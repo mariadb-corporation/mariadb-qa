@@ -205,9 +205,10 @@ sudo apt install libasio-dev check scons libboost-program-options-dev libboost-d
 
 sudo apt install libdata-dumper-simple-perl  # Required by mysql_install_db
 
-sudo apt install --reinstall linux-tools-common linux-tools-generic linux-tools-`uname -r`  # Required to install perf. To use perf, do:  sudo perf top -p <pid_of_mysqld>  # And allow some time to sample
-
-# rr server Tuning
+# rr server Tuning (and perf)
+# rr requires perf, so install it here. However, even if this is not an rr server install it as it is handy in general, so do not make the next apt install line conditional to "${1}" befing "rr".
+# To use perf, do:  sudo perf top -p <pid_of_mysqld>  # And allow some time to sample
+sudo apt install --reinstall linux-tools-common linux-tools-generic linux-tools-`uname -r` 
 if [ "${1}" == "rr" ]; then
   sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
   sudo sed -i 's|^#RemoveIPC=yes|RemoveIPC=no|' /etc/systemd/logind.conf; sudo systemctl restart systemd-logind.service
