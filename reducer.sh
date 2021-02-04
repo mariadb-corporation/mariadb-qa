@@ -1265,6 +1265,7 @@ multi_reducer(){
             echo_out "$ATLEASTONCE [Stage $STAGE] [MULTI] Previous good testcase backed up as $WORKO.prev"
           fi
           cp -f $WORKF $WORKO
+          cp -f $WORKO $WORK_OUT
           ATLEASTONCE="[*]"  # The issue was seen at least once
           echo_out "$ATLEASTONCE [Stage $STAGE] [MULTI] Thread #$t reproduced the issue: testcase saved in $WORKO"
           FOUND_VERIFIED=1  # Outer loop terminate setup
@@ -2720,7 +2721,7 @@ cleanup_and_save(){
       sleep 2; sync
     fi
     cp -f $WORKT $WORKF
-    if [ -r "$WORKO" ]; then  # First occurence: there is no $WORKO yet
+    if [ -r "$WORKO" ]; then 
       cp -f $WORKO ${WORKO}.prev
       # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
@@ -2747,6 +2748,7 @@ cleanup_and_save(){
       else
         echo "# mysqld initialization options required: ${MYINIT}" > $WORKO
       fi
+    #else here would only happen in the case that MYSQLD_OPTIONS_REQUIRED and MYINIT are both empty.
     fi
     MYSQLD_OPTIONS_REQUIRED=
     cp -f $WORKO $WORK_OUT

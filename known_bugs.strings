@@ -117,8 +117,7 @@ m_cpp_buf <= ptr && ptr <= m_cpp_buf + m_buf_length|SIGABRT|Lex_input_stream::bo
 length <= 64|SIGABRT|PFS_variable_name_row::make_row|User_variables::materialize|table_uvar_by_thread::materialize|table_uvar_by_thread::rnd_next                              ## DBG MDEV-23665
 (m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item_decimal_typecast::val_str                                          ## DBG |MDEV-23664
 (m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item::save_decimal_in_field                                             ## DBG |MDEV-23664
-SIGFPE|row_search_with_covering_prefix|row_search_mvcc|ha_innobase::index_read|handler::index_read_map
-                                                                         ## OPT MDEV-23600
+SIGFPE|row_search_with_covering_prefix|row_search_mvcc|ha_innobase::index_read|handler::index_read_map                                                                         ## OPT MDEV-23600
 marked_for_read()|SIGABRT|Field_long::val_int|Item_field::val_int|Item_func_plus::int_op|Item_func_hybrid_field_type::val_int_from_int_op                                      ## DBG MDEV-23597
 tab->ref.use_count|SIGABRT|join_read_key_unlock_row|evaluate_join_record|sub_select|do_select                                                                                  ## DBG MDEV-23596
 SIGSEGV|mtr_t::init|fsp_init_file_page|fsp_page_create|fsp_alloc_free_page                                                                                                     ## DBG |MDEV-23566
