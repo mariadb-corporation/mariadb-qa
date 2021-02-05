@@ -20,7 +20,7 @@ if [ "$1" == "scan" ]; then
   SCANBUGS=1
 fi
 
-# Check if this is a mdg run
+# Check if this is a MDG run
 if [ "$(grep --binary-files=text 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
   MDG=1
 else

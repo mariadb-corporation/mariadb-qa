@@ -58,7 +58,7 @@ echo ${WORKDIR} > /tmp/gomd_helper # gomd helper
 PQUERY_TOOL_NAME=$(basename ${PQUERY_BIN})
 if [ "${SEED}" == "" ]; then SEED=${RANDOMD}; fi
 # TODO: research this new code (and how it affects trials, though it seeems backwards compatible; checking for PQUERY3 varialbe happens AFTER all other checks are done (i.e. first core, then other checks, then PQUERY3 check, so should be fine? Though trial-1 is apparently removed; research further))
-if [[ ${PQUERY_TOOL_NAME} == "pquery3-ps" || ${PQUERY_TOOL_NAME} == "pquery3-mdg" ]]; then PQUERY3=1; fi
+if [[ ${PQUERY_TOOL_NAME} == "pquery3-ps" || ${PQUERY_TOOL_NAME} == "pquery3"* ]]; then PQUERY3=1; fi
 
 # Safety checks: ensure variables are correctly set to avoid rm -Rf issues (if not set correctly, it was likely due to altering internal variables at the top of this file)
 if [ "${WORKDIR}" == "/sd[a-z][/]" ]; then
@@ -173,18 +173,27 @@ diskspace() {
 
 add_handy_scripts(){
   # Add handy stack script
-  cat "${SCRIPT_PWD}/stack.sh" > ${RUNDIR}/${TRIAL}/stack && chmod +x ${RUNDIR}/${TRIAL}/stack
+  if [[ ${MDG} -eq 1 ]]; then
+    SAVE_STACK_LOC=${RUNDIR}/${TRIAL}/node${j}
+  else
+    SAVE_STACK_LOC=${RUNDIR}/${TRIAL}
+  fi
+  cat "${SCRIPT_PWD}/stack.sh" > ${SAVE_STACK_LOC}/stack && chmod +x ${SAVE_STACK_LOC}/stack
   # Add handy gdb script
-  echo "echo 'Handy copy and paste script:'" > ${RUNDIR}/${TRIAL}/gdb
-  echo "echo '  set pagination off'" >> ${RUNDIR}/${TRIAL}/gdb
-  echo "echo '  set print pretty on'" >> ${RUNDIR}/${TRIAL}/gdb
-  echo "echo '  set print frame-arguments all'" >> ${RUNDIR}/${TRIAL}/gdb
-  echo "echo '  thread apply all backtrace full'" >> ${RUNDIR}/${TRIAL}/gdb
-  echo "echo 'OR simple one-thread backtrace instead of all threads (i.e. instead of last line):'" >> ${RUNDIR}/${TRIAL}/gdb
-  echo "echo '  bt'" >> ${RUNDIR}/${TRIAL}/gdb
-  echo "sleep 5" >> ${RUNDIR}/${TRIAL}/gdb
-  echo "gdb ../mysqld/mysqld ./data/*core*" >> ${RUNDIR}/${TRIAL}/gdb
-  chmod +x ${RUNDIR}/${TRIAL}/gdb
+  echo "echo 'Handy copy and paste script:'" > ${SAVE_STACK_LOC}/gdb
+  echo "echo '  set pagination off'" >> ${SAVE_STACK_LOC}/gdb
+  echo "echo '  set print pretty on'" >> ${SAVE_STACK_LOC}/gdb
+  echo "echo '  set print frame-arguments all'" >> ${SAVE_STACK_LOC}/gdb
+  echo "echo '  thread apply all backtrace full'" >> ${SAVE_STACK_LOC}/gdb
+  echo "echo 'OR simple one-thread backtrace instead of all threads (i.e. instead of last line):'" >> ${SAVE_STACK_LOC}/gdb
+  echo "echo '  bt'" >> ${SAVE_STACK_LOC}/gdb
+  echo "sleep 5" >> ${SAVE_STACK_LOC}/gdb
+  if [[ ${MDG} -eq 1 ]]; then
+    echo "gdb ../mysqld/mysqld ${GALERA_CORE_LOC}" >> ${SAVE_STACK_LOC}/gdb
+  else
+    echo "gdb ../mysqld/mysqld ./data/*core*" >> ${SAVE_STACK_LOC}/gdb
+  fi
+  chmod +x ${SAVE_STACK_LOC}/gdb
 }
 
 # Find mysqld binary
@@ -398,6 +407,7 @@ ctrl-c() {
 savetrial() { # Only call this if you definitely want to save a trial
   echoit "Moving rundir from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
   mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1 | tee -a /${WORKDIR}/pquery-run.log
+  chmod -R +rX ${WORKDIR}/${TRIAL}/
   if [ "$PMM_CLEAN_TRIAL" == "1" ]; then
     echoit "Removing mysql instance (pq${RANDOMD}-${TRIAL}) from pmm-admin"
     sudo pmm-admin remove mysql pq${RANDOMD}-${TRIAL} > /dev/null
@@ -431,6 +441,7 @@ savesql() {
   echoit "Copying sql trace(s) from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
   diskspace
   mkdir ${WORKDIR}/${TRIAL}
+  chmod -R +rX ${WORKDIR}/${TRIAL}/
   cp ${RUNDIR}/${TRIAL}/*.sql ${WORKDIR}/${TRIAL}/
   rm -Rf ${RUNDIR}/${TRIAL}
   sync
@@ -503,17 +514,12 @@ if [[ $MDG -eq 1 ]]; then
   echo "innodb_autoinc_lock_mode=2" >> ${BASEDIR}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${BASEDIR}/my.cnf
   echo "wsrep_sst_method=rsync" >> ${BASEDIR}/my.cnf
+  echo "binlog_format=ROW" >> ${BASEDIR}/my.cnf
   echo "core-file" >> ${BASEDIR}/my.cnf
   echo "log-output=none" >> ${BASEDIR}/my.cnf
   echo "wsrep_slave_threads=2" >> ${BASEDIR}/my.cnf
   echo "wsrep_on=1" >> ${BASEDIR}/my.cnf
   if [[ "$ENCRYPTION_RUN" == 1 ]]; then
-    echo "log_bin=binlog" >> ${BASEDIR}/my.cnf
-    echo "binlog_format=ROW" >> ${BASEDIR}/my.cnf
-    echo "gtid_mode=ON" >> ${BASEDIR}/my.cnf
-    echo "enforce_gtid_consistency=ON" >> ${BASEDIR}/my.cnf
-    echo "master_verify_checksum=on" >> ${BASEDIR}/my.cnf
-    echo "binlog_checksum=CRC32" >> ${BASEDIR}/my.cnf
     echo "encrypt_binlog=ON" >> ${BASEDIR}/my.cnf
     if [[ $WITH_KEYRING_VAULT -ne 1 ]]; then
       echo "early-plugin-load=keyring_file.so" >> ${BASEDIR}/my.cnf
@@ -605,25 +611,25 @@ mdg_startup() {
     sed -i "2i log-error=$node/node${i}.err" ${DATADIR}/n${i}.cnf
     sed -i "2i port=$RBASE1" ${DATADIR}/n${i}.cnf
     sed -i "2i datadir=$node" ${DATADIR}/n${i}.cnf
+    sed -i "2i socket=$node/node${i}_socket.sock" ${DATADIR}/n${i}.cnf
+    sed -i "2i tmpdir=$DATADIR/tmp${i}" ${DATADIR}/n${i}.cnf
     if [[ "$ENCRYPTION_RUN" != 1 ]]; then
       sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPT\"" ${DATADIR}/n${i}.cnf
     else
       sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPT;socket.ssl_key=${WORKDIR}/cert/server-key.pem;socket.ssl_cert=${WORKDIR}/cert/server-cert.pem;socket.ssl_ca=${WORKDIR}/cert/ca.pem\"" ${DATADIR}/n${i}.cnf
+      echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
+      echo "ssl-cert = ${WORKDIR}/cert/server-cert.pem" >> ${DATADIR}/n${i}.cnf
+      echo "ssl-key = ${WORKDIR}/cert/server-key.pem" >> ${DATADIR}/n${i}.cnf
+      echo "[client]" >> ${DATADIR}/n${i}.cnf
+      echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
+      echo "ssl-cert = ${WORKDIR}/cert/client-cert.pem" >> ${DATADIR}/n${i}.cnf
+      echo "ssl-key = ${WORKDIR}/cert/client-key.pem" >> ${DATADIR}/n${i}.cnf
+      echo "[sst]" >> ${DATADIR}/n${i}.cnf
+      echo "encrypt = 4" >> ${DATADIR}/n${i}.cnf
+      echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
+      echo "ssl-cert = ${WORKDIR}/cert/server-cert.pem" >> ${DATADIR}/n${i}.cnf
+      echo "ssl-key = ${WORKDIR}/cert/server-key.pem" >> ${DATADIR}/n${i}.cnf
     fi
-    sed -i "2i socket=$node/node${i}_socket.sock" ${DATADIR}/n${i}.cnf
-    sed -i "2i tmpdir=$DATADIR/tmp${i}" ${DATADIR}/n${i}.cnf
-    echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
-    echo "ssl-cert = ${WORKDIR}/cert/server-cert.pem" >> ${DATADIR}/n${i}.cnf
-    echo "ssl-key = ${WORKDIR}/cert/server-key.pem" >> ${DATADIR}/n${i}.cnf
-    echo "[client]" >> ${DATADIR}/n${i}.cnf
-    echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
-    echo "ssl-cert = ${WORKDIR}/cert/client-cert.pem" >> ${DATADIR}/n${i}.cnf
-    echo "ssl-key = ${WORKDIR}/cert/client-key.pem" >> ${DATADIR}/n${i}.cnf
-    echo "[sst]" >> ${DATADIR}/n${i}.cnf
-    echo "encrypt = 4" >> ${DATADIR}/n${i}.cnf
-    echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
-    echo "ssl-cert = ${WORKDIR}/cert/server-cert.pem" >> ${DATADIR}/n${i}.cnf
-    echo "ssl-key = ${WORKDIR}/cert/server-key.pem" >> ${DATADIR}/n${i}.cnf
     if [ "$IS_STARTUP" == "startup" ]; then
       ${INIT_TOOL} ${INIT_OPT} --basedir=${BASEDIR} --datadir=$node > ${WORKDIR}/startup_node1.err 2>&1
     fi
@@ -1524,7 +1530,6 @@ pquery_test() {
           grep -o "CHANGED: [0-9]\+" ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_SEC_ENGINE}.sql > ${RUNDIR}/${TRIAL}/${QC_SEC_ENGINE}.result
         fi
       else # Not a query correctness testing run
-        add_handy_scripts
         echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
         if [ ${QUERY_DURATION_TESTING} -eq 1 ]; then # Query duration testing run
           if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
@@ -1924,6 +1929,7 @@ pquery_test() {
               if [ $(ls -l ${RUNDIR}/${TRIAL}/node${j}/*core* 2> /dev/null | wc -l) -ge 1 ]; then
                 export GALERA_ERROR_LOG=${RUNDIR}/${TRIAL}/node${j}/node${j}.err
                 export GALERA_CORE_LOC=$(ls -t ${RUNDIR}/${TRIAL}/node${j}/*core* 2> /dev/null)
+                export node=node${j}
                 echoit "mysqld coredump detected at $(ls ${RUNDIR}/${TRIAL}/node${j}/*core* 2> /dev/null)"
                 handle_bugs
               fi
@@ -2028,6 +2034,7 @@ fi
 rm -Rf ${WORKDIR} ${RUNDIR}
 diskspace
 mkdir ${WORKDIR} ${WORKDIR}/log ${RUNDIR}
+chmod -R +rX ${WORKDIR}
 WORKDIRACTIVE=1
 ONGOING=
 # User for recovery testing
