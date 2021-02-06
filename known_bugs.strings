@@ -22,6 +22,7 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+"lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                     ## DBG MDEV-24700
 page_has_next(block->frame) || rec_is_alter_metadata(p, *index)|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last                ## DBG |MDEV-24796
 page_has_next(block->frame) || block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last         ## DBG |MDEV-24796
 page_has_next(block->frame) || rec_is_alter_metadata(p, *index) || block->page.id().page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last  ## DBG |MDEV-24796

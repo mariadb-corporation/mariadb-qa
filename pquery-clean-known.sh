@@ -52,7 +52,7 @@ if [ ${CONFLICT} -eq 1 ]; then
 fi
 
 while read line; do
-  STRING="$(echo "$line" | sed 's|[ \t]*##.*$||')"
+  STRING="$(echo "$line" | sed 's|[ \t]*##.*$||' |  sed 's|"|\\\"|g')"  # For more information on the " to \" sed, ref pquery-prep-red.sh (search for:  The sed transforms "  ), and pquery-results.sh (search for:  sed reverts the insertion of  ). Note there is one backslash less in this one
   if [ -z "${STRING}" ]; then continue; fi
   # echo "${STRING}..."  # For debugging
   # sleep 1  # For debugging
