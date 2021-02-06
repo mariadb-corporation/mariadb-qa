@@ -22,6 +22,10 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+page_has_next(block->frame) || rec_is_alter_metadata(p, *index)|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last                ## DBG |MDEV-24796
+page_has_next(block->frame) || block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last         ## DBG |MDEV-24796
+page_has_next(block->frame) || rec_is_alter_metadata(p, *index) || block->page.id().page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last  ## DBG |MDEV-24796
+page_has_next(block->frame) || rec_is_alter_metadata(p, *index) || block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last  ## DBG |MDEV-24796
 thr->graph->trx->id == trx_read_trx_id( static_cast<const byte*>( trx_id->data)) || static_cast<ins_node_t*>( thr->run_node)->bulk_insert|SIGABRT|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry  ## DBG MDEV-24716
 !node->table->skip_alter_undo|SIGABRT|row_upd_clust_rec|row_upd_clust_step|row_upd|row_upd_step                                                                                ## DBG MDEV-24715
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                    ## DBG |MDEV-24706
@@ -117,8 +121,7 @@ m_cpp_buf <= ptr && ptr <= m_cpp_buf + m_buf_length|SIGABRT|Lex_input_stream::bo
 length <= 64|SIGABRT|PFS_variable_name_row::make_row|User_variables::materialize|table_uvar_by_thread::materialize|table_uvar_by_thread::rnd_next                              ## DBG MDEV-23665
 (m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item_decimal_typecast::val_str                                          ## DBG |MDEV-23664
 (m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item::save_decimal_in_field                                             ## DBG |MDEV-23664
-SIGFPE|row_search_with_covering_prefix|row_search_mvcc|ha_innobase::index_read|handler::index_read_map
-                                                                         ## OPT MDEV-23600
+SIGFPE|row_search_with_covering_prefix|row_search_mvcc|ha_innobase::index_read|handler::index_read_map                                                                         ## OPT MDEV-23600
 marked_for_read()|SIGABRT|Field_long::val_int|Item_field::val_int|Item_func_plus::int_op|Item_func_hybrid_field_type::val_int_from_int_op                                      ## DBG MDEV-23597
 tab->ref.use_count|SIGABRT|join_read_key_unlock_row|evaluate_join_record|sub_select|do_select                                                                                  ## DBG MDEV-23596
 SIGSEGV|mtr_t::init|fsp_init_file_page|fsp_page_create|fsp_alloc_free_page                                                                                                     ## DBG |MDEV-23566

@@ -1,0 +1,6 @@
+CREATE TABLE t (c INT KEY) ENGINE=InnoDB;
+INSERT INTO t VALUES(1),(2);
+SET GLOBAL innodb_limit_optimistic_insert_debug=2;
+ALTER TABLE t ADD COLUMN d INT;
+DELETE FROM t;
+SELECT * FROM t WHERE c<>1 ORDER BY c DESC;

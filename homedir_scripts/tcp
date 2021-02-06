@@ -166,6 +166,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|rpad|RPAD|gi' | \
   sed 's|lpad|LPAD|gi' | \
   sed 's|into|INTO|gi' | \
+  sed 's|column|COLUMN|gi' | \
   sed 's|left|LEFT|gi' | \
   sed 's|right|RIGHT|gi' | \
   sed 's|threads|THREADS|gi' | \
@@ -237,6 +238,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|transforms|transforms|gi' | \
   sed 's|test\([^ ]*\)|test\L\1|gi' | \
   sed 's|0x\([0-9A-Fa-f]\)|0x\1|gi' | \
+  sed 's| ()|()|gi' | \
   sed 's| = |=|gi'
 
 # Templates for copy/paste

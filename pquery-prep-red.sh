@@ -627,7 +627,7 @@ if [ ${QC} -eq 0 ]; then
           ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
           cd - >/dev/null || exit 1
         fi
-        TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1)"  # TODO: this change needs further testing for cluster/GR. Also, it is likely someting was missed for this in the updated pquery-run.sh: the need to generate a MYBUG file for each node!
+        TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # TODO: this change needs further testing for cluster/GR. Also, it is likely someting was missed for this in the updated pquery-run.sh: the need to generate a MYBUG file for each node!   # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.     
         check_if_asan_or_ubsan_or_tsan
         echo "* TEXT variable set to: '${TEXT}'"
         if [ "${MULTI}" == "1" ]; then
@@ -751,7 +751,7 @@ if [ ${QC} -eq 0 ]; then
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1
           fi
-          TEXT="$(cat ./${TRIAL}/MYBUG)"
+          TEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.
           check_if_asan_or_ubsan_or_tsan
           echo "* TEXT variable set to: '${TEXT}'"
           if [ "${MULTI}" == "1" -a -s ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing ];then

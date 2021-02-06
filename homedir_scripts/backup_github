@@ -67,6 +67,7 @@ cp ps_1sec ${TARGET}
 cp r ${TARGET}
 cp ramdrive.sh ${TARGET}
 cp s ${TARGET}
+cp ss ${TARGET}
 cp sc ${TARGET}
 cp sge ${TARGET}
 cp sr ${TARGET}
