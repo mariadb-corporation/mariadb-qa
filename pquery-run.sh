@@ -58,7 +58,7 @@ echo ${WORKDIR} > /tmp/gomd_helper # gomd helper
 PQUERY_TOOL_NAME=$(basename ${PQUERY_BIN})
 if [ "${SEED}" == "" ]; then SEED=${RANDOMD}; fi
 # TODO: research this new code (and how it affects trials, though it seeems backwards compatible; checking for PQUERY3 varialbe happens AFTER all other checks are done (i.e. first core, then other checks, then PQUERY3 check, so should be fine? Though trial-1 is apparently removed; research further))
-if [[ ${PQUERY_TOOL_NAME} == "pquery3-ps" || ${PQUERY_TOOL_NAME} == "pquery3"* ]]; then PQUERY3=1; fi
+if [[ ${PQUERY_TOOL_NAME} == "pquery3"* ]]; then PQUERY3=1; fi
 
 # Safety checks: ensure variables are correctly set to avoid rm -Rf issues (if not set correctly, it was likely due to altering internal variables at the top of this file)
 if [ "${WORKDIR}" == "/sd[a-z][/]" ]; then
@@ -194,6 +194,7 @@ add_handy_scripts(){
     echo "gdb ../mysqld/mysqld ./data/*core*" >> ${SAVE_STACK_LOC}/gdb
   fi
   chmod +x ${SAVE_STACK_LOC}/gdb
+  SAVE_STACK_LOC=
 }
 
 # Find mysqld binary

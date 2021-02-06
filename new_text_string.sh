@@ -26,6 +26,8 @@ if [ -z "${MYSQLD}" ]; then
     MYSQLD="../mysqld"
   elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
     MYSQLD="../mysqld/mysqld"
+  elif [ -r ../../mysqld/mysqld -a ! -d ../../mysqld/mysqld ]; then  # Used by pquery-pre-red.sh to re-generate MYBUG string with valid input
+    MYSQLD="../../mysqld/mysqld"
   elif [ -r ./log/master.err ]; then
     POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
     if [ -r ${POTENTIAL_MYSQLD} ]; then
