@@ -53,7 +53,7 @@ TRIALS_EXECUTED=$(cat pquery-run.log 2>/dev/null | grep --binary-files=text -o "
 echo "================ [Run: $(echo ${PWD} | sed 's|.*/||')] Sorted unique issue strings (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers)"
 ORIG_IFS=$IFS; IFS=$'\n'  # Use newline seperator instead of space seperator in the for loop
 if [[ $PXC -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
-  for STRING in $(grep --binary-files=text "   TEXT=" reducer* 2>/dev/null | sed 's|.*TEXT=.||;s|.[ \t]*$||' | sort -u); do
+  for STRING in $(grep --binary-files=text "   TEXT=" reducer* 2>/dev/null | sed 's|.*TEXT=.||;s|"$||' | sort -u); do
     MATCHING_TRIALS=()
     if grep -qi "^USE_NEW_TEXT_STRING=1" reducer*.sh; then  # New text string (i.e. no regex) mode
       for MATCHING_TRIAL in $(grep -FiH --binary-files=text "${STRING}" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
@@ -76,7 +76,7 @@ if [[ $PXC -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
       elif [[ "${STRING}" == "runtime error:"* ]]; then  # UBSAN bugs
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sUBSAN ",$1}')"
       else
-        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-170s",$1}')"
+        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-170s",$1}' | sed 's|\\"|"|g')"  # The s|\\"|"|g sed reverts the insertion of \ before " (i.e. \") as done by pquery-prep-reducer.sh and as used by reducer. It is not helpful here, and it is not part of the offial bug uniqueID string. Thus, pquery-results.sh and in-reducer TEXT slightly differ: " (pquery-results.sh, MYBUG, known_bug_string.sh) vs \" (reducer.sh, and as set by pquery-prep-reducer.sh)
       fi
       COUNT_OUT="$(echo $COUNT | awk '{printf "(Seen %3s times: reducers ",$1}')"
       echo -e "${STRING_OUT}${COUNT_OUT}$(echo ${MATCHING_TRIALS[@]}|sed 's| |,|g'))"

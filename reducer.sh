@@ -2492,11 +2492,6 @@ cut_random_chunk(){
   fi
 }
 
-cut_fixed_chunk(){
-  echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line $CURRENTLINE (Current chunk size: fixed to 1)"
-  sed -n "$CURRENTLINE ! p" $WORKF > $WORKT
-}
-
 cut_fireworks_chunk_and_shuffle(){
   echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Fireworks] Chunking and shuffling ${FIREWORKS_LINES} lines"
   RANDOM=$(date +%s%N | cut -b10-19)  # Resetting random entropy to ensure highest quality entropy
@@ -3967,25 +3962,27 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
   STAGE=2
   TRIAL=1
   NOISSUEFLOW=0
-  LINES=`cat $WORKF | wc -l | tr -d '[\t\n ]*'`
   CURRENTLINE=1
-  REALLINE=1
   echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
-  while [ $LINES -ge $REALLINE ]; do
-    if [ $LINES -eq $REALLINE  ]; then NEXTACTION="& progress to the next stage"; fi
-    if [ $TRIAL -gt 1 ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
-    cut_fixed_chunk
+  while true; do
+    if [ ${TRIAL} -gt 1 ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
+    if [ ${CURRENTLINE} -gt ${LINECOUNTF} ]; then
+      break  # EOF reached
+    elif [ ${CURRENTLINE} -eq ${LINECOUNTF} ]; then
+      NEXTACTION="& progress to the next stage"  # Last line
+    fi
+    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line ${CURRENTLINE} (Current chunk size: fixed to 1)"
+    sed -n "$CURRENTLINE ! p" $WORKF > $WORKT
     run_and_check
-    if [ $? -eq 0 ]; then CURRENTLINE=$[$CURRENTLINE+1]; fi  # Only advance the column number if there was no issue, otherwise stay on the same column (An issue will remove the current column and shift all other columns down by one, hence you have to stay in the same place as it will contain the next column)
-    REALLINE=$[$REALLINE+1]
-    TRIAL=$[$TRIAL+1]
-    if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
-      SIZEF=$(stat -c %s ${WORKF})
-      LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
-    else
+    if [ $? -eq 0 ]; then CURRENTLINE=$[ ${CURRENTLINE} + 1 ]; fi  # Only advance the filter line number if there was no issue, otherwise stay on the same line as the file has gotten one line shorter, and so the next line is now the current line!
+    if [ "${FIREWORKS}" -eq 1 ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
       SIZEF=$(stat -c %s ${INPUTFILE})
       LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+    else
+      SIZEF=$(stat -c %s ${WORKF})
+      LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
     fi
+    TRIAL=$[ ${TRIAL} + 1 ]
   done
 fi
 
