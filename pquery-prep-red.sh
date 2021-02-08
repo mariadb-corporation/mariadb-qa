@@ -408,8 +408,8 @@ generate_reducer_script(){
     MULTI_STRING3="0,/#VARMOD#/s:#VARMOD#:FORCE_SPORADIC=1\n#VARMOD#:"
   fi
   if [[ ${MDG} -eq 1 ]]; then
-    MDG_CLEANUP1="0,/^[ \t]*MDG_MOD[ \t]*=.*$/s|^[ \t]*MDG_MOD[ \t]*=.*$|#MDG_MOD=<set_below_in_machine_variables_section>|"
-    MDG_STRING1="0,/#VARMOD#/s:#VARMOD#:MDG_MOD=1\n#VARMOD#:"
+    MDG_CLEANUP1="0,/^[ \t]*USE_MDG[ \t]*=.*$/s|^[ \t]*USE_MDG[ \t]*=.*$|#USE_MDG=<set_below_in_machine_variables_section>|"
+    MDG_STRING1="0,/#VARMOD#/s:#VARMOD#:export USE_MDG=1\n#VARMOD#:"
   else
     MDG_CLEANUP1="s|ZERO0|ZERO0|"  # Idem as above
     MDG_STRING1="s|ZERO0|ZERO0|"
@@ -631,11 +631,13 @@ if [ ${QC} -eq 0 ]; then
         check_if_asan_or_ubsan_or_tsan
         echo "* TEXT variable set to: '${TEXT}'"
         if [ "${MULTI}" == "1" ]; then
-           if [ -s ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing ];then
+           if [ -s ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/${TRIAL}.sql.failing ];then
              auto_interleave_failing_sql ${INPUTFILE}
            fi
         fi
-        generate_reducer_script
+        if [[ "${TEXT}" != "Assert: no core file found"* ]]; then ## TODO: Check if this always works correctly (i.e. are cores present whereas it says there are no core files found)
+          generate_reducer_script
+        fi
       done
       if [ "${MYEXTRA}" != "" ]; then
         echo "* MYEXTRA variable set to: ${MYEXTRA}"
