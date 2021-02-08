@@ -603,9 +603,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
   else
     echo_out "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
   fi
-  finish
-  echo_out "[Abort] Done. Terminating reducer"
-  exit 2
+  finish 'abort'
 }
 
 options_check(){
@@ -3307,6 +3305,10 @@ finish(){
     echo_out "[DONE] Final testcase: $INPUTFILE (= input file; no optimizations were successful. $(wc -l $INPUTFILE | awk '{print $1}') lines)"
   else  # Reduction
     echo_out "[DONE] Final testcase: $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
+  fi
+  if [ "${1}" == "abort" ]; then
+    echo_out "[Abort] Done. Terminating reducer"
+    exit 2
   fi
   exit 0
 }
