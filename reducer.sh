@@ -3178,7 +3178,7 @@ stop_mysqld_or_pxc(){
   SHUTDOWN_TIME_START=$(date +'%s')
   MODE0_MIN_SHUTDOWN_TIME=$[ $TIMEOUT_CHECK + 10 ]
   if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
-    (ps -ef | grep -e  'node1_socket\|node2_socket\|node3_socket' | grep -v grep |  grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
+    (ps -ef | grep -e 'node1_socket\|node2_socket\|node3_socket' | grep -v grep | grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
     sleep 2; sync
   else
     if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld
