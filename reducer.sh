@@ -4057,7 +4057,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     else break
     fi
     SIZET=`stat -c %s $WORKT`
-    if [ ${NOSKIP} -eq 0 -a $SIZEF -ge $SIZET ]; then
+    if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
@@ -4235,7 +4235,7 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     else break
     fi
     SIZET=`stat -c %s $WORKT`
-    if [ ${NOSKIP} -eq 0 -a $SIZEF -ge $SIZET ]; then
+    if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
@@ -4698,19 +4698,26 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 168 ]; then sed -e 's/  / /' $WORKF > $WORKT
     elif [ $TRIAL -eq 169 ]; then sed -e 's/  / /' $WORKF > $WORKT
     elif [ $TRIAL -eq 170 ]; then sed -e 's|;#.*$|;|' $WORKF > $WORKT
-    elif [ $TRIAL -eq 171 ]; then sed -e 's/;  ;/;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 172 ]; then sed -e 's/; ;/;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 173 ]; then sed -e 's/;;/;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 174 ]; then sed -e 's/; /;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 175 ]; then grep -E --binary-files=text -v '^$' $WORKF > $WORKT
-    elif [ $TRIAL -eq 176 ]; then sed -e 's/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/' $WORKF > $WORKT
-    # RV 25/01/21 Disabled next line to see if this fixes the # mysqld options required insert. Also note 177 changed on the line thereafter: update when removing to higher number
-    # elif [ $TRIAL -eq 177 ]; then grep -E --binary-files=text -v "^#" $WORKF > $WORKT
-    elif [ $TRIAL -eq 177 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 171 ]; then sed -e 's|;#[^#]\+$|;|' $WORKF > $WORKT
+    elif [ $TRIAL -eq 172 ]; then sed -e 's/;  ;/;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 173 ]; then sed -e 's/; ;/;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 174 ]; then sed -e 's/;;/;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 175 ]; then sed -e 's/; /;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 176 ]; then grep -E --binary-files=text -v '^$' $WORKF > $WORKT
+    elif [ $TRIAL -eq 177 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
+      if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
+        ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT
+      else
+        continue  # Continue with next trial instead
+      fi
+    elif [ $TRIAL -eq 178 ]; then sed -e 's/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/' $WORKF > $WORKT
+    # RV 25/01/21 Disabled next line to see if this fixes the # mysqld options required insert. Also note 179 changed on the line thereafter: update when removing to higher number
+    # elif [ $TRIAL -eq 179 ]; then grep -E --binary-files=text -v "^#" $WORKF > $WORKT
+    elif [ $TRIAL -eq 179 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`
-    if [ ${NOSKIP} -eq 0 -a $SIZEF -ge $SIZET ]; then
+    if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
