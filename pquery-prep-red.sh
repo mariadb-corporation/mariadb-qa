@@ -408,15 +408,15 @@ generate_reducer_script(){
     MULTI_STRING3="0,/#VARMOD#/s:#VARMOD#:FORCE_SPORADIC=1\n#VARMOD#:"
   fi
   if [[ ${MDG} -eq 1 ]]; then
-    MDG_CLEANUP1="0,/^[ \t]*USE_MDG[ \t]*=.*$/s|^[ \t]*USE_MDG[ \t]*=.*$|#USE_MDG=<set_below_in_machine_variables_section>|"
-    MDG_STRING1="0,/#VARMOD#/s:#VARMOD#:export USE_MDG=1\n#VARMOD#:"
+    MDG_CLEANUP1="0,/^[ \t]*MDG[ \t]*=.*$/s|^[ \t]*MDG[ \t]*=.*$|#MDG=<set_below_in_machine_variables_section>|"
+    MDG_STRING1="0,/#VARMOD#/s:#VARMOD#:export MDG=1\n#VARMOD#:"
   else
     MDG_CLEANUP1="s|ZERO0|ZERO0|"  # Idem as above
     MDG_STRING1="s|ZERO0|ZERO0|"
   fi
   if [[ ${GRP_RPL} -eq 1 ]]; then
-    GRP_RPL_CLEANUP1="0,/^[ \t]*GRP_RPL_MOD[ \t]*=.*$/s|^[ \t]*GRP_RPL_MOD[ \t]*=.*$|#GRP_RPL_MOD=<set_below_in_machine_variables_section>|"
-    GRP_RPL_STRING1="0,/#VARMOD#/s:#VARMOD#:GRP_RPL_MOD=1\n#VARMOD#:"
+    GRP_RPL_CLEANUP1="0,/^[ \t]*GRP_RPL[ \t]*=.*$/s|^[ \t]*GRP_RPL[ \t]*=.*$|#GRP_RPL=<set_below_in_machine_variables_section>|"
+    GRP_RPL_STRING1="0,/#VARMOD#/s:#VARMOD#:GRP_RPL=1\n#VARMOD#:"
   else
     GRP_RPL_CLEANUP1="s|ZERO0|ZERO0|"  # Idem as above
     GRP_RPL_STRING1="s|ZERO0|ZERO0|"

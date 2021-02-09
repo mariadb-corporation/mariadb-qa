@@ -102,12 +102,12 @@ SKIPSTAGEABOVE=99               # Usually not changed (default=99), skips stages
 FORCE_KILL=0                    # On/Off (1/0) Enable to forcefully kill mysqld instead of using mysqladmin shutdown etc. Auto-disabled for MODE=0.
 
 # === MariaDB Galera Cluster
-USE_MDG=0                       # On/Off (1/0) Enable to reduce testcases using a MariaDB Galera Cluster. Auto-enables USE_PQUERY=1
+MDG=0                       # On/Off (1/0) Enable to reduce testcases using a MariaDB Galera Cluster. Auto-enables USE_PQUERY=1
 MDG_ISSUE_NODE=0                # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
 WSREP_PROVIDER_OPTIONS=""       # wsrep_provider_options to be used (and reduced).
 
 # === MySQL Group Replication
-USE_GRP_RPL=0                   # On/Off (1/0) Enable to reduce testcases using MySQL Group Replication. Auto-enables USE_PQUERYE=1
+GRP_RPL=0                   # On/Off (1/0) Enable to reduce testcases using MySQL Group Replication. Auto-enables USE_PQUERYE=1
 GRP_RPL_ISSUE_NODE=0            # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
 
 # === MODE=5 Settings           # Only applicable when MODE5 is used
@@ -153,8 +153,8 @@ TS_VARIABILITY_SLEEP=1
 # - USE_PQUERY: 1: use pquery, 0: use mysql CLI. Causes reducer.sh to use pquery instead of the mysql client for replays (default=0). Supported for MODE=1,3,4
 # - PQUERY_LOC: Location of the pquery binary (ref ~/mariadb-qa/pquery/pquery[-ms])
 # - PQUERY_EXTRA_OPTIONS: Extra options to pquery which will be added to the pquery command line. This is used for query correctness trials
-# - USE_MDG: 1: bring up 3 node MariaDB Galera Cluster instead of default server, 0: use default non-cluster server (mysqld)
-# - USE_GRP_RPL: 1: bring up 3 node Group Replication instead of default server, 0: use default non-cluster server (mysqld)
+# - MDG: 1: bring up 3 node MariaDB Galera Cluster instead of default server, 0: use default non-cluster server (mysqld)
+# - GRP_RPL: 1: bring up 3 node Group Replication instead of default server, 0: use default non-cluster server (mysqld)
 #   see lp:/mariadb-qa/mdg-pquery/new/mdg-pquery_info.txt and lp:/mariadb-qa/docker_info.txt for more information on this. See above for some limitations etc.
 #   IMPORTANT NOTE: If this is set to 1, ftm, these settings (and limitations) are automatically set: INHERENT: USE_PQUERY=1, LIMTATIONS: FORCE_SPORADIC=0,
 #   SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MYEXTRA="", MULTI_THREADS=0
@@ -580,14 +580,14 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "[Abort] Best testcase thus far: $INPUTFILE (= input file; no optimizations were successful)"
   fi
   echo_out "[Abort] End of dump stack"
-  if [ $USE_MDG -eq 1 ]; then
+  if [ $MDG -eq 1 ]; then
     echo_out "[Abort] Ensuring any remaining MDG nodes are terminated and removed"
-    (ps -ef | grep -e  'node1_socket\|node2_socket\|node3_socket' | grep -v grep |  grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
+    (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   fi
-  if [ $USE_GRP_RPL -eq 1 ]; then
+  if [ $GRP_RPL -eq 1 ]; then
     echo_out "[Abort] Ensuring any remaining Group Replication nodes are terminated and removed"
-    (ps -ef | grep -e  'node1_socket\|node2_socket\|node3_socket' | grep -v grep |  grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
+    (ps -ef | grep -E  'node1_socket|node2_socket|node3_socket' |  grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   fi
   echo_out "[Abort] Ensuring any remaining processes are terminated"
@@ -883,12 +883,12 @@ options_check(){
       exit 1
     fi
   fi
-  if [[ $USE_MDG -eq 1  || $USE_GRP_RPL -eq 1 ]]; then
+  if [[ $MDG -eq 1  || $GRP_RPL -eq 1 ]]; then
     USE_PQUERY=1
     # ========= These are currently limitations of MDG/Group Replication mode. Feel free to extend reducer.sh to handle these ========
     #export -n MYEXTRA=""  # Serious shortcoming. Work to be done. PQUERY MYEXTRA variables will be added docker-compose.yml
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
-      echo_out "[Setup] USE_MDG or USE_GRP_RPL is enabled, setting FORCE_SPORADIC=0, SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MULTI_THREADS=0"
+      echo_out "[Setup] MDG or GRP_RPL is enabled, setting FORCE_SPORADIC=0, SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MULTI_THREADS=0"
     fi
     export -n FORCE_SPORADIC=0
     export -n SPORADIC=0
@@ -958,8 +958,8 @@ options_check(){
       echo "Terminating now."
       exit 1
     fi
-    if [[ $USE_MDG -gt 0 || $USE_GRP_RPL -eq 1 ]]; then
-      echo "GLIBC testcase reduction is not yet supported for USE_MDG=1 or USE_GRP_RPL=1. This would be very complex to code, except perhaps for a single node cluster or for one node only. See source code for details. Search for 'GLIBC crash reduction'"
+    if [[ $MDG -gt 0 || $GRP_RPL -eq 1 ]]; then
+      echo "GLIBC testcase reduction is not yet supported for MDG=1 or GRP_RPL=1. This would be very complex to code, except perhaps for a single node cluster or for one node only. See source code for details. Search for 'GLIBC crash reduction'"
       echo "A workaround may be to see if this GLIBC crash reproduces on standard (non-cluster) mysqld also, which is likely."
       echo "Terminating now."
       exit 1
@@ -1622,11 +1622,11 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  if [ $USE_MDG -eq 1 ]; then
+  if [ $MDG -eq 1 ]; then
     echo_out "[Init] MDG Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
     echo_out "[Init] MDG Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
     echo_out "[Init] MDG Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
-  elif [ $USE_GRP_RPL -eq 1 ]; then
+  elif [ $GRP_RPL -eq 1 ]; then
     echo_out "[Init] Group Replication Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
     echo_out "[Init] Group Replication Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
     echo_out "[Init] Group Replication Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
@@ -1740,8 +1740,8 @@ init_workdir_and_files(){
       echo_out "[Warning] ThreadSync: ONLY use -vvv logging for debugging, as this *will* cause issue non-reproducilbity due to excessive disk logging!"
     fi
   fi
-  if [ $USE_MDG -gt 0 ]; then
-    echo_out "[Init] USE_MDG active, so automatically set USE_PQUERY=1: MariaDB Galera Cluster testcase reduction is currently supported only with pquery"
+  if [ $MDG -gt 0 ]; then
+    echo_out "[Init] MDG active, so automatically set USE_PQUERY=1: MariaDB Galera Cluster testcase reduction is currently supported only with pquery"
     if [ $MODE -eq 5 -o $MODE -eq 3 ]; then
       echo_out "[Warning] MODE=$MODE is set, as well as MDG mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
     fi
@@ -1757,8 +1757,8 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  if [ $USE_GRP_RPL -gt 0 ]; then
-    echo_out "[Init] USE_GRP_RPL active, so automatically set USE_PQUERY=1: Group Replication Cluster testcase reduction is currently supported only with pquery"
+  if [ $GRP_RPL -gt 0 ]; then
+    echo_out "[Init] GRP_RPL active, so automatically set USE_PQUERY=1: Group Replication Cluster testcase reduction is currently supported only with pquery"
     if [ $MODE -eq 5 -o $MODE -eq 3 ]; then
       echo_out "[Warning] MODE=$MODE is set, as well as Group Replication mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
     fi
@@ -1805,7 +1805,7 @@ init_workdir_and_files(){
     elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
       echo "WARNING: mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may fail."
     fi
-    if [[ $USE_MDG -ne 1 && $USE_GRP_RPL -ne 1 ]]; then
+    if [[ $MDG -ne 1 && $GRP_RPL -ne 1 ]]; then
       echo_out "[Init] Setting up standard working template (without using MYEXTRA options)"
       generate_run_scripts
       ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR --datadir=$WORKD/data ${MID_OPTIONS} --user=$MYUSER > $WORKD/init.log 2>&1
@@ -1844,7 +1844,7 @@ init_workdir_and_files(){
         $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock --force mysql < $WORKD/timezone.init
       fi
       stop_mysqld_or_mdg
-    elif [[ $USE_MDG -eq 1 ]]; then
+    elif [[ $MDG -eq 1 ]]; then
       echo_out "[Init] Setting up standard MDG working template (without using MYEXTRA options)"
       node1="${WORKD}/node1"
       node2="${WORKD}/node2"
@@ -1856,7 +1856,7 @@ init_workdir_and_files(){
       cp -a $WORKD/node1/* $WORKD/node1.init/
       cp -a $WORKD/node2/* $WORKD/node2.init/
       cp -a $WORKD/node3/* $WORKD/node3.init/
-    elif [[ $USE_GRP_RPL -eq 1 ]]; then
+    elif [[ $GRP_RPL -eq 1 ]]; then
       echo_out "[Init] Setting up standard Group Replication working template (without using MYEXTRA options)"
       MID="${BASEDIR}/bin/mysqld --no-defaults --initialize-insecure ${MYINIT} --basedir=${BASEDIR}"
       node1="${WORKD}/node1"
@@ -1920,7 +1920,7 @@ generate_run_scripts(){
     chmod +x $WORK_RUN
     if [ $USE_PQUERY -eq 1 ]; then
       cp $PQUERY_LOC $WORK_PQUERY_BIN  # Make a copy of the pquery binary for easy replay later (no need to download)
-      if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+      if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         echo "echo \"Executing testcase ./${EPOCH}.sql against mysqld at 127.0.0.1:10000 using pquery...\"" > $WORK_RUN_PQUERY
         echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
         echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
@@ -1997,7 +1997,7 @@ generate_run_scripts(){
 }
 
 init_mysql_dir(){
-  if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
     sudo rm -Rf $WORKD/node1 $WORKD/node2 $WORKD/node3
     cp -a ${node1}.init ${node1}
     cp -a ${node2}.init ${node2}
@@ -2018,9 +2018,9 @@ init_mysql_dir(){
 
 start_mysqld_or_valgrind_or_mdg(){
   init_mysql_dir
-  if [ $USE_MDG -eq 1 ]; then
+  if [ $MDG -eq 1 ]; then
     start_mdg_main
-  elif [ $USE_GRP_RPL -eq 1 ]; then
+  elif [ $GRP_RPL -eq 1 ]; then
     gr_start_main
   else
     # Pre-start cleanup
@@ -2058,7 +2058,7 @@ start_mysqld_or_valgrind_or_mdg(){
 
 start_mdg_main(){
   #clean existing processes
-  ps -ef | grep -e  'n1.cnf\|n2.cnf\|n3.cnf' | grep -v grep |  grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true
+  ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true
   sleep 2; sync
   SUSER=root
   SPASS=
@@ -2531,7 +2531,7 @@ run_and_check(){
   OUTCOME="$?"
   if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 6 ]; then stop_mysqld_or_mdg; fi
   # Add error log from this trial to the overall run error log
-  if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
     sudo cat $WORKD/node1/error.log > $WORKD/node1_error.log
     sudo cat $WORKD/node2/error.log > $WORKD/node2_error.log
     sudo cat $WORKD/node3/error.log > $WORKD/node3_error.log
@@ -2547,7 +2547,7 @@ run_sql_code(){
     # Setting up query timeouts using the MySQL Event Scheduler
     # Place event into the mysql db, not test db as the test db is dropped immediately
     SOCKET_TO_BE_USED=
-    if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+    if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
       SOCKET_TO_BE_USED=${node1}/node1_socket.sock
     else
       SOCKET_TO_BE_USED=$WORKD/socket.sock
@@ -2601,7 +2601,7 @@ run_sql_code(){
     echo_out "$TXT_OUT"
     echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [SQL] All SQL threads have finished/terminated"
   elif [ $MODE -eq 5 ]; then
-    if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+    if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
       cat $WORKT | $BASEDIR/bin/mysql -uroot -S${node1}/node1_socket.sock -vvv --force test > $WORKD/log/mysql.out 2>&1
     else
       cat $WORKT | $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock -vvv --force test > $WORKD/log/mysql.out 2>&1
@@ -2622,7 +2622,7 @@ run_sql_code(){
       if [ $MODE -eq 2 ]; then
         USE_PQUERYE2_CLIENT_LOGGING="--log-all-queries --log-failed-queries"
       fi
-      if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+      if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         if [ $PQUERY_MULTI -eq 1 ]; then
           if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${node1}/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
@@ -2642,7 +2642,7 @@ run_sql_code(){
     else
       if [ "$CLI_MODE" == "" ]; then CLI_MODE=99; fi  # Leads to assert below
       CLIENT_SOCKET=
-      if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+      if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         CLIENT_SOCKET=${node1}/node1_socket.sock
       else
         CLIENT_SOCKET=$WORKD/socket.sock
@@ -2691,8 +2691,12 @@ cleanup_and_save(){
       TS_init_all_sql_files
     fi
   else
-    if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
-      (ps -ef | grep -e  'node1_socket\|node2_socket\|node3_socket' | grep -v grep |  grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
+    if [[ $MDG -eq 1 ]]; then
+      (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
+      sleep 2; sync
+    fi
+    if [[ $GRP_RPL -eq 1 ]]; then
+      (ps -ef | grep -E  'node1_socket|node2_socket|node3_socket' |  grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
       sleep 2; sync
     fi
     cp -f $WORKT $WORKF
@@ -2829,7 +2833,7 @@ process_outcome(){
     M3_ISSUE_FOUND=0
     SKIP_NEWBUG=0
     ERRORLOG=
-    if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+    if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
       ERRORLOG=$WORKD/*/error.log
       sudo chmod 777 $ERRORLOG
     else
@@ -2860,7 +2864,7 @@ process_outcome(){
           echo_out "Assert: cd ${WORKD} before USE_NEW_TEXT_STRING parsing failed. Terminating."
           exit 1
         fi
-        if [ $USE_MDG -eq 1 ]; then
+        if [ $MDG -eq 1 ]; then
           export GALERA_ERROR_LOG=$WORKD/node1/error.log
           export GALERA_CORE_LOC=$WORKD/node1/*core*
         fi
@@ -2969,7 +2973,7 @@ process_outcome(){
         control_backtrack_flow
       fi
       cleanup_and_save
-      if [ $USE_MDG -eq 0 ]; then
+      if [ $MDG -eq 0 ]; then
         return 1
       fi
     else
@@ -2983,7 +2987,7 @@ process_outcome(){
   # MODE4: Crash testing
   elif [ $MODE -eq 4 ]; then
     M4_ISSUE_FOUND=0
-    if [ $USE_MDG -eq 1 ]; then
+    if [ $MDG -eq 1 ]; then
       if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 1 ]; then
         if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
@@ -2993,7 +2997,7 @@ process_outcome(){
       if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 3 ]; then
         if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node3}/node3_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
-    elif [ $USE_GRP_RPL -eq 1 ]; then
+    elif [ $GRP_RPL -eq 1 ]; then
       if [ $GRP_RPL_ISSUE_NODE -eq 0 -o $GRP_RPL_ISSUE_NODE -eq 1 ]; then
         if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
@@ -3163,8 +3167,8 @@ process_outcome(){
 stop_mysqld_or_mdg(){
   SHUTDOWN_TIME_START=$(date +'%s')
   MODE0_MIN_SHUTDOWN_TIME=$[ $TIMEOUT_CHECK + 10 ]
-  if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
-    (ps -ef | grep -e  'n1.cnf\|n2.cnf\|n3.cnf' | grep -v grep |  grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
+  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
+    (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   else
     if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld
@@ -3302,7 +3306,7 @@ copy_workdir_to_tmp(){
       if [ $WORKDIR_LOCATION -eq 1 -o $WORKDIR_LOCATION -eq 2 ]; then
         echo_out "[Cleanup] Since tmpfs or ramfs (volatile memory) was used, reducer is now saving a copy of the work directory in /tmp/$EPOCH"
         echo_out "[Cleanup] Storing a copy of reducer ($0) and it's original input file ($INPUTFILE) in /tmp/$EPOCH also"
-        if [[ $USE_MDG -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+        if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
           sudo cp -a $WORKD /tmp/$EPOCH
           sudo chown -R `whoami`:`whoami` /tmp/$EPOCH
           sudo chown -R `whoami` /tmp/$EPOCH  # Google cloud will fail on trying to use groups
