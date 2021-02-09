@@ -39,7 +39,7 @@ if [ -z "${MYSQLD}" ]; then
   fi
 fi
 
-if [[ ${MDG} -eq 1 || ${USE_MDG} -eq 1 ]]; then
+if [[ ${MDG} -eq 1 ]]; then
   ERROR_LOG=${GALERA_ERROR_LOG}
   LATEST_CORE=${GALERA_CORE_LOC}
 else
