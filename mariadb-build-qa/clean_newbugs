@@ -67,7 +67,9 @@ delete_newbug(){
   DELETE="$(echo "${STRING_FILE}" | sed 's|\.string|.reducer.sh|')"
   if [[ "${DELETE}" == "./newbug_"* ]]; then
     if [[ "${DELETE}" == *".reducer.sh" ]]; then
-      rm ${DELETE}
+      if [ -r ${DELETE} ]; then  # TODO: Remove this check later (mid 2021), as some older NEWBUGS dirs do not have reducer files yet
+        rm ${DELETE}
+      fi
     fi
   fi
 } 
@@ -105,8 +107,3 @@ while IFS=$'\n' read STRING_FILE; do
     fi 
   fi 
 done < ./newbugs.list
-
-
-
-
-
