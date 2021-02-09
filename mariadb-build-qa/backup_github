@@ -22,6 +22,7 @@ cp buildall_opt_ms.sh ${TARGET}
 cp buildall_san_slow.sh ${TARGET}
 cp terminate_ds_memory.sh ${TARGET}
 cp clean_newbugs ${TARGET}
+cp clean_newbugs.old ${TARGET}
 cp clone.sh ${TARGET}
 cp cloneall.sh ${TARGET}
 cp cloneall_ms.sh ${TARGET}

@@ -1,30 +1,112 @@
 #!/bin/bash
 set +H
-if [ ! -r ~/mariadb-qa/known_bugs.strings ]; then echo '~/mariadb-qa/known_bugs.strings not found!'; exit 1; fi
-if [ ! -d /data/NEWBUGS -a ! -d /data/FIREWORKS ]; then echo '/data/NEWBUGS and /data/FIREWORKS not found!'; exit 1; fi
-# This needs some work:
-# Done! (Newbugs 014)
-# bash: -c: line 0: syntax error near unexpected token `>|'
-# bash: -c: line 0: `rm list.count > 0|SIGABRT|ut_dbg_assertion_failed|ut_list_remove<ut_list_base<buf_page_t, ut_list_node<buf_page_t> buf_page_t::*>, GenericGetNode<buf_page_t> >|ut_list_remove<ut_list_base<buf_page_t, ut_list_node<buf_page_t> buf_page_t::*> >|buf_flush_relocate_on_flush_list'
-# Done! (Newbugs 015)
-# Disabled ftm. Test manually, fix may be to change '>|' to '\>\|' or similar?
-# Also, this code is slow. The one below is much quicker, but only works on a limited subset.
-# Perhaps a better idea is to move into dirs and then run below code on subdirs?
-#for DIR in $(seq 1 999); do
-#  if [ ${DIR} -le 9 ]; then
-#    DIR2="00${DIR}"
-#  elif [ ${DIR} -le 99 ]; then
-#    DIR2="0${DIR}"
-#  else
-#    DIR2="${DIR}"
-#  fi
-#  if [ ! -z "$(ls /data/NEWBUGS/newbug_${DIR2}*.string 2>/dev/null)" ]; then
-#    grep --binary-files=text -vE '^[ \t]*$|^#' ~/mariadb-qa/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+##.*$||' | xargs -I{} grep --binary-files=text -Fi "{}" /data/NEWBUGS/newbug_${DIR2}*.string 2>/dev/null | sed 's|.string:.*$|.*|' | xargs -I{} echo "rm {}" | xargs -I{} bash -c "{}"
-#    echo "Done! (Newbugs ${DIR2})"
-#  fi
-#done
-grep --binary-files=text -vE '^[ \t]*$|^#' ~/mariadb-qa/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+##.*$||' | xargs -I{} grep --binary-files=text -Fi "{}" /data/NEWBUGS/*.string 2>/dev/null | sed 's|.string:.*$|.*|' | xargs -I{} echo "rm {}" | xargs -I{} bash -c "{}"
-echo 'Done! (Newbugs)'
 
-grep --binary-files=text -vE '^[ \t]*$|^#' ~/mariadb-qa/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+##.*$||' | xargs -I{} grep --binary-files=text -Fi "{}" /data/FIREWORKS/*.string 2>/dev/null | sed 's|.string:.*$|.*|' | xargs -I{} echo "rm {}" | xargs -I{} bash -c "{}"
-echo 'Done! (Fireworks)'
+# This script, by default, cleans up /data/NEWBUGS (or instead any directory passed as the first option to this script) by indexing all seen bugs into a newbugs.list (using 'find' as 'ls' will easily report 'ls: Argument list too long' for this directory as it often has 300-800k files in it). Then this is list is reviewed line by line and for the first 3 occurences of any string, that bug/index is kept (iow the three string, sql and reducer files are kept). This thus eliminates >3 duplicates.
+
+# User variables
+ENABLE_OUTPUT=0    # 0 For silence, 1 For output
+KNOWN_BUGS="/home/$(whoami)/mariadb-qa/known_bugs.strings"
+
+# System variable(s) and options check
+TARGET=
+if [ ! -r ${KNOWN_BUGS} ]; then echo "Assert: KNOWN_BUGS file ('${KNOWN_BUGS}' as set in this script) not readable!"; exit 1; fi
+if [ ! -z "${1}" ]; then 
+  if [ -d "${1}" ]; then
+    TARGET="${1}"
+  else
+    echo "Assert: '${1}' was specified as an option to this script, however that directory does not exist, or the option specified existed but was not a directory."
+    exit 1
+  fi
+else
+  if [ -d "/data/NEWBUGS" ]; then
+    TARGET="/data/NEWBUGS"
+  else
+    echo "Assert: no option was specified to this script, and /data/NEWBUGS does not exist: it is thus unknown which directory this script should cleanup."
+    exit 1
+  fi
+fi
+if [ -z "${TARGET}" ]; then echo "Assert: TARGET is empty."; exit 1; fi  # Dev assert
+
+if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+  echo "Commencing de-duplication and known bugs cleanup of ${TARGET}"
+  echo ".. Changing to target directory ${TARGET}"
+fi
+cd ${TARGET}
+if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+  echo ".. Compiling newbugs.list of strings (this takes 2-3 minutes on high end server with ~250k string files)"
+fi
+find -maxdepth 1 -type f -name '*.string' > newbugs.list
+if [ ! -r ./newbugs.list ]; then echo "Assert: './list' does not exist after creating the same"; exit 1; fi
+
+COUNT=$(wc -l ./newbugs.list 2>/dev/null | sed 's| .*||')
+if [ -z "${COUNT}" -o "${COUNT}" -le 0 ]; then 
+  if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+    echo "Nothing to do!"
+    exit 0
+  fi
+fi
+if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+  echo ".. Found ${COUNT} string files"
+fi
+
+delete_newbug(){
+  # String file
+  if [[ "${STRING_FILE}" == "./newbug_"* ]]; then
+    if [[ "${STRING_FILE}" == *".string" ]]; then
+      rm ${STRING_FILE} 
+    fi
+  fi
+  # SQL file
+  DELETE="$(echo "${STRING_FILE}" | sed 's|\.string|.sql|')"
+  if [[ "${DELETE}" == "./newbug_"* ]]; then
+    if [[ "${DELETE}" == *".sql" ]]; then
+      rm ${DELETE}
+    fi
+  fi
+  # Reducer file
+  DELETE="$(echo "${STRING_FILE}" | sed 's|\.string|.reducer.sh|')"
+  if [[ "${DELETE}" == "./newbug_"* ]]; then
+    if [[ "${DELETE}" == *".reducer.sh" ]]; then
+      rm ${DELETE}
+    fi
+  fi
+} 
+
+if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+  echo ".. De-duplicating (3 occurences max), and removing known bugs"
+fi
+IDX=0
+rm -f newbugs.dedup
+touch newbugs.dedup
+while IFS=$'\n' read STRING_FILE; do
+  IDX=$[ ${IDX} + 1 ] 
+  STRING="$(cat ${STRING_FILE})"
+  # Look if the issue is known already
+  FINDBUG="$(grep -Fi --binary-files=text "${STRING}" ${KNOWN_BUGS})"
+  if [ "$(echo "${FINDBUG}" | sed 's|[ \t]*\(.\).*|\1|')" == "#" ]; then FINDBUG=""; fi  # Bugs marked as fixed need to be excluded. This cannot be done by using "^${TEXT}" as the grep is not regex aware (-F used), nor can it be made to be, due to the many special (regex-like) characters in the unique bug strings.
+  if [ ! -z "${FINDBUG}" ]; then  # Bug is known already
+    if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+      echo ".... [${IDX}] ${STRING_FILE}: already known issue: filtering"
+    fi
+    delete_newbug
+  else
+    # Count nr of occurences in ./newbugs.dedup, a file used to count/add up to 3x the same bug: the rest is discarded
+    DUPS="$(grep -Fic --binary-files=text "${STRING}" ./newbugs.dedup)"
+    if [ -z "${DUPS}" -o "${DUPS}" -eq 0 -o "${DUPS}" -eq 1 -o "${DUPS}" -eq 2 ]; then
+      if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+        echo "... [${IDX}] ${STRING_FILE}: new issue, occurence $[ ${DUPS} + 1 ]/3, adding to ./newbugs.dedup"
+      fi
+      echo "${STRING}" >> ./newbugs.dedup
+    elif [ "${DUPS}" -ge 3 ]; then  # It should never be greater then 3: defensive coding
+      if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+        echo "... [${IDX}] ${STRING_FILE}: new issue, occurence 4+: filtering"
+      fi
+      delete_newbug
+    fi 
+  fi 
+done < ./newbugs.list
+
+
+
+
+

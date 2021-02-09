@@ -81,7 +81,9 @@
   echo ls | xargs | sh -x  # Conceptually similar to echo ls | xargs bash -c
   echo -n "echo\necho" | xargs | sed 's|DUMMY|NO ACTION|'  # When used like this, a \n is added to the output. This is not the case if 'xargs |' is dropped
 # For all lines in a file, action something. Note that the for loop has limitations (spaces) which require IFS to be set. This is not so with the while loop
-  ORIG_IFS=${IFS}; IFS=$'\n'; for LINE in $(cat ./file.txt); do echo ${LINE}; done; IFS=${ORIG_IFS}   #OR#  while read line; do echo ${line}; done < ./file.txt
+  ORIG_IFS=${IFS}; IFS=$'\n'; for LINE in $(cat ./file.txt); do echo ${LINE}; done; IFS=${ORIG_IFS}   #OR#  while read line; do echo ${line}; done < ./file.txt  # However, the best solution is:
+    while IFS=$'\n' read LINE; do
+    done < "${INPUTFILE}"
 # Obtain a fully qualified directory and script name
   SCRIPT_AND_PATH=$(readlink -f $0); SCRIPT=$(echo ${SCRIPT_AND_PATH} | sed 's|.*/||')
 # Change the file contents (inline replace used here) of multiple files in subdirectories
