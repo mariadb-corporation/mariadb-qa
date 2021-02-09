@@ -4,7 +4,7 @@ set +H
 # This script, by default, cleans up /data/NEWBUGS (or instead any directory passed as the first option to this script) by indexing all seen bugs into a newbugs.list (using 'find' as 'ls' will easily report 'ls: Argument list too long' for this directory as it often has 300-800k files in it). Then this is list is reviewed line by line and for the first 3 occurences of any string, that bug/index is kept (iow the three string, sql and reducer files are kept). This thus eliminates >3 duplicates.
 
 # User variables
-ENABLE_OUTPUT=0    # 0 For silence, 1 For output
+ENABLE_OUTPUT=1    # 0 For silence, 1 For output
 KNOWN_BUGS="/home/$(whoami)/mariadb-qa/known_bugs.strings"
 
 # System variable(s) and options check
@@ -27,6 +27,7 @@ else
 fi
 if [ -z "${TARGET}" ]; then echo "Assert: TARGET is empty."; exit 1; fi  # Dev assert
 
+# Start main de-duplicaton and known bugs cleanup
 if [ ${ENABLE_OUTPUT} -eq 1 ]; then
   echo "Commencing de-duplication and known bugs cleanup of ${TARGET}"
   echo ".. Changing to target directory ${TARGET}"
@@ -63,6 +64,15 @@ delete_newbug(){
       rm ${DELETE}
     fi
   fi
+  # varmod file
+  DELETE="$(echo "${STRING_FILE}" | sed 's|\.string|.varmod|')"
+  if [[ "${DELETE}" == "./newbug_"* ]]; then
+    if [[ "${DELETE}" == *".varmod" ]]; then
+      if [ -r ${DELETE} ]; then  # TODO: Remove this check later (mid 2021), as some older NEWBUGS dirs do not have varmod files yet
+        rm ${DELETE}
+      fi
+    fi
+  fi
   # Reducer file
   DELETE="$(echo "${STRING_FILE}" | sed 's|\.string|.reducer.sh|')"
   if [[ "${DELETE}" == "./newbug_"* ]]; then
@@ -78,8 +88,9 @@ if [ ${ENABLE_OUTPUT} -eq 1 ]; then
   echo ".. De-duplicating (3 occurences max), and removing known bugs"
 fi
 IDX=0
-rm -f newbugs.dedup
-touch newbugs.dedup
+rm -f newbugs.dedup newbugs.files
+touch newbugs.dedup newbugs.files
+echo 'mkdir -p STORE' >> newbugs.files
 while IFS=$'\n' read STRING_FILE; do
   IDX=$[ ${IDX} + 1 ] 
   STRING="$(cat ${STRING_FILE})"
@@ -94,12 +105,15 @@ while IFS=$'\n' read STRING_FILE; do
   else
     # Count nr of occurences in ./newbugs.dedup, a file used to count/add up to 3x the same bug: the rest is discarded
     DUPS="$(grep -Fic --binary-files=text "${STRING}" ./newbugs.dedup)"
-    if [ -z "${DUPS}" -o "${DUPS}" -eq 0 -o "${DUPS}" -eq 1 -o "${DUPS}" -eq 2 ]; then
+    #if [ -z "${DUPS}" -o "${DUPS}" -eq 0 -o "${DUPS}" -eq 1 -o "${DUPS}" -eq 2 ]; then  # Keep 3 occurences
+    if [ -z "${DUPS}" -o "${DUPS}" -eq 0 ]; then  # Keep only 1 occurence
       if [ ${ENABLE_OUTPUT} -eq 1 ]; then
         echo "... [${IDX}] ${STRING_FILE}: new issue, occurence $[ ${DUPS} + 1 ]/3, adding to ./newbugs.dedup"
       fi
       echo "${STRING}" >> ./newbugs.dedup
-    elif [ "${DUPS}" -ge 3 ]; then  # It should never be greater then 3: defensive coding
+      echo "mv $(echo "${STRING_FILE}" | sed 's|\.string|*|') STORE" >> ./newbugs.files
+    #elif [ "${DUPS}" -ge 3 ]; then  # Keep 3 occurences # It should never be greater then 3: defensive coding
+    elif [ "${DUPS}" -ge 1 ]; then  # Keep 1 occurence  # Idem
       if [ ${ENABLE_OUTPUT} -eq 1 ]; then
         echo "... [${IDX}] ${STRING_FILE}: new issue, occurence 4+: filtering"
       fi
@@ -107,3 +121,21 @@ while IFS=$'\n' read STRING_FILE; do
     fi 
   fi 
 done < ./newbugs.list
+
+# Other data cleanup
+rm 16*_* 2>/dev/null # {epoch}_run, {epoch}_start etc. scripts created by reducer (can easily be recreated if needed)
+
+# Fireworks cleanup
+if [ -d /data/FIREWORKS ]; then 
+  grep --binary-files=text -vE '^[ \t]*$|^#' ${KNOWN_BUGS} 2>/dev/null | sed 's|[ \t]\+##.*$||' | xargs -I{} grep --binary-files=text -Fi "{}" /data/FIREWORKS/*.string 2>/dev/null | sed 's|.string:.*$|.*|' | xargs -I{} echo "rm {}" | xargs -I{} bash -c "{}"
+  if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+    echo '.. Fireworks cleaned'
+  fi
+fi
+
+# Check if only a partial capture is complete (mostly the case with older runs, it may be popssible to remove this later, revisit in mid 2021. TODO). (And this is why the file newbugs.files is created), by moving all to-be-saved files to a separate directory (manual option)
+chmod +x ./newbugs.files
+echo '.. You can run ./newbugs.files to move all found bugs to ./STORE and then cleanup current directory manually.'
+
+# Cleanup
+rm newbugs.dedup newbugs.list

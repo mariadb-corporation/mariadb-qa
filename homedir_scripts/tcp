@@ -1,2 +1,2 @@
 #!/bin/bash
-~/mariadb-qa/testcase_prettify.sh
+~/mariadb-qa/testcase_prettify.sh "$*"

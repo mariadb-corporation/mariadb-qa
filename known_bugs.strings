@@ -22,7 +22,15 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
-"lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                     ## DBG MDEV-24700
+SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command                                                                   ## OPT |MDEV-24814
+SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute                                                            ## DBG |MDEV-24814
+SIGSEGV|replace_table_table|mysql_table_grant|mysql_execute_command|mysql_parse                                                                                                ## OPT |MDEV-24814
+!trx->read_only|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low                                        ## DBG |MDEV-24812
+DICT_TF2_FLAG_IS_SET(index->table, DICT_TF2_TEMPORARY)|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low  ## DBG |MDEV-24812
+SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_low|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                         ## DBG |MDEV-24812
+SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_undo|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                        ## DBG |MDEV-24812
+"lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                     ## DBG |MDEV-24700
+"lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|row_mysql_handle_errors                                                                  ## DBG |MDEV-24700
 page_has_next(block->frame) || rec_is_alter_metadata(p, *index)|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last                ## DBG |MDEV-24796
 page_has_next(block->frame) || block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last         ## DBG |MDEV-24796
 page_has_next(block->frame) || rec_is_alter_metadata(p, *index) || block->page.id().page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last  ## DBG |MDEV-24796

@@ -1,5 +1,7 @@
+#!/bin/bash
 ~/mariadb-qa/kill_all_procs.sh
 if [ -r /test/kill_all ]; then
   cd /test
   ./kill_all
 fi
+screen -wipe 2>/dev/null 1>&2
