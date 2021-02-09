@@ -101,13 +101,13 @@ SKIPSTAGEBELOW=0                # Usually not changed (default=0), skips stages 
 SKIPSTAGEABOVE=99               # Usually not changed (default=99), skips stages above and including this stage
 FORCE_KILL=0                    # On/Off (1/0) Enable to forcefully kill mysqld instead of using mysqladmin shutdown etc. Auto-disabled for MODE=0.
 
-# === Percona XtraDB Cluster
-USE_PXC=0                       # On/Off (1/0) Enable to reduce testcases using a Percona XtraDB Cluster. Auto-enables USE_PQUERY=1
-PXC_ISSUE_NODE=0                # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
+# === MariaDB Galera Cluster
+MDG=0                       # On/Off (1/0) Enable to reduce testcases using a MariaDB Galera Cluster. Auto-enables USE_PQUERY=1
+MDG_ISSUE_NODE=0                # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
 WSREP_PROVIDER_OPTIONS=""       # wsrep_provider_options to be used (and reduced).
 
 # === MySQL Group Replication
-USE_GRP_RPL=0                   # On/Off (1/0) Enable to reduce testcases using MySQL Group Replication. Auto-enables USE_PQUERYE=1
+GRP_RPL=0                   # On/Off (1/0) Enable to reduce testcases using MySQL Group Replication. Auto-enables USE_PQUERYE=1
 GRP_RPL_ISSUE_NODE=0            # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
 
 # === MODE=5 Settings           # Only applicable when MODE5 is used
@@ -153,16 +153,16 @@ TS_VARIABILITY_SLEEP=1
 # - USE_PQUERY: 1: use pquery, 0: use mysql CLI. Causes reducer.sh to use pquery instead of the mysql client for replays (default=0). Supported for MODE=1,3,4
 # - PQUERY_LOC: Location of the pquery binary (ref ~/mariadb-qa/pquery/pquery[-ms])
 # - PQUERY_EXTRA_OPTIONS: Extra options to pquery which will be added to the pquery command line. This is used for query correctness trials
-# - USE_PXC: 1: bring up 3 node Percona XtraDB Cluster instead of default server, 0: use default non-cluster server (mysqld)
-# - USE_GRP_RPL: 1: bring up 3 node Group Replication instead of default server, 0: use default non-cluster server (mysqld)
-#   see lp:/mariadb-qa/pxc-pquery/new/pxc-pquery_info.txt and lp:/mariadb-qa/docker_info.txt for more information on this. See above for some limitations etc.
+# - MDG: 1: bring up 3 node MariaDB Galera Cluster instead of default server, 0: use default non-cluster server (mysqld)
+# - GRP_RPL: 1: bring up 3 node Group Replication instead of default server, 0: use default non-cluster server (mysqld)
+#   see lp:/mariadb-qa/mdg-pquery/new/mdg-pquery_info.txt and lp:/mariadb-qa/docker_info.txt for more information on this. See above for some limitations etc.
 #   IMPORTANT NOTE: If this is set to 1, ftm, these settings (and limitations) are automatically set: INHERENT: USE_PQUERY=1, LIMTATIONS: FORCE_SPORADIC=0,
 #   SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MYEXTRA="", MULTI_THREADS=0
-# - PXC_ISSUE_NODE: This indicates which node you would like to be checked for presence of the issue. 0 = Any node. Valid options: 0, 1, 2, or 3. Only works
+# - MDG_ISSUE_NODE: This indicates which node you would like to be checked for presence of the issue. 0 = Any node. Valid options: 0, 1, 2, or 3. Only works
 #   for MODE=4 currently.
 # - GRP_RPL_ISSUE_NODE: This indicates which node you would like to be checked for presence of the issue. 0 = Any node. Valid options: 0, 1, 2, or 3. Only works
 #   for MODE=4 currently.
-# - PXC_DOCKER_COMPOSE_LOC: Location of the Docker Compose file used to bring up 3 node Percona XtraDB Cluster (using images previously prepared by "new" method)
+# - MDG_DOCKER_COMPOSE_LOC: Location of the Docker Compose file used to bring up 3 node MariaDB Galera Cluster (using images previously prepared by "new" method)
 # - QUERYTIMEOUT: Number of seconds to wait before terminating a query (similar to RQG's querytimeout option). Do not set < 40 to avoid initial DDL failure
 #   Warning: do not set this smaller then 1.5x what was used in RQG. If set smaller, the bug may not reproduce. 1.5x instead of 1x is a simple precaution
 # - TS_TRXS_SETS [ALPHA]: For ThreadSync simplification (MODE 6+), use the last x set of thread actions only
@@ -242,7 +242,7 @@ TS_VARIABILITY_SLEEP=1
 #   - It has been clearly shown that different ways of replaying SQL may trigger a bug where other replay options do not. This looks to be more related to for example timing/server access method then to an inherent/underlying bug in for example the mysql client (CLI) workings. As such, the "resolution" is not to change ("fix") the client instead exploit this difference between replay options to trigger/reproduce bugs/replay test cases in multiple ways.
 #   - An expansion of this could be where the initial stage (as it goes through it's iterations) replays each next iteration with a different replay method.
 #     This is not 100% covering however, as the last stage (with the least amount of changes to the SQL input file) would replay with replay method/option x, while x may not be the replay option which triggers the bug at hand. As such, a few more verify stage rounds (there's 6 atm - each with 10 replay threads) may be needed to replay (partly "again", but this time with the least changed SQL file) the same SQL with each replay option. This would thus result in reducer needing a bit more time to do the VERIFY stage, but likely with good improved bug reproducibility. Untill this functionality is implemented, see the following file/page for reproducing & simplification ideas, which (if all followed diligently) usually result in bugs becoming reproducible; https://github.com/mariadb-corporation/mariadb-qa/blob/master/reproducing_and_simplification.txt
-# - PXC Node work: rm -Rf's in other places (non-supported subreducers for example) will need sudo. Also test for sudo working correctly upfront
+# - MDG Node work: rm -Rf's in other places (non-supported subreducers for example) will need sudo. Also test for sudo working correctly upfront
 # - Add a MYEXTRA simplificator at end (extra stage) so that mysqld options are minimal
 # - Improve ";" work in STAGE4 (";" sometimes missing from results - does not affect reproducibility)
 # - Improve VALGRIND/ERRORLOG run work (complete?)
@@ -580,14 +580,14 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "[Abort] Best testcase thus far: $INPUTFILE (= input file; no optimizations were successful)"
   fi
   echo_out "[Abort] End of dump stack"
-  if [ $USE_PXC -eq 1 ]; then
-    echo_out "[Abort] Ensuring any remaining PXC nodes are terminated and removed"
-    (ps -ef | grep -e  'node1_socket\|node2_socket\|node3_socket' | grep -v grep |  grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
+  if [ $MDG -eq 1 ]; then
+    echo_out "[Abort] Ensuring any remaining MDG nodes are terminated and removed"
+    (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   fi
-  if [ $USE_GRP_RPL -eq 1 ]; then
+  if [ $GRP_RPL -eq 1 ]; then
     echo_out "[Abort] Ensuring any remaining Group Replication nodes are terminated and removed"
-    (ps -ef | grep -e  'node1_socket\|node2_socket\|node3_socket' | grep -v grep |  grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
+    (ps -ef | grep -E  'node1_socket|node2_socket|node3_socket' |  grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   fi
   echo_out "[Abort] Ensuring any remaining processes are terminated"
@@ -881,12 +881,12 @@ options_check(){
       exit 1
     fi
   fi
-  if [[ $USE_PXC -eq 1  || $USE_GRP_RPL -eq 1 ]]; then
+  if [[ $MDG -eq 1  || $GRP_RPL -eq 1 ]]; then
     USE_PQUERY=1
-    # ========= These are currently limitations of PXC/Group Replication mode. Feel free to extend reducer.sh to handle these ========
+    # ========= These are currently limitations of MDG/Group Replication mode. Feel free to extend reducer.sh to handle these ========
     #export -n MYEXTRA=""  # Serious shortcoming. Work to be done. PQUERY MYEXTRA variables will be added docker-compose.yml
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
-      echo_out "[Setup] USE_PXC or USE_GRP_RPL is enabled, setting FORCE_SPORADIC=0, SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MULTI_THREADS=0"
+      echo_out "[Setup] MDG or GRP_RPL is enabled, setting FORCE_SPORADIC=0, SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MULTI_THREADS=0"
     fi
     export -n FORCE_SPORADIC=0
     export -n SPORADIC=0
@@ -895,23 +895,23 @@ options_check(){
     export -n MULTI_THREADS=0  # Original thought here was to avoid dozens of 3-container docker setups. This needs reviewing now that mysqld is used directly.
     # /==========
     if [ $MODE -eq 0 ]; then
-      echo "Error: PXC/Group Replication mode is set to 1, and MODE=0 set to 0, but this option combination has not been tested/added to reducer.sh yet. Please do so!"
+      echo "Error: MDG/Group Replication mode is set to 1, and MODE=0 set to 0, but this option combination has not been tested/added to reducer.sh yet. Please do so!"
       echo "Terminating now."
       exit 1
     fi
     if [ "${TIMEOUT_COMMAND}" != "" ]; then
-      echo "Error: PXC/Group Replication mode is set to 1, and TIMEOUT_COMMAND is set, but this option combination has not been tested/added to reducer.sh yet. Please do so!"
+      echo "Error: MDG/Group Replication mode is set to 1, and TIMEOUT_COMMAND is set, but this option combination has not been tested/added to reducer.sh yet. Please do so!"
       echo "Terminating now."
       exit 1
     fi
     if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
-      echo "Error: Valgrind for 3 node PXC/Group Replication replay has not been implemented yet. Please do so! Free cookies afterwards!"
+      echo "Error: Valgrind for 3 node MDG/Group Replication replay has not been implemented yet. Please do so! Free cookies afterwards!"
       echo "Terminating now."
       exit 1
     fi
     if [ $MODE -ge 6 -a $MODE -le 9 ]; then
-      echo "Error: wrong option combination: MODE is set to $MODE (ThreadSync) and PXC/Group Replication mode is active"
-      echo 'Please check script contents/options ($MODE and $PXC mode variables)'
+      echo "Error: wrong option combination: MODE is set to $MODE (ThreadSync) and MDG/Group Replication mode is active"
+      echo 'Please check script contents/options ($MODE and $MDG mode variables)'
       echo "Terminating now."
       exit 1
     fi
@@ -956,8 +956,8 @@ options_check(){
       echo "Terminating now."
       exit 1
     fi
-    if [[ $USE_PXC -gt 0 || $USE_GRP_RPL -eq 1 ]]; then
-      echo "GLIBC testcase reduction is not yet supported for USE_PXC=1 or USE_GRP_RPL=1. This would be very complex to code, except perhaps for a single node cluster or for one node only. See source code for details. Search for 'GLIBC crash reduction'"
+    if [[ $MDG -gt 0 || $GRP_RPL -eq 1 ]]; then
+      echo "GLIBC testcase reduction is not yet supported for MDG=1 or GRP_RPL=1. This would be very complex to code, except perhaps for a single node cluster or for one node only. See source code for details. Search for 'GLIBC crash reduction'"
       echo "A workaround may be to see if this GLIBC crash reproduces on standard (non-cluster) mysqld also, which is likely."
       echo "Terminating now."
       exit 1
@@ -1620,11 +1620,11 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  if [ $USE_PXC -eq 1 ]; then
-    echo_out "[Init] PXC Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
-    echo_out "[Init] PXC Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
-    echo_out "[Init] PXC Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
-  elif [ $USE_GRP_RPL -eq 1 ]; then
+  if [ $MDG -eq 1 ]; then
+    echo_out "[Init] MDG Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
+    echo_out "[Init] MDG Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
+    echo_out "[Init] MDG Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
+  elif [ $GRP_RPL -eq 1 ]; then
     echo_out "[Init] Group Replication Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
     echo_out "[Init] Group Replication Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
     echo_out "[Init] Group Replication Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
@@ -1738,25 +1738,25 @@ init_workdir_and_files(){
       echo_out "[Warning] ThreadSync: ONLY use -vvv logging for debugging, as this *will* cause issue non-reproducilbity due to excessive disk logging!"
     fi
   fi
-  if [ $USE_PXC -gt 0 ]; then
-    echo_out "[Init] USE_PXC active, so automatically set USE_PQUERY=1: Percona XtraDB Cluster testcase reduction is currently supported only with pquery"
+  if [ $MDG -gt 0 ]; then
+    echo_out "[Init] MDG active, so automatically set USE_PQUERY=1: MariaDB Galera Cluster testcase reduction is currently supported only with pquery"
     if [ $MODE -eq 5 -o $MODE -eq 3 ]; then
-      echo_out "[Warning] MODE=$MODE is set, as well as PXC mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
+      echo_out "[Warning] MODE=$MODE is set, as well as MDG mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
     fi
     if [ $MODE -eq 4 ]; then
-      if [ $PXC_ISSUE_NODE -eq 0 ]; then
-        echo_out "[Info] All PXC nodes will be checked for the issue. As long as one node reproduces, testcase reduction will continue (PXC_ISSUE_NODE=0)"
-      elif [ $PXC_ISSUE_NODE -eq 1 ]; then
-        echo_out "[Info] Important: PXC_ISSUE_NODE is set to 1, so only PXC node 1 will be checked for the presence of the issue"
-      elif [ $PXC_ISSUE_NODE -eq 2 ]; then
-        echo_out "[Info] Important: PXC_ISSUE_NODE is set to 2, so only PXC node 2 will be checked for the presence of the issue"
-      elif [ $PXC_ISSUE_NODE -eq 3 ]; then
-        echo_out "[Info] Important: PXC_ISSUE_NODE is set to 3, so only PXC node 3 will be checked for the presence of the issue"
+      if [ $MDG_ISSUE_NODE -eq 0 ]; then
+        echo_out "[Info] All MDG nodes will be checked for the issue. As long as one node reproduces, testcase reduction will continue (MDG_ISSUE_NODE=0)"
+      elif [ $MDG_ISSUE_NODE -eq 1 ]; then
+        echo_out "[Info] Important: MDG_ISSUE_NODE is set to 1, so only MDG node 1 will be checked for the presence of the issue"
+      elif [ $MDG_ISSUE_NODE -eq 2 ]; then
+        echo_out "[Info] Important: MDG_ISSUE_NODE is set to 2, so only MDG node 2 will be checked for the presence of the issue"
+      elif [ $MDG_ISSUE_NODE -eq 3 ]; then
+        echo_out "[Info] Important: MDG_ISSUE_NODE is set to 3, so only MDG node 3 will be checked for the presence of the issue"
       fi
     fi
   fi
-  if [ $USE_GRP_RPL -gt 0 ]; then
-    echo_out "[Init] USE_GRP_RPL active, so automatically set USE_PQUERY=1: Group Replication Cluster testcase reduction is currently supported only with pquery"
+  if [ $GRP_RPL -gt 0 ]; then
+    echo_out "[Init] GRP_RPL active, so automatically set USE_PQUERY=1: Group Replication Cluster testcase reduction is currently supported only with pquery"
     if [ $MODE -eq 5 -o $MODE -eq 3 ]; then
       echo_out "[Warning] MODE=$MODE is set, as well as Group Replication mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
     fi
@@ -1764,47 +1764,47 @@ init_workdir_and_files(){
       if [ $GRP_RPL_ISSUE_NODE -eq 0 ]; then
         echo_out "[Info] All Group Replication nodes will be checked for the issue. As long as one node reproduces, testcase reduction will continue (GRP_RPL_ISSUE_NODE=0)"
       elif [ $GRP_RPL_ISSUE_NODE -eq 1 ]; then
-        echo_out "[Info] Important: GRP_RPL_ISSUE_NODE is set to 1, so only PXC node 1 will be checked for the presence of the issue"
+        echo_out "[Info] Important: GRP_RPL_ISSUE_NODE is set to 1, so only MDG node 1 will be checked for the presence of the issue"
       elif [ $GRP_RPL_ISSUE_NODE -eq 2 ]; then
-        echo_out "[Info] Important: GRP_RPL_ISSUE_NODE is set to 2, so only PXC node 2 will be checked for the presence of the issue"
+        echo_out "[Info] Important: GRP_RPL_ISSUE_NODE is set to 2, so only MDG node 2 will be checked for the presence of the issue"
       elif [ $GRP_RPL_ISSUE_NODE -eq 3 ]; then
-        echo_out "[Info] Important: GRP_RPL_ISSUE_NODE is set to 3, so only PXC node 3 will be checked for the presence of the issue"
+        echo_out "[Info] Important: GRP_RPL_ISSUE_NODE is set to 3, so only MDG node 3 will be checked for the presence of the issue"
       fi
     fi
   fi
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is a parent/main reducer
-    if [[ $USE_PXC -ne 1 && $USE_GRP_RPL -ne 1 ]]; then
-      echo_out "[Init] Setting up standard working template (without using MYEXTRA options)"
-      # Get version specific options
-      MID=
-      if [ -r ${BASEDIR}/scripts/mysql_install_db ]; then MID="${BASEDIR}/scripts/mysql_install_db"; fi
-      if [ -r ${BASEDIR}/bin/mysql_install_db ]; then MID="${BASEDIR}/bin/mysql_install_db"; fi
-      START_OPT="--core-file"           # Compatible with 5.6,5.7,8.0
-      INIT_OPT="--no-defaults --initialize-insecure ${MYINIT}"  # Compatible with     5.7,8.0 (mysqld init)
-      INIT_TOOL="${BIN}"                # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
-      VERSION_INFO=$(${BIN} --version | grep -E --binary-files=text -oe '[58]\.[01567]' | head -n1)
-      VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-6]' | head -n1)
-      if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" ]; then
-        VERSION_INFO="5.6"
-        INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
-        INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal"
-        START_OPT="--core-file --core"
-      elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
-        VERSION_INFO="5.1"
-        INIT_TOOL="${PWD}/scripts/mysql_install_db"
-        INIT_OPT="--no-defaults --force"
-        START_OPT="--core"
-      elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
-        if [ "${MID}" == "" ]; then
-          echo "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
-          exit 1
-        fi
-        INIT_TOOL="${MID}"
-        INIT_OPT="--no-defaults --force ${MYINIT}"
-        START_OPT="--core"
-      elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
-        echo "WARNING: mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may fail."
+    # Get version specific options
+    MID=
+    if [ -r ${BASEDIR}/scripts/mysql_install_db ]; then MID="${BASEDIR}/scripts/mysql_install_db"; fi
+    if [ -r ${BASEDIR}/bin/mysql_install_db ]; then MID="${BASEDIR}/bin/mysql_install_db"; fi
+    START_OPT="--core-file"           # Compatible with 5.6,5.7,8.0
+    INIT_OPT="--no-defaults --initialize-insecure ${MYINIT}"  # Compatible with     5.7,8.0 (mysqld init)
+    INIT_TOOL="${BIN}"                # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
+    VERSION_INFO=$(${BIN} --version | grep -E --binary-files=text -oe '[58]\.[01567]' | head -n1)
+    VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-6]' | head -n1)
+    if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" ]; then
+      VERSION_INFO="5.6"
+      INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
+      INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal"
+      START_OPT="--core-file --core"
+    elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
+      VERSION_INFO="5.1"
+      INIT_TOOL="${PWD}/scripts/mysql_install_db"
+      INIT_OPT="--no-defaults --force"
+      START_OPT="--core"
+    elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
+      if [ "${MID}" == "" ]; then
+        echo "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
+        exit 1
       fi
+      INIT_TOOL="${MID}"
+      INIT_OPT="--no-defaults --force ${MYINIT}"
+      START_OPT="--core"
+    elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
+      echo "WARNING: mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may fail."
+    fi
+    if [[ $MDG -ne 1 && $GRP_RPL -ne 1 ]]; then
+      echo_out "[Init] Setting up standard working template (without using MYEXTRA options)"
       generate_run_scripts
       ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR --datadir=$WORKD/data ${MID_OPTIONS} --user=$MYUSER > $WORKD/init.log 2>&1
       if [ ! -d "$WORKD/data" ]; then
@@ -1841,28 +1841,20 @@ init_workdir_and_files(){
         echo_out "[Info] If you see a [GLIBC] crash above, change reducer to use a non-Valgrind-instrumented build of mysql_tzinfo_to_sql (Ref. BUG#13498842)"
         $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock --force mysql < $WORKD/timezone.init
       fi
-      stop_mysqld_or_pxc
-    elif [[ $USE_PXC -eq 1 ]]; then
-      echo_out "[Init] Setting up standard PXC working template (without using MYEXTRA options)"
-      if check_for_version $MYSQL_VERSION "5.7.0" ; then
-        MID="${BASEDIR}/bin/mysqld --no-defaults --initialize-insecure ${MYINIT} --basedir=${BASEDIR}"
-      else
-        MID="${BASEDIR}/scripts/mysql_install_db --no-defaults --force ${MYINIT} --basedir=${BASEDIR}"
-      fi
+      stop_mysqld_or_mdg
+    elif [[ $MDG -eq 1 ]]; then
+      echo_out "[Init] Setting up standard MDG working template (without using MYEXTRA options)"
       node1="${WORKD}/node1"
       node2="${WORKD}/node2"
       node3="${WORKD}/node3"
-      if ! check_for_version $MYSQL_VERSION "5.7.0" ; then
-        mkdir -p $node1 $node2 $node3
-      fi
-      ${MID} --datadir=$node1  > ${WORKD}/startup_node1_error.log 2>&1 || exit 1;
-      ${MID} --datadir=$node2  > ${WORKD}/startup_node2_error.log 2>&1 || exit 1;
-      ${MID} --datadir=$node3  > ${WORKD}/startup_node3_error.log 2>&1 || exit 1;
+      ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node1  > ${WORKD}/startup_node1_error.log 2>&1
+      ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node2  > ${WORKD}/startup_node2_error.log 2>&1
+      ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node3  > ${WORKD}/startup_node3_error.log 2>&1
       mkdir $WORKD/node1.init $WORKD/node2.init $WORKD/node3.init
       cp -a $WORKD/node1/* $WORKD/node1.init/
       cp -a $WORKD/node2/* $WORKD/node2.init/
       cp -a $WORKD/node3/* $WORKD/node3.init/
-    elif [[ $USE_GRP_RPL -eq 1 ]]; then
+    elif [[ $GRP_RPL -eq 1 ]]; then
       echo_out "[Init] Setting up standard Group Replication working template (without using MYEXTRA options)"
       MID="${BASEDIR}/bin/mysqld --no-defaults --initialize-insecure ${MYINIT} --basedir=${BASEDIR}"
       node1="${WORKD}/node1"
@@ -1926,7 +1918,7 @@ generate_run_scripts(){
     chmod +x $WORK_RUN
     if [ $USE_PQUERY -eq 1 ]; then
       cp $PQUERY_LOC $WORK_PQUERY_BIN  # Make a copy of the pquery binary for easy replay later (no need to download)
-      if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+      if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         echo "echo \"Executing testcase ./${EPOCH}.sql against mysqld at 127.0.0.1:10000 using pquery...\"" > $WORK_RUN_PQUERY
         echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
         echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
@@ -2003,7 +1995,7 @@ generate_run_scripts(){
 }
 
 init_mysql_dir(){
-  if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
     sudo rm -Rf $WORKD/node1 $WORKD/node2 $WORKD/node3
     cp -a ${node1}.init ${node1}
     cp -a ${node2}.init ${node2}
@@ -2022,11 +2014,11 @@ init_mysql_dir(){
   fi
 }
 
-start_mysqld_or_valgrind_or_pxc(){
+start_mysqld_or_valgrind_or_mdg(){
   init_mysql_dir
-  if [ $USE_PXC -eq 1 ]; then
-    start_pxc_main
-  elif [ $USE_GRP_RPL -eq 1 ]; then
+  if [ $MDG -eq 1 ]; then
+    start_mdg_main
+  elif [ $GRP_RPL -eq 1 ]; then
     gr_start_main
   else
     # Pre-start cleanup
@@ -2062,7 +2054,10 @@ start_mysqld_or_valgrind_or_pxc(){
   STARTUPCOUNT=$[$STARTUPCOUNT+1]
 }
 
-start_pxc_main(){
+start_mdg_main(){
+  #clean existing processes
+  ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true
+  sleep 2; sync
   SUSER=root
   SPASS=
   # Creating default my.cnf file
@@ -2072,112 +2067,97 @@ start_pxc_main(){
   echo "wsrep-debug=1" >> ${WORKD}/my.cnf
   echo "innodb_file_per_table" >> ${WORKD}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${WORKD}/my.cnf
-  if ! check_for_version $MYSQL_VERSION "8.0.0" ; then
-    echo "innodb_locks_unsafe_for_binlog=1" >> ${WORKD}/my.cnf
-    echo "wsrep_sst_auth=$SUSER:$SPASS" >> ${WORKD}/my.cnf
-  else
-    echo "pxc_encrypt_cluster_traffic=OFF" >> ${WORKD}/my.cnf
-    echo "log-error-verbosity=1" >> ${WORKD}/my.cnf
-  fi
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${WORKD}/my.cnf
-  echo "wsrep_sst_method=xtrabackup-v2" >> ${WORKD}/my.cnf
+  echo "wsrep_sst_method=rsync" >> ${WORKD}/my.cnf
+  echo "wsrep_sst_auth=$SUSER:$SPASS" >> ${WORKD}/my.cnf
+  echo "binlog_format=ROW" >> ${WORKD}/my.cnf
   echo "core-file" >> ${WORKD}/my.cnf
   echo "log-output=none" >> ${WORKD}/my.cnf
   echo "wsrep_slave_threads=2" >> ${WORKD}/my.cnf
+  echo "wsrep_on=1" >> ${WORKD}/my.cnf
+  # TODO: Add encryption checks after implementing encryption functionalities in pquery-run.sh
+#  if [[ "$ENCRYPTION_RUN" == 1 ]]; then
+#    echo "encrypt_binlog=ON" >> ${WORKD}/my.cnf
+#    if [[ $WITH_KEYRING_VAULT -ne 1 ]]; then
+#      echo "early-plugin-load=keyring_file.so" >> ${WORKD}/my.cnf
+#      echo "keyring_file_data=keyring" >> ${WORKD}/my.cnf
+#    fi
+#  fi
+
+  mdg_node_startup_status() {
+    # ensure that node has started and has joined the group post SST
+    ERROR_LOG=$1
+    for X in $(seq 0 120); do
+      sleep 1
+      if grep -E --binary-files=text -qi "Synchronized with group, ready for connections" $ERROR_LOG ; then
+        break
+      fi
+      if [[ $X -eq 119 ]]; then
+        echo "Error! server not started.. Terminating!"
+        grep -E --binary-files=text -i "ERROR|ASSERTION" $ERROR_LOG
+        echo "Terminating now."
+        exit 1
+      fi
+    done
+  }
 
   ADDR="127.0.0.1"
-  RPORT=$(( RANDOM%21 + 10 ))
-  RBASE1="$(( RPORT*1000 ))"
-  RADDR1="$ADDR:$(( RBASE1 + 7 ))"
-  LADDR1="$ADDR:$(( RBASE1 + 8 ))"
-
-  RBASE2="$(( RBASE1 + 100 ))"
-  RADDR2="$ADDR:$(( RBASE2 + 7 ))"
-  LADDR2="$ADDR:$(( RBASE2 + 8 ))"
-
-  RBASE3="$(( RBASE1 + 200 ))"
-  RADDR3="$ADDR:$(( RBASE3 + 7 ))"
-  LADDR3="$ADDR:$(( RBASE3 + 8 ))"
-
-  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/my.cnf --defaults-group-suffix=.1 \
-    --datadir=$node1 \
-    --loose-debug-sync-timeout=600 --skip-performance-schema  $MYEXTRA  \
-    --wsrep_cluster_address=gcomm:// \
-    --wsrep_node_incoming_address=$ADDR \
-    --wsrep_provider_options="gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS" \
-    --wsrep_node_address=$ADDR  \
-    --log-error=$node1/error.log \
-    --socket=$node1/node1_socket.sock \
-    --port=$RBASE1 --server-id=1 > $node1/error.log 2>&1 &
-
-  echo_out "Waiting for node-1 to start ....."
-  MPID="$!"
-  for X in $(seq 1 120); do
-    sleep 1
-    if grep -E --binary-files=text -qi "Synchronized with group, ready for connections" $node1/error.log ; then
-     break
-    fi
-    if [ "${MPID}" == "" ]; then
-      echo "Error! server not started.. Terminating!"
-      grep -E --binary-files=text -i "ERROR|ASSERTION" $node1/error.log
-      echo "Terminating now."
-      exit 1
-    fi
+  RPORT=$(((RANDOM % 21 + 10) * 1000))
+  rm -rf $WORKD/tmp*
+  unset MDG_PORTS
+  unset MDG_LADDRS
+  MDG_PORTS=""
+  MDG_LADDRS=""
+  for i in $(seq 1 3); do
+    node=${WORKD}/node${i}
+    mkdir -p $WORKD/tmp${i}
+    RBASE1="$((RPORT + (100 * $i)))"
+    LADDR1="127.0.0.1:$((RBASE1 + 8))"
+    MDG_PORTS+=("$RBASE1")
+    MDG_LADDRS+=("$LADDR1")
+    cp ${WORKD}/my.cnf ${WORKD}/n${i}.cnf
+    sed -i "2i server-id=10${i}" ${WORKD}/n${i}.cnf
+    sed -i "2i wsrep_node_incoming_address=$ADDR" ${WORKD}/n${i}.cnf
+    sed -i "2i wsrep_node_address=$ADDR" ${WORKD}/n${i}.cnf
+    sed -i "2i log-error=$node/error.log" ${WORKD}/n${i}.cnf
+    sed -i "2i port=$RBASE1" ${WORKD}/n${i}.cnf
+    sed -i "2i datadir=$node" ${WORKD}/n${i}.cnf
+    sed -i "2i socket=$node/node${i}_socket.sock" ${WORKD}/n${i}.cnf
+    sed -i "2i tmpdir=$WORKD/tmp${i}" ${WORKD}/n${i}.cnf
+    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
+    # TODO: Add encryption checks after implementing encryption functionalities in pquery-run.sh
+#    if [[ "$ENCRYPTION_RUN" != 1 ]]; then
+#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
+#    else
+#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS;socket.ssl_key=${WORKD}/cert/server-key.pem;socket.ssl_cert=${WORKD}/cert/server-cert.pem;socket.ssl_ca=${WORKD}/cert/ca.pem\"" ${WORKD}/n${i}.cnf
+#      echo "ssl-ca = ${WORKD}/cert/ca.pem" >> ${WORKD}/n${i}.cnf
+#      echo "ssl-cert = ${WORKD}/cert/server-cert.pem" >> ${WORKD}/n${i}.cnf
+#      echo "ssl-key = ${WORKD}/cert/server-key.pem" >> ${WORKD}/n${i}.cnf
+#      echo "[client]" >> ${WORKD}/n${i}.cnf
+#      echo "ssl-ca = ${WORKD}/cert/ca.pem" >> ${WORKD}/n${i}.cnf
+#      echo "ssl-cert = ${WORKD}/cert/client-cert.pem" >> ${WORKD}/n${i}.cnf
+#      echo "ssl-key = ${WORKD}/cert/client-key.pem" >> ${WORKD}/n${i}.cnf
+#      echo "[sst]" >> ${WORKD}/n${i}.cnf
+#      echo "encrypt = 4" >> ${WORKD}/n${i}.cnf
+#      echo "ssl-ca = ${WORKD}/cert/ca.pem" >> ${WORKD}/n${i}.cnf
+#      echo "ssl-cert = ${WORKD}/cert/server-cert.pem" >> ${WORKD}/n${i}.cnf
+#      echo "ssl-key = ${WORKD}/cert/server-key.pem" >> ${WORKD}/n${i}.cnf
+#    fi
   done
 
-  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/my.cnf --defaults-group-suffix=.2 \
-    --datadir=$node2 \
-    --loose-debug-sync-timeout=600 --skip-performance-schema $MYEXTRA  \
-    --wsrep_cluster_address=gcomm://$LADDR1,gcomm://$LADDR3 \
-    --wsrep_node_incoming_address=$ADDR \
-    --wsrep_provider_options="gmcast.listen_addr=tcp://$LADDR2;$WSREP_PROVIDER_OPTIONS" \
-    --wsrep_node_address=$ADDR \
-    --log-error=$node2/error.log \
-    --socket=$node2/node2_socket.sock \
-    --port=$RBASE2 --server-id=2 > $node2/error.log 2>&1 &
+  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n1.cnf
+  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n2.cnf
+  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[3]},${MDG_LADDRS[3]}" ${WORKD}/n3.cnf
 
-  echo_out "Waiting for node-2 to start ....."
-  MPID="$!"
-  for X in $(seq 1 120); do
-    sleep 1
-    if grep -E --binary-files=text -qi "Synchronized with group, ready for connections" $node2/error.log ; then
-     break
-    fi
-    if [ "${MPID}" == "" ]; then
-      echo "Error! server not started.. Terminating!"
-      grep -E --binary-files=text -i "ERROR|ASSERTION" $node2/error.log
-      echo "Terminating now."
-      exit 1
-    fi
-  done
+  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n1.cnf $MYEXTRA --wsrep-new-cluster > $node1/error.log 2>&1 &
+  mdg_node_startup_status $node1/error.log
+  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n2.cnf $MYEXTRA > $node2/error.log 2>&1 &
+  mdg_node_startup_status $node2/error.log
+  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n3.cnf $MYEXTRA > $node3/error.log 2>&1 &
+  mdg_node_startup_status $node3/error.log
 
-  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/my.cnf --defaults-group-suffix=.3 \
-    --datadir=$node3 \
-    --loose-debug-sync-timeout=600 --skip-performance-schema $MYEXTRA  \
-    --wsrep_cluster_address=gcomm://$LADDR1,gcomm://$LADDR2 \
-    --wsrep_node_incoming_address=$ADDR \
-    --wsrep_provider_options="gmcast.listen_addr=tcp://$LADDR3;$WSREP_PROVIDER_OPTIONS" \
-    --wsrep_node_address=$ADDR  \
-    --log-error=$node3/error.log \
-    --socket=$node3/node3_socket.sock \
-    --port=$RBASE3 --server-id=3  > $node3/error.log 2>&1 &
-
-  # ensure that node-3 has started and has joined the group post SST
-  echo_out "Waiting for node-3 to start ....."
-  MPID="$!"
-  for X in $(seq 1 120); do
-    sleep 1
-    if grep -E --binary-files=text -qi "Synchronized with group, ready for connections" $node3/error.log ; then
-     ${BASEDIR}/bin/mysql -uroot -S$node1/node1_socket.sock -e "create database if not exists test" > /dev/null 2>&1
-     break
-    fi
-    if [ "${MPID}" == "" ]; then
-      echo_out "Error! server not started.. Terminating!"
-      grep -E --binary-files=text -i "ERROR|ASSERTION" $node3/error.log
-      echo "Terminating now."
-      exit 1
-    fi
-  done
+  # create test to run pquery command
+  ${BASEDIR}/bin/mysql -uroot -S$node1/node1_socket.sock -e "create database if not exists test" > /dev/null 2>&1
 
   CLUSTER_UP=0
   if $BASEDIR/bin/mysqladmin -uroot --socket=${node3}/node3_socket.sock ping > /dev/null 2>&1; then
@@ -2542,14 +2522,14 @@ cut_threadsync_chunk(){
 }
 
 run_and_check(){
-  start_mysqld_or_valgrind_or_pxc
+  start_mysqld_or_valgrind_or_mdg
   run_sql_code
-  if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then stop_mysqld_or_pxc; fi
+  if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then stop_mysqld_or_mdg; fi
   process_outcome
   OUTCOME="$?"
-  if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 6 ]; then stop_mysqld_or_pxc; fi
+  if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 6 ]; then stop_mysqld_or_mdg; fi
   # Add error log from this trial to the overall run error log
-  if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
     sudo cat $WORKD/node1/error.log > $WORKD/node1_error.log
     sudo cat $WORKD/node2/error.log > $WORKD/node2_error.log
     sudo cat $WORKD/node3/error.log > $WORKD/node3_error.log
@@ -2565,7 +2545,7 @@ run_sql_code(){
     # Setting up query timeouts using the MySQL Event Scheduler
     # Place event into the mysql db, not test db as the test db is dropped immediately
     SOCKET_TO_BE_USED=
-    if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+    if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
       SOCKET_TO_BE_USED=${node1}/node1_socket.sock
     else
       SOCKET_TO_BE_USED=$WORKD/socket.sock
@@ -2619,7 +2599,7 @@ run_sql_code(){
     echo_out "$TXT_OUT"
     echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [SQL] All SQL threads have finished/terminated"
   elif [ $MODE -eq 5 ]; then
-    if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+    if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
       cat $WORKT | $BASEDIR/bin/mysql -uroot -S${node1}/node1_socket.sock -vvv --force test > $WORKD/log/mysql.out 2>&1
     else
       cat $WORKT | $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock -vvv --force test > $WORKD/log/mysql.out 2>&1
@@ -2640,7 +2620,7 @@ run_sql_code(){
       if [ $MODE -eq 2 ]; then
         USE_PQUERYE2_CLIENT_LOGGING="--log-all-queries --log-failed-queries"
       fi
-      if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+      if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         if [ $PQUERY_MULTI -eq 1 ]; then
           if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${node1}/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
@@ -2660,7 +2640,7 @@ run_sql_code(){
     else
       if [ "$CLI_MODE" == "" ]; then CLI_MODE=99; fi  # Leads to assert below
       CLIENT_SOCKET=
-      if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+      if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         CLIENT_SOCKET=${node1}/node1_socket.sock
       else
         CLIENT_SOCKET=$WORKD/socket.sock
@@ -2709,8 +2689,12 @@ cleanup_and_save(){
       TS_init_all_sql_files
     fi
   else
-    if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
-      (ps -ef | grep -e  'node1_socket\|node2_socket\|node3_socket' | grep -v grep |  grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
+    if [[ $MDG -eq 1 ]]; then
+      (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
+      sleep 2; sync
+    fi
+    if [[ $GRP_RPL -eq 1 ]]; then
+      (ps -ef | grep -E  'node1_socket|node2_socket|node3_socket' |  grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
       sleep 2; sync
     fi
     cp -f $WORKT $WORKF
@@ -2847,7 +2831,7 @@ process_outcome(){
     M3_ISSUE_FOUND=0
     SKIP_NEWBUG=0
     ERRORLOG=
-    if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+    if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
       ERRORLOG=$WORKD/*/error.log
       sudo chmod 777 $ERRORLOG
     else
@@ -2877,6 +2861,10 @@ process_outcome(){
         if [ "${WORKD}" != "${PWD}" ]; then
           echo_out "Assert: cd ${WORKD} before USE_NEW_TEXT_STRING parsing failed. Terminating."
           exit 1
+        fi
+        if [ $MDG -eq 1 ]; then
+          export GALERA_ERROR_LOG=$WORKD/node1/error.log
+          export GALERA_CORE_LOC=$WORKD/node1/*core*
         fi
         MYBUGFOUND="$($TEXT_STRING_LOC "${BIN}")"
         NTSEXITCODE=${?}
@@ -2983,7 +2971,7 @@ process_outcome(){
         control_backtrack_flow
       fi
       cleanup_and_save
-      if [ $USE_PXC -eq 0 ]; then
+      if [ $MDG -eq 0 ]; then
         return 1
       fi
     else
@@ -2997,17 +2985,17 @@ process_outcome(){
   # MODE4: Crash testing
   elif [ $MODE -eq 4 ]; then
     M4_ISSUE_FOUND=0
-    if [ $USE_PXC -eq 1 ]; then
-      if [ $PXC_ISSUE_NODE -eq 0 -o $PXC_ISSUE_NODE -eq 1 ]; then
+    if [ $MDG -eq 1 ]; then
+      if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 1 ]; then
         if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
-      if [ $PXC_ISSUE_NODE -eq 0 -o $PXC_ISSUE_NODE -eq 2 ]; then
+      if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 2 ]; then
         if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node2}/node2_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
-      if [ $PXC_ISSUE_NODE -eq 0 -o $PXC_ISSUE_NODE -eq 3 ]; then
+      if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 3 ]; then
         if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node3}/node3_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
-    elif [ $USE_GRP_RPL -eq 1 ]; then
+    elif [ $GRP_RPL -eq 1 ]; then
       if [ $GRP_RPL_ISSUE_NODE -eq 0 -o $GRP_RPL_ISSUE_NODE -eq 1 ]; then
         if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
@@ -3174,11 +3162,11 @@ process_outcome(){
   fi
 }
 
-stop_mysqld_or_pxc(){
+stop_mysqld_or_mdg(){
   SHUTDOWN_TIME_START=$(date +'%s')
   MODE0_MIN_SHUTDOWN_TIME=$[ $TIMEOUT_CHECK + 10 ]
-  if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
-    (ps -ef | grep -e 'node1_socket\|node2_socket\|node3_socket' | grep -v grep | grep $EPOCH | awk '{print $2}' | xargs kill -9 >/dev/null 2>&1 || true)
+  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
+    (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   else
     if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld
@@ -3320,7 +3308,7 @@ copy_workdir_to_tmp(){
       if [ $WORKDIR_LOCATION -eq 1 -o $WORKDIR_LOCATION -eq 2 ]; then
         echo_out "[Cleanup] Since tmpfs or ramfs (volatile memory) was used, reducer is now saving a copy of the work directory in /tmp/$EPOCH"
         echo_out "[Cleanup] Storing a copy of reducer ($0) and it's original input file ($INPUTFILE) in /tmp/$EPOCH also"
-        if [[ $USE_PXC -eq 1 || $USE_GRP_RPL -eq 1 ]]; then
+        if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
           sudo cp -a $WORKD /tmp/$EPOCH
           sudo chown -R `whoami`:`whoami` /tmp/$EPOCH
           sudo chown -R `whoami` /tmp/$EPOCH  # Google cloud will fail on trying to use groups
