@@ -1162,7 +1162,7 @@ multi_reducer(){
   # Choose a random port number in 10-65K range, check if free, increase if needbe
   MULTI_MYPORT=$[ 10001 + ( $RANDOM % 55000 ) ]
   while :; do
-    ISPORTFREE=$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)
+    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)"
     if [ $ISPORTFREE -ge 1 ]; then
       MULTI_MYPORT=$[ $MULTI_MYPORT + 100 ]  #+100 to avoid 'clusters of ports'
     else
@@ -1204,7 +1204,7 @@ multi_reducer(){
     # Take the following available port
     MULTI_MYPORT=$[ $MULTI_MYPORT + 1 ]
     while :; do
-      ISPORTFREE=$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)
+      ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)"
       if [ $ISPORTFREE -ge 1 ]; then
         MULTI_MYPORT=$[ $MULTI_MYPORT +100 ]  #+100 to avoid 'clusters of ports'
       else
@@ -1455,7 +1455,7 @@ init_empty_port(){
   # Choose a random port number in 10-65K range, check if free, increase if needbe
   MYPORT=$[ 10001 + ( $RANDOM % 55000 ) ]
   while :; do
-    ISPORTFREE=$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)
+    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MYPORT " | wc -l)"
     if [ $ISPORTFREE -ge 1 ]; then
       MYPORT=$[ $MYPORT + 100 ]  #+100 to avoid 'clusters of ports'
     else

@@ -34,6 +34,13 @@ else
   GRP_RPL=0
 fi
 
+# String (TEXT=string) specific trials (commonly these are MODE=3 trials)
+NTS=''  # Backwards compatible (and manually modified reducers scanning without using new text string)
+if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then
+  NTS='-Fi' # New text string (i.e. no regex) mode
+fi
+TRIALS_EXECUTED=$(cat pquery-run.log 2>/dev/null | grep --binary-files=text -o "==.*TRIAL.*==" | tail -n1 | sed 's|[^0-9]*||;s|[ \t=]||g')
+echo "================ [Run: $(echo ${PWD} | sed 's|.*/||')] Sorted unique issue strings (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers)"
 # Current location checks
 if [ $(ls ./*/*.sql 2>/dev/null | wc -l) -eq 0 ]; then
   echo "Assert: no pquery trials (with logging - i.e. ./*/*.sql) were found in this directory (or they were all cleaned up already) (${PWD})"
@@ -44,13 +51,6 @@ elif [ $(ls ./reducer* ./qcreducer* 2>/dev/null | wc -l) -eq 0 ]; then
   exit 1
 fi
 
-# String (TEXT=string) specific trials (commonly these are MODE=3 trials)
-NTS=''  # Backwards compatible (and manually modified reducers scanning without using new text string)
-if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh; then
-  NTS='-Fi' # New text string (i.e. no regex) mode
-fi
-TRIALS_EXECUTED=$(cat pquery-run.log 2>/dev/null | grep --binary-files=text -o "==.*TRIAL.*==" | tail -n1 | sed 's|[^0-9]*||;s|[ \t=]||g')
-echo "================ [Run: $(echo ${PWD} | sed 's|.*/||')] Sorted unique issue strings (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers)"
 ORIG_IFS=$IFS; IFS=$'\n'  # Use newline seperator instead of space seperator in the for loop
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
   for STRING in $(grep --binary-files=text "   TEXT=" reducer* 2>/dev/null | sed 's|.*TEXT=.||;s|"$||' | sort -u); do
