@@ -287,6 +287,17 @@ if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for moving of tarball (2)!"; exit 1; fi
   echo $CMD > ${DIR_opt_new}/BUILD_CMD_CMAKE
   #rm -Rf ${CURPATH}_opt  # Best not to delete it; this way gdb debugging is better quality as source will be available!
+  # Create galera library
+  cp -R ${CURPATH}_galera ${CURPATH}_galera_dbg
+  cd ${CURPATH}_galera_dbg
+  cmake . | tee /tmp/psms_opt_galera_build_${RANDOMD}
+  make | tee -a /tmp/psms_opt_galera_build_${RANDOMD}
+  if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
+    cp libgalera_enterprise_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
+  else
+    cp libgalera_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
+  fi
+  cd ..
   exit 0
 else
   echo "There was some unknown build issue... Have a nice day!"
