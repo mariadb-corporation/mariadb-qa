@@ -4,4 +4,8 @@ if [ -r /test/kill_all ]; then
   cd /test
   ./kill_all
 fi
-screen -wipe 2>/dev/null 1>&2
+for ((i=1;i<=3;i++)); do
+  screen -ls | sed 's|\.newbug.*||;s| ||g' | grep -v pts | xargs -I{} kill -9 {} 2>/dev/null 1>&2
+  screen -wipe 2>/dev/null 1>&2
+  sleep 0.43
+done

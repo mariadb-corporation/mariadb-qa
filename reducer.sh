@@ -1080,7 +1080,7 @@ set_internal_options(){  # Internal options: do not modify!
   WHOAMI=$(whoami)
   OVERALL_RESTART_ISSUES_IN_FIREWORKS_MODE_COUNT=0
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer. For subreducers, EPOCH, SKIPV, SPORADIC is set in #VARMOD#
-    EPOCH=$(date +%s)  # Used for /dev/shm work directory name and WORK_INIT, WORK_START etc. file names
+    EPOCH=$(date +%s%N)  # Used for /dev/shm work directory name and WORK_INIT, WORK_START etc. file names
     SKIPV=0
     SPORADIC=0
     MYUSER=$(whoami)
@@ -1159,12 +1159,12 @@ multi_reducer(){
   fi
   mkdir $WORKD/subreducer/
 
-  # Choose a random port number in 40K range, check if free, increase if needbe
-  MULTI_MYPORT=$[40000 + ( $RANDOM % ( $[ 9999 - 1 ] + 1 ) ) + 1 ]
+  # Choose a random port number in 10-65K range, check if free, increase if needbe
+  MULTI_MYPORT=$[ 10001 + ( $RANDOM % 55000 ) ]
   while :; do
-    ISPORTFREE=$(netstat -an | grep -E --binary-files=text $MULTI_MYPORT | wc -l | tr -d '[\t\n ]*')
+    ISPORTFREE=$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)
     if [ $ISPORTFREE -ge 1 ]; then
-      MULTI_MYPORT=$[$MULTI_MYPORT+100]  #+100 to avoid 'clusters of ports'
+      MULTI_MYPORT=$[ $MULTI_MYPORT + 100 ]  #+100 to avoid 'clusters of ports'
     else
       break
     fi
@@ -1202,11 +1202,11 @@ multi_reducer(){
     TXT_OUT="$TXT_OUT #$t [$PID]"
 
     # Take the following available port
-    MULTI_MYPORT=$[$MULTI_MYPORT+1]
+    MULTI_MYPORT=$[ $MULTI_MYPORT + 1 ]
     while :; do
-      ISPORTFREE=$(netstat -an | grep -E --binary-files=text $MULTI_MYPORT | wc -l | tr -d '[\t\n ]*')
+      ISPORTFREE=$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)
       if [ $ISPORTFREE -ge 1 ]; then
-        MULTI_MYPORT=$[$MULTI_MYPORT+100]  #+100 to avoid 'clusters of ports'
+        MULTI_MYPORT=$[ $MULTI_MYPORT +100 ]  #+100 to avoid 'clusters of ports'
       else
         break
       fi
@@ -1452,12 +1452,12 @@ TS_init_all_sql_files(){
 }
 
 init_empty_port(){
-  # Choose a random port number in 30K range, check if free, increase if needbe
-  MYPORT=$[30000 + ( $RANDOM % ( $[ 9999 - 1 ] + 1 ) ) + 1 ]
+  # Choose a random port number in 10-65K range, check if free, increase if needbe
+  MYPORT=$[ 10001 + ( $RANDOM % 55000 ) ]
   while :; do
-    ISPORTFREE=$(netstat -an | grep -E --binary-files=text $MYPORT | wc -l | tr -d '[\t\n ]*')
+    ISPORTFREE=$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)
     if [ $ISPORTFREE -ge 1 ]; then
-      MYPORT=$[$MYPORT+100]  #+100 to avoid 'clusters of ports'
+      MYPORT=$[ $MYPORT + 100 ]  #+100 to avoid 'clusters of ports'
     else
       break
     fi
@@ -1536,6 +1536,10 @@ init_workdir_and_files(){
     fi
   done
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer
+    if [ -d $WORKD ]; then
+      echo "Assert: $WORKD already exists? This should not happen (race condition in script or the surrounding setup/environment). Start by reviewing how this script was called."  # EPOCH setup was also changed from date +%s to date +%s%N + this assert was added, both to prevent 'mkdir: cannot create directory ...: File exists' like issues, mainly seen on xargs calls of a large amount of reducer scripts, with or without -P and with or without awk pause attempts (https://stackoverflow.com/a/15159993/1208218). This issue should not happen anymore. If it does, it's serious as it may indicate a race condition in reducer, perhaps in interaction with subreducers or similar, or in the surrounding framework/setup/environment (how was the script called?)
+      exit 1
+    fi
     mkdir $WORKD
   fi
   mkdir $WORKD/data $WORKD/log $WORKD/tmp

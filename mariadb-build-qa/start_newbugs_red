@@ -1,12 +1,16 @@
 #!/bin/bash
+#DIR_TO_ACTION="/data/NEWBUGS"
+DIR_TO_ACTION="/data/NEWBUGS.PREV"
+
+# Variables check
 if [ -z "${1}" -o -z "${2}" ]; then echo "Assert: two script options are required: the start offset (start at reducer x in ls -v output) as the first option, and the number of reducers to run as the second"; exit 1; fi
 START=${1}
 TODO=${2}
-
 if [ ${START} -lt 1 ]; then echo "Assert: START (${START}) should be equal or greater then 1!"; exit 1; fi
 if [ ${TODO} -lt 1 ]; then echo "Assert: TODO (${TODO}) should be equal or greater then 1!"; exit 1; fi
-cd /data/NEWBUGS
-cd /data/NEWBUGS.PREV
+
+# Main code
+cd ${DIR_TO_ACTION}
 mkdir -p reducer.logs
 TOTAL=$[ ${TODO} + ${START} -1 ]
 echo "Calculating payload (slow: limited to speed of I/O subsystem when there are many files)..."
@@ -15,6 +19,10 @@ ls --color=never -v *.reducer 2>/dev/null | head -n${TOTAL} | tail -n${TODO} > /
 COUNT="$(wc -l /tmp/reducers.newbug | sed 's| .*||')"
 if [ ${COUNT} -lt ${TODO} ]; then echo "Assert: applicable reducers COUNT (${COUNT}) is less than TODO (${TODO}) setting: please reduce the number of TODO items, or lower the START offset"; exit 1; fi
 echo "Starting ${TODO} reducers, starting at ls -v offset ${START}..."
-# The sleep ... grep -n ... command in the xargs command (before executing the reducer as ./{} ensures the pause described below by checking the reducer's number in the /tmp/reducers.newbug file and depending on it's position times two a matching sleep duration is executed
-cat /tmp/reducers.newbug | xargs -P200 -I{} screen -admS {} bash -c 'sleep $[ $(grep -n "{}" /tmp/reducers.newbug | sed "s|:.*||") * 2 ]; ./{} | tee -a ./reducer.logs/{}.log;bash'
-echo "Started ${TODO} reducers. Note that each reducer has a given start sleep delay, from 2 seconds to $[ ${TODO} * 2 ] seconds for the last reducer. This is to prevent epoch directory conflicts in tmpfs."
+cat /tmp/reducers.newbug | xargs -I{} screen -admS {} bash -c "{ cd ${DIR_TO_ACTION}; ./{} | tee -a ./reducer.logs/{}.log; bash; }"
+#echo "Starting ${TODO} reducers, starting at ls -v offset ${START}, with a ~2 second delay each..."
+#echo "Script will complete in about $[ ${TODO} * 2 ] to $[ ${TODO} * 3 ] seconds..."
+#cat /tmp/reducers.newbug | awk '{ system("sleep 3"); print $1 }' | xargs -I{} screen -admS {} bash -c "{ ./{} | tee -a ./reducer.logs/{}.log; bash; }"
+#cat /tmp/reducers.newbug | awk '{ system("sleep 3"); print $1 }' | xargs -I{} screen -admS {} bash -c "{ ./{} | tee -a ./reducer.logs/{}.log; bash; }"
+#cat /tmp/reducers.newbug | awk '{ system("sleep 1"); print $1 }' | xargs -I{} bash -c 'sleep 2; screen -admS {} bash -c "./{} | tee -a ./reducer.logs/{}.log; bash"'
+echo "Started ${TODO} reducers... Done!"

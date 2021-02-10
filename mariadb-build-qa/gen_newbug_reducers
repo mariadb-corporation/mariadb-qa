@@ -67,9 +67,9 @@ while read SQL_FILE; do
   sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" ${REDUCER_FILE}
   sed -i "s|^WORKDIR_LOCATION=[0-9]|WORKDIR_LOCATION=1|" ${REDUCER_FILE}
   sed -i "s|^NEW_BUGS_COPY_DIR=.*|NEW_BUGS_COPY_DIR=\"${PWD}\"|" ${REDUCER_FILE}
-  sed -i "s|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=2|" ${REDUCER_FILE}
+  sed -i "s|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=3|" ${REDUCER_FILE}
   sed -i "s|^MULTI_THREADS_INCREASE=[0-9]\+|MULTI_THREADS_INCREASE=1|" ${REDUCER_FILE}
-  sed -i "s|^MULTI_THREADS_MAX=[0-9]\+|MULTI_THREADS_MAX=5|" ${REDUCER_FILE}
+  sed -i "s|^MULTI_THREADS_MAX=[0-9]\+|MULTI_THREADS_MAX=7|" ${REDUCER_FILE}
   sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=23|" ${REDUCER_FILE}
   sed -i 's|^INPUTFILE=.*|INPUTFILE="$(ls --color=never -s '"${SQL_FILE}"'* \| grep --binary-files=text -vE "backup\|failing\|prev" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\+\|\|\")"|' ${REDUCER_FILE}
   sed -i "s|^TEXT_STRING_LOC=.*|TEXT_STRING_LOC=\"${TEXT_STRING_LOC}\"|" ${REDUCER_FILE}
