@@ -1,2 +1,7 @@
-wc -l */*/*_out
+#!/bin/bash
+wc -l [0-9][0-9][0-9][0-9][0-9][0-9]/*/*_out
+
+# To include newbus, use this one instead:
+#wc -l */*/*_out
+
 #find . | grep "_out$" | xargs wc -l

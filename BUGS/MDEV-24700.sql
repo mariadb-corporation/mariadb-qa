@@ -3,3 +3,9 @@ CREATE TRIGGER tr AFTER INSERT ON t FOR EACH ROW REPLACE INTO s VALUES(1);
 XA START 'a';
 INSERT INTO t VALUES(1);  # Gives error 'ERROR 1146 (42S02): Table 'test.s' doesn't exist'
 REPLACE t VALUES(1);
+
+CREATE TABLE t (a INT KEY,b CHAR(1)) ENGINE=InnoDB;
+CREATE TABLE t2 (b INT,FOREIGN KEY(b)REFERENCES t (a)) ENGINE=InnoDB;
+XA START 'x';
+INSERT INTO t2 VALUES(1);  # Gives ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`test`.`t2`, CONSTRAINT `t2_ibfk_1` FOREIGN KEY (`b`) REFERENCES `t` (`a`))
+REPLACE t2 VALUES(1);

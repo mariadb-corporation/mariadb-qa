@@ -48,6 +48,7 @@ cp reducer_live ${TARGET}
 cp multi_sr_all ${TARGET}
 cp multi_sr_leftover ${TARGET}
 cp gen_newbug_reducers ${TARGET}
+cp start_newbugs_red ${TARGET}
 cp make_space ${TARGET}
 cp d2 ${TARGET}
 cp d3 ${TARGET}
@@ -77,6 +78,8 @@ cp del_all_data ${TARGET}
 cp loop_screens ${TARGET}
 cp loop_screens_ge ${TARGET}
 cp loop_screens_pr ${TARGET}
+cp loop_screens_newbug ${TARGET}
+cp loop_screens_other ${TARGET}
 cp monitor_run ${TARGET}
 cp monitor_runs ${TARGET}
 cp todaysruns ${TARGET}

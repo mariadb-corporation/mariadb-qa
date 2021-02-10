@@ -1,8 +1,12 @@
 #!/bin/bash
 set +H
 
+########################################################################################################################
+# This script is outdated and replaced by in-reducer.sh code which creates matching reducer scripts per newbug stored! #
+########################################################################################################################
+
 # User variables, dynamic
-BASEDIR="/test/MD080920-mariadb-10.5.6-linux-x86_64-dbg"  # Base directory to use for testing against
+BASEDIR="/test/MD260121-mariadb-10.5.9-linux-x86_64-dbg"  # Base directory to use for testing against
 
 # User variables, likely no change needed to these, ever
 REDUCER_MAIN="/home/$(whoami)/mariadb-qa/reducer.sh"  # Reducer template to use
@@ -14,15 +18,15 @@ if [ ! -r ${REDUCER_MAIN} ]; then
   echo "Assert: reducer (${REDUCER_MAIN}) not readable by this script. Terminating."
   exit 1
 fi
-if [ ! -r /data/NEWBUGS ]; then
-  if [ ! -r ./NEWBUGS ]; then
-    echo 'Assert: Neither /data/NEWBUGS nor ./NEWBUGS exists. Terminating.'
+if [ ! -r /data/NEWBUGS.PREV ]; then
+  if [ ! -r ./NEWBUGS.PREV ]; then
+    echo 'Assert: Neither /data/NEWBUGS.PREV nor ./NEWBUGS exists. Terminating.'
     exit 1
   else
-    cd ./NEWBUGS
+    cd ./NEWBUGS.PREV
   fi
 else
-  cd /data/NEWBUGS
+  cd /data/NEWBUGS.PREV
 fi
 
 rm -f ./gen_reducer.list
@@ -58,15 +62,16 @@ while read SQL_FILE; do
   sed -i "s/^TEXT=.*/TEXT='${TEXT}'/" "${REDUCER_FILE}"
   sed -i "s|^SCAN_FOR_NEW_BUGS=[0-9]|SCAN_FOR_NEW_BUGS=1|" "${REDUCER_FILE}"
   sed -i "s|^USE_NEW_TEXT_STRING=[0-9]|USE_NEW_TEXT_STRING=1|"  "${REDUCER_FILE}"
-  sed -i "s|^FORCE_SKIPV=0|FORCE_SKIPV=1|" ${REDUCER_FILE}
+  sed -i "s|^FORCE_SKIPV=[0-9]|FORCE_SKIPV=1|" ${REDUCER_FILE}
+  sed -i "s| --sql_mode=ONLY_FULL_GROUP_BY| --sql_mode= --log-bin|" ${REDUCER_FILE}
   sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" ${REDUCER_FILE}
   sed -i "s|^WORKDIR_LOCATION=[0-9]|WORKDIR_LOCATION=1|" ${REDUCER_FILE}
   sed -i "s|^NEW_BUGS_COPY_DIR=.*|NEW_BUGS_COPY_DIR=\"${PWD}\"|" ${REDUCER_FILE}
-  sed -i "s|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=3 |" ${REDUCER_FILE}
-  sed -i "s|^MULTI_THREADS_INCREASE=[0-9]\+|MULTI_THREADS_INCREASE=3|" ${REDUCER_FILE}
-  sed -i "s|^MULTI_THREADS_MAX=[0-9]\+|MULTI_THREADS_MAX=9 |" ${REDUCER_FILE}
-  sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=5|" ${REDUCER_FILE}
-  sed -i 's|^INPUTFILE=.*|INPUTFILE="$(ls -t '"${SQL_FILE}"'* \| head -n1)"|' ${REDUCER_FILE}
+  sed -i "s|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=3|" ${REDUCER_FILE}
+  sed -i "s|^MULTI_THREADS_INCREASE=[0-9]\+|MULTI_THREADS_INCREASE=1|" ${REDUCER_FILE}
+  sed -i "s|^MULTI_THREADS_MAX=[0-9]\+|MULTI_THREADS_MAX=7|" ${REDUCER_FILE}
+  sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=23|" ${REDUCER_FILE}
+  sed -i 's|^INPUTFILE=.*|INPUTFILE="$(ls --color=never -s '"${SQL_FILE}"'* \| grep --binary-files=text -vE "backup\|failing\|prev" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\+\|\|\")"|' ${REDUCER_FILE}
   sed -i "s|^TEXT_STRING_LOC=.*|TEXT_STRING_LOC=\"${TEXT_STRING_LOC}\"|" ${REDUCER_FILE}
   sed -i "s|^KNOWN_BUGS_LOC=.*|KNOWN_BUGS_LOC=\"${KNOWN_BUGS_LOC}\"|" ${REDUCER_FILE}
   chmod +x ${REDUCER_FILE}
