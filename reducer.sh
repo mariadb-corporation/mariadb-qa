@@ -1158,17 +1158,9 @@ multi_reducer(){
     exit 1
   fi
   mkdir $WORKD/subreducer/
-
-  # Choose a random port number in 10-65K range, check if free, increase if needbe
-  MULTI_MYPORT=$[ 10001 + ( $RANDOM % 55000 ) ]
-  while :; do
-    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)"
-    if [ $ISPORTFREE -ge 1 ]; then
-      MULTI_MYPORT=$[ $MULTI_MYPORT + 100 ]  #+100 to avoid 'clusters of ports'
-    else
-      break
-    fi
-  done
+  init_empty_port
+  MULTI_MYPORT=$NEWPORT
+  NEWPORT=
 
   TXT_OUT="$ATLEASTONCE [Stage $STAGE] [MULTI] Forking subreducer threads [PIDs]:"
   for t in $(eval echo {1..$MULTI_THREADS}); do
@@ -1200,17 +1192,9 @@ multi_reducer(){
     PID=$!
     export MULTI_PID$t=$PID
     TXT_OUT="$TXT_OUT #$t [$PID]"
-
-    # Take the following available port
-    MULTI_MYPORT=$[ $MULTI_MYPORT + 1 ]
-    while :; do
-      ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MULTI_MYPORT " | wc -l)"
-      if [ $ISPORTFREE -ge 1 ]; then
-        MULTI_MYPORT=$[ $MULTI_MYPORT +100 ]  #+100 to avoid 'clusters of ports'
-      else
-        break
-      fi
-    done
+    init_empty_port
+    MULTI_MYPORT=$NEWPORT
+    NEWPORT=
   done
   echo_out "$TXT_OUT"
 
@@ -1452,12 +1436,13 @@ TS_init_all_sql_files(){
 }
 
 init_empty_port(){
+  NEWPORT=
   # Choose a random port number in 10-65K range, check if free, increase if needbe
-  MYPORT=$[ 10001 + ( $RANDOM % 55000 ) ]
+  NEWPORT=$[ 10001 + ( $RANDOM % 55000 ) ]
   while :; do
-    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $MYPORT " | wc -l)"
+    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $NEWPORT " | wc -l)"
     if [ $ISPORTFREE -ge 1 ]; then
-      MYPORT=$[ $MYPORT + 100 ]  #+100 to avoid 'clusters of ports'
+      NEWPORT=$[ $NEWPORT + 100 ]  #+100 to avoid 'clusters of ports'
     else
       break
     fi
@@ -2108,6 +2093,8 @@ start_mdg_main(){
 
   ADDR="127.0.0.1"
   init_empty_port
+  MYPORT=$NEWPORT
+  NEWPORT=
   rm -rf $WORKD/tmp*
   unset MDG_PORTS
   unset MDG_LADDRS
@@ -3751,6 +3738,8 @@ fireworks_setup(){
   options_check $1
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is a parent/main reducer
     init_empty_port
+    MYPORT=$NEWPORT
+    NEWPORT=
   fi
   init_workdir_and_files
   if [ $MODE -eq 9 ]; then echo_out "[Init] Run mode: MODE=9: ThreadSync Crash [ALPHA]"

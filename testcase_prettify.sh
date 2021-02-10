@@ -27,6 +27,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|hour|HOUR|gi' | \
   sed 's|begin|BEGIN|gi' | \
   sed 's|end|END|gi' | \
+  sed 's|load|LOAD|gi' | \
   sed 's|ends|ENDS|gi' | \
   sed 's|then|THEN|gi' | \
   sed 's|add|ADD|gi' | \
