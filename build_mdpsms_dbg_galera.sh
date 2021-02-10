@@ -1,5 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
+# Modified by Ramesh Sivaraman, MariaDB
 
 MAKE_THREADS=13         # Number of build threads. There may be a bug for builds when setting this >1
 WITH_EMBEDDED_SERVER=0  # 0 or 1 # Include the embedder server (removed in 8.0)

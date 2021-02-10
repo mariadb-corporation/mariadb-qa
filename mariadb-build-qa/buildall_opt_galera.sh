@@ -1,5 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+# Modified by Ramesh Sivaraman, MariaDB
+
 # This script can likely be sourced (. ./buildall_opt.sh) to be able to use job control ('jobs', 'fg' etc)
 
 ./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
