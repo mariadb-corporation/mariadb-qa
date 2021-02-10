@@ -2072,7 +2072,8 @@ start_mdg_main(){
   echo "innodb_file_per_table" >> ${WORKD}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${WORKD}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${WORKD}/my.cnf
-  echo "wsrep_sst_method=rsync" >> ${WORKD}/my.cnf
+  echo "wsrep_sst_method=mariabackup" >> ${WORKD}/my.cnf
+  echo "wsrep_sst_auth=root:" >> ${WORKD}/my.cnf
   echo "wsrep_sst_auth=$SUSER:$SPASS" >> ${WORKD}/my.cnf
   echo "binlog_format=ROW" >> ${WORKD}/my.cnf
   echo "core-file" >> ${WORKD}/my.cnf
@@ -2106,7 +2107,7 @@ start_mdg_main(){
   }
 
   ADDR="127.0.0.1"
-  RPORT=$(((RANDOM % 21 + 10) * 1000))
+  init_empty_port
   rm -rf $WORKD/tmp*
   unset MDG_PORTS
   unset MDG_LADDRS
@@ -2115,7 +2116,7 @@ start_mdg_main(){
   for i in $(seq 1 3); do
     node=${WORKD}/node${i}
     mkdir -p $WORKD/tmp${i}
-    RBASE1="$((RPORT + (100 * $i)))"
+    RBASE1="$((MYPORT + (100 * $i)))"
     LADDR1="127.0.0.1:$((RBASE1 + 8))"
     MDG_PORTS+=("$RBASE1")
     MDG_LADDRS+=("$LADDR1")

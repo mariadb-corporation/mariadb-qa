@@ -514,7 +514,8 @@ if [[ $MDG -eq 1 ]]; then
   echo "innodb_file_per_table" >> ${BASEDIR}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${BASEDIR}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${BASEDIR}/my.cnf
-  echo "wsrep_sst_method=rsync" >> ${BASEDIR}/my.cnf
+  echo "wsrep_sst_method=mariabackup" >> ${BASEDIR}/my.cnf
+  echo "wsrep_sst_auth=root:" >> ${BASEDIR}/my.cnf
   echo "binlog_format=ROW" >> ${BASEDIR}/my.cnf
   echo "core-file" >> ${BASEDIR}/my.cnf
   echo "log-output=none" >> ${BASEDIR}/my.cnf
