@@ -2110,7 +2110,7 @@ start_mdg_main(){
     mkdir -p $WORKD/tmp${i}
     RBASE1="$((MYPORT + (100 * $i)))"
     LADDR1="127.0.0.1:$((RBASE1 + 8))"
-    SST_PORT="127.0.0.1:$((LADDR1 + 1))"
+    SST_PORT="127.0.0.1:$((RBASE1 + 1))"
     MDG_PORTS+=("$RBASE1")
     MDG_LADDRS+=("$LADDR1")
     cp ${WORKD}/my.cnf ${WORKD}/n${i}.cnf
