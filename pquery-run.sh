@@ -604,12 +604,14 @@ mdg_startup() {
     mkdir -p $DATADIR/tmp${i}
     RBASE1="$((RPORT + (100 * $i)))"
     LADDR1="127.0.0.1:$((RBASE1 + 8))"
+    SST_PORT="127.0.0.1:$((LADDR1 + 1))"
     MDG_PORTS+=("$RBASE1")
     MDG_LADDRS+=("$LADDR1")
     cp ${BASEDIR}/my.cnf ${DATADIR}/n${i}.cnf
     sed -i "2i server-id=10${i}" ${DATADIR}/n${i}.cnf
     sed -i "2i wsrep_node_incoming_address=$ADDR" ${DATADIR}/n${i}.cnf
     sed -i "2i wsrep_node_address=$ADDR" ${DATADIR}/n${i}.cnf
+    sed -i "2i wsrep_sst_receive_address=$SST_PORT" ${DATADIR}/n${i}.cnf
     sed -i "2i log-error=$node/node${i}.err" ${DATADIR}/n${i}.cnf
     sed -i "2i port=$RBASE1" ${DATADIR}/n${i}.cnf
     sed -i "2i datadir=$node" ${DATADIR}/n${i}.cnf

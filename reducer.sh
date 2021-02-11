@@ -2110,12 +2110,14 @@ start_mdg_main(){
     mkdir -p $WORKD/tmp${i}
     RBASE1="$((MYPORT + (100 * $i)))"
     LADDR1="127.0.0.1:$((RBASE1 + 8))"
+    SST_PORT="127.0.0.1:$((LADDR1 + 1))"
     MDG_PORTS+=("$RBASE1")
     MDG_LADDRS+=("$LADDR1")
     cp ${WORKD}/my.cnf ${WORKD}/n${i}.cnf
     sed -i "2i server-id=10${i}" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_node_incoming_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_node_address=$ADDR" ${WORKD}/n${i}.cnf
+    sed -i "2i wsrep_sst_receive_address=$SST_PORT" ${WORKD}/n${i}.cnf
     sed -i "2i log-error=$node/error.log" ${WORKD}/n${i}.cnf
     sed -i "2i port=$RBASE1" ${WORKD}/n${i}.cnf
     sed -i "2i datadir=$node" ${WORKD}/n${i}.cnf
