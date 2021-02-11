@@ -40,6 +40,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|help|HELP|gi' | \
   sed 's|like|LIKE|gi' | \
   sed 's|partition|PARTITION|gi' | \
+  sed 's|partitions|PARTITIONS|gi' | \
   sed 's|subpartition|SUBPARTITION|gi' | \
   sed 's|subpartitions|SUBPARTITIONS|gi' | \
   sed 's|by list|BY LIST|gi' | \

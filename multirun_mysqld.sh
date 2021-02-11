@@ -5,15 +5,12 @@
 # Start this script from within the base directory which contains ./bin/mysqld[-debug]
 
 # User configurable variables
-WORKDIR="/dev/shm"                               ## Working directory ("/dev/shm" preferred)
-SQLFILE="./in.sql"                               ## SQL Input file
-MYEXTRA="--event-scheduler=ON"                   ## MYEXTRA: Extra --options required for msyqld (may not be required)
-#MYEXTRA="--event-scheduler=ON --max_allowed_packet=33554432 --maximum-bulk_insert_buffer_size=1M --maximum-join_buffer_size=1M --maximum-max_heap_table_size=1M --maximum-max_join_size=1M --maximum-myisam_max_sort_file_size=1M --maximum-myisam_mmap_size=1M --maximum-myisam_sort_buffer_size=1M --maximum-optimizer_trace_max_mem_size=1M --maximum-preload_buffer_size=1M --maximum-query_alloc_block_size=1M --maximum-query_prealloc_size=1M --maximum-range_alloc_block_size=1M --maximum-read_buffer_size=1M --maximum-read_rnd_buffer_size=1M --maximum-sort_buffer_size=1M --maximum-tmp_table_size=1M --maximum-transaction_alloc_block_size=1M --maximum-transaction_prealloc_size=1M --log-output=none --sql_mode=ONLY_FULL_GROUP_BY --innodb_file_per_table=1 --innodb_flush_method=O_DIRECT --innodb_lock_schedule_algorithm=fcfs --innodb_stats_persistent=off --loose-idle_write_transaction_timeout=0 --loose-idle_transaction_timeout=0 --loose-idle_readonly_transaction_timeout=0 --connect_timeout=60 --interactive_timeout=28800 --slave_net_timeout=60 --net_read_timeout=30 --net_write_timeout=60 --loose-table_lock_wait_timeout=50 --wait_timeout=28800 --lock-wait-timeout=86400 --innodb-lock-wait-timeout=50 --log_output=FILE --log-bin --log_bin_trust_function_creators=1 --loose-max-statement-time=30 --loose-debug_assert_on_not_freed_memory=0 --innodb-buffer-pool-size=256M --innodb_use_native_aio=0"
-#MYEXTRA=" --no-defaults"
-# --plugin-load=tokudb=ha_tokudb.so --tokudb-check-jemalloc=0 --init-file=/home/roel/mariadb-qa/plugins_57.sql --binlog-group-commit-sync-delay=2047 "
-SERVER_THREADS=(2 10 20 30 40 50)                 ## Number of server threads (x mysqld's). This is a sequence: (10 20) means: first 10, then 20 server if no crash was observed
-CLIENT_THREADS=1                                  ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
-AFTER_SHUTDOWN_DELAY=60                           ## Wait this many seconds for mysqld to shutdown properly. If it does not shutdown within the allotted time, an error shows
+WORKDIR="/dev/shm"                     ## Working directory ("/dev/shm" preferred)
+SQLFILE="./in.sql"                     ## SQL Input file
+MYEXTRA="${*}"                         ## Accept mysqld options from the command line
+SERVER_THREADS=(2 10 20 30 40 50 100)  ## Number of server threads (x mysqld's). This is a sequence: (10 20) means: first 10, then 20 server if no crash was observed
+CLIENT_THREADS=200                     ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
+AFTER_SHUTDOWN_DELAY=35                ## Wait this many seconds for mysqld to shutdown properly. If it does not shutdown within the allotted time, an error shows
 
 # Internal variables
 MYUSER=$(whoami)
@@ -61,25 +58,43 @@ fi
 
 echoit "Script work directory : ${WORKDIR}"
 # Get version specific options
+if [ ! -r ./BUILD_CMD_CMAKE ]; then 
+  echo "./BUILD_CMD_CMAKE not found! Are you usre you are in a BASEDIR directory?"
+  echo "If you're sure (and for example ./bin/mysqld exists), then do this:"
+  echo "touch ./BUILD_CMD_CMAKE   # And restart the script"
+  exit 1
+else
+  BASEDIR="${PWD}"
+fi
 BIN=
 if [ -r ${PWD}/bin/mysqld-debug ]; then BIN="${PWD}/bin/mysqld-debug"; fi  # Needs to come first so it's overwritten in next line if both exist
 if [ -r ${PWD}/bin/mysqld ]; then BIN="${PWD}/bin/mysqld"; fi
 if [ "${BIN}" == "" ]; then echo "Assert: no mysqld or mysqld-debug binary was found!"; fi
 MID=
-if [ -r ${PWD}/scripts/mysql_install_db ]; then MID="${PWD}/scripts/mysql_install_db"; fi
-if [ -r ${PWD}/bin/mysql_install_db ]; then MID="${PWD}/bin/mysql_install_db"; fi
+if [ -r ${BASEDIR}/scripts/mysql_install_db ]; then MID="${BASEDIR}/scripts/mysql_install_db"; fi
+if [ -r ${BASEDIR}/bin/mysql_install_db ]; then MID="${BASEDIR}/bin/mysql_install_db"; fi
 START_OPT="--core-file"           # Compatible with 5.6,5.7,8.0
-#INIT_OPT="--no-defaults --initialize-insecure"  # Compatible with     5.7,8.0 (mysqld init)
-INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal"  # MD
+INIT_OPT="--no-defaults --initialize-insecure ${MYINIT}"  # Compatible with     5.7,8.0 (mysqld init)
 INIT_TOOL="${BIN}"                # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
-VERSION_INFO=$(${BIN} --version | grep -oe '[58]\.[01567]' | head -n1)
-if [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
+VERSION_INFO=$(${BIN} --version | grep -E --binary-files=text -oe '[58]\.[01567]' | head -n1)
+VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-6]' | head -n1)
+if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" ]; then
+  VERSION_INFO="5.6"
+  INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
+  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal"
+  START_OPT="--core-file --core"
+elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
+  VERSION_INFO="5.1"
+  INIT_TOOL="${PWD}/scripts/mysql_install_db"
+  INIT_OPT="--no-defaults --force"
+  START_OPT="--core"
+elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
   if [ "${MID}" == "" ]; then
     echo "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
     exit 1
   fi
   INIT_TOOL="${MID}"
-  INIT_OPT="--no-defaults --force"
+  INIT_OPT="--no-defaults --force ${MYINIT}"
   START_OPT="--core"
 elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
   echo "WARNING: mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may fail."
@@ -96,8 +111,7 @@ for i in ${SERVER_THREADS[@]};do
     MYPORT=$[ ${MYPORT} + 1 ]
     mkdir ${WORKDIR}/${j} 2>/dev/null
     $INIT_TOOL --no-defaults ${INIT_OPT} --basedir=${PWD} --datadir=${WORKDIR}/${j} > ${WORKDIR}/${j}_mysql_install_db.out 2>&1
-    CMD="bash -c \"set -o pipefail; ${BIN} ${MYEXTRA} ${START_OPT} --basedir=${PWD} --datadir=${WORKDIR}/${j} --port=${MYPORT}
-         --pid-file=${WORKDIR}/${j}_pid.pid --log-error=${WORKDIR}/${j}_error.log.out --socket=${WORKDIR}/${j}_socket.sock --user=${MYUSER}\""
+    CMD="bash -c \"set -o pipefail; ${BIN} ${MYEXTRA} ${START_OPT} --basedir=${PWD} --datadir=${WORKDIR}/${j} --port=${MYPORT} --pid-file=${WORKDIR}/${j}_pid.pid --log-error=${WORKDIR}/${j}_error.log.out --socket=${WORKDIR}/${j}_socket.sock --user=${MYUSER}\""
     eval $CMD > ${WORKDIR}/${j}_mysqld.out 2>&1 &
     PIDV="$!"
     MYSQLD+=(${PIDV})
@@ -138,7 +152,7 @@ for i in ${SERVER_THREADS[@]};do
   sleep 1  # Avoids last client not having started yet
   # Check if mysql client finished
   for k in "${MYSQLC[@]}"; do
-    while [[ ( -d /proc/$k ) && ( -z `grep zombie /proc/$k/status` ) ]]; do
+    while [[ ( -d /proc/$k ) && ( -z "$(grep zombie /proc/$k/status 2>/dev/null)" ) ]]; do  # Without the 2>/dev/null it sometimes produced 'grep: /proc/595146/status: No such file or directory'
       # Check mysqld processes are still alive while waiting for client processes to finish
       for j in `seq 1 ${i}`;do
         if ! ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping > /dev/null 2>&1; then
@@ -158,27 +172,30 @@ for i in ${SERVER_THREADS[@]};do
   # Shutdown mysqld processes
   for j in `seq 1 ${i}`;do
     echoit "Shutting down mysqld #${j}..."
-    timeout --signal=9 ${AFTER_SHUTDOWN_DELAY}s ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock shutdown > /dev/null 2>&1
+    timeout --signal=9 ${AFTER_SHUTDOWN_DELAY}s ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock shutdown >/dev/null 2>&1
     if [ $? -eq 137 ]; then  # Timeout was activated after ${AFTER_SHUTDOWN_DELAY} seconds, highly likely indicating a hang
       echoit "[!] Potential server hang found: mysqld #{j} has not shutdown in ${AFTER_SHUTDOWN_DELAY} seconds. Check gdb --pid=${MYSQLD[j-1]}. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
       exit 1
     fi
   done
+  # Mandarory pause to allow core file write
+  sleep 3
+  sync
   # Check for shutdown issues
+  echoit "Checking outcomes..."
   for j in `seq 1 ${i}`;do
     # Check for shutdown failure (mysqld still responding to mysqladmin pings)
     PING=
     timeout --signal=9 10s ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping > /dev/null 2>&1
-${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping
+${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping 2>/dev/null 1>&2
     PING=$?
-echo $PING
     if [ $PING -eq 137 ]; then
       echoit "[!] Potential server hang found: a mysqladmin ping to mysqld #${j} did not complete in 10 sconds. Check gdb --pid=${MYSQLD[j-1]} for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
       exit 1
     elif [ $PING -eq 0 ]; then
       echoit "[!] Server hang found: mysqld #${j} has not shutdown in 60 seconds and is still responding to mysqladmin ping. Check gdb --pid=${MYSQLD[j-1]} for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
       exit 1
-    elif [ $PING -ne 1 ]; then
+    elif [ $PING -ne 1 ]; then  # PING -eq 1 is what we are looking for, i.e. server no longer reachable. Then check for core dumps below.
       echoit "[!] Unknown issue detected: a mysqladmin ping to mysqld #${j} returned exit status $PING, which is unkwnon to this script. Please research this code $PING and the current status of mysqld with gdb --pid=${MYSQLD[j-1]} for more info, then please update this script so it can handle this state. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
       exit 1
     fi
@@ -188,12 +205,11 @@ echo $PING
       exit 1
     fi
   done
-  for j in `seq 1 ${i}`;do
-    echo "Checking PID ${MYSQLD[${i}]}"
-  done
   kill -9 `printf '%s ' "${MYSQLD[@]}"` 2>/dev/null  # For safety, though processes should be gone. Redirected stderr to /dev/null as otherwise 'multirun_mysqld.sh: line ___: kill: (_____) - No such process' errors would show.
+  # Roundup by reporting that nothing was found for this run. (If something was found, the script would have instead terminated already, ref exit 1 above after/if 'Check for core dump' was found, and this messsage would thus never show.)
   if [ ${SERVER_THREADS[@]:(-1)} -ne ${i} ] ; then
-   echoit "Did not find server crash with ${i} mysqld processes. Restarting crash test with next set of mysqld processes."
-   rm -Rf ${WORKDIR}/*
+    echoit "Did not find server crash with ${i} mysqld processes. Restarting crash test with next set of mysqld processes."
+    rm -Rf ${WORKDIR}/*
   fi
 done
+echoit "Complete, no issues found."

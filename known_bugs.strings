@@ -495,7 +495,11 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.
 
 ###### FIXED BUGS ######
 # Assert: No parsable frames? ## This is seen for bugs which terminate the sever before a core can be written, like stack smashing. Current related bugs in progress: MDEV-22258  
-#m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ha_innobase::is_read_only|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|Sql_cmd_alter_table::execute ## Fixed ## DBG MDEV-24503
+# page_offset(rec) <= page_header_get_field(page, PAGE_HEAP_TOP)|SIGABRT|ut_dbg_assertion_failed|page_rec_check|page_rec_is_user_rec|btr_search_guess_on_hash         ## Fixed ## DBG |MDEV-24832
+# SIGSEGV|dict_table_t::not_redundant|rec_get_offsets_func|btr_search_check_guess|btr_search_guess_on_hash                                                            ## Fixed ## OPT |MDEV-24832
+# SIGSEGV|btr_search_guess_on_hash|btr_cur_search_to_nth_level_func|btr_pcur_open_low|row_ins_clust_index_entry_low                                                   ## Fixed ## OPT |MDEV-24832
+# (block)->index || (block)->n_pointers == 0|SIGABRT|ut_dbg_assertion_failed|btr_search_drop_page_hash_index|dict_index_t::clear|dict_table_t::clear                  ## Fixed ## DBG |MDEV-24832
+# m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ha_innobase::is_read_only|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|Sql_cmd_alter_table::execute ## Fixed ## DBG MDEV-24503
 # SIGSEGV|sf_malloc_usable_size|my_free|delete_dynamic|my_hash_free                                                                                                   ## Fixed ## DBG MDEV-23534
 # SIGSEGV|my_free|delete_dynamic|Rpl_filter::set_wild_ignore_table|Sys_var_rpl_filter::set_filter_value                                                               ## Fixed ## OPT MDEV-22317
 # 0|SIGABRT|Item_func_json_objectagg::reset_field|init_tmptable_sum_functions|end_update|AGGR_OP::put_record                                                          ## Fixed ## DBG MDEV-23029
