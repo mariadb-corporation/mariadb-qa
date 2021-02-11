@@ -335,6 +335,9 @@ export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs
 export UBSAN_OPTIONS=print_stacktrace=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
 
+# Flags
+FIRST_MYSQLD_START_FLAG=1  # Avoids FORCE_KILL=1 from being used at '[Init] Attempting first mysqld startup with all MYEXTRA options passed to mysqld' stage.
+
 # ===== [SPECIAL MYEXTRA SECTION START] Preparation for STAGES 8 and 9: special MYEXTRA startup option sets handling
 # Important: If you add a section below for additional startup option sets, be sure to add the final outcome to SPECIAL_MYEXTRA_OPTIONS at the end of this section (marked by "[SPECIAL MYEXTRA SECTION END]")
 #            And additionaly to add a new trial in STAGE9 to cover the additional startup option set created here.
@@ -1531,10 +1534,8 @@ init_workdir_and_files(){
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
   echo_out "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0")"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
-  echo_out "[Init] Workdir: $WORKD"
   export TMP=$WORKD/tmp
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then echo_out "[Init] Console typescript log for REDUCE_GLIBC_OR_SS_CRASHES: /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log"; fi
-  echo_out "[Init] Temporary storage directory (TMP environment variable) set to $TMP"
   # jemalloc configuration for TokuDB plugin
   JE1="if [ \"\${JEMALLOC}\" != \"\" -a -r \"\${JEMALLOC}\" ]; then export LD_PRELOAD=\${JEMALLOC}"
   #JE2=" elif [ -r /usr/lib64/libjemalloc.so.1 ]; then export LD_PRELOAD=/usr/lib64/libjemalloc.so.1"
@@ -1574,13 +1575,12 @@ init_workdir_and_files(){
     else
       WORKO="$(echo $INPUTFILE | sed 's/$/_out/' | sed "s/^.*\//$(echo $WORKD | sed 's/\//\\\//g')\//")"  # Save output file in individual workdirs
     fi
+    echo_out "[Init] Input file: $INPUTFILE"
     if [ "${WORK_BUG_DIR}" == "${INPUTFULE}" ]; then
       echo_out "[Init] Output dir: $PWD"
     else
       echo_out "[Init] Output dir: $WORK_BUG_DIR"
     fi
-    echo_out "[Init] Input file: $INPUTFILE"
-    echo_out "[Init] EPOCH ID: $EPOCH (used for various file and directory names)"
     # Initial INPUTFILE to WORKF copy
     if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not need a WORKF file (ref cut_fireworks_chunk_and_shuffle and note ${INPUTFILE} is used instead. The reason for setting it up this way is 1) it greatly improves /dev/shm diskspace as WORKF is not created per-thread, thereby saving let's say 450MB for a standard SQL input file, per-thread, 2) There is no need to maintain a working file (WORKF) as the input is never changed/reduced. INPUTFILE is shuffled and chuncked (as per FIREWORKS_LINES setting) and saved as in.tmp, and if a new bug is found, that file is copied to NEW_BUGS_SAVE_DIR.
       if [ "$MULTI_REDUCER" != "1" -a $FORCE_SKIPV -gt 0 ]; then  # This is the parent/main reducer and verify stage is being skipped, add dropc. If the verify stage is not being skipped (FORCE_SKIPV=0) then the 'else' clause will apply and the verify stage will handle the dropc addition or not (depending on how much initial simplification in the verify stage is possible). Note that FORCE_SKIPV check is defensive programming and not needed atm; the actual call within the verify() uses multi_reducer $1 - i.e. the original input file is used, not the here-modified WORKF file.
@@ -1609,6 +1609,8 @@ init_workdir_and_files(){
       fi
     fi
   fi
+  echo_out "[Init] Workdir: $WORKD"
+  echo_out "[Init] EPOCH ID: $EPOCH (used for various file and directory names)"
   if [ $MDG -eq 1 ]; then
     echo_out "[Init] MDG Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
     echo_out "[Init] MDG Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
@@ -1625,6 +1627,7 @@ init_workdir_and_files(){
       echo_out "[Init] Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
     fi
   fi
+  echo_out "[Init] Temporary directory (TMP Variable) set to $TMP"
   if [ $SKIPSTAGEBELOW -gt 0 ]; then echo_out "[Init] SKIPSTAGEBELOW active. Stages up to and including $SKIPSTAGEBELOW are skipped"; fi
   if [ $SKIPSTAGEABOVE -lt 9 ]; then echo_out "[Init] SKIPSTAGEABOVE active. Stages above and including $SKIPSTAGEABOVE are skipped"; fi
   if [ $PQUERY_MULTI -gt 0 ]; then
@@ -1807,6 +1810,7 @@ init_workdir_and_files(){
       fi
       #start_mysqld_main
       echo_out "[Init] Attempting first mysqld startup with all MYEXTRA options passed to mysqld"
+      FIRST_MYSQLD_START_FLAG=1
       if [ $MODE -ne 1 -a $MODE -ne 6 ]; then start_mysqld_main; else start_valgrind_mysqld_main; fi
       if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
         if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
@@ -1857,6 +1861,7 @@ init_workdir_and_files(){
       cp -a $WORKD/node2/* $WORKD/node2.init/
       cp -a $WORKD/node3/* $WORKD/node3.init/
     fi
+    FIRST_MYSQLD_START_FLAG=0  # From here onwards, FORCE_KILL can be used if used if it set enabled (set to 1)
   else
     echo_out "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../data.init)"
   fi
@@ -3161,7 +3166,7 @@ stop_mysqld_or_mdg(){
     (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   else
-    if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld
+    if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 -a ${FIRST_MYSQLD_START_FLAG} -ne 1 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld. For the first init startup of mysqld, kill should also not be used.
       while :; do
         if kill -0 $PIDV >/dev/null 2>&1; then
           sleep 1
