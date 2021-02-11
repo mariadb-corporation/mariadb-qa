@@ -10,19 +10,28 @@ clone_es_mdg_repo(){
   read -p 'Github username: ' GIT_USERNAME
   read -sp 'Github authentication token: ' GIT_ASKPASS
   git clone --depth=1 --recurse-submodules -j8 --branch=$1-enterprise https://$GIT_USERNAME@github.com/mariadb-corporation/MariaDBEnterprise  $1 &
-  #clone galera repo
+  clone galera repo
   if [[ ${1} =~ 10.[4-6] ]]; then
     git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-4.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git $1_galera &
   else
     git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-3.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git $1_galera &
   fi
+  while ! grep -q "xpand" ${1}/.gitmodules 2&> /dev/null ; do
+    sleep 2
+    sed -i "s|url = git@github.com:mariadb-corporation/xpand.git|url = https://github.com/mariadb-corporation/xpand.git|" ${1}/.gitmodules 2&> /dev/null
+    if grep -q "$GIT_USERNAME" ${1}/.gitmodules 2&> /dev/null ; then
+      cd ${1}
+      git submodule update --init --recursive
+      cd ..
+    fi
+  done
   unset GIT_USERNAME
   unset GIT_ASKPASS
   GIT_USERNAME=''
   GIT_ASKPASS=''
 }
 if [[ "${2}" == "ES" ]]; then
-  clone_es_mdg_repo
+  clone_es_mdg_repo $1
 else
   git clone --depth=1 --recurse-submodules -j8 --branch=$1 https://github.com/MariaDB/server.git $1 &
   # For full trees, use:

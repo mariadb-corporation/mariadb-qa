@@ -12,6 +12,15 @@ clone_repos(){
     else
       git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-3.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git $1_galera &
     fi
+    while ! grep -q "xpand" ${1}/.gitmodules 2&> /dev/null ; do
+      sleep 2
+      sed -i "s|url = git@github.com:mariadb-corporation/xpand.git|url = https://github.com/mariadb-corporation/xpand.git|" ${1}/.gitmodules 2&> /dev/null
+      if grep -q "$GIT_USERNAME" ${1}/.gitmodules 2&> /dev/null ; then
+        cd ${1}
+        git submodule update --init --recursive
+        cd ..
+      fi
+    done
   else
     git clone --depth=1 --recurse-submodules -j8 --branch=$1 https://github.com/MariaDB/server.git $1 &
     # For full trees, use:
@@ -40,11 +49,11 @@ clone_multi_repos(){
     read -p 'Github username: ' GIT_USERNAME
     read -sp 'Github authentication token: ' GIT_ASKPASS
   fi
-  clone_repos 10.2 $MD_REPO &
-  clone_repos 10.3 $MD_REPO &
-  clone_repos 10.4 $MD_REPO &
-  clone_repos 10.5 $MD_REPO &
-  clone_repos 10.6 $MD_REPO &
+  clone_repos 10.2 &
+  clone_repos 10.3 &
+  clone_repos 10.4 &
+  clone_repos 10.5 &
+  clone_repos 10.6 &
   unset GIT_USERNAME
   unset GIT_ASKPASS
   GIT_USERNAME=''
