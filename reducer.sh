@@ -2097,9 +2097,9 @@ start_mdg_main(){
   }
 
   ADDR="127.0.0.1"
-  init_empty_port
-  MYPORT=$NEWPORT
-  NEWPORT=
+  #init_empty_port
+  #MYPORT=$NEWPORT
+  #NEWPORT=
   rm -rf $WORKD/tmp*
   unset MDG_PORTS
   unset MDG_LADDRS
@@ -2108,27 +2108,36 @@ start_mdg_main(){
   for i in $(seq 1 3); do
     node=${WORKD}/node${i}
     mkdir -p $WORKD/tmp${i}
-    RBASE1="$((MYPORT + (100 * $i)))"
-    LADDR1="127.0.0.1:$((RBASE1 + 8))"
-    SST_PORT="127.0.0.1:$((RBASE1 + 1))"
-    MDG_PORTS+=("$RBASE1")
-    MDG_LADDRS+=("$LADDR1")
+    #RBASE1="$((MYPORT + (100 * $i)))"
+    #LADDR1="127.0.0.1:$((RBASE1 + 8))"
+    #SST_PORT="127.0.0.1:$((RBASE1 + 1))"
+    init_empty_port
+    RBASE=$NEWPORT
+    NEWPORT=
+    init_empty_port
+    LADDR="127.0.0.1:${NEWPORT}"
+    NEWPORT=
+    init_empty_port
+    SST_PORT="127.0.0.1:${NEWPORT}"
+    NEWPORT=
+    MDG_PORTS+=("$RBASE")
+    MDG_LADDRS+=("$LADDR")
     cp ${WORKD}/my.cnf ${WORKD}/n${i}.cnf
     sed -i "2i server-id=10${i}" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_node_incoming_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_node_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_sst_receive_address=$SST_PORT" ${WORKD}/n${i}.cnf
     sed -i "2i log-error=$node/error.log" ${WORKD}/n${i}.cnf
-    sed -i "2i port=$RBASE1" ${WORKD}/n${i}.cnf
+    sed -i "2i port=$RBASE" ${WORKD}/n${i}.cnf
     sed -i "2i datadir=$node" ${WORKD}/n${i}.cnf
     sed -i "2i socket=$node/node${i}_socket.sock" ${WORKD}/n${i}.cnf
     sed -i "2i tmpdir=$WORKD/tmp${i}" ${WORKD}/n${i}.cnf
-    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
+    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
     # TODO: Add encryption checks after implementing encryption functionalities in pquery-run.sh
 #    if [[ "$ENCRYPTION_RUN" != 1 ]]; then
-#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
+#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
 #    else
-#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS;socket.ssl_key=${WORKD}/cert/server-key.pem;socket.ssl_cert=${WORKD}/cert/server-cert.pem;socket.ssl_ca=${WORKD}/cert/ca.pem\"" ${WORKD}/n${i}.cnf
+#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS;socket.ssl_key=${WORKD}/cert/server-key.pem;socket.ssl_cert=${WORKD}/cert/server-cert.pem;socket.ssl_ca=${WORKD}/cert/ca.pem\"" ${WORKD}/n${i}.cnf
 #      echo "ssl-ca = ${WORKD}/cert/ca.pem" >> ${WORKD}/n${i}.cnf
 #      echo "ssl-cert = ${WORKD}/cert/server-cert.pem" >> ${WORKD}/n${i}.cnf
 #      echo "ssl-key = ${WORKD}/cert/server-key.pem" >> ${WORKD}/n${i}.cnf
@@ -2171,14 +2180,27 @@ start_mdg_main(){
 
 gr_start_main(){
   ADDR="127.0.0.1"
-  RPORT=$(( RANDOM%21 + 10 ))
-  RBASE="$(( RPORT*1000 ))"
-  RBASE1="$(( RBASE + 1 ))"
-  RBASE2="$(( RBASE + 2 ))"
-  RBASE3="$(( RBASE + 3 ))"
-  LADDR1="$ADDR:$(( RBASE + 101 ))"
-  LADDR2="$ADDR:$(( RBASE + 102 ))"
-  LADDR3="$ADDR:$(( RBASE + 103 ))"
+  init_empty_port
+  RBASE1=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  RBASE2=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  RBASE3=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  LPORT1=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  LPORT2=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  LPORT3=$NEWPORT
+  NEWPORT=
+  LADDR1="$ADDR:${LPORT1}"
+  LADDR2="$ADDR:${LPORT2}"
+  LADDR3="$ADDR:${LPORT3}"
 
   gr_startup_chk(){
     ERROR_LOG=$1

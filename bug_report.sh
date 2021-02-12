@@ -302,7 +302,7 @@ if [ ${SAN_MODE} -eq 0 ]; then
   if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 ]; then
     echo 'Remember to action:'
     echo '1) If no engine is specified, add ENGINE=InnoDB'
-    echo '2) Double check noformat version strings for non-10.5 issues'
+    echo '2) Double check noformat version strings for non-10.5/10.6 issues to see if it is correctly formatted'
     if [ ${NOCORE} -ne 1 ]; then
       echo '3A) Add bug to known.strings, as follows:'
       cd ${RUN_PWD}
