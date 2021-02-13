@@ -97,8 +97,8 @@ else
 fi
 
 # Setup scritps
-rm -f start start_group_replication start_valgrind start_gypsy repl_setup stop setup cl cl_noprompt cl_noprompt_nobinary test init wipe all all_no_cl sysbench_prepare sysbench_run sysbench_measure myrocks_tokudb_init pmm_os_agent pmm_mysql_agent stop_group_replication *cl gdb fixin stack wipe_group_replication multirun multirun_pquery reducer_*
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_pquery | loopin | gdb | fixin | stack | myrocks_tokudb_init"
+rm -f start start_group_replication start_valgrind start_gypsy repl_setup stop setup cl cl_noprompt cl_noprompt_nobinary test init wipe all all_no_cl sysbench_prepare sysbench_run sysbench_measure myrocks_tokudb_init pmm_os_agent pmm_mysql_agent stop_group_replication *cl gdb fixin stack wipe_group_replication multirun multirun_pquery multirun_mysqld reducer_*
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_pquery | multirun_mysqld | loopin | gdb | fixin | stack | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 if [[ $GRP_RPL -eq 1 ]];then
   echo "Adding scripts: ${BASIC_SCRIPTS} | ${GRP_RPL_SCRIPTS}"
@@ -376,10 +376,12 @@ echo 'wc -l in.sql' >> loopin
 echo 'wc -l out.sql' >> loopin
 echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DROP/CREATE/USE DATABASE test!"' >> loopin
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >> loopin
+echo "#!/bin/bash" > multirun_mysqld
+echo '~/mariadb-qa/multirun_mysqld.sh "${*}"' >> multirun_mysqld
 echo "#!/bin/bash" > multirun
 echo "if [ ! -r ./in.sql ]; then echo 'Missing ./in.sql - please create it!'; exit 1; fi" >> multirun
 echo "if [ ! -r ./all_no_cl ]; then echo 'Missing ./all_no_cl - perhaps run ~/start or ~/mariadb-qa/startup.sh again?'; exit 1; fi" >> multirun
-echo "echo 'Use: --max_connections=10000 as an additional option to multirun if you want to run with more than 255 connections!"
+echo "echo 'Use: --max_connections=10000 as an additional option to multirun if you want to run with more than 255 connections!'" >> multirun
 echo "if [ \"\$(grep -o 'DROP DATABASE test' ./in.sql)\" == \"\" -o \"\$(grep -o 'CREATE DATABASE test' ./in.sql)\" == \"\" -o \"\$(grep -o 'USE test' ./in.sql)\" == \"\" ]; then" >> multirun
 echo "  echo \"Warning: 'DROP/CREATE/USE DATABASE test;' queries NOT all present in in.sql, which may negatively affect issue reproducibilitiy when using multiple executions of the same code (due to pre-exisiting server states)! Consider adding:\"" >> multirun
 echo "  echo '--------------------'" >> multirun

@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ -z "${1}" ]; then echo "Assert: specify workdir"; exit 1; fi
+if [ ! -d ./${1} ]; then echo "Assert: workdir '${1}' not found"; exit 1; fi
+if [ "$(echo "${1}" | grep -o "[0-9][0-9][0-9][0-9][0-9][0-9]")" != "${1}" ]; then echo "Assert: specify workdir in format: 000000 - ref ls to see actual number"; exit 1; fi
+if [ ! -r ./${1}/pquery-run.log ]; then echo "Assert: workdir '${1}' does not appear to be a pquery-run directory, it does not contain echo pquery-run.log"; exit 1; fi
+
+ps -ef | grep "/dev/shm/${1}" | grep -v grep | grep "$(whoami)" | awk '{print $2}' | xargs -I{} kill -9 {}
+screen -d -r  | grep "\.ge${1}" | sed 's|\..*||' | xargs kill -9
+rm -Rf /data/${1}
+sync
+screen -wipe 2>/dev/null 1>&2

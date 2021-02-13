@@ -15,8 +15,6 @@ SCRIPT_PWD="$(cd `dirname $0` && pwd)"
 cd ${SCRIPT_PWD}
 cp buildall_dbg.sh ${TARGET}
 cp buildall_opt.sh ${TARGET}
-cp buildall_dbg_galera.sh ${TARGET}
-cp buildall_opt_galera.sh ${TARGET}
 cp buildall_dbg_san.sh ${TARGET}
 cp buildall_opt_san.sh ${TARGET}
 cp buildall_dbg_ms.sh ${TARGET}
@@ -26,9 +24,7 @@ cp terminate_ds_memory.sh ${TARGET}
 cp clean_newbugs ${TARGET}
 cp clean_newbugs.old ${TARGET}
 cp clone.sh ${TARGET}
-cp clone_galera.sh ${TARGET}
 cp cloneall.sh ${TARGET}
-cp cloneall_galera.sh ${TARGET}
 cp cloneall_ms.sh ${TARGET}
 cp copy_in.sql_all ${TARGET}
 cp copyin ${TARGET}
@@ -36,11 +32,13 @@ cp backup_github ${TARGET}
 cp count_all ${TARGET}
 cp findbug ${TARGET}
 cp findbug+ ${TARGET}
+cp find_reduced_bugs ${TARGET}
 cp gendirs.sh ${TARGET}
 cp kill_all ${TARGET}
 cp kill_ge ${TARGET}
 cp kill_pr ${TARGET}
 cp kill_s ${TARGET}
+cp kill_del_1_prge ${TARGET}
 cp stop_all ${TARGET}
 cp start_all ${TARGET}
 cp startup_all ${TARGET}

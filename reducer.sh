@@ -43,7 +43,7 @@ MYINIT=""                       # Extra options to pass to mysqld AND at data di
 BASEDIR="${PWD}"                # Path to the MySQL BASE directory to be used
 DISABLE_TOKUDB_AUTOLOAD=0       # On/Off (1/0) Prevents mysqld startup issues when using standard MySQL server (i.e. no TokuDB available) with a testcase containing TokuDB SQL
 DISABLE_TOKUDB_AND_JEMALLOC=1   # For MariaDB, TokuDB is deprecated, so we always disable both in full
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # script location to access storage engine plugin sql file.
+SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # 'script' utility location to access storage engine plugin sql file
 
 # === Sporadic testcases        # Used when testcases prove to be sporadic *and* fail to reduce using basic methods
 FORCE_SKIPV=0                   # On/Off (1/0) Forces verify stage to be skipped (auto-enables FORCE_SPORADIC)
@@ -102,12 +102,12 @@ SKIPSTAGEABOVE=99               # Usually not changed (default=99), skips stages
 FORCE_KILL=0                    # On/Off (1/0) Enable to forcefully kill mysqld instead of using mysqladmin shutdown etc. Auto-disabled for MODE=0.
 
 # === MariaDB Galera Cluster
-MDG=0                       # On/Off (1/0) Enable to reduce testcases using a MariaDB Galera Cluster. Auto-enables USE_PQUERY=1
+MDG=0                           # On/Off (1/0) Enable to reduce testcases using a MariaDB Galera Cluster. Auto-enables USE_PQUERY=1
 MDG_ISSUE_NODE=0                # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
 WSREP_PROVIDER_OPTIONS=""       # wsrep_provider_options to be used (and reduced).
 
 # === MySQL Group Replication
-GRP_RPL=0                   # On/Off (1/0) Enable to reduce testcases using MySQL Group Replication. Auto-enables USE_PQUERYE=1
+GRP_RPL=0                       # On/Off (1/0) Enable to reduce testcases using MySQL Group Replication. Auto-enables USE_PQUERYE=1
 GRP_RPL_ISSUE_NODE=0            # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
 
 # === MODE=5 Settings           # Only applicable when MODE5 is used
@@ -2112,9 +2112,9 @@ start_mdg_main(){
   }
 
   ADDR="127.0.0.1"
-  init_empty_port
-  MYPORT=$NEWPORT
-  NEWPORT=
+  #init_empty_port
+  #MYPORT=$NEWPORT
+  #NEWPORT=
   rm -rf $WORKD/tmp*
   unset MDG_PORTS
   unset MDG_LADDRS
@@ -2123,27 +2123,36 @@ start_mdg_main(){
   for i in $(seq 1 3); do
     node=${WORKD}/node${i}
     mkdir -p $WORKD/tmp${i}
-    RBASE1="$((MYPORT + (100 * $i)))"
-    LADDR1="127.0.0.1:$((RBASE1 + 8))"
-    SST_PORT="127.0.0.1:$((RBASE1 + 1))"
-    MDG_PORTS+=("$RBASE1")
-    MDG_LADDRS+=("$LADDR1")
+    #RBASE1="$((MYPORT + (100 * $i)))"
+    #LADDR1="127.0.0.1:$((RBASE1 + 8))"
+    #SST_PORT="127.0.0.1:$((RBASE1 + 1))"
+    init_empty_port
+    RBASE=$NEWPORT
+    NEWPORT=
+    init_empty_port
+    LADDR="127.0.0.1:${NEWPORT}"
+    NEWPORT=
+    init_empty_port
+    SST_PORT="127.0.0.1:${NEWPORT}"
+    NEWPORT=
+    MDG_PORTS+=("$RBASE")
+    MDG_LADDRS+=("$LADDR")
     cp ${WORKD}/my.cnf ${WORKD}/n${i}.cnf
     sed -i "2i server-id=10${i}" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_node_incoming_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_node_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_sst_receive_address=$SST_PORT" ${WORKD}/n${i}.cnf
     sed -i "2i log-error=$node/error.log" ${WORKD}/n${i}.cnf
-    sed -i "2i port=$RBASE1" ${WORKD}/n${i}.cnf
+    sed -i "2i port=$RBASE" ${WORKD}/n${i}.cnf
     sed -i "2i datadir=$node" ${WORKD}/n${i}.cnf
     sed -i "2i socket=$node/node${i}_socket.sock" ${WORKD}/n${i}.cnf
     sed -i "2i tmpdir=$WORKD/tmp${i}" ${WORKD}/n${i}.cnf
-    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
+    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
     # TODO: Add encryption checks after implementing encryption functionalities in pquery-run.sh
 #    if [[ "$ENCRYPTION_RUN" != 1 ]]; then
-#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
+#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
 #    else
-#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPTIONS;socket.ssl_key=${WORKD}/cert/server-key.pem;socket.ssl_cert=${WORKD}/cert/server-cert.pem;socket.ssl_ca=${WORKD}/cert/ca.pem\"" ${WORKD}/n${i}.cnf
+#      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS;socket.ssl_key=${WORKD}/cert/server-key.pem;socket.ssl_cert=${WORKD}/cert/server-cert.pem;socket.ssl_ca=${WORKD}/cert/ca.pem\"" ${WORKD}/n${i}.cnf
 #      echo "ssl-ca = ${WORKD}/cert/ca.pem" >> ${WORKD}/n${i}.cnf
 #      echo "ssl-cert = ${WORKD}/cert/server-cert.pem" >> ${WORKD}/n${i}.cnf
 #      echo "ssl-key = ${WORKD}/cert/server-key.pem" >> ${WORKD}/n${i}.cnf
@@ -2200,14 +2209,27 @@ start_mdg_main(){
 
 gr_start_main(){
   ADDR="127.0.0.1"
-  RPORT=$(( RANDOM%21 + 10 ))
-  RBASE="$(( RPORT*1000 ))"
-  RBASE1="$(( RBASE + 1 ))"
-  RBASE2="$(( RBASE + 2 ))"
-  RBASE3="$(( RBASE + 3 ))"
-  LADDR1="$ADDR:$(( RBASE + 101 ))"
-  LADDR2="$ADDR:$(( RBASE + 102 ))"
-  LADDR3="$ADDR:$(( RBASE + 103 ))"
+  init_empty_port
+  RBASE1=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  RBASE2=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  RBASE3=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  LPORT1=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  LPORT2=$NEWPORT
+  NEWPORT=
+  init_empty_port
+  LPORT3=$NEWPORT
+  NEWPORT=
+  LADDR1="$ADDR:${LPORT1}"
+  LADDR2="$ADDR:${LPORT2}"
+  LADDR3="$ADDR:${LPORT3}"
 
   gr_startup_chk(){
     ERROR_LOG=$1
@@ -2959,7 +2981,7 @@ process_outcome(){
                 cp "${WORKT}" "${NEWBUGSO}"
                 echo_out "[NewBug] Saved the new testcase to: ${NEWBUGSO}"
                 cp "${WORKD}/MYBUG.FOUND" "${NEWBUGTO}"
-                echo_out "[NewBug] Saved the unique bugid to: ${NEWBUGTO}"
+                echo_out "[NewBug] Saved the Unique bug ID to: ${NEWBUGTO}"
                 # The next line takes this file (i.e. the current running reducer) and removes the #VARMOD# section
                 # if present (it will be present if the NEWBUG was found by a subreducer), thereby making it a main
                 # reducer itself rather than a subreducer. None of the variables saved in the #VARMOD# section by the
@@ -2972,6 +2994,12 @@ process_outcome(){
                 sed '/^#VARMOD#/p;/^MULTI_REDUCER=/,/^#VARMOD#/d' "$(readlink -f ${BASH_SOURCE[0]})" > "${NEWBUGRE}"
                 sed '/^MULTI_REDUCER=/,/^#VARMOD#/p;d' "$(readlink -f ${BASH_SOURCE[0]})" | grep -v "^#VARMOD#" > "${NEWBUGVM}"
                 sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
+                NEWBUGTEXT=
+                if [ $MDG -eq 1 ]; then
+                  NEWBUGTEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # Idem as below
+                else
+                  NEWBUGTEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
+                fi
                 sed -i "s|^TEXT=\"[^\"]\+\"|TEXT=\"$(cat ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.string | head -n1 | tr -d '\n')\"|" "${NEWBUGRE}"
                 chmod +x "${NEWBUGRE}"
                 echo_out "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"

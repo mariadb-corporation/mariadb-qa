@@ -1,6 +1,7 @@
 #!/bin/bash
-#DIR_TO_ACTION="/data/NEWBUGS"
-DIR_TO_ACTION="/data/NEWBUGS.PREV"
+# Specify DIR_TO_ACTION as a full path name, and do NOT use things like ${PWD}/NEWBUGS etc.
+DIR_TO_ACTION="/data/NEWBUGS"
+#DIR_TO_ACTION="/data/NEWBUGS.PREV"
 
 # Variables check
 if [ -z "${1}" -o -z "${2}" ]; then echo "Assert: two script options are required: the start offset (start at reducer x in ls -v output) as the first option, and the number of reducers to run as the second"; exit 1; fi

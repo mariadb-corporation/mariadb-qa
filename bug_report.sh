@@ -140,10 +140,10 @@ if [ -z "${TEXT}" ]; then
 else
   if [ ${SAN_MODE} -eq 0 ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh | xargs -I{} echo "grep -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
   else
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
   fi
 fi
 cd - >/dev/null || exit 1
@@ -302,7 +302,7 @@ if [ ${SAN_MODE} -eq 0 ]; then
   if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 ]; then
     echo 'Remember to action:'
     echo '1) If no engine is specified, add ENGINE=InnoDB'
-    echo '2) Double check noformat version strings for non-10.5 issues'
+    echo '2) Double check noformat version strings for non-10.5/10.6 issues to see if it is correctly formatted'
     if [ ${NOCORE} -ne 1 ]; then
       echo '3A) Add bug to known.strings, as follows:'
       cd ${RUN_PWD}
