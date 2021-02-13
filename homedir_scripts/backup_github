@@ -28,6 +28,7 @@ cp ds ${TARGET}
 cp dt ${TARGET}
 cp er ${TARGET}
 cp eb ${TARGET}
+cp ebe ${TARGET}
 cp f-master ${TARGET}
 cp f-slave ${TARGET}
 cp fix_rqg ${TARGET}

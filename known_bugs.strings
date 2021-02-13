@@ -23,6 +23,7 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+SIGABRT|DbugExit|_db_return_|my_malloc|Query_cache::init_cache                                                                                                                 ## DBG MDEV-24858
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command                                                                   ## OPT |MDEV-24814
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute                                                            ## DBG |MDEV-24814
 SIGSEGV|replace_table_table|mysql_table_grant|mysql_execute_command|mysql_parse                                                                                                ## OPT |MDEV-24814
