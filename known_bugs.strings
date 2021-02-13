@@ -23,6 +23,7 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+SIGABRT|__cxa_throw () from|std::__throw_logic_error(char const*) () from|std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>|std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct_aux<char const*>  ## DBG MDEV-24856
 static_cast<ins_node_t*>(thr->run_node)->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low  ## DBG MDEV-24859
 b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                     ## DBG MDEV-24660
 SIGABRT|DbugExit|_db_return_|my_malloc|Query_cache::init_cache                                                                                                                 ## DBG MDEV-24858
