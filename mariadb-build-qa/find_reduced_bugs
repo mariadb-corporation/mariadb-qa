@@ -1,0 +1,4 @@
+#!/bin/bash
+set +H
+if [ -z "${1}" ]; then echo 'Assert: please pass the string you want to search for as the first option to this script!'; exit 1; fi
+grep --binary-files=text -Fi "${1}" [0-9]*/*/MYBUG* 2>/dev/null | sed 's|^|wc -l |;s|MYBUG.*|\*_out|' | xargs -I {} bash -c "{}"

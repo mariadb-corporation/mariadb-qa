@@ -15,6 +15,7 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 ###### BUGS WHICH REQUIRE ADDITIONAL TESTCASES (DISABLED FILTERS) ######
 # SIGSEGV|malloc_size_and_flag|my_free|PROFILING::finish_current_query_impl|PROFILING::finish_current_query                                                                    ## OPT MDEV-23657
 #index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                               ## OPT |MDEV-22714* NOW 23801
+#index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                        ## DBG |MDEV-22714* NOW 23801
 
 ##### DISABLED FILTERS DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|maria_create|ha_maria::create                   ## DBG |MDEV-23222
@@ -468,7 +469,6 @@ SIGSEGV|heap_rnext|ha_heap::index_next|handler::index_next_same|handler::ha_inde
 subq_pred->engine->engine_type() == subselect_engine::SINGLE_SELECT_ENGINE|SIGABRT|execute_degenerate_jtbm_semi_join|setup_jtbm_semi_joins|JOIN::optimize_inner|JOIN::optimize ## DBG |MDEV-22700*
 SIGSEGV|select_value_catcher::setup|execute_degenerate_jtbm_semi_join|setup_jtbm_semi_joins|JOIN::optimize_inner                                                               ## OPT |MDEV-22700*
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|copy_fields|end_write                                                                                 ## DBG MDEV-22702*
-index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                         ## DBG |MDEV-22714
 !binlog || exist_hton_without_prepare|SIGABRT|MYSQL_BIN_LOG::unlog_xa_prepare|ha_prepare|trans_xa_prepare|mysql_execute_command                                                ## DBG MDEV-22757*
 SIGSEGV|Item_field::type_handler|subselect_engine::set_row|subselect_single_select_engine::fix_length_and_dec|Item_singlerow_subselect::fix_length_and_dec                     ## DBG |MDEV-22786*
 SIGSEGV|Item_subselect::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed|fix_fields_for_tvc                                                                    ## DBG |MDEV-22786*
