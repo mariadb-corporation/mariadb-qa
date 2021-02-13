@@ -351,6 +351,7 @@ nr != 0|SIGABRT|handler::update_auto_increment|ha_myisam::write_row|handler::ha_
 nr != 0|SIGABRT|handler::update_auto_increment|ha_heap::write_row|handler::ha_write_row|write_record                                                                           ## DBG |MDEV-22118
 nr != 0|SIGABRT|handler::update_auto_increment|ha_maria::write_row|handler::ha_write_row|write_record                                                                          ## DBG |MDEV-22118
 nr != 0|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                                                                       ## DBG |MDEV-22118
+nr != 0|SIGABRT|handler::update_auto_increment|ha_archive::write_row|handler::ha_write_row|write_record                                                                        ## DBG |MDEV-22118
 table->file->stats.records > 0 || error|SIGABRT|join_read_const_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                 ## DBG MDEV-22117
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_sql_stmt_prepare|mysql_execute_command                               ## DBG MDEV-22058
 strlen(name_arg) <= (64*3)|SIGABRT|MDL_key::mdl_key_init|MDL_request::init_with_source|lock_object_name|Sp_handler::sp_drop_routine                                            ## DBG |MDEV-22044
