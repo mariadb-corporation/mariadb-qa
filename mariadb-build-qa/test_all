@@ -55,10 +55,8 @@ fi
 sync
 
 # Output results and save copy of reasy bug reporting (mariadb-qa/bug_report.sh)
-# The 'signal' is a bit rudimentary, but it will locate all crashes in all distributions
 if [ ${SAN_MODE} -eq 1 ]; then
-  export TEXT="${TEXT}"  # Likely not strictly necessary; defensive coding
-  ./findbug+ SAN 'signal' | tee test.results
+  ./findbug+ SAN "${TEXT}" | tee test.results
 else
-  ./findbug+ 'signal' | tee test.results
+  ./findbug+ "${TEXT}" | tee test.results
 fi

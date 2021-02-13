@@ -3,6 +3,10 @@
 rm -f report.log
 if [ -r report.log ]; then echo "Assert: report.log still present though this script tried to delete it!"; exit 1; fi
 
+if [ ! -r ../gendirs.sh ]; then echo "Assert: ../gendirs.sh not available, are you executing this from within a BASEDIR?"; exit 1; fi
+
+if [ -z "$(echo "$(cd ..;./gendirs.sh)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
+
 export TEXT=
 MYEXTRA_OPT=
 if [[ "${PWD}" == *"SAN"* ]]; then
@@ -24,13 +28,12 @@ if [ "${1}" == "SAN" ]; then
   ~/mariadb-qa/bug_report.sh SAN "${MYEXTRA_OPT}" | tee report.log
 else
   MYEXTRA_OPT="$*"
-  #sed -i 's|^TEXT="[^"]\+"|TEXT=""|' ~/mariadb-qa/bug_report.sh  # Ensure we're looking for core files, not specific bugs for which bug_report.sh may have been updated
-  sed -i 's|^TEXT="[^"]\+"|TEXT="got signal"|' ~/mariadb-qa/bug_report.sh  # New test as of 3/11/20: ensure we're looking for 'got signal', as cores do not always seem to be generated in MD (long standing issue, source unclear).
-  rm -Rf ../MD*/data.PREV ../MS*/data.PREV  # Avoid data.PREV cores from being picked up
+  #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
+  export TEXT="signal"  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
+  rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh "${MYEXTRA_OPT}" | tee report.log
-  sed -i 's|^TEXT="[^"]\+"|TEXT=""|' ~/mariadb-qa/bug_report.sh  # Cleanup
   ~/tt | grep -A1 "URL" | tee -a report.log
-  echo '*** All strings merged (for ~/kb) ***'
+  echo '*** All strings merged (for updating ~/kb) ***'
   if [ -r ../allstrings_merged ]; then
     cd .. && ./allstrings_merged && cd - >/dev/null 2>&1
   fi
