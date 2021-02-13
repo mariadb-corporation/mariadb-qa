@@ -43,7 +43,7 @@ MYINIT=""                       # Extra options to pass to mysqld AND at data di
 BASEDIR="${PWD}"                # Path to the MySQL BASE directory to be used
 DISABLE_TOKUDB_AUTOLOAD=0       # On/Off (1/0) Prevents mysqld startup issues when using standard MySQL server (i.e. no TokuDB available) with a testcase containing TokuDB SQL
 DISABLE_TOKUDB_AND_JEMALLOC=1   # For MariaDB, TokuDB is deprecated, so we always disable both in full
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # script location to access storage engine plugin sql file.
+SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # 'script' utility location to access storage engine plugin sql file
 
 # === Sporadic testcases        # Used when testcases prove to be sporadic *and* fail to reduce using basic methods
 FORCE_SKIPV=0                   # On/Off (1/0) Forces verify stage to be skipped (auto-enables FORCE_SPORADIC)
@@ -2952,7 +2952,7 @@ process_outcome(){
                 cp "${WORKT}" "${NEWBUGSO}"
                 echo_out "[NewBug] Saved the new testcase to: ${NEWBUGSO}"
                 cp "${WORKD}/MYBUG.FOUND" "${NEWBUGTO}"
-                echo_out "[NewBug] Saved the unique bugid to: ${NEWBUGTO}"
+                echo_out "[NewBug] Saved the Unique bug ID to: ${NEWBUGTO}"
                 # The next line takes this file (i.e. the current running reducer) and removes the #VARMOD# section
                 # if present (it will be present if the NEWBUG was found by a subreducer), thereby making it a main
                 # reducer itself rather than a subreducer. None of the variables saved in the #VARMOD# section by the

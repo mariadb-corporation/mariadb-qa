@@ -7,12 +7,6 @@
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 set +H
 
-# Check if this an automated (pquery-reach.sh) run
-REACH=0  # Normal output
-if [ "$1" == "reach" ]; then
-  REACH=1  # Minimal output, and no 2x enter required
-fi
-
 # Check if this is a pxc run
 PXC=0
 if [ "$(grep 'PXC Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*PXC Mode[: \t]*||' )" == "TRUE" ]; then
@@ -75,7 +69,8 @@ done < ${STRINGS_FILE}
 # Other cleanups
 grep "CT NAME_CONST('a', -(1 [ANDOR]\+ 2)) [ANDOR]\+ 1" */log/master.err 2>/dev/null | sed 's|/.*||' | xargs -I{} ~/mariadb-qa/pquery-del-trial.sh {}  #http://bugs.mysql.com/bug.php?id=81407
 
-if [ ${REACH} -eq 0 ]; then  # Avoid normal output if this is an automated run (REACH=1)
+# Check if this an automated (pquery-reach.sh or /data/clean_all) run, which should have no output
+if [ "${1}" != "reach" -a "${1}" != "cleanall" ]; then
   if [ -d ./bundles ]; then
     echo "Done! Any trials in ./bundles were not touched. Any Valgrind trials were not touched."
   else
