@@ -2971,6 +2971,28 @@ process_outcome(){
                 else
                   NEWBUGTEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
                 fi
+                # This code is takem from pquery-prep-red.sh, if it is updated here, please also update it there.
+                if [[ "${NEWBUGTEXT}" = *":"* ]]; then
+                  if [[ "${NEWBUGTEXT}" = *"|"* ]]; then
+                    if [[ "${NEWBUGTEXT}" = *"/"* ]]; then
+                      if [[ "${NEWBUGTEXT}" = *"_"* ]]; then
+                        if [[ "${NEWBUGTEXT}" = *"-"* ]]; then
+                          echo "Assert (#1)! No suitable sed seperator found. NEWBUGTEXT (${NEWBUGTEXT}) contains all of the possibilities, add more!"
+                        else
+                          NEWBUGTEXT="$(echo "$NEWBUGTEXT"|sed -e "s-&-\\\\\\&-g")"  # Escape '&' correctly
+                        fi
+                      else
+                        NEWBUGTEXT="$(echo "$NEWBUGTEXT"|sed -e "s_&_\\\\\\&_g")"  # Escape '&' correctly
+                      fi
+                    else
+                      NEWBUGTEXT="$(echo "$NEWBUGTEXT"|sed -e "s/&/\\\\\\&/g")"  # Escape '&' correctly
+                    fi
+                  else
+                    NEWBUGTEXT="$(echo "$NEWBUGTEXT"|sed -e "s|&|\\\\\\&|g")"  # Escape '&' correctly
+                  fi
+                else
+                  NEWBUGTEXT="$(echo "$NEWBUGTEXT"|sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
+                fi
                 sed -i "s|^TEXT=\"[^\"]\+\"|TEXT=\"$(cat ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.string | head -n1 | tr -d '\n')\"|" "${NEWBUGRE}"
                 chmod +x "${NEWBUGRE}"
                 echo_out "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"
