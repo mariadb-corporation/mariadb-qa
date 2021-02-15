@@ -23,6 +23,7 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+table_ref->next_global == __null|SIGABRT|Sql_cmd_truncate_table::lock_table|Sql_cmd_truncate_table::truncate_table|Sql_cmd_truncate_table::execute|mysql_execute_command  ## DBG |MDEV-24865
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|mysql_execute_command|mysql_parse|wsrep_mysql_parse # DBG |MDEV-21697
 state_ == s_joiner || state_ == s_initialized|SIGABRT|wsrep::server_state::sst_received|wsrep_sst_complete|wsrep_sst_received|wsrep_set_local_position  ## DBG |MDEV-22285
 SIGABRT|__cxa_throw () from|wsrep::server_state::sst_received|wsrep_sst_complete|wsrep_sst_received ## OPT |MDEV-22285
