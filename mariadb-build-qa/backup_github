@@ -20,12 +20,16 @@ cp buildall_opt_san.sh ${TARGET}
 cp buildall_dbg_ms.sh ${TARGET}
 cp buildall_opt_ms.sh ${TARGET}
 cp buildall_san_slow.sh ${TARGET}
+cp buildall_dbg_galera.sh ${TARGET}
+cp buildall_opt_galera.sh ${TARGET}
 cp terminate_ds_memory.sh ${TARGET}
 cp clean_newbugs ${TARGET}
 cp clean_newbugs.old ${TARGET}
 cp clone.sh ${TARGET}
 cp cloneall.sh ${TARGET}
 cp cloneall_ms.sh ${TARGET}
+cp clone_galera.sh ${TARGET}
+cp cloneall_galera.sh ${TARGET}
 cp copy_in.sql_all ${TARGET}
 cp copyin ${TARGET}
 cp backup_github ${TARGET}
@@ -75,7 +79,6 @@ cp move_newbugs ${TARGET}
 cp check ${TARGET}
 cp count_reducers ${TARGET}
 cp qcdiffs ${TARGET}
-cp pull_and_build_galera ${TARGET}
 cp del_all_data ${TARGET}
 cp loop_screens ${TARGET}
 cp loop_screens_ge ${TARGET}

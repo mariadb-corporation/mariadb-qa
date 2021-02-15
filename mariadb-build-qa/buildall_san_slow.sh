@@ -10,7 +10,12 @@ BUILD_10_4=1
 BUILD_10_5=1
 BUILD_10_6=1
 
-./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
+if [ ! -r ./terminate_ds_memory.sh ]; then
+  echo './terminate_ds_memory.sh missing!'
+  exit 1
+else
+  ./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
+fi
 
 DIR=${PWD}
 
