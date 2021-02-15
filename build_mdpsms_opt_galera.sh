@@ -293,9 +293,9 @@ if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
   cmake . | tee /tmp/psms_opt_galera_build_${RANDOMD}
   make | tee -a /tmp/psms_opt_galera_build_${RANDOMD}
   if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
-    cp libgalera_enterprise_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
+    cp libgalera_enterprise_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
   else
-    cp libgalera_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
+    cp libgalera_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
   fi
   cd ..
   exit 0
