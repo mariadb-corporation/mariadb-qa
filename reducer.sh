@@ -1870,6 +1870,13 @@ init_workdir_and_files(){
 generate_run_scripts(){
   # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a mysql cli), _stop (stop mysqld). _start (starts mysqld)
   # (start_mysqld_main and start_valgrind_mysqld_main). Togheter these scripts can be used for executing the final testcase ($WORKO_start > $WORKO_run)
+  if [[ ${MDG} -eq 1 ]]; then
+    local EPOCH_SOCKET="/dev/shm/${EPOCH}/node1/node1_socket.sock"
+    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/node1/error.log"
+  else
+    local EPOCH_SOCKET="/dev/shm/${EPOCH}/socket.sock"
+    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/log/master.err"
+  fi
   echo "BASEDIR=$BASEDIR" | sed 's|^[ \t]*||;s|[ \t]*$||;s|/$||' > $WORK_BASEDIR
   echo "SOURCE_DIR=\$BASEDIR  # Only required to be set if make_binary_distrubtion script was NOT used to build MySQL" | sed 's|^[ \t]*||;s|[ \t]*$||;s|/$||' >> $WORK_BASEDIR
   echo "JEMALLOC=~/libjemalloc.so.1  # Only required for Percona Server with TokuDB. Can be completely ignored otherwise. This can be changed to a custom path to use a custom jemalloc. If this file is not present, the standard OS locations for jemalloc will be checked" >> $WORK_BASEDIR
@@ -1878,7 +1885,11 @@ generate_run_scripts(){
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_INIT
   echo "echo \"Attempting to prepare mysqld environment at /dev/shm/${EPOCH}...\"" >> $WORK_INIT
   echo "rm -Rf /dev/shm/${EPOCH}" >> $WORK_INIT
-  echo "mkdir -p /dev/shm/${EPOCH}/tmp /dev/shm/${EPOCH}/log" >> $WORK_INIT
+  if [[ ${MDG} -eq 1 ]]; then
+    echo "mkdir -p /dev/shm/${EPOCH}/tmp1 /dev/shm/${EPOCH}/tmp2 /dev/shm/${EPOCH}/tmp3" >> $WORK_INIT
+  else
+    echo "mkdir -p /dev/shm/${EPOCH}/tmp /dev/shm/${EPOCH}/log" >> $WORK_INIT
+  fi
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`" >> $WORK_INIT
   echo "if [ -n \"\$BIN\"  ]; then" >> $WORK_INIT
   echo "  if [ \"\$BIN\" != \"\${BASEDIR}/bin/mysqld\" -a \"\$BIN\" != \"\${BASEDIR}/bin/mysqld-debug\" ];then" >> $WORK_INIT
@@ -1891,72 +1902,75 @@ generate_run_scripts(){
   echo "VERSION=\"\`\$BIN --version | grep -E --binary-files=text -oe '[58]\.[15670]' | head -n1\`\"" >> $WORK_INIT
   echo "VERSION2=\"\`\$BIN --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-6]' | head -n1\`\"" >> $WORK_INIT
   echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then MID_OPTIONS='--no-defaults --initialize-insecure ${MYINIT}'; elif [ \"\$VERSION\" == \"5.6\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION}\" == \"5.5\" ]; then MID_OPTIONS='--force ${MYINIT}';elif [ \"\${VERSION2}\" == \"10.1\" -o \"\${VERSION2}\" == \"10.2\" -o \"\${VERSION2}\" == \"10.3\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION2}\" == \"10.4\" -o \"\${VERSION2}\" == \"10.5\" -o \"\${VERSION2}\" == \"10.6\" ]; then MID_OPTIONS='--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}'; else MID_OPTIONS='${MYINIT}'; fi" >> $WORK_INIT
-  echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then \$BIN \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; else \$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; fi" >> $WORK_INIT
+  if [[ ${MDG} -eq 1 ]]; then
+    echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node1" >> $WORK_INIT
+    echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node2" >> $WORK_INIT
+    echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node3" >> $WORK_INIT
+  else
+    echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then \$BIN \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; else \$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; fi" >> $WORK_INIT
+  fi
   if [ $MODE -ge 6 ]; then
     # This still needs implementation for MODE6 or higher ("else line" below simply assumes a single $WORKO atm, while MODE6 and higher has more then 1)
     echo_out "[Not implemented yet] MODE6 or higher does not auto-generate a $WORK_RUN file yet"
     echo "Not implemented yet: MODE6 or higher does not auto-generate a $WORK_RUN file yet" > $WORK_RUN
-    echo "#${BASEDIR}/bin/mysql -uroot -S/dev/shm/${EPOCH}/socket.sock < INPUT_FILE_GOES_HERE (like $WORKO)" >> $WORK_RUN
+    echo "#${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} < INPUT_FILE_GOES_HERE (like $WORKO)" >> $WORK_RUN
     chmod +x $WORK_RUN
   else
     echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_RUN
     echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN
-    echo "echo \"Executing testcase ./${EPOCH}.sql against mysqld with socket /dev/shm/${EPOCH}/socket.sock using the mysql CLI client...\"" >> $WORK_RUN
+    echo "echo \"Executing testcase ./${EPOCH}.sql against mysqld with socket ${EPOCH_SOCKET} using the mysql CLI client...\"" >> $WORK_RUN
     if [ "$CLI_MODE" == "" ]; then CLI_MODE=99; fi  # Leads to assert below
     case $CLI_MODE in
-      0) echo "cat ./${EPOCH}.sql | \${BASEDIR}/bin/mysql -uroot -S/dev/shm/${EPOCH}/socket.sock --binary-mode --force test" >> $WORK_RUN ;;
-      1) echo "\${BASEDIR}/bin/mysql -uroot -S/dev/shm/${EPOCH}/socket.sock --execute=\"SOURCE ./${EPOCH}.sql;\" --force test" >> $WORK_RUN ;;  # When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.
-      2) echo "\${BASEDIR}/bin/mysql -uroot -S/dev/shm/${EPOCH}/socket.sock --binary-mode --force test < ./${EPOCH}.sql" >> $WORK_RUN ;;
+      0) echo "cat ./${EPOCH}.sql | \${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --binary-mode --force test" >> $WORK_RUN ;;
+      1) echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --execute=\"SOURCE ./${EPOCH}.sql;\" --force test" >> $WORK_RUN ;;  # When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.
+      2) echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --binary-mode --force test < ./${EPOCH}.sql" >> $WORK_RUN ;;
       *) echo_out "Assert: default clause in CLI_MODE switchcase hit (in generate_run_scripts). This should not happen. CLI_MODE=${CLI_MODE}"; exit 1 ;;
     esac
     chmod +x $WORK_RUN
     if [ $USE_PQUERY -eq 1 ]; then
       cp $PQUERY_LOC $WORK_PQUERY_BIN  # Make a copy of the pquery binary for easy replay later (no need to download)
-      if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-        echo "echo \"Executing testcase ./${EPOCH}.sql against mysqld at 127.0.0.1:10000 using pquery...\"" > $WORK_RUN_PQUERY
-        echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
-        echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
-        echo "export LD_LIBRARY_PATH=\${BASEDIR}/lib" >> $WORK_RUN_PQUERY
-        if [ $PQUERY_MULTI -eq 1 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
-
-          echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES --user=root --socket=/dev/shm/${EPOCH}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
-        else
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE=""; else PQUERY_SHUFFLE="--no-shuffle"; fi
-          echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=1 --user=root --socket=/dev/shm/${EPOCH}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
-        fi
+      echo "echo \"Executing testcase ./${EPOCH}.sql against mysqld with socket ${EPOCH_SOCKET} using pquery...\"" > $WORK_RUN_PQUERY
+      echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
+      echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
+      echo "export LD_LIBRARY_PATH=\${BASEDIR}/lib" >> $WORK_RUN_PQUERY
+      if [ $PQUERY_MULTI -eq 1 ]; then
+        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
+        echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
       else
-        echo "echo \"Executing testcase ./${EPOCH}.sql against mysqld with socket /dev/shm/${EPOCH}/socket.sock using pquery...\"" > $WORK_RUN_PQUERY
-        echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
-        echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
-        echo "export LD_LIBRARY_PATH=\${BASEDIR}/lib" >> $WORK_RUN_PQUERY
-        if [ $PQUERY_MULTI -eq 1 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
-          echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES --user=root --socket=/dev/shm/${EPOCH}/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
-        else
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE=""; else PQUERY_SHUFFLE="--no-shuffle"; fi
-          echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=1 --user=root --socket=/dev/shm/${EPOCH}/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
-        fi
+        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE=""; else PQUERY_SHUFFLE="--no-shuffle"; fi
+        echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=1 --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
       fi
       chmod +x $WORK_RUN_PQUERY
     fi
   fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_GDB
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_GDB
-  echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/data/core*)" >> $WORK_GDB
+  if [[ ${MDG} -eq 1 ]]; then
+    echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/node1/core*)" >> $WORK_GDB
+  else
+    echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/data/core*)" >> $WORK_GDB
+  fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_PARSE_CORE
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_PARSE_CORE
-  echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/data/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
+  if [[ ${MDG} -eq 1 ]]; then
+    echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/node1/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
+  else
+    echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/data/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
+  fi
   echo -e "  set auto-load safe-path /\n  set libthread-db-search-path /usr/lib/\n  set trace-commands on\n  set pagination off\n  set print pretty on\n  set print array on\n  set print array-indexes on\n  set print elements 4096\n  set print frame-arguments all\n  set logging file ${EPOCH}_FULL.gdb\n  set logging on\n  thread apply all bt full\n  set logging off\n  set logging file ${EPOCH}_STD.gdb\n  set logging on\n  thread apply all bt\n  set logging off\n  quit\nEOF" >> $WORK_PARSE_CORE
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_STOP
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_STOP
-  echo "echo \"Attempting to shutdown mysqld with socket /dev/shm/${EPOCH}/socket.sock...\"" >> $WORK_STOP
+  echo "echo \"Attempting to shutdown mysqld with socket ${EPOCH_SOCKET}...\"" >> $WORK_STOP
   echo "MYADMIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqladmin -type f -o -name mysqladmin -type l \`" >> $WORK_STOP
-  echo "\$MYADMIN -uroot -S/dev/shm/${EPOCH}/socket.sock shutdown" >> $WORK_STOP
+  echo "\$MYADMIN -uroot -S${EPOCH_SOCKET} shutdown" >> $WORK_STOP
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_CL
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_CL
-  echo "echo \"Connecting to mysqld with socket -S/dev/shm/${EPOCH}/socket.sock test using the mysql CLI client...\"" >> $WORK_CL
-  echo "\${BASEDIR}/bin/mysql -uroot -S/dev/shm/${EPOCH}/socket.sock \$(ls -d /dev/shm/${EPOCH}/data/test 2>/dev/null | grep -o 'test')" >> $WORK_CL
+  echo "echo \"Connecting to mysqld with socket -S${EPOCH_SOCKET} test using the mysql CLI client...\"" >> $WORK_CL
+  if [[ ${MDG} -eq 1 ]]; then
+    echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} \$(ls -d /dev/shm/${EPOCH}/node1/test 2>/dev/null | grep -o 'test')" >> $WORK_CL
+  else
+    echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} \$(ls -d /dev/shm/${EPOCH}/data/test 2>/dev/null | grep -o 'test')" >> $WORK_CL
+  fi
   echo -e "To replay, the attached tarball (${EPOCH}_bug_bundle.tar.gz) gives the testcase as an exact match of our system, including some handy utilities\n" > $WORK_HOW_TO_USE
   echo "$ vi ${EPOCH}_mybase         # STEP1: Update the base path in this file (usually the only change required!). If you use a non-binary distribution, please update SOURCE_DIR location also" >> $WORK_HOW_TO_USE
   echo "$ ./${EPOCH}_init            # STEP2: Initializes the data dir" >> $WORK_HOW_TO_USE
@@ -1979,9 +1993,9 @@ generate_run_scripts(){
     fi
   fi
   if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
-    echo "$ vi /dev/shm/${EPOCH}/log/master.err  # STEP7: Verify the error log" >> $WORK_HOW_TO_USE
+    echo "$ vi ${EPOCH_ERROR_LOG}  # STEP7: Verify the error log" >> $WORK_HOW_TO_USE
   else
-    echo "$ vi /dev/shm/${EPOCH}/log/master.err  # STEP6: Verify the error log" >> $WORK_HOW_TO_USE
+    echo "$ vi ${EPOCH_ERROR_LOG}  # STEP6: Verify the error log" >> $WORK_HOW_TO_USE
   fi
   echo "$ ./${EPOCH}_gdb             # OPTIONAL: Brings you to a gdb prompt with gdb attached to the used mysqld and attached to the generated core" >> $WORK_HOW_TO_USE
   echo "$ ./${EPOCH}_parse_core      # OPTIONAL: Creates ${EPOCH}_STD.gdb and ${EPOCH}_FULL.gdb; standard and full variables gdb stack traces" >> $WORK_HOW_TO_USE
@@ -2049,6 +2063,7 @@ start_mysqld_or_valgrind_or_mdg(){
 }
 
 start_mdg_main(){
+  generate_run_scripts
   #clean existing processes
   ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true
   sleep 2; sync
@@ -2156,7 +2171,21 @@ start_mdg_main(){
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n1.cnf
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n2.cnf
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[3]},${MDG_LADDRS[3]}" ${WORKD}/n3.cnf
-
+  cp ${WORKD}/n1.cnf ${EPOCH}_n1.cnf
+  cp ${WORKD}/n2.cnf ${EPOCH}_n2.cnf
+  cp ${WORKD}/n2.cnf ${EPOCH}_n3.cnf
+  echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
+  echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
+  echo "echo \"Attempting to start mysqld (socket /dev/shm/${EPOCH}/node1/node1_socket.sock)...\"" >> $WORK_START
+  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
+  echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n1.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node1/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+  echo "sleep 10" >> $WORK_START
+  echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n2.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node2/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+  echo "sleep 60" >> $WORK_START
+  echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n3.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node3/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+  echo "sleep 60" >> $WORK_START
+  sed -i "s|$WORKD|/dev/shm/${EPOCH}|g" $WORK_START
+  chmod +x $WORK_START
   ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n1.cnf $MYEXTRA --wsrep-new-cluster > $node1/error.log 2>&1 &
   mdg_node_startup_status $node1/error.log
   ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n2.cnf $MYEXTRA > $node2/error.log 2>&1 &

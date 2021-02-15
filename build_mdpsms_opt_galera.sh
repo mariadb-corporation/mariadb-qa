@@ -220,7 +220,7 @@ fi
 CURPATH=$(echo $PWD | sed 's|.*/||')
 
 cd ..
-rm -Rf ${CURPATH}_opt
+rm -Rf ${CURPATH}_opt ${CURPATH}_galera_opt
 rm -f /tmp/psms_opt_build_${RANDOMD}
 cp -R ${CURPATH} ${CURPATH}_opt
 cd ${CURPATH}_opt
@@ -288,8 +288,8 @@ if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
   echo $CMD > ${DIR_opt_new}/BUILD_CMD_CMAKE
   #rm -Rf ${CURPATH}_opt  # Best not to delete it; this way gdb debugging is better quality as source will be available!
   # Create galera library
-  cp -R ${CURPATH}_galera ${CURPATH}_galera_dbg
-  cd ${CURPATH}_galera_dbg
+  cp -R ${CURPATH}_galera ${CURPATH}_galera_opt
+  cd ${CURPATH}_galera_opt
   cmake . | tee /tmp/psms_opt_galera_build_${RANDOMD}
   make | tee -a /tmp/psms_opt_galera_build_${RANDOMD}
   if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
