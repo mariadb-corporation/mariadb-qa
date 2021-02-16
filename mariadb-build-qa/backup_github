@@ -92,7 +92,7 @@ cp allruns ${TARGET}
 cp scan_MYBUG ${TARGET}
 cp scan_errorlogs ${TARGET}
 cp linkit ${TARGET}
-#cp REGEX_EXCLUDE ${TARGET}  # Excluded as it is different for each system
+#cp REGEX_EXCLUDE ${TARGET}  # Excluded as it is different on each system
 cp find_deadlocks ${TARGET}
 cp prep_ram_full ${TARGET}
 cp use_new ${TARGET}
@@ -108,6 +108,7 @@ cp allstrings_new ${TARGET}
 cp semaphore ${TARGET}
 cp uniq_newbugs ${TARGET}
 cp whoislive ${TARGET}
+cp gen_results_mon_list ${TARGET}
 
 cd ${TARGET}
 git add *

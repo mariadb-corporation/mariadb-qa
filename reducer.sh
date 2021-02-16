@@ -1731,7 +1731,7 @@ init_workdir_and_files(){
     fi
   fi
   if [ $MDG -gt 0 ]; then
-    echo_out "[Init] MDG active, so automatically set USE_PQUERY=1: MariaDB Galera Cluster testcase reduction is currently supported only with pquery"
+    echo_out "[Init] MDG active, so automatically set USE_PQUERY=1: MariaDB Galera Cluster testcase reduction is currently supported with pquery only"
     if [ $MODE -eq 5 -o $MODE -eq 3 ]; then
       echo_out "[Warning] MODE=$MODE is set, as well as MDG mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
     fi
@@ -2170,7 +2170,7 @@ start_mdg_main(){
 
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n1.cnf
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n2.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[3]},${MDG_LADDRS[3]}" ${WORKD}/n3.cnf
+  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n3.cnf
   cp ${WORKD}/n1.cnf ${EPOCH}_n1.cnf
   cp ${WORKD}/n2.cnf ${EPOCH}_n2.cnf
   cp ${WORKD}/n2.cnf ${EPOCH}_n3.cnf
@@ -3000,7 +3000,7 @@ process_outcome(){
                 else
                   NEWBUGTEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
                 fi
-                # This code is takem from pquery-prep-red.sh, if it is updated here, please also update it there.
+                # This code is taken from pquery-prep-red.sh, if it is updated here, please also update it there.
                 if [[ "${NEWBUGTEXT}" = *":"* ]]; then
                   if [[ "${NEWBUGTEXT}" = *"|"* ]]; then
                     if [[ "${NEWBUGTEXT}" = *"/"* ]]; then
