@@ -2173,7 +2173,7 @@ start_mdg_main(){
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n3.cnf
   cp ${WORKD}/n1.cnf ${EPOCH}_n1.cnf
   cp ${WORKD}/n2.cnf ${EPOCH}_n2.cnf
-  cp ${WORKD}/n2.cnf ${EPOCH}_n3.cnf
+  cp ${WORKD}/n3.cnf ${EPOCH}_n3.cnf
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
   echo "echo \"Attempting to start mysqld (socket /dev/shm/${EPOCH}/node1/node1_socket.sock)...\"" >> $WORK_START
@@ -4781,7 +4781,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
       if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
         ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT
       else
-        continue  # Continue with next trial instead
+        cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
     elif [ $TRIAL -eq 182 ]; then sed -e 's/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/' $WORKF > $WORKT
     # RV 25/01/21 Disabled next line to see if this fixes the # mysqld options required insert. Also note trial number changed on the line thereafter: update when removing to higher number
