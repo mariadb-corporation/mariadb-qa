@@ -514,7 +514,11 @@ if [[ $MDG -eq 1 ]]; then
   echo "innodb_file_per_table" >> ${BASEDIR}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${BASEDIR}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${BASEDIR}/my.cnf
-  echo "wsrep_sst_method=mariabackup" >> ${BASEDIR}/my.cnf
+  if [ ${MDG_SST_METHOD} -eq 1 ] ; then
+    echo "wsrep_sst_method=rsync" >> ${BASEDIR}/my.cnf
+  else
+    echo "wsrep_sst_method=mariabackup" >> ${BASEDIR}/my.cnf
+  fi
   echo "wsrep_sst_auth=root:" >> ${BASEDIR}/my.cnf
   echo "binlog_format=ROW" >> ${BASEDIR}/my.cnf
   echo "core-file" >> ${BASEDIR}/my.cnf
@@ -2049,6 +2053,11 @@ if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
 elif [[ ${MDG} -eq 1 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} | MDG Mode: TRUE"
   echoit "${ONGOING}"
+  if [ ${MDG_SST_METHOD} -eq 1 ] ; then
+    echoit "MDG SST Method: 'rsync'"
+  else
+    echoit "MDG SST Method: 'mariabackup'"
+  fi
   if [ ${MDG_CLUSTER_RUN} -eq 1 ]; then
     echoit "MDG Cluster run: 'YES'"
   else

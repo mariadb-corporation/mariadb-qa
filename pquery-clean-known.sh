@@ -7,10 +7,10 @@
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 set +H
 
-# Check if this is a pxc run
-PXC=0
-if [ "$(grep 'PXC Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*PXC Mode[: \t]*||' )" == "TRUE" ]; then
-  PXC=1
+# Check if this is a MariaDB Galera Cluster run
+MDG=0
+if [ "$(grep 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
+  MDG=1
 fi
 
 # Check if this is a group replication run
@@ -25,7 +25,7 @@ if [ `ls ./*/*.sql 2>/dev/null | wc -l` -eq 0 ]; then
   exit 1
 fi
 
-if [[ ${PXC} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
+if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
   cat ${SCRIPT_PWD}/known_bugs.strings > /tmp/pquery_known_bugs
   cat ${SCRIPT_PWD}/known_bugs_pxc.strings >> /tmp/pquery_known_bugs
   STRINGS_FILE=/tmp/pquery_known_bugs
@@ -54,7 +54,7 @@ while read line; do
     if [ $(ls reducer[0-9]* 2>/dev/null | wc -l) -gt 0 ]; then
       # echo $STRING  # For debugging
       # sleep 1  # For debugging
-      if [[ ${PXC} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
+      if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
 	      # grep -li "${STRING}" reducer[0-9]*  # For debugging (use script utility, then search for the reducer<nr>.sh in the typescript)
         grep -li --binary-files=text "${STRING}" reducer[0-9]* | awk -F'.'  '{print substr($1,8)}' | xargs -I_ $SCRIPT_PWD/pquery-del-trial.sh _
       else
@@ -67,7 +67,9 @@ while read line; do
 done < ${STRINGS_FILE}
 
 # Other cleanups
-grep "CT NAME_CONST('a', -(1 [ANDOR]\+ 2)) [ANDOR]\+ 1" */log/master.err 2>/dev/null | sed 's|/.*||' | xargs -I{} ~/mariadb-qa/pquery-del-trial.sh {}  #http://bugs.mysql.com/bug.php?id=81407
+if [ ${MDG} -ne 1 ]; then
+ grep "CT NAME_CONST('a', -(1 [ANDOR]\+ 2)) [ANDOR]\+ 1" */log/master.err 2>/dev/null | sed 's|/.*||' | xargs -I{} ~/mariadb-qa/pquery-del-trial.sh {}  #http://bugs.mysql.com/bug.php?id=81407
+fi
 
 # Check if this an automated (pquery-reach.sh or /data/clean_all) run, which should have no output
 if [ "${1}" != "reach" -a "${1}" != "cleanall" ]; then

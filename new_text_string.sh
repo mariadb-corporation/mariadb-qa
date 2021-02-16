@@ -47,6 +47,14 @@ else
   LATEST_CORE=$(ls -t */*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
 fi
 
+if [ ! -f "$ERROR_LOG" ]; then
+  ERROR_LOG=$(ls node1/node1.err 2>/dev/null | head -n1)
+fi
+
+if [ ! -f "$LATEST_CORE" ]; then
+  LATEST_CORE=$(ls -t */*core* 2>/dev/null | head -n1)
+fi
+
 if [ -z "${LATEST_CORE}" ]; then
   # TODO: Improve code for when there is an error log (with possible assert) but no core dump (unlikely)
   # Idea; can we fallback to OLD/text_string.sh in that case?

@@ -1627,7 +1627,11 @@ init_workdir_and_files(){
       echo_out "[Init] Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
     fi
   fi
-  echo_out "[Init] Temporary directory (TMP Variable) set to $TMP"
+  if [ $MDG -eq 1 ]; then
+    echo_out "[Init] Galera Cluster Temporary directories (TMP Variable) set to $WORKD/tmp1, $WORKD/tmp2, $WORKD/tmp3 respectively"
+  else
+    echo_out "[Init] Temporary directory (TMP Variable) set to $TMP"
+  fi
   if [ $SKIPSTAGEBELOW -gt 0 ]; then echo_out "[Init] SKIPSTAGEBELOW active. Stages up to and including $SKIPSTAGEBELOW are skipped"; fi
   if [ $SKIPSTAGEABOVE -lt 9 ]; then echo_out "[Init] SKIPSTAGEABOVE active. Stages above and including $SKIPSTAGEABOVE are skipped"; fi
   if [ $PQUERY_MULTI -gt 0 ]; then
@@ -2171,9 +2175,9 @@ start_mdg_main(){
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n1.cnf
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n2.cnf
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n3.cnf
-  cp ${WORKD}/n1.cnf ${EPOCH}_n1.cnf
-  cp ${WORKD}/n2.cnf ${EPOCH}_n2.cnf
-  cp ${WORKD}/n3.cnf ${EPOCH}_n3.cnf
+  cp ${WORKD}/n1.cnf ${WORKD}/${EPOCH}_n1.cnf
+  cp ${WORKD}/n2.cnf ${WORKD}/${EPOCH}_n2.cnf
+  cp ${WORKD}/n3.cnf ${WORKD}/${EPOCH}_n3.cnf
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
   echo "echo \"Attempting to start mysqld (socket /dev/shm/${EPOCH}/node1/node1_socket.sock)...\"" >> $WORK_START
