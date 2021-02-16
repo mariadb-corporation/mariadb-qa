@@ -1443,7 +1443,7 @@ init_empty_port(){
   # Choose a random port number in 10-65K range, check if free, increase if needbe
   NEWPORT=$[ 10001 + ( $RANDOM % 55000 ) ]
   while :; do
-    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text " $NEWPORT " | wc -l)"
+    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]$NEWPORT " | wc -l)"
     if [ $ISPORTFREE -ge 1 ]; then
       NEWPORT=$[ $NEWPORT + 100 ]  #+100 to avoid 'clusters of ports'
     else
