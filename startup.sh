@@ -118,6 +118,7 @@ else
 fi
 
 # Check MariaDB Galera Cluster
+GALERA_LIB=
 if [ -r lib/libgalera_smm.so ]; then
   MDG=1
   GALERA_LIB=${PWD}/lib/libgalera_smm.so
@@ -131,17 +132,18 @@ elif [ -r lib/libgalera_enterprise_smm.so ]; then
 else
   echo "Warning! Galera plugin not found. Skipping Galera startup"
   MDG=0
+  SOCKET=${PWD}/socket.sock
+  CORE_FILE="data/*core*"
 fi
 
 # Setup scritps
-rm -f start start_group_replication start_valgrind start_gypsy repl_setup stop setup cl *_node_cl* cl_noprompt cl_noprompt_nobinary test init wipe all all_no_cl sysbench_prepare sysbench_run sysbench_measure myrocks_tokudb_init pmm_os_agent pmm_mysql_agent stop_group_replication *cl gdb fixin stack wipe_group_replication multirun multirun_pquery multirun_mysqld reducer_*
+rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init pmm* reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test wipe*
 BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_pquery | multirun_mysqld | loopin | gdb | fixin | stack | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_wipe | gal_init | gal_kill | gal_setup | gdb | 1_node_cli | 2_node_cli | 3_node_cli | all | all_no_cl | all_rr | all_stbe | binlog | cl | cl_noprompt | cl_noprompt_nobinary | fixin | loopin | multirun | multirun_mysqld | multirun_pquery | multitest | pmm_mysql_agent | pmm_os_agent | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | sqlmode | stack | sysbench_measure | sysbench_prepare | sysbench_run | test"
 if [[ $GRP_RPL -eq 1 ]]; then
   echo "Adding scripts: ${BASIC_SCRIPTS} | ${GRP_RPL_SCRIPTS}"
 elif [[ $MDG -eq 1 ]]; then
-  rm -f gal_start gal_start_rr gal_stop gal_wipe gal_init gal_kill gal_setup gdb 1_node_cli 2_node_cli 3_node_cli all all_no_cl all_rr all_stbe binlog cl cl_noprompt cl_noprompt_nobinary fixin loopin multirun multirun_mysqld multirun_pquery multitest pmm_mysql_agent pmm_os_agent reducer_errorlog.sh reducer_errorlog_pquery.sh reducer_fireworks.sh reducer_new_text_string.sh reducer_new_text_string_pquery.sh sqlmode stack sysbench_measure sysbench_prepare sysbench_run test
   echo "Adding scripts: ${GALERA_SCRIPTS}"
 else
   echo "Adding scripts: ${BASIC_SCRIPTS}"
