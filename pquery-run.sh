@@ -141,6 +141,22 @@ check_for_version() {
   fi
 }
 
+# Find empty port
+init_empty_port(){
+  NEWPORT=
+  # Choose a random port number in 10-65K range, check if free, increase if needbe
+  NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+  while :; do
+    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
+    ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
+    if [ "${ISPORTFREE}" -ge 1 -o ! -z "${ISPORTFREE2}" ]; then
+      NEWPORT=$[ ${NEWPORT} + 100 ]  # +100 to avoid 'clusters of ports'
+    else
+      break
+    fi
+  done
+}
+
 # Output function
 echoit() {
   if [ "${ELIMINATE_KNOWN_BUGS}" == "1" ]; then
@@ -537,7 +553,6 @@ fi
 mdg_startup() {
   IS_STARTUP=$1
   ADDR="127.0.0.1"
-  RPORT=$(((RANDOM % 21 + 10) * 1000))
   SOCKET1=${RUNDIR}/${TRIAL}/node1/node1_socket.sock
   SOCKET2=${RUNDIR}/${TRIAL}/node2/node2_socket.sock
   SOCKET3=${RUNDIR}/${TRIAL}/node3/node3_socket.sock
@@ -585,7 +600,9 @@ mdg_startup() {
       if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
         break
       fi
-      mdg_startup_chk ${ERR_FILE}
+      if [[ $X -eq $((MDG_START_TIMEOUT - 1)) ]]; then
+        mdg_startup_chk ${ERR_FILE}
+      fi
     done
   }
   unset MDG_PORTS
@@ -593,6 +610,17 @@ mdg_startup() {
   MDG_PORTS=""
   MDG_LADDRS=""
   for i in $(seq 1 3); do
+    init_empty_port
+    RBASE=$NEWPORT
+    NEWPORT=
+    init_empty_port
+    LADDR="127.0.0.1:${NEWPORT}"
+    NEWPORT=
+    init_empty_port
+    SST_PORT="127.0.0.1:${NEWPORT}"
+    NEWPORT=
+    MDG_PORTS+=("$RBASE")
+    MDG_LADDRS+=("$LADDR")
     if [ "$IS_STARTUP" == "startup" ]; then
       node="${WORKDIR}/node${i}.template"
       if ! check_for_version $MYSQL_VERSION "5.7.0"; then
@@ -606,25 +634,20 @@ mdg_startup() {
     fi
     diskspace
     mkdir -p $DATADIR/tmp${i}
-    RBASE1="$((RPORT + (100 * $i)))"
-    LADDR1="127.0.0.1:$((RBASE1 + 8))"
-    SST_PORT="127.0.0.1:$((RBASE1 + 1))"
-    MDG_PORTS+=("$RBASE1")
-    MDG_LADDRS+=("$LADDR1")
     cp ${BASEDIR}/my.cnf ${DATADIR}/n${i}.cnf
     sed -i "2i server-id=10${i}" ${DATADIR}/n${i}.cnf
     sed -i "2i wsrep_node_incoming_address=$ADDR" ${DATADIR}/n${i}.cnf
     sed -i "2i wsrep_node_address=$ADDR" ${DATADIR}/n${i}.cnf
     sed -i "2i wsrep_sst_receive_address=$SST_PORT" ${DATADIR}/n${i}.cnf
     sed -i "2i log-error=$node/node${i}.err" ${DATADIR}/n${i}.cnf
-    sed -i "2i port=$RBASE1" ${DATADIR}/n${i}.cnf
+    sed -i "2i port=$RBASE" ${DATADIR}/n${i}.cnf
     sed -i "2i datadir=$node" ${DATADIR}/n${i}.cnf
     sed -i "2i socket=$node/node${i}_socket.sock" ${DATADIR}/n${i}.cnf
     sed -i "2i tmpdir=$DATADIR/tmp${i}" ${DATADIR}/n${i}.cnf
     if [[ "$ENCRYPTION_RUN" != 1 ]]; then
-      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPT\"" ${DATADIR}/n${i}.cnf
+      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPT\"" ${DATADIR}/n${i}.cnf
     else
-      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR1;$WSREP_PROVIDER_OPT;socket.ssl_key=${WORKDIR}/cert/server-key.pem;socket.ssl_cert=${WORKDIR}/cert/server-cert.pem;socket.ssl_ca=${WORKDIR}/cert/ca.pem\"" ${DATADIR}/n${i}.cnf
+      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPT;socket.ssl_key=${WORKDIR}/cert/server-key.pem;socket.ssl_cert=${WORKDIR}/cert/server-cert.pem;socket.ssl_ca=${WORKDIR}/cert/ca.pem\"" ${DATADIR}/n${i}.cnf
       echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
       echo "ssl-cert = ${WORKDIR}/cert/server-cert.pem" >> ${DATADIR}/n${i}.cnf
       echo "ssl-key = ${WORKDIR}/cert/server-key.pem" >> ${DATADIR}/n${i}.cnf
@@ -1868,8 +1891,6 @@ pquery_test() {
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       echoit "Pri engine pquery run details:$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log | sed 's|.*:||')"
       echoit "Sec engine pquery run details:$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log | sed 's|.*:||')"
-    elif [[ ${MDG} -eq 1 && ${MDG_CLUSTER_RUN} -eq 0 ]]; then
-      echoit "pquery run details:$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/node1/*.sql ${RUNDIR}/${TRIAL}/node1/*.log | sed 's|.*:||')"
     else
       echoit "pquery run details:$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log | sed 's|.*:||')"
     fi

@@ -1438,6 +1438,7 @@ TS_init_all_sql_files(){
   done
 }
 
+# Find empty port
 init_empty_port(){
   NEWPORT=
   # Choose a random port number in 10-65K range, check if free, increase if needbe
@@ -2083,7 +2084,6 @@ start_mdg_main(){
   echo "innodb_autoinc_lock_mode=2" >> ${WORKD}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${WORKD}/my.cnf
   echo "wsrep_sst_method=mariabackup" >> ${WORKD}/my.cnf
-  echo "wsrep_sst_auth=root:" >> ${WORKD}/my.cnf
   echo "wsrep_sst_auth=$SUSER:$SPASS" >> ${WORKD}/my.cnf
   echo "binlog_format=ROW" >> ${WORKD}/my.cnf
   echo "core-file" >> ${WORKD}/my.cnf

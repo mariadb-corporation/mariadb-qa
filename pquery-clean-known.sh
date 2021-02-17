@@ -68,7 +68,7 @@ done < ${STRINGS_FILE}
 
 # Other cleanups
 if [ ${MDG} -ne 1 ]; then
- grep "CT NAME_CONST('a', -(1 [ANDOR]\+ 2)) [ANDOR]\+ 1" */log/master.err 2>/dev/null | sed 's|/.*||' | xargs -I{} ~/mariadb-qa/pquery-del-trial.sh {}  #http://bugs.mysql.com/bug.php?id=81407
+  grep "CT NAME_CONST('a', -(1 [ANDOR]\+ 2)) [ANDOR]\+ 1" */log/master.err 2>/dev/null | sed 's|/.*||' | xargs -I{} ~/mariadb-qa/pquery-del-trial.sh {}  #http://bugs.mysql.com/bug.php?id=81407
 fi
 
 # Check if this an automated (pquery-reach.sh or /data/clean_all) run, which should have no output
