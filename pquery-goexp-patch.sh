@@ -12,11 +12,12 @@ if [ "$1" == "" ]; then
   echo "Terminating."
   exit 1
 elif [ "$(echo $1 | sed 's|^[0-9]\+||')" != "" ]; then
-  if [[ "${1}" == "newbug_"* ]]; then
-    if [ -f "./${1}" -a -r "./${1}" ]; then
-      REDUCER="${1}"  
+  R1="$(echo "${1}" | sed 's|^\./||')"
+  if [[ "${R1}" == "newbug_"* ]]; then
+    if [ -f "./${R1}" -a -r "./${R1}" ]; then
+      REDUCER="${R1}"
     else
-      echo "Assert: the reducer script passed to this script (${1}) is not a file readable by this script!" 
+      echo "Assert: the reducer script passed to this script (${REDUCER}) is not a file readable by this script!" 
       exit 1
     fi
   else
