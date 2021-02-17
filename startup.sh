@@ -123,11 +123,13 @@ GALERA_LIB=
 CORE_FILE="data/*core*"
 SOCKET=${PWD}/socket.sock
 if [ -r lib/libgalera_smm.so ]; then
+  echo "CS Galera plugin found. Adding CS Galera startup"
   MDG=1
   GALERA_LIB=${PWD}/lib/libgalera_smm.so
   SOCKET=${PWD}/node1/node1_socket.sock
   CORE_FILE="node1/*core*"
 elif [ -r lib/libgalera_enterprise_smm.so ]; then
+  echo "ES Galera plugin found. Adding ES Galera startup"
   MDG=1
   GALERA_LIB=${PWD}/lib/libgalera_enterprise_smm.so
   SOCKET=${PWD}/node1/node1_socket.sock
