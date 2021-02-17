@@ -118,7 +118,10 @@ else
 fi
 
 # Check MariaDB Galera Cluster
+MDG=0
 GALERA_LIB=
+CORE_FILE="data/*core*"
+SOCKET=${PWD}/socket.sock
 if [ -r lib/libgalera_smm.so ]; then
   MDG=1
   GALERA_LIB=${PWD}/lib/libgalera_smm.so
@@ -127,13 +130,10 @@ if [ -r lib/libgalera_smm.so ]; then
 elif [ -r lib/libgalera_enterprise_smm.so ]; then
   MDG=1
   GALERA_LIB=${PWD}/lib/libgalera_enterprise_smm.so
-  SOCKET=${PWD}/socket.sock
-  CORE_FILE="data/*core*"
+  SOCKET=${PWD}/node1/node1_socket.sock
+  CORE_FILE="node1/*core*"
 else
   echo "Warning! Galera plugin not found. Skipping Galera startup"
-  MDG=0
-  SOCKET=${PWD}/socket.sock
-  CORE_FILE="data/*core*"
 fi
 
 # Setup scritps
