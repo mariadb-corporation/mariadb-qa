@@ -2260,7 +2260,7 @@ elif [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
   ${SCRIPT_PWD}/ldd_files.sh
   cd ${PWDTMPSAVE} || exit 1
   if [[ ${MDG} -eq 1 ]]; then
-    echoit "Ensuring MDG templates created for pquery run.."
+    echoit "Ensuring MDG templates were created correctly for pquery run..."
     mdg_startup startup
     sleep 5
     if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node1.template/node1_socket.sock ping > /dev/null 2>&1; then
