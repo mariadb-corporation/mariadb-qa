@@ -32,4 +32,4 @@ sed -i "s|^FORCE_SKIPV=1|FORCE_SKIPV=0|" ${REDUCER}
 sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=1000|" ${REDUCER}
 
 # Start reducer
-${REDUCER}
+./${REDUCER}

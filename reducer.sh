@@ -1441,11 +1441,12 @@ TS_init_all_sql_files(){
 init_empty_port(){
   NEWPORT=
   # Choose a random port number in 10-65K range, check if free, increase if needbe
-  NEWPORT=$[ 10001 + ( $RANDOM % 55000 ) ]
+  NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
   while :; do
-    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]$NEWPORT " | wc -l)"
-    if [ $ISPORTFREE -ge 1 ]; then
-      NEWPORT=$[ $NEWPORT + 100 ]  #+100 to avoid 'clusters of ports'
+    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
+    ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
+    if [ ${ISPORTFREE} -ge 1 -o ! -z "${ISPORTFREE2}" ]; then
+      NEWPORT=$[ ${NEWPORT} + 100 ]  # +100 to avoid 'clusters of ports'
     else
       break
     fi
