@@ -1,2 +1,2 @@
+#!/bin/bash
 ~/mariadb-qa/pquery-goexp-patch.sh $1
-./reducer$1.sh
