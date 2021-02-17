@@ -514,7 +514,11 @@ if [[ $MDG -eq 1 ]]; then
   echo "innodb_file_per_table" >> ${BASEDIR}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${BASEDIR}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${BASEDIR}/my.cnf
-  echo "wsrep_sst_method=mariabackup" >> ${BASEDIR}/my.cnf
+  if [ ${MDG_SST_METHOD} -eq 1 ] ; then
+    echo "wsrep_sst_method=rsync" >> ${BASEDIR}/my.cnf
+  else
+    echo "wsrep_sst_method=mariabackup" >> ${BASEDIR}/my.cnf
+  fi
   echo "wsrep_sst_auth=root:" >> ${BASEDIR}/my.cnf
   echo "binlog_format=ROW" >> ${BASEDIR}/my.cnf
   echo "core-file" >> ${BASEDIR}/my.cnf
@@ -667,7 +671,7 @@ mdg_startup() {
   diskspace
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${DATADIR}/n1.cnf
   sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${DATADIR}/n2.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[3]},${MDG_LADDRS[3]}" ${DATADIR}/n3.cnf
+  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${DATADIR}/n3.cnf
   get_error_socket_file 1
   if [ "${RR_TRACING}" == "0" ]; then
     $VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n1.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
@@ -2049,6 +2053,11 @@ if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
 elif [[ ${MDG} -eq 1 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} | MDG Mode: TRUE"
   echoit "${ONGOING}"
+  if [ ${MDG_SST_METHOD} -eq 1 ] ; then
+    echoit "MDG SST Method: 'rsync'"
+  else
+    echoit "MDG SST Method: 'mariabackup'"
+  fi
   if [ ${MDG_CLUSTER_RUN} -eq 1 ]; then
     echoit "MDG Cluster run: 'YES'"
   else
@@ -2260,7 +2269,7 @@ elif [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
   ${SCRIPT_PWD}/ldd_files.sh
   cd ${PWDTMPSAVE} || exit 1
   if [[ ${MDG} -eq 1 ]]; then
-    echoit "Ensuring MDG templates created for pquery run.."
+    echoit "Ensuring MDG templates were created correctly for pquery run..."
     mdg_startup startup
     sleep 5
     if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node1.template/node1_socket.sock ping > /dev/null 2>&1; then

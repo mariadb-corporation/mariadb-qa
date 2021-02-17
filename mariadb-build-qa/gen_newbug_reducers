@@ -46,7 +46,8 @@ while read SQL_FILE; do
     rm -f "${REDUCER_FILE}"
   fi
   cp "${REDUCER_MAIN}" "${REDUCER_FILE}"
-  TEXT="$(cat "${STRING_FILE}" | head -n1)"
+  # The following code is also present in pquery-prep-red.sh and reducer.sh, please update all at the same time
+  TEXT="$(cat "${STRING_FILE}" | head -n1 | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
   if [[ "${TEXT}" = *":"* ]]; then
     if [[ "${TEXT}" = *"|"* ]]; then
       if [[ "${TEXT}" = *"/"* ]]; then

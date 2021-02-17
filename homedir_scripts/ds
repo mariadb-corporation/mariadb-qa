@@ -54,6 +54,11 @@ while true; do
     ~/mariadb-qa/tmpfs_clean.sh 1 >/dev/null &
     sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches"  # Cleanup cache, may help avoid OOM
     sync
+    if [ -d /data ]; then
+      cd /data
+      #if [ -r ./clean_all ]; then ./clean_all; fi
+      if [ -r ./clean_newbugs ]; then ./clean_newbugs; fi
+    fi
     COUNT2=0
   fi
   if [ ${COUNT3} -ge 5000 ]; then

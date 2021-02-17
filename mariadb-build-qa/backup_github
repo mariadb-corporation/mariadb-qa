@@ -20,12 +20,16 @@ cp buildall_opt_san.sh ${TARGET}
 cp buildall_dbg_ms.sh ${TARGET}
 cp buildall_opt_ms.sh ${TARGET}
 cp buildall_san_slow.sh ${TARGET}
+cp buildall_dbg_galera.sh ${TARGET}
+cp buildall_opt_galera.sh ${TARGET}
 cp terminate_ds_memory.sh ${TARGET}
 cp clean_newbugs ${TARGET}
 cp clean_newbugs.old ${TARGET}
 cp clone.sh ${TARGET}
 cp cloneall.sh ${TARGET}
 cp cloneall_ms.sh ${TARGET}
+cp clone_galera.sh ${TARGET}
+cp cloneall_galera.sh ${TARGET}
 cp copy_in.sql_all ${TARGET}
 cp copyin ${TARGET}
 cp backup_github ${TARGET}
@@ -33,6 +37,7 @@ cp count_all ${TARGET}
 cp findbug ${TARGET}
 cp findbug+ ${TARGET}
 cp find_reduced_bugs ${TARGET}
+cp find_newbug_bugs ${TARGET}
 cp gendirs.sh ${TARGET}
 cp kill_all ${TARGET}
 cp kill_ge ${TARGET}
@@ -75,7 +80,6 @@ cp move_newbugs ${TARGET}
 cp check ${TARGET}
 cp count_reducers ${TARGET}
 cp qcdiffs ${TARGET}
-cp pull_and_build_galera ${TARGET}
 cp del_all_data ${TARGET}
 cp loop_screens ${TARGET}
 cp loop_screens_ge ${TARGET}
@@ -89,7 +93,7 @@ cp allruns ${TARGET}
 cp scan_MYBUG ${TARGET}
 cp scan_errorlogs ${TARGET}
 cp linkit ${TARGET}
-#cp REGEX_EXCLUDE ${TARGET}  # Excluded as it is different for each system
+#cp REGEX_EXCLUDE ${TARGET}  # Excluded as it is different on each system
 cp find_deadlocks ${TARGET}
 cp prep_ram_full ${TARGET}
 cp use_new ${TARGET}
@@ -105,6 +109,7 @@ cp allstrings_new ${TARGET}
 cp semaphore ${TARGET}
 cp uniq_newbugs ${TARGET}
 cp whoislive ${TARGET}
+cp gen_results_mon_list ${TARGET}
 
 cd ${TARGET}
 git add *

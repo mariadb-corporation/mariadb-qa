@@ -1,3 +1,8 @@
 #!/bin/bash
-~/mariadb-qa/pquery-clean-all++.sh
+# With thanks, https://unix.stackexchange.com/a/46801/241016
+if [ -z "$PS1" ]; then
+  ~/mariadb-qa/pquery-clean-all.sh
+else
+  ~/mariadb-qa/pquery-clean-all.sh cleanall
+fi
 #if [ -r ./clean_newbugs ]; then ./clean_newbugs; fi

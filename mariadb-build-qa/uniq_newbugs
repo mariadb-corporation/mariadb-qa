@@ -3,4 +3,4 @@
 # mkdir new && ./uniq_newbugs | sed -e 's|:|\t|' | awk '{print $1}' | sed 's|\.string||' | xargs -I{} cp {}.sql {}.string new
 # Or (to place them for processing by ~/mariadb/mass_bug_report.sh):
 # ./uniq_newbugs | sed -e 's|:|\t|' | awk '{print $1}' | sed 's|\.string||' | xargs -I{} cp {}.sql {}.string /test/TESTCASES/
-grep '' *.string | sort -k2 -u -t:
+grep '' *.string | sort -k2 -u -t: | sed 's|^|=== |;s|\.string:|.reducer.sh ===\n    |'

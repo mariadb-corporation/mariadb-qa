@@ -295,6 +295,7 @@ generate_reducer_script(){
     fi
     TEXT_CLEANUP="0,/^[ \t]*TEXT[ \t]*=.*$/s|^[ \t]*TEXT[ \t]*=.*$|#TEXT=<set_below_in_machine_variables_section>|"
     TEXT_STRING1="0,/#VARMOD#/s:#VARMOD#:# IMPORTANT NOTE; Leave the 3 spaces before TEXT on the next line; pquery-results.sh uses these\n#VARMOD#:"
+    # This code below is duplicated into reducer.sh. If it is updated here, please also update it there.
     if [[ "${TEXT}" = *":"* ]]; then
       if [[ "${TEXT}" = *"|"* ]]; then
         if [[ "${TEXT}" = *"/"* ]]; then

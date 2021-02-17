@@ -1,7 +1,12 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
+if [ ! -r ./terminate_ds_memory.sh ]; then
+  echo './terminate_ds_memory.sh missing!'
+  exit 1
+else
+  ./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
+fi
 
 DIR=${PWD}
 rm -Rf 10.1_dbg_asan 10.2_dbg_asan 10.3_dbg_asan 10.4_dbg_asan 10.5_dbg_asan 10.6_dbg_asan

@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ -z "${1}" ]; then
+  echo "This script finds the shortest newbug sql file for a given input string"
+  echo "Specify as the only option to this script a string you are searching for"
+  exit 1
+elif [ -z "$(ls *.string 2>/dev/null)" ]; then 
+  echo "No *.string files found!"
+  exit 1
+fi
+grep "${1}" *.string | sed 's|.string.*|.sql|' | xargs wc -l | grep -v total | sort -nr
