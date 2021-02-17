@@ -107,7 +107,6 @@ cat "${1}" | tr -d '`' | \
   sed 's|blob|BLOB|gi' | \
   sed 's|varchar|VARCHAR|gi' | \
   sed 's|character|CHARACTER|gi' | \
-  sed 's|text|TEXT|gi' | \
   sed 's|replace|REPLACE|gi' | \
   sed 's|delayed|DELAYED|gi' | \
   sed 's|lock|LOCK|gi' | \
@@ -138,6 +137,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|bit|BIT|gi' | \
   sed 's|set|SET|gi' | \
   sed 's|setval|SETVAL|gi' | \
+  sed 's|fulltext|FULLTEXT|gi' | \
   sed 's|default|DEFAULT|gi' | \
   sed 's|session|SESSION|gi' | \
   sed 's|global|GLOBAL|gi' | \
@@ -216,6 +216,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|initial_size|INITIAL_SIZE|gi' | \
   sed 's|user@localhost|user@localhost|gi' | \
   sed 's|\.TABLES|\.tables|gi' | \
+  sed 's|text|TEXT|gi' | \
   sed 's|date_sub[ ]*(|DATE_SUB(|gi' | \
   sed 's|concat_ws[ ]*(|CONCAT_WS(|gi' | \
   sed 's|greatest[ ]*(|GREATEST(|gi' | \

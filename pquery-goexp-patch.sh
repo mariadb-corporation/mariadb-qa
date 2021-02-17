@@ -12,7 +12,15 @@ if [ "$1" == "" ]; then
   echo "Terminating."
   exit 1
 elif [ "$(echo $1 | sed 's|^[0-9]\+||')" != "" ]; then
-  R1="$(echo "${1}" | sed 's|^\./||')"
+  if [[ "${1}" == "/data/NEWBUGS/"* ]]; then 
+    if [ -d "/data/NEWBUGS" ]; then
+      cd /data/NEWBUGS
+    else
+      echo "Assert: /data/NEWBUGS was specified, yet that directory does not exist"
+      exit 1
+    fi
+  fi
+  R1="$(echo "${1}" | sed 's|^/data/NEWBUGS/||;s|^\./||')"
   if [[ "${R1}" == "newbug_"* ]]; then
     if [ -f "./${R1}" -a -r "./${R1}" ]; then
       REDUCER="${R1}"
