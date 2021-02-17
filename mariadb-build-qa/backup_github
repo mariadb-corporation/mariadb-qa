@@ -37,6 +37,7 @@ cp count_all ${TARGET}
 cp findbug ${TARGET}
 cp findbug+ ${TARGET}
 cp find_reduced_bugs ${TARGET}
+cp find_newbug_bugs ${TARGET}
 cp gendirs.sh ${TARGET}
 cp kill_all ${TARGET}
 cp kill_ge ${TARGET}

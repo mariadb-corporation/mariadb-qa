@@ -40,6 +40,8 @@ ln -s /test/copyin /home/$(whoami)/copyin 2>&1 | grep -v 'File exists'
 ln -s /test/newbug_clean /home/$(whoami)/nc 2>&1 | grep -v 'File exists'
 ln -s /test/uniq_newbugs /data/uniq_newbugs 2>&1 | grep -v 'File exists'
 ln -s /test/uniq_newbugs /data/NEWBUGS/uniq_newbugs 2>&1 | grep -v 'File exists'
+ln -s /test/find_newbug_bugs /data/NEWBUGS/find_newbug_bugs 2>&1 | grep -v 'File exists'
+ln -s /test/find_newbug_bugs /data/find_newbug_bugs 2>&1 | grep -v 'File exists'
 ln -s /test/uniq_newbugs /data/FIREWORKS/uniq_newbugs 2>&1 | grep -v 'File exists'
 ln -s /test/uniq_newbugs /test/TESTCASES/uniq_newbugs 2>&1 | grep -v 'File exists'
 

@@ -1445,7 +1445,7 @@ init_empty_port(){
   while :; do
     ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
-    if [ ${ISPORTFREE} -ge 1 -o ! -z "${ISPORTFREE2}" ]; then
+    if [ "${ISPORTFREE}" -ge 1 -o ! -z "${ISPORTFREE2}" ]; then
       NEWPORT=$[ ${NEWPORT} + 100 ]  # +100 to avoid 'clusters of ports'
     else
       break
