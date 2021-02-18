@@ -11,13 +11,25 @@ SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for
 SERVER_VERSION="$(${BIN} --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
 BUILD_TYPE=
 LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
+MDG=0
+if [ ! -z "$(ls --color=never ./node*/node*.err 2>/dev/null)" ]; then
+  MDG=1
+fi
 if [ "${LAST_THREE}" != "dbg" -a "${LAST_THREE}" != "opt" ]; then  # in-trial ./stack call
-  LAST_THREE="$(grep --binary-files=text -Eo "\-dbg|\-opt" ./node*/node*.err ./log/master.err 2>/dev/null | head -n1 | sed 's|\-||')"
+  if [ "${MDG}" -eq 1 ]; then
+    LAST_THREE="$(grep --binary-files=text -Eo "\-dbg|\-opt" ./node*/node*.err 2>/dev/null | head -n1 | sed 's|\-||')"
+  else
+    LAST_THREE="$(grep --binary-files=text -Eo "\-dbg|\-opt" ./log/master.err 2>/dev/null | head -n1 | sed 's|\-||')"
+  fi
 fi
 if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
 if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
 
-CORE_COUNT=$(ls --color=never data/*core* node*/*core* 2>/dev/null | wc -l)
+if [ "${MDG}" -eq 1 ]; then
+  CORE_COUNT=$(ls --color=never node*/*core* 2>/dev/null | wc -l)
+else
+  CORE_COUNT=$(ls --color=never data/*core* 2>/dev/null | wc -l)
+fi
 if [ ${CORE_COUNT} -eq 0 ]; then
   echo "INFO: no cores found at data/*core* nor at node*/*core*"
   exit 1
@@ -26,7 +38,11 @@ elif [ ${CORE_COUNT} -gt 1 ]; then
   exit 1
 fi
 
-ERROR_LOG=$(ls --color=never ./node*/node*.err ./log/master.err 2>/dev/null | head -n1)  # node has to come first as that one has to be used before others if present, and normal ls will sort alphabetically, placing node1 (likely crashing node) first. Still, it is not perfect in case node2 or node3 crashes TODO
+if [ "${MDG}" -eq 1 ]; then
+  ERROR_LOG=$(ls --color=never ./node*/node*.err 2>/dev/null | head -n1)  # This is not perfect in case node2 or node3 crashes TODO
+else
+  ERROR_LOG=$(ls --color=never ./log/master.err 2>/dev/null | head -n1)
+fi
 if [ ! -z "${ERROR_LOG}" ]; then
   ASSERT="$(grep --binary-files=text -m1 'Assertion.*failed.$' ${ERROR_LOG} | head -n1)"
   if [ -z "${ASSERT}" ]; then
