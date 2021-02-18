@@ -137,7 +137,7 @@ fi
 rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init pmm* reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test wipe*
 BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_pquery | multirun_mysqld | loopin | gdb | fixin | stack | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
-GALERA_SCRIPTS="gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
+GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | 1_node_cli | 2_node_cli | 3_node_cli | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
   echo "Adding scripts: ${BASIC_SCRIPTS} | ${GRP_RPL_SCRIPTS}"
 elif [[ $MDG -eq 1 ]]; then
