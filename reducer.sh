@@ -2140,6 +2140,9 @@ start_mdg_main(){
     init_empty_port
     SST_PORT="127.0.0.1:${NEWPORT}"
     NEWPORT=
+    init_empty_port
+    IST_PORT="127.0.0.1:${NEWPORT}"
+    NEWPORT=
     MDG_PORTS+=("$RBASE")
     MDG_LADDRS+=("$LADDR")
     cp ${WORKD}/my.cnf ${WORKD}/n${i}.cnf
@@ -2152,7 +2155,7 @@ start_mdg_main(){
     sed -i "2i datadir=$node" ${WORKD}/n${i}.cnf
     sed -i "2i socket=$node/node${i}_socket.sock" ${WORKD}/n${i}.cnf
     sed -i "2i tmpdir=$WORKD/tmp${i}" ${WORKD}/n${i}.cnf
-    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
+    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;ist.recv_addr=$IST_PORT;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
     # TODO: Add encryption checks after implementing encryption functionalities in pquery-run.sh
 #    if [[ "$ENCRYPTION_RUN" != 1 ]]; then
 #      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf

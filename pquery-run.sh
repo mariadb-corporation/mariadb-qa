@@ -619,6 +619,9 @@ mdg_startup() {
     init_empty_port
     SST_PORT="127.0.0.1:${NEWPORT}"
     NEWPORT=
+    init_empty_port
+    IST_PORT="127.0.0.1:${NEWPORT}"
+    NEWPORT=
     MDG_PORTS+=("$RBASE")
     MDG_LADDRS+=("$LADDR")
     if [ "$IS_STARTUP" == "startup" ]; then
@@ -645,9 +648,9 @@ mdg_startup() {
     sed -i "2i socket=$node/node${i}_socket.sock" ${DATADIR}/n${i}.cnf
     sed -i "2i tmpdir=$DATADIR/tmp${i}" ${DATADIR}/n${i}.cnf
     if [[ "$ENCRYPTION_RUN" != 1 ]]; then
-      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPT\"" ${DATADIR}/n${i}.cnf
+      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;ist.recv_addr=$IST_PORT;$WSREP_PROVIDER_OPT\"" ${DATADIR}/n${i}.cnf
     else
-      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPT;socket.ssl_key=${WORKDIR}/cert/server-key.pem;socket.ssl_cert=${WORKDIR}/cert/server-cert.pem;socket.ssl_ca=${WORKDIR}/cert/ca.pem\"" ${DATADIR}/n${i}.cnf
+      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;ist.recv_addr=$IST_PORT;$WSREP_PROVIDER_OPT;socket.ssl_key=${WORKDIR}/cert/server-key.pem;socket.ssl_cert=${WORKDIR}/cert/server-cert.pem;socket.ssl_ca=${WORKDIR}/cert/ca.pem\"" ${DATADIR}/n${i}.cnf
       echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
       echo "ssl-cert = ${WORKDIR}/cert/server-cert.pem" >> ${DATADIR}/n${i}.cnf
       echo "ssl-key = ${WORKDIR}/cert/server-key.pem" >> ${DATADIR}/n${i}.cnf

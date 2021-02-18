@@ -120,20 +120,15 @@ fi
 # Check MariaDB Galera Cluster
 MDG=0
 GALERA_LIB=
-CORE_FILE="data/*core*"
 SOCKET=${PWD}/socket.sock
 if [ -r lib/libgalera_smm.so ]; then
   echo "CS Galera plugin found. Adding CS Galera startup"
   MDG=1
   GALERA_LIB=${PWD}/lib/libgalera_smm.so
-  SOCKET=${PWD}/node1/node1_socket.sock
-  CORE_FILE="node1/*core*"
 elif [ -r lib/libgalera_enterprise_smm.so ]; then
   echo "ES Galera plugin found. Adding ES Galera startup"
   MDG=1
   GALERA_LIB=${PWD}/lib/libgalera_enterprise_smm.so
-  SOCKET=${PWD}/node1/node1_socket.sock
-  CORE_FILE="node1/*core*"
 else
   echo "Warning! Galera plugin not found. Skipping Galera startup"
 fi
@@ -142,11 +137,11 @@ fi
 rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init pmm* reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test wipe*
 BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_pquery | multirun_mysqld | loopin | gdb | fixin | stack | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
-GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_wipe | gal_init | gal_kill | gal_setup | gdb | 1_node_cli | 2_node_cli | 3_node_cli | all | all_no_cl | all_rr | all_stbe | binlog | cl | cl_noprompt | cl_noprompt_nobinary | fixin | loopin | multirun | multirun_mysqld | multirun_pquery | multitest | pmm_mysql_agent | pmm_os_agent | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | sqlmode | stack | sysbench_measure | sysbench_prepare | sysbench_run | test"
+GALERA_SCRIPTS="gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
   echo "Adding scripts: ${BASIC_SCRIPTS} | ${GRP_RPL_SCRIPTS}"
 elif [[ $MDG -eq 1 ]]; then
-  echo "Adding scripts: ${GALERA_SCRIPTS}"
+  echo "Adding scripts: ${BASIC_SCRIPTS} ${GALERA_SCRIPTS}"
 else
   echo "Adding scripts: ${BASIC_SCRIPTS}"
 fi
@@ -281,7 +276,8 @@ if [[ $MDG -eq 1 ]]; then
 
   init_empty_port
   PORT=$NEWPORT
-
+  MDG_PORTS=""
+  MDG_LADDRS=""
   for i in $(seq 1 3); do
     node=node${i}
     mkdir -p ${PWD}/tmp${i}
@@ -293,6 +289,9 @@ if [[ $MDG -eq 1 ]]; then
     NEWPORT=
     init_empty_port
     SST_PORT="127.0.0.1:${NEWPORT}"
+    NEWPORT=
+    init_empty_port
+    IST_PORT="127.0.0.1:${NEWPORT}"
     NEWPORT=
     MDG_PORTS+=("$RBASE")
     MDG_LADDRS+=("$LADDR")
@@ -306,11 +305,11 @@ if [[ $MDG -eq 1 ]]; then
     sed -i "2i datadir=${PWD}/$node" n${i}.cnf
     sed -i "2i socket=${PWD}/$node/node${i}_socket.sock" n${i}.cnf
     sed -i "2i tmpdir=${PWD}/tmp${i}" n${i}.cnf
-    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS\"" n${i}.cnf
+    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;ist.recv_addr=$IST_PORT;$WSREP_PROVIDER_OPTIONS\"" n${i}.cnf
   done
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[0]},${MDG_LADDRS[1]},${MDG_LADDRS[2]}" n1.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[0]},${MDG_LADDRS[1]},${MDG_LADDRS[2]}" n2.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[0]},${MDG_LADDRS[1]},${MDG_LADDRS[2]}" n3.cnf
+  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" n1.cnf
+  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" n2.cnf
+  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" n3.cnf
 
   echo -e "#!/bin/bash" >./gal_start
   echo -e "NODES=\$1" >>./gal_start
@@ -347,14 +346,14 @@ if [[ $MDG -eq 1 ]]; then
   echo "mkdir -p \"\${_RR_TRACE_DIR}\"" >> ./gal_start_rr
   echo "/usr/bin/rr record --chaos ${PWD}/bin/mysqld --defaults-file=${PWD}/n1.cnf \$MYEXTRA --wsrep-new-cluster > ${PWD}/node1/node1.err 2>&1 & " >> ./gal_start_rr
   echo "check_node_startup 1" >> ./gal_start_rr
-  echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n2.cnf \$MYEXTRA > $PWD/node2/node3.err 2>&1 &" >> ./gal_start_rr
+  echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n2.cnf \$MYEXTRA > $PWD/node2/node2.err 2>&1 &" >> ./gal_start_rr
   echo "check_node_startup 2" >> ./gal_start_rr
   echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n3.cnf \$MYEXTRA > $PWD/node3/node3.err 2>&1 &" >> ./gal_start_rr
   echo "check_node_startup 3" >> ./gal_start_rr
 
   echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n1.cnf \$MYEXTRA --wsrep-new-cluster > $PWD/node1/node1.err 2>&1 &" >> ./gal_start
   echo "check_node_startup 1" >> ./gal_start
-  echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n2.cnf \$MYEXTRA > $PWD/node2/node3.err 2>&1 &" >> ./gal_start
+  echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n2.cnf \$MYEXTRA > $PWD/node2/node2.err 2>&1 &" >> ./gal_start
   echo "check_node_startup 2" >> ./gal_start
   echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n3.cnf \$MYEXTRA > $PWD/node3/node3.err 2>&1 &" >> ./gal_start
   echo "check_node_startup 3" >> ./gal_start
@@ -389,181 +388,181 @@ if [[ $MDG -eq 1 ]]; then
   echo "if [ -r node3/node3.err ]; then mv node3/node3.err node3/node3.err.PREV; fi" >>gal_wipe
   echo "./gal_init;./gal_start;./1_node_cli;./gal_stop;./gal_kill >/dev/null 2>&1;tail node1/node1.err" > gal_setup
   chmod +x 1_node_cli 2_node_cli 3_node_cli gal_wipe gal_start gal_stop gal_init gal_kill gal_setup gal_start_rr
-else
-  mkdir -p data data/mysql log
-  if [ "${USE_JE}" -eq 1 ]; then
-    if [ -r ${PWD}/lib/mysql/plugin/ha_tokudb.so ]; then
-      TOKUDB="--plugin-load-add=tokudb=ha_tokudb.so --tokudb-check-jemalloc=0"
-    else
-      TOKUDB=
-    fi
-  fi
-  if [ -r ${PWD}/lib/mysql/plugin/ha_rocksdb.so ]; then
-    ROCKSDB="--plugin-load-add=rocksdb=ha_rocksdb.so"
-  else
-    ROCKSDB=
-  fi
-
-  if [[ ! -z "$TOKUDB" ]]; then
-    LOAD_TOKUDB_INIT_FILE="${SCRIPT_PWD}/TokuDB.sql"
-  else
-    LOAD_TOKUDB_INIT_FILE=
-  fi
-  if [[ ! -z "$ROCKSDB" ]]; then
-    LOAD_ROCKSDB_INIT_FILE="${SCRIPT_PWD}/MyRocks.sql"
-  else
-    LOAD_ROCKSDB_INIT_FILE=
-  fi
-
-  echo 'MYEXTRA_OPT="$*"' >start
-  echo 'MYEXTRA=" --no-defaults "' >>start
-  echo '#MYEXTRA=" --no-defaults --sql_mode="' >>start
-  #echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load=TokuDB=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
-  #echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
-  echo '#MYEXTRA=" --no-defaults --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>start
-  echo "#MYEXTRA=\" --no-defaults --performance-schema --performance-schema-instrument='%=on'\"" >>start
-  #echo '#MYEXTRA=" --no-defaults --default-tmp-storage-engine=MyISAM --rocksdb --skip-innodb --default-storage-engine=RocksDB  # For fb-mysql only"' >> start
-  echo '#MYEXTRA=" --no-defaults --event-scheduler=ON --maximum-bulk_insert_buffer_size=1M --maximum-join_buffer_size=1M --maximum-max_heap_table_size=1M --maximum-max_join_size=1M --maximum-myisam_max_sort_file_size=1M --maximum-myisam_mmap_size=1M --maximum-myisam_sort_buffer_size=1M --maximum-optimizer_trace_max_mem_size=1M --maximum-preload_buffer_size=1M --maximum-query_alloc_block_size=1M --maximum-query_prealloc_size=1M --maximum-range_alloc_block_size=1M --maximum-read_buffer_size=1M --maximum-read_rnd_buffer_size=1M --maximum-sort_buffer_size=1M --maximum-tmp_table_size=1M --maximum-transaction_alloc_block_size=1M --maximum-transaction_prealloc_size=1M --log-output=none --sql_mode=ONLY_FULL_GROUP_BY"' >>start
-  add_san_options start
-  if [ "${USE_JE}" -eq 1 ]; then
-    echo $JE1 >>start
-    echo $JE2 >>start
-    echo $JE3 >>start
-    echo $JE4 >>start
-    echo $JE5 >>start
-    echo $JE6 >>start
-    echo $JE7 >>start
-  fi
-  cp start start_valgrind # Idem setup for Valgrind
-  cp start start_gypsy    # Idem setup for gypsy
-  cp start start_rr       # Idem setup for rr
-  echo "$BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT}  2>&1 &" >>start
-  echo "for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
-  if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO}" != "5.6" ]; then
-    echo "${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
-  fi
-  echo " valgrind --suppressions=${PWD}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
-  echo "$BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_gypsy
-  echo "export _RR_TRACE_DIR=\"${PWD}/rr\"" >>start_rr
-  echo "if [ -d \"\${_RR_TRACE_DIR}\" ]; then  # Security measure to avoid incorrect mass-rm" >>start_rr
-  echo "  if [ \"\${_RR_TRACE_DIR}\" == \"\${PWD}/rr\" ]; then  # Security measure to avoid incorrect mass-rm" >>start_rr
-  echo "    rm -Rf \"\${_RR_TRACE_DIR}\"" >>start_rr
-  echo "  fi" >>start_rr
-  echo "fi" >>start_rr
-  echo "mkdir -p \"\${_RR_TRACE_DIR}\"" >>start_rr
-  echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
-  echo "echo 'Server socket: ${SOCKET} with datadir: ${PWD}/data'" >>start
-  tail -n1 start >>start_valgrind
-  tail -n1 start >>start_gypsy
-  tail -n1 start >>start_rr
-
-  # -- Replication setup
-  echo '#!/usr/bin/env bash' >repl_setup
-  echo "REPL_TYPE=\$1" >>repl_setup
-  echo "if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-  echo "  NODES=2" >>repl_setup
-  echo "else" >>repl_setup
-  echo "  NODES=1" >>repl_setup
-  echo "fi" >>repl_setup
-  echo 'MYEXTRA=" --no-defaults --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>repl_setup
-  echo "RPORT=$(($RANDOM % 10000 + 10000))" >>repl_setup
-  echo "echo \"\" > stop_repl" >>repl_setup
-  echo "if ${PWD}/bin/mysqladmin -uroot -S$PWD/socket.sock ping > /dev/null 2>&1; then" >>repl_setup
-  echo "  ${PWD}/bin/mysql -A -uroot -S${SOCKET}  -Bse\"create user repl@'%' identified by 'repl';\"" >>repl_setup
-  echo "  ${PWD}/bin/mysql -A -uroot -S${SOCKET}  -Bse\"grant all on *.* to repl@'%'; flush privileges;\"" >>repl_setup
-  echo "  MASTER_PORT=\$(\${PWD}/bin/mysql -A -uroot -S\${SOCKET}  -Bse\"select @@port\")" >>repl_setup
-  echo "else" >>repl_setup
-  echo "  echo \"ERROR! Master server is not started. Make sure to start master with GTID enabled. Terminating!\"" >>repl_setup
-  echo "  exit 1" >>repl_setup
-  echo "fi" >>repl_setup
-  echo "for i in \`seq 1 \$NODES\`;do" >>repl_setup
-  echo "  RBASE=\"\$(( RPORT + \$i ))\"" >>repl_setup
-  echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-  echo "    if [ \$i -eq 1 ]; then" >>repl_setup
-  echo "      node=\"${PWD}/masternode2\"" >>repl_setup
-  echo "    else" >>repl_setup
-  echo "      node=\"${PWD}/slavenode\"" >>repl_setup
-  echo "    fi" >>repl_setup
-  echo "  else" >>repl_setup
-  echo "    node=\"${PWD}/slavenode\"" >>repl_setup
-  echo "  fi" >>repl_setup
-  echo "  if [ ! -d \$node ]; then" >>repl_setup
-  echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 || exit 1;" >>repl_setup
-  echo "  fi" >>repl_setup
-  echo "  $BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=\${node} --datadir=\${node} ${TOKUDB} ${ROCKSDB} --socket=\$node/socket.sock --port=\$RBASE --report-host=$ADDR --report-port=\$RBASE  --server-id=10\$i --log-error=\$node/mysql.err 2>&1 &" >>repl_setup
-  echo "  for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S\$node/socket.sock > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>repl_setup
-  echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-  echo "    if [ \$i -eq 1 ]; then" >>repl_setup
-  echo "      ${PWD}/bin/mysql -A -uroot --socket=\$node/socket.sock  -Bse\"create user repl@'%' identified by 'repl';\"" >>repl_setup
-  echo "      ${PWD}/bin/mysql -A -uroot --socket=\$node/socket.sock  -Bse\"grant all on *.* to repl@'%';flush privileges;\"" >>repl_setup
-  echo "      echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"masternode2> \\\"\" > ${PWD}/masternode2_cl " >>repl_setup
-  echo "    else" >>repl_setup
-  echo "      echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"slavenode> \\\"\" > ${PWD}/\slavenode_cl " >>repl_setup
-  echo "    fi" >>repl_setup
-  echo "  else" >>repl_setup
-  echo "    echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"slavenode> \\\"\" > ${PWD}/\slavenode_cl " >>repl_setup
-  echo "  fi" >>repl_setup
-
-  echo "  echo \"${PWD}/bin/mysqladmin -uroot -S\$node/socket.sock shutdown\" >> stop_repl" >>repl_setup
-  echo "  echo \"echo 'Server on socket \$node/socket.sock with datadir \$node halted'\" >> stop_repl" >>repl_setup
-  echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-  echo "    if [ \$i -eq 2 ]; then" >>repl_setup
-  echo "      MASTER_PORT2=\$(${PWD}/bin/mysql -A -uroot -S${PWD}/masternode2/socket.sock  -Bse\"SELECT @@port\")" >>repl_setup
-  if [ "${VERSION_INFO}" == "8.0" ]; then
-    echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1 FOR CHANNEL 'master1';\"" >>repl_setup
-    echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT2, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1 FOR CHANNEL 'master2';\"" >>repl_setup
-  else
-    echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1 FOR CHANNEL 'master1';\"" >>repl_setup
-    echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT2, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1 FOR CHANNEL 'master2';\"" >>repl_setup
-  fi
-  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"START SLAVE;\"" >>repl_setup
-  echo "    fi" >>repl_setup
-  echo "  else" >>repl_setup
-  if [ "${VERSION_INFO}" == "8.0" ]; then
-    echo "    ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1;START SLAVE;\"" >>repl_setup
-  else
-    echo "    ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1;START SLAVE;\"" >>repl_setup
-  fi
-  echo "  fi" >>repl_setup
-  echo "done" >>repl_setup
-  echo "if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-  echo "  chmod +x  masternode2_cl slavenode_cl stop_repl" >>repl_setup
-  echo "else" >>repl_setup
-  echo "  chmod +x  slavenode_cl stop_repl" >>repl_setup
-  echo "fi" >>repl_setup
-
-  # TODO: fix the line below somehow, and add binary-files=text for all greps. Also revert redirect to >> for second line
-  #echo "set +H" > kill  # Fails with odd './kill: 1: set: Illegal option -H' when kill_all is used?
-  echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
-  echo "timeout -k90 -s9 90s ${PWD}/bin/mysqladmin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
-  echo "./kill >/dev/null 2>&1" >>stop
-  echo "echo 'Server on socket ${SOCKET} with datadir ${PWD}/data halted'" >>stop
-  echo "./init;./start;./cl;./stop;./kill >/dev/null 2>&1;tail log/master.err" >setup
-
-  echo 'MYEXTRA_OPT="$*"' >wipe
-  echo "./stop >/dev/null 2>&1" >>wipe
-  #echo "rm -Rf ${PWD}/data.PREV; mv ${PWD}/data ${PWD}/data.PREV 2>/dev/null" >> wipe  # Removed to save disk space, changed to next line
-  echo "rm -Rf ${PWD}/data ${PWD}/rr" >>wipe
-  if [ "${USE_JE}" -eq 1 ]; then
-    echo $JE1 >>wipe
-    echo $JE2 >>wipe
-    echo $JE3 >>wipe
-    echo $JE4 >>wipe
-    echo $JE5 >>wipe
-    echo $JE6 >>wipe
-    echo $JE7 >>wipe
-  fi
-  echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data" >> wipe
-  echo "rm -f log/master.err.PREV" >>wipe
-  echo "if [ -r log/master.err ]; then mv log/master.err log/master.err.PREV; fi" >>wipe
-  # Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
-  echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CREATE DATABASE IF NOT EXISTS test' ; ./stop" >>wipe
-  # Creating init script
-  echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
-  echo "rm -Rf ${PWD}/data" >> init
-  echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data" >>init
-  echo "rm -f log/master.*" >>init
 fi
+mkdir -p data data/mysql log
+if [ "${USE_JE}" -eq 1 ]; then
+  if [ -r ${PWD}/lib/mysql/plugin/ha_tokudb.so ]; then
+    TOKUDB="--plugin-load-add=tokudb=ha_tokudb.so --tokudb-check-jemalloc=0"
+  else
+    TOKUDB=
+  fi
+fi
+if [ -r ${PWD}/lib/mysql/plugin/ha_rocksdb.so ]; then
+  ROCKSDB="--plugin-load-add=rocksdb=ha_rocksdb.so"
+else
+  ROCKSDB=
+fi
+
+if [[ ! -z "$TOKUDB" ]]; then
+  LOAD_TOKUDB_INIT_FILE="${SCRIPT_PWD}/TokuDB.sql"
+else
+  LOAD_TOKUDB_INIT_FILE=
+fi
+if [[ ! -z "$ROCKSDB" ]]; then
+  LOAD_ROCKSDB_INIT_FILE="${SCRIPT_PWD}/MyRocks.sql"
+else
+  LOAD_ROCKSDB_INIT_FILE=
+fi
+
+echo 'MYEXTRA_OPT="$*"' >start
+echo 'MYEXTRA=" --no-defaults "' >>start
+echo '#MYEXTRA=" --no-defaults --sql_mode="' >>start
+#echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load=TokuDB=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
+#echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
+echo '#MYEXTRA=" --no-defaults --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>start
+echo "#MYEXTRA=\" --no-defaults --performance-schema --performance-schema-instrument='%=on'\"" >>start
+#echo '#MYEXTRA=" --no-defaults --default-tmp-storage-engine=MyISAM --rocksdb --skip-innodb --default-storage-engine=RocksDB  # For fb-mysql only"' >> start
+echo '#MYEXTRA=" --no-defaults --event-scheduler=ON --maximum-bulk_insert_buffer_size=1M --maximum-join_buffer_size=1M --maximum-max_heap_table_size=1M --maximum-max_join_size=1M --maximum-myisam_max_sort_file_size=1M --maximum-myisam_mmap_size=1M --maximum-myisam_sort_buffer_size=1M --maximum-optimizer_trace_max_mem_size=1M --maximum-preload_buffer_size=1M --maximum-query_alloc_block_size=1M --maximum-query_prealloc_size=1M --maximum-range_alloc_block_size=1M --maximum-read_buffer_size=1M --maximum-read_rnd_buffer_size=1M --maximum-sort_buffer_size=1M --maximum-tmp_table_size=1M --maximum-transaction_alloc_block_size=1M --maximum-transaction_prealloc_size=1M --log-output=none --sql_mode=ONLY_FULL_GROUP_BY"' >>start
+add_san_options start
+if [ "${USE_JE}" -eq 1 ]; then
+  echo $JE1 >>start
+  echo $JE2 >>start
+  echo $JE3 >>start
+  echo $JE4 >>start
+  echo $JE5 >>start
+  echo $JE6 >>start
+  echo $JE7 >>start
+fi
+cp start start_valgrind # Idem setup for Valgrind
+cp start start_gypsy    # Idem setup for gypsy
+cp start start_rr       # Idem setup for rr
+echo "$BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT}  2>&1 &" >>start
+echo "for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
+if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO}" != "5.6" ]; then
+  echo "${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
+fi
+echo " valgrind --suppressions=${PWD}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
+echo "$BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_gypsy
+echo "export _RR_TRACE_DIR=\"${PWD}/rr\"" >>start_rr
+echo "if [ -d \"\${_RR_TRACE_DIR}\" ]; then  # Security measure to avoid incorrect mass-rm" >>start_rr
+echo "  if [ \"\${_RR_TRACE_DIR}\" == \"\${PWD}/rr\" ]; then  # Security measure to avoid incorrect mass-rm" >>start_rr
+echo "    rm -Rf \"\${_RR_TRACE_DIR}\"" >>start_rr
+echo "  fi" >>start_rr
+echo "fi" >>start_rr
+echo "mkdir -p \"\${_RR_TRACE_DIR}\"" >>start_rr
+echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
+echo "echo 'Server socket: ${SOCKET} with datadir: ${PWD}/data'" >>start
+tail -n1 start >>start_valgrind
+tail -n1 start >>start_gypsy
+tail -n1 start >>start_rr
+
+# -- Replication setup
+echo '#!/usr/bin/env bash' >repl_setup
+echo "REPL_TYPE=\$1" >>repl_setup
+echo "if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+echo "  NODES=2" >>repl_setup
+echo "else" >>repl_setup
+echo "  NODES=1" >>repl_setup
+echo "fi" >>repl_setup
+echo 'MYEXTRA=" --no-defaults --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>repl_setup
+echo "RPORT=$(($RANDOM % 10000 + 10000))" >>repl_setup
+echo "echo \"\" > stop_repl" >>repl_setup
+echo "if ${PWD}/bin/mysqladmin -uroot -S$PWD/socket.sock ping > /dev/null 2>&1; then" >>repl_setup
+echo "  ${PWD}/bin/mysql -A -uroot -S${SOCKET}  -Bse\"create user repl@'%' identified by 'repl';\"" >>repl_setup
+echo "  ${PWD}/bin/mysql -A -uroot -S${SOCKET}  -Bse\"grant all on *.* to repl@'%'; flush privileges;\"" >>repl_setup
+echo "  MASTER_PORT=\$(\${PWD}/bin/mysql -A -uroot -S\${SOCKET}  -Bse\"select @@port\")" >>repl_setup
+echo "else" >>repl_setup
+echo "  echo \"ERROR! Master server is not started. Make sure to start master with GTID enabled. Terminating!\"" >>repl_setup
+echo "  exit 1" >>repl_setup
+echo "fi" >>repl_setup
+echo "for i in \`seq 1 \$NODES\`;do" >>repl_setup
+echo "  RBASE=\"\$(( RPORT + \$i ))\"" >>repl_setup
+echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+echo "    if [ \$i -eq 1 ]; then" >>repl_setup
+echo "      node=\"${PWD}/masternode2\"" >>repl_setup
+echo "    else" >>repl_setup
+echo "      node=\"${PWD}/slavenode\"" >>repl_setup
+echo "    fi" >>repl_setup
+echo "  else" >>repl_setup
+echo "    node=\"${PWD}/slavenode\"" >>repl_setup
+echo "  fi" >>repl_setup
+echo "  if [ ! -d \$node ]; then" >>repl_setup
+echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 || exit 1;" >>repl_setup
+echo "  fi" >>repl_setup
+echo "  $BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=\${node} --datadir=\${node} ${TOKUDB} ${ROCKSDB} --socket=\$node/socket.sock --port=\$RBASE --report-host=$ADDR --report-port=\$RBASE  --server-id=10\$i --log-error=\$node/mysql.err 2>&1 &" >>repl_setup
+echo "  for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S\$node/socket.sock > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>repl_setup
+echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+echo "    if [ \$i -eq 1 ]; then" >>repl_setup
+echo "      ${PWD}/bin/mysql -A -uroot --socket=\$node/socket.sock  -Bse\"create user repl@'%' identified by 'repl';\"" >>repl_setup
+echo "      ${PWD}/bin/mysql -A -uroot --socket=\$node/socket.sock  -Bse\"grant all on *.* to repl@'%';flush privileges;\"" >>repl_setup
+echo "      echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"masternode2> \\\"\" > ${PWD}/masternode2_cl " >>repl_setup
+echo "    else" >>repl_setup
+echo "      echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"slavenode> \\\"\" > ${PWD}/\slavenode_cl " >>repl_setup
+echo "    fi" >>repl_setup
+echo "  else" >>repl_setup
+echo "    echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"slavenode> \\\"\" > ${PWD}/\slavenode_cl " >>repl_setup
+echo "  fi" >>repl_setup
+
+echo "  echo \"${PWD}/bin/mysqladmin -uroot -S\$node/socket.sock shutdown\" >> stop_repl" >>repl_setup
+echo "  echo \"echo 'Server on socket \$node/socket.sock with datadir \$node halted'\" >> stop_repl" >>repl_setup
+echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+echo "    if [ \$i -eq 2 ]; then" >>repl_setup
+echo "      MASTER_PORT2=\$(${PWD}/bin/mysql -A -uroot -S${PWD}/masternode2/socket.sock  -Bse\"SELECT @@port\")" >>repl_setup
+if [ "${VERSION_INFO}" == "8.0" ]; then
+  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1 FOR CHANNEL 'master1';\"" >>repl_setup
+  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT2, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1 FOR CHANNEL 'master2';\"" >>repl_setup
+else
+  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1 FOR CHANNEL 'master1';\"" >>repl_setup
+  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT2, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1 FOR CHANNEL 'master2';\"" >>repl_setup
+fi
+echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"START SLAVE;\"" >>repl_setup
+echo "    fi" >>repl_setup
+echo "  else" >>repl_setup
+if [ "${VERSION_INFO}" == "8.0" ]; then
+  echo "    ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1;START SLAVE;\"" >>repl_setup
+else
+  echo "    ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1;START SLAVE;\"" >>repl_setup
+fi
+echo "  fi" >>repl_setup
+echo "done" >>repl_setup
+echo "if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+echo "  chmod +x  masternode2_cl slavenode_cl stop_repl" >>repl_setup
+echo "else" >>repl_setup
+echo "  chmod +x  slavenode_cl stop_repl" >>repl_setup
+echo "fi" >>repl_setup
+
+# TODO: fix the line below somehow, and add binary-files=text for all greps. Also revert redirect to >> for second line
+#echo "set +H" > kill  # Fails with odd './kill: 1: set: Illegal option -H' when kill_all is used?
+echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
+echo "timeout -k90 -s9 90s ${PWD}/bin/mysqladmin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
+echo "./kill >/dev/null 2>&1" >>stop
+echo "echo 'Server on socket ${SOCKET} with datadir ${PWD}/data halted'" >>stop
+echo "./init;./start;./cl;./stop;./kill >/dev/null 2>&1;tail log/master.err" >setup
+
+echo 'MYEXTRA_OPT="$*"' >wipe
+echo "./stop >/dev/null 2>&1" >>wipe
+#echo "rm -Rf ${PWD}/data.PREV; mv ${PWD}/data ${PWD}/data.PREV 2>/dev/null" >> wipe  # Removed to save disk space, changed to next line
+echo "rm -Rf ${PWD}/data ${PWD}/rr" >>wipe
+if [ "${USE_JE}" -eq 1 ]; then
+  echo $JE1 >>wipe
+  echo $JE2 >>wipe
+  echo $JE3 >>wipe
+  echo $JE4 >>wipe
+  echo $JE5 >>wipe
+  echo $JE6 >>wipe
+  echo $JE7 >>wipe
+fi
+echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data" >> wipe
+echo "rm -f log/master.err.PREV" >>wipe
+echo "if [ -r log/master.err ]; then mv log/master.err log/master.err.PREV; fi" >>wipe
+# Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
+echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CREATE DATABASE IF NOT EXISTS test' ; ./stop" >>wipe
+# Creating init script
+echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
+echo "rm -Rf ${PWD}/data" >> init
+echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data" >>init
+echo "rm -f log/master.*" >>init
+
 
 
 echo "#!/bin/bash" >loopin
@@ -579,7 +578,7 @@ echo 'wc -l out.sql' >>loopin
 echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DROP/CREATE/USE DATABASE test!"' >>loopin
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >>loopin
 echo "#!/bin/bash" >multirun_mysqld
-echo '~/mariadb-qa/multirun_mysqld.sh "${*}"' >>multirun_mysqld
+echo "~/mariadb-qa/multirun_mysqld.sh \"${*}\"" >>multirun_mysqld
 echo "#!/bin/bash" >multirun
 echo "if [ ! -r ./in.sql ]; then echo 'Missing ./in.sql - please create it!'; exit 1; fi" >>multirun
 echo "if [ ! -r ./all_no_cl ]; then echo 'Missing ./all_no_cl - perhaps run ~/start or ~/mariadb-qa/startup.sh again?'; exit 1; fi" >>multirun
@@ -606,6 +605,7 @@ echo "echo \"Order: \$(if grep -qi 'RND_REPLAY_ORDER=1' ~/mariadb-qa/multirun_cl
 echo "echo ''" >>multirun
 ln -s ./multirun ./m 2>/dev/null
 cp ./multirun ./multirun_pquery
+
 echo "~/mariadb-qa/multirun_cli.sh 200 100000 in.sql ${PWD}/bin/mysql ${SOCKET}" >>multirun
 echo "#~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/mysql ${SOCKET}" >>multirun
 echo "# Note that there are two levels of threading: the number of pquery clients started (as set by $1), and the number of pquery threads initiated/used by each of those pquery clients (as set by $7)." >>multirun_pquery
@@ -618,6 +618,14 @@ echo "~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariadb
 echo "" >>multirun_pquery
 echo "## Single pquery client, single thread (most common)" >>multirun_pquery
 echo "#~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 1" >>multirun_pquery
+
+if [[ $MDG -eq 1 ]]; then
+  cp multirun gal_multirun
+  cp multirun_pquery gal_multirun_pquery
+  sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_multirun*
+  sed -i "s|all_no_cl|gal_no_cl|g" gal_multirun*
+  ln -s ./gal_multirun ./g_m 2>/dev/null
+fi
 
 if [[ $MDG -eq 0 ]]; then
   if [ ! -z "$LOAD_TOKUDB_INIT_FILE" ]; then
@@ -650,6 +658,13 @@ echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinar
 touch test
 add_san_options test
 echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
+if [[ $MDG -eq 1 ]]; then
+  cp cl gal_cl
+  cp cl_noprompt gal_cl_noprompt
+  cp cl_noprompt_nobinary gal_cl_noprompt_nobinary
+  cp test gal_test
+  sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_cl gal_cl_noprompt gal_cl_noprompt_nobinary gal_test
+fi
 
 if [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "0.5" ]; then
   if [ "${VERSION_INFO}" == "8.0" ]; then
@@ -670,11 +685,13 @@ elif [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "1.
     echo "sysbench /usr/share/sysbench/oltp_read_write.lua --report-interval=10 --time=50 --events=0 --index_updates=10 --non_index_updates=10 --distinct_ranges=15 --order_ranges=15 --tables=1 --threads=4  --table-size=1000000 --mysql-db=test --mysql-user=root --db-driver=mysql --mysql-socket=${SOCKET} run" >sysbench_run
   fi
 fi
-
 if [[ $MDG -eq 0 ]]; then
   echo "./stop 2>/dev/null;./kill >/dev/null 2>&1;./wipe;./start;./sysbench_prepare;./sysbench_run;./stop;./kill >/dev/null 2>&1;" >sysbench_measure
 else
-  echo "./gal_stop 2>/dev/null;./gal_kill >/dev/null 2>&1;./gal_wipe;./gal_start;./sysbench_prepare;./sysbench_run;./gal_stop;./gal_kill >/dev/null 2>&1;" >sysbench_measure
+  cp sysbench_prepare gal_sysbench_prepare
+  cp sysbench_run gal_sysbench_run
+  sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_sysbench*
+  echo "./gal_stop 2>/dev/null;./gal_kill >/dev/null 2>&1;./gal_wipe;./gal_start;./gal_sysbench_prepare;./gal_sysbench_run;./gal_stop;./gal_kill >/dev/null 2>&1;" >gal_sysbench_measure
 fi
 
 # RV/RS discussed this code 19/12/18 and decided we should disable and ultimately remove it. There is myrocks_tokudb_init already, which can do the same if needed (i.e. load extra TokuDB and RocksDB plugins). The main reason to remove this code is that loading these extra plugins always by defaut will make --init-file=...plugins_80.sql not work with errors like 'Function 'tokudb_file_map' already exists.' which can affect issue reproducibility (as not all plugins are loaded), or even hide bugs with plugins_80.sql if there are any (when it's used with ./start).
@@ -734,35 +751,53 @@ echo 'echo "USE test;" >> ./in.sql' >>fixin
 echo 'if [ -r ./in.tmp ]; then cat in.tmp >> in.sql; rm -f in.tmp; fi' >>fixin
 
 echo "${SCRIPT_PWD}/stack.sh" >stack
-echo "if [ \$(ls ${CORE_FILE} 2>/dev/null | wc -l) -eq 0 ]; then" >gdb
-echo "  echo \"No core file found in ${CORE_FILE} - exiting\"" >>gdb
+echo "if [ \$(ls data/*core* 2>/dev/null | wc -l) -eq 0 ]; then" >gdb
+echo "  echo \"No core file found in data/*core* - exiting\"" >>gdb
 echo "  exit 1" >>gdb
-echo "elif [ \$(ls ${CORE_FILE} 2>/dev/null | wc -l) -gt 1 ]; then" >>gdb
-echo "  echo \"More then one core file found in ${CORE_FILE} - exiting\"" >>gdb
+echo "elif [ \$(ls data/*core* 2>/dev/null | wc -l) -gt 1 ]; then" >>gdb
+echo "  echo \"More then one core file found in data/*core* - exiting\"" >>gdb
 echo "  exit 1" >>gdb
 echo "else" >>gdb
-echo "  gdb bin/mysqld \$(ls ${CORE_FILE})" >>gdb
+echo "  gdb bin/mysqld \$(ls data/*core*)" >>gdb
 echo "fi" >>gdb
 
+if [[ $MDG -eq 1 ]]; then
+  cp gdb gal_gdb
+  sed -i "s|ls data/\*core\*|ls node1/\*core\*|g" gal_gdb
+fi
 echo 'sudo pmm-admin config --server $(ifconfig | grep -A1 "^en" | grep -v "^en" | sed "s|.*inet ||;s| .*||")' >pmm_os_agent
 echo 'sudo pmm-admin add mysql $(echo ${PWD} | sed "s|/|-|g;s|^-\+||") --socket=${SOCKET} --user=root --query-source=perfschema' >pmm_mysql_agent
 
+echo './all --sql_mode=' >sqlmode
+echo './all --log_bin' >binlog
+echo 'MYEXTRA_OPT="$*"' >all
+echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT};./cl" >>all
+ln -s ./all ./a 2>/dev/null
+echo 'MYEXTRA_OPT="$*"' >all_stbe
+echo "./all --early-plugin-load=keyring_file.so --keyring_file_data=keyring --innodb_sys_tablespace_encrypt=ON \${MYEXTRA_OPT}" >>all_stbe # './all_stbe' is './all' with system tablespace encryption
+echo 'MYEXTRA_OPT="$*"' >all_no_cl
+echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT}" >>all_no_cl
+echo 'MYEXTRA_OPT="$*"' >all_rr
+echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};./cl" >>all_rr
+if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
+chmod +x start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init pmm_os_agent pmm_mysql_agent repl_setup multirun multirun_pquery multirun_mysqld reducer_* 2>/dev/null
+
+# Adding galera all script
+echo './gal --sql_mode=' >gal_sqlmode
+echo './gal --log_bin' >gal_binlog
+echo 'MYEXTRA_OPT="$*"' >gal
+echo "./gal_kill >/dev/null 2>&1;./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT};./gal_cl" >>gal
+ln -s ./gal ./g 2>/dev/null
+echo 'MYEXTRA_OPT="$*"' >gal_stbe
+echo "./gal --early-plugin-load=keyring_file.so --keyring_file_data=keyring --innodb_sys_tablespace_encrypt=ON \${MYEXTRA_OPT}" >>gal_stbe # './gal_stbe' is './gal' with system tablespace encryption
+echo 'MYEXTRA_OPT="$*"' >gal_no_cl
+echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT}" >>gal_no_cl
+echo 'MYEXTRA_OPT="$*"' >gal_rr
+echo "./gal_kill >/dev/null 2>&1;./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start_rr \${MYEXTRA_OPT};./gal_cl" >>gal_rr
+chmod +x gal gal_cl gal_sqlmode gal_binlog gal_stbe gal_no_cl gal_rr gal_gdb gal_test gal_cl_noprompt_nobinary gal_cl_noprompt gal_multirun gal_multirun_pquery gal_sysbench_measure gal_sysbench_prepare gal_sysbench_run 2>/dev/null
+echo "Setting up server with default directories"
 
 if [[ $MDG -eq 0 ]]; then
-  echo './all --sql_mode=' >sqlmode
-  echo './all --log_bin' >binlog
-  echo 'MYEXTRA_OPT="$*"' >all
-  echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT};./cl" >>all
-  ln -s ./all ./a 2>/dev/null
-  echo 'MYEXTRA_OPT="$*"' >all_stbe
-  echo "./all --early-plugin-load=keyring_file.so --keyring_file_data=keyring --innodb_sys_tablespace_encrypt=ON \${MYEXTRA_OPT}" >>all_stbe # './all_stbe' is './all' with system tablespace encryption
-  echo 'MYEXTRA_OPT="$*"' >all_no_cl
-  echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT}" >>all_no_cl
-  echo 'MYEXTRA_OPT="$*"' >all_rr
-  echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};./cl" >>all_rr
-  if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
-  chmod +x start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init pmm_os_agent pmm_mysql_agent repl_setup multirun multirun_pquery multirun_mysqld reducer_* 2>/dev/null
-  echo "Setting up server with default directories"
   ./stop >/dev/null 2>&1
   ./init
   if [[ -r ${PWD}/lib/mysql/plugin/ha_tokudb.so ]] || [[ -r ${PWD}/lib/mysql/plugin/ha_rocksdb.so ]]; then
@@ -772,20 +807,6 @@ if [[ $MDG -eq 0 ]]; then
   echo "Done! To get a fresh instance at any time, execute: ./all (executes: stop;kill;wipe;start;cl)"
   echo "      To get a fresh instance now, execute: ./start then wait 3 seconds and execute ./cl"
 else
-  echo './all --sql_mode=' >sqlmode
-  echo './all --log_bin' >binlog
-  echo 'MYEXTRA_OPT="$*"' >all
-  echo "./gal_kill >/dev/null 2>&1;./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT};./1_node_cli" >>all
-  ln -s ./all ./a 2>/dev/null
-  echo 'MYEXTRA_OPT="$*"' >all_stbe
-  echo "./all --early-plugin-load=keyring_file.so --keyring_file_data=keyring --innodb_sys_tablespace_encrypt=ON \${MYEXTRA_OPT}" >>all_stbe # './all_stbe' is './all' with system tablespace encryption
-  echo 'MYEXTRA_OPT="$*"' >all_no_cl
-  echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT}" >>all_no_cl
-  echo 'MYEXTRA_OPT="$*"' >all_rr
-  echo "./gal_kill >/dev/null 2>&1;./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start_rr \${MYEXTRA_OPT};./1_node_cli" >>all_rr
-  if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
-  chmod +x setup cl cl_noprompt cl_noprompt_nobinary test sqlmode binlog all all_stbe all_no_cl all_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin pmm_os_agent pmm_mysql_agent multirun multirun_pquery multirun_mysqld reducer_* 2>/dev/null
-  echo "Setting up server with default directories"
   ./gal_stop >/dev/null 2>&1
   ./gal_init
   echo "Done! To get a fresh instance at any time, execute: ./all (executes: gal_stop;gal_kill;gal_wipe;gal_start;1_node_cli)"
