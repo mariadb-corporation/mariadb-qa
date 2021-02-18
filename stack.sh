@@ -17,16 +17,16 @@ fi
 if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
 if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
 
-CORE_COUNT=$(ls data/*core* 2>/dev/null | wc -l)
+CORE_COUNT=$(ls --color=never data/*core* node*/*core* 2>/dev/null | wc -l)
 if [ ${CORE_COUNT} -eq 0 ]; then
-  echo "INFO: no cores found at data/*core*"
+  echo "INFO: no cores found at data/*core* nor at node*/*core*"
   exit 1
 elif [ ${CORE_COUNT} -gt 1 ]; then
-  echo "Assert: too many (${CORE_COUNT}) cores found at data/*core*, this should not happen (as ./all_no_cl was used which should have created a clean data directory)"
+  echo "Assert: too many (${CORE_COUNT}) cores found at data/*core* and/or node*/*core*, this should not happen (as ./all_no_cl was used which should have created a clean data directory, or the same for the matching Galera scripts)"
   exit 1
 fi
 
-ERROR_LOG=$(ls log/master.err 2>/dev/null | head -n1)
+ERROR_LOG=$(ls --color=never log/master.err 2>/dev/null | head -n1)
 if [ ! -z "${ERROR_LOG}" ]; then
   ASSERT="$(grep --binary-files=text -m1 'Assertion.*failed.$' ${ERROR_LOG} | head -n1)"
   if [ -z "${ASSERT}" ]; then
@@ -37,7 +37,7 @@ if [ ! -z "${ERROR_LOG}" ]; then
   fi
 fi
 
-gdb -q ${BIN} $(ls data/*core*) >/tmp/${RANDF}.gdba 2>&1 << EOF
+gdb -q ${BIN} $(ls --color=never data/*core* node*/*core* 2>/dev/null) >/tmp/${RANDF}.gdba 2>&1 << EOF
  set pagination off
  set print pretty on
  set print frame-arguments all

@@ -69,6 +69,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|handler|HANDLER|gi' | \
   sed 's|dual|DUAL|gi' | \
   sed 's|all|ALL|gi' | \
+  sed 's|call|CALL|gi' | \
+  sed 's|flush|FLUSH|gi' | \
   sed 's|with|WITH|gi' | \
   sed 's|recursive|RECURSIVE|gi' | \
   sed 's|dynamic|DYNAMIC|gi' | \
