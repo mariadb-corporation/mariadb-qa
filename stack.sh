@@ -12,7 +12,7 @@ SERVER_VERSION="$(${BIN} --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-Mar
 BUILD_TYPE=
 LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
 if [ "${LAST_THREE}" != "dbg" -a "${LAST_THREE}" != "opt" ]; then  # in-trial ./stack call
-  LAST_THREE="$(grep --binary-files=text -Eo "\-dbg|\-opt" ./log/master.err 2>/dev/null | head -n1 | sed 's|\-||')"
+  LAST_THREE="$(grep --binary-files=text -Eo "\-dbg|\-opt" ./node*/node*.err ./log/master.err 2>/dev/null | head -n1 | sed 's|\-||')"
 fi
 if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
 if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
@@ -26,7 +26,7 @@ elif [ ${CORE_COUNT} -gt 1 ]; then
   exit 1
 fi
 
-ERROR_LOG=$(ls --color=never log/master.err 2>/dev/null | head -n1)
+ERROR_LOG=$(ls --color=never ./node*/node*.err ./log/master.err 2>/dev/null | head -n1)  # node has to come first as that one has to be used before others if present, and normal ls will sort alphabetically, placing node1 (likely crashing node) first. Still, it is not perfect in case node2 or node3 crashes TODO
 if [ ! -z "${ERROR_LOG}" ]; then
   ASSERT="$(grep --binary-files=text -m1 'Assertion.*failed.$' ${ERROR_LOG} | head -n1)"
   if [ -z "${ASSERT}" ]; then
