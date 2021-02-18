@@ -4,6 +4,7 @@ set +H  # Disables history substitution and avoids  -bash: !: event not found  l
 NOPERL=0
 perl --version >/dev/null 2>&1
 if [ $? -ne 0 ]; then echo "This script requires perl, please install it"; NOPERL=1; fi
+SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 
 noformat_strings(){
   echo "----- Handy extra noformat strings -----"
@@ -17,9 +18,17 @@ noformat_strings(){
       MYSQLD="../mysqld/mysqld"
     elif [ -r ./log/master.err ]; then
       POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-      if [ -r ${POTENTIAL_MYSQLD} ]; then
+      if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
         MYSQLD="${POTENTIAL_MYSQLD}"
       fi
+    elif [ -r ./node1/node1.err ]; then
+      POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+      if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
+        MYSQLD="${POTENTIAL_MYSQLD}"
+      fi
+    else
+      echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld nor other potential mysqld's extracted from any logs at ./log/master.err or ./node1/node1.err"
+      exit 1
     fi
   fi
   if [ ! -z "${MYSQLD}" ]; then
@@ -35,7 +44,17 @@ noformat_strings(){
   fi
 }
 
-TEXT="$(~/t)"
+if [ -r ~/mariadb-qa/new_text_string.sh ]; then
+  TEXT="$(~/mariadb-qa/new_text_string.sh)"
+elif [ -r ${SCRIPT_PWD}/new_text_string.sh ]; then
+  TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"
+elif [ -r ~/t ]; then
+  TEXT="$(~/t)"
+else
+  echo "Assert: new_text_string.sh cannot be located"
+  exit 1
+fi
+
 if [[ "${TEXT}" == *"no core file found"* ]]; then 
   echo "Assert: no core file found in */*core*"
   #echo $-

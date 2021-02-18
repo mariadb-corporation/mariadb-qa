@@ -33,37 +33,56 @@ if [ -z "${MYSQLD}" ]; then
     if [ -r ${POTENTIAL_MYSQLD} ]; then
       MYSQLD="${POTENTIAL_MYSQLD}"
     fi
+  elif [ -r ./node1/node1.err ]; then
+    POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+    if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
+      MYSQLD="${POTENTIAL_MYSQLD}"
+    fi
   else
-    echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld"
+    echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld nor other potential mysqld's extracted from any logs at ./log/master.err or ./node1/node1.err"
     exit 1
+  fi
+fi
+
+if [ "${MDG}" != "1" ]; then
+  if [ ! -z "$(ls --color=never ./node*/node*.err 2>/dev/null)" ]; then
+    MDG=1
   fi
 fi
 
 if [[ ${MDG} -eq 1 ]]; then
   ERROR_LOG=${GALERA_ERROR_LOG}
   LATEST_CORE=${GALERA_CORE_LOC}
+  if [ -z "${ERROR_LOG}" ]; then  # Interactive call from basedir
+    if [ -r ./node1/node1.err ]; then
+      ERROR_LOG="./node1/node1.err"
+    else
+      echo "Assert: no error log found for Galera run!"
+      exit 1
+    fi
+  fi 
+  if [ -z "${LATEST_CORE}" ]; then  # Interactive call from basedir
+    LATEST_CORE=
+    if [ "${MDG}" -eq 1 ]; then
+      LATEST_CORE="$(ls -t --color=never node*/*core* 2>/dev/null)"
+    else
+      LATEST_CORE="$(ls --color=never data/*core* 2>/dev/null)"
+    fi
+  fi
 else
   ERROR_LOG=$(ls log/master.err 2>/dev/null | head -n1)
   LATEST_CORE=$(ls -t */*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
 fi
 
-if [ ! -f "$ERROR_LOG" ]; then
-  ERROR_LOG=$(ls node1/node1.err 2>/dev/null | head -n1)
-fi
-
-if [ ! -f "$LATEST_CORE" ]; then
-  LATEST_CORE=$(ls -t */*core* 2>/dev/null | head -n1)
+if [ -z "${ERROR_LOG}" ]; then
+  echo "Assert: no error log found at ${ERROR_LOG} - exiting"
+  exit 1
 fi
 
 if [ -z "${LATEST_CORE}" ]; then
   # TODO: Improve code for when there is an error log (with possible assert) but no core dump (unlikely)
   # Idea; can we fallback to OLD/text_string.sh in that case?
   echo "Assert: no core file found in */*core* (excluding any .PREV directories)"
-  exit 1
-fi
-
-if [ -z "${ERROR_LOG}" ]; then
-  echo "Assert: no error log found at ${ERROR_LOG} - exiting"
   exit 1
 fi
 
