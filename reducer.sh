@@ -2999,12 +2999,7 @@ process_outcome(){
                 sed '/^#VARMOD#/p;/^MULTI_REDUCER=/,/^#VARMOD#/d' "$(readlink -f ${BASH_SOURCE[0]})" > "${NEWBUGRE}"
                 sed '/^MULTI_REDUCER=/,/^#VARMOD#/p;d' "$(readlink -f ${BASH_SOURCE[0]})" | grep -v "^#VARMOD#" > "${NEWBUGVM}"
                 sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
-                NEWBUGTEXT=
-                if [ $MDG -eq 1 ]; then
-                  NEWBUGTEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # Idem as below
-                else
-                  NEWBUGTEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
-                fi
+                NEWBUGTEXT="$(cat ${NEWBUGTO} | sed 's|"|\\\\"|g')" # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
                 # This code is taken from pquery-prep-red.sh, if it is updated here, please also update it there.
                 if [[ "${NEWBUGTEXT}" = *":"* ]]; then
                   if [[ "${NEWBUGTEXT}" = *"|"* ]]; then
@@ -3027,7 +3022,7 @@ process_outcome(){
                 else
                   NEWBUGTEXT="$(echo "$NEWBUGTEXT"|sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
                 fi
-                sed -i "s|^TEXT=\"[^\"]\+\"|TEXT=\"$(cat ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.string | head -n1 | tr -d '\n')\"|" "${NEWBUGRE}"
+                sed -i "s|^TEXT=\"[^\"]\+\"|TEXT=\"${NEWBUGTEXT}\"" "${NEWBUGRE}"
                 chmod +x "${NEWBUGRE}"
                 echo_out "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"
                 NEWBUGSO=

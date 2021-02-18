@@ -8,10 +8,10 @@
 # the said changes done by this script. It will then run through all other stages
 
 if [ "$1" == "" ]; then
-  echo "Assert: This script expects one option, namely the trial number for which this script should patch reducer<trialnr>.sh"
+  echo "Assert: This script expects one option, namely the trial number for which this script should patch reducer<trialnr>.sh Note: you can also use, for example, 5-1 for reducer5-1.sh - in the case of reducers for MDG runs."
   echo "Terminating."
   exit 1
-elif [ "$(echo $1 | sed 's|^[0-9]\+||')" != "" ]; then
+elif [ "$(echo "$1" | sed 's|^[-0-9]\+||')" != "" ]; then
   if [[ "${1}" == "/data/NEWBUGS/"* ]]; then 
     if [ -d "/data/NEWBUGS" ]; then
       cd /data/NEWBUGS
@@ -34,6 +34,11 @@ elif [ "$(echo $1 | sed 's|^[0-9]\+||')" != "" ]; then
   fi
 else
   REDUCER="reducer${1}.sh"
+fi
+
+if [ ! -r ${REDUCER} -o ! -f ${REDUCER} ]; then
+  echo "Assert: ${REDUCER} does not exist!"
+  exit 1
 fi
 
 # Patch reducer

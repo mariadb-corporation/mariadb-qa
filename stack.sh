@@ -9,8 +9,11 @@ if [ -z "${BIN}" ]; then echo "Assert: bin/mysqld not found!" exit 1; fi
 
 SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${BIN} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
 SERVER_VERSION="$(${BIN} --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
-LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
 BUILD_TYPE=
+LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
+if [ "${LAST_THREE}" != "dbg" -a "${LAST_THREE}" != "opt" ]; then  # in-trial ./stack call
+  LAST_THREE="$(grep --binary-files=text -Eo "\-dbg|\-opt" ./log/master.err 2>/dev/null | head -n1 | sed 's|\-||')"
+fi
 if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
 if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
 

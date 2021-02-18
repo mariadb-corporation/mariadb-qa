@@ -8,6 +8,12 @@ ENABLE_OUTPUT=1    # 0 For silence, 1 For output
 KNOWN_BUGS="/home/$(whoami)/mariadb-qa/known_bugs.strings"
 
 # System variable(s) and options check
+NEWBUG_COUNT="$(ps -ef | grep clean_newbug | grep -v grep | wc -l)"  # +1 occurence due to subshell
+if [ "${NEWBUG_COUNT}" -gt 2 ]; then  # Ensure clean_newbugs is not running already!
+  echo "Assert: ./clean_newbug is already running elsewhere!"
+  exit 1
+fi
+
 TARGET=
 if [ ! -r ${KNOWN_BUGS} ]; then echo "Assert: KNOWN_BUGS file ('${KNOWN_BUGS}' as set in this script) not readable!"; exit 1; fi
 if [ ! -z "${1}" ]; then 

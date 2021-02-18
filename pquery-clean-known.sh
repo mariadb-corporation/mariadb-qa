@@ -25,13 +25,7 @@ if [ `ls ./*/*.sql 2>/dev/null | wc -l` -eq 0 ]; then
   exit 1
 fi
 
-if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
-  cat ${SCRIPT_PWD}/known_bugs.strings > /tmp/pquery_known_bugs
-  cat ${SCRIPT_PWD}/known_bugs_pxc.strings >> /tmp/pquery_known_bugs
-  STRINGS_FILE=/tmp/pquery_known_bugs
-else
-  STRINGS_FILE=${SCRIPT_PWD}/known_bugs.strings
-fi
+STRINGS_FILE=${SCRIPT_PWD}/known_bugs.strings 
 
 # Make sure known bug lists file does not contain a merge conflict
 CONFLICT=0

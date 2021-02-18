@@ -32,6 +32,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|end|END|gi' | \
   sed 's|load|LOAD|gi' | \
   sed 's|ends|ENDS|gi' | \
+  sed 's|serial|SERIAL|gi' | \
   sed 's|then|THEN|gi' | \
   sed 's|add|ADD|gi' | \
   sed 's|savepoint|SAVEPOINT|gi' | \
