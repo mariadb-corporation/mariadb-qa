@@ -1284,12 +1284,12 @@ pquery_test() {
     mdg_startup
     echoit "Checking 3 node MDG Cluster startup..."
     for X in $(seq 0 10); do
-      sleep 1
+      sleep 1.3
       CLUSTER_UP=0
       if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET1} ping > /dev/null 2>&1; then
-        if [ $(${BASEDIR}/bin/mysql -uroot -S${SOCKET1} -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_cluster" | awk '{print $2}') -eq 3 ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
-        if [ $(${BASEDIR}/bin/mysql -uroot -S${SOCKET2} -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_cluster" | awk '{print $2}') -eq 3 ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
-        if [ $(${BASEDIR}/bin/mysql -uroot -S${SOCKET3} -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_cluster" | awk '{print $2}') -eq 3 ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
+        if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET1} -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_cluster" | awk '{print $2}')" -eq 3 ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
+        if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET2} -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_cluster" | awk '{print $2}')" -eq 3 ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
+        if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET3} -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_cluster" | awk '{print $2}')" -eq 3 ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
         if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET1} -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_local" | awk '{print $2}')" == "Synced" ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
         if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET2} -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_local" | awk '{print $2}')" == "Synced" ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
         if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET3} -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_local" | awk '{print $2}')" == "Synced" ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
@@ -1864,7 +1864,7 @@ pquery_test() {
       ); do
         sleep 1
         if [[ ! -r ${RUNDIR}/${TRIAL}/node1/node1.err || ! -r ${RUNDIR}/${TRIAL}/node2/node2.err || ! -r ${RUNDIR}/${TRIAL}/node2/node2.err ]]; then
-          echoit "Assert: MDG error logs (${RUNDIR}/${TRIAL}/node[13]/node[13].err) not found during a Valgrind run. Please check. Trying to continue, but something is wrong already..."
+          echoit "Assert: MariaDB Galera error logs (${RUNDIR}/${TRIAL}/node[13]/node[13].err) not found during a Valgrind run. Please check. Trying to continue, but something is wrong already..."
           break
         elif [ $(egrep "==[0-9]+== ERROR SUMMARY: [0-9]+ error" ${RUNDIR}/${TRIAL}/node*/node*.err | wc -l) -eq 3 ]; then # Summary found, Valgrind is done
           VALGRIND_SUMMARY_FOUND=1
@@ -2290,51 +2290,59 @@ elif [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
   ${SCRIPT_PWD}/ldd_files.sh
   cd ${PWDTMPSAVE} || exit 1
   if [[ ${MDG} -eq 1 ]]; then
-    echoit "Ensuring MDG templates were created correctly for pquery run..."
+    echoit "Creating 3 MariaDB Galera Node data directory templates..."
     mdg_startup startup
     sleep 5
     if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node1.template/node1_socket.sock ping > /dev/null 2>&1; then
-      echoit "MDG node1.template started"
+      echoit "MariaDB Galera 'node1.template' data directory template creation started"
     else
-      echoit "Assert: MDG data template creation failed.."
+      echoit "Assert: MariaDB Galera 'node1.template' data directory template creation failed..."
       exit 1
     fi
     if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node2.template/node2_socket.sock ping > /dev/null 2>&1; then
-      echoit "MDG node2.template started"
+      echoit "MariaDB Galera 'node2.template' data directory template creation started"
     else
-      echoit "Assert: MDG data template creation failed.."
+      echoit "Assert: MariaDB Galera 'node2.template' data directory template creation failed..."
       exit 1
     fi
     if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node3.template/node3_socket.sock ping > /dev/null 2>&1; then
-      echoit "MDG node3.template started"
+      echoit "MariaDB Galera 'node3.template' data directory template creation started"
     else
-      echoit "Assert: MDG data template creation failed.."
+      echoit "Assert: MariaDB Galera 'node3.template' data directory template creation failed..."
       exit 1
     fi
-    echoit "Created MDG data templates for pquery run.."
+    echoit "Shutting down 3 MariaDB Galera data directory template creation nodes..."
     ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node3.template/node3_socket.sock shutdown > /dev/null 2>&1
     ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node2.template/node2_socket.sock shutdown > /dev/null 2>&1
     ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node1.template/node1_socket.sock shutdown > /dev/null 2>&1
+    echoit "Completed 3 Node MDG data templates creations"
   elif [[ ${GRP_RPL} -eq 1 ]]; then
-    echoit "Ensuring Group Replication templates created for pquery run.."
+    echoit "Creating 3 Group Replication data directory templates..."
     gr_startup startup
     sleep 5
     if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node1.template/node1_socket.sock ping > /dev/null 2>&1; then
-      echoit "Group Replication node1.template started"
-    fi
-    if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node2.template/node2_socket.sock ping > /dev/null 2>&1; then
-      echoit "Group Replication node2.template started"
-    fi
-    if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node3.template/node3_socket.sock ping > /dev/null 2>&1; then
-      echoit "Group Replication node3.template started"
+      echoit "Group Replication 'node1.template' data directory template creation started"
     else
-      echoit "Assert: Group Replication data template creation failed.."
+      echoit "Assert: Group Replication 'node1.template' data directory template creation failed..."
       exit 1
     fi
-    echoit "Created Group Replication data templates for pquery run.."
+    if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node2.template/node2_socket.sock ping > /dev/null 2>&1; then
+      echoit "Group Replication 'node2.template' data directory template creation started"
+    else
+      echoit "Assert: Group Replication 'node2.template' data directory template creation failed..."
+      exit 1
+    fi
+    if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node3.template/node3_socket.sock ping > /dev/null 2>&1; then
+      echoit "Group Replication 'node3.template' data directory template creation started"
+    else
+      echoit "Assert: Group Replication 'node3.template' data directory template creation failed..."
+      exit 1
+    fi
+    echoit "Shutting down 3 Group Replication data directory template creation nodes..."
     ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node3.template/node3_socket.sock shutdown > /dev/null 2>&1
     ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node2.template/node2_socket.sock shutdown > /dev/null 2>&1
     ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node1.template/node1_socket.sock shutdown > /dev/null 2>&1
+    echoit "Completed 3 Node Group Replication data templates creations"
   fi
 fi
 

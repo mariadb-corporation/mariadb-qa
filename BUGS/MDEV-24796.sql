@@ -4,3 +4,12 @@ SET GLOBAL innodb_limit_optimistic_insert_debug=2;
 ALTER TABLE t ADD COLUMN d INT;
 DELETE FROM t;
 SELECT * FROM t WHERE c<>1 ORDER BY c DESC;
+
+SET sql_mode='';
+SET GLOBAL innodb_limit_optimistic_insert_debug=4;
+CREATE TABLE t (c INT NOT NULL UNIQUE KEY);
+INSERT INTO t VALUES(1),(2);
+ALTER TABLE t ADD COLUMN c2 INT;
+INSERT INTO t VALUES(3,0),(4,0);
+DELETE FROM t;
+SELECT * FROM t WHERE c<0 ORDER BY c DESC;

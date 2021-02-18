@@ -4,6 +4,9 @@
 
 # NOTES: this script may work less well for SQL containing actual data, as SQL idioms like 'when' are changed to 'WHEN' without regards for wheter such word appears inside a text string or as a SQL idiom. ~/tcp is beta quality. Watch out for: ERROR 1064 (42000): You have an error in your SQL syntax during SQL replay. Even a small error like "COUNT(" vs "COUNT (" can make a testcase non-reproducible. There are also other shortcomings to this aid-tool, for example data text becoming uppercase which may affect reprodicibilty). For every error you find, please improve ~/tcp handling of the same. A common issue is the space in the "COUNT (" example, and such cases are handled near the end of the ~/tcp script! If your ~/tcp parsed testcase does not immediately work, try the original reducer-produced unparsed testcase! Thank you'
 
+if [ -z "${1}" ]; then echo "Assert: please specify testcase to prettify!"; exit 1; fi
+if [ ! -f "${1}" -o ! -r "${1}" ]; then echo "Assert: '${1}' is not readable by this script"; exit 1; fi
+
 OPTIONS="$(grep -i '^. mysqld options required for replay' "${1}" | head -n1 | sed "s|. mysqld options required for replay:[ \t]\+..sql_mode=[ \t]*$|SET sql_mode='';|")"
 set +H
 # Note that there is one shortcoming in deleting '`' on the next line: if a certain keyword is used

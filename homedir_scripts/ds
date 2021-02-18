@@ -59,7 +59,11 @@ while true; do
       # The following seems handy, but it is not, and can use some improvements TODO. Reason: for ./clean_all, 
       # this may wipe reducers which have their string already included in known bugs whilst you are working on it
       #if [ -r ./clean_all ]; then ./clean_all; fi
-      if [ -r ./clean_newbugs ]; then ./clean_newbugs; fi
+      if [ -r ./clean_newbugs ]; then
+        if [ -z "$(ps -ef | grep clean_newbug | grep -v grep)" ]; then  # Ensure clean_newbugs is not running already!
+          ./clean_newbugs
+        fi
+      fi
     fi
     COUNT2=0
   fi
