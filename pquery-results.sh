@@ -35,9 +35,9 @@ else
 fi
 
 # String (TEXT=string) specific trials (commonly these are MODE=3 trials)
-NTS=''  # Backwards compatible (and manually modified reducers scanning without using new text string)
+NTS=  # Backwards compatible (and manually modified reducers scanning without using new text string)
 if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then
-  NTS='-Fi' # New text string (i.e. no regex) mode
+  NTS='-Fi' # New text string (i.e. no regex, exact text string) mode
 fi
 TRIALS_EXECUTED=$(cat pquery-run.log 2>/dev/null | grep --binary-files=text -o "==.*TRIAL.*==" | tail -n1 | sed 's|[^0-9]*||;s|[ \t=]||g')
 echo "================ [Run: $(echo ${PWD} | sed 's|.*/||')] Sorted unique issue strings (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers)"
@@ -51,9 +51,10 @@ elif [ $(ls ./reducer* ./qcreducer* 2>/dev/null | wc -l) -eq 0 ]; then
   exit 1
 fi
 
+# MODE 3 TRIALS
 ORIG_IFS=$IFS; IFS=$'\n'  # Use newline seperator instead of space seperator in the for loop
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
-  for STRING in $(grep --binary-files=text "   TEXT=" reducer* 2>/dev/null | sed 's|.*TEXT=.||;s|"$||' | sort -u); do
+  for STRING in $(grep --binary-files=text "   TEXT=" reducer* 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u); do
     MATCHING_TRIALS=()
     if grep -qi "^USE_NEW_TEXT_STRING=1" reducer*.sh; then  # New text string (i.e. no regex) mode
       for MATCHING_TRIAL in $(grep -FiH --binary-files=text "${STRING}" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
@@ -78,7 +79,7 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
       else
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-170s",$1}' | sed 's|\\"|"|g')"  # The s|\\"|"|g sed reverts the insertion of \ before " (i.e. \") as done by pquery-prep-reducer.sh and as used by reducer. It is not helpful here, and it is not part of the offial bug uniqueID string. Thus, pquery-results.sh and in-reducer TEXT slightly differ: " (pquery-results.sh, MYBUG, known_bug_string.sh) vs \" (reducer.sh, and as set by pquery-prep-reducer.sh, and pquery-clean-known.sh also uses this to be able to find failing reducers)
       fi
-      COUNT_OUT="$(echo $COUNT | awk '{printf "(Seen %3s times: reducers ",$1}')"
+      COUNT_OUT="$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')"
       echo -e "${STRING_OUT}${COUNT_OUT}$(echo ${MATCHING_TRIALS[@]}|sed 's| |,|g'))"
     fi
     if [ ${SCANBUGS} -eq 1 ]; then
@@ -110,16 +111,16 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
     fi
   done
 else  # Galera or GR run
-  for STRING in $(grep --binary-files=text '   TEXT=' reducer* 2>/dev/null | sed 's|.*TEXT=.||;s|.[ \t]*$||' | sort -u); do
+  for STRING in $(grep --binary-files=text "   TEXT=" reducer* 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u); do
     MATCHING_TRIALS=()
     for TRIAL in $(grep ${NTS} -H --binary-files=text "${STRING}" reducer* 2>/dev/null | awk '{print $1}' | cut -d'-' -f1 | tr -d '[:alpha:]' | sort -un) ; do
-      MATCHING_TRIAL=$(grep -H --binary-files=text '   TEXT=' reducer${TRIAL}-* 2>/dev/null | sed 's|reducer\([0-9]\).sh:|reducer\1.sh:  |;s|reducer\([0-9][0-9]\).sh:|reducer\1.sh: |;s|  TEXT|TEXT|' | grep ${NTS} --binary-files=text "${STRING}" | sed "s|.sh.*||;s|reducer${TRIAL}-||" | tr '\n' ',' | sed 's|,$||' | xargs -I {} echo "[${TRIAL}-{}] ")
-      MATCHING_TRIALS+=("$MATCHING_TRIAL")
+      MATCHING_TRIAL=$(grep -H --binary-files=text '   TEXT=' reducer${TRIAL}-* 2>/dev/null | sed 's|reducer\([0-9]\).sh:|reducer\1.sh:  |;s|reducer\([0-9][0-9]\).sh:|reducer\1.sh: |;s|  TEXT|TEXT|' | grep ${NTS} --binary-files=text "${STRING}" | sed "s|.sh.*||;s|reducer${TRIAL}-||" | tr -d '\n' | xargs -I {} echo "${TRIAL}-{},")
+      MATCHING_TRIALS+=("${MATCHING_TRIAL}")
     done
     COUNT=$(grep --binary-files=text '   TEXT=' reducer* 2>/dev/null | sed 's|reducer\([0-9]\).sh:|reducer\1.sh:  |;s|reducer\([0-9][0-9]\).sh:|reducer\1.sh: |;s|  TEXT|TEXT|' | grep ${NTS} --binary-files=text "${STRING}" | wc -l)
     STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-55s",$1}')"
-    COUNT_OUT="$(echo $COUNT | awk '{printf "(Seen %3s times: reducers ",$1}')"
-    echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})"
+    COUNT_OUT="$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')"
+    echo "$(echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})" | sed 's|, |,|g;s|,)|)|')"
     if [ ${SCANBUGS} -eq 1 ]; then
       # Look for exact match (except for allowing both .c and .cc to be used)
       SCANSTRING="$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|')"
@@ -154,8 +155,8 @@ IFS=$ORIG_IFS
 # MODE 4 TRIALS
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then
   COUNT=0
-  MATCHING_TRIALS=()
-  for MATCHING_TRIAL in $(grep ${NTS} -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
+  MATCHING_TRIALS=()  
+  for MATCHING_TRIAL in $(grep -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
     if [ ! -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]; then
       MATCHING_TRIALS+=($MATCHING_TRIAL)
       COUNT=$[ COUNT + 1 ]
@@ -163,14 +164,14 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then
   done
   if [ $COUNT -gt 0 ]; then
     STRING_OUT="$(echo "* TRIALS TO CHECK MANUALLY (NO TEXT SET: MODE=4) *" | awk -F "\n" '{printf "%-55s",$1}')"
-    COUNT_OUT=$(echo $COUNT | awk '{printf "(Seen %3s times: reducers ",$1}')
+    COUNT_OUT=$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')
     echo -e "${STRING_OUT}${COUNT_OUT}$(echo ${MATCHING_TRIALS[@]}|sed 's| |,|g'))"
   fi
 else
   COUNT=0
   MATCHING_TRIALS=()
-  for TRIAL in $(grep ${NTS} -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | awk '{print $1}' | cut -d'-' -f1 | tr -d '[:alpha:]' | sort -un); do
-    MATCHING_TRIAL=$(grep ${NTS} -H --binary-files=text "^MODE=4$" reducer${TRIAL}-* 2>/dev/null | sed "s|.sh.*||;s|reducer${TRIAL}-||" | tr '\n' , | sed 's|,$||' | xargs -I '{}' echo "[${TRIAL}-{}] ")
+  for TRIAL in $(grep -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | awk '{print $1}' | cut -d'-' -f1 | tr -d '[:alpha:]' | sort -un); do
+    MATCHING_TRIAL=$(grep -H --binary-files=text "^MODE=4$" reducer${TRIAL}-* 2>/dev/null | sed "s|.sh.*||;s|reducer${TRIAL}-||" | tr '\n' , | sed 's|,$||' | xargs -I '{}' echo "${TRIAL}-{},")
     if [[ ! -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]]; then
       MATCHING_TRIALS+=($MATCHING_TRIAL)
       COUNT=$[ COUNT + 1 ]
@@ -178,8 +179,9 @@ else
   done
   if [ $COUNT -gt 0 ]; then
     STRING_OUT="$(echo "* TRIALS TO CHECK MANUALLY (NO TEXT SET; MODE=4) *" | awk -F "\n" '{printf "%-55s",$1}')"
-    COUNT_OUT=$(echo $COUNT | awk '{printf "(Seen %3s times: reducers ",$1}')
-    echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})"
+    COUNT_OUT=$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')
+    echo "$(echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})" | sed 's|, |,|g;s|,)|)|')"
+           #echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})"
   fi
 fi
 
@@ -196,7 +198,7 @@ fi
 if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
   COUNT=$(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l)
   STRING_OUT="$(echo "* SHUTDOWN TIMEOUT >90 SEC (NO TEXT SET, MODE=0) *" | awk -F "\n" '{printf "%-55s",$1}')"
-  COUNT_OUT=$(echo $COUNT | awk '{printf "(Seen %3s times: reducers ",$1}')
+  COUNT_OUT=$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')
   echo -e "${STRING_OUT}${COUNT_OUT}$(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||'))"
 fi
 
@@ -220,12 +222,12 @@ if [ $COUNT -gt 0 ]; then
   for STRING in $(grep --binary-files=text '   TEXT=' qcreducer* 2>/dev/null | sed 's|.*TEXT="||;s|"$||' | sort -u); do
     MATCHING_TRIALS=()
     for TRIAL in $(grep ${NTS} -H --binary-files=text "${STRING}" qcreducer* 2>/dev/null | awk '{ print $1}' | cut -d'-' -f1 | sed 's/[^0-9]//g' | sort -un) ; do
-      MATCHING_TRIAL=$(grep -H --binary-files=text '   TEXT=' qcreducer${TRIAL}* 2>/dev/null | sed 's!qcreducer\([0-9]\).sh:!qcreducer\1.sh:  !;s!qcreducer\([0-9][0-9]\).sh:!qcreducer\1.sh: !;s!  TEXT!TEXT!' | grep ${NTS} --binary-files=text "${STRING}" | sed "s!.sh.*!!;s!reducer${TRIAL}!!" | tr '\n' ',' | sed 's!,$!!' | xargs -I {} echo "[${TRIAL}{}] " 2>/dev/null | sed 's!qc!!' )
+      MATCHING_TRIAL=$(grep -H --binary-files=text '   TEXT=' qcreducer${TRIAL}* 2>/dev/null | sed 's!qcreducer\([0-9]\).sh:!qcreducer\1.sh:  !;s!qcreducer\([0-9][0-9]\).sh:!qcreducer\1.sh: !;s!  TEXT!TEXT!' | grep ${NTS} --binary-files=text "${STRING}" | sed "s!.sh.*!!;s!reducer${TRIAL}!!" | tr '\n' ',' | sed 's!,$!!' | xargs -I {} echo "${TRIAL}{}," 2>/dev/null | sed 's!qc!!' )
       MATCHING_TRIALS+=("$MATCHING_TRIAL")
     done
     COUNT=$(grep --binary-files=text '   TEXT=' qcreducer* 2>/dev/null | sed 's|qcreducer\([0-9]\).sh:|qcreducer\1.sh:  |;s|qcreducer\([0-9][0-9]\).sh:|qcreducer\1.sh: |;s|  TEXT|TEXT|' | grep "${STRING}" | wc -l)
     STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-55s",$1}')"
-    COUNT_OUT="$(echo $COUNT | awk '{printf "(Seen %3s times: reducers ",$1}')"
+    COUNT_OUT="$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')"
     echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})"
   done
 fi

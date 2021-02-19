@@ -133,7 +133,7 @@ while(true); do                                     # Main loop
     echo -e "\nCleaning up known issues..."
     ${SCRIPT_PWD}/pquery-clean-known.sh             # Clean known issues
     ${SCRIPT_PWD}/pquery-clean-known++.sh           # Expert clean known issues (quite strong cleanup)
-    ${SCRIPT_PWD}/pquery-eliminate-dups.sh          # Eliminate dups, leaving at least x trials for issues where the number of trials >=x. Will also leave alone all other (<x) trials. x can be set in script
+    ${SCRIPT_PWD}/pquery-eliminate-dups.sh          # Eliminate dups, leaving at least x trials for issues where the number of trials >=x. Will also leave alone all other (<x) trials. x can be set in that script
   fi
   if [ $(ls reducer*.sh quick_*reducer*.sh 2>/dev/null | wc -l) -gt 0 ]; then  # If reducers are available after cleanup
     echo ""
