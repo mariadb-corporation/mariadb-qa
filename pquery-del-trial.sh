@@ -5,14 +5,18 @@ TRIAL=$(echo "$1" | sed 's|_val||' | sed 's|[ \t]*||g')  # _val: for Valgrind bu
 
 # Check if this is a MariaDB Galera Cluster run
 MDG=0
-if [ "$(grep 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
+if grep -qi 'MDG Mode:.*TRUE' ./pquery-run.log 2>/dev/null; then
   MDG=1
 fi
 
+MDG_NODE=
+TRIAL_DIR=
 if [[ $MDG -eq 1 ]];then
-  TRIAL_DIR=$(echo $TRIAL | sed 's/-/\/node/g')
-  MDG_NODE=$(echo $TRIAL | cut -d'-' -f2)
-  TRIAL=$(echo $TRIAL | cut -d'-' -f1)
+  TRIAL_DIR="$(echo $TRIAL | sed 's/-/\/node/g')"
+  if [[ "${TRIAL}" == *"-"* ]]; then
+    MDG_NODE="$(echo $TRIAL | cut -d'-' -f2)"
+    TRIAL="$(echo $TRIAL | cut -d'-' -f1)"
+  fi
 fi
 
 if [ "${TRIAL}" == "" ]; then
@@ -30,7 +34,6 @@ elif [ -d ./${TRIAL} ]; then
   else
     #if grep -qi "ERROR. Aborting" $ERROR_LOG; then
     #  if grep -qi "TCP.IP port.*Address already in use" $ERROR_LOG; then
-
     rm -Rf ./${TRIAL} > /dev/null 2>&1
   fi
 else
@@ -42,8 +45,12 @@ fi
 # Delete other files
 if [[ $MDG -eq 1 ]];then
   rm -f ./reducer${TRIAL}-${MDG_NODE}.sh > /dev/null 2>&1
-  rm -f ./quick_*reducer${TRIAL}-${MDG_NODE}.sh > /dev/null 2>&1
-  echo "- pquery trial #${TRIAL_DIR} and all related files wiped"
+  if [ -z "${MDG_NODE}" ]; then
+    rm -f ./reducer${TRIAL}-*.sh > /dev/null 2>&1
+  else
+    rm -f ./reducer${TRIAL}-${MDG_NODE}.sh > /dev/null 2>&1
+  fi
+  echo "- pquery MDG trial #${TRIAL_DIR} and all related files wiped"
 else
   rm -f ./reducer${TRIAL}.sh > /dev/null 2>&1
   rm -f ./quick_*reducer${TRIAL}.sh > /dev/null 2>&1

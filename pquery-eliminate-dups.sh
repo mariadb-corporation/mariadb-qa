@@ -42,9 +42,11 @@ SED_STRING="$(echo "${SED_STRING}" | sed 's|,$||')"  # Remove the last comma for
 
 # The 'grep -v reducer' in the next line is an extraneous check for safety
 #${SCRIPT_PWD}/pquery-results.sh 2>/dev/null | grep --binary-files=text -v 'TRIALS TO CHECK MANUALLY' | sed 's|_val||g' | grep --binary-files=text -oE "Seen[ \t]+[0-9][0-9]+ times.*,.*|Seen[ \t]+[2-9] times.*,.*" | grep --binary-files=text -o "reducers [ ]*${SEARCH_STRING}" | sed "s|reducers [ ]*${SED_STRING}||" | sed 's|)||;s|,|\n|g' | grep --binary-files=text -v 'reducer' | grep --binary-files=text -v '^[ \t]*$' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
+# Discussed RS/RV 19-02-2021
 # Whereas the command above ^ is the most accurate (and should be maintained alike to the line below!), the
 # line below adds an additional drop of the specific node selector `-1,-2,-3` in order - FOR THE MOMENT (TODO) -
 # to delete the entire trial. Once we commence pquery multinode runs, we should start using the line above instead,
 # Or make the line optional or selectable somehow. Perhaps we can have another homedir script which selects either
-# line etc. Discussed RS/RV 19-02-2021
-${SCRIPT_PWD}/pquery-results.sh 2>/dev/null | grep --binary-files=text -v 'TRIALS TO CHECK MANUALLY' | sed 's|_val||g' | grep --binary-files=text -oE "Seen[ \t]+[0-9][0-9]+ times.*,.*|Seen[ \t]+[2-9] times.*,.*" | grep --binary-files=text -o "reducers [ ]*${SEARCH_STRING}" | sed "s|reducers [ ]*${SED_STRING}||" | sed 's|)||;s|,|\n|g' | grep --binary-files=text -v 'reducer' | grep --binary-files=text -v '^[ \t]*$' | sed -e 's|\-[1-3]$||' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
+# line etc. One more questionable item is the '*' in the 's|\-[1-3]*$||' sed (it's too broad, there for -23 TODO)
+# Can it be removed later on without limiting cleanup functionality? TEST.
+${SCRIPT_PWD}/pquery-results.sh 2>/dev/null | grep --binary-files=text -v 'TRIALS TO CHECK MANUALLY' | sed 's|_val||g' | grep --binary-files=text -oE "Seen[ \t]+[0-9][0-9]+ times.*,.*|Seen[ \t]+[2-9] times.*,.*" | grep --binary-files=text -o "reducers [ ]*${SEARCH_STRING}" | sed "s|reducers [ ]*${SED_STRING}||" | sed 's|)||;s|,|\n|g' | grep --binary-files=text -v 'reducer' | grep --binary-files=text -v '^[ \t]*$' | sed -e 's|\-[1-3]*$||' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
