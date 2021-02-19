@@ -23,8 +23,10 @@ fi
 # Check if this is a MDG run
 if [ "$(grep --binary-files=text 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
   MDG=1
+  ERROR_LOG_LOC="*/node*/node*.err"
 else
   MDG=0
+  ERROR_LOG_LOC="*/log/master.err"
 fi
 
 # Check if this is a group replication run
@@ -208,9 +210,9 @@ if [ $(ls */GONEAWAY 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 
 # 'SIGKILL myself' trials
-if [ $(grep --binary-files=text -l "SIGKILL myself" */log/master.err 2>/dev/null | wc -l) -gt 0 ]; then
+if [ $(grep --binary-files=text -l "SIGKILL myself" ${ERROR_LOG_LOC} 2>/dev/null | wc -l) -gt 0 ]; then
   echo "--------------"
-  echo "'SIGKILL myself' trials found: $(grep --binary-files=text -l "SIGKILL myself" */log/master.err 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||')"
+  echo "'SIGKILL myself' trials found: $(grep --binary-files=text -l "SIGKILL myself" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||')"
   echo "(> 'SIGKILL myself' trials are not handled properly yet by pquery-prep-red.sh (feel free to expand it), and cannot be filtered easily (idem). Frequency also unkwnon. pquery-run.sh has only recently (26-08-2016) been expanded to not delete these. Easiest way to handle these ftm is to set them to MODE=4 and TEXT='SIGKILL myself' in their reducer<trialnr>.sh files. Then, simply reduce as normal.)"
 fi
 
@@ -231,7 +233,7 @@ if [ $COUNT -gt 0 ]; then
 fi
 
 # Likely out of disk space trials
-OOS1=$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" */log/master.err | sed 's|/.*||' | tr '\n' ' ')
+OOS1=$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" ${ERROR_LOG_LOC} | sed 's|/.*||' | tr '\n' ' ')
 OOS2=$(ls -s */data/*core* 2>/dev/null | grep --binary-files=text -o "^ *0 [^/]\+" | awk '{print $2}' | tr '\n' ' ')  # Cores with a file size of 0: good indication of OOS
 OOS="$(echo "${OOS1} ${OOS2}" | sed "s|  | |g")"
 if [ "$(echo "${OOS}" | sed "s| ||g")" != "" ]; then
@@ -240,7 +242,7 @@ if [ "$(echo "${OOS}" | sed "s| ||g")" != "" ]; then
 fi
 
 # Likely disk I/O issues trials
-DI1=$(grep --binary-files=text "bytes should have been read. Only" */log/master.err | sed 's|/.*||' | tr '\n' ' ')
+DI1=$(grep --binary-files=text "bytes should have been read. Only" ${ERROR_LOG_LOC} | sed 's|/.*||' | tr '\n' ' ')
 DI="$(echo "${DI1}" | sed "s|  | |g")"
 if [ "$(echo "${DI}" | sed "s| ||g")" != "" ]; then
   echo "================ Likely disk I/O issues trials (unable to read from disk etc.):"
@@ -271,14 +273,13 @@ if [ $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --bi
 fi
 
 # Stack smashing overview
-if [ ! -z "$(grep --binary-files=text 'smashing' */*/log/master.err 2>/dev/null)" ]; then
+if [ ! -z "$(grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null)" ]; then
   echo "================ Stack smashing detected:"
-  grep --binary-files=text 'smashing' */*/log/master.err 2>/dev/null
+  grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null
   echo "================"
 fi
-
 extract_valgrind_error(){
-  for i in $( ls  */log/master.err 2>/dev/null); do
+  for i in $( ls  ${ERROR_LOG_LOC} 2>/dev/null); do
     TRIAL=$(echo $i | cut -d'/' -f1)
     echo "============ Trial $TRIAL ===================="
     grep --binary-files=text -E --no-group-separator  -A4 "Thread[ \t][0-9]+:" $i | cut -d' ' -f2- |  sed 's/0x.*:[ \t]\+//' |  sed 's/(.*)//' | rev | cut -d '(' -f2- | sed 's/^[ \t]\+//' | rev  | sed 's/^[ \t]\+//'  |  tr '\n' '|' |xargs |  sed 's/Thread[ \t][0-9]\+:/\nIssue #/ig'
