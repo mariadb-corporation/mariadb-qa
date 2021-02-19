@@ -24,6 +24,7 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+state() == s_executing || state() == s_prepared || state() == s_committing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans # DBG |MDEV-24912
 lock_rec_get_first( lock_hash, receiver, receiver_heap_no) == __null || lock_hash == &lock_sys.prdt_hash || lock_hash == &lock_sys.prdt_page_hash|SIGABRT|lock_rec_move_low|lock_rec_move|lock_update_split_right|btr_page_split_and_insert # DBG MDEV-24914
 0|SIGABRT|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const                                ## DBG MDEV-24902
 SIGSEGV|fts_get_table_name|fts_write_node|fts_sync_write_words|fts_sync_index                                                                                                  ## DBG |MDEV-24901
