@@ -357,6 +357,7 @@ if [[ $MDG -eq 1 ]]; then
   echo "check_node_startup 2" >> ./gal_start
   echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n3.cnf \$MYEXTRA > $PWD/node3/node3.err 2>&1 &" >> ./gal_start
   echo "check_node_startup 3" >> ./gal_start
+  echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start
 
   echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/n.*.cnf\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >gal_kill
   echo "./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1" >./gal_init
