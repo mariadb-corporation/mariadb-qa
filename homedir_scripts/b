@@ -5,7 +5,11 @@ if [ -r report.log ]; then echo "Assert: report.log still present though this sc
 
 if [ ! -r ../gendirs.sh ]; then echo "Assert: ../gendirs.sh not available, are you executing this from within a BASEDIR?"; exit 1; fi
 
-if [ -z "$(echo "$(cd ..;./gendirs.sh)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
+if [ "${1}" == "GAL" ]; then
+  if [ -z "$(echo "$(cd ..;./gendirs.sh GAL)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
+else
+  if [ -z "$(echo "$(cd ..;./gendirs.sh)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
+fi
 
 export TEXT=
 MYEXTRA_OPT=
@@ -26,6 +30,12 @@ if [ "${1}" == "SAN" ]; then
   # MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||;s|${TEXT}||')"
   MYEXTRA_OPT="$3 $4 $5 $6 $7 $8 $9"
   ~/mariadb-qa/bug_report.sh SAN "${MYEXTRA_OPT}" | tee report.log
+elif [ "${1}" == "GAL" ]; then
+  MYEXTRA_OPT="$*"
+  #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
+  export TEXT="signal"  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
+  #rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
+  ~/mariadb-qa/bug_report.sh GAL "${MYEXTRA_OPT}" | tee report.log
 else
   MYEXTRA_OPT="$*"
   #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)

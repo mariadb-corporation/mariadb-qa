@@ -25,16 +25,20 @@ fi
 rm -f /tmp/pri.t /tmp/sec.t
 
 # Generate full list
-if [ ${SAN_MODE} -eq 1 ]; then
+if [ "${1}" == "SAN" ]; then
   ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "SAN" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
+elif [ "${1}" == "GAL" ]; then
+  ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "GAL" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
 else
   ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep -vE --binary-files=text "SAN|GAL" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
 fi
 
 # Generate bug list
-if [ ${SAN_MODE} -eq 1 ]; then
+if [ "${1}" == "SAN" ]; then
   export TEXT="${TEXT}"  # Likely not strictly necessary; defensive coding
   ./findbug SAN | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
+elif [ "${1}" == "GAL" ]; then
+  ./findbug GAL | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 else
   ./findbug "${1}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 fi
