@@ -4,7 +4,10 @@ REGEX_EXCLUDE="$(cat REGEX_EXCLUDE 2>/dev/null)"  # Handy to exclude a particula
 if [ -z "${REGEX_EXCLUDE}" ]; then REGEX_EXCLUDE="DUMMYSTRINGNEVERSEEN"; fi
 
 if [ "${1}" == "SAN" ]; then
-  ls --color=never -d UBASAN_M* TSAN_M* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -v tar 
+  ls --color=never -d UBASAN_M* TSAN_M* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -v tar
+elif [ "${1}" == "GAL" ]; then
+    ls --color=never -d GAL_MD*   2>/dev/null | grep -v tar
+    ls --color=never -d GAL_EMD* 2>/dev/null | grep -v tar
 else
   ls --color=never -d EMD*10.[1-6]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -v tar | grep -vE "SAN|GAL"
   ls --color=never -d MD*10.[1-6]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -v tar | grep -vE "SAN|GAL"
