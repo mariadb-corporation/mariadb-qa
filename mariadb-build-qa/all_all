@@ -11,8 +11,6 @@ fi
 # Stop (if running), wipe and start all instances in parallel
 if [ ${SAN_MODE} -eq 1 ]; then
   ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./all_no_cl ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
-elif [ "${1}" == "GAL" ]; then
-  ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_no_cl ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
 else
   ./gendirs.sh | xargs -I{} echo "cd {}; ./all_no_cl ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
 fi

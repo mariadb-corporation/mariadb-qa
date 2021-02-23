@@ -69,7 +69,7 @@ for i in $(seq 1 ${NR_OF_TESTCASES}); do
   sleep 1
   rm -f ${TESTCASE}.report ${TESTCASE}.report.NOCORE
   cd ${RUN_BASEDIR}/..
-  ./check  # Ensure that basedir dirs are still in top shape
+#  ./check  # Ensure that basedir dirs are still in top shape
   if [ ${?} -ne 0 ]; then
     echo "Assert: ./check failed!"
     exit 1

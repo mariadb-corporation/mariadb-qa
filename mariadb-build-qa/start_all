@@ -3,10 +3,6 @@
 
 MYEXTRA_OPT="$*"
 
-if [ "${1}" == "GAL" ]; then
-  ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_start ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
-else
-  ./gendirs.sh | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
-fi
+./gendirs.sh | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
 
 sync

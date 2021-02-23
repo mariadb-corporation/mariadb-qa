@@ -24,6 +24,7 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low                    ## DBG |MDEV-24951
 !WSREP_EMULATE_BINLOG(thd) || total_length + thd->wsrep_sr().log_position() == saved_pos|SIGABRT|wsrep_write_cache_inc|wsrep_write_cache|Wsrep_client_service::prepare_data_for_replication|wsrep::transaction::certify_commit ## DBG |MENT-1112
 active()|SIGABRT|wsrep::transaction::assign_xid|wsrep::client_state::assign_xid|wsrep_assign_xid|trans_xa_start                                                                ## DBG |MENT-1111
 is_streaming() == false|SIGABRT|wsrep::transaction::cleanup|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement                     ## DBG |MENT-1110
@@ -53,8 +54,6 @@ SIGSEGV|replace_table_table|mysql_table_grant|mysql_execute_command|mysql_parse 
 DICT_TF2_FLAG_IS_SET(index->table, DICT_TF2_TEMPORARY)|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low  ## DBG |MDEV-24812
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_low|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                         ## DBG |MDEV-24812
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_undo|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                        ## DBG |MDEV-24812
-"lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                     ## DBG |MDEV-24700
-"lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|row_mysql_handle_errors                                                                  ## DBG |MDEV-24700
 page_has_next(block->frame) || block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|handler::index_read_map         ## DBG |MDEV-24796
 page_has_next(block->frame) || rec_is_alter_metadata(p, *index)|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|handler::index_read_map                ## DBG |MDEV-24796
 page_has_next(block->frame) || rec_is_alter_metadata(p, *index) || block->page.id().page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|handler::index_read_map ## DBG |MDEV-24796
@@ -75,6 +74,12 @@ SIGSEGV|my_scan_weight_utf8mb3_general_ci|my_strnncollsp_utf8mb3_general_ci|char
 SIGSEGV|main_arena () from|Event_queue::empty_queue|Event_queue::deinit_queue|Event_queue::~Event_queue                                                                        ## OPT |MDEV-24686
 SIGSEGV|Event_db_repository::load_named_event|Events::create_event|mysql_execute_command|mysql_parse                                                                           ## OPT |MDEV-24686
 SIGSEGV|Event_queue::get_top_for_execution_if_time|Event_scheduler::run|event_scheduler_thread|start_thread                                                                    ## DBG |MDEV-24686
+SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                                             ## DBG |MDEV-24686
+SIGSEGV|Event_queue::empty_queue|Event_queue::deinit_queue|Event_queue::~Event_queue|Events::deinit                                                                            ## DBG |MDEV-24686
+SIGSEGV|Event_queue::find_n_remove_event|Event_queue::update_event|Events::update_event|mysql_execute_command                                                                  ## DBG |MDEV-24686
+SIGSEGV|Event_queue::get_top_for_execution_if_time|Event_scheduler::run|event_scheduler_thread|pfs_spawn_thread                                                                ## DBG |MDEV-24686
+SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncollsp_utf8_general_ci|event_basic_db_equal                                                      ## OPT |MDEV-24686
+SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncollsp_utf8_general_ci|event_basic_identifier_equal                                              ## OPT |MDEV-24686
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|select_insert::send_ok_packet|select_create::send_eof                      ## DBG MDEV-24672
 SIGABRT|ut_dbg_assertion_failed|lock_wait_table_reserve_slot|lock_wait_suspend_thread|row_mysql_handle_errors                                                                  ## OPT MDEV-24671
 SIGABRT|safe_mutex_unlock|inline_mysql_mutex_unlock|change_password|set_var_password::update                                                                                   ## DBG MDEV-24668
@@ -488,7 +493,8 @@ false|SIGABRT|Item_in_subselect::create_single_in_to_exists_cond|Item_in_subsele
 marked_for_read()|SIGABRT|Field_blob::val_str|Item_field::val_str|Item::val_str|Item_func_hash::val_int                                                                        ## DBG ~MDEV-22551*
 SIGSEGV|traverse_role_graph_impl|traverse_role_graph_up|propagate_role_grants|mysql_grant                                                                                      ## OPT MDEV-22521*
 SIGSEGV|check_vcol_forward_refs|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table                                                                              ## OPT MDEV-22525*
-SIGSEGV|is_versioning_timestamp|Vers_parse_info::check_sys_fields|Table_scope_and_contents_source_st::vers_check_system_fields|Table_scope_and_contents_source_st::check_fields## OPT MDEV-22660*
+false|SIGABRT|set_field_lock_type|table_table_handles::read_row_values|PFS_engine_table::read_row|ha_perfschema::rnd_next                                                      ## DBG MDEV-22576*
+SIGSEGV|is_versioning_timestamp|Vers_parse_info::check_sys_fields|Table_scope_and_contents_source_st::vers_check_system_fields|Table_scope_and_contents_source_st::check_fields ## OPT MDEV-22660*
 offset < table->s->reclength|SIGABRT|dump_leaf_key|Item_func_group_concat::add|Item_func_group_concat::add|Aggregator_simple::add
 bitmap_is_set(&(m_part_info->read_partitions), m_last_part)|SIGABRT|ha_partition::position|multi_delete::send_data|select_result_sink::send_data_with_check|end_send           ## DBG MDEV-22667*
 offset < table->s->reclength|SIGABRT|dump_leaf_key|Item_func_group_concat::add|Item_func_group_concat::add|Aggregator_simple::add                                              ## DBG MDEV-22675*
@@ -556,4 +562,7 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.
 # !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command        ## Fixed ## DBG MDEV-22002
 # SIGSEGV|row_make_new_pathname|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table                                                            ## Fixed ## OPT MDEV-21983
 # marked_for_read()|SIGABRT|Field_blob::val_str|Item_field::val_str|Item::val_str|Item_func_hash::val_int                                                             ## Fixed ## DBG ~MDEV-21804*
+# "lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|trx_rollback_to_savepoint_for_mysql_low                                       ## Fixed ## DBG |MDEV-24700
+# "lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                          ## Fixed ## DBG |MDEV-24700
+# "lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|row_mysql_handle_errors                                                       ## Fixed ## DBG |MDEV-24700
 # args[0]->type_handler()->mysql_timestamp_type() == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## Fixed ## DBG MDEV-20984

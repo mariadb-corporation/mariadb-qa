@@ -9,3 +9,14 @@ CREATE TABLE t2 (b INT,FOREIGN KEY(b)REFERENCES t (a)) ENGINE=InnoDB;
 XA START 'x';
 INSERT INTO t2 VALUES(1);  # Gives ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`test`.`t2`, CONSTRAINT `t2_ibfk_1` FOREIGN KEY (`b`) REFERENCES `t` (`a`))
 REPLACE t2 VALUES(1);
+
+SET sql_mode='';
+CREATE TABLE t(a INT PRIMARY KEY) ENGINE=InnoDB;
+CREATE TABLE t2(c INT);
+XA START 'a';
+SELECT d FROM t2;
+SAVEPOINT x;
+INSERT INTO t2 VALUES(0);
+INSERT INTO t VALUES(0), (0);
+INSERT INTO t VALUES(0);
+ROLLBACK TO SAVEPOINT x;

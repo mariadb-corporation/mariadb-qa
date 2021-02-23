@@ -19,6 +19,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|index|INDEX|g' | \
   sed 's|int|INT|gi;s|integer|INT|gi' | \
   sed 's|decimal|DECIMAL|gi' | \
+  sed 's|value|VALUE|gi' | \
   sed 's|create|CREATE|gi' | \
   sed 's|table|TABLE|gi' | \
   sed 's|tables|TABLES|gi' | \
@@ -28,10 +29,12 @@ cat "${1}" | tr -d '`' | \
   sed 's|every|EVERY|gi' | \
   sed 's|minute|MINUTE|gi' | \
   sed 's|hour|HOUR|gi' | \
+  sed 's|day|DAY|gi' | \
   sed 's|begin|BEGIN|gi' | \
   sed 's|end|END|gi' | \
-  sed 's|load|LOAD|gi' | \
   sed 's|ends|ENDS|gi' | \
+  sed 's|rollback|ROLLBACK|gi' | \
+  sed 's|load|LOAD|gi' | \
   sed 's|serial|SERIAL|gi' | \
   sed 's|then|THEN|gi' | \
   sed 's|add|ADD|gi' | \
@@ -213,6 +216,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|row_start|ROW_START|gi' | \
   sed 's|row_end|ROW_END|gi' | \
   sed 's|date_add|DATE_ADD|gi' | \
+  sed 's|day_minute|DAY_MINUTE|gi' | \
   sed 's|system_time|SYSTEM_TIME|gi' | \
   sed 's|export_set|EXPORT_SET|gi' | \
   sed 's|unix_timestamp|UNIX_TIMESTAMP|gi' | \

@@ -18,6 +18,7 @@ cp optimizer_bugs ${TARGET}
 cp temp_move_away ${TARGET}
 cp move_nocore_back ${TARGET}
 cp move_long ${TARGET}
+cp real_new_bugs ${TARGET}
 
 cd ${TARGET}
 git add *
