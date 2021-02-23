@@ -36,9 +36,16 @@ if [ ! -r bin/mysqld ]; then
   exit 1
 fi
 
-if [ ! -r ./all_no_cl ]; then  # Local
-  echo "Assert: ./all_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
-  exit 1
+if [ "${1}" == "GAL" ]; then
+  if [ ! -r ./gal_no_cl ]; then  # Local
+      echo "Assert: ./gal_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
+      exit 1
+  fi
+else
+  if [ ! -r ./all_no_cl ]; then  # Local
+    echo "Assert: ./all_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
+    exit 1
+  fi
 fi
 
 if [ ! -r ../test_all ]; then  # Global
@@ -86,11 +93,19 @@ if [ "$(echo "${MYEXTRA_OPT_CLEANED}" | sed 's|[ \t]||g')" != "" ]; then
 fi
 
 if [ ${SAN_MODE} -eq 0 ]; then
-  ./all_no_cl ${MYEXTRA_OPT_CLEANED}
-  ./test
-  timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; sleep 0.2; ./kill 2>/dev/null; sleep 0.2
-
-  CORE_COUNT=$(ls data/*core* 2>/dev/null | wc -l)
+  if [ "${1}" == "GAL" ]; then
+    ./gal_no_cl ${MYEXTRA_OPT_CLEANED}
+    ./gal_test
+    timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./gal_stop; sleep 0.2; ./kill 2>/dev/null; sleep 0.2
+    CORE_COUNT=$(ls node1/*core* 2>/dev/null | wc -l)
+    CORE_FILE=$(ls node1/*core* 2>/dev/null | head -1)
+  else
+    ./all_no_cl ${MYEXTRA_OPT_CLEANED}
+    ./test
+    timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; sleep 0.2; ./kill 2>/dev/null; sleep 0.2
+    CORE_COUNT=$(ls data/*core* 2>/dev/null | wc -l)
+    CORE_FILE=$(ls data/*core* 2>/dev/null | head -1)
+  fi
   if [ ${CORE_COUNT} -eq 0 ]; then
     echo "INFO: no cores found at data/*core*"
   elif [ ${CORE_COUNT} -gt 1 ]; then
@@ -100,7 +115,7 @@ if [ ${SAN_MODE} -eq 0 ]; then
     # set print array on
     # set print array-indexes on
     # set print elements 0
-    gdb -q bin/mysqld $(ls data/*core*) >/tmp/${RANDF}.gdba 2>&1 << EOF
+    gdb -q bin/mysqld $(ls $CORE_FILE) >/tmp/${RANDF}.gdba 2>&1 << EOF
      set pagination off
      set print pretty on
      set print frame-arguments all
@@ -116,34 +131,44 @@ cp in.sql ..
 if [ ! -r ../in.sql ]; then echo "Assert: ../in.sql not available after copy attempt!"; exit 1; fi
 cd ..
 echo "Testing all..."
-if [ ${SAN_MODE} -eq 0 ]; then
-  ./test_all ${MYEXTRA_OPT_CLEANED}
-else
+if [ "${1}" == "SAN" ]; then
   export TEXT="${TEXT}"  # Likely not strictly necessary; defensive coding
   ./test_all SAN ${MYEXTRA_OPT_CLEANED}
+elif [ "${1}" == "GAL" ]; then
+  ./test_all GAL ${MYEXTRA_OPT_CLEANED}
+else
+  ./test_all ${MYEXTRA_OPT_CLEANED}
 fi
 echo "Ensuring all servers are gone..."
 sync
-if [ ${SAN_MODE} -eq 0 ]; then
-  ./kill_all  # NOTE: Can not be executed as ../kill_all as it requires ./gendirs.sh
-else
+if [ "${1}" == "SAN" ]; then
   ./kill_all SAN
+elif [ "${1}" == "GAL" ]; then
+  ./kill_all GAL
+else
+  ./kill_all # NOTE: Can not be executed as ../kill_all as it requires ./gendirs.sh
 fi
+
 if [ -z "${TEXT}" ]; then
   echo "TEXT not set, scanning for corefiles..."
-  if [ ${SAN_MODE} -eq 0 ]; then
-    CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh | xargs -I{} echo "ls {}/data/*core* 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
-  else
+  if [ "${1}" == "SAN" ]; then
     echo "Assert: SAN mode is enabled, but TEXT variable is not set!"
     exit 1
+  elif [ "${1}" == "GAL" ]; then
+    CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh GAL | xargs -I{} echo "ls {}/node1/*core* 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+  else
+    CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh | xargs -I{} echo "ls {}/data/*core* 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
   fi
 else
-  if [ ${SAN_MODE} -eq 0 ]; then
-    echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
-  else
+  if [ "${1}" == "SAN" ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+  elif [ "${1}" == "GAL" ]; then
+    echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh GAL | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/node1/node1.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+  else
+    echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
   fi
 fi
 cd - >/dev/null || exit 1
@@ -162,13 +187,17 @@ echo -e '{noformat}\n'
 echo -e 'Leads to:\n'
 # Assumes (which is valid for the pquery framework) that 1st assertion is also the last in the log
 if [ ${SAN_MODE} -eq 0 ]; then
-  ERROR_LOG=$(ls log/master.err 2>/dev/null | head -n1)
-  if [ ! -z "${ERROR_LOG}" ]; then
+  if [ "${1}" == "GAL" ]; then
+    ERROR_LOG=$(ls node1/node1.err 2>/dev/null | head -n1)
+  else
+    ERROR_LOG=$(ls log/master.err 2>/dev/null | head -n1)
+  fi
+  if [ -n "${ERROR_LOG}" ]; then
     ASSERT="$(grep --binary-files=text -m1 'Assertion.*failed.$' ${ERROR_LOG} | head -n1)"
     if [ -z "${ASSERT}" ]; then
       ASSERT="$(grep --binary-files=text -m1 'Failing assertion:' ${ERROR_LOG} | head -n1)"
     fi
-    if [ ! -z "${ASSERT}" ]; then
+    if [ -n "${ASSERT}" ]; then
       echo -e "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV} ${BUILD_TYPE}}\n${ASSERT}\n{noformat}\n"
     fi
   fi
@@ -180,7 +209,11 @@ if [ ${SAN_MODE} -eq 0 ]; then
     rm -f /tmp/${RANDF}.gdba
   else
     NOCORE=1
-    echo "THIS TESTCASE DID NOT CRASH ${SERVER_VERSION} (the version of the basedir in which you started this script), SO NO BACKTRACE IS SHOWN HERE. YOU CAN RE-EXECUTE THIS SCRIPT FROM ONE OF THE 'Bug confirmed present in' DIRECTORIES BELOW TO OBTAIN ONE, OR EXECUTE ./all_no_cl; ./test; ./stack FROM WITHIN THAT DIRECTORY TO GET A BACKTRACE ETC. MANUALLY!"
+    if [ "${1}" == "GAL" ]; then
+      echo "THIS TESTCASE DID NOT CRASH ${SERVER_VERSION} (the version of the basedir in which you started this script), SO NO BACKTRACE IS SHOWN HERE. YOU CAN RE-EXECUTE THIS SCRIPT FROM ONE OF THE 'Bug confirmed present in' DIRECTORIES BELOW TO OBTAIN ONE, OR EXECUTE ./gal_no_cl; ./gal_test; ./stack FROM WITHIN THAT DIRECTORY TO GET A BACKTRACE ETC. MANUALLY!"
+    else
+      echo "THIS TESTCASE DID NOT CRASH ${SERVER_VERSION} (the version of the basedir in which you started this script), SO NO BACKTRACE IS SHOWN HERE. YOU CAN RE-EXECUTE THIS SCRIPT FROM ONE OF THE 'Bug confirmed present in' DIRECTORIES BELOW TO OBTAIN ONE, OR EXECUTE ./all_no_cl; ./test; ./stack FROM WITHIN THAT DIRECTORY TO GET A BACKTRACE ETC. MANUALLY!"
+    fi
   fi
 else
   echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV} ${BUILD_TYPE}}"
@@ -278,7 +311,7 @@ if [ -z "${TEXT}" ]; then
     cd ..; ./findbug+ 'signal'; cd - >/dev/null
   fi
 else
-  if [ ${SAN_MODE} -eq 1 ]; then
+  if [ "${1}" == "SAN" ]; then
     if [ -r ../test.results ]; then
       cat ../test.results
     else
@@ -288,15 +321,19 @@ else
       export TEXT="${TEXT}"  # Likely not strictly necessary; defensive coding
       cd ..; ./findbug+ SAN; cd - >/dev/null
     fi
+  elif [ "${1}" == "GAL" ]; then
+    cd ..; ./findbug+ GAL "${TEXT}"; cd - >/dev/null
   else
     cd ..; ./findbug+ "${TEXT}"; cd - >/dev/null
   fi
 fi
 echo '-------------------- /BUG REPORT --------------------'
-if [ ${SAN_MODE} -eq 0 ]; then
-  echo "TOTAL CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
-else
+if [ "${1}" == "SAN" ]; then
   echo "TOTAL SAN OCCURENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
+elif [ "${1}" == "GAL" ]; then
+  echo "TOTAL GALERA CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
+else
+  echo "TOTAL CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 fi
 if [ ${SAN_MODE} -eq 0 ]; then
   if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 ]; then

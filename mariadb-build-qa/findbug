@@ -18,12 +18,16 @@ if [ -z "${1}" -o "${ERROR_IN_OPTIONS}" -eq 1 ]; then
 elif [ "${1}" == "SAN" ]; then
   SAN_MODE=1
   TEXT="${2}"  # Presence of ${2} was checked earlier above (ref ERROR_IN_OPTIONS)
+elif [ "${1}" == "GAL" ]; then
+  TEXT="${2}"
 else
   TEXT="${1}"
 fi
 
-if [ ${SAN_MODE} -eq 1 ]; then
+if [ "${1}" == "SAN" ]; then
   grep -Ei --binary-files=text "${TEXT}" */log/master.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text -E "SAN"
+elif [ "${1}" == "GAL" ]; then
+  grep -Ei --binary-files=text "${TEXT}" */node1/node1.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text -E "GAL"
 else
   grep -Ei --binary-files=text "${1}" */log/master.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep -vE --binary-files=text "SAN|GAL"
 fi
