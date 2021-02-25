@@ -18,7 +18,11 @@ init_empty_port(){
     fi
   done
 }
-
+# Nr of MDG nodes 1-3
+NR_OF_NODES=${1}
+if [ -z "${NR_OF_NODES}" ] ; then
+  NR_OF_NODES=3
+fi
 init_empty_port
 PORT=$NEWPORT
 MTRT=$((${RANDOM} % 100 + 700))
@@ -109,6 +113,12 @@ elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
   echo "=========================================================================================="
 fi
 
+if [ "${VERSION_INFO_2}" == "10.3" ]; then
+  if echo "${PWD}" | grep -q EMD ; then
+    INIT_OPT="${INIT_OPT} --auth-root-authentication-method=normal"
+  fi
+fi
+
 # Check GR
 if find . -name group_replication.so | grep -q .; then
   GRP_RPL=1
@@ -137,7 +147,7 @@ fi
 rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init pmm* reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test wipe*
 BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_pquery | multirun_mysqld | loopin | gdb | fixin | stack | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
-GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | 1_node_cli | 2_node_cli | 3_node_cli | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
+GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
   echo "Adding scripts: ${BASIC_SCRIPTS} | ${GRP_RPL_SCRIPTS}"
 elif [[ $MDG -eq 1 ]]; then
@@ -278,7 +288,7 @@ if [[ $MDG -eq 1 ]]; then
   PORT=$NEWPORT
   MDG_PORTS=""
   MDG_LADDRS=""
-  for i in $(seq 1 3); do
+  for i in $(seq 1 "${NR_OF_NODES}"); do
     node=node${i}
     mkdir -p ${PWD}/tmp${i}
     init_empty_port
@@ -344,51 +354,36 @@ if [[ $MDG -eq 1 ]]; then
   echo "  fi" >> ./gal_start_rr
   echo "fi" >> ./gal_start_rr
   echo "mkdir -p \"\${_RR_TRACE_DIR}\"" >> ./gal_start_rr
-  echo "/usr/bin/rr record --chaos ${PWD}/bin/mysqld --defaults-file=${PWD}/n1.cnf \$MYEXTRA --wsrep-new-cluster > ${PWD}/node1/node1.err 2>&1 & " >> ./gal_start_rr
-  echo "check_node_startup 1" >> ./gal_start_rr
-  echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n2.cnf \$MYEXTRA > $PWD/node2/node2.err 2>&1 &" >> ./gal_start_rr
-  echo "check_node_startup 2" >> ./gal_start_rr
-  echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n3.cnf \$MYEXTRA > $PWD/node3/node3.err 2>&1 &" >> ./gal_start_rr
-  echo "check_node_startup 3" >> ./gal_start_rr
-
-  echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n1.cnf \$MYEXTRA --wsrep-new-cluster > $PWD/node1/node1.err 2>&1 &" >> ./gal_start
-  echo "check_node_startup 1" >> ./gal_start
-  echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n2.cnf \$MYEXTRA > $PWD/node2/node2.err 2>&1 &" >> ./gal_start
-  echo "check_node_startup 2" >> ./gal_start
-  echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n3.cnf \$MYEXTRA > $PWD/node3/node3.err 2>&1 &" >> ./gal_start
-  echo "check_node_startup 3" >> ./gal_start
-  echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start
-
-  echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/n.*.cnf\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >gal_kill
   echo "./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1" >./gal_init
   echo "rm -Rf ${PWD}/node*" >>./gal_init
-  echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node1" >>./gal_init
-  echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node2" >>./gal_init
-  echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node3" >>./gal_init
-
-  echo "${PWD}/bin/mysqladmin -uroot -S${PWD}/node3/node3_socket.sock shutdown" >./gal_stop
-  echo "echo \"Server on socket ${PWD}/node3/node3_socket.sock halted\"" >>./gal_stop
-  echo "${PWD}/bin/mysqladmin -uroot -S${PWD}/node2/node2_socket.sock shutdown" >>./gal_stop
-  echo "echo \"Server on socket ${PWD}/node2/node2_socket.sock halted\"" >>./gal_stop
-  echo "${PWD}/bin/mysqladmin -uroot -S${PWD}/node1/node1_socket.sock shutdown" >>./gal_stop
-  echo "echo \"Server on socket ${PWD}/node1/node1_socket.sock halted\"" >>./gal_stop
-  echo "./gal_kill >/dev/null 2>&1" >>./gal_stop
-
-  echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node1/node1_socket.sock --prompt \"node1:\\u@\\h> \"" >${PWD}/1_node_cli
-  echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node2/node2_socket.sock --prompt \"node2:\\u@\\h> \"" >${PWD}/2_node_cli
-  echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node3/node3_socket.sock --prompt \"node3:\\u@\\h> \"" >${PWD}/3_node_cli
-
+  echo "" > ./gal_stop
   echo "./gal_stop >/dev/null 2>&1" >gal_wipe
   echo "rm -Rf ${PWD}/node* ${PWD}/galera_rr" >>gal_wipe
-  echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node1" >>gal_wipe
-  echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node2" >>gal_wipe
-  echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node3" >>gal_wipe
-  echo "rm -f node*/node*.err.PREV" >>gal_wipe
-  echo "if [ -r node1/node1.err ]; then mv node1/node1.err node1/node1.err.PREV; fi" >>gal_wipe
-  echo "if [ -r node2/node2.err ]; then mv node2/node2.err node2/node2.err.PREV; fi" >>gal_wipe
-  echo "if [ -r node3/node3.err ]; then mv node3/node3.err node3/node3.err.PREV; fi" >>gal_wipe
+  for i in $(seq 1 "${NR_OF_NODES}"); do
+    if [ "${i}" -eq 1 ] ; then
+      echo "/usr/bin/rr record --chaos ${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start_rr
+      echo "check_node_startup ${i}" >> ./gal_start_rr
+      echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start
+      echo "check_node_startup ${i}" >> ./gal_start
+    else
+      echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA > $PWD/node${i}/node${i}.err 2>&1 &" >> ./gal_start_rr
+      echo "check_node_startup ${i}" >> ./gal_start_rr
+      echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA > $PWD/node${i}/node${i}.err 2>&1 &" >> ./gal_start
+      echo "check_node_startup ${i}" >> ./gal_start
+    fi
+    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>./gal_init
+    echo "${PWD}/bin/mysqladmin -uroot -S${PWD}/node${i}/node${i}_socket.sock shutdown" >> ./gal_stop
+    echo "echo \"Server on socket ${PWD}/node${i}/node${i}_socket.sock halted\"" >>./gal_stop
+    echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
+    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>gal_wipe
+    echo "if [ -r node1/node${i}.err ]; then mv node${i}/node${i}.err node${i}/node${i}.err.PREV; fi" >>gal_wipe
+  done
+  echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start_rr
+  echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start
+  echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/n.*.cnf\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >gal_kill
+  echo "./gal_kill >/dev/null 2>&1" >>./gal_stop
   echo "./gal_init;./gal_start;./1_node_cli;./gal_stop;./gal_kill >/dev/null 2>&1;tail node1/node1.err" > gal_setup
-  chmod +x 1_node_cli 2_node_cli 3_node_cli gal_wipe gal_start gal_stop gal_init gal_kill gal_setup gal_start_rr
+  chmod +x *_node_cli gal_wipe gal_start gal_stop gal_init gal_kill gal_setup gal_start_rr
 fi
 mkdir -p data data/mysql log
 if [ "${USE_JE}" -eq 1 ]; then
