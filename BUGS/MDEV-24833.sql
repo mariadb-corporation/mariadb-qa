@@ -1,0 +1,6 @@
+DROP DATABASE test;
+CREATE DATABASE test;
+USE test;
+SET sql_mode='';
+CREATE TABLE t3 (c1 VARCHAR(10));
+ALTER TABLE t3 ENGINE=NonExistentEngine; 
