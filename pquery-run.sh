@@ -104,6 +104,11 @@ if [ "${RR_TRACING}" == "1" ]; then
   fi
 fi
 
+# Nr of MDG nodes 1-n
+if [ -z "${NR_OF_NODES}" ] ; then
+  NR_OF_NODES=3
+fi
+
 # Try and raise ulimit for user processes (see setup_server.sh for how to set correct soft/hard nproc settings in limits.conf)
 #ulimit -u 7000
 
@@ -609,7 +614,7 @@ mdg_startup() {
   unset MDG_LADDRS
   MDG_PORTS=""
   MDG_LADDRS=""
-  for i in $(seq 1 3); do
+  for i in $(seq 1 ${NR_OF_NODES}); do
     init_empty_port
     RBASE=$NEWPORT
     NEWPORT=
@@ -695,59 +700,54 @@ mdg_startup() {
     VALGRIND_CMD=""
   fi
   diskspace
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${DATADIR}/n1.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${DATADIR}/n2.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${DATADIR}/n3.cnf
-  get_error_socket_file 1
-  if [ "${RR_TRACING}" == "0" ]; then
-    $VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n1.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
-  else
-    export _RR_TRACE_DIR="${RUNDIR}/${TRIAL}/rr"
-    mkdir -p "${_RR_TRACE_DIR}"
-    /usr/bin/rr record --chaos ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n1.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
-  fi
-  mdg_startup_status 1
-  get_error_socket_file 2
-  $VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n2.cnf \
-    $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA > ${ERR_FILE} 2>&1 &
-  mdg_startup_status 2
-  get_error_socket_file 3
-  $VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n3.cnf \
-    $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA > ${ERR_FILE} 2>&1 &
-  mdg_startup_status 3
-
+  WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
+  for j in $(seq 1 ${NR_OF_NODES}); do
+    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS}" ${DATADIR}/n${j}.cnf
+    get_error_socket_file ${j}
+    if [ ${j} -eq 1 ]; then
+      if [ "${RR_TRACING}" == "0" ]; then
+        $VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
+      else
+        export _RR_TRACE_DIR="${RUNDIR}/${TRIAL}/rr"
+        mkdir -p "${_RR_TRACE_DIR}"
+        /usr/bin/rr record --chaos ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
+      fi
+      mdg_startup_status ${j}
+    else
+      get_error_socket_file ${j}
+      $VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf \
+        $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA > ${ERR_FILE} 2>&1 &
+      mdg_startup_status ${j}
+    fi
+    if [ "$IS_STARTUP" != "startup" ]; then
+      if [ ${j} -eq 1 ]; then
+        echo "RUNDIR=$RUNDIR" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "WORKDIR=${WORKDIR}" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "startup_check(){ " >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "  SOCKET=\$1" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "  for X in \`seq 0 200\`; do" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "    sleep 1" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "    if ${BASEDIR}/bin/mysqladmin -uroot -S\${SOCKET} ping > /dev/null 2>&1; then" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "      break" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "    fi" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "  done" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "}" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "sed -i \"s|\$RUNDIR|\${WORKDIR}|g\" ${WORKDIR}/${TRIAL}/n${j}.cnf" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "$VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/${TRIAL}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA  --wsrep-new-cluster > ${RUNDIR}/${TRIAL}/node${j}/node${j}.err 2>&1 &" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "startup_check $node/node${j}_socket.sock" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+      fi
+      echo "$VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/${TRIAL}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA > ${RUNDIR}/${TRIAL}/node${j}/node${j}.err  2>&1 &" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+      echo "startup_check $node/node${j}_socket.sock" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+    fi
+  done
   if [ "$IS_STARTUP" != "startup" ]; then
-    echo "RUNDIR=$RUNDIR" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "WORKDIR=${WORKDIR}" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "sed -i \"s|\$RUNDIR|\${WORKDIR}|g\" ${WORKDIR}/${TRIAL}/n1.cnf" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "sed -i \"s|\$RUNDIR|\${WORKDIR}|g\" ${WORKDIR}/${TRIAL}/n2.cnf" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "sed -i \"s|\$RUNDIR|\${WORKDIR}|g\" ${WORKDIR}/${TRIAL}/n3.cnf" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "startup_check(){ " >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "  SOCKET=\$1" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "  for X in \`seq 0 200\`; do" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "    sleep 1" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "    if ${BASEDIR}/bin/mysqladmin -uroot -S\${SOCKET} ping > /dev/null 2>&1; then" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "      break" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "    fi" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "  done" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "}" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "$VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/${TRIAL}/n1.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA  --wsrep-new-cluster > ${RUNDIR}/${TRIAL}/node1/node1.err 2>&1 &" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "startup_check ${SOCKET1}" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "$VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/${TRIAL}/n2.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA > ${RUNDIR}/${TRIAL}/node2/node2.err  2>&1 &" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "startup_check ${SOCKET2}" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "$VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/${TRIAL}/n3.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA > ${RUNDIR}/${TRIAL}/node3/node3.err  2>&1 &" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "startup_check ${SOCKET3}" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "echo \"${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/${TRIAL}/node3/node3_socket.sock shutdown > /dev/null 2>&1\" > ${WORKDIR}/${TRIAL}/stop_mdg_recovery" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "echo \"${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/${TRIAL}/node2/node2_socket.sock shutdown > /dev/null 2>&1\" >> ${WORKDIR}/${TRIAL}/stop_mdg_recovery" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "echo \"${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/${TRIAL}/node1/node1_socket.sock shutdown > /dev/null 2>&1\" >> ${WORKDIR}/${TRIAL}/stop_mdg_recovery" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-    echo "chmod +x ${WORKDIR}/${TRIAL}/stop_mdg_recovery" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+    for j in $(seq 1 ${NR_OF_NODES}); do
+      echo "echo \"${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/${TRIAL}/node${j}/node${j}_socket.sock shutdown > /dev/null 2>&1\" > ${WORKDIR}/${TRIAL}/stop_mdg_recovery" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+      echo "chmod +x ${WORKDIR}/${TRIAL}/stop_mdg_recovery" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+    done
     chmod +x ${RUNDIR}/${TRIAL}/start_mdg_recovery
-
-  fi
-  if [ "$IS_STARTUP" == "startup" ]; then
-    ${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node${NR}.template/node${NR}_socket.sock -e "create database if not exists test" > /dev/null 2>&1
+    ${BASEDIR}/bin/mysql -uroot -S${RUNDIR}/${TRIAL}/node1/node1_socket.sock -e "create database if not exists test" > /dev/null 2>&1
   fi
 }
 
@@ -1222,22 +1222,19 @@ pquery_test() {
     fi
   elif [[ "${MDG}" == "1" ]]; then
     diskspace
-    if [[ ${PQUERY3} -eq 1 && ${TRIAL} -gt 1 ]]; then
-      mkdir -p ${RUNDIR}/${TRIAL}/
-      echoit "Copying datadir from ${WORKDIR}/$((${TRIAL} - 1))/node1 into ${RUNDIR}/${TRIAL}/node1 ..."
-      cp -R ${WORKDIR}/$((${TRIAL} - 1))/node1 ${RUNDIR}/${TRIAL}/node1 2>&1
-      echoit "Copying datadir from ${WORKDIR}/$((${TRIAL} - 1))/node2 into ${RUNDIR}/${TRIAL}/node2 ..."
-      cp -R ${WORKDIR}/$((${TRIAL} - 1))/node2 ${RUNDIR}/${TRIAL}/node2 2>&1
-      echoit "Copying datadir from ${WORKDIR}/$((${TRIAL} - 1))/node3 into ${RUNDIR}/${TRIAL}/node3 ..."
-      cp -R ${WORKDIR}/$((${TRIAL} - 1))/node3 ${RUNDIR}/${TRIAL}/node3 2>&1
-      sed -i 's|safe_to_bootstrap:.*$|safe_to_bootstrap: 1|' ${RUNDIR}/${TRIAL}/node1/grastate.dat
-    else
-      mkdir -p ${RUNDIR}/${TRIAL}/
-      cp -R ${WORKDIR}/node1.template ${RUNDIR}/${TRIAL}/node1 2>&1
-      cp -R ${WORKDIR}/node2.template ${RUNDIR}/${TRIAL}/node2 2>&1
-      cp -R ${WORKDIR}/node3.template ${RUNDIR}/${TRIAL}/node3 2>&1
-    fi
-
+    for i in $(seq 1 ${NR_OF_NODES}); do
+      if [[ ${PQUERY3} -eq 1 && ${TRIAL} -gt 1 ]]; then
+        mkdir -p ${RUNDIR}/${TRIAL}/
+        echoit "Copying datadir from ${WORKDIR}/$((${TRIAL} - 1))/node${i} into ${RUNDIR}/${TRIAL}/node${i} ..."
+        cp -R ${WORKDIR}/$((${TRIAL} - 1))/node${i} ${RUNDIR}/${TRIAL}/node${i} 2>&1
+        if [ ${i} -eq 1 ]; then
+          sed -i 's|safe_to_bootstrap:.*$|safe_to_bootstrap: 1|' ${RUNDIR}/${TRIAL}/node${i}/grastate.dat
+        fi
+      else
+        mkdir -p ${RUNDIR}/${TRIAL}/
+        cp -R ${WORKDIR}/node${i}.template ${RUNDIR}/${TRIAL}/node${i} 2>&1
+      fi
+    done
     MDG_MYEXTRA=
     # === MDG Options Stage 1: Add random mysqld options to MDG_MYEXTRA
     if [ ${MDG_ADD_RANDOM_OPTIONS} -eq 1 ]; then
@@ -1285,28 +1282,19 @@ pquery_test() {
       echoit "Waiting for all MDG nodes to fully start (note this is slow for Valgrind runs, and can easily take 90-180 seconds even on an high end server)..."
     fi
     mdg_startup
-    echoit "Checking 3 node MDG Cluster startup..."
-    for X in $(seq 0 10); do
-      sleep 1.3
-      CLUSTER_UP=0
-      if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET1} ping > /dev/null 2>&1; then
-        if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET1} -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_cluster" | awk '{print $2}')" -eq 3 ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
-        if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET2} -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_cluster" | awk '{print $2}')" -eq 3 ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
-        if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET3} -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_cluster" | awk '{print $2}')" -eq 3 ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
-        if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET1} -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_local" | awk '{print $2}')" == "Synced" ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
-        if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET2} -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_local" | awk '{print $2}')" == "Synced" ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
-        if [ "$(${BASEDIR}/bin/mysql -uroot -S${SOCKET3} -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_local" | awk '{print $2}')" == "Synced" ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
-      fi
-      # If count reached 6 (there are 6 checks), then the Cluster is up & running and consistent in it's Cluster topology views (as seen by each node)
-      if [ ${CLUSTER_UP} -eq 6 ]; then
-        ISSTARTED=1
-        echoit "3 Node MDG Cluster started ok. Clients:"
-        echoit "Node #1: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${SOCKET1}"
-        echoit "Node #2: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${SOCKET2}"
-        echoit "Node #3: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${SOCKET3}"
-        break
-      fi
+    echoit "Checking ${NR_OF_NODES} node MDG Cluster startup..."
+    CLUSTER_UP=0
+    for i in $(seq 1 ${NR_OF_NODES}); do
+      sleep 1
+      if [ "$(${BASEDIR}/bin/mysql -uroot -S${RUNDIR}/${TRIAL}/node${i}/node${i}_socket.sock -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep "wsrep_local" | awk '{print $2}')" == "Synced" ]; then CLUSTER_UP=$((${CLUSTER_UP} + 1)); fi
     done
+    if [ ${CLUSTER_UP} -eq ${NR_OF_NODES} ]; then
+      ISSTARTED=1
+      for i in $(seq 1 ${NR_OF_NODES}); do
+        echoit "${NR_OF_NODES} Node MDG Cluster started ok. Clients:"
+        echoit "Node #${i}: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${RUNDIR}/${TRIAL}/node${i}/node${i}_socket.sock"
+      done
+    fi
   elif [[ ${GRP_RPL} -eq 1 ]]; then
     diskspace
     mkdir -p ${RUNDIR}/${TRIAL}/
@@ -1737,7 +1725,7 @@ pquery_test() {
       sleep 2
       sync
     elif [[ ${MDG} -eq 1 ]]; then
-      echoit "3 Node MDG Cluster failed to start after ${MDG_START_TIMEOUT} seconds. Will issue an extra cleanup to ensure nothing remains..."
+      echoit "${NR_OF_NODES} Node MDG Cluster failed to start after ${MDG_START_TIMEOUT} seconds. Will issue an extra cleanup to ensure nothing remains..."
       (ps -ef | grep 'n[0-9].cnf' | grep ${RUNDIR} | grep -v grep | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1 || true)
       sleep 2
       sync
@@ -1957,7 +1945,7 @@ pquery_test() {
       if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2> /dev/null | wc -l) -ge 1 -o "$(${SCRIPT_PWD}/OLD/text_string.sh ${RUNDIR}/${TRIAL}/log/master.err 2> /dev/null)" != "" -o "$(${SCRIPT_PWD}/OLD/text_string.sh ${RUNDIR}/${TRIAL}/node1/node1.err 2> /dev/null)" != "" -o "$(${SCRIPT_PWD}/OLD/text_string.sh ${RUNDIR}/${TRIAL}/node2/node2.err 2> /dev/null)" != "" -o "$(${SCRIPT_PWD}/OLD/text_string.sh ${RUNDIR}/${TRIAL}/node3/node3.err 2> /dev/null)" != "" ]; then
         if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2> /dev/null | wc -l) -ge 1 ]; then
           if [[ ${MDG} -eq 1 ]]; then
-            for j in $(seq 1 3); do
+            for j in $(seq 1 ${NR_OF_NODES}); do
               if [ $(ls -l ${RUNDIR}/${TRIAL}/node${j}/*core* 2> /dev/null | wc -l) -ge 1 ]; then
                 export GALERA_ERROR_LOG=${RUNDIR}/${TRIAL}/node${j}/node${j}.err
                 export GALERA_CORE_LOC=$(ls -t ${RUNDIR}/${TRIAL}/node${j}/*core* 2> /dev/null)
@@ -2077,6 +2065,7 @@ if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
 elif [[ ${MDG} -eq 1 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} | MDG Mode: TRUE"
   echoit "${ONGOING}"
+  echoit "Number of Galera Cluster nodes: $NR_OF_NODES"
   if [ ${MDG_SST_METHOD} -eq 1 ] ; then
     echoit "MDG SST Method: 'rsync'"
   else
@@ -2293,32 +2282,22 @@ elif [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
   ${SCRIPT_PWD}/ldd_files.sh
   cd ${PWDTMPSAVE} || exit 1
   if [[ ${MDG} -eq 1 ]]; then
-    echoit "Creating 3 MariaDB Galera Node data directory templates..."
+    echoit "Creating ${NR_OF_NODES} MariaDB Galera Node data directory templates..."
     mdg_startup startup
-    sleep 5
-    if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node1.template/node1_socket.sock ping > /dev/null 2>&1; then
-      echoit "MariaDB Galera 'node1.template' data directory template creation started"
-    else
-      echoit "Assert: MariaDB Galera 'node1.template' data directory template creation failed..."
-      exit 1
-    fi
-    if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node2.template/node2_socket.sock ping > /dev/null 2>&1; then
-      echoit "MariaDB Galera 'node2.template' data directory template creation started"
-    else
-      echoit "Assert: MariaDB Galera 'node2.template' data directory template creation failed..."
-      exit 1
-    fi
-    if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node3.template/node3_socket.sock ping > /dev/null 2>&1; then
-      echoit "MariaDB Galera 'node3.template' data directory template creation started"
-    else
-      echoit "Assert: MariaDB Galera 'node3.template' data directory template creation failed..."
-      exit 1
-    fi
-    echoit "Shutting down 3 MariaDB Galera data directory template creation nodes..."
-    ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node3.template/node3_socket.sock shutdown > /dev/null 2>&1
-    ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node2.template/node2_socket.sock shutdown > /dev/null 2>&1
-    ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node1.template/node1_socket.sock shutdown > /dev/null 2>&1
-    echoit "Completed 3 Node MDG data templates creations"
+    sleep 2
+    for i in $(seq 1 ${NR_OF_NODES}); do
+      if ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node${i}.template/node${i}_socket.sock ping > /dev/null 2>&1; then
+        echoit "MariaDB Galera 'node${i}.template' data directory template creation started"
+      else
+        echoit "Assert: MariaDB Galera 'node${i}.template' data directory template creation failed..."
+        exit 1
+      fi
+    done
+    echoit "Shutting down ${NR_OF_NODES} MariaDB Galera data directory template creation nodes..."
+    for i in $(seq 1 ${NR_OF_NODES}); do
+      ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node${i}.template/node${i}_socket.sock shutdown > /dev/null 2>&1
+    done
+    echoit "Completed ${NR_OF_NODES} Node MDG data templates creations"
   elif [[ ${GRP_RPL} -eq 1 ]]; then
     echoit "Creating 3 Group Replication data directory templates..."
     gr_startup startup

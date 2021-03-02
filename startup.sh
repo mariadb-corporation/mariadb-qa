@@ -18,7 +18,7 @@ init_empty_port(){
     fi
   done
 }
-# Nr of MDG nodes 1-3
+# Nr of MDG nodes 1-n
 NR_OF_NODES=${1}
 if [ -z "${NR_OF_NODES}" ] ; then
   NR_OF_NODES=3
@@ -317,9 +317,10 @@ if [[ $MDG -eq 1 ]]; then
     sed -i "2i tmpdir=${PWD}/tmp${i}" n${i}.cnf
     sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;ist.recv_addr=$IST_PORT;$WSREP_PROVIDER_OPTIONS\"" n${i}.cnf
   done
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" n1.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" n2.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" n3.cnf
+  WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
+  for j in $(seq 1 ${NR_OF_NODES}); do
+    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS}" n${j}.cnf
+  done
 
   echo -e "#!/bin/bash" >./gal_start
   echo -e "NODES=\$1" >>./gal_start
