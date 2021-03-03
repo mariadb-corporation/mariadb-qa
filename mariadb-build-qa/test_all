@@ -55,6 +55,8 @@ sleep 13  # Give servers some time to properly shutdown. TODO: this can be impro
 sync
 if [ ${SAN_MODE} -eq 1 ]; then
   ./kill_all SAN
+elif [ "${1}" == "GAL" ]; then
+  ./kill_all GAL
 else
   ./kill_all
 fi
@@ -63,6 +65,8 @@ sync
 # Output results and save copy of reasy bug reporting (mariadb-qa/bug_report.sh)
 if [ ${SAN_MODE} -eq 1 ]; then
   ./findbug+ SAN "${TEXT}" | tee test.results
+elif [ "${1}" == "GAL" ]; then
+  ./findbug+ GAL "${TEXT}" | tee test.results
 else
   ./findbug+ "${TEXT}" | tee test.results
 fi
