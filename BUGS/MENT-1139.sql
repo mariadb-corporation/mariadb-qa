@@ -1,0 +1,6 @@
+XA START 'a';
+SET wsrep_on=OFF;
+XA END 'a';
+XA PREPARE 'a';
+XA COMMIT 'a';
+CREATE DATABASE one;

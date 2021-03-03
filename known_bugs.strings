@@ -24,6 +24,7 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+transaction_.active() == false || (transaction_.state() == wsrep::transaction::s_executing || transaction_.state() == wsrep::transaction::s_prepared || transaction_.state() == wsrep::transaction::s_aborted || transaction_.state() == wsrep::transaction::s_must_abort)|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command # DBG|MENT-1139
 client_state_.mode() != wsrep::client_state::m_toi|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans            ## DBG |MDEV-25045
 SIGSEGV|wsrep_can_run_in_toi|wsrep_can_run_in_nbo|wsrep_NBO_begin|wsrep_to_isolation_begin                                                                                     ## OPT |MENT-1134
 SIGABRT|__cxa_rethrow () from|galera::WriteSetOut::gather|galera::TrxHandleMaster::gather|galera::ReplicatorSMM::replicate                                                     ## DBG |MDEV-25025
