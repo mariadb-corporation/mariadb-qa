@@ -12,3 +12,4 @@ elif [ "${1}" == "GAL" ]; then
 else
   ./gendirs.sh | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -I{} sh -c "{}"
 fi
+

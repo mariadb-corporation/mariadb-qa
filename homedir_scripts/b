@@ -33,7 +33,7 @@ if [ "${1}" == "SAN" ]; then
 elif [ "${1}" == "GAL" ]; then
   MYEXTRA_OPT="$*"
   #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
-  export TEXT="signal"  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
+  export TEXT="mysqld got signal"  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
   #rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh GAL "${MYEXTRA_OPT}" | tee report.log
 else
@@ -48,3 +48,4 @@ else
     cd .. && ./allstrings_merged && cd - >/dev/null 2>&1
   fi
 fi
+

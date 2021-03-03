@@ -113,8 +113,8 @@ elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
   echo "=========================================================================================="
 fi
 
-if [ "${VERSION_INFO_2}" == "10.3" ]; then
-  if echo "${PWD}" | grep -q EMD ; then
+if echo "${PWD}" | grep -q EMD ; then
+  if [ "${VERSION_INFO_2}" == "10.3" -o "${VERSION_INFO_2}" == "10.2" ]; then
     INIT_OPT="${INIT_OPT} --auth-root-authentication-method=normal"
   fi
 fi
@@ -810,3 +810,4 @@ else
   echo "      To get a fresh instance now, execute: ./gal_start then wait 3 seconds and execute ./1_node_cli"
 fi
 exit 0
+
