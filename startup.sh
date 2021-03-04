@@ -362,7 +362,7 @@ if [[ $MDG -eq 1 ]]; then
   echo "rm -Rf ${PWD}/node* ${PWD}/galera_rr" >>gal_wipe
   for i in $(seq 1 "${NR_OF_NODES}"); do
     if [ "${i}" -eq 1 ] ; then
-      echo "/usr/bin/rr record --chaos ${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start_rr
+      echo "/usr/bin/rr record --chaos ${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --loose-innodb-flush-method=fsync --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start_rr
       echo "check_node_startup ${i}" >> ./gal_start_rr
       echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start
       echo "check_node_startup ${i}" >> ./gal_start
@@ -452,6 +452,7 @@ echo "echo 'Server socket: ${SOCKET} with datadir: ${PWD}/data'" >>start
 tail -n1 start >>start_valgrind
 tail -n1 start >>start_gypsy
 tail -n1 start >>start_rr
+sed -i "s|--no-defaults|--no-defaults --loose-innodb-flush-method=fsync|g" start_rr
 
 # -- Replication setup
 echo '#!/usr/bin/env bash' >repl_setup
