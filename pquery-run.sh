@@ -708,9 +708,13 @@ mdg_startup() {
       if [ "${RR_TRACING}" == "0" ]; then
         $VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
       else
-        export _RR_TRACE_DIR="${RUNDIR}/${TRIAL}/rr"
-        mkdir -p "${_RR_TRACE_DIR}"
-        /usr/bin/rr record --chaos ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
+        if [ "$IS_STARTUP" == "startup" ]; then
+          ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
+        else
+          export _RR_TRACE_DIR="${RUNDIR}/${TRIAL}/rr"
+          mkdir -p "${_RR_TRACE_DIR}"
+          /usr/bin/rr record --chaos ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
+        fi
       fi
       mdg_startup_status ${j}
     else
