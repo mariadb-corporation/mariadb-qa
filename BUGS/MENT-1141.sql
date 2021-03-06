@@ -1,0 +1,7 @@
+SET SESSION pseudo_slave_mode=ON;
+CREATE TABLE t0 (c INT);
+XA START 'a';
+INSERT INTO t0 VALUES(0);
+XA END 'a';
+XA PREPARE 'a';
+ALTER TABLE t0 ENGINE=InnoDB;

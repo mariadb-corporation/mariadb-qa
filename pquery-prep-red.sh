@@ -65,7 +65,7 @@ if [ "$(grep 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t
 else
   export MDG=0
 fi
-
+NR_OF_NODES=$(grep 'Number of Galera Cluster nodes:' ./pquery-run.log 2> /dev/null | sed 's|^.*Number of Galera Cluster nodes[: \t]*||')
 # Check if this is a group replication run
 if [ "$(grep 'Group Replication Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*Group Replication Mode[: \t]*||')" == "TRUE" ]; then
   GRP_RPL=1
@@ -410,7 +410,9 @@ generate_reducer_script(){
   fi
   if [[ ${MDG} -eq 1 ]]; then
     MDG_CLEANUP1="0,/^[ \t]*MDG[ \t]*=.*$/s|^[ \t]*MDG[ \t]*=.*$|#MDG=<set_below_in_machine_variables_section>|"
+    MDG_CLEANUP2="0,/^[ \t]*NR_OF_NODES[ \t]*=.*$/s|^[ \t]*NR_OF_NODES[ \t]*=.*$|#NR_OF_NODES=<set_below_in_machine_variables_section>|"
     MDG_STRING1="0,/#VARMOD#/s:#VARMOD#:export MDG=1\n#VARMOD#:"
+    MDG_STRING2="0,/#VARMOD#/s:#VARMOD#:NR_OF_NODES=${NR_OF_NODES}\n#VARMOD#:"
   else
     MDG_CLEANUP1="s|ZERO0|ZERO0|"  # Idem as above
     MDG_STRING1="s|ZERO0|ZERO0|"
@@ -466,6 +468,7 @@ generate_reducer_script(){
    | sed -e "0,/^[ \t]*USE_PQUERY[ \t]*=.*$/s|^[ \t]*USE_PQUERY[ \t]*=.*$|#USE_PQUERY=<set_below_in_machine_variables_section>|" \
    | sed -e "0,/^[ \t]*PQUERY_LOC[ \t]*=.*$/s|^[ \t]*PQUERY_LOC[ \t]*=.*$|#PQUERY_LOC=<set_below_in_machine_variables_section>|" \
    | sed -e "${MDG_CLEANUP1}" \
+   | sed -e "${MDG_CLEANUP2}" \
    | sed -e "${GRP_RPL_CLEANUP1}" \
    | sed -e "${SI_CLEANUP1}" \
    | sed -e "${SI_STRING1}" \
@@ -490,6 +493,7 @@ generate_reducer_script(){
    | sed -e "${SAVE_RESULTS_CLEANUP}" \
    | sed -e "0,/#VARMOD#/s:#VARMOD#:SAVE_RESULTS=0\n#VARMOD#:" \
    | sed -e "${MDG_STRING1}" \
+   | sed -e "${MDG_STRING2}" \
    | sed -e "${GRP_RPL_STRING1}" \
    | sed -e "${QC_STRING1}" \
    | sed -e "${QC_STRING2}" \
@@ -562,7 +566,7 @@ ASAN_OR_UBSAN_OR_TSAN_BUG=0
 if [ ${QC} -eq 0 ]; then
   if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
     for TRIAL in $(ls ./*/node*/*core* 2>/dev/null | sed 's|./||;s|/.*||' | sort | sort -u); do
-      for SUBDIR in `ls -lt ${TRIAL} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | tr -dc '0-9\n' | sort`; do
+      for SUBDIR in `ls -lt ${TRIAL} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep -v tmp | tr -dc '0-9\n' | sort`; do
         GALERA_CORE_LOC=""
         GALERA_ERROR_LOG=""
         OUTFILE="${TRIAL}-${SUBDIR}"
@@ -570,7 +574,7 @@ if [ ${QC} -eq 0 ]; then
         touch ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
         echo "========== Processing pquery trial ${TRIAL}-${SUBDIR}"
         if [ -r ./reducer${TRIAL}-${SUBDIR}.sh ]; then
-          echo "* Reducer for this trial (./reducer${TRIAL}_${SUBDIR}.sh) already exists. Skipping to next trial."
+          echo "* Reducer for this trial (./reducer${TRIAL}_${SUBDIR}.sh) already exists. Skipping to next trial/node."
           continue
         fi
         if [ `ls ./${TRIAL}/MYEXTRA 2>/dev/null | wc -l` -gt 0 ]; then
@@ -608,24 +612,6 @@ if [ ${QC} -eq 0 ]; then
         else
           BASE="`grep 'Basedir:' ./pquery-run.log | sed 's|^.*Basedir[: \t]*||;;s/|.*$//' | tr -d '[[:space:]]'`"
         fi
-        CORE=`ls -1 ./${TRIAL}/node${SUBDIR}/*core* 2>&1 | head -n1 | grep -v "No such file"`
-        ERRLOG=./${TRIAL}/node${SUBDIR}/node${SUBDIR}.err
-        if [ `cat ${INPUTFILE} | wc -l` -ne 0 ]; then
-          if [ "$CORE" != "" ]; then
-            extract_queries_core
-            export GALERA_CORE_LOC=${CORE}
-          fi
-          if [ "$ERRLOG" != "" ]; then
-            extract_queries_error_log
-            export GALERA_ERROR_LOG=${ERRLOG}
-          else
-            echo "Assert! Error log at ./${TRIAL}/node${SUBDIR}/error.log could not be read?"
-            exit 1
-          fi
-        fi
-        add_select_ones_to_trace ${INPUTFILE}
-        add_select_sleep_to_trace ${INPUTFILE}
-        remove_non_sql_from_trace ${INPUTFILE}
         # OLD_WAY: TEXT="$(${SCRIPT_PWD}/OLD/text_string.sh ./${TRIAL}/node${SUBDIR}/node${SUBDIR}.err)"
         if [ ! -r ./${TRIAL}/node${SUBDIR}/MYBUG ]; then  # Sometimes (approx 1/50-1/100 trials) MYBUG is missing, so [re-]generate it. TODO: find reason (in pquery-run.sh likely)
           cd ./${TRIAL}/node${SUBDIR} || exit 1
@@ -634,26 +620,47 @@ if [ ${QC} -eq 0 ]; then
         fi
         TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # TODO: this change needs further testing for cluster/GR. Also, it is likely someting was missed for this in the updated pquery-run.sh: the need to generate a MYBUG file for each node!   # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.     
         check_if_asan_or_ubsan_or_tsan
-        echo "* TEXT variable set to: '${TEXT}'"
         if [ "${MULTI}" == "1" ]; then
            if [ -s ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/${TRIAL}.sql.failing ];then
              auto_interleave_failing_sql ${INPUTFILE}
            fi
         fi
         if [[ "${TEXT}" != "Assert: no core file found"* ]]; then ## TODO: Check if this always works correctly (i.e. are cores present whereas it says there are no core files found)
+          echo "* TEXT variable set to: '${TEXT}'"
+          CORE=`ls -1 ./${TRIAL}/node${SUBDIR}/*core* 2>&1 | head -n1 | grep -v "No such file"`
+          ERRLOG=./${TRIAL}/node${SUBDIR}/node${SUBDIR}.err
+          if [ `cat ${INPUTFILE} | wc -l` -ne 0 ]; then
+            if [ "$CORE" != "" ]; then
+              extract_queries_core
+              export GALERA_CORE_LOC=${CORE}
+            fi
+            if [ "$ERRLOG" != "" ]; then
+              extract_queries_error_log
+              export GALERA_ERROR_LOG=${ERRLOG}
+            else
+              echo "Assert! Error log at ./${TRIAL}/node${SUBDIR}/error.log could not be read?"
+              exit 1
+            fi
+          fi
+          add_select_ones_to_trace ${INPUTFILE}
+          add_select_sleep_to_trace ${INPUTFILE}
+          remove_non_sql_from_trace ${INPUTFILE}
           generate_reducer_script
+          if [ "${MYEXTRA}" != "" ]; then
+            echo "* MYEXTRA variable set to: ${MYEXTRA}"
+          fi
+          if [ "${WSREP_PROVIDER_OPTIONS}" != "" ]; then
+            echo "* WSREP_PROVIDER_OPTIONS variable set to: ${WSREP_PROVIDER_OPTIONS}"
+          fi
+          if [[ ${VALGRIND_CHECK} -eq 1 ]]; then
+            echo "* Valgrind was used for this trial"
+          fi
+          echo "Trial analysis complete. Reducer created: ${PWD}/reducer${TRIAL}-${SUBDIR}.sh"
+        else
+          echo "Assert: no core file found. Skipping to next trial/node."
+          continue
         fi
       done
-      if [ "${MYEXTRA}" != "" ]; then
-        echo "* MYEXTRA variable set to: ${MYEXTRA}"
-      fi
-      if [ "${WSREP_PROVIDER_OPTIONS}" != "" ]; then
-        echo "* WSREP_PROVIDER_OPTIONS variable set to: ${WSREP_PROVIDER_OPTIONS}"
-      fi
-      if [[ ${VALGRIND_CHECK} -eq 1 ]]; then
-        echo "* Valgrind was used for this trial"
-      fi
-      echo "Trial analysis complete. Reducer created: ${PWD}/reducer${TRIAL}-${SUBDIR}.sh"
     done
   else
     for SQLLOG in $(ls ./*/*thread-0.sql 2>/dev/null); do

@@ -26,6 +26,13 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 ###### CURRENT BUGS ######
 SIGABRT|DbugExit|_db_return_|my_malloc|JOIN_CACHE::alloc_buffer                                                                                                                ## DBG MDEV-25027
 SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search|choose_plan                                                                            ## DBG MDEV-25013
+thd|SIGABRT|wsrep_innobase_kill_one_trx|wsrep_kill_victim|lock_table_other_has_incompatible|lock_table                                                                         ## OPT |MENT-1141
+SIGSEGV|mach_read_from_n_little_endian|row_mysql_read_blob_ref|wsrep_calc_row_hash|ha_innobase::wsrep_append_keys                                                              ## OPT |MDEV-25047
+transaction_.active() == false || (transaction_.state() == wsrep::transaction::s_executing || transaction_.state() == wsrep::transaction::s_prepared || transaction_.state() == wsrep::transaction::s_aborted || transaction_.state() == wsrep::transaction::s_must_abort)|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command # DBG|MENT-1139
+client_state_.mode() != wsrep::client_state::m_toi|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans            ## DBG |MDEV-25045
+SIGSEGV|wsrep_can_run_in_toi|wsrep_can_run_in_nbo|wsrep_NBO_begin|wsrep_to_isolation_begin                                                                                     ## OPT |MENT-1134
+SIGABRT|__cxa_rethrow () from|galera::WriteSetOut::gather|galera::TrxHandleMaster::gather|galera::ReplicatorSMM::replicate                                                     ## DBG |MDEV-25025
+SIGSEGV|wsrep_can_run_in_toi|wsrep_TOI_begin|wsrep_to_isolation_begin|Sql_cmd_alter_table::execute                                                                             ## OPT |MDEV-24833
 m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                         ## DBG MDEV-24960
 !m.first->second.is_bulk_insert()|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                           ## DBG MDEV-24905
 ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare                               ## DBG |MENT-1119
@@ -317,7 +324,7 @@ SIGSEGV|mysql_unlock_tables|mysql_unlock_tables|close_thread_tables|Locked_table
 SIGSEGV|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                           ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|free_tmp_table|close_thread_tables|mysql_execute_command|mysql_parse                                                                                                   ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl                         ## OPT |MDEV-22448 NOW 20945
-SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## OPT |MDEV-22448 NOW 20945
+SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## OPT |MDEV-22448 NOW 20945/MDEV-25037
 SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                                ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::is_lock_owner|is_locked_view                                                                                   ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|thr_multi_unlock|mysql_unlock_tables|mysql_unlock_tables|close_thread_tables                                                                                           ## OPT |MDEV-22448 NOW 20945
@@ -330,7 +337,7 @@ SIGSEGV|inline_mysql_prlock_wrlock|MDL_lock::remove_ticket|MDL_context::release_
 SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> >::remove|MDL_context::release_lock|MDL_context::release_lock|backup_unlock ## OPT |MDEV-22448 NOW 20945
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|THD::cleanup|unlink_thd                                                                     ## OPT |MDEV-22448 NOW 20945
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|backup_lock|mysql_execute_command                                                           ## OPT |MDEV-22448 NOW 20945
-SIGSEGV|MDL_lock::hog_lock_types_bitmap|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_context::release_lock                                                         ## OPT |MDEV-22448 NOW 20945
+SIGSEGV|MDL_lock::hog_lock_types_bitmap|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_context::release_lock                                                         ## OPT |MDEV-22448 NOW 20945/MDEV-25037
 SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::rollback_to_savepoint|THD::restore_backup_open_tables_state                                         ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|Item::val_uint|handle_select|execute_sqlcom_select|mysql_execute_command                                                                                               ## OPT MDEV-22447
 SIGABRT|ut_dbg_assertion_failed|trx_start_if_not_started_xa_low|ha_innobase::init_table_handle_for_HANDLER|mysql_ha_read                                                       ## OPT |MDEV-22445

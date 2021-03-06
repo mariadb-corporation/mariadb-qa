@@ -104,6 +104,7 @@ FORCE_KILL=0                    # On/Off (1/0) Enable to forcefully kill mysqld 
 # === MariaDB Galera Cluster
 MDG=0                           # On/Off (1/0) Enable to reduce testcases using a MariaDB Galera Cluster. Auto-enables USE_PQUERY=1
 MDG_ISSUE_NODE=0                # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
+NR_OF_NODES=3                   # Nr of MDG nodes 1-n
 WSREP_PROVIDER_OPTIONS=""       # wsrep_provider_options to be used (and reduced).
 
 # === MySQL Group Replication
@@ -585,7 +586,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
   echo_out "[Abort] End of dump stack"
   if [ $MDG -eq 1 ]; then
     echo_out "[Abort] Ensuring any remaining MDG nodes are terminated and removed"
-    (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
+    (ps -ef | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   fi
   if [ $GRP_RPL -eq 1 ]; then
@@ -908,7 +909,7 @@ options_check(){
       exit 1
     fi
     if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
-      echo "Error: Valgrind for 3 node MDG/Group Replication replay has not been implemented yet. Please do so! Free cookies afterwards!"
+      echo "Error: Valgrind for ${NR_OF_NODES} node MDG/Group Replication replay has not been implemented yet. Please do so! Free cookies afterwards!"
       echo "Terminating now."
       exit 1
     fi
@@ -1614,9 +1615,9 @@ init_workdir_and_files(){
   echo_out "[Init] Workdir: $WORKD"
   echo_out "[Init] EPOCH ID: $EPOCH (used for various file and directory names)"
   if [ $MDG -eq 1 ]; then
-    echo_out "[Init] MDG Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
-    echo_out "[Init] MDG Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
-    echo_out "[Init] MDG Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
+    for i in $(seq 1 "${NR_OF_NODES}"); do
+      echo_out "[Init] MDG Node #${i} Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node${i}/node${i}_socket.sock"
+    done
   elif [ $GRP_RPL -eq 1 ]; then
     echo_out "[Init] Group Replication Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
     echo_out "[Init] Group Replication Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
@@ -1630,7 +1631,7 @@ init_workdir_and_files(){
     fi
   fi
   if [ $MDG -eq 1 ]; then
-    echo_out "[Init] Galera Cluster Temporary directories (TMP Variable) set to $WORKD/tmp1, $WORKD/tmp2, $WORKD/tmp3 respectively"
+    echo_out "[Init] Galera Cluster Temporary directories (TMP Variable) set to $(ls -d $WORKD/tmp* | xargs ) respectively"
   else
     echo_out "[Init] Temporary directory (TMP Variable) set to $TMP"
   fi
@@ -1744,13 +1745,10 @@ init_workdir_and_files(){
     if [ $MODE -eq 4 ]; then
       if [ $MDG_ISSUE_NODE -eq 0 ]; then
         echo_out "[Info] All MDG nodes will be checked for the issue. As long as one node reproduces, testcase reduction will continue (MDG_ISSUE_NODE=0)"
-      elif [ $MDG_ISSUE_NODE -eq 1 ]; then
-        echo_out "[Info] Important: MDG_ISSUE_NODE is set to 1, so only MDG node 1 will be checked for the presence of the issue"
-      elif [ $MDG_ISSUE_NODE -eq 2 ]; then
-        echo_out "[Info] Important: MDG_ISSUE_NODE is set to 2, so only MDG node 2 will be checked for the presence of the issue"
-      elif [ $MDG_ISSUE_NODE -eq 3 ]; then
-        echo_out "[Info] Important: MDG_ISSUE_NODE is set to 3, so only MDG node 3 will be checked for the presence of the issue"
       fi
+      for i in $(seq 1 ${NR_OF_NODES}); do
+       echo_out "[Info] Important: MDG_ISSUE_NODE is set to ${i}, so only MDG node ${i} will be checked for the presence of the issue"
+      done
     fi
   fi
   if [ $GRP_RPL -gt 0 ]; then
@@ -1843,16 +1841,12 @@ init_workdir_and_files(){
       stop_mysqld_or_mdg
     elif [[ $MDG -eq 1 ]]; then
       echo_out "[Init] Setting up standard MDG working template (without using MYEXTRA options)"
-      node1="${WORKD}/node1"
-      node2="${WORKD}/node2"
-      node3="${WORKD}/node3"
-      ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node1  > ${WORKD}/startup_node1_error.log 2>&1
-      ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node2  > ${WORKD}/startup_node2_error.log 2>&1
-      ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node3  > ${WORKD}/startup_node3_error.log 2>&1
-      mkdir $WORKD/node1.init $WORKD/node2.init $WORKD/node3.init
-      cp -a $WORKD/node1/* $WORKD/node1.init/
-      cp -a $WORKD/node2/* $WORKD/node2.init/
-      cp -a $WORKD/node3/* $WORKD/node3.init/
+      for i in $(seq 1 ${NR_OF_NODES}); do
+        node="${WORKD}/node${i}"
+        ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node  > ${WORKD}/startup_node${i}_error.log 2>&1
+        mkdir $WORKD/node${i}.init
+        cp -a $WORKD/node${i}/* $WORKD/node${i}.init/
+      done
     elif [[ $GRP_RPL -eq 1 ]]; then
       echo_out "[Init] Setting up standard Group Replication working template (without using MYEXTRA options)"
       MID="${BASEDIR}/bin/mysqld --no-defaults --initialize-insecure ${MYINIT} --basedir=${BASEDIR}"
@@ -1891,9 +1885,7 @@ generate_run_scripts(){
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_INIT
   echo "echo \"Attempting to prepare mysqld environment at /dev/shm/${EPOCH}...\"" >> $WORK_INIT
   echo "rm -Rf /dev/shm/${EPOCH}" >> $WORK_INIT
-  if [[ ${MDG} -eq 1 ]]; then
-    echo "mkdir -p /dev/shm/${EPOCH}/tmp1 /dev/shm/${EPOCH}/tmp2 /dev/shm/${EPOCH}/tmp3" >> $WORK_INIT
-  else
+  if [[ ${MDG} -eq 0 ]]; then
     echo "mkdir -p /dev/shm/${EPOCH}/tmp /dev/shm/${EPOCH}/log" >> $WORK_INIT
   fi
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`" >> $WORK_INIT
@@ -1909,9 +1901,10 @@ generate_run_scripts(){
   echo "VERSION2=\"\`\$BIN --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-6]' | head -n1\`\"" >> $WORK_INIT
   echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then MID_OPTIONS='--no-defaults --initialize-insecure ${MYINIT}'; elif [ \"\$VERSION\" == \"5.6\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION}\" == \"5.5\" ]; then MID_OPTIONS='--force ${MYINIT}';elif [ \"\${VERSION2}\" == \"10.1\" -o \"\${VERSION2}\" == \"10.2\" -o \"\${VERSION2}\" == \"10.3\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION2}\" == \"10.4\" -o \"\${VERSION2}\" == \"10.5\" -o \"\${VERSION2}\" == \"10.6\" ]; then MID_OPTIONS='--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}'; else MID_OPTIONS='${MYINIT}'; fi" >> $WORK_INIT
   if [[ ${MDG} -eq 1 ]]; then
-    echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node1" >> $WORK_INIT
-    echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node2" >> $WORK_INIT
-    echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node3" >> $WORK_INIT
+    for i in $(seq 1 ${NR_OF_NODES}); do
+      mkdir -p /dev/shm/${EPOCH}/tmp${i}
+      echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node${i}" >> $WORK_INIT
+    done
   else
     echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then \$BIN \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; else \$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; fi" >> $WORK_INIT
   fi
@@ -2009,7 +2002,12 @@ generate_run_scripts(){
 }
 
 init_mysql_dir(){
-  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
+  if [[ $MDG -eq 1 ]] ; then
+    for i in $(seq 1 ${NR_OF_NODES}); do
+      sudo rm -Rf ${WORKD}/node${i}
+      cp -a ${WORKD}/node${i}.init ${WORKD}/node${i}
+    done
+  elif [[ $GRP_RPL -eq 1 ]]; then
     sudo rm -Rf $WORKD/node1 $WORKD/node2 $WORKD/node3
     cp -a ${node1}.init ${node1}
     cp -a ${node2}.init ${node2}
@@ -2071,7 +2069,7 @@ start_mysqld_or_valgrind_or_mdg(){
 start_mdg_main(){
   generate_run_scripts
   #clean existing processes
-  ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true
+  ps -ef | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true
   sleep 2; sync
   SUSER=root
   SPASS=
@@ -2125,12 +2123,9 @@ start_mdg_main(){
   unset MDG_LADDRS
   MDG_PORTS=""
   MDG_LADDRS=""
-  for i in $(seq 1 3); do
+  for i in $(seq 1 ${NR_OF_NODES}); do
     node=${WORKD}/node${i}
     mkdir -p $WORKD/tmp${i}
-    #RBASE1="$((MYPORT + (100 * $i)))"
-    #LADDR1="127.0.0.1:$((RBASE1 + 8))"
-    #SST_PORT="127.0.0.1:$((RBASE1 + 1))"
     init_empty_port
     RBASE=$NEWPORT
     NEWPORT=
@@ -2176,43 +2171,31 @@ start_mdg_main(){
 #    fi
   done
 
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n1.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n2.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n3.cnf
-  cp ${WORKD}/n1.cnf ${WORKD}/${EPOCH}_n1.cnf
-  cp ${WORKD}/n2.cnf ${WORKD}/${EPOCH}_n2.cnf
-  cp ${WORKD}/n3.cnf ${WORKD}/${EPOCH}_n3.cnf
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
-  echo "echo \"Attempting to start mysqld (socket /dev/shm/${EPOCH}/node1/node1_socket.sock)...\"" >> $WORK_START
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
-  echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n1.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node1/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-  echo "sleep 10" >> $WORK_START
-  echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n2.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node2/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-  echo "sleep 60" >> $WORK_START
-  echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n3.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node3/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-  echo "sleep 60" >> $WORK_START
+  WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
+  for j in $(seq 1 ${NR_OF_NODES}); do
+    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS}" ${WORKD}/n${j}.cnf
+    cp ${WORKD}/n${j}.cnf ${WORKD}/${EPOCH}_n${j}.cnf
+    if [ ${j} -eq 1 ]; then
+      echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START
+      echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      echo "sleep 10" >> $WORK_START
+      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/error.log 2>&1 &
+      mdg_node_startup_status ${WORKD}/node${j}/error.log
+    else
+      echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      echo "sleep 60" >> $WORK_START
+      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA > ${WORKD}/node${j}/error.log 2>&1 &
+      mdg_node_startup_status ${WORKD}/node${j}/error.log
+    fi
+  done
+
   sed -i "s|$WORKD|/dev/shm/${EPOCH}|g" $WORK_START
   chmod +x $WORK_START
-  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n1.cnf $MYEXTRA --wsrep-new-cluster > $node1/error.log 2>&1 &
-  mdg_node_startup_status $node1/error.log
-  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n2.cnf $MYEXTRA > $node2/error.log 2>&1 &
-  mdg_node_startup_status $node2/error.log
-  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n3.cnf $MYEXTRA > $node3/error.log 2>&1 &
-  mdg_node_startup_status $node3/error.log
-
   # create test to run pquery command
-  ${BASEDIR}/bin/mysql -uroot -S$node1/node1_socket.sock -e "create database if not exists test" > /dev/null 2>&1
-
-  CLUSTER_UP=0
-  if $BASEDIR/bin/mysqladmin -uroot --socket=${node3}/node3_socket.sock ping > /dev/null 2>&1; then
-    if [[ `$BASEDIR/bin/mysql -uroot --socket=${node1}/node1_socket.sock -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_cluster" | awk '{print $2}'` -eq 3 ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ `$BASEDIR/bin/mysql -uroot --socket=${node2}/node2_socket.sock -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_cluster" | awk '{print $2}'` -eq 3 ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ `$BASEDIR/bin/mysql -uroot --socket=${node3}/node3_socket.sock -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_cluster" | awk '{print $2}'` -eq 3 ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ "`$BASEDIR/bin/mysql -uroot --socket=${node1}/node1_socket.sock -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_local" | awk '{print $2}'`" == "Synced" ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ "`$BASEDIR/bin/mysql -uroot --socket=${node2}/node2_socket.sock -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_local" | awk '{print $2}'`" == "Synced" ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ "`$BASEDIR/bin/mysql -uroot --socket=${node3}/node3_socket.sock -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_local" | awk '{print $2}'`" == "Synced" ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-  fi
+  ${BASEDIR}/bin/mysql -uroot -S${WORKD}/node1/node1_socket.sock -e "create database if not exists test" > /dev/null 2>&1
 }
 
 gr_start_main(){
@@ -2587,10 +2570,14 @@ run_and_check(){
   OUTCOME="$?"
   if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 6 ]; then stop_mysqld_or_mdg; fi
   # Add error log from this trial to the overall run error log
-  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-    sudo cat $WORKD/node1/error.log > $WORKD/node1_error.log
-    sudo cat $WORKD/node2/error.log > $WORKD/node2_error.log
-    sudo cat $WORKD/node3/error.log > $WORKD/node3_error.log
+  if [[ $MDG -eq 1 ]] ; then
+    for i in $(seq 1 "${NR_OF_NODES}"); do
+      cat $WORKD/node${i}/error.log >> $WORKD/node${i}_error.log
+    done
+  elif [[ $GRP_RPL -eq 1 ]]; then
+    sudo cat $WORKD/node1/error.log >> $WORKD/node1_error.log
+    sudo cat $WORKD/node2/error.log >> $WORKD/node2_error.log
+    sudo cat $WORKD/node3/error.log >> $WORKD/node3_error.log
   else
     cat $WORKD/log/master.err >> $WORKD/error.log
     rm -f $WORKD/log/master.err
@@ -2681,10 +2668,10 @@ run_sql_code(){
       if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         if [ $PQUERY_MULTI -eq 1 ]; then
           if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
-          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${node1}/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
+          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         else
           if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE=""; else PQUERY_SHUFFLE="--no-shuffle"; fi
-          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${node1}/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
+          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         fi
       else
         if [ $PQUERY_MULTI -eq 1 ]; then
@@ -2699,7 +2686,7 @@ run_sql_code(){
       if [ "$CLI_MODE" == "" ]; then CLI_MODE=99; fi  # Leads to assert below
       CLIENT_SOCKET=
       if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-        CLIENT_SOCKET=${node1}/node1_socket.sock
+        CLIENT_SOCKET=${WORKD}/node1/node1_socket.sock
       else
         CLIENT_SOCKET=$WORKD/socket.sock
       fi
@@ -2748,7 +2735,7 @@ cleanup_and_save(){
     fi
   else
     if [[ $MDG -eq 1 ]]; then
-      (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
+      (ps -ef | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
       sleep 2; sync
     fi
     if [[ $GRP_RPL -eq 1 ]]; then
@@ -3067,15 +3054,11 @@ process_outcome(){
   elif [ $MODE -eq 4 ]; then
     M4_ISSUE_FOUND=0
     if [ $MDG -eq 1 ]; then
-      if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 1 ]; then
-        if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
-      fi
-      if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 2 ]; then
-        if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node2}/node2_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
-      fi
-      if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 3 ]; then
-        if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node3}/node3_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
-      fi
+      for i in $(seq 1 ${NR_OF_NODES}); do
+        if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq ${i} ]; then
+          if ! $BASEDIR/bin/mysqladmin -uroot --socket=$WORKD/node${i}/node${i}_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
+        fi
+      done
     elif [ $GRP_RPL -eq 1 ]; then
       if [ $GRP_RPL_ISSUE_NODE -eq 0 -o $GRP_RPL_ISSUE_NODE -eq 1 ]; then
         if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
@@ -3247,7 +3230,7 @@ stop_mysqld_or_mdg(){
   SHUTDOWN_TIME_START=$(date +'%s')
   MODE0_MIN_SHUTDOWN_TIME=$[ $TIMEOUT_CHECK + 10 ]
   if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-    (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
+    (ps -ef | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   else
     if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 -a ${FIRST_MYSQLD_START_FLAG} -ne 1 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld. For the first init startup of mysqld, kill should also not be used.

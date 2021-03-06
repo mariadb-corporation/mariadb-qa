@@ -18,6 +18,8 @@ if [ -z "${1}" -o "${ERROR_IN_OPTIONS}" -eq 1 ]; then
 elif [ "${1}" == "SAN" ]; then
   SAN_MODE=1
   TEXT="${2}"  # Presence of ${2} was checked earlier above (ref ERROR_IN_OPTIONS)
+elif [ "${1}" == "GAL" ]; then
+  TEXT="${2}"
 else
   TEXT="${1}"
 fi
@@ -39,7 +41,8 @@ if [ "${1}" == "SAN" ]; then
   export TEXT="${TEXT}"  # Likely not strictly necessary; defensive coding
   ./findbug SAN | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 elif [ "${1}" == "GAL" ]; then
-  ./findbug GAL | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
+  export TEXT="${TEXT}"  # Likely not strictly necessary; defensive coding
+  ./findbug GAL "${TEXT}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 else
   ./findbug "${1}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 fi
@@ -55,3 +58,4 @@ cat /tmp/sec.t | sed 's|-| |;s|mysql|DUMMY2|' | tr '\n' ',' | sed 's|DUMMY2|\nMy
 # Compile/output bug-not-present-in list
 echo -e "\nBug (or feature/syntax) confirmed not present in:"
 diff /tmp/pri.t /tmp/sec.t | grep --binary-files=text '<' | sed 's|^< ||' | sed 's|-| |;s|mysql|DUMMY2|' | tr '\n' ',' | sed 's|DUMMY2|\nMySQL:|;s|DUMMY2||g;s|,|, |g;s|^mariadb|DUMMY|;s|mariadb ||g;s|DUMMY|MariaDB:|;s|-dbg| (dbg)|g;s|-opt| (opt)|g;' | sed 's|, $||;s|  | |g'; echo ''
+
