@@ -248,9 +248,11 @@ cat "${1}" | tr -d '`' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES(|gi' | \
   sed 's|transforms|transforms|gi' | \
+  sed 's|identified by|IDENTIFIED BY|gi' | \
   sed 's|test\([^ ]*\)|test\L\1|gi' | \
   sed 's|0x\([0-9A-Fa-f]\)|0x\1|gi' | \
   sed 's| ()|()|gi' | \
+  sed "s|BY''|BY ''|gi" | \
   sed 's| = |=|gi'
 
 # Templates for copy/paste

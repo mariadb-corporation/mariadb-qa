@@ -1,38 +1,11 @@
 #!/bin/bash
 DIR=/data
-MON[1]=020250
-MON[2]=053306
-MON[3]=121120
-MON[4]=176386
-MON[5]=212111
-MON[6]=212942
-MON[7]=231134
-MON[8]=312190
-MON[9]=320104
-MON[10]=358253
-MON[11]=372000
-MON[12]=391732
-MON[13]=458147
-MON[14]=464310
-MON[15]=557247
-MON[16]=561135
-MON[17]=671948
-MON[18]=700118
-MON[19]=708212
-MON[20]=731541
-MON[21]=761882
-MON[22]=765167
-MON[23]=769908
-MON[24]=771620
-MON[25]=774517
-MON[26]=777199
-MON[27]=801309
-MON[28]=852212
-MON[29]=852476
-MON[30]=863246
-MON[31]=892234
-MON[32]=904204
-MON[33]=912288
+source results.list  # This file should contain lines like: 
+                     # MON[1]=532099
+                     # MON[2]=398230
+                     # MON[3]=032309
+                     # etc. The file is sourced to allow this file to be backed up with results.list 
+                     # being local to the machine/directory. Note: results.list is not backed up
 clear
 while true; do
   for ((i=1;i<=20;i++)); do

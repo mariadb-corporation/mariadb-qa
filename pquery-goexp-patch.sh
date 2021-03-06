@@ -2,10 +2,10 @@
 # Created by Roel Van de Paar, Percona LLC
 
 # This script quickly patches a reducer<trialnr>.sh or newbug_...sh script from FORCE_SKIPV set on to off, 
-# and sets it to the already reduced _out sql file. This is very handy when the following procedure was used;
-# pquery-run.sh > pquery-go-expert.sh > {reducer<trialnr>.sh or pquery-mass-reducer.sh} > testcase reduced 
-# but now stuck at stage1 and ~4 lines (multi-threaded) > this script > restart reducer<trialnr>.sh with 
-# the said changes done by this script. It will then run through all other stages
+# This is very handy when the following procedure was used; pquery-run.sh > pquery-go-expert.sh >
+# {reducer<trialnr>.sh or pquery-mass-reducer.sh} > testcase reduced, but now stuck at stage1 and ~4 lines 
+# (multi-threaded) > this script > restart reducer<trialnr>.sh with the said changes done by this script. 
+# It will then run through all other stages
 
 if [ "$1" == "" ]; then
   echo "Assert: This script expects one option, namely the trial number for which this script should patch reducer<trialnr>.sh Note: you can also use, for example, 5-1 for reducer5-1.sh - in the case of reducers for MDG runs."
