@@ -31,7 +31,7 @@ if [ "${1}" == "SAN" ]; then
   ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "SAN" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
 elif [ "${1}" == "GAL" ]; then
   REGEX_EXCLUDE="${REGEX_EXCLUDE//EMD|/}"
-  ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "GAL" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
+  ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "GAL" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+*.*-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
 else
   ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep -vE --binary-files=text "SAN|GAL" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
 fi
@@ -42,7 +42,7 @@ if [ "${1}" == "SAN" ]; then
   ./findbug SAN | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 elif [ "${1}" == "GAL" ]; then
   export TEXT="${TEXT}"  # Likely not strictly necessary; defensive coding
-  ./findbug GAL "${TEXT}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
+  ./findbug GAL "${TEXT}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+*.*-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 else
   ./findbug "${1}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 fi

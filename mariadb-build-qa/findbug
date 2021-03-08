@@ -27,6 +27,7 @@ fi
 if [ "${1}" == "SAN" ]; then
   grep -Ei --binary-files=text "${TEXT}" */log/master.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text -E "SAN"
 elif [ "${1}" == "GAL" ]; then
+  REGEX_EXCLUDE="${REGEX_EXCLUDE//EMD|/}"
   grep -Ei --binary-files=text "${TEXT}" */node1/node1.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text -E "GAL"
 else
   grep -Ei --binary-files=text "${1}" */log/master.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep -vE --binary-files=text "SAN|GAL"
