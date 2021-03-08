@@ -892,11 +892,6 @@ options_check(){
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
       echo_out "[Setup] MDG or GRP_RPL is enabled, setting FORCE_SPORADIC=0, SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MULTI_THREADS=0"
     fi
-    export -n FORCE_SPORADIC=0
-    export -n SPORADIC=0
-    export -n FORCE_SKIPV=0
-    export -n SKIPV=1
-    export -n MULTI_THREADS=0  # Original thought here was to avoid dozens of 3-container docker setups. This needs reviewing now that mysqld is used directly.
     # /==========
     if [ $MODE -eq 0 ]; then
       echo "Error: MDG/Group Replication mode is set to 1, and MODE=0 set to 0, but this option combination has not been tested/added to reducer.sh yet. Please do so!"
@@ -1533,7 +1528,9 @@ init_workdir_and_files(){
     fi
     mkdir $WORKD
   fi
-  mkdir $WORKD/data $WORKD/log $WORKD/tmp
+  if [ $MDG -eq 0 ]; then
+    mkdir $WORKD/data $WORKD/log $WORKD/tmp
+  fi
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
   echo_out "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0")"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
@@ -1863,7 +1860,11 @@ init_workdir_and_files(){
     fi
     FIRST_MYSQLD_START_FLAG=0  # From here onwards, FORCE_KILL can be used if used if it set enabled (set to 1)
   else
-    echo_out "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../data.init)"
+    if [[ $MDG -eq 1 ]]; then
+      echo_out "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../node*.init)"
+    else
+      echo_out "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../data.init)"
+    fi
   fi
 }
 
@@ -2005,7 +2006,12 @@ init_mysql_dir(){
   if [[ $MDG -eq 1 ]] ; then
     for i in $(seq 1 ${NR_OF_NODES}); do
       sudo rm -Rf ${WORKD}/node${i}
-      cp -a ${WORKD}/node${i}.init ${WORKD}/node${i}
+      if [ "$MULTI_REDUCER" != "1" ]; then  # This is a parent/main reducer
+        cp -a $WORKD/node${i}.init $WORKD/node${i}
+      else
+        mkdir ${WORKD}/node${i}
+        cp -a $WORKD/../../node${i}.init/* $WORKD/node${i}/
+      fi
     done
   elif [[ $GRP_RPL -eq 1 ]]; then
     sudo rm -Rf $WORKD/node1 $WORKD/node2 $WORKD/node3
