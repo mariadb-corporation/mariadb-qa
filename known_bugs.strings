@@ -9,8 +9,8 @@ SIGABRT|__libc_message|malloc_printerr|_int_free|__GI___libc_free               
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                                       ## DBG MDEV-22663
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command                   ## DBG MDEV-23786
 
-###### STACK SMASHING BUGS ######
-STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item## OPT MDEV-22755
+###### STACK SMASHING BUGS (not auto-filtered) ######
+STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item                                                                                               ## OPT MDEV-22755
 
 ###### BUGS WHICH REQUIRE ADDITIONAL TESTCASES (DISABLED FILTERS) ######
 #SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                                  ## DBG MDEV-24911
@@ -18,12 +18,13 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                               ## OPT |MDEV-22714* NOW 23801
 #index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                        ## DBG |MDEV-22714* NOW 23801
 
-##### DISABLED FILTERS DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
+##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|maria_create|ha_maria::create                   ## DBG |MDEV-23222
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|ma_crypt_post_write_hook|write_page             ## OPT |MDEV-18496*
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+SIGSEGV|fts_create_in_mem_aux_table|fts_create_one_index_table|fts_create_index_tables|prepare_inplace_alter_table_dict                                                        ## OPT MDEV-25070
 SIGABRT|DbugExit|_db_return_|my_malloc|JOIN_CACHE::alloc_buffer                                                                                                                ## DBG MDEV-25027
 SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search|choose_plan                                                                            ## DBG MDEV-25013
 thd|SIGABRT|wsrep_innobase_kill_one_trx|wsrep_kill_victim|lock_table_other_has_incompatible|lock_table                                                                         ## OPT |MENT-1141
