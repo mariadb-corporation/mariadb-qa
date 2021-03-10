@@ -81,6 +81,7 @@ cp check ${TARGET}
 cp count_reducers ${TARGET}
 cp qcdiffs ${TARGET}
 cp del_all_data ${TARGET}
+cp del_failing_dev_shm ${TARGET}
 cp loop_screens ${TARGET}
 cp loop_screens_ge ${TARGET}
 cp loop_screens_pr ${TARGET}

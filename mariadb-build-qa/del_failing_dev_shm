@@ -1,0 +1,7 @@
+#!/bin/bash
+cd /dev/shm
+if [ "${PWD}" != "/dev/shm" -o ! -d /dev/shm ]; then 
+  echo "Assert: something is amiss. PWD!=/dev/shm or /dev/shm is not a directory"
+  exit 1
+fi
+tail -n1 */reducer.log | grep --group-separator='' -B1 '\[\]' | grep -o '[0-9]\+/reducer.log' | sed 's|/reducer.log||' | xargs -I{} rm -Rf /dev/shm/{}
