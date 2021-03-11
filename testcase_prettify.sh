@@ -24,6 +24,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|table|TABLE|gi' | \
   sed 's|tables|TABLES|gi' | \
   sed 's|view|VIEW|gi' | \
+  sed 's|distinct|DISTINCT|gi' | \
   sed 's|comment|COMMENT|gi' | \
   sed 's|schedule|SCHEDULE|gi' | \
   sed 's|every|EVERY|gi' | \
@@ -35,6 +36,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|ends|ENDS|gi' | \
   sed 's|rollback|ROLLBACK|gi' | \
   sed 's|load|LOAD|gi' | \
+  sed 's|separator|SEPARATOR|gi' | \
   sed 's|serial|SERIAL|gi' | \
   sed 's|then|THEN|gi' | \
   sed 's|add|ADD|gi' | \
@@ -95,6 +97,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|asc|ASC|gi' | \
   sed 's|limit|LIMIT|gi' | \
   sed 's|group by|GROUP BY|gi' | \
+  sed 's|group_concat|GROUP_CONCAT|gi' | \
   sed 's|count|COUNT|gi' | \
   sed 's| as | AS |gi' | \
   sed 's| to | TO |gi' | \
@@ -136,6 +139,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|truncate|TRUNCATE|gi' | \
   sed 's|explain|EXPLAIN|gi' | \
   sed 's|extended|EXTENDED|gi' | \
+  sed 's|date|DATE|gi' | \
+  sed 's|datetime|DATETIME|gi' | \
+  sed 's|time|TIME|gi' | \
   sed 's|repair|REPAIR|gi' | \
   sed 's|repeat|REPEAT|gi' | \
   sed 's|engine|ENGINE|gi' | \
@@ -225,6 +231,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|master_pos_wait|MASTER_POS_WAIT|gi' | \
   sed 's|initial_size|INITIAL_SIZE|gi' | \
   sed 's|user@localhost|user@localhost|gi' | \
+  sed 's|root@localhost|root@localhost|gi' | \
+  sed 's|@localhost|@localhost|gi' | \
   sed 's|\.TABLES|\.tables|gi' | \
   sed 's|text|TEXT|gi' | \
   sed 's|date_sub[ ]*(|DATE_SUB(|gi' | \
