@@ -1,0 +1,4 @@
+CREATE TABLE t1 (a INT);
+CREATE TABLE t2 (a INT);
+SET SESSION wsrep_osu_method=NBO;
+OPTIMIZE TABLE t1, t2;

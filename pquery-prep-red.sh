@@ -567,8 +567,8 @@ if [ ${QC} -eq 0 ]; then
   if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
     for TRIAL in $(ls ./*/node*/*core* 2>/dev/null | sed 's|./||;s|/.*||' | sort | sort -u); do
       for SUBDIR in `ls -lt ${TRIAL} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep -v tmp | tr -dc '0-9\n' | sort`; do
-        GALERA_CORE_LOC=""
-        GALERA_ERROR_LOG=""
+        export GALERA_CORE_LOC=`ls -1 ./${TRIAL}/node${SUBDIR}/*core* 2>&1 | head -n1 | grep -v "No such file"`
+        export GALERA_ERROR_LOG=./${TRIAL}/node${SUBDIR}/node${SUBDIR}.err
         OUTFILE="${TRIAL}-${SUBDIR}"
         rm -Rf ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
         touch ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
@@ -627,16 +627,14 @@ if [ ${QC} -eq 0 ]; then
         fi
         if [[ "${TEXT}" != "Assert: no core file found"* ]]; then ## TODO: Check if this always works correctly (i.e. are cores present whereas it says there are no core files found)
           echo "* TEXT variable set to: '${TEXT}'"
-          CORE=`ls -1 ./${TRIAL}/node${SUBDIR}/*core* 2>&1 | head -n1 | grep -v "No such file"`
-          ERRLOG=./${TRIAL}/node${SUBDIR}/node${SUBDIR}.err
           if [ `cat ${INPUTFILE} | wc -l` -ne 0 ]; then
-            if [ "$CORE" != "" ]; then
+            if [ "$GALERA_CORE_LOC" != "" ]; then
+              CORE=${GALERA_CORE_LOC}
               extract_queries_core
-              export GALERA_CORE_LOC=${CORE}
             fi
-            if [ "$ERRLOG" != "" ]; then
+            if [ "$GALERA_ERROR_LOG" != "" ]; then
+              ERRLOG=${GALERA_ERROR_LOG}
               extract_queries_error_log
-              export GALERA_ERROR_LOG=${ERRLOG}
             else
               echo "Assert! Error log at ./${TRIAL}/node${SUBDIR}/error.log could not be read?"
               exit 1
