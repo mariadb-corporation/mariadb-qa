@@ -28,6 +28,7 @@ cp clean_newbugs.old ${TARGET}
 cp clone.sh ${TARGET}
 cp cloneall.sh ${TARGET}
 cp cloneall_ms.sh ${TARGET}
+cp clone_enterprise.sh ${TARGET}
 cp clone_galera.sh ${TARGET}
 cp cloneall_galera.sh ${TARGET}
 cp copy_in.sql_all ${TARGET}

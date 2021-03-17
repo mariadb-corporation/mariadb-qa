@@ -66,6 +66,7 @@ SIGSEGV|fts_get_table_name|fts_write_node|fts_sync_write_words|fts_sync_index   
 SIGSEGV|ib_vector_size|fts_sync_write_words|fts_sync_index|my_thread_var_dbug                                                                                                  ## DBG |MDEV-24901
 SIGSEGV|row_merge_fts_doc_tokenize|fts_parallel_tokenization                                                                                                                   ## DBG |MDEV-24901
 SIGSEGV|row_merge_fts_doc_tokenize|fts_parallel_tokenization|__gthread_mutex_unlock|std::mutex::unlock                                                                         ## DBG |MDEV-24901
+SIGSEGV|fts_parallel_tokenization|__gthread_mutex_unlock|std::mutex::unlock|std::unique_lock<std::mutex>::unlock                                                               ## DBG |MDEV-24901
 SIGSEGV|row_merge_fts_doc_tokenize|fts_parallel_tokenization|purge_coordinator_callback|__GI___pthread_mutex_lock                                                              ## DBG |MDEV-24901
 SIGSEGV|row_merge_fts_doc_tokenize|fts_parallel_tokenization|std::condition_variable::__wait_until_impl<std::chrono::duration<long, std::ratio<1l, 1000000000l> > >|std::condition_variable::wait_until<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1l, 1000000000l> > > ## DBG |MDEV-24901
 table_ref->next_global == __null|SIGABRT|Sql_cmd_truncate_table::lock_table|Sql_cmd_truncate_table::truncate_table|Sql_cmd_truncate_table::execute|mysql_execute_command       ## DBG |MDEV-24865
