@@ -1,0 +1,7 @@
+DROP DATABASE test;
+CREATE DATABASE test;
+USE test;
+SET GLOBAL binlog_checksum=NONE;
+SHUTDOWN;
+SET GLOBAL event_scheduler=1;
+SELECT SLEEP (3);

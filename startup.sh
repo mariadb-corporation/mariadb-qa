@@ -145,7 +145,7 @@ fi
 
 # Setup scritps
 rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init pmm* reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test wipe*
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_pquery | multirun_mysqld | loopin | gdb | fixin | stack | myrocks_tokudb_init"
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_pquery | multirun_mysqld | multirun_mysqld_text | loopin | gdb | fixin | stack | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -576,7 +576,13 @@ echo 'wc -l out.sql' >>loopin
 echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DROP/CREATE/USE DATABASE test!"' >>loopin
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >>loopin
 echo "#!/bin/bash" >multirun_mysqld
-echo "~/mariadb-qa/multirun_mysqld.sh \"${*}\"" >>multirun_mysqld
+echo "~/mariadb-qa/multirun_mysqld.sh \"\${*}\"" >>multirun_mysqld
+echo "#!/bin/bash" >multirun_mysqld_text
+echo "# First option passed to ./multirun_mysqld_text should be the string to look for" >>multirun_mysqld_text
+echo "# Second option passed to ./multirun_mysqld_text can be the MYEXTRA string, if any (optional)" >>multirun_mysqld_text
+echo "if [ -z \"\${1}\" ]; then echo \"Assert: first variable passed to ./multirun_mysqld_text should be the TEXT string to look for. Do not use uniqueID's (not implemented yet), instead use a string to look for in the error log, like a single mangled frameor a partial error message\"; exit 1; fi" >>multirun_mysqld_text
+echo "MODTEXT=\"\$(echo \"\${1}\" | sed \"s|^[ '\t]||g;s|[ '\t]$||\")\""
+echo "~/mariadb-qa/multirun_mysqld.sh TEXT \"\${1}\" \"\$(echo \"\${*}\" | sed \"s|^[ ]*\${MODTEXT}[ ]*||\")\" " >>multirun_mysqld_text
 echo "#!/bin/bash" >multirun
 echo "if [ ! -r ./in.sql ]; then echo 'Missing ./in.sql - please create it!'; exit 1; fi" >>multirun
 echo "if [ ! -r ./all_no_cl ]; then echo 'Missing ./all_no_cl - perhaps run ~/start or ~/mariadb-qa/startup.sh again?'; exit 1; fi" >>multirun
@@ -778,7 +784,7 @@ echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTR
 echo 'MYEXTRA_OPT="$*"' >all_rr
 echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};./cl" >>all_rr
 if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
-chmod +x start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init pmm_os_agent pmm_mysql_agent repl_setup multirun multirun_pquery multirun_mysqld reducer_* 2>/dev/null
+chmod +x start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init pmm_os_agent pmm_mysql_agent repl_setup multirun multirun_pquery multirun_mysqld multirun_mysqld_text reducer_* 2>/dev/null
 
 # Adding galera all script
 echo './gal --sql_mode=' >gal_sqlmode

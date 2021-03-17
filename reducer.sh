@@ -575,6 +575,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "[Abort] CTRL+C Was pressed. Dumping variable stack"
   else
     echo_out "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
+    sleep 2  # TODO: For some reason the message above is looping
     echo_out "[Abort] The source for this reducer was likely deleted. Dumping variable stack"
   fi
   echo_out "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
@@ -608,6 +609,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
   fi
   finish 'abort'
+  exit 2
 }
 
 options_check(){
@@ -3364,7 +3366,7 @@ finish(){
   else  # Reduction
     echo_out "[DONE] Final testcase: $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
   fi
-  if [ "${1}" == "abort" ]; then
+  if [ "${1}" == 'abort' ]; then
     echo_out "[Abort] Done. Terminating reducer"
     exit 2
   fi

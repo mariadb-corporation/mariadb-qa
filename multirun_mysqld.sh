@@ -12,7 +12,24 @@ MYEXTRA="${*}"                         ## Accept mysqld options from the command
 SERVER_THREADS=(2 10 20 30 40 50 100)  ## Number of server threads (x mysqld's). This is a sequence: (10 20) means: first 10, then 20 server if no crash was observed
 CLIENT_THREADS=200                     ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
 AFTER_SHUTDOWN_DELAY=35                ## Wait this many seconds for mysqld to shutdown properly. If it does not shutdown within the allotted time, an error shows
-TEXT=""                                ## Search for a specific string on crash/shutdown. Do NOT use unique bug ID's here (not implemented yet)
+TEXT=""                                ## Search for a specific string on crash/shutdown. Do NOT use unique bug ID's here (not implemented yet), only a TEXT to look for in the error log (for example, a single mangled frame or a partial error message)
+
+# Scripted variables
+if [ "${1}" == "TEXT" ]; then
+  if [ ! -z "${2}" ]; then
+    TEXT="${2}"
+    echo "Looking for TEXT '${TEXT}' in the error log, and ignoring all events (shutdows, other crashes, etc.) UNTIL this TEXT string is found"
+    if [ ! -z "${3}" ]; then
+      MYEXTRA="$(echo "${*}" | sed "s|^[ ]*TEXT[ ]*||;s|^[ ]*${TEXT}[ ]*||")"
+    else
+      MYEXTRA=""
+    fi
+  else
+    echo "Assert: if first variable is passed as TEXT (as done), second variable should be the text to look for, and the third variable and subsequent MYEXTRA options, if any. The second variable was empty in this case."
+    exit 1
+  fi
+fi
+echo "Using MYEXTRA options: ${MYEXTRA}"
 
 # Internal variables
 MYUSER=$(whoami)
@@ -228,7 +245,11 @@ ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping 2>/dev/null 1>&2
   kill -9 `printf '%s ' "${MYSQLD[@]}"` 2>/dev/null  # For safety, though processes should be gone. Redirected stderr to /dev/null as otherwise 'multirun_mysqld.sh: line ___: kill: (_____) - No such process' errors would show.
   # Roundup by reporting that nothing was found for this run. (If something was found, the script would have instead terminated already, ref exit 1 above after/if 'Check for core dump' was found, and this messsage would thus never show.)
   if [ ${SERVER_THREADS[@]:(-1)} -ne ${i} ] ; then
-    echoit "Did not find server crash with ${i} mysqld processes. Restarting crash test with next set of mysqld processes."
+    if [ ! -z "${TEXT}" ]; then
+      echoit "Did not find server crash with ${i} mysqld processes. Restarting crash testing with next set of mysqld processes."
+    else
+      echoit "Did not find the correct (TEXT based) server crash with ${i} mysqld processes. Restarting specific TEXT crash testing with next set of mysqld processes."
+    fi
     rm -Rf ${WORKDIR}/*
   fi
 done
