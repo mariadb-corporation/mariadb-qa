@@ -1,6 +1,7 @@
 #!/bin/bash
 # Created by Ramesh Sivaraman, Percona LLC
 # Updated by Roel Van de Paar, Percona LLC
+set +H
 
 # Start this script from within the base directory which contains ./bin/mysqld[-debug]
 
@@ -11,6 +12,7 @@ MYEXTRA="${*}"                         ## Accept mysqld options from the command
 SERVER_THREADS=(2 10 20 30 40 50 100)  ## Number of server threads (x mysqld's). This is a sequence: (10 20) means: first 10, then 20 server if no crash was observed
 CLIENT_THREADS=200                     ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
 AFTER_SHUTDOWN_DELAY=35                ## Wait this many seconds for mysqld to shutdown properly. If it does not shutdown within the allotted time, an error shows
+TEXT=""                                ## Search for a specific string on crash/shutdown. Do NOT use unique bug ID's here (not implemented yet)
 
 # Internal variables
 MYUSER=$(whoami)
@@ -100,6 +102,23 @@ elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
   echo "WARNING: mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may fail."
 fi
 
+checkstatus(){
+  CONTINUE=0
+  if [ ! -z "${TEXT}" ]; then
+    if grep -qi "${TEXT}" ${WORKDIR}/${j}_error.log.out; then
+      echoit "[!] Server crash/shutdown found with correct TEXT ("${TEXT}") in the error log at ${WORKDIR}/${j}_error.log.out. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
+      exit 1
+    else
+      echoit "[!] Server crash/shutdown found, however not with the correct TEXT ("${TEXT}") in the error log. Continuing..." 
+      CONTINUE=1
+    fi
+  else
+    echoit "[!] Server crash/shutdown found : Check ${WORKDIR}/${j}_error.log.out for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
+    exit 1
+  fi
+}
+
+CONTINUE=0
 # Run SQL file from reducer<trial>.sh
 for i in ${SERVER_THREADS[@]};do
   # Start multiple mysqld service
@@ -144,9 +163,10 @@ for i in ${SERVER_THREADS[@]};do
       MYSQLC+=($PID)
     done
     # Check if mysqld process crashed immediately
+    CONTINUE=0
     if ! ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping > /dev/null 2>&1; then
-      echoit "[!] Server crash/shutdown found : Check ${WORKDIR}/${j}_error.log.out for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
-      exit 1
+      checkstatus
+      if [ "${CONTINUE}" == "1" ]; then continue; fi
     fi
   done
   sleep 1  # Avoids last client not having started yet
@@ -156,8 +176,8 @@ for i in ${SERVER_THREADS[@]};do
       # Check mysqld processes are still alive while waiting for client processes to finish
       for j in `seq 1 ${i}`;do
         if ! ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping > /dev/null 2>&1; then
-          echoit "[!] Server crash/shutdown found: Check ${WORKDIR}/${j}_error.log.out for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
-          exit 1
+          checkstatus
+          if [ "${CONTINUE}" == "1" ]; then continue; fi
         fi
       done
     done
@@ -165,8 +185,8 @@ for i in ${SERVER_THREADS[@]};do
   # Check mysqld processes are still alive after client processes are done
   for j in `seq 1 ${i}`;do
     if ! ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping > /dev/null 2>&1; then
-      echoit "[!] Server crash/shutdown found: Check ${WORKDIR}/${j}_error.log.out for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
-      exit 1
+      checkstatus
+      if [ "${CONTINUE}" == "1" ]; then continue; fi
     fi
   done
   # Shutdown mysqld processes

@@ -24,6 +24,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|table|TABLE|gi' | \
   sed 's|tables|TABLES|gi' | \
   sed 's|view|VIEW|gi' | \
+  sed 's|using|USING|gi' | \
   sed 's|distinct|DISTINCT|gi' | \
   sed 's|comment|COMMENT|gi' | \
   sed 's|schedule|SCHEDULE|gi' | \
@@ -44,6 +45,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|checksum|CHECKSUM|gi' | \
   sed 's|event|EVENT|gi' | \
   sed 's|procedure|PROCEDURE|gi' | \
+  sed 's|function|FUNCTION|gi' | \
   sed 's|sequence|SEQUENCE|gi' | \
   sed 's|if exists|IF EXISTS|gi' | \
   sed 's|help|HELP|gi' | \
