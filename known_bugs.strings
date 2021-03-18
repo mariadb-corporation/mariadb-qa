@@ -24,6 +24,8 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+ds_control|SIGABRT|debug_sync_get_action|debug_sync_eval_action|debug_sync_set_action|wsrep_nbo_phase_one_end                                                                  ## DBG |MENT-1160
+mode() == m_local|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|sp_head::execute|sp_head::execute_trigger                                                 ## DBG |MDEV-24062
 m_thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|Wsrep_prepared_applier_service::rollback|wsrep::server_state::close_orphaned_sr_transactions|wsrep::server_state::on_primary_view|wsrep::server_state::on_view ## DBG |MENT-1159
 SIGSEGV|Event_queue::recalculate_activation_times|Event_scheduler::run|event_scheduler_thread|pfs_spawn_thread                                                                 ## DBG |MDEV-25176
 SIGSEGV|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map                                                                   ## OPT |MDEV-25160
@@ -341,6 +343,7 @@ SIGSEGV|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_cont
 SIGSEGV|free_tmp_table|close_thread_tables|mysql_execute_command|mysql_parse                                                                                                   ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl                         ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## OPT |MDEV-22448 NOW 20945/MDEV-25037
+ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|Item_func_release_all_locks::val_int|Type_handler::Item_send_long|Type_handler_long::Item_send            ## DBG |MDEV-25037
 SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                                ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::is_lock_owner|is_locked_view                                                                                   ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|thr_multi_unlock|mysql_unlock_tables|mysql_unlock_tables|close_thread_tables                                                                                           ## OPT |MDEV-22448 NOW 20945

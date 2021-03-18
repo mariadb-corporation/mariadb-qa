@@ -1630,7 +1630,7 @@ init_workdir_and_files(){
     fi
   fi
   if [ $MDG -eq 1 ]; then
-    echo_out "[Init] Galera Cluster Temporary directories (TMP Variable) set to $(ls -d $WORKD/tmp* | xargs ) respectively"
+    echo_out "[Init] Galera Cluster Temporary directories (TMP Variable) set to $WORKD/tmp[1-$NR_OF_NODES]"
   else
     echo_out "[Init] Temporary directory (TMP Variable) set to $TMP"
   fi
