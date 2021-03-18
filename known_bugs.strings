@@ -24,10 +24,13 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
-SIGSEGV|Event_queue::recalculate_activation_times|Event_scheduler::run|event_scheduler_thread|pfs_spawn_thread                                                                 ## DBG MDEV-25176
-SIGSEGV|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map                                                                   ## OPT MDEV-25160
+m_thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|Wsrep_prepared_applier_service::rollback|wsrep::server_state::close_orphaned_sr_transactions|wsrep::server_state::on_primary_view|wsrep::server_state::on_view ## DBG |MENT-1159
+SIGSEGV|Event_queue::recalculate_activation_times|Event_scheduler::run|event_scheduler_thread|pfs_spawn_thread                                                                 ## DBG |MDEV-25176
+SIGSEGV|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map                                                                   ## OPT |MDEV-25160
 ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## DBG |MENT-1151
 toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|Sql_cmd_alter_table::execute                                ## DBG |MENT-1147
+toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|mysql_execute_command                                       ## DBG |MENT-1147
+toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|Sql_cmd_optimize_table::execute                             ## DBG |MENT-1147
 toi_mode_ == m_local|SIGABRT|wsrep::client_state::end_nbo_phase_two|wsrep_NBO_end|wsrep_to_isolation_end|mysql_execute_command                                                 ## OPT |MENT-1144
 error.len > 0|SIGABRT|galera::ReplicatorSMM::handle_apply_error|galera::ReplicatorSMM::to_isolation_end|galera_to_execute_end|wsrep::wsrep_provider_v26::leave_toi             ## DBG |MDEV-25089
 SIGSEGV|THD::change_item_tree|Item::split_sum_func2|JOIN::prepare|JOIN::prepare                                                                                                ## OPT |MDEV-24454
