@@ -1784,7 +1784,7 @@ init_workdir_and_files(){
       START_OPT="--core-file --core"
     elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
       VERSION_INFO="5.1"
-      INIT_TOOL="${PWD}/scripts/mysql_install_db"
+      INIT_TOOL="${BASEDIR}/scripts/mysql_install_db"
       INIT_OPT="--no-defaults --force"
       START_OPT="--core"
     elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
