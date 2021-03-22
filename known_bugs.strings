@@ -24,6 +24,10 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+ds_control|SIGABRT|debug_sync_get_action|debug_sync_eval_action|debug_sync_set_action|mysql_alter_table                                                                        ## DBG |MDEV-25218
+trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                  ## DBG |MDEV-25219
+thd->wsrep_trx_meta.gtid.seqno == (-1)|SIGABRT|wsrep_to_isolation_begin|open_tables|open_and_lock_tables|open_and_lock_tables                                                  ## DBG |MDEV-25201
+inited==INDEX|SIGABRT|handler::ha_index_end|Wsrep_schema_impl::end_index_scan|remove_fragment|Wsrep_schema::remove_fragments                                                   ## DBG |MENT-1161
 ds_control|SIGABRT|debug_sync_get_action|debug_sync_eval_action|debug_sync_set_action|wsrep_nbo_phase_one_end                                                                  ## DBG |MENT-1160
 mode() == m_local|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|sp_head::execute|sp_head::execute_trigger                                                 ## DBG |MDEV-24062
 m_thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|Wsrep_prepared_applier_service::rollback|wsrep::server_state::close_orphaned_sr_transactions|wsrep::server_state::on_primary_view|wsrep::server_state::on_view ## DBG |MENT-1159
