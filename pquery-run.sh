@@ -702,7 +702,7 @@ mdg_startup() {
   diskspace
   WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
   for j in $(seq 1 ${NR_OF_NODES}); do
-    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS}" ${DATADIR}/n${j}.cnf
+    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS:1}" ${DATADIR}/n${j}.cnf
     get_error_socket_file ${j}
     if [ ${j} -eq 1 ]; then
       if [ "${RR_TRACING}" == "0" ]; then
@@ -1587,10 +1587,30 @@ pquery_test() {
             PQPID="$!"
           else
             if [[ ${MDG_CLUSTER_RUN} -eq 1 ]]; then
-              cat ${MDG_CLUSTER_CONFIG} |
-                sed -e "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
-                sed -e "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
-                  > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
+              for i in $(seq 1 ${NR_OF_NODES}); do
+                cat << EOF >> ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
+[node${i}.md.galera]
+database = test
+address = localhost
+infile = ${INFILE}
+logdir = ${RUNDIR}/${TRIAL}
+socket = ${RUNDIR}/${TRIAL}/node${i}/node${i}_socket.sock
+user = root
+password =
+threads = 1
+queries-per-thread = 10000000
+verbose = No
+log-all-queries = Yes
+log-failed-queries = Yes
+shuffle = Yes
+log-query-statistics = No
+log-query-duration = No
+log-client-output = No
+log-query-number = No
+run= Yes
+
+EOF
+              done
               echoit "${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg"
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
@@ -2298,7 +2318,7 @@ elif [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
       fi
     done
     echoit "Shutting down ${NR_OF_NODES} MariaDB Galera data directory template creation nodes..."
-    for i in $(seq 1 ${NR_OF_NODES}); do
+    for i in $(seq ${NR_OF_NODES} -1 1); do
       ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node${i}.template/node${i}_socket.sock shutdown > /dev/null 2>&1
     done
     echoit "Completed ${NR_OF_NODES} Node MDG data templates creations"

@@ -319,7 +319,7 @@ if [[ $MDG -eq 1 ]]; then
   done
   WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
   for j in $(seq 1 ${NR_OF_NODES}); do
-    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS}" n${j}.cnf
+    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS:1}" n${j}.cnf
   done
 
   echo -e "#!/bin/bash" >./gal_start
@@ -373,11 +373,14 @@ if [[ $MDG -eq 1 ]]; then
       echo "check_node_startup ${i}" >> ./gal_start
     fi
     echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>./gal_init
-    echo "${PWD}/bin/mysqladmin -uroot -S${PWD}/node${i}/node${i}_socket.sock shutdown" >> ./gal_stop
-    echo "echo \"Server on socket ${PWD}/node${i}/node${i}_socket.sock halted\"" >>./gal_stop
+
     echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
     echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>gal_wipe
     echo "if [ -r node1/node${i}.err ]; then mv node${i}/node${i}.err node${i}/node${i}.err.PREV; fi" >>gal_wipe
+  done
+  for i in $(seq "${NR_OF_NODES}" -1 1); do
+    echo "${PWD}/bin/mysqladmin -uroot -S${PWD}/node${i}/node${i}_socket.sock shutdown" >> ./gal_stop
+    echo "echo \"Server on socket ${PWD}/node${i}/node${i}_socket.sock halted\"" >>./gal_stop
   done
   echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start_rr
   echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start

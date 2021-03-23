@@ -2184,7 +2184,7 @@ start_mdg_main(){
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
   WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
   for j in $(seq 1 ${NR_OF_NODES}); do
-    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS}" ${WORKD}/n${j}.cnf
+    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS:1}" ${WORKD}/n${j}.cnf
     cp ${WORKD}/n${j}.cnf ${WORKD}/${EPOCH}_n${j}.cnf
     if [ ${j} -eq 1 ]; then
       echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START
