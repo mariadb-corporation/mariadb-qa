@@ -450,12 +450,11 @@ echo "    rm -Rf \"\${_RR_TRACE_DIR}\"" >>start_rr
 echo "  fi" >>start_rr
 echo "fi" >>start_rr
 echo "mkdir -p \"\${_RR_TRACE_DIR}\"" >>start_rr
-echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
+echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} ${START_OPT} --loose-innodb-flush-method=fsync --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
 echo "echo 'Server socket: ${SOCKET} with datadir: ${PWD}/data'" >>start
 tail -n1 start >>start_valgrind
 tail -n1 start >>start_gypsy
 tail -n1 start >>start_rr
-sed -i "s|--no-defaults|--no-defaults --loose-innodb-flush-method=fsync|g" start_rr
 
 # -- Replication setup
 echo '#!/usr/bin/env bash' >repl_setup
@@ -785,7 +784,7 @@ echo "./all --early-plugin-load=keyring_file.so --keyring_file_data=keyring --in
 echo 'MYEXTRA_OPT="$*"' >all_no_cl
 echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT}" >>all_no_cl
 echo 'MYEXTRA_OPT="$*"' >all_rr
-echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};./cl" >>all_rr
+echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10;./cl" >>all_rr
 if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
 chmod +x start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init pmm_os_agent pmm_mysql_agent repl_setup multirun multirun_pquery multirun_mysqld multirun_mysqld_text reducer_* 2>/dev/null
 
