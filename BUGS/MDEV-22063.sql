@@ -1,0 +1,2 @@
+CREATE TABLE t (id INT KEY,a YEAR,INDEX (id,a));
+REPLACE INTO t (id,a)SELECT /*!99997 */ 1;
