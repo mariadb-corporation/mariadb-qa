@@ -628,7 +628,7 @@ echo "#~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariad
 cp ./multirun ./multirun_rr
 sed -i 's|all_no_cl|all_no_cl_rr|g' ./multirun_rr
 cp ./multirun_pquery ./multirun_pquery_rr
-sed -i 's|all_no_cl|all_no_cl_rr|g' ./multirun_rr
+sed -i 's|all_no_cl|all_no_cl_rr|g' ./multirun_pquery_rr
 
 if [[ $MDG -eq 1 ]]; then
   cp multirun gal_multirun
