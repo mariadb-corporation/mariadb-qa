@@ -679,8 +679,9 @@ QUERIES_PER_THREAD=$[ ${QUERIES} / ${THREADS} ]
 FINAL_OUTFILE=$(echo ${OUTPUT_FILE} | sed 's|\.sql||')
 PIDS=
 if [ ${QUERIES_PER_THREAD} -gt 0 ]; then
-  # Remove old output files & old temporary files (if any)
-  rm -f ${FINAL_OUTFILE}*.sql
+  # Remove old output file & old temporary files (if any)
+  rm -f ${FINAL_OUTFILE}.sql     # old output file
+  rm -f ${FINAL_OUTFILE}*_*.sql  # old temporary files (if threads were used). DO NOT REMOVE '_' as batches.sh generates outcome.sql
   touch ${FINAL_OUTFILE}.sql
   if [ ! -r ${FINAL_OUTFILE}.sql ]; then 
     echo "Assert: ${FINAL_OUTFILE}.sql not present after 'touch ${FINAL_OUTFILE}.sql' command!"

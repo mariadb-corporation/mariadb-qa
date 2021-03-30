@@ -12,6 +12,8 @@ fi
 
 ./kill_all
 sync
+# Next line only does EMD* MD* MS* (which is a handy alternative/hack if you have an ogoing *SAN run etc.)
+#./gendirs.sh | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} sh -c "{}"
 ./gendirs.sh ALLALL | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} sh -c "{}"
 
 sync

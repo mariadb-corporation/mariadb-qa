@@ -24,6 +24,10 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|THD::init                                                                                                        ## DBG |MDEV-25237
+SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                               ## DBG |MDEV-25237
+global_system_variables.session_track_system_variables|SIGABRT|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init|THD::THD                                             ## DBG |MDEV-25237
+SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## DBG |MDEV-25206
 ds_control|SIGABRT|debug_sync_get_action|debug_sync_eval_action|debug_sync_set_action|mysql_alter_table                                                                        ## DBG |MDEV-25218
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                  ## DBG |MDEV-25219
 thd->wsrep_trx_meta.gtid.seqno == (-1)|SIGABRT|wsrep_to_isolation_begin|open_tables|open_and_lock_tables|open_and_lock_tables                                                  ## DBG |MDEV-25201
@@ -405,11 +409,6 @@ SIGSEGV|ha_innobase::cmp_ref|queue_insert|merge_buffers|merge_index             
 SIGSEGV|st_join_table::save_explain_data|JOIN::save_explain_data_intern|JOIN::save_explain_data|JOIN::build_explain                                                            ## OPT MDEV-22160
 state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|sys_var::set_default                    ## OPT MDEV-22148
 state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|set_var::update                         ## OPT MDEV-22148
-SIGSEGV|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update|sql_set_variables                                                                       ## OPT |MDEV-22134
-global_system_variables.session_track_system_variables|SIGABRT|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init|THD::THD                                             ## OPT |MDEV-22134
-SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                               ## OPT |MDEV-22134
-SIGABRT|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                               ## OPT |MDEV-22134
-SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update                                                                           ## OPT |MDEV-22134
 SIGABRT|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                                                           ## OPT |MDEV-22133
 SIGSEGV|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                                                             ## OPT |MDEV-22133
 SIGSEGV|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                                                           ## OPT |MDEV-22133
@@ -607,3 +606,8 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.
 # "lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                          ## Fixed ## DBG |MDEV-24700
 # "lock not found" == 0|SIGABRT|lock_table_x_unlock|trx_t::rollback_low|trx_t::rollback|row_mysql_handle_errors                                                       ## Fixed ## DBG |MDEV-24700
 # args[0]->type_handler()->mysql_timestamp_type() == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## Fixed ## DBG MDEV-20984
+# SIGSEGV|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update|sql_set_variables                                                            ## Fixed ## OPT |MDEV-22134
+# global_system_variables.session_track_system_variables|SIGABRT|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init|THD::THD                                  ## Fixed ## OPT |MDEV-22134
+# SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                    ## Fixed ## OPT |MDEV-22134
+# SIGABRT|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                    ## Fixed ## OPT |MDEV-22134
+# SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update                                                                ## Fixed ## OPT |MDEV-22134

@@ -414,6 +414,8 @@ else
   LOAD_ROCKSDB_INIT_FILE=
 fi
 
+echo "echo '---------- START ----------' >> ./log/master.err" >insert_start_marker
+echo "echo '---------- STOP  ----------' >> ./log/master.err" >insert_stop_marker
 echo 'MYEXTRA_OPT="$*"' >start
 echo 'MYEXTRA=" --no-defaults "' >>start
 echo '#MYEXTRA=" --no-defaults --sql_mode="' >>start
@@ -787,7 +789,7 @@ echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTR
 echo 'MYEXTRA_OPT="$*"' >all_rr
 echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};./cl" >>all_rr
 if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
-chmod +x start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init pmm_os_agent pmm_mysql_agent repl_setup multirun multirun_pquery multirun_mysqld multirun_mysqld_text reducer_* 2>/dev/null
+chmod +x insert_start_marker insert_stop_marker start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init pmm_os_agent pmm_mysql_agent repl_setup multirun multirun_pquery multirun_mysqld multirun_mysqld_text reducer_* 2>/dev/null
 
 # Adding galera all script
 echo './gal --sql_mode=' >gal_sqlmode
