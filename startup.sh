@@ -144,8 +144,8 @@ else
 fi
 
 # Setup scritps
-rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init pmm* reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test wipe*
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_pquery | multirun_mysqld | multirun_mysqld_text | loopin | gdb | fixin | stack | myrocks_tokudb_init"
+rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test wipe*
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | loopin | gdb | fixin | stack | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -625,6 +625,11 @@ echo "" >>multirun_pquery
 echo "## Single pquery client, single thread (most common)" >>multirun_pquery
 echo "#~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 1" >>multirun_pquery
 
+cp ./multirun ./multirun_rr
+sed -i 's|all_no_cl|all_no_cl_rr|g' ./multirun_rr
+cp ./multirun_pquery ./multirun_pquery_rr
+sed -i 's|all_no_cl|all_no_cl_rr|g' ./multirun_rr
+
 if [[ $MDG -eq 1 ]]; then
   cp multirun gal_multirun
   cp multirun_pquery gal_multirun_pquery
@@ -771,8 +776,6 @@ if [[ $MDG -eq 1 ]]; then
   cp gdb gal_gdb
   sed -i "s|ls data/\*core\*|ls node1/\*core\*|g" gal_gdb
 fi
-echo 'sudo pmm-admin config --server $(ifconfig | grep -A1 "^en" | grep -v "^en" | sed "s|.*inet ||;s| .*||")' >pmm_os_agent
-echo 'sudo pmm-admin add mysql $(echo ${PWD} | sed "s|/|-|g;s|^-\+||") --socket=${SOCKET} --user=root --query-source=perfschema' >pmm_mysql_agent
 
 echo './all --sql_mode=' >sqlmode
 echo './all --log_bin' >binlog
@@ -782,11 +785,13 @@ ln -s ./all ./a 2>/dev/null
 echo 'MYEXTRA_OPT="$*"' >all_stbe
 echo "./all --early-plugin-load=keyring_file.so --keyring_file_data=keyring --innodb_sys_tablespace_encrypt=ON \${MYEXTRA_OPT}" >>all_stbe # './all_stbe' is './all' with system tablespace encryption
 echo 'MYEXTRA_OPT="$*"' >all_no_cl
-echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT}" >>all_no_cl
+echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT}" >>all_no_cl
+echo 'MYEXTRA_OPT="$*"' >all_no_cl_rr
+echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10" >>all_no_cl_rr
 echo 'MYEXTRA_OPT="$*"' >all_rr
 echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10;./cl" >>all_rr
 if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
-chmod +x start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init pmm_os_agent pmm_mysql_agent repl_setup multirun multirun_pquery multirun_mysqld multirun_mysqld_text reducer_* 2>/dev/null
+chmod +x start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr all_no_cl_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init repl_setup multirun* reducer_* 2>/dev/null
 
 # Adding galera all script
 echo './gal --sql_mode=' >gal_sqlmode
