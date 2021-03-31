@@ -1,1 +1,2 @@
-/home/roel/mariadb-qa/stack.sh
+#!/bin/bash
+/home/${whoami}/mariadb-qa/stack.sh

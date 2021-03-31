@@ -7,4 +7,5 @@ for i in $(seq 1 500); do
   wc -l outcome.sql
   rm out.sql
 done
-echo "- Done!"
+echo "- Done! Results saved in outcome.sql"
+echo "NOTE: you may want to do:  $ sed -i 's|TokuDB|InnoDB|gi' outcome.sql  # Or, edit engines.txt and run generator.sh again"
