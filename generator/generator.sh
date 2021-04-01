@@ -713,5 +713,5 @@ else
   sed -i "s|\t| |g;s|  \+| |g;s|[ ]*,|,|g;s|[ ]*;$|;|" ${FINAL_OUTFILE}.sql
   END=`date +%s`; RUNTIME=$[ ${END} - ${START} ]; MINUTES=$[ ${RUNTIME} / 60 ]; SECONDS=$[ ${RUNTIME} % 60 ]
   echo "DONE! Generated ${QUERIES} quality queries in ${MINUTES}m${SECONDS}s, and saved the results in ${FINAL_OUTFILE}.sql"
-  echo "NOTE: you may want to do:  \$ sed -i \"s|RocksDB|InnoDB|gi;s|TokuDB|InnoDB|gi\" ${FINAL_OUTFILE}.sql  # depending on what MySQL distribution you are using. Or, edit engines.txt and run generator.sh again"
+  echo "NOTE: you may like to do:  \$ sed -i \"s|some_engine|InnoDB|gi\" ${FINAL_OUTFILE}.sql  # Or, edit engines.txt and run generator.sh again"
 fi

@@ -575,8 +575,8 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "[Abort] CTRL+C Was pressed. Dumping variable stack"
   else
     echo_out "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
-    sleep 2  # TODO: For some reason the message above is looping
-    echo_out "[Abort] The source for this reducer was likely deleted. Dumping variable stack"
+    echo_out "[Abort] The source for this reducer was likely deleted. Terminating."
+    exit 3
   fi
   echo_out "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
   if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written

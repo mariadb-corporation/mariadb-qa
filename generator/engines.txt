@@ -1,15 +1,11 @@
+Aria
+Aria
+Aria
+Aria
 RocksDB
 RocksDB
 RocksDB
 RocksDB
-RocksDB
-RocksDB
-RocksDB
-RocksDB
-TokuDB
-TokuDB
-TokuDB
-TokuDB
 InnoDB
 InnoDB
 InnoDB
@@ -20,6 +16,8 @@ InnoDB
 InnoDB
 InnoDB
 MyISAM
+MyISAM
+MyISAM
 MEMORY
 MEMORY
 MEMORY
@@ -27,4 +25,5 @@ CSV
 BLACKHOLE
 MRG_MyISAM
 ARCHIVE
+SEQUENCE
 PERFORMANCE_SCHEMA

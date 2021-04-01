@@ -206,7 +206,8 @@ marked_for_read()|SIGABRT|Field_blob::val_str|Field::val_str|handler::calculate_
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Rows_log_event::write_row|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event                 ## OPT MDEV-22936
 binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update                                               ## DBG |MDEV-22921
 binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update|sys_var::set_default                                          ## DBG |MDEV-22921
-(m_storage_engine_name.str != __null) == used_engine|SIGABRT|Sql_cmd_alter_table::execute|mysql_execute_command|Prepared_statement::execute|Prepared_statement::execute_loop   ## DBG MDEV-22907
+(m_storage_engine_name.str != __null) == used_engine|SIGABRT|Sql_cmd_alter_table::execute|mysql_execute_command|Prepared_statement::execute|Prepared_statement::execute_loop   ## DBG |MDEV-22907
+(m_storage_engine_name.str != __null) == used_engine|SIGABRT|Sql_cmd_alter_table::execute|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core ## DBG |MDEV-22907
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|open_table_entry_fini|open_table|open_and_process_table                                              ## DBG |MDEV-22883
 SIGSEGV|strxmov|Trigger::get_trigger_info|store_trigger|get_schema_triggers_record                                                                                             ## OPT |MDEV-22883
 m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_internal_tmp_table_from_heap|select_unit::write_record|select_unit::send_data                         ## DBG |MDEV-22882

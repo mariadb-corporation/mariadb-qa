@@ -18,8 +18,13 @@ cat "${1}" | tr -d '`' | \
   sed 's|^[ ]\+||;s|;[ ]\+$|;|' | \
   sed 's|index|INDEX|g' | \
   sed 's|int|INT|gi;s|integer|INT|gi' | \
+  sed 's|float|FLOAT|gi' | \
+  sed 's|real|REAL|gi' | \
+  sed 's|varbinary|VARBINARY|gi;s|binary|BINARY|gi' | \
   sed 's|decimal|DECIMAL|gi' | \
+  sed 's|numeric|NUMERIC|gi' | \
   sed 's|value|VALUE|gi' | \
+  sed 's|deterministic|DETERMINISTIC|gi' | \
   sed 's|create|CREATE|gi' | \
   sed 's|table|TABLE|gi' | \
   sed 's|tables|TABLES|gi' | \
@@ -208,7 +213,10 @@ cat "${1}" | tr -d '`' | \
   sed 's| ,|,|g' | \
   sed 's|( |(|g' | \
   sed 's| )|)|g' | \
-  sed 's|(| (|g;s|  | |g;s| \([A-Z][A-Z][A-Z]\) (| \1(|g;s|DECIMAL (|DECIMAL(|g;s|TRIM (|TRIM(|g;' | \
+  sed 's|(| (|g' | \
+  sed 's|  | |g' | \
+  sed 's| \([A-Z][A-Z][A-Z]\) (| \1(|g' | \
+  sed 's|FLOAT[ ]*(|FLOAT(|gi;s|INT[ ]*(|INT(|gi;s|VARBINARY[ ]*(|VARIBINARY(|gi;s|TIME[ ]*(|TIME(|gi;s|DECIMAL[ ]*(|DECIMAL(|gi;s|TRIM[ ]*(|TRIM(|gi;s|REAL[ ]*(|REAL(|gi;s|NUMERIC[ ]*(|NUMERIC(|gi;s|KEY[ ]*(|KEY(|gi;' | \
   sed 's|starts|STARTS|gi' | \
   sed 's|interval|INTERVAL|gi' | \
   sed 's|ifnull|IFNULL|gi' | \
@@ -265,10 +273,13 @@ cat "${1}" | tr -d '`' | \
   sed 's|identified by|IDENTIFIED BY|gi' | \
   sed 's|test\([^ ]*\)|test\L\1|gi' | \
   sed 's|0x\([0-9A-Fa-f]\)|0x\1|gi' | \
+  sed 's|)engine|) ENGINE|gi' | \
+  sed 's|)zerofill|) ZEROFILL|gi' | \
   sed 's| ()|()|gi' | \
   sed 's|), (|),(|gi' | \
   sed "s|BY''|BY ''|gi" | \
-  sed 's| = |=|gi'
+  sed 's|[ ]*=[ ]*|=|gi' | \
+  sed 's|  | |gi'
 
 # Templates for copy/paste
 #  sed 's|||gi' | \

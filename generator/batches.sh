@@ -8,4 +8,4 @@ for i in $(seq 1 500); do
   rm out.sql
 done
 echo "- Done! Results saved in outcome.sql"
-echo "NOTE: you may want to do:  $ sed -i 's|TokuDB|InnoDB|gi' outcome.sql  # Or, edit engines.txt and run generator.sh again"
+echo "NOTE: you may want to do:  $ sed -i 's|some_engine|InnoDB|gi' outcome.sql  # Or, edit engines.txt and run generator.sh again"
