@@ -585,7 +585,7 @@ echo "#!/bin/bash" >multirun_mysqld_text
 echo "# First option passed to ./multirun_mysqld_text should be the string to look for" >>multirun_mysqld_text
 echo "# Second option passed to ./multirun_mysqld_text can be the MYEXTRA string, if any (optional)" >>multirun_mysqld_text
 echo "if [ -z \"\${1}\" ]; then echo \"Assert: first variable passed to ./multirun_mysqld_text should be the TEXT string to look for. Do not use uniqueID's (not implemented yet), instead use a string to look for in the error log, like a single mangled frameor a partial error message\"; exit 1; fi" >>multirun_mysqld_text
-echo "MODTEXT=\"\$(echo \"\${1}\" | sed \"s|^[ '\t]||g;s|[ '\t]$||\")\""
+echo "MODTEXT=\"\$(echo \"\${1}\" | sed \"s|^[ '\t]||g;s|[ '\t]$||\")\"" >>multirun_mysqld_text
 echo "~/mariadb-qa/multirun_mysqld.sh TEXT \"\${1}\" \"\$(echo \"\${*}\" | sed \"s|^[ ]*\${MODTEXT}[ ]*||\")\" " >>multirun_mysqld_text
 echo "#!/bin/bash" >multirun
 echo "if [ ! -r ./in.sql ]; then echo 'Missing ./in.sql - please create it!'; exit 1; fi" >>multirun

@@ -17,7 +17,6 @@ STACK_SMASHING|SIGABRT|_Z29fill_schema_schema_privilegesP3THDP10TABLE_LISTP4Item
 #SIGSEGV|malloc_size_and_flag|my_free|PROFILING::finish_current_query_impl|PROFILING::finish_current_query                                                                     ## OPT MDEV-23657
 #index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                               ## OPT |MDEV-22714* NOW 23801
 #index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                        ## DBG |MDEV-22714* NOW 23801
-#lock_rec_get_first( lock_hash, receiver, receiver_heap_no) == __null || lock_hash == &lock_sys.prdt_hash || lock_hash == &lock_sys.prdt_page_hash|SIGABRT|lock_rec_move_low|lock_rec_move|lock_update_split_right|btr_page_split_and_insert # DBG MDEV-24914
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|maria_create|ha_maria::create                   ## DBG |MDEV-23222
@@ -30,7 +29,6 @@ trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_sta
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|THD::init                                                                                                        ## DBG |MDEV-25237
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                               ## DBG |MDEV-25237
 global_system_variables.session_track_system_variables|SIGABRT|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init|THD::THD                                             ## DBG |MDEV-25237
-SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## DBG |MDEV-25206
 0|SIGABRT|wsrep::transaction::before_rollback|wsrep::client_state::before_rollback|wsrep_before_rollback|ha_rollback_trans                                                     ## DBG |MDEV-22063
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|purge_relay_logs                           ## DBG MDEV-25284
 index->table->is_temporary() || !page_is_leaf(block->frame) || !!(index)->is_primary()|SIGABRT|btr_page_reorganize_low|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## DBG MDEV-25283
@@ -55,7 +53,6 @@ SIGSEGV|THD::change_item_tree|Item::split_sum_func2|JOIN::prepare|JOIN::prepare 
 SIGSEGV|THD::change_item_tree|Item::split_sum_func2|JOIN::prepare|st_select_lex_unit::prepare                                                                                  ## DBG |MDEV-24454
 SIGSEGV|THD::change_item_tree|Item::split_sum_func2|JOIN::prepare|st_select_lex_unit::prepare_join                                                                             ## DBG |MDEV-24454
 SIGSEGV|THD::change_item_tree|JOIN::prepare|st_select_lex_unit::prepare_join|st_select_lex_unit::prepare                                                                       ## OPT |MDEV-24454
-SIGABRT|__libc_message|malloc_printerr|_int_free|DBUGCloseFile                                                                                                                 ## DBG MDEV-25072
 SIGSEGV|fts_create_in_mem_aux_table|fts_create_one_index_table|fts_create_index_tables|prepare_inplace_alter_table_dict                                                        ## OPT MDEV-25070
 SIGABRT|DbugExit|_db_return_|my_malloc|JOIN_CACHE::alloc_buffer                                                                                                                ## DBG MDEV-25027
 SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search|choose_plan                                                                            ## DBG MDEV-25013
@@ -94,8 +91,6 @@ table_ref->next_global == __null|SIGABRT|Sql_cmd_truncate_table::lock_table|Sql_
 state_ == s_joiner || state_ == s_initialized|SIGABRT|wsrep::server_state::sst_received|wsrep_sst_complete|wsrep_sst_received|wsrep_set_local_position  ## DBG |MDEV-22285
 SIGABRT|__cxa_throw () from|wsrep::server_state::sst_received|wsrep_sst_complete|wsrep_sst_received                                                                            ## OPT |MDEV-22285
 SIGABRT|__cxa_throw () from|std::__throw_logic_error(char const*) () from|std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>|std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct_aux<char const*> ## DBG MDEV-24856
-static_cast<ins_node_t*>(thr->run_node)->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low  ## DBG |MDEV-24859
-static_cast<ins_node_t*>(thr->run_node)->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low   ## DBG |MDEV-24859
 b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                     ## DBG MDEV-24660
 SIGABRT|DbugExit|_db_return_|my_malloc|Query_cache::init_cache                                                                                                                 ## DBG MDEV-24858
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command                                                                   ## OPT |MDEV-24814
@@ -619,3 +614,8 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.
 # SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                    ## Fixed ## OPT |MDEV-22134
 # SIGABRT|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                    ## Fixed ## OPT |MDEV-22134
 # SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update                                                                ## Fixed ## OPT |MDEV-22134
+# static_cast<ins_node_t*>(thr->run_node)->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low ## Fixed ## DBG |MDEV-24859
+# static_cast<ins_node_t*>(thr->run_node)->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low ## Fixed ## DBG |MDEV-24859
+# SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                    ## Fixed ## DBG MDEV-25206
+# lock_rec_get_first( lock_hash, receiver, receiver_heap_no) == __null || lock_hash == &lock_sys.prdt_hash || lock_hash == &lock_sys.prdt_page_hash|SIGABRT|lock_rec_move_low|lock_rec_move|lock_update_split_right|btr_page_split_and_insert ## Deemed Fixed ## DBG MDEV-24914
+# SIGABRT|__libc_message|malloc_printerr|_int_free|DBUGCloseFile                                                                                                      ## Fixed ## DBG MDEV-25072
