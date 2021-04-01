@@ -21,6 +21,7 @@
 #SIGSEGV|binary2my_decimal|Field_new_decimal::val_decimal|Item_sum_sum::add_helper|Item_sum_sum::add                                                                            ## OPT MDEV-25317
 #scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                ## DBG MDEV-25317
 #scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                                               ## DBG MDEV-25317
+state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## DBG MENT-1175
 SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## OPT MDEV-25158
 SIGSEGV|dict_table_t::not_redundant|rec_get_offsets_func|lock_rec_print|lock_trx_print_locks                                                                                   ## OPT |MDEV-25315
 ptr|SIGABRT|ut_align_down|page_align|page_align|page_rec_is_comp                                                                                                               ## DBG |MDEV-25315
@@ -32,7 +33,7 @@ trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_sta
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|THD::init                                                                                                        ## DBG |MDEV-25237
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                               ## DBG |MDEV-25237
 global_system_variables.session_track_system_variables|SIGABRT|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init|THD::THD                                             ## DBG |MDEV-25237
-0|SIGABRT|wsrep::transaction::before_rollback|wsrep::client_state::before_rollback|wsrep_before_rollback|ha_rollback_trans                                                     ## DBG |MDEV-22063
+0|SIGABRT|wsrep::transaction::before_rollback|wsrep::client_state::before_rollback|wsrep_before_rollback|ha_rollback_trans                                                     ## DBG MDEV-22063*
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|purge_relay_logs                           ## DBG MDEV-25284
 index->table->is_temporary() || !page_is_leaf(block->frame) || !!(index)->is_primary()|SIGABRT|btr_page_reorganize_low|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## DBG MDEV-25283
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::update_row                                       ## DBG |MDEV-18848
