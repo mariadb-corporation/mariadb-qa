@@ -15,7 +15,6 @@
 #index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                        ## DBG |MDEV-22714* NOW 23801
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
-#(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|ma_crypt_post_write_hook|write_page             ## OPT |MDEV-18496*
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
@@ -202,8 +201,6 @@ binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginva
 SIGSEGV|strxmov|Trigger::get_trigger_info|store_trigger|get_schema_triggers_record                                                                                             ## OPT |MDEV-22883
 m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_internal_tmp_table_from_heap|select_unit::write_record|select_unit::send_data                         ## DBG |MDEV-22882
 m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_internal_tmp_table_from_heap|TABLE::insert_all_rows_into_tmp_table|TABLE_LIST::fill_recursive         ## DBG |MDEV-22882
-SIGSEGV|report_json_error_ex|Item_func_json_merge_patch::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                                                     ## OPT |MDEV-20593
-report_json_error_ex|Item_func_json_merge_patch::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                     ## OPT |MDEV-20593
 !thd->get_stmt_da()->is_sent() || thd->killed|SIGABRT|ha_maria::external_lock|handler::ha_external_lock|handler::ha_external_unlock|unlock_external                            ## DBG MDEV-22857
 !str || str != Ptr|SIGABRT|String::copy|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str|Item::save_str_in_field                                             ## DBG MDEV-22856
 !field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## DBG MDEV-22855
@@ -320,17 +317,6 @@ SIGSEGV|store_key::copy|cp_buffer_from_ref|JOIN_CACHE_HASHED::put_record|sub_sel
 strcmp(share->unique_file_name,filename) || share->last_version|SIGABRT|test_if_reopen|mi_open|ha_myisam::open|handler::ha_open                                                ## DBG MDEV-16985
 #thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|select_insert::prepare_eof                                             ## DBG |MDEV-17223, not sure where this particular uniqueID was obtained, but it is not repeatable. Remarked to update later.
 thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|copy_data_between_tables                                               ## DBG |MDEV-17223
-(key_del_current != 0) && ((key_del_current == (~ (my_off_t) 0)) || (key_del_current <= (share->state.state.key_file_length - block_size)))|SIGABRT|_ma_new|_ma_enlarge_root|_ma_ck_real_write_btree|_ma_ck_write_btree_with_log ## DBG |MDEV-18496
-!(offset < ((7 + 1 + 1 + 2 + 1) + (share)->crypt_page_header_space))|SIGABRT|_ma_scan_block_record|sort_get_next_record|sort_key_read|find_all_keys                            ## DBG |MDEV-18496
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_truncate_table::execute|mysql_execute_command                      ## DBG |MDEV-18496
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_load|mysql_execute_command                                           ## DBG |MDEV-18496
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|drop_routine|mysql_execute_command                                         ## DBG |MDEV-18496
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|simple_rename_or_index_change|mysql_alter_table                            ## OPT |MDEV-18496*
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                       ## OPT |MDEV-18496*
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_create_or_drop_trigger|mysql_execute_command                         ## DBG |MDEV-18496
-! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_analyze_table::execute                                                                    ## DBG |MDEV-18496
-status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|one_thread_per_connection_end|do_handle_one_connection                      ## OPT |MDEV-18496*
-!parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::drop_all_triggers|mysql_rm_table_no_locks|mysql_rm_table                        ## DBG |MDEV-18496
 file->s->base.reclength < file->s->vreclength|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::repair|handler::ha_repair|mysql_admin_table                                 ## DBG |MDEV-19011
 file->s->base.reclength < file->s->vreclength|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|mysql_admin_table                             ## DBG |MDEV-19011
 file->s->base.reclength < file->s->vreclength|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert       ## DBG |MDEV-19011*
@@ -373,7 +359,6 @@ update->n_fields < ulint(table->n_cols + table->n_v_cols)|SIGABRT|upd_node_t::ma
 SIGABRT|ut_dbg_assertion_failed|que_graph_free_recursive|row_prebuilt_free|ha_innobase::close                                                                                  ## OPT |MDEV-20563*
 maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Item_func_hybrid_field_type::date_op_with_null_check|Item_func_hybrid_field_type::val_real_from_date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_val_real ## DBG |MDEV-20501*
 maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## DBG |MDEV-20501*
-SIGSEGV|report_json_error_ex|Item_func_json_merge_patch::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                                                     ## OPT MDEV-20593*
 SIGSEGV|JOIN::transform_in_predicates_into_in_subq|convert_join_subqueries_to_semijoins|JOIN::optimize_inner|JOIN::optimize                                                    ## OPT MDEV-20770*
 maybe_null || !null_value|SIGABRT|Item_func_round::time_op|Item_func_hybrid_field_type::time_op_with_null_check|Item_func_hybrid_field_type::val_str_from_time_op|Type_handler_time_common::Item_func_hybrid_field_type_val_str ## DBG MDEV-20816*
 part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## DBG MDEV-21027*
@@ -619,3 +604,18 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.
 # m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low         ## Fixed ## DBG MDEV-24951
 # SIGABRT|__libc_message|__GI___fortify_fail|__GI___chk_fail|wsrep_store_key_val_for_row                                                                              ## Fixed ## OPT MDEV-24978
 # SIGSEGV|fts_create_in_mem_aux_table|fts_create_one_index_table|fts_create_index_tables|prepare_inplace_alter_table_dict                                             ## Fixed ## OPT MDEV-25070
+# (longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|ma_crypt_post_write_hook|write_page   ## Fixed ## OPT |MDEV-18496*
+# (key_del_current != 0) && ((key_del_current == (~ (my_off_t) 0)) || (key_del_current <= (share->state.state.key_file_length - block_size)))|SIGABRT|_ma_new|_ma_enlarge_root|_ma_ck_real_write_btree|_ma_ck_write_btree_with_log ## Fixed ## DBG |MDEV-18496
+# !(offset < ((7 + 1 + 1 + 2 + 1) + (share)->crypt_page_header_space))|SIGABRT|_ma_scan_block_record|sort_get_next_record|sort_key_read|find_all_keys                 ## Fixed ## DBG |MDEV-18496
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_truncate_table::execute|mysql_execute_command           ## Fixed ## DBG |MDEV-18496
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_load|mysql_execute_command                                ## Fixed ## DBG |MDEV-18496
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|drop_routine|mysql_execute_command                              ## Fixed ## DBG |MDEV-18496
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|simple_rename_or_index_change|mysql_alter_table                 ## Fixed ## OPT |MDEV-18496*
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                            ## Fixed ## OPT |MDEV-18496*
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_create_or_drop_trigger|mysql_execute_command              ## Fixed ## DBG |MDEV-18496
+# ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_analyze_table::execute                                                         ## Fixed ## DBG |MDEV-18496
+# status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|one_thread_per_connection_end|do_handle_one_connection           ## Fixed ## OPT |MDEV-18496*
+# !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::drop_all_triggers|mysql_rm_table_no_locks|mysql_rm_table             ## Fixed ## DBG |MDEV-18496
+# SIGSEGV|report_json_error_ex|Item_func_json_merge_patch::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                                          ## Fixed ## OPT |MDEV-20593
+# report_json_error_ex|Item_func_json_merge_patch::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                          ## Fixed ## OPT |MDEV-20593
+# SIGSEGV|report_json_error_ex|Item_func_json_merge_patch::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                                          ## Fixed ## OPT MDEV-20593*
