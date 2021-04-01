@@ -175,6 +175,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|csv|CSV|gi' | \
   sed 's|archive|ARCHIVE|gi' | \
   sed 's|values|VALUES|gi' | \
+  sed 's|against|AGAINST|gi' | \
   sed 's|row_format|ROW_FORMAT|gi' | \
   sed 's|key_block_size|KEY_BLOCK_SIZE|gi' | \
   sed 's|compressed|COMPRESSED|gi' | \
@@ -257,6 +258,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \
+  sed 's|)values|) VALUES|gi' | \
+  sed 's|)against|) AGAINST|gi' | \
+  sed "s|'IN |' IN |gi" | \
   sed 's|transforms|transforms|gi' | \
   sed 's|identified by|IDENTIFIED BY|gi' | \
   sed 's|test\([^ ]*\)|test\L\1|gi' | \

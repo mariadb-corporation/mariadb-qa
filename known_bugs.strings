@@ -20,6 +20,9 @@
 ###### CURRENT BUGS ######
 SIGSEGV|dict_table_t::not_redundant|rec_get_offsets_func|lock_rec_print|lock_trx_print_locks                                                                                   ## OPT |MDEV-25315
 ptr|SIGABRT|ut_align_down|page_align|page_align|page_rec_is_comp                                                                                                               ## DBG |MDEV-25315
+!lock_sys_t::get_first(receiver_cell, receiver_id, receiver_heap_no)|SIGABRT|lock_rec_move|lock_update_root_raise|btr_root_raise_and_insert|btr_cur_pessimistic_insert         ## DBG |MDEV-25315
+!lock_sys_t::get_first(receiver_cell, receiver_id, receiver_heap_no)|SIGABRT|lock_rec_move|lock_update_split_right|btr_page_split_and_insert|btr_root_raise_and_insert         ## DBG |MDEV-25315
+trx->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low                                       ## DBG |MDEV-25315
 trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                              ## OPT MDEV-25297
 (ctx->new_table->fts == __null) == (ctx->new_table->fts_doc_id_index == __null)|SIGABRT|commit_cache_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table|mysql_inplace_alter_table ## DBG MDEV-25295
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|THD::init                                                                                                        ## DBG |MDEV-25237
