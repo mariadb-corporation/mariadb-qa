@@ -1,0 +1,9 @@
+#!/bin/bash
+echo "This script will delete reducers for all workdirs in results.list"
+read -p "Press enter to continue/confirm"
+rm -f ./del_list
+cat ./results.list | sed 's|.*=||' | xargs -I{} echo "rm -f {}/reducer*.sh" >> ./del_list
+cat ./results.list | sed 's|.*=||' | xargs -I{} echo "rm -f {}/*/MYBUG" >> ./del_list
+chmod +x ./del_list
+./del_list
+rm del_list

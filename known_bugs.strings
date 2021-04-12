@@ -18,9 +18,12 @@
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
-#SIGSEGV|binary2my_decimal|Field_new_decimal::val_decimal|Item_sum_sum::add_helper|Item_sum_sum::add                                                                            ## OPT MDEV-25317
-#scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                ## DBG MDEV-25317
-#scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                                               ## DBG MDEV-25317
+scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec_decimal|Type_handler_decimal_result::Item_sum_avg_fix_length_and_dec   ## DBG MDEV-25317
+scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size_inline|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::resolve_type                       ## DBG MDEV-25317
+SIGSEGV|binary2my_decimal|Field_new_decimal::val_decimal|Item_sum_sum::add_helper|Item_sum_sum::add                                                                            ## OPT MDEV-25317
+scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec_decimal|Type_handler_decimal_result::Item_sum_avg_fix_length_and_dec   ## DBG MDEV-25317
+scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                ## DBG MDEV-25317
+scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                                               ## DBG MDEV-25317
 state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## DBG MENT-1175
 SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## OPT MDEV-25158
 SIGSEGV|dict_table_t::not_redundant|rec_get_offsets_func|lock_rec_print|lock_trx_print_locks                                                                                   ## OPT |MDEV-25315

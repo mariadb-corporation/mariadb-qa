@@ -2,8 +2,8 @@
 #Created by Roel Van de Paar, MariaDB
 
 # This script generates a unique ID for all ASAN, TSAN and UBSAN errors seen in a mysqld error log
-# ${1}: First input, only option, point to mysqld error log directly, or to basedir which contains ./log/master.err
-#       If the option is not specified, the script will attempt looking in ${PWD}/log/master.err and ${PWD}/master.err
+# ${1}: First input, only option, point to mysqld error log directly, or to a basedir which contains ./log/master.err
+#       If the option is not specified, the script will attempt to look in ${PWD}/log/master.err and ${PWD}/master.err
 
 set +H
 PROFILING=0  # Set to 1 to profile Bash to /tmp/bashstart.$$.log (slows down script by a factor of 10x)

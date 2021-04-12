@@ -1,0 +1,13 @@
+#!/bin/bash
+echo "This script will start pquery-go-expert.sh for all workdirs in results.list"
+echo "This is handy if all pge's had to be stopped for some reason"
+read -p "Press enter to continue/confirm"
+if [ ! -f ~/sge -o ! -r ~/sge ]; then
+  echo "~/sge cannot be read!"
+  exit 1
+else
+  cat ./results.list | sed 's|.*=||' | xargs -I{} ~/sge {}
+  echo "Done!"
+  screen -ls | grep 'ge[0-9]'
+  exit 0
+fi

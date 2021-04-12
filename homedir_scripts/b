@@ -36,6 +36,11 @@ elif [ "${1}" == "GAL" ]; then
   export TEXT="mysqld got signal"  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
   #rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh GAL "${MYEXTRA_OPT}" | tee report.log
+  ~/tt | grep -A1 "URL" | tee -a report.log
+  echo '*** All strings merged (for updating ~/kb) ***' | tee -a report.log
+  if [ -r ../allstrings_merged ]; then
+    cd .. && ./allstrings_merged | tee -a report.log && cd - >/dev/null 2>&1
+  fi
 else
   MYEXTRA_OPT="$*"
   #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
@@ -43,9 +48,9 @@ else
   rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh "${MYEXTRA_OPT}" | tee report.log
   ~/tt | grep -A1 "URL" | tee -a report.log
-  echo '*** All strings merged (for updating ~/kb) ***'
+  echo '*** All strings merged (for updating ~/kb) ***' | tee -a report.log
   if [ -r ../allstrings_merged ]; then
-    cd .. && ./allstrings_merged && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_merged | tee -a report.log && cd - >/dev/null 2>&1
   fi
 fi
 

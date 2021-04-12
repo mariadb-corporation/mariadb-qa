@@ -117,21 +117,21 @@ while IFS=$'\n' read STRING_FILE; do
       fi
       echo "${STRING}" >> ./newbugs.dedup
     elif [ "${DUPS}" -ge 3 ]; then  # Keep 3 occurences # It should never be greater then 3: defensive coding
-    #elif [ "${DUPS}" -ge 1 ]; then  # Keep 1 occurence  # Idem
-      # Check first if this is not a really small testcase (less then 23 lines)
-      SQL_FILE="$(echo "${STRING_FILE}" | sed 's|\.string|.sql|')"
-      SQL_LINES="$(wc -l ${SQL_FILE} | sed 's| .*||')"
-      SQL_FILE=
-      if [ "${SQL_LINES}" -le 23 ]; then 
-        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+, though not filtering as testcase is only ${SQL_LINES} lines"
-        fi
-      else
-        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+: filtering"
-        fi
-        delete_newbug
+# Code temporarily disabled (1/4/21 as more then 120k testcases present)
+#      # Check first if this is not a really small testcase (less than or equal to 5 lines)
+#      SQL_FILE="$(echo "${STRING_FILE}" | sed 's|\.string|.sql|')"
+#      SQL_LINES="$(wc -l ${SQL_FILE} | sed 's| .*||')"
+#      SQL_FILE=
+#      if [ "${SQL_LINES}" -le 5 ]; then 
+#        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+#          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+, though not filtering as testcase is only ${SQL_LINES} lines"
+#        fi
+#      else
+      if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+: filtering"
       fi
+      delete_newbug
+#      fi
       SQL_LINES=
     fi 
   fi 

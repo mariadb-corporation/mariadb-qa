@@ -489,9 +489,9 @@ handle_bugs() {
   add_handy_scripts
   TEXT=$(${SCRIPT_PWD}/new_text_string.sh)
   if [[ ${MDG} -eq 1 ]]; then
-    echo "${TEXT}" > ${RUNDIR}/${TRIAL}/node${j}/MYBUG
+    echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node${j}/MYBUG
   else
-    echo "${TEXT}" > ${RUNDIR}/${TRIAL}/MYBUG
+    echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/MYBUG
   fi
   cd - >/dev/null || exit 1
   if [[ ${MDG} -eq 1 ]]; then

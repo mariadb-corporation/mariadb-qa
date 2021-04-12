@@ -48,6 +48,7 @@ cp kill_del_1_prge ${TARGET}
 cp stop_all ${TARGET}
 cp start_all ${TARGET}
 cp startup_all ${TARGET}
+cp start_ge_list ${TARGET}
 cp t_all ${TARGET}
 cp all_all ${TARGET}
 cp sge_all ${TARGET}
@@ -83,6 +84,7 @@ cp count_reducers ${TARGET}
 cp qcdiffs ${TARGET}
 cp del_all_data ${TARGET}
 cp del_failing_dev_shm ${TARGET}
+cp del_reducers_list ${TARGET}
 cp loop_screens ${TARGET}
 cp loop_screens_ge ${TARGET}
 cp loop_screens_pr ${TARGET}

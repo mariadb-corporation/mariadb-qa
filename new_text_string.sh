@@ -6,6 +6,7 @@
 # ./new_text_string.sh 'FRAMESONLY'    # Used in automation, ref mass_bug_report.sh
 # ./new_text_string.sh "${mysqld_loc}" # Where mysqld
 
+SCRIPT_PWD=$(cd "`dirname $0`" && pwd) 
 FRAMESONLY=0
 MYSQLD=
 if [ ! -z "${1}" ]; then
@@ -79,11 +80,26 @@ if [ -z "${ERROR_LOG}" ]; then
   exit 1
 fi
 
+# Note: all asserts below exclude any 'PREV' directories, like data.PREV
 if [ -z "${LATEST_CORE}" ]; then
-  # TODO: Improve code for when there is an error log (with possible assert) but no core dump (unlikely)
-  # Idea; can we fallback to OLD/text_string.sh in that case?
-  echo "Assert: no core file found in */*core* (excluding any .PREV directories)"
-  exit 1
+  if [ -f ${SCRIPT_PWD}/fallback_text_string.sh -a -r ${SCRIPT_PWD}/fallback_text_string.sh ]; then
+    if grep -qi 'signal' "${ERROR_LOG}"; then
+      TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "${ERROR_LOG}")"
+      if [ -z "${TEXT}" ]; then
+        echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
+        exit 1
+      else
+        echo "${TEXT}"
+        exit 0
+      fi
+    else
+      echo "Assert: no core file found in */*core*, and no 'signal' found in the error log, so fallback_text_string.sh was not attempted"
+      exit 1
+    fi
+  else
+    echo "Assert: no core file found in */*core*, and fallback_text_string.sh was not found, or is not readable"
+    exit 1
+  fi
 fi
 
 RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
