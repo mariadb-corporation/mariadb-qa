@@ -34,6 +34,7 @@ while true; do
     sudo lsof -s +L1 | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | grep -E "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]|^[3-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | awk '{print $2}' | xargs kill -9 2>/dev/null
     # Check if we have reducer directories > 10GB on /dev/shm and drop them, saving the reducer file
     # Only one directory "per COUNT1 round" is done at the time
+    cd /dev/shm
     ANY_SINGLE_LARGE_REDUCER_DIR="$(ls | grep '^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | xargs du -shc 2>/dev/null | grep -v total | grep '^[.0-9]\+G' | grep '^[1-9][0-9]' | head -n1 | awk '{print $2}')"
     if [ ! -z "${ANY_SINGLE_LARGE_REDUCER_DIR}" ]; then
       if [ -d ${ANY_SINGLE_LARGE_REDUCER_DIR} ]; then
@@ -47,6 +48,7 @@ while true; do
         fi
       fi
     fi
+c   cd - >/dev/null
     sync
     COUNT1=0
   fi
