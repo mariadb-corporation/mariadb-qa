@@ -12,5 +12,5 @@ https://www.percona.com/blog/2015/03/17/free-mysql-qa-and-bash-linux-training-se
 
 Please Note: 
 * For a number of the scripts to run successfully, it is required that sudo is enabled and working and should not request a password.
-* Work is ongoing to change various tools to run well with MariaDB products. 
-* Please contact Roel or Ramesh if you have questions/for information.
+* Please contact Roel or Ramesh if you have questions or for information.
+* Most of the documentation is in-line in the code.
