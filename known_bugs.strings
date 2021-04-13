@@ -18,13 +18,19 @@
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
-allocated_status_memory != __null|SIGABRT|PROF_MEASUREMENT::set_label|PROF_MEASUREMENT::PROF_MEASUREMENT|QUERY_PROFILE::new_status|PROFILING::status_change                     ## DBG MDEV-25329
-scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec_decimal|Type_handler_decimal_result::Item_sum_avg_fix_length_and_dec   ## DBG MDEV-25317
-scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size_inline|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::resolve_type                       ## DBG MDEV-25317
-SIGSEGV|binary2my_decimal|Field_new_decimal::val_decimal|Item_sum_sum::add_helper|Item_sum_sum::add                                                                            ## OPT MDEV-25317
-scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec_decimal|Type_handler_decimal_result::Item_sum_avg_fix_length_and_dec   ## DBG MDEV-25317
-scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                ## DBG MDEV-25317
-scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                                               ## DBG MDEV-25317
+name.length == strlen(name.str)|SIGABRT|Item_func_sp::make_send_field|Protocol::send_result_set_metadata|select_send::send_result_set_metadata|JOIN::exec_inner                ## DBG |MDEV-25399
+name.length == strlen(name.str)|SIGABRT|Item_func_sp::make_send_field|Send_field::Send_field|Protocol_text::store_field_metadata|Protocol::send_result_set_metadata            ## DBG |MDEV-253991
+name.length == strlen(name.str)|SIGABRT|Item_func_sp::make_send_field|Send_field::Send_field|Protocol_text::store_item_metadata|Protocol::send_result_set_metadata             ## DBG |MDEV-25399 
+allocated_status_memory != __null|SIGABRT|PROF_MEASUREMENT::set_label|PROF_MEASUREMENT::PROF_MEASUREMENT|QUERY_PROFILE::new_status|PROFILING::status_change                    ## DBG MDEV-25329
+SIGSEGV|Field_iterator_natural_join::next|Field_iterator_table_ref::next|mark_common_columns|store_top_level_join_columns                                                      ## DBG |MDEV-24935
+SIGSEGV|Field_iterator_table_ref::get_or_create_column_ref|mark_common_columns|store_top_level_join_columns|setup_natural_join_row_types                                       ## DBG |MDEV-24935
+table_ref->is_natural_join || table_ref->nested_join || (table_ref->join_columns && ((table_ref->field_translation && table_ref->join_columns->elements == (ulong)(table_ref->field_translation_end - table_ref->field_translation)) || (!table_ref->field_translation && table_ref->join_columns->elements == table_ref->table->s->fields)))|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql ## DBG |MDEV-2493
+table_ref->is_natural_join || table_ref->nested_join || (table_ref->join_columns && ((table_ref->field_translation && table_ref->join_columns->elements == (ulong)(table_ref->field_translation_end - table_ref->field_translation)) || (!table_ref->field_translation && table_ref->join_columns->elements == table_ref->table->s->fields)))|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|mark_common_columns|store_top_level_join_columns ## DBG |MDEV-24935 
+SIGSEGV|binary2my_decimal|Field_new_decimal::val_decimal|Item_sum_sum::add_helper|Item_sum_sum::add                                                                            ## OPT |MDEV-25317
+scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec_decimal|Type_handler_decimal_result::Item_sum_avg_fix_length_and_dec   ## DBG |MDEV-25317
+scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                                               ## DBG |MDEV-25317
+scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size_inline|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::resolve_type                       ## DBG |MDEV-25317
+scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                ## DBG |MDEV-25317
 state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## DBG MENT-1175
 SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## OPT MDEV-25158
 SIGSEGV|dict_table_t::not_redundant|rec_get_offsets_func|lock_rec_print|lock_trx_print_locks                                                                                   ## OPT |MDEV-25315

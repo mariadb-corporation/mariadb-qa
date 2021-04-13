@@ -94,6 +94,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|user|USER|gi' | \
   sed 's|natural|NATURAL|gi' | \
   sed 's|join|JOIN|gi' | \
+  sed 's|straight|STRAIGHT|gi' | \
   sed 's|backup|BACKUP|gi' | \
   sed 's|alter|ALTER|gi' | \
   sed 's|desc|DESC|gi' | \
@@ -266,15 +267,13 @@ cat "${1}" | tr -d '`' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \
-  sed 's|)values|) VALUES|gi' | \
-  sed 's|)against|) AGAINST|gi' | \
   sed "s|'IN |' IN |gi" | \
+  sed "s|AND(|AND (|gi" | \
   sed 's|transforms|transforms|gi' | \
   sed 's|identified by|IDENTIFIED BY|gi' | \
   sed 's|test\([^ ]*\)|test\L\1|gi' | \
   sed 's|0x\([0-9A-Fa-f]\)|0x\1|gi' | \
-  sed 's|)engine|) ENGINE|gi' | \
-  sed 's|)zerofill|) ZEROFILL|gi' | \
+  sed 's|)\([a-zA-Z]\+\)|) \1|gi' | \
   sed 's| ()|()|gi' | \
   sed 's|), (|),(|gi' | \
   sed "s|BY''|BY ''|gi" | \
