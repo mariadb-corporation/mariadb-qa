@@ -8,3 +8,9 @@ SET sql_mode='';
 CREATE PROCEDURE p1 (IN i INT) ALTER TABLE t ENGINE=none;
 CALL p1 (1);
 CALL p1 (1);
+
+SET sql_mode='';
+SET @c:="ALTER TABLE t ENGINE=none";
+PREPARE s FROM @c;
+EXECUTE s;
+EXECUTE s;

@@ -18,6 +18,8 @@
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+!str || str != Ptr|SIGABRT|String::copy|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str|Item_func_set_user_var::check                                       ## DBG MDEV-25402
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## DBG MDEV-25401
 name.length == strlen(name.str)|SIGABRT|Item_func_sp::make_send_field|Protocol::send_result_set_metadata|select_send::send_result_set_metadata|JOIN::exec_inner                ## DBG |MDEV-25399
 name.length == strlen(name.str)|SIGABRT|Item_func_sp::make_send_field|Send_field::Send_field|Protocol_text::store_field_metadata|Protocol::send_result_set_metadata            ## DBG |MDEV-253991
 name.length == strlen(name.str)|SIGABRT|Item_func_sp::make_send_field|Send_field::Send_field|Protocol_text::store_item_metadata|Protocol::send_result_set_metadata             ## DBG |MDEV-25399 
@@ -218,6 +220,7 @@ binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginva
 binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update|sys_var::set_default                                          ## DBG |MDEV-22921
 (m_storage_engine_name.str != __null) == used_engine|SIGABRT|Sql_cmd_alter_table::execute|mysql_execute_command|Prepared_statement::execute|Prepared_statement::execute_loop   ## DBG |MDEV-22907
 (m_storage_engine_name.str != __null) == used_engine|SIGABRT|Sql_cmd_alter_table::execute|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core ## DBG |MDEV-22907
+(m_storage_engine_name.str != __null) == used_engine|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                       ## DBG |MDEV-22907
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|open_table_entry_fini|open_table|open_and_process_table                                              ## DBG |MDEV-22883
 SIGSEGV|strxmov|Trigger::get_trigger_info|store_trigger|get_schema_triggers_record                                                                                             ## OPT |MDEV-22883
 m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_internal_tmp_table_from_heap|select_unit::write_record|select_unit::send_data                         ## DBG |MDEV-22882

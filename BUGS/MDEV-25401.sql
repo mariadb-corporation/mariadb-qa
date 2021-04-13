@@ -1,0 +1,15 @@
+# Repeat 2-x times to crash
+DROP DATABASE test;
+CREATE DATABASE test;
+USE test;
+SET sql_mode='';
+SET SESSION unique_checks=0,foreign_key_checks=0;
+CREATE TABLE t (c INT,c2 INT) ENGINE=InnoDB;
+INSERT INTO t VALUES (0,0);
+XA START 'a';
+UPDATE t SET c=0;
+SAVEPOINT s;
+CREATE TEMPORARY TABLE t2 (c INT PRIMARY KEY,c2 INT) ENGINE=InnoDB;
+INSERT INTO t2 VALUES (0,0),(0,0);
+UPDATE t SET c=0;
+SAVEPOINT s;
