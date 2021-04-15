@@ -1,0 +1,5 @@
+# [sst] progressfile+time+xbstream
+[sst]
+time=1
+streamfmt=xbstream
+progress=/tmp/progress1-conf5.log

@@ -1,0 +1,5 @@
+innodb_encrypt_tables = ON
+innodb_encrypt_temporary_tables = ON
+innodb_encrypt_log = ON
+innodb_encryption_threads = 4
+innodb_encryption_rotate_key_age = 1

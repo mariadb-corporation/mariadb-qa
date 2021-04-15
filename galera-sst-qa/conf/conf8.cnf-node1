@@ -1,0 +1,5 @@
+# [mysqld] external-log-bin 
+[mysqld]
+gtid_strict_mode=1
+log_slave_updates=ON
+log_bin=/tmp/node1/mysql-bin

@@ -1,0 +1,8 @@
+# [mariabackup] parallel [sst] progressfile+time
+[mariabackup]
+parallel=4
+
+[sst]
+time=1
+streamfmt=xbstream
+progress=/tmp/progress2-conf4.log
