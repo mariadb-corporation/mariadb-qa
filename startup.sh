@@ -590,7 +590,6 @@ echo "~/mariadb-qa/multirun_mysqld.sh TEXT \"\${1}\" \"\$(echo \"\${*}\" | sed \
 echo "#!/bin/bash" >multirun
 echo "if [ ! -r ./in.sql ]; then echo 'Missing ./in.sql - please create it!'; exit 1; fi" >>multirun
 echo "if [ ! -r ./all_no_cl ]; then echo 'Missing ./all_no_cl - perhaps run ~/start or ~/mariadb-qa/startup.sh again?'; exit 1; fi" >>multirun
-echo "echo 'Use: --max_connections=10000 as an additional option to multirun if you want to run with more than 255 connections!'" >>multirun
 echo "if [ \"\$(grep -o 'DROP DATABASE test' ./in.sql)\" == \"\" -o \"\$(grep -o 'CREATE DATABASE test' ./in.sql)\" == \"\" -o \"\$(grep -o 'USE test' ./in.sql)\" == \"\" ]; then" >>multirun
 echo "  echo \"Warning: 'DROP/CREATE/USE DATABASE test;' queries NOT all present in in.sql, which may negatively affect issue reproducibilitiy when using multiple executions of the same code (due to pre-exisiting server states)! Consider adding:\"" >>multirun
 echo "  echo '--------------------'" >>multirun
@@ -602,7 +601,7 @@ echo "  echo 'To the top of in.sql to improve issue reproducibility when executi
 echo "  echo 'NOTE: This can be done easily by pressing CTRL+C now and running ./fixin which fix this'" >>multirun
 echo "  read -p 'Press enter to continue, or press CTRL+C to action this now...'" >>multirun
 echo "fi" >>multirun
-echo "./all_no_cl \"\$*\"" >>multirun
+echo "./all_no_cl \"\$* --max_connections=10000\"" >>multirun
 echo "if [ ! -r ~/mariadb-qa/multirun_cli.sh ]; then echo 'Missing ~/mariadb-qa/multirun_cli.sh - did you pull mariadb-qa from GitHub?'; exit 1; fi" >>multirun
 echo "sed -i 's|^RND_DELAY_FUNCTION=[0-9]|RND_DELAY_FUNCTION=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
 echo "sed -i 's|^RND_REPLAY_ORDER=[0-9]|RND_REPLAY_ORDER=1|' ~/mariadb-qa/multirun_cli.sh" >>multirun
