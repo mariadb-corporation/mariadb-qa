@@ -404,7 +404,7 @@ validate_table_checksum(){
   if [[ -n "${CONF_TEST}" ]]; then
     TEST_NAME="galera_sst_${SST} - $(head -1 ${WORKDIR}/conf/${CONF}.cnf-node1) - ${IS_ENCRYPTION}"
   elif [[ -n "${SST_LOST_FOUND_TEST}" ]]; then
-    TEST_NAME="galera_sst_${SST} - # ${SST_LOST_FOUND_TEST} - ${IS_ENCRYPTION}"
+    TEST_NAME="galera_sst_${SST} - # lost+found test - ${IS_ENCRYPTION}"
   else
     TEST_NAME="galera_sst_${SST} - # innodb_page_size(${size}),${IS_ENCRYPTION}"
   fi
