@@ -6,6 +6,7 @@
 set -o nounset    # no undefined variables
 
 #Global variables
+declare SCRIPT_PWD=$(cd "$(dirname $0)" && pwd)
 declare WORKDIR=${PWD}
 # Internal variables: DO NOT CHANGE!
 declare -i NR_OF_NODES=2
@@ -16,6 +17,9 @@ declare SST=""
 declare SYSBENCH_OPTIONS
 declare ENCRYPTION
 declare CONF=""
+declare VERIFY_ENCRYPTION_OPT=""
+declare SST_LOST_FOUND_TEST=""
+declare CONF_TEST=""
 
 # Dispay script usage details
 usage () {
@@ -69,6 +73,37 @@ do
   esac
 done
 
+echo "Initiating SST test"
+echo "Work directory: ${WORKDIR}"
+echo "Log directory: ${WORKDIR}/logs"
+
+#######################
+# SST run sanity check
+#######################
+sst_sanity(){
+  # Copy SSL certiticates to work directory
+  if [[ ! -d "${WORKDIR}/cert" ]]; then
+    if [[ -d "${SCRIPT_PWD}/cert" ]]; then
+      cp -r ${SCRIPT_PWD}/cert  ${WORKDIR}/
+    else
+      echo "WARNING: SSL certificate directory does not exist. SST will encryption will be skipped"
+    fi
+  fi
+
+  # Checking pv binary location
+  if [[ ! -e $(which pv 2> /dev/null) ]]; then
+    echo "The pv binary was not found. Please install the pv package."
+    exit 1
+  fi
+  # Checking stunnel binary location
+  if [[ ! -e $(which stunnel 2> /dev/null) ]]; then
+    echo "The stunnel binary was not found. Please install the stunnel package."
+    exit 1
+  fi
+}
+
+sst_sanity
+
 if [[ -z "$SST" ]]; then
   declare SST="all"
 fi
@@ -83,8 +118,6 @@ if [ ! -r ${BASEDIR}/bin/mysqld ]; then
   exit 1
 fi
 
-declare VERSION=$(${BASEDIR}/bin/mysqld --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-6]' | head -n1)
-
 #############################
 # Store mariadb version info
 #############################
@@ -97,22 +130,6 @@ rm -rf ${WORKDIR}/logs/mariadb-galera-sst-test.log &> /dev/null
 echoit(){
   if [ "${WORKDIR}" != "" ]; then
     echo "[$(date +'%T')] $1" >> ${WORKDIR}/logs/mariadb-galera-sst-test.log;
-  fi
-}
-
-########################
-# SST dependency check
-########################
-sst_sanity(){
-  # Checking pv binary location
-  if [[ ! -e $(which pv 2> /dev/null) ]]; then
-    echo "The pv binary was not found. Please install the pv package."
-    exit 1
-  fi
-  # Checking stunnel binary location
-  if [[ ! -e $(which stunnel 2> /dev/null) ]]; then
-    echo "The stunnel binary was not found. Please install the stunnel package."
-    exit 1
   fi
 }
 
@@ -134,7 +151,7 @@ sysbench_run(){
 }
 
 
-cd "${WORKDIR}"
+cd ${WORKDIR} || true
 
 #######################################
 # Setting seeddb creation configuration
@@ -176,6 +193,10 @@ mdg_startup_status() {
     sleep 1
     if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
       break
+    fi
+    if [[ $X -eq $((SERVER_START_TIMEOUT - 1)) ]]; then
+      echo "Assert: Could not start cluster node on socket: $SOCKET. Check the error log to get more info"
+      exit 1
     fi
   done
 }
@@ -270,6 +291,18 @@ sample_crypt_data_load(){
   done
 }
 
+lost_found_test(){
+  LOST_FOUND_DB_1="\`lost+found\`"
+  LOST_FOUND_DB_2="\`#mysql50#not_lost+found\`"
+  ${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -e "CREATE DATABASE IF NOT EXISTS ${LOST_FOUND_DB_1};CREATE DATABASE IF NOT EXISTS ${LOST_FOUND_DB_2};" > /dev/null 2>&1
+  for i in $(seq 1 10); do
+    ${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -e "CREATE TABLE ${LOST_FOUND_DB_1}.t${i} (f1 CHAR(255)) ENGINE=InnoDB;CREATE TABLE ${LOST_FOUND_DB_2}.t${i} (f1 CHAR(255)) ENGINE=InnoDB;" > /dev/null 2>&1
+    for j in $(seq 1 50); do
+      STR=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 100 | head -n 1)
+      ${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -e "INSERT INTO ${LOST_FOUND_DB_1}.t${i}(f1) VALUES('${STR}');INSERT INTO ${LOST_FOUND_DB_2}.t${i}(f1) VALUES('${STR}');" > /dev/null 2>&1
+    done
+  done
+}
 
 #####################
 # Start Galera node
@@ -277,10 +310,10 @@ sample_crypt_data_load(){
 start_galera_nodes(){
   MYEXTRA=${1-}
   for j in $(seq 1 ${NR_OF_NODES}); do
-    if [ -n "${CONF}" ]; then
+    if [ -n "${CONF_TEST}" ]; then
      cat ${WORKDIR}/conf/${CONF}.cnf-node${j} >> ${WORKDIR}/n${j}.cnf
     fi
-    if [[ -n ${ENCRYPTION_CHECK} ]]; then
+    if [[ -n ${VERIFY_ENCRYPTION_OPT} ]]; then
       sed -i  "0,/^[ \t]*tkey[ \t]*=.*$/s|^[ \t]*tkey[ \t]*=.*$|tkey=${WORKDIR}/cert/server-key.pem|" ${WORKDIR}/n${j}.cnf
       sed -i  "0,/^[ \t]*tcert[ \t]*=.*$/s|^[ \t]*tcert[ \t]*=.*$|tcert=${WORKDIR}/cert/server-cert.pem|" ${WORKDIR}/n${j}.cnf
     fi
@@ -290,13 +323,17 @@ start_galera_nodes(){
       mdg_startup_status "${WORKDIR}/node${j}/node${j}_socket.sock"
       echoit "${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node${j}/node${j}_socket.sock -e 'create database if not exists test' > /dev/null 2>&1"
       ${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node${j}/node${j}_socket.sock -e "create database if not exists test" > /dev/null 2>&1
-      sysbench_run load_data
-      sample_data_load
-      if [[ "${ENCRYPTION}" == "crypt" ]]; then
-        sample_crypt_data_load
+      if [[ -z "${SST_LOST_FOUND_TEST}" ]]; then
+        sysbench_run load_data
+        echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node${j}/node${j}_socket.sock prepare > ${WORKDIR}/logs/sysbench_load.log 2>&1"
+        sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node${j}/node${j}_socket.sock prepare > ${WORKDIR}/logs/sysbench_load.log 2>&1
+        sample_data_load
+        if [[ "${ENCRYPTION}" == "crypt" ]]; then
+          sample_crypt_data_load
+        fi
+      else
+        lost_found_test
       fi
-      echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node${j}/node${j}_socket.sock prepare > ${WORKDIR}/logs/sysbench_load.log 2>&1"
-      sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node${j}/node${j}_socket.sock prepare > ${WORKDIR}/logs/sysbench_load.log 2>&1
     else
       echoit "${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/n${j}.cnf ${MYEXTRA} > ${WORKDIR}/logs/node${j}.err 2>&1 &"
       ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/n${j}.cnf ${MYEXTRA} > ${WORKDIR}/logs/node${j}.err 2>&1 &
@@ -310,8 +347,8 @@ start_galera_nodes(){
 ####################
 check_sst_status(){
   if [[ "${SST}" == "mariabackup" ]]; then
-    WSREP_LOCAL_STATE_UUID=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -Ns -e 'SHOW STATUS LIKE "wsrep_local_state_uuid"'| awk {'print $2'})
-    WSREP_LAST_COMMITED=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -Ns -e 'SHOW STATUS LIKE "wsrep_last_committed"'| awk {'print $2'})
+    WSREP_LOCAL_STATE_UUID=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -Ns -e "SHOW STATUS LIKE 'wsrep_local_state_uuid'"| awk {'print $2'})
+    WSREP_LAST_COMMITED=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -Ns -e "SHOW STATUS LIKE 'wsrep_last_committed'"| awk {'print $2'})
 
     ## thanks to PXC sst test script: xb_galera_sst.sh
     if [[ "${WSREP_LOCAL_STATE_UUID}" == "$(sed  -re 's/:.+$//' ${WORKDIR}/node2/xtrabackup_galera_info_SST)" && "${WSREP_LAST_COMMITED}" == "$(sed  -re 's/^.+://' ${WORKDIR}/node2/xtrabackup_galera_info_SST)" ]]; then
@@ -328,18 +365,21 @@ check_sst_status(){
 ##############################
 save_artifacts(){
   COMMENT=${1-}
-  if [ -n "${CONF}" ]; then
+  if [[ -n "${CONF_TEST}" ]]; then
     TESTCASE="${CONF}_cnf-node_${COMMENT}"
+  elif [[ -n "${SST_LOST_FOUND_TEST}" ]]; then
+    TESTCASE="${SST_LOST_FOUND_TEST}_${COMMENT}"
   else
     TESTCASE="inno_page_size_${size}_${COMMENT}"
   fi
-  TESTCASE=${1-}
   rm -rf ${WORKDIR}/logs/${SST}_${TESTCASE}/ > /dev/null 2>&1
   mkdir ${WORKDIR}/logs/${SST}_${TESTCASE}/
   cp ${WORKDIR}/logs/node1.err ${WORKDIR}/logs/${SST}_${TESTCASE}/
   cp ${WORKDIR}/logs/node2.err ${WORKDIR}/logs/${SST}_${TESTCASE}/
   cp ${WORKDIR}/logs/mariadb-galera-sst-test.log ${WORKDIR}/logs/${SST}_${TESTCASE}/
-  cp ${WORKDIR}/logs/sysbench_load.log ${WORKDIR}/logs/${SST}_${TESTCASE}/
+  if [[ -z "${SST_LOST_FOUND_TEST}" ]]; then
+   cp ${WORKDIR}/logs/sysbench_load.log ${WORKDIR}/logs/${SST}_${TESTCASE}/
+  fi
   echoit "SST ${SST} logs saved in ${WORKDIR}/logs/${SST}_${TESTCASE}/"
 }
 
@@ -347,17 +387,26 @@ save_artifacts(){
 # Verify table checksum
 ########################
 validate_table_checksum(){
-  CHECK_ENCRYPTION="${1}"
-  NODE1_MD5SUM=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -e 'select * from test.sbtest1;' | md5sum | cut -d" " -f1)
-  NODE2_MD5SUM=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node2/node2_socket.sock -e 'select * from test.sbtest1;' | md5sum | cut -d" " -f1)
+  IS_ENCRYPTION="${1}"
+  if [[ -n "${SST_LOST_FOUND_TEST}" ]]; then
+    # Get checkdum from lost+found DB for lost found SST test
+    NODE1_MD5SUM=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -e "select * from ${LOST_FOUND_DB_1}.t1;" | md5sum | cut -d" " -f1)
+    NODE2_MD5SUM=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node2/node2_socket.sock -e "select * from ${LOST_FOUND_DB_1}.t1;" | md5sum | cut -d" " -f1)
+  else
+    # Get checkdum from sysbench table
+    NODE1_MD5SUM=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -e "select * from test.sbtest1;" | md5sum | cut -d" " -f1)
+    NODE2_MD5SUM=$(${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node2/node2_socket.sock -e "select * from test.sbtest1;" | md5sum | cut -d" " -f1)
+  fi
   if [[ "${NODE1_MD5SUM}" != "${NODE2_MD5SUM}" ]];then
     echo "Integrity verification failed: found: ${NODE1_MD5SUM} expected: ${NODE2_MD5SUM}"
     exit 1
   fi
-  if [ -n "${CONF}" ]; then
-    TEST_NAME="galera_sst_${SST} - $(head -1 ${WORKDIR}/conf/${CONF}.cnf-node1) - ${CHECK_ENCRYPTION}"
+  if [[ -n "${CONF_TEST}" ]]; then
+    TEST_NAME="galera_sst_${SST} - $(head -1 ${WORKDIR}/conf/${CONF}.cnf-node1) - ${IS_ENCRYPTION}"
+  elif [[ -n "${SST_LOST_FOUND_TEST}" ]]; then
+    TEST_NAME="galera_sst_${SST} - # ${SST_LOST_FOUND_TEST} - ${IS_ENCRYPTION}"
   else
-    TEST_NAME="galera_sst_${SST} - # innodb_page_size(${size}),${CHECK_ENCRYPTION}"
+    TEST_NAME="galera_sst_${SST} - # innodb_page_size(${size}),${IS_ENCRYPTION}"
   fi
   TEST_TIME=$(($(date '+%s') - TEST_START_TIME))
   if [ "$NODE1_MD5SUM" == "$NODE2_MD5SUM" ]; then
@@ -365,7 +414,6 @@ validate_table_checksum(){
   else
     printf "%-90s  %-10s %-10s\n" "$TEST_NAME" "[failed]" "$TEST_TIME"
   fi
-  CONF=''
 }
 
 ########################
@@ -377,9 +425,9 @@ shutdown_nodes(){
   done
 }
 
-###############
-# SST run test
-###############
+########################
+# Initiate SST test run
+########################
 sst_run(){
     INNO_PAGE_SIZE=${1:+--innodb-page-size="$1"}
     ## Non encryption run
@@ -409,11 +457,6 @@ sst_run(){
 ##################
 invoke_sst_run(){
   SST=${1-}
-  ########################
-  # Initiate SST test run
-  ########################
-  CONF_ARRAY=()
-  while IFS='' read -r line; do CONF_ARRAY+=("$line"); done < <(find ${WORKDIR}/conf/ -type f -exec basename {} \; 2>/dev/null | grep conf*.*node | cut -d'.' -f1 | sort | uniq)
   printf "%-112s\n" | tr " " "="
   printf "%-90s  %-10s %-10s\n" "TEST" "RESULT" "TIME(s)"
   printf "%-112s\n" | tr " " "-"
@@ -429,16 +472,19 @@ invoke_sst_run(){
   ############################################
   # Test SST using sst/mariadb/mysqld options
   ############################################
+  CONF_ARRAY=()
+  while IFS='' read -r line; do CONF_ARRAY+=("$line"); done < <(find ${WORKDIR}/conf/ -type f -exec basename {} \; 2>/dev/null | grep conf*.*node | cut -d'.' -f1 | sort | uniq)
   if [[ "${SST}" == "mariabackup" ]]; then
+    CONF_TEST="multiple_config_test"
     for CONF in "${CONF_ARRAY[@]}"; do
       BACKUP_LOCK=$(grep -o no-backup ${WORKDIR}/conf/${CONF}.cnf-node* 2>1)
       if [[ -n ${BACKUP_LOCK} ]]; then
-        if [[ ${VERSION} != "10.6" ]]; then
+        if [[ ${MYSQL_VERSION} != "10.6" ]]; then
           continue
         fi
       fi
-      ENCRYPTION_CHECK=$(grep -o encrypt ${WORKDIR}/conf/${CONF}.cnf-node* 2>1)
-      if [[ -n ${ENCRYPTION_CHECK} ]]; then
+      VERIFY_ENCRYPTION_OPT=$(grep -o encrypt ${WORKDIR}/conf/${CONF}.cnf-node* 2>1)
+      if [[ -n ${VERIFY_ENCRYPTION_OPT} ]]; then
         if [[ ! -f ${WORKDIR}/cert/server-cert.pem ]]; then
           echo "SSL certificates not found: Skipping SST encryption test"
           continue
@@ -446,17 +492,19 @@ invoke_sst_run(){
       fi
       sst_run
     done
+    CONF_TEST=''
+    # Run lost+found SST test
+    SST_LOST_FOUND_TEST="lost_found_test"
+    sst_run
+    SST_LOST_FOUND_TEST=""
   elif [[ "${SST}" == "rsync" ]]; then
+    CONF_TEST="encrypt_config_test"
     CONF=conf3
     sst_run
+    CONF_TEST=""
   fi
   printf "%-112s\n" | tr " " "="
 }
-
-echo "Initiating SST test"
-echo "Work directory: ${WORKDIR}"
-echo "Log directory: ${WORKDIR}/logs"
-sst_sanity
 
 if [[ "${SST}" == "all" ]]; then
   invoke_sst_run "rsync"
