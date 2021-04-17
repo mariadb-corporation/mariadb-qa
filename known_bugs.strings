@@ -10,7 +10,6 @@
 
 ###### BUGS WHICH REQUIRE ADDITIONAL TESTCASES (DISABLED FILTERS) ######
 #SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                                  ## DBG MDEV-24911
-#SIGSEGV|malloc_size_and_flag|my_free|PROFILING::finish_current_query_impl|PROFILING::finish_current_query                                                                     ## OPT MDEV-23657
 #index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                               ## OPT |MDEV-22714* NOW 23801
 #index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                        ## DBG |MDEV-22714* NOW 23801
 
@@ -18,6 +17,7 @@
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|multi_delete::send_eof|do_select                                           ## DBG MDEV-25426
 !str || str != Ptr|SIGABRT|String::copy|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str|Item_func_set_user_var::check                                       ## DBG MDEV-25402
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## DBG MDEV-25401
 name.length == strlen(name.str)|SIGABRT|Item_func_sp::make_send_field|Protocol::send_result_set_metadata|select_send::send_result_set_metadata|JOIN::exec_inner                ## DBG |MDEV-25399
@@ -35,13 +35,6 @@ scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size_inlin
 scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                ## DBG |MDEV-25317
 state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## DBG MENT-1175
 SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## OPT MDEV-25158
-SIGSEGV|dict_table_t::not_redundant|rec_get_offsets_func|lock_rec_print|lock_trx_print_locks                                                                                   ## OPT |MDEV-25315
-ptr|SIGABRT|ut_align_down|page_align|page_align|page_rec_is_comp                                                                                                               ## DBG |MDEV-25315
-!lock_sys_t::get_first(receiver_cell, receiver_id, receiver_heap_no)|SIGABRT|lock_rec_move|lock_update_root_raise|btr_root_raise_and_insert|btr_cur_pessimistic_insert         ## DBG |MDEV-25315
-!lock_sys_t::get_first(receiver_cell, receiver_id, receiver_heap_no)|SIGABRT|lock_rec_move|lock_update_split_right|btr_page_split_and_insert|btr_root_raise_and_insert         ## DBG |MDEV-25315
-trx->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low                                       ## DBG |MDEV-25315
-trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                              ## OPT MDEV-25297
-(ctx->new_table->fts == __null) == (ctx->new_table->fts_doc_id_index == __null)|SIGABRT|commit_cache_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table|mysql_inplace_alter_table ## DBG MDEV-25295
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|THD::init                                                                                                        ## DBG |MDEV-25237
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                               ## DBG |MDEV-25237
 global_system_variables.session_track_system_variables|SIGABRT|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init|THD::THD                                             ## DBG |MDEV-25237
@@ -72,7 +65,6 @@ SIGSEGV|THD::change_item_tree|JOIN::prepare|st_select_lex_unit::prepare_join|st_
 SIGABRT|DbugExit|_db_return_|my_malloc|JOIN_CACHE::alloc_buffer                                                                                                                ## DBG MDEV-25027
 SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search|choose_plan                                                                            ## DBG MDEV-25013
 thd|SIGABRT|wsrep_innobase_kill_one_trx|wsrep_kill_victim|lock_table_other_has_incompatible|lock_table                                                                         ## OPT MENT-1141
-SIGSEGV|mach_read_from_n_little_endian|row_mysql_read_blob_ref|wsrep_calc_row_hash|ha_innobase::wsrep_append_keys                                                              ## OPT MDEV-25047
 transaction_.active() == false || (transaction_.state() == wsrep::transaction::s_executing || transaction_.state() == wsrep::transaction::s_prepared || transaction_.state() == wsrep::transaction::s_aborted || transaction_.state() == wsrep::transaction::s_must_abort)|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command ## DBG MENT-1139
 client_state_.mode() != wsrep::client_state::m_toi|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans            ## DBG MDEV-25045
 SIGSEGV|wsrep_can_run_in_toi|wsrep_can_run_in_nbo|wsrep_NBO_begin|wsrep_to_isolation_begin                                                                                     ## OPT MENT-1134
@@ -305,7 +297,6 @@ id|SIGABRT|trx_write_trx_id|row_ins_step|row_insert_for_mysql|ha_innobase::write
 thr_get_trx(thr)->id || index->table->no_rollback()|SIGABRT|row_ins_index_entry|row_ins_index_entry_step|row_ins|row_ins_step                                                  ## DBG |MDEV-22255
 id > 0|SIGABRT|trx_write_trx_id|row_ins_step|row_insert_for_mysql|ha_innobase::write_row                                                                                       ## DBG |MDEV-22255
 val > 0|SIGABRT|row_upd_index_entry_sys_field|row_upd_clust_rec_by_insert|row_upd_clust_step|row_upd                                                                           ## DBG |MDEV-22255
-SIGABRT|ib::fatal_or_error::~fatal_or_error|ut_allocator<unsigned char, true>::allocate|buf_pool_t::create|srv_start                                                           ## OPT MDEV-22219
 SIGABRT|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                                                           ## OPT |MDEV-22133
 SIGSEGV|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                                                             ## OPT |MDEV-22133
 SIGSEGV|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                                                           ## OPT |MDEV-22133
@@ -643,3 +634,13 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.
 # SIGSEGV|report_json_error_ex|Item_func_json_merge_patch::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                                          ## Fixed ## OPT |MDEV-20593
 # report_json_error_ex|Item_func_json_merge_patch::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                          ## Fixed ## OPT |MDEV-20593
 # SIGSEGV|report_json_error_ex|Item_func_json_merge_patch::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                                          ## Fixed ## OPT MDEV-20593*
+# SIGSEGV|malloc_size_and_flag|my_free|PROFILING::finish_current_query_impl|PROFILING::finish_current_query                                                   ## Assumed Fixed ## OPT MDEV-23657
+# SIGABRT|ib::fatal_or_error::~fatal_or_error|ut_allocator<unsigned char, true>::allocate|buf_pool_t::create|srv_start                                                ## Fixed ## OPT MDEV-22219
+# SIGSEGV|mach_read_from_n_little_endian|row_mysql_read_blob_ref|wsrep_calc_row_hash|ha_innobase::wsrep_append_keys                                                   ## Fixed ## OPT MDEV-25047
+# (ctx->new_table->fts == __null) == (ctx->new_table->fts_doc_id_index == __null)|SIGABRT|commit_cache_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table|mysql_inplace_alter_table ## Fixed ## DBG MDEV-25295
+# trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                   ## Fixed ## OPT MDEV-25297
+# SIGSEGV|dict_table_t::not_redundant|rec_get_offsets_func|lock_rec_print|lock_trx_print_locks                                                                        ## Fixed ## OPT |MDEV-25315
+# ptr|SIGABRT|ut_align_down|page_align|page_align|page_rec_is_comp                                                                                                    ## Fixed ## DBG |MDEV-25315
+# !lock_sys_t::get_first(receiver_cell, receiver_id, receiver_heap_no)|SIGABRT|lock_rec_move|lock_update_root_raise|btr_root_raise_and_insert|btr_cur_pessimistic_insert ## Fixed ## DBG |MDEV-25315
+# !lock_sys_t::get_first(receiver_cell, receiver_id, receiver_heap_no)|SIGABRT|lock_rec_move|lock_update_split_right|btr_page_split_and_insert|btr_root_raise_and_insert ## Fixed ## DBG |MDEV-25315
+# trx->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low                            ## Fixed ## DBG |MDEV-25315
