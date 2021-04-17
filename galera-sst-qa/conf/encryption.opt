@@ -1,0 +1,3 @@
+--plugin-load-add=file_key_management.so --loose-file-key-management --loose-file-key-management-filename=conf/keys.txt --file-key-management-encryption-algorithm=aes_cbc
+--plugin-load-add=file_key_management.so --loose-file-key-management --loose-file-key-management-filename=conf/keys.txt --file-key-management-encryption-algorithm=aes_ctr
+--plugin-load-add=example_key_management.so --loose-example-key-management

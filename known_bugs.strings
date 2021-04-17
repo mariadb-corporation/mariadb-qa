@@ -18,6 +18,10 @@
 
 ###### CURRENT BUGS ######
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|multi_delete::send_eof|do_select                                           ## DBG MDEV-25426
+!is_thread_specific || (mysqld_server_initialized && thd)|SIGABRT|my_malloc_size_cb_func|my_free|delete_dynamic|my_hash_free                                                   ## DBG MDEV-25389
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item::send|Protocol::send_result_set_row                                                                                ## DBG |MDEV-25375
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                       ## DBG |MDEV-25375
+0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler::Item_send_str                                                                ## DBG |MDEV-25375
 !str || str != Ptr|SIGABRT|String::copy|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str|Item_func_set_user_var::check                                       ## DBG MDEV-25402
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## DBG MDEV-25401
 name.length == strlen(name.str)|SIGABRT|Item_func_sp::make_send_field|Protocol::send_result_set_metadata|select_send::send_result_set_metadata|JOIN::exec_inner                ## DBG |MDEV-25399

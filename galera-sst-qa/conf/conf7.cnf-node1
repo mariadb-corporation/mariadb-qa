@@ -1,0 +1,8 @@
+# [mariabackup] parallel + [sst] sockopt
+[mariabackup]
+parallel=8
+
+[sst]
+streamfmt=xbstream
+transferfmt=socat
+sockopt=,nodelay,sndbuf=1048576

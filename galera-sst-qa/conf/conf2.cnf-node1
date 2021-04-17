@@ -1,0 +1,4 @@
+# [sst] xbstream
+[sst]
+streamfmt=xbstream
+transferfmt=socat
