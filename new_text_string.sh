@@ -132,6 +132,9 @@ gdb -q ${MYSQLD} ${LATEST_CORE} >/tmp/${RANDF}.gdb1 2>&1 << EOF
   quit
 EOF
 
+# Cleanup (gdb) markers to allow frame #0 to be read
+sed -i 's|^(gdb)[ ]*||' /tmp/${RANDF}.gdb2 
+
 touch /tmp/${RANDF}.gdb3
 TEXT=
 
@@ -161,10 +164,10 @@ IMPROVE_FLAG=''
 grep --binary-files=text -A100 'signal handler called' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vE 'std::terminate.*from|__GI_raise |__GI_abort |__assert_fail_base |__GI___assert_fail |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called' | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
 if [ "$(wc -m /tmp/${RANDF}.gdb4 2>/dev/null | sed 's| .*||')" == "0" ]; then
   # 'signal handler called' was not found, try another method
-  grep --binary-files=text -m1 -A100 '^#1' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vE 'std::terminate.*from|__GI_raise |__GI_abort |__assert_fail_base |__GI___assert_fail |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called' | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
+  grep --binary-files=text -m1 -A100 '^#0' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vE 'std::terminate.*from|__GI_raise |__GI_abort |__assert_fail_base |__GI___assert_fail |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called' | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
 fi
 if [ "$(wc -m /tmp/${RANDF}.gdb4 2>/dev/null | sed 's| .*||')" == "0" ]; then
-  # '#1' was not found, which is unlikely to happen, but improvements may be possible, set flag
+  # '#0' was not found, which is unlikely to happen, but improvements may be possible, set flag
   IMPROVE_FLAG=' (may be improved upon)'
 fi
 rm -f /tmp/${RANDF}.gdb2
