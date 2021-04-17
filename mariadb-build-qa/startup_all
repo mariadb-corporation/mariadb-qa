@@ -20,4 +20,5 @@ sync
 
 sudo mv /etc/mysql /etc/mysql.old 2>/dev/null  # Avoids any local my.cnf from being used by any mysqld
 
+# The echo below will not show at the end due to the background processes. TODO: fix by waiting for no more startup.sh processes to be present
 echo "Complete! The information above (on ./all) refers to the script which were created INSIDE the base directories, i.e. you can do: cd somebasedir; ./all"
