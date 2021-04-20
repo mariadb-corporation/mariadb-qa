@@ -50,7 +50,11 @@ else
   ~/tt | grep -A1 "URL" | tee -a report.log
   echo '*** All strings merged (for updating ~/kb) ***' | tee -a report.log
   if [ -r ../allstrings_merged ]; then
-    cd .. && ./allstrings_merged | tee -a report.log && cd - >/dev/null 2>&1
+    if [ "${1}" == "GAL" ]; then
+      cd .. && ./allstrings_merged GAL | tee -a report.log && cd - >/dev/null 2>&1
+    else
+      cd .. && ./allstrings_merged | tee -a report.log && cd - >/dev/null 2>&1
+    fi
   fi
 fi
 
