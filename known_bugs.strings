@@ -60,7 +60,8 @@ client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_ke
 is_last_prefix <= 0|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record                                                       ## DBG |MDEV-15656
 ds_control|SIGABRT|debug_sync_get_action|debug_sync_eval_action|debug_sync_set_action|mysql_alter_table                                                                        ## DBG MDEV-25218
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                  ## DBG MDEV-25219
-thd->wsrep_trx_meta.gtid.seqno == (-1)|SIGABRT|wsrep_to_isolation_begin|open_tables|open_and_lock_tables|open_and_lock_tables                                                  ## DBG MDEV-25201
+thd->wsrep_trx_meta.gtid.seqno == (-1)|SIGABRT|wsrep_to_isolation_begin|open_tables|open_and_lock_tables|open_and_lock_tables                                                  ## DBG |MDEV-25201
+thd->wsrep_trx_meta.gtid.seqno == (-1)|SIGABRT|wsrep_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                ## DBG |MDEV-25201
 inited==INDEX|SIGABRT|handler::ha_index_end|Wsrep_schema_impl::end_index_scan|remove_fragment|Wsrep_schema::remove_fragments                                                   ## DBG MENT-1161
 ds_control|SIGABRT|debug_sync_get_action|debug_sync_eval_action|debug_sync_set_action|wsrep_nbo_phase_one_end                                                                  ## DBG MENT-1160
 mode() == m_local|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|sp_head::execute|sp_head::execute_trigger                                                 ## DBG |MDEV-24062
