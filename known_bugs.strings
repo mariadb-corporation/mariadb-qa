@@ -17,6 +17,9 @@
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql|mysql_parse|wsrep_mysql_parse                                                                 ## DBG |MDEV-25484
+lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql|mysql_parse|dispatch_command                                                                  ## DBG |MDEV-25484
+0|SIGABRT|wsrep_create_appliers|wsrep_slave_threads_update|sys_var::update|set_var::update                                                                                     ## OPT MDEV-25472
 transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command                                 ## DBG MENT-1180
 !thd->mdl_context.has_locks()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|start_thread                                                                   ## DBG |MDEV-25463
 !thd->mdl_context.has_locks()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|pfs_spawn_thread                                                               ## DBG |MDEV-25463
