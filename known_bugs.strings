@@ -17,6 +17,10 @@
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+!lock_sys_t::get_first(receiver_cell, receiver_id, receiver_heap_no)|SIGABRT|lock_rec_move|lock_update_split_right|btr_page_split_and_insert|btr_root_raise_and_insert         ## DBG MDEV-25487
+m_status == DA_ERROR || m_status == DA_OK || m_status == DA_OK_BULK|SIGABRT|Diagnostics_area::message|get_schema_tables_record|fill_schema_table_by_open|get_all_tables        ## DBG MDEV-25462
+je->state == JST_KEY|SIGABRT|Geometry::create_from_json|Item_func_geometry_from_json::val_str|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii            ## DBG MDEV-25461
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_sql_stmt_prepare|mysql_execute_command                               ## DBG MDEV-25460
 thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|apply_fragment|apply_write_set|wsrep::server_state::on_apply                                          ## DBG MDEV-25455
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|multi_delete::send_eof|do_select                                           ## DBG MDEV-25426
 !is_thread_specific || (mysqld_server_initialized && thd)|SIGABRT|my_malloc_size_cb_func|my_free|delete_dynamic|my_hash_free                                                   ## DBG MDEV-25389

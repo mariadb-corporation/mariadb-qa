@@ -29,6 +29,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|table|TABLE|gi' | \
   sed 's|tables|TABLES|gi' | \
   sed 's|view|VIEW|gi' | \
+  sed 's|status|STATUS|gi' | \
   sed 's|using|USING|gi' | \
   sed 's|distinct|DISTINCT|gi' | \
   sed 's|comment|COMMENT|gi' | \
