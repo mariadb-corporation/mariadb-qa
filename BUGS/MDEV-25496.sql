@@ -1,0 +1,10 @@
+SET foreign_key_checks=0,unique_checks=0;
+CREATE TABLE t (i INT) ENGINE=InnoDB PARTITION BY HASH (i) PARTITIONS 3;
+INSERT INTO t VALUES (0);
+INSERT INTO t VALUES (0x40),(0x41),(0x42),(0x43),(0x44),(0x45),(0x46),(0x47);
+
+SET foreign_key_checks=0, unique_checks=0;
+CREATE TABLE t (i INT) ENGINE=InnoDB PARTITION BY HASH (i) PARTITIONS 3;
+INSERT INTO t VALUES (0);
+INSERT INTO t VALUES (64),(65),(66),(67);
+DROP TABLE t;
