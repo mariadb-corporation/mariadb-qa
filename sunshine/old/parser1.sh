@@ -1,4 +1,5 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
 set +H
 
 STARTFLAG=0  # 1 When 'directly_executable_statement:' was seen (start from here), 0 at start
