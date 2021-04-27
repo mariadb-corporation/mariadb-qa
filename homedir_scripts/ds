@@ -48,7 +48,7 @@ while true; do
         fi
       fi
     fi
-c   cd - >/dev/null
+    cd - >/dev/null
     sync
     COUNT1=0
   fi

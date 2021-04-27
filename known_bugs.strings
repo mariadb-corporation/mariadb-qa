@@ -18,6 +18,8 @@
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+SIGSEGV|handler_index_cond_check|row_search_idx_cond_check|row_search_mvcc|ha_innobase::index_read                                                                             ## DBG MDEV-22846
+0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## DBG MDEV-17890
 inited==INDEX|SIGABRT|handler::ha_index_end|opt_sum_query|JOIN::optimize_inner|JOIN::optimize                                                                                  ## DBG MDEV-20460
 SIGSEGV|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update|sql_set_variables                                                                       ## DBG |MDEV-25499
 SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update                                                                           ## OPT |MDEV-25499
