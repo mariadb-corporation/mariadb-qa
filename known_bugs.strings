@@ -19,6 +19,8 @@
 
 ###### CURRENT BUGS ######
 lock_table_has(trx, index->table, LOCK_IX)|SIGABRT|lock_rec_insert_check_and_lock|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low            ## DBG MDEV-25534
+table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|ha_delete_table|mysql_rm_table_no_locks                           ## DBG MDEV-25500
+tl->table == __null|SIGABRT|THD::open_temporary_table|THD::open_temporary_tables|wsrep_append_fk_parent_table|Sql_cmd_alter_table::execute                                     ## DBG MDEV-25494
 !((system_charset_info)->coll->strcasecmp((system_charset_info), (dict_table_get_col_name( ib_table, j)), (field->field_name.str)))|SIGABRT|innobase_build_v_templ|ha_innobase::inplace_alter_table|handler::ha_inplace_alter_table|mysql_inplace_alter_table ## DBG MDEV-25533
 part_id == m_last_part|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                  ## DBG MDEV-25532
 SIGSEGV|handler_index_cond_check|row_search_idx_cond_check|row_search_mvcc|ha_innobase::index_read                                                                             ## DBG MDEV-22846
