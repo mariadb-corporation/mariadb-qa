@@ -1,0 +1,6 @@
+#!/bin/bash
+
+DIR="$(echo "${1}" | sed 's|/dev/shm/||')"
+if [ -z "${DIR}" ]; then echo "No input provided, please pass a /dev/shm directory for which you want to call all processes!"; exit 1; fi
+if [ ! -d "/dev/shm/${DIR}" ]; then echo "The directory /dev/shm/${DIR} does not exist. Please pass an actual /dev/shm directory for which you want to call all processes!"; exit 1; fi
+ps -ef | grep "/dev/shm/${1}" | grep -v grep | awk '{print $2}' | xargs kill -9
