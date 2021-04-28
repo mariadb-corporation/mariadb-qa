@@ -1,0 +1,2 @@
+INSTALL SONAME 'ha_rocksdb';
+CREATE TEMPORARY TABLE tmp_rocksdb_0 (a CHAR(0)) ENGINE=RocksDB;
