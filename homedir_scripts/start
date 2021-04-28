@@ -1,1 +1,1 @@
-~/mariadb-qa/startup.sh
+~/mariadb-qa/startup.sh $1
