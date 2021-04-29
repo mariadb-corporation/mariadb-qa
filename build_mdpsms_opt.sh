@@ -254,8 +254,10 @@ if [ $FB -eq 0 ]; then
     sleep 0.1
     #XPAND='-DWITH_XPAND=1'  # Disabled ftm due to cnf limitation (https://mariadb.com/kb/en/mariadb-maxscale-25-maxscale-and-xpand-tutorial/)
   fi
-  # Temporary patch (Ref discussion DB/RV on 14-04-2021) to see if this fixes the core dumping issues (ref MDEV-24199) 
-  sed -i -e 's:\(sigaction(SIG[SABIF]\)://\1:' sql/mysqld.cc
+  # Temporary patch (Ref discussion DB/RV on 14-04-2021) to see if this fixes the core dumping issues (ref MDEV-24199)
+  if grep -qi --binary-files=text 'SERVER_MATURITY' VERSION; then  # Only do so for MD (fails for MS 5.7 and 8.0)
+    sed -i -e 's:\(sigaction(SIG[SABIF]\)://\1:' sql/mysqld.cc
+  fi
   CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release -DWITH_JEMALLOC=no ${XPAND} -DWITH_TOKUDB=0 -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_PERFSCHEMA_STORAGE_ENGINE=1 ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
