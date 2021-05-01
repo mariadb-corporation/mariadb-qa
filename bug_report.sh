@@ -310,9 +310,9 @@ if [ -z "${TEXT}" ]; then
     cat ../test.results
   else
     echo "--------------------------------------------------------------------------------------------------------------"
-    echo "ERROR: expected ../test.results to exist, but it did not. Running:  ./findbug+ 'signal'  though this may fail."
+    echo "ERROR: expected ../test.results to exist, but it did not. Running:  ./findbug+ '[ \\t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]' (any crashed instance), though this may fail."
     echo "--------------------------------------------------------------------------------------------------------------"
-    cd ..; ./findbug+ 'signal'; cd - >/dev/null
+    cd ..; ./findbug+ '[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]'; cd - >/dev/null
   fi
 else
   if [ "${1}" == "SAN" ]; then

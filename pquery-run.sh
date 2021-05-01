@@ -149,15 +149,14 @@ check_for_version() {
 # Find empty port
 init_empty_port(){
   NEWPORT=
-  # Choose a random port number in 10-65K range, check if free, increase if needbe
-  NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
   while :; do
-    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
+    # Choose a random port number in 10-65K range, check if free, increase if needbe
+    NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+    ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
-    if [ "${ISPORTFREE}" -ge 1 -o ! -z "${ISPORTFREE2}" ]; then
-      NEWPORT=$[ ${NEWPORT} + 100 ]  # +100 to avoid 'clusters of ports'
-    else
-      break
+    ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
+    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
+      break  # Suitable port number found
     fi
   done
 }

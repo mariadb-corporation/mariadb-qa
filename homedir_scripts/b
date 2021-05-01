@@ -33,7 +33,9 @@ if [ "${1}" == "SAN" ]; then
 elif [ "${1}" == "GAL" ]; then
   MYEXTRA_OPT="$*"
   #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
-  export TEXT="mysqld got signal"  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
+  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
+  # Note 1/05/21: the reason this still works correctly for Galera is that the Galera build scripts do not have the build code patches for core dumps yet. Thus, "mysqld got signal" or "signal" would likely work fine at all times. Ref below in non-Galera section for more on this
+  export TEXT="mysqld got signal"  
   #rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh GAL "${MYEXTRA_OPT}" | tee report.log
   ~/tt | grep -A1 "URL" | tee -a report.log
@@ -44,13 +46,23 @@ elif [ "${1}" == "GAL" ]; then
 else
   MYEXTRA_OPT="$*"
   #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
-  export TEXT="signal"  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
+  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
+  # New test as of 1/05/21: The previous 'signal' worked somewhat fine prior to the build code patches for core dumps. After those were added, it was possible for 10.6 to generate a crash message without the word 'signal' in it (in the error log). Now testing with '[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]' which is basically any memory address in the log (and none should be shown if there was no crash, though occassionally a hex string may cause an SQL issue reaching the error log). Evaluate over time again.
+  export TEXT="[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]"
   rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh "${MYEXTRA_OPT}" | tee report.log
-  ~/tt | grep -A1 "URL" | tee -a report.log
+  ~/tt | grep --bianry-files=text -A1 "URL" | tee -a report.log
   echo '*** All strings merged (for updating ~/kb) ***' | tee -a report.log
   if [ -r ../allstrings_merged ]; then
     cd .. && ./allstrings_merged | tee -a report.log && cd - >/dev/null 2>&1
+  fi
+  # The following code is now precautionary/defensive coding as this is covered in the new port assignment code
+  if grep --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err; then
+    echo "------------------------------------------------------------------------------------------"
+    echo "Assert: the text 'Do you already have another mysqld server running on port' was found in:"
+    grep -l --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err
+    echo "You will probably want to fix this port conflict and then re-run ~/b!"
+    echo "------------------------------------------------------------------------------------------"
   fi
 fi
 
