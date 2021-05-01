@@ -10,7 +10,7 @@ if [ ! -r ~/mariadb-qa/startup.sh ]; then
   exit 1
 fi
 
-./kill_all
+./kill_all 2>&1 | grep -v 'kill did not exist'
 sync
 # Next line only does EMD* MD* MS* (which is a handy alternative/hack if you have an ogoing *SAN run etc.)
 #./gendirs.sh | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} sh -c "{}"

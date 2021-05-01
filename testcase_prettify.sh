@@ -16,6 +16,7 @@ set +H
 cat "${1}" | tr -d '`' | \
   sed 's|;#.*$|;|;s| ;$|;|g;s|;;$|;|g' | \
   sed 's|^[ ]\+||;s|;[ ]\+$|;|' | \
+  sed 's|open|OPEN|gi' | \
   sed 's|index|INDEX|g' | \
   sed 's|int|INT|gi;s|integer|INT|gi' | \
   sed 's|float|FLOAT|gi' | \
