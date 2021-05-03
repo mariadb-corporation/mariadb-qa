@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ ! -d /home/$(whoami)/mariadb-qa/mariadb-build-qa ]; then echo '/home/$(whoami)/mariadb-qa/mariadb-build-qa does not exist, did you create it and execute cp ~/mariadb-qa/mariadb-build-qa/* /home/$(whoami)/mariadb-qa/mariadb-build-qa yet?'; exit 1; fi
+if [ ! -d /test ]; then echo '/test does not exist, did you create it and execute cp ~/mariadb-qa/mariadb-build-qa/* /home/$(whoami)/mariadb-qa/mariadb-build-qa yet?'; exit 1; fi
 if [ ! -d /data ]; then echo '/data does not exist yet? Please create it'; exit 1; fi
 mkdir -p /data/NEWBUGS /data/FIREWORKS
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/clean_all /test/clean_all  2>&1
@@ -168,5 +168,6 @@ ln -fs /home/$(whoami)/mariadb-qa/homedir_scripts/tt /home/$(whoami)/tt 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/homedir_scripts/ver /home/$(whoami)/ver 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/homedir_scripts/vi /home/$(whoami)/vi 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/homedir_scripts/newbug /home/$(whoami)/mariadb-qa/mariadb-build-qa/newbug 2>&1
+
 echo 'Done!'
 exit 0
