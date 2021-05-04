@@ -18,6 +18,7 @@
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
 ###### CURRENT BUGS ######
+readbytes != (size_t)-1 || (*__errno_location ()) != 9|SIGABRT|my_pread|azflush|ha_archive::info|ha_archive::update_create_info                                                ## DBG MDEV-24420
 pause_seqno_.is_undefined() == false|SIGABRT|wsrep::server_state::resume|Global_read_lock::unlock_global_read_lock|fix_read_only|sys_var::update                               ## DBG MDEV-25562
 ctx->skip_pk_sort|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|mysql_inplace_alter_table          ## DBG MDEV-25550
 *new_engine|SIGABRT|check_engine|create_table_impl|mysql_create_table_no_lock|mysql_create_table                                                                               ## DBG MDEV-25549

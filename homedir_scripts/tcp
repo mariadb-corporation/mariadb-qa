@@ -1,2 +1,0 @@
-#!/bin/bash
-~/mariadb-qa/testcase_prettify.sh "${1}"
