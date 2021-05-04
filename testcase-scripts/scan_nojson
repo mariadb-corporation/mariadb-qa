@@ -1,0 +1,1 @@
+./scan | grep ".sql" | sed 's|\.sql.*||' | sort -un | xargs -I{} grep -iL "JSON" "{}.sql"
