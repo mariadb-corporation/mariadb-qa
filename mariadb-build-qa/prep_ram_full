@@ -27,7 +27,7 @@ cp copy_in.sql_all /ram
 cp count_all /ram
 cp clean_all /ram
 cp kill_* /ram
-cp findbug* /ram
+cp findbug+ /ram
 cp del_all_data /ram
 cp find_cores /ram
 cp find_deadlocks /ram

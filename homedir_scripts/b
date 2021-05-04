@@ -45,10 +45,7 @@ elif [ "${1}" == "GAL" ]; then
   fi
 else
   MYEXTRA_OPT="$*"
-  #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
-  # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
-  # New test as of 1/05/21: The previous 'signal' worked somewhat fine prior to the build code patches for core dumps. After those were added, it was possible for 10.6 to generate a crash message without the word 'signal' in it (in the error log). Now testing with '[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]' which is basically any memory address in the log (and none should be shown if there was no crash, though occassionally a hex string may cause an SQL issue reaching the error log). Evaluate over time again.
-  export TEXT="[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]"
+  export TEXT="BBB"  # A dummy string to let findbug+ know we want to scan for a set of strings to establish crashes
   rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh "${MYEXTRA_OPT}" | tee report.log
   ~/tt | tee -a report.log

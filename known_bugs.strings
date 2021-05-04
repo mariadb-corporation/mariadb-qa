@@ -315,6 +315,8 @@ ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlo
 SIGSEGV|MDL_lock::hog_lock_types_bitmap|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_context::release_lock                                                         ## OPT |MDEV-22448 NOW 20945/MDEV-25037
 SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::rollback_to_savepoint|THD::restore_backup_open_tables_state                                         ## OPT |MDEV-22448 NOW 20945
 SIGSEGV|Item::val_uint|handle_select|execute_sqlcom_select|mysql_execute_command                                                                                               ## OPT MDEV-22447
+!trx_is_started(trx) || trx->state == TRX_STATE_ACTIVE|SIGABRT|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first|ha_innobase::rnd_next                          ## DBG |MDEV-22445
+SIGABRT|ut_dbg_assertion_failed|trx_start_if_not_started_low|row_search_mvcc|ha_innobase::index_read                                                                           ## OPT |MDEV-22445
 SIGABRT|ut_dbg_assertion_failed|trx_start_if_not_started_xa_low|ha_innobase::init_table_handle_for_HANDLER|mysql_ha_read                                                       ## OPT |MDEV-22445
 SIGABRT|ut_dbg_assertion_failed|trx_start_if_not_started_xa_low|trx_start_if_not_started_xa_low|ha_innobase::init_table_handle_for_HANDLER                                     ## OPT |MDEV-22445
 SIGSEGV|__strlen_avx2|Json_writer::add_str|Json_value_helper::add_str|Json_writer_object::add                                                                                  ## OPT |MDEV-22444
