@@ -24,7 +24,11 @@ elif [ "${1}" == "SAN" ]; then
   TEXT="${2}"  # Presence of ${2} was checked earlier above (ref ERROR_IN_OPTIONS)
 elif [ "${1}" == "GAL" ]; then
   GAL_MODE=1
-  TEXT="${2}"
+  if [ "${2}" == "BBB" ]; then  # Coding dummy string passed by ~/b to enable searching for multitude of strings
+    TEXT="[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]|signal|[Aa]ssertion"
+  else
+    TEXT="${2}"
+  fi
 else
   if [ "${1}" == "BBB" ]; then  # Coding dummy string passed by ~/b to enable searching for multitude of strings
     TEXT="[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]|signal|[Aa]ssertion"
@@ -35,25 +39,26 @@ fi
 
 rm -f /tmp/pri.t /tmp/sec.t
 
-# Generate full list
+FILT=
 if [ "${SAN_MODE}" -eq 1 ]; then
-  ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "SAN" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
+  FILT=(--binary-files=text 'SAN')
 elif [ "${GAL_MODE}" -eq 1 ]; then
-  REGEX_EXCLUDE="${REGEX_EXCLUDE//EMD|/}"
-  ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "GAL" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+*.*-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
-else  # Normal mode; no SAN, no GAL
-  ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep -vE --binary-files=text "SAN|GAL" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
+  FILT=(--binary-files=text 'GAL')
+else
+  FILT=(-vE --binary-files=text 'SAN|GAL')
 fi
+ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
 
 # Generate bug list
 if [ "${SAN_MODE}" -eq 1 ]; then
-  grep -Ei --binary-files=text "${TEXT}" */log/master.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text -E "SAN" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
+  grep -Ei --binary-files=text "${TEXT}" */log/master.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 elif [ "${GAL_MODE}" -eq 1 ]; then
   REGEX_EXCLUDE="${REGEX_EXCLUDE//EMD|/}"
-  grep -Ei --binary-files=text "${TEXT}" */node1/node1.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text -E "GAL" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+*.*-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
+  grep -Ei --binary-files=text "${TEXT}" */node1/node1.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 else  # Normal mode; no SAN, no GAL
-  grep -Ei --binary-files=text "${TEXT}" */log/master.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep -vE --binary-files=text "SAN|GAL" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
+  grep -Ei --binary-files=text "${TEXT}" */log/master.err | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 fi
+FILT=
 
 # Output bug-present-in list
 echo "Bug confirmed present in:"
