@@ -2184,7 +2184,7 @@ start_mdg_main(){
   WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
   for j in $(seq 1 ${NR_OF_NODES}); do
     sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS:1}" ${WORKD}/n${j}.cnf
-    cp ${WORKD}/n${j}.cnf ${WORKD}/${EPOCH}_n${j}.cnf
+    cp ${WORKD}/n${j}.cnf ${WORK_BUG_DIR}/${EPOCH}_n${j}.cnf
     if [ ${j} -eq 1 ]; then
       echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START
       echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
