@@ -4,3 +4,4 @@ SET GLOBAL event_scheduler=1;
 SELECT SLEEP(1);
 SELECT SLEEP(1);
 SELECT SLEEP(1);
+

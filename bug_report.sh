@@ -185,9 +185,9 @@ if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE="(Optimized)"; fi
 if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE="(Debug)"; fi
 
 echo '-------------------- BUG REPORT --------------------'
-echo '{noformat}'
+echo '{code:sql}'
 cat in.sql | grep -v --binary-files=text '^$'
-echo -e '{noformat}\n'
+echo -e '{code}\n'
 echo -e 'Leads to:\n'
 # Assumes (which is valid for the pquery framework) that 1st assertion is also the last in the log
 if [ ${SAN_MODE} -eq 0 ]; then

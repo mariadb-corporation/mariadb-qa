@@ -1,23 +1,41 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID etc.
 
-###### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (REVIEW REGULARLY) ######
+##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (REVIEW REGULARLY) #####
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_ha_read|mysql_execute_command                                                                                 ## DBG MDEV-20207
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## DBG MDEV-22663
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                                       ## DBG MDEV-22663
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command                   ## DBG MDEV-23786
 
-###### STACK SMASHING BUGS (not auto-filtered) (prefix the uniqueID with 'STACK_SMASHING|') ######
+##### STACK SMASHING BUGS (not auto-filtered) (prefix the uniqueID with 'STACK_SMASHING|') #####
 
-###### BUGS WHICH REQUIRE ADDITIONAL TESTCASES (DISABLED FILTERS) ######
+##### BUGS WHICH REQUIRE ADDITIONAL TESTCASES (DISABLED FILTERS) #####
 #SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                                  ## DBG MDEV-24911
 #index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                               ## OPT |MDEV-22714* NOW 23801
 #index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                        ## DBG |MDEV-22714* NOW 23801
 #b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                    ## DBG MDEV-24660
+# escape != -1|SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|Create_tmp_table::cleanup_on_failure                                                         ## DBG |MDEV-25610
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
-###### CURRENT BUGS ######
+##### MONTY bb-10.6-monty MAY 2021 TESTING (DISABLED FILTERS TO AVOID FILTERING TRUNK RUNS) #####
+#to <= end|SIGABRT|process_args|my_vsnprintf_ex|my_error|change_master                                                                                                         ## DBG |MDEV-25612
+#SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
+
+##### CURRENT BUGS #####
+used_tables_cache == 0|SIGABRT|Item_func::fix_fields|create_view_field|Field_iterator_view::create_item|find_field_in_view                                                     ## DBG |MDEV-25650
+marked_for_read()|SIGABRT|Field_datetimef::get_TIME|Field_datetimef::get_date|Field_temporal::save_in_field|Field::store_field                                                 ## DBG |MDEV-18166
+marked_for_read()|SIGABRT|Field_bit::val_int|Field_bit::save_in_field|Field::store_field|field_conv_incompatible                                                               ## DBG |MDEV-18166
+marked_for_read()|SIGABRT|Field_enum::val_int|Field_enum::store_field|field_conv_incompatible|field_conv                                                                       ## DBG |MDEV-18166
+marked_for_read()|SIGABRT|Field_blob::val_str|Field::val_str|Field::save_in_field_str|Field_str::save_in_field                                                                 ## DBG |MDEV-18166
+!table || (!table->read_set || bitmap_is_set(table->read_set, field_index) || (!(ptr >= table->record[0] && ptr < table->record[0] + table->s->reclength)))|SIGABRT|Field_blob::val_str|Field::val_str|Field::save_in_field_str|Field_str::save_in_field ## DBG |MDEV-18166
+marked_for_read()|SIGABRT|Field_blob::val_real|Item_field::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op                                 ## DBG |MDEV-18166
+!table || (!table->read_set || bitmap_is_set(table->read_set, field_index) || (!(ptr >= table->record[0] && ptr < table->record[0] + table->s->reclength)))|SIGABRT|Field_blob::val_real|Item_field::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real ## DBG |MDEV-18166
+!table || (!table->read_set || bitmap_is_set(table->read_set, field_index) || (!(ptr >= table->record[0] && ptr < table->record[0] + table->s->reclength)))|SIGABRT|Field_blob::val_real|Item_field::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op ## DBG |MDEV-18166
+!table || (!table->read_set || bitmap_is_set(table->read_set, field_index) || (!(ptr >= table->record[0] && ptr < table->record[0] + table->s->reclength)))|SIGABRT|Field_bit::val_int|Field_bit::save_in_field|Field::store_field|field_conv_incompatible ## DBG |MDEV-18166
+err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|handler::ha_rename_table                                            ## DBG MDEV-25642
+escape != -1|SIGABRT|Item_func_like::val_int|Item::send|Protocol::send_result_set_row|select_send::send_data                                                                   ## DBG |MDEV-25610
+escape != -1|SIGABRT|Item_func_like::val_int|Type_handler::Item_send_long|Type_handler_long::Item_send|Item::send                                                              ## DBG |MDEV-25610
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Item_param::get_date|Type_handler::Item_send_datetime|Type_handler_datetime_common::Item_send                            ## DBG |MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Type_handler::Item_send_datetime                              ## DBG |MDEV-25593
 !thd || thd->locked_tables_mode || !thd->mdl_context.has_locks() || thd->handler_tables_hash.records || thd->ull_hash.records || thd->global_read_lock.is_acquired()|SIGABRT|reload_acl_and_cache|mysql_execute_command|mysql_parse|dispatch_command ## DBG MDEV-25589
@@ -425,6 +443,7 @@ update->n_fields < ulint(table->n_cols + table->n_v_cols)|SIGABRT|upd_node_t::ma
 SIGABRT|ut_dbg_assertion_failed|que_graph_free_recursive|row_prebuilt_free|ha_innobase::close                                                                                  ## OPT |MDEV-20563
 maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Item_func_hybrid_field_type::date_op_with_null_check|Item_func_hybrid_field_type::val_real_from_date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_val_real ## DBG |MDEV-20501
 maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## DBG |MDEV-20501
+maybe_null() || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## DBG |MDEV-20501
 SIGSEGV|JOIN::transform_in_predicates_into_in_subq|convert_join_subqueries_to_semijoins|JOIN::optimize_inner|JOIN::optimize                                                    ## OPT MDEV-20770
 maybe_null || !null_value|SIGABRT|Item_func_round::time_op|Item_func_hybrid_field_type::time_op_with_null_check|Item_func_hybrid_field_type::val_str_from_time_op|Type_handler_time_common::Item_func_hybrid_field_type_val_str ## DBG MDEV-20816
 part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## DBG MDEV-21027
