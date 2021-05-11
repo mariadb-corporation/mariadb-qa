@@ -19,8 +19,8 @@ ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/find_newbug_bugs /data/NEWBUG
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/uniq_newbugs /data/FIREWORKS/uniq_newbugs 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/uniq_newbugs /test/TESTCASES/uniq_newbugs 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/testcase_prettify.sh /home/$(whoami)/tcp 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-qa/pquery-goexp-patch.sh /home/$(whoami)/pge 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-qa/pquery-go-expert.sh /home/$(whoami)/pg 2>&1
+ln -fs /home/$(whoami)/mariadb-qa/pquery-goexp-patch.sh /home/$(whoami)/pge 2>&1
+ln -fs /home/$(whoami)/mariadb-qa/pquery-go-expert.sh /home/$(whoami)/pg 2>&1
 
 cd /home/$(whoami)/mariadb-qa/BUGS
 git add *
