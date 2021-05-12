@@ -23,6 +23,7 @@
 #SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
 
 ##### CURRENT BUGS #####
+transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse|dispatch_command                    ## DBG MENT-1195
 SIGSEGV|ilist<trx_t, void>::erase|ilist<trx_t, void>::remove|thread_safe_trx_ilist_t::remove|trx_sys_t::deregister_trx                                                         ## DBG |MDEV-25663
 state == TRX_STATE_NOT_STARTED|SIGABRT|trx_t::assert_freed|trx_create|dict_stats_exec_sql|dict_stats_delete_from_table_stats                                                   ## DBG |MDEV-25663
 trx_state_eq((trx), TRX_STATE_NOT_STARTED)|SIGABRT|trx_create|dict_stats_exec_sql|dict_stats_delete_from_table_stats|dict_stats_drop_table                                     ## DBG |MDEV-25663
