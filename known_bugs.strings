@@ -23,6 +23,7 @@
 #SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
 
 ##### CURRENT BUGS #####
+state_ == s_exec|SIGABRT|wsrep::client_state::after_row|wsrep_after_row|wsrep_after_row|handler::ha_write_row                                                                  ## DBG MDEV-25661
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|create_view_field|Field_iterator_view::create_item|find_field_in_view                                                     ## DBG |MDEV-25650
 marked_for_read()|SIGABRT|Field_datetimef::get_TIME|Field_datetimef::get_date|Field_temporal::save_in_field|Field::store_field                                                 ## DBG |MDEV-18166
 marked_for_read()|SIGABRT|Field_bit::val_int|Field_bit::save_in_field|Field::store_field|field_conv_incompatible                                                               ## DBG |MDEV-18166
