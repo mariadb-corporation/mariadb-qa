@@ -21,6 +21,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|int|INT|gi;s|integer|INT|gi' | \
   sed 's|float|FLOAT|gi' | \
   sed 's|real|REAL|gi' | \
+  sed 's|enum|ENUM|gi' | \
   sed 's|varbinary|VARBINARY|gi;s|binary|BINARY|gi' | \
   sed 's|decimal|DECIMAL|gi' | \
   sed 's|numeric|NUMERIC|gi' | \
@@ -221,7 +222,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|(| (|g' | \
   sed 's|  | |g' | \
   sed 's| \([A-Z][A-Z][A-Z]\) (| \1(|g' | \
-  sed 's|FLOAT[ ]*(|FLOAT(|gi;s|INT[ ]*(|INT(|gi;s|VARBINARY[ ]*(|VARIBINARY(|gi;s|TIME[ ]*(|TIME(|gi;s|DECIMAL[ ]*(|DECIMAL(|gi;s|TRIM[ ]*(|TRIM(|gi;s|REAL[ ]*(|REAL(|gi;s|NUMERIC[ ]*(|NUMERIC(|gi;s|KEY[ ]*(|KEY(|gi;' | \
+  sed 's|FLOAT[ ]*(|FLOAT(|gi;s|INT[ ]*(|INT(|gi;s|VARBINARY[ ]*(|VARBINARY(|gi;s|TIME[ ]*(|TIME(|gi;s|DECIMAL[ ]*(|DECIMAL(|gi;s|TRIM[ ]*(|TRIM(|gi;s|REAL[ ]*(|REAL(|gi;s|NUMERIC[ ]*(|NUMERIC(|gi;s|KEY[ ]*(|KEY(|gi;' | \
   sed 's|starts|STARTS|gi' | \
   sed 's|interval|INTERVAL|gi' | \
   sed 's|ifnull|IFNULL|gi' | \
@@ -272,7 +273,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \
   sed "s|'IN |' IN |gi" | \
-  sed "s|AND(|AND (|gi" | \
+  sed 's|AND(|AND (|gi' | \
   sed 's|transforms|transforms|gi' | \
   sed 's|identified by|IDENTIFIED BY|gi' | \
   sed 's|test\([^ ]*\)|test\L\1|gi' | \

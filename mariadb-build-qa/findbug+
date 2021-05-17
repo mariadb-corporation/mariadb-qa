@@ -33,7 +33,7 @@ elif [ "${TEXT}" == "GAL" ]; then
   TEXT="${2}"  # Note this may be 'BBB' and if so it will be replaced below
   NODE=1
   if [ ! -z "${3}" ]; then
-    NODE="${3}"
+    NODE="${3}"  # Could be '*' or 1,2,3,... (node to be scanned: all or specific 1,2,3,...)
   fi
 fi
 if [ "${TEXT}" == "BBB" ]; then  # BBB: coding dummy string passed by ~/b to enable searching for multitude of strings

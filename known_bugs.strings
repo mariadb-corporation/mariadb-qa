@@ -23,6 +23,7 @@
 #SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
 
 ##### CURRENT BUGS #####
+table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|open_table_from_share|open_table                                  ## DBG MDEV-25696
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command                 ## DBG MDEV-25668
 transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse|dispatch_command                    ## DBG MENT-1195
 SIGSEGV|ilist<trx_t, void>::erase|ilist<trx_t, void>::remove|thread_safe_trx_ilist_t::remove|trx_sys_t::deregister_trx                                                         ## DBG |MDEV-25663
@@ -237,6 +238,7 @@ SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|best_e
 SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                                       ## OPT |MDEV-23937
 SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search|choose_plan                                                                            ## OPT |MDEV-23937
 SIGSEGV|restore_prev_nj_state|best_extension_by_limited_search|greedy_search|choose_plan                                                                                       ## OPT |MDEV-23937
+SIGSEGV|restore_prev_nj_state|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                                                  ## OPT |MDEV-23937
 !result|SIGABRT|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator|Item_bool_rowready_func2::fix_length_and_dec          ## DBG MDEV-23800
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|store_key_field::copy_inner|store_key::copy                                                           ## DBG MDEV-23749
 SIGSEGV|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse                                                                                                  ## OPT MDEV-23731

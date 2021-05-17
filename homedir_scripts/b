@@ -54,7 +54,7 @@ else
     cd .. && ./allstrings_merged | tee -a report.log && cd - >/dev/null 2>&1
   fi
   # The following code is now precautionary/defensive coding as this is covered in the new port assignment code
-  if grep --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err; then
+  if grep --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err 2>/dev/null; then
     echo "------------------------------------------------------------------------------------------"
     echo "Assert: the text 'Do you already have another mysqld server running on port' was found in:"
     grep -l --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err
