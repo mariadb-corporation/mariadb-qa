@@ -24,6 +24,7 @@
 
 ##### CURRENT BUGS #####
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|open_table_from_share|open_table                                  ## DBG MDEV-25696
+thd->is_error()|SIGABRT|convert_error_to_warning|Show::get_geometry_column_record|fill_schema_table_by_open|get_all_tables                                                     ## DBG MDEV-25692
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command                 ## DBG MDEV-25668
 transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse|dispatch_command                    ## DBG MENT-1195
 SIGSEGV|ilist<trx_t, void>::erase|ilist<trx_t, void>::remove|thread_safe_trx_ilist_t::remove|trx_sys_t::deregister_trx                                                         ## DBG |MDEV-25663
