@@ -44,16 +44,16 @@ rm -f /tmp/pri.t /tmp/sec.t
 
 FILT=
 if [ "${SAN_MODE}" -eq 1 ]; then
-  FILT=(--binary-files=text 'SAN')
+  FILT=('SAN')
 elif [ "${GAL_MODE}" -eq 1 ]; then
-  FILT=(--binary-files=text 'GAL')
+  FILT=('GAL')
 else
-  FILT=(-vE --binary-files=text 'SAN|GAL')
+  FILT=(-vE 'SAN|GAL')
 fi
 ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
 
 # Generate bug list
-grep -Ei --binary-files=text "${TEXT}" */log/master.err */node1/node1.err 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
+grep -Ei --binary-files=text "${TEXT}" */log/master.err */node1/node1.err 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
 FILT=
 
 # Output bug-present-in list
