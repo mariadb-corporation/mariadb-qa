@@ -5,3 +5,8 @@ SET GLOBAL wsrep_max_ws_rows=1;
 DROP TABLES t1;
 INSERT INTO t1 VALUES (6373);
 CREATE TABLE t2 ENGINE=heap SELECT * FROM t1;
+
+SET default_storage_engine="HEAP";
+CREATE TABLE t1 (f1 BIGINT);
+SET GLOBAL wsrep_max_ws_rows = 1;
+INSERT INTO t1 VALUES (NOW()),(NOW()),(NOW());
