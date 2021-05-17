@@ -31,6 +31,10 @@ elif [ "${TEXT}" == "GAL" ]; then
   GAL_MODE=1
   REGEX_EXCLUDE="${REGEX_EXCLUDE//EMD|/}"
   TEXT="${2}"  # Note this may be 'BBB' and if so it will be replaced below
+  NODE=1
+  if [ ! -z "${3}" ]; then
+    NODE="${3}"
+  fi
 fi
 if [ "${TEXT}" == "BBB" ]; then  # BBB: coding dummy string passed by ~/b to enable searching for multitude of strings
   BBB_MODE=1
@@ -53,11 +57,11 @@ VER_SCAN_STRING='mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]'
 ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/pri.t
 
 # Generate bug list
-grep -Ei --binary-files=text "${TEXT}" */log/master.err */node1/node1.err 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t
+grep -Ei --binary-files=text "${TEXT}" */log/master.err */node${NODE}/node${NODE}.err 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t
 FILT=
 if [ "${BBB_MODE}" -eq 1 ]; then
   mv /tmp/sec.t /tmp/sec.t.1
-  ls --color=never */data/core* */node1/core* 2>/dev/null | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t.2
+  ls --color=never */data/core* */node${NODE}/core* 2>/dev/null | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t.2
   cat /tmp/sec.t.1 /tmp/sec.t.2 2>/dev/null | sort -u > /tmp/sec.t
   rm -f /tmp/sec.t.1 /tmp/sec.t.2
 fi
