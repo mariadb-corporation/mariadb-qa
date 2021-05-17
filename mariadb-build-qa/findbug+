@@ -47,14 +47,17 @@ elif [ "${GAL_MODE}" -eq 1 ]; then
 else
   FILT=(-vE 'SAN|GAL')
 fi
-ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/pri.t
+
+VER_SCAN_STRING='mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]'
+
+ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/pri.t
 
 # Generate bug list
-grep -Ei --binary-files=text "${TEXT}" */log/master.err */node1/node1.err 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t
+grep -Ei --binary-files=text "${TEXT}" */log/master.err */node1/node1.err 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t
 FILT=
 if [ "${BBB_MODE}" -eq 1 ]; then
   mv /tmp/sec.t /tmp/sec.t.1
-  ls --color=never */data/core* 2>/dev/null | sed 's|-linux-x86_64||' | grep -oE --binary-files=text 'mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]' | sort -u > /tmp/sec.t.2
+  ls --color=never */data/core* 2>/dev/null | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t.2
   cat /tmp/sec.t.1 /tmp/sec.t.2 2>/dev/null | sort -u > /tmp/sec.t
   rm -f /tmp/sec.t.1 /tmp/sec.t.2
 fi
