@@ -21,23 +21,18 @@ if [ -z "${1}" -o "${ERROR_IN_OPTIONS}" -eq 1 ]; then
   echo "After testing of in.sql is complete, this script will look for the string 'bug_string_to_look_for' in the error log."
   echo "It expects that test_all was already executed"
   exit 1
-elif [ "${1}" == "SAN" ]; then
+fi
+TEXT="${1}"  # Note this may be 'SAN', 'GAL' or 'BBB', and if so it will be replaced respectively below
+if [ "${TEXT}" == "SAN" ]; then
   SAN_MODE=1
   TEXT="${2}"  # Presence of ${2} was checked earlier above (ref ERROR_IN_OPTIONS)
-elif [ "${1}" == "GAL" ]; then
+elif [ "${TEXT}" == "GAL" ]; then
   GAL_MODE=1
   REGEX_EXCLUDE="${REGEX_EXCLUDE//EMD|/}"
-  if [ "${2}" == "BBB" ]; then  # Coding dummy string passed by ~/b to enable searching for multitude of strings
-    TEXT="[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]|signal|[Aa]ssertion"
-  else
-    TEXT="${2}"
-  fi
-else
-  if [ "${1}" == "BBB" ]; then  # Coding dummy string passed by ~/b to enable searching for multitude of strings
-    TEXT="[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]|signal|[Aa]ssertion"
-  else
-    TEXT="${1}"
-  fi
+  TEXT="${2}"  # Note this may be 'BBB' and if so it will be replaced below (ref below)
+fi
+if [ "${TEXT}" == "BBB" ]; then  # 'BBB': coding dummy string passed by ~/b to enable searching for multitude of strings
+  TEXT="[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]|signal|[Aa]ssertion"
 fi
 
 rm -f /tmp/pri.t /tmp/sec.t
