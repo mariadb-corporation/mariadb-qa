@@ -23,6 +23,7 @@
 #SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
 
 ##### CURRENT BUGS #####
+thd->is_error()|SIGABRT|convert_error_to_warning|Show::get_geometry_column_record|fill_schema_table_by_open|get_all_tables                                                     ## DBG MDEV-25692
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command                 ## DBG MDEV-25668
 transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse|dispatch_command                    ## DBG MENT-1195
 SIGSEGV|ilist<trx_t, void>::erase|ilist<trx_t, void>::remove|thread_safe_trx_ilist_t::remove|trx_sys_t::deregister_trx                                                         ## DBG |MDEV-25663
