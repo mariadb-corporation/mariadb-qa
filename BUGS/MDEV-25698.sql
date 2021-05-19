@@ -1,0 +1,2 @@
+SET GLOBAL wsrep_mode=STRICT_REPLICATION;
+CREATE VIEW v AS SELECT * FROM JSON_TABLE ('{"a":0}',"$" COLUMNS (a DECIMAL(1,1) path '$.a')) foo;

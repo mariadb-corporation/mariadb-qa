@@ -23,6 +23,8 @@
 #SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
 
 ##### CURRENT BUGS #####
+SIGSEGV|wsrep_should_replicate_ddl|wsrep_should_replicate_ddl_iterate|mysql_create_view|mysql_execute_command                                                                  ## OPT |MDEV-25698
+SIGSEGV|wsrep_should_replicate_ddl|wsrep_should_replicate_ddl|wsrep_should_replicate_ddl_iterate|mysql_create_view                                                             ## DBG |MDEV-25698
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|open_table_from_share|open_table                                  ## DBG MDEV-25696
 thd->is_error()|SIGABRT|convert_error_to_warning|Show::get_geometry_column_record|fill_schema_table_by_open|get_all_tables                                                     ## DBG MDEV-25692
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command                 ## DBG MDEV-25668
