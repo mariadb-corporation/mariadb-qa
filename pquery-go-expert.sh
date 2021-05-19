@@ -56,7 +56,7 @@ ctrl_c(){
 trap ctrl_c SIGINT
 
 # Internal variables
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f $0))
 RANDOMMUTEX=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
 MUTEX=/tmp/ge_${RANDOMMUTEX}_IN_PROGRESS_MUTEX
 
