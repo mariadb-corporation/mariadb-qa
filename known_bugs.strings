@@ -52,7 +52,8 @@ escape != -1|SIGABRT|Item_func_like::val_int|Type_handler::Item_send_long|Type_h
 SIGSEGV|my_strcasecmp_utf8mb3|get_table_category|wsrep_tables_accessible_when_detached|mysql_execute_command                                                                   ## OPT MDEV-25586
 !thd->wsrep_cs().current_error()|SIGABRT|wsrep_after_command_ignore_result|Event_job_data::execute|Event_worker_thread::run|event_worker_thread                                ## DBG MDEV-25566
 readbytes != (size_t)-1 || (*__errno_location ()) != 9|SIGABRT|my_pread|azflush|ha_archive::info|ha_archive::update_create_info                                                ## DBG MDEV-24420
-pause_seqno_.is_undefined() == false|SIGABRT|wsrep::server_state::resume|Global_read_lock::unlock_global_read_lock|fix_read_only|sys_var::update                               ## DBG MDEV-25562
+pause_seqno_.is_undefined() == false|SIGABRT|wsrep::server_state::resume|Global_read_lock::unlock_global_read_lock|fix_read_only|sys_var::update                               ## DBG |MDEV-25562
+pause_seqno_.is_undefined() == false|SIGABRT|wsrep::server_state::resume|wsrep::server_state::resume_and_resync|Global_read_lock::unlock_global_read_lock|mysql_execute_command ## DBG |MDEV-25562
 ctx->skip_pk_sort|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|mysql_inplace_alter_table          ## DBG MDEV-25550
 *new_engine|SIGABRT|check_engine|create_table_impl|mysql_create_table_no_lock|mysql_create_table                                                                               ## DBG MDEV-25549
 transactional_table || !changed || thd->transaction.stmt.modified_non_trans_table|SIGABRT|mysql_insert|mysql_execute_command|mysql_parse|wsrep_mysql_parse                     ## DBG |MDEV-25548
