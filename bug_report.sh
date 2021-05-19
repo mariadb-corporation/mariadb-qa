@@ -24,7 +24,11 @@ else
     echo "If you want to scan for specific strings in the error log, then use:"
     echo "  export TEXT='your_search_text'  # to set it before running this script"
   else
-    echo "NOTE: Looking for '${TEXT}' in the error log to validate issue occurence."
+    if [ "${TEXT}" == "BBB" ]; then
+      echo "NOTE: Looking for crashes/asserts in the error log as well as core files to validate issue occurence."
+    else
+      echo "NOTE: Looking for '${TEXT}' in the error log to validate issue occurence."
+    fi
   fi
 fi
 sleep 1

@@ -3,9 +3,10 @@
 #BASEDIR=/test/MDEV-23536_MD080121-mariadb-10.6.0-linux-x86_64-dbg  # opt or dbg is fine, does not matter
 #BASEDIR=/test/MD041220-mariadb-10.6.0-linux-x86_64-opt
 #BASEDIR=/test/EMD021120-mariadb-10.5.6-4-linux-x86_64-dbg
-BASEDIR=/test/MONTY_MD100521-mariadb-10.6.1-linux-x86_64-opt
+#BASEDIR=/test/MONTY_MD100521-mariadb-10.6.1-linux-x86_64-opt
+BASEDIR=/test/MD180521-mariadb-10.6.1-linux-x86_64-dbg
 RUNSOPT=5
-RUNSDBG=5
+RUNSDBG=8
 CONF=pquery-run-MD.conf  # File name only, no spaces, no directories
 #CONF=pquery-run-MD-buf.conf
 #CONF=pquery-run-MD-rr.conf

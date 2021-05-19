@@ -23,6 +23,7 @@
 #SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
 
 ##### CURRENT BUGS #####
+page_rec_is_leaf(rec)|SIGABRT|lock_rec_queue_validate|lock_rec_validate_page|lock_rec_block_validate|lock_validate                                                             ## DBG MDEV-25711
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|open_table_from_share|open_table                                  ## DBG MDEV-25696
 thd->is_error()|SIGABRT|convert_error_to_warning|Show::get_geometry_column_record|fill_schema_table_by_open|get_all_tables                                                     ## DBG MDEV-25692
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command                 ## DBG MDEV-25668
@@ -261,7 +262,8 @@ SIGSEGV|ft_boolean_check_syntax_string|check_ftb_syntax|sys_var::check|set_var::
 SIGABRT|os_file_handle_error_cond_exit|os_file_handle_error|os_file_create_func|pfs_os_file_create_func                                                                        ## OPT |MDEV-23267 
 SIGABRT|ut_dbg_assertion_failed|SysTablespace::create_file|SysTablespace::open_or_create|srv_start                                                                             ## OPT |MDEV-23267
 !srv_read_only_mode || m_ignore_read_only|SIGABRT|SysTablespace::create_file|SysTablespace::open_or_create|srv_start|innodb_init                                               ## DBG |MDEV-23267
-SIGSEGV|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                                                              ## DBG MDEV-23256
+SIGSEGV|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                                                              ## DBG |MDEV-23256
+table_block_data->m_cached_query_count >= 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                  ## DBG |MDEV-23256
 inited == RND|SIGABRT|handler::ha_rnd_next|select_unit_ext::send_eof|do_select|JOIN::exec_inner                                                                                ## DBG MDEV-23226
 t->s->tmp_table || thd->mdl_context.is_lock_owner(MDL_key::TABLE, t->s->db.str, t->s->table_name.str, t->reginfo.lock_type >= TL_WRITE_ALLOW_WRITE ? MDL_SHARED_WRITE : MDL_SHARED_READ)|SIGABRT|lock_tables_check|mysql_lock_tables|lock_tables|open_and_lock_tables ## DBG MDEV-23211
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Column_definition::create_interval_from_interval_list|Column_definition::prepare_interval_field          ## DBG |MDEV-23210
