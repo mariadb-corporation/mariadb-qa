@@ -1,35 +1,8 @@
 #!/bin/bash
 set +H
 INPUT="${1}"
-echo "--- Searching for '${INPUT}' in known bugs strings file..."
+echo "--- Searching for '${INPUT}' in known bugs strings file ---------------------"
 ~/kbs "${INPUT}"
-echo "--- Searching for '${INPUT}' in various places... This may take a while!"
-echo "1/14..."
-grep --binary-files=text -Fi "${INPUT}" /test/*/*/log/master.err /test/*/*/*/log/master.err 2>/dev/null
-echo "2/14..."
-grep --binary-files=text -Fi "${INPUT}" /data/*/*/log/master.err /data/*/*/*/log/master.err 2>/dev/null
-echo "3/14..."
-grep --binary-files=text -Fi "${INPUT}" /test/*/*/MYBUG* /test/*/*/*/MYBUG* 2>/dev/null
-echo "4/14..."
-grep --binary-files=text -Fi "${INPUT}" /data/*/*/MYBUG* /data/*/*/*/MYBUG* 2>/dev/null
-echo "5/14..."
-grep --binary-files=text -Fi "${INPUT}" /test/*/log/master.err 2>/dev/null
-echo "6/14..."
-grep --binary-files=text -Fi "${INPUT}" /data/*/log/master.err 2>/dev/null
-echo "7/14..."
-grep --binary-files=text -Fi "${INPUT}" /test/TESTCASES/*.report 2>/dev/null
-echo "8/14..."
-grep --binary-files=text -Fi "${INPUT}" /data/TESTCASES/*.report 2>/dev/null
-echo "9/14..."
-grep --binary-files=text -Fi "${INPUT}" /test/TESTCASES/*/*.report 2>/dev/null
-echo "10/14..."
-grep --binary-files=text -Fi "${INPUT}" /data/TESTCASES/*/*.report 2>/dev/null
-echo "11/14..."
-grep --binary-files=text -Fi "${INPUT}" /data/NEWBUGS/*.string 2>/dev/null
-echo "12/14..."
-grep --binary-files=text -Fi "${INPUT}" /data/FIREWORKS/*.string 2>/dev/null
-echo "13/14..."
-grep --binary-files=text -Fi "${INPUT}" /test/*/*/node*/node*.err 2>/dev/null
-echo "14/14..."
-grep --binary-files=text -Fi "${INPUT}" /data/*/*/node*/node*.err 2>/dev/null
-echo "Done!"
+echo "--- Searching for '${INPUT}' in various locations: This may take a while! ---"
+grep --binary-files=text -Fi "${INPUT}" /test/*/*/*.err /data/*/*/*.err /test/*/*/*/*.err /data/*/*/*/*.err /test/*/*/*/*/*.err /data/*/*/*/*/*.err /test/*/*/MYBUG* /test/*/*/*/MYBUG* /data/*/*/MYBUG* /data/*/*/*/MYBUG* /test/TESTCASES/*.report /data/TESTCASES/*.report /data/TESTCASES/*/*.report /data/NEWBUGS/*.string /data/FIREWORKS/*.string 2>/dev/null
+echo "-----------------------------------------------------------------------------"
