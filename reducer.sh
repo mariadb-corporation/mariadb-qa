@@ -2084,7 +2084,6 @@ start_mdg_main(){
   rm -rf ${WORKD}/my.cnf
   echo "[mysqld]" > ${WORKD}/my.cnf
   echo "basedir=${BASEDIR}" >> ${WORKD}/my.cnf
-  echo "wsrep-debug=1" >> ${WORKD}/my.cnf
   echo "innodb_file_per_table" >> ${WORKD}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${WORKD}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${WORKD}/my.cnf

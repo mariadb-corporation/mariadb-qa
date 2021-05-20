@@ -530,7 +530,6 @@ if [[ $MDG -eq 1 ]]; then
   rm -rf ${BASEDIR}/my.cnf
   echo "[mysqld]" > ${BASEDIR}/my.cnf
   echo "basedir=${BASEDIR}" >> ${BASEDIR}/my.cnf
-  echo "wsrep-debug=1" >> ${BASEDIR}/my.cnf
   echo "innodb_file_per_table" >> ${BASEDIR}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${BASEDIR}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${BASEDIR}/my.cnf
