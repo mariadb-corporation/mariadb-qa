@@ -21,7 +21,7 @@ if [ "$1" == "scan" ]; then
 fi
 
 # Check if this is a MDG run
-if [ "$(grep --binary-files=text 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
+if [ "$(grep --binary-files=text 'MDG Mode:' ./pquery-run.log 2>/dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
   MDG=1
   ERROR_LOG_LOC="*/node*/node*.err"
 else
@@ -30,7 +30,7 @@ else
 fi
 
 # Check if this is a group replication run
-if [ "$(grep --binary-files=text 'Group Replication Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*Group Replication Mode[: \t]*||')" == "TRUE" ]; then
+if [ "$(grep --binary-files=text 'Group Replication Mode:' ./pquery-run.log 2>/dev/null | sed 's|^.*Group Replication Mode[: \t]*||')" == "TRUE" ]; then
   GRP_RPL=1
 else
   GRP_RPL=0
@@ -41,13 +41,15 @@ NTS=  # Backwards compatible (and manually modified reducers scanning without us
 if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then
   NTS='-Fi' # New text string (i.e. no regex, exact text string) mode
 fi
-TRIALS_EXECUTED=$(cat pquery-run.log 2>/dev/null | grep --binary-files=text -o "==.*TRIAL.*==" | tail -n1 | sed 's|[^0-9]*||;s|[ \t=]||g')
+TRIALS_EXECUTED=$(cat pquery-run.log 2>/dev/null | grep --binary-files=text -o "==.*TRIAL.*==" 2>/dev/null | tail -n1 | sed 's|[^0-9]*||;s|[ \t=]||g')
 echo "================ [Run: $(echo ${PWD} | sed 's|.*/||')] Sorted unique issue strings (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers)"
 # Current location checks
 if [ $(ls ./*/*.sql 2>/dev/null | wc -l) -eq 0 ]; then
-  echo "Assert: no pquery trials (with logging - i.e. ./*/*.sql) were found in this directory (or they were all cleaned up already) (${PWD})"
-  echo "Please make sure to execute this script from within the pquery working directory!"
-  exit 1
+  if [ "$(echo ${PWD} | sed 's|.*/||')" != "ERR_REDUCERS" -a $(ls ./*.sql 2>/dev/null | wc -l) -eq 0  ]; then
+    echo "Assert: no pquery trials (with logging - i.e. ./*/*.sql) were found in this directory (or they were all cleaned up already) (${PWD})"
+    echo "Please make sure to execute this script from within the pquery working directory!"
+    exit 1
+  fi
 elif [ $(ls ./reducer* ./qcreducer* 2>/dev/null | wc -l) -eq 0 ]; then
   echo "Assert: no reducer scripts were found in this directory. Did you forgot to execute ${SCRIPT_PWD}/pquery-prep-red.sh ?"
   exit 1
@@ -58,18 +60,26 @@ ORIG_IFS=$IFS; IFS=$'\n'  # Use newline seperator instead of space seperator in 
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
   for STRING in $(grep --binary-files=text "   TEXT=" reducer* 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u); do
     MATCHING_TRIALS=()
-    if grep -qi "^USE_NEW_TEXT_STRING=1" reducer*.sh; then  # New text string (i.e. no regex) mode
-      for MATCHING_TRIAL in $(grep -FiH --binary-files=text "${STRING}" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
+    if grep -qi "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then  # New text string (i.e. no regex) mode
+      CHAR_REGEX='[^0-9]'
+      if [ "$(echo ${PWD} | sed 's|.*/||')" == "ERR_REDUCERS" ]; then
+        CHAR_REGEX='[^_0-9]'
+      fi
+      for MATCHING_TRIAL in $(grep -FiH --binary-files=text "${STRING}" reducer* 2>/dev/null | awk '{print $1}' | sort -u | sed "s|:.*||;s|${CHAR_REGEX}||g" | sed 's|^__||' | sort -un) ; do
         MATCHING_TRIAL=$(echo ${MATCHING_TRIAL} | sed 's|.*TEXT=.||;s|\.[ \t]*$||')
         MATCHING_TRIALS+=($MATCHING_TRIAL)
       done
       COUNT=$(grep -Fi --binary-files=text "${STRING}" reducer* 2>/dev/null | wc -l)
     else  # Backwards compatible (and manually modified reducers scanning without using new text string)
-      for MATCHING_TRIAL in $(grep -H --binary-files=text "TEXT=.${STRING}." reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
+      CHAR_REGEX='[^0-9]'
+      if [ "$(echo ${PWD} | sed 's|.*/||')" == "ERR_REDUCERS" ]; then
+        CHAR_REGEX='[^_0-9]'
+      fi
+      for MATCHING_TRIAL in $(grep -H --binary-files=text "TEXT=.${STRING}." reducer* 2>/dev/null | awk '{print $1}' | sort -u | sed "s|:.*||;s|${CHAR_REGEX}||g" | sed 's|^__||' | sort -un) ; do
         MATCHING_TRIAL=$(echo ${MATCHING_TRIAL} | sed 's|.*TEXT=.||;s|\.[ \t]*$||')
         MATCHING_TRIALS+=($MATCHING_TRIAL)
       done
-      COUNT=$(grep --binary-files=text '   TEXT=' reducer* 2>/dev/null | sed 's|reducer\([0-9]\+\).sh:|reducer\1.sh:  |;s|  TEXT|TEXT|' | grep --binary-files=text "${STRING}" | wc -l)
+      COUNT=$(grep --binary-files=text '   TEXT=' reducer* 2>/dev/null | sort -u | sed 's|reducer\([0-9]\+\).sh:|reducer\1.sh:  |;s|  TEXT|TEXT|' | grep --binary-files=text "${STRING}" 2>/dev/null | wc -l)
     fi
     if [ ${COUNT} -gt 0 ]; then
       if [[ "${STRING}" == "=ERROR"* ]]; then  # ASAN bugs
@@ -87,27 +97,27 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
     if [ ${SCANBUGS} -eq 1 ]; then
       # Look for exact match (except for allowing both .c and .cc to be used)
       SCANSTRING="$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|')"
-      SCANOUTPUT="$(grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /')"
+      SCANOUTPUT="$(grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /')"
       if [ "$(echo "${SCANOUTPUT}" | sed 's|[ \t]\+||g')" != "" ]; then
         # Note you cannot just echo ${SCANOUTPUT} here without processing; it does not contain newlines. If multiple matches are found, it will condense them into one line
-        grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /'
+        grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /'
       else
         # Look for a more generic string. Allow things like "line 1000" to match for "line 2100" (first digit match + neighbour numbers)
         SCANSTRING=$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|;s|\( line [0-9]\)[0-9]\+|\1|')
         SCANSTRINGLASTNR=$(echo "${SCANSTRING}" | sed 's|.*\(.\)$|\1|' | sed 's|[^0-9]||')
         if [ "${SCANSTRINGLASTNR}" == "" -o "${SCANSTRINGLASTNR}" == "0" ]; then  # The last character was not a digit, or a 0
-          grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
         else
           # Scan all nearest neighbours
           SCANSTRING=$(echo "${SCANSTRING}" | sed 's|.$||')  # Remove last character (the number)
           # Scan with the original string number
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
           # Scan with the original string number -1 (0 is not fine; already handled above)
           SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} - 1 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
           # Scan with the original string number +1 (9 is fine; this becomes 10 and that would be the next upper neighbour)
           SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} + 2 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
         fi
       fi
     fi
@@ -116,37 +126,37 @@ else  # Galera or GR run
   for STRING in $(grep --binary-files=text "   TEXT=" reducer* 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u); do
     MATCHING_TRIALS=()
     for TRIAL in $(grep ${NTS} -H --binary-files=text "${STRING}" reducer* 2>/dev/null | awk '{print $1}' | cut -d'-' -f1 | tr -d '[:alpha:]' | sort -un) ; do
-      MATCHING_TRIAL=$(grep -H --binary-files=text '   TEXT=' reducer${TRIAL}-* 2>/dev/null | sed 's|reducer\([0-9]\).sh:|reducer\1.sh:  |;s|reducer\([0-9][0-9]\).sh:|reducer\1.sh: |;s|  TEXT|TEXT|' | grep ${NTS} --binary-files=text "${STRING}" | sed "s|.sh.*||;s|reducer${TRIAL}-||" | tr -d '\n' | xargs -I {} echo "${TRIAL}-{},")
+      MATCHING_TRIAL=$(grep -H --binary-files=text '   TEXT=' reducer${TRIAL}-* 2>/dev/null | sed 's|reducer\([0-9]\).sh:|reducer\1.sh:  |;s|reducer\([0-9][0-9]\).sh:|reducer\1.sh: |;s|  TEXT|TEXT|' | grep ${NTS} --binary-files=text "${STRING}" 2>/dev/null | sed "s|.sh.*||;s|reducer${TRIAL}-||" | tr -d '\n' | xargs -I {} echo "${TRIAL}-{},")
       MATCHING_TRIALS+=("${MATCHING_TRIAL}")
     done
-    COUNT=$(grep --binary-files=text '   TEXT=' reducer* 2>/dev/null | sed 's|reducer\([0-9]\).sh:|reducer\1.sh:  |;s|reducer\([0-9][0-9]\).sh:|reducer\1.sh: |;s|  TEXT|TEXT|' | grep ${NTS} --binary-files=text "${STRING}" | wc -l)
+    COUNT=$(grep --binary-files=text '   TEXT=' reducer* 2>/dev/null | sort -u | sed 's|reducer\([0-9]\).sh:|reducer\1.sh:  |;s|reducer\([0-9][0-9]\).sh:|reducer\1.sh: |;s|  TEXT|TEXT|' | grep ${NTS} --binary-files=text "${STRING}" 2>/dev/null | wc -l)
     STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-55s",$1}')"
     COUNT_OUT="$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')"
     echo "$(echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})" | sed 's|, |,|g;s|,)|)|')"
     if [ ${SCANBUGS} -eq 1 ]; then
       # Look for exact match (except for allowing both .c and .cc to be used)
       SCANSTRING="$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|')"
-      SCANOUTPUT="$(grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /')"
+      SCANOUTPUT="$(grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /')"
       if [ "$(echo --binary-files=text "${SCANOUTPUT}" | sed 's|[ \t]\+||g')" != "" ]; then
         # Note you cannot just echo ${SCANOUTPUT} here without processing; it does not contain newlines. If multiple matches are found, it will condense them into one line
-        grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /'
+        grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /'
       else
         # Look for a more generic string. Allow things like "line 1000" to match for "line 2100" (first digit match + neighbour numbers)
         SCANSTRING=$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|;s|\( line [0-9]\)[0-9]\+|\1|')
         SCANSTRINGLASTNR=$(echo "${SCANSTRING}" | sed 's|.*\(.\)$|\1|' | sed 's|[^0-9]||')
         if [ "${SCANSTRINGLASTNR}" == "" -o "${SCANSTRINGLASTNR}" == "0" ]; then  # The last character was not a digit, or a 0
-          grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
         else
           # Scan all nearest neighbours
           SCANSTRING=$(echo "${SCANSTRING}" | sed 's|.$||')  # Remove last character (the number)
           # Scan with the original string number
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
           # Scan with the original string number -1 (0 is not fine; already handled above)
           SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} - 1 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
           # Scan with the original string number +1 (9 is fine; this becomes 10 and that would be the next upper neighbour)
           SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} + 2 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
         fi
       fi
     fi
@@ -158,7 +168,7 @@ IFS=$ORIG_IFS
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then
   COUNT=0
   MATCHING_TRIALS=()  
-  for MATCHING_TRIAL in $(grep -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
+  for MATCHING_TRIAL in $(grep -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | sort -u | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
     if [ ! -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]; then
       MATCHING_TRIALS+=($MATCHING_TRIAL)
       COUNT=$[ COUNT + 1 ]
@@ -172,8 +182,8 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then
 else
   COUNT=0
   MATCHING_TRIALS=()
-  for TRIAL in $(grep -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | awk '{print $1}' | cut -d'-' -f1 | tr -d '[:alpha:]' | sort -un); do
-    MATCHING_TRIAL=$(grep -H --binary-files=text "^MODE=4$" reducer${TRIAL}-* 2>/dev/null | sed "s|.sh.*||;s|reducer${TRIAL}-||" | tr '\n' , | sed 's|,$||' | xargs -I '{}' echo "${TRIAL}-{},")
+  for TRIAL in $(grep -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | sort -u | awk '{print $1}' | cut -d'-' -f1 | tr -d '[:alpha:]' | sort -un); do
+    MATCHING_TRIAL=$(grep -H --binary-files=text "^MODE=4$" reducer${TRIAL}-* 2>/dev/null | sort -u | sed "s|.sh.*||;s|reducer${TRIAL}-||" | tr '\n' , | sed 's|,$||' | xargs -I '{}' echo "${TRIAL}-{},")
     if [[ ! -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]]; then
       MATCHING_TRIALS+=($MATCHING_TRIAL)
       COUNT=$[ COUNT + 1 ]
@@ -224,10 +234,10 @@ if [ $COUNT -gt 0 ]; then
   for STRING in $(grep --binary-files=text '   TEXT=' qcreducer* 2>/dev/null | sed 's|.*TEXT="||;s|"$||' | sort -u); do
     MATCHING_TRIALS=()
     for TRIAL in $(grep ${NTS} -H --binary-files=text "${STRING}" qcreducer* 2>/dev/null | awk '{ print $1}' | cut -d'-' -f1 | sed 's/[^0-9]//g' | sort -un) ; do
-      MATCHING_TRIAL=$(grep -H --binary-files=text '   TEXT=' qcreducer${TRIAL}* 2>/dev/null | sed 's!qcreducer\([0-9]\).sh:!qcreducer\1.sh:  !;s!qcreducer\([0-9][0-9]\).sh:!qcreducer\1.sh: !;s!  TEXT!TEXT!' | grep ${NTS} --binary-files=text "${STRING}" | sed "s!.sh.*!!;s!reducer${TRIAL}!!" | tr '\n' ',' | sed 's!,$!!' | xargs -I {} echo "${TRIAL}{}," 2>/dev/null | sed 's!qc!!' )
+      MATCHING_TRIAL=$(grep -H --binary-files=text '   TEXT=' qcreducer${TRIAL}* 2>/dev/null | sed 's!qcreducer\([0-9]\).sh:!qcreducer\1.sh:  !;s!qcreducer\([0-9][0-9]\).sh:!qcreducer\1.sh: !;s!  TEXT!TEXT!' | grep ${NTS} --binary-files=text "${STRING}" 2>/dev/null | sed "s!.sh.*!!;s!reducer${TRIAL}!!" | tr '\n' ',' | sed 's!,$!!' | xargs -I {} echo "${TRIAL}{}," 2>/dev/null | sed 's!qc!!' )
       MATCHING_TRIALS+=("$MATCHING_TRIAL")
     done
-    COUNT=$(grep --binary-files=text '   TEXT=' qcreducer* 2>/dev/null | sed 's|qcreducer\([0-9]\).sh:|qcreducer\1.sh:  |;s|qcreducer\([0-9][0-9]\).sh:|qcreducer\1.sh: |;s|  TEXT|TEXT|' | grep "${STRING}" | wc -l)
+    COUNT=$(grep --binary-files=text '   TEXT=' qcreducer* 2>/dev/null | sort -u | sed 's|qcreducer\([0-9]\).sh:|qcreducer\1.sh:  |;s|qcreducer\([0-9][0-9]\).sh:|qcreducer\1.sh: |;s|  TEXT|TEXT|' | grep "${STRING}" 2>/dev/null | wc -l)
     STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-55s",$1}')"
     COUNT_OUT="$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')"
     echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})"
@@ -235,8 +245,8 @@ if [ $COUNT -gt 0 ]; then
 fi
 
 # Likely out of disk space trials
-OOS1=$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" ${ERROR_LOG_LOC} | sed 's|/.*||' | tr '\n' ' ')
-OOS2=$(ls -s */data/*core* 2>/dev/null | grep --binary-files=text -o "^ *0 [^/]\+" | awk '{print $2}' | tr '\n' ' ')  # Cores with a file size of 0: good indication of OOS
+OOS1=$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')
+OOS2=$(ls -s */data/*core* 2>/dev/null | grep --binary-files=text -o "^ *0 [^/]\+" 2>/dev/null | awk '{print $2}' | tr '\n' ' ')  # Cores with a file size of 0: good indication of OOS
 OOS="$(echo "${OOS1} ${OOS2}" | sed "s|  | |g")"
 if [ "$(echo "${OOS}" | sed "s| ||g")" != "" ]; then
   echo "================ Likely out of disk space trials:"
@@ -244,7 +254,7 @@ if [ "$(echo "${OOS}" | sed "s| ||g")" != "" ]; then
 fi
 
 # Likely disk I/O issues trials
-DI1=$(grep --binary-files=text "bytes should have been read. Only" ${ERROR_LOG_LOC} | sed 's|/.*||' | tr '\n' ' ')
+DI1=$(grep --binary-files=text "bytes should have been read. Only" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')
 DI="$(echo "${DI1}" | sed "s|  | |g")"
 if [ "$(echo "${DI}" | sed "s| ||g")" != "" ]; then
   echo "================ Likely disk I/O issues trials (unable to read from disk etc.):"
@@ -257,21 +267,21 @@ fi
 # when RELEASE was seen? Likely not for mysql cli mode, but for pquery (which is then updated to do so) it would be fine, and
 # many testcases would not end up with an eventual RELEASE so they would replay at the mysql cli just fine, or otherwise the
 # pquery replay method can be used in the replay only works via pquery (as usual).
-REL1=$(grep --binary-files=text -m1 -B2 "MySQL server has gone away" */default.node.tld_thread-0.sql 2>/dev/null | grep --binary-files=text -i "RELEASE[ \t]*;" | sed 's|/.*||' | sort -nu | tr '\n' ' ')
+REL1=$(grep --binary-files=text -m1 -B2 "MySQL server has gone away" */default.node.tld_thread-0.sql 2>/dev/null | grep --binary-files=text -i "RELEASE[ \t]*;" 2>/dev/null | sed 's|/.*||' | sort -nu | tr '\n' ' ')
 if [ "$REL1" != "" ]; then
   echo "================ Likely 'Server has gone away' 200x due to 'RELEASE' sql:"
   echo "${REL1}"
 fi
 
 # Coredumps overview (for comparison)
-COREDUMPS="$(find . | grep --binary-files=text 'core' | grep --binary-files=text -vE 'parse|pquery' | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|')"
+COREDUMPS="$(find . | grep --binary-files=text 'core' 2>/dev/null | grep --binary-files=text -vE 'parse|pquery' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|')"
 if [ "$(echo "${COREDUMPS}" | sed 's| \+||g')" != "" ]; then
   echo "================ Coredumps found in trials:"
-  find . | grep --binary-files=text  'core' | grep --binary-files=text -vE 'parse|pquery|vault' | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|'
+  find . | grep --binary-files=text  'core' 2>/dev/null | grep --binary-files=text -vE 'parse|pquery|vault' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|'
 fi
 echo "================"
-if [ $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" | sed 's/^0|//' | wc -l) -gt 0 ]; then
-  echo "Detected one or more empty (0 byte) reducer script(s): $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" | sed 's/^0|//' | tr '\n' ' ')- you may want to check what's causing this (possibly a bug in pquery-prep-red.sh, or did you simply run out of space while running pquery-prep-red.sh?) and do the analysis for these trial numbers manually, or free some space, delete the reducer*.sh scripts and re-run pquery-prep-red.sh"
+if [ $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | wc -l) -gt 0 ]; then
+  echo "Detected one or more empty (0 byte) reducer script(s): $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | tr '\n' ' ')- you may want to check what's causing this (possibly a bug in pquery-prep-red.sh, or did you simply run out of space while running pquery-prep-red.sh?) and do the analysis for these trial numbers manually, or free some space, delete the reducer*.sh scripts and re-run pquery-prep-red.sh"
 fi
 
 # Stack smashing overview
@@ -284,7 +294,7 @@ extract_valgrind_error(){
   for i in $( ls  ${ERROR_LOG_LOC} 2>/dev/null); do
     TRIAL=$(echo $i | cut -d'/' -f1)
     echo "============ Trial $TRIAL ===================="
-    grep --binary-files=text -E --no-group-separator  -A4 "Thread[ \t][0-9]+:" $i | cut -d' ' -f2- |  sed 's/0x.*:[ \t]\+//' |  sed 's/(.*)//' | rev | cut -d '(' -f2- | sed 's/^[ \t]\+//' | rev  | sed 's/^[ \t]\+//'  |  tr '\n' '|' |xargs |  sed 's/Thread[ \t][0-9]\+:/\nIssue #/ig'
+    grep --binary-files=text -E --no-group-separator  -A4 "Thread[ \t][0-9]+:" $i 2>/dev/null | cut -d' ' -f2- |  sed 's/0x.*:[ \t]\+//' |  sed 's/(.*)//' | rev | cut -d '(' -f2- | sed 's/^[ \t]\+//' | rev  | sed 's/^[ \t]\+//'  |  tr '\n' '|' |xargs |  sed 's/Thread[ \t][0-9]\+:/\nIssue #/ig'
   done
 }
 

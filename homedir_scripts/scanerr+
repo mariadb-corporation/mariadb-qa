@@ -1,0 +1,45 @@
+#!/bin/bash
+echo "Producing reducer scripts for all error log issues as found by ~/scanerr (/data only)."
+# Currently only single-threaded /data based runs are supported. Both CS/ES Server and Galera are supported."  
+# The /data limitation is configured in ~/scanerr when using 'plusmode' as first option. 
+mkdir -p /data/ERR_REDUCERS
+if [ ! -d /data/ERR_REDUCERS ]; then 
+  echo "Assert: /data/ERR_REDUCERS does not exist after creation attempt"
+  exit 1
+fi
+if [ ! -r ~/scanerr ]; then
+  echo "Assert: ~/scanerr does not exist, run ~/mariadb-qa/linkit first"
+fi
+# 'plusmode' is used to limit the output of ~/scanerr to only the relevant part of the found error string of interest as well as scanning /data only as mentioned above (ref ~/scanerr)
+~/scanerr plusmode > /tmp/scanerr.list
+while read LINE; do
+  echo "[$(date +'%T')] Processing $(echo "${LINE}" | sed 's|master.err:|master.err: |')"
+  EPATH="$(echo "${LINE}"  | sed 's|:.*||;s|/log/master.err||;s|node.*/node.*err||')"
+  ERROR="$(echo "${LINE}"  | sed 's|.*master.err:||')"
+  TRIAL="$(echo "${EPATH}" | sed 's|.*/||')"
+  WORKD="$(echo "${EPATH}" | sed 's|/data/\([0-9]\+\).*|\1|')"
+  REDUC="/data/${WORKD}/reducer${TRIAL}.sh"                      # Original, to-be-copied and to-be-modified reducer
+  TARGR="/data/ERR_REDUCERS/reducer_err_${WORKD}_${TRIAL}.sh"    # Target reducer
+  INPUT="/data/${WORKD}/${TRIAL}/default.node.tld_thread-0.sql"  # Original input file
+  TARGS="/data/ERR_REDUCERS/reducer_err_${WORKD}_${TRIAL}.sql"   # Target copied input file (the new input file)
+  # Note that we cannot use the original input file as reducer will auto-take the last _out file (which may no longer
+  # contain the issue being scanned for here; we need the original one, and additionally, even if we were to set
+  # INPUTFILE to the original input file, it would overwrite any already-reducer (for example for a crash) _out file!
+  #echo "E: ${ERROR} | T: ${TRIAL} | W: ${WORKD}"  # For debugging
+  if [ ! -r ${INPUT} ]; then 
+    echo "*** Error: /data/${WORKD}/reducer${TRIAL}.sh not found (did you run pquery-prep-red.sh or pquery-go-expert.sh or ~/pg? Note also that ~/gomd automatically starts a ~/pg for each run automatically, so best to use that)"
+    continue
+  fi
+  if [ ! -r ${REDUC} ]; then
+    echo "*** Error: /data/${WORKD}/reducer${TRIAL}.sh not found (did you run pquery-prep-red.sh or pquery-go-expert.sh or ~/pg? Note also that ~/gomd automatically starts a ~/pg for each run automatically, so best to use that)"
+    continue
+  fi
+  rm -f "${TARGR}" "${TARGS}"  # Delete if already exist (this should never cause loss of data as reduced sql is _out)
+  cp "${REDUC}" "${TARGR}"
+  cp "${INPUT}" "${TARGS}"
+  sed -i 's|USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|' ${TARGR}
+  sed -i 's|SCAN_FOR_NEW_BUGS=1|SCAN_FOR_NEW_BUGS=0|' ${TARGR}
+  sed -i "s|^[ ]*TEXT=.*|   TEXT='${ERROR}'|" ${TARGR}
+  sed -i 's|^MODE=[0-9]|MODE=3|' ${TARGR}
+  sed -i "s|^INPUTFILE=.*|INPUTFILE=\"\$(ls -s ${TARGS}* \| grep --binary-files=text -vE \"backup\|failing\|prev\" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\+\|\|\")\"|" ${TARGR}
+done < /tmp/scanerr.list
