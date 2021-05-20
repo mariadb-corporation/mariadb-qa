@@ -20,9 +20,9 @@ while read LINE; do
   TRIAL="$(echo "${EPATH}" | sed 's|.*/||')"
   WORKD="$(echo "${EPATH}" | sed 's|/data/\([0-9]\+\).*|\1|')"
   REDUC="/data/${WORKD}/reducer${TRIAL}.sh"                      # Original, to-be-copied and to-be-modified reducer
-  TARGR="/data/ERR_REDUCERS/reducer_err_${WORKD}_${TRIAL}.sh"    # Target reducer
+  TARGR="/data/ERR_REDUCERS/reducer${WORKD}${TRIAL}.sh"    # Target reducer
   INPUT="/data/${WORKD}/${TRIAL}/default.node.tld_thread-0.sql"  # Original input file
-  TARGS="/data/ERR_REDUCERS/reducer_err_${WORKD}_${TRIAL}.sql"   # Target copied input file (the new input file)
+  TARGS="/data/ERR_REDUCERS/reducer${WORKD}${TRIAL}.sql"   # Target copied input file (the new input file)
   # Note that we cannot use the original input file as reducer will auto-take the last _out file (which may no longer
   # contain the issue being scanned for here; we need the original one, and additionally, even if we were to set
   # INPUTFILE to the original input file, it would overwrite any already-reducer (for example for a crash) _out file!
@@ -43,5 +43,6 @@ while read LINE; do
   sed -i "s|^   TEXT=\".*|   TEXT=\"${ERROR}\"|" ${TARGR}
   sed -i "s|^TEXT=\".*|   TEXT=\"${ERROR}\"|" ${TARGR}
   sed -i 's|^MODE=[0-9]|MODE=3|' ${TARGR}
+  sed -i 's|^FORCE_KILL=.*|FORCE_KILL=0|' ${TARGR}
   sed -i "s|^INPUTFILE=.*|INPUTFILE=\"\$(ls -s ${TARGS}* \| grep --binary-files=text -vE \"backup\|failing\|prev\" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\\+\|\|\")\"|" ${TARGR}
 done < /tmp/scanerr.list
