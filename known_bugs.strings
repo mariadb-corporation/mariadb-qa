@@ -23,6 +23,8 @@
 #SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
 
 ##### CURRENT BUGS #####
+!wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|ha_commit_trans|trans_begin|mysql_execute_command ## DBG |MDEV-25740
+ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                                            ## DBG MDEV-25738
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_help_internal|mysqld_help                                                                                    ## DBG MDEV-25735
 page_rec_is_leaf(rec)|SIGABRT|lock_rec_queue_validate|lock_rec_validate_page|lock_rec_block_validate|lock_validate                                                             ## DBG MDEV-25711
 mode_ == m_local|SIGABRT|wsrep::client_state::streaming_params|Wsrep_load_data_split::~Wsrep_load_data_split|mysql_load|mysql_execute_command                                  ## DBG MDEV-25731
