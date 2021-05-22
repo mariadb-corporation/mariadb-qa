@@ -614,7 +614,7 @@ mdg_startup() {
   MDG_LADDRS=""
   for i in $(seq 1 ${NR_OF_NODES}); do
     init_empty_port
-    RBASE=$NEWPORT
+    RBASE=${NEWPORT}
     NEWPORT=
     init_empty_port
     LADDR="127.0.0.1:${NEWPORT}"
@@ -1041,7 +1041,9 @@ pquery_test() {
       # Ensure that mysqld server startup will not fail due to a mismatched checksum algo between the original MID and the changed MYEXTRA options
       rm ${RUNDIR}/${TRIAL}/data/ib_log*
     fi
-    PORT=$((50000 + ($RANDOM % (9999))))
+    init_empty_port
+    PORT=${NEWPORT}
+    NEWPORT=
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       echoit "Starting Primary mysqld. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
     else
@@ -1093,47 +1095,75 @@ pquery_test() {
       sleep 1
     fi
     diskspace
-    echo "This script recreates the /dev/shm dirs for the trial and copies the current (crashed/ended state) data state to it." > ${RUNDIR}/${TRIAL}/start
-    echo "This script can be considered safe to run as many times as needed, but remember to kill the running mysqld each time." >> ${RUNDIR}/${TRIAL}/start
-    echo "echo '=== Setting up directories...'" >> ${RUNDIR}/${TRIAL}/start
-    echo "rm -Rf ${RUNDIR}/${TRIAL}" >> ${RUNDIR}/${TRIAL}/start
-    echo "mkdir -p ${RUNDIR}/${TRIAL}/data ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log" >> ${RUNDIR}/${TRIAL}/start
-    echo "cp -R ./data/* ${RUNDIR}/${TRIAL}/data  # Copy the servers current (crashed/ended state) data directory" >> ${RUNDIR}/${TRIAL}/start
-    echo "#echo '=== Data dir init (only use when doing option startup testing)...'" >> ${RUNDIR}/${TRIAL}/start
-    echo "#${BIN} --no-defaults --initialize-insecure --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err" | sed 's|[ \t]\+| |g' >> ${RUNDIR}/${TRIAL}/start
-    echo "echo '=== Starting mysqld...'" >> ${RUNDIR}/${TRIAL}/start
-    echo "${CMD} > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start
+    echo "This script recreates the /dev/shm dirs for the trial and copies the current (crashed/ended state) data state to it." > ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "This script can be considered safe to run as many times as needed, but remember to kill the running mysqld each time." >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "echo '=== Setting up directories...'" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "rm -Rf ${RUNDIR}/${TRIAL}" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "mkdir -p ${RUNDIR}/${TRIAL}/data ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "cp -R ./data/* ${RUNDIR}/${TRIAL}/data  # Copy the servers current (crashed/ended state) data directory" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "#echo '=== Data dir init (only use when doing option startup testing)...'" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "#${BIN} --no-defaults --initialize-insecure --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err" | sed 's|[ \t]\+| |g' >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "echo '=== Starting mysqld...'" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "${CMD} > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start_dev_shm
     if [ "${MYEXTRA}" != "" ]; then
-      echo "# Same startup command, but without MYEXTRA included:" >> ${RUNDIR}/${TRIAL}/start
-      echo "#$(echo ${CMD} | sed "s|${MYEXTRA}||") > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start
+      echo "# Same startup command, but without MYEXTRA included:" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+      echo "#$(echo ${CMD} | sed "s|${MYEXTRA}||") > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start_dev_shm
     fi
     if [ "${MYSAFE}" != "" ]; then
       if [ "${MYEXTRA}" != "" ]; then
-        echo "# Same startup command, but without MYEXTRA and MYSAFE included:" >> ${RUNDIR}/${TRIAL}/start
-        echo "#$(echo ${CMD} | sed "s|${MYEXTRA}||;s|${MYSAFE}||") > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start
+        echo "# Same startup command, but without MYEXTRA and MYSAFE included:" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+        echo "#$(echo ${CMD} | sed "s|${MYEXTRA}||;s|${MYSAFE}||") > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start_dev_shm
       else
-        echo "# Same startup command, but without MYSAFE included (and MYEXTRA was already empty):" >> ${RUNDIR}/${TRIAL}/start
-        echo "#$(echo ${CMD} | sed "s|${MYSAFE}||") > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start
+        echo "# Same startup command, but without MYSAFE included (and MYEXTRA was already empty):" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+        echo "#$(echo ${CMD} | sed "s|${MYSAFE}||") > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start_dev_shm
       fi
     fi
-    chmod +x ${RUNDIR}/${TRIAL}/start
+    chmod +x ${RUNDIR}/${TRIAL}/start_dev_shm
     CLBIN="$(echo "${BIN}" | sed 's|/mysqld|/mysql|')"
-    echo "${CLBIN} --socket=${SOCKET} -uroot" > ${RUNDIR}/${TRIAL}/cl
+    echo "${CLBIN} --socket=${SOCKET} -uroot" > ${RUNDIR}/${TRIAL}/cl_dev_shm
+    chmod +x ${RUNDIR}/${TRIAL}/cl_dev_shm
+    cat ${RUNDIR}/${TRIAL}/cl_dev_shm | sed "s|/dev/shm|/data|" > ${RUNDIR}/${TRIAL}/cl
     chmod +x ${RUNDIR}/${TRIAL}/cl
-    ALTERCMD="set +H; ${CLBIN} --socket=${SOCKET} -uroot --batch --force -A -e 'SELECT CONCAT(\"ALTER TABLE \`\",TABLE_SCHEMA,\".\",TABLE_NAME,\"\` ENGINE=THEENGINEDUMMY\") FROM information_schema.TABLES WHERE TABLE_SCHEMA=\"test\"' | sed 's|\`test.|\`|' | xargs -I{} echo \"echo '{}'; echo '{}' | ${CLBIN} --socket=${SOCKET} -uroot --force --binary-mode -A test | tee -a alter_test.txt\" | xargs -0 -I{} bash -c \"{}\""
-    echo "$(echo "${ALTERCMD}" | sed 's|THEENGINEDUMMY|InnoDB|g')" > ${RUNDIR}/${TRIAL}/alter_tables_to_innodb_test
-    echo "$(echo "${ALTERCMD}" | sed 's|THEENGINEDUMMY|MyISAM|g')" > ${RUNDIR}/${TRIAL}/alter_tables_to_myisam_test
-    echo "$(echo "${ALTERCMD}" | sed 's|THEENGINEDUMMY|Memory|g')" > ${RUNDIR}/${TRIAL}/alter_tables_to_memory_test
-    echo "$(echo "${ALTERCMD}" | sed 's|THEENGINEDUMMY|Aria|g')"   > ${RUNDIR}/${TRIAL}/alter_tables_to_aria_test
-    ALTERCMD=
-    echo "set +H; ${CLBIN} --socket=${SOCKET} -uroot --databases test 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\"" > ${RUNDIR}/${TRIAL}/mysqlcheck_test
+    echo "${CLBIN}admin --socket=${SOCKET} -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop
+    chmod +x stop
+    echo "grep -o 'port=[0-9]\\+' start | sed 's|port=||' | xargs -I{} echo \"ps -ef | grep '{}'\" | xargs -I{} bash -c \"{}\" | grep \"\${PWD}\" | awk '{print \$2}' | xargs kill -9" > ${RUNDIR}/${TRIAL}/kill
+    chmod +x kill
+    ACCMD="$(echo "set +H; ${CLBIN} --socket=${SOCKET} -uroot --batch --force -A -e 'SELECT CONCAT(\"ALTER TABLE \`\",TABLE_SCHEMA,\".\",TABLE_NAME,\"\` ENGINE=THEENGINEDUMMY;\") FROM information_schema.TABLES WHERE TABLE_SCHEMA=\"test\"' | sed 's|\`test.|\`|' | xargs -I{} echo \"echo '{}'; echo '{}' | ${CLBIN} --socket=${SOCKET} -uroot --force --binary-mode -A test | tee -a alter_test.txt\" | xargs -0 -I{} bash -c \"{}\"" | sed "s|/dev/shm|/data|g")"
+    echo "${ACCMD}" | sed 's|THEENGINEDUMMY|InnoDB|g' > ${RUNDIR}/${TRIAL}/alter_tables_to_innodb_test
+    echo "${ACCMD}" | sed 's|THEENGINEDUMMY|MyISAM|g' > ${RUNDIR}/${TRIAL}/alter_tables_to_myisam_test
+    echo "${ACCMD}" | sed 's|THEENGINEDUMMY|Memory|g' > ${RUNDIR}/${TRIAL}/alter_tables_to_memory_test
+    echo "${ACCMD}" | sed 's|THEENGINEDUMMY|Aria|g'   > ${RUNDIR}/${TRIAL}/alter_tables_to_aria_test
+    chmod +x ${RUNDIR}/${TRIAL}/alter_tables*
+    echo "${ACCMD}" | sed 's|ALTER TABLE|CHECK TABLE|g;s| ENGINE=THEENGINEDUMMY||g;' > ${RUNDIR}/${TRIAL}/check_tables
+    echo "${ACCMD}" | sed 's|ALTER TABLE|CHECK TABLE|g;s| QUICK||g;' > ${RUNDIR}/${TRIAL}/check_tables_quick
+    ACCMD=
+    chmod +x ${RUNDIR}/${TRIAL}/check_tables*
+    MCCMD="set +H; ${CLBIN}check --socket=${SOCKET} -uroot --force --check --extended --flush --databases test 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\"" 
     CLBIN=
+    echo "${MCCMD}" > ${RUNDIR}/${TRIAL}/mysqlcheck_test
+    echo "${MCCMD}" | sed 's|\-\-check |--check-upgrade |' > ${RUNDIR}/${TRIAL}/mysqlcheck_upg_test
+    MCCMD= 
+    chmod +x ${RUNDIR}/${TRIAL}/mysqlcheck_*
     echo "# Recovery testing script." > ${RUNDIR}/${TRIAL}/start_recovery
-    echo "# This script creates an all-privileges recovery@'%' user; ref recovery-user.sql in the wordir (no the trial dir))"
-    echo "# It thens brings up the server for a crash recovery test."
+    echo "# This script creates an all-privileges recovery@'%' user; ref recovery-user.sql in the wordir (no the trial dir))" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "# It thens brings up the server for a crash recovery test." >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "BASEDIR=$BASEDIR" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "if [ ! -r ${WORKDIR}/${TRIAL}/log/master.original.err ]; then" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "  cp ${WORKDIR}/${TRIAL}/log/master.err ${WORKDIR}/${TRIAL}/log/master.original.err" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "fi" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "if [ ! -d ./data.original ]; then" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "  cp -r ./data ./data.original" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "fi" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "${CMD//$RUNDIR/${WORKDIR}} --init-file=${WORKDIR}/recovery-user.sql > ${WORKDIR}/${TRIAL}/log/master.err 2>&1 &" | sed 's|[ \t]\+| |g'  >> ${RUNDIR}/${TRIAL}/start_recovery
     chmod +x ${RUNDIR}/${TRIAL}/start_recovery
+    cat ${RUNDIR}/${TRIAL}/start_recovery | sed 's|/recovery-user.sql|/root-access.sql|g' > ${RUNDIR}/${TRIAL}/start
+    chmod +x ${RUNDIR}/${TRIAL}/start
+    echo "${RUNDIR}/${TRIAL}/start" > ${RUNDIR}/${TRIAL}/all
+    echo "${RUNDIR}/${TRIAL}/cl" >> ${RUNDIR}/${TRIAL}/all
+    chmod +x ${RUNDIR}/${TRIAL}/all
+    echo "${RUNDIR}/${TRIAL}/start_dev_shm" > ${RUNDIR}/${TRIAL}/all_dev_shm
+    echo "${RUNDIR}/${TRIAL}/cl_dev_shm" >> ${RUNDIR}/${TRIAL}/all_dev_shm
+    chmod +x ${RUNDIR}/${TRIAL}/all_dev_shm
     # New MYEXTRA/MYSAFE variables pass & VALGRIND run check method as of 2015-07-28 (MYSAFE & MYEXTRA stored in a text file inside the trial dir, VALGRIND file created if used)
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       echo "${MYSAFE} ${MYEXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA.left # When changing this, also search for/edit other '\.left' and '\.right' occurences in this file
@@ -2093,7 +2123,15 @@ chmod -R +rX ${WORKDIR}
 WORKDIRACTIVE=1
 ONGOING=
 # User for recovery testing
-echo "create user recovery@'%';grant all on *.* to recovery@'%';flush privileges;" > ${WORKDIR}/recovery-user.sql
+echo "CREATE USER recovery@'%';" > ${WORKDIR}/recovery-user.sql
+echo "GRANT ALL ON *.* TO recovery@'%';" >> ${WORKDIR}/recovery-user.sql
+echo "FLUSH PRIVILEGES;" >> ${WORKDIR}/recovery-user.sql
+# User for root access after a trial is done (which may have modified user table)
+# TODO: add a mysql.user touch/creation here in case that tible was removed/wiped or broken
+# i.e. DROP TABLE mysql.user then CREATE TABLE, but may be version-specific
+echo "CREATE USER root@'%';" > ${WORKDIR}/root-access.sql
+echo "GRANT ALL ON *.* TO root@'%';" >> ${WORKDIR}/root-access.sql
+echo "FLUSH PRIVILEGES;" >> ${WORKDIR}/root-access.sql
 if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} "
   echoit "${ONGOING}"
