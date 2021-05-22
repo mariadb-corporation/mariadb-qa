@@ -17,12 +17,12 @@ while read LINE; do
   echo "[$(date +'%T')] Processing $(echo "${LINE}" | sed 's|master.err:|master.err: |')"
   EPATH="$(echo "${LINE}"  | sed 's|:.*||;s|/log/master.err||;s|node.*/node.*err||')"
   ERROR="$(echo "${LINE}"  | sed 's|.*master.err:||' | sed "s|+|.|g;s|\~|.|g;s|'|.|g;s|\"|.|g;s|\!|.|g;s|&|.|g;s|\*|.|g;s|\]|.|g;s|\[|.|g;s|)|.|g;s|(|.|g;s|\%|.|g;s|\^|.|g;s|\$|.|g;s|\||.|g;s|\-|.|g;s|[\.]\+$||;s|[:]* \./dev/shm/.*$||;")"
-  TRIAL="$(echo "${EPATH}" | sed 's|.*/||')"
-  WORKD="$(echo "${EPATH}" | sed 's|/data/\([0-9]\+\).*|\1|')"
+  WORKD="$(echo "${EPATH}" | sed 's|/data/\([0-9]\+\).*|\1|')"   # pquery Framework run workdir
+  TRIAL="$(echo "${EPATH}" | sed 's|.*/||')"                     # pquery Framework run trial (subdir of workdir)
   REDUC="/data/${WORKD}/reducer${TRIAL}.sh"                      # Original, to-be-copied and to-be-modified reducer
-  TARGR="/data/ERR_REDUCERS/reducer${WORKD}${TRIAL}.sh"    # Target reducer
+  TARGR="/data/ERR_REDUCERS/reducer${WORKD}${TRIAL}.sh"          # Target reducer
   INPUT="/data/${WORKD}/${TRIAL}/default.node.tld_thread-0.sql"  # Original input file
-  TARGS="/data/ERR_REDUCERS/reducer${WORKD}${TRIAL}.sql"   # Target copied input file (the new input file)
+  TARGS="/data/ERR_REDUCERS/reducer${WORKD}${TRIAL}.sql"         # Target copied input file (the new input file)
   # Note that we cannot use the original input file as reducer will auto-take the last _out file (which may no longer
   # contain the issue being scanned for here; we need the original one, and additionally, even if we were to set
   # INPUTFILE to the original input file, it would overwrite any already-reducer (for example for a crash) _out file!

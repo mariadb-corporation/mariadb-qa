@@ -1,15 +1,24 @@
 #!/bin/bash
 set +H
 
-ERRORS='Incorrect information in file.*|Table.*contains.*user defined columns in.*but.*|Unknown column.*in.*GENERATED.*ALWAYS.*AS|Failed to read from the.*|Table.*doesn.t exist in engine.*|Index.*has.*columns unique inside.*but.*|.*indexes inside.*which is different from the number of indexes.*|.*is marked as crashed|got error.*when reading table.*|got error.*from storage engine.*'
+# Scan for these errors (regex)
+ERRORS='Incorrect information in file.*|Table.*contains.*user defined columns in.*but.*|Unknown column.*in.*GENERATED.*ALWAYS.*AS|Failed to read from the.*|Table.*doesn.t exist in engine.*|Index.*has.*columns unique inside.*but.*|.*indexes inside.*which is different from the number of indexes.*|.*is marked as crashed|got error.*when reading table.*|got error.*from storage engine.*|Clustered record for sec rec|DATA TUPLE|Record in index|InnoDB: page'
+
+# Filter list
+# mtr.add_suppression: cleanup of invalid captures of suppression rather than actual error
+# Got error 194 when reading table: MariaDB error code 194: Tablespace is missing for a table (dropped tablespace)
+FILTER='mtr.add_suppression|Got error 194 when reading table'
+
+# Post scan cleanup
 POSTPARSE='s|[:]* \./dev/shm/.*$||;s|[\.]\+$||;s|[0-9]\+ .ERROR. mysqld: Table|ERROR. mysqld: Table|'
+
+echo "--- Searching for various errors in all error logs: This may take a while! ---"
 if [ "${1}" == "plusmode" ]; then
   #TO_SCAN='/data/1*/1*/log/*.err'  # For testing
-  TO_SCAN='/data/*/*/*/*.err /data/*/*/*/*/*.err'  # /data only ftm (ref ~/scanerr+)
-  grep --binary-files=text -Eio "${ERRORS}" ${TO_SCAN} 2>/dev/null | sed "${POSTPARSE}"
+  TO_SCAN='/data/*/*/*/*.err /data/*/*/*/*/*.err'  # /data based runs only ftm (ref ~/scanerr+)
+  grep --binary-files=text -Eio "${ERRORS}" ${TO_SCAN} 2>/dev/null | grep --binary-files=text -vE "${FILTER}" | sed "${POSTPARSE}"
 else
   TO_SCAN='/test/*/*/*.err /data/*/*/*.err /test/*/*/*/*.err /data/*/*/*/*.err /test/*/*/*/*/*.err /data/*/*/*/*/*.err'
-  echo "--- Searching for various errors in all error logs: This may take a while! ---"
-  grep --binary-files=text -Ei "${ERRORS}" ${TO_SCAN} 2>/dev/null | sed "${POSTPARSE}"
+  grep --binary-files=text -Ei "${ERRORS}" ${TO_SCAN} 2>/dev/null | grep --binary-files=text -vE "${FILTER}" | sed "${POSTPARSE}"
   echo "------------------------------------------------------------------------------"
 fi

@@ -13,7 +13,7 @@ CONFIGURATION_FILE=pquery-run.conf # Do not use any path specifiers, the .conf f
 # * SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
 # * SQL hashing s/t2/t1/, hex values "0x"
 # * Full MTR grammar on one-liners
-# * Interleave all statements with another that is likely to cause issues, for example "USE mysql"
+# * Interleave all statements with another that is likely to cause issues, for example "USE mysql". This is already done regularly with feature testing through SQL interleaving, but it could be done per statement. For example, every second line a SELECT, next SQL file every second line an UPDATE, next SQL file every second line an ALTER etc. then use all (do not combine; too large input) files either randomly or sequentially. And instead of just SELECT, or UPDATE, or ALTER etc. use sql-interleaving to make a variety of 9 per statement.
 # * It would be possible to output all new bugs to a flat text file, so that when the new bug detection is operating, it will check not only known_bugs.strings but also this new flat text file, and if a bug is seen already, it could just delete the trial. This will only leave one trial in place for testcase reduction, but over time and over different runs this should be quite fine - especially as showstopper like bugs will be all over the runs and hence will reproduce every new run with ease. For the moment, pquery-eliminate-dups.sh reduces the max number to 3, so that is quite fine also.
 
 # ========================================= MAIN CODE ============================================================================
@@ -1093,14 +1093,14 @@ pquery_test() {
       sleep 1
     fi
     diskspace
-    echo "## Good for reproducing mysqld (5.7+) startup issues only (full issues need a data dir, so use mysql_install_db or mysqld --init for those)" > ${RUNDIR}/${TRIAL}/start
-    echo "## Another strategy is to activate the data dir copy below, this way the server will be brought up with the same state as it crashed/was shutdown" >> ${RUNDIR}/${TRIAL}/start
+    echo "This script recreates the /dev/shm dirs for the trial and copies the current (crashed/ended state) data state to it." > ${RUNDIR}/${TRIAL}/start
+    echo "This script can be considered safe to run as many times as needed, but remember to kill the running mysqld each time." >> ${RUNDIR}/${TRIAL}/start
     echo "echo '=== Setting up directories...'" >> ${RUNDIR}/${TRIAL}/start
     echo "rm -Rf ${RUNDIR}/${TRIAL}" >> ${RUNDIR}/${TRIAL}/start
     echo "mkdir -p ${RUNDIR}/${TRIAL}/data ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log" >> ${RUNDIR}/${TRIAL}/start
-    echo "#cp -R ./data/* ${RUNDIR}/${TRIAL}/data  # When using this, please also remark the 'Data dir init' below to avoid overwriting the data directory" >> ${RUNDIR}/${TRIAL}/start
-    echo "echo '=== Data dir init...'" >> ${RUNDIR}/${TRIAL}/start
-    echo "${BIN} --no-defaults --initialize-insecure --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err" >> ${RUNDIR}/${TRIAL}/start
+    echo "cp -R ./data/* ${RUNDIR}/${TRIAL}/data  # Copy the servers current (crashed/ended state) data directory" >> ${RUNDIR}/${TRIAL}/start
+    echo "#echo '=== Data dir init (only use when doing option startup testing)...'" >> ${RUNDIR}/${TRIAL}/start
+    echo "#${BIN} --no-defaults --initialize-insecure --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err" | sed 's|[ \t]\+| |g' >> ${RUNDIR}/${TRIAL}/start
     echo "echo '=== Starting mysqld...'" >> ${RUNDIR}/${TRIAL}/start
     echo "${CMD} > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start
     if [ "${MYEXTRA}" != "" ]; then
@@ -1117,9 +1117,22 @@ pquery_test() {
       fi
     fi
     chmod +x ${RUNDIR}/${TRIAL}/start
-    echo "BASEDIR=$BASEDIR" > ${RUNDIR}/${TRIAL}/start_recovery
-
-    echo "${CMD//$RUNDIR/${WORKDIR}} --init-file=${WORKDIR}/recovery-user.sql > ${WORKDIR}/${TRIAL}/log/master.err 2>&1 &" >> ${RUNDIR}/${TRIAL}/start_recovery
+    CLBIN="$(echo "${BIN}" | sed 's|/mysqld|/mysql|')"
+    echo "${CLBIN} --socket=${SOCKET} -uroot" > ${RUNDIR}/${TRIAL}/cl
+    chmod +x ${RUNDIR}/${TRIAL}/cl
+    ALTERCMD="set +H; ${CLBIN} --socket=${SOCKET} -uroot --batch --force -A -e 'SELECT CONCAT(\"ALTER TABLE \`\",TABLE_SCHEMA,\".\",TABLE_NAME,\"\` ENGINE=THEENGINEDUMMY\") FROM information_schema.TABLES WHERE TABLE_SCHEMA=\"test\"' | sed 's|\`test.|\`|' | xargs -I{} echo \"echo '{}'; echo '{}' | ${CLBIN} --socket=${SOCKET} -uroot --force --binary-mode -A test | tee -a alter_test.txt\" | xargs -0 -I{} bash -c \"{}\""
+    echo "$(echo "${ALTERCMD}" | sed 's|THEENGINEDUMMY|InnoDB|g')" > ${RUNDIR}/${TRIAL}/alter_tables_to_innodb_test
+    echo "$(echo "${ALTERCMD}" | sed 's|THEENGINEDUMMY|MyISAM|g')" > ${RUNDIR}/${TRIAL}/alter_tables_to_myisam_test
+    echo "$(echo "${ALTERCMD}" | sed 's|THEENGINEDUMMY|Memory|g')" > ${RUNDIR}/${TRIAL}/alter_tables_to_memory_test
+    echo "$(echo "${ALTERCMD}" | sed 's|THEENGINEDUMMY|Aria|g')"   > ${RUNDIR}/${TRIAL}/alter_tables_to_aria_test
+    ALTERCMD=
+    echo "set +H; ${CLBIN} --socket=${SOCKET} -uroot --databases test 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\"" > ${RUNDIR}/${TRIAL}/mysqlcheck_test
+    CLBIN=
+    echo "# Recovery testing script." > ${RUNDIR}/${TRIAL}/start_recovery
+    echo "# This script creates an all-privileges recovery@'%' user; ref recovery-user.sql in the wordir (no the trial dir))"
+    echo "# It thens brings up the server for a crash recovery test."
+    echo "BASEDIR=$BASEDIR" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "${CMD//$RUNDIR/${WORKDIR}} --init-file=${WORKDIR}/recovery-user.sql > ${WORKDIR}/${TRIAL}/log/master.err 2>&1 &" | sed 's|[ \t]\+| |g'  >> ${RUNDIR}/${TRIAL}/start_recovery
     chmod +x ${RUNDIR}/${TRIAL}/start_recovery
     # New MYEXTRA/MYSAFE variables pass & VALGRIND run check method as of 2015-07-28 (MYSAFE & MYEXTRA stored in a text file inside the trial dir, VALGRIND file created if used)
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
