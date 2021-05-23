@@ -16,9 +16,9 @@ echo "--- Searching for various errors in all error logs: This may take a while!
 if [ "${1}" == "plusmode" ]; then
   #TO_SCAN='/data/1*/1*/log/*.err'  # For testing
   TO_SCAN='/data/*/*/*/*.err /data/*/*/*/*/*.err'  # /data based runs only ftm (ref ~/scanerr+)
-  grep --binary-files=text -Eio "${ERRORS}" ${TO_SCAN} 2>/dev/null | grep --binary-files=text -vE "${FILTER}" | sed "${POSTPARSE}"
+  grep --binary-files=text -Eio "${ERRORS}" ${TO_SCAN} | sort | uniq 2>/dev/null | grep --binary-files=text -vE "${FILTER}" | sed "${POSTPARSE}"
 else
   TO_SCAN='/test/*/*/*.err /data/*/*/*.err /test/*/*/*/*.err /data/*/*/*/*.err /test/*/*/*/*/*.err /data/*/*/*/*/*.err'
-  grep --binary-files=text -Ei "${ERRORS}" ${TO_SCAN} 2>/dev/null | grep --binary-files=text -vE "${FILTER}" | sed "${POSTPARSE}"
+  grep --binary-files=text -Ei "${ERRORS}" ${TO_SCAN} | sort | uniq 2>/dev/null | grep --binary-files=text -vE "${FILTER}" | sed "${POSTPARSE}"
   echo "------------------------------------------------------------------------------"
 fi
