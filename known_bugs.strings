@@ -26,6 +26,7 @@
 #SIGSEGV|my_b_write|write_keys|find_all_keys|filesort    ## Dud, fixed in 10.4.19
 
 ##### CURRENT BUGS #####
+!wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|ha_commit_trans|trans_commit_implicit|mysql_execute_command ## DBG |MDEV-25740
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|ha_commit_trans|trans_begin|mysql_execute_command ## DBG |MDEV-25740
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                                            ## DBG MDEV-25738
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_help_internal|mysqld_help                                                                                    ## DBG MDEV-25735
