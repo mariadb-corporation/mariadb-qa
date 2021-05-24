@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "[$(date +'%T')] Producing reducer scripts for all error log issues as found by ~/scanerr (/data only)."
 echo "[$(date +'%T')] This will easily take 10+ minutes on a high end server with hundreds to thousands of trials."
-MODE="${1}"
+MODE="${1}"   # blank '' or GAL selectable
 # Currently only single-threaded /data based runs are supported. Both CS/ES Server and Galera are supported."  
 # The /data limitation is configured in ~/scanerr when using 'plusmode' as first option. 
 mkdir -p /data/ERR_REDUCERS
