@@ -123,7 +123,8 @@ scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_
 scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size_inline|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::resolve_type                       ## DBG |MDEV-25317
 scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                ## DBG |MDEV-25317
 state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## DBG MENT-1175
-SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## OPT MDEV-25158
+SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## OPT |MDEV-25158
+curr_op_type != INTERSECT_ALL|SIGABRT|select_unit_ext::send_eof|do_select|JOIN::exec_inner|JOIN::exec                                                                          ## DBG |MDEV-25158
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|THD::init                                                                                                        ## DBG |MDEV-25237
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                               ## DBG |MDEV-25237
 global_system_variables.session_track_system_variables|SIGABRT|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init|THD::THD                                             ## DBG |MDEV-25237
