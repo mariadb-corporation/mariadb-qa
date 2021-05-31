@@ -100,7 +100,7 @@ VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep
 if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" ]; then
   VERSION_INFO="5.6"
   INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
-  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal"
+  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
   START_OPT="--core-file --core"
 elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
   VERSION_INFO="5.1"
