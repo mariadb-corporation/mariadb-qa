@@ -61,7 +61,7 @@ grep -Ei --binary-files=text "${TEXT}" */log/master.err */node${NODE}/node${NODE
 FILT=
 if [ "${BBB_MODE}" -eq 1 ]; then
   mv /tmp/sec.t /tmp/sec.t.1
-  ls --color=never */data/core* */node${NODE}/core* 2>/dev/null | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t.2
+  ls --color=never */data/core* */node${NODE}/core* 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t.2
   cat /tmp/sec.t.1 /tmp/sec.t.2 2>/dev/null | sort -u > /tmp/sec.t
   rm -f /tmp/sec.t.1 /tmp/sec.t.2
 fi
