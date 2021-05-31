@@ -1754,83 +1754,83 @@ EOF
           PQPID="$!"
         fi
       fi
-      TIMEOUT_REACHED=0
-      if [ ${QUERY_CORRECTNESS_TESTING} -ne 1 ]; then
-        echoit "pquery running (Max duration: ${PQUERY_RUN_TIMEOUT}s)..."
-        for X in $(seq 1 ${PQUERY_RUN_TIMEOUT}); do
-          sleep 1
-          if grep -qi "error while loading shared libraries" ${RUNDIR}/${TRIAL}/pquery.log; then
-            if grep -qi "error while loading shared libraries.*libssl" ${RUNDIR}/${TRIAL}/pquery.log; then
-              echoit "$(grep -i "error while loading shared libraries" ${RUNDIR}/${TRIAL}/pquery.log)"
-              echoit "Assert: There was an error loading the shared/dynamic libssl library linked to from within pquery. You may want to try and install a package similar to libssl-dev. If that is already there, try instead to build pquery on this particular machine. Sometimes there are differences seen between Centos and Ubuntu. Perhaps we need to have a pquery build for each of those separately."
-            else
-              echoit "Assert: There was an error loading the shared/dynamic mysql client library linked to from within pquery. Ref. ${RUNDIR}/${TRIAL}/pquery.log to see the error. The solution is to ensure that LD_LIBRARY_PATH is set correctly (for example: execute '$ export LD_LIBRARY_PATH=<your_mysql_base_directory>/lib' in your shell. This will happen only if you use pquery without statically linked client libraries, and this in turn would happen only if you compiled pquery yourself instead of using the pre-built binaries available in https://github.com/Percona-QA/mariadb-qa (ref subdirectory/files ./pquery/pquery*) - which are normally used by this script (hence this situation is odd to start with). The pquery binaries in mariadb-qa all include a statically linked mysql client library matching the mysql flavor (PS,MS,MD,WS) it was built for. Another reason for this error may be that (having used pquery without statically linked client binaries as mentioned earlier) the client libraries are not available at the location set in LD_LIBRARY_PATH (which is currently set to '${LD_LIBRARY_PATH}'."
-            fi
-            exit 1
+    fi
+    TIMEOUT_REACHED=0
+    if [ ${QUERY_CORRECTNESS_TESTING} -ne 1 ]; then
+      echoit "pquery running (Max duration: ${PQUERY_RUN_TIMEOUT}s)..."
+      for X in $(seq 1 ${PQUERY_RUN_TIMEOUT}); do
+        sleep 1
+        if grep -qi "error while loading shared libraries" ${RUNDIR}/${TRIAL}/pquery.log; then
+          if grep -qi "error while loading shared libraries.*libssl" ${RUNDIR}/${TRIAL}/pquery.log; then
+            echoit "$(grep -i "error while loading shared libraries" ${RUNDIR}/${TRIAL}/pquery.log)"
+            echoit "Assert: There was an error loading the shared/dynamic libssl library linked to from within pquery. You may want to try and install a package similar to libssl-dev. If that is already there, try instead to build pquery on this particular machine. Sometimes there are differences seen between Centos and Ubuntu. Perhaps we need to have a pquery build for each of those separately."
+          else
+            echoit "Assert: There was an error loading the shared/dynamic mysql client library linked to from within pquery. Ref. ${RUNDIR}/${TRIAL}/pquery.log to see the error. The solution is to ensure that LD_LIBRARY_PATH is set correctly (for example: execute '$ export LD_LIBRARY_PATH=<your_mysql_base_directory>/lib' in your shell. This will happen only if you use pquery without statically linked client libraries, and this in turn would happen only if you compiled pquery yourself instead of using the pre-built binaries available in https://github.com/Percona-QA/mariadb-qa (ref subdirectory/files ./pquery/pquery*) - which are normally used by this script (hence this situation is odd to start with). The pquery binaries in mariadb-qa all include a statically linked mysql client library matching the mysql flavor (PS,MS,MD,WS) it was built for. Another reason for this error may be that (having used pquery without statically linked client binaries as mentioned earlier) the client libraries are not available at the location set in LD_LIBRARY_PATH (which is currently set to '${LD_LIBRARY_PATH}'."
           fi
-          if [ "$(ps -ef | grep ${PQPID} | grep -v grep)" == "" ]; then # pquery ended
-            break
-          fi
-          if [ ${CRASH_RECOVERY_TESTING} -eq 1 ]; then
-            if [[ ${REPL} -eq 1 ]]; then
-              # Shutdown/kill servers for replication crash recovery testing before finishing pquery run
-              if [ $X -ge ${REPLICATION_SHUTDOWN_OR_KILL_TIMEOUT} ]; then
-                if [[ ${REPLICATION_SHUTDOWN_OR_KILL} -eq 1 ]]; then
-                  # kill servers for replication crash recovery testing
-                  kill -9 ${MPID} > /dev/null 2>&1
-                  kill -9 ${SLAVE_MPID} > /dev/null 2>&1
-                else
-                  # shutdown servers for replication crash recovery testing
-                  timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1
-                  timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1
-                fi
-                sleep 2
-                echoit "killed for crash testing"
-                CRASH_CHECK=1
-                break
-              fi
-            else
-              if [ $X -ge $CRASH_RECOVERY_KILL_BEFORE_END_SEC ]; then
-                if [ $MDG -eq 1 ]; then
-                  ps -ef | grep -e 'node1_socket\|node2_socket\|node3_socket' | grep -v grep | grep $RANDOMD | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
-                else
-                  kill -9 ${MPID} > /dev/null 2>&1
-                fi
+          exit 1
+        fi
+        if [ "$(ps -ef | grep ${PQPID} | grep -v grep)" == "" ]; then # pquery ended
+          break
+        fi
+        if [ ${CRASH_RECOVERY_TESTING} -eq 1 ]; then
+          if [[ ${REPL} -eq 1 ]]; then
+            # Shutdown/kill servers for replication crash recovery testing before finishing pquery run
+            if [ $X -ge ${REPLICATION_SHUTDOWN_OR_KILL_TIMEOUT} ]; then
+              if [[ ${REPLICATION_SHUTDOWN_OR_KILL} -eq 1 ]]; then
+                # kill servers for replication crash recovery testing
+                kill -9 ${MPID} > /dev/null 2>&1
+                kill -9 ${SLAVE_MPID} > /dev/null 2>&1
+              else
+                # shutdown servers for replication crash recovery testing
+                timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1
+                timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1
               fi
               sleep 2
               echoit "killed for crash testing"
               CRASH_CHECK=1
               break
             fi
-          fi
-          # Initiate Percona Xtrabackup
-          if [[ ${PXB_CRASH_RUN} -eq 1 ]]; then
-            if [[ $X -ge $PXB_INITIALIZE_BACKUP_SEC ]]; then
-              $PXB_BASEDIR/bin/xtrabackup --user=root --password='' --backup --target-dir=${RUNDIR}/${TRIAL}/xb_full -S${SOCKET} --datadir=${RUNDIR}/${TRIAL}/data --lock-ddl > ${RUNDIR}/${TRIAL}/backup.log 2>&1
-              $PXB_BASEDIR/bin/xtrabackup --prepare --target_dir=${RUNDIR}/${TRIAL}/xb_full --lock-ddl > ${RUNDIR}/${TRIAL}/prepare_backup.log 2>&1
-              echoit "Backup completed"
-              PXB_CHECK=1
-              break
+          else
+            if [ $X -ge $CRASH_RECOVERY_KILL_BEFORE_END_SEC ]; then
+              if [ $MDG -eq 1 ]; then
+                ps -ef | grep -e 'node1_socket\|node2_socket\|node3_socket' | grep -v grep | grep $RANDOMD | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
+              else
+                kill -9 ${MPID} > /dev/null 2>&1
+              fi
             fi
-          fi
-          if [ $X -ge ${PQUERY_RUN_TIMEOUT} ]; then
-            echoit "${PQUERY_RUN_TIMEOUT}s timeout reached. Terminating this trial..."
-            TIMEOUT_REACHED=1
-            if [ ${TIMEOUT_INCREMENT} != 0 ]; then
-              echoit "TIMEOUT_INCREMENT option was enabled and set to ${TIMEOUT_INCREMENT} sec"
-              echoit "${TIMEOUT_INCREMENT}s will be added to the next trial timeout."
-            else
-              echoit "TIMEOUT_INCREMENT option was disabled and set to 0"
-            fi
-            PQUERY_RUN_TIMEOUT=$((${PQUERY_RUN_TIMEOUT} + ${TIMEOUT_INCREMENT}))
+            sleep 2
+            echoit "killed for crash testing"
+            CRASH_CHECK=1
             break
           fi
-        done
-        if [ "$PMM" == "1" ]; then
-          if ps -p ${MPID} > /dev/null; then
-            echoit "PMM trial info : Sleeping 5 mints to check the data collection status"
-            sleep 300
+        fi
+        # Initiate Percona Xtrabackup
+        if [[ ${PXB_CRASH_RUN} -eq 1 ]]; then
+          if [[ $X -ge $PXB_INITIALIZE_BACKUP_SEC ]]; then
+            $PXB_BASEDIR/bin/xtrabackup --user=root --password='' --backup --target-dir=${RUNDIR}/${TRIAL}/xb_full -S${SOCKET} --datadir=${RUNDIR}/${TRIAL}/data --lock-ddl > ${RUNDIR}/${TRIAL}/backup.log 2>&1
+            $PXB_BASEDIR/bin/xtrabackup --prepare --target_dir=${RUNDIR}/${TRIAL}/xb_full --lock-ddl > ${RUNDIR}/${TRIAL}/prepare_backup.log 2>&1
+            echoit "Backup completed"
+            PXB_CHECK=1
+            break
           fi
+        fi
+        if [ $X -ge ${PQUERY_RUN_TIMEOUT} ]; then
+          echoit "${PQUERY_RUN_TIMEOUT}s timeout reached. Terminating this trial..."
+          TIMEOUT_REACHED=1
+          if [ ${TIMEOUT_INCREMENT} != 0 ]; then
+            echoit "TIMEOUT_INCREMENT option was enabled and set to ${TIMEOUT_INCREMENT} sec"
+            echoit "${TIMEOUT_INCREMENT}s will be added to the next trial timeout."
+          else
+            echoit "TIMEOUT_INCREMENT option was disabled and set to 0"
+          fi
+          PQUERY_RUN_TIMEOUT=$((${PQUERY_RUN_TIMEOUT} + ${TIMEOUT_INCREMENT}))
+          break
+        fi
+      done
+      if [ "$PMM" == "1" ]; then
+        if ps -p ${MPID} > /dev/null; then
+          echoit "PMM trial info : Sleeping 5 mints to check the data collection status"
+          sleep 300
         fi
       fi
     fi
