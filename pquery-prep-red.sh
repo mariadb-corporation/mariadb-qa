@@ -22,19 +22,19 @@ ASAN_OR_UBSAN_OR_TSAN_BUG=0
 
 check_if_asan_or_ubsan_or_tsan(){
   if [[ "${TEXT}" == *"Assert: no core file found in"* ]]; then
-    if [ $(grep -m1 --binary-files=text "=ERROR:" ./${TRIAL}/log/master.err 2> /dev/null | wc -l) -ge 1 ]; then
+    if [ $(grep -m1 --binary-files=text "=ERROR:" ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* ASAN bug found!"
-      TEXT="$(grep --binary-files=text -im1 -o "=ERROR:.*" ./${TRIAL}/log/master.err)"
+      TEXT="$(grep --binary-files=text -im1 -o "=ERROR:.*" ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null)"
      fix_asan_and_ubsan_and_tsan_text
       ASAN_OR_UBSAN_OR_TSAN_BUG=1
-     elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ./${TRIAL}/log/master.err 2> /dev/null | wc -l) -ge 1 ]; then
+     elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
        echo "* TSAN bug found!"
-       TEXT="$(grep --binary-files=text -im1 -o "ThreadSanitizer:.*" ./${TRIAL}/log/master.err)"
+       TEXT="$(grep --binary-files=text -im1 -o "ThreadSanitizer:.*" ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null)"
        fix_asan_and_ubsan_and_tsan_text
       ASAN_OR_UBSAN_OR_TSAN_BUG=1
-    elif [ $(grep -im1 --binary-files=text "runtime error:" ./${TRIAL}/log/master.err 2> /dev/null | wc -l) -ge 1 ]; then
+    elif [ $(grep -im1 --binary-files=text "runtime error:" ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* UBSAN bug found!"
-      TEXT="$(grep --binary-files=text -im1 -o "runtime error:.*" ./${TRIAL}/log/master.err)"
+      TEXT="$(grep --binary-files=text -im1 -o "runtime error:.*" ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null)"
       fix_asan_and_ubsan_and_tsan_text
       ASAN_OR_UBSAN_OR_TSAN_BUG=1
     fi
@@ -729,23 +729,23 @@ if [ ${QC} -eq 0 ]; then
         if [ -r ./${TRIAL}/VALGRIND -a ${VALGRIND_OVERRIDE} -ne 1 ]; then
           VALGRIND_CHECK=1
           # What follows are 3 different ways of checking if Valgrind issues were seen, mostly to ensure that no Valgrind issues go unseen, especially if log is not complete
-          VALGRIND_CHECK_1=$(grep --binary-files=text "==[0-9]\+== ERROR SUMMARY: [0-9]\+ error" ./${TRIAL}/log/master.err | sed 's|.*ERROR SUMMARY: \([0-9]\+\) error.*|\1|')
+          VALGRIND_CHECK_1=$(grep --binary-files=text "==[0-9]\+== ERROR SUMMARY: [0-9]\+ error" ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | sed 's|.*ERROR SUMMARY: \([0-9]\+\) error.*|\1|')
           if [ "${VALGRIND_CHECK_1}" == "" ]; then VALGRIND_CHECK_1=0; fi
           if [ ${VALGRIND_CHECK_1} -gt 0 ]; then
             VALGRIND_ERRORS_FOUND=1
           fi
-          if egrep --binary-files=text -qi "^[ \t]*==[0-9]+[= \t]+[atby]+[ \t]*0x" ./${TRIAL}/log/master.err; then
+          if egrep --binary-files=text -qi "^[ \t]*==[0-9]+[= \t]+[atby]+[ \t]*0x" ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null; then
             VALGRIND_ERRORS_FOUND=1
           fi
-          if egrep --binary-files=text -qi "==[0-9]+== ERROR SUMMARY: [1-9]" ./${TRIAL}/log/master.err; then
+          if egrep --binary-files=text -qi "==[0-9]+== ERROR SUMMARY: [1-9]" ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null; then
             VALGRIND_ERRORS_FOUND=1
           fi
           if [ ${VALGRIND_ERRORS_FOUND} -eq 1 ]; then
-            TEXT="$(${SCRIPT_PWD}/valgrind_string.sh ./${TRIAL}/log/master.err)"
+            TEXT="$(${SCRIPT_PWD}/valgrind_string.sh ./${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null)"
             if [ "${TEXT}" != "" ]; then
               echo "* Valgrind string detected: '${TEXT}'"
             else
-              echo "*** ERROR: No specific Valgrind string was detected in ./${TRIAL}/log/master.err! This may be a bug... Setting TEXT to generic '==    at 0x'"
+              echo "*** ERROR: No specific Valgrind string was detected in ./${TRIAL}/log/master.err nor ./${TRIAL}/node*/node*.err! This may be a bug... Setting TEXT to generic '==    at 0x'"
               TEXT="==    at 0x"
             fi
             # generate a valgrind specific reducer and then reset values if standard crash reducer is needed
@@ -856,7 +856,7 @@ fi
 # If these 3 all apply, it is safe to change the MODE to =0 and assume that this is a shutdown issue only
 for MATCHING_TRIAL in `grep -H "^MODE=[0-9]$" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un` ; do
   if [ -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]; then  # Only deal with shutdown timeout issues!
-    if [ $(grep -m1 --binary-files=text "=ERROR:" ${MATCHING_TRIAL}/log/master.err 2> /dev/null | wc -l) -gt 0 -o $(grep -m1 --binary-files=text "runtime error:" ${MATCHING_TRIAL}/log/master.err 2> /dev/null | wc -l) -gt 0 ]; then  # ASAN or UBSAN error, do not set MODE=0
+    if [ $(grep -m1 --binary-files=text "=ERROR:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 -o $(grep -m1 --binary-files=text "runtime error:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 ]; then  # ASAN or UBSAN error, do not set MODE=0
       echo "* Trial found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however an ASAN or UBSAN issue was present"
       echo "  > Removing ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE marker so normal reduction & result presentation can happen"
       rm -f ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE

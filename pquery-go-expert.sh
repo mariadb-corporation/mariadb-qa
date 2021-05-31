@@ -90,15 +90,18 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
           if grep --binary-files=text -qiE "^MODE=3|^MODE=4" ${REDUCER}; then  # Mode 3 or 4 (and not 0)
             TRIAL="$(echo ${REDUCER} | grep -o '[0-9]\+')"
             if [ ! -r "./${TRIAL}/AVOID_FORCE_KILL" ]; then  # Not flagged by pquery-prep-red.sh as a trial for which AVOID_FORCE_KILL should be avoided (i.e. likely a trial for which SHUTDOWN_TIMEOUT_ISSUE was previously found/set, but also with a core dump present - i.e. actual shutdown IS required to reduce towards the core dump issue seen)
-              if [ ! -r "./${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE" ]; then  # Not a shutdown timeout issue
-                TERRIBLY_OFFSET=$(grep --binary-files=text -ihbm1 'terribly' ${TRIAL}/log/master.err | head -n1 | sed 's|^\([0-9]\+\).*|\1|')
-                SHUTDOWN_OFFSET=$(grep --binary-files=text -hb 'shutdown' ${TRIAL}/log/master.err | grep -v srv_shutdown | head -n1 | sed 's|^\([0-9]\+\).*|\1|')
-                if [ ! -z "${TERRIBLY_OFFSET}" -a ! -z "${SHUTDOWN_OFFSET}" ]; then
-                  if [ ${TERRIBLY_OFFSET} -lt ${SHUTDOWN_OFFSET} ]; then  # Ensure crash came before shutdown
+              if [ -z "$(tail -n1 ${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | grep --binary-files=text -E 'invalid|alloc|free|corruption|corrupted')" ]; then  # Ensure that the last line of the log is not a memory corruption like "malloc(): , double free or corruption, free(): , Warning: Memory not freed" or similar (i.e. the result of the tail/grep is empty and -z "" the test will proceed with then clause) in which case we do NOT want to set FORCE_KILL=1 as that would prevent such a message which is seen on/after server shutdown.
+                if [ ! -r "./${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE" ]; then  # Not a shutdown timeout issue
+                  # Scan for the 'terribly' word in the error log
+                  TERRIBLY_OFFSET=$(grep --binary-files=text -ihbm1 'terribly' ${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | head -n1 | sed 's|^\([0-9]\+\).*|\1|')
+                  SHUTDOWN_OFFSET=$(grep --binary-files=text -hb 'shutdown' ${TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | grep -v srv_shutdown | head -n1 | sed 's|^\([0-9]\+\).*|\1|')
+                  if [ ! -z "${TERRIBLY_OFFSET}" -a ! -z "${SHUTDOWN_OFFSET}" ]; then
+                    if [ ${TERRIBLY_OFFSET} -lt ${SHUTDOWN_OFFSET} ]; then  # Ensure crash came before shutdown
+                      sed -i "s|^FORCE_KILL=[0-9]\+|FORCE_KILL=1|" ${REDUCER}
+                    fi
+                  elif [ -z "${SHUTDOWN_OFFSET}" ]; then  # No shutdown seen; safe to proceed
                     sed -i "s|^FORCE_KILL=[0-9]\+|FORCE_KILL=1|" ${REDUCER}
                   fi
-                elif [ -z "${SHUTDOWN_OFFSET}" ]; then  # No shutdown seen; safe to proceed
-                  sed -i "s|^FORCE_KILL=[0-9]\+|FORCE_KILL=1|" ${REDUCER}
                 fi
               fi
             fi
