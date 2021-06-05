@@ -1,0 +1,2 @@
+CREATE TEMPORARY TABLE t (c INT) ENGINE=mrg_myisam UNION=(t,t2) insert_method=FIRST;
+CREATE TABLE t2 LIKE t;
