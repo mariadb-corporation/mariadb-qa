@@ -22,8 +22,11 @@
 #to <= end|SIGABRT|process_args|my_vsnprintf_ex|my_error|change_master                                                                                                         ## DBG |MDEV-25612
 #SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
 
-##### 10.4.12+ InnoDB corrputions
-#SIGSEGV|my_b_write|write_keys|find_all_keys|filesort    ## Dud, fixed in 10.4.19
+##### 10.4.12+ InnoDB corrputions: dud uniqueID's fixed in 10.4.19 or earlier
+#SIGSEGV|my_b_write|write_keys|find_all_keys|filesort
+#SIGSEGV|__GI__IO_default_xsputn|__GI__IO_default_xsputn|__vfprintf_internal|__vsprintf_internal
+#SIGABRT|__libc_message|malloc_printerr|_int_malloc|__GI___libc_malloc
+#n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|ha_commit_trans|trans_commit_implicit|mysql_execute_command ## DBG |MDEV-25740

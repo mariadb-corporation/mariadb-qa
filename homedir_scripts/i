@@ -1,0 +1,32 @@
+#!/bin/bash
+if [ -z "${1}" ]; then
+  echo "Please pass trial number to locate the basedir for it!"
+  exit 1
+fi
+if [ ! -r ./reducer${1}.sh -o ! -d ./${1}/ ]; then
+  echo "./reducer${1}.sh or trial dir ./${1}/ not found!"
+  exit 1
+fi
+echo '========== MYBUG =========='
+cat ${1}/MYBUG
+echo '========== BASEDIR =========='
+grep '^BASEDIR' ./reducer${1}.sh | sed 's|^[^"]\+"||;s|".*||'
+echo '========== MYEXTRA =========='
+cat ${1}/MYEXTRA
+CHARS_MY_INIT="$(wc -m ${1}/MYINIT 2>/dev/null | sed 's| .*||')"
+if [ "${CHARS_MY_INIT}" -gt 1 ]; then
+  echo '========== MYINIT =========='
+  cat ${1}/MYINIT
+fi
+echo '========== pquery Tail =========='
+tail -n2 ${1}/pquery.log
+echo '========== Error Log Tail =========='
+cat ${1}/log/master.err | grep -vE '^[-=]+$' | tail -n3
+echo '========== Best Testcase =========='
+ls -s ${1}/default.node.tld_thread-0.sql* | grep --binary-files=text -vE "backup|failing|prev" | tac | head -n1 | sed "s|^[ 0-9]\+||;s|^/||" | xargs -I{} wc -l ${1}/{} | sed 's| | Lines: |'
+echo '========== Core Check =========='
+if [ -z "$(ls ${1}/data/*core* 2>/dev/null)" ]; then
+  echo "No core found for this trial (${1})"
+else
+  ls ${1}/data/*core*
+fi
