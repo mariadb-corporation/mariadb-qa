@@ -6,3 +6,8 @@ else
   ~/mariadb-qa/pquery-clean-all.sh cleanall
 fi
 #if [ -r ./clean_newbugs ]; then ./clean_newbugs; fi
+
+if [ -r /test/TESTCASES/mvknown ]; then
+  cd /test/TESTCASES
+  ~/mariadb-qa/move_known.sh
+fi

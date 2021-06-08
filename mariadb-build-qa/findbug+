@@ -8,22 +8,22 @@ SAN_MODE=0
 GAL_MODE=0
 BBB_MODE=0
 ERROR_IN_OPTIONS=0
-TEXT=
 if [ "${1}" == "SAN" -a -z "${2}" ]; then ERROR_IN_OPTIONS=1; fi
 if [ "${1}" == "GAL" -a -z "${2}" ]; then ERROR_IN_OPTIONS=1; fi
 if [ "${1}" != "GAL" -a "${1}" != "SAN" -a ! -z "${2}" ]; then ERROR_IN_OPTIONS=1; fi
-if [ -z "${1}" -o "${ERROR_IN_OPTIONS}" -eq 1 ]; then
-  echo "This script expects one or two paramaters;"
+if [ "${ERROR_IN_OPTIONS}" -eq 1 ]; then
+  echo "This script expects zero, one or two paramaters;"
+  echo "  > For crashing bugs, specify: ./findbug+ 'BBB' (BBB=Common crash strings are all scanned) (and this is also the default when zero parameters are passed)"
+  echo "  > For GAL crashing bugs, specify: ./findbug+ 'GAL' 'BBB' (BBB=Common crash strings are all scanned)"
   echo "  > For SAN bugs, specify: ./findbug+ SAN 'bug_string_to_look_for' (SAN=UBSAN,ASAN,TSAN)"
   echo "  > For GAL bugs, specify: ./findbug+ GAL 'bug_string_to_look_for' (GAL=Galera)"
-  echo "  > For crashing bugs, specify: ./findbug+ 'BBB' (BBB=Common crash strings are all scanned)"
-  echo "  > For GAL crashing bugs, specify: ./findbug+ 'GAL' 'BBB' (BBB=Common crash strings are all scanned)"
   echo "  > For all other bugs, specify: ./findbug+ 'bug_string_to_look_for' without a first option"
   echo "After testing of in.sql is complete, this script will look for the string 'bug_string_to_look_for' in the error log."
   echo "It expects that test_all was already executed"
   exit 1
 fi
-TEXT="${1}"  # Note this may be 'SAN', 'GAL' or 'BBB', and if so it will be replaced respectively below
+TEXT="${1}"  # Note this may be 'SAN', 'GAL', 'BBB' or ''(='BBB'). If so, each one will be replaced respectively below
+if [ -z "${1}" ]; then TEXT='BBB'; fi
 if [ "${TEXT}" == "SAN" ]; then
   SAN_MODE=1
   TEXT="${2}"  # Presence of ${2} was checked earlier above (ref ERROR_IN_OPTIONS)

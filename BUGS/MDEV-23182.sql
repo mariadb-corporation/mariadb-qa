@@ -11,3 +11,10 @@ CREATE TABLE H (c VARCHAR(1) PRIMARY KEY);
 PREPARE p FROM 'SELECT * FROM H WHERE c NOT IN (\'a\', \'a\')';
 EXECUTE p;
 EXECUTE p;
+
+SET collation_connection=utf32_czech_ci;
+CREATE TABLE t1 (c VARCHAR(1));
+SET in_predicate_conversion_threshold=2;
+PREPARE p FROM 'SELECT * FROM t1 WHERE c NOT IN (\'a\',\'a\')';
+EXECUTE p;
+EXECUTE p;

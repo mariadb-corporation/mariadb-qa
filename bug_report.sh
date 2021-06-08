@@ -136,7 +136,6 @@ if [ ! -r ../in.sql ]; then echo "Assert: ../in.sql not available after copy att
 cd ..
 echo "Testing all..."
 if [ "${1}" == "SAN" ]; then
-  export TEXT="${TEXT}"  # Likely not strictly necessary; defensive coding
   ./test_all SAN ${MYEXTRA_OPT_CLEANED}
 elif [ "${1}" == "GAL" ]; then
   ./test_all GAL ${MYEXTRA_OPT_CLEANED}
@@ -314,9 +313,9 @@ if [ -z "${TEXT}" ]; then
     cat ../test.results
   else
     echo "--------------------------------------------------------------------------------------------------------------"
-    echo "ERROR: expected ../test.results to exist, but it did not. Running:  ./findbug+ '[ \\t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]' (any crashed instance), though this may fail."
+    echo "ERROR: expected ../test.results to exist, but it did not. Running:  ./findbug+ 'BBB' (common crash strings are all scanned), though this may fail."
     echo "--------------------------------------------------------------------------------------------------------------"
-    cd ..; ./findbug+ '[ \t]0x[0-9a-f][0-9a-f][0-9a-f][0-9a-f]'; cd - >/dev/null
+    cd ..; ./findbug+ 'BBB'; cd - >/dev/null
   fi
 else
   if [ "${1}" == "SAN" ]; then
@@ -324,10 +323,9 @@ else
       cat ../test.results
     else
       echo "--------------------------------------------------------------------------------------------------------------"
-      echo "ERROR: expected ../test.results to exist, but it did not. Running:  ./findbug+ SAN  with TEXT eportet, though this may fail."
+      echo "ERROR: expected ../test.results to exist, but it did not. Running:  ./findbug+ SAN '${TEXT}', though this may fail."
       echo "--------------------------------------------------------------------------------------------------------------"
-      export TEXT="${TEXT}"  # Likely not strictly necessary; defensive coding
-      cd ..; ./findbug+ SAN; cd - >/dev/null
+      cd ..; ./findbug+ SAN "${TEXT}"; cd - >/dev/null
     fi
   elif [ "${1}" == "GAL" ]; then
     cd ..; ./findbug+ GAL "${TEXT}"; cd - >/dev/null

@@ -13,8 +13,8 @@ while true; do
       if [ -d "${DIR}/${MON[${i}]}" ]; then
         cd "${DIR}/${MON[${i}]}"
         ~/pr | grep -vEi '^================$|SHUTDOWN|no reducer scripts were found in this directory' | sed '/Coredumps found in trials/,+1d'
-        echo "------------- Scanning last line of all error logs for this run for malloc/free/corruption issues"
-        tail -n1 */*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E 'invalid|alloc|free|corruption|corrupted'  # malloc(): , double free or corruption, free(): , Warning: Memory not freed, 
+        echo "=== Scanning last line of all error logs for this run for malloc/free/corruption issues"
+        tail -n1 */*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E 'invalid|alloc|free|corruption|corrupted' | grep -vE 'Column count of mysql\.' # malloc(): , double free or corruption, free(): , Warning: Memory not freed, etc. 
       else
         echo "Index ${i} seems to be invalid: directopry ${DIR}/${MON[${i}]} does not exist!"
         exit 1
