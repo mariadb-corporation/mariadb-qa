@@ -53,7 +53,7 @@ else
   if [ -z "$(ls ${1}/data/*core 2>/dev/null)" ]; then
     echo "CORE           : No core"
   else
-    ls ${1}/data/*core | sed 's|^|CORE     : |'
+    ls ${1}/data/*core | sed 's|^|CORE           : |'
   fi
 fi
 
