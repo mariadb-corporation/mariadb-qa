@@ -15,9 +15,12 @@
 #b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                    ## DBG MDEV-24660
 #escape != -1|SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|Create_tmp_table::cleanup_on_failure                                                          ## DBG |MDEV-25610
 
-##### Diagnostics_area::set_error_status|THD... Issues, ref https://bit.ly/3cjV3hu for more info on these
-#table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                         ## MDEV-19569
-#0|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                         ## MDEV-17890
+##### Diagnostics_area::set_error_status|THD... Issues; incorrect, logged as MDEV-25874
+table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-19569
+0|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                          ## MDEV-17890
+row_end|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                    ## MDEV-22660
+marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-24658
+scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                         ## MDEV-25317
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
@@ -33,6 +36,10 @@
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|innodb_wait_allow_writes|os_file_write_func                                                                                    ## DBG |MDEV-25890
+!pk->has_virtual()|SIGABRT|instant_alter_column_possible|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|mysql_recreate_table                                  ## DBG |MDEV-20131
+!pk->has_virtual()|SIGABRT|instant_alter_column_possible|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|Sql_cmd_alter_table::execute                          ## DBG |MDEV-20131
+!pk->has_virtual()|SIGABRT|instant_alter_column_possible|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|mysql_execute_command                                 ## DBG |MDEV-20131
 SIGSEGV|find_field_in_table|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                                                ## OPT |MDEV-19569
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## DBG |MDEV-19569
 SIGSEGV|ha_myisammrg::append_create_info|add_table_options|show_create_table_ex|show_create_table                                                                              ## OPT |MDEV-25856
@@ -466,7 +473,8 @@ val <= 4294967295u|SIGSEGV|fts_encode_int|fts_cache_node_add_positions|row_fts_i
 pos == node->first_doc_id|SIGABRT|fts_query_filter_doc_ids|fts_query_read_node|fts_query_index_fetch_nodes|fetch_step                                                          ## DBG |MDEV-19522
 pos == node->first_doc_id|SIGABRT|ut_dbg_assertion_failed|fts_query_filter_doc_ids|fts_query_read_node|fts_query_index_fetch_nodes                                             ## DBG |MDEV-19522
 inited==NONE|SIGABRT|handler::ha_index_read_idx_map|write_record|Delayed_insert::handle_inserts|handle_delayed_insert                                                          ## DBG MDEV-19596
-log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|ha_maria::external_lock                                            ## DBG MDEV-17225
+log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|ha_maria::external_lock                                            ## DBG |MDEV-17225
+log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|maria_delete_all_rows|ha_maria::delete_all_rows                              ## DBG |MDEV-17225
 thd->transaction.stmt.is_empty()|SIGABRT|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlink_all_closed_tables|prepare_for_repair|mysql_admin_table            ## DBG |MDEV-17749
 thd->transaction->stmt.is_empty()|SIGABRT|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlink_all_closed_tables|Locked_tables_list::reopen_tables|close_cached_tables ## DBG |MDEV-17749
 thd->transaction->stmt.is_empty()|SIGABRT|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlink_all_closed_tables|Locked_tables_list::reopen_tables|mysql_inplace_alter_table ## DBG |MDEV-17749
