@@ -2189,6 +2189,8 @@ rm -Rf ${WORKDIR} ${RUNDIR}
 diskspace
 mkdir ${WORKDIR} ${WORKDIR}/log ${RUNDIR}
 chmod -R +rX ${WORKDIR}
+echo "grep -E '^BASEDIR=|^INFILE=|^THREADS=|^MYEXTRA=|^MYINIT=|^ADD_RANDOM_OPTIONS=' pquery*run*conf | sed 's|   #.*||;s|ADD_RANDOM|RND|;s|=|: \\t|'" > ${WORKDIR}/i
+chmod +x ${WORKDIR}/i
 WORKDIRACTIVE=1
 ONGOING=
 # User for recovery testing

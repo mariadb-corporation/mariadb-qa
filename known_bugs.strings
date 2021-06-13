@@ -36,6 +36,9 @@ scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_conditi
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+field_length < 1024|SIGABRT|Field_string::save_field_metadata|Table_map_log_event::save_field_metadata|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map    ## DBG |MDEV-25900
+octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map ## DBG |MDEV-25900
+table2 == NULL|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::add|dict_table_t::add_to_cache|dict_load_table_one                                                                  ## OPT MDEV-25905
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|innodb_wait_allow_writes|os_file_write_func                                                                                    ## DBG |MDEV-25890
 !pk->has_virtual()|SIGABRT|instant_alter_column_possible|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|mysql_recreate_table                                  ## DBG |MDEV-20131
 !pk->has_virtual()|SIGABRT|instant_alter_column_possible|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|Sql_cmd_alter_table::execute                          ## DBG |MDEV-20131
