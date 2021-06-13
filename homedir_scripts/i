@@ -39,7 +39,7 @@ else
   cat ${1}/log/master.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | head -n1 | sed 's|^|ERRORLOG       : |'
   cat ${1}/log/master.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | tail -n2 | sed 's|^|                 |'
 fi
-ls -s ${1}/default.node.tld_thread-0.sql| grep --binary-files=text -vE "backup|failing|prev" | tac | head -n1 | sed "s|^[ 0-9]\+||;s|^/||" | xargs -I{} wc -l ${1}/{} | sed 's| | Lines: cat |;s|^|TESTCASE       : |'
+ls -s ${1}/default.node.tld_thread-0.sql* | grep --binary-files=text -vE "backup|failing|prev" | tac | head -n1 | sed "s|^[ 0-9]\+||;s|^/||" | xargs -I{} wc -l ${1}/{} | sed 's| | Lines: cat |;s|^|TESTCASE       : |'
 
 if [[ ${MDG} -eq 1 ]]; then
   for i in $(ls -lt ${1} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep -v tmp | tr -dc '0-9\n' | sort); do

@@ -76,9 +76,6 @@ echo 'Starting bug report generation for this SQL code (please check):'
 echo '----------------------------------------------------------------'
 cat in.sql | grep -v --binary-files=text '^$'
 echo '----------------------------------------------------------------'
-echo 'Note that any mysqld options need to be listed as follows on the first line above:'
-echo '# mysqld options required for replay:  --someoption[=somevalue]'
-sleep 2
 
 RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
 RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
@@ -93,8 +90,11 @@ echo ${MYEXTRA_OPT} >> /tmp/options_bug_report.${RANDF}
 MYEXTRA_OPT_CLEANED=$(cat /tmp/options_bug_report.${RANDF} | sed 's|  | |g' | tr ' ' '\n' | sort -u | tr '\n' ' ')
 if [ "$(echo "${MYEXTRA_OPT_CLEANED}" | sed 's|[ \t]||g')" != "" ]; then
   echo "Using the following options: ${MYEXTRA_OPT_CLEANED}"
-  sleep 0.2  # For visual confirmation
+else
+  echo 'Note that any mysqld options need to be listed as follows on the first line in the testcase (as shown above):'
+  echo '# mysqld options required for replay:  --someoption[=somevalue]'
 fi
+sleep 2.5  # For visual confirmation
 
 if [ ${SAN_MODE} -eq 0 ]; then
   if [ "${1}" == "GAL" ]; then
