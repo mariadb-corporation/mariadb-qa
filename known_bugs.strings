@@ -36,6 +36,11 @@ scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_conditi
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_exec_sql|dict_stats_delete_from_table_stats     ## DBG |MDEV-25907
+table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_update|create_table_info_t::create_table_update_dict ## DBG |MDEV-25907
+thd->locked_tables_mode == LTM_NONE|SIGABRT|Locked_tables_list::init_locked_tables|flush_tables_with_read_lock|mysql_execute_command|mysql_parse                               ## DBG MDEV-25837
+SIGSEGV|flush_tables_with_read_lock|mysql_execute_command|mysql_parse|dispatch_command                                                                                         ## OPT |MDEV-25906
+SIGSEGV|ha_maria::extra|flush_tables_with_read_lock|mysql_execute_command|mysql_parse                                                                                          ## OPT |MDEV-25906
 field_length < 1024|SIGABRT|Field_string::save_field_metadata|Table_map_log_event::save_field_metadata|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map    ## DBG |MDEV-25900
 octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map ## DBG |MDEV-25900
 table2 == NULL|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::add|dict_table_t::add_to_cache|dict_load_table_one                                                                  ## OPT MDEV-25905
@@ -43,6 +48,9 @@ SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|innodb_wait_allow_writes|os_file
 !pk->has_virtual()|SIGABRT|instant_alter_column_possible|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|mysql_recreate_table                                  ## DBG |MDEV-20131
 !pk->has_virtual()|SIGABRT|instant_alter_column_possible|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|Sql_cmd_alter_table::execute                          ## DBG |MDEV-20131
 !pk->has_virtual()|SIGABRT|instant_alter_column_possible|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|mysql_execute_command                                 ## DBG |MDEV-20131
+!index->has_virtual()|SIGABRT|dict_index_build_internal_clust|dict_index_add_to_cache|dict_create_index_step|que_thr_step                                                      ## DBG |MDEV-20131
+SIGSEGV|dict_stats_try_drop_table|innobase_reload_table|ha_innobase::commit_inplace_alter_table|mysql_inplace_alter_table                                                      ## OPT |MDEV-20131
+SIGSEGV|innobase_copy_frm_flags_from_table_share|ha_innobase::commit_inplace_alter_table|mysql_inplace_alter_table|mysql_alter_table                                           ## OPT |MDEV-20131
 SIGSEGV|find_field_in_table|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                                                ## OPT |MDEV-19569
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## DBG |MDEV-19569
 SIGSEGV|ha_myisammrg::append_create_info|add_table_options|show_create_table_ex|show_create_table                                                                              ## OPT |MDEV-25856
@@ -243,7 +251,8 @@ SIGSEGV|maria_status|ha_maria::info|make_join_statistics|JOIN::optimize_inner   
 auto_increment_value|SIGABRT|ha_partition::info|ha_partition::update_next_auto_inc_val|ha_partition::write_row|handler::ha_write_row                                           ## DBG |MDEV-24610
 auto_increment_value|SIGABRT|ha_partition::info|ha_partition::write_row|handler::ha_write_row|write_record                                                                     ## DBG |MDEV-24610
 auto_increment_value|SIGABRT|ha_partition::initialize_auto_increment|Partition_helper::set_auto_increment_if_higher|Partition_helper::ph_write_row|ha_partition::write_row     ## DBG |MDEV-24610
-error == DB_SUCCESS || error == DB_DUPLICATE_KEY|SIGABRT|ut_dbg_assertion_failed|trx_t::commit_low|trx_t::commit|trx_commit_for_mysql                                          ## DBG MDEV-24608
+error == DB_SUCCESS || error == DB_DUPLICATE_KEY|SIGABRT|ut_dbg_assertion_failed|trx_t::commit_low|trx_t::commit|trx_commit_for_mysql                                          ## DBG |MDEV-24608
+error == DB_DUPLICATE_KEY || error == DB_LOCK_WAIT_TIMEOUT|SIGABRT|trx_t::commit_low|trx_t::commit_persist|trx_t::commit|trx_commit_for_mysql                                  ## DBG |MDEV-24608
 item->name && item->name[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                            ## DBG |MDEV-24588
 item->name.str && item->name.str[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                    ## DBG |MDEV-24588
 SIGSEGV|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                              ## DBG MDEV-24560

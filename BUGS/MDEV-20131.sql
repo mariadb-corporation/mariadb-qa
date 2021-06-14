@@ -9,3 +9,10 @@ ALTER TABLE t ADD COLUMN j INT;
 # mysqld options required for replay:  --innodb_page_size=4k
 CREATE TABLE t (c1 TEXT (4000),c2 TEXT (4000),PRIMARY KEY(c1(3072))) ENGINE=InnoDB;
 OPTIMIZE TABLE t;
+
+# mysqld options required for replay:  --innodb_page_size=4k
+CREATE TABLE t (c TEXT,PRIMARY KEY(c(1300))) ENGINE=InnoDB;
+
+# mysqld options required for replay:  --innodb_page_size=4k
+CREATE TABLE t (c TEXT,PRIMARY KEY(c(1300))) ENGINE=InnoDB;
+ALTER TABLE t DROP PRIMARY KEY;

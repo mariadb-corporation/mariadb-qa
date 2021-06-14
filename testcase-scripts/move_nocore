@@ -1,0 +1,4 @@
+#!/bin/bash
+
+mkdir NOCORE
+ls *.NOCORE | sed 's|.sql.report.NOCORE||' | xargs -I{} echo 'mv {}.sql {}.sql.report {}.sql.report.NOCORE NOCORE' | xargs -I{} bash -c "{}"
