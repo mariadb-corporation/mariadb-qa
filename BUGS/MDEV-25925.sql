@@ -1,0 +1,5 @@
+# Warning: Memory not freed: 32 on INSERT DELAYED
+SET sql_mode='TRADITIONAL';
+CREATE TABLE t (c BLOB) ENGINE=MyISAM;
+INSERT DELAYED INTO t VALUES (''||'');
+SHUTDOWN;

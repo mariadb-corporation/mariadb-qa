@@ -16,11 +16,12 @@
 #escape != -1|SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|Create_tmp_table::cleanup_on_failure                                                          ## DBG |MDEV-25610
 
 ##### Diagnostics_area::set_error_status|THD... Issues; incorrect, logged as MDEV-25874
-table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-19569
-0|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                          ## MDEV-17890
-row_end|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                    ## MDEV-22660
-marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-24658
-scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                         ## MDEV-25317
+table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## DBG |MDEV-19569
+0|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                          ## DBG |MDEV-17890
+row_end|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                    ## DBG |MDEV-22660
+marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## DBG |MDEV-24658
+scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                         ## DBG |MDEV-25317
+status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql     ## DBG |MDEV-25927
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
@@ -36,7 +37,10 @@ scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_conditi
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|do_handle_one_connection|handle_one_connection                              ## DBG |MDEV-25927
+status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|one_thread_per_connection_end|do_handle_one_connection                      ## DBG |MDEV-25927
 table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_exec_sql|dict_stats_delete_from_table_stats     ## DBG |MDEV-25907
+table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_update|dict_stats_init                          ## DBG |MDEV-25907
 table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_update|create_table_info_t::create_table_update_dict ## DBG |MDEV-25907
 thd->locked_tables_mode == LTM_NONE|SIGABRT|Locked_tables_list::init_locked_tables|flush_tables_with_read_lock|mysql_execute_command|mysql_parse                               ## DBG MDEV-25837
 SIGSEGV|flush_tables_with_read_lock|mysql_execute_command|mysql_parse|dispatch_command                                                                                         ## OPT |MDEV-25906
