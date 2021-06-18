@@ -29,5 +29,7 @@ fi
 cd /home/$(whoami)/mariadb-qa/BUGS
 git add *
 
+rm -f /data/d[0-9] /data/o[0-9]
+
 echo 'Done!'
 exit 0
