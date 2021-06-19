@@ -1,0 +1,18 @@
+#!/bin/bash
+
+grep '^BASEDIR' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+grep '^INFILE' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|;s|\${SCRIPT_PWD}|~/mariadb-qa|'
+grep '^PQUERY_BIN' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|;s|\${SCRIPT_PWD}|~/mariadb-qa|'
+grep '^ADD_RANDOM_OPTIONS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
+grep '^PQUERY_RUN_TIMEOUT' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
+grep '^THREADS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+if grep '^USE_GENERATOR_INSTEAD_OF_INFILE=1' pquery*.conf; then
+  grep '^USE_GENERATOR_INSTEAD_OF_INFILE' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+  grep '^ADD_INFILE_TO_GENERATED_SQL' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+  grep '^QUERIES_PER_GENERATOR_RUN' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+  grep '^GENERATE_NEW_QUERIES_EVERY_X_TRIALS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+fi
+grep '^MYINIT' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+grep '^MYSAFE' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+grep '^MYEXTRA' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+
