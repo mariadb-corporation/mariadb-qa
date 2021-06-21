@@ -195,7 +195,13 @@ SIGSEGV|THD::change_item_tree|Item::split_sum_func2|JOIN::prepare|st_select_lex_
 SIGSEGV|THD::change_item_tree|Item::split_sum_func2|JOIN::prepare|st_select_lex_unit::prepare_join                                                                             ## DBG |MDEV-24454
 SIGSEGV|THD::change_item_tree|JOIN::prepare|st_select_lex_unit::prepare_join|st_select_lex_unit::prepare                                                                       ## OPT |MDEV-24454
 SIGABRT|DbugExit|_db_return_|my_malloc|JOIN_CACHE::alloc_buffer                                                                                                                ## DBG MDEV-25027
-SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search|choose_plan                                                                            ## DBG MDEV-25013
+SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search                                    ## OPT |MDEV-23937
+SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                                       ## OPT |MDEV-23937
+SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search|choose_plan                                                                            ## OPT |MDEV-23937
+SIGSEGV|restore_prev_nj_state|best_extension_by_limited_search|greedy_search|choose_plan                                                                                       ## OPT |MDEV-23937
+SIGSEGV|restore_prev_nj_state|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                                                  ## OPT |MDEV-23937
+SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search|choose_plan                                                                            ## DBG |MDEV-25013
+SIGSEGV|best_extension_by_limited_search|greedy_search|choose_plan|make_join_statistics                                                                                        ## DBG |MDEV-25013
 thd|SIGABRT|wsrep_innobase_kill_one_trx|wsrep_kill_victim|lock_table_other_has_incompatible|lock_table                                                                         ## OPT MENT-1141
 transaction_.active() == false || (transaction_.state() == wsrep::transaction::s_executing || transaction_.state() == wsrep::transaction::s_prepared || transaction_.state() == wsrep::transaction::s_aborted || transaction_.state() == wsrep::transaction::s_must_abort)|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command ## DBG MENT-1139
 client_state_.mode() != wsrep::client_state::m_toi|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans            ## DBG MDEV-25045
@@ -290,11 +296,6 @@ open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 &&
 open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|close_log_table|TR_table::~TR_table|ha_commit_trans ## DBG |MDEV-24154
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::change_table_name|do_rename|rename_tables                                       ## DBG MDEV-23977
 SIGSEGV|__GI___pthread_mutex_lock|calloc () from|asn1_array2tree () from|call_init                                                                                             ## DBG |MDEV-23985
-SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search                                    ## OPT |MDEV-23937
-SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                                       ## OPT |MDEV-23937
-SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search|choose_plan                                                                            ## OPT |MDEV-23937
-SIGSEGV|restore_prev_nj_state|best_extension_by_limited_search|greedy_search|choose_plan                                                                                       ## OPT |MDEV-23937
-SIGSEGV|restore_prev_nj_state|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                                                  ## OPT |MDEV-23937
 !result|SIGABRT|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator|Item_bool_rowready_func2::fix_length_and_dec          ## DBG MDEV-23800
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|store_key_field::copy_inner|store_key::copy                                                           ## DBG MDEV-23749
 SIGSEGV|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse                                                                                                  ## OPT MDEV-23731
