@@ -39,6 +39,10 @@ status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|D
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_detach|slave_applier_reset_xa_trans|trans_xa_prepare|mysql_execute_command                         ## DBG MENT-1234
+flags() == 0|SIGABRT|wsrep::transaction::start_transaction|wsrep::client_state::start_transaction|wsrep_start_transaction|wsrep_bf_abort                                       ## DBG MDEV-25974
+SIGSEGV|__memcmp_avx2_movbe|rpl_sql_thread_info::cached_charset_compare|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                        ## DBG MDEV-25970
+state_ == s_exec|SIGABRT|wsrep::client_state::start_transaction|wsrep_start_transaction|wsrep_bf_abort|wsrep_thd_bf_abort                                                      ## DBG MDEV-25972
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|do_handle_one_connection|handle_one_connection                              ## DBG |MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|one_thread_per_connection_end|do_handle_one_connection                      ## DBG |MDEV-25927
 table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_exec_sql|dict_stats_delete_from_table_stats     ## DBG |MDEV-25907
