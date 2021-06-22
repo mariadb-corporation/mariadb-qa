@@ -288,6 +288,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|), (|),(|gi' | \
   sed "s|BY''|BY ''|gi" | \
   sed 's|[ ]*=[ ]*|=|gi' | \
+  sed 's|[ \t]\+| |g' | \
   sed 's|  | |gi'
 
 # Templates for copy/paste

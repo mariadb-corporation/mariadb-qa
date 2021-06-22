@@ -2755,7 +2755,7 @@ cleanup_and_save(){
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
     fi
     grep -E --binary-files=text -v "^# mysqld options required for replay:" $WORKT > $WORKO
-    MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g")
+    MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|--sql_mode=--|--sql_mode= --|g")
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
       if [ -s $WORKO ]; then
         if [ "${MYINIT}" == "" ]; then
@@ -3345,7 +3345,7 @@ finish(){
   echo_out "[Finish] Remember; UBSAN testcases may need: export UBSAN_OPTIONS=print_stacktrace=1"
   echo_out "[Finish] Final testcase bundle tar ball    : ${EPOCH}_bug_bundle.tar.gz (handy for upload to bug reports)"
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is the parent/main reducer
-    MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g")
+    MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|--sql_mode=--|--sql_mode= --|g")
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
       echo_out "[Finish] mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED (the testcase will not reproduce the issue without these options passed to mysqld)"
     fi

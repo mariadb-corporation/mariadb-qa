@@ -1,0 +1,24 @@
+# mysqld options required for replay:  --log-bin
+SET autocommit = 0;
+SET sql_mode='';
+CREATE TABLE t (a INT) ENGINE=InnoDB;
+CREATE TEMPORARY TABLE t2 (id INT) ENGINE=InnoDB;
+SELECT * FROM t LIMIT 1;
+CREATE TRIGGER t BEFORE UPDATE ON t FOR EACH ROW SET @a=1;
+LOCK TABLES t WRITE CONCURRENT;
+INSERT INTO t VALUES (1);
+SAVEPOINT B;
+BEGIN;
+SELECT * FROM non_existing;
+
+# mysqld options required for replay:  --log-bin
+SET autocommit=0;
+CREATE TABLE t (a TEXT) ENGINE=InnoDB;
+CREATE TEMPORARY TABLE tmp (id INT NOT NULL) ENGINE=MEMORY;
+SELECT * FROM t WHERE c1 IN ('a','a') ORDER BY c1 DESC LIMIT 2;
+CREATE TRIGGER tr BEFORE UPDATE ON t FOR EACH ROW SET @a:=1;
+LOCK TABLES t WRITE CONCURRENT;
+INSERT INTO t VALUES ('a');
+SAVEPOINT B;
+BEGIN;
+SELECT * FROM t_bigint WHERE id IN ('a', 'a');

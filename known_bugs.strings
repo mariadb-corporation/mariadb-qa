@@ -39,6 +39,7 @@ status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|D
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+binlog_table_maps == 0 || locked_tables_mode == LTM_LOCK_TABLES|SIGABRT|THD::reset_for_next_command|mysql_parse|dispatch_command|do_command                                    ## DBG MDEV-22915
 thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_detach|slave_applier_reset_xa_trans|trans_xa_prepare|mysql_execute_command                         ## DBG MENT-1234
 flags() == 0|SIGABRT|wsrep::transaction::start_transaction|wsrep::client_state::start_transaction|wsrep_start_transaction|wsrep_bf_abort                                       ## DBG MDEV-25974
 SIGSEGV|__memcmp_avx2_movbe|rpl_sql_thread_info::cached_charset_compare|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                        ## DBG MDEV-25970
