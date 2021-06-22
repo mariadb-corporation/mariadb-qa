@@ -56,7 +56,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|procedure|PROCEDURE|gi' | \
   sed 's|function|FUNCTION|gi' | \
   sed 's|sequence|SEQUENCE|gi' | \
-  sed 's|if exists|IF EXISTS|gi' | \
+  sed 's|exists|EXISTS|gi' | \
   sed 's|help|HELP|gi' | \
   sed 's|like|LIKE|gi' | \
   sed 's|partition|PARTITION|gi' | \
@@ -72,6 +72,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|where|WHERE|gi' | \
   sed 's|start|START|gi' | \
   sed 's|first|FIRST|gi' | \
+  sed 's|second|SECOND|gi' | \
   sed 's|last|LAST|gi' | \
   sed 's|xa|XA|gi' | \
   sed 's|shutdown|SHUTDOWN|gi' | \
@@ -155,6 +156,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|date|DATE|gi' | \
   sed 's|datetime|DATETIME|gi' | \
   sed 's|time|TIME|gi' | \
+  sed 's|timestamp|TIMESTAMP|gi' | \
   sed 's|repair|REPAIR|gi' | \
   sed 's|repeat|REPEAT|gi' | \
   sed 's|engine|ENGINE|gi' | \
@@ -176,6 +178,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|linestring|LINESTRING|gi' | \
   sed 's|polygon|POLYGON|gi' | \
   sed 's|geometry|GEOMETRY|gi' | \
+  sed 's|if |IF |gi' | \
   sed 's| in | IN |gi' | \
   sed 's| on | ON |gi' | \
   sed 's| for | FOR |gi' | \
@@ -239,7 +242,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|row_start|ROW_START|gi' | \
   sed 's|row_end|ROW_END|gi' | \
   sed 's|date_add|DATE_ADD|gi' | \
+  sed 's|day_second|DAY_SECOND|gi' | \
   sed 's|day_minute|DAY_MINUTE|gi' | \
+  sed 's|day_hour|DAY_HOUR|gi' | \
   sed 's|system_time|SYSTEM_TIME|gi' | \
   sed 's|export_set|EXPORT_SET|gi' | \
   sed 's|unix_timestamp|UNIX_TIMESTAMP|gi' | \

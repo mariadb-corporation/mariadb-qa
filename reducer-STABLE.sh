@@ -104,6 +104,7 @@ FORCE_KILL=0                    # On/Off (1/0) Enable to forcefully kill mysqld 
 # === MariaDB Galera Cluster
 MDG=0                           # On/Off (1/0) Enable to reduce testcases using a MariaDB Galera Cluster. Auto-enables USE_PQUERY=1
 MDG_ISSUE_NODE=0                # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
+NR_OF_NODES=3                   # Nr of MDG nodes 1-n
 WSREP_PROVIDER_OPTIONS=""       # wsrep_provider_options to be used (and reduced).
 
 # === MySQL Group Replication
@@ -574,7 +575,8 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "[Abort] CTRL+C Was pressed. Dumping variable stack"
   else
     echo_out "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
-    echo_out "[Abort] The source for this reducer was likely deleted. Dumping variable stack"
+    echo_out "[Abort] The source for this reducer was likely deleted. Terminating."
+    exit 3
   fi
   echo_out "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
   if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
@@ -585,7 +587,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
   echo_out "[Abort] End of dump stack"
   if [ $MDG -eq 1 ]; then
     echo_out "[Abort] Ensuring any remaining MDG nodes are terminated and removed"
-    (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
+    (ps -ef | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   fi
   if [ $GRP_RPL -eq 1 ]; then
@@ -607,6 +609,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
   fi
   finish 'abort'
+  exit 2
 }
 
 options_check(){
@@ -891,11 +894,6 @@ options_check(){
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
       echo_out "[Setup] MDG or GRP_RPL is enabled, setting FORCE_SPORADIC=0, SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MULTI_THREADS=0"
     fi
-    export -n FORCE_SPORADIC=0
-    export -n SPORADIC=0
-    export -n FORCE_SKIPV=0
-    export -n SKIPV=1
-    export -n MULTI_THREADS=0  # Original thought here was to avoid dozens of 3-container docker setups. This needs reviewing now that mysqld is used directly.
     # /==========
     if [ $MODE -eq 0 ]; then
       echo "Error: MDG/Group Replication mode is set to 1, and MODE=0 set to 0, but this option combination has not been tested/added to reducer.sh yet. Please do so!"
@@ -908,7 +906,7 @@ options_check(){
       exit 1
     fi
     if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
-      echo "Error: Valgrind for 3 node MDG/Group Replication replay has not been implemented yet. Please do so! Free cookies afterwards!"
+      echo "Error: Valgrind for ${NR_OF_NODES} node MDG/Group Replication replay has not been implemented yet. Please do so! Free cookies afterwards!"
       echo "Terminating now."
       exit 1
     fi
@@ -1306,8 +1304,8 @@ multi_reducer(){
           else
             echo_out "$ATLEASTONCE [Stage $STAGE] [MULTI] Thread #$t disappeared, restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))"
             if [ "${FIREWORKS}" != "1" ]; then  # Only show this is in non-fireworks mode. In fireworks more, this outcome is expected. TODO: We can perhaps just 'never' show this, as it is highly likely seen only when an issue that is not being searched for is seen (to be verified through setting pauses in the script etc and checking why this subreducer thread dissappeared)
-              # The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence. And if 1/2/3 are handled as such, the error message below can be made much nicer. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
-              echo_out "[Debug Aid] This can happen on busy servers, - or - if this message is looping constantly; did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running?. This may also happen due to any of the following reasons: 1) Another server running on the same port (check error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err  2) mysqld startup timeouts etc., 3) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep 'Access denied for user' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another option may be to 'just let it run'. 4) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached. 5) the server is crashing, _but not_ on the specific text being searched for - try MODE=4. You may also want to checkout the last few lines of the subreducer log which often help to find the specific issue. Ref: tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log and also check tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err"  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue.
+              # The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in log/master.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
+              echo_out "[Debug Aid] This can happen on busy servers, - or - if this message is looping constantly; did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running?. This may also happen due to any of the following reasons: 1) (Most likely): The storage location you are using (${WORKD}) has run out of space temporarily  2) Another server running on the same port (check error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err  3) mysqld startup timeouts etc., 4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep 'Access denied for user' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another option may be to 'just let it run'. 5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached. 6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4. You may also want to checkout the last few lines of the subreducer log which often help to find the specific issue. Ref: tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log and also check both tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err and tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out"  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue.
               echo_out "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."  
               sleep 10
               # TODO: Reason 1 does happen. Observed:
@@ -1441,15 +1439,14 @@ TS_init_all_sql_files(){
 # Find empty port
 init_empty_port(){
   NEWPORT=
-  # Choose a random port number in 10-65K range, check if free, increase if needbe
-  NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
   while :; do
-    ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
+    # Choose a random port number in 10-65K range, check if free, increase if needbe
+    NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+    ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
-    if [ "${ISPORTFREE}" -ge 1 -o ! -z "${ISPORTFREE2}" ]; then
-      NEWPORT=$[ ${NEWPORT} + 100 ]  # +100 to avoid 'clusters of ports'
-    else
-      break
+    ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
+    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
+      break  # Suitable port number found
     fi
   done
 }
@@ -1532,7 +1529,9 @@ init_workdir_and_files(){
     fi
     mkdir $WORKD
   fi
-  mkdir $WORKD/data $WORKD/log $WORKD/tmp
+  if [ $MDG -eq 0 ]; then
+    mkdir $WORKD/data $WORKD/log $WORKD/tmp
+  fi
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
   echo_out "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0")"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
@@ -1614,9 +1613,9 @@ init_workdir_and_files(){
   echo_out "[Init] Workdir: $WORKD"
   echo_out "[Init] EPOCH ID: $EPOCH (used for various file and directory names)"
   if [ $MDG -eq 1 ]; then
-    echo_out "[Init] MDG Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
-    echo_out "[Init] MDG Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
-    echo_out "[Init] MDG Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
+    for i in $(seq 1 "${NR_OF_NODES}"); do
+      echo_out "[Init] MDG Node #${i} Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node${i}/node${i}_socket.sock"
+    done
   elif [ $GRP_RPL -eq 1 ]; then
     echo_out "[Init] Group Replication Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
     echo_out "[Init] Group Replication Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
@@ -1630,7 +1629,7 @@ init_workdir_and_files(){
     fi
   fi
   if [ $MDG -eq 1 ]; then
-    echo_out "[Init] Galera Cluster Temporary directories (TMP Variable) set to $WORKD/tmp1, $WORKD/tmp2, $WORKD/tmp3 respectively"
+    echo_out "[Init] Galera Cluster Temporary directories (TMP Variable) set to $WORKD/tmp[1-$NR_OF_NODES]"
   else
     echo_out "[Init] Temporary directory (TMP Variable) set to $TMP"
   fi
@@ -1744,13 +1743,10 @@ init_workdir_and_files(){
     if [ $MODE -eq 4 ]; then
       if [ $MDG_ISSUE_NODE -eq 0 ]; then
         echo_out "[Info] All MDG nodes will be checked for the issue. As long as one node reproduces, testcase reduction will continue (MDG_ISSUE_NODE=0)"
-      elif [ $MDG_ISSUE_NODE -eq 1 ]; then
-        echo_out "[Info] Important: MDG_ISSUE_NODE is set to 1, so only MDG node 1 will be checked for the presence of the issue"
-      elif [ $MDG_ISSUE_NODE -eq 2 ]; then
-        echo_out "[Info] Important: MDG_ISSUE_NODE is set to 2, so only MDG node 2 will be checked for the presence of the issue"
-      elif [ $MDG_ISSUE_NODE -eq 3 ]; then
-        echo_out "[Info] Important: MDG_ISSUE_NODE is set to 3, so only MDG node 3 will be checked for the presence of the issue"
       fi
+      for i in $(seq 1 ${NR_OF_NODES}); do
+       echo_out "[Info] Important: MDG_ISSUE_NODE is set to ${i}, so only MDG node ${i} will be checked for the presence of the issue"
+      done
     fi
   fi
   if [ $GRP_RPL -gt 0 ]; then
@@ -1787,7 +1783,7 @@ init_workdir_and_files(){
       START_OPT="--core-file --core"
     elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
       VERSION_INFO="5.1"
-      INIT_TOOL="${PWD}/scripts/mysql_install_db"
+      INIT_TOOL="${BASEDIR}/scripts/mysql_install_db"
       INIT_OPT="--no-defaults --force"
       START_OPT="--core"
     elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
@@ -1843,16 +1839,12 @@ init_workdir_and_files(){
       stop_mysqld_or_mdg
     elif [[ $MDG -eq 1 ]]; then
       echo_out "[Init] Setting up standard MDG working template (without using MYEXTRA options)"
-      node1="${WORKD}/node1"
-      node2="${WORKD}/node2"
-      node3="${WORKD}/node3"
-      ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node1  > ${WORKD}/startup_node1_error.log 2>&1
-      ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node2  > ${WORKD}/startup_node2_error.log 2>&1
-      ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node3  > ${WORKD}/startup_node3_error.log 2>&1
-      mkdir $WORKD/node1.init $WORKD/node2.init $WORKD/node3.init
-      cp -a $WORKD/node1/* $WORKD/node1.init/
-      cp -a $WORKD/node2/* $WORKD/node2.init/
-      cp -a $WORKD/node3/* $WORKD/node3.init/
+      for i in $(seq 1 ${NR_OF_NODES}); do
+        node="${WORKD}/node${i}"
+        ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node  > ${WORKD}/startup_node${i}_error.log 2>&1
+        mkdir $WORKD/node${i}.init
+        cp -a $WORKD/node${i}/* $WORKD/node${i}.init/
+      done
     elif [[ $GRP_RPL -eq 1 ]]; then
       echo_out "[Init] Setting up standard Group Replication working template (without using MYEXTRA options)"
       MID="${BASEDIR}/bin/mysqld --no-defaults --initialize-insecure ${MYINIT} --basedir=${BASEDIR}"
@@ -1869,7 +1861,11 @@ init_workdir_and_files(){
     fi
     FIRST_MYSQLD_START_FLAG=0  # From here onwards, FORCE_KILL can be used if used if it set enabled (set to 1)
   else
-    echo_out "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../data.init)"
+    if [[ $MDG -eq 1 ]]; then
+      echo_out "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../node*.init)"
+    else
+      echo_out "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../data.init)"
+    fi
   fi
 }
 
@@ -1891,9 +1887,7 @@ generate_run_scripts(){
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_INIT
   echo "echo \"Attempting to prepare mysqld environment at /dev/shm/${EPOCH}...\"" >> $WORK_INIT
   echo "rm -Rf /dev/shm/${EPOCH}" >> $WORK_INIT
-  if [[ ${MDG} -eq 1 ]]; then
-    echo "mkdir -p /dev/shm/${EPOCH}/tmp1 /dev/shm/${EPOCH}/tmp2 /dev/shm/${EPOCH}/tmp3" >> $WORK_INIT
-  else
+  if [[ ${MDG} -eq 0 ]]; then
     echo "mkdir -p /dev/shm/${EPOCH}/tmp /dev/shm/${EPOCH}/log" >> $WORK_INIT
   fi
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`" >> $WORK_INIT
@@ -1909,9 +1903,10 @@ generate_run_scripts(){
   echo "VERSION2=\"\`\$BIN --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-6]' | head -n1\`\"" >> $WORK_INIT
   echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then MID_OPTIONS='--no-defaults --initialize-insecure ${MYINIT}'; elif [ \"\$VERSION\" == \"5.6\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION}\" == \"5.5\" ]; then MID_OPTIONS='--force ${MYINIT}';elif [ \"\${VERSION2}\" == \"10.1\" -o \"\${VERSION2}\" == \"10.2\" -o \"\${VERSION2}\" == \"10.3\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION2}\" == \"10.4\" -o \"\${VERSION2}\" == \"10.5\" -o \"\${VERSION2}\" == \"10.6\" ]; then MID_OPTIONS='--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}'; else MID_OPTIONS='${MYINIT}'; fi" >> $WORK_INIT
   if [[ ${MDG} -eq 1 ]]; then
-    echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node1" >> $WORK_INIT
-    echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node2" >> $WORK_INIT
-    echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node3" >> $WORK_INIT
+    for i in $(seq 1 ${NR_OF_NODES}); do
+      mkdir -p /dev/shm/${EPOCH}/tmp${i}
+      echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node${i}" >> $WORK_INIT
+    done
   else
     echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then \$BIN \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; else \$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; fi" >> $WORK_INIT
   fi
@@ -2009,7 +2004,17 @@ generate_run_scripts(){
 }
 
 init_mysql_dir(){
-  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
+  if [[ $MDG -eq 1 ]] ; then
+    for i in $(seq 1 ${NR_OF_NODES}); do
+      sudo rm -Rf ${WORKD}/node${i}
+      if [ "$MULTI_REDUCER" != "1" ]; then  # This is a parent/main reducer
+        cp -a $WORKD/node${i}.init $WORKD/node${i}
+      else
+        mkdir ${WORKD}/node${i}
+        cp -a $WORKD/../../node${i}.init/* $WORKD/node${i}/
+      fi
+    done
+  elif [[ $GRP_RPL -eq 1 ]]; then
     sudo rm -Rf $WORKD/node1 $WORKD/node2 $WORKD/node3
     cp -a ${node1}.init ${node1}
     cp -a ${node2}.init ${node2}
@@ -2071,7 +2076,7 @@ start_mysqld_or_valgrind_or_mdg(){
 start_mdg_main(){
   generate_run_scripts
   #clean existing processes
-  ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true
+  ps -ef | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true
   sleep 2; sync
   SUSER=root
   SPASS=
@@ -2079,7 +2084,6 @@ start_mdg_main(){
   rm -rf ${WORKD}/my.cnf
   echo "[mysqld]" > ${WORKD}/my.cnf
   echo "basedir=${BASEDIR}" >> ${WORKD}/my.cnf
-  echo "wsrep-debug=1" >> ${WORKD}/my.cnf
   echo "innodb_file_per_table" >> ${WORKD}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${WORKD}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${WORKD}/my.cnf
@@ -2125,12 +2129,9 @@ start_mdg_main(){
   unset MDG_LADDRS
   MDG_PORTS=""
   MDG_LADDRS=""
-  for i in $(seq 1 3); do
+  for i in $(seq 1 ${NR_OF_NODES}); do
     node=${WORKD}/node${i}
     mkdir -p $WORKD/tmp${i}
-    #RBASE1="$((MYPORT + (100 * $i)))"
-    #LADDR1="127.0.0.1:$((RBASE1 + 8))"
-    #SST_PORT="127.0.0.1:$((RBASE1 + 1))"
     init_empty_port
     RBASE=$NEWPORT
     NEWPORT=
@@ -2139,6 +2140,9 @@ start_mdg_main(){
     NEWPORT=
     init_empty_port
     SST_PORT="127.0.0.1:${NEWPORT}"
+    NEWPORT=
+    init_empty_port
+    IST_PORT="127.0.0.1:${NEWPORT}"
     NEWPORT=
     MDG_PORTS+=("$RBASE")
     MDG_LADDRS+=("$LADDR")
@@ -2152,7 +2156,7 @@ start_mdg_main(){
     sed -i "2i datadir=$node" ${WORKD}/n${i}.cnf
     sed -i "2i socket=$node/node${i}_socket.sock" ${WORKD}/n${i}.cnf
     sed -i "2i tmpdir=$WORKD/tmp${i}" ${WORKD}/n${i}.cnf
-    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
+    sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;ist.recv_addr=$IST_PORT;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
     # TODO: Add encryption checks after implementing encryption functionalities in pquery-run.sh
 #    if [[ "$ENCRYPTION_RUN" != 1 ]]; then
 #      sed -i "2i wsrep_provider_options=\"gmcast.listen_addr=tcp://$LADDR;$WSREP_PROVIDER_OPTIONS\"" ${WORKD}/n${i}.cnf
@@ -2173,43 +2177,31 @@ start_mdg_main(){
 #    fi
   done
 
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n1.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n2.cnf
-  sed -i "2i wsrep_cluster_address=gcomm://${MDG_LADDRS[1]},${MDG_LADDRS[2]},${MDG_LADDRS[3]}" ${WORKD}/n3.cnf
-  cp ${WORKD}/n1.cnf ${WORKD}/${EPOCH}_n1.cnf
-  cp ${WORKD}/n2.cnf ${WORKD}/${EPOCH}_n2.cnf
-  cp ${WORKD}/n3.cnf ${WORKD}/${EPOCH}_n3.cnf
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
-  echo "echo \"Attempting to start mysqld (socket /dev/shm/${EPOCH}/node1/node1_socket.sock)...\"" >> $WORK_START
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
-  echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n1.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node1/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-  echo "sleep 10" >> $WORK_START
-  echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n2.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node2/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-  echo "sleep 60" >> $WORK_START
-  echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n3.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node3/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-  echo "sleep 60" >> $WORK_START
+  WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
+  for j in $(seq 1 ${NR_OF_NODES}); do
+    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS:1}" ${WORKD}/n${j}.cnf
+    cp ${WORKD}/n${j}.cnf ${WORK_BUG_DIR}/${EPOCH}_n${j}.cnf
+    if [ ${j} -eq 1 ]; then
+      echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START
+      echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      echo "sleep 10" >> $WORK_START
+      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/error.log 2>&1 &
+      mdg_node_startup_status ${WORKD}/node${j}/error.log
+    else
+      echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      echo "sleep 60" >> $WORK_START
+      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA > ${WORKD}/node${j}/error.log 2>&1 &
+      mdg_node_startup_status ${WORKD}/node${j}/error.log
+    fi
+  done
+
   sed -i "s|$WORKD|/dev/shm/${EPOCH}|g" $WORK_START
   chmod +x $WORK_START
-  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n1.cnf $MYEXTRA --wsrep-new-cluster > $node1/error.log 2>&1 &
-  mdg_node_startup_status $node1/error.log
-  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n2.cnf $MYEXTRA > $node2/error.log 2>&1 &
-  mdg_node_startup_status $node2/error.log
-  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n3.cnf $MYEXTRA > $node3/error.log 2>&1 &
-  mdg_node_startup_status $node3/error.log
-
   # create test to run pquery command
-  ${BASEDIR}/bin/mysql -uroot -S$node1/node1_socket.sock -e "create database if not exists test" > /dev/null 2>&1
-
-  CLUSTER_UP=0
-  if $BASEDIR/bin/mysqladmin -uroot --socket=${node3}/node3_socket.sock ping > /dev/null 2>&1; then
-    if [[ `$BASEDIR/bin/mysql -uroot --socket=${node1}/node1_socket.sock -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_cluster" | awk '{print $2}'` -eq 3 ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ `$BASEDIR/bin/mysql -uroot --socket=${node2}/node2_socket.sock -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_cluster" | awk '{print $2}'` -eq 3 ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ `$BASEDIR/bin/mysql -uroot --socket=${node3}/node3_socket.sock -e"show global status like 'wsrep_cluster_size'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_cluster" | awk '{print $2}'` -eq 3 ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ "`$BASEDIR/bin/mysql -uroot --socket=${node1}/node1_socket.sock -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_local" | awk '{print $2}'`" == "Synced" ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ "`$BASEDIR/bin/mysql -uroot --socket=${node2}/node2_socket.sock -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_local" | awk '{print $2}'`" == "Synced" ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-    if [[ "`$BASEDIR/bin/mysql -uroot --socket=${node3}/node3_socket.sock -e"show global status like 'wsrep_local_state_comment'" | sed 's/[| \t]\+/\t/g' | grep -E --binary-files=text "wsrep_local" | awk '{print $2}'`" == "Synced" ]]; then CLUSTER_UP=$[ $CLUSTER_UP + 1]; fi
-  fi
+  ${BASEDIR}/bin/mysql -uroot -S${WORKD}/node1/node1_socket.sock -e "create database if not exists test" > /dev/null 2>&1
 }
 
 gr_start_main(){
@@ -2584,10 +2576,14 @@ run_and_check(){
   OUTCOME="$?"
   if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 6 ]; then stop_mysqld_or_mdg; fi
   # Add error log from this trial to the overall run error log
-  if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-    sudo cat $WORKD/node1/error.log > $WORKD/node1_error.log
-    sudo cat $WORKD/node2/error.log > $WORKD/node2_error.log
-    sudo cat $WORKD/node3/error.log > $WORKD/node3_error.log
+  if [[ $MDG -eq 1 ]] ; then
+    for i in $(seq 1 "${NR_OF_NODES}"); do
+      cat $WORKD/node${i}/error.log >> $WORKD/node${i}_error.log
+    done
+  elif [[ $GRP_RPL -eq 1 ]]; then
+    sudo cat $WORKD/node1/error.log >> $WORKD/node1_error.log
+    sudo cat $WORKD/node2/error.log >> $WORKD/node2_error.log
+    sudo cat $WORKD/node3/error.log >> $WORKD/node3_error.log
   else
     cat $WORKD/log/master.err >> $WORKD/error.log
     rm -f $WORKD/log/master.err
@@ -2678,10 +2674,10 @@ run_sql_code(){
       if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         if [ $PQUERY_MULTI -eq 1 ]; then
           if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
-          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${node1}/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
+          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         else
           if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE=""; else PQUERY_SHUFFLE="--no-shuffle"; fi
-          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${node1}/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
+          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         fi
       else
         if [ $PQUERY_MULTI -eq 1 ]; then
@@ -2696,7 +2692,7 @@ run_sql_code(){
       if [ "$CLI_MODE" == "" ]; then CLI_MODE=99; fi  # Leads to assert below
       CLIENT_SOCKET=
       if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-        CLIENT_SOCKET=${node1}/node1_socket.sock
+        CLIENT_SOCKET=${WORKD}/node1/node1_socket.sock
       else
         CLIENT_SOCKET=$WORKD/socket.sock
       fi
@@ -2745,7 +2741,7 @@ cleanup_and_save(){
     fi
   else
     if [[ $MDG -eq 1 ]]; then
-      (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
+      (ps -ef | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
       sleep 2; sync
     fi
     if [[ $GRP_RPL -eq 1 ]]; then
@@ -2999,12 +2995,7 @@ process_outcome(){
                 sed '/^#VARMOD#/p;/^MULTI_REDUCER=/,/^#VARMOD#/d' "$(readlink -f ${BASH_SOURCE[0]})" > "${NEWBUGRE}"
                 sed '/^MULTI_REDUCER=/,/^#VARMOD#/p;d' "$(readlink -f ${BASH_SOURCE[0]})" | grep -v "^#VARMOD#" > "${NEWBUGVM}"
                 sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
-                NEWBUGTEXT=
-                if [ $MDG -eq 1 ]; then
-                  NEWBUGTEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # Idem as below
-                else
-                  NEWBUGTEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
-                fi
+                NEWBUGTEXT="$(cat ${NEWBUGTO} | sed 's|"|\\\\"|g')" # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
                 # This code is taken from pquery-prep-red.sh, if it is updated here, please also update it there.
                 if [[ "${NEWBUGTEXT}" = *":"* ]]; then
                   if [[ "${NEWBUGTEXT}" = *"|"* ]]; then
@@ -3027,7 +3018,7 @@ process_outcome(){
                 else
                   NEWBUGTEXT="$(echo "$NEWBUGTEXT"|sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
                 fi
-                sed -i "s|^TEXT=\"[^\"]\+\"|TEXT=\"$(cat ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.string | head -n1 | tr -d '\n')\"|" "${NEWBUGRE}"
+                sed -i "s|^TEXT=\"[^\"]\+\"|TEXT=\"${NEWBUGTEXT}\"" "${NEWBUGRE}"
                 chmod +x "${NEWBUGRE}"
                 echo_out "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"
                 NEWBUGSO=
@@ -3069,15 +3060,11 @@ process_outcome(){
   elif [ $MODE -eq 4 ]; then
     M4_ISSUE_FOUND=0
     if [ $MDG -eq 1 ]; then
-      if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 1 ]; then
-        if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
-      fi
-      if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 2 ]; then
-        if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node2}/node2_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
-      fi
-      if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq 3 ]; then
-        if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node3}/node3_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
-      fi
+      for i in $(seq 1 ${NR_OF_NODES}); do
+        if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq ${i} ]; then
+          if ! $BASEDIR/bin/mysqladmin -uroot --socket=$WORKD/node${i}/node${i}_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
+        fi
+      done
     elif [ $GRP_RPL -eq 1 ]; then
       if [ $GRP_RPL_ISSUE_NODE -eq 0 -o $GRP_RPL_ISSUE_NODE -eq 1 ]; then
         if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
@@ -3249,7 +3236,7 @@ stop_mysqld_or_mdg(){
   SHUTDOWN_TIME_START=$(date +'%s')
   MODE0_MIN_SHUTDOWN_TIME=$[ $TIMEOUT_CHECK + 10 ]
   if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-    (ps -ef | grep -E 'n1.cnf|n2.cnf|n3.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
+    (ps -ef | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1 || true)
     sleep 2; sync
   else
     if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 -a ${FIRST_MYSQLD_START_FLAG} -ne 1 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld. For the first init startup of mysqld, kill should also not be used.
@@ -3377,7 +3364,7 @@ finish(){
   else  # Reduction
     echo_out "[DONE] Final testcase: $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
   fi
-  if [ "${1}" == "abort" ]; then
+  if [ "${1}" == 'abort' ]; then
     echo_out "[Abort] Done. Terminating reducer"
     exit 2
   fi
