@@ -3041,20 +3041,24 @@ process_outcome(){
                           echo "Assert (#1)! No suitable sed seperator found. NEWBUGTEXT (${NEWBUGTEXT}) contains all of the possibilities, add more!"
                         else
                           NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s-&-\\\\\\&-g")"  # Escape '&' correctly
+                          sed -i "s-^TEXT=.*-TEXT=\"${NEWBUGTEXT}\"-" "${NEWBUGRE}"
                         fi
                       else
                         NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s_&_\\\\\\&_g")"  # Escape '&' correctly
+                        sed -i "s_^TEXT=.*_TEXT=\"${NEWBUGTEXT}\"_" "${NEWBUGRE}"
                       fi
                     else
                       NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s/&/\\\\\\&/g")"  # Escape '&' correctly
+                      sed -i "s/^TEXT=.*/TEXT=\"${NEWBUGTEXT}\"/" "${NEWBUGRE}"
                     fi
                   else
                     NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s|&|\\\\\\&|g")"  # Escape '&' correctly
+                    sed -i "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT}\"|" "${NEWBUGRE}"
                   fi
                 else
                   NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
+                  sed -i "s:^TEXT=.*:TEXT=\"${NEWBUGTEXT}\":" "${NEWBUGRE}"
                 fi
-                sed -i "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT}\"|" "${NEWBUGRE}"
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
                 sed -i "s|^MYEXTRA=.*|MYEXTRA=\"${MYEXTRA}\"|" "${NEWBUGRE}"
                 chmod +x "${NEWBUGRE}"
@@ -3082,6 +3086,7 @@ process_outcome(){
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*${M3_OUTPUT_TEXT}OutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good mysqld error log output issue in $WORKO"
         control_backtrack_flow
       fi
+      sleep 2; sync
       cleanup_and_save
       if [ $MDG -eq 0 ]; then
         return 1
