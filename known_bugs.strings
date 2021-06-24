@@ -216,7 +216,8 @@ SIGSEGV|wsrep_can_run_in_toi|wsrep_can_run_in_nbo|wsrep_NBO_begin|wsrep_to_isola
 SIGABRT|__cxa_rethrow () from|galera::WriteSetOut::gather|galera::TrxHandleMaster::gather|galera::ReplicatorSMM::replicate                                                     ## DBG MDEV-25025
 m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                         ## DBG MDEV-24960
 !m.first->second.is_bulk_insert()|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                           ## DBG MDEV-24905
-ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare                               ## DBG MENT-1119
+ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit                                  ## DBG |MENT-1119
+ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare                               ## DBG |MENT-1119
 state_ == s_exec|SIGABRT|wsrep::client_state::start_transaction|Wsrep_storage_service::start_transaction|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step ## OPT |MENT-1117/MDEV-22227
 server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare ## DBG |MENT-1117
 m_thd == _current_thd()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service|Wsrep_prepared_applier_service::~Wsrep_prepared_applier_service ## DBG |MDEV-25516
