@@ -178,6 +178,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|linestring|LINESTRING|gi' | \
   sed 's|polygon|POLYGON|gi' | \
   sed 's|geometry|GEOMETRY|gi' | \
+  sed 's|cache|CACHE|gi' | \
   sed 's|if |IF |gi' | \
   sed 's| in | IN |gi' | \
   sed 's| on | ON |gi' | \
