@@ -3033,6 +3033,7 @@ process_outcome(){
                 sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
                 NEWBUGTEXT="$(sed 's|"|\\\\"|g' "${NEWBUGTO}")" # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
                 # This code is taken from pquery-prep-red.sh, if it is updated here, please also update it there and vice versa
+                NEWBUGTEXT_FINAL=
                 if [[ "${NEWBUGTEXT}" = *":"* ]]; then
                   if [[ "${NEWBUGTEXT}" = *"|"* ]]; then
                     if [[ "${NEWBUGTEXT}" = *"/"* ]]; then
@@ -3040,25 +3041,27 @@ process_outcome(){
                         if [[ "${NEWBUGTEXT}" = *"-"* ]]; then
                           echo "Assert (#1)! No suitable sed seperator found. NEWBUGTEXT (${NEWBUGTEXT}) contains all of the possibilities, add more!"
                         else
-                          NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s-&-\\\\\\&-g")"  # Escape '&' correctly
-                          sed -i "s-^TEXT=.*-TEXT=\"${NEWBUGTEXT}\"-" "${NEWBUGRE}"
+                          NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s-&-\\\\\\&-g")"  # Escape '&' correctly
+                          sed -ie "s-^TEXT=.*-TEXT=\"${NEWBUGTEXT_FINAL}\"-" "${NEWBUGRE}"
                         fi
                       else
-                        NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s_&_\\\\\\&_g")"  # Escape '&' correctly
-                        sed -i "s_^TEXT=.*_TEXT=\"${NEWBUGTEXT}\"_" "${NEWBUGRE}"
+                        NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s_&_\\\\\\&_g")"  # Escape '&' correctly
+                        sed -ie "s_^TEXT=.*_TEXT=\"${NEWBUGTEXT_FINAL}\"_" "${NEWBUGRE}"
                       fi
                     else
-                      NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s/&/\\\\\\&/g")"  # Escape '&' correctly
-                      sed -i "s/^TEXT=.*/TEXT=\"${NEWBUGTEXT}\"/" "${NEWBUGRE}"
+                      NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s/&/\\\\\\&/g")"  # Escape '&' correctly
+                      sed -ie "s/^TEXT=.*/TEXT=\"${NEWBUGTEXT_FINAL}\"/" "${NEWBUGRE}"
                     fi
                   else
-                    NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s|&|\\\\\\&|g")"  # Escape '&' correctly
-                    sed -i "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT}\"|" "${NEWBUGRE}"
+                    NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s|&|\\\\\\&|g")"  # Escape '&' correctly
+                    sed -ie "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT_FINAL}\"|" "${NEWBUGRE}"
                   fi
                 else
-                  NEWBUGTEXT="$(echo "$NEWBUGTEXT" | sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
-                  sed -i "s:^TEXT=.*:TEXT=\"${NEWBUGTEXT}\":" "${NEWBUGRE}"
+                  NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
+                  sed -ie "s:^TEXT=.*:TEXT=\"${NEWBUGTEXT_FINAL}\":" "${NEWBUGRE}"
                 fi
+                NEWBUGTEXT_FINAL=
+                NEWBUGTEXT=
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
                 sed -i "s|^MYEXTRA=.*|MYEXTRA=\"${MYEXTRA}\"|" "${NEWBUGRE}"
                 chmod +x "${NEWBUGRE}"
