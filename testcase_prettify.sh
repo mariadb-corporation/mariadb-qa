@@ -27,6 +27,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|numeric|NUMERIC|gi' | \
   sed 's|value|VALUE|gi' | \
   sed 's|deterministic|DETERMINISTIC|gi' | \
+  sed 's|commit|COMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
   sed 's|table|TABLE|gi' | \
   sed 's|tables|TABLES|gi' | \

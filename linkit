@@ -8,7 +8,7 @@ if [ ! -d /test -o ! -d /data ]; then
   sudo chmod -R +rX /data
 fi
 
-mkdir -p /data/NEWBUGS /data/FIREWORKS
+mkdir -p /data/NEWBUGS
 
 ln -fs /home/$(whoami)/mariadb-qa/homedir_scripts/* /home/$(whoami)/ 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
@@ -16,7 +16,6 @@ ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /data/ 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/testcase-scripts/* /test/TESTCASES/ 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/uniq_newbugs /data/NEWBUGS/uniq_newbugs 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/find_newbug_bugs /data/NEWBUGS/find_newbug_bugs 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/uniq_newbugs /data/FIREWORKS/uniq_newbugs 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/uniq_newbugs /test/TESTCASES/uniq_newbugs 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/testcase_prettify.sh /home/$(whoami)/tcp 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-goexp-patch.sh /home/$(whoami)/pge 2>&1
