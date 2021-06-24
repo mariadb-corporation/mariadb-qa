@@ -118,7 +118,7 @@ MODE5_ADDITIONAL_COUNTTEXT=1    # Number of times the additional text should app
 
 # === FIREWORKS Settings
 FIREWORKS=0                     # Fireworks mode: setups reducer.sh in such a way that any new bug observed, using a given input file, will be stored, and no actual reduction will be done. Expert use only; turning this on changes many settings, and thus changes the operation of reducer completely (default=0 = off)
-FIREWORKS_LINES=200000          # How many lines to slice from the provided input file. Previous testing seems to shows an almost even distribution of original testcase lenght. High number: higher possibility of hitting a bug per run, but slower. Low number: the same, both in reverse. (default=200000, needs testing with 50000, 100000 etc.)
+FIREWORKS_LINES=200000          # How many lines to slice from the provided input file. Previous testing seems to shows an almost even distribution to original testcase lenght. High number: higher possibility of hitting a bug per run, but slower. Low number: the same, both in reverse. (default=200000, needs testing with 50000, 100000 etc.)
 
 # === Old ThreadSync options    # No longer commonly used
 TS_TRXS_SETS=0
@@ -1079,7 +1079,6 @@ set_internal_options(){  # Internal options: do not modify!
   fi
   sleep 0.1$RANDOM  # Subreducer OS slicing
   WHOAMI=$(whoami)
-  OVERALL_RESTART_ISSUES_IN_FIREWORKS_MODE_COUNT=0
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer. For subreducers, EPOCH, SKIPV, SPORADIC is set in #VARMOD#
     EPOCH=$(date +%s%N)  # Used for /dev/shm work directory name and WORK_INIT, WORK_START etc. file names
     SKIPV=0
@@ -1294,11 +1293,10 @@ multi_reducer(){
               echo_out "$ATLEASTONCE [Stage $STAGE] [MULTI] [OOS] Thread #$t disappeared (mysqld start failed) due to running out of diskspace. Restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))."
               #echo_out "$ATLEASTONCE [Stage $STAGE] [MULTI] [OOS] Copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review. Otherwise, please ignore the \"check...\" message just above; the files are no longer there given the restart above)"
             else
-              if [ "${FIREWORKS}" != "1" -o ${OVERALL_RESTART_ISSUES_IN_FIREWORKS_MODE_COUNT} -gt 100 ]; then  # Only show this is in non-fireworks mode, or when it is seen a lot (>100). In fireworks more, seeing this from time to time is somewhat expected.
+              if [ "${FIREWORKS}" != "1" ]; then  # Only show this is in non-fireworks mode
                 echo_out "$ATLEASTONCE [Stage $STAGE] [MULTI] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This can happen irregularly on busy servers. If the message is scrolling however, please investigate; reducer has copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review. Otherwise, please ignore the \"Failed to start..., check...\" message just above, the files are no longer there/it does not apply, given the restart)"  # Due to mysqld startup timeouts etc. | Check last few lines of subreducer log to find reason (you may need a pause above before the thread is restarted!)
               else
                 echo_out "$ATLEASTONCE [Stage $STAGE] [MULTI] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))"
-                OVERALL_RESTART_ISSUES_IN_FIREWORKS_MODE_COUNT=$[ ${OVERALL_RESTART_ISSUES_IN_FIREWORKS_MODE_COUNT} + 1 ]
               fi
             fi
           else
@@ -3989,7 +3987,7 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
     echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE (duration depends on initial input file size)"
     while [ $LINECOUNTF -ge $STAGE1_LINES ]; do
       if [ $LINECOUNTF -eq $STAGE1_LINES  ]; then NEXTACTION="& Progress to the next stage"; fi
-      if [ $TRIAL -gt 1 ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
+      if [ $TRIAL -gt 1 -a "${FIREWORKS}" != "1" ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
       if [ "$MULTI_REDUCER" != "1" -a $SPORADIC -eq 1 -a $REDUCE_GLIBC_OR_SS_CRASHES -le 0 ]; then
         # This is the parent/main reducer AND the issue is sporadic (so; need to use multiple threads). Disabled for REDUCE_GLIBC_OR_SS_CRASHES as it is always single-threaded
         if [ "${FIREWORKS}" == "1" ]; then  # Fireworks mode does not use WORKF but INPUTFILE
@@ -4027,7 +4025,7 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
   CURRENTLINE=1
   echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
   while true; do
-    if [ ${TRIAL} -gt 1 ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
+    if [ ${TRIAL} -gt 1 -a "${FIREWORKS}" != "1" ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
     if [ ${CURRENTLINE} -gt ${LINECOUNTF} ]; then
       break  # EOF reached
     elif [ ${CURRENTLINE} -eq ${LINECOUNTF} ]; then

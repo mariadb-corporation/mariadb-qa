@@ -8,11 +8,12 @@ KILL_PERCENT=7  # Ex: 4: All processes up to 3.99 will continue to live, 4.00 an
 # Script variables
 while true; do
   clear
-  ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep -v gcc | head -n7
+  CMD="ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep -vE 'fireworks|mtr_to_sql|generator.sh|cc'"
+  ${CMD} | head -n7
   HEADLINE=;PERCENT=;PID=
   if [ "${KILL_LARGE}" -eq 1 ]; then
     # Do not terminate generator.sh nor cc1plus or any other *cc* program
-    HEADLINE="$(ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep -vE 'generator.sh|cc' | head -n2 | tail -n1)"
+    HEADLINE="$(${CMD} | head -n2 | tail -n1)"
     PERCENT="$(echo ${HEADLINE} | awk '{print $2}' | sed 's|\.[0-9]\+||;s|[ \t]||g')"
     PID="$(echo ${HEADLINE} | awk '{print $1}' | sed 's|[ \t]||g')"
     if [ ${PERCENT} -ge ${KILL_PERCENT} ]; then
