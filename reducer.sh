@@ -3063,7 +3063,7 @@ process_outcome(){
                 NEWBUGTEXT_FINAL=
                 NEWBUGTEXT=
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
-                sed -i "s|^MYEXTRA=.*|MYEXTRA=\"${MYEXTRA}\"|" "${NEWBUGRE}"
+                #sed -i "s|^MYEXTRA=.*|MYEXTRA=\"${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO Needs more work. Whilst the original is for example "--no-defaults --log-output=none --sql_mode=ONLY_FULL_GROUP_BY" this will end up with "--log-output=none" only which is not so good as "--no-defaults" is missing and more importantly, it's incorrect.
                 chmod +x "${NEWBUGRE}"
                 echo_out "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"
                 NEWBUGSO=
