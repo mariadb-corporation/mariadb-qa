@@ -1,0 +1,13 @@
+#!/bin/bash
+
+screen -ls | grep "newbug_" | sed 's|\..*||' | sed 's|[^_0-9]||g' | sort -un > ~/screen_list_newbug
+
+COUNT=$(wc -l ~/screen_list_newbug 2>/dev/null | sed 's| .*||')
+
+for SCREEN in $(seq 1 ${COUNT}); do
+  PID="$(head -n ${SCREEN} ~/screen_list_newbug | tail -n1)"
+  echo "Connecting you to screen ${SCREEN}/${COUNT} with PID ${PID}" && sleep 0.1
+  screen -d -r ${PID}
+done
+
+rm -f ~/screen_list_newbug

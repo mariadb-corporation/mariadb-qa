@@ -1,0 +1,3 @@
+#!/bin/bash
+
+grep '.*' *.string | wc -l | sed 's|^|Number of string files: |'

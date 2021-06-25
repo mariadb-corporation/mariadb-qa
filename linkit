@@ -1,34 +1,39 @@
 #!/bin/bash
 
-if [ ! -d /test -o ! -d /data ]; then
-  sudo mkdir -p /test /data
+if [ ! -d /test -o ! -d /data/NEWBUGS ]; then
+  sudo mkdir -p /test /data/NEWBUGS  # Creates both /data and /data/NEWBUGS
   sudo chown -R $(whoami):$(whoami) /test
   sudo chown -R $(whoami):$(whoami) /data
   sudo chmod -R +rX /test
   sudo chmod -R +rX /data
 fi
 
-mkdir -p /data/NEWBUGS
-
+# Homedir scripts
 ln -fs /home/$(whoami)/mariadb-qa/homedir_scripts/* /home/$(whoami)/ 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /data/ 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/testcase-scripts/* /test/TESTCASES/ 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/uniq_newbugs /data/NEWBUGS/uniq_newbugs 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/find_newbug_bugs /data/NEWBUGS/find_newbug_bugs 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/uniq_newbugs /test/TESTCASES/uniq_newbugs 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/testcase_prettify.sh /home/$(whoami)/tcp 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-goexp-patch.sh /home/$(whoami)/pge 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-go-expert.sh /home/$(whoami)/pg 2>&1
 
+# Build scripts (mostly/mainly used from /test)
+ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
+ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /data/ 2>&1
+rm -f /data/d[0-9] /data/o[0-9]  # Remove changedir scripts normally only used in /test
+
+# Mass testcase scripts
+ln -fs /home/$(whoami)/mariadb-qa/testcase-scripts/* /test/TESTCASES/ 2>&1
+ln -fs /home/$(whoami)/mariadb-qa/newbugs/uniq_newbugs /test/TESTCASES/uniq_newbugs 2>&1
+
+# Newbugs (new bugs found by reducer while reducing) & Fireworks (new bugs found by reducer in fireworks mode)
+ln -fs /home/$(whoami)/mariadb-qa/newbugs/* /data/NEWBUGS/ 2>&1
+
+# Link ~/BUGS to ~/mariadb-qa/BUGS for ease-of-access
 if [ ! -d /home/$(whoami)/BUGS ]; then
-  ln -fs /home/$(whoami)/mariadb-qa/BUGS /home/$(whoami)/BUGS
+  ln -fs /home/$(whoami)/mariadb-qa/BUGS /home/$(whoami)/BUGS 2>&1
 fi
 
+# Add any bugs not commited yet
 cd /home/$(whoami)/mariadb-qa/BUGS
 git add *
-
-rm -f /data/d[0-9] /data/o[0-9]
 
 echo 'Done!'
 exit 0
