@@ -3062,6 +3062,10 @@ process_outcome(){
                 fi
                 NEWBUGTEXT_FINAL=
                 NEWBUGTEXT=
+                sed -i "s|^THREADS=.*|THREADS=3|" "${NEWBUGRE}"
+                sed -i "s|^MULTI_THREADS_INCREASE=.*|MULTI_THREADS_INCREASE=1|" "${NEWBUGRE}"
+                sed -i "s|^MULTI_THREADS_MAX=.*|MULTI_THREADS_MAX=5|" "${NEWBUGRE}"
+                sed -i "s|^STAGE1_LINES=.*|STAGE1_LINES=5|" "${NEWBUGRE}"
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
                 #sed -i "s|^MYEXTRA=.*|MYEXTRA=\"${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO Needs more work. Whilst the original is for example "--no-defaults --log-output=none --sql_mode=ONLY_FULL_GROUP_BY" this will end up with "--log-output=none" only which is not so good as "--no-defaults" is missing and more importantly, it's incorrect.
                 chmod +x "${NEWBUGRE}"
