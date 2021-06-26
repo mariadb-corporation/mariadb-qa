@@ -675,16 +675,26 @@ echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.
 
 echo '#!/bin/bash' > clean_failing_queries
 echo '# This script elimiates failing queries from in.sql in two different ways and saves the results in cleaned1.sql and cleaned2.sql' >> clean_failing_queries
-echo '' >> clean_failing_queries
+echo "echo ''" >> clean_failing_queries
+echo 'rm -f ./cleaned1.sql.safe ./cleaned2.sql.safe' >> clean_failing_queries
+echo 'if [ -r ./cleaned1.sql ]; then mv ./cleaned1.sql ./cleaned1.sql.safe; fi' >> clean_failing_queries
+echo 'if [ -r ./cleaned2.sql ]; then mv ./cleaned2.sql ./cleaned2.sql.safe; fi' >> clean_failing_queries
 echo 'grep --binary-files=text "#NOERROR" in.sql > cleaned1.sql' >> clean_failing_queries
-echo './all_no_cl' >> clean_failing_queries
+echo './all_no_cl "${*}"' >> clean_failing_queries
+echo "echo ''" >> clean_failing_queries
+echo "echo 'Executing testcase...'" >> clean_failing_queries
 echo './test' >> clean_failing_queries
+echo "echo 'Processing queries...'" >> clean_failing_queries
 echo "grep --binary-files=text '^ERROR' mysql.out | grep -o ') at line [0-9]\+:' | grep -o '[0-9]\+' | sort -nr | sed 's|$|d;|' | tr -d '\n' | sed \"s|^|sed '|;s|$|' in.sql > cleaned2.sql\n|\" > ./cln_in && chmod +x ./cln_in && ./cln_in && rm -f ./cln_in" >> clean_failing_queries
-echo '' >> clean_failing_queries
+echo "echo ''" >> clean_failing_queries
 echo "echo 'Done! Failing queries from in.sql were eliminated.'" >> clean_failing_queries
 echo "echo '      The result (via #NOERROR selection) is stored in: cleaned1.sql'" >> clean_failing_queries
 echo "echo '      The result (from re-execution test) is stored in: cleaned2.sql'" >> clean_failing_queries
-echo "echo 'Warning: mysqld options can easily change the outcome of replays. For example setting --sql_mode= as a startup option will result in engine substituion (with the default engine) where a specified engine is unkown, thereby completely altering any error vs no error results.'" >> clean_failing_queries
+echo "echo ''" >> clean_failing_queries
+echo "echo 'You can also have a look at mysql.out to see the output of the orginal in.sql execution (i.e. with errors intact)'" >> clean_failing_queries
+echo "echo ''" >> clean_failing_queries
+echo "echo 'Warning #1: mysqld options can easily change the outcome of replays. For example setting --sql_mode= as a startup option will result in engine substituion (with the default engine) where a specified engine is unkown, thereby completely altering any error vs no error results.'" >> clean_failing_queries
+echo "echo 'Warning #2: currently all errors are filtered out. However, an error may show on a statement which partially executed correctly. For example, DROP TABLE t1,t2; where t1 exists but t2 does not will seem to fail with ERROR 1051 (42S02) however on closer inspection, it will show that only t2 is reported as an unknown table whereas t1 was dropped and thereby all execution thereafter is changed between the cleaned and non-cleaned versions.'" >> clean_failing_queries
 
 if [[ $MDG -eq 1 ]]; then
   cp cl gal_cl
