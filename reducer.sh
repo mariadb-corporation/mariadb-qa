@@ -803,10 +803,10 @@ options_check(){
   # Sanitize input filenames which do not have a path specified by pointing to the current path (only possible conclusion). This ensures [Finish] output looks correct (ref $WORK_BUG_DIR)
   if [[ "${INPUTFILE}" != *"/"* ]]; then
     INPUTFILE="${PWD}/${INPUTFILE}"
-    if [ ! -r "${INPUTFILE}" -a ! -d "${INPUTFILE}" ]; then
-      echo "Assert: INPUTFILE is not a readable file, nor a directory"
-      exit 1
-    fi
+  fi
+  if [ ! -r "${INPUTFILE}" -a ! -d "${INPUTFILE}" ]; then
+    echo "Assert: INPUTFILE is not a readable file, nor a directory"
+    exit 1
   fi
   if [ $MODE -eq 0 ]; then
     if [ "${TIMEOUT_COMMAND}" != "" ]; then
@@ -1114,7 +1114,7 @@ set_internal_options(){  # Internal options: do not modify!
 }
 
 kill_multi_reducer(){
-  PS_CMD="ps -def | grep -E --binary-files=text subreducer | grep -E --binary-files=text \$WHOAMI | grep -E --binary-files=text \$EPOCH | grep -Ev --binary-files=text 'grep|fireworks' | awk '{print \$2}'"
+  PS_CMD="ps -def | grep --binary-files=text 'subreducer' | grep --binary-files=text ${WHOAMI} | grep --binary-files=text ${EPOCH} | grep --binary-files=text 'grep' | awk '{print \$2}'"
   if [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; then
     PIDS_TO_TERMINATE=$(eval ${PS_CMD} | sort -u | tr '\n' ' ')
     echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating these PID's: $PIDS_TO_TERMINATE"
@@ -1145,6 +1145,10 @@ multi_reducer(){
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     echo_out "ASSERT: REDUCE_GLIBC_OR_SS_CRASHES is active, and we ended up in multi_reducer() function. This should not be possible as REDUCE_GLIBC_OR_SS_CRASHES uses a single thread only."
   fi
+
+  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any old subreducer processes are terminated"
+  kill_multi_reducer
+
   if [ "$STAGE" = "V" ]; then
     echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Starting $MULTI_THREADS verification subreducer threads to verify if the issue is sporadic ($WORKD/subreducer/)"
     SKIPV=0
@@ -1157,9 +1161,6 @@ multi_reducer(){
     fi
     SKIPV=1 # For subreducers started for simplification (STAGE1+), verify/initial simplification should be skipped as this was done already by the parent/main reducer (i.e. just above)
   fi
-
-  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any old subreducer processes are terminated"
-  kill_multi_reducer
 
   # Create (or remove/create) main multi-reducer path
   rm -Rf $WORKD/subreducer/
@@ -3318,8 +3319,16 @@ stop_mysqld_or_mdg(){
       if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 1; fi
 
       if [ "${FIREWORKS}" == "1" ]; then  # Terminate mysqld directly in fireworks mode
-        for i in $(seq 1 3); do  # Ensure the process is definitely gone
-          { kill -9 $PIDV >/dev/null 2>&1; } >/dev/null 2>&1
+        { kill -9 $PIDV >/dev/null 2>&1; } >/dev/null 2>&1
+        sleep 0.02
+        while :; do
+          if kill -0 $PIDV >/dev/null 2>&1; then
+            { kill -9 $PIDV >/dev/null 2>&1; } >/dev/null 2>&1
+            sleep 1
+            if kill -0 $PIDV >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed at least twice. Is this server very busy?"; else break; fi
+          else
+            break
+          fi
         done
       else
         # Try various things now to bring server down, upto kill -9
@@ -3337,7 +3346,7 @@ stop_mysqld_or_mdg(){
               break
             fi
             if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 2; fi
-            if kill -0 $PIDV >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server failed at least twice. Is this server very busy?"; else break; fi
+            if kill -0 $PIDV >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed at least twice. Is this server very busy?"; else break; fi
             sleep 5
             if [ $MODE -ne 1 -a $MODE -ne 6 ]; then
               if [ $MODE -eq 0 ]; then
@@ -3347,7 +3356,7 @@ stop_mysqld_or_mdg(){
               fi
               if kill -0 $PIDV >/dev/null 2>&1; then
                 if [ $MODE -ne 0 ]; then  # For MODE=0, the following is not a WARNING but fairly normal
-                  echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server failed. Now forcing kill of mysqld"
+                  echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed. Now forcing kill of mysqld"
                 fi
                 { kill -9 $PIDV >/dev/null 2>&1; } >/dev/null 2>&1
               else

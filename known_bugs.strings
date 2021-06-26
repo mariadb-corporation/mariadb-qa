@@ -28,6 +28,9 @@ status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|D
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
 
+##### Filter debug/debug sync occurences. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
+debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## DBG 1
+
 ##### MONTY bb-10.6-monty MAY 2021 TESTING (DISABLED FILTERS TO AVOID FILTERING TRUNK RUNS) #####
 #to <= end|SIGABRT|process_args|my_vsnprintf_ex|my_error|change_master                                                                                                         ## DBG |MDEV-25612
 #SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
