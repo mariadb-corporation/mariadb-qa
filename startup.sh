@@ -684,6 +684,7 @@ echo '' >> clean_failing_queries
 echo "echo 'Done! Failing queries from in.sql were eliminated.'" >> clean_failing_queries
 echo "echo '      The result (via #NOERROR selection) is stored in: cleaned1.sql'" >> clean_failing_queries
 echo "echo '      The result (from re-execution test) is stored in: cleaned2.sql'" >> clean_failing_queries
+echo "echo 'Warning: mysqld options can easily change the outcome of replays. For example setting --sql_mode= as a startup option will result in engine substituion (with the default engine) where a specified engine is unkown, thereby completely altering any error vs no error results.'" >> clean_failing_queries
 
 if [[ $MDG -eq 1 ]]; then
   cp cl gal_cl
@@ -753,11 +754,11 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   sed -i 's|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR="/data/NEWBUGS"   |' ./reducer_new_text_string.sh
   sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="/home/$(whoami)/mariadb-qa/new_text_string.sh"   |' ./reducer_new_text_string.sh
   sed -i 's|^PQUERY_LOC=[^#]\+|PQUERY_LOC="/home/$(whoami)/mariadb-qa/pquery/pquery2-md"   |' ./reducer_new_text_string.sh
-  sed -i 's|^SCAN_FOR_NEW_BUGS=0|SCAN_FOR_NEW_BUGS=1|' ./reducer_new_text_string.sh # If not set already
+  sed -i 's|^SCAN_FOR_NEW_BUGS=0|SCAN_FOR_NEW_BUGS=1|' ./reducer_new_text_string.sh  # If not set already
   # ------------------- ./reducer_errorlog.sh creation
   cp ./reducer_new_text_string.sh ./reducer_errorlog.sh
   sed -i 's|^USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|' ./reducer_errorlog.sh
-  sed -i 's|^SCAN_FOR_NEW_BUGS=1|SCAN_FOR_NEW_BUGS=0|' ./reducer_errorlog.sh # SCAN_FOR_NEW_BUGS=1 Not supported yet when using USE_NEW_TEXT_STRING=0
+  sed -i 's|^SCAN_FOR_NEW_BUGS=1|SCAN_FOR_NEW_BUGS=0|' ./reducer_errorlog.sh  # SCAN_FOR_NEW_BUGS=1 Not supported yet when using USE_NEW_TEXT_STRING=0
   # ------------------- ./reducer_errorlog_pquery.sh creation
   cp ./reducer_errorlog.sh ./reducer_errorlog_pquery.sh
   sed -i 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_errorlog_pquery.sh
@@ -767,7 +768,7 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   # ------------------- ./reducer_fireworks.sh creation
   cp ./reducer_new_text_string.sh ./reducer_fireworks.sh
   sed -i 's|^FIREWORKS=0|FIREWORKS=1|' ./reducer_fireworks.sh
-  sed -i 's|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR="/data/FIREWORKS"   |' ./reducer_fireworks.sh
+  sed -i 's|^MYEXTRA=.*|MYEXTRA="--no-defaults ${3}"|' ./reducer_fireworks.sh  # It is best not to add --sql_mode=... as this will significantly affect CLI replay attempts as the CLI by default does not set --sql_mode=... as normally defined in reducer.sh's MYEXTRA default (--sql_mode=ONLY_FULL_GROUP_BY). Reason: with either --sql_mode= or --sql_mode=--sql_mode=ONLY_FULL_GROUP_BY engine substituion (to the default storage engine, i.e. InnoDB or MyISAM in MTR) is enabled. Replays at the CLI would thus look significantly different by default (i.e. unless this option was passed and by default it is not)
 fi
 
 echo 'rm -f in.tmp' >fixin
