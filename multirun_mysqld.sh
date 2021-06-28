@@ -1,6 +1,7 @@
 #!/bin/bash
 # Created by Ramesh Sivaraman, Percona LLC
 # Updated by Roel Van de Paar, Percona LLC
+# Updated by Roel Van de Paar, MariaDB
 set +H
 
 # Start this script from within the base directory which contains ./bin/mysqld[-debug]
@@ -9,10 +10,12 @@ set +H
 WORKDIR="/dev/shm"                     ## Working directory ("/dev/shm" preferred)
 SQLFILE="./in.sql"                     ## SQL Input file
 MYEXTRA="${*}"                         ## Accept mysqld options from the command line
-SERVER_THREADS=(2 10 20 30 40 50 100)  ## Number of server threads (x mysqld's). This is a sequence: (10 20) means: first 10, then 20 server if no crash was observed
-CLIENT_THREADS=200                     ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
-AFTER_SHUTDOWN_DELAY=35                ## Wait this many seconds for mysqld to shutdown properly. If it does not shutdown within the allotted time, an error shows
-TEXT=""                                ## Search for a specific string on crash/shutdown. Do NOT use unique bug ID's here (not implemented yet), only a TEXT to look for in the error log (for example, a single mangled frame or a partial error message)
+SERVER_THREADS=(2 10 25 50 75 100 200 250)  ## Number of server threads (x mysqld's). This is a sequence: (10 20) means: first 10, then 20 server if no crash was observed
+#CLIENT_THREADS=200                     ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
+CLIENT_THREADS=1                      ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
+#AFTER_SHUTDOWN_DELAY=35                ## Wait this many seconds for mysqld to shutdown properly. If it does not shutdown within the allotted time, an error shows
+AFTER_SHUTDOWN_DELAY=3
+TEXT="xid_count"                                ## Search for a specific string on crash/shutdown. Do NOT use unique bug ID's here (not implemented yet), only a TEXT to look for in the error log (for example, a single mangled frame or a partial error message)
 
 # Scripted variables
 if [ "${1}" == "TEXT" ]; then
@@ -146,12 +149,12 @@ for i in ${SERVER_THREADS[@]};do
     echoito "Starting mysqld #${SERVER_COUNT}..."
     MYPORT=$[ ${MYPORT} + 1 ]
     mkdir ${WORKDIR}/${j} 2>/dev/null
-    $INIT_TOOL --no-defaults ${INIT_OPT} --basedir=${PWD} --datadir=${WORKDIR}/${j} > ${WORKDIR}/${j}_mysql_install_db.out 2>&1
+    $INIT_TOOL --no-defaults ${INIT_OPT} --basedir=${PWD} --datadir=${WORKDIR}/${j} ${MYEXTRA} > ${WORKDIR}/${j}_mysql_install_db.out 2>&1
     CMD="bash -c \"set -o pipefail; ${BIN} ${MYEXTRA} ${START_OPT} --basedir=${PWD} --datadir=${WORKDIR}/${j} --port=${MYPORT} --pid-file=${WORKDIR}/${j}_pid.pid --log-error=${WORKDIR}/${j}_error.log.out --socket=${WORKDIR}/${j}_socket.sock --user=${MYUSER}\""
     eval $CMD > ${WORKDIR}/${j}_mysqld.out 2>&1 &
     PIDV="$!"
     MYSQLD+=(${PIDV})
-    echoit "Started mysqld #${SERVER_COUNT} with PID ${MYSQLD[j-1]}"
+    echoit "Started mysqld #${SERVER_COUNT}/${i} with PID ${MYSQLD[j-1]}"
   done
   for j in `seq 1 ${i}`;do
     x=0

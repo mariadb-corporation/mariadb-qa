@@ -132,6 +132,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|after|AFTER|gi' | \
   sed 's|before|BEFORE|gi' | \
   sed 's|blob|BLOB|gi' | \
+  sed 's|char|CHAR|gi' | \
   sed 's|varchar|VARCHAR|gi' | \
   sed 's|character|CHARACTER|gi' | \
   sed 's|replace|REPLACE|gi' | \

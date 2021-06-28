@@ -48,6 +48,7 @@ SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # 'script' utility location to access st
 # === Sporadic testcases        # Used when testcases prove to be sporadic *and* fail to reduce using basic methods
 FORCE_SKIPV=0                   # On/Off (1/0) Forces verify stage to be skipped (auto-enables FORCE_SPORADIC)
 FORCE_SPORADIC=0                # On/Off (1/0) Forces issue to be treated as sporadic
+NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat each trial 1 time. Increase to re-attempt trials when reduction was not succesful for that trial; ideal for sporadic issues which need x attempts per trial. Will work irrespective of detected sporadicity.
 
 # === True Multi-Threaded       # True multi-threaded testcase reduction (only program in the world that does this) based on random replay (auto-covers sporadic testcases)
 PQUERY_MULTI=0                  # On/off (1/0) Enables true multi-threaded testcase reduction based on random replay (auto-enables USE_PQUERY)
@@ -236,7 +237,6 @@ TS_VARIABILITY_SLEEP=1
 
 # ======== Ideas for improvement
 # - The write of the file should be atomic - i.e. if reducer is interrupted during a testcase_out write, the file may be faulty. Check if this is so & fix
-# - STAGE8 does currently know/consider whetter an issue is sporadic (alike to other STAGES, except STAGE 1). We could have an additional option like STAGE8_FORCE_SPORADIC=0/1 Which would - specifically for STAGE 8 - try each option x times (STAGE8_SPORADIC_ATTEMPTS) when an issue is found to be (by the auto-sporadic issue detection) or is forced to be (by STAGE8_FORCE_SPORADIC=1) sporadic. This allows easier reduction of mysqld options for sporadic issues)
 # - A new mode could do this; main thread (single): run SQL, secondary thread (new functionality): check SHOW PROCESSLIST for certain regex TEXT regularly. This would allow creating testcases for queries that have a long runtime. This new functionality likely will live outside process_outcome() as it is a live check
 # - Incorporate 3+ different playback options: SOURCE ..., redirection with <, redirection with cat, (stretch goal; replay via MTR), etc. (there may be more)
 #   THIS FUNCTIONALITY WAS ADDED 09-06-2016. "An expansion of this..." below is not implmeneted yet
@@ -693,6 +693,13 @@ options_check(){
     echo 'Terminating reducer to allow this change to be made.'
     exit 1
   fi
+  if [ "$(echo "${NR_OF_TRIAL_REPEATS}" | grep --binary-files=text -o '[0-9]*')" != "${NR_OF_TRIAL_REPEATS}" ]; then
+    echo "Error: NR_OF_TRIAL_REPEATS (${NR_OF_TRIAL_REPEATS}) is not numeric."
+    exit 1
+  elif [ ${NR_OF_TRIAL_REPEATS} -lt 1 ]; then
+    echo "Error: NR_OF_TRIAL_REPEATS (${NR_OF_TRIAL_REPEATS}) is less than 1 which is an impossible setting."
+    exit 1
+  fi
   if [ $MODE -ge 6 ]; then
     if [ ! -d "$1" ]; then
         echo 'Error: A file name was given as input, but a directory name was expected.'
@@ -1002,7 +1009,7 @@ options_check(){
       echo "Terminating now."
       exit 1
     fi
-    # TODO: the following can be improved. If it is empty, we save to the workdir by default, but yet we assert here if is empty. As long as the feature is beta, this is a good idea to make sure new bugs are always saved correctly. What is not clear yet is if pquery-run.sh will copy the full trial dir on various reductions back. And, if you for example use reducer_new_text_string.sh from a basedir (after ~/start), then any newbugs will be saved in /dev/shm but not elsehwere unless NEW_BUGS_SAVE_DIR was set. It is, but it shows how new bugs could be missed if we don't assert here, just save to the workdir (/dev/shm) and not somehow copy it back. One solution may be to save to the same directory as where the original input file was (i.e. set NEW_BUGS_SAVE_DIR to that and never proceed unless NEW_BUGS_SAVE_DIR is set, i.e. it cannot be empty, but may be autoset as such. To evaluate more once more runtime experience is present, though this may no longer be visible now that NEW_BUGS_COPY_DIR code was changed to NEW_BUGS_SAVE_DIR and a copy is only stored in the save dir and not the workdir by defauly anymore (due to /dev/shm space prevention measures). 
+    # TODO: the following can be improved. If it is empty, we save to the workdir by default, but yet we assert here if is empty. As long as the feature is beta, this is a good idea to make sure new bugs are always saved correctly. What is not clear yet is if pquery-run.sh will copy the full trial dir on various reductions back. And, if you for example use reducer_new_text_string.sh from a basedir (after ~/start), then any newbugs will be saved in /dev/shm but not elsehwere unless NEW_BUGS_SAVE_DIR was set. It is, but it shows how new bugs could be missed if we don't assert here, just save to the workdir (/dev/shm) and not somehow copy it back. One solution may be to save to the same directory as where the original input file was (i.e. set NEW_BUGS_SAVE_DIR to that and never proceed unless NEW_BUGS_SAVE_DIR is set, i.e. it cannot be empty, but may be autoset as such. To evaluate more once more runtime experience is present, though this may no longer be visible now that NEW_BUGS_COPY_DIR code was changed to NEW_BUGS_SAVE_DIR and a copy is only stored in the save dir and not the workdir by defauly anymore (due to /dev/shm space prevention measures).
     if [ -z "${NEW_BUGS_SAVE_DIR}" ]; then
       echo "Assert: SCAN_FOR_NEW_BUGS was set to 1, yet NEW_BUGS_SAVE_DIR is empty. Please set it to a target directory for the SQL testcases to be saved"
       echo "Terminating now."
@@ -1020,7 +1027,6 @@ options_check(){
       echo "SCAN_FOR_NEW_BUGS was set to 1, yet USE_NEW_TEXT_STRING is not set to 1 (set to '${USE_NEW_TEXT_STRING}'). This setup is not covered by this script yet. Ref inside reducer for more info. Automatically turning SCAN_FOR_NEW_BUGS off."
       # Reason is that the new text string script is used in conjunction with the new bugs string list. This could be expanded to include the older bugs string list also, but this would seem to be wasted effort as that list is no longer maintained inside MariaDB (the new unique bug id's are used instead and are much better/of much higher quality). Rather, and this is also provides additional ROI in other areas; update the new text string script to call the old script for any case where a new unique bug ID can not be obtained (quite limited limited amount of cases; usually only when incorrect core dumps (stack smashing, OOS, mysqld failed to create a coredump) are used.
       SCAN_FOR_NEW_BUGS=0
-      exit 1
     fi
   fi
   export -n MYEXTRA=`echo ${MYEXTRA} | sed 's|[ \t]*--no-defaults[ \t]*||g'`  # Ensuring --no-defaults is no longer part of MYEXTRA. Reducer already sets this itself always.
@@ -1339,10 +1345,10 @@ multi_reducer(){
             if [ "${FIREWORKS}" == "1" ]; then
               echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t ended. Thread restarted (PID #$(eval echo $(echo '$MULTI_PID'"$t")))"
             else
-              # Only show this in non-fireworks mode. In fireworks mode, this outcome is expected. 
+              # Only show this in non-fireworks mode. In fireworks mode, this outcome is expected.
               # TODO: The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in log/master.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
               echo_out "[Debug Aid] This can happen on busy servers, - or - if this message is looping constantly; did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running?. This may also happen due to any of the following reasons: 1) (Most likely): The storage location you are using (${WORKD}) has run out of space temporarily  2) Another server running on the same port (check error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err  3) mysqld startup timeouts etc., 4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep 'Access denied for user' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another option may be to 'just let it run'. 5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached. 6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4. You may also want to checkout the last few lines of the subreducer log which often help to find the specific issue. Ref: tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log and also check both tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err and tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out"  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue.
-              echo_out "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."  
+              echo_out "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."
               sleep 10
               # TODO: Reason 1 does happen. Observed:
               # 2020-08-24  9:55:45 0 [ERROR] Can't start server: Bind on TCP/IP port. Got error: 98: Address already in use
@@ -1625,7 +1631,7 @@ init_workdir_and_files(){
           #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
           #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
           echo "$DROPC" > $WORKF
-          grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF 
+          grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF
         else  # pquery is used; use a multi-line format for DROPC
           cp $INPUTFILE $WORKF
           # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
@@ -1757,6 +1763,11 @@ init_workdir_and_files(){
         echo_out "[Init] Using shuffled (random/non-sequential) multi-threaded replay"
       fi
     fi
+  fi
+  echo_out "[Init] Number of times each trial will be attempted: ${NR_OF_TRIAL_REPEATS}x"
+
+  if [ ${NR_OF_TRIAL_REPEATS} -gt 50 ]; then
+    echo "Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
   fi
   if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echo_out "[Init] Passing the following additional options to mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
   if [ "$MYINIT" != "" ]; then echo_out "[Init] Passing the following additional options to mysqld initialization: $MYINIT"; fi
@@ -2785,7 +2796,7 @@ cleanup_and_save(){
       sleep 2; sync
     fi
     cp -f $WORKT $WORKF
-    if [ -r "$WORKO" ]; then 
+    if [ -r "$WORKO" ]; then
       cp -f $WORKO ${WORKO}.prev
       # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
@@ -3028,7 +3039,7 @@ process_outcome(){
                 # The exact working is: when ^#VARMOD# is found print it once (as in the next command it is included in
                 # the delete, yet it need to stay. Then (the next command), take from ^MULTI_REDUCER= to ^#VARMOD# and
                 # delete it. For the .varmod creation command, it is the reverse: print that block, (d)elete the rest
-                # Also, in the secondary sed, FIREWORKS is turned off for the newly created (for bug reducing) reducer 
+                # Also, in the secondary sed, FIREWORKS is turned off for the newly created (for bug reducing) reducer
                 sed '/^#VARMOD#/p;/^MULTI_REDUCER=/,/^#VARMOD#/d' "$(readlink -f ${BASH_SOURCE[0]})" | sed 's|^FIREWORKS=1|FIREWORKS=0|' > "${NEWBUGRE}"
                 sed '/^MULTI_REDUCER=/,/^#VARMOD#/p;d' "$(readlink -f ${BASH_SOURCE[0]})" | grep -v "^#VARMOD#" > "${NEWBUGVM}"
                 sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
@@ -3493,12 +3504,12 @@ report_linecounts(){
       LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
     fi
     if [ "$STAGE" = "V" ]; then
-      echo_out "[Init] Initial number of lines in restructured input file: $LINECOUNTF"
+      echo_out "[Init] Initial number of lines in restructured input file: $LINECOUNTF (${INPUTFILE})"
     else
-      echo_out "[Init] Number of lines in input file: $LINECOUNTF"
+      echo_out "[Init] Number of lines in input file: $LINECOUNTF (${INPUTFILE})"
       if [ ${LINECOUNTF} -eq 0 ]; then
         echo_out "Assert: Input file empty (0 lines)! Terminating"
-	exit 1
+        exit 1
       fi
     fi
   fi
@@ -3542,10 +3553,17 @@ verify_not_found(){
   exit 1
 }
 
+#STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
 verify(){
-  #STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
+  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS>1 (${NR_OF_TRIAL_REPEATS}) and this issue is thus likely highly sporadic, which may cause verification to fail."
+    # Ref https://jira.mariadb.org/browse/TODO-3017
+    # Instead of using STAGE V to verify if the issue exists, one can simply test reproducibility using FORCE_SKIPV=1 with multi-threaded pre-reduction (with a high number of MULTI_THREADS like 30 or more) until such approximate time as pquery-go-expert.sh (~/pge) is normally needed.
+    return
+  fi
   STAGE='V'
   TRIAL=1
+  TRIAL_REPEAT_COUNT=0
   echo_out "$ATLEASTONCE [Stage $STAGE] Verifying the bug/issue exists and is reproducible by reducer (duration depends on initial input file size)"
   # --init-file: Instead of using an init file, add the init file contents to the top of the testcase, if that still reproduces the issue, below
   ORIGINALMYEXTRA=$MYEXTRA
@@ -3618,7 +3636,7 @@ verify(){
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
               echo "$DROPC" > $WORKF
-              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF 
+              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF
             else  # pquery is used; use a multi-line format for DROPC
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
@@ -3658,7 +3676,7 @@ verify(){
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
               echo "$DROPC" > $WORKF
-              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF 
+              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF
             else  # pquery is used; use a multi-line format for DROPC
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
@@ -3701,7 +3719,7 @@ verify(){
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
               echo "$DROPC" > $WORKF
-              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF 
+              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF
             else  # pquery is used; use a multi-line format for DROPC
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
@@ -3737,7 +3755,7 @@ verify(){
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
               echo "$DROPC" > $WORKF
-              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF 
+              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF
             else  # pquery is used; use a multi-line format for DROPC
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
@@ -3771,7 +3789,7 @@ verify(){
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
               echo "$DROPC" > $WORKF
-              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF 
+              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF
             else  # pquery is used; use a multi-line format for DROPC
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
@@ -3807,10 +3825,17 @@ verify(){
       if [ "$?" -eq "1" ]; then  # Verify success, exit loop
         echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Success. Issue detected. Saved files."
         report_linecounts
+        TRIAL_REPEAT_COUNT=0
         break
-      else  # Verify fail, 'while' loop continues
+      else  # Verify fail, 'while' loop continues (and possibly with repeated trials if NR_OF_TRIAL_REPEATS>1)
         echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Failed. Issue not detected."
-        TRIAL=$[$TRIAL+1]
+        TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
+        if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
+          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+        else
+          TRIAL=$[$TRIAL+1]
+          TRIAL_REPEAT_COUNT=0
+        fi
       fi
     done
   fi
@@ -4085,9 +4110,10 @@ fi
 
 #STAGE2: Loop through each line of the remaining file (now max $STAGE1_LINES lines) once
 if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
-  NEXTACTION="& try removing next line in the file"
+  NEXTACTION="& try removing next SQL line"
   STAGE=2
   TRIAL=1
+  TRIAL_REPEAT_COUNT=0
   NOISSUEFLOW=0
   CURRENTLINE=1
   echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
@@ -4100,8 +4126,28 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
     fi
     echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line ${CURRENTLINE} (Current chunk size: fixed to 1)"
     sed -n "$CURRENTLINE ! p" $WORKF > $WORKT
-    run_and_check
-    if [ $? -eq 0 ]; then CURRENTLINE=$[ ${CURRENTLINE} + 1 ]; fi  # Only advance the filter line number if there was no issue, otherwise stay on the same line as the file has gotten one line shorter, and so the next line is now the current line!
+    while true; do
+      run_and_check
+      if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
+        TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
+        if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
+          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          NEXTACTION="& reattempt removing the same SQL line"
+          continue;
+        else  # Maximum repeats reached and issue failed to reproduce in any of them
+          # Only advance the filter line number if there was no issue, otherwise stay on the same line as the file has gotten one line shorter, and so the next line is now the current line! IOW, in "Verify success" below we do not advance the line counter as the next line is now the current line, whereas here we advance by one to jump ahead to the next line whilst leaving the current line which was tested for removal (and could not be removed) intact.
+          CURRENTLINE=$[ ${CURRENTLINE} + 1 ];
+          NEXTACTION="& try removing next SQL line"
+          if [ ${CURRENTLINE} -eq ${LINECOUNTF} ]; then
+            NEXTACTION="& progress to the next stage"  # Last line
+          fi
+          break
+        fi
+      else  # Verify success
+        break;
+      fi
+    done
+    TRIAL_REPEAT_COUNT=0
     if [ "${FIREWORKS}" -eq 1 ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
       SIZEF=$(stat -c %s ${INPUTFILE})
       LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
@@ -4109,18 +4155,19 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
       SIZEF=$(stat -c %s ${WORKF})
       LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
     fi
-    TRIAL=$[ ${TRIAL} + 1 ]
+    TRIAL=$[$TRIAL+1]
   done
 fi
 
 #STAGE3: Execute various cleanup sed's to reduce testcase complexity further. Perform a check if the issue is still present for each replacement (set)
 if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
+  NEXTACTION="& try next testcase complexity reducing sed"
   STAGE=3
   TRIAL=1
+  TRIAL_REPEAT_COUNT=0
   SIZEF=`stat -c %s $WORKF`
   echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
   while :; do
-    NEXTACTION="& try next testcase complexity reducing sed"
     NOSKIP=0
 
     # The @##@ sed's remove comments like /*! NULL */. Each sed removes one /* */ block per line, so 3 sed's removes 3x /* */ for each line
@@ -4185,9 +4232,25 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
+      TRIAL=$[$TRIAL+1]
+      TRIAL_REPEAT_COUNT=0
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
       run_and_check
+      NEXTACTION="& try next testcase complexity reducing sed"
+      if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
+        TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
+        if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
+          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          NEXTACTION="& reattempt the same testcase complexity reducing sed"
+        else  # Maximum repeats reached and issue failed to reproduce in any of them
+          TRIAL=$[$TRIAL+1]
+          TRIAL_REPEAT_COUNT=0
+        fi
+      else  # Verify success
+        TRIAL=$[$TRIAL+1]
+        TRIAL_REPEAT_COUNT=0
+      fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
         SIZEF=$(stat -c %s ${WORKF})
         LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
@@ -4196,18 +4259,18 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
         LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
       fi
     fi
-    TRIAL=$[$TRIAL+1]
   done
 fi
 
 #STAGE4: Execute various query syntax complexity reducing sed's to reduce testcase complexity further. Perform a check if the issue is still present for each replacement (set)
 if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
+  NEXTACTION="& try next query syntax complexity reducing sed"
   STAGE=4
   TRIAL=1
+  TRIAL_REPEAT_COUNT=0
   SIZEF=`stat -c %s $WORKF`
   echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
   while :; do
-    NEXTACTION="& try next query syntax complexity reducing sed"
     NOSKIP=0
 
     # The @##@ sed's remove comments like /*! NULL */. Each sed removes one /* */ block per line, so 3 sed's removes 3x /* */ for each line
@@ -4363,9 +4426,25 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
+      TRIAL=$[$TRIAL+1]
+      TRIAL_REPEAT_COUNT=0
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
       run_and_check
+      NEXTACTION="& try next query syntax complexity reducing sed"
+      if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
+        TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
+        if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
+          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          NEXTACTION="& reattempt the same testcase complexity reducing sed"
+        else  # Maximum repeats reached and issue failed to reproduce in any of them
+          TRIAL=$[$TRIAL+1]
+          TRIAL_REPEAT_COUNT=0
+        fi
+      else  # Verify success
+        TRIAL=$[$TRIAL+1]
+        TRIAL_REPEAT_COUNT=0
+      fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
         SIZEF=$(stat -c %s ${WORKF})
         LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
@@ -4374,16 +4453,15 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
         LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
       fi
     fi
-    TRIAL=$[$TRIAL+1]
   done
 fi
 
 #STAGE5: Rename tables and views to generic tx/vx names. This stage is not size bound (i.e. testcase size is not checked per&pre-run to see if the run can be skipped like in some other stages). Performs a check if the issue is still present for each replacement (set).
 if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
+  NEXTACTION="& try next testcase complexity reducing sed"
   STAGE=5
   TRIAL=1
   echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
-  NEXTACTION="& try next testcase complexity reducing sed"
 
   # Change tablenames to tx
   COUNTTABLES=$(grep -E --binary-files=text "CREATE[\t ]*TABLE" $WORKF | wc -l)
@@ -4424,11 +4502,11 @@ fi
 
 #STAGE6: Eliminate columns to reduce testcase complexity further. Perform a check if the issue is still present for each replacement (set).
 if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
+  NEXTACTION="& try and rename this column (if it failed removal) or remove the next column"
   STAGE=6
   TRIAL=1
   SIZEF=`stat -c %s $WORKF`
   echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
-  NEXTACTION="& try and rename this column (if it failed removal) or remove the next column"
 
   # CREATE TABLE name (...); statements on one line are split to obtain one column per line by the initial verification (STAGE V).
   # And, another situation, CREATE TABLE statements with each column on a new line is the usual RQG output. Both these cases are handled.
@@ -4645,12 +4723,13 @@ fi
 
 #STAGE7: Execute various final testcase cleanup sed's. Perform a check if the issue is still present for each replacement (set)
 if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
+  NEXTACTION="& try next testcase complexity reducing sed"
   STAGE=7
   TRIAL=1
+  TRIAL_REPEAT_COUNT=0
   SIZEF=`stat -c %s $WORKF`
   echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
   while :; do
-    NEXTACTION="& try next testcase complexity reducing sed"
     NOSKIP=0
 
     if   [ $TRIAL -eq 1   ]; then sed -e "s/[\t]\+/ /g" $WORKF > $WORKT
@@ -4852,6 +4931,20 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
       run_and_check
+      NEXTACTION="& try next testcase complexity reducing sed"
+      if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
+        TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
+        if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
+          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          NEXTACTION="& reattempt the same testcase complexity reducing sed"
+        else  # Maximum repeats reached and issue failed to reproduce in any of them
+          TRIAL=$[$TRIAL+1]
+          TRIAL_REPEAT_COUNT=0
+        fi
+      else  # Verify success
+        TRIAL=$[$TRIAL+1]
+        TRIAL_REPEAT_COUNT=0
+      fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
         SIZEF=$(stat -c %s ${WORKF})
         LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
@@ -4860,15 +4953,15 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
         LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
       fi
     fi
-    TRIAL=$[$TRIAL+1]
   done
 fi
 
 #STAGE8: Execute mysqld option simplification. Perform a check if the issue is still present once options are removed one-by-one
 if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
+  NEXTACTION="& try removing next mysqld option"
   STAGE=8
   TRIAL=1
-  NEXTACTION="& try removing next mysqld option"
+  TRIAL_REPEAT_COUNT=0
   cp $WORKF $WORKT  # Setup STAGE8 to begin with the last known good testcase. WORKT is used as input in run_and_check
   FILE1="$WORKD/file1"
   FILE2="$WORKD/file2"
@@ -4886,80 +4979,100 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
       STAGE8_NOT_STARTED_CORRECTLY=0
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Filtering mysqld option $line from MYEXTRA";
       MYEXTRA=$(echo $MYEXTRA | sed "s|$line||")
-      run_and_check
-      if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert
-        MYEXTRA="$MYEXTRA $line"
-      else  # Issue reproduced, so leave MYEXTRA as-is (already filtered), and filter the same from WORK_START now too
-        sed -i "s|$line||" $WORK_START
-      fi
+      while true; do
+        run_and_check
+        NEXTACTION="& try removing next mysqld option"
+        TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
+        if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
+          if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
+            echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+            NEXTACTION="& reattempt removing the same mysqld option"
+            continue
+          else  # Maximum repeats reached and issue failed to reproduce in any of them
+            MYEXTRA="$MYEXTRA $line"
+            break
+          fi
+        else  # Issue reproduced, so leave MYEXTRA as-is (already filtered), and filter the same from WORK_START now too
+          sed -i "s|$line||" $WORK_START
+          break
+        fi
+      done
+      TRIAL_REPEAT_COUNT=0
       TRIAL=$[$TRIAL+1]
     done < $WORKD/mysqld_opt.out
   }
 
-  # Deal with options differently depending on how many there are (this selection is only made once)
-  myextra_split
-  if [ $MYSQLD_OPTION_COUNT -eq 0 ]; then  # 0 options
-    if [ -n "$(echo ${MYEXTRA} | sed "s|[ \t]*||")" ]; then
-      echo_out "Assert: counted number of mysqld options was zero, yet \$MYEXTRA is not empty;"
-      echo_out "MYEXTRA: $MYEXTRA"
-      echo_out "Please check. Terminating."
-      exit 1
-    fi
-    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping this stage as the testcase does not contain extraneous mysqld options"
-  elif [ $MYSQLD_OPTION_COUNT -ge 1 -a $MYSQLD_OPTION_COUNT -le 4 ]; then  # 1-4 options
-    myextra_reduction
-  else  # 4+ options
-    while true; do
-      SAVE_STAGE8_MYEXTRA=$MYEXTRA
-      MYEXTRA=$(cat $FILE1 | tr -s "\n" " " | sed 's|[ \t]\+| |g;s| $||g;s|^ ||g')
-      STAGE8_CHK=0
-      STAGE8_NOT_STARTED_CORRECTLY=0
-      echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using first set of mysqld option(s) from MYEXTRA: $MYEXTRA";
-      run_and_check
-      TRIAL=$[$TRIAL+1]
-      if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, try second set
-        MYEXTRA=$(cat $FILE2 | tr -s "\n" " " | sed 's|[ \t]\+| |g;s| $||g;s|^ ||g')
+  # If NR_OF_TRIAL_REPEATS is >1 then try only per-option reduction (simplifies code)
+  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+    myextra_reduction  # Commence 1-by-1 reduction (with build-in NR_OF_TRIAL_REPEATS handling)
+  else
+    # Deal with options differently depending on how many there are (this selection is made only once)
+    myextra_split
+    if [ $MYSQLD_OPTION_COUNT -eq 0 ]; then  # 0 options
+      if [ -n "$(echo ${MYEXTRA} | sed "s|[ \t]*||")" ]; then
+        echo_out "Assert: counted number of mysqld options was zero, yet \$MYEXTRA is not empty;"
+        echo_out "MYEXTRA: $MYEXTRA"
+        echo_out "Please check. Terminating."
+        exit 1
+      fi
+      echo_out "$ATLEASTONCE [Stage $STAGE] Skipping this stage as the testcase does not contain extraneous mysqld options"
+    elif [ $MYSQLD_OPTION_COUNT -ge 1 -a $MYSQLD_OPTION_COUNT -le 4 ]; then  # 1-4 options
+      myextra_reduction
+    else  # 4+ options
+      while true; do
+        SAVE_STAGE8_MYEXTRA=$MYEXTRA
+        MYEXTRA=$(cat $FILE1 | tr -s "\n" " " | sed 's|[ \t]\+| |g;s| $||g;s|^ ||g')
         STAGE8_CHK=0
         STAGE8_NOT_STARTED_CORRECTLY=0
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using second set of mysqld option(s) from MYEXTRA: $MYEXTRA";
+        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using first set of mysqld option(s) from MYEXTRA: $MYEXTRA";
         run_and_check
         TRIAL=$[$TRIAL+1]
-        if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, try reducing 1-by-1
-          # Both the first set as well as the second set of options failed to reproduce the issue
-          MYEXTRA=$SAVE_STAGE8_MYEXTRA
-          myextra_reduction  # Commence 1-by-1 reduction
-          break
-        else  # Issue reproduced, so leave MYEXTA as-is (already filtered), and filter each filtered optiom from WORK_START now too
+        if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, try second set
+          MYEXTRA=$(cat $FILE2 | tr -s "\n" " " | sed 's|[ \t]\+| |g;s| $||g;s|^ ||g')
+          STAGE8_CHK=0
+          STAGE8_NOT_STARTED_CORRECTLY=0
+          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using second set of mysqld option(s) from MYEXTRA: $MYEXTRA";
+          run_and_check
+          TRIAL=$[$TRIAL+1]
+          if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, try reducing 1-by-1
+            # Both the first set as well as the second set of options failed to reproduce the issue
+            MYEXTRA=$SAVE_STAGE8_MYEXTRA
+            myextra_reduction  # Commence 1-by-1 reduction
+            break
+          else  # Issue reproduced, so leave MYEXTA as-is (already filtered), and filter each filtered optiom from WORK_START now too
+            while read line; do
+              sed -i "s|$line||" $WORK_START
+            done < $FILE1  # We use $FILE1 here (the opposite option set with options that are not required for issue reproduction)
+            myextra_split
+            if [ $(wc -l $FILE1 $FILE2 | grep total | awk '{print $1}') -le 4 ]; then  # Remaining nr of options <=4
+              myextra_reduction  # Commence 1-by-1 reduction
+              break
+            fi
+          fi
+        else  # Issue reproduced, so leave MYEXTRA as-is (already filtered), and filter each filtered option from WORK_START now too
           while read line; do
             sed -i "s|$line||" $WORK_START
-          done < $FILE1  # We use $FILE1 here (the opposite option set with options that are not required for issue reproduction)
+          done < $FILE2  # We use $FILE2 here (the opposite option set with options that are not required for issue reproduction)
           myextra_split
           if [ $(wc -l $FILE1 $FILE2 | grep total | awk '{print $1}') -le 4 ]; then  # Remaining nr of options <=4
             myextra_reduction  # Commence 1-by-1 reduction
             break
           fi
         fi
-      else  # Issue reproduced, so leave MYEXTRA as-is (already filtered), and filter each filtered option from WORK_START now too
-        while read line; do
-          sed -i "s|$line||" $WORK_START
-        done < $FILE2  # We use $FILE2 here (the opposite option set with options that are not required for issue reproduction)
-        myextra_split
-        if [ $(wc -l $FILE1 $FILE2 | grep total | awk '{print $1}') -le 4 ]; then  # Remaining nr of options <=4
-          myextra_reduction  # Commence 1-by-1 reduction
-          break
-        fi
-      fi
-    done
+      done
+    fi
   fi
 fi
 
 #STAGE9: Execute storage engine, binlogging, keyring and similar options simplification.
 if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
+  NEXTACTION=""
   STAGE=9
   TRIAL=1
   cp $WORKF $WORKT  # Setup STAGE9 to begin with the last known good testcase. WORKT is used as input in run_and_check
 
   stage9_run(){
+    TRIAL_REPEAT_COUNT=0
     STAGE9_CHK=0
     SAVE_MYINIT=""
     if [[ ${MYINIT_DROP} -eq 1 ]]; then
@@ -4969,18 +5082,29 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
     STAGE9_NOT_STARTED_CORRECTLY=0
     SAVE_SPECIAL_MYEXTRA_OPTIONS=$SPECIAL_MYEXTRA_OPTIONS
     SPECIAL_MYEXTRA_OPTIONS=$(echo "$SPECIAL_MYEXTRA_OPTIONS" | sed "s|$STAGE9_FILTER||");
-    run_and_check
-    if [ $STAGE9_CHK -eq 0 -o $STAGE9_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert
-      SPECIAL_MYEXTRA_OPTIONS=$SAVE_SPECIAL_MYEXTRA_OPTIONS
-      if [ "${SAVE_MYINIT}" != "" ]; then
-        MYINIT=${SAVE_MYINIT}
+    while true; do
+      run_and_check
+      TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
+      if [ $STAGE9_CHK -eq 0 -o $STAGE9_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
+        if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then  # Retry if NR_OF_TRIAL_REPEATS>1
+          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          continue
+        else  # Maximum repeats reached and issue failed to reproduce in any of them
+          SPECIAL_MYEXTRA_OPTIONS=$SAVE_SPECIAL_MYEXTRA_OPTIONS
+          if [ "${SAVE_MYINIT}" != "" ]; then
+            MYINIT=${SAVE_MYINIT}
+          fi
+          break
+        fi
+      else  # Issue reproduced, so leave SPECIAL_MYEXTRA_OPTIONS as-is (already filtered), and filter the same from WORK_START now too
+        sed -i "s|$STAGE9_FILTER||" $WORK_START
+        if [ "${SAVE_MYINIT}" != "" ]; then
+          sed -i "s|${MYINIT}||" $WORK_START
+        fi
+        break
       fi
-    else  # Issue reproduced, so leave SPECIAL_MYEXTRA_OPTIONS as-is (already filtered), and filter the same from WORK_START now too
-      sed -i "s|$STAGE9_FILTER||" $WORK_START
-      if [ "${SAVE_MYINIT}" != "" ]; then
-        sed -i "s|${MYINIT}||" $WORK_START
-      fi
-    fi
+    done
+    TRIAL_REPEAT_COUNT=0
     TRIAL=$[$TRIAL+1]
   }
 
