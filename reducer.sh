@@ -4928,6 +4928,8 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
+      TRIAL=$[$TRIAL+1]
+      TRIAL_REPEAT_COUNT=0
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
       run_and_check
