@@ -64,8 +64,33 @@ else
   # Delete trial directory
   ERRORS=
   ERROR_LOG=
+  ERRORS_LAST_LINE=
   REGEX_ERRORS_SCAN=
+  REGEX_ERRORS_LASTLINE=
   REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
+  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
+    REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
+    if [ -z "${REGEX_ERRORS_SCAN}" ]; then
+      echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
+      exit 1
+    fi
+  else
+    echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
+    exit 1
+  fi
+  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
+    REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
+    if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
+      echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
+      exit 1
+    fi
+  else
+    echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
+    exit 1
+  fi
+  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
+    REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
+  fi
   if [[ "${MDG}" -eq 1 ]]; then
     if [ -z "${MDG_NODE}" ]; then
       ERROR_LOG="./${TRIAL_DIR}/node*.err"
@@ -76,24 +101,16 @@ else
     ERROR_LOG="./${TRIAL}/log/master.err"
   fi
   if [ -r ${ERROR_LOG} ]; then
-    if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
-      REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
-      if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
-        REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
-      fi
-      ERRORS="$(grep --binary-files=text -Eio -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
-      if [ -z "${ERRORS}" ]; then
-        delete_trial
-      else
-        if [ "${2}" != "1" ]; then
-          echo "Not deleting trial ${TRIAL} as a memory or corruption was found in the error log! To delete it anyways please add a '1' as second option to this script!"
-        else
-          delete_trial
-        fi
-      fi
-    else
-      echo "Warning: ${SCRIPT_PWD}/REGEX_ERRORS_SCAN not found, proceeding however the error log was not scanned for errors!"
+    ERRORS="$(grep --binary-files=text -Eio -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
+    ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"
+    if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
       delete_trial
+    else
+      if [ "${2}" != "1" ]; then
+        echo "Not deleting trial ${TRIAL} as a significant error was found in the error log! To delete it anyways please add a '1' as second option to this script!"
+      else
+        delete_trial
+      fi
     fi
   else
     echo "Warning: ${ERROR_LOG} not found, proceeding to delete all other trial files"

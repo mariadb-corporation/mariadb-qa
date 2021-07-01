@@ -1,23 +1,65 @@
 #!/bin/bash
 DIR=/data
+MARIADB_QA="/home/$(whoami)/mariadb-qa"  # Adjust if needed, though storing mariadb-qa in ~/mariadb-qa is highly recommended
 source results.list  # This file should contain lines like: 
                      # MON[1]=532099
                      # MON[2]=398230
                      # MON[3]=032309
                      # etc. The file is sourced to allow this file to be backed up with results.list 
                      # being local to the machine/directory. Note: results.list is not backed up
+set +H
 clear
+
+# Setup error scanning
+ERRORS=
+ERRORS_LAST_LINE=
+REGEX_ERRORS_SCAN=
+REGEX_ERRORS_LASTLINE=
+REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
+if [ -r ${MARIADB_QA}/REGEX_ERRORS_SCAN ]; then
+  REGEX_ERRORS_SCAN="$(cat ${MARIADB_QA}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
+  if [ -z "${REGEX_ERRORS_SCAN}" ]; then
+    echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
+    exit 1
+  fi
+else
+  echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
+  exit 1
+fi
+if [ -r ${MARIADB_QA}/REGEX_ERRORS_LASTLINE ]; then
+  REGEX_ERRORS_LASTLINE="$(cat ${MARIADB_QA}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
+  if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
+    echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
+    exit 1
+  fi
+else
+  echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
+  exit 1
+fi
+if [ -r ${MARIADB_QA}/REGEX_ERRORS_FILTER ]; then
+  REGEX_ERRORS_FILTER="$(cat ${MARIADB_QA}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
+fi
+
+# Loop dirs from results.list
 while true; do
   for ((i=1;i<=20;i++)); do
     if [ ! -z "${MON[i]}" ]; then
       if [ -d "${DIR}/${MON[${i}]}" ]; then
         cd "${DIR}/${MON[${i}]}"
         ~/pr | grep -vEi '^================$|SHUTDOWN|no reducer scripts were found in this directory' | sed '/Coredumps found in trials/,+1d'
-        ERRORS="$(tail -n1 */*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E 'invalid|alloc|free|corruption|corrupted' | grep -vE 'Column count of mysql\.')"  # malloc(): , double free or corruption, free(): , Warning: Memory not freed, etc. 
+        TO_SCAN='*/*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err'
+        ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
         if [ ! -z "${ERRORS}" ]; then 
-          echo "=== Malloc/free/corruption issues in last line of error logs"
+          echo "=== Errors found in error log"
           echo "${ERRORS}"
         fi
+        ERRORS=
+        ERRORS_LAST_LINE="$(tail -n1 */*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"  # malloc(): , double free or corruption, free(): , Warning: Memory not freed, etc. 
+        if [ ! -z "${ERRORS_LAST_LINE}" ]; then 
+          echo "=== Malloc/free/corruption issues found (in last line of error logs)"
+          echo "${ERRORS_LAST_LINE}"
+        fi
+        ERRORS_LAST_LINE=
       else
         echo "Index ${i} seems to be invalid: directopry ${DIR}/${MON[${i}]} does not exist!"
         exit 1

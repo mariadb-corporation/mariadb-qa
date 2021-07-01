@@ -1,1 +1,1 @@
-mtr.add_suppression|Got error 194 when reading table|Incorrect information in file.*/mysql/.*frm
+mtr.add_suppression|Got error 194 when reading table|Incorrect information in file.*/mysql/.*frm|Column count of mysql\.

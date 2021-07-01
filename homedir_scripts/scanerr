@@ -5,6 +5,7 @@ MARIADB_QA="/home/$(whoami)/mariadb-qa"  # Adjust if needed, though storing mari
 
 set +H
 REGEX_ERRORS_SCAN=
+REGEX_ERRORS_LASTLINE=
 REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
 if [ -r ${MARIADB_QA}/REGEX_ERRORS_SCAN ]; then
   REGEX_ERRORS_SCAN="$(cat ${MARIADB_QA}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
@@ -14,6 +15,16 @@ if [ -r ${MARIADB_QA}/REGEX_ERRORS_SCAN ]; then
   fi
 else
   echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
+  exit 1
+fi
+if [ -r ${MARIADB_QA}/REGEX_ERRORS_LASTLINE ]; then
+  REGEX_ERRORS_LASTLINE="$(cat ${MARIADB_QA}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
+  if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
+    echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
+    exit 1
+  fi
+else
+  echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
   exit 1
 fi
 
@@ -32,8 +43,9 @@ if [ "${1}" == "plusmode" ]; then
   #TO_SCAN='/data/1*/1*/log/*.err'  # For testing
   TO_SCAN='/data/*/*/*/*.err /data/*/*/*/*/*.err'  # /data based runs only ftm (ref ~/scanerr+)
   grep --binary-files=text -Eio "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | sed "${POST_PARSE}"
+  tail -n1 ${TO_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | tr '\n' ' ' | sed 's| <== |:|g;s|==> |\n|g' | grep --binary-files=text -vE '^[ \t]*$'  # TODO: May work as-is or may need some more work (note -Eio vs -Ei in first grep, which will not be easy to implement here, but may not be needed as the lastline strings are short already!)
 else
   TO_SCAN='/test/*/*/*.err /data/*/*/*.err /test/*/*/*/*.err /data/*/*/*/*.err /test/*/*/*/*/*.err /data/*/*/*/*/*.err'
   grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | sed "${POST_PARSE}"
-  echo "------------------------------------------------------------------------------"
+  tail -n1 ${TO_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | tr '\n' ' ' | sed 's| <== |:|g;s|==> |\n|g' | grep --binary-files=text -vE '^[ \t]*$'
 fi
