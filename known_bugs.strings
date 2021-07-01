@@ -42,6 +42,10 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+size >= 4U|SIGABRT|fil_space_extend_must_retry|fil_space_t::prepare|fil_space_t::get|buf_read_page                                                                             ## DBG |MDEV-26068
+size >= 4U|SIGABRT|fil_space_extend_must_retry|fil_mutex_enter_and_prepare_for_io|fil_io|buf_read_page_low                                                                     ## DBG |MDEV-26068
+size >= 4|SIGABRT|fil_space_extend_must_retry|fil_mutex_enter_and_prepare_for_io|fil_io|buf_read_page_low                                                                      ## DBG |MDEV-26068
+SIGSEGV|trx_rseg_update_wsrep_checkpoint|trx_rseg_update_wsrep_checkpoint|innobase_wsrep_set_checkpoint|innobase_wsrep_set_checkpoint                                          ## OPT MDEV-26065
 i != streaming_clients_.end()|SIGABRT|wsrep::server_state::convert_streaming_client_to_applier|wsrep::transaction::xa_detach|wsrep::client_state::xa_detach|wsrep_xa_detach    ## DBG MENT-1237
 state_ == s_exec|SIGABRT|wsrep::client_state::enter_toi_local|wsrep_TOI_begin|wsrep_to_isolation_begin|mysql_execute_command                                                   ## DBG MENT-1236
 binlog_table_maps == 0 || locked_tables_mode == LTM_LOCK_TABLES|SIGABRT|THD::reset_for_next_command|mysql_parse|dispatch_command|do_command                                    ## DBG MDEV-22915
