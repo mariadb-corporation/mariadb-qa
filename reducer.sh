@@ -43,7 +43,7 @@ MYINIT=""                       # Extra options to pass to mysqld AND at data di
 BASEDIR="${PWD}"                # Path to the MySQL BASE directory to be used
 DISABLE_TOKUDB_AUTOLOAD=0       # On/Off (1/0) Prevents mysqld startup issues when using standard MySQL server (i.e. no TokuDB available) with a testcase containing TokuDB SQL
 DISABLE_TOKUDB_AND_JEMALLOC=1   # For MariaDB, TokuDB is deprecated, so we always disable both in full
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # 'script' utility location to access storage engine plugin sql file
+SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # The directory reducer.sh is in (to reference other scripts)
 
 # === Sporadic testcases        # Used when testcases prove to be sporadic *and* fail to reduce using basic methods
 FORCE_SKIPV=0                   # On/Off (1/0) Forces verify stage to be skipped (auto-enables FORCE_SPORADIC)
@@ -1251,9 +1251,9 @@ multi_reducer(){
         if [ -s $MULTI_WORKD/VERIFIED ]; then
           sleep 1.5  # Give subreducer script time to write out the file fully
           if [ "${FIREWORKS}" != "1" ]; then
-            echo_out_overwrite "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating simplification subreducer threads... "
+            echo_out_overwrite "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating simplification subreducer threads..."
           else
-            echo_out_overwrite "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads... "
+            echo_out_overwrite "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads..."
           fi
           for i in $(eval echo {1..$MULTI_THREADS}); do
             # Make sure all subprocessed are gone. Not 100% safe (though likely 99.999%) as the wait has a kill. It is re-run for safety.

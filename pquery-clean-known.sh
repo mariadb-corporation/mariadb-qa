@@ -50,7 +50,7 @@ while read line; do
       # sleep 1  # For debugging
       if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
 	      # grep -li "${STRING}" reducer[0-9]*  # For debugging (use script utility, then search for the reducer<nr>.sh in the typescript)
-        grep -li --binary-files=text "${STRING}" reducer[0-9]* | awk -F'.'  '{print substr($1,8)}' | xargs -I_ $SCRIPT_PWD/pquery-del-trial.sh _
+        grep -li --binary-files=text "${STRING}" reducer[0-9]* | awk -F'.'  '{print substr($1,8)}' | xargs -I{} $SCRIPT_PWD/pquery-del-trial.sh {}
       else
 	      # grep -li "${STRING}" reducer[0-9]*  # For debugging (use script utility, then search for the reducer<nr>.sh in the typescript)
         grep -Fli --binary-files=text "${STRING}" reducer[0-9]* | sed 's/[^0-9]//g' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}

@@ -35,7 +35,8 @@ while true; do
     # Check if we have reducer directories > 10GB on /dev/shm and drop them, saving the reducer file
     # Only one directory "per COUNT1 round" is done at the time
     cd /dev/shm
-    ANY_SINGLE_LARGE_REDUCER_DIR="$(ls | grep '^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | xargs du -shc 2>/dev/null | grep -v total | grep '^[.0-9]\+G' | grep '^[1-9][0-9]' | head -n1 | awk '{print $2}')"
+    #ANY_SINGLE_LARGE_REDUCER_DIR="$(ls | grep '^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | xargs du -shc 2>/dev/null | grep -v total | grep '^[.0-9]\+G' | grep '^[1-9][0-9]' | head -n1 | awk '{print $2}')"
+    ANY_SINGLE_LARGE_REDUCER_DIR=''  # TEMP HACK, ref https://jira.mariadb.org/browse/TODO-3015
     if [ ! -z "${ANY_SINGLE_LARGE_REDUCER_DIR}" ]; then
       if [ -d ${ANY_SINGLE_LARGE_REDUCER_DIR} ]; then
         if [ -r ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log ]; then
