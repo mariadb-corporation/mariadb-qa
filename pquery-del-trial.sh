@@ -67,18 +67,19 @@ else
   REGEX_ERRORS_FILTER=
   if [[ "${MDG}" -eq 1 ]]; then
     if [ -z "${MDG_NODE}" ]; then
-      ERROR_LOG='./${TRIAL_DIR}/node*.err'
+      ERROR_LOG="./${TRIAL_DIR}/node*.err"
     else
-      ERROR_LOG='./${TRIAL_DIR}/node${MDG_NODE}.err'
+      ERROR_LOG="./${TRIAL_DIR}/node${MDG_NODE}.err"
     fi
   else
-    ERROR_LOG='./${TRIAL}/log/master.err'
+    ERROR_LOG="./${TRIAL}/log/master.err"
   fi
   if [ -r ${ERROR_LOG} ]; then
     if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
       REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null)"
       if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
-      REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null)"
+        REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null)"
+      fi
       ERRORS="$(grep --binary-files=text -Eio -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${FILTER}")"
       if [ -z "${ERRORS}" ]; then
         delete_trial
