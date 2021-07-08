@@ -83,6 +83,7 @@ SIGABRT|galera::FSM<galera::TrxHandle::State,galera::TrxHandle::Transition,galer
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|mysql_execute_command|mysql_parse|wsrep_mysql_parse ## DBG |MDEV-22421
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|ha_commit_trans|trans_commit_implicit|mysql_execute_command ## DBG |MDEV-25740
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|ha_commit_trans|trans_begin|mysql_execute_command ## DBG |MDEV-25740
+!wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|wsrep_on_check|sys_var::check|set_var::check ## DBG MENT-1258
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                                            ## DBG MDEV-25738
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_help_internal|mysqld_help                                                                                    ## DBG MDEV-25735
 page_rec_is_leaf(rec)|SIGABRT|lock_rec_queue_validate|lock_rec_validate_page|lock_rec_block_validate|lock_validate                                                             ## DBG MDEV-25711
