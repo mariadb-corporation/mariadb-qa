@@ -106,6 +106,7 @@ else
     if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
       delete_trial
     else
+     echo "-2-${2}-"
       if [ "${2}" != "1" ]; then
         echo "Not deleting trial ${TRIAL} as a significant error was found in the error log! To delete it anyways please add a '1' as second option to this script!"
       else
