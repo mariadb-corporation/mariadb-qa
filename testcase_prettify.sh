@@ -220,6 +220,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|geomfromtext|GEOMFROMTEXT|gi' | \
   sed 's|ST_\([_a-zA-Z]\+\)|\UST_\1|gi' | \
   sed "s|^. mysqld options required for replay.*|${OPTIONS}|i" | \
+  sed 's|crc32|CRC32|g' | \
   sed 's|\t| |g' | \
   sed 's|  | |g' | \
   sed 's| ,|,|g' | \
