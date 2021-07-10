@@ -38,14 +38,20 @@ fi
 # Post scan cleanup
 POST_PARSE='s|[:]* \./dev/shm/.*$||;s|[\.]\+$||;s|[0-9]\+ .ERROR. mysqld: Table|ERROR. mysqld: Table|'
 
-echo "--- Searching for various errors in all error logs: This may take a while! ---"
-if [ "${1}" == "plusmode" ]; then
+if [ "${1}" != "generate_reducers" ]; then
+  if [ "${1}" != "local" ]; then  # i.e. called as ~/scanerr to scan all error logs on the server
+    echo "--- Searching for various errors in all error logs: This may take a while! ---"
+    TO_SCAN='/test/*/*/*.err /data/*/*/*.err /test/*/*/*/*.err /data/*/*/*/*.err /test/*/*/*/*/*.err /data/*/*/*/*/*.err'
+  else  # i.e. called from inside a BASEDIR or TRIAL directory
+    echo "--- Searching for various errors in ./log/master.err (local mode) ---"
+    TO_SCAN='./log/master.err'
+  fi
+  grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | sed "${POST_PARSE}"
+  tail -n1 ${TO_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | tr '\n' ' ' | sed 's| <== |:|g;s|==> |\n|g' | grep --binary-files=text -vE '^[ \t]*$'
+else  # generate_reducers mode (as used by ~/mariadb/homedir_scripts/scanerr_gen_reducers aka ~/scanerr_gen_reducers)
+  echo "--- Searching for various errors in all error logs and generating reducers for them: This may take a while! ---"
   #TO_SCAN='/data/1*/1*/log/*.err'  # For testing
   TO_SCAN='/data/*/*/*/*.err /data/*/*/*/*/*.err'  # /data based runs only ftm (ref ~/scanerr+)
   grep --binary-files=text -Eio "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | sed "${POST_PARSE}"
   tail -n1 ${TO_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | tr '\n' ' ' | sed 's| <== |:|g;s|==> |\n|g' | grep --binary-files=text -vE '^[ \t]*$'  # TODO: May work as-is or may need some more work (note -Eio vs -Ei in first grep, which will not be easy to implement here, but may not be needed as the lastline strings are short already!)
-else
-  TO_SCAN='/test/*/*/*.err /data/*/*/*.err /test/*/*/*/*.err /data/*/*/*/*.err /test/*/*/*/*/*.err /data/*/*/*/*/*.err'
-  grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | sed "${POST_PARSE}"
-  tail -n1 ${TO_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | tr '\n' ' ' | sed 's| <== |:|g;s|==> |\n|g' | grep --binary-files=text -vE '^[ \t]*$'
 fi

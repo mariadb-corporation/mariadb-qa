@@ -101,14 +101,14 @@ else
     ERROR_LOG="./${TRIAL}/log/master.err"
   fi
   if [ -r ${ERROR_LOG} ]; then
-    ERRORS="$(grep --binary-files=text -Eio -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
+    # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
+    ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
     ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"
     if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
       delete_trial
     else
-     echo "-2-${2}-"
       if [ "${2}" != "1" ]; then
-        echo "Not deleting trial ${TRIAL} as a significant error was found in the error log! To delete it anyways please add a '1' as second option to this script!"
+        echo "Not deleting trial ${TRIAL} as one ore more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script!"
       else
         delete_trial
       fi
