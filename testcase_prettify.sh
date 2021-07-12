@@ -112,7 +112,6 @@ cat "${1}" | tr -d '`' | \
   sed 's|asc|ASC|gi' | \
   sed 's|limit|LIMIT|gi' | \
   sed 's|group by|GROUP BY|gi' | \
-  sed 's|group_concat|GROUP_CONCAT|gi' | \
   sed 's|count|COUNT|gi' | \
   sed 's| as | AS |gi' | \
   sed 's| to | TO |gi' | \
@@ -279,6 +278,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|max[ ]*(|MAX(|gi' | \
   sed 's|date_add[ ]*(|DATE_ADD(|gi' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
+  sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \
   sed "s|'IN |' IN |gi" | \
@@ -291,8 +291,10 @@ cat "${1}" | tr -d '`' | \
   sed 's| ()|()|gi' | \
   sed 's|), (|),(|gi' | \
   sed "s|BY''|BY ''|gi" | \
-  sed 's|[ ]*=[ ]*|=|gi' | \
+  sed 's|[ ]*=[ ]*|=|gi;s|sql_mode=\([^ ]\)|sql_mode= \1|' | \
   sed 's|[ \t]\+| |g' | \
+  sed 's|=on;$|=ON;|g' | \
+  sed 's|=off;$|=OFF;|g' | \
   sed 's|  | |gi'
 
 # Templates for copy/paste

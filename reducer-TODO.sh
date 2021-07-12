@@ -4070,7 +4070,7 @@ else
   LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
 fi
 if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
-  if [ "${FIREWORKS}" == "1" ]; then
+  if [ "${FIREWORKS}" != "1" ]; then
     NEXTACTION="& try removing next random line(set)"
   else
     NEXTACTION="& create next FIREWORKS random lineset"
