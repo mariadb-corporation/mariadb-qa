@@ -242,6 +242,7 @@ SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnnco
 SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncollsp_utf8_general_ci|event_basic_identifier_equal                                              ## OPT |MDEV-24686
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|select_insert::send_ok_packet|select_create::send_eof                      ## DBG MDEV-24672
 marked_for_read()|SIGABRT|Field_long::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                          ## DBG |MDEV-24658
+marked_for_read()|SIGABRT|Field_varstring::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                     ## DBG |MDEV-24658
 marked_for_read()|SIGABRT|Field_string::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                        ## DBG |MDEV-24658
 SIGSEGV|maria_scan_init|ha_maria::rnd_init|handler::ha_rnd_init|handler::read_first_row                                                                                        ## DBG |MDEV-24651
 SIGSEGV|maria_scan_init|handler::ha_rnd_init|handler::read_first_row|handler::ha_read_first_row                                                                                ## DBG |MDEV-24651
