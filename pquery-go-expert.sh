@@ -85,7 +85,7 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
           sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=5|" ${REDUCER}
           # Auto-set the inputfile to the most recent sql trace inc _out* handling
           # Also exclude 'backup/failing' for multi-threaded runs. For example, WORKDIR/TRIALDIR/trial.sql.failing (/data/487127/48/48.sql.failing)
-          sed -i 's|^INPUTFILE="\([^"]\+\)"|INPUTFILE="$(ls -s \1* \| grep --binary-files=text -vE "backup\|failing\|prev" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\+\|\|\")"|' ${REDUCER}
+          sed -i 's|^INPUTFILE="\([^"]\+\)"|INPUTFILE="$(ls --color=never -s \1* \| grep --binary-files=text -vE "backup\|failing\|prev" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\+\|\|\")"|' ${REDUCER}
           # Next, we consider if we will set FORCE_KILL=1 by doing many checks to see if it makes sense
           if grep --binary-files=text -qiE "^MODE=3|^MODE=4" ${REDUCER}; then  # Mode 3 or 4 (and not 0)
             TRIAL="$(echo ${REDUCER} | grep -o '[0-9]\+')"
@@ -120,7 +120,7 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
 
 while(true); do                                     # Main loop
   while(true); do                                   # Prevent a bug when pquery-go-expert.sh is started and no trials are present yet
-    if [ "$(ls -d [0-9]* 2>/dev/null)" == "" ]; then
+    if [ "$(ls --color=never -d [0-9]* 2>/dev/null)" == "" ]; then
       echo "Waiting for next round... Sleeping 300 seconds..."
       sleep 300                                     # Sleep 5 minutes
       continue
@@ -129,7 +129,7 @@ while(true); do                                     # Main loop
     fi
   done
   touch ${MUTEX}                                    # Create mutex (indicating that background_sed_loop is live)
-  if [ `ls */*.sql 2>/dev/null | wc -l` -gt 0 ]; then  # If trials are available
+  if [ $(ls --color=never */*.sql 2>/dev/null | wc -l) -gt 0 ]; then  # If trials are available
     background_sed_loop &                           # Start background_sed_loop in a background thread, it will patch reducer<nr>.sh scripts
     PID=$!                                          # Capture the PID of the background_sed_loop so we can kill -9 it once pquery-prep-red.sh is complete
     ${SCRIPT_PWD}/pquery-prep-red.sh                # Execute pquery-prep.red generating reducer<nr>.sh scripts, auto-updated by the background thread
@@ -138,7 +138,7 @@ while(true); do                                     # Main loop
     ${SCRIPT_PWD}/pquery-clean-known++.sh           # Expert clean known issues (quite strong cleanup)
     ${SCRIPT_PWD}/pquery-eliminate-dups.sh          # Eliminate dups, leaving at least x trials for issues where the number of trials >=x. Will also leave alone all other (<x) trials. x can be set in that script
   fi
-  if [ $(ls reducer*.sh quick_*reducer*.sh 2>/dev/null | wc -l) -gt 0 ]; then  # If reducers are available after cleanup
+  if [ $(ls --color=never reducer*.sh quick_*reducer*.sh 2>/dev/null | wc -l) -gt 0 ]; then  # If reducers are available after cleanup
     echo ""
     ${SCRIPT_PWD}/pquery-results.sh                 # Report
   fi

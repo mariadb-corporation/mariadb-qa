@@ -714,7 +714,7 @@ options_check(){
       echo "Terminating now."
       exit 1
     else
-      TS_THREADS=$(ls -l $1/log/C[0-9]*T[0-9]*.sql | wc -l | tr -d '[\t\n ]*')
+      TS_THREADS=$(ls --color=never -l $1/log/C[0-9]*T[0-9]*.sql | wc -l | tr -d '[\t\n ]*')
       # Making sure $TS_ELIMINATION_THREAD_ID is higher than number of threads to avoid 'unary operator expected' in cleanup_and_save during STAGE V
       TS_ELIMINATION_THREAD_ID=$[$TS_THREADS+1]
       if [ $TS_THREADS -lt 1 ]; then
@@ -1437,9 +1437,9 @@ multi_reducer_decide_input(){
 
 TS_init_all_sql_files(){
   # DATA thread (Single threaded init by RQG - saved as CT[0-9].sql, usually CT2.sql or CT3.sql)
-  TSDATA_COUNT=$(ls $TS_INPUTDIR/CT[0-9]*.sql | wc -l | tr -d '[\t\n ]*')
+  TSDATA_COUNT=$(ls --color=never $TS_INPUTDIR/CT[0-9]*.sql | wc -l | tr -d '[\t\n ]*')
   if [ $TSDATA_COUNT -eq 1 ]; then
-    TS_DATAINPUTFILE=$(ls $TS_INPUTDIR/CT[0-9]*.sql)
+    TS_DATAINPUTFILE=$(ls --color=never $TS_INPUTDIR/CT[0-9]*.sql)
   else
     echo 'ASSERT: do not know how to handle more than one ThreadSync data input file [yet].'
     echo "Terminating now."
@@ -1448,7 +1448,7 @@ TS_init_all_sql_files(){
 
   # SQL threads (Multi-threaded SQL run by RQG - saved as C[0-9]*T[0-9]*.sql)
   TS_REAL_THREAD=0
-  for TSSQL in $(ls $TS_INPUTDIR/C[0-9]*T[0-9]*.sql | sort); do
+  for TSSQL in $(ls --color=never $TS_INPUTDIR/C[0-9]*T[0-9]*.sql | sort); do
     TS_REAL_THREAD=$[$TS_REAL_THREAD+1]
     export TS_SQLINPUTFILE$TS_REAL_THREAD=$TSSQL
   done
@@ -1994,16 +1994,16 @@ generate_run_scripts(){
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_GDB
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_GDB
   if [[ ${MDG} -eq 1 ]]; then
-    echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/node1/core*)" >> $WORK_GDB
+    echo "gdb \${BASEDIR}/bin/mysqld \$(ls --color=never /dev/shm/${EPOCH}/node1/core*)" >> $WORK_GDB
   else
-    echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/data/core*)" >> $WORK_GDB
+    echo "gdb \${BASEDIR}/bin/mysqld \$(ls --color=never /dev/shm/${EPOCH}/data/core*)" >> $WORK_GDB
   fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_PARSE_CORE
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_PARSE_CORE
   if [[ ${MDG} -eq 1 ]]; then
-    echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/node1/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
+    echo "gdb \${BASEDIR}/bin/mysqld \$(ls --color=never /dev/shm/${EPOCH}/node1/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
   else
-    echo "gdb \${BASEDIR}/bin/mysqld \$(ls /dev/shm/${EPOCH}/data/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
+    echo "gdb \${BASEDIR}/bin/mysqld \$(ls --color=never /dev/shm/${EPOCH}/data/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
   fi
   echo -e "  set auto-load safe-path /\n  set libthread-db-search-path /usr/lib/\n  set trace-commands on\n  set pagination off\n  set print pretty on\n  set print array on\n  set print array-indexes on\n  set print elements 4096\n  set print frame-arguments all\n  set logging file ${EPOCH}_FULL.gdb\n  set logging on\n  thread apply all bt full\n  set logging off\n  set logging file ${EPOCH}_STD.gdb\n  set logging on\n  thread apply all bt\n  set logging off\n  quit\nEOF" >> $WORK_PARSE_CORE
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_STOP
@@ -2015,9 +2015,9 @@ generate_run_scripts(){
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_CL
   echo "echo \"Connecting to mysqld with socket -S${EPOCH_SOCKET} test using the mysql CLI client...\"" >> $WORK_CL
   if [[ ${MDG} -eq 1 ]]; then
-    echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} \$(ls -d /dev/shm/${EPOCH}/node1/test 2>/dev/null | grep -o 'test')" >> $WORK_CL
+    echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} \$(ls --color=never -d /dev/shm/${EPOCH}/node1/test 2>/dev/null | grep -o 'test')" >> $WORK_CL
   else
-    echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} \$(ls -d /dev/shm/${EPOCH}/data/test 2>/dev/null | grep -o 'test')" >> $WORK_CL
+    echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} \$(ls --color=never -d /dev/shm/${EPOCH}/data/test 2>/dev/null | grep -o 'test')" >> $WORK_CL
   fi
   echo -e "To replay, the attached tarball (${EPOCH}_bug_bundle.tar.gz) gives the testcase as an exact match of our system, including some handy utilities\n" > $WORK_HOW_TO_USE
   echo "$ vi ${EPOCH}_mybase         # STEP1: Update the base path in this file (usually the only change required!). If you use a non-binary distribution, please update SOURCE_DIR location also" >> $WORK_HOW_TO_USE
@@ -3044,7 +3044,7 @@ process_outcome(){
                 # Also, in the secondary sed, FIREWORKS is turned off for the newly created (for bug reducing) reducer
                 sed '/^#VARMOD#/p;/^MULTI_REDUCER=/,/^#VARMOD#/d' "$(readlink -f ${BASH_SOURCE[0]})" | sed 's|^FIREWORKS=1|FIREWORKS=0|' > "${NEWBUGRE}"
                 sed '/^MULTI_REDUCER=/,/^#VARMOD#/p;d' "$(readlink -f ${BASH_SOURCE[0]})" | grep -v "^#VARMOD#" > "${NEWBUGVM}"
-                sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
+                sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls --color=never -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
                 NEWBUGTEXT="$(sed 's|"|\\\\"|g' "${NEWBUGTO}")" # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
                 # This code is taken from pquery-prep-red.sh, if it is updated here, please also update it there and vice versa
                 NEWBUGTEXT_FINAL=
