@@ -279,9 +279,9 @@ if [[ ${GRP_RPL_CLUSTER_RUN} -eq 1 && ${GRP_RPL} -eq 0 ]]; then
   echoit "As GRP_RPL_CLUSTER_RUN=1, this script is auto-assuming this is a Group Replication run and will set GRP_RPL=1"
   GRP_RPL=1
 fi
-if [ "${MDG}" == "1" ]; then
+if [ "${MDG_CLUSTER_RUN}" == "1" ]; then
   if [ ${QUERIES_PER_THREAD} -lt 2147483647 ]; then # Starting up a cluster takes more time, so don't rotate too quickly
-    echoit "Note: As this is a MDG=1 run, and QUERIES_PER_THREAD was set to only ${QUERIES_PER_THREAD}, this script is setting the queries per thread to the required minimum of 2147483647 for this run."
+    echoit "Note: As this is a MDG_CLUSTER_RUN=1 run, and QUERIES_PER_THREAD was set to only ${QUERIES_PER_THREAD}, this script is setting the queries per thread to the required minimum of 2147483647 for this run."
     QUERIES_PER_THREAD=2147483647 # Max int
   fi
   if [ ${PQUERY_RUN_TIMEOUT} -lt 60 ]; then # Starting up a cluster takes more time, so don't rotate too quickly
@@ -555,11 +555,19 @@ if [[ $MDG -eq 1 ]]; then
   echo "wsrep_slave_threads=2" >> ${BASEDIR}/my.cnf
   echo "wsrep_on=1" >> ${BASEDIR}/my.cnf
   if [[ "$ENCRYPTION_RUN" == 1 ]]; then
-    echo "encrypt_binlog=ON" >> ${BASEDIR}/my.cnf
-    if [[ $WITH_KEYRING_VAULT -ne 1 ]]; then
-      echo "early-plugin-load=keyring_file.so" >> ${BASEDIR}/my.cnf
-      echo "keyring_file_data=keyring" >> ${BASEDIR}/my.cnf
-    fi
+    echo "encrypt_binlog=1" >> ${BASEDIR}/my.cnf
+    echo "plugin_load_add=file_key_management" >> ${BASEDIR}/my.cnf
+    echo "file_key_management_filename=${SCRIPT_PWD}/pquery/galera_encryption.key" >> ${BASEDIR}/my.cnf
+    echo "file_key_management_encryption_algorithm=aes_cbc" >> ${BASEDIR}/my.cnf
+    echo "innodb_encrypt_tables=ON" >> ${BASEDIR}/my.cnf
+    echo "innodb_encryption_rotate_key_age=0" >> ${BASEDIR}/my.cnf
+    echo "innodb_encrypt_log=ON" >> ${BASEDIR}/my.cnf
+    echo "innodb_encryption_threads=0" >> ${BASEDIR}/my.cnf
+    echo "innodb_encrypt_temporary_tables=ON" >> ${BASEDIR}/my.cnf
+    echo "encrypt-tmp-disk-tables=1" >> ${BASEDIR}/my.cnf
+    echo "encrypt-tmp-files=1" >> ${BASEDIR}/my.cnf
+    echo "aria_encrypt_tables=ON" >> ${BASEDIR}/my.cnf
+    echo "innodb-tablespaces-encryption" >> ${BASEDIR}/my.cnf
   fi
 fi
 
@@ -667,26 +675,28 @@ mdg_startup() {
       echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
       echo "ssl-cert = ${WORKDIR}/cert/server-cert.pem" >> ${DATADIR}/n${i}.cnf
       echo "ssl-key = ${WORKDIR}/cert/server-key.pem" >> ${DATADIR}/n${i}.cnf
-      echo "[client]" >> ${DATADIR}/n${i}.cnf
-      echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
-      echo "ssl-cert = ${WORKDIR}/cert/client-cert.pem" >> ${DATADIR}/n${i}.cnf
-      echo "ssl-key = ${WORKDIR}/cert/client-key.pem" >> ${DATADIR}/n${i}.cnf
+
       echo "[sst]" >> ${DATADIR}/n${i}.cnf
-      echo "encrypt = 4" >> ${DATADIR}/n${i}.cnf
-      echo "ssl-ca = ${WORKDIR}/cert/ca.pem" >> ${DATADIR}/n${i}.cnf
-      echo "ssl-cert = ${WORKDIR}/cert/server-cert.pem" >> ${DATADIR}/n${i}.cnf
-      echo "ssl-key = ${WORKDIR}/cert/server-key.pem" >> ${DATADIR}/n${i}.cnf
+      echo "encrypt = 3" >> ${DATADIR}/n${i}.cnf
+      echo "tcert = ${WORKDIR}/cert/server-cert.pem" >> ${DATADIR}/n${i}.cnf
+      echo "tkey = ${WORKDIR}/cert/server-key.pem" >> ${DATADIR}/n${i}.cnf
     fi
     if [ "$IS_STARTUP" == "startup" ]; then
       ${INIT_TOOL} ${INIT_OPT} --basedir=${BASEDIR} --datadir=$node > ${WORKDIR}/startup_node1.err 2>&1
     fi
   done
-  if check_for_version $MYSQL_VERSION "8.0.0"; then
-    if [ "$IS_STARTUP" == "startup" ]; then
-      diskspace
-      mkdir ${WORKDIR}/cert
-      cp ${WORKDIR}/node1.template/*.pem ${WORKDIR}/cert/
-    fi
+  if [ "$IS_STARTUP" == "startup" ]; then
+    diskspace
+    rm -rf ${WORKDIR}/cert && mkdir -p ${WORKDIR}/cert
+    pushd ${WORKDIR}/cert
+    # Creating CA certificate
+    openssl genrsa 2048 > ca-key.pem
+    openssl req -new -x509 -nodes -days 3600 -key ca-key.pem -out ca.pem -subj '/CN=www.mariadb.com/O=RDBMS/C=US'
+    # Creating server certificate
+    openssl req -newkey rsa:2048 -days 3600 -nodes -keyout server-key.pem -out server-req.pem -subj '/CN=www.mariadb.com/O=RDBMS/C=AU'
+    openssl rsa -in server-key.pem -out server-key.pem
+    openssl x509 -req -in server-req.pem -days 3600 -CA ca.pem -CAkey ca-key.pem -set_serial 01 -out server-cert.pem
+    popd
   fi
   get_error_socket_file() {
     NR=$1
