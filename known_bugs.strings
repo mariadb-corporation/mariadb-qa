@@ -103,6 +103,7 @@ escape != -1|SIGABRT|Item_func_like::val_int|Type_handler::Item_send_long|Type_h
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Item_param::get_date|Type_handler::Item_send_datetime|Type_handler_datetime_common::Item_send                            ## DBG |MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Type_handler::Item_send_datetime                              ## DBG |MDEV-25593
 !thd || thd->locked_tables_mode || !thd->mdl_context.has_locks() || thd->handler_tables_hash.records || thd->ull_hash.records || thd->global_read_lock.is_acquired()|SIGABRT|reload_acl_and_cache|mysql_execute_command|mysql_parse|dispatch_command ## DBG MDEV-25589
+!thd->wsrep_cs().current_error()|SIGABRT|wsrep_after_command_ignore_result|wsrep_on_check|sys_var::check|set_var::check                                                        ## DBG MENT-1265
 !thd->wsrep_cs().current_error()|SIGABRT|wsrep_after_command_ignore_result|Event_job_data::execute|Event_worker_thread::run|event_worker_thread                                ## DBG MDEV-25566
 readbytes != (size_t)-1 || (*__errno_location ()) != 9|SIGABRT|my_pread|azflush|ha_archive::info|ha_archive::update_create_info                                                ## DBG MDEV-24420
 ctx->skip_pk_sort|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|mysql_inplace_alter_table          ## DBG MDEV-25550
