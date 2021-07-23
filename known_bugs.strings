@@ -42,6 +42,9 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+fixed || state == NO_VALUE|SIGABRT|Item_param::basic_const_item|Item_param::eq|find_item_in_list|find_order_in_list                                                            ## DBG |MDEV-15704
+fixed || state == NO_VALUE|SIGABRT|Item_param::basic_const_item|find_order_in_list|setup_order|setup_without_group                                                             ## DBG |MDEV-15704
+SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_lock::has_pending_conflicting_lock|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush                             ## DBG MDEV-26216
 (&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(),(&(&thd->LOCK_thd_data)->m_mutex)->thread)|SIGABRT|wsrep_thd_is_aborting|srv_conc_enter_innodb_with_atomics|srv_conc_enter_innodb|innobase_srv_conc_enter_innodb ## DBG MDEV-22105/25079
 state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|set_var::update                         ## DBG MENT-1266
 ! thd->in_sub_stmt|SIGABRT|trans_rollback_stmt|binlog_log_row|handler::ha_write_row|write_record                                                                               ## DBG |MDEV-26175
