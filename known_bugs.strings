@@ -8,7 +8,8 @@ open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_tab
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                                       ## DBG MDEV-22663
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command                   ## DBG MDEV-23786
 
-##### STACK SMASHING BUGS (not auto-filtered) (prefix the uniqueID with 'STACK_SMASHING|') #####
+##### STACK SMASHING BUGS (not always auto-filtered; note prefix) (prefix the uniqueID with 'STACK_SMASHING|') #####
+SIGSEGV|table_cond_selectivity                         ## OPT |MDEV-26190
 
 ##### BUGS WHICH REQUIRE ADDITIONAL TESTCASES (DISABLED FILTERS) #####
 #SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                                  ## DBG MDEV-24911
@@ -42,6 +43,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                                       ## DBG |MDEV-26190
+SIGSEGV|restore_prev_nj_state|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search                                               ## OPT |MDEV-26190
 (&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(),(&(&thd->LOCK_thd_data)->m_mutex)->thread)|SIGABRT|wsrep_thd_is_aborting|srv_conc_enter_innodb_with_atomics|srv_conc_enter_innodb|innobase_srv_conc_enter_innodb ## DBG MDEV-22105/25079
 state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|set_var::update                         ## DBG MENT-1266
 ! thd->in_sub_stmt|SIGABRT|trans_rollback_stmt|binlog_log_row|handler::ha_write_row|write_record                                                                               ## DBG |MDEV-26175

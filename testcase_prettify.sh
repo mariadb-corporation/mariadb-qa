@@ -53,7 +53,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|add|ADD|gi' | \
   sed 's|savepoint|SAVEPOINT|gi' | \
   sed 's|checksum|CHECKSUM|gi' | \
-  sed 's|event|EVENT|gi' | \
+  sed 's|events|EVENTS|gi;s|event|EVENT|gi' | \
   sed 's|procedure|PROCEDURE|gi' | \
   sed 's|function|FUNCTION|gi' | \
   sed 's|sequence|SEQUENCE|gi' | \
