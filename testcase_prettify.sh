@@ -212,6 +212,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|always|ALWAYS|gi' | \
   sed 's|invisible|INVISIBLE|gi' | \
   sed 's|virtual|VIRTUAL|gi' | \
+  sed 's|minvalue|MINVALUE|gi' | \
+  sed 's|maxvalue|MAXVALUE|gi' | \
+  sed 's|increment by|INCREMENT BY|gi' | \
   sed 's|checkpoint|checkpoint|gi' | \
   sed 's|coordinates|coordinates|gi' | \
   sed 's|_\([a-zA-Z]\+\)|_\L\1|gi;s|\([a-zA-Z]\+\)_|\L\1_|gi' | \
