@@ -141,7 +141,8 @@ SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_def
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql|mysql_parse|wsrep_mysql_parse                                                                 ## DBG |MDEV-25484
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql|mysql_parse|dispatch_command                                                                  ## DBG |MDEV-25484
 0|SIGABRT|wsrep_create_appliers|wsrep_slave_threads_update|sys_var::update|set_var::update                                                                                     ## OPT MDEV-25472
-transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command                                 ## DBG MENT-1180
+transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command                                 ## DBG |MENT-1180
+ransaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep_before_command|do_command|do_handle_one_connection                                             ## DBG |MENT-1180
 !thd->mdl_context.has_locks()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|start_thread                                                                   ## DBG |MDEV-25463
 !thd->mdl_context.has_locks()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|pfs_spawn_thread                                                               ## DBG |MDEV-25463
 thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|apply_fragment|apply_write_set|wsrep::server_state::on_apply                                          ## DBG MDEV-25455
