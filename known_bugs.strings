@@ -299,7 +299,8 @@ SIGSEGV|replace_db_table|mysql_grant|Sql_cmd_grant_table::execute_table_mask|mys
 SIGSEGV|base_list_iterator::next|List_iterator<Item>::operator++|TABLE_LIST::change_refs_to_fields|find_dup_table                                                              ## OPT MDEV-24183
 open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|close_system_tables|close_log_table|TR_table::~TR_table ## DBG |MDEV-24154
 open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|close_log_table|TR_table::~TR_table|ha_commit_trans ## DBG |MDEV-24154
-!parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::change_table_name|do_rename|rename_tables                                       ## DBG MDEV-23977
+!parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::change_table_name|do_rename|rename_tables                                       ## DBG |MDEV-23977
+!parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::prepare_for_rename|do_rename|rename_tables                                      ## DBG |MDEV-23977
 SIGSEGV|__GI___pthread_mutex_lock|calloc () from|asn1_array2tree () from|call_init                                                                                             ## DBG |MDEV-23985
 !result|SIGABRT|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator|Item_bool_rowready_func2::fix_length_and_dec          ## DBG MDEV-23800
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|store_key_field::copy_inner|store_key::copy                                                           ## DBG MDEV-23749
