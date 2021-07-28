@@ -18,7 +18,7 @@ SIGSEGV|table_cond_selectivity                         ## OPT |MDEV-26190
 #b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                    ## DBG MDEV-24660
 #escape != -1|SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|Create_tmp_table::cleanup_on_failure                                                          ## DBG |MDEV-25610
 
-##### Diagnostics_area::set_error_status|THD... Issues; incorrect, logged as MDEV-25874
+##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## DBG |MDEV-19569
 0|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                          ## DBG |MDEV-17890
 row_end|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                    ## DBG |MDEV-22660
@@ -43,6 +43,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+(key_del_current != 0) && ((key_del_current == (~ (my_off_t) 0)) || (key_del_current <= (share->state.state.key_file_length - block_size)))|SIGABRT|_ma_new|_ma_enlarge_root|_ma_ck_real_write_btree|_ma_ck_write_btree_with_log ## DBG |MDEV-26258
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_analyze_table::execute                        ## DBG |MDEV-26258
 i >= 0|SIGABRT|intern_plugin_unlock|plugin_unlock|check_engine_supports_temporary|sys_var::check                                                                               ## DBG |MDEV-26242
 SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                                       ## DBG |MDEV-26190
 SIGSEGV|restore_prev_nj_state|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search                                               ## OPT |MDEV-26190
