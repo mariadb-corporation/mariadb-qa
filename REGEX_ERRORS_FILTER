@@ -1,1 +1,1 @@
-mtr.add_suppression|Got error 194 when reading table|Incorrect information in file.*/mysql/.*frm|Column count of mysql\.|the required persistent statistics storage is not present or is corrupted|Event invalid|Got error 170
+mtr.add_suppression|Got error 194 when reading table|Incorrect information in file.*/mysql/.*frm|Column count of mysql\.|the required persistent statistics storage is not present or is corrupted|Got error 170|Event invalid
