@@ -587,12 +587,12 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
   echo_out "[Abort] End of dump stack"
   if [ $MDG -eq 1 ]; then
     echo_out "[Abort] Ensuring any remaining MDG nodes are terminated and removed"
-    { ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; } >/dev/null  2>&1
+    ( ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null  2>&1
     sleep 2; sync
   fi
   if [ $GRP_RPL -eq 1 ]; then
     echo_out "[Abort] Ensuring any remaining Group Replication nodes are terminated and removed"
-    { ps -def | grep -E  'node1_socket|node2_socket|node3_socket' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; } >/dev/null 2>&1
+    ( ps -def | grep -E  'node1_socket|node2_socket|node3_socket' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
     sleep 2; sync
   fi
   echo_out "[Abort] Ensuring any remaining processes are terminated"
@@ -602,7 +602,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "Assert: \$EPOCH is empty! in abort()!"
   fi
   echo_out "[Abort] Terminating these PID's: $PIDS_TO_TERMINATE"
-  { kill -9 $PIDS_TO_TERMINATE >/dev/null 2>&1; } >/dev/null 2>&1
+  ( kill -9 $PIDS_TO_TERMINATE >/dev/null 2>&1; ) >/dev/null 2>&1
   if [ -r $INPUTFILE ]; then
     echo_out "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the interruption"
   else
@@ -1126,7 +1126,7 @@ kill_multi_reducer(){
     echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating these PID's: $PIDS_TO_TERMINATE"
     while [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; do
       for t in $(eval ${PS_CMD} | sort -u); do
-        { sleep 0.01; kill -9 $t >/dev/null 2>&1; timeout -k4 -s9 4s wait $t >/dev/null 2>&1; } >/dev/null 2>&1
+        ( sleep 0.01; kill -9 $t >/dev/null 2>&1; timeout -k4 -s9 4s wait $t >/dev/null 2>&1; ) >/dev/null 2>&1
         timeout -k5 -s9 5s wait $t >/dev/null 2>&1
       done
       sync; sleep 3
@@ -1255,19 +1255,10 @@ multi_reducer(){
           else
             echo_out_overwrite "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads..."
           fi
-          for i in $(eval echo {1..$MULTI_THREADS}); do
-            # Make sure all subprocessed are gone. Not 100% safe (though likely 99.999%) as the wait has a kill. It is re-run for safety.
-            PID_TO_KILL=$(eval echo $(echo '$MULTI_PID'"$i"))
-            { sleep 0.01; kill -9 $PID_TO_KILL >/dev/null 2>&1; timeout -k4 -s9 4s wait $PID_TO_KILL >/dev/null 2>&1; } >/dev/null 2>&1
-            timeout -k5 -s9 5s wait $PID_TO_KILL >/dev/null 2>&1
-          done
-          sleep 4  # Make sure disk based activity is finished
-          for i in $(eval echo {1..$MULTI_THREADS}); do
-            # Make sure all subprocessed are gone. Not 100% safe (though likely 99.999%) as the wait has a kill. It is re-run for safety.
-            PID_TO_KILL=$(eval echo $(echo '$MULTI_PID'"$i"))
-            { sleep 0.01; kill -9 $PID_TO_KILL >/dev/null 2>&1; timeout -k4 -s9 4s wait $PID_TO_KILL >/dev/null 2>&1; } >/dev/null 2>&1
-            timeout -k5 -s9 5s wait $PID_TO_KILL >/dev/null 2>&1
-          done
+          # Kill subreducers explicitly
+          ps -ef | grep 'subreducer' | grep -v grep | grep $EPOCH | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
+          sleep 1
+          ps -ef | grep 'subreducer' | grep -v grep | grep $EPOCH | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
           sleep 2
           if [ "${FIREWORKS}" != "1" ]; then
             echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating simplification subreducer threads... done"
@@ -1314,7 +1305,7 @@ multi_reducer(){
           # Ensure previous server is gone (new code 24-08-2020 to better deal with assert above)
           if [ ! -z "$(ps -def | grep "$RESTART_WORKD/log/master.err")" ]; then
             for i in $(seq 1 3); do
-              { kill -9 $(ps -def | grep "$RESTART_WORKD/log/master.err" | grep -v grep | awk '{print $2}') >/dev/null 2>&1; } >/dev/null 2>&1
+              ( kill -9 $(ps -def | grep "$RESTART_WORKD/log/master.err" | grep -v grep | awk '{print $2}') >/dev/null 2>&1; ) >/dev/null 2>&1
             done
           fi
           # Remove all files, except for subreducer script
@@ -2123,7 +2114,7 @@ start_mysqld_or_valgrind_or_mdg(){
 start_mdg_main(){
   generate_run_scripts
   #clean existing processes
-  { ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; } >/dev/null 2>&1
+  (ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
   sleep 2; sync
   SUSER=root
   SPASS=
@@ -2790,11 +2781,11 @@ cleanup_and_save(){
     fi
   else
     if [[ $MDG -eq 1 ]]; then
-      { ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; } >/dev/null 2>&1
+      ( ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
       sleep 2; sync
     fi
     if [[ $GRP_RPL -eq 1 ]]; then
-      { ps -def | grep -E  'node1_socket|node2_socket|node3_socket' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; } >/dev/null 2>&1
+      ( ps -def | grep -E  'node1_socket|node2_socket|node3_socket' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
       sleep 2; sync
     fi
     cp -f $WORKT $WORKF
@@ -3300,14 +3291,14 @@ stop_mysqld_or_mdg(){
   SHUTDOWN_TIME_START=$(date +'%s')
   MODE0_MIN_SHUTDOWN_TIME=$[ $TIMEOUT_CHECK + 10 ]
   if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-    { ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; } >/dev/null 2>&1
+    ( ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
     sleep 2; sync
   else
     if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 -a ${FIRST_MYSQLD_START_FLAG} -ne 1 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld. For the first init startup of mysqld, kill should also not be used.
       while :; do
         if kill -0 $PIDV >/dev/null 2>&1; then
           sleep 1
-          { kill -9 $PIDV >/dev/null 2>&1; } >/dev/null 2>&1
+          ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
         else
           break
         fi
@@ -3332,11 +3323,11 @@ stop_mysqld_or_mdg(){
       if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 1; fi
 
       if [ "${FIREWORKS}" == "1" ]; then  # Terminate mysqld directly in fireworks mode
-        { kill -9 $PIDV >/dev/null 2>&1; } >/dev/null 2>&1
+        ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
         sleep 0.02
         while :; do
           if kill -0 $PIDV >/dev/null 2>&1; then
-            { kill -9 $PIDV >/dev/null 2>&1; } >/dev/null 2>&1
+            ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
             sleep 1
             if kill -0 $PIDV >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed at least twice. Is this server very busy?"; else break; fi
           else
@@ -3350,7 +3341,7 @@ stop_mysqld_or_mdg(){
           if kill -0 $PIDV >/dev/null 2>&1; then
             if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 2; fi
             if kill -0 $PIDV >/dev/null 2>&1; then  # Retry shutdown one more time
-              $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
+              ${BASEDIR}/bin/mysqladmin -uroot -S${WORKD}/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
               if grep -qi "Access denied for user" $WORKD/log/mysqld.out; then
                 echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"
                 exit 1
@@ -3371,7 +3362,7 @@ stop_mysqld_or_mdg(){
                 if [ $MODE -ne 0 ]; then  # For MODE=0, the following is not a WARNING but fairly normal
                   echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed. Now forcing kill of mysqld"
                 fi
-                { kill -9 $PIDV >/dev/null 2>&1; } >/dev/null 2>&1
+                ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
               else
                 break
               fi
