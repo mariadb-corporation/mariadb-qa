@@ -43,6 +43,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## OPT |MENT-1287
+SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>::load|wait_for_commit::unregister_wait_for_prior_commit|wsrep_unregister_from_group_commit    ## DBG |MENT-1287
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## DBG |MENT-1286
 state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys                                                  ## OPT |MENT-1286
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table                       ## OPT |MDEV-26273
