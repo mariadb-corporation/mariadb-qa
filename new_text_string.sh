@@ -10,6 +10,8 @@ SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 FRAMESONLY=0
 MYSQLD=
 TRIAL=
+LOC=${PWD}
+
 if [ ! -z "${1}" ]; then
   if [ "${1}" == "FRAMESONLY" ]; then  # Used in automation, ref mass_bug_report.sh
     FRAMESONLY=1
@@ -17,6 +19,7 @@ if [ ! -z "${1}" ]; then
     MYSQLD="${1}"
   elif [ -d "${1}" -a "$(echo "${1}" | grep -o '[0-9]\+')" == "${1}" ]; then
     TRIAL="${1}"
+    LOC="${PWD}/${TRIAL}"
   else
     echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script"
     exit 1
@@ -60,29 +63,19 @@ if [[ ${MDG} -eq 1 ]]; then
   ERROR_LOG=${GALERA_ERROR_LOG}
   LATEST_CORE=${GALERA_CORE_LOC}
   if [ -z "${ERROR_LOG}" ]; then  # Interactive call from basedir
-    if [ -r ./node1/node1.err ]; then
-      ERROR_LOG="./node1/node1.err"
+    if [ -r ${LOC}/node1/node1.err ]; then
+      ERROR_LOG="${LOC}/node1/node1.err"
     else
       echo "Assert: no error log found for Galera run!"
       exit 1
     fi
   fi 
   if [ -z "${LATEST_CORE}" ]; then  # Interactive call from basedir
-    LATEST_CORE=
-    if [ "${MDG}" -eq 1 ]; then
-      LATEST_CORE="$(ls -t --color=never node*/*core* 2>/dev/null)"
-    else
-      LATEST_CORE="$(ls --color=never data/*core* 2>/dev/null)"
-    fi
+    LATEST_CORE="$(ls -t --color=never ${LOC}/node*/*core* 2>/dev/null)"
   fi
 else
-  if [ -z "${TRIAL}" ]; then
-    ERROR_LOG=$(ls log/master.err 2>/dev/null | head -n1)
-    LATEST_CORE=$(ls -t */*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
-  else
-    ERROR_LOG=$(ls ${TRIAL}/log/master.err 2>/dev/null | head -n1)
-    LATEST_CORE=$(ls -t ${TRIAL}/*/*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
-  fi
+  ERROR_LOG=$(ls ${LOC}/log/master.err 2>/dev/null | head -n1)
+  LATEST_CORE=$(ls -t ${LOC}/*/*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
 fi
 
 if [ -z "${ERROR_LOG}" ]; then

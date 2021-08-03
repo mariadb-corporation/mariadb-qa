@@ -17,52 +17,56 @@ if [[ ${MDG} -eq 1 ]]; then
     exit 1
   fi
   for i in $(ls -lt ${1} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep -v tmp | tr -dc '0-9\n' | sort); do
-    cat ${1}/node${i}/MYBUG | sed "s|^|NODE${i} BUG      : |"
+    cat ${1}/node${i}/MYBUG | sed "s|^|NODE${i} BUG         : |"
+    if [ -z "$(ls ./reducer${1}-${i}.sh 2>/dev/null)" ]; then
+      echo "Assert: no core file found in */*core*, and no 'signal' found in the error log, so reducer file was not created" | sed "s|^|TEXT (REDUCER) N${i} : |"
+    else
+      grep '^[ ]*TEXT=' ./reducer${1}-${i}.sh | grep -v 'fireworks' | sed 's|^[ ]*TEXT="||;s|"$||' | head -n1 | sed "s|^|TEXT (REDUCER) N${i} : |"
+    fi
   done
-  grep '^[ ]*TEXT=' ./reducer${1}-*.sh | grep -v 'fireworks' | sed 's|^[ ]*TEXT="||;s|"$||' | head -n1 | sed 's|^|TEXT (REDUCER) : |'
-  grep '^BASEDIR' ./reducer${1}-*.sh | sed 's|^[^"]\+"||;s|".*||' | head -n1 | sed 's|^|BASEDIR        : |'
+  grep '^BASEDIR' ./reducer${1}-*.sh | sed 's|^[^"]\+"||;s|".*||' | head -n1 | sed 's|^|BASEDIR           : |'
 else
   if [ ! -r ./reducer${1}.sh -o ! -d ./${1}/ ]; then
     echo "./reducer${1}.sh or trial dir ./${1}/ not found!"
     exit 1
   fi
-  cat ${1}/MYBUG | sed 's|^|MYBUG          : |'
-  grep '^[ ]*TEXT=' ./reducer${1}.sh | grep -v 'fireworks' | sed 's|^[ ]*TEXT="||;s|"$||' | head -n1 | sed 's|^|TEXT (REDUCER) : |'
-  grep '^BASEDIR' ./reducer${1}.sh | sed 's|^[^"]\+"||;s|".*||' | sed 's|^|BASEDIR        : |'
+  cat ${1}/MYBUG | sed 's|^|MYBUG             : |'
+  grep '^[ ]*TEXT=' ./reducer${1}.sh | grep -v 'fireworks' | sed 's|^[ ]*TEXT="||;s|"$||' | head -n1 | sed 's|^|TEXT (REDUCER)    : |'
+  grep '^BASEDIR' ./reducer${1}.sh | sed 's|^[^"]\+"||;s|".*||' | sed 's|^|BASEDIR           : |'
 fi
-tail -n2 ${1}/pquery.log | head -n1 | sed 's|^|PQUERY         : |'
-tail -n2 ${1}/pquery.log | tail -n1 | sed 's|^|                 |'
+tail -n2 ${1}/pquery.log | head -n1 | sed 's|^|PQUERY            : |'
+tail -n2 ${1}/pquery.log | tail -n1 | sed 's|^|                    |'
 if [[ ${MDG} -eq 1 ]]; then
   for i in $(ls -lt ${1} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep -v tmp | tr -dc '0-9\n' | sort); do
-    cat ${1}/node${i}/node${i}.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | head -n1 | sed "s|^|NODE${i} ERRORLOG : |"
-    cat ${1}/node${i}/node${i}.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | tail -n2 | sed 's|^|                 |'
+    cat ${1}/node${i}/node${i}.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | head -n1 | sed "s|^|NODE${i} ERRORLOG    : |"
+    cat ${1}/node${i}/node${i}.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | tail -n2 | sed 's|^|                    |'
   done
 else
-  cat ${1}/log/master.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | head -n1 | sed 's|^|ERRORLOG END   : |'
-  cat ${1}/log/master.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | tail -n2 | sed 's|^|                 |'
+  cat ${1}/log/master.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | head -n1 | sed 's|^|ERRORLOG END      : |'
+  cat ${1}/log/master.err | grep --binary-files=text -v '^[ \t]*$' | tail -n3 | tail -n2 | sed 's|^|                    |'
 fi
-ls -s ${1}/default.node.tld_thread-0.sql* | grep --binary-files=text -vE "backup|failing|prev" | tac | head -n1 | sed "s|^[ 0-9]\+||;s|^/||" | xargs -I{} wc -l ${1}/{} | sed "s| | Lines: cat ${PWD}/|;s|^|TESTCASE       : |" | sed 's|[/]\+|/|g'
+ls -s ${1}/default.node.tld_thread-0.sql* | grep --binary-files=text -vE "backup|failing|prev" | tac | head -n1 | sed "s|^[ 0-9]\+||;s|^/||" | xargs -I{} wc -l ${1}/{} | sed "s| | Lines: cat ${PWD}/|;s|^|TESTCASE          : |" | sed 's|[/]\+|/|g'
 
 if [[ ${MDG} -eq 1 ]]; then
   for i in $(ls -lt ${1} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep -v tmp | tr -dc '0-9\n' | sort); do
     if [ -z "$(ls ${1}/node${i}/*core 2>/dev/null)" ]; then
-      echo "NODE${i} CORE     : No core"
+      echo "NODE${i} CORE        : No core"
     else
-      ls ${1}/node${i}/*core | sed "s|^|NODE${i} CORE     : ${PWD}/|" | sed 's|[/]\+|/|g'
-      ~/t ${1} | sed "s|^|CORE UNIQUEID  : |"
+      ls ${1}/node${i}/*core | sed "s|^|NODE${i} CORE        : ${PWD}/|" | sed 's|[/]\+|/|g'
+      ~/t ${1} | sed "s|^|CORE UNIQUEID N${i}  : |"
     fi
   done
 else
   if [ -z "$(ls ${1}/data/*core 2>/dev/null)" ]; then
-    echo "CORE           : No core"
+    echo "CORE              : No core"
   else
-    ls ${1}/data/*core | sed "s|^|CORE           : ${PWD}/|" | sed 's|[/]\+|/|g'
-    ~/t ${1} | sed "s|^|CORE UNIQUEID  : |"
+    ls ${1}/data/*core | sed "s|^|CORE              : ${PWD}/|" | sed 's|[/]\+|/|g'
+    ~/t ${1} | sed "s|^|CORE UNIQUEID     : |"
   fi
 fi
 
 CHARS_MY_INIT="$(wc -m ${1}/MYINIT 2>/dev/null | sed 's| .*||')"
 if [ "${CHARS_MY_INIT}" -gt 1 ]; then
-  cat ${1}/MYINIT | sed 's|^|MYINIT         : |'
+  cat ${1}/MYINIT | sed 's|^|MYINIT            : |'
 fi
-cat ${1}/MYEXTRA | sed 's|\-\-no\-defaults ||;s|^|MYEXTRA        : |'
+cat ${1}/MYEXTRA | sed 's|\-\-no\-defaults ||;s|^|MYEXTRA           : |'
