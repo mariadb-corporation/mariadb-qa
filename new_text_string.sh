@@ -9,11 +9,14 @@
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd) 
 FRAMESONLY=0
 MYSQLD=
+TRIAL=
 if [ ! -z "${1}" ]; then
   if [ "${1}" == "FRAMESONLY" ]; then  # Used in automation, ref mass_bug_report.sh
     FRAMESONLY=1
-  elif [ -r "${1}" -a -x "${1}" ]; then  # TODO: improve to check if it is mysqld
+  elif [ -r "${1}" -a -x "${1}" -a "$(file "${1}" | grep -o 'ELF 64-bit LSB shared object')" == "ELF 64-bit LSB shared object" ]; then
     MYSQLD="${1}"
+  elif [ -d "${1}" -a "$(echo "${1}" | grep -o '[0-9]\+')" == "${1}" ]; then
+    TRIAL="${1}"
   else
     echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script"
     exit 1
@@ -23,6 +26,8 @@ fi
 if [ -z "${MYSQLD}" ]; then
   if [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
     MYSQLD="./bin/mysqld"
+  elif [ -r ./mysqld/mysqld -a ! -z "${TRIAL}" ]; then  # For trial sub dirs in workdirs
+    MYSQLD="./mysqld/mysqld"
   elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Used by pquery-run.sh when analyzing trial cores in-run
     MYSQLD="../mysqld"
   elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
@@ -71,8 +76,13 @@ if [[ ${MDG} -eq 1 ]]; then
     fi
   fi
 else
-  ERROR_LOG=$(ls log/master.err 2>/dev/null | head -n1)
-  LATEST_CORE=$(ls -t */*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
+  if [ -z "${TRIAL}" ]; then
+    ERROR_LOG=$(ls log/master.err 2>/dev/null | head -n1)
+    LATEST_CORE=$(ls -t */*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
+  else
+    ERROR_LOG=$(ls ${TRIAL}/log/master.err 2>/dev/null | head -n1)
+    LATEST_CORE=$(ls -t ${TRIAL}/*/*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
+  fi
 fi
 
 if [ -z "${ERROR_LOG}" ]; then

@@ -13,6 +13,7 @@ ln -fs /home/$(whoami)/mariadb-qa/homedir_scripts/* /home/$(whoami)/ 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/testcase_prettify.sh /home/$(whoami)/tcp 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-goexp-patch.sh /home/$(whoami)/pge 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-go-expert.sh /home/$(whoami)/pg 2>&1
+ln -fs /home/$(whoami)/mariadb-qa/new_text_string.sh /home/$(whoami)/t 2>&1
 
 # Build scripts (mostly/mainly used from /test)
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
