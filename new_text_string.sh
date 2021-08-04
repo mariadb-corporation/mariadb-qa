@@ -15,7 +15,8 @@ LOC=${PWD}
 if [ ! -z "${1}" ]; then
   if [ "${1}" == "FRAMESONLY" ]; then  # Used in automation, ref mass_bug_report.sh
     FRAMESONLY=1
-  elif [ -r "${1}" -a -x "${1}" -a "$(file "${1}" | grep -o 'ELF 64-bit LSB shared object')" == "ELF 64-bit LSB shared object" ]; then
+  #elif [ -r "${1}" -a -x "${1}" -a "$(file "${1}" | grep -o 'ELF 64-bit LSB shared object')" == "ELF 64-bit LSB shared object" ]; then
+  elif [ -r "${1}" -a -x "${1}" ]; then
     MYSQLD="${1}"
   elif [ -d "${1}" -a "$(echo "${1}" | grep -o '[0-9]\+')" == "${1}" ]; then
     TRIAL="${1}"
