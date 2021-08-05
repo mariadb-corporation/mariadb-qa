@@ -15,9 +15,13 @@ LOC=${PWD}
 if [ ! -z "${1}" ]; then
   if [ "${1}" == "FRAMESONLY" ]; then  # Used in automation, ref mass_bug_report.sh
     FRAMESONLY=1
-  #elif [ -r "${1}" -a -x "${1}" -a "$(file "${1}" | grep -o 'ELF 64-bit LSB shared object')" == "ELF 64-bit LSB shared object" ]; then
-  elif [ -r "${1}" -a -x "${1}" ]; then
-    MYSQLD="${1}"
+  elif [ -f "${1}" -a -x "${1}" ]; then
+    if [ "$(readlink -f "${1}" | xargs file | grep -o 'ELF 64-bit LSB shared object')" == "ELF 64-bit LSB shared object" ]; then
+      MYSQLD="${1}"
+    else
+      echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script"
+      exit 1
+    fi
   elif [ -d "${1}" -a "$(echo "${1}" | grep -o '[0-9]\+')" == "${1}" ]; then
     TRIAL="${1}"
     LOC="${PWD}/${TRIAL}"
