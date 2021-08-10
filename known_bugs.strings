@@ -43,6 +43,12 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+!table->file || table->file->inited == handler::NONE|SIGABRT|close_thread_table|close_thread_tables|mysqld_show_create|mysql_execute_command                                   ## DBG |MDEV-26334
+SIGSEGV|bitmap_clear_bit|bitmap_lock_clear_bit|free_tmp_table|close_thread_tables                                                                                              ## OPT |MDEV-26334
+SIGSEGV|handler::ha_close|closefrm|intern_close_table|tc_purge                                                                                                                 ## OPT |MDEV-26334
+map->bitmap|SIGABRT|bitmap_lock_clear_bit|free_tmp_table|close_thread_tables|mysqld_show_create                                                                                ## DBG |MDEV-26334
+prebuilt->magic_n == ROW_PREBUILT_ALLOCATED|SIGABRT|ut_dbg_assertion_failed|row_prebuilt_free|ha_innobase::close|closefrm                                                      ## OPT |MDEV-26334
+SIGSEGV|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc                                                                                                        ## DBG MDEV-26330
 state_ == s_idle && mode_ == m_local && transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::sync_rollback_complete|wsrep_rollback_local|wsrep_rollback_process|start_wsrep_THD ## DBG MDEV-26304
 thd->wsrep_trx().is_streaming()|SIGABRT|Wsrep_replayer_service::apply_write_set|apply_write_set|wsrep::server_state::on_apply|wsrep::high_priority_service::apply              ## DBG MDEV-26303
 SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## OPT |MENT-1287
@@ -396,7 +402,10 @@ fixed == 0|SIGABRT|Item_func::fix_fields|fix_fields_for_tvc|table_value_constr::
 time_type == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Datetime::is_valid_datetime_slow|Datetime::is_valid_value_slow|Datetime::Datetime|Item::val_datetime_packed                      ## DBG |MDEV-22661
 time_type == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Datetime::is_valid_datetime_slow|Datetime::Datetime|TR_table::query|Item_func_trt_id::get_by_commit_ts                           ## DBG |MDEV-22661
 SIGSEGV|in_vector::find|Item_func_in::val_int|TABLE::verify_constraints|TABLE_LIST::view_check_option                                                                          ## DBG MDEV-22652
-dict_tf2_is_valid(flags, flags2)|SIGABRT|ut_dbg_assertion_failed|dict_mem_table_create|create_table_info_t::create_table_def|create_table_info_t::create_table                 ## OPT MDEV-22627
+dict_tf2_is_valid(flags, flags2)|SIGABRT|ut_dbg_assertion_failed|dict_mem_table_create|create_table_info_t::create_table_def|create_table_info_t::create_table                 ## OPT |MDEV-22627
+dict_tf2_is_valid(flags, flags2)|SIGABRT|ut_dbg_assertion_failed|dict_table_t::create|create_table_info_t::create_table_def|create_table_info_t::create_table                  ## OPT |MDEV-22627
+dict_tf2_is_valid(flags, flags2)|SIGABRT|ut_dbg_assertion_failed|dict_mem_table_create|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table               ## OPT |MDEV-22627
+dict_tf2_is_valid(flags, flags2)|SIGABRT|ut_dbg_assertion_failed|dict_table_t::create|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table                ## OPT |MDEV-22627
 SIGSEGV|flush_all_key_blocks|prepare_resize_simple_key_cache|resize_partitioned_key_cache|resize_key_cache                                                                     ## OPT MDEV-22590
 thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|create_internal_tmp_table_from_heap                                    ## DBG |MDEV-22500
 thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|mysql_load                                                             ## DBG |MDEV-22500
