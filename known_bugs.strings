@@ -56,8 +56,12 @@ SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## DBG |MENT-1286
 state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys                                                  ## OPT |MENT-1286
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table                       ## OPT |MDEV-26273
+SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|ha_innobase::commit_inplace_alter_table|mysql_inplace_alter_table                               ## OPT |MDEV-26273
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::pfs_begin_lock|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|prepare_inplace_alter_table_dict    ## DBG |MDEV-26273
+SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::pfs_begin_lock|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|ha_innobase::commit_inplace_alter_table ## DBG |MDEV-26273
 SIGSEGV|inline_mysql_mutex_lock|fts_sync_during_ddl|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table                                                  ## DBG |MDEV-26273
+SIGSEGV|inline_mysql_mutex_lock|fts_sync_during_ddl|ha_innobase::commit_inplace_alter_table|mysql_inplace_alter_table                                                          ## OPT |MDEV-26273
+SIGSEGV|inline_mysql_mutex_lock|fts_sync_during_ddl|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                                             ## DBG |MDEV-26273
 state() == s_preparing || (is_xa() && state() == s_replaying) || (ret && (state() == s_must_abort || state() == s_must_replay || state() == s_cert_failed || state() == s_aborted))|SIGABRT|wsrep::transaction::before_prepare|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## DBG MDEV-26266
 !killed_err || killed != NOT_KILLED|SIGABRT|THD::killed_errno|sp_head::execute|sp_head::execute_procedure|do_execute_sp                                                        ## DBG MENT-1278
 (key_del_current != 0) && ((key_del_current == (~ (my_off_t) 0)) || (key_del_current <= (share->state.state.key_file_length - block_size)))|SIGABRT|_ma_new|_ma_enlarge_root|_ma_ck_real_write_btree|_ma_ck_write_btree_with_log ## DBG |MDEV-26258
@@ -477,6 +481,7 @@ strlen(name_arg) <= (64U*3)|SIGABRT|MDL_key::mdl_key_init|MDL_request::init|lock
 SIGSEGV|tokudb_rollback_to_savepoint|ha_rollback_to_savepoint|trans_rollback_to_savepoint|mysql_execute_command                                                                ## OPT MDEV-4527
 checksum_start + checksum_length == f->ptr|SIGABRT|handler::calculate_checksum|mysql_checksum_table|mysql_execute_command|mysql_parse                                          ## DBG |MDEV-11783
 SIGSEGV|sortlength|filesort|create_sort_index|Window_funcs_sort::exec                                                                                                          ## OPT |MDEV-11783
+checksum_start + checksum_length == f->ptr|SIGABRT|handler::calculate_checksum|ha_partition::calculate_checksum|mysql_checksum_table|mysql_execute_command                     ## DBG |MDEV-11783
 table->s->db_create_options == part_table->s->db_create_options|SIGABRT|compare_table_with_partition|Sql_cmd_alter_table_exchange_partition::exchange_partition|Sql_cmd_alter_table_exchange_partition::execute|mysql_execute_command ## DBG MDEV-228116
 SIGSEGV|sortlength|filesort|create_sort_index|st_join_table::sort_table                                                                                                        ## DBG |MDEV-15178
 SIGABRT|ut_dbg_assertion_failed|trx_rollback_last_sql_stat_for_mysql|innobase_rollback|ha_rollback_trans                                                                       ## OPT MDEV-15494

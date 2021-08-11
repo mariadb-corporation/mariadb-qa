@@ -1,5 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+# TCP = Test Case Prettify
 # This script prettifies SQL code towards uppercase, and is made as an aid for testcase handling. It is also used by reducer.sh in one of it's testcase reduction/prettifying trials, and if uncessfull, the original testcase is left.
 
 # NOTES: this script may work less well for SQL containing actual data, as SQL idioms like 'when' are changed to 'WHEN' without regards for wheter such word appears inside a text string or as a SQL idiom. ~/tcp is beta quality. Watch out for: ERROR 1064 (42000): You have an error in your SQL syntax during SQL replay. Even a small error like "COUNT(" vs "COUNT (" can make a testcase non-reproducible. There are also other shortcomings to this aid-tool, for example data text becoming uppercase which may affect reprodicibilty). For every error you find, please improve ~/tcp handling of the same. A common issue is the space in the "COUNT (" example, and such cases are handled near the end of the ~/tcp script! If your ~/tcp parsed testcase does not immediately work, try the original reducer-produced unparsed testcase! Thank you'
@@ -37,6 +38,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|status|STATUS|gi' | \
   sed 's|using|USING|gi' | \
   sed 's|distinct|DISTINCT|gi' | \
+  sed 's|cascaded|CASCADED|gi' | \
+  sed 's|check option|CHECK OPTION|gi' | \
   sed 's|comment|COMMENT|gi' | \
   sed 's|schedule|SCHEDULE|gi' | \
   sed 's|every|EVERY|gi' | \
@@ -262,6 +265,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|user@localhost|user@localhost|gi' | \
   sed 's|root@localhost|root@localhost|gi' | \
   sed 's|@localhost|@localhost|gi' | \
+  sed 's|log_bin_trust_function_creators|log_bin_trust_function_creators|gi' | \
   sed 's|\.TABLES|\.tables|gi' | \
   sed 's|text|TEXT|gi' | \
   sed 's|date_sub[ ]*(|DATE_SUB(|gi' | \
