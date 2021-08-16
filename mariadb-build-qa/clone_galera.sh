@@ -13,7 +13,7 @@ echo '0'
   echo ''
   git clone --depth=1 -j8 --branch=$1-enterprise https://$GIT_USERNAME@github.com/mariadb-corporation/MariaDBEnterprise  $1
   #clone galera repo
-  if [[ ${1} =~ 10.[4-6] ]]; then
+  if [[ ${1} =~ 10.[4-7] ]]; then
     git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-4.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git $1_galera
   else
     git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-3.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git $1_galera
@@ -36,7 +36,7 @@ else
   # For full trees, use:
   #git clone --recurse-submodules -j8 --branch=$1 https://github.com/MariaDB/server.git $1 &
   #clone galera repo
-  if [[ ${1} =~ 10.[4-6] ]]; then
+  if [[ ${1} =~ 10.[4-7] ]]; then
     git clone --depth=1 --recurse-submodules -j8 --branch=mariadb-4.x https://github.com/MariaDB/galera $1_galera &
   else
     git clone --depth=1 --recurse-submodules -j8 --branch=mariadb-3.x https://github.com/MariaDB/galera $1_galera &

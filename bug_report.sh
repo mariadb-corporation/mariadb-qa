@@ -105,7 +105,6 @@ if [ ${SAN_MODE} -eq 0 ]; then
     CORE_FILE=$(ls node1/*core* 2>/dev/null | head -1)
   else
     ./all_no_cl ${MYEXTRA_OPT_CLEANED}
-    ./test
     timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; sleep 0.2; ./kill 2>/dev/null; sleep 0.2
     CORE_COUNT=$(ls data/*core* 2>/dev/null | wc -l)
     CORE_FILE=$(ls data/*core* 2>/dev/null | head -1)
