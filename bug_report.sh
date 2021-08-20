@@ -97,6 +97,7 @@ else
 fi
 sleep 2.5  # For visual confirmation
 
+# Note that the following may do a duplicate run of the testcase on the current PWD basedir directory, which at first glance seems unnessary duplication. If the current PWD basedir directory is part of gendirs that is likely true. However, if it not (like for example a special build) then the code below will still test the testcase against this current PWD basedir directory and make a bug report on that (whilst also reporting on all other versions/dirs listed in gendirs). TODO this can then (if that reasoning about past reasons is correct) be slightly shortened by checking if the current PWD basedir is in gendirs and skip the re-test in such case, and just use the results already present in the current dir as created by test_all. 
 if [ ${SAN_MODE} -eq 0 ]; then
   if [ "${1}" == "GAL" ]; then
     ./gal_no_cl ${MYEXTRA_OPT_CLEANED}
@@ -112,6 +113,7 @@ if [ ${SAN_MODE} -eq 0 ]; then
     else
       ./all_no_cl ${MYEXTRA_OPT_CLEANED}
     fi
+    ./test
     timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; sleep 0.2; ./kill 2>/dev/null; sleep 0.2
     CORE_COUNT=$(ls data/*core* 2>/dev/null | wc -l)
     CORE_FILE=$(ls data/*core* 2>/dev/null | head -1)
@@ -132,6 +134,7 @@ if [ ${SAN_MODE} -eq 0 ]; then
      bt
      quit
 EOF
+   echo 'y' > /tmp/a
   fi
 fi
 
@@ -158,7 +161,7 @@ else
   ./kill_all # NOTE: Can not be executed as ../kill_all as it requires ./gendirs.sh
 fi
 
-if [ -z "${TEXT}" ]; then
+if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then
   echo "TEXT not set, scanning for corefiles..."
   if [ "${1}" == "SAN" ]; then
     echo "Assert: SAN mode is enabled, but TEXT variable is not set!"

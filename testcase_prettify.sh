@@ -28,6 +28,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|decimal|DECIMAL|gi' | \
   sed 's|numeric|NUMERIC|gi' | \
   sed 's|value|VALUE|gi' | \
+  sed 's|return|RETURN|gi' | \
+  sed 's|returns|RETURNS|gi' | \
   sed 's|deterministic|DETERMINISTIC|gi' | \
   sed 's|commit|COMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
@@ -60,6 +62,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|events|EVENTS|gi;s|event|EVENT|gi' | \
   sed 's|procedure|PROCEDURE|gi' | \
   sed 's|function|FUNCTION|gi' | \
+  sed 's|seq|SEQ|gi' | \
   sed 's|sequence|SEQUENCE|gi' | \
   sed 's|exists|EXISTS|gi' | \
   sed 's|help|HELP|gi' | \
