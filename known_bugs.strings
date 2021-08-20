@@ -42,6 +42,7 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+SIGSEGV|flush_tables_with_read_lock|mysql_execute_command|mysql_parse|dispatch_command                                                                                         ## OPT MDEV-26456
 SIGSEGV|Item::cleanup|Item::cleanup_processor|Item::cleanup_excluding_immutables_processor|Item::walk                                                                          ## DBG |MDEV-26452
 SIGSEGV|Item::cleanup|Item::cleanup_processor|Item::cleanup_processor|Item::cleanup_excluding_immutables_processor                                                             ## OPT |MDEV-26452
 field->col->is_binary() || field->prefix_len % field->col->mbmaxlen == 0|SIGABRT|dict_index_add_to_cache|dict_create_index_step|que_thr_step|que_run_threads_low               ## DBG MDEV-26379

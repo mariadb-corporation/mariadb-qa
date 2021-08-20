@@ -134,7 +134,6 @@ if [ ${SAN_MODE} -eq 0 ]; then
      bt
      quit
 EOF
-   echo 'y' > /tmp/a
   fi
 fi
 
