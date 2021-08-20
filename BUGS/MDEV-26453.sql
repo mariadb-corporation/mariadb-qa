@@ -1,0 +1,5 @@
+SET sql_mode= '';
+CREATE TEMPORARY TABLE t (c INT AUTO_INCREMENT KEY,c2 INT,INDEX idx (c2)) ENGINE=InnoDB;
+CREATE UNIQUE INDEX i1 USING HASH ON t (c ASC);
+INSERT INTO t VALUES ('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','E0');
+DELETE FROM t;

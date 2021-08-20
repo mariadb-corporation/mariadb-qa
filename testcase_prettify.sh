@@ -245,6 +245,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|discard|DISCARD|gi' | \
   sed 's|fts_doc_id|FTS_DOC_ID|gi' | \
   sed 's|mysql\.\([^ ]\+\)|mysql.\L\1|gi' | \
+  sed 's|to_days|TO_DAYS|gi' | \
+  sed 's|range|RANGE|gi' | \
+  sed 's|less than|LESS THAN|gi' | \
   sed 's|auto_increment|AUTO_INCREMENT|gi' | \
   sed 's|column_format|COLUMN_FORMAT|gi' | \
   sed 's|low_priority|LOW_PRIORITY|gi' | \

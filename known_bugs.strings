@@ -20,7 +20,6 @@ SIGSEGV|table_cond_selectivity                         ## OPT |MDEV-26190
 
 ##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## DBG |MDEV-19569
-0|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                          ## DBG |MDEV-17890
 row_end|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                    ## DBG |MDEV-22660
 marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## DBG |MDEV-24658
 scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                         ## DBG |MDEV-25317
@@ -43,6 +42,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+SIGSEGV|Item::cleanup|Item::cleanup_processor|Item::cleanup_excluding_immutables_processor|Item::walk                                                                          ## DBG |MDEV-26452
+SIGSEGV|Item::cleanup|Item::cleanup_processor|Item::cleanup_processor|Item::cleanup_excluding_immutables_processor                                                             ## OPT |MDEV-26452
 field->col->is_binary() || field->prefix_len % field->col->mbmaxlen == 0|SIGABRT|dict_index_add_to_cache|dict_create_index_step|que_thr_step|que_run_threads_low               ## DBG MDEV-26379
 SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|srw_mutex::wr_lock_try|srw_mutex::wr_lock|ssux_lock_low::wr_lock                                             ## OPT MDEV-26373
 info.max_leaf_size != 0|SIGABRT|create_table_info_t::row_size_is_acceptable|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table ## DBG MDEV-26371
@@ -156,7 +157,7 @@ tl->table == __null|SIGABRT|THD::open_temporary_table|THD::open_temporary_tables
 !((system_charset_info)->coll->strcasecmp((system_charset_info), (dict_table_get_col_name( ib_table, j)), (field->field_name.str)))|SIGABRT|innobase_build_v_templ|ha_innobase::inplace_alter_table|handler::ha_inplace_alter_table|mysql_inplace_alter_table ## DBG MDEV-25533
 part_id == m_last_part|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                  ## DBG MDEV-25532
 SIGSEGV|handler_index_cond_check|row_search_idx_cond_check|row_search_mvcc|ha_innobase::index_read                                                                             ## DBG MDEV-22846
-0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## DBG MDEV-17890
+0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## DBG MDEV-26453
 inited==INDEX|SIGABRT|handler::ha_index_end|opt_sum_query|JOIN::optimize_inner|JOIN::optimize                                                                                  ## DBG MDEV-20460
 SIGSEGV|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update|sql_set_variables                                                                       ## DBG |MDEV-25499
 SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update                                                                           ## OPT |MDEV-25499
@@ -345,9 +346,14 @@ fd != -1|SIGABRT|my_seek|azrewind|ha_archive::read_data_header|ha_archive::rnd_i
 table_list->prelocking_placeholder == TABLE_LIST::PRELOCK_NONE|SIGABRT|check_lock_and_start_stmt|restart_trans_for_tables|create_table_impl|mysql_create_table_no_lock         ## DBG MDEV-23298
 info->dfile.file == share->bitmap.file.file|SIGABRT|_ma_scan_init_block_record|maria_scan_init|ha_maria::rnd_init|handler::ha_rnd_init                                         ## DBG MDEV-23297
 SIGSEGV|ft_boolean_check_syntax_string|check_ftb_syntax|sys_var::check|set_var::check                                                                                          ## OPT MDEV-23269
-SIGABRT|os_file_handle_error_cond_exit|os_file_handle_error|os_file_create_func|pfs_os_file_create_func                                                                        ## OPT |MDEV-23267 
+SIGSEGV|ft_boolean_check_syntax_string|check_ftb_syntax|sys_var::check|sys_var::set_default                                                                                    ## OPT MDEV-23269
+SIGABRT|os_file_handle_error_cond_exit|os_file_handle_error|os_file_create_func|pfs_os_file_create_func                                                                        ## OPT |MDEV-23267
+SIGSEGV|fetch_data_into_cache|trx_i_s_possibly_fetch_data_into_cache|trx_i_s_common_fill_table|get_schema_tables_result                                                        ## OPT |MDEV-23267
 SIGABRT|ut_dbg_assertion_failed|SysTablespace::create_file|SysTablespace::open_or_create|srv_start                                                                             ## OPT |MDEV-23267
-!srv_read_only_mode || m_ignore_read_only|SIGABRT|SysTablespace::create_file|SysTablespace::open_or_create|srv_start|innodb_init                                               ## DBG |MDEV-23267
+!srv_read_only_mode || m_ignore_read_only|SIGABRT|ut_dbg_assertion_failed|SysTablespace::create_file|SysTablespace::open_or_create|srv_start                                   ## DBG |MDEV-23267
+SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                           ## OPT |MDEV-23267
+!srv_read_only_mode || m_ignore_read_only|SIGABRT|SysTablespace::create_file|SysTablespace::open_or_create|srv_start|innodb_init                                               ## OPT |MDEV-23267
+SIGSEGV|<lambdaatomic|thread_safe_trx_ilist_t::for_each<fetch_data_into_cachetrx0sys.h|fetch_data_into_cache|trx_i_s_possibly_fetch_data_into_cache                            ## OPT |MDEV-23267
 SIGSEGV|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                                                              ## DBG |MDEV-23256
 table_block_data->m_cached_query_count >= 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                  ## DBG |MDEV-23256
 inited == RND|SIGABRT|handler::ha_rnd_next|select_unit_ext::send_eof|do_select|JOIN::exec_inner                                                                                ## DBG MDEV-23226
@@ -858,3 +864,4 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.
 # table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_exec_sql|dict_stats_delete_from_table_stats ## Fixed ## DBG |MDEV-25907
 # table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_update|dict_stats_init               ## Fixed ## DBG |MDEV-25907
 # table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_update|create_table_info_t::create_table_update_dict ## Fixed ## DBG |MDEV-25907
+# 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## DBG MDEV-17890
