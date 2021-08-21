@@ -7,7 +7,7 @@
 
 SAN_MODE=0
 USE_WIPE_AND_START=0   # Use ./kill, ./wipe and ./start with mysqld options passed to ./start only. This can be handy when for example using --innodb-force-recovery=x which only should be passed to ./start and will fail when used with ./all_no_cl. IOW instead of ./all_no_cl, ./kill, ./wipe and ./start are used and instead of passing all options to the init called by ./all_no_cl they are not passed to the init when this option is set to 1. Note that the reverse requirement can be required too; for example when using --innodb_page_size=4k, this should be set to 0 as that option is definitely required in the init startup (as arranged by ./all_no_cl). For general use, leave set to 0. For specific use (like --innodb-force-recovery=x set to 1).
-SHORTER_STOP_TIME=13   # TODO: this can be improved
+SHORTER_STOP_TIME=23   # TODO: this can be improved. Likely setting this smaller than 20 seconds is not a good idea, some cores/crashes may be missed (presumably on slow servers)
 
 MYEXTRA_OPT="$*"
 if [ "${1}" == "SAN" ]; then

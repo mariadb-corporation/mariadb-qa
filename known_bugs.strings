@@ -42,6 +42,10 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+SIGSEGV|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Item::save_in_field                                                                   ## OPT |MDEV-26457
+SIGSEGV|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field                                        ## DBG |MDEV-26457
+SIGSEGV|Item_func_concat::val_str|Item::save_in_field|TABLE::update_virtual_field|compute_vcols                                                                                ## DBG |MDEV-26457
+SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                         ## DBG |MDEV-26457
 SIGSEGV|flush_tables_with_read_lock|mysql_execute_command|mysql_parse|dispatch_command                                                                                         ## OPT MDEV-26456
 SIGSEGV|Item::cleanup|Item::cleanup_processor|Item::cleanup_excluding_immutables_processor|Item::walk                                                                          ## DBG |MDEV-26452
 SIGSEGV|Item::cleanup|Item::cleanup_processor|Item::cleanup_processor|Item::cleanup_excluding_immutables_processor                                                             ## OPT |MDEV-26452
@@ -299,6 +303,7 @@ item->name && item->name[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_L
 item->name.str && item->name.str[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                    ## DBG |MDEV-24588
 SIGSEGV|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                              ## DBG |MDEV-24560
 SIGABRT|__libc_message|malloc_printerr|_int_free|free_root                                                                                                                     ## OPT |MDEV-24560
+SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                                                                                                                     ## OPT |MDEV-24560
 select_lex->leaf_tables.elements != 0|SIGABRT|mysql_insert_select_prepare|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core                ## DBG MDEV-24559
 !(index)->is_spatial()|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild               ## DBG |MDEV-24558
 !dict_index_is_spatial(index)|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild        ## DBG |MDEV-24558

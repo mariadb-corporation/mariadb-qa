@@ -305,7 +305,7 @@ cat "${1}" | tr -d '`' | \
   sed 's| ()|()|gi' | \
   sed 's|), (|),(|gi' | \
   sed "s|BY''|BY ''|gi" | \
-  sed 's|[ ]*=[ ]*|=|gi;s|sql_mode=\([^ ]\)|sql_mode= \1|' | \
+  sed "s|[ ]*=[ ]*|=|gi;s|sql_mode=\([^ ']\)|sql_mode= \1|" | \
   sed 's|[ \t]\+| |g' | \
   sed 's|=on;$|=ON;|g' | \
   sed 's|=off;$|=OFF;|g' | \
