@@ -44,3 +44,11 @@ RENAME TABLE t2 TO t,t2 TO t3,t2 TO t3;
 SET GLOBAL TABLE_open_cache = -1;
 SET SESSION tmp_disk_TABLE_size = True;
 SELECT TRIGGER_name, CREATEd, action_order FROM information_schema.TRIGGERs WHERE TRIGGER_schema='test';
+
+
+# mysqld options required for replay:  --tmp-disk-table-size=254
+CREATE DATABASE mysqldump_test_db;
+USE mysqldump_test_db;
+CREATE TABLE t0 (f0 CHAR(0));
+CREATE TRIGGER tr0 AFTER INSERT ON t0 FOR EACH ROW SET @test_var=0;
+SELECT * FROM information_schema.TRIGGERS;

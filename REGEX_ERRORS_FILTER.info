@@ -3,3 +3,5 @@ Filter Text                                       Info at
 Got error 170                                     https://jira.mariadb.org/browse/MDEV-26261
 Event invalid                                     https://jira.mariadb.org/browse/MDEV-26270
 InnoDB: Resetting invalid page                    https://jira.mariadb.org/browse/MDEV-26121
+Assertion .block_size                             https://jira.mariadb.org/browse/MDEV-26459
+Incorrect information in file: ...sys             Usually not bugs but /sys/ modifications

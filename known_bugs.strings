@@ -44,10 +44,9 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 ##### CURRENT BUGS #####
 block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                               ## DBG MDEV-26459
 SIGSEGV|btr_cur_open_at_index_side_func|btr_pcur_open_at_index_side|innobase_table_is_empty|ha_innobase::check_if_supported_inplace_alter                                      ## OPT |MDEV-26458
-SIGSEGV|fil_space_t::zip_size|btr_cur_open_at_index_side_func|btr_pcur_open_at_index_side|innobase_table_is_empty
-                                                        ## OPT |MDEV-26458
-SIGSEGV|fil_space_t::zip_size|btr_cur_open_at_index_side|btr_pcur_open_at_index_side|innobase_table_is_empty
-                                                        ## DBG |MDEV-26458
+SIGSEGV|btr_cur_open_at_index_side|btr_pcur_open_at_index_side|innobase_table_is_empty|ha_innobase::check_if_supported_inplace_alter                                           ## OPT |MDEV-26458
+SIGSEGV|fil_space_t::zip_size|btr_cur_open_at_index_side_func|btr_pcur_open_at_index_side|innobase_table_is_empty                                                              ## OPT |MDEV-26458
+SIGSEGV|fil_space_t::zip_size|btr_cur_open_at_index_side|btr_pcur_open_at_index_side|innobase_table_is_empty                                                                   ## DBG |MDEV-26458
 SIGSEGV|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Item::save_in_field                                                                   ## OPT |MDEV-26457
 SIGSEGV|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field                                        ## DBG |MDEV-26457
 SIGSEGV|Item_func_concat::val_str|Item::save_in_field|TABLE::update_virtual_field|compute_vcols                                                                                ## DBG |MDEV-26457
@@ -400,6 +399,7 @@ binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginva
 (m_storage_engine_name.str != __null) == used_engine|SIGABRT|Sql_cmd_alter_table::execute|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core ## DBG |MDEV-22907
 (m_storage_engine_name.str != __null) == used_engine|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                       ## DBG |MDEV-22907
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|open_table_entry_fini|open_table|open_and_process_table                                              ## DBG |MDEV-22883
+!parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|fill_schema_table_from_frm|get_all_tables|get_schema_tables_result                                   ## DBG |MDEV-22883
 SIGSEGV|strxmov|Trigger::get_trigger_info|store_trigger|get_schema_triggers_record                                                                                             ## OPT |MDEV-22883
 m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_internal_tmp_table_from_heap|select_unit::write_record|select_unit::send_data                         ## DBG |MDEV-22882
 m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_internal_tmp_table_from_heap|TABLE::insert_all_rows_into_tmp_table|TABLE_LIST::fill_recursive         ## DBG |MDEV-22882
