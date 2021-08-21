@@ -1,0 +1,3 @@
+SET sort_buffer_size=1125899906842624;
+CREATE TABLE t (a INT,b CHAR,KEY(a,b)) ENGINE=InnoDB;
+DELETE a1 FROM t AS a1,t AS a2 WHERE a1.a=a2.a;
