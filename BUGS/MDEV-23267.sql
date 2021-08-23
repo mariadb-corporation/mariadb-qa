@@ -9,3 +9,7 @@ INSERT INTO mysql.innodb_table_stats SELECT database_name,''AS table_name,laST_U
 XA START 'a','a',0;
 SELECT stat_value>0 FROM mysql.innodb_index_stats WHERE table_name LIKE 'a' IN (0);
 SELECT * FROM information_schema.innodb_lock_waits;
+
+# mysqld options required for replay:  --innodb-force-recovery=6
+USE test;
+SET GLOBAL innodb_log_checkpoint_now=TRUE;

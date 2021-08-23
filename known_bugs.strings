@@ -362,8 +362,9 @@ SIGABRT|os_file_handle_error_cond_exit|os_file_handle_error|os_file_create_func|
 SIGSEGV|fetch_data_into_cache|trx_i_s_possibly_fetch_data_into_cache|trx_i_s_common_fill_table|get_schema_tables_result                                                        ## OPT |MDEV-23267
 SIGABRT|ut_dbg_assertion_failed|SysTablespace::create_file|SysTablespace::open_or_create|srv_start                                                                             ## OPT |MDEV-23267
 !srv_read_only_mode || m_ignore_read_only|SIGABRT|ut_dbg_assertion_failed|SysTablespace::create_file|SysTablespace::open_or_create|srv_start                                   ## DBG |MDEV-23267
-SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                           ## OPT |MDEV-23267
+!srv_read_only_mode|SIGABRT|fil_write_flushed_lsn|checkpoint_now_set|sys_var_pluginvar::global_update|sys_var::update                                                          ## DBG |MDEV-23267
 !srv_read_only_mode || m_ignore_read_only|SIGABRT|SysTablespace::create_file|SysTablespace::open_or_create|srv_start|innodb_init                                               ## OPT |MDEV-23267
+SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                           ## OPT |MDEV-23267
 SIGSEGV|<lambdaatomic|thread_safe_trx_ilist_t::for_each<fetch_data_into_cachetrx0sys.h|fetch_data_into_cache|trx_i_s_possibly_fetch_data_into_cache                            ## OPT |MDEV-23267
 SIGSEGV|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                                                              ## DBG |MDEV-23256
 table_block_data->m_cached_query_count >= 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                  ## DBG |MDEV-23256
