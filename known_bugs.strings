@@ -27,6 +27,7 @@ status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|D
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
+#SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                        ## DBG |MDEV-26457 and |MDEV-26491
 
 ##### Filter debug/debug sync occurences. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
 debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## DBG 1
@@ -42,6 +43,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ##### CURRENT BUGS #####
+!strcmp(index->table->name.m_name, "SYS_FOREIGN") || !strcmp(index->table->name.m_name, "SYS_FOREIGN_COLS")|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## DBG MDEV-19216
+SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                                   ## OPT MDEV-26491
 !srv_read_only_mode|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                        ## DBG MDEV-26490
 !srv_read_only_mode|SIGABRT|trx_start_low|trx_start_internal_low|dict_stats_fetch_from_ps|dict_stats_update                                                                    ## DBG MDEV-26490
 block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                               ## DBG MDEV-26459
@@ -52,7 +55,6 @@ SIGSEGV|fil_space_t::zip_size|btr_cur_open_at_index_side|btr_pcur_open_at_index_
 SIGSEGV|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Item::save_in_field                                                                   ## OPT |MDEV-26457
 SIGSEGV|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field                                        ## DBG |MDEV-26457
 SIGSEGV|Item_func_concat::val_str|Item::save_in_field|TABLE::update_virtual_field|compute_vcols                                                                                ## DBG |MDEV-26457
-SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                         ## DBG |MDEV-26457
 SIGSEGV|flush_tables_with_read_lock|mysql_execute_command|mysql_parse|dispatch_command                                                                                         ## OPT MDEV-26456
 SIGSEGV|Item::cleanup|Item::cleanup_processor|Item::cleanup_excluding_immutables_processor|Item::walk                                                                          ## DBG |MDEV-26452
 SIGSEGV|Item::cleanup|Item::cleanup_processor|Item::cleanup_processor|Item::cleanup_excluding_immutables_processor                                                             ## OPT |MDEV-26452

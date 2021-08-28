@@ -80,7 +80,7 @@ if [ -z "${OUT}" ]; then
     echo "${OUT2}"
   fi
 elif [[ "${OUT}" == "#"* ]]; then
-  echo "ALREADY KNOWN *PREVIOUSLY FIXED* BUG! POTENTIALLY NEW BUG TO LOG; SEARCH FIRST:"
+  echo "ALREADY KNOWN *PREVIOUSLY FIXED (OR NON-FILTERED)* BUG! POTENTIALLY NEW BUG TO LOG; SEARCH FIRST:"
   echo "${OUT}"
 else
   echo "ALREADY KNOWN BUG!"
