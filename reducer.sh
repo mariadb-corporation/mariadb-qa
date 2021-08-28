@@ -4219,7 +4219,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     elif [ $TRIAL -eq 53 ]; then sed -e "s/'[^']\+'/''/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 54 ]; then sed -e "s/'[^']\+'/1/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 55 ]; then sed -e "s/'[^']\+'/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 56 ]; then NEXTACTION="& progress to the next stage"; sed -e 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 56 ]; then sed -e 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`
@@ -4413,7 +4413,12 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 144 ]; then sed -e 's/NOT NULL//i' $WORKF > $WORKT  # Second occurence only
     elif [ $TRIAL -eq 145 ]; then sed -e 's/NOT NULL//i' $WORKF > $WORKT  # Third occurence only
     elif [ $TRIAL -eq 146 ]; then sed -e 's/NOT NULL//i' $WORKF > $WORKT  # Fourth occurence only
-    elif [ $TRIAL -eq 147 ]; then NEXTACTION="& progress to the next stage"; sed -e 's/DROP DATABASE transforms;CREATE DATABASE transforms;//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 147 ]; then sed -e 's/TEMPORARY//i' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 148 ]; then sed -e 's/AUTO_INCREMENT KEY//i' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 149 ]; then sed -e 's/AUTO_INCREMENT//i' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 150 ]; then sed -e 's/UNIQUE//i' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 151 ]; then sed -e 's/idx/i/' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 152 ]; then sed -e 's/DROP DATABASE transforms;CREATE DATABASE transforms;//' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`

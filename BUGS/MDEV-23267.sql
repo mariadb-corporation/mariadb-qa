@@ -13,3 +13,6 @@ SELECT * FROM information_schema.innodb_lock_waits;
 # mysqld options required for replay:  --innodb-force-recovery=6
 USE test;
 SET GLOBAL innodb_log_checkpoint_now=TRUE;
+
+# mysqld options required for replay:  --innodb-force-recovery=254
+INSERT INTO mysql.innodb_table_stats SELECT database_name,''AS table_name,laST_UPDATE,0 AS n_rows,clustered_index_size,sum_of_other_index_sizes FROM mysql.innodb_table_stats WHERE table_name='';
