@@ -10,12 +10,14 @@ set +H
 WORKDIR="/dev/shm"                     ## Working directory ("/dev/shm" preferred)
 SQLFILE="./in.sql"                     ## SQL Input file
 MYEXTRA="${*}"                         ## Accept mysqld options from the command line
-SERVER_THREADS=(2 10 25 50 75 100 200 250)  ## Number of server threads (x mysqld's). This is a sequence: (10 20) means: first 10, then 20 server if no crash was observed
-#CLIENT_THREADS=200                     ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
-CLIENT_THREADS=1                      ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
-#AFTER_SHUTDOWN_DELAY=35                ## Wait this many seconds for mysqld to shutdown properly. If it does not shutdown within the allotted time, an error shows
+#SERVER_THREADS=(2 10 25 50 75 100 200 250)  ## Number of server threads (x mysqld's). This is a sequence: (10 20) means: first 10, then 20 server if no crash was observed
+SERVER_THREADS=(30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 3 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30)  ## Number of server threads (x mysqld's). This is a sequence: (10 20) means: first 10, then 20 server if no crash was observed
+#CLIENT_THREADS=200                    ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
+CLIENT_THREADS=1                       ## Number of client threads (y threads) which will execute the SQLFILE input file against each mysqld
+#AFTER_SHUTDOWN_DELAY=35               ## Wait this many seconds for mysqld to shutdown properly. If it does not shutdown within the allotted time, an error shows
 AFTER_SHUTDOWN_DELAY=3
-TEXT="xid_count"                                ## Search for a specific string on crash/shutdown. Do NOT use unique bug ID's here (not implemented yet), only a TEXT to look for in the error log (for example, a single mangled frame or a partial error message)
+IGNORE_SHUTDOWN_WIHOUT_CRASH=1         ## When the testcase contains SHUTDOWN, setting this option to 1 prevents any shutdowns without crash from being considered as an event to halt script execution. i.e. a crash is required, not just a shutdown for the script to stop/finish
+TEXT=""                                ## Search for a specific string on crash/shutdown. Do NOT use unique bug ID's here (not implemented yet), only a TEXT to look for in the error log (for example, a single mangled frame or a partial error message)
 
 # Scripted variables
 if [ "${1}" == "TEXT" ]; then
@@ -124,17 +126,23 @@ fi
 
 checkstatus(){
   CONTINUE=0
-  if [ ! -z "${TEXT}" ]; then
-    if grep -qi "${TEXT}" ${WORKDIR}/${j}_error.log.out; then
-      echoit "[!] Server crash/shutdown found with correct TEXT ("${TEXT}") in the error log at ${WORKDIR}/${j}_error.log.out. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
-      exit 1
-    else
-      echoit "[!] Server crash/shutdown found, however not with the correct TEXT ("${TEXT}") in the error log. Continuing..." 
-      CONTINUE=1
-    fi
+  if [ "${IGNORE_SHUTDOWN_WIHOUT_CRASH}" -eq 1 ]; then
+    echoit "[!] Server shutdown found, however as IGNORE_SHUTDOWN_WIHOUT_CRASH=1 the script will continue..."
+    CONTINUE=1
   else
-    echoit "[!] Server crash/shutdown found : Check ${WORKDIR}/${j}_error.log.out for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
-    exit 1
+    if [ ! -z "${TEXT}" ]; then
+      if grep -qi "${TEXT}" ${WORKDIR}/${j}_error.log.out; then
+        echoit "[!] Server crash/shutdown found with correct TEXT ("${TEXT}") in the error log at ${WORKDIR}/${j}_error.log.out. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
+        exit 1
+      else
+        echoit "[!] Server crash/shutdown found, however not with the correct TEXT ("${TEXT}") in the error log. Continuing..." 
+        CONTINUE=1
+      fi
+    else
+      echoit "[!] Server crash/shutdown found: Check ${WORKDIR}/${j}_error.log.out for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
+      ps -ef | grep -v grep | grep "$(echo "${WORKDIR}" | sed 's|/dev/shm/||')" | awk '{print $2}' | xargs -I{} kill -9 {}
+      exit 1
+    fi
   fi
 }
 
@@ -164,8 +172,9 @@ for i in ${SERVER_THREADS[@]};do
       ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping > /dev/null 2>&1
       CHECK=$?
       sleep 1
-      if [ $x == 60 ];then
+      if [ $x == 40 ];then
         echoit "[ERROR] Server not started: Check ${WORKDIR}/${j}_mysql_install_db.out, ${WORKDIR}/${j}_error.log.out and ${WORKDIR}/${j}_mysqld.out for more info"
+        ps -ef | grep -v grep | grep "$(echo "${WORKDIR}" | sed 's|/dev/shm/||')" | awk '{print $2}' | xargs -I{} kill -9 {}
         exit 1;
       fi
       x=$[ $x+1 ]
@@ -214,7 +223,7 @@ for i in ${SERVER_THREADS[@]};do
     echoit "Shutting down mysqld #${j}..."
     timeout --signal=9 ${AFTER_SHUTDOWN_DELAY}s ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock shutdown >/dev/null 2>&1
     if [ $? -eq 137 ]; then  # Timeout was activated after ${AFTER_SHUTDOWN_DELAY} seconds, highly likely indicating a hang
-      echoit "[!] Potential server hang found: mysqld #{j} has not shutdown in ${AFTER_SHUTDOWN_DELAY} seconds. Check gdb --pid=${MYSQLD[j-1]}. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
+      echoit "[!] Potential server hang found: mysqld #{j} (${WORKDIR}) has not shutdown in ${AFTER_SHUTDOWN_DELAY} seconds. Check gdb --pid=${MYSQLD[j-1]}. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
       exit 1
     fi
   done
@@ -230,13 +239,13 @@ for i in ${SERVER_THREADS[@]};do
 ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping 2>/dev/null 1>&2
     PING=$?
     if [ $PING -eq 137 ]; then
-      echoit "[!] Potential server hang found: a mysqladmin ping to mysqld #${j} did not complete in 10 sconds. Check gdb --pid=${MYSQLD[j-1]} for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
+      echoit "[!] Potential server hang found: a mysqladmin ping to mysqld #${j} (${WORKDIR}) did not complete in 10 sconds. Check gdb --pid=${MYSQLD[j-1]} for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
       exit 1
     elif [ $PING -eq 0 ]; then
-      echoit "[!] Server hang found: mysqld #${j} has not shutdown in 60 seconds and is still responding to mysqladmin ping. Check gdb --pid=${MYSQLD[j-1]} for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
+      echoit "[!] Server hang found: mysqld #${j} (${WORKDIR}) has not shutdown in 60 seconds and is still responding to mysqladmin ping. Check gdb --pid=${MYSQLD[j-1]} for more info. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
       exit 1
     elif [ $PING -ne 1 ]; then  # PING -eq 1 is what we are looking for, i.e. server no longer reachable. Then check for core dumps below.
-      echoit "[!] Unknown issue detected: a mysqladmin ping to mysqld #${j} returned exit status $PING, which is unkwnon to this script. Please research this code $PING and the current status of mysqld with gdb --pid=${MYSQLD[j-1]} for more info, then please update this script so it can handle this state. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
+      echoit "[!] Unknown issue detected: a mysqladmin ping to mysqld #${j} (${WORKDIR}) returned exit status $PING, which is unkwnon to this script. Please research this code $PING and the current status of mysqld with gdb --pid=${MYSQLD[j-1]} for more info, then please update this script so it can handle this state. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
       exit 1
     fi
     # Check for core dump
@@ -247,13 +256,14 @@ ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock ping 2>/dev/null 1>&2
   done
   kill -9 `printf '%s ' "${MYSQLD[@]}"` 2>/dev/null  # For safety, though processes should be gone. Redirected stderr to /dev/null as otherwise 'multirun_mysqld.sh: line ___: kill: (_____) - No such process' errors would show.
   # Roundup by reporting that nothing was found for this run. (If something was found, the script would have instead terminated already, ref exit 1 above after/if 'Check for core dump' was found, and this messsage would thus never show.)
-  if [ ${SERVER_THREADS[@]:(-1)} -ne ${i} ] ; then
+  #if [ ${SERVER_THREADS[@]:(-1)} -ne ${i} ] ; then
     if [ ! -z "${TEXT}" ]; then
-      echoit "Did not find server crash with ${i} mysqld processes. Restarting crash testing with next set of mysqld processes."
-    else
       echoit "Did not find the correct (TEXT based) server crash with ${i} mysqld processes. Restarting specific TEXT crash testing with next set of mysqld processes."
+    else
+      echoit "Did not find server crash with ${i} mysqld processes. Restarting crash testing with next set of mysqld processes."
     fi
     rm -Rf ${WORKDIR}/*
-  fi
+    ps -ef | grep -v grep | grep "$(echo "${WORKDIR}" | sed 's|/dev/shm/||')" | awk '{print $2}' | xargs -I{} kill -9 {}
+  #fi
 done
 echoit "Complete, no issues found."

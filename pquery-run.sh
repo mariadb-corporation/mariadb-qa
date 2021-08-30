@@ -1294,9 +1294,11 @@ pquery_test() {
           fi
         fi
       fi
-      if grep -qi "ERROR. Aborting" ${RUNDIR}/${TRIAL}/log/slave.err; then
-        echoit "Assert! The text '[ERROR] Aborting' was found in the slave error log"
-        removetrial
+      if [ "${REPL}" -eq 1 ]; then
+        if grep -qi "ERROR. Aborting" ${RUNDIR}/${TRIAL}/log/slave.err; then
+          echoit "Assert! The text '[ERROR] Aborting' was found in the slave error log"
+          removetrial
+        fi
       fi
       if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2> /dev/null | wc -l) -ge 1 ]; then break; fi # Break the wait-for-server-started loop if a core file is found. Handling of core is done below.
     done

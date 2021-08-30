@@ -33,6 +33,10 @@ cat "${1}" | tr -d '`' | \
   sed 's|deterministic|DETERMINISTIC|gi' | \
   sed 's|commit|COMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
+  sed 's|data|DATA|gi' | \
+  sed 's|local|LOCAL|gi' | \
+  sed 's|infile|INFILE|gi' | \
+  sed 's|terminated by|TERMINATED BY|gi' | \
   sed 's|table|TABLE|gi' | \
   sed 's|tables|TABLES|gi' | \
   sed 's|view|VIEW|gi' | \

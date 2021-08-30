@@ -8,14 +8,14 @@ open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_tab
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                                       ## DBG MDEV-22663
 
 ##### STACK SMASHING BUGS (not always auto-filtered; note prefix) (prefix the uniqueID with 'STACK_SMASHING|') #####
-SIGSEGV|table_cond_selectivity                         ## OPT |MDEV-26190
+STACK_SMASHING|SIGSEGV|table_cond_selectivity           ## OPT |MDEV-26190
 
 ##### BUGS WHICH REQUIRE ADDITIONAL TESTCASES (DISABLED FILTERS) #####
-#SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                                  ## DBG MDEV-24911
-#index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                               ## OPT |MDEV-22714* NOW 23801
-#index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                        ## DBG |MDEV-22714* NOW 23801
-#b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                    ## DBG MDEV-24660
-#escape != -1|SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|Create_tmp_table::cleanup_on_failure                                                          ## DBG |MDEV-25610
+#**#SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                               ## DBG MDEV-24911
+#**#index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                            ## OPT |MDEV-22714* NOW 23801
+#**#index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                     ## DBG |MDEV-22714* NOW 23801
+#**#b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                 ## DBG MDEV-24660
+#**#escape != -1|SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|Create_tmp_table::cleanup_on_failure                                                       ## DBG |MDEV-25610
 
 ##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## DBG |MDEV-19569
@@ -25,23 +25,15 @@ scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_conditi
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql     ## DBG |MDEV-25927
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
-#(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl                ## DBG |MDEV-24749
-#SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                        ## DBG |MDEV-26457 and |MDEV-26491
+#***#(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl            ## DBG |MDEV-24749
+#***#SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                    ## DBG |MDEV-26457 and |MDEV-26491
+#***#SIGABRT|DbugExit|_db_return_|Diagnostics_area::set_ok_status|my_ok                                                                                                        ## DBG |MDEV-25460
 
 ##### Filter debug/debug sync occurences. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
 debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## DBG 1
 
-##### MONTY bb-10.6-monty MAY 2021 TESTING (DISABLED FILTERS TO AVOID FILTERING TRUNK RUNS) #####
-#to <= end|SIGABRT|process_args|my_vsnprintf_ex|my_error|change_master                                                                                                         ## DBG |MDEV-25612
-#SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
-
-##### 10.4.12+ InnoDB corrputions: dud uniqueID's fixed in 10.4.19 or earlier
-#SIGSEGV|my_b_write|write_keys|find_all_keys|filesort
-#SIGSEGV|__GI__IO_default_xsputn|__GI__IO_default_xsputn|__vfprintf_internal|__vsprintf_internal
-#SIGABRT|__libc_message|malloc_printerr|_int_malloc|__GI___libc_malloc
-#n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
-
 ##### CURRENT BUGS #####
+m_status == DA_ERROR || m_status == DA_OK || m_status == DA_OK_BULK || m_status == DA_EOF_BULK|SIGABRT|Diagnostics_area::message|get_schema_tables_record|fill_schema_table_by_open|get_all_tables ## MDEV-26496
 !strcmp(index->table->name.m_name, "SYS_FOREIGN") || !strcmp(index->table->name.m_name, "SYS_FOREIGN_COLS")|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## DBG MDEV-19216
 SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                                   ## OPT MDEV-26491
 !srv_read_only_mode|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                        ## DBG MDEV-26490
@@ -150,7 +142,7 @@ inited==INDEX|SIGABRT|handler::ha_index_end|opt_sum_query|JOIN::optimize_inner|J
 SIGSEGV|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update|sql_set_variables                                                                       ## DBG |MDEV-25499
 SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update                                                                           ## OPT |MDEV-25499
 !writer.checksum_len || writer.remains == 0|SIGABRT|MYSQL_BIN_LOG::write_cache|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events ## DBG MDEV-25488
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_sql_stmt_prepare|mysql_execute_command                               ## DBG MDEV-25460
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_sql_stmt_prepare|mysql_execute_command                               ## DBG |MDEV-25460
 0|SIGABRT|wsrep_create_appliers|wsrep_slave_threads_update|sys_var::update|set_var::update                                                                                     ## OPT MDEV-25472
 transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command                                 ## DBG |MENT-1180
 transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep_before_command|do_command|do_handle_one_connection                                            ## DBG |MENT-1180
@@ -572,6 +564,16 @@ SIGSEGV|close_thread_table|drop_open_table|select_create::abort_result_set|handl
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|close_thread_tables|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlock_locked_table ## DBG |MDEV-23391
 thd->transaction->stmt.is_empty()|SIGABRT|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlock_locked_table|select_create::abort_result_set|handle_select       ## DBG |MDEV-23391
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.str, MDL_EXCLUSIVE)|SIGABRT|TDC_element::flush|drop_open_table|select_create::abort_result_set|handle_select ## DBG |MDEV-23391
+
+##### MONTY bb-10.6-monty MAY 2021 TESTING (DISABLED FILTERS TO AVOID FILTERING TRUNK RUNS) #####
+#to <= end|SIGABRT|process_args|my_vsnprintf_ex|my_error|change_master                                                                                                         ## DBG |MDEV-25612
+#SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## OPT |MDEV-25612
+
+##### 10.4.12+ InnoDB corrputions: dud uniqueID's fixed in 10.4.19 or earlier
+#SIGSEGV|my_b_write|write_keys|find_all_keys|filesort
+#SIGSEGV|__GI__IO_default_xsputn|__GI__IO_default_xsputn|__vfprintf_internal|__vsprintf_internal
+#SIGABRT|__libc_message|malloc_printerr|_int_malloc|__GI___libc_malloc
+#n < m_size|SIGABRT|Bounds_checked_array<unsigned char*>::operator[]|Filesort_buffer::get_record_buffer|SORT_INFO::get_record_buffer|find_all_keys
 
 ###### FIXED BUGS ######
 # Assert: No parsable frames? ## This is seen for bugs which terminate the sever before a core can be written, like stack smashing. Current related bugs in progress: MDEV-22258  
