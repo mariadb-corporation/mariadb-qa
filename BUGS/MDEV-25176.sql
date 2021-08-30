@@ -5,3 +5,7 @@ SET GLOBAL binlog_checksum=NONE;
 SHUTDOWN;
 SET GLOBAL event_scheduler=1;
 SELECT SLEEP (3);
+
+SHUTDOWN;
+SET GLOBAL event_scheduler=1;
+SELECT SLEEP (3);

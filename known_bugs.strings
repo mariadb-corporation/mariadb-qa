@@ -33,6 +33,7 @@ status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|D
 debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## DBG 1
 
 ##### CURRENT BUGS #####
+tmp != ((long long) 0x8000000000000000LL)|SIGABRT|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_datetimef::get_date|Field_temporal::save_in_field         ## DBG MDEV-26507
 m_status == DA_ERROR || m_status == DA_OK || m_status == DA_OK_BULK || m_status == DA_EOF_BULK|SIGABRT|Diagnostics_area::message|get_schema_tables_record|fill_schema_table_by_open|get_all_tables ## MDEV-26496
 !strcmp(index->table->name.m_name, "SYS_FOREIGN") || !strcmp(index->table->name.m_name, "SYS_FOREIGN_COLS")|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## DBG MDEV-19216
 SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                                   ## OPT MDEV-26491
@@ -190,6 +191,7 @@ ds_control|SIGABRT|debug_sync_get_action|debug_sync_eval_action|debug_sync_set_a
 mode() == m_local|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|sp_head::execute|sp_head::execute_trigger                                                 ## DBG |MDEV-24062
 m_thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|Wsrep_prepared_applier_service::rollback|wsrep::server_state::close_orphaned_sr_transactions|wsrep::server_state::on_primary_view|wsrep::server_state::on_view ## DBG MENT-1159
 SIGSEGV|Event_queue::recalculate_activation_times|Event_scheduler::run|event_scheduler_thread|pfs_spawn_thread                                                                 ## DBG |MDEV-25176
+SIGSEGV|my_hash_first|my_hash_search|safe_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## DBG |MDEV-25176
 SIGSEGV|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map                                                                   ## OPT |MDEV-25160
 ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## DBG MENT-1151
 toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|Sql_cmd_alter_table::execute                                ## DBG |MENT-1147
