@@ -1,5 +1,9 @@
 #!/bin/bash
 set +H
-COUNT1=$(ps -ef | grep --binary-files=text 'SCREEN' | grep --binary-files=text 'reducer[0-9]\+.sh' | sed 's|.*reducer|reducer|;s|;bash||' | sort -u | wc -l)
-COUNT2=$(screen -d -r | grep "\.reducer" | sort -u | wc -l)
-echo $[ ${COUNT1} + ${COUNT2} ]
+# New method
+screen -ls | grep '\.s[0-9]' | wc -l
+
+# Old method (same result)
+#COUNT1=$(ps -ef | grep --binary-files=text 'SCREEN' | grep --binary-files=text 'reducer[0-9]\+.sh' | sed 's|.*reducer|reducer|;s|;bash||' | sort -u | wc -l)
+#COUNT2=$(screen -d -r | grep "\.reducer" | sort -u | wc -l)
+#echo $[ ${COUNT1} + ${COUNT2} ]
