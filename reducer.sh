@@ -4229,7 +4229,6 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
       TRIAL_REPEAT_COUNT=0
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
-      NEXTACTION="& try next testcase complexity reducing sed"
       run_and_check
       if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
@@ -4239,10 +4238,12 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
         else  # Maximum repeats reached and issue failed to reproduce in any of them
           TRIAL=$[$TRIAL+1]
           TRIAL_REPEAT_COUNT=0
+          NEXTACTION="& try next testcase complexity reducing sed"
         fi
       else  # Verify success
         TRIAL=$[$TRIAL+1]
         TRIAL_REPEAT_COUNT=0
+        NEXTACTION="& try next testcase complexity reducing sed"
       fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
         SIZEF=$(stat -c %s ${WORKF})
@@ -4428,7 +4429,6 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
       TRIAL_REPEAT_COUNT=0
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
-      NEXTACTION="& try next query syntax complexity reducing sed"
       run_and_check
       if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
@@ -4438,10 +4438,12 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
         else  # Maximum repeats reached and issue failed to reproduce in any of them
           TRIAL=$[$TRIAL+1]
           TRIAL_REPEAT_COUNT=0
+          NEXTACTION="& try next query syntax complexity reducing sed"
         fi
       else  # Verify success
         TRIAL=$[$TRIAL+1]
         TRIAL_REPEAT_COUNT=0
+        NEXTACTION="& try next query syntax complexity reducing sed"
       fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
         SIZEF=$(stat -c %s ${WORKF})
@@ -4930,7 +4932,6 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
       TRIAL_REPEAT_COUNT=0
     else
       if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
-      NEXTACTION="& try next testcase complexity reducing sed"
       run_and_check
       if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
@@ -4940,10 +4941,12 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
         else  # Maximum repeats reached and issue failed to reproduce in any of them
           TRIAL=$[$TRIAL+1]
           TRIAL_REPEAT_COUNT=0
+          NEXTACTION="& try next testcase complexity reducing sed"
         fi
       else  # Verify success
         TRIAL=$[$TRIAL+1]
         TRIAL_REPEAT_COUNT=0
+        NEXTACTION="& try next testcase complexity reducing sed"
       fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
         SIZEF=$(stat -c %s ${WORKF})
@@ -4978,7 +4981,6 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Filtering mysqld option $line from MYEXTRA";
       MYEXTRA=$(echo $MYEXTRA | sed "s|$line||")
       while true; do
-        NEXTACTION="& try removing next mysqld option"
         run_and_check
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
@@ -4995,6 +4997,7 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
           break
         fi
       done
+      NEXTACTION="& try removing next mysqld option"
       TRIAL_REPEAT_COUNT=0
       TRIAL=$[$TRIAL+1]
     done < $WORKD/mysqld_opt.out
