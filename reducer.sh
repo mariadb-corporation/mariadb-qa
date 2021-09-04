@@ -4967,8 +4967,6 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
   FILE2="$WORKD/file2"
 
   myextra_split(){
-    echo $MYEXTRA | sed 's|[ \t]\+| |g' | tr -s " " "\n" | grep -v "^[ \t]*$" > $WORKD/mysqld_opt.out
-    MYSQLD_OPTION_COUNT=$(cat $WORKD/mysqld_opt.out | wc -l)
     head -n $((MYSQLD_OPTION_COUNT/2)) $WORKD/mysqld_opt.out > $FILE1
     tail -n $((MYSQLD_OPTION_COUNT-MYSQLD_OPTION_COUNT/2)) $WORKD/mysqld_opt.out > $FILE2
   }
@@ -5001,6 +4999,10 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
       TRIAL=$[$TRIAL+1]
     done < $WORKD/mysqld_opt.out
   }
+
+  # Option enumeration & count
+  echo $MYEXTRA | sed 's|[ \t]\+| |g' | tr -s " " "\n" | grep -v "^[ \t]*$" > $WORKD/mysqld_opt.out
+  MYSQLD_OPTION_COUNT=$(cat $WORKD/mysqld_opt.out | wc -l)
 
   # If NR_OF_TRIAL_REPEATS is >1 then try only per-option reduction (simplifies code)
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
