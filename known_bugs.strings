@@ -29,10 +29,12 @@ status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|D
 #***#SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                    ## DBG |MDEV-26457 and |MDEV-26491
 #***#SIGABRT|DbugExit|_db_return_|Diagnostics_area::set_ok_status|my_ok                                                                                                        ## DBG |MDEV-25460
 
-##### Filter debug/debug sync occurences. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
+##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
 debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## DBG 1
+!maria_assert_if_crashed_table|SIGABRT|_ma_set_fatal_error|_ma_flush_table_files|_ma_reenable_logging_for_table|ha_maria::external_lock                                        ## DBG 2
 
 ##### CURRENT BUGS #####
+SIGSEGV|spider_free_mem|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions                                                                                    ## DBG MDEV-26158
 maybe_null || !null_value|SIGABRT|Item_func_ceiling::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## DBG |MDEV-26536
 maybe_null() || !null_value|SIGABRT|Item_func_ceiling::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## DBG |MDEV-26536
 tmp != ((long long) 0x8000000000000000LL)|SIGABRT|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_datetimef::get_date|Field_temporal::save_in_field         ## DBG MDEV-26507

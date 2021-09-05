@@ -3549,7 +3549,7 @@ verify_not_found(){
 #STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
 verify(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS>1 (${NR_OF_TRIAL_REPEATS}) and this issue is thus likely highly sporadic, which may cause verification to fail."
+    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed sporadic)"
     # Ref https://jira.mariadb.org/browse/TODO-3017
     # Instead of using STAGE V to verify if the issue exists, one can simply test reproducibility using FORCE_SKIPV=1 with multi-threaded pre-reduction (with a high number of MULTI_THREADS like 30 or more) until such approximate time as pquery-go-expert.sh (~/pge) is normally needed.
     return
@@ -4970,6 +4970,8 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
   FILE2="$WORKD/file2"
 
   myextra_split(){
+    echo $MYEXTRA | sed 's|[ \t]\+| |g' | tr -s " " "\n" | grep -v "^[ \t]*$" > $WORKD/mysqld_opt.out
+    MYSQLD_OPTION_COUNT=$(cat $WORKD/mysqld_opt.out | wc -l)
     head -n $((MYSQLD_OPTION_COUNT/2)) $WORKD/mysqld_opt.out > $FILE1
     tail -n $((MYSQLD_OPTION_COUNT-MYSQLD_OPTION_COUNT/2)) $WORKD/mysqld_opt.out > $FILE2
   }
@@ -5003,12 +5005,10 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
     done < $WORKD/mysqld_opt.out
   }
 
-  # Option enumeration & count
-  echo $MYEXTRA | sed 's|[ \t]\+| |g' | tr -s " " "\n" | grep -v "^[ \t]*$" > $WORKD/mysqld_opt.out
-  MYSQLD_OPTION_COUNT=$(cat $WORKD/mysqld_opt.out | wc -l)
-
   # If NR_OF_TRIAL_REPEATS is >1 then try only per-option reduction (simplifies code)
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+    echo $MYEXTRA | sed 's|[ \t]\+| |g' | tr -s " " "\n" | grep -v "^[ \t]*$" > $WORKD/mysqld_opt.out
+    MYSQLD_OPTION_COUNT=$(cat $WORKD/mysqld_opt.out | wc -l)
     myextra_reduction  # Commence 1-by-1 reduction (with build-in NR_OF_TRIAL_REPEATS handling)
   else
     # Deal with options differently depending on how many there are (this selection is made only once)
