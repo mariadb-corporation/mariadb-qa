@@ -7,7 +7,7 @@ ps -ef | grep 'bash -c ./reducer' | grep -o 'reducer[0-9]\+\.sh' | sort -u | wc 
 # Note the grep -v grep is necessary as for example ~/pr greps from reducer files and reducerx.sh will appear in ps output for those scripts, whereas they are not running reducers
 # ps -ef | grep -v grep | grep -o 'reducer[0-9]\+\.sh' | sort -u | wc -l
 
-# Old method (same result)
+# Old method
 #COUNT1=$(ps -ef | grep --binary-files=text 'SCREEN' | grep --binary-files=text 'reducer[0-9]\+.sh' | sed 's|.*reducer|reducer|;s|;bash||' | sort -u | wc -l)
 #COUNT2=$(screen -d -r | grep "\.reducer" | sort -u | wc -l)
 #echo $[ ${COUNT1} + ${COUNT2} ]

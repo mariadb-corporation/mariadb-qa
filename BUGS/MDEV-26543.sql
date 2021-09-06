@@ -1,0 +1,6 @@
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+CREATE TABLE t (c INT KEY,c2 INT,KEY(c2)) ENGINE=SPIDER PARTITION BY LIST COLUMNS (c) (PARTITION p DEFAULT ENGINE=SPIDER);
+ALTER TABLE t ADD c2 BINARY FIRST;
+SELECT * FROM t WHERE c2='' AND c2='' AND c='' ORDER BY c2 DESC;
+
+# Then check error log for: [ERROR] Got error 12701 when reading table './test/t'
