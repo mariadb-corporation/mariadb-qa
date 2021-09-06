@@ -34,7 +34,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 !maria_assert_if_crashed_table|SIGABRT|_ma_set_fatal_error|_ma_flush_table_files|_ma_reenable_logging_for_table|ha_maria::external_lock                                        ## DBG 2
 
 ##### CURRENT BUGS #####
-SIGSEGV|spider_check_and_set_trx_isolation|ha_spider::dml_init|ha_spider::rnd_init|handler::ha_rnd_init                                                                        ## OPT MDEV=26539
+SIGSEGV|spider_check_and_set_trx_isolation|ha_spider::dml_init|ha_spider::rnd_init|handler::ha_rnd_init                                                                        ## OPT |MDEV-26539
+SIGSEGV|I_P_List_iterator<TABLE, I_P_List<TABLE, All_share_tables, I_P_List_null_counter, I_P_List_no_push_back<TABLE> > >::operator++|THD::drop_temporary_table|mysql_alter_table|Sql_cmd_alter_table::execute ## OPT |MDEV-26539
 inited==RND|SIGABRT|handler::ha_rnd_end|ha_partition::direct_delete_rows|handler::ha_direct_delete_rows|mysql_delete                                                           ## DBG MDEV-26540
 SIGSEGV|spider_free_mem|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions                                                                                    ## OPT MDEV-26158
 maybe_null || !null_value|SIGABRT|Item_func_ceiling::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## DBG |MDEV-26536
