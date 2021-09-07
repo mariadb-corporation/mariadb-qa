@@ -1,0 +1,45 @@
+WARNING: ThreadSanitizer: data race (pid=2702489)
+  Atomic write of size 8 at 0x5574f389eef8 by thread T7:
+    #0 __tsan_atomic64_fetch_add <null> (libtsan.so.0+0x7f2d9)
+    #1 os_file_pread /test/10.5_opt_san/storage/innobase/os/os0file.cc:3311 (mariadbd+0x140ec02)
+    #2 os_file_read_page /test/10.5_opt_san/storage/innobase/os/os0file.cc:3345 (mariadbd+0x140ec02)
+    #3 os_file_read_func(IORequest const&, int, void*, unsigned long, unsigned long) /test/10.5_opt_san/storage/innobase/os/os0file.cc:3730 (mariadbd+0x140ffbf)
+    #4 os_aio(IORequest const&, void*, unsigned long, unsigned long) /test/10.5_opt_san/storage/innobase/os/os0file.cc:4117 (mariadbd+0x140ffbf)
+    #5 fil_space_t::io(IORequest const&, unsigned long, unsigned long, void*, buf_page_t*) /test/10.5_opt_san/storage/innobase/fil/fil0fil.cc:3431 (mariadbd+0x1634a88)
+    #6 buf_read_page_low /test/10.5_opt_san/storage/innobase/buf/buf0rea.cc:344 (mariadbd+0x15d2183)
+    #7 buf_read_page_background(fil_space_t*, page_id_t, unsigned long, bool) /test/10.5_opt_san/storage/innobase/buf/buf0rea.cc:510 (mariadbd+0x15d2183)
+    #8 buf_load /test/10.5_opt_san/storage/innobase/buf/buf0dump.cc:677 (mariadbd+0x15c2622)
+    #9 buf_dump_load_func /test/10.5_opt_san/storage/innobase/buf/buf0dump.cc:758 (mariadbd+0x15c31e1)
+    #10 tpool::task::execute() /test/10.5_opt_san/tpool/task.cc:52 (mariadbd+0x16f48df)
+    #11 tpool::thread_pool_generic::worker_main(tpool::worker_data*) /test/10.5_opt_san/tpool/tpool_generic.cc:546 (mariadbd+0x16f1b54)
+    #12 void std::__invoke_impl<void, void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*>(std::__invoke_memfun_deref, void (tpool::thread_pool_generic::*&&)(tpool::worker_data*), tpool::thread_pool_generic*&&, tpool::worker_data*&&) /usr/include/c++/9/bits/invoke.h:73 (mariadbd+0x16f2a47)
+    #13 std::__invoke_result<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*>::type std::__invoke<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*>(void (tpool::thread_pool_generic::*&&)(tpool::worker_data*), tpool::thread_pool_generic*&&, tpool::worker_data*&&) /usr/include/c++/9/bits/invoke.h:95 (mariadbd+0x16f2a47)
+    #14 void std::thread::_Invoker<std::tuple<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*> >::_M_invoke<0ul, 1ul, 2ul>(std::_Index_tuple<0ul, 1ul, 2ul>) /usr/include/c++/9/thread:244 (mariadbd+0x16f2a47)
+    #15 std::thread::_Invoker<std::tuple<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*> >::operator()() /usr/include/c++/9/thread:251 (mariadbd+0x16f2a47)
+    #16 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*> > >::_M_run() /usr/include/c++/9/thread:195 (mariadbd+0x16f2a47)
+    #17 <null> <null> (libstdc++.so.6+0xd6d83)
+ 
+  Previous write of size 8 at 0x5574f389eef8 by main thread:
+    #0 memset <null> (libtsan.so.0+0x3792f)
+    #1 memset /usr/include/x86_64-linux-gnu/bits/string_fortified.h:71 (mariadbd+0x1360588)
+    #2 innodb_init /test/10.5_opt_san/storage/innobase/handler/ha_innodb.cc:3950 (mariadbd+0x1360588)
+    #3 ha_initialize_handlerton(st_plugin_int*) /test/10.5_opt_san/sql/handler.cc:645 (mariadbd+0xcf9547)
+    #4 plugin_initialize /test/10.5_opt_san/sql/sql_plugin.cc:1459 (mariadbd+0x8d3f74)
+    #5 plugin_init(int*, char**, int) /test/10.5_opt_san/sql/sql_plugin.cc:1751 (mariadbd+0x8d5cc3)
+    #6 init_server_components /test/10.5_opt_san/sql/mysqld.cc:4913 (mariadbd+0x72043d)
+    #7 mysqld_main(int, char**) /test/10.5_opt_san/sql/mysqld.cc:5496 (mariadbd+0x725bf4)
+    #8 main /test/10.5_opt_san/sql/main.cc:25 (mariadbd+0x6b8455)
+ 
+  Location is global 'innodb_counter_value' of size 24480 at 0x5574f389be80 (mariadbd+0x000002b2def8)
+ 
+  Thread T7 (tid=2702743, running) created by thread T1 at:
+    #0 pthread_create <null> (libtsan.so.0+0x5ea99)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xd7048)
+    #2 tpool::thread_pool_generic::maybe_wake_or_create_thread() /test/10.5_opt_san/tpool/tpool_generic.cc:802 (mariadbd+0x16f2787)
+    #3 tpool::thread_pool_generic::submit_task(tpool::task*) /test/10.5_opt_san/tpool/tpool_generic.cc:821 (mariadbd+0x16f2787)
+    #4 tpool::thread_pool_generic::timer_generic::submit_task(void*) /test/10.5_opt_san/tpool/tpool_generic.cc:335 (mariadbd+0x16f28c9)
+    #5 process_timers /test/10.5_opt_san/mysys/thr_timer.c:271 (mariadbd+0x17b289b)
+    #6 timer_handler /test/10.5_opt_san/mysys/thr_timer.c:315 (mariadbd+0x17b289b)
+    #7 <null> <null> (libtsan.so.0+0x2d1af)
+ 
+SUMMARY: ThreadSanitizer: data race (/usr/lib/x86_64-linux-gnu/libtsan.so.0+0x7f2d9) in __tsan_atomic64_fetch_add

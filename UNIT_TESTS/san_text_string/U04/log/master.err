@@ -1,0 +1,284 @@
+Version: '10.6.0-MariaDB'  socket: '/test/ASAN_MD101120-mariadb-10.6.0-linux-x86_64-opt/socket.sock'  port: 10008  MariaDB Server
+/test/10.6_opt_asan/sql/item.cc:2826:70: runtime error: member call on address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  00 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2d62d23f in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2826
+    #1 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #2 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #3 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #4 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #5 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #6 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #7 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #8 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #9 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #10 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #11 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #12 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #13 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #14 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #15 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #16 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #17 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #18 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #19 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+/test/10.6_opt_asan/sql/sql_class.cc:3785:19: runtime error: member access within address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  a0 5b 08 00 b0 62 00 00  01 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2bfedede in Query_arena::set_query_arena(Query_arena*) /test/10.6_opt_asan/sql/sql_class.cc:3785
+    #1 0x562d2bd93495 in sp_head::execute_function(THD*, Item**, unsigned int, Field*, sp_rcontext**, Query_arena*) /test/10.6_opt_asan/sql/sp_head.cc:2056
+    #2 0x562d2d62c205 in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2829
+    #3 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #4 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #5 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #6 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #7 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #8 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #9 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #10 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #11 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #12 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #13 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #14 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #15 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #16 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #17 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #18 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #19 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #20 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #21 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+/test/10.6_opt_asan/sql/sql_class.cc:3786:19: runtime error: member access within address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  a0 5b 08 00 b0 62 00 00  01 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2bfede5d in Query_arena::set_query_arena(Query_arena*) /test/10.6_opt_asan/sql/sql_class.cc:3786
+    #1 0x562d2bd93495 in sp_head::execute_function(THD*, Item**, unsigned int, Field*, sp_rcontext**, Query_arena*) /test/10.6_opt_asan/sql/sp_head.cc:2056
+    #2 0x562d2d62c205 in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2829
+    #3 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #4 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #5 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #6 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #7 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #8 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #9 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #10 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #11 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #12 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #13 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #14 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #15 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #16 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #17 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #18 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #19 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #20 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #21 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+/test/10.6_opt_asan/sql/sql_class.cc:3787:15: runtime error: member access within address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  a0 5b 08 00 b0 62 00 00  01 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2bfede3f in Query_arena::set_query_arena(Query_arena*) /test/10.6_opt_asan/sql/sql_class.cc:3787
+    #1 0x562d2bd93495 in sp_head::execute_function(THD*, Item**, unsigned int, Field*, sp_rcontext**, Query_arena*) /test/10.6_opt_asan/sql/sp_head.cc:2056
+    #2 0x562d2d62c205 in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2829
+    #3 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #4 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #5 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #6 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #7 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #8 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #9 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #10 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #11 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #12 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #13 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #14 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #15 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #16 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #17 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #18 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #19 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #20 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #21 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+/test/10.6_opt_asan/sql/sql_class.cc:3891:23: runtime error: member call on address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  a0 5b 08 00 b0 62 00 00  01 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2bfef83f in THD::restore_active_arena(Query_arena*, Query_arena*) /test/10.6_opt_asan/sql/sql_class.cc:3891
+    #1 0x562d2bd935d8 in sp_head::execute_function(THD*, Item**, unsigned int, Field*, sp_rcontext**, Query_arena*) /test/10.6_opt_asan/sql/sp_head.cc:2071
+    #2 0x562d2d62c205 in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2829
+    #3 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #4 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #5 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #6 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #7 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #8 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #9 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #10 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #11 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #12 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #13 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #14 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #15 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #16 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #17 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #18 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #19 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #20 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #21 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+/test/10.6_opt_asan/sql/sql_class.cc:3785:3: runtime error: member access within address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  a0 5b 08 00 b0 62 00 00  01 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2bfedeaf in Query_arena::set_query_arena(Query_arena*) /test/10.6_opt_asan/sql/sql_class.cc:3785
+    #1 0x562d2bfef744 in THD::restore_active_arena(Query_arena*, Query_arena*) /test/10.6_opt_asan/sql/sql_class.cc:3891
+    #2 0x562d2bd935d8 in sp_head::execute_function(THD*, Item**, unsigned int, Field*, sp_rcontext**, Query_arena*) /test/10.6_opt_asan/sql/sp_head.cc:2071
+    #3 0x562d2d62c205 in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2829
+    #4 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #5 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #6 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #7 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #8 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #9 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #10 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #11 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #12 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #13 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #14 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #15 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #16 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #17 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #18 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #19 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #20 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #21 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #22 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+/test/10.6_opt_asan/sql/item.cc:2841:31: runtime error: member call on address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  c8 1b 09 00 50 62 00 00  a0 5b 08 00 b0 62 00 00  01 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2d62d040 in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2841
+    #1 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #2 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #3 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #4 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #5 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #6 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #7 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #8 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #9 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #10 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #11 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #12 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #13 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #14 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #15 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #16 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #17 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #18 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #19 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+/test/10.6_opt_asan/sql/sql_class.cc:3771:10: runtime error: member access within address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  c8 1b 09 00 50 62 00 00  a0 5b 08 00 b0 62 00 00  01 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2bfedb55 in Query_arena::free_items() /test/10.6_opt_asan/sql/sql_class.cc:3771
+    #1 0x562d2d62c349 in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2841
+    #2 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #3 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #4 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #5 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #6 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #7 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #8 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #9 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #10 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #11 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #12 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #13 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #14 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #15 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #16 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #17 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #18 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #19 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #20 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+/test/10.6_opt_asan/sql/sql_class.cc:3773:11: runtime error: member access within address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  c8 1b 09 00 50 62 00 00  a0 5b 08 00 b0 62 00 00  01 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2bfed9c2 in Query_arena::free_items() /test/10.6_opt_asan/sql/sql_class.cc:3773
+    #1 0x562d2d62c349 in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2841
+    #2 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #3 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #4 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #5 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #6 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #7 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #8 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #9 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #10 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #11 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #12 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #13 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #14 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #15 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #16 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #17 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #18 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #19 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #20 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+/test/10.6_opt_asan/sql/sql_class.cc:3771:21: runtime error: member access within address 0x62b000086460 which does not point to an object of type 'Query_arena'
+0x62b000086460: note: object has invalid vptr
+ 00 00 00 00  00 00 00 00 00 00 00 00  c8 1b 09 00 50 62 00 00  a0 5b 08 00 b0 62 00 00  01 00 00 00
+              ^~~~~~~~~~~~~~~~~~~~~~~
+              invalid vptr
+    #0 0x562d2bfed9e3 in Query_arena::free_items() /test/10.6_opt_asan/sql/sql_class.cc:3771
+    #1 0x562d2d62c349 in Item_sp::execute_impl(THD*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2841
+    #2 0x562d2d62d4e4 in Item_sp::execute(THD*, bool*, Item**, unsigned int) /test/10.6_opt_asan/sql/item.cc:2743
+    #3 0x562d2daf96de in Item_func_sp::val_int() /test/10.6_opt_asan/sql/item_func.h:3485
+    #4 0x562d2ce881b0 in Type_handler::Item_send_long(Item*, Protocol*, st_value*) const /test/10.6_opt_asan/sql/sql_type.cc:7374
+    #5 0x562d2bc8cd29 in Protocol::send_result_set_row(List<Item>*) /test/10.6_opt_asan/sql/protocol.cc:1082
+    #6 0x562d2c008b29 in select_send::send_data(List<Item>&) /test/10.6_opt_asan/sql/sql_class.cc:3025
+    #7 0x562d2c617c9e in JOIN::exec_inner() /test/10.6_opt_asan/sql/sql_select.cc:4337
+    #8 0x562d2c61aa29 in JOIN::exec() /test/10.6_opt_asan/sql/sql_select.cc:4250
+    #9 0x562d2c60b5bd in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_opt_asan/sql/sql_select.cc:4665
+    #10 0x562d2c610853 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_opt_asan/sql/sql_select.cc:417
+    #11 0x562d2c2d35d1 in execute_sqlcom_select /test/10.6_opt_asan/sql/sql_parse.cc:6118
+    #12 0x562d2c31555e in mysql_execute_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:3820
+    #13 0x562d2c2a0dcd in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_opt_asan/sql/sql_parse.cc:7883
+    #14 0x562d2c2f9e0d in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_opt_asan/sql/sql_parse.cc:1816
+    #15 0x562d2c305c82 in do_command(THD*) /test/10.6_opt_asan/sql/sql_parse.cc:1348
+    #16 0x562d2caf4a1c in do_handle_one_connection(CONNECT*, bool) /test/10.6_opt_asan/sql/sql_connect.cc:1410
+    #17 0x562d2caf7754 in handle_one_connection /test/10.6_opt_asan/sql/sql_connect.cc:1312
+    #18 0x562d2eaf9eaa in pfs_spawn_thread /test/10.6_opt_asan/storage/perfschema/pfs.cc:2201
+    #19 0x15347d2f0608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #20 0x15347c444292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+2020-11-12 13:15:59 0 [Note] /test/ASAN_MD101120-mariadb-10.6.0-linux-x86_64-opt/bin/mysqld (initiated by: root[root] @ localhost []): Normal shutdown
+2020-11-12 13:15:59 0 [Note] Event Scheduler: Purging the queue. 0 events
+2020-11-12 13:15:59 0 [Note] InnoDB: FTS optimize thread exiting.
+2020-11-12 13:15:59 0 [Note] InnoDB: Starting shutdown...
+2020-11-12 13:15:59 0 [Note] InnoDB: Dumping buffer pool(s) to /test/ASAN_MD101120-mariadb-10.6.0-linux-x86_64-opt/data/ib_buffer_pool
+2020-11-12 13:15:59 0 [Note] InnoDB: Buffer pool(s) dump completed at 201112 13:15:59
+2020-11-12 13:16:00 0 [Note] InnoDB: Shutdown completed; log sequence number 45142; transaction id 21
+2020-11-12 13:16:00 0 [Note] InnoDB: Removed temporary tablespace data file: ibtmp1
+2020-11-12 13:16:00 0 [Note] /test/ASAN_MD101120-mariadb-10.6.0-linux-x86_64-opt/bin/mysqld: Shutdown complete

@@ -1,0 +1,11 @@
+../mysys/hash.c:126:21: runtime error: applying zero offset to null pointer
+    #0 0x349d3a9 in my_hash_free_elements /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../mysys/hash.c:126:21
+    #1 0x349d0c5 in my_hash_free /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../mysys/hash.c:150:3
+    #2 0x1997416 in ignore_db_dirs_free() /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_show.cc:768:3
+    #3 0xd5e7ce in clean_up(bool) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/mysqld.cc:2213:3
+    #4 0xd5f1ad in unireg_abort /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/mysqld.cc:2143:3
+    #5 0xd6ca30 in init_server_components() /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/mysqld.cc:5395:5
+    #6 0xd65aea in mysqld_main(int, char**) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/mysqld.cc:5937:7
+    #7 0xd5c829 in main /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/main.cc:25:10
+    #8 0x7f140b3c81e2 in __libc_start_main /build/glibc-t7JzpG/glibc-2.30/csu/../csu/libc-start.c:308:16
+    #9 0xd3aecd in _start (/home/kevg/work/m/bb-10.2-kevgs/build_ubsan/sql/mysqld+0xd3aecd)

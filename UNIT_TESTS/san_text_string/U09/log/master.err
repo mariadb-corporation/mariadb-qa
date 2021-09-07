@@ -1,0 +1,35 @@
+../storage/innobase/buf/buf0buddy.cc:350:6: runtime error: index 4096 out of bounds for type 'byte [38]'
+    #0 0x22f14fb in buf_buddy_alloc_zip(buf_pool_t*, unsigned long) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/buf/buf0buddy.cc:350:6
+    #1 0x22f0786 in buf_buddy_alloc_low(buf_pool_t*, unsigned long, unsigned long*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/buf/buf0buddy.cc:501:26
+    #2 0x20fbb33 in buf_buddy_alloc(buf_pool_t*, unsigned long, unsigned long*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/include/buf0buddy.ic:111:17
+    #3 0x20fe8e3 in buf_page_create(page_id_t, page_size_t const&, mtr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/buf/buf0buf.cc:5727:10
+    #4 0x20c4c5f in fsp_page_create(fil_space_t*, unsigned long, page_size_t const&, mtr_t*, mtr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/fsp/fsp0fsp.cc:1284:23
+    #5 0x20c324f in fsp_alloc_free_page(fil_space_t*, page_size_t const&, unsigned long, mtr_t*, mtr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/fsp/fsp0fsp.cc:1412:9
+    #6 0x20c111d in fsp_alloc_seg_inode_page(fil_space_t*, unsigned char*, mtr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/fsp/fsp0fsp.cc:1649:10
+    #7 0x20b164e in fsp_alloc_seg_inode(fil_space_t*, unsigned char*, mtr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/fsp/fsp0fsp.cc:1700:10
+    #8 0x20af96a in fseg_create_general(unsigned long, unsigned long, unsigned long, mtr_t*, buf_block_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/fsp/fsp0fsp.cc:2029:10
+    #9 0x20b5649 in fseg_create(unsigned long, unsigned long, mtr_t*, buf_block_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/fsp/fsp0fsp.cc:2118:9
+    #10 0x21e8090 in btr_create(unsigned long, unsigned long, page_size_t const&, unsigned long, dict_index_t*, btr_create_t const*, mtr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/btr/btr0btr.cc:1120:11
+    #11 0x23a8690 in dict_create_index_tree_step(ind_node_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/dict/dict0crea.cc:885:19
+    #12 0x23a5f48 in dict_create_index_step(que_thr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/dict/dict0crea.cc:1500:9
+    #13 0x26e0dd9 in que_thr_step(que_thr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/que/que0que.cc:1052:9
+    #14 0x26deed9 in que_run_threads_low(que_thr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/que/que0que.cc:1104:14
+    #15 0x26de836 in que_run_threads(que_thr_t*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/que/que0que.cc:1144:2
+    #16 0x2796ebe in row_merge_create_index_graph(trx_t*, dict_table_t*, dict_index_t*&, dict_add_v_col_t const*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/row/row0merge.cc:4335:2
+    #17 0x2796852 in row_merge_create_index(trx_t*, dict_table_t*, index_def_t const*, dict_add_v_col_t const*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/row/row0merge.cc:4406:8
+    #18 0x2490d0a in prepare_inplace_alter_table_dict(Alter_inplace_info*, TABLE const*, TABLE const*, char const*, unsigned long, unsigned long, unsigned long, bool, bool) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/handler/handler0alter.cc:4841:23
+    #19 0x247d762 in ha_innobase::prepare_inplace_alter_table(TABLE*, Alter_inplace_info*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../storage/innobase/handler/handler0alter.cc:6054:2
+    #20 0xd90c39 in handler::ha_prepare_inplace_alter_table(TABLE*, Alter_inplace_info*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/handler.cc:4358:10
+    #21 0x198cd00 in mysql_inplace_alter_table(THD*, TABLE_LIST*, TABLE*, TABLE*, Alter_inplace_info*, enum_alter_inplace_result, MDL_request*, Alter_table_ctx*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_table.cc:7420:20
+    #22 0x197555d in mysql_alter_table(THD*, char*, char*, HA_CREATE_INFO*, TABLE_LIST*, Alter_info*, unsigned int, st_order*, bool) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_table.cc:9622:16
+    #23 0x1b7fccc in Sql_cmd_alter_table::execute(THD*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_alter.cc:333:11
+    #24 0x163140a in mysql_execute_command(THD*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:5964:26
+    #25 0x1605962 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:7733:18
+    #26 0x15f675c in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1823:7
+    #27 0x1600930 in do_command(THD*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1377:17
+    #28 0x1b6cbcb in do_handle_one_connection(CONNECT*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_connect.cc:1336:11
+    #29 0x1b6c419 in handle_one_connection /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_connect.cc:1241:3
+    #30 0x7ff362db8ea6 in start_thread nptl/pthread_create.c:477:8
+    #31 0x7ff36294deae in clone misc/../sysdeps/unix/sysv/linux/x86_64/clone.S:95
+ 
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior ../storage/innobase/buf/buf0buddy.cc:350:6

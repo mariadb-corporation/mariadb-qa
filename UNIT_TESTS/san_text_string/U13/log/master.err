@@ -1,0 +1,26 @@
+../sql/sql_show.cc:3558:7: runtime error: call to function show_binlog_vars(THD*, st_mysql_show_var*, char*) through pointer to incorrect function type 'int (*)(THD *, st_mysql_show_var *, void *, system_status_var *, enum_var_type)'
+/home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/log.cc:10407: note: show_binlog_vars(THD*, st_mysql_show_var*, char*) defined here
+    #0 0x18cca35 in show_status_array(THD*, char const*, st_mysql_show_var*, enum_var_type, system_status_var*, char const*, TABLE*, bool, Item*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_show.cc:3558:7
+    #1 0x18cdd16 in fill_status(THD*, TABLE_LIST*, Item*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_show.cc:7594:8
+    #2 0x18d87af in get_schema_tables_result(JOIN*, enum_schema_table_state) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_show.cc:8467:11
+    #3 0x17ac54d in JOIN::exec_inner() /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_select.cc:3602:7
+    #4 0x17aaf93 in JOIN::exec() /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_select.cc:3433:3
+    #5 0x1733e2b in mysql_select(THD*, TABLE_LIST*, unsigned int, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_select.cc:3833:9
+    #6 0x1732994 in handle_select(THD*, LEX*, select_result*, unsigned long) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_select.cc:361:10
+    #7 0x163e1c9 in execute_sqlcom_select(THD*, TABLE_LIST*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:6218:12
+    #8 0x163a6c5 in execute_show_status(THD*, TABLE_LIST*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:6251:10
+    #9 0x1618b4e in mysql_execute_command(THD*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:3447:5
+    #10 0x13487c1 in sp_instr_stmt::exec_core(THD*, unsigned int*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sp_head.cc:3332:12
+    #11 0x1345553 in sp_lex_keeper::reset_lex_and_exec_core(THD*, unsigned int*, bool, sp_instr*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sp_head.cc:3095:17
+    #12 0x1346a29 in sp_instr_stmt::execute(THD*, unsigned int*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sp_head.cc:3248:25
+    #13 0x1333dfa in sp_head::execute(THD*, bool) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sp_head.cc:1326:20
+    #14 0x133ab82 in sp_head::execute_procedure(THD*, List<Item>*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sp_head.cc:2202:17
+    #15 0x16441ae in do_execute_sp(THD*, sp_head*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:2946:16
+    #16 0x16325cc in mysql_execute_command(THD*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:5564:13
+    #17 0x160c3a2 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:7733:18
+    #18 0x15fd19c in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1823:7
+    #19 0x1607370 in do_command(THD*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1377:17
+    #20 0x1b7360b in do_handle_one_connection(CONNECT*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_connect.cc:1336:11
+    #21 0x1b72e59 in handle_one_connection /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_connect.cc:1241:3
+    #22 0x7fe552741ea6 in start_thread nptl/pthread_create.c:477:8
+    #23 0x7fe5522d6eae in clone misc/../sysdeps/unix/sysv/linux/x86_64/clone.S:95

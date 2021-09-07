@@ -1,0 +1,18 @@
+2021-03-24 20:13:22 0 [Note] InnoDB: Starting shutdown...
+2021-03-24 20:13:22 0 [Note] InnoDB: Dumping buffer pool(s) to /test/UBASAN_MD260121-mariadb-10.6.0-linux-x86_64-dbg/data/ib_buffer_pool
+2021-03-24 20:13:22 0 [Note] InnoDB: Buffer pool(s) dump completed at 210324 20:13:22
+/data/builds/10.6_dbg_san/storage/innobase/srv/srv0start.cc:2069:31: runtime error: member call on null pointer of type 'struct fil_space_t'
+    #0 0x55b3789cf44f in innodb_shutdown() /data/builds/10.6_dbg_san/storage/innobase/srv/srv0start.cc:2069
+    #1 0x55b378182457 in innobase_end /data/builds/10.6_dbg_san/storage/innobase/handler/ha_innodb.cc:3762
+    #2 0x55b3763df122 in ha_finalize_handlerton(st_plugin_int*) /data/builds/10.6_dbg_san/sql/handler.cc:583
+    #3 0x55b374e7a210 in plugin_deinitialize /data/builds/10.6_dbg_san/sql/sql_plugin.cc:1262
+    #4 0x55b374e8957c in reap_plugins /data/builds/10.6_dbg_san/sql/sql_plugin.cc:1338
+    #5 0x55b374e8d530 in plugin_shutdown() /data/builds/10.6_dbg_san/sql/sql_plugin.cc:2045
+    #6 0x55b3745c56a9 in clean_up /data/builds/10.6_dbg_san/sql/mysqld.cc:1981
+    #7 0x55b3745f48ed in mysqld_main(int, char**) /data/builds/10.6_dbg_san/sql/mysqld.cc:5728
+    #8 0x55b3745bdbaa in main /data/builds/10.6_dbg_san/sql/main.cc:25
+    #9 0x14a2d352e0b2 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x270b2)
+    #10 0x55b3744915ad in _start (/test/UBASAN_MD260121-mariadb-10.6.0-linux-x86_64-dbg/bin/mariadbd+0x7b275ad)
+ 
+2021-03-24 20:13:23 0 [Note] InnoDB: Removed temporary tablespace data file: ibtmp1
+2021-03-24 20:13:23 0 [Note] InnoDB: Shutdown completed; log sequence number 43230; transaction id 19

@@ -1,0 +1,13 @@
+/test/10.5_opt_asan/sql/sql_acl.cc:9985:29: runtime error: member access within null pointer of type 'struct TABLE'
+    #0 0x55f9cd2e883e in handle_grant_table /test/10.5_opt_asan/sql/sql_acl.cc:9985
+    #1 0x55f9cd3457c7 in handle_grant_data /test/10.5_opt_asan/sql/sql_acl.cc:10552
+    #2 0x55f9cd3468a6 in mysql_create_user(THD*, List<LEX_USER>&, bool) /test/10.5_opt_asan/sql/sql_acl.cc:10770
+    #3 0x55f9cd7e3f36 in mysql_execute_command(THD*) /test/10.5_opt_asan/sql/sql_parse.cc:5345
+    #4 0x55f9cd761d77 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /test/10.5_opt_asan/sql/sql_parse.cc:8044
+    #5 0x55f9cd7bb3e9 in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /test/10.5_opt_asan/sql/sql_parse.cc:1872
+    #6 0x55f9cd7c7e48 in do_command(THD*) /test/10.5_opt_asan/sql/sql_parse.cc:1353
+    #7 0x55f9cdfb6f9c in do_handle_one_connection(CONNECT*, bool) /test/10.5_opt_asan/sql/sql_connect.cc:1410
+    #8 0x55f9cdfb9cd4 in handle_one_connection /test/10.5_opt_asan/sql/sql_connect.cc:1312
+    #9 0x55f9cffc5d5a in pfs_spawn_thread /test/10.5_opt_asan/storage/perfschema/pfs.cc:2201
+    #10 0x1541f042f608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #11 0x1541ef583292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)

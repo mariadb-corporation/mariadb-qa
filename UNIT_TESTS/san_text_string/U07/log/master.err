@@ -1,0 +1,14 @@
+../sql/sql_select.cc:2918:22: runtime error: applying non-zero offset 4054449126480 to null pointer
+    #0 0x17e6dce in JOIN::make_aggr_tables_info() /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_select.cc:2918:22
+    #1 0x17a88f0 in JOIN::optimize_inner() /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_select.cc:2277:9
+    #2 0x179e272 in JOIN::optimize() /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_select.cc:1113:12
+    #3 0x179038f in mysql_select(THD*, TABLE_LIST*, unsigned int, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_resul>
+    #4 0x178f312 in handle_select(THD*, LEX*, select_result*, unsigned long) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_select.cc:361:10
+    #5 0x1695663 in execute_sqlcom_select(THD*, TABLE_LIST*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:6225:12
+    #6 0x1670e24 in mysql_execute_command(THD*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:3532:12
+    #7 0x1663157 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:7740:18
+    #8 0x165acfa in handle_bootstrap_impl(THD*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1049:5
+    #9 0x1659b28 in do_handle_bootstrap(THD*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1101:3
+    #10 0x1659860 in handle_bootstrap /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1084:3
+    #11 0x7f374ee9b608 in start_thread /build/glibc-YYA7BZ/glibc-2.31/nptl/pthread_create.c:477:8
+    #12 0x7f374e5b1102 in clone /build/glibc-YYA7BZ/glibc-2.31/misc/../sysdeps/unix/sysv/linux/x86_64/clone.S:95

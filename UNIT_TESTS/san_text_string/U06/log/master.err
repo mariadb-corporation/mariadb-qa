@@ -1,0 +1,16 @@
+../strings/ctype-mb.c:328:32: runtime error: applying non-zero offset 2 to null pointer
+    #0 0x3629952 in my_charpos_mb /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../strings/ctype-mb.c:328:32
+    #1 0x1a77d72 in validate_comment_length(THD*, st_mysql_lex_string*, unsigned long, unsigned int, char const*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_table.cc:4289:17
+    #2 0x1a6a36c in mysql_prepare_create_table(THD*, HA_CREATE_INFO*, Alter_info*, unsigned int*, handler*, st_key**, unsigned int*, int) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_table.cc:4106:9
+    #3 0x1a7c2fa in mysql_create_frm_image(THD*, char const*, char const*, HA_CREATE_INFO*, Alter_info*, int, st_key**, unsigned int*, st_mysql_const_unsigned_lex_string*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_table.cc:4678:7
+    #4 0x1a7e8f4 in create_table_impl(THD*, char const*, char const*, char const*, char const*, char const*, DDL_options_st, HA_CREATE_INFO*, Alter_info*, int, bool*, st_key**, unsigned int*, st_mysql_const_unsigned_lex_string*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_table.cc:4927:11
+    #5 0x1a7ca2f in mysql_create_table_no_lock(THD*, char const*, char const*, Table_specification_st*, Alter_info*, bool*, int) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_table.cc:5047:8
+    #6 0x1a801fb in mysql_create_table(THD*, TABLE_LIST*, Table_specification_st*, Alter_info*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_table.cc:5112:7
+    #7 0x1ac67f5 in Sql_cmd_create_table::execute(THD*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_table.cc:10944:12
+    #8 0x172aba3 in mysql_execute_command(THD*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:5971:26
+    #9 0x16fc3b6 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:7739:18
+    #10 0x16f34e9 in handle_bootstrap_impl(THD*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1049:5
+    #11 0x16f2228 in do_handle_bootstrap(THD*) /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1101:3
+    #12 0x16f1f60 in handle_bootstrap /home/kevg/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_parse.cc:1084:3
+    #13 0x7f3d5c890668 in start_thread /build/glibc-t7JzpG/glibc-2.30/nptl/pthread_create.c:479:8
+    #14 0x7f3d5bd59322 in clone /build/glibc-t7JzpG/glibc-2.30/misc/../sysdeps/unix/sysv/linux/x86_64/clone.S:95

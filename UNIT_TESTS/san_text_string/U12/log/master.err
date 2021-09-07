@@ -1,0 +1,27 @@
+/test/10.6_dbg_asan/sql/sql_type_int.h:91:42: runtime error: shift exponent 255 is too large for 64-bit type 'long long unsigned int'
+
+10.6.0 c498250888ec126fddda2867d1239b2a7734482f (Debug)
+
+    #1 0x55fe03aa5302 in Func_handler_shift_right_decimal_to_ulonglong::to_longlong_null(Item_handled_func*) const /test/10.6_dbg_asan/sql/item_func.cc:2196
+    #2 0x55fe036c3cf9 in Item_handled_func::Handler_int::val_int(Item_handled_func*) const /test/10.6_dbg_asan/sql/item_func.h:704
+    #3 0x55fe02b81b27 in Item_handled_func::val_int() /test/10.6_dbg_asan/sql/item_func.h:791
+    #4 0x55fe02b60a78 in Type_handler::Item_send_longlong(Item*, Protocol*, st_value*) const /test/10.6_dbg_asan/sql/sql_type.cc:7383
+    #5 0x55fe02bd0c62 in Type_handler_longlong::Item_send(Item*, Protocol*, st_value*) const /test/10.6_dbg_asan/sql/sql_type.h:5638
+    #6 0x55fe015732e5 in Item::send(Protocol*, st_value*) /test/10.6_dbg_asan/sql/item.h:1059
+    #7 0x55fe01559d8b in Protocol::send_result_set_row(List<Item>*) /test/10.6_dbg_asan/sql/protocol.cc:1082
+    #8 0x55fe019acda7 in select_send::send_data(List<Item>&) /test/10.6_dbg_asan/sql/sql_class.cc:3025
+    #9 0x55fe020f542d in select_result_sink::send_data_with_check(List<Item>&, st_select_lex_unit*, unsigned long long) /test/10.6_dbg_asan/sql/sql_class.h:5325
+    #10 0x55fe020f542d in JOIN::exec_inner() /test/10.6_dbg_asan/sql/sql_select.cc:4337
+    #11 0x55fe020fc19a in JOIN::exec() /test/10.6_dbg_asan/sql/sql_select.cc:4250
+    #12 0x55fe020ed2c5 in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_dbg_asan/sql/sql_select.cc:4665
+    #13 0x55fe020eec99 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_dbg_asan/sql/sql_select.cc:417
+    #14 0x55fe01d036a2 in execute_sqlcom_select /test/10.6_dbg_asan/sql/sql_parse.cc:6118
+    #15 0x55fe01d63f0a in mysql_execute_command(THD*) /test/10.6_dbg_asan/sql/sql_parse.cc:3820
+    #16 0x55fe01cc7eda in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_dbg_asan/sql/sql_parse.cc:7883
+    #17 0x55fe01d3694c in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_dbg_asan/sql/sql_parse.cc:1816
+    #18 0x55fe01d4bd14 in do_command(THD*) /test/10.6_dbg_asan/sql/sql_parse.cc:1348
+    #19 0x55fe0272a0ee in do_handle_one_connection(CONNECT*, bool) /test/10.6_dbg_asan/sql/sql_connect.cc:1410
+    #20 0x55fe0272d371 in handle_one_connection /test/10.6_dbg_asan/sql/sql_connect.cc:1312
+    #21 0x55fe04c27923 in pfs_spawn_thread /test/10.6_dbg_asan/storage/perfschema/pfs.cc:2201
+    #22 0x14595360d608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #23 0x145952761292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)

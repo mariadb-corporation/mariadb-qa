@@ -1,0 +1,12 @@
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior ../extra/yassl/taocrypt/include/block.hpp:108:16 in 
+2020-10-03 12:31:50 140500336854912 [Note] Server socket created on IP: '127.0.0.1'.
+../mysys/hash.c:798:9: runtime error: applying zero offset to null pointer
+    #0 0x32be198 in my_hash_iterate /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../mysys/hash.c:798:9
+    #1 0x13b9361 in grant_reload(THD*) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_acl.cc:7566:3
+    #2 0x13b8e52 in grant_init() /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/sql_acl.cc:7321:16
+    #3 0xcfb41a in mysqld_main(int, char**) /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/mysqld.cc:5995:12
+    #4 0xcf5689 in main /home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/../sql/main.cc:25:10
+    #5 0x7fc8c8adfcc9 in __libc_start_main csu/../csu/libc-start.c:308:16
+    #6 0xcd3279 in _start (/home/kevgs/work/m/bb-10.2-kevgs/build_ubsan/sql/mysqld+0xcd3279)
+

@@ -1,0 +1,12 @@
+/home/psergey/dev-git2/10.5/sql/sql_class.h:4169:24: runtime error: load of value 2779096485, which is not a valid value for type 'enum_binlog_format'
+    #0 0x56245d5aa9bd in THD::set_current_stmt_binlog_format_stmt() /home/psergey/dev-git2/10.5/sql/sql_class.h:4169
+    #1 0x56245d6c5842 in THD::reset_current_stmt_binlog_format_row() /home/psergey/dev-git2/10.5/sql/sql_class.h:4208
+    #2 0x56245d66142c in THD::init() /home/psergey/dev-git2/10.5/sql/sql_class.cc:1286
+    #3 0x56245d65a27b in THD::THD(unsigned long long, bool) /home/psergey/dev-git2/10.5/sql/sql_class.cc:841
+    #4 0x56245d8bc5c4 in plugin_load /home/psergey/dev-git2/10.5/sql/sql_plugin.cc:1813
+    #5 0x56245d8bc14d in plugin_init(int*, char**, int) /home/psergey/dev-git2/10.5/sql/sql_plugin.cc:1746
+    #6 0x56245d3d293a in init_server_components /home/psergey/dev-git2/10.5/sql/mysqld.cc:5008
+    #7 0x56245d3d4350 in mysqld_main(int, char**) /home/psergey/dev-git2/10.5/sql/mysqld.cc:5536
+    #8 0x56245d3c13b9 in main /home/psergey/dev-git2/10.5/sql/main.cc:25
+    #9 0x7f50b7c72b96 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x21b96)
+    #10 0x56245d3c12b9 in _start (/optane/dev-git2/10.5/sql/mysqld+0x32572b9)

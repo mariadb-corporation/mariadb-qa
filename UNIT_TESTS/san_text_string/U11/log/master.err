@@ -1,0 +1,16 @@
+/test/10.6_dbg_asan/sql/opt_split.cc:1150:28: runtime error: shift exponent 61 is too large for 32-bit type 'int'
+    #0 0x55b5d97e9acb in JOIN::fix_all_splittings_in_plan() /test/10.6_dbg_asan/sql/opt_split.cc:1150
+    #1 0x55b5d8becd60 in JOIN::optimize_inner() /test/10.6_dbg_asan/sql/sql_select.cc:2268
+    #2 0x55b5d8bee9c9 in JOIN::optimize() /test/10.6_dbg_asan/sql/sql_select.cc:1627
+    #3 0x55b5d8bf2f72 in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.6_dbg_asan/sql/sql_select.cc:4651
+    #4 0x55b5d8bf4c99 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.6_dbg_asan/sql/sql_select.cc:417
+    #5 0x55b5d88096a2 in execute_sqlcom_select /test/10.6_dbg_asan/sql/sql_parse.cc:6118
+    #6 0x55b5d8869f0a in mysql_execute_command(THD*) /test/10.6_dbg_asan/sql/sql_parse.cc:3820
+    #7 0x55b5d87cdeda in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_dbg_asan/sql/sql_parse.cc:7883
+    #8 0x55b5d883c94c in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_dbg_asan/sql/sql_parse.cc:1816
+    #9 0x55b5d8851d14 in do_command(THD*) /test/10.6_dbg_asan/sql/sql_parse.cc:1348
+    #10 0x55b5d92300ee in do_handle_one_connection(CONNECT*, bool) /test/10.6_dbg_asan/sql/sql_connect.cc:1410
+    #11 0x55b5d9233371 in handle_one_connection /test/10.6_dbg_asan/sql/sql_connect.cc:1312
+    #12 0x55b5db72d923 in pfs_spawn_thread /test/10.6_dbg_asan/storage/perfschema/pfs.cc:2201
+    #13 0x14a105a94608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+    #14 0x14a104be8292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)

@@ -1,0 +1,27 @@
+/home/dan/mariadb-server-not-worktree/sql/item_sum.cc:1135:10: runtime error: null pointer passed as argument 1, which is declared to never be null
+    #0 0x1379c6b38 in Item_sum_num::fix_fields(THD*, Item**) /home/dan/mariadb-server-not-worktree/sql/item_sum.cc:1135
+    #1 0x137f04f4c in Item_window_func::fix_fields(THD*, Item**) /home/dan/mariadb-server-not-worktree/sql/item_windowfunc.cc:118
+    #2 0x137f04f4c in Item_window_func::fix_fields(THD*, Item**) /home/dan/mariadb-server-not-worktree/sql/item_windowfunc.cc:85
+    #3 0x13623fd84 in Item::fix_fields_if_needed(THD*, Item**) /home/dan/mariadb-server-not-worktree/sql/item.h:978
+    #4 0x13623fd84 in Item::fix_fields_if_needed_for_scalar(THD*, Item**) /home/dan/mariadb-server-not-worktree/sql/item.h:982
+    #5 0x13623fd84 in setup_fields(THD*, Bounds_checked_array<Item*>, List<Item>&, enum_column_usage, List<Item>*, List<Item>*, bool) /home/dan/mariadb-server-not-worktree/sql/sql_base.cc:7573
+    #6 0x1366d4b48 in JOIN::prepare(TABLE_LIST*, Item*, unsigned int, st_order*, bool, st_order*, Item*, st_order*, st_select_lex*, st_select_lex_unit*) /home/dan/mariadb-server-not-worktree/sql/sql_select.cc:1247
+    #7 0x1368764d8 in st_select_lex_unit::prepare_join(THD*, st_select_lex*, select_result*, unsigned long long, bool) /home/dan/mariadb-server-not-worktree/sql/sql_union.cc:1093
+    #8 0x1368894cc in st_select_lex_unit::prepare(TABLE_LIST*, select_result*, unsigned long long) /home/dan/mariadb-server-not-worktree/sql/sql_union.cc:1466
+    #9 0x136326558 in mysql_derived_prepare /home/dan/mariadb-server-not-worktree/sql/sql_derived.cc:816
+    #10 0x1363201d4 in mysql_handle_single_derived(LEX*, TABLE_LIST*, unsigned int) /home/dan/mariadb-server-not-worktree/sql/sql_derived.cc:206
+    #11 0x136923a04 in TABLE_LIST::handle_derived(LEX*, unsigned int) /home/dan/mariadb-server-not-worktree/sql/table.cc:9059
+    #12 0x1363d1350 in LEX::handle_list_of_derived(TABLE_LIST*, unsigned int) /home/dan/mariadb-server-not-worktree/sql/sql_lex.h:4416
+    #13 0x1363d1350 in st_select_lex::handle_derived(LEX*, unsigned int) /home/dan/mariadb-server-not-worktree/sql/sql_lex.cc:4847
+    #14 0x1366d4448 in JOIN::prepare(TABLE_LIST*, Item*, unsigned int, st_order*, bool, st_order*, Item*, st_order*, st_select_lex*, st_select_lex_unit*) /home/dan/mariadb-server-not-worktree/sql/sql_select.cc:1146
+    #15 0x1366dd674 in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /home/dan/mariadb-server-not-worktree/sql/sql_select.cc:4613
+    #16 0x1366dfc20 in handle_select(THD*, LEX*, select_result*, unsigned long) /home/dan/mariadb-server-not-worktree/sql/sql_select.cc:417
+    #17 0x1364c6120 in execute_sqlcom_select /home/dan/mariadb-server-not-worktree/sql/sql_parse.cc:6209
+    #18 0x1364f0a20 in mysql_execute_command(THD*) /home/dan/mariadb-server-not-worktree/sql/sql_parse.cc:3939
+    #19 0x13649fd64 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /home/dan/mariadb-server-not-worktree/sql/sql_parse.cc:7993
+    #20 0x1364dd7fc in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /home/dan/mariadb-server-not-worktree/sql/sql_parse.cc:1874
+    #21 0x1364e6cb8 in do_command(THD*) /home/dan/mariadb-server-not-worktree/sql/sql_parse.cc:1355
+    #22 0x136a1dc50 in do_handle_one_connection(CONNECT*, bool) /home/dan/mariadb-server-not-worktree/sql/sql_connect.cc:1411
+    #23 0x136a1fdb8 in handle_one_connection /home/dan/mariadb-server-not-worktree/sql/sql_connect.cc:1313
+    #24 0x13821d5d0 in pfs_spawn_thread /home/dan/mariadb-server-not-worktree/storage/perfschema/pfs.cc:2201
+    #25 0x7fff81098858 in start_thread /build/glibc-uvws04/glibc-2.27/nptl/pthread_create.c:463
