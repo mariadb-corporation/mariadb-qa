@@ -1,0 +1,173 @@
+==2721620==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7f9b89204ca8 at pc 0x5578a8d4819e bp 0x7f9b89204b80 sp 0x7f9b89204b70
+WRITE of size 1 at 0x7f9b89204ca8 thread T5
+    #0 0x5578a8d4819d in strmake /data/src/10.2/strings/strmake.c:66
+    #1 0x5578a8ce4fc0 in my_strnxfrm_tis620 /data/src/10.2/strings/ctype-tis620.c:608
+    #2 0x5578a79eff7b in Field::pos_in_interval_val_str(Field*, Field*, unsigned int) /data/src/10.2/sql/field.cc:1208
+    #3 0x5578a7a55857 in Field_str::pos_in_interval(Field*, Field*) /data/src/10.2/sql/field.h:1777
+    #4 0x5578a76304e1 in Histogram_builder::next(void*, unsigned int) (/mnt-hd8t/bld/10.2-asan-nightly/bin/mysqld+0x10414e1)
+    #5 0x5578a761cf5a in histogram_build_walk /data/src/10.2/sql/sql_statistics.cc:1610
+    #6 0x5578a8c69fb1 in tree_walk_left_root_right /data/src/10.2/mysys/tree.c:552
+    #7 0x5578a8c69e22 in tree_walk /data/src/10.2/mysys/tree.c:538
+    #8 0x5578a774b21a in Unique::walk(TABLE*, int (*)(void*, unsigned int, void*), void*) /data/src/10.2/sql/uniques.cc:646
+    #9 0x5578a7630fdb in Count_distinct_field::get_value_with_histogram(unsigned long long) (/mnt-hd8t/bld/10.2-asan-nightly/bin/mysqld+0x1041fdb)
+    #10 0x5578a7632e23 in Column_statistics_collected::finish(unsigned long long) (/mnt-hd8t/bld/10.2-asan-nightly/bin/mysqld+0x1043e23)
+    #11 0x5578a761fe56 in collect_statistics_for_table(THD*, TABLE*) /data/src/10.2/sql/sql_statistics.cc:2666
+    #12 0x5578a77e79c7 in mysql_admin_table /data/src/10.2/sql/sql_admin.cc:902
+    #13 0x5578a77ebbe4 in Sql_cmd_analyze_table::execute(THD*) /data/src/10.2/sql/sql_admin.cc:1341
+    #14 0x5578a744c343 in mysql_execute_command(THD*) /data/src/10.2/sql/sql_parse.cc:6017
+    #15 0x5578a7457b65 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /data/src/10.2/sql/sql_parse.cc:7793
+    #16 0x5578a7430d6a in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /data/src/10.2/sql/sql_parse.cc:1827
+    #17 0x5578a742db35 in do_command(THD*) /data/src/10.2/sql/sql_parse.cc:1381
+    #18 0x5578a77b906b in do_handle_one_connection(CONNECT*) /data/src/10.2/sql/sql_connect.cc:1336
+    #19 0x5578a77b892e in handle_one_connection /data/src/10.2/sql/sql_connect.cc:1241
+    #20 0x5578a8b57ccf in pfs_spawn_thread /data/src/10.2/storage/perfschema/pfs.cc:1869
+    #21 0x7f9b940ac608 in start_thread /build/glibc-eX1tMB/glibc-2.31/nptl/pthread_create.c:477
+    #22 0x7f9b93c87292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+Address 0x7f9b89204ca8 is located in stack of thread T5 at offset 40 in frame
+    #0 0x5578a79efcd9 in Field::pos_in_interval_val_str(Field*, Field*, unsigned int) /data/src/10.2/sql/field.cc:1203
+ 
+  This frame has 3 object(s):
+    [32, 40) 'mp_prefix' (line 1204) <== Memory access at offset 40 overflows this variable
+    [64, 72) 'minp_prefix' (line 1205)
+    [96, 104) 'maxp_prefix' (line 1206)
+HINT: this may be a false positive if your program uses some custom stack unwind mechanism, swapcontext or vfork
+      (longjmp and C++ exceptions *are* supported)
+Thread T5 created by T0 here:
+    #0 0x7f9b94653805 in pthread_create (/lib/x86_64-linux-gnu/libasan.so.5+0x3a805)
+    #1 0x5578a8b580c0 in spawn_thread_v1 /data/src/10.2/storage/perfschema/pfs.cc:1919
+    #2 0x5578a71d12a3 in inline_mysql_thread_create /data/src/10.2/include/mysql/psi/mysql_thread.h:1246
+    #3 0x5578a71e91fa in create_thread_to_handle_connection(CONNECT*) /data/src/10.2/sql/mysqld.cc:6573
+    #4 0x5578a71e9995 in create_new_thread /data/src/10.2/sql/mysqld.cc:6643
+    #5 0x5578a71eab38 in handle_connections_sockets() /data/src/10.2/sql/mysqld.cc:6901
+    #6 0x5578a71e854b in mysqld_main(int, char**) /data/src/10.2/sql/mysqld.cc:6192
+    #7 0x5578a71cfb5c in main /data/src/10.2/sql/main.cc:25
+    #8 0x7f9b93b8c0b2 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x270b2)
+ 
+SUMMARY: AddressSanitizer: stack-buffer-overflow /data/src/10.2/strings/strmake.c:66 in strmake
+Shadow bytes around the buggy address:
+  0x0ff3f1238940: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff3f1238950: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff3f1238960: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff3f1238970: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff3f1238980: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x0ff3f1238990: f1 f1 f1 f1 00[f2]f2 f2 00 f2 f2 f2 00 f3 f3 f3
+  0x0ff3f12389a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff3f12389b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff3f12389c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff3f12389d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff3f12389e0: f1 f1 f1 f1 00 00 00 00 00 00 00 00 00 00 00 f3
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+  Shadow gap:              cc
+==2721620==ABORTING
+210830 19:58:11 [ERROR] mysqld got signal 6 ;
+This could be because you hit a bug. It is also possible that this binary
+or one of the libraries it was linked against is corrupt, improperly built,
+or misconfigured. This error can also be caused by malfunctioning hardware.
+ 
+To report this bug, see https://mariadb.com/kb/en/reporting-bugs
+ 
+We will try our best to scrape up some info that will hopefully help
+diagnose the problem, but since we have already crashed, 
+something is definitely wrong and this may fail.
+ 
+Server version: 10.2.41-MariaDB-debug-log
+key_buffer_size=1048576
+read_buffer_size=131072
+max_used_connections=1
+max_threads=153
+thread_count=1
+It is possible that mysqld could use up to 
+key_buffer_size + (read_buffer_size + sort_buffer_size)*max_threads = 63106 K  bytes of memory
+Hope that's ok; if not, decrease some variables in the equation.
+ 
+Thread pointer: 0x62a000060270
+Attempting backtrace. You can use the following information to find out
+where mysqld died. If you see no messages after this, something went
+terribly wrong...
+stack_bottom = 0x7f9b89208d10 thread_stack 0x5b000
+/lib/x86_64-linux-gnu/libasan.so.5(+0x6cd30)[0x7f9b94685d30]
+mysys/stacktrace.c:172(my_print_stacktrace)[0x5578a8c53571]
+sql/signal_handler.cc:221(handle_fatal_signal)[0x5578a7a79bfd]
+sigaction.c:0(__restore_rt)[0x7f9b940b83c0]
+/lib/x86_64-linux-gnu/libc.so.6(gsignal+0xcb)[0x7f9b93bab18b]
+/lib/x86_64-linux-gnu/libc.so.6(abort+0x12b)[0x7f9b93b8a859]
+/lib/x86_64-linux-gnu/libasan.so.5(+0x12b6a2)[0x7f9b947446a2]
+/lib/x86_64-linux-gnu/libasan.so.5(+0x13624c)[0x7f9b9474f24c]
+/lib/x86_64-linux-gnu/libasan.so.5(+0x1178ec)[0x7f9b947308ec]
+/lib/x86_64-linux-gnu/libasan.so.5(+0x117363)[0x7f9b94730363]
+/lib/x86_64-linux-gnu/libasan.so.5(__asan_report_store1+0x3e)[0x7f9b947313ee]
+strings/strmake.c:66(strmake)[0x5578a8d4819e]
+strings/ctype-tis620.c:608(my_strnxfrm_tis620)[0x5578a8ce4fc1]
+sql/field.cc:1208(Field::pos_in_interval_val_str(Field*, Field*, unsigned int))[0x5578a79eff7c]
+sql/field.h:1778(Field_str::pos_in_interval(Field*, Field*))[0x5578a7a55858]
+sql/sql_statistics.cc:1590(Histogram_builder::next(void*, unsigned int))[0x5578a76304e2]
+sql/sql_statistics.cc:1611(histogram_build_walk)[0x5578a761cf5b]
+mysys/tree.c:552(tree_walk_left_root_right)[0x5578a8c69fb2]
+mysys/tree.c:538(tree_walk)[0x5578a8c69e23]
+sql/uniques.cc:646(Unique::walk(TABLE*, int (*)(void*, unsigned int, void*), void*))[0x5578a774b21b]
+sql/sql_statistics.cc:1709(Count_distinct_field::get_value_with_histogram(unsigned long long))[0x5578a7630fdc]
+sql/sql_statistics.cc:2406(Column_statistics_collected::finish(unsigned long long))[0x5578a7632e24]
+sql/sql_statistics.cc:2666(collect_statistics_for_table(THD*, TABLE*))[0x5578a761fe57]
+sql/sql_admin.cc:902(mysql_admin_table(THD*, TABLE_LIST*, st_ha_check_opt*, char const*, thr_lock_type, bool, bool, unsigned int, int (*)(THD*, TABLE_LIST*, st_ha_check_opt*), int (handler::*)(THD*, st_ha_check_opt*), int (*)(THD*, TABLE_LIST*, st_ha_check_opt*), bool))[0x5578a77e79c8]
+sql/sql_admin.cc:1341(Sql_cmd_analyze_table::execute(THD*))[0x5578a77ebbe5]
+sql/sql_parse.cc:6017(mysql_execute_command(THD*))[0x5578a744c344]
+sql/sql_parse.cc:7793(mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool))[0x5578a7457b66]
+sql/sql_parse.cc:1830(dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool))[0x5578a7430d6b]
+sql/sql_parse.cc:1381(do_command(THD*))[0x5578a742db36]
+sql/sql_connect.cc:1336(do_handle_one_connection(CONNECT*))[0x5578a77b906c]
+sql/sql_connect.cc:1242(handle_one_connection)[0x5578a77b892f]
+perfschema/pfs.cc:1871(pfs_spawn_thread)[0x5578a8b57cd0]
+nptl/pthread_create.c:478(start_thread)[0x7f9b940ac609]
+/lib/x86_64-linux-gnu/libc.so.6(clone+0x43)[0x7f9b93c87293]
+ 
+Trying to get some variables.
+Some pointers may be invalid and cause the dump to abort.
+Query (0x62b000000290): ANALYZE TABLE t
+ 
+Connection ID (thread ID): 4
+Status: NOT_KILLED
+ 
+Optimizer switch: index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=off,engine_condition_pushdown=off,index_condition_pushdown=on,derived_merge=on,derived_with_keys=on,firstmatch=on,loosescan=on,materialization=on,in_to_exists=on,semijoin=on,partial_match_rowid_merge=on,partial_match_table_scan=on,subquery_cache=on,mrr=off,mrr_cost_based=off,mrr_sort_keys=off,outer_join_with_cache=on,semijoin_with_cache=on,join_cache_incremental=on,join_cache_hashed=on,join_cache_bka=on,optimize_join_buffer_size=off,table_elimination=on,extended_keys=on,exists_to_in=on,orderby_uses_equalities=on,condition_pushdown_for_derived=on
+ 
+The manual page at https://mariadb.com/kb/en/how-to-produce-a-full-stack-trace-for-mysqld/ contains
+information that should help you find out what is causing the crash.
+Writing a core file...
+Working directory at /dev/shm/var_auto_KM0J/mysqld.1/data
+Resource Limits:
+Limit                     Soft Limit           Hard Limit           Units     
+Max cpu time              unlimited            unlimited            seconds   
+Max file size             unlimited            unlimited            bytes     
+Max data size             unlimited            unlimited            bytes     
+Max stack size            8388608              unlimited            bytes     
+Max core file size        unlimited            unlimited            bytes     
+Max resident set          unlimited            unlimited            bytes     
+Max processes             385737               385737               processes 
+Max open files            1024                 1024                 files     
+Max locked memory         67108864             67108864             bytes     
+Max address space         unlimited            unlimited            bytes     
+Max file locks            unlimited            unlimited            locks     
+Max pending signals       385737               385737               signals   
+Max msgqueue size         819200               819200               bytes     
+Max nice priority         0                    0                    
+Max realtime priority     0                    0                    
+Max realtime timeout      unlimited            unlimited            us        
+Core pattern: |/usr/share/apport/apport %p %s %c %d %P %E

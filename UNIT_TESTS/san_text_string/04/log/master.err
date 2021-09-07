@@ -1,0 +1,187 @@
+==897576==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7fbb699d28a1 at pc 0x7fbb72f27d00 bp 0x7fbb699d2830 sp 0x7fbb699d1fd8
+READ of size 129 at 0x7fbb699d28a1 thread T5
+    #0 0x7fbb72f27cff  (/lib/x86_64-linux-gnu/libasan.so.5+0xdacff)
+    #1 0x55ad1752847b in Inet6::cmp(char const*, unsigned long) const /data/src/10.5/plugin/type_inet/sql_type_inet.hh:232
+    #2 0x55ad1752847b in Inet6::cmp(Binary_string const&) const /data/src/10.5/plugin/type_inet/sql_type_inet.h:236
+    #3 0x55ad1752847b in Type_handler_inet6::stored_field_cmp_to_item(THD*, Field*, Item*) const /data/src/10.5/plugin/type_inet/sql_type_inet.h:387
+    #4 0x55ad15fac84f in stored_field_cmp_to_item(THD*, Field*, Item*) /data/src/10.5/sql/item.cc:9786
+    #5 0x55ad163cafef in SEL_ARG_GT::SEL_ARG_GT(THD*, unsigned char const*, KEY_PART const*, Field*, Item*) /data/src/10.5/sql/opt_range.cc:1984
+    #6 0x55ad163cafef in Field::stored_field_make_mm_leaf(RANGE_OPT_PARAM*, KEY_PART*, scalar_comparison_op, Item*) /data/src/10.5/sql/opt_range.cc:8940
+    #7 0x55ad163c9776 in Item_bool_func::get_mm_parts(RANGE_OPT_PARAM*, Field*, Item_func::Functype, Item*) /data/src/10.5/sql/opt_range.cc:8535
+    #8 0x55ad163c9776 in Item_bool_func::get_mm_parts(RANGE_OPT_PARAM*, Field*, Item_func::Functype, Item*) /data/src/10.5/sql/opt_range.cc:8500
+    #9 0x55ad163d2f7c in Item_bool_func::get_full_func_mm_tree(RANGE_OPT_PARAM*, Item_field*, Item*) /data/src/10.5/sql/opt_range.cc:8220
+    #10 0x55ad1604f5d3 in Item_bool_func::get_full_func_mm_tree_for_args(RANGE_OPT_PARAM*, Item*, Item*) /data/src/10.5/sql/item_cmpfunc.h:207
+    #11 0x55ad1604f5d3 in Item_bool_func2_with_rev::get_mm_tree(RANGE_OPT_PARAM*, Item**) /data/src/10.5/sql/item_cmpfunc.h:501
+    #12 0x55ad163e739d in SQL_SELECT::test_quick_select(THD*, Bitmap<64u>, unsigned long long, unsigned long long, bool, bool, bool, bool) /data/src/10.5/sql/opt_range.cc:2859
+    #13 0x55ad158a3b65 in test_if_quick_select /data/src/10.5/sql/sql_select.cc:21532
+    #14 0x55ad15945b95 in join_init_quick_read_record /data/src/10.5/sql/sql_select.cc:21502
+    #15 0x55ad158ec0a6 in sub_select(JOIN*, st_join_table*, bool) /data/src/10.5/sql/sql_select.cc:20634
+    #16 0x55ad158ec0a6 in sub_select(JOIN*, st_join_table*, bool) /data/src/10.5/sql/sql_select.cc:20566
+    #17 0x55ad158ac7c7 in evaluate_join_record /data/src/10.5/sql/sql_select.cc:20860
+    #18 0x55ad158ec184 in sub_select(JOIN*, st_join_table*, bool) /data/src/10.5/sql/sql_select.cc:20637
+    #19 0x55ad158ec184 in sub_select(JOIN*, st_join_table*, bool) /data/src/10.5/sql/sql_select.cc:20566
+    #20 0x55ad159a2cd4 in do_select /data/src/10.5/sql/sql_select.cc:20171
+    #21 0x55ad159a2cd4 in JOIN::exec_inner() /data/src/10.5/sql/sql_select.cc:4455
+    #22 0x55ad159a3fe6 in JOIN::exec() /data/src/10.5/sql/sql_select.cc:4236
+    #23 0x55ad1599bb20 in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /data/src/10.5/sql/sql_select.cc:4663
+    #24 0x55ad1599e6bf in handle_select(THD*, LEX*, select_result*, unsigned long) /data/src/10.5/sql/sql_select.cc:417
+    #25 0x55ad1580aa07 in execute_sqlcom_select /data/src/10.5/sql/sql_parse.cc:6210
+    #26 0x55ad15838fe2 in mysql_execute_command(THD*) /data/src/10.5/sql/sql_parse.cc:3932
+    #27 0x55ad157f733c in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /data/src/10.5/sql/sql_parse.cc:7994
+    #28 0x55ad15823500 in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /data/src/10.5/sql/sql_parse.cc:1867
+    #29 0x55ad158292e4 in do_command(THD*) /data/src/10.5/sql/sql_parse.cc:1348
+    #30 0x55ad15bc2e9c in do_handle_one_connection(CONNECT*, bool) /data/src/10.5/sql/sql_connect.cc:1410
+    #31 0x55ad15bc3a1c in handle_one_connection /data/src/10.5/sql/sql_connect.cc:1312
+    #32 0x55ad167a4788 in pfs_spawn_thread /data/src/10.5/storage/perfschema/pfs.cc:2201
+    #33 0x7fbb72dd7608 in start_thread /build/glibc-YYA7BZ/glibc-2.31/nptl/pthread_create.c:477
+    #34 0x7fbb729ab102 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122102)
+ 
+Address 0x7fbb699d28a1 is located in stack of thread T5 at offset 65 in frame
+    #0 0x55ad1752820f in Type_handler_inet6::stored_field_cmp_to_item(THD*, Field*, Item*) const /data/src/10.5/plugin/type_inet/sql_type_inet.h:375
+ 
+  This frame has 2 object(s):
+    [48, 65) 'ni' (line 378)
+    [112, 152) 'tmp' (line 381) <== Memory access at offset 65 partially underflows this variable
+HINT: this may be a false positive if your program uses some custom stack unwind mechanism, swapcontext or vfork
+      (longjmp and C++ exceptions *are* supported)
+Thread T5 created by T0 here:
+    #0 0x7fbb72e87805 in pthread_create (/lib/x86_64-linux-gnu/libasan.so.5+0x3a805)
+    #1 0x55ad167a4a26 in my_thread_create /data/src/10.5/storage/perfschema/my_thread.h:38
+    #2 0x55ad167a4a26 in pfs_spawn_thread_v1 /data/src/10.5/storage/perfschema/pfs.cc:2252
+    #3 0x55ad15584dde in inline_mysql_thread_create /data/src/10.5/include/mysql/psi/mysql_thread.h:1321
+    #4 0x55ad15584dde in create_thread_to_handle_connection(CONNECT*) /data/src/10.5/sql/mysqld.cc:6025
+    #5 0x55ad155907a4 in handle_accepted_socket(st_mysql_socket, st_mysql_socket) /data/src/10.5/sql/mysqld.cc:6149
+    #6 0x55ad155911b2 in handle_connections_sockets() /data/src/10.5/sql/mysqld.cc:6276
+    #7 0x55ad15592de3 in mysqld_main(int, char**) /data/src/10.5/sql/mysqld.cc:5671
+    #8 0x7fbb728b00b2 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x270b2)
+ 
+SUMMARY: AddressSanitizer: stack-buffer-overflow (/lib/x86_64-linux-gnu/libasan.so.5+0xdacff) 
+Shadow bytes around the buggy address:
+  0x0ff7ed3324c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff7ed3324d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff7ed3324e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff7ed3324f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff7ed332500: 00 00 00 00 00 00 00 00 00 00 00 00 f1 f1 f1 f1
+=>0x0ff7ed332510: f1 f1 00 00[01]f2 f2 f2 f2 f2 00 00 00 00 00 f3
+  0x0ff7ed332520: f3 f3 f3 f3 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff7ed332530: 00 00 00 00 f1 f1 f1 f1 00 f3 f3 f3 00 00 00 00
+  0x0ff7ed332540: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff7ed332550: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0ff7ed332560: 00 00 00 00 00 00 00 00 f1 f1 f1 f1 00 f3 f3 f3
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+  Shadow gap:              cc
+==897576==ABORTING
+200923 16:16:28 [ERROR] mysqld got signal 6 ;
+This could be because you hit a bug. It is also possible that this binary
+or one of the libraries it was linked against is corrupt, improperly built,
+or misconfigured. This error can also be caused by malfunctioning hardware.
+ 
+To report this bug, see https://mariadb.com/kb/en/reporting-bugs
+ 
+We will try our best to scrape up some info that will hopefully help
+diagnose the problem, but since we have already crashed, 
+something is definitely wrong and this may fail.
+ 
+Server version: 10.5.6-MariaDB-log
+key_buffer_size=1048576
+read_buffer_size=131072
+max_used_connections=1
+max_threads=153
+thread_count=2
+It is possible that mysqld could use up to 
+key_buffer_size + (read_buffer_size + sort_buffer_size)*max_threads = 63636 K  bytes of memory
+Hope that's ok; if not, decrease some variables in the equation.
+ 
+Thread pointer: 0x62b000069218
+Attempting backtrace. You can use the following information to find out
+where mysqld died. If you see no messages after this, something went
+terribly wrong...
+stack_bottom = 0x7fbb699d7800 thread_stack 0x5fc00
+??:0(__interceptor_tcgetattr)[0x7fbb72eb9d30]
+/data/bld/10.5-rel-asan-nightly/bin/mariadbd(my_print_stacktrace+0xf6)[0x55ad172aa4e6]
+mysys/stacktrace.c:213(my_print_stacktrace)[0x55ad15f168f4]
+sigaction.c:0(__restore_rt)[0x7fbb72de33c0]
+??:0(gsignal)[0x7fbb728cf18b]
+??:0(abort)[0x7fbb728ae859]
+??:0(__sanitizer_set_report_fd)[0x7fbb72f786a2]
+??:0(__sanitizer_get_module_and_offset_for_pc)[0x7fbb72f8324c]
+??:0(__sanitizer_ptr_cmp)[0x7fbb72f648ec]
+??:0(__asan_on_error)[0x7fbb72f64363]
+??:0(__sanitizer_weak_hook_memcmp)[0x7fbb72f27d1f]
+/data/bld/10.5-rel-asan-nightly/bin/mariadbd(+0x2acb47c)[0x55ad1752847c]
+type_inet/sql_type_inet.h:387(Type_handler_inet6::stored_field_cmp_to_item(THD*, Field*, Item*) const)[0x55ad15fac850]
+sql/item.cc:9778(stored_field_cmp_to_item(THD*, Field*, Item*))[0x55ad163caff0]
+sql/opt_range.cc:1983(SEL_ARG_GT::SEL_ARG_GT(THD*, unsigned char const*, KEY_PART const*, Field*, Item*))[0x55ad163c9777]
+sql/opt_range.cc:8536(Item_bool_func::get_mm_parts(RANGE_OPT_PARAM*, Field*, Item_func::Functype, Item*))[0x55ad163d2f7d]
+sql/opt_range.cc:8220(Item_bool_func::get_full_func_mm_tree(RANGE_OPT_PARAM*, Item_field*, Item*))[0x55ad1604f5d4]
+sql/item_cmpfunc.h:207(Item_bool_func::get_full_func_mm_tree_for_args(RANGE_OPT_PARAM*, Item*, Item*))[0x55ad163e739e]
+sql/opt_range.cc:2859(SQL_SELECT::test_quick_select(THD*, Bitmap<64u>, unsigned long long, unsigned long long, bool, bool, bool, bool))[0x55ad158a3b66]
+sql/sql_select.cc:21536(test_if_quick_select(st_join_table*))[0x55ad15945b96]
+sql/sql_select.cc:21502(join_init_quick_read_record(st_join_table*))[0x55ad158ec0a7]
+sql/sql_select.cc:20634(sub_select(JOIN*, st_join_table*, bool))[0x55ad158ac7c8]
+sql/sql_select.cc:20861(evaluate_join_record(JOIN*, st_join_table*, int))[0x55ad158ec185]
+sql/sql_select.cc:20645(sub_select(JOIN*, st_join_table*, bool))[0x55ad159a2cd5]
+sql/sql_select.cc:20171(JOIN::exec_inner())[0x55ad159a3fe7]
+sql/sql_select.cc:4237(JOIN::exec())[0x55ad1599bb21]
+sql/sql_select.cc:4665(mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*))[0x55ad1599e6c0]
+sql/sql_select.cc:417(handle_select(THD*, LEX*, select_result*, unsigned long))[0x55ad1580aa08]
+sql/sql_parse.cc:6210(execute_sqlcom_select(THD*, TABLE_LIST*))[0x55ad15838fe3]
+sql/sql_parse.cc:3932(mysql_execute_command(THD*))[0x55ad157f733d]
+sql/sql_parse.cc:8011(mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool))[0x55ad15823501]
+sql/sql_parse.cc:1870(dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool))[0x55ad158292e5]
+sql/sql_parse.cc:1348(do_command(THD*))[0x55ad15bc2e9d]
+sql/sql_connect.cc:1410(do_handle_one_connection(CONNECT*, bool))[0x55ad15bc3a1d]
+sql/sql_connect.cc:1318(handle_one_connection)[0x55ad167a4789]
+nptl/pthread_create.c:478(start_thread)[0x7fbb72dd7609]
+??:0(clone)[0x7fbb729ab103]
+ 
+Trying to get some variables.
+Some pointers may be invalid and cause the dump to abort.
+Query (0x62b000038238): SELECT * FROM t AS t1 JOIN t AS t2 WHERE t2.a > t1.b
+ 
+Connection ID (thread ID): 4
+Status: NOT_KILLED
+ 
+Optimizer switch: index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=off,engine_condition_pushdown=off,index_condition_pushdown=on,derived_merge=on,derived_with_keys=on,firstmatch=on,loosescan=on,materialization=on,in_to_exists=on,semijoin=on,partial_match_rowid_merge=on,partial_match_table_scan=on,subquery_cache=on,mrr=off,mrr_cost_based=off,mrr_sort_keys=off,outer_join_with_cache=on,semijoin_with_cache=on,join_cache_incremental=on,join_cache_hashed=on,join_cache_bka=on,optimize_join_buffer_size=on,table_elimination=on,extended_keys=on,exists_to_in=on,orderby_uses_equalities=on,condition_pushdown_for_derived=on,split_materialized=on,condition_pushdown_for_subquery=on,rowid_filter=on,condition_pushdown_from_having=on,not_null_range_scan=off
+ 
+The manual page at https://mariadb.com/kb/en/how-to-produce-a-full-stack-trace-for-mysqld/ contains
+information that should help you find out what is causing the crash.
+Writing a core file...
+Working directory at /dev/shm/var_auto_N0vd/mysqld.1/data
+Resource Limits:
+Limit                     Soft Limit           Hard Limit           Units     
+Max cpu time              unlimited            unlimited            seconds   
+Max file size             unlimited            unlimited            bytes     
+Max data size             unlimited            unlimited            bytes     
+Max stack size            8388608              unlimited            bytes     
+Max core file size        0                    0                    bytes     
+Max resident set          unlimited            unlimited            bytes     
+Max processes             385884               385884               processes 
+Max open files            1024                 1024                 files     
+Max locked memory         67108864             67108864             bytes     
+Max address space         unlimited            unlimited            bytes     
+Max file locks            unlimited            unlimited            locks     
+Max pending signals       385884               385884               signals   
+Max msgqueue size         819200               819200               bytes     
+Max nice priority         0                    0                    
+Max realtime priority     0                    0                    
+Max realtime timeout      unlimited            unlimited            us        
+Core pattern: |/usr/share/apport/apport %p %s %c %d %P %E

@@ -1,0 +1,61 @@
+==7593==ERROR: AddressSanitizer: use-after-poison on address 0x62b000000431 at pc 0x55e883600c1a bp 0x7f35ee66a4e0 sp 0x7f35ee66a4d8
+READ of size 4 at 0x62b000000431 thread T5
+    #0 0x55e883600c19 in my_convert /data/src/10.3/strings/ctype.c:1109
+    #1 0x55e8824e5ec8 in copy_and_convert(char*, unsigned long, charset_info_st const*, char const*, unsigned long, charset_info_st const*, unsigned int*) /data/src/10.3/sql/sql_string.h:44
+    #2 0x55e8824e5ec8 in sql_strmake_with_convert(THD*, char const*, unsigned long, charset_info_st const*, unsigned long, charset_info_st const*, unsigned long*) /data/src/10.3/sql/thr_malloc.cc:92
+    #3 0x55e88282f1ff in Item::set_name(THD*, char const*, unsigned long, charset_info_st const*) /data/src/10.3/sql/item.cc:1268
+    #4 0x55e8826fa329 in MYSQLparse(THD*) /data/src/10.3/sql/sql_yacc.yy:13668
+    #5 0x55e8822cc03c in parse_sql(THD*, Parser_state*, Object_creation_ctx*, bool) /data/src/10.3/sql/sql_parse.cc:10095
+    #6 0x55e8822e32af in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /data/src/10.3/sql/sql_parse.cc:7771
+    #7 0x55e8822e77ba in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /data/src/10.3/sql/sql_parse.cc:1856
+    #8 0x55e8822eb82c in do_command(THD*) /data/src/10.3/sql/sql_parse.cc:1401
+    #9 0x55e88254524f in do_handle_one_connection(CONNECT*) /data/src/10.3/sql/sql_connect.cc:1403
+    #10 0x55e88254567a in handle_one_connection /data/src/10.3/sql/sql_connect.cc:1308
+    #11 0x55e8834ca5e3 in pfs_spawn_thread /data/src/10.3/storage/perfschema/pfs.cc:1869
+    #12 0x7f35fa3a94a3 in start_thread (/lib/x86_64-linux-gnu/libpthread.so.0+0x74a3)
+    #13 0x7f35f84ddd0e in __clone (/lib/x86_64-linux-gnu/libc.so.6+0xe8d0e)
+ 
+0x62b000000431 is located 561 bytes inside of 24608-byte region [0x62b000000200,0x62b000006220)
+allocated by thread T5 here:
+    #0 0x7f35fa680d28 in malloc (/usr/lib/x86_64-linux-gnu/libasan.so.3+0xc1d28)
+    #1 0x55e883580e4c in my_malloc /data/src/10.3/mysys/my_malloc.c:101
+ 
+Thread T5 created by T0 here:
+    #0 0x7f35fa5eff59 in __interceptor_pthread_create (/usr/lib/x86_64-linux-gnu/libasan.so.3+0x30f59)
+    #1 0x55e8834d2862 in spawn_thread_v1 /data/src/10.3/storage/perfschema/pfs.cc:1919
+ 
+SUMMARY: AddressSanitizer: use-after-poison /data/src/10.3/strings/ctype.c:1109 in my_convert
+Shadow bytes around the buggy address:
+  0x0c567fff8030: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c567fff8040: 00 00 00 00 f7 00 00 f7 00 00 05 f7 00 05 f7 00
+  0x0c567fff8050: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c567fff8060: 00 00 00 00 00 00 00 00 00 00 00 00 00 f7 05 f7
+  0x0c567fff8070: 01 f7 00 02 f7 00 00 00 00 00 00 00 00 00 00 00
+=>0x0c567fff8080: 00 00 00 f7 00 00[02]f7 00 00 f7 00 00 00 f7 00
+  0x0c567fff8090: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f7
+  0x0c567fff80a0: 00 00 f7 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c567fff80b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c567fff80c0: 00 00 00 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+  0x0c567fff80d0: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Heap right redzone:      fb
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack partial redzone:   f4
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==7593==ABORTING

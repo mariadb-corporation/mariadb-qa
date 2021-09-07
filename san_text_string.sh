@@ -1,9 +1,13 @@
 #!/bin/bash
-#Created by Roel Van de Paar, MariaDB
+# Created by Roel Van de Paar, MariaDB
 
 # This script generates a unique ID for all ASAN, TSAN and UBSAN errors seen in a mysqld error log
 # ${1}: First input, only option, point to mysqld error log directly, or to a basedir which contains ./log/master.err
 #       If the option is not specified, the script will attempt to look in ${PWD}/log/master.err and ${PWD}/master.err
+
+# To 1) aid automation, and as 2) subsequent errors may be the result of former ones, and as 3) subsequent errors may
+# be standalone errors which can (and likely will, provided the random spread is wide enough) show in other test trials,
+# the script will output only the first issue detected (whetter it be ASAN, TSAN or UBSAN). 
 
 set +H
 PROFILING=0  # Set to 1 to profile Bash to /tmp/bashstart.$$.log (slows down script by a factor of 10x)
@@ -67,7 +71,7 @@ if [ -z "${ERROR_LOG}" -o ! -r "${ERROR_LOG}" ]; then
 fi
 
 # Error log verification
-ERROR_LOG_LINES="$(cat "${ERROR_LOG}" 2>/dev/null | wc -l)"  # cat provides streamlined 0-reporting
+ERROR_LOG_LINES="$(cat "${ERROR_LOG}" 2>/dev/null | wc -l)"  # cat provides streamlined 0-line reporting
 if [ -z "${ERROR_LOG_LINES}" ]; then
   echo "Assert: an attempt to count the number of lines in ${ERROR_LOG} has yielded and empty result."
   exit 1
@@ -114,31 +118,58 @@ fi
 # Error log scanning & parsing
 FLAG_ASAN_IN_PROGRESS=0; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=0
 FLAG_ASAN_READY=0; FLAG_TSAN_READY=0; FLAG_UBSAN_READY=0
+ASAN_FRAME1=; ASAN_FRAME2=; ASAN_FRAME3=; ASAN_FRAME4=
 UBSAN_FRAME1=; UBSAN_FRAME2=; UBSAN_FRAME3=; UBSAN_FRAME4=
+ASAN_ERROR=;TSAN_ERROR=;UBSAN_ERROR=;
+ASAN_FILE_PREPARSE=;TSAN_FILE_PREPARSE=;UBSAN_FILE_PREPARSE=
 LINE_COUNTER=0
+
+asan_file_preparse(){
+  ASAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|.* \([^ ]\+\)$|\1|;s|:[0-9]\+$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;')"  # Drop path prefix (build directory), leaving only relevant part for MD/MS
+  if [[ "${ASAN_FILE_PREPARSE}" == "("*")" ]]; then
+    # The location is a non-resolved maridbd/mysqld location (i.e. /bin/mariadbd+0x81e8edf), and not helpful - get it from the next frame
+    ASAN_FILE_PREPARSE=''
+  fi
+}
+
 while IFS=$'\n' read LINE; do
   LINE_COUNTER=$[ ${LINE_COUNTER} + 1 ]
-  if [[ "${LINE}" == *"=ERROR:"* ]]; then  # ASAN Issue detected, and commencing
-    flag_ready_check
-    FLAG_ASAN_IN_PROGRESS=1; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=0
-    
-    
-  fi
-
-  if [[ "${LINE}" == *"ThreadSanitizer:"* ]]; then  # TSAN Issue detected, and commencing
-    flag_ready_check
-    FLAG_ASAN_IN_PROGRESS=0; FLAG_TSAN_IN_PROGRESS=1; FLAG_UBSAN_IN_PROGRESS=0
-
-    
-  fi
-
   # ------------- ASAN Issue check (if present) -------------
   if [ ${FLAG_ASAN_PRESENT} -eq 1 ]; then
-    sleep 0
+    if [[ "${LINE}" == *"=ERROR:"* ]]; then  # ASAN Issue detected, and commencing
+      flag_ready_check
+      FLAG_ASAN_IN_PROGRESS=1; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=0
+      ASAN_FRAME1=; ASAN_FRAME2=; ASAN_FRAME3=; ASAN_FRAME4=
+      ASAN_ERROR="$(echo "${LINE}" | sed 's|.*ERROR:[ ]||;s| on address.*||')"
+    fi
+    if [ "${FLAG_ASAN_IN_PROGRESS}" -eq 1 ]; then
+      # Parse first 4 stack frames if discovered in current line
+      if [[ "${LINE}" == *"#0 0x"* ]]; then
+        ASAN_FRAME1="$(echo "${LINE}" | sed 's|^[^i]\+in[ ]\+||;s|(.*)||g;s|[ ]\+.*||')"
+        asan_file_preparse
+      fi
+      if [[ "${LINE}" == *" #1 0x"* ]]; then
+        ASAN_FRAME2="$(echo "${LINE}" | sed 's|^[^i]\+in[ ]\+||;s|(.*)||g;s|[ ]\+.*||')"
+        asan_file_preparse
+      fi
+      if [[ "${LINE}" == *" #2 0x"* ]]; then
+        ASAN_FRAME3="$(echo "${LINE}" | sed 's|^[^i]\+in[ ]\+||;s|(.*)||g;s|[ ]\+.*||')"
+        asan_file_preparse
+      fi
+      if [[ "${LINE}" == *" #3 0x"* ]]; then
+        ASAN_FRAME4="$(echo "${LINE}" | sed 's|^[^i]\+in[ ]\+||;s|(.*)||g;s|[ ]\+.*||')"
+        asan_file_preparse
+        FLAG_ASAN_IN_PROGRESS=0  # ASAN issues are herewith fully defined
+        FLAG_ASAN_READY=1
+      fi
+    fi
   fi
   # ------------- TSAN Issue check (if present) -------------
   if [ ${FLAG_TSAN_PRESENT} -eq 1 ]; then
-    sleep 0
+    if [[ "${LINE}" == *"ThreadSanitizer:"* ]]; then  # TSAN Issue detected, and commencing
+      flag_ready_check
+      FLAG_ASAN_IN_PROGRESS=0; FLAG_TSAN_IN_PROGRESS=1; FLAG_UBSAN_IN_PROGRESS=0
+    fi
   fi
   # ------------- UBSAN Issue check (if present) -------------
   if [ ${FLAG_UBSAN_PRESENT} -eq 1 ]; then
@@ -180,12 +211,42 @@ while IFS=$'\n' read LINE; do
       FLAG_ASAN_IN_PROGRESS=0; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=0
       FLAG_ASAN_STRING_COMMENCED=0
       UNIQUE_ID=
-      # ...
-      #echo "${UNIQUE_ID}"
-      FLAG_ASAN_READY=0
-      FLAG_ASAN_STRING_COMMENCED=0
-      ASAN_FRAME1=; ASAN_FRAME2=; ASAN_FRAME3=; ASAN_FRAME4=  # Will this be used?
-      UNIQUE_ID=
+      if [ ! -z "${ASAN_FILE_PREPARSE}" ]; then 
+        UNIQUE_ID="${ASAN_FILE_PREPARSE}"
+        FLAG_ASAN_STRING_COMMENCED=1
+      fi
+      if [ ! -z "${ASAN_ERROR}" ]; then
+        if [ "${FLAG_ASAN_STRING_COMMENCED}" -eq 1 ]; then
+          UNIQUE_ID="${UNIQUE_ID}|${ASAN_ERROR}"
+        else
+          UNIQUE_ID="${ASAN_ERROR}"
+          FLAG_ASAN_STRING_COMMENCED=1
+        fi
+      fi
+      if [ ! -z "${ASAN_FRAME1}" ]; then 
+        if [ "${FLAG_ASAN_STRING_COMMENCED}" -eq 1 ]; then
+          UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME1}"
+        else
+          UNIQUE_ID="${ASAN_FRAME1}"
+          FLAG_ASAN_STRING_COMMENCED=1
+        fi
+      else 
+        if [ -z "${UNIQUE_ID}" ]; then
+          echo "Assert: ASAN UNIQUE_ID generation issue"
+          exit 1
+        fi
+      fi
+      if [ ! -z "${ASAN_FRAME2}" ]; then
+       UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME2}" 
+      fi
+      if [ ! -z "${ASAN_FRAME3}" ]; then
+        UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME3}" 
+      fi
+      if [ ! -z "${ASAN_FRAME4}" ]; then
+        UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME4}" 
+      fi
+      echo "${UNIQUE_ID}"
+      exit 0
     fi
   fi
   # ------------- TSAN Issue roundup (if present) -------------
@@ -233,10 +294,7 @@ while IFS=$'\n' read LINE; do
         UNIQUE_ID="${UNIQUE_ID}|${UBSAN_FRAME4}" 
       fi
       echo "${UNIQUE_ID}"
-      FLAG_UBSAN_READY=0
-      FLAG_UBSAN_STRING_COMMENCED=0
-      UBSAN_FRAME1=; UBSAN_FRAME2=; UBSAN_FRAME3=; UBSAN_FRAME4=
-      UNIQUE_ID=
+      exit 0
     fi
   fi
 done < "${ERROR_LOG}"

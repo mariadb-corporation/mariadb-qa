@@ -1,0 +1,23 @@
+echo "---- ASAN Unit tests of san_text_string.sh ----"
+cd 01
+~/mariadb-qa/san_text_string.sh | sed 's|^|01: |'
+cd ../02
+~/mariadb-qa/san_text_string.sh | sed 's|^|02: |'
+cd ../03
+~/mariadb-qa/san_text_string.sh | sed 's|^|03: |'
+cd ../04
+~/mariadb-qa/san_text_string.sh | sed 's|^|04: |'
+cd ../05
+~/mariadb-qa/san_text_string.sh | sed 's|^|05: |'
+cd ../06
+~/mariadb-qa/san_text_string.sh | sed 's|^|06: |'
+cd ../07
+~/mariadb-qa/san_text_string.sh | sed 's|^|07: |'
+cd ../08
+~/mariadb-qa/san_text_string.sh | sed 's|^|08: |'
+cd ../09
+~/mariadb-qa/san_text_string.sh | sed 's|^|09: |'
+cd ../10
+~/mariadb-qa/san_text_string.sh | sed 's|^|10: |'
+cd ../11
+~/mariadb-qa/san_text_string.sh | sed 's|^|11: |'

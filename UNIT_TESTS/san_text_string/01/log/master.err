@@ -1,0 +1,80 @@
+Version: '10.5.4-2-MariaDB-debug-log'  
+==25959==ERROR: AddressSanitizer: use-after-poison on address 0x62b0000a1e5c at pc 0x7f96073fe8f9 bp 0x7f95f11276a0 sp 0x7f95f1126e30
+WRITE of size 10 at 0x62b0000a1e5c thread T13
+    #0 0x7f96073fe8f8 in __interceptor_vsprintf (/usr/lib/x86_64-linux-gnu/libasan.so.4+0x9e8f8)
+    #1 0x7f96073fec86 in __interceptor_sprintf (/usr/lib/x86_64-linux-gnu/libasan.so.4+0x9ec86)
+    #2 0x555817dcd36d in mysql_alter_table(THD*, st_mysql_const_lex_string const*, st_mysql_const_lex_string const*, HA_CREATE_INFO*, TABLE_LIST*, Alter_info*, unsigned int, st_order*, bool, bool) /10.5e/sql/sql_table.cc:10241
+    #3 0x555817ddb41b in mysql_recreate_table(THD*, TABLE_LIST*, bool) /10.5e/sql/sql_table.cc:12006
+    #4 0x555817f85856 in admin_recreate_table /10.5e/sql/sql_admin.cc:58
+    #5 0x555817f8d2b1 in mysql_admin_table /10.5e/sql/sql_admin.cc:1042
+    #6 0x555817f90786 in Sql_cmd_optimize_table::execute(THD*) /10.5e/sql/sql_admin.cc:1408
+    #7 0x555817b37e6d in mysql_execute_command(THD*) /10.5e/sql/sql_parse.cc:5958
+    #8 0x555817b45c09 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /10.5e/sql/sql_parse.cc:8020
+    #9 0x555817b1bf5c in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /10.5e/sql/sql_parse.cc:1874
+    #10 0x555817b18786 in do_command(THD*) /10.5e/sql/sql_parse.cc:1355
+    #11 0x555817f51b14 in do_handle_one_connection(CONNECT*, bool) /10.5e/sql/sql_connect.cc:1411
+    #12 0x555817f5146d in handle_one_connection /10.5e/sql/sql_connect.cc:1313
+    #13 0x555818c20f1c in pfs_spawn_thread /10.5e/storage/perfschema/pfs.cc:2201
+    #14 0x7f960565c6da in start_thread (/lib/x86_64-linux-gnu/libpthread.so.0+0x76da)
+    #15 0x7f9604842a3e in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x121a3e)
+ 
+0x62b0000a1e5c is located 3164 bytes inside of 24740-byte region [0x62b0000a1200,0x62b0000a72a4)
+allocated by thread T13 here:
+    #0 0x7f960743eb40 in __interceptor_malloc (/usr/lib/x86_64-linux-gnu/libasan.so.4+0xdeb40)
+    #1 0x5558198a4632 in sf_malloc /10.5e/mysys/safemalloc.c:118
+    #2 0x5558198720c1 in my_malloc /10.5e/mysys/my_malloc.c:88
+    #3 0x55581984d87e in reset_root_defaults /10.5e/mysys/my_alloc.c:147
+    #4 0x5558179f98c1 in THD::init_for_queries() /10.5e/sql/sql_class.cc:1404
+    #5 0x555817f50d97 in prepare_new_connection_state(THD*) /10.5e/sql/sql_connect.cc:1240
+    #6 0x555817f514e8 in thd_prepare_connection(THD*) /10.5e/sql/sql_connect.cc:1334
+    #7 0x555817f51a3f in do_handle_one_connection(CONNECT*, bool) /10.5e/sql/sql_connect.cc:1401
+    #8 0x555817f5146d in handle_one_connection /10.5e/sql/sql_connect.cc:1313
+    #9 0x555818c20f1c in pfs_spawn_thread /10.5e/storage/perfschema/pfs.cc:2201
+    #10 0x7f960565c6da in start_thread (/lib/x86_64-linux-gnu/libpthread.so.0+0x76da)
+ 
+Thread T13 created by T0 here:
+    #0 0x7f9607397d2f in __interceptor_pthread_create (/usr/lib/x86_64-linux-gnu/libasan.so.4+0x37d2f)
+    #1 0x555818c1bc6e in my_thread_create /10.5e/storage/perfschema/my_thread.h:34
+    #2 0x555818c2130b in pfs_spawn_thread_v1 /10.5e/storage/perfschema/pfs.cc:2252
+    #3 0x55581781bf6c in inline_mysql_thread_create /10.5e/include/mysql/psi/mysql_thread.h:1321
+    #4 0x555817831766 in create_thread_to_handle_connection(CONNECT*) /10.5e/sql/mysqld.cc:6035
+    #5 0x555817831dc7 in create_new_thread(CONNECT*) /10.5e/sql/mysqld.cc:6094
+    #6 0x5558178320ed in handle_accepted_socket(st_mysql_socket, st_mysql_socket) /10.5e/sql/mysqld.cc:6159
+    #7 0x555817832c1b in handle_connections_sockets() /10.5e/sql/mysqld.cc:6286
+    #8 0x555817830fae in mysqld_main(int, char**) /10.5e/sql/mysqld.cc:5704
+    #9 0x55581781a699 in main /10.5e/sql/main.cc:25
+    #10 0x7f9604742b96 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x21b96)
+ 
+SUMMARY: AddressSanitizer: use-after-poison (/usr/lib/x86_64-linux-gnu/libasan.so.4+0x9e8f8) in __interceptor_vsprintf
+Shadow bytes around the buggy address:
+  0x0c568000c370: 00 00 00 00 00 00 00 00 00 00 00 00 f7 03 f7 00
+  0x0c568000c380: 00 f7 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c568000c390: 00 00 00 00 f7 00 01 f7 00 00 f7 00 00 00 00 00
+  0x0c568000c3a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 f7 00 01
+  0x0c568000c3b0: f7 00 00 f7 00 00 00 00 f7 00 f7 00 00 00 00 00
+=>0x0c568000c3c0: f7 00 00 00 00 00 00 00 00 04 f7[04]f7 f7 f7 f7
+  0x0c568000c3d0: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+  0x0c568000c3e0: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+  0x0c568000c3f0: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+  0x0c568000c400: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+  0x0c568000c410: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==25959==ABORTING

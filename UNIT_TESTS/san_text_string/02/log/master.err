@@ -1,0 +1,127 @@
+==25641==ERROR: AddressSanitizer: heap-use-after-free on address 0x61200002f058 at pc 0x56293037c50b bp 0x7f781de6aa70 sp 0x7f781de6aa68
+READ of size 8 at 0x61200002f058 thread T5
+    #0 0x56293037c50a in _ma_record_pos /10.5/storage/maria/ma_range.c:195
+    #1 0x56293037bc77 in maria_records_in_range /10.5/storage/maria/ma_range.c:104
+    #2 0x562930203a82 in ha_maria::records_in_range(unsigned int, st_key_range const*, st_key_range const*, st_page_range*) /10.5/storage/maria/ha_maria.cc:3323
+    #3 0x56292eda8fa7 in handler::multi_range_read_info_const(unsigned int, st_range_seq_if*, void*, unsigned int, unsigned int*, unsigned int*, Cost_estimate*) /10.5/sql/multi_range_read.cc:177
+    #4 0x56292edb4d45 in DsMrr_impl::dsmrr_info_const(unsigned int, st_range_seq_if*, void*, unsigned int, unsigned int*, unsigned int*, Cost_estimate*) /10.5/sql/multi_range_read.cc:1708
+    #5 0x562930207947 in ha_maria::multi_range_read_info_const(unsigned int, st_range_seq_if*, void*, unsigned int, unsigned int*, unsigned int*, Cost_estimate*) /10.5/storage/maria/ha_maria.cc:3986
+    #6 0x56292f48c784 in check_quick_select /10.5/sql/opt_range.cc:11113
+    #7 0x56292f473c6b in get_key_scans_params /10.5/sql/opt_range.cc:7400
+    #8 0x56292f4575e3 in SQL_SELECT::test_quick_select(THD*, Bitmap<64u>, unsigned long long, unsigned long long, bool, bool, bool, bool) /10.5/sql/opt_range.cc:2897
+    #9 0x56292ea17000 in test_if_quick_select /10.5/sql/sql_select.cc:21499
+    #10 0x56292ea16aa3 in join_init_quick_read_record /10.5/sql/sql_select.cc:21469
+    #11 0x56292ea10ab1 in sub_select(JOIN*, st_join_table*, bool) /10.5/sql/sql_select.cc:20601
+    #12 0x56292ea122d1 in evaluate_join_record /10.5/sql/sql_select.cc:20827
+    #13 0x56292ea10c6c in sub_select(JOIN*, st_join_table*, bool) /10.5/sql/sql_select.cc:20604
+    #14 0x56292ea0ecfa in do_select /10.5/sql/sql_select.cc:20138
+    #15 0x56292e99cf13 in JOIN::exec_inner() /10.5/sql/sql_select.cc:4463
+    #16 0x56292e99a565 in JOIN::exec() /10.5/sql/sql_select.cc:4244
+    #17 0x56292e99e47a in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /10.5/sql/sql_select.cc:4668
+    #18 0x56292e9707a9 in handle_select(THD*, LEX*, select_result*, unsigned long) /10.5/sql/sql_select.cc:417
+    #19 0x56292e8e2790 in execute_sqlcom_select /10.5/sql/sql_parse.cc:6168
+    #20 0x56292e8d0bb2 in mysql_execute_command(THD*) /10.5/sql/sql_parse.cc:3901
+    #21 0x56292e8ed7de in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /10.5/sql/sql_parse.cc:7953
+    #22 0x56292e8c35d8 in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /10.5/sql/sql_parse.cc:1839
+    #23 0x56292e8c000d in do_command(THD*) /10.5/sql/sql_parse.cc:1358
+    #24 0x56292ecdbe90 in do_handle_one_connection(CONNECT*, bool) /10.5/sql/sql_connect.cc:1422
+    #25 0x56292ecdb72b in handle_one_connection /10.5/sql/sql_connect.cc:1319
+    #26 0x56292f7125b9 in pfs_spawn_thread /10.5/storage/perfschema/pfs.cc:2201
+    #27 0x7f782a102fa2 in start_thread /build/glibc-vjB4T1/glibc-2.28/nptl/pthread_create.c:486
+    #28 0x7f78294f74ce in clone (/lib/x86_64-linux-gnu/libc.so.6+0xf94ce)
+ 
+0x61200002f058 is located 152 bytes inside of 276-byte region [0x61200002efc0,0x61200002f0d4)
+freed by thread T5 here:
+    #0 0x7f782a204fb0 in __interceptor_free (/usr/lib/x86_64-linux-gnu/libasan.so.5+0xe8fb0)
+    #1 0x562930613472 in free_memory /10.5/mysys/safemalloc.c:279
+    #2 0x562930612a9f in sf_free /10.5/mysys/safemalloc.c:197
+    #3 0x5629305e1bfc in my_free /10.5/mysys/my_malloc.c:209
+    #4 0x5629301c1d3a in _ma_remove_table_from_trnman /10.5/storage/maria/ma_state.c:594
+    #5 0x5629302c53c1 in maria_extra /10.5/storage/maria/ma_extra.c:410
+    #6 0x5629301ff1b5 in ha_maria::extra(ha_extra_function) /10.5/storage/maria/ha_maria.cc:2646
+    #7 0x56292e76508b in close_system_tables(THD*, Open_tables_backup*) /10.5/sql/sql_base.cc:9075
+    #8 0x56292f5863be in Event_db_repository::fill_schema_events(THD*, TABLE_LIST*, char const*) /10.5/sql/event_db_repository.cc:569
+    #9 0x56292ec71035 in Events::fill_schema_events(THD*, TABLE_LIST*, Item*) /10.5/sql/events.cc:846
+    #10 0x56292eac31e1 in get_schema_tables_result(JOIN*, enum_schema_table_state) /10.5/sql/sql_show.cc:8636
+    #11 0x56292e99c67a in JOIN::exec_inner() /10.5/sql/sql_select.cc:4420
+    #12 0x56292e99a565 in JOIN::exec() /10.5/sql/sql_select.cc:4244
+    #13 0x56292e99e47a in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /10.5/sql/sql_select.cc:4668
+    #14 0x56292e9707a9 in handle_select(THD*, LEX*, select_result*, unsigned long) /10.5/sql/sql_select.cc:417
+    #15 0x56292e8e2790 in execute_sqlcom_select /10.5/sql/sql_parse.cc:6168
+    #16 0x56292e8d0bb2 in mysql_execute_command(THD*) /10.5/sql/sql_parse.cc:3901
+    #17 0x56292e8ed7de in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /10.5/sql/sql_parse.cc:7953
+    #18 0x56292e8c35d8 in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /10.5/sql/sql_parse.cc:1839
+    #19 0x56292e8c000d in do_command(THD*) /10.5/sql/sql_parse.cc:1358
+    #20 0x56292ecdbe90 in do_handle_one_connection(CONNECT*, bool) /10.5/sql/sql_connect.cc:1422
+    #21 0x56292ecdb72b in handle_one_connection /10.5/sql/sql_connect.cc:1319
+    #22 0x56292f7125b9 in pfs_spawn_thread /10.5/storage/perfschema/pfs.cc:2201
+    #23 0x7f782a102fa2 in start_thread /build/glibc-vjB4T1/glibc-2.28/nptl/pthread_create.c:486
+ 
+previously allocated by thread T5 here:
+    #0 0x7f782a205330 in __interceptor_malloc (/usr/lib/x86_64-linux-gnu/libasan.so.5+0xe9330)
+    #1 0x562930612484 in sf_malloc /10.5/mysys/safemalloc.c:118
+    #2 0x5629305e0e4d in my_malloc /10.5/mysys/my_malloc.c:88
+    #3 0x5629301be4b1 in _ma_setup_live_state /10.5/storage/maria/ma_state.c:82
+    #4 0x5629301c2520 in _ma_block_start_trans /10.5/storage/maria/ma_state.c:664
+    #5 0x5629305fa13e in thr_multi_lock /10.5/mysys/thr_lock.c:1318
+    #6 0x56292f39f9b6 in mysql_lock_tables(THD*, st_mysql_lock*, unsigned int) /10.5/sql/lock.cc:348
+    #7 0x56292f39f557 in mysql_lock_tables(THD*, TABLE**, unsigned int, unsigned int) /10.5/sql/lock.cc:300
+    #8 0x56292e74e091 in lock_tables(THD*, TABLE_LIST*, unsigned int, unsigned int) /10.5/sql/sql_base.cc:5497
+    #9 0x56292e74c283 in open_and_lock_tables(THD*, DDL_options_st const&, TABLE_LIST*, bool, unsigned int, Prelocking_strategy*) /10.5/sql/sql_base.cc:5217
+    #10 0x56292e6a7e24 in open_and_lock_tables(THD*, TABLE_LIST*, bool, unsigned int) /10.5/sql/sql_base.h:509
+    #11 0x56292e8e1d08 in execute_sqlcom_select /10.5/sql/sql_parse.cc:6089
+    #12 0x56292e8d0bb2 in mysql_execute_command(THD*) /10.5/sql/sql_parse.cc:3901
+    #13 0x56292e8ed7de in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /10.5/sql/sql_parse.cc:7953
+    #14 0x56292e8c35d8 in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /10.5/sql/sql_parse.cc:1839
+    #15 0x56292e8c000d in do_command(THD*) /10.5/sql/sql_parse.cc:1358
+    #16 0x56292ecdbe90 in do_handle_one_connection(CONNECT*, bool) /10.5/sql/sql_connect.cc:1422
+    #17 0x56292ecdb72b in handle_one_connection /10.5/sql/sql_connect.cc:1319
+    #18 0x56292f7125b9 in pfs_spawn_thread /10.5/storage/perfschema/pfs.cc:2201
+    #19 0x7f782a102fa2 in start_thread /build/glibc-vjB4T1/glibc-2.28/nptl/pthread_create.c:486
+ 
+Thread T5 created by T0 here:
+    #0 0x7f782a16cdb0 in __interceptor_pthread_create (/usr/lib/x86_64-linux-gnu/libasan.so.5+0x50db0)
+    #1 0x56292f70d4b0 in my_thread_create /10.5/storage/perfschema/my_thread.h:34
+    #2 0x56292f7129a8 in pfs_spawn_thread_v1 /10.5/storage/perfschema/pfs.cc:2252
+    #3 0x56292e5cd18a in inline_mysql_thread_create /10.5/include/mysql/psi/mysql_thread.h:1321
+    #4 0x56292e5e3371 in create_thread_to_handle_connection(CONNECT*) /10.5/sql/mysqld.cc:6113
+    #5 0x56292e5e39df in create_new_thread(CONNECT*) /10.5/sql/mysqld.cc:6172
+    #6 0x56292e5e3d43 in handle_accepted_socket(st_mysql_socket, st_mysql_socket) /10.5/sql/mysqld.cc:6237
+    #7 0x56292e5e4982 in handle_connections_sockets() /10.5/sql/mysqld.cc:6364
+    #8 0x56292e5e2b24 in mysqld_main(int, char**) /10.5/sql/mysqld.cc:5772
+    #9 0x56292e5cb954 in main /10.5/sql/main.cc:25
+    #10 0x7f782942209a in __libc_start_main ../csu/libc-start.c:308
+ 
+SUMMARY: AddressSanitizer: heap-use-after-free /10.5/storage/maria/ma_range.c:195 in _ma_record_pos
+Shadow bytes around the buggy address:
+  0x0c247fffddb0: fd fd fd fd fd fd fd fd fd fd fd fa fa fa fa fa
+  0x0c247fffddc0: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  0x0c247fffddd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c247fffdde0: 00 00 00 00 00 00 00 00 00 00 00 04 fa fa fa fa
+  0x0c247fffddf0: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
+=>0x0c247fffde00: fd fd fd fd fd fd fd fd fd fd fd[fd]fd fd fd fd
+  0x0c247fffde10: fd fd fd fd fd fd fd fd fd fd fd fa fa fa fa fa
+  0x0c247fffde20: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  0x0c247fffde30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c247fffde40: 00 00 00 00 00 00 00 00 00 00 00 04 fa fa fa fa
+  0x0c247fffde50: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==25641==ABORTING

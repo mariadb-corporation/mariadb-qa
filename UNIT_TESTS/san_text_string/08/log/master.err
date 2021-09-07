@@ -1,0 +1,210 @@
+==1096074==ERROR: AddressSanitizer: use-after-poison on address 0x6210000d5ed0 at pc 0x7f2506a40d00 bp 0x7f24f6f9c260 sp 0x7f24f6f9ba08
+READ of size 16 at 0x6210000d5ed0 thread T13
+    #0 0x7f2506a40cff  (/lib/x86_64-linux-gnu/libasan.so.5+0xdacff)
+    #1 0x55849d9c0d03 in cmp_data(unsigned long, unsigned long, unsigned char const*, unsigned long, unsigned char const*, unsigned long) /data/src/10.5/storage/innobase/rem/rem0cmp.cc:322
+    #2 0x55849d9bcc3d in cmp_dtuple_rec_with_match_low(dtuple_t const*, unsigned char const*, unsigned short const*, unsigned long, unsigned long*) /data/src/10.5/storage/innobase/rem/rem0cmp.cc:457
+    #3 0x55849d941f37 in page_cur_search_with_match(buf_block_t const*, dict_index_t const*, dtuple_t const*, page_cur_mode_t, unsigned long*, unsigned long*, page_cur_t*, rtr_info*) /data/src/10.5/storage/innobase/page/page0cur.cc:452
+    #4 0x55849dcadd03 in btr_cur_search_to_nth_level_func(dict_index_t*, unsigned long, dtuple_t const*, page_cur_mode_t, unsigned long, btr_cur_t*, rw_lock_t*, char const*, unsigned int, mtr_t*, unsigned long) /data/src/10.5/storage/innobase/btr/btr0cur.cc:1991
+    #5 0x55849daf2859 in btr_pcur_open_with_no_init_func /data/src/10.5/storage/innobase/include/btr0pcur.ic:504
+    #6 0x55849db0e5da in row_search_mvcc(unsigned char*, page_cur_mode_t, row_prebuilt_t*, unsigned long, unsigned long) /data/src/10.5/storage/innobase/row/row0sel.cc:4661
+    #7 0x55849d6e3ecb in ha_innobase::index_read(unsigned char*, unsigned char const*, unsigned int, ha_rkey_function) /data/src/10.5/storage/innobase/handler/ha_innodb.cc:8774
+    #8 0x55849cbe0396 in handler::index_read_map(unsigned char*, unsigned char const*, unsigned long, ha_rkey_function) /data/src/10.5/sql/handler.h:3798
+    #9 0x55849cbb0237 in handler::ha_index_read_map(unsigned char*, unsigned char const*, unsigned long, ha_rkey_function) /data/src/10.5/sql/handler.cc:3124
+    #10 0x55849cbcb1a5 in handler::read_range_first(st_key_range const*, st_key_range const*, bool, bool) /data/src/10.5/sql/handler.cc:6199
+    #11 0x55849cfd65e8 in QUICK_RANGE_SELECT::get_next_prefix(unsigned int, unsigned int, unsigned char*) /data/src/10.5/sql/opt_range.cc:12699
+    #12 0x55849cfe9c5e in QUICK_GROUP_MIN_MAX_SELECT::next_prefix() /data/src/10.5/sql/opt_range.cc:15530
+    #13 0x55849cfe8363 in QUICK_GROUP_MIN_MAX_SELECT::get_next() /data/src/10.5/sql/opt_range.cc:15272
+    #14 0x55849d00ad4b in rr_quick /data/src/10.5/sql/records.cc:403
+    #15 0x55849c1da7dd in READ_RECORD::read_record() /data/src/10.5/sql/records.h:80
+    #16 0x55849c4eb7b1 in join_init_read_record(st_join_table*) /data/src/10.5/sql/sql_select.cc:21632
+    #17 0x55849c4e4a9a in sub_select(JOIN*, st_join_table*, bool) /data/src/10.5/sql/sql_select.cc:20684
+    #18 0x55849c4e2d7d in do_select /data/src/10.5/sql/sql_select.cc:20221
+    #19 0x55849c46f634 in JOIN::exec_inner() /data/src/10.5/sql/sql_select.cc:4467
+    #20 0x55849c46cc1f in JOIN::exec() /data/src/10.5/sql/sql_select.cc:4247
+    #21 0x55849c470ff3 in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /data/src/10.5/sql/sql_select.cc:4720
+    #22 0x55849c442831 in handle_select(THD*, LEX*, select_result*, unsigned long) /data/src/10.5/sql/sql_select.cc:417
+    #23 0x55849c3abf9f in execute_sqlcom_select /data/src/10.5/sql/sql_parse.cc:6282
+    #24 0x55849c39ae9a in mysql_execute_command(THD*) /data/src/10.5/sql/sql_parse.cc:3978
+    #25 0x55849c3b7299 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /data/src/10.5/sql/sql_parse.cc:8063
+    #26 0x55849c38d492 in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /data/src/10.5/sql/sql_parse.cc:1889
+    #27 0x55849c389dbb in do_command(THD*) /data/src/10.5/sql/sql_parse.cc:1370
+    #28 0x55849c7cc657 in do_handle_one_connection(CONNECT*, bool) /data/src/10.5/sql/sql_connect.cc:1410
+    #29 0x55849c7cbfbb in handle_one_connection /data/src/10.5/sql/sql_connect.cc:1312
+    #30 0x55849d4dbb72 in pfs_spawn_thread /data/src/10.5/storage/perfschema/pfs.cc:2201
+    #31 0x7f2506523608 in start_thread /build/glibc-eX1tMB/glibc-2.31/nptl/pthread_create.c:477
+    #32 0x7f25060f7292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+ 
+0x6210000d5ed0 is located 464 bytes inside of 4196-byte region [0x6210000d5d00,0x6210000d6d64)
+allocated by thread T13 here:
+    #0 0x7f2506a73bc8 in malloc (/lib/x86_64-linux-gnu/libasan.so.5+0x10dbc8)
+    #1 0x55849e17e0f9 in sf_malloc /data/src/10.5/mysys/safemalloc.c:121
+    #2 0x55849e14b20e in my_malloc /data/src/10.5/mysys/my_malloc.c:90
+    #3 0x55849e126fc2 in alloc_root /data/src/10.5/mysys/my_alloc.c:244
+    #4 0x55849cfe5ac8 in QUICK_GROUP_MIN_MAX_SELECT::init() /data/src/10.5/sql/opt_range.cc:14930
+    #5 0x55849cfe4915 in TRP_GROUP_MIN_MAX::make_quick(PARAM*, bool, st_mem_root*) /data/src/10.5/sql/opt_range.cc:14771
+    #6 0x55849cf940b0 in SQL_SELECT::test_quick_select(THD*, Bitmap<64u>, unsigned long long, unsigned long long, bool, bool, bool, bool) /data/src/10.5/sql/opt_range.cc:3054
+    #7 0x55849c4716f9 in get_quick_record_count /data/src/10.5/sql/sql_select.cc:4764
+    #8 0x55849c478650 in make_join_statistics /data/src/10.5/sql/sql_select.cc:5495
+    #9 0x55849c457127 in JOIN::optimize_inner() /data/src/10.5/sql/sql_select.cc:2256
+    #10 0x55849c450607 in JOIN::optimize() /data/src/10.5/sql/sql_select.cc:1628
+    #11 0x55849c470dfe in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /data/src/10.5/sql/sql_select.cc:4706
+    #12 0x55849c442831 in handle_select(THD*, LEX*, select_result*, unsigned long) /data/src/10.5/sql/sql_select.cc:417
+    #13 0x55849c3abf9f in execute_sqlcom_select /data/src/10.5/sql/sql_parse.cc:6282
+    #14 0x55849c39ae9a in mysql_execute_command(THD*) /data/src/10.5/sql/sql_parse.cc:3978
+    #15 0x55849c3b7299 in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /data/src/10.5/sql/sql_parse.cc:8063
+    #16 0x55849c38d492 in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /data/src/10.5/sql/sql_parse.cc:1889
+    #17 0x55849c389dbb in do_command(THD*) /data/src/10.5/sql/sql_parse.cc:1370
+    #18 0x55849c7cc657 in do_handle_one_connection(CONNECT*, bool) /data/src/10.5/sql/sql_connect.cc:1410
+    #19 0x55849c7cbfbb in handle_one_connection /data/src/10.5/sql/sql_connect.cc:1312
+    #20 0x55849d4dbb72 in pfs_spawn_thread /data/src/10.5/storage/perfschema/pfs.cc:2201
+    #21 0x7f2506523608 in start_thread /build/glibc-eX1tMB/glibc-2.31/nptl/pthread_create.c:477
+ 
+Thread T13 created by T0 here:
+    #0 0x7f25069a0805 in pthread_create (/lib/x86_64-linux-gnu/libasan.so.5+0x3a805)
+    #1 0x55849d4d6b16 in my_thread_create /data/src/10.5/storage/perfschema/my_thread.h:38
+    #2 0x55849d4dbf65 in pfs_spawn_thread_v1 /data/src/10.5/storage/perfschema/pfs.cc:2252
+    #3 0x55849c07e432 in inline_mysql_thread_create /data/src/10.5/include/mysql/psi/mysql_thread.h:1323
+    #4 0x55849c094222 in create_thread_to_handle_connection(CONNECT*) /data/src/10.5/sql/mysqld.cc:6012
+    #5 0x55849c0948a1 in create_new_thread(CONNECT*) /data/src/10.5/sql/mysqld.cc:6071
+    #6 0x55849c094bfe in handle_accepted_socket(st_mysql_socket, st_mysql_socket) /data/src/10.5/sql/mysqld.cc:6136
+    #7 0x55849c09581d in handle_connections_sockets() /data/src/10.5/sql/mysqld.cc:6263
+    #8 0x55849c093a2f in mysqld_main(int, char**) /data/src/10.5/sql/mysqld.cc:5658
+    #9 0x55849c07cefc in main /data/src/10.5/sql/main.cc:25
+    #10 0x7f2505ffc0b2 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x270b2)
+ 
+SUMMARY: AddressSanitizer: use-after-poison (/lib/x86_64-linux-gnu/libasan.so.5+0xdacff) 
+Shadow bytes around the buggy address:
+  0x0c4280012b80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c4280012b90: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c4280012ba0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c4280012bb0: 00 00 00 00 f7 00 00 05 f7 00 00 00 04 f7 07 f7
+  0x0c4280012bc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x0c4280012bd0: f7 04 f7 00 00 00 00 00 f7 00[f7]00 f7 00 00 00
+  0x0c4280012be0: 00 00 00 00 00 00 00 00 00 f7 f7 f7 f7 f7 f7 f7
+  0x0c4280012bf0: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+  0x0c4280012c00: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+  0x0c4280012c10: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+  0x0c4280012c20: f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7 f7
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+  Shadow gap:              cc
+==1096074==ABORTING
+210304 21:33:59 [ERROR] mysqld got signal 6 ;
+This could be because you hit a bug. It is also possible that this binary
+or one of the libraries it was linked against is corrupt, improperly built,
+or misconfigured. This error can also be caused by malfunctioning hardware.
+ 
+To report this bug, see https://mariadb.com/kb/en/reporting-bugs
+ 
+We will try our best to scrape up some info that will hopefully help
+diagnose the problem, but since we have already crashed, 
+something is definitely wrong and this may fail.
+ 
+Server version: 10.5.10-MariaDB-debug-log
+key_buffer_size=1048576
+read_buffer_size=131072
+max_used_connections=1
+max_threads=153
+thread_count=1
+It is possible that mysqld could use up to 
+key_buffer_size + (read_buffer_size + sort_buffer_size)*max_threads = 63744 K  bytes of memory
+Hope that's ok; if not, decrease some variables in the equation.
+ 
+Thread pointer: 0x62b00009a288
+Attempting backtrace. You can use the following information to find out
+where mysqld died. If you see no messages after this, something went
+terribly wrong...
+stack_bottom = 0x7f24f6fa2950 thread_stack 0x5fc00
+??:0(__interceptor_tcgetattr)[0x7f25069d2d30]
+mysys/stacktrace.c:212(my_print_stacktrace)[0x55849e15b856]
+sql/signal_handler.cc:212(handle_fatal_signal)[0x55849cb948cb]
+sigaction.c:0(__restore_rt)[0x7f250652f3c0]
+??:0(gsignal)[0x7f250601b18b]
+??:0(abort)[0x7f2505ffa859]
+??:0(__sanitizer_set_report_fd)[0x7f2506a916a2]
+??:0(__sanitizer_get_module_and_offset_for_pc)[0x7f2506a9c24c]
+??:0(__sanitizer_ptr_cmp)[0x7f2506a7d8ec]
+??:0(__asan_on_error)[0x7f2506a7d363]
+??:0(__sanitizer_weak_hook_memcmp)[0x7f2506a40d1f]
+rem/rem0cmp.cc:322(cmp_data(unsigned long, unsigned long, unsigned char const*, unsigned long, unsigned char const*, unsigned long))[0x55849d9c0d04]
+rem/rem0cmp.cc:457(cmp_dtuple_rec_with_match_low(dtuple_t const*, unsigned char const*, unsigned short const*, unsigned long, unsigned long*))[0x55849d9bcc3e]
+page/page0cur.cc:452(page_cur_search_with_match(buf_block_t const*, dict_index_t const*, dtuple_t const*, page_cur_mode_t, unsigned long*, unsigned long*, page_cur_t*, rtr_info*))[0x55849d941f38]
+btr/btr0cur.cc:1991(btr_cur_search_to_nth_level_func(dict_index_t*, unsigned long, dtuple_t const*, page_cur_mode_t, unsigned long, btr_cur_t*, rw_lock_t*, char const*, unsigned int, mtr_t*, unsigned long))[0x55849dcadd04]
+include/btr0pcur.ic:504(btr_pcur_open_with_no_init_func(dict_index_t*, dtuple_t const*, page_cur_mode_t, unsigned long, btr_pcur_t*, rw_lock_t*, char const*, unsigned int, mtr_t*))[0x55849daf285a]
+row/row0sel.cc:4661(row_search_mvcc(unsigned char*, page_cur_mode_t, row_prebuilt_t*, unsigned long, unsigned long))[0x55849db0e5db]
+handler/ha_innodb.cc:8774(ha_innobase::index_read(unsigned char*, unsigned char const*, unsigned int, ha_rkey_function))[0x55849d6e3ecc]
+sql/handler.h:3799(handler::index_read_map(unsigned char*, unsigned char const*, unsigned long, ha_rkey_function))[0x55849cbe0397]
+sql/handler.cc:3124(handler::ha_index_read_map(unsigned char*, unsigned char const*, unsigned long, ha_rkey_function))[0x55849cbb0238]
+sql/handler.cc:6199(handler::read_range_first(st_key_range const*, st_key_range const*, bool, bool))[0x55849cbcb1a6]
+sql/opt_range.cc:12699(QUICK_RANGE_SELECT::get_next_prefix(unsigned int, unsigned int, unsigned char*))[0x55849cfd65e9]
+sql/opt_range.cc:15530(QUICK_GROUP_MIN_MAX_SELECT::next_prefix())[0x55849cfe9c5f]
+sql/opt_range.cc:15272(QUICK_GROUP_MIN_MAX_SELECT::get_next())[0x55849cfe8364]
+sql/records.cc:403(rr_quick(READ_RECORD*))[0x55849d00ad4c]
+sql/records.h:80(READ_RECORD::read_record())[0x55849c1da7de]
+sql/sql_select.cc:21632(join_init_read_record(st_join_table*))[0x55849c4eb7b2]
+sql/sql_select.cc:20684(sub_select(JOIN*, st_join_table*, bool))[0x55849c4e4a9b]
+sql/sql_select.cc:20221(do_select(JOIN*, Procedure*))[0x55849c4e2d7e]
+sql/sql_select.cc:4467(JOIN::exec_inner())[0x55849c46f635]
+sql/sql_select.cc:4248(JOIN::exec())[0x55849c46cc20]
+sql/sql_select.cc:4722(mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*))[0x55849c470ff4]
+sql/sql_select.cc:417(handle_select(THD*, LEX*, select_result*, unsigned long))[0x55849c442832]
+sql/sql_parse.cc:6282(execute_sqlcom_select(THD*, TABLE_LIST*))[0x55849c3abfa0]
+sql/sql_parse.cc:3978(mysql_execute_command(THD*))[0x55849c39ae9b]
+sql/sql_parse.cc:8063(mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool))[0x55849c3b729a]
+sql/sql_parse.cc:1892(dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool))[0x55849c38d493]
+sql/sql_parse.cc:1370(do_command(THD*))[0x55849c389dbc]
+sql/sql_connect.cc:1410(do_handle_one_connection(CONNECT*, bool))[0x55849c7cc658]
+sql/sql_connect.cc:1314(handle_one_connection)[0x55849c7cbfbc]
+perfschema/pfs.cc:2203(pfs_spawn_thread)[0x55849d4dbb73]
+nptl/pthread_create.c:478(start_thread)[0x7f2506523609]
+??:0(clone)[0x7f25060f7293]
+ 
+Trying to get some variables.
+Some pointers may be invalid and cause the dump to abort.
+Query (0x62b0000a12a8): SELECT DISTINCT a, id FROM t1 WHERE a > 'foo' OR id = 10
+ 
+Connection ID (thread ID): 4
+Status: NOT_KILLED
+ 
+Optimizer switch: index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=off,engine_condition_pushdown=off,index_condition_pushdown=on,derived_merge=on,derived_with_keys=on,firstmatch=on,loosescan=on,materialization=on,in_to_exists=on,semijoin=on,partial_match_rowid_merge=on,partial_match_table_scan=on,subquery_cache=on,mrr=off,mrr_cost_based=off,mrr_sort_keys=off,outer_join_with_cache=on,semijoin_with_cache=on,join_cache_incremental=on,join_cache_hashed=on,join_cache_bka=on,optimize_join_buffer_size=on,table_elimination=on,extended_keys=on,exists_to_in=on,orderby_uses_equalities=on,condition_pushdown_for_derived=on,split_materialized=on,condition_pushdown_for_subquery=on,rowid_filter=on,condition_pushdown_from_having=on,not_null_range_scan=off
+ 
+The manual page at https://mariadb.com/kb/en/how-to-produce-a-full-stack-trace-for-mysqld/ contains
+information that should help you find out what is causing the crash.
+Writing a core file...
+Working directory at /dev/shm/var_auto_7G2c/mysqld.1/data
+Resource Limits:
+Limit                     Soft Limit           Hard Limit           Units     
+Max cpu time              unlimited            unlimited            seconds   
+Max file size             unlimited            unlimited            bytes     
+Max data size             unlimited            unlimited            bytes     
+Max stack size            8388608              unlimited            bytes     
+Max core file size        0                    0                    bytes     
+Max resident set          unlimited            unlimited            bytes     
+Max processes             385874               385874               processes 
+Max open files            1024                 1024                 files     
+Max locked memory         67108864             67108864             bytes     
+Max address space         unlimited            unlimited            bytes     
+Max file locks            unlimited            unlimited            locks     
+Max pending signals       385874               385874               signals   
+Max msgqueue size         819200               819200               bytes     
+Max nice priority         0                    0                    
+Max realtime priority     0                    0                    
+Max realtime timeout      unlimited            unlimited            us        
+Core pattern: |/usr/share/apport/apport %p %s %c %d %P %E

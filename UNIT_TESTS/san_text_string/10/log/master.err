@@ -1,0 +1,299 @@
+2021-09-07 11:04:07 0 [Note] InnoDB: !!!!!!!! UNIV_DEBUG switched on !!!!!!!!!
+2021-09-07 11:04:07 0 [Note] InnoDB: Uses event mutexes
+2021-09-07 11:04:07 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+2021-09-07 11:04:07 0 [Note] InnoDB: Number of pools: 1
+2021-09-07 11:04:07 0 [Note] InnoDB: Using crc32 + pclmulqdq instructions
+2021-09-07 11:04:07 0 [Note] mysqld: O_TMPFILE is not supported on /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/data (disabling future attempts)
+2021-09-07 11:04:07 0 [Note] InnoDB: Using Linux native AIO
+2021-09-07 11:04:07 0 [Note] InnoDB: Initializing buffer pool, total size = 134217728, chunk size = 134217728
+2021-09-07 11:04:07 0 [Note] InnoDB: Completed initialization of buffer pool
+2021-09-07 11:04:07 0 [Note] InnoDB: 128 rollback segments are active.
+2021-09-07 11:04:07 0 [Note] InnoDB: Creating shared tablespace for temporary tables
+2021-09-07 11:04:07 0 [Note] InnoDB: Setting file './ibtmp1' size to 12 MB. Physically writing the file full; Please wait ...
+2021-09-07 11:04:07 0 [Note] InnoDB: File './ibtmp1' size is now 12 MB.
+2021-09-07 11:04:07 0 [Note] InnoDB: 10.5.13 started; log sequence number 45690; transaction id 20
+2021-09-07 11:04:07 0 [Note] Plugin 'FEEDBACK' is disabled.
+2021-09-07 11:04:07 0 [Note] InnoDB: Loading buffer pool(s) from /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/data/ib_buffer_pool
+2021-09-07 11:04:07 0 [Note] InnoDB: Buffer pool(s) load completed at 210907 11:04:07
+2021-09-07 11:04:07 0 [Note] Server socket created on IP: '::'.
+2021-09-07 11:04:08 0 [Note] Reading of all Master_info entries succeeded
+2021-09-07 11:04:08 0 [Note] Added new Master_info '' to hash table
+2021-09-07 11:04:08 0 [Note] /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mysqld: ready for connections.
+Version: '10.5.13-MariaDB-debug'  socket: '/test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/socket.sock'  port: 39268  MariaDB Server
+2021-09-07 11:04:08 0 [Note] /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mysqld (initiated by: root[root] @ localhost []): Normal shutdown
+2021-09-07 11:04:08 0 [Note] Event Scheduler: Purging the queue. 0 events
+2021-09-07 11:04:08 0 [Note] InnoDB: FTS optimize thread exiting.
+2021-09-07 11:04:08 0 [Note] InnoDB: Starting shutdown...
+2021-09-07 11:04:08 0 [Note] InnoDB: Dumping buffer pool(s) to /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/data/ib_buffer_pool
+2021-09-07 11:04:08 0 [Note] InnoDB: Buffer pool(s) dump completed at 210907 11:04:08
+2021-09-07 11:04:08 0 [Note] InnoDB: Removed temporary tablespace data file: "ibtmp1"
+2021-09-07 11:04:08 0 [Note] InnoDB: Shutdown completed; log sequence number 45702; transaction id 21
+2021-09-07 11:04:08 0 [Note] /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mysqld: Shutdown complete
+
+AddressSanitizer exit stats:
+Stats: 78M malloced (3M for red zones) by 51051 calls
+Stats: 0M realloced by 7 calls
+Stats: 78M freed by 51029 calls
+Stats: 0M really freed by 0 calls
+Stats: 93M (93M-0M) mmaped; 472 maps, 0 unmaps
+  mallocs by size class: 2:48; 3:153; 4:154; 6:118; 7:3507; 8:17; 11:17; 12:12; 13:32499; 14:195; 15:130; 16:8063; 17:534; 18:384; 19:265; 20:133; 21:59; 22:3467; 23:77; 24:32; 25:185; 26:77; 27:84; 28:18; 29:531; 30:30; 31:9; 32:1; 33:70; 34:7; 35:2; 36:1; 37:24; 38:4; 39:5; 41:46; 42:10; 43:18; 44:12; 45:16; 48:2; 49:3; 50:4; 51:1; 
+Stats: malloc large: 27
+Stats: StackDepot: 6537 ids; 0M allocated
+Stats: SizeClassAllocator64: 25M mapped (18M rss) in 63752 allocations; remains 52200
+  02 (    32): mapped:     64K allocs:     128 frees:       0 inuse:    128 num_freed_chunks    1920 avail:   2048 rss:      4K releases:      0 last released:      0K region: 0x602000000000
+  03 (    48): mapped:    128K allocs:    1792 frees:    1603 inuse:    189 num_freed_chunks    2541 avail:   2730 rss:     60K releases:      0 last released:      0K region: 0x603000000000
+  04 (    64): mapped:     64K allocs:     896 frees:     669 inuse:    227 num_freed_chunks     797 avail:   1024 rss:     28K releases:      0 last released:      0K region: 0x604000000000
+  06 (    96): mapped:    192K allocs:    1664 frees:    1512 inuse:    152 num_freed_chunks    1896 avail:   2048 rss:     76K releases:      0 last released:      0K region: 0x606000000000
+  07 (   112): mapped:    448K allocs:    4096 frees:     518 inuse:   3578 num_freed_chunks     518 avail:   4096 rss:    428K releases:      0 last released:      0K region: 0x607000000000
+  08 (   128): mapped:     64K allocs:     512 frees:     380 inuse:    132 num_freed_chunks     380 avail:    512 rss:     16K releases:      0 last released:      0K region: 0x608000000000
+  11 (   176): mapped:    128K allocs:     384 frees:     251 inuse:    133 num_freed_chunks     611 avail:    744 rss:     16K releases:      0 last released:      0K region: 0x60b000000000
+  12 (   192): mapped:     64K allocs:     128 frees:       0 inuse:    128 num_freed_chunks     213 avail:    341 rss:      4K releases:      0 last released:      0K region: 0x60c000000000
+  13 (   208): mapped:   6720K allocs:   32896 frees:     378 inuse:  32518 num_freed_chunks     565 avail:  33083 rss:   6624K releases:      0 last released:      0K region: 0x60d000000000
+  14 (   224): mapped:    128K allocs:     640 frees:     352 inuse:    288 num_freed_chunks     297 avail:    585 rss:     56K releases:      0 last released:      0K region: 0x60e000000000
+  15 (   240): mapped:    128K allocs:     512 frees:     377 inuse:    135 num_freed_chunks     411 avail:    546 rss:     40K releases:      0 last released:      0K region: 0x60f000000000
+  16 (   256): mapped:   2112K allocs:    8320 frees:     250 inuse:   8070 num_freed_chunks     378 avail:   8448 rss:   2024K releases:      0 last released:      0K region: 0x610000000000
+  17 (   320): mapped:    384K allocs:    1280 frees:     713 inuse:    567 num_freed_chunks     661 avail:   1228 rss:    208K releases:      0 last released:      0K region: 0x611000000000
+  18 (   384): mapped:    256K allocs:     640 frees:     249 inuse:    391 num_freed_chunks     291 avail:    682 rss:    160K releases:      0 last released:      0K region: 0x612000000000
+  19 (   448): mapped:    768K allocs:    1792 frees:    1502 inuse:    290 num_freed_chunks    1465 avail:   1755 rss:    188K releases:      0 last released:      0K region: 0x613000000000
+  20 (   512): mapped:    320K allocs:     640 frees:     491 inuse:    149 num_freed_chunks     491 avail:    640 rss:     80K releases:      0 last released:      0K region: 0x614000000000
+  21 (   640): mapped:    192K allocs:     306 frees:     201 inuse:    105 num_freed_chunks     202 avail:    307 rss:     52K releases:      0 last released:      0K region: 0x615000000000
+  22 (   768): mapped:   3072K allocs:    4080 frees:     583 inuse:   3497 num_freed_chunks     599 avail:   4096 rss:   2652K releases:      0 last released:      0K region: 0x616000000000
+  23 (   896): mapped:    256K allocs:     292 frees:     211 inuse:     81 num_freed_chunks     211 avail:    292 rss:     84K releases:      0 last released:      0K region: 0x617000000000
+  24 (  1024): mapped:    320K allocs:     320 frees:     251 inuse:     69 num_freed_chunks     251 avail:    320 rss:     44K releases:      0 last released:      0K region: 0x618000000000
+  25 (  1280): mapped:    640K allocs:     510 frees:     296 inuse:    214 num_freed_chunks     298 avail:    512 rss:    268K releases:      0 last released:      0K region: 0x619000000000
+  26 (  1536): mapped:    256K allocs:     168 frees:      79 inuse:     89 num_freed_chunks      81 avail:    170 rss:    120K releases:      0 last released:      0K region: 0x61a000000000
+  27 (  1792): mapped:    512K allocs:     288 frees:     203 inuse:     85 num_freed_chunks     207 avail:    292 rss:    176K releases:      0 last released:      0K region: 0x61b000000000
+  28 (  2048): mapped:    256K allocs:     128 frees:      93 inuse:     35 num_freed_chunks      93 avail:    128 rss:     44K releases:      0 last released:      0K region: 0x61c000000000
+  29 (  2560): mapped:   1792K allocs:     725 frees:     180 inuse:    545 num_freed_chunks     171 avail:    716 rss:   1360K releases:      0 last released:      0K region: 0x61d000000000
+  30 (  3072): mapped:    192K allocs:      63 frees:      20 inuse:     43 num_freed_chunks      21 avail:     64 rss:     96K releases:      0 last released:      0K region: 0x61e000000000
+  31 (  3584): mapped:    192K allocs:      54 frees:      34 inuse:     20 num_freed_chunks      34 avail:     54 rss:     44K releases:      0 last released:      0K region: 0x61f000000000
+  32 (  4096): mapped:     64K allocs:      16 frees:       0 inuse:     16 num_freed_chunks       0 avail:     16 rss:      4K releases:      0 last released:      0K region: 0x620000000000
+  33 (  5120): mapped:    704K allocs:     132 frees:      54 inuse:     78 num_freed_chunks      62 avail:    140 rss:    380K releases:      0 last released:      0K region: 0x621000000000
+  34 (  6144): mapped:     64K allocs:      10 frees:       0 inuse:     10 num_freed_chunks       0 avail:     10 rss:     44K releases:      0 last released:      0K region: 0x622000000000
+  35 (  7168): mapped:     64K allocs:       9 frees:       0 inuse:      9 num_freed_chunks       0 avail:      9 rss:     16K releases:      0 last released:      0K region: 0x623000000000
+  36 (  8192): mapped:    960K allocs:     168 frees:      91 inuse:     77 num_freed_chunks      43 avail:    120 rss:    508K releases:      0 last released:      0K region: 0x624000000000
+  37 ( 10240): mapped:    320K allocs:      30 frees:       5 inuse:     25 num_freed_chunks       7 avail:     32 rss:    244K releases:      0 last released:      0K region: 0x625000000000
+  38 ( 12288): mapped:     64K allocs:       5 frees:       0 inuse:      5 num_freed_chunks       0 avail:      5 rss:     48K releases:      0 last released:      0K region: 0x626000000000
+  39 ( 14336): mapped:    128K allocs:       8 frees:       0 inuse:      8 num_freed_chunks       1 avail:      9 rss:     64K releases:      0 last released:      0K region: 0x627000000000
+  41 ( 20480): mapped:    960K allocs:      48 frees:       2 inuse:     46 num_freed_chunks       2 avail:     48 rss:    760K releases:      0 last released:      0K region: 0x629000000000
+  42 ( 24576): mapped:    256K allocs:      10 frees:       0 inuse:     10 num_freed_chunks       0 avail:     10 rss:    156K releases:      0 last released:      0K region: 0x62a000000000
+  43 ( 28672): mapped:    576K allocs:      20 frees:       1 inuse:     19 num_freed_chunks       1 avail:     20 rss:    496K releases:      0 last released:      0K region: 0x62b000000000
+  44 ( 32768): mapped:    512K allocs:      16 frees:       3 inuse:     13 num_freed_chunks       3 avail:     16 rss:    192K releases:      0 last released:      0K region: 0x62c000000000
+  45 ( 40960): mapped:    640K allocs:      16 frees:       0 inuse:     16 num_freed_chunks       0 avail:     16 rss:    304K releases:      0 last released:      0K region: 0x62d000000000
+  48 ( 65536): mapped:    128K allocs:       2 frees:       0 inuse:      2 num_freed_chunks       0 avail:      2 rss:    116K releases:      0 last released:      0K region: 0x630000000000
+  49 ( 81920): mapped:    256K allocs:       3 frees:       0 inuse:      3 num_freed_chunks       0 avail:      3 rss:    144K releases:      0 last released:      0K region: 0x631000000000
+  50 ( 98304): mapped:    384K allocs:       4 frees:       0 inuse:      4 num_freed_chunks       0 avail:      4 rss:    328K releases:      0 last released:      0K region: 0x632000000000
+  51 (114688): mapped:    128K allocs:       1 frees:       0 inuse:      1 num_freed_chunks       0 avail:      1 rss:    108K releases:      0 last released:      0K region: 0x633000000000
+Stats: LargeMmapAllocator: allocated 27 times, remains 27 (67172 K) max 65 M; by size logs: 17:6; 18:8; 19:6; 21:3; 22:2; 24:2; 
+Quarantine limits: global: 512Mb; thread local: 1024Kb
+Global quarantine stats: batches: 73; bytes: 82180431 (user: 81582415); chunks: 50773 (capacity: 74533); 68% chunks used; 0% memory overhead
+2021-09-07 11:04:09 0 [Note] InnoDB: !!!!!!!! UNIV_DEBUG switched on !!!!!!!!!
+2021-09-07 11:04:09 0 [Note] InnoDB: Uses event mutexes
+2021-09-07 11:04:09 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+2021-09-07 11:04:09 0 [Note] InnoDB: Number of pools: 1
+2021-09-07 11:04:09 0 [Note] InnoDB: Using crc32 + pclmulqdq instructions
+2021-09-07 11:04:09 0 [Note] mysqld: O_TMPFILE is not supported on /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/data (disabling future attempts)
+2021-09-07 11:04:10 0 [Note] InnoDB: Using Linux native AIO
+2021-09-07 11:04:10 0 [Note] InnoDB: Initializing buffer pool, total size = 134217728, chunk size = 134217728
+2021-09-07 11:04:10 0 [Note] InnoDB: Completed initialization of buffer pool
+2021-09-07 11:04:10 0 [Note] InnoDB: 128 rollback segments are active.
+2021-09-07 11:04:10 0 [Note] InnoDB: Creating shared tablespace for temporary tables
+2021-09-07 11:04:10 0 [Note] InnoDB: Setting file './ibtmp1' size to 12 MB. Physically writing the file full; Please wait ...
+2021-09-07 11:04:10 0 [Note] InnoDB: File './ibtmp1' size is now 12 MB.
+2021-09-07 11:04:10 0 [Note] InnoDB: 10.5.13 started; log sequence number 45702; transaction id 20
+2021-09-07 11:04:10 0 [Note] InnoDB: Loading buffer pool(s) from /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/data/ib_buffer_pool
+2021-09-07 11:04:10 0 [Note] Plugin 'FEEDBACK' is disabled.
+2021-09-07 11:04:10 0 [Note] InnoDB: Buffer pool(s) load completed at 210907 11:04:10
+2021-09-07 11:04:10 0 [Note] Server socket created on IP: '::'.
+2021-09-07 11:04:10 0 [Note] Reading of all Master_info entries succeeded
+2021-09-07 11:04:10 0 [Note] Added new Master_info '' to hash table
+2021-09-07 11:04:10 0 [Note] /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mysqld: ready for connections.
+Version: '10.5.13-MariaDB-debug'  socket: '/test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/socket.sock'  port: 39268  MariaDB Server
+=================================================================
+==3663406==ERROR: AddressSanitizer: unknown-crash on address 0x61900009253f at pc 0x557cf9d0aee0 bp 0x14ebf4f8c750 sp 0x14ebf4f8bef8
+READ of size 8 at 0x61900009253f thread T14
+    #0 0x557cf9d0aedf in __interceptor_memcpy.part.0 (/test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mariadbd+0x81e8edf)
+    #1 0x557cfccfe026 in QUICK_GROUP_MIN_MAX_SELECT::next_min_in_range() /test/10.5_dbg_san/sql/opt_range.cc:15725
+    #2 0x557cfccff064 in QUICK_GROUP_MIN_MAX_SELECT::next_min() /test/10.5_dbg_san/sql/opt_range.cc:15401
+    #3 0x557cfcd03376 in QUICK_GROUP_MIN_MAX_SELECT::get_next() /test/10.5_dbg_san/sql/opt_range.cc:15334
+    #4 0x557cfcd7fc3d in rr_quick /test/10.5_dbg_san/sql/records.cc:403
+    #5 0x557cfa8e5204 in READ_RECORD::read_record() /test/10.5_dbg_san/sql/records.h:80
+    #6 0x557cfa8e5204 in join_init_read_record(st_join_table*) /test/10.5_dbg_san/sql/sql_select.cc:21821
+    #7 0x557cfa826e6f in sub_select(JOIN*, st_join_table*, bool) /test/10.5_dbg_san/sql/sql_select.cc:20860
+    #8 0x557cfa9ea13d in do_select /test/10.5_dbg_san/sql/sql_select.cc:20397
+    #9 0x557cfa9ea13d in JOIN::exec_inner() /test/10.5_dbg_san/sql/sql_select.cc:4516
+    #10 0x557cfa9eb9de in JOIN::exec() /test/10.5_dbg_san/sql/sql_select.cc:4296
+    #11 0x557cfa9dc91f in mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*) /test/10.5_dbg_san/sql/sql_select.cc:4772
+    #12 0x557cfa9de2f3 in handle_select(THD*, LEX*, select_result*, unsigned long) /test/10.5_dbg_san/sql/sql_select.cc:444
+    #13 0x557cfa5e4c13 in execute_sqlcom_select /test/10.5_dbg_san/sql/sql_parse.cc:6314
+    #14 0x557cfa649163 in mysql_execute_command(THD*) /test/10.5_dbg_san/sql/sql_parse.cc:4005
+    #15 0x557cfa5a8c6a in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /test/10.5_dbg_san/sql/sql_parse.cc:8100
+    #16 0x557cfa62277d in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /test/10.5_dbg_san/sql/sql_parse.cc:1891
+    #17 0x557cfa639a5c in do_command(THD*) /test/10.5_dbg_san/sql/sql_parse.cc:1370
+    #18 0x557cfb028fc7 in do_handle_one_connection(CONNECT*, bool) /test/10.5_dbg_san/sql/sql_connect.cc:1418
+    #19 0x557cfb02c27f in handle_one_connection /test/10.5_dbg_san/sql/sql_connect.cc:1312
+    #20 0x557cfd5bdde7 in pfs_spawn_thread /test/10.5_dbg_san/storage/perfschema/pfs.cc:2201
+    #21 0x14ec17f65608 in start_thread /build/glibc-eX1tMB/glibc-2.31/nptl/pthread_create.c:477
+    #22 0x14ec171db292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+
+0x61900009253f is located 191 bytes inside of 1124-byte region [0x619000092480,0x6190000928e4)
+allocated by thread T14 here:
+    #0 0x557cf9d7d5f8 in __interceptor_malloc (/test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mariadbd+0x825b5f8)
+    #1 0x557cfee8362f in sf_malloc /test/10.5_dbg_san/mysys/safemalloc.c:121
+    #2 0x557cfee410f8 in my_malloc /test/10.5_dbg_san/mysys/my_malloc.c:90
+    #3 0x557cfee1a0ac in alloc_root /test/10.5_dbg_san/mysys/my_alloc.c:244
+    #4 0x557cfee1bb97 in strmake_root /test/10.5_dbg_san/mysys/my_alloc.c:466
+    #5 0x557cfae3e2cb in open_table_from_share(THD*, TABLE_SHARE*, st_mysql_const_lex_string const*, unsigned int, unsigned int, unsigned int, TABLE*, bool, List<String>*) /test/10.5_dbg_san/sql/table.cc:3933
+    #6 0x557cfa163aaa in open_table(THD*, TABLE_LIST*, Open_table_context*) /test/10.5_dbg_san/sql/sql_base.cc:2001
+    #7 0x557cfa18388c in open_and_process_table /test/10.5_dbg_san/sql/sql_base.cc:3786
+    #8 0x557cfa18388c in open_tables(THD*, DDL_options_st const&, TABLE_LIST**, unsigned int*, unsigned int, Prelocking_strategy*) /test/10.5_dbg_san/sql/sql_base.cc:4269
+    #9 0x557cfa184d0c in open_and_lock_tables(THD*, DDL_options_st const&, TABLE_LIST*, bool, unsigned int, Prelocking_strategy*) /test/10.5_dbg_san/sql/sql_base.cc:5215
+    #10 0x557cfa3cab8b in open_and_lock_tables(THD*, TABLE_LIST*, bool, unsigned int) /test/10.5_dbg_san/sql/sql_base.h:507
+    #11 0x557cfa3cab8b in mysql_insert(THD*, TABLE_LIST*, List<Item>&, List<List<Item> >&, List<Item>&, List<Item>&, enum_duplicates, bool, select_result*) /test/10.5_dbg_san/sql/sql_insert.cc:757
+    #12 0x557cfa6536ad in mysql_execute_command(THD*) /test/10.5_dbg_san/sql/sql_parse.cc:4624
+    #13 0x557cfa5a8c6a in mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool) /test/10.5_dbg_san/sql/sql_parse.cc:8100
+    #14 0x557cfa62277d in dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool) /test/10.5_dbg_san/sql/sql_parse.cc:1891
+    #15 0x557cfa639a5c in do_command(THD*) /test/10.5_dbg_san/sql/sql_parse.cc:1370
+    #16 0x557cfb028fc7 in do_handle_one_connection(CONNECT*, bool) /test/10.5_dbg_san/sql/sql_connect.cc:1418
+    #17 0x557cfb02c27f in handle_one_connection /test/10.5_dbg_san/sql/sql_connect.cc:1312
+    #18 0x557cfd5bdde7 in pfs_spawn_thread /test/10.5_dbg_san/storage/perfschema/pfs.cc:2201
+    #19 0x14ec17f65608 in start_thread /build/glibc-eX1tMB/glibc-2.31/nptl/pthread_create.c:477
+
+Thread T14 created by T0 here:
+    #0 0x557cf9caa265 in pthread_create (/test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mariadbd+0x8188265)
+    #1 0x557cfd5ce8ff in my_thread_create /test/10.5_dbg_san/storage/perfschema/my_thread.h:48
+    #2 0x557cfd5ce8ff in pfs_spawn_thread_v1 /test/10.5_dbg_san/storage/perfschema/pfs.cc:2252
+    #3 0x557cf9dd768d in inline_mysql_thread_create /test/10.5_dbg_san/include/mysql/psi/mysql_thread.h:1323
+    #4 0x557cf9dd768d in create_thread_to_handle_connection(CONNECT*) /test/10.5_dbg_san/sql/mysqld.cc:6010
+    #5 0x557cf9deb34f in create_new_thread(CONNECT*) /test/10.5_dbg_san/sql/mysqld.cc:6069
+    #6 0x557cf9deb9e6 in handle_accepted_socket(st_mysql_socket, st_mysql_socket) /test/10.5_dbg_san/sql/mysqld.cc:6134
+    #7 0x557cf9ded474 in handle_connections_sockets() /test/10.5_dbg_san/sql/mysqld.cc:6261
+    #8 0x557cf9df0f07 in mysqld_main(int, char**) /test/10.5_dbg_san/sql/mysqld.cc:5656
+    #9 0x557cf9dbebaa in main /test/10.5_dbg_san/sql/main.cc:25
+    #10 0x14ec170e00b2 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x270b2)
+
+SUMMARY: AddressSanitizer: unknown-crash (/test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mariadbd+0x81e8edf) in __interceptor_memcpy.part.0
+Shadow bytes around the buggy address:
+  0x0c328000a450: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c328000a460: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c328000a470: 00 00 00 00 00 00 00 00 00 00 00 04 fa fa fa fa
+  0x0c328000a480: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c328000a490: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x0c328000a4a0: 00 00 00 00 f7 03 f7[07]07 f7 00 00 00 f7 00 00
+  0x0c328000a4b0: 00 00 00 f7 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c328000a4c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f7
+  0x0c328000a4d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c328000a4e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 f7 00 00
+  0x0c328000a4f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+  Shadow gap:              cc
+==3663406==ABORTING
+210907 11:04:15 [ERROR] mysqld got signal 6 ;
+This could be because you hit a bug. It is also possible that this binary
+or one of the libraries it was linked against is corrupt, improperly built,
+or misconfigured. This error can also be caused by malfunctioning hardware.
+
+To report this bug, see https://mariadb.com/kb/en/reporting-bugs
+
+We will try our best to scrape up some info that will hopefully help
+diagnose the problem, but since we have already crashed, 
+something is definitely wrong and this may fail.
+
+Server version: 10.5.13-MariaDB-debug
+key_buffer_size=134217728
+read_buffer_size=131072
+max_used_connections=1
+max_threads=153
+thread_count=1
+It is possible that mysqld could use up to 
+key_buffer_size + (read_buffer_size + sort_buffer_size)*max_threads = 467975 K  bytes of memory
+Hope that's ok; if not, decrease some variables in the equation.
+
+Thread pointer: 0x62b00007e288
+Attempting backtrace. You can use the following information to find out
+where mysqld died. If you see no messages after this, something went
+terribly wrong...
+stack_bottom = 0x14ebf4f90b40 thread_stack 0x100000
+/test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mysqld(+0x81ba790)[0x557cf9cdc790]
+asan_interceptors.o:0(__interceptor_backtrace.part.0)[0x557cfee53fe1]
+mysys/stacktrace.c:212(my_print_stacktrace)[0x557cfbc3901c]
+sigaction.c:0(__restore_rt)[0x14ec17f713c0]
+linux/raise.c:51(__GI_raise)[0x14ec170ff18b]
+stdlib/abort.c:81(__GI_abort)[0x14ec170de859]
+/test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mysqld(+0x82790e2)[0x557cf9d9b0e2]
+/test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/bin/mysqld(+0x8283c8c)[0x557cf9da5c8c]
+:0(__sanitizer::Abort())[0x557cf9d8731c]
+:0(__sanitizer::Die())[0x557cf9d86d93]
+:0(__asan::ScopedInErrorReport::~ScopedInErrorReport())[0x557cf9d0aeff]
+:0(__asan::ReportGenericError(unsigned long, unsigned long, unsigned long, unsigned long, bool, unsigned long, unsigned int, bool))[0x557cfccfe027]
+asan_interceptors.o:0(__interceptor_memcpy.part.0)[0x557cfccff065]
+sql/opt_range.cc:15726(QUICK_GROUP_MIN_MAX_SELECT::next_min_in_range())[0x557cfcd03377]
+sql/opt_range.cc:15401(QUICK_GROUP_MIN_MAX_SELECT::next_min())[0x557cfcd7fc3e]
+sql/records.cc:403(rr_quick(READ_RECORD*))[0x557cfa8e5205]
+sql/sql_select.cc:21789(join_init_read_record(st_join_table*))[0x557cfa826e70]
+sql/sql_select.cc:20860(sub_select(JOIN*, st_join_table*, bool))[0x557cfa9ea13e]
+sql/sql_select.cc:20397(JOIN::exec_inner())[0x557cfa9eb9df]
+sql/sql_select.cc:4297(JOIN::exec())[0x557cfa9dc920]
+sql/sql_select.cc:4772(mysql_select(THD*, TABLE_LIST*, List<Item>&, Item*, unsigned int, st_order*, st_order*, Item*, st_order*, unsigned long long, select_result*, st_select_lex_unit*, st_select_lex*))[0x557cfa9de2f4]
+sql/sql_select.cc:444(handle_select(THD*, LEX*, select_result*, unsigned long))[0x557cfa5e4c14]
+sql/sql_parse.cc:6314(execute_sqlcom_select(THD*, TABLE_LIST*))[0x557cfa649164]
+sql/sql_parse.cc:4005(mysql_execute_command(THD*))[0x557cfa5a8c6b]
+sql/sql_parse.cc:8100(mysql_parse(THD*, char*, unsigned int, Parser_state*, bool, bool))[0x557cfa62277e]
+sql/sql_parse.cc:1891(dispatch_command(enum_server_command, THD*, char*, unsigned int, bool, bool))[0x557cfa639a5d]
+sql/sql_parse.cc:1370(do_command(THD*))[0x557cfb028fc8]
+sql/sql_connect.cc:1418(do_handle_one_connection(CONNECT*, bool))[0x557cfb02c280]
+sql/sql_connect.cc:1312(handle_one_connection)[0x557cfd5bdde8]
+nptl/pthread_create.c:478(start_thread)[0x14ec17f65609]
+x86_64/clone.S:97(__GI___clone)[0x14ec171db293]
+
+Trying to get some variables.
+Some pointers may be invalid and cause the dump to abort.
+Query (0x62b0000852a8): SELECT MIN(a), b FROM t1 WHERE a IS NULL GROUP BY b
+
+Connection ID (thread ID): 4
+Status: NOT_KILLED
+
+Optimizer switch: index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=off,engine_condition_pushdown=off,index_condition_pushdown=on,derived_merge=on,derived_with_keys=on,firstmatch=on,loosescan=on,materialization=on,in_to_exists=on,semijoin=on,partial_match_rowid_merge=on,partial_match_table_scan=on,subquery_cache=on,mrr=off,mrr_cost_based=off,mrr_sort_keys=off,outer_join_with_cache=on,semijoin_with_cache=on,join_cache_incremental=on,join_cache_hashed=on,join_cache_bka=on,optimize_join_buffer_size=on,table_elimination=on,extended_keys=on,exists_to_in=on,orderby_uses_equalities=on,condition_pushdown_for_derived=on,split_materialized=on,condition_pushdown_for_subquery=on,rowid_filter=on,condition_pushdown_from_having=on,not_null_range_scan=off
+
+The manual page at https://mariadb.com/kb/en/how-to-produce-a-full-stack-trace-for-mysqld/ contains
+information that should help you find out what is causing the crash.
+Writing a core file...
+Working directory at /test/UBASAN_MD060921-mariadb-10.5.13-linux-x86_64-dbg/data
+Resource Limits:
+Limit                     Soft Limit           Hard Limit           Units     
+Max cpu time              unlimited            unlimited            seconds   
+Max file size             unlimited            unlimited            bytes     
+Max data size             unlimited            unlimited            bytes     
+Max stack size            unlimited            unlimited            bytes     
+Max core file size        0                    0                    bytes     
+Max resident set          unlimited            unlimited            bytes     
+Max processes             unlimited            unlimited            processes 
+Max open files            1048576              1048576              files     
+Max locked memory         unlimited            unlimited            bytes     
+Max address space         unlimited            unlimited            bytes     
+Max file locks            unlimited            unlimited            locks     
+Max pending signals       unlimited            unlimited            signals   
+Max msgqueue size         unlimited            unlimited            bytes     
+Max nice priority         0                    0                    
+Max realtime priority     0                    0                    
+Max realtime timeout      unlimited            unlimited            us        
+Core pattern: |/usr/share/apport/apport %p %s %c %d %P %E
+

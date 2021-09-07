@@ -1,0 +1,45 @@
+==7774==ERROR: AddressSanitizer: global-buffer-overflow on address 0x555f8b359d00 at pc 0x555f8b34f66e bp 0x7ffe05183c10 sp 0x7ffe05183c08
+READ of size 100 at 0x555f8b359d00 thread T0
+    #0 0x555f8b34f66d in ma_net_write_buff /data/src/10.2-bug/libmariadb/libmariadb/ma_net.c:287
+    #1 0x555f8b34f09e in ma_net_write_command /data/src/10.2-bug/libmariadb/libmariadb/ma_net.c:241
+    #2 0x555f8b2cf5e9 in mthd_my_send_cmd /data/src/10.2-bug/libmariadb/libmariadb/mariadb_lib.c:396
+    #3 0x555f8b300023 in mysql_stmt_prepare /data/src/10.2-bug/libmariadb/libmariadb/mariadb_stmt.c:1616
+    #4 0x555f8b2cc78d in test_parse_error_and_bad_length /data/src/10.2-bug/libmariadb/unittest/libmariadb/errors.c:257
+    #5 0x555f8b2cb03f in run_tests /data/src/10.2-bug/libmariadb/unittest/libmariadb/my_test.h:579
+    #6 0x555f8b2cc813 in main /data/src/10.2-bug/libmariadb/unittest/libmariadb/errors.c:284
+    #7 0x7fd7120d32b0 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x202b0)
+    #8 0x555f8b2c93c9 in _start (/data/src/10.2-bug/libmariadb/unittest/libmariadb/errors+0x243c9)
+ 
+0x555f8b359d0f is located 0 bytes to the right of global variable *.LC87 from /data/src/10.2-bug/libmariadb/unittest/libmariadb/errors.c (0x555f8b359d00) of size 15
+  *.LC87 is ascii string SHOW DATABASES
+SUMMARY: AddressSanitizer: global-buffer-overflow /data/src/10.2-bug/libmariadb/libmariadb/ma_net.c:287 ma_net_write_buff
+Shadow bytes around the buggy address:
+  0x0aac71663350: 00 00 00 00 00 02 f9 f9 f9 f9 f9 f9 00 06 f9 f9
+  0x0aac71663360: f9 f9 f9 f9 00 00 00 00 f9 f9 f9 f9 00 06 f9 f9
+  0x0aac71663370: f9 f9 f9 f9 00 06 f9 f9 f9 f9 f9 f9 00 00 00 00
+  0x0aac71663380: 00 f9 f9 f9 f9 f9 f9 f9 00 00 02 f9 f9 f9 f9 f9
+  0x0aac71663390: 00 07 f9 f9 f9 f9 f9 f9 00 00 03 f9 f9 f9 f9 f9
+=>0x0aac716633a0:[00]07 f9 f9 f9 f9 f9 f9 00 00 05 f9 f9 f9 f9 f9
+  0x0aac716633b0: 00 00 00 f9 f9 f9 f9 f9 00 00 05 f9 f9 f9 f9 f9
+  0x0aac716633c0: 00 00 03 f9 f9 f9 f9 f9 00 00 06 f9 f9 f9 f9 f9
+  0x0aac716633d0: 00 00 03 f9 f9 f9 f9 f9 00 00 01 f9 f9 f9 f9 f9
+  0x0aac716633e0: 00 06 f9 f9 f9 f9 f9 f9 00 00 f9 f9 f9 f9 f9 f9
+  0x0aac716633f0: 00 00 00 00 f9 f9 f9 f9 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Heap right redzone:      fb
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack partial redzone:   f4
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Contiguous container OOB:fc
+  ASan internal:           fe
+==7774==ABORTING

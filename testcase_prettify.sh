@@ -32,6 +32,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|returns|RETURNS|gi' | \
   sed 's|deterministic|DETERMINISTIC|gi' | \
   sed 's|commit|COMMIT|gi' | \
+  sed 's|autocommit|AUTOCOMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
   sed 's|data|DATA|gi' | \
   sed 's|local|LOCAL|gi' | \

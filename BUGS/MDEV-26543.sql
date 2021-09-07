@@ -4,3 +4,11 @@ ALTER TABLE t ADD c2 BINARY FIRST;
 SELECT * FROM t WHERE c2='' AND c2='' AND c='' ORDER BY c2 DESC;
 
 # Then check error log for: [ERROR] Got error 12701 when reading table './test/t'
+
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+CREATE SERVER d FOREIGN DATA WRAPPER mysql OPTIONS (HOST'',DATABASE'',USER'',PORT 10000,PASSWORD'');
+CREATE TABLE t1 (c1 INT KEY,c2 INT) ENGINE=SPIDER PARTITION BY LIST COLUMNS(c1)(PARTITION p1 DEFAULT ENGINE=SPIDER);
+SELECT c1,sum(c3) FROM t1;
+SELECT * FROM t1 WHERE c1='838:59:59';
+
+# Then check error log for: [ERROR] Got error 12701 when reading table './test/t1'
