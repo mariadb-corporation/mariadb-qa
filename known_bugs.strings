@@ -34,6 +34,7 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 !maria_assert_if_crashed_table|SIGABRT|_ma_set_fatal_error|_ma_flush_table_files|_ma_reenable_logging_for_table|ha_maria::external_lock                                        ## DBG 2
 
 ##### CURRENT BUGS #####
+transaction_.active() == false|SIGABRT|wsrep::client_state::~client_state|Wsrep_client_state::~Wsrep_client_state|THD::~THD|THD::~THD                                          ## OPT MDEV-26575
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## DBG MDEV-26546
 part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row                         ## DBG MDEV-26544
 inited==RND|SIGABRT|handler::ha_rnd_end|ha_partition::direct_delete_rows|handler::ha_direct_delete_rows|mysql_delete                                                           ## DBG MDEV-26540
