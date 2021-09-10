@@ -3036,7 +3036,7 @@ process_outcome(){
                 sed '/^#VARMOD#/p;/^MULTI_REDUCER=/,/^#VARMOD#/d' "$(readlink -f ${BASH_SOURCE[0]})" | sed 's|^FIREWORKS=1|FIREWORKS=0|' > "${NEWBUGRE}"
                 sed '/^MULTI_REDUCER=/,/^#VARMOD#/p;d' "$(readlink -f ${BASH_SOURCE[0]})" | grep -v "^#VARMOD#" > "${NEWBUGVM}"
                 sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls --color=never -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
-                NEWBUGTEXT="$(sed 's|"|\\\\"|g' "${NEWBUGTO}")" # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
+                NEWBUGTEXT="$(echo "${NEWBUGTO}" | sed 's|"|\\\\"|g')" # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. Potential TODO: when checking this manually, " was changed to \\" not \" so there may be a bug here in too many back slashes. If we run into that, update the sed to one less backslash.
                 # This code is taken from pquery-prep-red.sh, if it is updated here, please also update it there and vice versa
                 NEWBUGTEXT_FINAL=
                 if [[ "${NEWBUGTEXT}" = *":"* ]]; then
