@@ -1190,20 +1190,20 @@ multi_reducer(){
 
     FIXED_TEXT="$(echo "$TEXT" | sed "s|:|\\\:|g;s|&|\\\&|g")"  # Correctly escape : and &
     cat $0 \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:MULTI_REDUCER=1\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:EPOCH=$EPOCH\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:MODE=$MODE\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:TEXT=\"$FIXED_TEXT\"\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:MODE5_COUNTTEXT=$MODE5_COUNTTEXT\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:SKIPV=$SKIPV\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:SPORADIC=$SPORADIC\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:PQUERY_MULTI_CLIENT_THREADS=$PQUERY_MULTI_CLIENT_THREADS\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:PQUERY_MULTI_QUERIES=$PQUERY_MULTI_QUERIES\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:TS_TRXS_SETS=$TS_TRXS_SETS\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:TS_DBG_CLI_OUTPUT=$TS_DBG_CLI_OUTPUT\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:BASEDIR=\"$BASEDIR\"\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:MYPORT=\"$MULTI_MYPORT\"\n#VARMOD#:" \
-      | sed -e "0,/#VARMOD#/s:#VARMOD#:MYUSER=\"$MYUSER\"\n#VARMOD#:" > $MULTI_WORKD/subreducer
+      | sed "0,/#VARMOD#/s:#VARMOD#:MULTI_REDUCER=1\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:EPOCH=$EPOCH\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:MODE=$MODE\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:TEXT=\"$FIXED_TEXT\"\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:MODE5_COUNTTEXT=$MODE5_COUNTTEXT\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:SKIPV=$SKIPV\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:SPORADIC=$SPORADIC\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:PQUERY_MULTI_CLIENT_THREADS=$PQUERY_MULTI_CLIENT_THREADS\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:PQUERY_MULTI_QUERIES=$PQUERY_MULTI_QUERIES\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:TS_TRXS_SETS=$TS_TRXS_SETS\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:TS_DBG_CLI_OUTPUT=$TS_DBG_CLI_OUTPUT\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:BASEDIR=\"$BASEDIR\"\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:MYPORT=\"$MULTI_MYPORT\"\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:MYUSER=\"$MYUSER\"\n#VARMOD#:" > $MULTI_WORKD/subreducer
 
     chmod +x $MULTI_WORKD/subreducer
     sleep 0.2  # To avoid "InnoDB: Error: pthread_create returned 11" collisions/overloads
@@ -1266,7 +1266,7 @@ multi_reducer(){
             echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads... done"
           fi
           # The subshell in the following line simply retrieves the WORKO output file from the subreducer Then, the grep -v removes any mysqld option line before copying the file to the new/next WORKF for the next trial If this step was not done, the new/next WORKF testcase would always be +1 line longer. The way this would show for example in SKIPV mode is that the main reducer would indicate that it had found a shorter testcase (-1 line for example) whereas the next trial would start with the same line number (as +1 line was re-added). This is not so clear when large chunks are removed at the time, but it becomes very clear when only ~5-15 lines are left. This was fixed and the line below does not suffer from said problem
-          grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') > $WORKF
+          grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed 's/^.*://' -e 's/[ ]*//g') > $WORKF
           if [ "${FIREWORKS}" != "1" ]; then
             if [ -r "$WORKO" ]; then  # Avoid first occurence when there is no $WORKO yet
               cp -f $WORKO ${WORKO}.prev
@@ -1403,10 +1403,10 @@ multi_reducer_decide_input(){
   for t in $(eval echo {1..$MULTI_THREADS}); do
     export MULTI_WORKD=$(eval echo $(echo '$WORKD'"$t"))
     if [ -s $MULTI_WORKD/VERIFIED ]; then
-      TRIAL_LEVEL=$(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "TRIAL" | sed -e 's/^.*://' -e 's/[ ]*//g')
+      TRIAL_LEVEL=$(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "TRIAL" | sed 's/^.*://' -e 's/[ ]*//g')
       if [ $TRIAL_LEVEL -eq 1 ]; then
         # Highest optimization possible, use file and exit
-        cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
+        cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed 's/^.*://' -e 's/[ ]*//g') $WORKF
         echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, maximum initial simplification file, at thread #$t: Using it as new input file"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
           MYEXTRA=$(cat $MULTI_WORKD/MYEXTRA)
@@ -1414,7 +1414,7 @@ multi_reducer_decide_input(){
         break
       elif [ $TRIAL_LEVEL -lt $LOWEST_TRIAL_LEVEL_SEEN ]; then
         LOWEST_TRIAL_LEVEL_SEEN=$TRIAL_LEVEL
-        cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
+        cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed 's/^.*://' -e 's/[ ]*//g') $WORKF
         echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, level $TRIAL_LEVEL simplification file, at thread #$t: Using it as new input file, unless better is found"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
           MYEXTRA=$(cat $MULTI_WORKD/MYEXTRA)
@@ -2582,7 +2582,7 @@ cut_threadsync_chunk(){
         fi)
         if [ $TS_VARIABILITY_SLEEP -gt 0 ]; then
           tail -n$LAST_LINE $TS_WORKF | grep -E --binary-files=text -v "^[\t ]*;[\t ]*$" | \
-            sed -e "s/SET DEBUG_SYNC\(.*\)now SIGNAL GO_T2/SELECT SLEEP($TS_VARIABILITY_SLEEP);SET DEBUG_SYNC\1now SIGNAL GO_T2/" > $TS_WORKT
+            sed "s/SET DEBUG_SYNC\(.*\)now SIGNAL GO_T2/SELECT SLEEP($TS_VARIABILITY_SLEEP);SET DEBUG_SYNC\1now SIGNAL GO_T2/" > $TS_WORKT
         else
           tail -n$LAST_LINE $TS_WORKF | grep -E --binary-files=text -v "^[\t ]*;[\t ]*$" > $TS_WORKT
         fi
@@ -2597,7 +2597,7 @@ cut_threadsync_chunk(){
         if [ $TS_VARIABILITY_SLEEP -gt 0 ]; then
           TS_VARIABILITY_SLEEP_TENTH=$(echo "$TS_VARIABILITY_SLEEP / 10" | bc -l)
           tail -n$LAST_LINE $TS_WORKF | grep -E --binary-files=text -v "^[\t ]*;[\t ]*$" | \
-            sed -e "s/SET DEBUG_SYNC/SELECT SLEEP($TS_VARIABILITY_SLEEP_TENTH);SET DEBUG_SYNC/" > $TS_WORKT
+            sed "s/SET DEBUG_SYNC/SELECT SLEEP($TS_VARIABILITY_SLEEP_TENTH);SET DEBUG_SYNC/" > $TS_WORKT
         else
           tail -n$LAST_LINE $TS_WORKF | grep -E --binary-files=text -v "^[\t ]*;[\t ]*$" > $TS_WORKT
         fi
@@ -3046,23 +3046,23 @@ process_outcome(){
                         if [[ "${NEWBUGTEXT}" = *"-"* ]]; then
                           echo "Assert (#1)! No suitable sed seperator found. NEWBUGTEXT (${NEWBUGTEXT}) contains all of the possibilities, add more!"
                         else
-                          NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s-&-\\\\\\&-g")"  # Escape '&' correctly
+                          NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s-&-\\\\\\&-g")"  # Escape '&' correctly
                           sed -i "s-^TEXT=.*-TEXT=\"${NEWBUGTEXT_FINAL}\"-" "${NEWBUGRE}"
                         fi
                       else
-                        NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s_&_\\\\\\&_g")"  # Escape '&' correctly
+                        NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s_&_\\\\\\&_g")"  # Escape '&' correctly
                         sed -i "s_^TEXT=.*_TEXT=\"${NEWBUGTEXT_FINAL}\"_" "${NEWBUGRE}"
                       fi
                     else
-                      NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s/&/\\\\\\&/g")"  # Escape '&' correctly
+                      NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s/&/\\\\\\&/g")"  # Escape '&' correctly
                       sed -i "s/^TEXT=.*/TEXT=\"${NEWBUGTEXT_FINAL}\"/" "${NEWBUGRE}"
                     fi
                   else
-                    NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s|&|\\\\\\&|g")"  # Escape '&' correctly
+                    NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s|&|\\\\\\&|g")"  # Escape '&' correctly
                     sed -i "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT_FINAL}\"|" "${NEWBUGRE}"
                   fi
                 else
-                  NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
+                  NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s:&:\\\\\\&:g")"  # Escape '&' correctly
                   sed -i "s:^TEXT=.*:TEXT=\"${NEWBUGTEXT_FINAL}\":" "${NEWBUGRE}"
                 fi
                 NEWBUGTEXT_FINAL=
@@ -3605,23 +3605,23 @@ verify(){
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
             grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC" $TS_WORKF \
-              | sed -e 's/[\t ]\+/ /g' \
-              | sed -e "s/[ ]*)[ ]*,[ ]*([ ]*/),\n(/g" \
-              | sed -e "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
-              | sed -e "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
-              | sed -e 's/ VALUES[ ]*(/ VALUES \n(/g' \
+              | sed 's/[\t ]\+/ /g' \
+              | sed "s/[ ]*)[ ]*,[ ]*([ ]*/),\n(/g" \
+              | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
+              | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
+              | sed 's/ VALUES[ ]*(/ VALUES \n(/g' \
                     -e "s/', '/','/g" > $TS_WORKT
           done
         else
           echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & cleanup"
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-| \[Note\] |====|  WARNING: |^Hope that|^Logging: |\++++| exit with exit status |Lost connection to | valgrind |Using [MSI]|Using dynamic|MySQL Version|\------|TIME \(ms\)$|Skipping ndb|Setting mysqld |Binaries are debug |Killing Possible Leftover|Removing Stale Files|Creating Directories|Installing Master Database|Servers started, |Try: yum|Missing separate debug|SOURCE|CURRENT_TEST|\[ERROR\]|with SSL|_root_|connect to MySQL|No such file|is deprecated at|just omit the defined" $WORKF \
-            | sed -e "$REMOVESUFFIX" \
-            | sed -e 's/[\t ]\+/ /g' \
-            | sed -e 's/Query ([0-9a-fA-F]): \(.*\)/\1;/g' \
-            | sed -e "s/[ ]*)[ ]*,[ ]*([ ]*/),\n(/g" \
-            | sed -e "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
-            | sed -e "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
-            | sed -e 's/ VALUES[ ]*(/ VALUES \n(/g' \
+            | sed "$REMOVESUFFIX" \
+            | sed 's/[\t ]\+/ /g' \
+            | sed 's/Query ([0-9a-fA-F]): \(.*\)/\1;/g' \
+            | sed "s/[ ]*)[ ]*,[ ]*([ ]*/),\n(/g" \
+            | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
+            | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
+            | sed 's/ VALUES[ ]*(/ VALUES \n(/g' \
                   -e "s/', '/','/g" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
@@ -3649,19 +3649,19 @@ verify(){
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
-            sed -e "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" TS_$WORKF \
-              | sed -e "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
-              | sed -e "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
+            sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" TS_$WORKF \
+              | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
+              | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
           done
         else
           echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: High initial simplification & cleanup (no RQG log text removal)"
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-" $WORKF \
-            | sed -e "$REMOVESUFFIX" \
-            | sed -e 's/[\t ]\+/ /g' \
-            | sed -e "s/[ ]*)[ ]*,[ ]*([ ]*/),\n(/g" \
-            | sed -e "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
-            | sed -e "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
-            | sed -e 's/ VALUES[ ]*(/ VALUES \n(/g' \
+            | sed "$REMOVESUFFIX" \
+            | sed 's/[\t ]\+/ /g' \
+            | sed "s/[ ]*)[ ]*,[ ]*([ ]*/),\n(/g" \
+            | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
+            | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
+            | sed 's/ VALUES[ ]*(/ VALUES \n(/g' \
                   -e "s/', '/','/g" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
@@ -3691,21 +3691,21 @@ verify(){
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
             grep -E --binary-files=text -v "^#|^$" $TS_WORKF \
-              | sed -e 's/[\t ]\+/ /g' \
-              | sed -e "s/[ ]*)[ ]*,[ ]*([ ]*/),\n(/g" \
-              | sed -e "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
-              | sed -e "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
-              | sed -e 's/ VALUES[ ]*(/ VALUES \n(/g' \
+              | sed 's/[\t ]\+/ /g' \
+              | sed "s/[ ]*)[ ]*,[ ]*([ ]*/),\n(/g" \
+              | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
+              | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
+              | sed 's/ VALUES[ ]*(/ VALUES \n(/g' \
                     -e "s/', '/','/g" > $TS_WORKT
           done
         else
           echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: High initial simplification (no RQG text removal & less cleanup)"
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-" $WORKF \
-            | sed -e "$REMOVESUFFIX" \
-            | sed -e "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" \
-            | sed -e "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
-            | sed -e "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
-            | sed -e 's/ VALUES[ ]*(/ VALUES \n(/g' > $WORKT
+            | sed "$REMOVESUFFIX" \
+            | sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" \
+            | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
+            | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
+            | sed 's/ VALUES[ ]*(/ VALUES \n(/g' > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
@@ -3732,16 +3732,16 @@ verify(){
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
-            sed -e "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" TS_$WORKF \
-              | sed -e "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
-              | sed -e "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
+            sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" TS_$WORKF \
+              | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
+              | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
           done
         else
           echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split & remove # comments)"
-          sed -e "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
-            | sed -e "$REMOVESUFFIX" \
-            | sed -e "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
-            | sed -e "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $WORKT
+          sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
+            | sed "$REMOVESUFFIX" \
+            | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
+            | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
@@ -3768,14 +3768,14 @@ verify(){
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
-            sed -e "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $TS_WORKF > $TS_WORKT
+            sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $TS_WORKF > $TS_WORKT
           done
         else
           # The benefit of splitting INSERT lines: example: INSERT (a),(b),(c); becomes INSERT (a),\n(b)\n(c); and thus the seperate line with "b" could be eliminated/simplified.
           # If the testcase then works fine withouth the 'b' elemeneted inserted, it has become simpler. Consider large inserts (100's of rows) and how complexity can be reduced.
           echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split & remove # comments)"
-          sed -e "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
-            | sed -e "$REMOVESUFFIX" > $WORKT
+          sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
+            | sed "$REMOVESUFFIX" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
@@ -3987,7 +3987,7 @@ if [ $MODE -ge 6 ]; then
         # Single thread elimination (based on reverse order of TRIAL - control thread is normally first)
         export TS_WORKF=$(eval echo $(echo '$WORKF'"$TS_ELIMINATION_THREAD_ID"))
         export TS_WORKT=$(eval echo $(echo '$WORKT'"$TS_ELIMINATION_THREAD_ID"))
-        TS_T_THREAD=$(grep -E --binary-files=text "DEBUG_SYNC.*SIGNAL" $TS_WORKF | sed -e 's/^.*SIGNAL[ ]*//;s/ .*$//g')
+        TS_T_THREAD=$(grep -E --binary-files=text "DEBUG_SYNC.*SIGNAL" $TS_WORKF | sed 's/^.*SIGNAL[ ]*//;s/ .*$//g')
         echo "" > $TS_WORKT
 
         # Update the control thread (remove DEBUG_SYNCs for thread in question)
@@ -4164,62 +4164,62 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     NOSKIP=0
 
     # The @##@ sed's remove comments like /*! NULL */. Each sed removes one /* */ block per line, so 3 sed's removes 3x /* */ for each line
-    if   [ $TRIAL -eq 1  ]; then sed -e "s/[\t ]*,[ \t]*/,/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 2  ]; then NOSKIP=1; sed -e "s/\\\"/'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 3  ]; then sed -e "s/\\\'//g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 4  ]; then sed -e "s/'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'/'0000-00-00'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 5  ]; then sed -e "s/'[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.[0-9][0-9][0-9][0-9][0-9][0-9]'/'00:00:00.000000'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 6  ]; then sed -e "s/'[-][0-9]*\.[0-9]*'/'0.0'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 7  ]; then sed -e "s/'[0-9][0-9]:[0-9][0-9]:[0-9][0-9]'/'00:00:00'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 8  ]; then sed -e "s/'[-][0-9]'/'0'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 9  ]; then sed -e "s/'[-][0-9]\+'/'0'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 10 ]; then sed -e "s/'0'/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 11 ]; then sed -e "s/,[-][0-9],/,0,/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 12 ]; then sed -e "s/,[-][0-9]\+,/,0,/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 13 ]; then sed -e "s/'[a-z]'/'a'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 14 ]; then sed -e "s/'[a-z]\+'/'a'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 15 ]; then sed -e "s/'[A-Z]'/'a'/g"  $WORKF > $WORKT
-    elif [ $TRIAL -eq 16 ]; then sed -e "s/'[A-Z]\+'/'a'/g"  $WORKF > $WORKT
-    elif [ $TRIAL -eq 17 ]; then sed -e 's/^[ \t]\+//g' -e 's/[ \t]\+$//g' -e 's/[ \t]\+/ /g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 18 ]; then sed -e 's/( /(/g' -e 's/ )/)/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 19 ]; then sed -e 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 20 ]; then sed -e 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 21 ]; then sed -e 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 22 ]; then sed -e 's/ \. /\./g' -e 's/, /,/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 23 ]; then sed -e 's/)[ \t]\+,/),/g' -e 's/)[ \t]\+;/);/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 24 ]; then sed -e 's/\/\*\(.*\)\*\//\1/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 25 ]; then sed -e 's/field/f/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 26 ]; then sed -e 's/field/f/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 27 ]; then sed -e 's/column/c/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 28 ]; then sed -e 's/column/c/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 29 ]; then sed -e 's/col/c/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 30 ]; then sed -e 's/col/c/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 31 ]; then sed -e 's/view/v/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 32 ]; then sed -e 's/view\([0-9]\)*/v\1/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 33 ]; then sed -e 's/table/t/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 34 ]; then sed -e 's/table\([0-9]\)*/t\1/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 35 ]; then sed -e 's/alias\([0-9]\)*/a\1/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 36 ]; then sed -e 's/ \([=<>!]\+\)/\1/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 37 ]; then sed -e 's/\([=<>!]\+\) /\1/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 38 ]; then sed -e 's/[=<>!]\+/=/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 39 ]; then sed -e 's/ .*[=<>!]\+.* / 1=1 /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 40 ]; then sed -e 's/([0-9]\+)/(1)/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 41 ]; then sed -e 's/([0-9]\+)//gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 42 ]; then sed -e 's/[ ]\+/ /g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 43 ]; then sed -e 's/^[ ]\+//g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 44 ]; then sed -e 's/[ ]\+$//g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 45 ]; then sed -e 's/transforms\.//gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 46 ]; then sed -e 's/test\.//gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 47 ]; then sed -e "s/'[^']\+'/'abcdefghijklmnopqrstuvwxyz'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 48 ]; then sed -e "s/'[^']\+'/'abcdefghijklm'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 49 ]; then sed -e "s/'[^']\+'/'abcde'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 50 ]; then sed -e "s/'[^']\+'/NULL/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 51 ]; then sed -e "s/'[^']\+'/'a'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 52 ]; then sed -e "s/'[^']\+'/'0'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 53 ]; then sed -e "s/'[^']\+'/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 54 ]; then sed -e "s/'[^']\+'/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 55 ]; then sed -e "s/'[^']\+'/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 56 ]; then sed -e 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    if   [ $TRIAL -eq 1  ]; then sed "s/[\t ]*,[ \t]*/,/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 2  ]; then NOSKIP=1; sed "s/\\\"/'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 3  ]; then sed "s/\\\'//g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 4  ]; then sed "s/'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'/'0000-00-00'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 5  ]; then sed "s/'[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.[0-9][0-9][0-9][0-9][0-9][0-9]'/'00:00:00.000000'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 6  ]; then sed "s/'[-][0-9]*\.[0-9]*'/'0.0'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 7  ]; then sed "s/'[0-9][0-9]:[0-9][0-9]:[0-9][0-9]'/'00:00:00'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 8  ]; then sed "s/'[-][0-9]'/'0'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 9  ]; then sed "s/'[-][0-9]\+'/'0'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 10 ]; then sed "s/'0'/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 11 ]; then sed "s/,[-][0-9],/,0,/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 12 ]; then sed "s/,[-][0-9]\+,/,0,/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 13 ]; then sed "s/'[a-z]'/'a'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 14 ]; then sed "s/'[a-z]\+'/'a'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 15 ]; then sed "s/'[A-Z]'/'a'/g"  $WORKF > $WORKT
+    elif [ $TRIAL -eq 16 ]; then sed "s/'[A-Z]\+'/'a'/g"  $WORKF > $WORKT
+    elif [ $TRIAL -eq 17 ]; then sed 's/^[ \t]\+//g' -e 's/[ \t]\+$//g' -e 's/[ \t]\+/ /g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 18 ]; then sed 's/( /(/g' -e 's/ )/)/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 19 ]; then sed 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 20 ]; then sed 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 21 ]; then sed 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 22 ]; then sed 's/ \. /\./g' -e 's/, /,/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 23 ]; then sed 's/)[ \t]\+,/),/g' -e 's/)[ \t]\+;/);/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 24 ]; then sed 's/\/\*\(.*\)\*\//\1/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 25 ]; then sed 's/field/f/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 26 ]; then sed 's/field/f/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 27 ]; then sed 's/column/c/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 28 ]; then sed 's/column/c/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 29 ]; then sed 's/col/c/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 30 ]; then sed 's/col/c/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 31 ]; then sed 's/view/v/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 32 ]; then sed 's/view\([0-9]\)*/v\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 33 ]; then sed 's/table/t/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 34 ]; then sed 's/table\([0-9]\)*/t\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 35 ]; then sed 's/alias\([0-9]\)*/a\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 36 ]; then sed 's/ \([=<>!]\+\)/\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 37 ]; then sed 's/\([=<>!]\+\) /\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 38 ]; then sed 's/[=<>!]\+/=/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 39 ]; then sed 's/ .*[=<>!]\+.* / 1=1 /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 40 ]; then sed 's/([0-9]\+)/(1)/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 41 ]; then sed 's/([0-9]\+)//gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 42 ]; then sed 's/[ ]\+/ /g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 43 ]; then sed 's/^[ ]\+//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 44 ]; then sed 's/[ ]\+$//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 45 ]; then sed 's/transforms\.//gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 46 ]; then sed 's/test\.//gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 47 ]; then sed "s/'[^']\+'/'abcdefghijklmnopqrstuvwxyz'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 48 ]; then sed "s/'[^']\+'/'abcdefghijklm'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 49 ]; then sed "s/'[^']\+'/'abcde'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 50 ]; then sed "s/'[^']\+'/NULL/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 51 ]; then sed "s/'[^']\+'/'a'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 52 ]; then sed "s/'[^']\+'/'0'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 53 ]; then sed "s/'[^']\+'/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 54 ]; then sed "s/'[^']\+'/1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 55 ]; then sed "s/'[^']\+'/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 56 ]; then sed 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`
@@ -4268,158 +4268,158 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     NOSKIP=0
 
     # The @##@ sed's remove comments like /*! NULL */. Each sed removes one /* */ block per line, so 3 sed's removes 3x /* */ for each line
-    if   [ $TRIAL -eq 1  ]; then sed -e 's/IN[ \t]*(.*)/IN (SELECT 1)/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 2  ]; then sed -e 's/IN[ \t]*(.*)/IN (SELECT 1)/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 3  ]; then sed -e 's/ON[ \t]*(.*)/ON (1=1)/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 4  ]; then sed -e 's/ON[ \t]*(.*)/ON (1=1)/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 5  ]; then sed -e 's/FROM[ \t]*(.*)/FROM (SELECT 1)/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 6  ]; then sed -e 's/FROM[ \t]*(.*)/FROM (SELECT 1)/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 7  ]; then sed -e 's/WHERE.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 8  ]; then sed -e 's/WHERE.*ORDER BY/ORDER BY/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 9  ]; then sed -e 's/WHERE.*LIMIT/LIMIT/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 10 ]; then sed -e 's/WHERE.*LIMIT/LIMIT/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 11 ]; then sed -e 's/WHERE.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 12 ]; then sed -e 's/WHERE.*GROUP BY/GROUP BY/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 13 ]; then sed -e 's/WHERE.*HAVING/HAVING/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 14 ]; then sed -e 's/WHERE.*HAVING/HAVING/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 15 ]; then sed -e 's/ORDER BY.*WHERE/WHERE/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 16 ]; then sed -e 's/ORDER BY.*WHERE/WHERE/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 17 ]; then sed -e 's/ORDER BY.*LIMIT/LIMIT/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 18 ]; then sed -e 's/ORDER BY.*LIMIT/LIMIT/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 19 ]; then sed -e 's/ORDER BY.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 20 ]; then sed -e 's/ORDER BY.*GROUP BY/GROUP BY/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 21 ]; then sed -e 's/ORDER BY.*HAVING/HAVING/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 22 ]; then sed -e 's/ORDER BY.*HAVING/HAVING/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 23 ]; then sed -e 's/LIMIT.*WHERE/WHERE/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 24 ]; then sed -e 's/LIMIT.*WHERE/WHERE/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 25 ]; then sed -e 's/LIMIT.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 26 ]; then sed -e 's/LIMIT.*ORDER BY/ORDER BY/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 27 ]; then sed -e 's/LIMIT.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 28 ]; then sed -e 's/LIMIT.*GROUP BY/GROUP BY/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 29 ]; then sed -e 's/LIMIT.*HAVING/HAVING/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 30 ]; then sed -e 's/LIMIT.*HAVING/HAVING/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 31 ]; then sed -e 's/GROUP BY.*WHERE/WHERE/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 32 ]; then sed -e 's/GROUP BY.*WHERE/WHERE/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 33 ]; then sed -e 's/GROUP BY.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 34 ]; then sed -e 's/GROUP BY.*ORDER BY/ORDER BY/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 35 ]; then sed -e 's/GROUP BY.*LIMIT/LIMIT/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 36 ]; then sed -e 's/GROUP BY.*LIMIT/LIMIT/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 37 ]; then sed -e 's/GROUP BY.*HAVING/HAVING/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 38 ]; then sed -e 's/GROUP BY.*HAVING/HAVING/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 39 ]; then sed -e 's/HAVING.*WHERE/WHERE/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 40 ]; then sed -e 's/HAVING.*WHERE/WHERE/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 41 ]; then sed -e 's/HAVING.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 42 ]; then sed -e 's/HAVING.*ORDER BY/ORDER BY/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 43 ]; then sed -e 's/HAVING.*LIMIT/LIMIT/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 44 ]; then sed -e 's/HAVING.*LIMIT/LIMIT/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 45 ]; then sed -e 's/HAVING.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 46 ]; then sed -e 's/HAVING.*GROUP BY/GROUP BY/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 47 ]; then sed -e 's/LIMIT[[:digit:][:space:][:cntrl:]]*;$/;/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 48 ]; then sed -e 's/ORDER BY.*;$/;/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 49 ]; then sed -e 's/GROUP BY.*;$/;/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 50 ]; then sed -e 's/HAVING.*;$/;/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 51 ]; then sed -e 's/WHERE.*;$/;/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 52 ]; then sed -e 's/LIMIT.*;$/;/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 53 ]; then sed -e 's/GROUP BY.*;$/;/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 54 ]; then sed -e 's/ORDER BY.*;$/;/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 55 ]; then sed -e 's/HAVING.*;$/;/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 56 ]; then sed -e 's/WHERE.*;$/;/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 57 ]; then sed -e 's/(SELECT 1)/(1)/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 58 ]; then sed -e 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 59 ]; then sed -e 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 60 ]; then sed -e 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 61 ]; then sed -e 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 62 ]; then sed -e 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 63 ]; then sed -e 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 64 ]; then sed -e 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 65 ]; then sed -e 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 66 ]; then sed -e 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 67 ]; then sed -e 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 68 ]; then sed -e 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 69 ]; then sed -e 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 70 ]; then sed -e 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 71 ]; then sed -e 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 72 ]; then sed -e 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 73 ]; then sed -e 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 74 ]; then sed -e 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 75 ]; then sed -e 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 76 ]; then sed -e 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 77 ]; then sed -e 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 78 ]; then sed -e 's/AND.*IN/IN/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 79 ]; then sed -e 's/AND.*ON/ON/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 80 ]; then sed -e 's/AND.*WHERE/WHERE/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 81 ]; then sed -e 's/AND.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 82 ]; then sed -e 's/AND.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 83 ]; then sed -e 's/AND.*LIMIT/LIMIT/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 84 ]; then sed -e 's/AND.*HAVING/HAVING/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 85 ]; then sed -e 's/OR.*IN/IN/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 86 ]; then sed -e 's/OR.*ON/ON/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 87 ]; then sed -e 's/OR.*WHERE/WHERE/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 88 ]; then sed -e 's/OR.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 89 ]; then sed -e 's/OR.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 90 ]; then sed -e 's/OR.*LIMIT/LIMIT/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 91 ]; then sed -e 's/OR.*HAVING/HAVING/i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 92 ]; then sed -e 's/ NOT NULL/ /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 93 ]; then sed -e 's/ NOT NULL/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 94 ]; then sed -e 's/ NULL/ /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 95 ]; then sed -e 's/ NULL/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 96 ]; then sed -e 's/ AUTO_INCREMENT/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 97 ]; then sed -e 's/ ALGORITHM=MERGE/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 98 ]; then sed -e 's/ OR REPLACE/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 99 ]; then sed -e 's/ PRIMARY/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 100 ]; then sed -e 's/ PRIMARY KEY/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 101 ]; then sed -e 's/ DEFAULT NULL/ /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 102 ]; then sed -e 's/ DEFAULT NULL/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 103 ]; then sed -e 's/ DEFAULT 0/ /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 104 ]; then sed -e 's/ DEFAULT 0/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 105 ]; then sed -e "s/ DEFAULT '2038-01-19 03:14:07'/ /i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 106 ]; then sed -e "s/ DEFAULT '2038-01-19 03:14:07'/ /gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 107 ]; then sed -e "s/ DEFAULT '1970-01-01 00:00:01'/ /i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 108 ]; then sed -e "s/ DEFAULT '1970-01-01 00:00:01'/ /gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 109 ]; then sed -e 's/ DEFAULT CURRENT_TIMESTAMP/ /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 110 ]; then sed -e 's/ DEFAULT CURRENT_TIMESTAMP/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 111 ]; then sed -e 's/ ON UPDATE CURRENT_TIMESTAMP/ /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 112 ]; then sed -e 's/ ON UPDATE CURRENT_TIMESTAMP/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 113 ]; then sed -e 's/ IF NOT EXISTS / /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 114 ]; then sed -e 's/ DISTINCT / /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 115 ]; then sed -e 's/ SQL_.*_RESULT / /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 116 ]; then sed -e 's/CHARACTER SET[ ]*.*[ ]*COLLATE[ ]*.*\([, ]\)/\1/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 117 ]; then sed -e 's/CHARACTER SET[ ]*.*\([, ]\)/\1/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 118 ]; then sed -e 's/COLLATE[ ]*.*\([, ]\)/\1/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 119 ]; then sed -e 's/ LEFT / /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 120 ]; then sed -e 's/ RIGHT / /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 121 ]; then sed -e 's/ OUTER / /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 122 ]; then sed -e 's/ INNER / /gi' -e 's/ CROSS / /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 123 ]; then sed -e 's/[a-z0-9]\+_//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 124 ]; then sed -e 's/[a-z0-9]\+_//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 125 ]; then sed -e 's/[a-z0-9]\+_//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 126 ]; then sed -e 's/[a-z0-9]\+_//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 127 ]; then sed -e 's/[a-z0-9]\+_//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 128 ]; then sed -e 's/[a-z0-9]\+_//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 129 ]; then sed -e 's/alias/a/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 130 ]; then sed -e 's/SELECT .* /SELECT * /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 131 ]; then sed -e 's/SELECT .* /SELECT * /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 132 ]; then sed -e 's/SELECT .* /SELECT 1 /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 133 ]; then sed -e 's/SELECT .* /SELECT 1 /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 134 ]; then sed -e 's/[\t ]\+/ /g' -e 's/ *\([;,]\)/\1/g' -e 's/ $//g' -e 's/^ //g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 135 ]; then sed -e 's/CHARACTER[ ]*SET[ ]*latin1/ /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 136 ]; then sed -e 's/CHARACTER[ ]*SET[ ]*utf8/ /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 137 ]; then sed -e 's/SELECT .* /SELECT 1 /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 138 ]; then sed -e 's/COLUMN_FORMAT COMPRESSED/ /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 139 ]; then sed -e 's/INTEGER/INT/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 140 ]; then sed -e 's/MAX[ \t]\+[0-9]\+//gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 141 ]; then sed -e 's/MAX[ \t]\+//gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 142 ]; then sed -e 's/NOT NULL//gi' $WORKF > $WORKT  # All
-    elif [ $TRIAL -eq 143 ]; then sed -e 's/NOT NULL//i' $WORKF > $WORKT  # First occurence only
-    elif [ $TRIAL -eq 144 ]; then sed -e 's/NOT NULL//i' $WORKF > $WORKT  # Second occurence only
-    elif [ $TRIAL -eq 145 ]; then sed -e 's/NOT NULL//i' $WORKF > $WORKT  # Third occurence only
-    elif [ $TRIAL -eq 146 ]; then sed -e 's/NOT NULL//i' $WORKF > $WORKT  # Fourth occurence only
-    elif [ $TRIAL -eq 147 ]; then sed -e 's/TEMPORARY//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 148 ]; then sed -e 's/AUTO_INCREMENT KEY//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 149 ]; then sed -e 's/AUTO_INCREMENT//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 150 ]; then sed -e 's/UNIQUE//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 151 ]; then sed -e 's/idx/i/' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 152 ]; then sed -e 's/DROP DATABASE transforms;CREATE DATABASE transforms;//' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    if   [ $TRIAL -eq 1  ]; then sed 's/IN[ \t]*(.*)/IN (SELECT 1)/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 2  ]; then sed 's/IN[ \t]*(.*)/IN (SELECT 1)/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 3  ]; then sed 's/ON[ \t]*(.*)/ON (1=1)/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 4  ]; then sed 's/ON[ \t]*(.*)/ON (1=1)/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 5  ]; then sed 's/FROM[ \t]*(.*)/FROM (SELECT 1)/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 6  ]; then sed 's/FROM[ \t]*(.*)/FROM (SELECT 1)/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 7  ]; then sed 's/WHERE.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 8  ]; then sed 's/WHERE.*ORDER BY/ORDER BY/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 9  ]; then sed 's/WHERE.*LIMIT/LIMIT/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 10 ]; then sed 's/WHERE.*LIMIT/LIMIT/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 11 ]; then sed 's/WHERE.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 12 ]; then sed 's/WHERE.*GROUP BY/GROUP BY/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 13 ]; then sed 's/WHERE.*HAVING/HAVING/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 14 ]; then sed 's/WHERE.*HAVING/HAVING/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 15 ]; then sed 's/ORDER BY.*WHERE/WHERE/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 16 ]; then sed 's/ORDER BY.*WHERE/WHERE/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 17 ]; then sed 's/ORDER BY.*LIMIT/LIMIT/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 18 ]; then sed 's/ORDER BY.*LIMIT/LIMIT/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 19 ]; then sed 's/ORDER BY.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 20 ]; then sed 's/ORDER BY.*GROUP BY/GROUP BY/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 21 ]; then sed 's/ORDER BY.*HAVING/HAVING/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 22 ]; then sed 's/ORDER BY.*HAVING/HAVING/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 23 ]; then sed 's/LIMIT.*WHERE/WHERE/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 24 ]; then sed 's/LIMIT.*WHERE/WHERE/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 25 ]; then sed 's/LIMIT.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 26 ]; then sed 's/LIMIT.*ORDER BY/ORDER BY/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 27 ]; then sed 's/LIMIT.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 28 ]; then sed 's/LIMIT.*GROUP BY/GROUP BY/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 29 ]; then sed 's/LIMIT.*HAVING/HAVING/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 30 ]; then sed 's/LIMIT.*HAVING/HAVING/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 31 ]; then sed 's/GROUP BY.*WHERE/WHERE/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 32 ]; then sed 's/GROUP BY.*WHERE/WHERE/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 33 ]; then sed 's/GROUP BY.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 34 ]; then sed 's/GROUP BY.*ORDER BY/ORDER BY/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 35 ]; then sed 's/GROUP BY.*LIMIT/LIMIT/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 36 ]; then sed 's/GROUP BY.*LIMIT/LIMIT/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 37 ]; then sed 's/GROUP BY.*HAVING/HAVING/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 38 ]; then sed 's/GROUP BY.*HAVING/HAVING/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 39 ]; then sed 's/HAVING.*WHERE/WHERE/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 40 ]; then sed 's/HAVING.*WHERE/WHERE/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 41 ]; then sed 's/HAVING.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 42 ]; then sed 's/HAVING.*ORDER BY/ORDER BY/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 43 ]; then sed 's/HAVING.*LIMIT/LIMIT/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 44 ]; then sed 's/HAVING.*LIMIT/LIMIT/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 45 ]; then sed 's/HAVING.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 46 ]; then sed 's/HAVING.*GROUP BY/GROUP BY/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 47 ]; then sed 's/LIMIT[[:digit:][:space:][:cntrl:]]*;$/;/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 48 ]; then sed 's/ORDER BY.*;$/;/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 49 ]; then sed 's/GROUP BY.*;$/;/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 50 ]; then sed 's/HAVING.*;$/;/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 51 ]; then sed 's/WHERE.*;$/;/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 52 ]; then sed 's/LIMIT.*;$/;/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 53 ]; then sed 's/GROUP BY.*;$/;/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 54 ]; then sed 's/ORDER BY.*;$/;/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 55 ]; then sed 's/HAVING.*;$/;/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 56 ]; then sed 's/WHERE.*;$/;/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 57 ]; then sed 's/(SELECT 1)/(1)/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 58 ]; then sed 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 59 ]; then sed 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 60 ]; then sed 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 61 ]; then sed 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 62 ]; then sed 's/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 63 ]; then sed 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 64 ]; then sed 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 65 ]; then sed 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 66 ]; then sed 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 67 ]; then sed 's/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 68 ]; then sed 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 69 ]; then sed 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 70 ]; then sed 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 71 ]; then sed 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 72 ]; then sed 's/SELECT \(.*\),\(.*\)/SELECT \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 73 ]; then sed 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 74 ]; then sed 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 75 ]; then sed 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 76 ]; then sed 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 77 ]; then sed 's/ SET \(.*\),\(.*\)/ SET \1/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 78 ]; then sed 's/AND.*IN/IN/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 79 ]; then sed 's/AND.*ON/ON/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 80 ]; then sed 's/AND.*WHERE/WHERE/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 81 ]; then sed 's/AND.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 82 ]; then sed 's/AND.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 83 ]; then sed 's/AND.*LIMIT/LIMIT/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 84 ]; then sed 's/AND.*HAVING/HAVING/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 85 ]; then sed 's/OR.*IN/IN/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 86 ]; then sed 's/OR.*ON/ON/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 87 ]; then sed 's/OR.*WHERE/WHERE/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 88 ]; then sed 's/OR.*ORDER BY/ORDER BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 89 ]; then sed 's/OR.*GROUP BY/GROUP BY/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 90 ]; then sed 's/OR.*LIMIT/LIMIT/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 91 ]; then sed 's/OR.*HAVING/HAVING/i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 92 ]; then sed 's/ NOT NULL/ /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 93 ]; then sed 's/ NOT NULL/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 94 ]; then sed 's/ NULL/ /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 95 ]; then sed 's/ NULL/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 96 ]; then sed 's/ AUTO_INCREMENT/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 97 ]; then sed 's/ ALGORITHM=MERGE/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 98 ]; then sed 's/ OR REPLACE/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 99 ]; then sed 's/ PRIMARY/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 100 ]; then sed 's/ PRIMARY KEY/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 101 ]; then sed 's/ DEFAULT NULL/ /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 102 ]; then sed 's/ DEFAULT NULL/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 103 ]; then sed 's/ DEFAULT 0/ /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 104 ]; then sed 's/ DEFAULT 0/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 105 ]; then sed "s/ DEFAULT '2038-01-19 03:14:07'/ /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 106 ]; then sed "s/ DEFAULT '2038-01-19 03:14:07'/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 107 ]; then sed "s/ DEFAULT '1970-01-01 00:00:01'/ /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 108 ]; then sed "s/ DEFAULT '1970-01-01 00:00:01'/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 109 ]; then sed 's/ DEFAULT CURRENT_TIMESTAMP/ /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 110 ]; then sed 's/ DEFAULT CURRENT_TIMESTAMP/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 111 ]; then sed 's/ ON UPDATE CURRENT_TIMESTAMP/ /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 112 ]; then sed 's/ ON UPDATE CURRENT_TIMESTAMP/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 113 ]; then sed 's/ IF NOT EXISTS / /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 114 ]; then sed 's/ DISTINCT / /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 115 ]; then sed 's/ SQL_.*_RESULT / /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 116 ]; then sed 's/CHARACTER SET[ ]*.*[ ]*COLLATE[ ]*.*\([, ]\)/\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 117 ]; then sed 's/CHARACTER SET[ ]*.*\([, ]\)/\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 118 ]; then sed 's/COLLATE[ ]*.*\([, ]\)/\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 119 ]; then sed 's/ LEFT / /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 120 ]; then sed 's/ RIGHT / /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 121 ]; then sed 's/ OUTER / /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 122 ]; then sed 's/ INNER / /gi' -e 's/ CROSS / /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 123 ]; then sed 's/[a-z0-9]\+_//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 124 ]; then sed 's/[a-z0-9]\+_//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 125 ]; then sed 's/[a-z0-9]\+_//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 126 ]; then sed 's/[a-z0-9]\+_//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 127 ]; then sed 's/[a-z0-9]\+_//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 128 ]; then sed 's/[a-z0-9]\+_//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 129 ]; then sed 's/alias/a/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 130 ]; then sed 's/SELECT .* /SELECT * /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 131 ]; then sed 's/SELECT .* /SELECT * /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 132 ]; then sed 's/SELECT .* /SELECT 1 /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 133 ]; then sed 's/SELECT .* /SELECT 1 /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 134 ]; then sed 's/[\t ]\+/ /g' -e 's/ *\([;,]\)/\1/g' -e 's/ $//g' -e 's/^ //g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 135 ]; then sed 's/CHARACTER[ ]*SET[ ]*latin1/ /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 136 ]; then sed 's/CHARACTER[ ]*SET[ ]*utf8/ /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 137 ]; then sed 's/SELECT .* /SELECT 1 /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 138 ]; then sed 's/COLUMN_FORMAT COMPRESSED/ /i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 139 ]; then sed 's/INTEGER/INT/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 140 ]; then sed 's/MAX[ \t]\+[0-9]\+//gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 141 ]; then sed 's/MAX[ \t]\+//gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 142 ]; then sed 's/NOT NULL//gi' $WORKF > $WORKT  # All
+    elif [ $TRIAL -eq 143 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # First occurence only
+    elif [ $TRIAL -eq 144 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # Second occurence only
+    elif [ $TRIAL -eq 145 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # Third occurence only
+    elif [ $TRIAL -eq 146 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # Fourth occurence only
+    elif [ $TRIAL -eq 147 ]; then sed 's/TEMPORARY//i' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 148 ]; then sed 's/AUTO_INCREMENT KEY//i' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 149 ]; then sed 's/AUTO_INCREMENT//i' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 150 ]; then sed 's/UNIQUE//i' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 151 ]; then sed 's/idx/i/' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 152 ]; then sed 's/DROP DATABASE transforms;CREATE DATABASE transforms;//' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`
@@ -4468,9 +4468,9 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
   if [ $COUNTTABLES -gt 0 ]; then
     for i in $(eval echo {$COUNTTABLES..1}); do  # Reverse order
       # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurence)
-      TABLENAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed -e 's/CREATE[\t ]*TABLE/\n/2' \
-        | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
-      sed -e "s/\([(. ]\)$TABLENAME\([ )]\)/\1 $TABLENAME \2/gi;s/ $TABLENAME / t$i /gi" $WORKF > $WORKT
+      TABLENAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed 's/CREATE[\t ]*TABLE/\n/2' \
+        | head -n1 | sed 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
+      sed "s/\([(. ]\)$TABLENAME\([ )]\)/\1 $TABLENAME \2/gi;s/ $TABLENAME / t$i /gi" $WORKF > $WORKT
       if [ "$TABLENAME" = "t$i" ]; then
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as table $i is already named 't$i' in the file"
       else
@@ -4486,9 +4486,9 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
   if [ $COUNTVIEWS -gt 0 ]; then
     for i in $(eval echo {$COUNTVIEWS..1}); do  # Reverse order
       # the '...\n/2' sed is a precaution against multiple CREATE VIEWs on one line (it replaces the second occurence)
-      VIEWNAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*VIEW" $WORKF | tail -n1 | sed -e 's/CREATE[\t ]*VIEW/\n/2' \
-        | head -n1 | sed -e 's/CREATE[\t ]*VIEW[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
-      sed -e "s/\([(. ]\)$VIEWNAME\([ )]\)/\1 $VIEWNAME \2/gi;s/ $VIEWNAME / v$i /gi" $WORKF > $WORKT
+      VIEWNAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*VIEW" $WORKF | tail -n1 | sed 's/CREATE[\t ]*VIEW/\n/2' \
+        | head -n1 | sed 's/CREATE[\t ]*VIEW[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
+      sed "s/\([(. ]\)$VIEWNAME\([ )]\)/\1 $VIEWNAME \2/gi;s/ $VIEWNAME / v$i /gi" $WORKF > $WORKT
       if [ "$VIEWNAME" = "v$i" ]; then
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as view $i is already named 'v$i' in the file"
       else
@@ -4522,8 +4522,8 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
   if [ ${COUNTTABLES} -ge 1 ]; then
     for t in $(eval echo {$COUNTTABLES..1}); do  # Reverse order process all tables
       # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurence)
-      TABLENAME=$(grep -E --binary-files=text -m$t "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed -e 's/CREATE[\t ]*TABLE/\n/2' \
-        | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
+      TABLENAME=$(grep -E --binary-files=text -m$t "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed 's/CREATE[\t ]*TABLE/\n/2' \
+        | head -n1 | sed 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
 
       # Check if this table ($TABLENAME) is references in aother INSERT..INTO..$TABLENAME2..SELECT..$TABLENAME line.
       # If so, reducer does not need to process this table since it will be processed later when reducer gets to the table $TABLENAME2
@@ -4540,7 +4540,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
           if [ "$COL" != "c$C_COL_COUNTER" ]; then
             # Try and rename column now to cx to make testcase cleaner
             if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Now attempting to rename column '$COL' to a more uniform 'c$C_COL_COUNTER'"; fi
-            sed -e "s/$COL/c$C_COL_COUNTER/g" $WORKF > $WORKT
+            sed "s/$COL/c$C_COL_COUNTER/g" $WORKF > $WORKT
             C_COL_COUNTER=$[$C_COL_COUNTER+1]
             run_and_check
             if [ $? -eq 1 ]; then
@@ -4567,8 +4567,8 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
         while grep -E --binary-files=text -qi "INSERT.*INTO.*$TEMPTABLENAME.*SELECT" $WORKF; do
           NUMOFINVOLVEDTABLES=$[$NUMOFINVOLVEDTABLES+1]
           # the '...\n/2' sed is a precaution against multiple INSERT INTOs on one line (it replaces the second occurence)
-          export TABLENAME$NUMOFINVOLVEDTABLES=$(grep -E --binary-files=text "INSERT.*INTO.*$TEMPTABLENAME.*SELECT" $WORKF | tail -n1 | sed -e 's/INSERT.*INTO/\n/2' \
-            | head -n1 | sed -e "s/INSERT.*INTO.*$TEMPTABLENAME.*SELECT.*FROM[\t ]*\(.*\)/\1/" -e 's/ //g;s/;//g')
+          export TABLENAME$NUMOFINVOLVEDTABLES=$(grep -E --binary-files=text "INSERT.*INTO.*$TEMPTABLENAME.*SELECT" $WORKF | tail -n1 | sed 's/INSERT.*INTO/\n/2' \
+            | head -n1 | sed "s/INSERT.*INTO.*$TEMPTABLENAME.*SELECT.*FROM[\t ]*\(.*\)/\1/" -e 's/ //g;s/;//g')
           TEMPTABLENAME=$(eval echo $(echo '$TABLENAME'"$NUMOFINVOLVEDTABLES"))
         done
 
@@ -4583,7 +4583,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
           # Eliminate the column from the correct CREATE TABLE table (this will match the first occurence of that column name in the correct CREATE TABLE)
           # This sed presumes that each column is on one line, by itself, terminated by a comma (can be improved upon as per the above remark note)
           WORKT2=`echo $WORKT | sed 's/$/.2/'`
-          sed -e "/CREATE.*TABLE.*$TABLENAME/,/^[ ]*$COL.*,/s/^[ ]*$COL.*,//1" $WORKF | grep -E --binary-files=text -v "^$" > $WORKT2  # Remove the column from table defintion
+          sed "/CREATE.*TABLE.*$TABLENAME/,/^[ ]*$COL.*,/s/^[ ]*$COL.*,//1" $WORKF | grep -E --binary-files=text -v "^$" > $WORKT2  # Remove the column from table defintion
           # Write the testcase with removed column table definition to WORKT as well in case there are no INSERT removals
           # (and hence $WORKT will not be replaced with $WORKT2 anymore below, so reducer does it here as a harmless, but potentially needed, precaution)
           cp -f $WORKT2 $WORKT
@@ -4615,7 +4615,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
               echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] INSERT..SELECT into this table from another one detected: removing corresponding column $COLUMN in table '$TABLENAME'"
               WORKT3=`echo $WORKT | sed 's/$/.3/'`
               COL_LINE=$[$(cat $WORKT2 | grep -E --binary-files=text -m1 -n "CREATE.*TABLE.*$TABLENAME" | awk -F":" '{print $1}') + $COLUMN]
-              cat $WORKT2 | sed -e "${COL_LINE}d" > $WORKT3  # (*) Remove the column from the connected table defintion
+              cat $WORKT2 | sed "${COL_LINE}d" > $WORKT3  # (*) Remove the column from the connected table defintion
               cp -f $WORKT3 $WORKT2
               rm $WORKT3
             else
@@ -4692,7 +4692,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
 
               # This column was not removed. Try and rename column now to cx to make testcase cleaner
               if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Now attempting to rename this column ('$COL') to a more uniform 'c$C_COL_COUNTER'"; fi
-              sed -e "s/$COL/c$C_COL_COUNTER/g" $WORKF > $WORKT
+              sed "s/$COL/c$C_COL_COUNTER/g" $WORKF > $WORKT
               C_COL_COUNTER=$[$C_COL_COUNTER+1]
               run_and_check
             else
@@ -4732,186 +4732,186 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
   while :; do
     NOSKIP=0
 
-    if   [ $TRIAL -eq 1   ]; then sed -e "s/[\t]\+/ /g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 2   ]; then sed -e "s/[ ]\+/ /g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 3   ]; then sed -e "s/[ ]*,/,/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 4   ]; then sed -e "s/,[ ]*/,/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 5   ]; then sed -e "s/[ ]*;[ ]*/;/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 6   ]; then sed -e "s/^[ ]*//g" -e "s/[ ]*$//g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 7   ]; then sed -e "s/GRANDPARENT/gp/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 8   ]; then sed -e "s/PARENT/p/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 9   ]; then sed -e "s/CHILD/c/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 10  ]; then sed -e "s/\([(,]\)[ ]*'a'[ ]*/\1''/g;s/[ ]*'a'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Simplify INSERT VALUES
-    elif [ $TRIAL -eq 11  ]; then sed -e "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante ''
-    elif [ $TRIAL -eq 12  ]; then sed -e "s/\([(,]\)[ ]*'[a-z]'[ ]*/\1''/g;s/[ ]*'[a-z]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 13  ]; then sed -e "s/\([(,]\)[ ]*'[A-Z]'[ ]*/\1''/g;s/[ ]*'[A-Z]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 14  ]; then sed -e "s/\([(,]\)[ ]*'[a-zA-Z]'[ ]*/\1''/g;s/[ ]*'[a-zA-Z]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 15  ]; then sed -e "s/\([(,]\)[ ]*'[a-z]*'[ ]*/\1''/g;s/[ ]*'[a-z]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 16  ]; then sed -e "s/\([(,]\)[ ]*'[A-Z]*'[ ]*/\1''/g;s/[ ]*'[A-Z]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 17  ]; then sed -e "s/\([(,]\)[ ]*'[a-zA-Z]*'[ ]*/\1''/g;s/[ ]*'[a-zA-Z]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 18  ]; then sed -e "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante '' again now
-    elif [ $TRIAL -eq 19  ]; then sed -e "s/([ ]*[0-9][ ]*,/(0,/g;s/,[ ]*[0-9][ ]*,/,0,/g;s/,[ ]*[0-9][ ]*)/,0)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 20  ]; then sed -e "s/([ ]*[0-9]*[ ]*,/(0,/g;s/,[ ]*[0-9]*[ ]*,/,0,/g;s/,[ ]*[0-9]*[ ]*)/,0)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 21  ]; then sed -e "s/([ ]*NULL[ ]*,/(1,/g;s/,[ ]*NULL[ ]*,/,1,/g;s/,[ ]*NULL[ ]*)/,1)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 22  ]; then sed -e "s/([ ]*NULL[ ]*,/(0,/g;s/,[ ]*NULL[ ]*,/,0,/g;s/,[ ]*NULL[ ]*)/,0)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 23  ]; then sed -e "s/([ ]*NULL[ ]*,/('',/g;s/,[ ]*NULL[ ]*,/,'',/g;s/,[ ]*NULL[ ]*)/,'')/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 24  ]; then sed -e "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante '' again now
-    elif [ $TRIAL -eq 25  ]; then sed -e "s/\([(,]\)[ ]*'[0-9]'[ ]*/\1''/g;s/[ ]*'[0-9]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 26  ]; then sed -e "s/\([(,]\)[ ]*'[0-9]*'[ ]*/\1''/g;s/[ ]*'[0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 27  ]; then sed -e "s/\([(,]\)[ ]*'[-0-9]*'[ ]*/\1''/g;s/[ ]*'[-0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Date
-    elif [ $TRIAL -eq 28  ]; then sed -e "s/\([(,]\)[ ]*'[:0-9]*'[ ]*/\1''/g;s/[ ]*'[:0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Time
-    elif [ $TRIAL -eq 29  ]; then sed -e "s/\([(,]\)[ ]*'[:.0-9]*'[ ]*/\1''/g;s/[ ]*'[:.0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Time, FSP
-    elif [ $TRIAL -eq 30  ]; then sed -e "s/\([(,]\)[ ]*'[-: 0-9]*'[ ]*/\1''/g;s/[ ]*'[-: 0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Datetime
-    elif [ $TRIAL -eq 31  ]; then sed -e "s/\([(,]\)[ ]*'[-.: 0-9]*'[ ]*/\1''/g;s/[ ]*'[-.: 0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Dt, FSP
-    elif [ $TRIAL -eq 32  ]; then sed -e "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante '' again now
-    elif [ $TRIAL -eq 33  ]; then sed -e "s/[ ]*'[a-z]'[ ]*/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 34  ]; then sed -e "s/[ ]*'[A-Z]'[ ]*/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 35  ]; then sed -e "s/[ ]*'[a-zA-Z]'[ ]*/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 36  ]; then sed -e "s/[ ]*'[a-z]*'[ ]*/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 37  ]; then sed -e "s/[ ]*'[A-Z]*'[ ]*/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 38  ]; then sed -e "s/[ ]*'[a-zA-Z]*'[ ]*/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 39  ]; then sed -e "s/[ ]*[0-9][ ]*/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 40  ]; then sed -e "s/[ ]*[0-9]*[ ]*/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 41  ]; then sed -e "s/[ ]*NULL[ ]*//g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 42  ]; then sed -e "s/[ ]*NULL[ ]*/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 43  ]; then sed -e "s/[ ]*NULL[ ]*/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 44  ]; then sed -e "s/[ ]*'[0-9]'[ ]*/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 45  ]; then sed -e "s/[ ]*'[0-9]*'[ ]*/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 46  ]; then sed -e "s/[0-9]/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 47  ]; then sed -e "s/[0-9]\+/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 48  ]; then sed -e "s/[ ]*AUTO_INCREMENT=[0-9]*//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 49  ]; then sed -e "s/[ ]*AUTO_INCREMENT[ ]*,/,/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 50  ]; then sed -e "s/PRIMARY[ ]*KEY.*,//g" $WORKF > $WORKT
+    if   [ $TRIAL -eq 1   ]; then sed "s/[\t]\+/ /g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 2   ]; then sed "s/[ ]\+/ /g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 3   ]; then sed "s/[ ]*,/,/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 4   ]; then sed "s/,[ ]*/,/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 5   ]; then sed "s/[ ]*;[ ]*/;/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 6   ]; then sed "s/^[ ]*//g" -e "s/[ ]*$//g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 7   ]; then sed "s/GRANDPARENT/gp/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 8   ]; then sed "s/PARENT/p/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 9   ]; then sed "s/CHILD/c/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 10  ]; then sed "s/\([(,]\)[ ]*'a'[ ]*/\1''/g;s/[ ]*'a'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Simplify INSERT VALUES
+    elif [ $TRIAL -eq 11  ]; then sed "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante ''
+    elif [ $TRIAL -eq 12  ]; then sed "s/\([(,]\)[ ]*'[a-z]'[ ]*/\1''/g;s/[ ]*'[a-z]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 13  ]; then sed "s/\([(,]\)[ ]*'[A-Z]'[ ]*/\1''/g;s/[ ]*'[A-Z]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 14  ]; then sed "s/\([(,]\)[ ]*'[a-zA-Z]'[ ]*/\1''/g;s/[ ]*'[a-zA-Z]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 15  ]; then sed "s/\([(,]\)[ ]*'[a-z]*'[ ]*/\1''/g;s/[ ]*'[a-z]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 16  ]; then sed "s/\([(,]\)[ ]*'[A-Z]*'[ ]*/\1''/g;s/[ ]*'[A-Z]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 17  ]; then sed "s/\([(,]\)[ ]*'[a-zA-Z]*'[ ]*/\1''/g;s/[ ]*'[a-zA-Z]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 18  ]; then sed "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante '' again now
+    elif [ $TRIAL -eq 19  ]; then sed "s/([ ]*[0-9][ ]*,/(0,/g;s/,[ ]*[0-9][ ]*,/,0,/g;s/,[ ]*[0-9][ ]*)/,0)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 20  ]; then sed "s/([ ]*[0-9]*[ ]*,/(0,/g;s/,[ ]*[0-9]*[ ]*,/,0,/g;s/,[ ]*[0-9]*[ ]*)/,0)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 21  ]; then sed "s/([ ]*NULL[ ]*,/(1,/g;s/,[ ]*NULL[ ]*,/,1,/g;s/,[ ]*NULL[ ]*)/,1)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 22  ]; then sed "s/([ ]*NULL[ ]*,/(0,/g;s/,[ ]*NULL[ ]*,/,0,/g;s/,[ ]*NULL[ ]*)/,0)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 23  ]; then sed "s/([ ]*NULL[ ]*,/('',/g;s/,[ ]*NULL[ ]*,/,'',/g;s/,[ ]*NULL[ ]*)/,'')/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 24  ]; then sed "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante '' again now
+    elif [ $TRIAL -eq 25  ]; then sed "s/\([(,]\)[ ]*'[0-9]'[ ]*/\1''/g;s/[ ]*'[0-9]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 26  ]; then sed "s/\([(,]\)[ ]*'[0-9]*'[ ]*/\1''/g;s/[ ]*'[0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 27  ]; then sed "s/\([(,]\)[ ]*'[-0-9]*'[ ]*/\1''/g;s/[ ]*'[-0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Date
+    elif [ $TRIAL -eq 28  ]; then sed "s/\([(,]\)[ ]*'[:0-9]*'[ ]*/\1''/g;s/[ ]*'[:0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Time
+    elif [ $TRIAL -eq 29  ]; then sed "s/\([(,]\)[ ]*'[:.0-9]*'[ ]*/\1''/g;s/[ ]*'[:.0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Time, FSP
+    elif [ $TRIAL -eq 30  ]; then sed "s/\([(,]\)[ ]*'[-: 0-9]*'[ ]*/\1''/g;s/[ ]*'[-: 0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Datetime
+    elif [ $TRIAL -eq 31  ]; then sed "s/\([(,]\)[ ]*'[-.: 0-9]*'[ ]*/\1''/g;s/[ ]*'[-.: 0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Dt, FSP
+    elif [ $TRIAL -eq 32  ]; then sed "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante '' again now
+    elif [ $TRIAL -eq 33  ]; then sed "s/[ ]*'[a-z]'[ ]*/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 34  ]; then sed "s/[ ]*'[A-Z]'[ ]*/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 35  ]; then sed "s/[ ]*'[a-zA-Z]'[ ]*/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 36  ]; then sed "s/[ ]*'[a-z]*'[ ]*/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 37  ]; then sed "s/[ ]*'[A-Z]*'[ ]*/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 38  ]; then sed "s/[ ]*'[a-zA-Z]*'[ ]*/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 39  ]; then sed "s/[ ]*[0-9][ ]*/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 40  ]; then sed "s/[ ]*[0-9]*[ ]*/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 41  ]; then sed "s/[ ]*NULL[ ]*//g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 42  ]; then sed "s/[ ]*NULL[ ]*/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 43  ]; then sed "s/[ ]*NULL[ ]*/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 44  ]; then sed "s/[ ]*'[0-9]'[ ]*/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 45  ]; then sed "s/[ ]*'[0-9]*'[ ]*/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 46  ]; then sed "s/[0-9]/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 47  ]; then sed "s/[0-9]\+/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 48  ]; then sed "s/[ ]*AUTO_INCREMENT=[0-9]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 49  ]; then sed "s/[ ]*AUTO_INCREMENT[ ]*,/,/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 50  ]; then sed "s/PRIMARY[ ]*KEY.*,//g" $WORKF > $WORKT
          # TODO: add situation where PRIMARY KEY is last column (i.e. remove comma on preceding line)
-    elif [ $TRIAL -eq 51  ]; then sed -e "s/PRIMARY[ ]*KEY[ ]*(\(.*\))/KEY (\1)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 52  ]; then sed -e "s/KEY[ ]*(\(.*\),.*)/KEY(\1)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 53  ]; then sed -e "s/INNR/I/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 54  ]; then sed -e "s/OUTR/O/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 55  ]; then sed -e "s/,LOAD_FILE('[A-Za-z0-9\/.]*'),/,'',/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 56  ]; then sed -e "s/_tinyint/ti/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 57  ]; then sed -e "s/_smallint/si/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 58  ]; then sed -e "s/_mediumint/mi/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 59  ]; then sed -e "s/_bigint/bi/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 60  ]; then sed -e "s/_int/i/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 61  ]; then sed -e "s/_decimal/dc/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 62  ]; then sed -e "s/_float/f/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 63  ]; then sed -e "s/_bit/bi/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 64  ]; then sed -e "s/_double/do/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 65  ]; then sed -e "s/_nokey/nk/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 66  ]; then sed -e "s/_key/k/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 67  ]; then sed -e "s/_varchar/vc/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 68  ]; then sed -e "s/_char/c/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 69  ]; then sed -e "s/_datetime/dt/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 70  ]; then sed -e "s/_date/d/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 71  ]; then sed -e "s/_time/t/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 72  ]; then sed -e "s/_timestamp/ts/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 73  ]; then sed -e "s/_year/y/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 74  ]; then sed -e "s/_blob/b/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 75  ]; then sed -e "s/_tinyblob/tb/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 76  ]; then sed -e "s/_mediumblob/mb/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 77  ]; then sed -e "s/_longblob/lb/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 78  ]; then sed -e "s/_text/te/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 79  ]; then sed -e "s/_tinytext/tt/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 80  ]; then sed -e "s/_mediumtext/mt/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 81  ]; then sed -e "s/_longtext/lt/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 82  ]; then sed -e "s/_binary/bn/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 83  ]; then sed -e "s/_varbinary/vb/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 84  ]; then sed -e "s/_enum/e/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 85  ]; then sed -e "s/_set/s/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 86  ]; then sed -e "s/_not/n/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 87  ]; then sed -e "s/_null/nu/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 88  ]; then sed -e "s/_latin1/l/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 89  ]; then sed -e "s/_utf8/u/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 90  ]; then sed -e "s/;[ ]*;/;/g" -e "s/[ ]*,[ ]*/,/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 91  ]; then sed -e "s/VARCHAR[ ]*(\(.*\))/CHAR (\1)/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 92  ]; then sed -e "s/VARBINARY[ ]*(\(.*\))/BINARY (\1)/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 93  ]; then sed -e "s/DATETIME/DATE/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 94  ]; then sed -e "s/TIME/DATE/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 95  ]; then sed -e "s/TINYBLOB/BLOB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 96  ]; then sed -e "s/MEDIUMBLOB/BLOB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 97  ]; then sed -e "s/LONGBLOB/BLOB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 98  ]; then sed -e "s/TINYTEXT/TEXT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 99  ]; then sed -e "s/MEDIUMTEXT/TEXT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 100 ]; then sed -e "s/LONGTEXT/TEXT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 101 ]; then sed -e "s/INTEGER/INT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 102 ]; then sed -e "s/TINYINT/INT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 103 ]; then sed -e "s/SMALLINT/INT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 104 ]; then sed -e "s/MEDIUMINT/INT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 105 ]; then sed -e "s/BIGINT/INT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 106 ]; then sed -e "s/WHERE[ ]*(\(.*\),.*)/WHERE (\1)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 107 ]; then sed -e "s/\\\'[0-9a-zA-Z]\\\'/0/g" $WORKF > $WORKT  # \'c\' in PS matching
-    elif [ $TRIAL -eq 108 ]; then sed -e "s/\\\'[0-9a-zA-Z]\\\'/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 109 ]; then sed -e "s/\\\'[0-9a-zA-Z]*\\\'/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 110 ]; then sed -e "s/\\\'[0-9a-zA-Z]*\\\'/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 111 ]; then sed -e "s/\\\'[0-9a-zA-Z]*\\\'/\\\'\\\'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 112 ]; then sed -e "s/<>/=/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 113 ]; then sed -e "s/([ ]*(/((/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 114 ]; then sed -e "s/)[ ]*)/))/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 115 ]; then sed -e "s/([ ]*/(/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 116 ]; then sed -e "s/[ ]*)/)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 117 ]; then sed -e "s/ prep_stmt_[0-9]*/ p1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 118 ]; then sed -e '/INSERT[ ]*INTO/,/)/{s/INSERT[ ]*INTO[ ]*\(.*\)[ ]*(/INSERT INTO \1/p;d}' $WORKF > $WORKT
-    elif [ $TRIAL -eq 119 ]; then sed -e "s/QUICK //gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 120 ]; then sed -e "s/LOW_PRIORITY //gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 121 ]; then sed -e "s/IGNORE //gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 122 ]; then sed -e "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 123 ]; then sed -e "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 124 ]; then sed -e "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 125 ]; then sed -e "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 126 ]; then sed -e "s/enum[ ]*('','','','','','',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 127 ]; then sed -e "s/enum[ ]*('','','','',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 128 ]; then sed -e "s/enum[ ]*('','','',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 129 ]; then sed -e "s/enum[ ]*('','',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 130 ]; then sed -e "s/set[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 131 ]; then sed -e "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 132 ]; then sed -e "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 133 ]; then sed -e "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 134 ]; then sed -e "s/set[ ]*('','','','','','',/SET('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 135 ]; then sed -e "s/set[ ]*('','','','',/SET('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 136 ]; then sed -e "s/set[ ]*('','','',/SET('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 137 ]; then sed -e "s/set[ ]*('','',/SET('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 138 ]; then NOSKIP=1; sed -e "s/ ENGINE=TokuDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT # NOSKIP as lenght of 'TokuDB' is same as 'InnoDB' and we want to check if the testcase is engine specific or not
-    elif [ $TRIAL -eq 139 ]; then sed -e 's/ ENGINE=RocksDB/ ENGINE=InnoDB/gi' $WORKF > $WORKT  # NOSKIP not required; InnoDB is shorter then RocksDB
-    elif [ $TRIAL -eq 140 ]; then NOSKIP=1; sed -e 's/ ENGINE=MEMORY/ ENGINE=InnoDB/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 141 ]; then NOSKIP=1; sed -e 's/ ENGINE=MyISAM/ ENGINE=InnoDB/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 142 ]; then NOSKIP=1; sed -e 's/ ENGINE=CSV/ ENGINE=InnoDB/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 143 ]; then NOSKIP=1; sed -e 's/ ENGINE=NDB/ ENGINE=InnoDB/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 144 ]; then NOSKIP=1; sed -e 's/ ENGINE=[A-Za-z_-]\+/ ENGINE=InnoDB/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 145 ]; then NOSKIP=1; sed -e 's/ ENGINE=[A-Za-z_-]\+/ /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 146 ]; then sed -e "s/ ENGINE=TokuDB/ ENGINE=none/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 147 ]; then sed -e "s/ ENGINE=RocksDB/ ENGINE=none/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 148 ]; then NOSKIP=1; sed -e "s/TokuDB/InnoDB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 149 ]; then sed -e 's/RocksDB/InnoDB/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 150 ]; then sed -e 's/[\t ]\+/ /g' -e 's/ \([;,]\)/\1/g' -e 's/ $//g' -e 's/^ //g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 151 ]; then sed -e 's/.*/\L&/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 152 ]; then sed -e 's/[ ]*([ ]*/(/;s/[ ]*)[ ]*/)/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 153 ]; then sed -e 's/;.*/;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 154 ]; then sed -e 's/;#;.*$/;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 155 ]; then sed -e 's/''/0/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 156 ]; then sed -e '/INSERT/,/;/s/''/0/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 157 ]; then sed -e '/SELECT/,/;/s/''/0/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 158 ]; then sed -e 's/;[ \t]\+#/;#/' $WORKF > $WORKT  # Remove any spaces/tabs before #EOL comments if present
-    elif [ $TRIAL -eq 159 ]; then sed -e 's/;[ \t]*#.*/;/' $WORKF > $WORKT  # Attempt to remove #EOL comments
-    elif [ $TRIAL -eq 160 ]; then sed -e 's/#[^#]\+$/;/' $WORKF > $WORKT  # Another attempt at removing #EOL comments
-    elif [ $TRIAL -eq 161 ]; then sed -e 's/#[^#]\+$/#/' $WORKF > $WORKT  # If previous attempts do not work, attempt shorter comments
-    elif [ $TRIAL -eq 162 ]; then sed -e 's/[ \t]\+$//' $WORKF > $WORKT  # Remove spaces at end of line
-    elif [ $TRIAL -eq 163 ]; then NOSKIP=1; sed -e 's|\([^;]\)$|\1;|' $WORKF > $WORKT  # Add ';' on lines that do not have it
-    elif [ $TRIAL -eq 164 ]; then NOSKIP=1; sed -e 's|#;|;#|' $WORKF > $WORKT  # Ref line above/below for combination effect
-    elif [ $TRIAL -eq 165 ]; then sed -e 's/;[ \t]\+;/;/g' $WORKF > $WORKT  # Remove empty statements if possible
-    elif [ $TRIAL -eq 166 ]; then sed -e 's/[ \t]\+/ /g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 167 ]; then sed -e 's/  / /' $WORKF > $WORKT
-    elif [ $TRIAL -eq 168 ]; then sed -e 's/  / /' $WORKF > $WORKT
-    elif [ $TRIAL -eq 169 ]; then sed -e 's/  / /' $WORKF > $WORKT
-    elif [ $TRIAL -eq 170 ]; then sed -e 's|;#.*$|;|' $WORKF > $WORKT
-    elif [ $TRIAL -eq 171 ]; then sed -e 's|;#[^#]\+$|;|' $WORKF > $WORKT
-    elif [ $TRIAL -eq 172 ]; then sed -e 's/;  ;/;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 173 ]; then sed -e 's/; ;/;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 174 ]; then sed -e 's/;;/;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 175 ]; then sed -e 's/; /;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 176 ]; then sed -e 's/t1/t/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 177 ]; then sed -e 's/c1/c/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 178 ]; then sed -e 's/p1/p/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 179 ]; then sed -e 's/f1/f/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 51  ]; then sed "s/PRIMARY[ ]*KEY[ ]*(\(.*\))/KEY (\1)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 52  ]; then sed "s/KEY[ ]*(\(.*\),.*)/KEY(\1)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 53  ]; then sed "s/INNR/I/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 54  ]; then sed "s/OUTR/O/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 55  ]; then sed "s/,LOAD_FILE('[A-Za-z0-9\/.]*'),/,'',/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 56  ]; then sed "s/_tinyint/ti/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 57  ]; then sed "s/_smallint/si/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 58  ]; then sed "s/_mediumint/mi/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 59  ]; then sed "s/_bigint/bi/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 60  ]; then sed "s/_int/i/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 61  ]; then sed "s/_decimal/dc/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 62  ]; then sed "s/_float/f/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 63  ]; then sed "s/_bit/bi/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 64  ]; then sed "s/_double/do/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 65  ]; then sed "s/_nokey/nk/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 66  ]; then sed "s/_key/k/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 67  ]; then sed "s/_varchar/vc/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 68  ]; then sed "s/_char/c/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 69  ]; then sed "s/_datetime/dt/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 70  ]; then sed "s/_date/d/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 71  ]; then sed "s/_time/t/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 72  ]; then sed "s/_timestamp/ts/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 73  ]; then sed "s/_year/y/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 74  ]; then sed "s/_blob/b/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 75  ]; then sed "s/_tinyblob/tb/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 76  ]; then sed "s/_mediumblob/mb/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 77  ]; then sed "s/_longblob/lb/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 78  ]; then sed "s/_text/te/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 79  ]; then sed "s/_tinytext/tt/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 80  ]; then sed "s/_mediumtext/mt/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 81  ]; then sed "s/_longtext/lt/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 82  ]; then sed "s/_binary/bn/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 83  ]; then sed "s/_varbinary/vb/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 84  ]; then sed "s/_enum/e/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 85  ]; then sed "s/_set/s/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 86  ]; then sed "s/_not/n/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 87  ]; then sed "s/_null/nu/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 88  ]; then sed "s/_latin1/l/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 89  ]; then sed "s/_utf8/u/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 90  ]; then sed "s/;[ ]*;/;/g" -e "s/[ ]*,[ ]*/,/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 91  ]; then sed "s/VARCHAR[ ]*(\(.*\))/CHAR (\1)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 92  ]; then sed "s/VARBINARY[ ]*(\(.*\))/BINARY (\1)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 93  ]; then sed "s/DATETIME/DATE/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 94  ]; then sed "s/TIME/DATE/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 95  ]; then sed "s/TINYBLOB/BLOB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 96  ]; then sed "s/MEDIUMBLOB/BLOB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 97  ]; then sed "s/LONGBLOB/BLOB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 98  ]; then sed "s/TINYTEXT/TEXT/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 99  ]; then sed "s/MEDIUMTEXT/TEXT/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 100 ]; then sed "s/LONGTEXT/TEXT/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 101 ]; then sed "s/INTEGER/INT/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 102 ]; then sed "s/TINYINT/INT/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 103 ]; then sed "s/SMALLINT/INT/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 104 ]; then sed "s/MEDIUMINT/INT/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 105 ]; then sed "s/BIGINT/INT/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 106 ]; then sed "s/WHERE[ ]*(\(.*\),.*)/WHERE (\1)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 107 ]; then sed "s/\\\'[0-9a-zA-Z]\\\'/0/g" $WORKF > $WORKT  # \'c\' in PS matching
+    elif [ $TRIAL -eq 108 ]; then sed "s/\\\'[0-9a-zA-Z]\\\'/1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 109 ]; then sed "s/\\\'[0-9a-zA-Z]*\\\'/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 110 ]; then sed "s/\\\'[0-9a-zA-Z]*\\\'/1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 111 ]; then sed "s/\\\'[0-9a-zA-Z]*\\\'/\\\'\\\'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 112 ]; then sed "s/<>/=/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 113 ]; then sed "s/([ ]*(/((/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 114 ]; then sed "s/)[ ]*)/))/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 115 ]; then sed "s/([ ]*/(/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 116 ]; then sed "s/[ ]*)/)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 117 ]; then sed "s/ prep_stmt_[0-9]*/ p1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 118 ]; then sed '/INSERT[ ]*INTO/,/)/{s/INSERT[ ]*INTO[ ]*\(.*\)[ ]*(/INSERT INTO \1/p;d}' $WORKF > $WORKT
+    elif [ $TRIAL -eq 119 ]; then sed "s/QUICK //gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 120 ]; then sed "s/LOW_PRIORITY //gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 121 ]; then sed "s/IGNORE //gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 122 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 123 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 124 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 125 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 126 ]; then sed "s/enum[ ]*('','','','','','',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 127 ]; then sed "s/enum[ ]*('','','','',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 128 ]; then sed "s/enum[ ]*('','','',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 129 ]; then sed "s/enum[ ]*('','',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 130 ]; then sed "s/set[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 131 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 132 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 133 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 134 ]; then sed "s/set[ ]*('','','','','','',/SET('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 135 ]; then sed "s/set[ ]*('','','','',/SET('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 136 ]; then sed "s/set[ ]*('','','',/SET('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 137 ]; then sed "s/set[ ]*('','',/SET('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 138 ]; then NOSKIP=1; sed "s/ ENGINE=TokuDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT # NOSKIP as lenght of 'TokuDB' is same as 'InnoDB' and we want to check if the testcase is engine specific or not
+    elif [ $TRIAL -eq 139 ]; then sed 's/ ENGINE=RocksDB/ ENGINE=InnoDB/gi' $WORKF > $WORKT  # NOSKIP not required; InnoDB is shorter then RocksDB
+    elif [ $TRIAL -eq 140 ]; then NOSKIP=1; sed 's/ ENGINE=MEMORY/ ENGINE=InnoDB/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 141 ]; then NOSKIP=1; sed 's/ ENGINE=MyISAM/ ENGINE=InnoDB/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 142 ]; then NOSKIP=1; sed 's/ ENGINE=CSV/ ENGINE=InnoDB/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 143 ]; then NOSKIP=1; sed 's/ ENGINE=NDB/ ENGINE=InnoDB/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 144 ]; then NOSKIP=1; sed 's/ ENGINE=[A-Za-z_-]\+/ ENGINE=InnoDB/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 145 ]; then NOSKIP=1; sed 's/ ENGINE=[A-Za-z_-]\+/ /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 146 ]; then sed "s/ ENGINE=TokuDB/ ENGINE=none/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 147 ]; then sed "s/ ENGINE=RocksDB/ ENGINE=none/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 148 ]; then NOSKIP=1; sed "s/TokuDB/InnoDB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 149 ]; then sed 's/RocksDB/InnoDB/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 150 ]; then sed 's/[\t ]\+/ /g' -e 's/ \([;,]\)/\1/g' -e 's/ $//g' -e 's/^ //g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 151 ]; then sed 's/.*/\L&/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 152 ]; then sed 's/[ ]*([ ]*/(/;s/[ ]*)[ ]*/)/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 153 ]; then sed 's/;.*/;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 154 ]; then sed 's/;#;.*$/;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 155 ]; then sed 's/''/0/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 156 ]; then sed '/INSERT/,/;/s/''/0/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 157 ]; then sed '/SELECT/,/;/s/''/0/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 158 ]; then sed 's/;[ \t]\+#/;#/' $WORKF > $WORKT  # Remove any spaces/tabs before #EOL comments if present
+    elif [ $TRIAL -eq 159 ]; then sed 's/;[ \t]*#.*/;/' $WORKF > $WORKT  # Attempt to remove #EOL comments
+    elif [ $TRIAL -eq 160 ]; then sed 's/#[^#]\+$/;/' $WORKF > $WORKT  # Another attempt at removing #EOL comments
+    elif [ $TRIAL -eq 161 ]; then sed 's/#[^#]\+$/#/' $WORKF > $WORKT  # If previous attempts do not work, attempt shorter comments
+    elif [ $TRIAL -eq 162 ]; then sed 's/[ \t]\+$//' $WORKF > $WORKT  # Remove spaces at end of line
+    elif [ $TRIAL -eq 163 ]; then NOSKIP=1; sed 's|\([^;]\)$|\1;|' $WORKF > $WORKT  # Add ';' on lines that do not have it
+    elif [ $TRIAL -eq 164 ]; then NOSKIP=1; sed 's|#;|;#|' $WORKF > $WORKT  # Ref line above/below for combination effect
+    elif [ $TRIAL -eq 165 ]; then sed 's/;[ \t]\+;/;/g' $WORKF > $WORKT  # Remove empty statements if possible
+    elif [ $TRIAL -eq 166 ]; then sed 's/[ \t]\+/ /g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 167 ]; then sed 's/  / /' $WORKF > $WORKT
+    elif [ $TRIAL -eq 168 ]; then sed 's/  / /' $WORKF > $WORKT
+    elif [ $TRIAL -eq 169 ]; then sed 's/  / /' $WORKF > $WORKT
+    elif [ $TRIAL -eq 170 ]; then sed 's|;#.*$|;|' $WORKF > $WORKT
+    elif [ $TRIAL -eq 171 ]; then sed 's|;#[^#]\+$|;|' $WORKF > $WORKT
+    elif [ $TRIAL -eq 172 ]; then sed 's/;  ;/;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 173 ]; then sed 's/; ;/;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 174 ]; then sed 's/;;/;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 175 ]; then sed 's/; /;/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 176 ]; then sed 's/t1/t/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 177 ]; then sed 's/c1/c/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 178 ]; then sed 's/p1/p/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 179 ]; then sed 's/f1/f/g' $WORKF > $WORKT
     elif [ $TRIAL -eq 180 ]; then grep -E --binary-files=text -v '^$' $WORKF > $WORKT
     elif [ $TRIAL -eq 181 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
       if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
@@ -4919,7 +4919,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
       else
         cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
-    elif [ $TRIAL -eq 182 ]; then sed -e 's/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/' $WORKF > $WORKT
+    elif [ $TRIAL -eq 182 ]; then sed 's/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/' $WORKF > $WORKT
     # RV 25/01/21 Disabled next line to see if this fixes the # mysqld options required insert. Also note trial number changed on the line thereafter: update when removing to higher number
     # elif [ $TRIAL -eq 183 ]; then grep -E --binary-files=text -v "^#" $WORKF > $WORKT
     elif [ $TRIAL -eq 183 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT

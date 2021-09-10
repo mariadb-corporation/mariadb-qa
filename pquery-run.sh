@@ -1668,15 +1668,15 @@ pquery_test() {
           else
             if [[ ${MDG_CLUSTER_RUN} -eq 1 ]]; then
               cat ${MDG_CLUSTER_CONFIG} |
-                sed -e "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
-                sed -e "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
+                sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
+                sed "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             elif [[ ${GRP_RPL_CLUSTER_RUN} -eq 1 ]]; then
               cat ${GRP_RPL_CLUSTER_CONFIG} |
-                sed -e "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
-                sed -e "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
+                sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
+                sed "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
@@ -1720,8 +1720,8 @@ EOF
               PQPID="$!"
             elif [[ ${GRP_RPL_CLUSTER_RUN} -eq 1 ]]; then
               cat ${GRP_RPL_CLUSTER_CONFIG} |
-                sed -e "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
-                sed -e "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
+                sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
+                sed "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
@@ -1744,7 +1744,7 @@ EOF
           CMD="${PQUERY_BIN} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --user=root --socket=${SOCKET} --seed ${SEED} --step ${TRIAL} --metadata-path ${WORKDIR}/ --seconds ${PQUERY_RUN_TIMEOUT} ${DYNAMIC_QUERY_PARAMETER}"
         elif [ ${MDG_CLUSTER_RUN} -eq 1 ]; then
           cat ${MDG_CLUSTER_CONFIG} |
-              sed -e "s|\/tmp|${RUNDIR}\/${TRIAL}|" \
+              sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" \
                 > ${RUNDIR}/${TRIAL}/pquery3-cluster-mdg.cfg
           CMD="${PQUERY_BIN} --database=test --config-file=${RUNDIR}/${TRIAL}/pquery3-cluster-mdg.cfg --queries-per-thread=${QUERIES_PER_THREAD} --seed ${SEED} --step ${TRIAL} --metadata-path ${WORKDIR}/ --seconds ${PQUERY_RUN_TIMEOUT} ${DYNAMIC_QUERY_PARAMETER}"
         else

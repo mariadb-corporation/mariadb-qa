@@ -304,34 +304,34 @@ generate_reducer_script(){
               echo "Assert (#1)! No suitable sed seperator found. TEXT (${TEXT}) contains all of the possibilities, add more!"
             else
               if [ ${QC} -eq 0 ]; then
-                TEXT="$(echo "$TEXT"|sed -e "s-&-\\\\\\&-g")"  # Escape '&' correctly
+                TEXT="$(echo "$TEXT"|sed "s-&-\\\\\\&-g")"  # Escape '&' correctly
                 TEXT_STRING2="0,/#VARMOD#/s-#VARMOD#-   TEXT=\"${TEXT}\"\n#VARMOD#-"
               else
-                TEXT="$(echo "$TEXT"|sed -e "s-|-\\\\\\\|-g")"
+                TEXT="$(echo "$TEXT"|sed "s-|-\\\\\\\|-g")"
                 TEXT_STRING2="0,/#VARMOD#/s-#VARMOD#-   TEXT=\"^${TEXT}\$\"\n#VARMOD#-"
               fi
             fi
           else
             if [ ${QC} -eq 0 ]; then
-              TEXT="$(echo "$TEXT"|sed -e "s_&_\\\\\\&_g")"  # Escape '&' correctly
+              TEXT="$(echo "$TEXT"|sed "s_&_\\\\\\&_g")"  # Escape '&' correctly
               TEXT_STRING2="0,/#VARMOD#/s_#VARMOD#_   TEXT=\"${TEXT}\"\n#VARMOD#_"
             else
-              TEXT="$(echo "$TEXT"|sed -e "s_|_\\\\\\\|_g")"
+              TEXT="$(echo "$TEXT"|sed "s_|_\\\\\\\|_g")"
               TEXT_STRING2="0,/#VARMOD#/s_#VARMOD#_   TEXT=\"^${TEXT}\$\"\n#VARMOD#_"
             fi
           fi
         else
           if [ ${QC} -eq 0 ]; then
-            TEXT="$(echo "$TEXT"|sed -e "s/&/\\\\\\&/g")"  # Escape '&' correctly
+            TEXT="$(echo "$TEXT"|sed "s/&/\\\\\\&/g")"  # Escape '&' correctly
             TEXT_STRING2="0,/#VARMOD#/s/#VARMOD#/   TEXT=\"${TEXT}\"\n#VARMOD#/"
           else
-            TEXT="$(echo "$TEXT"|sed -e "s/|/\\\\\\\|/g")"
+            TEXT="$(echo "$TEXT"|sed "s/|/\\\\\\\|/g")"
             TEXT_STRING2="0,/#VARMOD#/s/#VARMOD#/   TEXT=\"^${TEXT}\$\"\n#VARMOD#/"
           fi
         fi
       else
         if [ ${QC} -eq 0 ]; then
-          TEXT="$(echo "$TEXT"|sed -e "s|&|\\\\\\&|g")"  # Escape '&' correctly
+          TEXT="$(echo "$TEXT"|sed "s|&|\\\\\\&|g")"  # Escape '&' correctly
           TEXT_STRING2="0,/#VARMOD#/s|#VARMOD#|   TEXT=\"${TEXT}\"\n#VARMOD#|"
         else
           # TODO: check if something was missed here, or is there no swap needed for "|" perhaps?
@@ -340,10 +340,10 @@ generate_reducer_script(){
       fi
     else
       if [ ${QC} -eq 0 ]; then
-        TEXT="$(echo "$TEXT"|sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
+        TEXT="$(echo "$TEXT"|sed "s:&:\\\\\\&:g")"  # Escape '&' correctly
         TEXT_STRING2="0,/#VARMOD#/s:#VARMOD#:   TEXT=\"${TEXT}\"\n#VARMOD#:"
       else
-        TEXT="$(echo "$TEXT"|sed -e "s:|:\\\\\\\|:g")"
+        TEXT="$(echo "$TEXT"|sed "s:|:\\\\\\\|:g")"
         TEXT_STRING2="0,/#VARMOD#/s:#VARMOD#:   TEXT=\"^${TEXT}\$\"\n#VARMOD#:"
       fi
     fi
@@ -448,58 +448,58 @@ generate_reducer_script(){
   fi
   SAVE_RESULTS_CLEANUP="0,/^[ \t]*SAVE_RESULTS[ \t]*=.*$/s|^[ \t]*SAVE_RESULTS[ \t]*=.*$|#SAVE_RESULTS=<set_below_in_machine_variables_section>|"
   cat ${REDUCER} \
-   | sed -e "0,/^[ \t]*INPUTFILE[ \t]*=.*$/s|^[ \t]*INPUTFILE[ \t]*=.*$|#INPUTFILE=<set_below_in_machine_variables_section>|" \
-   | sed -e "0,/^[ \t]*MODE[ \t]*=.*$/s|^[ \t]*MODE[ \t]*=.*$|#MODE=<set_below_in_machine_variables_section>|" \
-   | sed -e "0,/^[ \t]*DISABLE_TOKUDB_AUTOLOAD[ \t]*=.*$/s|^[ \t]*DISABLE_TOKUDB_AUTOLOAD[ \t]*=.*$|#DISABLE_TOKUDB_AUTOLOAD=<set_below_in_machine_variables_section>|" \
-   | sed -e "0,/^[ \t]*TEXT_STRING_LOC[ \t]*=.*$/s|^[ \t]*TEXT_STRING_LOC[ \t]*=.*$|#TEXT_STRING_LOC=<set_below_in_machine_variables_section>|" \
-   | sed -e "0,/^[ \t]*USE_NEW_TEXT_STRING[ \t]*=.*$/s|^[ \t]*USE_NEW_TEXT_STRING[ \t]*=.*$|#USE_NEW_TEXT_STRING=<set_below_in_machine_variables_section>|" \
-   | sed -e "0,/^[ \t]*SCAN_FOR_NEW_BUGS[ \t]*=.*$/s|^[ \t]*SCAN_FOR_NEW_BUGS[ \t]*=.*$|#SCAN_FOR_NEW_BUGS=<set_below_in_machine_variables_section>|" \
-   | sed -e "0,/^[ \t]*KNOWN_BUGS_LOC[ \t]*=.*$/s|^[ \t]*KNOWN_BUGS_LOC[ \t]*=.*$|#KNOWN_BUGS_LOC=<set_below_in_machine_variables_section>|" \
+   | sed "0,/^[ \t]*INPUTFILE[ \t]*=.*$/s|^[ \t]*INPUTFILE[ \t]*=.*$|#INPUTFILE=<set_below_in_machine_variables_section>|" \
+   | sed "0,/^[ \t]*MODE[ \t]*=.*$/s|^[ \t]*MODE[ \t]*=.*$|#MODE=<set_below_in_machine_variables_section>|" \
+   | sed "0,/^[ \t]*DISABLE_TOKUDB_AUTOLOAD[ \t]*=.*$/s|^[ \t]*DISABLE_TOKUDB_AUTOLOAD[ \t]*=.*$|#DISABLE_TOKUDB_AUTOLOAD=<set_below_in_machine_variables_section>|" \
+   | sed "0,/^[ \t]*TEXT_STRING_LOC[ \t]*=.*$/s|^[ \t]*TEXT_STRING_LOC[ \t]*=.*$|#TEXT_STRING_LOC=<set_below_in_machine_variables_section>|" \
+   | sed "0,/^[ \t]*USE_NEW_TEXT_STRING[ \t]*=.*$/s|^[ \t]*USE_NEW_TEXT_STRING[ \t]*=.*$|#USE_NEW_TEXT_STRING=<set_below_in_machine_variables_section>|" \
+   | sed "0,/^[ \t]*SCAN_FOR_NEW_BUGS[ \t]*=.*$/s|^[ \t]*SCAN_FOR_NEW_BUGS[ \t]*=.*$|#SCAN_FOR_NEW_BUGS=<set_below_in_machine_variables_section>|" \
+   | sed "0,/^[ \t]*KNOWN_BUGS_LOC[ \t]*=.*$/s|^[ \t]*KNOWN_BUGS_LOC[ \t]*=.*$|#KNOWN_BUGS_LOC=<set_below_in_machine_variables_section>|" \
    | sed  "0,/^[ \t]*SCRIPT_PWD[ \t]*=.*$/s|^[ \t]*SCRIPT_PWD[ \t]*=.*$|SCRIPT_PWD=${SCRIPT_PWD}|" \
-   | sed -e "${PQUERYOPT_CLEANUP}" \
-   | sed -e "${MYEXTRA_CLEANUP}" \
-   | sed -e "${MYINIT_CLEANUP}" \
-   | sed -e "${WSREP_OPT_CLEANUP}" \
-   | sed -e "${TEXT_CLEANUP}" \
-   | sed -e "${MULTI_CLEANUP1}" \
-   | sed -e "${MULTI_CLEANUP2}" \
-   | sed -e "${MULTI_CLEANUP3}" \
-   | sed -e "0,/^[ \t]*BASEDIR[ \t]*=.*$/s|^[ \t]*BASEDIR[ \t]*=.*$|#BASEDIR=<set_below_in_machine_variables_section>|" \
-   | sed -e "0,/^[ \t]*USE_PQUERY[ \t]*=.*$/s|^[ \t]*USE_PQUERY[ \t]*=.*$|#USE_PQUERY=<set_below_in_machine_variables_section>|" \
-   | sed -e "0,/^[ \t]*PQUERY_LOC[ \t]*=.*$/s|^[ \t]*PQUERY_LOC[ \t]*=.*$|#PQUERY_LOC=<set_below_in_machine_variables_section>|" \
-   | sed -e "${MDG_CLEANUP1}" \
-   | sed -e "${MDG_CLEANUP2}" \
-   | sed -e "${GRP_RPL_CLEANUP1}" \
-   | sed -e "${SI_CLEANUP1}" \
-   | sed -e "${SI_STRING1}" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:MODE=${MODE}\n#VARMOD#:" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:USE_NEW_TEXT_STRING=${USE_NEW_TEXT_STRING}\n#VARMOD#:" \
-   | sed -e "${TEXT_STRING1}" \
-   | sed -e "${TEXT_STRING2}" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:BASEDIR=\"${BASE}\"\n#VARMOD#:" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:INPUTFILE=\"${INPUTFILE}\"\n#VARMOD#:" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:SCAN_FOR_NEW_BUGS=${SCAN_FOR_NEW_BUGS}\n#VARMOD#:" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:KNOWN_BUGS_LOC=\"${SCRIPT_PWD}/known_bugs.strings\"\n#VARMOD#:" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:TEXT_STRING_LOC=\"${SCRIPT_PWD}/new_text_string.sh\"\n#VARMOD#:" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:DISABLE_TOKUDB_AUTOLOAD=${DISABLE_TOKUDB_AUTOLOAD}\n#VARMOD#:" \
-   | sed -e "${MYEXTRA_STRING1}" \
-   | sed -e "${MYINIT_STRING1}" \
-   | sed -e "${WSREP_OPT_STRING}" \
-   | sed -e "${MULTI_STRING1}" \
-   | sed -e "${MULTI_STRING2}" \
-   | sed -e "${MULTI_STRING3}" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:USE_PQUERY=1\n#VARMOD#:" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:PQUERY_LOC=${PQUERY_BIN}\n#VARMOD#:" \
-   | sed -e "${SAVE_RESULTS_CLEANUP}" \
-   | sed -e "0,/#VARMOD#/s:#VARMOD#:SAVE_RESULTS=0\n#VARMOD#:" \
-   | sed -e "${MDG_STRING1}" \
-   | sed -e "${MDG_STRING2}" \
-   | sed -e "${GRP_RPL_STRING1}" \
-   | sed -e "${QC_STRING1}" \
-   | sed -e "${QC_STRING2}" \
-   | sed -e "${QC_STRING3}" \
-   | sed -e "${QC_STRING4}" \
-   | sed -e "${PQUERY_EXTRA_OPTIONS}" \
+   | sed "${PQUERYOPT_CLEANUP}" \
+   | sed "${MYEXTRA_CLEANUP}" \
+   | sed "${MYINIT_CLEANUP}" \
+   | sed "${WSREP_OPT_CLEANUP}" \
+   | sed "${TEXT_CLEANUP}" \
+   | sed "${MULTI_CLEANUP1}" \
+   | sed "${MULTI_CLEANUP2}" \
+   | sed "${MULTI_CLEANUP3}" \
+   | sed "0,/^[ \t]*BASEDIR[ \t]*=.*$/s|^[ \t]*BASEDIR[ \t]*=.*$|#BASEDIR=<set_below_in_machine_variables_section>|" \
+   | sed "0,/^[ \t]*USE_PQUERY[ \t]*=.*$/s|^[ \t]*USE_PQUERY[ \t]*=.*$|#USE_PQUERY=<set_below_in_machine_variables_section>|" \
+   | sed "0,/^[ \t]*PQUERY_LOC[ \t]*=.*$/s|^[ \t]*PQUERY_LOC[ \t]*=.*$|#PQUERY_LOC=<set_below_in_machine_variables_section>|" \
+   | sed "${MDG_CLEANUP1}" \
+   | sed "${MDG_CLEANUP2}" \
+   | sed "${GRP_RPL_CLEANUP1}" \
+   | sed "${SI_CLEANUP1}" \
+   | sed "${SI_STRING1}" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:MODE=${MODE}\n#VARMOD#:" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:USE_NEW_TEXT_STRING=${USE_NEW_TEXT_STRING}\n#VARMOD#:" \
+   | sed "${TEXT_STRING1}" \
+   | sed "${TEXT_STRING2}" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:BASEDIR=\"${BASE}\"\n#VARMOD#:" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:INPUTFILE=\"${INPUTFILE}\"\n#VARMOD#:" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:SCAN_FOR_NEW_BUGS=${SCAN_FOR_NEW_BUGS}\n#VARMOD#:" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:KNOWN_BUGS_LOC=\"${SCRIPT_PWD}/known_bugs.strings\"\n#VARMOD#:" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:TEXT_STRING_LOC=\"${SCRIPT_PWD}/new_text_string.sh\"\n#VARMOD#:" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:DISABLE_TOKUDB_AUTOLOAD=${DISABLE_TOKUDB_AUTOLOAD}\n#VARMOD#:" \
+   | sed "${MYEXTRA_STRING1}" \
+   | sed "${MYINIT_STRING1}" \
+   | sed "${WSREP_OPT_STRING}" \
+   | sed "${MULTI_STRING1}" \
+   | sed "${MULTI_STRING2}" \
+   | sed "${MULTI_STRING3}" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:USE_PQUERY=1\n#VARMOD#:" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:PQUERY_LOC=${PQUERY_BIN}\n#VARMOD#:" \
+   | sed "${SAVE_RESULTS_CLEANUP}" \
+   | sed "0,/#VARMOD#/s:#VARMOD#:SAVE_RESULTS=0\n#VARMOD#:" \
+   | sed "${MDG_STRING1}" \
+   | sed "${MDG_STRING2}" \
+   | sed "${GRP_RPL_STRING1}" \
+   | sed "${QC_STRING1}" \
+   | sed "${QC_STRING2}" \
+   | sed "${QC_STRING3}" \
+   | sed "${QC_STRING4}" \
+   | sed "${PQUERY_EXTRA_OPTIONS}" \
    > ${REDUCER_FILENAME}
   chmod +x ${REDUCER_FILENAME}
   # If this is a multi-threaded run, create additional quick reducers with only the executed SQL (may/may not work)

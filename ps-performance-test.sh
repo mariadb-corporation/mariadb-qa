@@ -332,7 +332,7 @@ export NUM_SECONDARY_INDEXES=3
 #Generate graph
 VERSION_INFO=`$DB_DIR/bin/mysqld --version | cut -d' ' -f2-`
 UPTIME_HOUR=`uptime -p`
-SYSTEM_LOAD=`uptime | sed 's|  | |g' | sed -e 's|.*user*.,|System|'`
+SYSTEM_LOAD=`uptime | sed 's|  | |g' | sed 's|.*user*.,|System|'`
 MEM=`free -g | grep "Mem:" | awk '{print "Total:"$2"GB  Used:"$3"GB  Free:"$4"GB" }'`
 if [ ! -f $LOGS/hw.info ];then
   RELEASE=`cat /etc/redhat-release`

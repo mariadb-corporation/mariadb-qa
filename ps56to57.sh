@@ -91,10 +91,10 @@ function create_emp_db()
   SQL_FILE=$3
   pushd $ROOT_FS/test_db
   cat $ROOT_FS/test_db/$SQL_FILE \
-   | sed -e "s|DROP DATABASE IF EXISTS employees|DROP DATABASE IF EXISTS ${DB_NAME}|" \
-   | sed -e "s|CREATE DATABASE IF NOT EXISTS employees|CREATE DATABASE IF NOT EXISTS ${DB_NAME}|" \
-   | sed -e "s|USE employees|USE ${DB_NAME}|" \
-   | sed -e "s|set default_storage_engine = InnoDB|set default_storage_engine = ${SE_NAME}|" \
+   | sed "s|DROP DATABASE IF EXISTS employees|DROP DATABASE IF EXISTS ${DB_NAME}|" \
+   | sed "s|CREATE DATABASE IF NOT EXISTS employees|CREATE DATABASE IF NOT EXISTS ${DB_NAME}|" \
+   | sed "s|USE employees|USE ${DB_NAME}|" \
+   | sed "s|set default_storage_engine = InnoDB|set default_storage_engine = ${SE_NAME}|" \
    > $ROOT_FS/test_db/${DB_NAME}_${SE_NAME}.sql
    $PS56_BASEDIR/bin/mysql --socket=${WORKDIR}/ps56.sock -u root < ${ROOT_FS}/test_db/${DB_NAME}_${SE_NAME}.sql || true
    popd

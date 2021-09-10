@@ -679,11 +679,11 @@ function async_rpl_test(){
       cp ${WORKDIR}/psnode1/keyring ${WORKDIR}/bkpslave/
     fi
     cat ${PS_BASEDIR}/n1.cnf |
-      sed -e "0,/^[ \t]*port[ \t]*=.*$/s|^[ \t]*port[ \t]*=.*$|port=3308|" |
-      sed -e "0,/^[ \t]*report-port[ \t]*=.*$/s|^[ \t]*report-port[ \t]*=.*$|report-port=3308|" |
-      sed -e "0,/^[ \t]*server-id[ \t]*=.*$/s|^[ \t]*server-id[ \t]*=.*$|server-id=200|" |
-      sed -e "s|psnode1|bkpslave|g" |
-      sed -e "0,/^[ \t]*socket[ \t]*=.*$/s|^[ \t]*socket[ \t]*=.*$|socket=/tmp/bkpslave.sock|"  > ${PS_BASEDIR}/bkpslave.cnf 2>&1
+      sed "0,/^[ \t]*port[ \t]*=.*$/s|^[ \t]*port[ \t]*=.*$|port=3308|" |
+      sed "0,/^[ \t]*report-port[ \t]*=.*$/s|^[ \t]*report-port[ \t]*=.*$|report-port=3308|" |
+      sed "0,/^[ \t]*server-id[ \t]*=.*$/s|^[ \t]*server-id[ \t]*=.*$|server-id=200|" |
+      sed "s|psnode1|bkpslave|g" |
+      sed "0,/^[ \t]*socket[ \t]*=.*$/s|^[ \t]*socket[ \t]*=.*$|socket=/tmp/bkpslave.sock|"  > ${PS_BASEDIR}/bkpslave.cnf 2>&1
 
     ${PS_BASEDIR}/bin/mysqld --defaults-file=${PS_BASEDIR}/bkpslave.cnf > $WORKDIR/logs/bkpslave.err 2>&1 &
 

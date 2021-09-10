@@ -909,8 +909,8 @@ pquery_test(){
     RECORDS=$(shuf -i 100-200 -n 1)
     SEED=$(shuf -i 100-200 -n 1)
     cat ${PQUERY_CONFIG} \
-        | sed -e "s|\/tmp|${RUNDIR}\/${TRIAL}|" \
-        | sed -e "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
+        | sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" \
+        | sed "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
         > ${RUNDIR}/${TRIAL}/pquery.cfg
 		${PQUERY_BIN} --config-file ${RUNDIR}/${TRIAL}/pquery.cfg --sql-file=${SCRIPT_PWD}/pquery/grammer.sql --log-all-queries  --threads $THREADS --tables $TABLES --records $RECORDS --seed $SEED --no-tbs  --no-enc -k >${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
     PQPID="$!"

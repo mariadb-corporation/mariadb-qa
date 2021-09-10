@@ -3014,10 +3014,10 @@ process_outcome(){
                   NEWBUGRE="${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.reducer.sh"
                   NEWBUGVM="${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.varmod"
                 else
-                  NEWBUGSO="$(echo $INPUTFILE | sed "s/$/_newbug_${EPOCH_RAN}.sql/")"
-                  NEWBUGTO="$(echo $INPUTFILE | sed "s/$/_newbug_${EPOCH_RAN}.string/")"
-                  NEWBUGRE="$(echo $INPUTFILE | sed "s/$/_newbug_${EPOCH_RAN}.reducer.sh/")"
-                  NEWBUGVM="$(echo $INPUTFILE | sed "s/$/_newbug_${EPOCH_RAN}.varmod/")"
+                  NEWBUGSO="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.sql|")"
+                  NEWBUGTO="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.string|")"
+                  NEWBUGRE="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.reducer.sh|")"
+                  NEWBUGVM="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.varmod|")"
                 fi
                 cp "${WORKT}" "${NEWBUGSO}"
                 echo_out "[NewBug] Saved the new testcase to: ${NEWBUGSO}"
@@ -3047,23 +3047,23 @@ process_outcome(){
                           echo "Assert (#1)! No suitable sed seperator found. NEWBUGTEXT (${NEWBUGTEXT}) contains all of the possibilities, add more!"
                         else
                           NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s-&-\\\\\\&-g")"  # Escape '&' correctly
-                          sed -ie "s-^TEXT=.*-TEXT=\"${NEWBUGTEXT_FINAL}\"-" "${NEWBUGRE}"
+                          sed -i "s-^TEXT=.*-TEXT=\"${NEWBUGTEXT_FINAL}\"-" "${NEWBUGRE}"
                         fi
                       else
                         NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s_&_\\\\\\&_g")"  # Escape '&' correctly
-                        sed -ie "s_^TEXT=.*_TEXT=\"${NEWBUGTEXT_FINAL}\"_" "${NEWBUGRE}"
+                        sed -i "s_^TEXT=.*_TEXT=\"${NEWBUGTEXT_FINAL}\"_" "${NEWBUGRE}"
                       fi
                     else
                       NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s/&/\\\\\\&/g")"  # Escape '&' correctly
-                      sed -ie "s/^TEXT=.*/TEXT=\"${NEWBUGTEXT_FINAL}\"/" "${NEWBUGRE}"
+                      sed -i "s/^TEXT=.*/TEXT=\"${NEWBUGTEXT_FINAL}\"/" "${NEWBUGRE}"
                     fi
                   else
                     NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s|&|\\\\\\&|g")"  # Escape '&' correctly
-                    sed -ie "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT_FINAL}\"|" "${NEWBUGRE}"
+                    sed -i "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT_FINAL}\"|" "${NEWBUGRE}"
                   fi
                 else
                   NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
-                  sed -ie "s:^TEXT=.*:TEXT=\"${NEWBUGTEXT_FINAL}\":" "${NEWBUGRE}"
+                  sed -i "s:^TEXT=.*:TEXT=\"${NEWBUGTEXT_FINAL}\":" "${NEWBUGRE}"
                 fi
                 NEWBUGTEXT_FINAL=
                 NEWBUGTEXT=
