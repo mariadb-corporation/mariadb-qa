@@ -54,6 +54,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|hour|HOUR|gi' | \
   sed 's|day|DAY|gi' | \
   sed 's|begin|BEGIN|gi' | \
+  sed 's|md5|MD5|gi' | \
   sed 's|end|END|gi' | \
   sed 's|ends|ENDS|gi' | \
   sed 's|rollback|ROLLBACK|gi' | \

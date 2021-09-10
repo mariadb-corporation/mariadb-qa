@@ -5,3 +5,4 @@ Event invalid                                     https://jira.mariadb.org/brows
 InnoDB: Resetting invalid page                    https://jira.mariadb.org/browse/MDEV-26121
 Assertion .block_size                             https://jira.mariadb.org/browse/MDEV-26459
 Incorrect information in file: ...sys             Usually not bugs but /sys/ modifications
+Got error 12701                                   https://jira.mariadb.org/browse/MDEV-26543
