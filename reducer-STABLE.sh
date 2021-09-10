@@ -48,7 +48,7 @@ SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # The directory reducer.sh is in (to ref
 # === Sporadic testcases        # Used when testcases prove to be sporadic *and* fail to reduce using basic methods
 FORCE_SKIPV=0                   # On/Off (1/0) Forces verify stage to be skipped (auto-enables FORCE_SPORADIC)
 FORCE_SPORADIC=0                # On/Off (1/0) Forces issue to be treated as sporadic
-NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat each trial 1 time. Increase to re-attempt trials when reduction was not succesful for that trial; ideal for sporadic issues which need x attempts per trial. Will work irrespective of detected sporadicity.
+NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat/try/attempt each trial 1 time. Increase to re-attempt trials when reduction was not succesful for that trial; ideal for sporadic issues which need x attempts per trial. Will work irrespective of detected sporadicity.
 
 # === True Multi-Threaded       # True multi-threaded testcase reduction (only program in the world that does this) based on random replay (auto-covers sporadic testcases)
 PQUERY_MULTI=0                  # On/off (1/0) Enables true multi-threaded testcase reduction based on random replay (auto-enables USE_PQUERY)
@@ -3036,7 +3036,7 @@ process_outcome(){
                 sed '/^#VARMOD#/p;/^MULTI_REDUCER=/,/^#VARMOD#/d' "$(readlink -f ${BASH_SOURCE[0]})" | sed 's|^FIREWORKS=1|FIREWORKS=0|' > "${NEWBUGRE}"
                 sed '/^MULTI_REDUCER=/,/^#VARMOD#/p;d' "$(readlink -f ${BASH_SOURCE[0]})" | grep -v "^#VARMOD#" > "${NEWBUGVM}"
                 sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls --color=never -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
-                NEWBUGTEXT="$(sed 's|"|\\\\"|g' "${NEWBUGTO}")" # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
+                NEWBUGTEXT="$(echo "${NEWBUGTO}" | sed 's|"|\\\\"|g')" # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. Potential TODO: when checking this manually, " was changed to \\" not \" so there may be a bug here in too many back slashes. If we run into that, update the sed to one less backslash.
                 # This code is taken from pquery-prep-red.sh, if it is updated here, please also update it there and vice versa
                 NEWBUGTEXT_FINAL=
                 if [[ "${NEWBUGTEXT}" = *":"* ]]; then
