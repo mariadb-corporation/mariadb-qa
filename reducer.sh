@@ -3014,10 +3014,10 @@ process_outcome(){
                   NEWBUGRE="${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.reducer.sh"
                   NEWBUGVM="${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.varmod"
                 else
-                  NEWBUGSO="$(echo $INPUTFILE | sed "s/$/_newbug_${EPOCH_RAN}.sql/")"
-                  NEWBUGTO="$(echo $INPUTFILE | sed "s/$/_newbug_${EPOCH_RAN}.string/")"
-                  NEWBUGRE="$(echo $INPUTFILE | sed "s/$/_newbug_${EPOCH_RAN}.reducer.sh/")"
-                  NEWBUGVM="$(echo $INPUTFILE | sed "s/$/_newbug_${EPOCH_RAN}.varmod/")"
+                  NEWBUGSO="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.sql|")"
+                  NEWBUGTO="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.string|")"
+                  NEWBUGRE="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.reducer.sh|")"
+                  NEWBUGVM="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.varmod|")"
                 fi
                 cp "${WORKT}" "${NEWBUGSO}"
                 echo_out "[NewBug] Saved the new testcase to: ${NEWBUGSO}"
