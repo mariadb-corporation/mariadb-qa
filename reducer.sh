@@ -3047,23 +3047,23 @@ process_outcome(){
                           echo "Assert (#1)! No suitable sed seperator found. NEWBUGTEXT (${NEWBUGTEXT}) contains all of the possibilities, add more!"
                         else
                           NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s-&-\\\\\\&-g")"  # Escape '&' correctly
-                          sed -ie "s-^TEXT=.*-TEXT=\"${NEWBUGTEXT_FINAL}\"-" "${NEWBUGRE}"
+                          sed -i "s-^TEXT=.*-TEXT=\"${NEWBUGTEXT_FINAL}\"-" "${NEWBUGRE}"
                         fi
                       else
                         NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s_&_\\\\\\&_g")"  # Escape '&' correctly
-                        sed -ie "s_^TEXT=.*_TEXT=\"${NEWBUGTEXT_FINAL}\"_" "${NEWBUGRE}"
+                        sed -i "s_^TEXT=.*_TEXT=\"${NEWBUGTEXT_FINAL}\"_" "${NEWBUGRE}"
                       fi
                     else
                       NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s/&/\\\\\\&/g")"  # Escape '&' correctly
-                      sed -ie "s/^TEXT=.*/TEXT=\"${NEWBUGTEXT_FINAL}\"/" "${NEWBUGRE}"
+                      sed -i "s/^TEXT=.*/TEXT=\"${NEWBUGTEXT_FINAL}\"/" "${NEWBUGRE}"
                     fi
                   else
                     NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s|&|\\\\\\&|g")"  # Escape '&' correctly
-                    sed -ie "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT_FINAL}\"|" "${NEWBUGRE}"
+                    sed -i "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT_FINAL}\"|" "${NEWBUGRE}"
                   fi
                 else
                   NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed -e "s:&:\\\\\\&:g")"  # Escape '&' correctly
-                  sed -ie "s:^TEXT=.*:TEXT=\"${NEWBUGTEXT_FINAL}\":" "${NEWBUGRE}"
+                  sed -i "s:^TEXT=.*:TEXT=\"${NEWBUGTEXT_FINAL}\":" "${NEWBUGRE}"
                 fi
                 NEWBUGTEXT_FINAL=
                 NEWBUGTEXT=
