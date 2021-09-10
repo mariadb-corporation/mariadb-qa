@@ -1266,7 +1266,7 @@ multi_reducer(){
             echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads... done"
           fi
           # The subshell in the following line simply retrieves the WORKO output file from the subreducer Then, the grep -v removes any mysqld option line before copying the file to the new/next WORKF for the next trial If this step was not done, the new/next WORKF testcase would always be +1 line longer. The way this would show for example in SKIPV mode is that the main reducer would indicate that it had found a shorter testcase (-1 line for example) whereas the next trial would start with the same line number (as +1 line was re-added). This is not so clear when large chunks are removed at the time, but it becomes very clear when only ~5-15 lines are left. This was fixed and the line below does not suffer from said problem
-          grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed 's/^.*://' -e 's/[ ]*//g') > $WORKF
+          grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') > $WORKF
           if [ "${FIREWORKS}" != "1" ]; then
             if [ -r "$WORKO" ]; then  # Avoid first occurence when there is no $WORKO yet
               cp -f $WORKO ${WORKO}.prev
@@ -1403,10 +1403,10 @@ multi_reducer_decide_input(){
   for t in $(eval echo {1..$MULTI_THREADS}); do
     export MULTI_WORKD=$(eval echo $(echo '$WORKD'"$t"))
     if [ -s $MULTI_WORKD/VERIFIED ]; then
-      TRIAL_LEVEL=$(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "TRIAL" | sed 's/^.*://' -e 's/[ ]*//g')
+      TRIAL_LEVEL=$(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "TRIAL" | sed -e 's/^.*://' -e 's/[ ]*//g')
       if [ $TRIAL_LEVEL -eq 1 ]; then
         # Highest optimization possible, use file and exit
-        cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed 's/^.*://' -e 's/[ ]*//g') $WORKF
+        cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
         echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, maximum initial simplification file, at thread #$t: Using it as new input file"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
           MYEXTRA=$(cat $MULTI_WORKD/MYEXTRA)
@@ -1414,7 +1414,7 @@ multi_reducer_decide_input(){
         break
       elif [ $TRIAL_LEVEL -lt $LOWEST_TRIAL_LEVEL_SEEN ]; then
         LOWEST_TRIAL_LEVEL_SEEN=$TRIAL_LEVEL
-        cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed 's/^.*://' -e 's/[ ]*//g') $WORKF
+        cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
         echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, level $TRIAL_LEVEL simplification file, at thread #$t: Using it as new input file, unless better is found"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
           MYEXTRA=$(cat $MULTI_WORKD/MYEXTRA)
@@ -4180,13 +4180,13 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     elif [ $TRIAL -eq 14 ]; then sed "s/'[a-z]\+'/'a'/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 15 ]; then sed "s/'[A-Z]'/'a'/g"  $WORKF > $WORKT
     elif [ $TRIAL -eq 16 ]; then sed "s/'[A-Z]\+'/'a'/g"  $WORKF > $WORKT
-    elif [ $TRIAL -eq 17 ]; then sed 's/^[ \t]\+//g' -e 's/[ \t]\+$//g' -e 's/[ \t]\+/ /g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 18 ]; then sed 's/( /(/g' -e 's/ )/)/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 19 ]; then sed 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 20 ]; then sed 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 21 ]; then sed 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
-    elif [ $TRIAL -eq 22 ]; then sed 's/ \. /\./g' -e 's/, /,/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 23 ]; then sed 's/)[ \t]\+,/),/g' -e 's/)[ \t]\+;/);/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 17 ]; then sed -e 's/^[ \t]\+//g' -e 's/[ \t]\+$//g' -e 's/[ \t]\+/ /g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 18 ]; then sed -e 's/( /(/g' -e 's/ )/)/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 19 ]; then sed -e 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 20 ]; then sed -e 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 21 ]; then sed -e 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
+    elif [ $TRIAL -eq 22 ]; then sed -e 's/ \. /\./g' -e 's/, /,/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 23 ]; then sed -e 's/)[ \t]\+,/),/g' -e 's/)[ \t]\+;/);/g' $WORKF > $WORKT
     elif [ $TRIAL -eq 24 ]; then sed 's/\/\*\(.*\)\*\//\1/' $WORKF > $WORKT
     elif [ $TRIAL -eq 25 ]; then sed 's/field/f/g' $WORKF > $WORKT
     elif [ $TRIAL -eq 26 ]; then sed 's/field/f/gi' $WORKF > $WORKT
@@ -4389,7 +4389,7 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 119 ]; then sed 's/ LEFT / /gi' $WORKF > $WORKT
     elif [ $TRIAL -eq 120 ]; then sed 's/ RIGHT / /gi' $WORKF > $WORKT
     elif [ $TRIAL -eq 121 ]; then sed 's/ OUTER / /gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 122 ]; then sed 's/ INNER / /gi' -e 's/ CROSS / /gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 122 ]; then sed -e 's/ INNER / /gi' -e 's/ CROSS / /gi' $WORKF > $WORKT
     elif [ $TRIAL -eq 123 ]; then sed 's/[a-z0-9]\+_//' $WORKF > $WORKT
     elif [ $TRIAL -eq 124 ]; then sed 's/[a-z0-9]\+_//' $WORKF > $WORKT
     elif [ $TRIAL -eq 125 ]; then sed 's/[a-z0-9]\+_//' $WORKF > $WORKT
@@ -4401,7 +4401,7 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 131 ]; then sed 's/SELECT .* /SELECT * /i' $WORKF > $WORKT
     elif [ $TRIAL -eq 132 ]; then sed 's/SELECT .* /SELECT 1 /gi' $WORKF > $WORKT
     elif [ $TRIAL -eq 133 ]; then sed 's/SELECT .* /SELECT 1 /i' $WORKF > $WORKT
-    elif [ $TRIAL -eq 134 ]; then sed 's/[\t ]\+/ /g' -e 's/ *\([;,]\)/\1/g' -e 's/ $//g' -e 's/^ //g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 134 ]; then sed -e 's/[\t ]\+/ /g' -e 's/ *\([;,]\)/\1/g' -e 's/ $//g' -e 's/^ //g' $WORKF > $WORKT
     elif [ $TRIAL -eq 135 ]; then sed 's/CHARACTER[ ]*SET[ ]*latin1/ /i' $WORKF > $WORKT
     elif [ $TRIAL -eq 136 ]; then sed 's/CHARACTER[ ]*SET[ ]*utf8/ /i' $WORKF > $WORKT
     elif [ $TRIAL -eq 137 ]; then sed 's/SELECT .* /SELECT 1 /gi' $WORKF > $WORKT
@@ -4469,7 +4469,7 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
     for i in $(eval echo {$COUNTTABLES..1}); do  # Reverse order
       # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurence)
       TABLENAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed 's/CREATE[\t ]*TABLE/\n/2' \
-        | head -n1 | sed 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
+        | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
       sed "s/\([(. ]\)$TABLENAME\([ )]\)/\1 $TABLENAME \2/gi;s/ $TABLENAME / t$i /gi" $WORKF > $WORKT
       if [ "$TABLENAME" = "t$i" ]; then
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as table $i is already named 't$i' in the file"
@@ -4487,7 +4487,7 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
     for i in $(eval echo {$COUNTVIEWS..1}); do  # Reverse order
       # the '...\n/2' sed is a precaution against multiple CREATE VIEWs on one line (it replaces the second occurence)
       VIEWNAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*VIEW" $WORKF | tail -n1 | sed 's/CREATE[\t ]*VIEW/\n/2' \
-        | head -n1 | sed 's/CREATE[\t ]*VIEW[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
+        | head -n1 | sed -e 's/CREATE[\t ]*VIEW[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
       sed "s/\([(. ]\)$VIEWNAME\([ )]\)/\1 $VIEWNAME \2/gi;s/ $VIEWNAME / v$i /gi" $WORKF > $WORKT
       if [ "$VIEWNAME" = "v$i" ]; then
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as view $i is already named 'v$i' in the file"
@@ -4523,7 +4523,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
     for t in $(eval echo {$COUNTTABLES..1}); do  # Reverse order process all tables
       # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurence)
       TABLENAME=$(grep -E --binary-files=text -m$t "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed 's/CREATE[\t ]*TABLE/\n/2' \
-        | head -n1 | sed 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
+        | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
 
       # Check if this table ($TABLENAME) is references in aother INSERT..INTO..$TABLENAME2..SELECT..$TABLENAME line.
       # If so, reducer does not need to process this table since it will be processed later when reducer gets to the table $TABLENAME2
@@ -4567,8 +4567,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
         while grep -E --binary-files=text -qi "INSERT.*INTO.*$TEMPTABLENAME.*SELECT" $WORKF; do
           NUMOFINVOLVEDTABLES=$[$NUMOFINVOLVEDTABLES+1]
           # the '...\n/2' sed is a precaution against multiple INSERT INTOs on one line (it replaces the second occurence)
-          export TABLENAME$NUMOFINVOLVEDTABLES=$(grep -E --binary-files=text "INSERT.*INTO.*$TEMPTABLENAME.*SELECT" $WORKF | tail -n1 | sed 's/INSERT.*INTO/\n/2' \
-            | head -n1 | sed "s/INSERT.*INTO.*$TEMPTABLENAME.*SELECT.*FROM[\t ]*\(.*\)/\1/" -e 's/ //g;s/;//g')
+          export TABLENAME$NUMOFINVOLVEDTABLES=$(grep -E --binary-files=text "INSERT.*INTO.*$TEMPTABLENAME.*SELECT" $WORKF | tail -n1 | sed 's/INSERT.*INTO/\n/2' | head -n1 | sed -e "s/INSERT.*INTO.*$TEMPTABLENAME.*SELECT.*FROM[\t ]*\(.*\)/\1/" -e 's/ //g;s/;//g')
           TEMPTABLENAME=$(eval echo $(echo '$TABLENAME'"$NUMOFINVOLVEDTABLES"))
         done
 
@@ -4737,7 +4736,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 3   ]; then sed "s/[ ]*,/,/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 4   ]; then sed "s/,[ ]*/,/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 5   ]; then sed "s/[ ]*;[ ]*/;/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 6   ]; then sed "s/^[ ]*//g" -e "s/[ ]*$//g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 6   ]; then sed -e "s/^[ ]*//g" -e "s/[ ]*$//g" $WORKF > $WORKT
     elif [ $TRIAL -eq 7   ]; then sed "s/GRANDPARENT/gp/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 8   ]; then sed "s/PARENT/p/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 9   ]; then sed "s/CHILD/c/g" $WORKF > $WORKT
@@ -4822,7 +4821,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 87  ]; then sed "s/_null/nu/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 88  ]; then sed "s/_latin1/l/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 89  ]; then sed "s/_utf8/u/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 90  ]; then sed "s/;[ ]*;/;/g" -e "s/[ ]*,[ ]*/,/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 90  ]; then sed -e "s/;[ ]*;/;/g" -e "s/[ ]*,[ ]*/,/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 91  ]; then sed "s/VARCHAR[ ]*(\(.*\))/CHAR (\1)/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 92  ]; then sed "s/VARBINARY[ ]*(\(.*\))/BINARY (\1)/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 93  ]; then sed "s/DATETIME/DATE/gi" $WORKF > $WORKT
@@ -4882,7 +4881,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 147 ]; then sed "s/ ENGINE=RocksDB/ ENGINE=none/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 148 ]; then NOSKIP=1; sed "s/TokuDB/InnoDB/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 149 ]; then sed 's/RocksDB/InnoDB/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 150 ]; then sed 's/[\t ]\+/ /g' -e 's/ \([;,]\)/\1/g' -e 's/ $//g' -e 's/^ //g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 150 ]; then sed -e 's/[\t ]\+/ /g' -e 's/ \([;,]\)/\1/g' -e 's/ $//g' -e 's/^ //g' $WORKF > $WORKT
     elif [ $TRIAL -eq 151 ]; then sed 's/.*/\L&/' $WORKF > $WORKT
     elif [ $TRIAL -eq 152 ]; then sed 's/[ ]*([ ]*/(/;s/[ ]*)[ ]*/)/' $WORKF > $WORKT
     elif [ $TRIAL -eq 153 ]; then sed 's/;.*/;/' $WORKF > $WORKT

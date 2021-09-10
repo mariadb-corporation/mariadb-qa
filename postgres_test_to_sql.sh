@@ -78,7 +78,7 @@ generate_sql()
 				sed "s: *--.*$::g" | \
 				sed 's|;.*.\-\-.*|;|' | \
 				sed '/^\\d/d' | \
-				sed :x -e '/;$/b' -e N -e 's/\n/ /' -e bx | \
+				sed -e :x -e '/;$/b' -e N -e 's/\n/ /' -e bx | \
 				sed "s|==>|-->|g" | \
 				sed "s|HH24textMItextSS|HH24--text--MI--text--SS|g" | \
 				sed 's|\\echo.*.\\quit||' | \
