@@ -29,13 +29,17 @@ cd ../T02
 cd ../T03
 ~/mariadb-qa/san_text_string.sh | sed 's|^|T03: |'
 cd ../T04
-~/mariad5-qa/san_text_string.sh | sed 's|^|T04: |'
+~/mariadb-qa/san_text_string.sh | sed 's|^|T04: |'
 cd ../T05
 ~/mariadb-qa/san_text_string.sh | sed 's|^|T05: |'
 cd ../T06
 ~/mariadb-qa/san_text_string.sh | sed 's|^|T06: |'
 cd ../T07
 ~/mariadb-qa/san_text_string.sh | sed 's|^|T07: |'
+cd ../T08
+~/mariadb-qa/san_text_string.sh | sed 's|^|T08: |'
+cd ../T09
+~/mariadb-qa/san_text_string.sh | sed 's|^|T09: |'
 echo "---- UBSAN Unit tests of san_text_string.sh ----"
 cd ../U01
 ~/mariadb-qa/san_text_string.sh | sed 's|^|U01: |'

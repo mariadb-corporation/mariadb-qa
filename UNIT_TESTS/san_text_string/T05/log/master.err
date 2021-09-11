@@ -1,100 +1,53 @@
-2021-01-26 20:17:03 0 [Note] /test/UBASAN_MD301120-mariadb-10.6.0-linux-x86_64-dbg/bin/mysqld: ready for connections.
-Version: '10.6.0-MariaDB-debug'  socket: '/test/UBASAN_MD301120-mariadb-10.6.0-linux-x86_64-dbg/socket.sock'  port: 11155  MariaDB Server
-2021-01-26 20:22:24 5 [Note] Event Scheduler: scheduler thread started with id 5
-=================================================================
-==3119492==ERROR: AddressSanitizer: heap-use-after-free on address 0x611000050f40 at pc 0x5574446306ad bp 0x1460109c1190 sp 0x1460109c1180
-READ of size 8 at 0x611000050f40 thread T15
-    #0 0x5574446306ac in event_queue_element_compare_q /test/10.6_dbg_san/sql/event_queue.cc:75
-    #1 0x5574464b52f0 in insert_at /test/10.6_dbg_san/mysys/queues.c:191
-    #2 0x5574464b6333 in queue_insert /test/10.6_dbg_san/mysys/queues.c:219
-    #3 0x5574464b650a in queue_insert_safe /test/10.6_dbg_san/mysys/queues.c:248
-    #4 0x557444634609 in Event_queue::update_event(THD*, st_mysql_const_lex_string const*, st_mysql_const_lex_string const*, Event_queue_element*) /test/10.6_dbg_san/sql/event_queue.cc:271
-    #5 0x55744264b857 in Events::update_event(THD*, Event_parse_data*, st_mysql_const_lex_string*, st_mysql_const_lex_string*) /test/10.6_dbg_san/sql/events.cc:550
-    #6 0x557441da5499 in mysql_execute_command(THD*) /test/10.6_dbg_san/sql/sql_parse.cc:5132
-    #7 0x557441cf150e in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_dbg_san/sql/sql_parse.cc:7883
-    #8 0x557441d5ffec in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_dbg_san/sql/sql_parse.cc:1816
-    #9 0x557441d753b4 in do_command(THD*) /test/10.6_dbg_san/sql/sql_parse.cc:1348
-    #10 0x557442754f1a in do_handle_one_connection(CONNECT*, bool) /test/10.6_dbg_san/sql/sql_connect.cc:1410
-    #11 0x55744275819d in handle_one_connection /test/10.6_dbg_san/sql/sql_connect.cc:1312
-    #12 0x557444c5442d in pfs_spawn_thread /test/10.6_dbg_san/storage/perfschema/pfs.cc:2201
-    #13 0x146033b56608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
-    #14 0x146032caa292 in __clone (/lib/x86_64-linux-gnu/libc.so.6+0x122292)
+WARNING: ThreadSanitizer: data race (pid=1100047)
+  Write of size 8 at 0x55786da8fee0 by main thread (mutexes: write M1285):
+    #0 LOGGER::init_error_log(unsigned long long) /test/10.5_opt_san/sql/log.cc:1443 (mariadbd+0xf13ac7)
+    #1 LOGGER::init_error_log(unsigned long long) /test/10.5_opt_san/sql/log.cc:1432 (mariadbd+0xf13ac7)
+    #2 LOGGER::set_handlers(unsigned long long, unsigned long long, unsigned long long) /test/10.5_opt_san/sql/log.cc:1611 (mariadbd+0xf13ac7)
+    #3 init_server_components /test/10.5_opt_san/sql/mysqld.cc:5066 (mariadbd+0x7206d7)
+    #4 mysqld_main(int, char**) /test/10.5_opt_san/sql/mysqld.cc:5496 (mariadbd+0x725bf4)
+    #5 main /test/10.5_opt_san/sql/main.cc:25 (mariadbd+0x6b8455)
  
-0x611000050f40 is located 0 bytes inside of 208-byte region [0x611000050f40,0x611000051010)
-freed by thread T15 here:
-    #0 0x5574414ce31f in operator delete(void*) (/test/UBASAN_MD301120-mariadb-10.6.0-linux-x86_64-dbg/bin/mariadbd+0x809031f)
-    #1 0x55744262ba5e in Event_queue_element::~Event_queue_element() /test/10.6_dbg_san/sql/event_data_objects.cc:331
-    #2 0x557444631a11 in Event_queue::find_n_remove_event(st_mysql_const_lex_string const*, st_mysql_const_lex_string const*) /test/10.6_dbg_san/sql/event_queue.cc:430
-    #3 0x55744463459e in Event_queue::update_event(THD*, st_mysql_const_lex_string const*, st_mysql_const_lex_string const*, Event_queue_element*) /test/10.6_dbg_san/sql/event_queue.cc:265
-    #4 0x55744264b857 in Events::update_event(THD*, Event_parse_data*, st_mysql_const_lex_string*, st_mysql_const_lex_string*) /test/10.6_dbg_san/sql/events.cc:550
-    #5 0x557441da5499 in mysql_execute_command(THD*) /test/10.6_dbg_san/sql/sql_parse.cc:5132
-    #6 0x557441cf150e in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_dbg_san/sql/sql_parse.cc:7883
-    #7 0x557441d5ffec in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_dbg_san/sql/sql_parse.cc:1816
-    #8 0x557441d753b4 in do_command(THD*) /test/10.6_dbg_san/sql/sql_parse.cc:1348
-    #9 0x557442754f1a in do_handle_one_connection(CONNECT*, bool) /test/10.6_dbg_san/sql/sql_connect.cc:1410
-    #10 0x55744275819d in handle_one_connection /test/10.6_dbg_san/sql/sql_connect.cc:1312
-    #11 0x557444c5442d in pfs_spawn_thread /test/10.6_dbg_san/storage/perfschema/pfs.cc:2201
-    #12 0x146033b56608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+  Previous read of size 8 at 0x55786da8fee0 by thread T5:
+    #0 LOGGER::error_log_print(loglevel, char const*, __va_list_tag*) /test/10.5_opt_san/sql/log.cc:1181 (mariadbd+0xf106b2)
+    #1 error_log_print(loglevel, char const*, __va_list_tag*) /test/10.5_opt_san/sql/log.cc:6818 (mariadbd+0xf106b2)
+    #2 sql_print_information_v(char const*, __va_list_tag*) /test/10.5_opt_san/sql/log.cc:9167 (mariadbd+0xf106b2)
+    #3 sql_print_information(char const*, ...) /test/10.5_opt_san/sql/log.cc:9156 (mariadbd+0xf106b2)
+    #4 ib::info::~info() /test/10.5_opt_san/storage/innobase/ut/ut0ut.cc:543 (mariadbd+0x67f3c7)
+    #5 buf_load_status /test/10.5_opt_san/storage/innobase/buf/buf0dump.cc:147 (mariadbd+0x68d3d3)
+    #6 buf_load /test/10.5_opt_san/storage/innobase/buf/buf0dump.cc:501 (mariadbd+0x15c20b6)
+    #7 buf_dump_load_func /test/10.5_opt_san/storage/innobase/buf/buf0dump.cc:758 (mariadbd+0x15c31e1)
+    #8 tpool::task::execute() /test/10.5_opt_san/tpool/task.cc:52 (mariadbd+0x16f48df)
+    #9 tpool::thread_pool_generic::worker_main(tpool::worker_data*) /test/10.5_opt_san/tpool/tpool_generic.cc:546 (mariadbd+0x16f1b54)
+    #10 void std::__invoke_impl<void, void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*>(std::__invoke_memfun_deref, void (tpool::thread_pool_generic::*&&)(tpool::worker_data*), tpool::thread_pool_generic*&&, tpool::worker_data*&&) /usr/include/c++/9/bits/invoke.h:73 (mariadbd+0x16f2a47)
+    #11 std::__invoke_result<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*>::type std::__invoke<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*>(void (tpool::thread_pool_generic::*&&)(tpool::worker_data*), tpool::thread_pool_generic*&&, tpool::worker_data*&&) /usr/include/c++/9/bits/invoke.h:95 (mariadbd+0x16f2a47)
+    #12 void std::thread::_Invoker<std::tuple<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*> >::_M_invoke<0ul, 1ul, 2ul>(std::_Index_tuple<0ul, 1ul, 2ul>) /usr/include/c++/9/thread:244 (mariadbd+0x16f2a47)
+    #13 std::thread::_Invoker<std::tuple<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*> >::operator()() /usr/include/c++/9/thread:251 (mariadbd+0x16f2a47)
+    #14 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (tpool::thread_pool_generic::*)(tpool::worker_data*), tpool::thread_pool_generic*, tpool::worker_data*> > >::_M_run() /usr/include/c++/9/thread:195 (mariadbd+0x16f2a47)
+    #15 <null> <null> (libstdc++.so.6+0xd6d83)
  
-previously allocated by thread T15 here:
-    #0 0x5574414cd387 in operator new(unsigned long) (/test/UBASAN_MD301120-mariadb-10.6.0-linux-x86_64-dbg/bin/mariadbd+0x808f387)
-    #1 0x557442649883 in Events::create_event(THD*, Event_parse_data*) /test/10.6_dbg_san/sql/events.cc:372
-    #2 0x557441da5566 in mysql_execute_command(THD*) /test/10.6_dbg_san/sql/sql_parse.cc:5128
-    #3 0x557441cf150e in mysql_parse(THD*, char*, unsigned int, Parser_state*) /test/10.6_dbg_san/sql/sql_parse.cc:7883
-    #4 0x557441d5ffec in dispatch_command(enum_server_command, THD*, char*, unsigned int) /test/10.6_dbg_san/sql/sql_parse.cc:1816
-    #5 0x557441d753b4 in do_command(THD*) /test/10.6_dbg_san/sql/sql_parse.cc:1348
-    #6 0x557442754f1a in do_handle_one_connection(CONNECT*, bool) /test/10.6_dbg_san/sql/sql_connect.cc:1410
-    #7 0x55744275819d in handle_one_connection /test/10.6_dbg_san/sql/sql_connect.cc:1312
-    #8 0x557444c5442d in pfs_spawn_thread /test/10.6_dbg_san/storage/perfschema/pfs.cc:2201
-    #9 0x146033b56608 in start_thread /build/glibc-ZN95T4/glibc-2.31/nptl/pthread_create.c:477
+  Location is global 'logger' of size 192 at 0x55786da8fe80 (mariadbd+0x0000022beee0)
+  Mutex M1285 (0x55786da8fe80) created at:
+    #0 pthread_rwlock_init <null> (libtsan.so.0+0x3699f)
+    #1 inline_mysql_rwlock_init /test/10.5_opt_san/include/mysql/psi/mysql_thread.h:870 (mariadbd+0xf12918)
+    #2 LOGGER::init_base() /test/10.5_opt_san/sql/log.cc:1236 (mariadbd+0xf12918)
+    #3 mysqld_main(int, char**) /test/10.5_opt_san/sql/mysqld.cc:5396 (mariadbd+0x72560e)
+    #4 main /test/10.5_opt_san/sql/main.cc:25 (mariadbd+0x6b8455)
  
-Thread T15 created by T0 here:
-    #0 0x5574413f8275 in __interceptor_pthread_create (/test/UBASAN_MD301120-mariadb-10.6.0-linux-x86_64-dbg/bin/mariadbd+0x7fba275)
-    #1 0x557444c64f45 in my_thread_create /test/10.6_dbg_san/storage/perfschema/my_thread.h:38
-    #2 0x557444c64f45 in pfs_spawn_thread_v1 /test/10.6_dbg_san/storage/perfschema/pfs.cc:2252
-    #3 0x55744152630d in inline_mysql_thread_create /test/10.6_dbg_san/include/mysql/psi/mysql_thread.h:1323
-    #4 0x55744152630d in create_thread_to_handle_connection(CONNECT*) /test/10.6_dbg_san/sql/mysqld.cc:5804
-    #5 0x557441539d9b in create_new_thread(CONNECT*) /test/10.6_dbg_san/sql/mysqld.cc:5863
-    #6 0x55744153a3d0 in handle_accepted_socket(st_mysql_socket, st_mysql_socket) /test/10.6_dbg_san/sql/mysqld.cc:5928
-    #7 0x55744153be54 in handle_connections_sockets() /test/10.6_dbg_san/sql/mysqld.cc:6055
-    #8 0x55744153f966 in mysqld_main(int, char**) /test/10.6_dbg_san/sql/mysqld.cc:5699
-    #9 0x55744150cbba in main /test/10.6_dbg_san/sql/main.cc:25
-    #10 0x146032baf0b2 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x270b2)
+  Thread T5 (tid=1100058, running) created by main thread at:
+    #0 pthread_create <null> (libtsan.so.0+0x5ea99)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xd7048)
+    #2 tpool::thread_pool_generic::maybe_wake_or_create_thread() /test/10.5_opt_san/tpool/tpool_generic.cc:802 (mariadbd+0x16f2787)
+    #3 tpool::thread_pool_generic::submit_task(tpool::task*) /test/10.5_opt_san/tpool/tpool_generic.cc:821 (mariadbd+0x16f2787)
+    #4 buf_flush_lists(unsigned long, unsigned long) /test/10.5_opt_san/storage/innobase/buf/buf0flu.cc:1533 (mariadbd+0x15ca505)
+    #5 buf_flush_sync() /test/10.5_opt_san/storage/innobase/buf/buf0flu.cc:2289 (mariadbd+0x15cbfe8)
+    #6 recv_sys_t::apply(bool) /test/10.5_opt_san/storage/innobase/log/log0recv.cc:2731 (mariadbd+0x13f4379)
+    #7 srv_start(bool) /test/10.5_opt_san/storage/innobase/srv/srv0start.cc:1490 (mariadbd+0x673e74)
+    #8 innodb_init /test/10.5_opt_san/storage/innobase/handler/ha_innodb.cc:3922 (mariadbd+0x1360400)
+    #9 ha_initialize_handlerton(st_plugin_int*) /test/10.5_opt_san/sql/handler.cc:645 (mariadbd+0xcf9547)
+    #10 plugin_initialize /test/10.5_opt_san/sql/sql_plugin.cc:1459 (mariadbd+0x8d3f74)
+    #11 plugin_init(int*, char**, int) /test/10.5_opt_san/sql/sql_plugin.cc:1751 (mariadbd+0x8d5cc3)
+    #12 init_server_components /test/10.5_opt_san/sql/mysqld.cc:4913 (mariadbd+0x72043d)
+    #13 mysqld_main(int, char**) /test/10.5_opt_san/sql/mysqld.cc:5496 (mariadbd+0x725bf4)
+    #14 main /test/10.5_opt_san/sql/main.cc:25 (mariadbd+0x6b8455)
  
-SUMMARY: AddressSanitizer: heap-use-after-free /test/10.6_dbg_san/sql/event_queue.cc:75 in event_queue_element_compare_q
-Shadow bytes around the buggy address:
-  0x0c2280002190: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
-  0x0c22800021a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-  0x0c22800021b0: 04 fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  0x0c22800021c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-  0x0c22800021d0: 00 00 00 00 00 00 00 00 04 fa fa fa fa fa fa fa
-=>0x0c22800021e0: fa fa fa fa fa fa fa fa[fd]fd fd fd fd fd fd fd
-  0x0c22800021f0: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-  0x0c2280002200: fd fd fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  0x0c2280002210: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-  0x0c2280002220: fd fd fd fd fd fd fd fd fd fd fa fa fa fa fa fa
-  0x0c2280002230: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
-Shadow byte legend (one shadow byte represents 8 application bytes):
-  Addressable:           00
-  Partially addressable: 01 02 03 04 05 06 07
-  Heap left redzone:       fa
-  Freed heap region:       fd
-  Stack left redzone:      f1
-  Stack mid redzone:       f2
-  Stack right redzone:     f3
-  Stack after return:      f5
-  Stack use after scope:   f8
-  Global redzone:          f9
-  Global init order:       f6
-  Poisoned by user:        f7
-  Container overflow:      fc
-  Array cookie:            ac
-  Intra object redzone:    bb
-  ASan internal:           fe
-  Left alloca redzone:     ca
-  Right alloca redzone:    cb
-  Shadow gap:              cc
-==3119492==ABORTING
-210126 20:22:25 [ERROR] mysqld got signal 6 ;
-...
-Query (0x62b0000a12a8): ALTER EVENT e ON SCHEDULE EVERY 1 HOUR STARTS '1999-01-01 00:00:00'
+SUMMARY: ThreadSanitizer: data race /test/10.5_opt_san/sql/log.cc:1443 in LOGGER::init_error_log(unsigned long long)

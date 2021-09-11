@@ -48,13 +48,14 @@ cat "${1}" | tr -d '`' | \
   sed 's|cascaded|CASCADED|gi' | \
   sed 's|check option|CHECK OPTION|gi' | \
   sed 's|comment|COMMENT|gi' | \
+  sed 's|md5|MD5|gi' | \
+  sed 's|query|QUERY|gi' | \
   sed 's|schedule|SCHEDULE|gi' | \
   sed 's|every|EVERY|gi' | \
   sed 's|minute|MINUTE|gi' | \
   sed 's|hour|HOUR|gi' | \
   sed 's|day|DAY|gi' | \
   sed 's|begin|BEGIN|gi' | \
-  sed 's|md5|MD5|gi' | \
   sed 's|end|END|gi' | \
   sed 's|ends|ENDS|gi' | \
   sed 's|rollback|ROLLBACK|gi' | \
@@ -299,6 +300,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|date_add[ ]*(|DATE_ADD(|gi' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
   sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \
+  sed 's|insert_method|INSERT_METHOD|gi' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \
   sed "s|'IN |' IN |gi" | \

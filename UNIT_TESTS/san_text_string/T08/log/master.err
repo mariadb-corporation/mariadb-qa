@@ -1,0 +1,12 @@
+WARNING: ThreadSanitizer: data race (pid=27180)
+  Read of size 8 at 0x000004011f90 by thread T17:
+    #0 safe_mutex_lock build/../mysys/thr_mutex.c:240:12 (mysqld+0x2206cc3)
+    #1 inline_mysql_mutex_lock build/../include/mysql/psi/mysql_thread.h:710:11 (mysqld+0x21f4b44)
+    #2 my_thread_init build/../mysys/my_thr_init.c:307:3 (mysqld+0x21f4628)
+    #3 fts_optimize_thread(void*) build/../storage/innobase/fts/fts0opt.cc:2799:2 (mysqld+0x1cb9073)
+ 
+  Previous write of size 8 at 0x000004011f90 by thread T16 (mutexes: write M862, write M861):
+    #0 safe_mutex_lock build/../mysys/thr_mutex.c:310:11 (mysqld+0x22071d0)
+    #1 inline_mysql_mutex_lock build/../include/mysql/psi/mysql_thread.h:710:11 (mysqld+0x21f4b44)
+    #2 my_thread_init build/../mysys/my_thr_init.c:307:3 (mysqld+0x21f4628)
+    #3 dict_stats_thread build/../storage/innobase/dict/dict0stats_bg.cc:459:2 (mysqld+0x1c050b4)

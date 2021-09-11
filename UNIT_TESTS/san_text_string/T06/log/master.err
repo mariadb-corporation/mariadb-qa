@@ -1,4 +1,4 @@
-ARNING: ThreadSanitizer: data race (pid=2702489)
+WARNING: ThreadSanitizer: data race (pid=2702489)
   Read of size 8 at 0x5574f389bc38 by thread T5 (mutexes: write M17663):
     #0 os_file_pread /test/10.5_opt_san/storage/innobase/os/os0file.cc:3308 (mariadbd+0x140ea82)
     #1 os_file_read_page /test/10.5_opt_san/storage/innobase/os/os0file.cc:3345 (mariadbd+0x140ea82)
