@@ -42,10 +42,10 @@ for TRIAL in "${issues[@]}"; do
   COUNTER=$[ $COUNTER + 1 ]
   COUNTER_LIVE=$[ $COUNTER_LIVE + 1 ]
   if [ $COUNTER -gt $SKIP ]; then
-    #screen -admS s${COUNTER_LIVE} bash -c "ulimit -u 4000;./reducer${TRIAL}.sh;bash"  # Start reducer, and when done give a usable bash prompt
-    screen -admS s${COUNTER_LIVE} bash -c "./reducer${TRIAL}.sh;bash"  # Start reducer, and when done give a usable bash prompt
+    #screen -admS s${TRIAL} bash -c "ulimit -u 4000;./reducer${TRIAL}.sh;bash"  # Start reducer, and when done provide a usable Bash prompt, and set ulimit beforehand
+    screen -admS s${TRIAL} bash -c "./reducer${TRIAL}.sh;bash"  # Start reducer, and when done provide a usable Bash prompt
     sleep 1  # Avoid a /dev/shm/<epoch> directory conflict (yes, it happened) (yes, it happened again at 0.3 sec delay)
-    echo "Started screen with name 's${COUNTER_LIVE}' and started ./reducer${TRIAL}.sh within it for issue: $(grep "   TEXT=" reducer${TRIAL}.sh | sed 's|   TEXT="||;s|"$||')"
+    echo "Started screen with name 's${TRIAL}' and started ./reducer${TRIAL}.sh within it for issue: $(grep "   TEXT=" reducer${TRIAL}.sh | sed 's|   TEXT="||;s|"$||')"
   fi
   if [ $COUNTER -eq $TOTAL ]; then break; fi
 done
