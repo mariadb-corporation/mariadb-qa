@@ -18,3 +18,5 @@ cd ${DIR}/10.4 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_opt.sh &
+
+echo "All processes started as background threads... Output will commence soon."

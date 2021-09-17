@@ -242,8 +242,8 @@ while IFS=$'\n' read LINE; do
   # ------------- ASAN Issue roundup (if present) -------------
   if [ "${FLAG_ASAN_PRESENT}" -eq 1 -a "${FLAG_ASAN_READY}" -eq 1 ]; then
     UNIQUE_ID="ASAN"
-    if [ ! -z "${ASAN_FILE_PREPARSE}" ]; then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FILE_PREPARSE}"; fi
     if [ ! -z "${ASAN_ERROR}" ];         then UNIQUE_ID="${UNIQUE_ID}|${ASAN_ERROR}"; fi
+    if [ ! -z "${ASAN_FILE_PREPARSE}" ]; then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FILE_PREPARSE}"; fi
     if [ ! -z "${ASAN_FRAME1}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME1}"; fi
     if [ ! -z "${ASAN_FRAME2}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME2}"; fi
     if [ ! -z "${ASAN_FRAME3}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME3}"; fi
@@ -254,8 +254,8 @@ while IFS=$'\n' read LINE; do
   # ------------- TSAN Issue roundup (if present) -------------
   if [ "${FLAG_TSAN_PRESENT}" -eq 1 -a "${FLAG_TSAN_READY}" -eq 1 ]; then
     UNIQUE_ID="TSAN"
-    if [ ! -z "${TSAN_FILE_PREPARSE}" ]; then UNIQUE_ID="${UNIQUE_ID}|${TSAN_FILE_PREPARSE}"; fi
     if [ ! -z "${TSAN_ERROR}" ];         then UNIQUE_ID="${UNIQUE_ID}|${TSAN_ERROR}"; fi
+    if [ ! -z "${TSAN_FILE_PREPARSE}" ]; then UNIQUE_ID="${UNIQUE_ID}|${TSAN_FILE_PREPARSE}"; fi
     if [ ! -z "${TSAN_FRAME1}" ];        then UNIQUE_ID="${UNIQUE_ID}|${TSAN_FRAME1}"; fi
     if [ ! -z "${TSAN_FRAME2}" ];        then UNIQUE_ID="${UNIQUE_ID}|${TSAN_FRAME2}"; fi
     if [ ! -z "${TSAN_FRAME3}" ];        then UNIQUE_ID="${UNIQUE_ID}|${TSAN_FRAME3}"; fi
@@ -266,8 +266,8 @@ while IFS=$'\n' read LINE; do
   # ------------- UBSAN Issue roundup (if present) -------------
   if [ "${FLAG_UBSAN_PRESENT}" -eq 1 -a "${FLAG_UBSAN_READY}" -eq 1 ]; then
     UNIQUE_ID="UBSAN"
-    if [ ! -z "${UBSAN_FILE_PREPARSE}" ]; then UNIQUE_ID="${UNIQUE_ID}|${UBSAN_FILE_PREPARSE}"; fi
     if [ ! -z "${UBSAN_ERROR}" ];         then UNIQUE_ID="${UNIQUE_ID}|${UBSAN_ERROR}"; fi
+    if [ ! -z "${UBSAN_FILE_PREPARSE}" ]; then UNIQUE_ID="${UNIQUE_ID}|${UBSAN_FILE_PREPARSE}"; fi
     if [ ! -z "${UBSAN_FRAME1}" ];        then UNIQUE_ID="${UNIQUE_ID}|${UBSAN_FRAME1}"; fi
     if [ ! -z "${UBSAN_FRAME2}" ];        then UNIQUE_ID="${UNIQUE_ID}|${UBSAN_FRAME2}"; fi
     if [ ! -z "${UBSAN_FRAME3}" ];        then UNIQUE_ID="${UNIQUE_ID}|${UBSAN_FRAME3}"; fi
