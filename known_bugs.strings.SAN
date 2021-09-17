@@ -1,0 +1,6 @@
+## Known *SAN bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID etc.
+
+##### CURRENT BUGS #####
+UBSAN|signed integer overflow: -10000000000 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## DBG DEV-22742
+
+###### FIXED BUGS ######
