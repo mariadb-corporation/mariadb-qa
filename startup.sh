@@ -804,6 +804,7 @@ if [[ $MDG -eq 1 ]]; then
   sed -i "s|ls data/\*core\*|ls node1/\*core\*|g" gal_gdb
 fi
 
+if [ ! -r ./in.sql ]; then touch ./in.sql; fi  # Make new empty file if does not exist yet
 echo './all --sql_mode=' >sqlmode
 echo './all --log_bin' >binlog
 echo 'MYEXTRA_OPT="$*"' >all
