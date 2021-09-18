@@ -6,6 +6,7 @@ RND_DELAY_FUNCTION=0     # If set to 1, insert random delays after starting a ne
 RND_REPLAY_ORDER=0       # If set to 1, the tool will shuffle the input SQL in various ways
 REPORT_END_THREAD=0      # If set to 1, report the outcome of ended threads (slows things down considerably)
 REPORT_THREADS=0         # If set to 1, report the outcome of ongoing threads (slows things down considerably)
+OUTPUT_FILES=0           # If set to 1, output files for each thread are written as: multirun.<thread number>.<repetition number>. This takes up much diskspace, clutters directories and reduced performance. Only enable for debugging.
 
 if [ "" == "$5" ]; then
   echo "This script expects exactly 5 options. Execute as follows:"
@@ -23,7 +24,9 @@ if [ "" == "$5" ]; then
   echo "  - If root user uses a password, a script hack is suggested *ftm*"
   echo "  - This script may cause very significant server load if used with many threads"
   echo "  - This script expects write permissions in the current directory ($PWD)"
-  echo "  - Output files for each thread are written as: multirun.<thread number>.<repetition number> (e.g. multirun.1.1 etc.)"
+  if [ "${OUTPUT_FILES}" -eq 1 ]; then
+    echo "  - Output files for each thread are written as: multirun.<thread number>.<repetition number> (e.g. multirun.1.1 etc.)"
+  fi
   exit 1
 fi
 
@@ -71,9 +74,17 @@ for (( ; ; )); do
         fi
         if [ $RND_REPLAY_ORDER -eq 1 ]; then
           shuf --random-source=/dev/urandom $3 > /tmp/tmp_mr.$thread.sql
-          CLI_CMD="$4 -uroot -S$5 --force --binary-mode test < /tmp/tmp_mr.$thread.sql > multirun.$thread 2>&1"
+          if [ "${OUTPUT_FILES}" -eq 1 ]; then
+            CLI_CMD="$4 -uroot -S$5 --force --binary-mode test < /tmp/tmp_mr.$thread.sql > multirun.$thread 2>&1"
+          else
+            CLI_CMD="$4 -uroot -S$5 --force --binary-mode test < /tmp/tmp_mr.$thread.sql > /dev/null"
+          fi
         else
-          CLI_CMD="$4 -uroot -S$5 --force --binary-mode test < $3 > multirun.$thread 2>&1"
+          if [ "${OUTPUT_FILES}" -eq 1 ]; then
+            CLI_CMD="$4 -uroot -S$5 --force --binary-mode test < $3 > multirun.$thread 2>&1"
+          else
+            CLI_CMD="$4 -uroot -S$5 --force --binary-mode test < $3 > /dev/null"
+          fi
         fi
         # In background; a must to ensure threads run concurrently
         # For testing: CLI_CMD="sleep $[ $RANDOM % 10 ]"

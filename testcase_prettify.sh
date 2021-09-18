@@ -48,6 +48,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|cascaded|CASCADED|gi' | \
   sed 's|check option|CHECK OPTION|gi' | \
   sed 's|comment|COMMENT|gi' | \
+  sed 's|sformat|SFORMAT|gi' | \
   sed 's|md5|MD5|gi' | \
   sed 's|query|QUERY|gi' | \
   sed 's|schedule|SCHEDULE|gi' | \
@@ -86,9 +87,6 @@ cat "${1}" | tr -d '`' | \
   sed 's|database|DATABASE|gi' | \
   sed 's|where|WHERE|gi' | \
   sed 's|start|START|gi' | \
-  sed 's|first|FIRST|gi' | \
-  sed 's|second|SECOND|gi' | \
-  sed 's|last|LAST|gi' | \
   sed 's|xa|XA|gi' | \
   sed 's|shutdown|SHUTDOWN|gi' | \
   sed 's|elt|ELT|gi' | \
@@ -280,6 +278,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|@localhost|@localhost|gi' | \
   sed 's|log_bin_trust_function_creators|log_bin_trust_function_creators|gi' | \
   sed 's|\.TABLES|\.tables|gi' | \
+  sed 's|first|FIRST|gi' | \
+  sed 's|second|SECOND|gi' | \
+  sed 's|last|LAST|gi' | \
   sed 's|text|TEXT|gi' | \
   sed 's|date_sub[ ]*(|DATE_SUB(|gi' | \
   sed 's|concat_ws[ ]*(|CONCAT_WS(|gi' | \

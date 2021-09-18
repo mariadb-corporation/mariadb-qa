@@ -20,6 +20,7 @@ ln -fs /home/$(whoami)/mariadb-qa/new_text_string.sh /home/$(whoami)/t 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/find_cause.sh /home/$(whoami)/fc 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-allsubdir-del-string.sh /home/$(whoami)/mcl 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-screen.sh /home/$(whoami)/s 2>&1
+ln -fs /home/$(whoami)/mariadb-qa/san_text_string.sh /home/$(whoami)/st 2>&1
 
 # Build scripts (mostly/mainly used from /test)
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
