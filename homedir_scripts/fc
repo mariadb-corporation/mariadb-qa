@@ -1,1 +1,1 @@
-~/mariadb-qa/fuzzer-crashes.sh
+~/mariadb-qa/find_cause ${*}

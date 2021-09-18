@@ -236,6 +236,7 @@ TS_VARIABILITY_SLEEP=1
 # - When using grep -E --binary-files=text, ALWAYS use --binary-files=text to avoid issues with hex characters causing non-reproducibility and/or grep playing up. If you see things like 'Binary file ... matches' as grep output it means you have executed grep against a file with binary chars, which is seen by the system as a binary file (even though it may be a flat sql text file with a few hex characters in it). Adding the --binary-files=text will correctly process the file.
 
 # ======== Ideas for improvement
+# - A SUBREDUCER_TIMEOUT=x option which by default is turned off, i.e. set to 0 but otherwise places a timeout (with kill -9) on the Bash shell (or similar) for subreducers, and restart the shell (or similar) if the timeout is hit. This will avoid any (if any) stuck subreducers. Frequency of running into this is likely low to start with
 # - The write of the file should be atomic - i.e. if reducer is interrupted during a testcase_out write, the file may be faulty. Check if this is so & fix
 # - A new mode could do this; main thread (single): run SQL, secondary thread (new functionality): check SHOW PROCESSLIST for certain regex TEXT regularly. This would allow creating testcases for queries that have a long runtime. This new functionality likely will live outside process_outcome() as it is a live check
 # - Incorporate 3+ different playback options: SOURCE ..., redirection with <, redirection with cat, (stretch goal; replay via MTR), etc. (there may be more)

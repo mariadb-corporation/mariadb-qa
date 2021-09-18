@@ -42,7 +42,7 @@ if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null
   NTS='-Fi' # New text string (i.e. no regex, exact text string) mode
 fi
 TRIALS_EXECUTED=$(cat pquery-run.log 2>/dev/null | grep --binary-files=text -o "==.*TRIAL.*==" 2>/dev/null | tail -n1 | sed 's|[^0-9]*||;s|[ \t=]||g')
-echo "================ [Run: $(echo ${PWD} | sed 's|.*/||')] Sorted unique issue strings (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers)"
+echo "========= [ cd  ${PWD} ] Sorted UniqueID's (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers)"
 # Current location checks
 if [ $(ls ./*/*.sql 2>/dev/null | wc -l) -eq 0 ]; then
   if [ "$(echo ${PWD} | sed 's|.*/||')" != "ERR_REDUCERS" -a $(ls ./*.sql 2>/dev/null | wc -l) -eq 0  ]; then
@@ -249,7 +249,7 @@ OOS1=$(egrep --binary-files=text -i "device full error|no space left on device|e
 OOS2=$(ls -s */data/*core* 2>/dev/null | grep --binary-files=text -o "^ *0 [^/]\+" 2>/dev/null | awk '{print $2}' | tr '\n' ' ')  # Cores with a file size of 0: good indication of OOS
 OOS="$(echo "${OOS1} ${OOS2}" | sed "s|  | |g")"
 if [ "$(echo "${OOS}" | sed "s| ||g")" != "" ]; then
-  echo "================ Likely out of disk space trials:"
+  echo "========= Likely out of disk space trials:"
   echo "$(echo "${OOS}" | tr ' ' '\n' | sort -nu |  tr '\n' ' ' | sed 's|$|\n|;s|^ \+||')"
 fi
 
@@ -257,7 +257,7 @@ fi
 DI1=$(grep --binary-files=text "bytes should have been read. Only" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')
 DI="$(echo "${DI1}" | sed "s|  | |g")"
 if [ "$(echo "${DI}" | sed "s| ||g")" != "" ]; then
-  echo "================ Likely disk I/O issues trials (unable to read from disk etc.):"
+  echo "========= Likely disk I/O issues trials (unable to read from disk etc.):"
   echo "$(echo "${DI}" | tr ' ' '\n' | sort -nu |  tr '\n' ' ' | sed 's|$|\n|;s|^ \+||')"
 fi
 
@@ -269,31 +269,31 @@ fi
 # pquery replay method can be used in the replay only works via pquery (as usual).
 REL1=$(grep --binary-files=text -m1 -B2 "MySQL server has gone away" */default.node.tld_thread-0.sql 2>/dev/null | grep --binary-files=text -i "RELEASE[ \t]*;" 2>/dev/null | sed 's|/.*||' | sort -nu | tr '\n' ' ')
 if [ "$REL1" != "" ]; then
-  echo "================ Likely 'Server has gone away' 200x due to 'RELEASE' sql:"
+  echo "========= Likely 'Server has gone away' 200x due to 'RELEASE' sql:"
   echo "${REL1}"
 fi
 
 # Coredumps overview (for comparison)
 COREDUMPS="$(find . | grep --binary-files=text 'core' 2>/dev/null | grep --binary-files=text -vE 'parse|pquery' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|')"
 if [ "$(echo "${COREDUMPS}" | sed 's| \+||g')" != "" ]; then
-  echo "================ Coredumps found in trials:"
+  echo "========= Coredumps found in trials:"
   find . | grep --binary-files=text  'core' 2>/dev/null | grep --binary-files=text -vE 'parse|pquery|vault' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|'
 fi
-echo "================"
+echo "========="
 if [ $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | wc -l) -gt 0 ]; then
   echo "Detected one or more empty (0 byte) reducer script(s): $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | tr '\n' ' ')- you may want to check what's causing this (possibly a bug in pquery-prep-red.sh, or did you simply run out of space while running pquery-prep-red.sh?) and do the analysis for these trial numbers manually, or free some space, delete the reducer*.sh scripts and re-run pquery-prep-red.sh"
 fi
 
 # Stack smashing overview
 if [ ! -z "$(grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null)" ]; then
-  echo "================ Stack smashing detected:"
+  echo "========= Stack smashing detected:"
   grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null
-  echo "================"
+  echo "========="
 fi
 extract_valgrind_error(){
   for i in $( ls  ${ERROR_LOG_LOC} 2>/dev/null); do
     TRIAL=$(echo $i | cut -d'/' -f1)
-    echo "============ Trial $TRIAL ===================="
+    echo "========= Trial $TRIAL =========="
     grep --binary-files=text -E --no-group-separator  -A4 "Thread[ \t][0-9]+:" $i 2>/dev/null | cut -d' ' -f2- |  sed 's/0x.*:[ \t]\+//' |  sed 's/(.*)//' | rev | cut -d '(' -f2- | sed 's/^[ \t]\+//' | rev  | sed 's/^[ \t]\+//'  |  tr '\n' '|' |xargs |  sed 's/Thread[ \t][0-9]\+:/\nIssue #/ig'
   done
 }

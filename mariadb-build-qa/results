@@ -46,7 +46,7 @@ while true; do
     if [ ! -z "${MON[i]}" ]; then
       if [ -d "${DIR}/${MON[${i}]}" ]; then
         cd "${DIR}/${MON[${i}]}"
-        ~/pr | grep -vEi '^================$|SHUTDOWN|no reducer scripts were found in this directory' | sed '/Coredumps found in trials/,+1d'
+        ~/pr | grep -vEi '^=========$|SHUTDOWN|no reducer scripts were found in this directory' | sed '/Coredumps found in trials/,+1d'
         TO_SCAN='*/*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err'
         ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
         if [ ! -z "${ERRORS}" ]; then 
