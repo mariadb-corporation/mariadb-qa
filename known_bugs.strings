@@ -34,6 +34,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 !maria_assert_if_crashed_table|SIGABRT|_ma_set_fatal_error|_ma_flush_table_files|_ma_reenable_logging_for_table|ha_maria::external_lock                                        ## DBG 2
 
 ##### CURRENT BUGS #####
+SIGSEGV|dict_table_get_first_index|dict_table_find_index_on_id|dict_stats_process_entry_from_defrag_pool|dict_defrag_process_entries_from_defrag_pool                          ## DBG |MDEV-26636
+table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_table_remove_from_cache_low|dict_table_remove_from_cache|row_drop_table_for_mysql                             ## DBG |MDEV-26636 
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert|ha_spider::end_bulk_insert                                          ## OPT |MDEV-26587
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert                                                      ## OPT |MDEV-26587
 SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                                   ## DBG MDEV-26583

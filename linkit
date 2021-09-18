@@ -10,14 +10,13 @@ fi
 
 # Homedir scripts
 ln -fs /home/$(whoami)/mariadb-qa/homedir_scripts/* /home/$(whoami)/ 2>&1
-rm -f ~/tcp ~/pge ~/pg ~/tr ~/tc ~/t ~/dt ~/fc ~/mcl ~/s
+rm -f ~/tcp ~/pge ~/pg ~/tr ~/tc ~/t ~/fc ~/mcl ~/s
 ln -fs /home/$(whoami)/mariadb-qa/testcase_prettify.sh /home/$(whoami)/tcp 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-goexp-patch.sh /home/$(whoami)/pge 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-go-expert.sh /home/$(whoami)/pg 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-todays-runs.sh /home/$(whoami)/tr 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/copy_testcases.sh /home/$(whoami)/tc 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/new_text_string.sh /home/$(whoami)/t 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/pquery-del-trial.sh /home/$(whoami)/dt 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/find_cause.sh /home/$(whoami)/fc 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-allsubdir-del-string.sh /home/$(whoami)/mcl 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/pquery-screen.sh /home/$(whoami)/s 2>&1

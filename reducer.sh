@@ -4887,7 +4887,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 152 ]; then sed 's/[ ]*([ ]*/(/;s/[ ]*)[ ]*/)/' $WORKF > $WORKT
     elif [ $TRIAL -eq 153 ]; then sed 's/;.*/;/' $WORKF > $WORKT
     elif [ $TRIAL -eq 154 ]; then sed 's/;#;.*$/;/' $WORKF > $WORKT
-    elif [ $TRIAL -eq 155 ]; then sed 's/''/0/g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 155 ]; then sed "s/''/0/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 156 ]; then sed '/INSERT/,/;/s/''/0/g' $WORKF > $WORKT
     elif [ $TRIAL -eq 157 ]; then sed '/SELECT/,/;/s/''/0/g' $WORKF > $WORKT
     elif [ $TRIAL -eq 158 ]; then sed 's/;[ \t]\+#/;#/' $WORKF > $WORKT  # Remove any spaces/tabs before #EOL comments if present
