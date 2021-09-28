@@ -1,5 +1,9 @@
 #!/bin/bash
 if [ -z "${1}" ]; then
+  if [ -r ./pquery-run.log ]; then  # Likely inside a workdir, just run ~/ii as aid
+    ~/ii
+    echo ''
+  fi
   echo "Please pass trial number to locate the basedir for it!"
   exit 1
 fi

@@ -70,6 +70,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|events|EVENTS|gi;s|event|EVENT|gi' | \
   sed 's|procedure|PROCEDURE|gi' | \
   sed 's|function|FUNCTION|gi' | \
+  sed 's|install|INSTALL|gi' | \
+  sed 's|soname|SONAME|gi' | \
   sed 's|seq|SEQ|gi' | \
   sed 's|sequence|SEQUENCE|gi' | \
   sed 's|exists|EXISTS|gi' | \

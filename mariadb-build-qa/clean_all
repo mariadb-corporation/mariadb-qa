@@ -2,7 +2,7 @@
 # With thanks, https://unix.stackexchange.com/a/46801/241016
 rm -f /test/multirun.[0-9]*  # Cleanup multirun logs
 if [ -z "$PS1" ]; then
-  ~/mariadb-qa/pquery-clean-all.sh
+  ~/mariadb-qa/pquery-clean-all.sh 1  # See pquery-clean-known.sh for more information on the "1"
 else
   ~/mariadb-qa/pquery-clean-all.sh cleanall
 fi

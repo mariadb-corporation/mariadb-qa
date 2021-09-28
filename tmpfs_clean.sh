@@ -1,6 +1,8 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
+EXCLUDE_DIR_REGEX='multipath|var_'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
+
 if [ "${1}" != "1" ]; then
   echo "(!) Script not armed! To arm it, include the number 1 behind it, e.g.: $ ~/mariadb-qa/tmpfs_clean.sh 1"
   echo "(!) This will enable actual tmpfs cleanup. Now executing a trial run only - no actual changes are made!"
@@ -11,11 +13,12 @@ fi
 
 COUNT_FOUND_AND_DEL=0
 COUNT_FOUND_AND_NOT_DEL=0
-if [ $(ls --color=never -ld /dev/shm/* | grep --binary-files=text -v 'multipath' | wc -l) -eq 0 ]; then
-  echo "> No /dev/shm/* directories found at all, it looks like tmpfs is empty. All good."
+if [ $(ls --color=never -ld /dev/shm/* | grep --binary-files=text -vE "${EXCLUDE_DIR_REGEX}" | wc -l) -eq 0 ]; then
+  echo "> No /dev/shm/* erasable directories found"
 else
   rm -f /tmp/tmpfs_clean_dirs
-  ls --color=never -ld /dev/shm/* | grep --binary-files=text -v 'multipath' | sed 's|^.*/dev/shm|/dev/shm|' >/tmp/tmpfs_clean_dirs 2>/dev/null
+  # In the next line, 'var_' is excluded to avoid deleting MTR --mem directories
+  ls --color=never -ld /dev/shm/* | grep --binary-files=text -vE "${EXCLUDE_DIR_REGEX}" | sed 's|^.*/dev/shm|/dev/shm|' >/tmp/tmpfs_clean_dirs 2>/dev/null
   COUNT=$(wc -l /tmp/tmpfs_clean_dirs 2>/dev/null | sed 's| .*||')
   for DIRCOUNTER in $(seq 1 ${COUNT}); do
     DIR="$(head -n ${DIRCOUNTER} /tmp/tmpfs_clean_dirs | tail -n1)"
@@ -105,6 +108,11 @@ else
       echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories. No other tmpfs directories exist. All good."
     fi
   fi
+fi
+
+if [ ! -z "$(ls -d --color=never /dev/shm/var_* 2>/dev/null)" ]; then
+  echo "> Note: MTR --mem directories found, please check/delete these manually as required (first column is space used):"
+  du -shc /dev/shm/var_* | grep -v total
 fi
 
 echo "> Done! /dev/shm available space is now: $(df -h | egrep --binary-files=text "/dev/shm" | awk '{print $4}')"

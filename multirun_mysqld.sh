@@ -223,7 +223,7 @@ for i in ${SERVER_THREADS[@]};do
     echoit "Shutting down mysqld #${j}..."
     timeout --signal=9 ${AFTER_SHUTDOWN_DELAY}s ${PWD}/bin/mysqladmin -uroot -S${WORKDIR}/${j}_socket.sock shutdown >/dev/null 2>&1
     if [ $? -eq 137 ]; then  # Timeout was activated after ${AFTER_SHUTDOWN_DELAY} seconds, highly likely indicating a hang
-      echoit "[!] Potential server hang found: mysqld #{j} (${WORKDIR}) has not shutdown in ${AFTER_SHUTDOWN_DELAY} seconds. Check gdb --pid=${MYSQLD[j-1]}. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
+      echoit "[!] Potential server hang found: mysqld #${j} (${WORKDIR}) has not shutdown in ${AFTER_SHUTDOWN_DELAY} seconds. Check gdb --pid=${MYSQLD[j-1]}. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
       exit 1
     fi
   done
