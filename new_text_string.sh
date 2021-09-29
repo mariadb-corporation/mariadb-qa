@@ -88,6 +88,21 @@ if [ -z "${ERROR_LOG}" ]; then
   exit 1
 fi
 
+# Check first if this is an ASAN/UBSAN/TSAN issue
+ASAN_OR_UBSAN_OR_TSAN_BUG=0
+if [ $(grep -m1 --binary-files=text "=ERROR:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+  ASAN_OR_UBSAN_OR_TSAN_BUG=1
+elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+  ASAN_OR_UBSAN_OR_TSAN_BUG=1
+elif [ $(grep -im1 --binary-files=text "runtime error:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+  ASAN_OR_UBSAN_OR_TSAN_BUG=1
+fi
+if [ "${ASAN_OR_UBSAN_OR_TSAN_BUG}" -eq 1 ]; then
+  TEXT="$(~/mariadb-qa/san_text_string.sh ${ERROR_LOG})"
+  echo "${TEXT}"
+  exit 0
+fi
+
 # Note: all asserts below exclude any 'PREV' directories, like data.PREV
 if [ -z "${LATEST_CORE}" ]; then
   if [ -f ${SCRIPT_PWD}/fallback_text_string.sh -a -r ${SCRIPT_PWD}/fallback_text_string.sh ]; then

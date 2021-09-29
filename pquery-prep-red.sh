@@ -20,34 +20,34 @@ WORKD_PWD=$PWD
 REDUCER="${SCRIPT_PWD}/reducer.sh"
 ASAN_OR_UBSAN_OR_TSAN_BUG=0
 
+# Disable history substitution and avoid  -bash: !: event not found  like errors
+set +H
+
 check_if_asan_or_ubsan_or_tsan(){
   if [[ "${TEXT}" == *"Assert: no core file found in"* ]]; then
     if [ $(grep -m1 --binary-files=text "=ERROR:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* ASAN bug found!"
-      TEXT="$(grep --binary-files=text -im1 -o "=ERROR:.*" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null)"
-     fix_asan_and_ubsan_and_tsan_text
       ASAN_OR_UBSAN_OR_TSAN_BUG=1
-     elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
-       echo "* TSAN bug found!"
-       TEXT="$(grep --binary-files=text -im1 -o "ThreadSanitizer:.*" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null)"
-       fix_asan_and_ubsan_and_tsan_text
+    elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
+      echo "* TSAN bug found!"
       ASAN_OR_UBSAN_OR_TSAN_BUG=1
     elif [ $(grep -im1 --binary-files=text "runtime error:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* UBSAN bug found!"
-      TEXT="$(grep --binary-files=text -im1 -o "runtime error:.*" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null)"
-      fix_asan_and_ubsan_and_tsan_text
       ASAN_OR_UBSAN_OR_TSAN_BUG=1
     fi
   fi
+  if [ "${ASAN_OR_UBSAN_OR_TSAN_BUG}" -eq 1 ]; then
+    if [ -r "./${TRIAL}/node${1}/node${1}.err" ]; then
+      TEXT="$(~/mariadb-qa/san_text_string.sh ./${TRIAL}/node${1}/node${1}.err)"
+    elif [ -r "./${TRIAL}/log/master.err" ]; then
+      TEXT="$(~/mariadb-qa/san_text_string.sh ./${TRIAL}/log/master.err)"
+    else
+      TEXT=
+      echo "Assert: ASAN_OR_UBSAN_OR_TSAN_BUG=1 yet neither ./${TRIAL}/log/master.err nor ./${TRIAL}/node${1}/node${1}.err was found"
+      exit 1
+    fi
+  fi
 }
-
-fix_asan_and_ubsan_and_tsan_text(){
-  # Make ASAN and UBSAN AND TSAN strings more generic (avoids memory address mismatches etc.)
-  TEXT="$(echo "${TEXT}" | sed 's|on address .*|on address|;s|of address.*|of address|;s|for 64-bit type.*|for 64-bit type|;s|integer overflow:.*|integer overflow:|;s|left shift of.*|left shift of|;s|shift exponent.*|shift exponent|;s|load of value.*|load of value|;s|allocation size.*|allocation size|;s|offset.*|offset|;s|of type.*|of type|;s|for type.*|for type|;s|negation of .*|negation of|;s|[ ]*(pid=[0-9]\+)||')"
-}
-
-# Disable history substitution and avoid  -bash: !: event not found  like errors
-set +H
 
 # Sanity checks
 if [ ! -r ${SCRIPT_PWD}/new_text_string.sh ]; then
@@ -277,8 +277,8 @@ generate_reducer_script(){
     TEXT_STRING2="s|ZERO0|ZERO0|"
   else  # Bug-specific TEXT string found, use MODE=3 to let reducer.sh reduce for that specific string
     if [ ${ASAN_OR_UBSAN_OR_TSAN_BUG} -eq 1 ]; then
-      USE_NEW_TEXT_STRING=0  # As the string is already set based on the ASAN '=ERROR:' or UBSAN 'runtime error:' seen in errorlog
-      SCAN_FOR_NEW_BUGS=0  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
+      USE_NEW_TEXT_STRING=1  # As the string is already set based on the ASAN '=ERROR:' or UBSAN 'runtime error:' seen in errorlog
+      SCAN_FOR_NEW_BUGS=1  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
       MODE=3
     elif [ ${VALGRIND_CHECK} -eq 1 ]; then
       USE_NEW_TEXT_STRING=0  # As here new_text_string.sh will not be used, but valgrind_string.sh
@@ -295,7 +295,7 @@ generate_reducer_script(){
     fi
     TEXT_CLEANUP="0,/^[ \t]*TEXT[ \t]*=.*$/s|^[ \t]*TEXT[ \t]*=.*$|#TEXT=<set_below_in_machine_variables_section>|"
     TEXT_STRING1="0,/#VARMOD#/s:#VARMOD#:# IMPORTANT NOTE; Leave the 3 spaces before TEXT on the next line; pquery-results.sh uses these\n#VARMOD#:"
-    # This code below is duplicated into reducer.sh. If it is updated here, please also update it there and vice versa.
+    # This code below is duplicated into reducer.sh. If it is updated here, please also update it there and vice versa. However, note that the code in reducer.sh is longer as it caters for '^   TEXT=' and '^TEXT=' - see the note in reducer.sh
     if [[ "${TEXT}" = *":"* ]]; then
       if [[ "${TEXT}" = *"|"* ]]; then
         if [[ "${TEXT}" = *"/"* ]]; then
