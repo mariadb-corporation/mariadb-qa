@@ -11,29 +11,36 @@ if [ "$1" == "" ]; then
   echo "Assert: This script expects one option, namely the trial number for which this script should patch reducer<trialnr>.sh Note: you can also use, for example, 5-1 for reducer5-1.sh - in the case of reducers for MDG runs."
   echo "Terminating."
   exit 1
-elif [ "$(echo "$1" | sed 's|^[-0-9]\+||')" != "" ]; then
-  if [[ "${1}" == "/data/NEWBUGS/"* ]]; then 
-    if [ -d "/data/NEWBUGS" ]; then
-      cd /data/NEWBUGS
-    else
-      echo "Assert: /data/NEWBUGS was specified, yet that directory does not exist"
-      exit 1
-    fi
+else
+  R1="$(echo "${1}" | sed 's|^/data/NEWBUGS/||;s|NEWBUGS/||;s|^\.[/]*||')"
+  if [ -f "/data/NEWBUGS/newbug_${R1}.reducer.sh" ]; then  # Add ./newbug_ and .reducer.sh if it was not specified
+    cd /data/NEWBUGS
+    R1="./newbug_${R1}.reducer.sh"
   fi
-  R1="$(echo "${1}" | sed 's|^/data/NEWBUGS/||;s|^\./||')"
-  if [[ "${R1}" == "newbug_"* ]]; then
+  if [ -f "/data/NEWBUGS/newbug_${R1}" ]; then  # Add ./newbug_ if it was not specified
+    cd /data/NEWBUGS
+    R1="./newbug_${R1}"
+  fi
+  if [ -f "/data/NEWBUGS/${R1}.reducer.sh" ]; then  # Add .reducer.sh if it was not specified
+    cd /data/NEWBUGS
+    R1="./${R1}.reducer.sh"
+  fi
+  if [ -f "/data/NEWBUGS/${R1}" ]; then  # Correct name already 
+    cd /data/NEWBUGS
+  fi
+  if [[ "${R1}" == *"newbug"* ]]; then
     if [ -f "./${R1}" -a -r "./${R1}" ]; then
       REDUCER="${R1}"
     else
       echo "Assert: the reducer script passed to this script (${REDUCER}) is not a file readable by this script!" 
       exit 1
     fi
-  else
+  elif [ ! -z "$(echo "${R1}" | sed 's|[0-9]||g')" ]; then
     echo "Assert: option passed is not numeric. If you do not know how to use this script, execute it without options to see more information"
     exit 1
+  else
+    REDUCER="reducer${1}.sh"
   fi
-else
-  REDUCER="reducer${1}.sh"
 fi
 
 if [ ! -r ${REDUCER} -o ! -f ${REDUCER} ]; then
