@@ -47,7 +47,7 @@ fi
 find -maxdepth 1 -type f -name '*.string' -printf "\n%AD %AT %p" | sort -t' ' -k1.7,1.8n -k1.1,1.2n -k1.4,1.5n -k2.1,2.2n -k2.4,2.5n -k2.7,2.8n -k2.10,2.19n | awk '{print $3}' > newbugs.list
 if [ ! -r ./newbugs.list ]; then echo "Assert: './list' does not exist after creating the same"; exit 1; fi
 
-find -maxdepth 1 -type f -name '*.string' -printf "\n%AD %AT %p" | sort -t' ' -k1.7,1.8n -k1.1,1.2n -k1.4,1.5n -k2.1,2.2n -k2.4,2.5n -k2.7,2.8n -k2.10,2.19nCOUNT=$(wc -l ./newbugs.list 2>/dev/null | sed 's| .*||')
+COUNT=$(wc -l ./newbugs.list 2>/dev/null | sed 's| .*||')
 if [ -z "${COUNT}" -o "${COUNT}" -le 0 ]; then 
   if [ ${ENABLE_OUTPUT} -eq 1 ]; then
     echo "Nothing to do!"
