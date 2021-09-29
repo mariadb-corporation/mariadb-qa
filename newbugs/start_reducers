@@ -15,7 +15,7 @@ if [ ! -z "${2}" ]; then
 fi
 
 mkdir -p ./reducer.logs
-# TODO: in contrast with ~/sr (same command, though not via final xargs pipe), the two screen commands below terminate as soon as ^C is pressed on a running reducer rather than presenting an interactive Bash shell. The difference is likely in xargs. The xargs -o (open tty) option does not resolve the issue. The -i (interactive) bash option (even if passed to all bash calls. Also tested these two combined.
+# TODO: in contrast with ~/sr (same command, though not via final xargs pipe), the two screen commands below terminate as soon as ^C is pressed on a running reducer rather than presenting an interactive Bash shell. The difference is likely in xargs. The xargs -o (open tty) option does not resolve the issue. The -i (interactive) bash option (even if passed to all bash calls. Also tested these two combined. Also test things like: bash -ilc 'bash' for the bash terminal to be started.
 if [ -z "${2}" ]; then
   ls --color=never *.reducer.sh | sort -n | head -n${1} | xargs -I{} echo 'screen -admS {} bash -c "./{} | tee -a ./reducer.logs/{}.log; bash"' | xargs -I{} bash -c "{}"
 else

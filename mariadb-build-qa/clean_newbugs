@@ -44,7 +44,7 @@ if [ ${ENABLE_OUTPUT} -eq 1 ]; then
 fi
 # The following find/sort ensures that the oldest seen issues are listed first, ensuring that the same reducers are kept run-over-run of ./clean_newbugs and thereby avoiding deletion of running reducers by for example the ~/ds watchdog
 # With thanks for the original idea at https://www.tecmint.com/find-and-sort-files-modification-date-and-time-in-linux/
-find -maxdepth 1 -type f -name '*.string' -printf "\n%AD %AT %p" | sort -t' ' -k1.7,1.8n -k1.1,1.2n -k1.4,1.5n -k2.1,2.2n -k2.4,2.5n -k2.7,2.8n -k2.10,2.19n | awk '{print $3}' > newbugs.list
+find -maxdepth 1 -type f -name '*.string' -printf "\n%AD %AT %p" | sort -t' ' -k1.7,1.8n -k1.1,1.2n -k1.4,1.5n -k2.1,2.2n -k2.4,2.5n -k2.7,2.8n -k2.10,2.19n | awk '{print $3}' | grep '\.string$' > newbugs.list
 if [ ! -r ./newbugs.list ]; then echo "Assert: './list' does not exist after creating the same"; exit 1; fi
 
 COUNT=$(wc -l ./newbugs.list 2>/dev/null | sed 's| .*||')
@@ -119,21 +119,20 @@ while IFS=$'\n' read STRING_FILE; do
       fi
       echo "${STRING}" >> ./newbugs.dedup
     elif [ "${DUPS}" -ge 3 ]; then  # Keep 3 occurences # It should never be greater then 3: defensive coding
-# Code temporarily disabled (1/4/21 as more then 120k testcases present)
-#      # Check first if this is not a really small testcase (less than or equal to 5 lines)
-#      SQL_FILE="$(echo "${STRING_FILE}" | sed 's|\.string|.sql|')"
-#      SQL_LINES="$(wc -l ${SQL_FILE} | sed 's| .*||')"
-#      SQL_FILE=
-#      if [ "${SQL_LINES}" -le 5 ]; then 
-#        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-#          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+, though not filtering as testcase is only ${SQL_LINES} lines"
-#        fi
-#      else
-      if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+: filtering"
+      # Check first if this is not a really small testcase (less than or equal to 5 lines)
+      SQL_FILE="$(echo "${STRING_FILE}" | sed 's|\.string|.sql|')"
+      SQL_LINES="$(wc -l ${SQL_FILE} | sed 's| .*||')"
+      SQL_FILE=
+      if [ "${SQL_LINES}" -le 5 ]; then 
+        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+, though not filtering as testcase is only ${SQL_LINES} lines"
+        fi
+      else
+        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+: filtering"
+        fi
+        delete_newbug
       fi
-      delete_newbug
-#      fi
       SQL_LINES=
     fi 
   fi 

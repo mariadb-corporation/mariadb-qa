@@ -26,8 +26,8 @@ if [ ! -z "${1}" ]; then
   fi
 else
   while true; do
-    echo "== Monitoring /dev/shm/[1-3]*/subreducer/*/MYBUG.FOUND..."
     clear
+    echo "== Monitoring /dev/shm/[1-3]*/subreducer/*/MYBUG.FOUND..."
     cat /dev/shm/[1-3]*/subreducer/*/MYBUG.FOUND 2>/dev/null | grep -v 'no core' | sort -u | cat -b | sed 's|^[ \t]\+||;s|\t|  |'
     sleep 3
   done

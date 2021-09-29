@@ -33,6 +33,7 @@ ln -fs /home/$(whoami)/mariadb-qa/newbugs/uniq_newbugs /test/TESTCASES/uniq_newb
 
 # Newbugs (new bugs found by reducer while reducing) & Fireworks (new bugs found by reducer in fireworks mode)
 ln -fs /home/$(whoami)/mariadb-qa/newbugs/* /data/NEWBUGS/ 2>&1
+ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/clean_newbugs /data/NEWBUGS/clean_newbugs 2>&1
 
 # Link ~/BUGS to ~/mariadb-qa/BUGS for ease-of-access
 if [ ! -d /home/$(whoami)/BUGS ]; then

@@ -202,6 +202,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|memory|MEMORY|gi' | \
   sed 's|innodb|InnoDB|gi' | \
   sed 's|myisam|MyISAM|gi' | \
+  sed 's|rocksdb|RocksDB|gi' | \
   sed 's|csv|CSV|gi' | \
   sed 's|archive|ARCHIVE|gi' | \
   sed 's|values|VALUES|gi' | \

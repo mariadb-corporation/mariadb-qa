@@ -24,16 +24,32 @@ marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_conditio
 scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                         ## DBG |MDEV-25317
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql     ## DBG |MDEV-25927
 
+##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
+debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## DBG 1
+!maria_assert_if_crashed_table|SIGABRT|_ma_set_fatal_error|_ma_flush_table_files|_ma_reenable_logging_for_table|ha_maria::external_lock                                        ## DBG 2
+
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #***#(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl            ## DBG |MDEV-24749
 #***#SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                    ## DBG |MDEV-26457 and |MDEV-26491
 #***#SIGABRT|DbugExit|_db_return_|Diagnostics_area::set_ok_status|my_ok                                                                                                        ## DBG |MDEV-25460
 
-##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
-debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## DBG 1
-!maria_assert_if_crashed_table|SIGABRT|_ma_set_fatal_error|_ma_flush_table_files|_ma_reenable_logging_for_table|ha_maria::external_lock                                        ## DBG 2
+##### DISABLED MEMORY FILTERS; DUE TO GENERIC/NON-SPECIFIC MEMORY STACKS #####
+#***#SIGABRT|__libc_message|malloc_printerr|_int_free|free_root                                                                                                                     ## OPT |MDEV-24560
+#***#SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                                                                                                                     ## OPT |MDEV-24560
+#***#SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<int>::deallocate                                                                                     ## OPT |MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<long>::deallocate                                                                                    ## OPT |MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<std::shared_ptr<rocksdb::EventListener> >::deallocate                                                ## OPT |MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|_int_free|myrocks::ha_rocksdb::free_key_buffers                                                                                         ## OPT |MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|cleanup_variables                                                                                                          ## OPT |MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|free_root                                                                                                                  ## OPT |MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|myrocks::ha_rocksdb::free_key_buffers                                                                                      ## OPT |MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|std::__shared_count<shared_ptr_base.h                                                                                      ## OPT |MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## OPT |MDEV-21799
 
 ##### CURRENT BUGS #####
+is_storage_available(tuple - packed_tuple, pack_info->m_max_image_len)|SIGABRT|myrocks::Rdb_key_def::pack_field|myrocks::Rdb_key_def::pack_record|myrocks::ha_rocksdb::update_write_sk|myrocks::ha_rocksdb::update_write_indexes ## DBG |MDEV-21799
+is_storage_available(tuple - packed_tuple, 0)|SIGABRT|myrocks::Rdb_key_def::pack_record|myrocks::ha_rocksdb::update_write_sk|myrocks::ha_rocksdb::update_write_indexes|myrocks::ha_rocksdb::update_write_row ## DBG |MDEV-21799
+SIGSEGV|User_table::set_user|replace_user_table|mysql_grant|Sql_cmd_grant_proxy::execute                                                                                       ## OPT |MDEV-26716
 SIGABRT|myrocks::rdb_i_s_global_info_fill_table|get_schema_tables_result|JOIN::exec_inner|JOIN::exec                                                                           ## OPT |MDEV-26677
 SIGSEGV|dict_table_find_index_on_id|dict_stats_process_entry_from_defrag_pool|dict_defrag_process_entries_from_defrag_pool|dict_stats_func                                     ## DBG |MDEV-26636
 SIGSEGV|dict_table_get_first_index|dict_table_find_index_on_id|dict_stats_process_entry_from_defrag_pool|dict_defrag_process_entries_from_defrag_pool                          ## DBG |MDEV-26636
@@ -299,8 +315,6 @@ error == DB_DUPLICATE_KEY || error == DB_LOCK_WAIT_TIMEOUT|SIGABRT|trx_t::commit
 item->name && item->name[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                            ## DBG |MDEV-24588
 item->name.str && item->name.str[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                    ## DBG |MDEV-24588
 SIGSEGV|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                              ## DBG |MDEV-24560
-SIGABRT|__libc_message|malloc_printerr|_int_free|free_root                                                                                                                     ## OPT |MDEV-24560
-SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                                                                                                                     ## OPT |MDEV-24560
 select_lex->leaf_tables.elements != 0|SIGABRT|mysql_insert_select_prepare|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core                ## DBG MDEV-24559
 !(index)->is_spatial()|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild               ## DBG |MDEV-24558
 !dict_index_is_spatial(index)|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild        ## DBG |MDEV-24558
