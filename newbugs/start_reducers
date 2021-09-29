@@ -14,6 +14,7 @@ if [ ! -z "${2}" ]; then
   fi
 fi
 
+mkdir -p ./reducer.logs
 if [ -z "${2}" ]; then
   ls --color=never *.reducer.sh | sort -n | head -n${1} | xargs -I{} echo "screen -admS {} bash -c './{} | tee -a ./reducer.logs/{}.log; bash'" | xargs -I{} bash -c "{}"
 else
