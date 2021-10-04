@@ -47,6 +47,7 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## OPT |MDEV-21799
 
 ##### CURRENT BUGS #####
+state == TRX_STATE_PREPARED || state == TRX_STATE_PREPARED_RECOVERED || state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## DBG MDEV-26753
 is_storage_available(tuple - packed_tuple, pack_info->m_max_image_len)|SIGABRT|myrocks::Rdb_key_def::pack_field|myrocks::Rdb_key_def::pack_record|myrocks::ha_rocksdb::update_write_sk|myrocks::ha_rocksdb::update_write_indexes ## DBG |MDEV-21799
 is_storage_available(tuple - packed_tuple, 0)|SIGABRT|myrocks::Rdb_key_def::pack_record|myrocks::ha_rocksdb::update_write_sk|myrocks::ha_rocksdb::update_write_indexes|myrocks::ha_rocksdb::update_write_row ## DBG |MDEV-21799
 SIGSEGV|User_table::set_user|replace_user_table|mysql_grant|Sql_cmd_grant_proxy::execute                                                                                       ## OPT |MDEV-26716
