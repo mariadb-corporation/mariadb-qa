@@ -302,7 +302,7 @@ if [ ${SAN_MODE} -eq 1 ]; then
   if grep -qm1 --binary-files=text 'ThreadSanitizer:' ./log/master.err; then  # TSAN
     # A note on exitcode=0: whereas we do not use this in our runs, it is required to let MTR bootstrap succeed.
     # TODO: Once code becomes more stable add: halt_on_error=1
-    echo '    export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:exitcode=0'
+    echo '    export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1:exitcode=0'
   fi
   if grep -qm1 --binary-files=text '=ERROR:' ./log/master.err; then  # ASAN
     # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)

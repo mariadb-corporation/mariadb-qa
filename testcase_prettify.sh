@@ -35,6 +35,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|autocommit|AUTOCOMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
   sed 's|data|DATA|gi' | \
+  sed 's|plugin|PLUGIN|gi' | \
+  sed 's|plugins|PLUGINS|gi' | \
   sed 's|local|LOCAL|gi' | \
   sed 's|infile|INFILE|gi' | \
   sed 's|terminated by|TERMINATED BY|gi' | \
