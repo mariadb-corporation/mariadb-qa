@@ -3038,7 +3038,7 @@ process_outcome(){
                 sed '/^MULTI_REDUCER=/,/^#VARMOD#/p;d' "$(readlink -f ${BASH_SOURCE[0]})" | grep -v "^#VARMOD#" > "${NEWBUGVM}"
                 sed -i "s|^INPUTFILE=.*$|INPUTFILE=\"\$(ls --color=never -t ${NEW_BUGS_SAVE_DIR}/newbug_${EPOCH_RAN}.sql* \| grep --binary-files=text -vE \"backup\|failing\" \| head -n1)\"|" "${NEWBUGRE}"
                 NEWBUGTEXT="$(echo "${NEWBUGTO}" | sed 's|"|\\\\"|g')" # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. Potential TODO: when checking this manually, " was changed to \\" not \" so there may be a bug here in too many back slashes. If we run into that, update the sed to one less backslash.
-                # This code is taken from pquery-prep-red.sh, if it is updated here, please also update it there and vice versa
+                # This code is taken from pquery-prep-red.sh, if it is updated here, please also update it there and vice versa. Note that the code between this script and pquery-prep-red.sh significantly differs however. See the info/note in pquery-prep-red.sh.
                 # HOWEVER, *** IMPORTANT NOTE ***, Note that here we have both '^   TEXT' and '^TEXT' instead of '^TEXT' only, as we are often using already-modified copied reducers, not the original reducer.sh, i.e. reducers which already use '^   TEXT'. So when copying this from another tool, remember to re-add the '^   TEXT' versions! If this is not done, then the result is that all NEWBUGS reducers will just have the original TEXT= and not the newly found bug, thereby defeating the purpose of 'NEWBUGS'.
                 NEWBUGTEXT_FINAL=
                 if [[ "${NEWBUGTEXT}" = *":"* ]]; then
@@ -3046,7 +3046,52 @@ process_outcome(){
                     if [[ "${NEWBUGTEXT}" = *"/"* ]]; then
                       if [[ "${NEWBUGTEXT}" = *"_"* ]]; then
                         if [[ "${NEWBUGTEXT}" = *"-"* ]]; then
-                          echo "Assert (#1)! No suitable sed seperator found. NEWBUGTEXT (${NEWBUGTEXT}) contains all of the possibilities, add more!"
+                          if [[ "${NEWBUGTEXT}" = *"("* ]]; then
+                            if [[ "${NEWBUGTEXT}" = *")"* ]]; then
+                              if [[ "${NEWBUGTEXT}" = *"@"* ]]; then
+                                if [[ "${NEWBUGTEXT}" = *"+"* ]]; then
+                                  if [[ "${NEWBUGTEXT}" = *";"* ]]; then
+                                    if [[ "${NEWBUGTEXT}" = *","* ]]; then
+                                      if [[ "${NEWBUGTEXT}" = *">"* ]]; then
+                                        echo "Assert (#1)! No suitable sed seperator found. NEWBUGTEXT (${NEWBUGTEXT}) contains all of the possibilities, add more!"
+                                        NEWBUGTEXT_FINAL="ASSERT: No suitable sed seperator found in reducer.sh; add more!"
+                                        sed -i "s|^   TEXT=.*|   TEXT=\"${NEWBUGTEXT_FINAL}\"|" "${NEWBUGRE}"
+                                        sed -i "s|^TEXT=.*|TEXT=\"${NEWBUGTEXT_FINAL}\"|" "${NEWBUGRE}"
+                                      else
+                                        NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s>&>\\\\\\&>g")"  # Escape '&' correctly
+                                        sed -i "s>^   TEXT=.*>   TEXT=\"${NEWBUGTEXT_FINAL}\">" "${NEWBUGRE}"
+                                        sed -i "s>^TEXT=.*>TEXT=\"${NEWBUGTEXT_FINAL}\">" "${NEWBUGRE}"
+                                      fi
+                                    else
+                                      NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s,&,\\\\\\&,g")"  # Escape '&' correctly
+                                      sed -i "s,^   TEXT=.*,   TEXT=\"${NEWBUGTEXT_FINAL}\"," "${NEWBUGRE}"
+                                      sed -i "s,^TEXT=.*,TEXT=\"${NEWBUGTEXT_FINAL}\"," "${NEWBUGRE}"
+                                    fi
+                                  else
+                                    NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s;&;\\\\\\&;g")"  # Escape '&' correctly
+                                    sed -i "s;^   TEXT=.*;   TEXT=\"${NEWBUGTEXT_FINAL}\";" "${NEWBUGRE}"
+                                    sed -i "s;^TEXT=.*;TEXT=\"${NEWBUGTEXT_FINAL}\";" "${NEWBUGRE}"
+                                  fi
+                                else
+                                  NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s+&+\\\\\\&+g")"  # Escape '&' correctly
+                                  sed -i "s+^   TEXT=.*+   TEXT=\"${NEWBUGTEXT_FINAL}\"+" "${NEWBUGRE}"
+                                  sed -i "s+^TEXT=.*+TEXT=\"${NEWBUGTEXT_FINAL}\"+" "${NEWBUGRE}"
+                                fi
+                              else
+                                NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s@&@\\\\\\&@g")"  # Escape '&' correctly
+                                sed -i "s@^   TEXT=.*@   TEXT=\"${NEWBUGTEXT_FINAL}\"@" "${NEWBUGRE}"
+                                sed -i "s@^TEXT=.*@TEXT=\"${NEWBUGTEXT_FINAL}\"@" "${NEWBUGRE}"
+                              fi
+                            else
+                              NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s)&)\\\\\\&)g")"  # Escape '&' correctly
+                              sed -i "s)^   TEXT=.*)   TEXT=\"${NEWBUGTEXT_FINAL}\")" "${NEWBUGRE}"
+                              sed -i "s)^TEXT=.*)TEXT=\"${NEWBUGTEXT_FINAL}\")" "${NEWBUGRE}"
+                            fi
+                          else
+                            NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s(&(\\\\\\&(g")"  # Escape '&' correctly
+                            sed -i "s(^   TEXT=.*(   TEXT=\"${NEWBUGTEXT_FINAL}\"(" "${NEWBUGRE}"
+                            sed -i "s(^TEXT=.*(TEXT=\"${NEWBUGTEXT_FINAL}\"(" "${NEWBUGRE}"
+                          fi
                         else
                           NEWBUGTEXT_FINAL="$(echo "$NEWBUGTEXT" | sed "s-&-\\\\\\&-g")"  # Escape '&' correctly
                           sed -i "s-^   TEXT=.*-   TEXT=\"${NEWBUGTEXT_FINAL}\"-" "${NEWBUGRE}"
