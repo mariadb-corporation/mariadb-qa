@@ -47,6 +47,7 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS #####
+client_state_.mode() == wsrep::client_state::m_local|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service|wsrep_replication_process ## MENT-1343
 SIGSEGV|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_table                                                                         ## MDEV-26805
 state == TRX_STATE_PREPARED || state == TRX_STATE_PREPARED_RECOVERED || state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-26753
 is_storage_available(tuple - packed_tuple, pack_info->m_max_image_len)|SIGABRT|myrocks::Rdb_key_def::pack_field|myrocks::Rdb_key_def::pack_record|myrocks::ha_rocksdb::update_write_sk|myrocks::ha_rocksdb::update_write_indexes ## MDEV-21799
