@@ -35,6 +35,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|autocommit|AUTOCOMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
   sed 's|data|DATA|gi' | \
+  sed 's|references|REFERENCES|gi' | \
   sed 's|plugin|PLUGIN|gi' | \
   sed 's|plugins|PLUGINS|gi' | \
   sed 's|local|LOCAL|gi' | \
@@ -52,6 +53,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|comment|COMMENT|gi' | \
   sed 's|sformat|SFORMAT|gi' | \
   sed 's|md5|MD5|gi' | \
+  sed 's|locate|LOCATE|gi' | \
   sed 's|query|QUERY|gi' | \
   sed 's|schedule|SCHEDULE|gi' | \
   sed 's|every|EVERY|gi' | \
@@ -146,6 +148,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|use_frm|USE_FRM|gi' | \
   sed 's|after|AFTER|gi' | \
   sed 's|before|BEFORE|gi' | \
+  sed 's|foreign|FOREIGN|gi' | \
   sed 's|blob|BLOB|gi' | \
   sed 's|char|CHAR|gi' | \
   sed 's|varchar|VARCHAR|gi' | \

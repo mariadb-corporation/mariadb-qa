@@ -1,3 +1,20 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+# This script is a copy of ~/kbs with $KB modified
 set +H
-grep --binary-files=text -Fi "$*" ~/mariadb-qa/known_bugs.strings_ASAN_UBSAN
+
+KB=~/mariadb-qa/known_bugs.strings.SAN
+
+if [ "${1}" != "REVERSE" ]; then  # Standard search (show the string if it exists)
+  grep --binary-files=text -Fi "${1}" ${KB}
+else   # Reverse search (show the string if it does not exist yet)
+  if [ -z "$(grep --binary-files=text -Fi "${2}" ${KB})" ]; then  # Not found at all
+    echo "${2}"
+  else  # Found, but possible a fixed bug (prefixed with leading '#') 
+    SEARCH="$(grep --binary-files=text -Fi "${2}" ${KB})"
+    if [[ "${SEARCH}" == "#"* ]]; then 
+      echo "${2}"
+      echo "Note: a fixed bug with the same UniqueID was found ${KB}!"
+    fi
+  fi
+fi

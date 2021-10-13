@@ -8,7 +8,11 @@ if [ ! -r ../gendirs.sh ]; then echo "Assert: ../gendirs.sh not available, are y
 if [ "${1}" == "GAL" ]; then
   if [ -z "$(echo "$(cd ..;./gendirs.sh GAL)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
 else
-  if [ -z "$(echo "$(cd ..;./gendirs.sh)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
+  if [[ "${PWD}" != *"SAN"* ]]; then
+    if [ -z "$(echo "$(cd ..;./gendirs.sh)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
+  else
+    if [ -z "$(echo "$(cd ..;./gendirs.sh SAN)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
+  fi
 fi
 
 export TEXT=

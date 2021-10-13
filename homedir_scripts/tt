@@ -56,7 +56,7 @@ else
 fi
 
 if [[ "${TEXT}" == *"no core file found"* ]]; then 
-  echo "Assert: no core file found in */*core*"
+  echo "Assert: no core file found in */*core* and no *SAN issue detected"
   #echo $-
   noformat_strings
   exit 1

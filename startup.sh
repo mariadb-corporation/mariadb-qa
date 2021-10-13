@@ -45,12 +45,7 @@ fi
 
 add_san_options() {
   # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-  if [ "${1}" != "cl" ]; then
-    echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1' >>"${1}"
-  else
-    # atexit=1 is annoying (and not commonly helpful) at CLI exit
-    echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1' >>"${1}"
-  fi
+  echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1  # Set atexit=1 to get full at-binary-exit memory stats' >>"${1}"
   # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
   # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
   #echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:check_initialization_order=1:detect_stack_use_after_return=1:abort_on_error=1' >> "${1}"

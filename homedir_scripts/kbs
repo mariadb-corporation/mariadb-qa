@@ -1,10 +1,19 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
 set +H
+
+KB=~/mariadb-qa/known_bugs.strings
+
 if [ "${1}" != "REVERSE" ]; then  # Standard search (show the string if it exists)
-  grep --binary-files=text -Fi "$*" ~/mariadb-qa/known_bugs.strings
+  grep --binary-files=text -Fi "${1}" ${KB}
 else  # Reverse search (show the string if it does not exist yet)
-  SEARCH="$(echo "$*" | sed 's|REVERSE[ \t]*||')"
-  if [ -z "$(grep --binary-files=text -Fi "${SEARCH}" ~/mariadb-qa/known_bugs.strings)" ]; then
-    echo "${SEARCH}"
+  if [ -z "$(grep --binary-files=text -Fi "${2}" ${KB})" ]; then  # Not found at all
+    echo "${2}"
+  else  # Found, but possible a fixed bug (prefixed with leading '#') 
+    SEARCH="$(grep --binary-files=text -Fi "${2}" ${KB})"
+    if [[ "${SEARCH}" == "#"* ]]; then 
+      echo "${2}"
+      echo "Note: a fixed bug with the same UniqueID was found ${KB}!"
+    fi
   fi
 fi
