@@ -238,6 +238,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|checkpoint|checkpoint|gi' | \
   sed 's|coordinates|coordinates|gi' | \
   sed 's|_\([a-zA-Z]\+\)|_\L\1|gi;s|\([a-zA-Z]\+\)_|\L\1_|gi' | \
+  sed 's|json_\([_a-zA-Z]\+\)|JSON_\U\1|gi' | \
   sed 's|\([^\.]\)st_|\1ST_|gi' | \
   sed 's|geomfromtext|GEOMFROMTEXT|gi' | \
   sed 's|ST_\([_a-zA-Z]\+\)|\UST_\1|gi' | \
@@ -310,7 +311,6 @@ cat "${1}" | tr -d '`' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
   sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \
   sed 's|insert_method|INSERT_METHOD|gi' | \
-  sed 's|json_array_insert|JSON_ARRAY_INSERT|g' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \
   sed "s|'IN |' IN |gi" | \

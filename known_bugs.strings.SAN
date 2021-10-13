@@ -14,6 +14,8 @@ UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented i
 UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_locate::val_int ## MDEV-22742
 UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## MDEV-22742
 UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_locate::val_int ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_insert::val_str ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_insert::val_str ## MDEV-22742
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                     ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                       ## MDEV-24193
 ASAN|use-after-poison|sql/spatial.cc|wkb_get_double|Gis_point::init_from_wkb|Gis_geometry_collection::init_from_wkb|Geometry::create_from_wkb                                  ## MDEV-26813
@@ -23,6 +25,9 @@ UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_
 UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/item_func.cc|Item_func_shift_right::val_int|Item::send|Protocol::send_result_set_row|select_send::send_data ## MDEV-24198
 UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/item_func.cc|Item_func_shift_right::val_int|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## MDEV-24198
 UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/item_func.cc|Item_func_shift_right::val_int|Type_handler::Item_send_longlong|Type_handler_longlong::Item_send|Item::send ## MDEV-24198
-
+UBSAN|index X out of bounds for type 'json_string_char_classes [128]'|strings/json_lib.c|skip_key|json_scan_next|Item_func_json_valid::val_int|Type_handler::Item_send_long    ## MDEV-26817
+UBSAN|index X out of bounds for type 'json_string_char_classes [128]'|strings/json_lib.c|skip_key|json_scan_next|json_valid|Item_func_json_valid::val_int                      ## MDEV-26817
+ASAN|global-buffer-overflow|sql/item_jsonfunc.cc|skip_key|json_scan_next|json_valid|Item_func_json_valid::val_int                                                              ## MDEV-26817
+ASAN|global-buffer-overflow|sql/sql_type.cc|skip_key|json_scan_next|Item_func_json_valid::val_int|Type_handler::Item_send_long                                                 ## MDEV-26817
 
 ###### FIXED BUGS ######

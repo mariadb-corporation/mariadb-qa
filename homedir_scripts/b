@@ -26,7 +26,7 @@ if [[ "${PWD}" == *"SAN"* ]]; then
   fi
 fi
 if [ "${1}" == "SAN" ]; then
-  if grep -qi "SAN" ../REGEX_EXCLUDE; then 
+  if [ ! -z "$(grep --binary-files=text -i "SAN" ../REGEX_EXCLUDE | grep -v 'SAN_MD[0-9]')" ]; then 
     echo "Assert: remove SAN from ../REGEX_EXCLUDE"
     exit 1
   fi

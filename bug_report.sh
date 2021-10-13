@@ -296,8 +296,7 @@ if [ ${SAN_MODE} -eq 1 ]; then
   fi
   if grep -qm1 --binary-files=text '=ERROR:' ./log/master.err; then  # UBSAN/ASAN (best not to split here, as options may interact: bug reproducibility max)
     echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
-  fi
-  if grep -qm1 --binary-files=text 'runtime error:' ./log/master.err; then  # UBSAN/ASAN (best not to split here, as options may interact: bug reproducibility max)
+  elif grep -qm1 --binary-files=text 'runtime error:' ./log/master.err; then  # UBSAN/ASAN (best not to split here, as options may interact: bug reproducibility max)  # elif; avoids double printing
     echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
   fi
   echo 'Set before execution:'
