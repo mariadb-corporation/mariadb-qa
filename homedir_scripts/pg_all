@@ -1,2 +1,11 @@
 #!/bin/bash
-ls --color=never -d [0-9][0-9][0-9][0-9][0-9][0-9] | xargs -I{} echo "cd {}; ~/pg & cd - 2>&1 >dev/null" | xargs -I{} bash -c "{}"
+# Created by Roel Van de Paar, MariaDB
+
+cd /data
+if [ "${1}" == "REGEN" ]; then 
+  rm -f [0-9][0-9][0-9][0-9][0-9][0-9]/reducer*.sh
+else 
+  echo "Start this script as ~/pg_all REGEN if you want to also delete/regenerate all reducers."
+  sleep 2
+fi
+ls --color=never -d [0-9][0-9][0-9][0-9][0-9][0-9] | xargs -I{} echo "cd {}; ~/pg & cd - 2>&1 >dev/null" | xargs -P50 -I{} bash -c "{}"

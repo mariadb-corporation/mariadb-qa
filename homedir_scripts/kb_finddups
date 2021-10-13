@@ -3,6 +3,7 @@
 set +H
 
 find_dups(){
+  if [ -z "${KB}" ]; then echo "Assert: \$KB not set. Verify code of this script as this should not happen"; exit 1; fi
   echo "=== Duplicates (if any) in ${KB}..."
   rm -f ./kb_findups.res
   while IFS=$'\n' read i; do  # Read UniqueID's line by line
