@@ -1,0 +1,24 @@
+#!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+set +H
+
+find_dups(){
+  echo "=== Duplicates (if any) in ${KB}..."
+  rm -f ./kb_findups.res
+  while IFS=$'\n' read i; do  # Read UniqueID's line by line
+    if [ -z "${i}" ]; then continue; fi  # Skip empty lines
+    if [[ "${i}" == "##"* ]]; then continue; fi  # Skip remarks
+    if [ "$(grep --binary-files=text -Fi -c "${i}" ${KB})" -gt 1 ]; then  # Search for the string in the known bugs and count
+      grep --binary-files=text -Finh "${i}" ${KB} > ./kb_findups.res
+    fi
+  done < ${KB}
+  if [ -r ./kb_findups.res ]; then
+    sort -h ./kb_findups.res  # Output list of duplicate lines
+    rm -f ./kb_findups.res
+  fi
+}
+
+KB=~/mariadb-qa/known_bugs.strings
+find_dups
+KB=~/mariadb-qa/known_bugs.strings.SAN
+find_dups

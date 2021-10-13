@@ -686,7 +686,6 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.
 # end <= thd->m_parser_state->m_lip.get_end_of_query()|SIGABRT|LEX::create_item_ident|MYSQLparse|parse_sql|mysql_parse                                                ## Fixed ## DBG |MDEV-22022
 # 0|SIGABRT|my_wc_to_printable_generic|my_convert_using_func|convert_error_message|net_send_error_packet                                                              ## Fixed ## DBG MDEV-22043
 # !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_sql_stmt_prepare|mysql_execute_command                    ## Fixed ## DBG MDEV-22058
-# !table->file->keyread_enabled()|SIGABRT|close_thread_table|close_thread_tables|mysql_execute_command|mysql_parse                                                    ## Fixed ## DBG MDEV-22062
 # SIGSEGV|Binary_string::copy_printable_hhhh|Protocol::store_warning|mysqld_show_warnings|mysql_execute_command                                                       ## Fixed ## OPT MDEV-22130
 # state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|sys_var::set_default         ## Fixed ## OPT |MDEV-22148
 # state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|set_var::update              ## Fixed ## OPT |MDEV-22148
