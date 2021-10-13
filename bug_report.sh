@@ -232,12 +232,11 @@ if [ ${SAN_MODE} -eq 0 ]; then
   fi
 else
   echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV} ${BUILD_TYPE}}"
-  grep -Ei --binary-files=text "${TEXT}" ./log/master.err
+  grep -Ei --binary-files=text "${TEXT}" ./log/master.err | grep --binary-files=text -v "^[ \t]*$"
   # Check if a SAN stack is present and add it to output seperately
   if [ "$(grep -Ei --binary-files=text -A1 "${TEXT}" ./log/master.err | tail -n1 | grep -o '^[ ]*#0' | sed 's|[^#0]||g')" == "#0" ]; then
     LINE_BEFORE_SAN_STACK=$(grep -nEi --binary-files=text "${TEXT}" ./log/master.err | grep -o --binary-files=text '^[0-9]\+')
     if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
-      echo ''
       echo '{noformat}'
       echo ''
       echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV} ${BUILD_TYPE}}"
@@ -296,6 +295,9 @@ if [ ${SAN_MODE} -eq 1 ]; then
     echo '    -DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys'
   fi
   if grep -qm1 --binary-files=text '=ERROR:' ./log/master.err; then  # UBSAN/ASAN (best not to split here, as options may interact: bug reproducibility max)
+    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
+  fi
+  if grep -qm1 --binary-files=text 'runtime error:' ./log/master.err; then  # UBSAN/ASAN (best not to split here, as options may interact: bug reproducibility max)
     echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
   fi
   echo 'Set before execution:'

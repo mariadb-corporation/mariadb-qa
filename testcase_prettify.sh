@@ -310,6 +310,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
   sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \
   sed 's|insert_method|INSERT_METHOD|gi' | \
+  sed 's|json_array_insert|JSON_ARRAY_INSERT|g' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \
   sed "s|'IN |' IN |gi" | \

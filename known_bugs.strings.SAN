@@ -1,21 +1,28 @@
 ## Known *SAN bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID etc.
 
 ##### CURRENT BUGS #####
-UBSAN|signed integer overflow: -10000000000 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## DBG MDEV-22742
-TSAN|data race|storage/innobase/os/os0file.cc|__tsan_atomic64_fetch_add..|os_file_pread|os_file_read_page|os_file_read_func                                                    ## OPT MDEV-24332
-ASAN|use-after-poison|mysys/hash.c|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|hashcmp|my_hash_first_from_hash_value                                         ## OPT MDEV-26637
-UBSAN|signed integer overflow: -10000000000 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_str_func::left_right_max_length  ## OPT MDEV-22742
-UBSAN|signed integer overflow: -10101010101 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_shift_left::val_int ## OPT MDEV-22742
-UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|max_length_for_string ## OPT MDEV-22742
-UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item::to_longlong_hybrid ## OPT MDEV-22742
-UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_pad::fix_length_and_dec ## OPT MDEV-22742
-UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item::to_longlong_hybrid ## OPT MDEV-22742
-UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## DBG MDEV-22742
-UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_locate::val_int ## OPT MDEV-22742
-UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## OPT MDEV-22742
-UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_locate::val_int ## OPT MDEV-22742
-UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                     ## OPT MDEV-24193
-UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                       ## OPT MDEV-24193
-ASAN|use-after-poison|sql/spatial.cc|wkb_get_double|Gis_point::init_from_wkb|Gis_geometry_collection::init_from_wkb|Geometry::create_from_wkb                                  ## OPT MDEV-26813
+UBSAN|signed integer overflow: -10000000000 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## MDEV-22742
+TSAN|data race|storage/innobase/os/os0file.cc|__tsan_atomic64_fetch_add..|os_file_pread|os_file_read_page|os_file_read_func                                                    ## MDEV-24332
+ASAN|use-after-poison|mysys/hash.c|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|hashcmp|my_hash_first_from_hash_value                                         ## MDEV-26637
+UBSAN|signed integer overflow: -10000000000 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_str_func::left_right_max_length  ## MDEV-22742
+UBSAN|signed integer overflow: -10101010101 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_shift_left::val_int ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|max_length_for_string ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item::to_longlong_hybrid ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_pad::fix_length_and_dec ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item::to_longlong_hybrid ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_locate::val_int ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## MDEV-22742
+UBSAN|signed integer overflow: -18446744073 * 1000000000 cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_locate::val_int ## MDEV-22742
+UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                     ## MDEV-24193
+UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                       ## MDEV-24193
+ASAN|use-after-poison|sql/spatial.cc|wkb_get_double|Gis_point::init_from_wkb|Gis_geometry_collection::init_from_wkb|Geometry::create_from_wkb                                  ## MDEV-26813
+UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Item::send|Protocol::send_result_set_row|select_send::send_data     ## MDEV-26814
+UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-26814
+UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-26814
+UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/item_func.cc|Item_func_shift_right::val_int|Item::send|Protocol::send_result_set_row|select_send::send_data ## MDEV-24198
+UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/item_func.cc|Item_func_shift_right::val_int|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## MDEV-24198
+UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/item_func.cc|Item_func_shift_right::val_int|Type_handler::Item_send_longlong|Type_handler_longlong::Item_send|Item::send ## MDEV-24198
+
 
 ###### FIXED BUGS ######
