@@ -1,0 +1,4 @@
+#!/bin/bash
+# This script will regenerate all MYBUG files for all SAN runs, delete their reducers and regenerate them using ~/pg
+
+ls --color=never -d [0-9]*/*SAN* | sed 's|/.*||' | xargs -I{} echo "cd {}; ls -d --color=never [0-9]* | xargs -I_ echo 'cd _; ~/t > MYBUG; cd ..' | xargs -I_ bash -c '_'; rm reducer*.sh; ~/pg & cd .." | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
