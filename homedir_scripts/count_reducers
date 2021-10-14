@@ -1,11 +1,12 @@
 #!/bin/bash
 set +H
 # New method. Not perfect as two reducers with the same number from different workdirs will count as one
-ps -ef | grep -E 'bash -c ./reducer[0-9]\+\.sh|bash -c ./newbug_[0-9]+\.reducer' | grep -oE 'reducer[0-9]+\.sh|newbug_[0-9]+\.reducer.sh' | sort -u | wc -l
+# Did not always work correctly? Reverted to old grep approach ftm
+# ps -ef | grep -E 'bash -c ./reducer[0-9]\+\.sh|bash -c ./newbug_[0-9]+\.reducer' | grep -oE 'reducer[0-9]+\.sh|newbug_[0-9]+\.reducer.sh' | sort -u | wc -l
 
 # New method, old grep approach (improved by 'bash -c ./reducer' grep above)
 # Note the grep -v grep is necessary as for example ~/pr greps from reducer files and reducerx.sh will appear in ps output for those scripts, whereas they are not running reducers
-# ps -ef | grep -v grep | grep -o 'reducer[0-9]\+\.sh' | sort -u | wc -l
+ps -ef | grep -v grep | grep -o 'reducer[0-9]\+\.sh' | sort -u | wc -l
 
 # Old method
 #COUNT1=$(ps -ef | grep --binary-files=text 'SCREEN' | grep --binary-files=text 'reducer[0-9]\+.sh' | sed 's|.*reducer|reducer|;s|;bash||' | sort -u | wc -l)

@@ -20,6 +20,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|open|OPEN|gi' | \
   sed 's|execute|EXECUTE|gi' | \
   sed 's|index|INDEX|g' | \
+  sed 's|hex|HEX|gi' | \
   sed 's|int|INT|gi;s|integer|INT|gi' | \
   sed 's|float|FLOAT|gi' | \
   sed 's|real|REAL|gi' | \
@@ -310,6 +311,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|date_add[ ]*(|DATE_ADD(|gi' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
   sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \
+  sed 's|column_create|COLUMN_CREATE|gi' | \
   sed 's|insert_method|INSERT_METHOD|gi' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \

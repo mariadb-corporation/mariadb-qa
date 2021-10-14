@@ -123,16 +123,16 @@ while IFS=$'\n' read STRING_FILE; do
       SQL_FILE="$(echo "${STRING_FILE}" | sed 's|\.string|.sql|')"
       SQL_LINES="$(wc -l ${SQL_FILE} | sed 's| .*||')"
       SQL_FILE=
-      if [ "${SQL_LINES}" -le 5 ]; then 
-        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+, though not filtering as testcase is only ${SQL_LINES} lines"
-        fi
-      else
+#      if [ "${SQL_LINES}" -le 5 ]; then 
+#        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+#          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+, though not filtering as testcase is only ${SQL_LINES} lines"
+#        fi
+#      else
         if [ ${ENABLE_OUTPUT} -eq 1 ]; then
           echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+: filtering"
         fi
         delete_newbug
-      fi
+#      fi
       SQL_LINES=
     fi 
   fi 

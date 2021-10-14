@@ -2,3 +2,6 @@
 # This script will regenerate all MYBUG files for all SAN runs, delete their reducers and regenerate them using ~/pg
 
 ls --color=never -d [0-9]*/*SAN* | sed 's|/.*||' | xargs -I{} echo "cd {}; ls -d --color=never [0-9]* | xargs -I_ echo 'cd _; ~/t > MYBUG; cd ..' | xargs -I_ bash -c '_'; rm reducer*.sh; ~/pg & cd .." | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+
+# Also handy (produces strings to restart all SAN reducers after they are updated with the above):
+# ls --color=never -d */*SAN*conf | sed 's|/.*||' | xargs -I{} echo "cd {}; rm */*prev */*out */1*; ~/mariadb-qa/pquery-mass-reduce.sh \$(~/pr | grep -v '^=' | wc -l); cd .."
