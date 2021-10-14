@@ -2248,6 +2248,11 @@ elif [[ ${GRP_RPL} -eq 1 ]]; then
 fi
 echo "[$(date +'%D %T')] ${ONGOING}" >> ~/ongoing.pquery-runs.txt
 ONGOING=
+if [[ ${RR_TRACING} -eq 1 ]]; then
+  echoit "RR Tracing enabled: YES"
+else
+  echoit "RR Tracing enabled: NO"
+fi
 
 if [[ ${PXB_CRASH_RUN} -eq 1 ]]; then
   echoit "PXB Base: ${PXB_BASEDIR}"

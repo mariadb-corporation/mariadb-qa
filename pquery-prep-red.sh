@@ -65,6 +65,13 @@ if [ "$(grep 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t
 else
   export MDG=0
 fi
+
+# Check RR Tracing enabled or not
+if [ "$(grep 'RR Tracing enabled:' ./pquery-run.log 2> /dev/null | sed 's|^.*RR Tracing enabled[: \t]*||' )" == "YES" ]; then
+  export RR_TRACING=1
+else
+  export RR_TRACING=0
+fi
 NR_OF_NODES=$(grep 'Number of Galera Cluster nodes:' ./pquery-run.log 2> /dev/null | sed 's|^.*Number of Galera Cluster nodes[: \t]*||')
 # Check if this is a group replication run
 if [ "$(grep 'Group Replication Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*Group Replication Mode[: \t]*||')" == "TRUE" ]; then
@@ -490,6 +497,13 @@ generate_reducer_script(){
     MDG_CLEANUP1="s|ZERO0|ZERO0|"  # Idem as above
     MDG_STRING1="s|ZERO0|ZERO0|"
   fi
+  if [[ ${RR_TRACING} -eq 1 ]]; then
+    RR_TRACING_CLEANUP="0,/^[ \t]*RR_TRACING[ \t]*=.*$/s|^[ \t]*RR_TRACING[ \t]*=.*$|#RR_TRACING=<set_below_in_machine_variables_section>|"
+    RR_TRACING_STRING="0,/#VARMOD#/s:#VARMOD#:export RR_TRACING=1\n#VARMOD#:"
+  else
+    RR_TRACING_CLEANUP="s|ZERO0|ZERO0|"  # Idem as above
+    RR_TRACING_STRING="s|ZERO0|ZERO0|"
+  fi
   if [[ ${GRP_RPL} -eq 1 ]]; then
     GRP_RPL_CLEANUP1="0,/^[ \t]*GRP_RPL[ \t]*=.*$/s|^[ \t]*GRP_RPL[ \t]*=.*$|#GRP_RPL=<set_below_in_machine_variables_section>|"
     GRP_RPL_STRING1="0,/#VARMOD#/s:#VARMOD#:GRP_RPL=1\n#VARMOD#:"
@@ -542,6 +556,7 @@ generate_reducer_script(){
    | sed "0,/^[ \t]*PQUERY_LOC[ \t]*=.*$/s|^[ \t]*PQUERY_LOC[ \t]*=.*$|#PQUERY_LOC=<set_below_in_machine_variables_section>|" \
    | sed "${MDG_CLEANUP1}" \
    | sed "${MDG_CLEANUP2}" \
+   | sed "${RR_TRACING_CLEANUP}" \
    | sed "${GRP_RPL_CLEANUP1}" \
    | sed "${SI_CLEANUP1}" \
    | sed "${SI_STRING1}" \
@@ -567,6 +582,7 @@ generate_reducer_script(){
    | sed "0,/#VARMOD#/s:#VARMOD#:SAVE_RESULTS=0\n#VARMOD#:" \
    | sed "${MDG_STRING1}" \
    | sed "${MDG_STRING2}" \
+   | sed "${RR_TRACING_STRING}" \
    | sed "${GRP_RPL_STRING1}" \
    | sed "${QC_STRING1}" \
    | sed "${QC_STRING2}" \
