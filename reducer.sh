@@ -75,7 +75,7 @@ SCAN_FOR_NEW_BUGS=0             # Scan for any new bugs seen during testcase red
 KNOWN_BUGS_LOC="${SCRIPT_PWD}/known_bugs.strings"  # If SCAN_FOR_NEW_BUGS=1 then this file is used to filter which bugs are known. i.e. if a certain unremarked text string appears in the KNOWN_BUGS_LOC file, it will not be considered a new issue when it is seen by reducer.sh
 NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (otherwise it will be saved in the workdir)
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
-RR_TRACING=1                    # Set to 1 to start server in RR
+RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -2242,7 +2242,7 @@ start_mdg_main(){
       echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START
       echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       echo "sleep 10" >> $WORK_START
-      ${RR_OPTIONS}  ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/error.log 2>&1 &
+      ${RR_OPTIONS} ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/error.log 2>&1 &
       mdg_node_startup_status ${WORKD}/node${j}/error.log
     else
       echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
@@ -2401,14 +2401,14 @@ start_mysqld_main(){
   fi
   # Change --port=$MYPORT to --skip-networking instead once BUG#13917335 is fixed and remove all MYPORT + MULTI_MYPORT coding
   if [ $MODE -ge 6 -a $TS_DEBUG_SYNC_REQUIRED_FLAG -eq 1 ]; then
-    echo "${RR_OPTIONS}  ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-    CMD="${RR_OPTIONS}  ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+    echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+    CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
     MYSQLD_START_TIME=$(date +'%s')
     $CMD > $WORKD/log/mysqld.out 2>&1 &
     PIDV="$!"
   else
-    echo "${RR_OPTIONS}  ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-    CMD="${RR_OPTIONS}  ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+    echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+    CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
     MYSQLD_START_TIME=$(date +'%s')
     $CMD > $WORKD/log/mysqld.out 2>&1 &
     PIDV="$!"

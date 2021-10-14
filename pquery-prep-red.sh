@@ -66,7 +66,7 @@ else
   export MDG=0
 fi
 
-# Check RR Tracing enabled or not
+# Check if RR Tracing was enabled for the run
 if [ "$(grep 'RR Tracing enabled:' ./pquery-run.log 2> /dev/null | sed 's|^.*RR Tracing enabled[: \t]*||' )" == "YES" ]; then
   export RR_TRACING=1
 else
@@ -596,7 +596,7 @@ generate_reducer_script(){
   if [ "${MULTI}" == "1" -a ${QC} -eq 0 ]; then
     QUICK_REDUCER_FILENAME="$(echo "${REDUCER_FILENAME}" | sed 's|^|quick_|')"
     if [ ! -z "${QUICK_REDUCER_FILENAME}" ]; then
-      if [ -r "${QUICK_REDUCER_FILENAME}" -a ! -d "${QUICK_REDUCER_FILENAME}" ]; then 
+      if [ -r "${QUICK_REDUCER_FILENAME}" -a ! -d "${QUICK_REDUCER_FILENAME}" ]; then
         rm -f "${QUICK_REDUCER_FILENAME}"
       fi
       if [ "$(ls --color=never ${WORKD_PWD}/${TRIAL}/*thread-[0-9]*.sql 2>/dev/null | wc -l)" -gt 0 ]; then
@@ -611,23 +611,23 @@ generate_reducer_script(){
         # Then do the same standard processing: add failing queries thrice, add SELECT 1's, add SELECT SLEEP's, ...
         # Note that if there is one failing query and one in the error log, then result is it will be added 6x
         # This is fine and >=3 occurences is desired in any case (may help with sporadic issues)
-        cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null 
-        cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null 
-        cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null 
+        cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
+        cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
+        cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
         add_select_ones_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         add_select_sleep_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         remove_non_sql_from_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         # Then interleave in extra failing queries all along the sql file (scaled/chuncked). This may increase
         # reproducibility, and is done for multi-threaded issues (who tend to be reduced by random-order replay!) only
-        # Multi-threaded issues are auto-set to random order replay accross many threads, ensuring 
+        # Multi-threaded issues are auto-set to random order replay accross many threads, ensuring
         auto_interleave_failing_sql ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         sed "s|${TRIAL}/${TRIAL}.sql|${TRIAL}/quick_${TRIAL}.sql|" "${REDUCER_FILENAME}" > "${QUICK_REDUCER_FILENAME}"  # Generates quick_reducer{trial}.sh with new quick_ input file.
-        sed -i "s|^MULTI_THREADS=3|MULTI_THREADS=10|" "${QUICK_REDUCER_FILENAME}"  # Speed things up 
+        sed -i "s|^MULTI_THREADS=3|MULTI_THREADS=10|" "${QUICK_REDUCER_FILENAME}"  # Speed things up
         sed -i "s|^PQUERY_MULTI_CLIENT_THREADS=30|PQUERY_MULTI_CLIENT_THREADS=20|" "${QUICK_REDUCER_FILENAME}"  # Don't overdo, scale better
         chmod +x ${QUICK_REDUCER_FILENAME}
         # Make yet another quick_onethd_reducer{trial}.sh which will attempt an even quicker (and potentially less
         # likely to reproduce) reduction using the quick_ input file and run it in a single thread run.
-        # The quick_ and quick_onethd_ reducers are meant to reduce the usual "few days" true multi-threaded 
+        # The quick_ and quick_onethd_ reducers are meant to reduce the usual "few days" true multi-threaded
         # testcase reduction down to a few hours for at least a subset of the issues which are more easy to reproduce
         QUICK_ONETHD_REDUCER_FILENAME="$(echo "${QUICK_REDUCER_FILENAME}" | sed 's|quick_|quick_onethd_|')"
         cp ${QUICK_REDUCER_FILENAME} ${QUICK_ONETHD_REDUCER_FILENAME}
@@ -707,7 +707,7 @@ if [ ${QC} -eq 0 ]; then
           ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
           cd - >/dev/null || exit 1
         fi
-        TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # TODO: this change needs further testing for cluster/GR. Also, it is likely someting was missed for this in the updated pquery-run.sh: the need to generate a MYBUG file for each node!   # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.     
+        TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # TODO: this change needs further testing for cluster/GR. Also, it is likely someting was missed for this in the updated pquery-run.sh: the need to generate a MYBUG file for each node!   # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.
         check_if_asan_or_ubsan_or_tsan ${SUBDIR}
         if [ "${MULTI}" == "1" ]; then
            if [ -s ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/${TRIAL}.sql.failing ];then
