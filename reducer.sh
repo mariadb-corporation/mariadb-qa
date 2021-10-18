@@ -75,7 +75,8 @@ SCAN_FOR_NEW_BUGS=0             # Scan for any new bugs seen during testcase red
 KNOWN_BUGS_LOC="${SCRIPT_PWD}/known_bugs.strings"  # If SCAN_FOR_NEW_BUGS=1 then this file is used to filter which bugs are known. i.e. if a certain unremarked text string appears in the KNOWN_BUGS_LOC file, it will not be considered a new issue when it is seen by reducer.sh
 NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (otherwise it will be saved in the workdir)
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
-RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
+RR_TRACING=1                    # Set to 1 to start server under the 'rr' debugger
+RR_SAVE_ALL_TRACES=1            # Set to 1 to save all rr traces
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -580,6 +581,14 @@ echo_out(){
 echo_out_overwrite(){
   # Used for frequent on-screen updating when using threads etc.
   echo -ne "$(date +'%F %T') $1\r"
+}
+
+save_rr_trace(){
+  RR_BKP_LOCATION=${1}
+  rm -rf ${RR_BKP_LOCATION}
+  mkdir -p "${RR_BKP_LOCATION}/"
+  cp -r ${WORKD}/rr ${RR_BKP_LOCATION}/
+  rm -rf ${WORKD}/rr
 }
 
 abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE anymore
@@ -1281,6 +1290,12 @@ multi_reducer(){
           grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') > $WORKF
           if [ "${FIREWORKS}" != "1" ]; then
             if [ -r "$WORKO" ]; then  # Avoid first occurence when there is no $WORKO yet
+              if [[ ${RR_TRACING} -eq 1 ]]; then
+                if [[ ${RR_SAVE_ALL_TRACES} -eq 1 ]]; then
+                  save_rr_trace "${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+                  echo_out "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+                fi
+              fi
               cp -f $WORKO ${WORKO}.prev
               # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
               echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Previous good testcase backed up as $WORKO.prev"
@@ -2809,6 +2824,12 @@ cleanup_and_save(){
     fi
     cp -f $WORKT $WORKF
     if [ -r "$WORKO" ]; then
+      if [[ ${RR_TRACING} -eq 1 ]]; then
+        if [[ ${RR_SAVE_ALL_TRACES} -eq 1 ]]; then
+          save_rr_trace "${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+        fi
+      fi
       cp -f $WORKO ${WORKO}.prev
       # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
@@ -3036,6 +3057,10 @@ process_outcome(){
                   NEWBUGTO="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.string|")"
                   NEWBUGRE="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.reducer.sh|")"
                   NEWBUGVM="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.varmod|")"
+                fi
+                if [[ ${RR_TRACING} -eq 1 ]]; then
+                  save_rr_trace "${NEW_BUGS_SAVE_DIR}/${EPOCH_RAN}_rr_trace"
+                  echo_out "[NewBug] Saved RR trace in ${NEW_BUGS_SAVE_DIR}/${EPOCH_RAN}_rr_trace"
                 fi
                 cp "${WORKT}" "${NEWBUGSO}"
                 echo_out "[NewBug] Saved the new testcase to: ${NEWBUGSO}"
@@ -4483,11 +4508,11 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 144 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # Second occurence only
     elif [ $TRIAL -eq 145 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # Third occurence only
     elif [ $TRIAL -eq 146 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # Fourth occurence only
-    elif [ $TRIAL -eq 147 ]; then sed 's/TEMPORARY//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 148 ]; then sed 's/AUTO_INCREMENT KEY//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 149 ]; then sed 's/AUTO_INCREMENT//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 150 ]; then sed 's/UNIQUE//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 151 ]; then sed 's/idx/i/' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 147 ]; then sed 's/TEMPORARY//i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 148 ]; then sed 's/AUTO_INCREMENT KEY//i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 149 ]; then sed 's/AUTO_INCREMENT//i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 150 ]; then sed 's/UNIQUE//i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 151 ]; then sed 's/idx/i/' $WORKF > $WORKT
     elif [ $TRIAL -eq 152 ]; then sed 's/DROP DATABASE transforms;CREATE DATABASE transforms;//' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
