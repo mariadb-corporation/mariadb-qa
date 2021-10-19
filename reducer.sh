@@ -75,8 +75,8 @@ SCAN_FOR_NEW_BUGS=0             # Scan for any new bugs seen during testcase red
 KNOWN_BUGS_LOC="${SCRIPT_PWD}/known_bugs.strings"  # If SCAN_FOR_NEW_BUGS=1 then this file is used to filter which bugs are known. i.e. if a certain unremarked text string appears in the KNOWN_BUGS_LOC file, it will not be considered a new issue when it is seen by reducer.sh
 NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (otherwise it will be saved in the workdir)
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
-RR_TRACING=1                    # Set to 1 to start server under the 'rr' debugger
-RR_SAVE_ALL_TRACES=1            # Set to 1 to save all rr traces
+RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
+RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -587,7 +587,7 @@ save_rr_trace(){
   RR_BKP_LOCATION=${1}
   rm -rf ${RR_BKP_LOCATION}
   mkdir -p "${RR_BKP_LOCATION}/"
-  cp -r ${WORKD}/rr ${RR_BKP_LOCATION}/
+  cp -r ${WORKD}/rr/* ${RR_BKP_LOCATION}/
   rm -rf ${WORKD}/rr
 }
 
@@ -3473,6 +3473,12 @@ stop_mysqld_or_mdg(){
 }
 
 finish(){
+  if [[ ${RR_TRACING} -eq 1 ]]; then
+    if [[ ${RR_SAVE_ALL_TRACES} -eq 0 ]]; then
+      save_rr_trace "${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
+      echo_out "[Finish] Number of server startups         : Saved RR trace in ${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
+    fi
+  fi
   echo_out "[Finish] Finalized reducing SQL input file ($INPUTFILE)"
   echo_out "[Finish] Number of server startups         : $STARTUPCOUNT (not counting subreducers)"
   echo_out "[Finish] Working directory was             : $WORKD"
