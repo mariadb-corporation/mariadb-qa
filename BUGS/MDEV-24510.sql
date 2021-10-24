@@ -9,3 +9,6 @@ SELECT event_name, created, last_altered FROM information_schema.events;
 SET sql_buffer_result=1;
 SET sql_mode=traditional;
 SELECT created FROM information_schema.events;
+
+SET @@sql_mode='no_zero_date';
+SELECT * FROM sys.innodb_lock_waits;

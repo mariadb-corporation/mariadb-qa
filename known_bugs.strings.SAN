@@ -1,5 +1,8 @@
 ## Known *SAN bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID etc.
 
+##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
+ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
+
 ##### CURRENT BUGS #####
 TSAN|data race|storage/innobase/os/os0file.cc|__tsan_atomic64_fetch_add..|os_file_pread|os_file_read_page|os_file_read_func                                                    ## MDEV-24332
 ASAN|use-after-poison|mysys/hash.c|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|hashcmp|my_hash_first_from_hash_value                                         ## MDEV-26637
@@ -20,6 +23,7 @@ UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long i
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_locate::val_int ## MDEV-22742
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_insert::val_str ## MDEV-22742
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_dyncol_create::prepare_arguments ## MDEV-22742
+UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_dyncol_get::val_int|Item_dyncol_get::val_int_signed_typecast ## MDEV-22742
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Item::send|Protocol::send_result_set_row|select_send::send_data     ## MDEV-26814
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-26814
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-26814
@@ -30,5 +34,10 @@ UBSAN|index X out of bounds for type 'json_string_char_classes [128]'|strings/js
 UBSAN|index X out of bounds for type 'json_string_char_classes [128]'|strings/json_lib.c|skip_key|json_scan_next|json_valid|Item_func_json_valid::val_int                      ## MDEV-26817
 ASAN|global-buffer-overflow|sql/item_jsonfunc.cc|skip_key|json_scan_next|json_valid|Item_func_json_valid::val_int                                                              ## MDEV-26817
 ASAN|global-buffer-overflow|sql/sql_type.cc|skip_key|json_scan_next|Item_func_json_valid::val_int|Type_handler::Item_send_long                                                 ## MDEV-26817
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/compat56.cc|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_temporal::save_in_field|Create_tmp_table::finalize ## MDEV-24510
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|ha_maria::write_row|handler::ha_write_row          ## MDEV-26839
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|handler::ha_write_row|copy_data_between_tables     ## MDEV-26839
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|handler::ha_write_row|write_record                 ## MDEV-26839
+UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-26840
 
 ###### FIXED BUGS ######

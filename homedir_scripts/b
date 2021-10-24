@@ -42,21 +42,11 @@ elif [ "${1}" == "GAL" ]; then
   export TEXT="mysqld got signal"  
   #rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh GAL "${MYEXTRA_OPT}" | tee report.log
-  ~/tt | grep -A1 "URL" | tee -a report.log
-  echo '*** All strings merged (for updating ~/kb) ***' | tee -a report.log
-  if [ -r ../allstrings_merged ]; then
-    cd .. && ./allstrings_merged GAL | tee -a report.log && cd - >/dev/null 2>&1
-  fi
 else
   MYEXTRA_OPT="$*"
   export TEXT="BBB"  # A dummy string to let findbug+ know we want to scan for a set of strings to establish crashes
   rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh "${MYEXTRA_OPT}" | tee report.log
-  ~/tt | tee -a report.log
-  echo '*** All strings merged (for updating ~/kb) ***' | tee -a report.log
-  if [ -r ../allstrings_merged ]; then
-    cd .. && ./allstrings_merged | tee -a report.log && cd - >/dev/null 2>&1
-  fi
   # The following code is now precautionary/defensive coding as this is covered in the new port assignment code
   if grep --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err 2>/dev/null; then
     echo "------------------------------------------------------------------------------------------"
@@ -64,6 +54,35 @@ else
     grep -l --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err
     echo "You will probably want to fix this port conflict and then re-run ~/b!"
     echo "------------------------------------------------------------------------------------------"
+  fi
+fi
+
+if [ ! -z "$(~/t | grep -o 'no core file found')" ]; then
+  echo "*) No core file was found, and no *SAN issue detected in the current directory, though other versions may have reproduced the issue! Check 'All strings merged' output below to confirm if any issues were seen in any version tested." | tee -a report.log
+  echo "*) As no issue was detected in the current directory, you may want to re-run this from another version's basedir where the issue was detected (Run and check ./allstrings output to find the exact basedir where the issue produced). This will then provide full stacks/a full report."
+else
+  ~/tt | tee -a report.log
+fi
+echo '----- All strings merged -----' | tee -a report.log
+if [ -r ../allstrings_merged ]; then
+  if [ "${1}" == "GAL" ]; then
+    cd .. && ./allstrings_merged GAL | tee -a report.log && cd - >/dev/null 2>&1
+  elif [ "${1}" == "SAN" ]; then
+    cd .. && ./allstrings_merged SAN | tee -a report.log && cd - >/dev/null 2>&1
+  else
+    cd .. && ./allstrings_merged | tee -a report.log && cd - >/dev/null 2>&1
+  fi
+fi
+if [ -r ../allstrings_new ]; then
+  if [ "${1}" == "GAL" ]; then
+    echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a report.log
+    cd .. && ./allstrings_new GAL | tee -a report.log && cd - >/dev/null 2>&1
+  elif [ "${1}" == "SAN" ]; then
+    echo '----- All NEW (not known yet) strings merged (for adding to ~/kba) -----' | tee -a report.log
+    cd .. && ./allstrings_new SAN | tee -a report.log && cd - >/dev/null 2>&1
+  else
+    echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a report.log
+    cd .. && ./allstrings_new | tee -a report.log && cd - >/dev/null 2>&1
   fi
 fi
 

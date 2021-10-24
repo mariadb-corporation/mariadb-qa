@@ -268,6 +268,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|less than|LESS THAN|gi' | \
   sed 's|auto_increment|AUTO_INCREMENT|gi' | \
   sed 's|column_format|COLUMN_FORMAT|gi' | \
+  sed 's|column_create|COLUMN_CREATE|gi' | \
+  sed 's|column_get|COLUMN_GET|gi' | \
   sed 's|low_priority|LOW_PRIORITY|gi' | \
   sed 's|row_format|ROW_FORMAT|gi' | \
   sed 's|row_start|ROW_START|gi' | \
@@ -311,7 +313,6 @@ cat "${1}" | tr -d '`' | \
   sed 's|date_add[ ]*(|DATE_ADD(|gi' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
   sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \
-  sed 's|column_create|COLUMN_CREATE|gi' | \
   sed 's|insert_method|INSERT_METHOD|gi' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \

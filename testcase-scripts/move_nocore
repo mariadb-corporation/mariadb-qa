@@ -1,4 +1,6 @@
 #!/bin/bash
 
-mkdir NOCORE
+mkdir -p NOCORE
+echo "Before: $(ls *.sql 2>/dev/null | wc -l)"
 ls *.NOCORE | sed 's|.sql.report.NOCORE||' | xargs -I{} echo 'mv {}.sql {}.sql.report {}.sql.report.NOCORE NOCORE' | xargs -I{} bash -c "{}"
+echo "Before: $(ls *.sql 2>/dev/null | wc -l)"

@@ -1,4 +1,5 @@
 #!/bin/bash
-echo "Before: $(ls *.sql | wc -l)"
+
+echo "Before: $(ls *.sql 2>/dev/null | wc -l)"
 ~/mariadb-qa/move_known.sh
-echo "After : $(ls *.sql | wc -l)"
+echo "After : $(ls *.sql 2>/dev/null | wc -l)"

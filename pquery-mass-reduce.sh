@@ -30,7 +30,7 @@ TOTAL=$[ $1 + $SKIP ]
 
 RND=${RANDOM}
 # For each issue, take the first trial number and sent it to a file
-${SCRIPT_PWD}/pquery-results.sh | grep -v 'reducers$)' | grep -o "reducers.*" | sed 's|reducers ||;s|[,)]\+.*||' > /tmp/${RND}.txt
+${SCRIPT_PWD}/pquery-results.sh | grep -v 'reducers)$' | grep -o "reducers.*" | sed 's|reducers ||;s|[,)]\+.*||' > /tmp/${RND}.txt
 # Now put the issues into an issue array
 mapfile -t issues < /tmp/${RND}.txt; rm -f /tmp/${RND}.txt 2>/dev/null
 # Check for existing reducers started in a similar way, to continue s<nr> name count (allows easy reconnect with `screen -d -r s<nr>`

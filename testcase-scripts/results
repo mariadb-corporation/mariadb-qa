@@ -1,0 +1,3 @@
+#!/bin/bash
+
+grep -A1 'Bug confirmed present' *.report | grep 'MariaDB: .*' | sed 's|-MariaDB||;s|\.report||'

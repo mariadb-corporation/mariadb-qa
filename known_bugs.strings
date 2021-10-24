@@ -25,8 +25,8 @@ scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_conditi
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql     ## MDEV-25927
 
 ##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
-debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## 1
-!maria_assert_if_crashed_table|SIGABRT|_ma_set_fatal_error|_ma_flush_table_files|_ma_reenable_logging_for_table|ha_maria::external_lock                                        ## 2
+debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## SPECIAL-1
+!maria_assert_if_crashed_table|SIGABRT|_ma_set_fatal_error|_ma_flush_table_files|_ma_reenable_logging_for_table|ha_maria::external_lock                                        ## SPECIAL-2
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 #***#(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl            ## MDEV-24749

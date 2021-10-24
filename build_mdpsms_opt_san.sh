@@ -10,8 +10,8 @@ USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
 CUSTOM_COMPILER_LOCATION="/home/roel/GCC-5.5.0/bin"
 USE_CLANG=0             # 0 or 1 # Use the clang compiler instead of gcc
 USE_SAN=1               # 0 or 1 # Use [ASAN or MSAN], UBSAN, TSAN
-USE_TSAN=1              # 0 or 1 # 1 Enables TSAN, disables ASAN+UBSAN. 0 Enables ASAN+UBSAN,disables TSAN
-ASAN_OR_MSAN=0          # 0 or 1 # 0: ASAN, 1: MSAN
+USE_TSAN=0              # 0 or 1 # 1 Enables TSAN, disables ASAN+UBSAN. 0 Enables ASAN+UBSAN,disables TSAN
+ASAN_OR_MSAN=1          # 0 or 1 # 0: ASAN, 1: MSAN
 #CLANG_LOCATION="/home/roel/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 CLANG_LOCATION="/usr/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 USE_AFL=0               # 0 or 1 # Use the American Fuzzy Lop gcc/g++ wrapper instead of gcc/g++
@@ -86,7 +86,11 @@ if [ ${USE_SAN} -eq 1 ]; then
   if [ ${USE_TSAN} -eq 1 ]; then
     PREFIX="TSAN_"
   else
-    PREFIX="UBASAN_"
+    if [ ${ASAN_OR_MSAN} -eq 0 ]; then
+      PREFIX="UBASAN_"
+    else
+      PREFIX="UBMSAN_"
+    fi
   fi
 fi
 if [ ${MYSQL_VERSION_MAJOR} -eq 10 ]; then
@@ -180,7 +184,7 @@ if [ $USE_SAN -eq 1 ]; then
     if [ ${ASAN_OR_MSAN} -eq 0 ]; then
       SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON"
     else
-      SAN="--DWITH_MSAN=ON -DWITH_UBSAN=ON"  # MD Does not have full MSAN support for InnoDB yet, and need to verify if -DWITH_UBSAN=ON works in combination with MSAN.
+      SAN="-DWITH_MSAN=ON -DWITH_UBSAN=ON"  # TODO: MD Does not have full MSAN support for InnoDB yet, and need to verify if -DWITH_UBSAN=ON works in combination with MSAN.
     fi
   fi
 fi
