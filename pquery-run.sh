@@ -1762,8 +1762,17 @@ EOF
           ${PQUERY_BIN} ${SQL_FILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
           PQPID="$!"
         else
-          ${PQUERY_BIN} ${SQL_FILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-          PQPID="$!"
+          if [[ ${MDG_CLUSTER_RUN} -eq 1 ]]; then
+            cat ${MDG_CLUSTER_CONFIG} |
+               sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
+               sed "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
+                 > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
+            ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+            PQPID="$!"
+          else
+            ${PQUERY_BIN} ${SQL_FILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+            PQPID="$!"
+          fi
         fi
       fi
     fi
