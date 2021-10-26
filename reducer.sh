@@ -584,10 +584,10 @@ echo_out_overwrite(){
 }
 
 save_rr_trace(){
-  RR_BKP_LOCATION=${1}
-  rm -rf ${RR_BKP_LOCATION}
-  mkdir -p "${RR_BKP_LOCATION}/"
-  cp -r ${WORKD}/rr/* ${RR_BKP_LOCATION}/
+  RR_SAVE_LOCATION=${1}
+  rm -rf ${RR_SAVE_LOCATION}
+  mkdir -p "${RR_SAVE_LOCATION}/"
+  cp -r ${WORKD}/rr/* ${RR_SAVE_LOCATION}/
   rm -rf ${WORKD}/rr
 }
 
@@ -3477,6 +3477,8 @@ finish(){
     if [[ ${RR_SAVE_ALL_TRACES} -eq 0 ]]; then
       save_rr_trace "${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
       echo_out "[Finish] Number of server startups         : Saved RR trace in ${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
+    else
+      echo_out "[Finish] RR traces saved in                : ${WORK_BUG_DIR}/rr"
     fi
   fi
   echo_out "[Finish] Finalized reducing SQL input file ($INPUTFILE)"
