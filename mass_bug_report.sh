@@ -29,7 +29,7 @@ fi
 
 
 if [ "$(echo "${PWD}" | grep -o 'opt$')" == "opt" ]; then
-  echo "Possible mistake; this script is being executed from an optimized build directory, however normally a solid subset of the testcases will require a debug build, and this script will use the current BASEDIR as the authorative source for prodicing the gdb backtrace displayed in the bug report. IOW, if there are debug-only testcases in ${TESTCASES_DIR} then there will likely not be any proper statck traces produced for those. To avoid this issue, simply CTRL+C now and run this script again from a debug build. This script will wait 5 seconds now to CTRL+C if necessary..."
+  echo "Possible mistake; this script is being executed from an optimized build directory, however normally a solid subset of the testcases will require a debug build, and this script will use the current BASEDIR as the authorative source for producing the gdb backtrace displayed in the bug report. IOW, if there are debug-only testcases in ${TESTCASES_DIR} then there will likely not be any proper statck traces produced for those. To avoid this issue, simply CTRL+C now and run this script again from a debug build. This script will wait 5 seconds now to CTRL+C if necessary..."
   sleep 5
 fi
 
