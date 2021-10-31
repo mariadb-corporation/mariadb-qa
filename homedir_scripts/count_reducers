@@ -2,7 +2,7 @@
 set +H
 # Latest new method. Count /dev/shm subreducers and sort -u
 # Not perfect as reducers may have already finished, but with ~/ds it's quite accurate almost always
-ls /dev/shm/[0-9]*/reducer.log | sort -u | wc -l
+ls /dev/shm/[0-9]*/reducer.log 2>/dev/null | sort -u | wc -l
 
 # New method. Not perfect as two reducers with the same number from different workdirs will count as one
 # Did not always work correctly?

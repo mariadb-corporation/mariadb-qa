@@ -75,6 +75,8 @@ SCAN_FOR_NEW_BUGS=0             # Scan for any new bugs seen during testcase red
 KNOWN_BUGS_LOC="${SCRIPT_PWD}/known_bugs.strings"  # If SCAN_FOR_NEW_BUGS=1 then this file is used to filter which bugs are known. i.e. if a certain unremarked text string appears in the KNOWN_BUGS_LOC file, it will not be considered a new issue when it is seen by reducer.sh
 NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (otherwise it will be saved in the workdir)
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
+RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
+RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -380,6 +382,16 @@ check_for_version()
 }
 TOKUDB=
 ROCKSDB=
+#Check rr binary location and set startup option
+if [[ ${RR_TRACING} -eq 1 ]]; then
+  if [[ -z $(which rr) ]]; then
+    echo "Assert: $(which rr) not found!"
+    exit 1
+  fi
+  export RR_OPTIONS="$(which rr) record --chaos"
+else
+  export RR_OPTIONS=""
+fi
 if [[ "${MYEXTRA}" == *"ha_rocksdb.so"* ]]; then
   if [ -r ${BASEDIR}/lib/mysql/plugin/ha_rocksdb.so ]; then
     ROCKSDB="$(echo "${MYEXTRA}" | grep -o "\-\-plugin[-_][^ ]\+ha_rocksdb.so" | head -n1)"  # Grep all text including and after ' --plugin[-_]' (upto any space as a new option starts there) upto and including the last 'ha_rocksdb.so' for that option
@@ -569,6 +581,14 @@ echo_out(){
 echo_out_overwrite(){
   # Used for frequent on-screen updating when using threads etc.
   echo -ne "$(date +'%F %T') $1\r"
+}
+
+save_rr_trace(){
+  RR_SAVE_LOCATION=${1}
+  rm -rf ${RR_SAVE_LOCATION}
+  mkdir -p "${RR_SAVE_LOCATION}/"
+  cp -r ${WORKD}/rr/* ${RR_SAVE_LOCATION}/
+  rm -rf ${WORKD}/rr
 }
 
 abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE anymore
@@ -1270,6 +1290,12 @@ multi_reducer(){
           grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') > $WORKF
           if [ "${FIREWORKS}" != "1" ]; then
             if [ -r "$WORKO" ]; then  # Avoid first occurence when there is no $WORKO yet
+              if [[ ${RR_TRACING} -eq 1 ]]; then
+                if [[ ${RR_SAVE_ALL_TRACES} -eq 1 ]]; then
+                  save_rr_trace "${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+                  echo_out "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+                fi
+              fi
               cp -f $WORKO ${WORKO}.prev
               # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
               echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Previous good testcase backed up as $WORKO.prev"
@@ -1338,8 +1364,8 @@ multi_reducer(){
               echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t ended. Thread restarted (PID #$(eval echo $(echo '$MULTI_PID'"$t")))"
             else
               # Only show this in non-fireworks mode. In fireworks mode, this outcome is expected.
-              # TODO: The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in log/master.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
-              echo_out "[Debug Aid] This can happen on busy servers, - or - if this message is looping constantly; did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running?. This may also happen due to any of the following reasons: 1) (Most likely): The storage location you are using (${WORKD}) has run out of space temporarily  2) Another server running on the same port (check error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err  3) mysqld startup timeouts etc., 4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep 'Access denied for user' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another option may be to 'just let it run'. 5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached. 6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4. You may also want to checkout the last few lines of the subreducer log which often help to find the specific issue. Ref: tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log and also check both tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err and tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out"  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue.
+              # TODO: The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in or "user specified as.*does not exist" (i.e. [ERROR] Event Scheduler: [..@..][test.t1] The user specified as a definer ('..'@'..') does not exist) in log/master.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
+              echo_out "[Debug Aid] This can happen on busy servers, - or - if this message is looping constantly; did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running?. This may also happen due to any of the following reasons: 1) (Most likely): The storage location you are using (${WORKD}) has run out of space temporarily  2) Another server running on the same port (check error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err  3) mysqld startup timeouts etc., 4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another option may be to 'just let it run'. 5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached. 6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4. You may also want to checkout the last few lines of the subreducer log which often help to find the specific issue. Ref: tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log and also check both tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err and tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out"  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue.
               echo_out "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."
               sleep 10
               # TODO: Reason 1 does happen. Observed:
@@ -2220,14 +2246,18 @@ start_mdg_main(){
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
   WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
+  if [[ ${RR_TRACING} -eq 1 ]]; then
+    export _RR_TRACE_DIR="${WORKD}/rr"
+    mkdir -p "${_RR_TRACE_DIR}"
+  fi
   for j in $(seq 1 ${NR_OF_NODES}); do
     sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS:1}" ${WORKD}/n${j}.cnf
     cp ${WORKD}/n${j}.cnf ${WORK_BUG_DIR}/${EPOCH}_n${j}.cnf
     if [ ${j} -eq 1 ]; then
       echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START
-      echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       echo "sleep 10" >> $WORK_START
-      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/error.log 2>&1 &
+      ${RR_OPTIONS} ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/error.log 2>&1 &
       mdg_node_startup_status ${WORKD}/node${j}/error.log
     else
       echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
@@ -2380,17 +2410,20 @@ start_mysqld_main(){
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then SCHEDULER_OR_NOT="--event-scheduler=ON "; fi
   CORE_FOR_NEW_TEXT_STRING=
   if [ $USE_NEW_TEXT_STRING -gt 0 ]; then CORE_FOR_NEW_TEXT_STRING="--core-file --core"; fi
-
+  if [[ ${RR_TRACING} -eq 1 ]]; then
+    export _RR_TRACE_DIR="${WORKD}/rr"
+    mkdir -p "${_RR_TRACE_DIR}"
+  fi
   # Change --port=$MYPORT to --skip-networking instead once BUG#13917335 is fixed and remove all MYPORT + MULTI_MYPORT coding
   if [ $MODE -ge 6 -a $TS_DEBUG_SYNC_REQUIRED_FLAG -eq 1 ]; then
-    echo "${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-    CMD="${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+    echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+    CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
     MYSQLD_START_TIME=$(date +'%s')
     $CMD > $WORKD/log/mysqld.out 2>&1 &
     PIDV="$!"
   else
-    echo "${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-    CMD="${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+    echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+    CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
     MYSQLD_START_TIME=$(date +'%s')
     $CMD > $WORKD/log/mysqld.out 2>&1 &
     PIDV="$!"
@@ -2791,6 +2824,12 @@ cleanup_and_save(){
     fi
     cp -f $WORKT $WORKF
     if [ -r "$WORKO" ]; then
+      if [[ ${RR_TRACING} -eq 1 ]]; then
+        if [[ ${RR_SAVE_ALL_TRACES} -eq 1 ]]; then
+          save_rr_trace "${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+        fi
+      fi
       cp -f $WORKO ${WORKO}.prev
       # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
@@ -3018,6 +3057,10 @@ process_outcome(){
                   NEWBUGTO="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.string|")"
                   NEWBUGRE="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.reducer.sh|")"
                   NEWBUGVM="$(echo $INPUTFILE | sed "s|$|_newbug_${EPOCH_RAN}.varmod|")"
+                fi
+                if [[ ${RR_TRACING} -eq 1 ]]; then
+                  save_rr_trace "${NEW_BUGS_SAVE_DIR}/${EPOCH_RAN}_rr_trace"
+                  echo_out "[NewBug] Saved RR trace in ${NEW_BUGS_SAVE_DIR}/${EPOCH_RAN}_rr_trace"
                 fi
                 cp "${WORKT}" "${NEWBUGSO}"
                 echo_out "[NewBug] Saved the new testcase to: ${NEWBUGSO}"
@@ -3430,6 +3473,14 @@ stop_mysqld_or_mdg(){
 }
 
 finish(){
+  if [[ ${RR_TRACING} -eq 1 ]]; then
+    if [[ ${RR_SAVE_ALL_TRACES} -eq 0 ]]; then
+      save_rr_trace "${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
+      echo_out "[Finish] Number of server startups         : Saved RR trace in ${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
+    else
+      echo_out "[Finish] RR traces saved in                : ${WORK_BUG_DIR}/rr"
+    fi
+  fi
   echo_out "[Finish] Finalized reducing SQL input file ($INPUTFILE)"
   echo_out "[Finish] Number of server startups         : $STARTUPCOUNT (not counting subreducers)"
   echo_out "[Finish] Working directory was             : $WORKD"
@@ -4465,11 +4516,11 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 144 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # Second occurence only
     elif [ $TRIAL -eq 145 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # Third occurence only
     elif [ $TRIAL -eq 146 ]; then sed 's/NOT NULL//i' $WORKF > $WORKT  # Fourth occurence only
-    elif [ $TRIAL -eq 147 ]; then sed 's/TEMPORARY//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 148 ]; then sed 's/AUTO_INCREMENT KEY//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 149 ]; then sed 's/AUTO_INCREMENT//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 150 ]; then sed 's/UNIQUE//i' $WORKF > $WORKT 
-    elif [ $TRIAL -eq 151 ]; then sed 's/idx/i/' $WORKF > $WORKT 
+    elif [ $TRIAL -eq 147 ]; then sed 's/TEMPORARY//i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 148 ]; then sed 's/AUTO_INCREMENT KEY//i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 149 ]; then sed 's/AUTO_INCREMENT//i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 150 ]; then sed 's/UNIQUE//i' $WORKF > $WORKT
+    elif [ $TRIAL -eq 151 ]; then sed 's/idx/i/' $WORKF > $WORKT
     elif [ $TRIAL -eq 152 ]; then sed 's/DROP DATABASE transforms;CREATE DATABASE transforms;//' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi

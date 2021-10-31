@@ -1,1 +1,1 @@
-invalid|alloc|free|corruption|corrupted
+^mysqld: |invalid|alloc|free|corruption|corrupted

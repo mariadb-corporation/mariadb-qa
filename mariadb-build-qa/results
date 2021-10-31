@@ -56,7 +56,7 @@ while true; do
         ERRORS=
         ERRORS_LAST_LINE="$(tail -n1 */*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"  # malloc(): , double free or corruption, free(): , Warning: Memory not freed, etc. 
         if [ ! -z "${ERRORS_LAST_LINE}" ]; then 
-          echo "=== Malloc/free/corruption issues found (in last line of error logs)"
+          echo "=== Asserts (no core)/Malloc/free/corruption issues found (in last line of error logs)"
           echo "${ERRORS_LAST_LINE}"
         fi
         ERRORS_LAST_LINE=
