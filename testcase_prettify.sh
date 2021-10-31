@@ -24,6 +24,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|int|INT|gi;s|integer|INT|gi' | \
   sed 's|float|FLOAT|gi' | \
   sed 's|real|REAL|gi' | \
+  sed 's|check|CHECK|gi' | \
   sed 's|enum|ENUM|gi' | \
   sed 's|varbinary|VARBINARY|gi;s|binary|BINARY|gi' | \
   sed 's|decimal|DECIMAL|gi' | \
@@ -33,7 +34,6 @@ cat "${1}" | tr -d '`' | \
   sed 's|returns|RETURNS|gi' | \
   sed 's|deterministic|DETERMINISTIC|gi' | \
   sed 's|commit|COMMIT|gi' | \
-  sed 's|autocommit|AUTOCOMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
   sed 's|data|DATA|gi' | \
   sed 's|references|REFERENCES|gi' | \
@@ -321,6 +321,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|AND(|AND (|gi' | \
   sed 's|transforms|transforms|gi' | \
   sed 's|identified by|IDENTIFIED BY|gi' | \
+  sed 's|autocommit|autocommit|gi' | \
   sed 's|test\([^ ]*\)|test\L\1|gi' | \
   sed 's|0x\([0-9A-Fa-f]\)|0x\1|gi' | \
   sed 's|)\([a-zA-Z]\+\)|) \1|gi' | \
