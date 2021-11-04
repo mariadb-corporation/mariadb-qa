@@ -90,7 +90,7 @@ if [ -z "${VERSION_INFO}" ]; then VERSION_INFO="NA"; fi
 VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-8]' | head -n1)
 if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
 
-if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" ]; then
+if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" ]; then
   VERSION_INFO="5.6"
   INIT_TOOL="${PWD}/scripts/mariadb-install-db"
   INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
