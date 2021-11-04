@@ -302,6 +302,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|if[ ]*(|IF(|gi' | \
   sed 's|current_user[ ]*(|CURRENT_USER(|gi' | \
   sed 's|password[ ]*(|PASSWORD(|gi' | \
+  sed 's|old_password[ ]*(|OLD_PASSWORD(|gi' | \
   sed 's|make_set[ ]*(|MAKE_SET(|gi' | \
   sed 's|substring_index[ ]*(|SUBSTRING_INDEX(|gi' | \
   sed 's|cast[ ]*(|CAST(|gi' | \

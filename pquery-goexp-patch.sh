@@ -15,22 +15,27 @@ else
   R1="$(echo "${1}" | sed 's|^/data/NEWBUGS/||;s|NEWBUGS/||;s|^\.[/]*||')"
   if [ -f "/data/NEWBUGS/newbug_${R1}.reducer.sh" ]; then  # Add ./newbug_ and .reducer.sh if it was not specified
     cd /data/NEWBUGS
-    R1="./newbug_${R1}.reducer.sh"
+    R1="newbug_${R1}.reducer.sh"
+    REDUCERLOG="newbug_${R1}.reducer.log"
   fi
   if [ -f "/data/NEWBUGS/newbug_${R1}" ]; then  # Add ./newbug_ if it was not specified
     cd /data/NEWBUGS
-    R1="./newbug_${R1}"
+    R1="newbug_${R1}"
+    REDUCERLOG="$(echo "newbug_${R1}.log" | sed 's|\.sh||')"
   fi
   if [ -f "/data/NEWBUGS/${R1}.reducer.sh" ]; then  # Add .reducer.sh if it was not specified
     cd /data/NEWBUGS
-    R1="./${R1}.reducer.sh"
+    R1="${R1}.reducer.sh"
+    REDUCERLOG="${R1}.reducer.log"
   fi
   if [ -f "/data/NEWBUGS/${R1}" ]; then  # Correct name already 
     cd /data/NEWBUGS
+    REDUCERLOG="$(echo "newbug_${R1}.log" | sed 's|\.sh||')"
   fi
   if [[ "${R1}" == *"newbug"* ]]; then
     if [ -f "./${R1}" -a -r "./${R1}" ]; then
       REDUCER="${R1}"
+      REDUCERLOG="reducer${1}.log"
     else
       echo "Assert: the reducer script passed to this script (${REDUCER}) is not a file readable by this script!" 
       exit 1
@@ -40,6 +45,7 @@ else
     exit 1
   else
     REDUCER="reducer${1}.sh"
+    REDUCERLOG="reducer${1}.log"
   fi
 fi
 
@@ -53,4 +59,5 @@ sed -i "s|^FORCE_SKIPV=1|FORCE_SKIPV=0|" ${REDUCER}
 sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=1000|" ${REDUCER}
 
 # Start reducer
-./${REDUCER}
+mkdir -p ./reducer.logs
+./${REDUCER} | tee -a ./reducer.logs/${REDUCERLOG}
