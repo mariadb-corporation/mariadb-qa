@@ -9,8 +9,8 @@ elif [ "${1}" == "GAL" ]; then
     ls --color=never -d GAL_MD*   2>/dev/null | grep -v tar
     ls --color=never -d GAL_EMD* 2>/dev/null | grep -v tar
 else
-  ls --color=never -d EMD*10.[1-7]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -v tar | grep -vE "SAN|GAL"
-  ls --color=never -d MD*10.[1-7]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -v tar | grep -vE "SAN|GAL"
+  ls --color=never -d EMD*10.[1-8]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -v tar | grep -vE "SAN|GAL"
+  ls --color=never -d MD*10.[1-8]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -v tar | grep -vE "SAN|GAL"
   ls --color=never -d MS*[58].[5670]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -v tar | grep -vE "SAN|GAL"
   if [ "${1}" == "ALLALL" ]; then
     ls --color=never -d UBASAN_M* TSAN_M* 2>/dev/null | grep -v tar 
