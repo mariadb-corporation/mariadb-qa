@@ -597,6 +597,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
   else
     echo_out "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
     echo_out "[Abort] The source for this reducer was likely deleted. Terminating."
+    trap SIGINT
     exit 3
   fi
   echo_out "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
@@ -630,6 +631,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
   fi
   finish 'abort'
+  trap SIGINT
   exit 2
 }
 
@@ -3533,6 +3535,7 @@ finish(){
   fi
   if [ "${1}" == 'abort' ]; then
     echo_out "[Abort] Done. Terminating reducer"
+    trap SIGINT
     exit 2
   fi
   exit 0
@@ -3962,22 +3965,18 @@ fireworks_setup(){
   fi
   echo_out "[Init] > STAGE1_LINES=-1: Avoid STAGE1 from ever terminating (required)"
   STAGE1_LINES=-1
-  if [ ${PQUERY_MULTI} -eq 0 ]; then  # If this is 1, then --shuffle is already active. If not, set it.
-    echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=1: As PQUERY_MULTI was set to 0, we need to ensure to enable random replay: --shuffle activated"
-    PQUERY_REVERSE_NOSHUFFLE_OPT=1
-  fi
-  PQUERY_MULTI=0
   echo_out "[Init] > MULTI_THREADS=25: If system overload is seen, decrease this in-code (preference)"
   MULTI_THREADS=25  # Setting this to a low number (1-5) will likely not yield great results. If the server supports it you can raise this. For 32 threads, 128GB and /dev/shm resized to 90GB, a good setting is MULTI_THREADS=25 with two reducer.sh scripts running both in fireworks mode, with /dev/shm cleaned out prior to starting them, and provided nothing else is running on the server. Watch out for OOS issues on /dev/shm tmpfs and/or OOM. Note that this setting basically means: x mysqld servers (with one client thread running against it) per reducer started in fireworks mode.
   # Note that MULTI_THREADS_INCREASE and MULTI_THREADS_MAX are of no significance as long as a reasonably lenght input SQL file is used; reducer will never reach this.
-  if [ "${PQUERY_MULTI}" != "0" ]; then
-    echo_out "[Init] > PQUERY_MULTI=0: disabled PQUERY_MULTI (not required)"
-    PQUERY_MULTI=0
-  fi
   if [ "${PQUERY_REVERSE_NOSHUFFLE_OPT}" != "0" ]; then
-    # Requires --no-shuffle option to pquery as reducer (in fireworks mode) will pre-shuffle the in.tmp (i.e. WORKT) file before execution. Using pquery without --no-shuffle is not the best solution for this, as it requires grabbing the SQL by pquery, whereas if it is pre-shuffled by reducer, issue reproducibility will, presumably, be much more perfect as there is zero post or re-parsing (i.e. the same SQL file can be used again in exactly the same way)
-    echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=0: disabled reversing the no shuffle option (required)"
-    PQUERY_REVERSE_NOSHUFFLE_OPT=0
+    # Requires --no-shuffle option to pquery as reducer (in fireworks mode) will pre-shuffle the in.tmp (i.e. WORKT) file before execution. Using pquery shuffling for this (i.e. without --no-shuffle,  is not the best solution for this, as it requires grabbing the SQL by pquery, whereas if it is pre-shuffled by reducer, issue reproducibility will, presumably, be much more perfect as there is zero post or re-parsing (i.e. the same SQL file can be used again in exactly the same way)
+    if [ ${PQUERY_MULTI} -eq 1 ]; then  # If this is 1, then --shuffle is already active and so it needs to be reversed
+      echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=1: As PQUERY_MULTI was set to 1, we need to ensure pquery shuffling is disabled in favor of in-reducer shuffling (required)"
+      PQUERY_REVERSE_NOSHUFFLE_OPT=1
+    else  # PQUERY_MULTI is 0, so --no-shuffle is effective if PQUERY_REVERSE_NOSHUFFLE_OPT=0
+      echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=0: As PQUERY_MULTI was set to 1, we need to ensure pquery shuffling is disabled in favor of in-reducer shuffling (required)"
+      PQUERY_REVERSE_NOSHUFFLE_OPT=0
+    fi
   fi
   if [ "${FORCE_SKIPV}" != "1" ]; then
     echo_out "[Init] > FORCE_SKIPV=1: enabled skipping verify stage (ensures 'free' runs)"

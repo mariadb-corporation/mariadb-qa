@@ -764,7 +764,6 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   sed -i 's|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR="/data/NEWBUGS"   |' ./reducer_new_text_string.sh
   sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="/home/$(whoami)/mariadb-qa/new_text_string.sh"   |' ./reducer_new_text_string.sh
   sed -i 's|^PQUERY_LOC=[^#]\+|PQUERY_LOC="/home/$(whoami)/mariadb-qa/pquery/pquery2-md"   |' ./reducer_new_text_string.sh
-  sed -i 's|^SCAN_FOR_NEW_BUGS=0|SCAN_FOR_NEW_BUGS=1|' ./reducer_new_text_string.sh  # If not set already
   # ------------------- ./reducer_errorlog.sh creation
   cp ./reducer_new_text_string.sh ./reducer_errorlog.sh
   sed -i 's|^USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|' ./reducer_errorlog.sh
@@ -776,7 +775,12 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   cp ./reducer_new_text_string.sh ./reducer_new_text_string_pquery.sh
   sed -i 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_new_text_string_pquery.sh
   # ------------------- ./reducer_fireworks.sh creation
-  cp ./reducer_new_text_string.sh ./reducer_fireworks.sh
+  cp ${SCRIPT_PWD}/reducer.sh ./reducer_fireworks.sh
+  mkdir -p ./FIREWORKS-BUGS
+  sed -i "s|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR=\"${PWD}/FIREWORKS-BUGS\"   |"  ./reducer_fireworks.sh
+  sed -i 's|^KNOWN_BUGS_LOC=[^#]\+|KNOWN_BUGS_LOC="/home/$(whoami)/mariadb-qa/known_bugs.strings"   |' ./reducer_fireworks.sh
+  sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="/home/$(whoami)/mariadb-qa/new_text_string.sh"   |' ./reducer_fireworks.sh
+  sed -i 's|^PQUERY_LOC=[^#]\+|PQUERY_LOC="/home/$(whoami)/mariadb-qa/pquery/pquery2-md"   |' ./reducer_fireworks.sh
   sed -i 's|^FIREWORKS=0|FIREWORKS=1|' ./reducer_fireworks.sh
   sed -i 's|^MYEXTRA=.*|MYEXTRA="--no-defaults ${3}"|' ./reducer_fireworks.sh  # It is best not to add --sql_mode=... as this will significantly affect CLI replay attempts as the CLI by default does not set --sql_mode=... as normally defined in reducer.sh's MYEXTRA default (--sql_mode=ONLY_FULL_GROUP_BY). Reason: with either --sql_mode= or --sql_mode=--sql_mode=ONLY_FULL_GROUP_BY engine substituion (to the default storage engine, i.e. InnoDB or MyISAM in MTR) is enabled. Replays at the CLI would thus look significantly different by default (i.e. unless this option was passed and by default it is not)
 fi
