@@ -60,6 +60,11 @@ bind } history
 bind k kill
 EOF
 fi
+
+# Enable true core file creation by disabling apport, with thanks https://askubuntu.com/a/93467
+sudo systemctl disable apport.service
+sudo systemctl mask apport.service
+
 echo "These settings are for a 128GB Memory server (google cloud instance of that size or similar)"
 # Do not add a fixed path to the kernel.core_pattern setting, it does not work correctly
 # RV [12 Oct 2020] also found that specifying a long core pattern like 'kernel.core_pattern=core.%p.%u.%s.%e.%t', works less well - cores are generated few times then when just using 'kernel.core_pattern=core', at least no Ubuntu 20.04 LTS. More root cause analysis needed, issue is very illusive. Reverted to just using '=core' for the moment, which is sufficient for framework.
