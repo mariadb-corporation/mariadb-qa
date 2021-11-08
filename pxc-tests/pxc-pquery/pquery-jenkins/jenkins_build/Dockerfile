@@ -1,6 +1,6 @@
 FROM centos:centos7
 MAINTAINER Roel Van de Paar roel.vandepaar@percona.com
-RUN yum install -y which wget zip unzip lsof libaio compat-readline5 socat percona-xtrabackup perl-DBD-MySQL perl-DBI rsync openssl098e eatmydata pv qpress gzip openssl
+RUN yum install -y which wget zip unzip lsof libaio compat-readline5 socat percona-xtrabackup perl-DBD-MySQL perl-DBI rsync openssl098e eatmydata pv qpress gzip openssl rr
 RUN yum install -y bzr automake gcc  make  libtool autoconf pkgconfig gettext git scons    boost_req boost-devel libaio openssl-devel  check-devel gdb perf
 RUN yum install -y gcc-c++ gperf ncurses-devel perl readline-devel time zlib-devel libaio-devel bison cmake wget
 RUN yum install -y coreutils grep procps

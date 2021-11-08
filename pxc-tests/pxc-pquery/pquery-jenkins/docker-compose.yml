@@ -1,29 +1,29 @@
-pxc1:
+mdg1:
   build: .
-  hostname: pxc1
+  hostname: mdg1
   command: sh -c "ln -s /usr/lib64/libreadline.so.6.2 /usr/lib64/libreadline.so.5; /mysql/bin/mysqld --basedir=/mysql --user=mysql --wsrep-new-cluster --skip-grant-tables --log-error=error.log"
   ports:
       - "10000:3306"
       - "10001:4567"
       - "10002:4568"
-pxc2:
+mdg2:
   build: .
-  hostname: pxc2
-  command: sh -c "/bin/sleep 30 && ln -s /usr/lib64/libreadline.so.6.2 /usr/lib64/libreadline.so.5;/mysql/bin/mysqld --basedir=/mysql --user=mysql --wsrep-node-name=pxc2 --wsrep_cluster_address=gcomm://pxc1 --skip-grant-tables  --wsrep-sst-method=rsync --log-error=error.log"
+  hostname: mdg2
+  command: sh -c "/bin/sleep 30 && ln -s /usr/lib64/libreadline.so.6.2 /usr/lib64/libreadline.so.5;/mysql/bin/mysqld --basedir=/mysql --user=mysql --wsrep-node-name=mdg2 --wsrep_cluster_address=gcomm://mdg1 --skip-grant-tables  --wsrep-sst-method=rsync --log-error=error.log"
   links:
-      - pxc1:pxc1
+      - mdg1:mdg1
   ports:
       - "11000:3306"
       - "11001:4567"
       - "11002:4568"
 
-pxc3:
+mdg3:
   build: .
-  hostname: pxc3
-  command: sh -c "/bin/sleep 100 && ln -s /usr/lib64/libreadline.so.6.2 /usr/lib64/libreadline.so.5;/mysql/bin/mysqld --basedir=/mysql --user=mysql --wsrep-node-name=pxc3 --wsrep_cluster_address=gcomm://pxc1,pxc2 --skip-grant-tables  --wsrep-sst-method=rsync --log-error=error.log"
+  hostname: mdg3
+  command: sh -c "/bin/sleep 100 && ln -s /usr/lib64/libreadline.so.6.2 /usr/lib64/libreadline.so.5;/mysql/bin/mysqld --basedir=/mysql --user=mysql --wsrep-node-name=mdg3 --wsrep_cluster_address=gcomm://mdg1,mdg2 --skip-grant-tables  --wsrep-sst-method=rsync --log-error=error.log"
   links:
-      - pxc1:pxc1
-      - pxc2:pxc2
+      - mdg1:mdg1
+      - mdg2:mdg2
   ports:
       - "12000:3306"
       - "12001:4567"
