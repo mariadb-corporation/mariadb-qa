@@ -1522,7 +1522,7 @@ init_workdir_and_files(){
     fi
     # Make sure that tmp has enough free space (some minor temporary files are stored there)
     if [ $(df -k -P /tmp | grep -E --binary-files=text -v "Mounted" | awk '{print $4}') -lt 400000 ]; then
-      echo 'Error: /tmp does not have enough free space (400Mb free space required for temporary files)'
+      echo 'Error: /tmp does not have enough free space (400Mb free space required for temporary files and any ongoing programs)'
       echo "Terminating now."
       exit 1
     fi

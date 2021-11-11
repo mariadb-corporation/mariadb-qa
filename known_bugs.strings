@@ -14,7 +14,6 @@ open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_tab
 #**#index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                            ## MDEV-22714* NOW 23801
 #**#index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                     ## MDEV-22714* NOW 23801
 #**#b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                 ## MDEV-24660
-#**#escape != -1|SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|Create_tmp_table::cleanup_on_failure                                                       ## MDEV-25610
 
 ##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-19569
@@ -135,8 +134,6 @@ thd->is_error()|SIGABRT|convert_error_to_warning|Show::get_geometry_column_recor
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command                 ## MDEV-25668
 state_ == s_exec|SIGABRT|wsrep::client_state::after_row|wsrep_after_row|wsrep_after_row|handler::ha_write_row                                                                  ## MDEV-25661
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|create_view_field|Field_iterator_view::create_item|find_field_in_view                                                     ## MDEV-25650
-escape != -1|SIGABRT|Item_func_like::val_int|Item::send|Protocol::send_result_set_row|select_send::send_data                                                                   ## MDEV-25610
-escape != -1|SIGABRT|Item_func_like::val_int|Type_handler::Item_send_long|Type_handler_long::Item_send|Item::send                                                              ## MDEV-25610
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Item_param::get_date|Type_handler::Item_send_datetime|Type_handler_datetime_common::Item_send                            ## MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Type_handler::Item_send_datetime                              ## MDEV-25593
 !thd || thd->locked_tables_mode || !thd->mdl_context.has_locks() || thd->handler_tables_hash.records || thd->ull_hash.records || thd->global_read_lock.is_acquired()|SIGABRT|reload_acl_and_cache|mysql_execute_command|mysql_parse|dispatch_command ## MDEV-25589
@@ -927,3 +924,6 @@ SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item::fix_fields_i
 # SIGSEGV|dict_table_find_index_on_id|dict_stats_process_entry_from_defrag_pool|dict_defrag_process_entries_from_defrag_pool|dict_stats_func                          ## Fixed ## MDEV-26636
 # SIGSEGV|dict_table_get_first_index|dict_table_find_index_on_id|dict_stats_process_entry_from_defrag_pool|dict_defrag_process_entries_from_defrag_pool               ## Fixed ## MDEV-26636
 # table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_table_remove_from_cache_low|dict_table_remove_from_cache|row_drop_table_for_mysql                  ## Fixed ## MDEV-26636
+# escape != -1|SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|Create_tmp_table::cleanup_on_failure                                                ## Fixed ## MDEV-25610
+# escape != -1|SIGABRT|Item_func_like::val_int|Item::send|Protocol::send_result_set_row|select_send::send_data                                                        ## Fixed ## MDEV-25610
+# escape != -1|SIGABRT|Item_func_like::val_int|Type_handler::Item_send_long|Type_handler_long::Item_send|Item::send                                                   ## Fixed ## MDEV-25610

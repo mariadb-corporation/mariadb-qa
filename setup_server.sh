@@ -67,7 +67,7 @@ sudo systemctl mask apport.service
 
 echo "These settings are for a 128GB Memory server (google cloud instance of that size or similar)"
 # Do not add a fixed path to the kernel.core_pattern setting, it does not work correctly
-# RV [12 Oct 2020] also found that specifying a long core pattern like 'kernel.core_pattern=core.%p.%u.%s.%e.%t', works less well - cores are generated few times then when just using 'kernel.core_pattern=core', at least no Ubuntu 20.04 LTS. More root cause analysis needed, issue is very illusive. Reverted to just using '=core' for the moment, which is sufficient for framework.
+# RV [12 Oct 2020] also found that specifying a long core pattern like 'kernel.core_pattern=core.%p.%u.%s.%e.%t', works less well - cores are generated few times then when just using 'kernel.core_pattern=core', at least no Ubuntu 20.04 LTS. More root cause analysis needed, issue is very illusive. Reverted to just using '=core' for the moment, which is sufficient for the framework. By disaling apport.service it would even seem that this setting is not strictly needed. The 'Unsafe core_pattern used with fs.suid_dumpable=2. Pipe handler or fully qualified core dump path required. Set kernel.core_pattern before fs.suid_dumpable.' can be considered expected and does not affect core file generation.
 #if [ "$(grep -m1 '^kernel.core_pattern=core.%p.%u.%s.%e.%t' /etc/sysctl.conf)" != 'kernel.core_pattern=core.%p.%u.%s.%e.%t' ]; then
 #  sudo sh -c 'echo "kernel.core_pattern=core.%p.%u.%s.%e.%t" >> /etc/sysctl.conf'  # Do NOT a core fixed path!
 #fi

@@ -101,6 +101,9 @@ else
   FB=1
 fi
 
+# Fix pcre2 link
+sed -i 's|http://ftp.pcre.org/pub/pcre/|https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.37/|' cmake/pcre.cmake
+
 # MySQL8 zlib Hack
 # Use -DWITH_ZLIB=bundled instead of =system for bug https://bugs.mysql.com/bug.php?id=89373
 # Also see https://bugs.launchpad.net/percona-server/+bug/1521566
