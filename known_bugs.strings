@@ -44,6 +44,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS #####
+SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-27007
+!lock_trx_has_sys_table_locks(trx)|SIGABRT|row_discard_tablespace_for_mysql|ha_innobase::discard_or_import_tablespace|handler::ha_discard_or_import_tablespace|mysql_discard_or_import_tablespace ## MDEV-27006
 SIGSEGV|wait_while_table_is_used|fast_alter_partition_table|mysql_alter_table|Sql_cmd_alter_table::execute                                                                     ## MDEV-27001
 client_state_.mode() == wsrep::client_state::m_local|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service|wsrep_replication_process ## MENT-1343
 SIGSEGV|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_table                                                                         ## MDEV-26805

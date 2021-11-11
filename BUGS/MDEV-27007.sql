@@ -1,0 +1,11 @@
+SET @@sql_mode='ansi_quotes';
+CREATE TABLE articles (id INT PRIMARY KEY, FTS_DOC_ID BIGINT UNSIGNED NOT NULL, title VARCHAR(200), body TEXT) ENGINE=InnoDB;
+CREATE TABLE t1 (c1 INT NOT NULL PRIMARY KEY, c2 BIT NULL, c3 BIT NULL);
+CREATE TABLE t2 (a INT UNIQUE) SELECT * FROM t1;
+SET SESSION unique_checks=0;
+SET foreign_key_checks=0;
+XA START 'foo';
+INSERT INTO articles (title) VALUES ('test'),('test');
+SELECT * FROM articles;
+INSERT INTO articles (title,body) VALUES ('TEST','TEST');
+
