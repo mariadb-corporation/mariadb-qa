@@ -1,9 +1,6 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID etc.
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (REVIEW REGULARLY) #####
-! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_ha_read|mysql_execute_command                                                                                 ## MDEV-20207
-SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                                             ## MDEV-24686
-open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                       ## MDEV-25927
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-22663
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                                       ## MDEV-22663
 
@@ -19,7 +16,10 @@ open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_tab
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-19569
 marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-24658
 scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                         ## MDEV-25317
+! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_ha_read|mysql_execute_command                                                                                 ## MDEV-20207
+open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                       ## MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql     ## MDEV-25927
+SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                                             ## MDEV-24686
 
 ##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
 debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                                                ## SPECIAL-1
@@ -44,6 +44,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS #####
+thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_rollback_trans|ha_commit_trans|trans_commit_implicit|mysql_execute_command             ## MDEV-27040
+SIGABRT|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|sync_dynamic_session_variables                                                                                  ## MDEV-27039
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-27007
 !lock_trx_has_sys_table_locks(trx)|SIGABRT|row_discard_tablespace_for_mysql|ha_innobase::discard_or_import_tablespace|handler::ha_discard_or_import_tablespace|mysql_discard_or_import_tablespace ## MDEV-27006
 SIGSEGV|wait_while_table_is_used|fast_alter_partition_table|mysql_alter_table|Sql_cmd_alter_table::execute                                                                     ## MDEV-27001
@@ -114,10 +116,14 @@ SIGSEGV|__memcmp_avx2_movbe|rpl_sql_thread_info::cached_charset_compare|Query_lo
 state_ == s_exec|SIGABRT|wsrep::client_state::start_transaction|wsrep_start_transaction|wsrep_bf_abort|wsrep_thd_bf_abort                                                      ## MDEV-25972
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|do_handle_one_connection|handle_one_connection                              ## MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|one_thread_per_connection_end|do_handle_one_connection                      ## MDEV-25927
+status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Backtrace stopped: Cannot access memory at address                                              ## MDEV-25927
+status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|__isoc99_fscanf@plt                                                                             ## MDEV-25927
 field_length < 1024|SIGABRT|Field_string::save_field_metadata|Table_map_log_event::save_field_metadata|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map    ## MDEV-25900
 octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map ## MDEV-25900
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|innodb_wait_allow_writes|os_file_write_func                                                                                    ## MDEV-25890
 SIGSEGV|find_field_in_table|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                                                ## MDEV-19569
+SIGSEGV|Field_iterator_table::set|insert_fields|setup_wild|JOIN::prepare                                                                                                       ## MDEV-19569
+table_ref->table || table_ref->view|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|insert_fields|setup_wild                                ## MDEV-19569
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-19569
 SIGSEGV|ha_myisammrg::append_create_info|add_table_options|show_create_table_ex|show_create_table                                                                              ## MDEV-25856
 SIGSEGV|ha_myisammrg::append_create_info|add_table_options|show_create_table|wsrep_create_like_table                                                                           ## MDEV-25856
@@ -368,6 +374,9 @@ SIGSEGV|fil_system_t::keyrotate_next|fil_crypt_find_space_to_rotate|fil_crypt_th
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-22768
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22716
 (*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                       ## MDEV-22713
+(*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed
+(*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed
+(*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item_func::fix_fields
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_client_binlog_statement|mysql_execute_command                        ## MDEV-22712
 llabs(next_free_value % real_increment) == offset|SIGABRT|sequence_definition::adjust_values|sequence_definition::check_and_adjust|MYSQLparse|parse_sql                        ## MDEV-22705
 fixed == 0|SIGABRT|Item_func::fix_fields|fix_fields_for_tvc|table_value_constr::prepare|st_select_lex_unit::prepare                                                            ## MDEV-22662

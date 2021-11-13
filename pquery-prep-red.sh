@@ -855,8 +855,10 @@ if [ ${QC} -eq 0 ]; then
           TEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.
           check_if_asan_or_ubsan_or_tsan
           if [ "$(echo "${TEXT}" | wc -l)" != "1" ]; then
-            echo "Assert: TEXT does not exactly contain one line only!"
-            TEXT="Assert: multi-line TEXT found! Check and fix scripts please"
+            echo "Assert: TEXT does not exactly contain one line only! TEXT seen (with newlines removed): '$(echo "${TEXT}" | tr '\n' ' ')'"
+            TEXT_MULTI="${TEXT}"
+            TEXT="Assert: multi-line TEXT found! Check and fix scripts please. TEXT seen (with newlines removed): '$(echo "${TEXT_MULTI}" | tr '\n' ' ')'"
+            TEXT_MULTI=
           fi
           echo "* TEXT variable set to: '${TEXT}'"
           if [ "${MULTI}" == "1" -a -s ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing ];then
