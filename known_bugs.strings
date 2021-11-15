@@ -313,6 +313,7 @@ SIGSEGV|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse   
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|ha_maria::implicit_commit                                          ## MDEV-23701
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|maria_commit                                                       ## MDEV-23701
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|_ma_bitmap_mark_file_changed|_ma_change_bitmap_page                          ## MDEV-23701
+log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|flush_log_for_bitmap|pagecache_fwrite                                        ## MDEV-23701
 open_tables == __null|SIGABRT|THD::cleanup|THD::free_connection|THD::~THD|THD::~THD                                                                                            ## MDEV-23701
 length < 249|SIGABRT|Transaction_state_tracker::store|Session_tracker::store|Protocol::net_send_ok|Protocol::send_ok                                                           ## MDEV-23173
 share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                         ## MDEV-23699
@@ -477,6 +478,8 @@ SIGSEGV|Query_arena::set_query_arena|THD::set_n_backup_active_arena|Field::set_d
 SIGSEGV|fk_prepare_copy_alter_table|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command                                                                       ## MDEV-19194
 SIGSEGV|st_select_lex::mark_as_dependent|mark_as_dependent|Item_field::fix_outer_field|Item_field::fix_fields                                                                  ## MDEV-20325
 !derived->is_excluded()|SIGABRT|TABLE_LIST::set_check_materialized|TABLE_LIST::set_materialized_derived|TABLE_LIST::init_derived|mysql_derived_init                            ## MDEV-20325
+SIGSEGV|set_max_sum_func_level|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                                                   ## MDEV-20325
+SIGSEGV|set_max_sum_func_level|Item_field::fix_outer_field|Item_field::fix_fields|Item_direct_view_ref::fix_fields                                                             ## MDEV-20325
 SIGSEGV|row_upd_del_mark_clust_rec|row_upd_clust_step|row_upd|row_upd_step                                                                                                     ## MDEV-20563
 SIGSEGV|wsrep_row_upd_index_is_foreign|row_upd_clust_step|row_upd|row_upd_step                                                                                                 ## MDEV-20563
 update->n_fields < ulint(table->n_cols + table->n_v_cols)|SIGABRT|upd_node_t::make_versioned_helper|upd_node_t::make_versioned_update|row_update_for_mysql|ha_innobase::delete_row ## MDEV-20563

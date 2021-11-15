@@ -1,3 +1,22 @@
+SET @save_aria_checkpoint_log_activity=@@ARIA_CHECKPOINT_LOG_ACTIVITY;
+SET @save_aria_group_commmit=@@ARIA_GROUP_COMMIT;
+SET @save_aria_checkpoint_interval=@@ARIA_CHECKPOINT_INTERVAL;
+SET @save_aria_group_commit_interval=@@ARIA_GROUP_COMMIT_INTERVAL;
+ 
+SET GLOBAL ARIA_CHECKPOINT_LOG_ACTIVITY=1;
+SET GLOBAL ARIA_GROUP_COMMIT=HARD;
+SET GLOBAL ARIA_CHECKPOINT_INTERVAL=1;
+# Wait 4 seconds for other commits to join in group commit
+SET GLOBAL ARIA_GROUP_COMMIT_INTERVAL=400000000;
+CREATE TABLE t1 (a int) engine=aria transactional=1;
+INSERT INTO t1 values(1);
+DROP TABLE t1;
+ 
+SET GLOBAL ARIA_CHECKPOINT_LOG_ACTIVITY=@save_aria_checkpoint_log_activity;
+SET GLOBAL ARIA_GROUP_COMMIT=@save_aria_group_commmit;
+SET GLOBAL ARIA_CHECKPOINT_INTERVAL=@save_aria_checkpoint_interval;
+SET GLOBAL ARIA_GROUP_COMMIT_INTERVAL=@save_aria_group_commit_interval;
+
 SET GLOBAL ARIA_CHECKPOINT_LOG_ACTIVITY=1;
 SET GLOBAL ARIA_GROUP_COMMIT=HARD;
 SET GLOBAL ARIA_GROUP_COMMIT_INTERVAL=100000000;
@@ -7,3 +26,8 @@ SET GLOBAL aria_checkpoint_log_activity=1;
 SET GLOBAL aria_group_commit="HARD";
 SET GLOBAL aria_group_commit_interval=100000000;
 GRANT SELECT ON *.* to root@localhost;
+
+SET GLOBAL aria_group_commit_INTERVAL=100000000;
+SET GLOBAL aria_group_commit=HARD;
+SET GLOBAL aria_checkpoint_log_activity=1;
+CREATE PROCEDURE p() SQL SECURITY INVOKER SELECT 1 QUERY;

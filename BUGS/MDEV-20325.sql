@@ -27,3 +27,9 @@ PREPARE s FROM "SELECT a.* FROM (SELECT tt.* FROM t tt) AS a";
 EXECUTE s;
 SET SESSION optimizer_switch="derived_merge=OFF";
 EXECUTE s;
+
+CREATE TABLE t0 (c INT KEY);
+PREPARE s FROM 'SELECT * FROM (SELECT * FROM t0) AS d';
+EXECUTE s;
+SET SESSION optimizer_switch='derived_merge=OFF';
+EXECUTE s;

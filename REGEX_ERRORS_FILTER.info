@@ -9,3 +9,5 @@ Got error 12701                                   https://jira.mariadb.org/brows
 test_ps_create_on_corrupted                       Not real corruption, just a table name
 test_ps_fetch_corrupted                           Not real corruption, just a table name
 virtual THD...!debug_assert_on_not_freed_memory   https://jira.mariadb.org/browse/MDEV-25927
+next_free_value                                   Not related to freeing memory, just a variable name
+lock mutex.*sys_vars_shared.h, line 56            https://jira.mariadb.org/browse/MDEV-27039
