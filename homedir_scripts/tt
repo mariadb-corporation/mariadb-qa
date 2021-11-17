@@ -70,8 +70,13 @@ if [ -z "$(echo "${TEXT}" | sed 's|[ \t]||g')" ]; then
 fi
 echo "----- String Scan -----"
 FRAMEX="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*|.*|.*$/\1/')"
-OUT="$(grep -Fi --binary-files=text "${TEXT}" ~/mariadb-qa/known_bugs.strings)"
-OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ~/mariadb-qa/known_bugs.strings)"
+if [[ "${TEXT}" != *"SAN"* ]]; then  # Normal bug
+  OUT="$(grep -Fi --binary-files=text "${TEXT}" ~/mariadb-qa/known_bugs.strings)"
+  OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ~/mariadb-qa/known_bugs.strings)"
+else  # *SAN bug
+  OUT="$(grep -Fi --binary-files=text "${TEXT}" ~/mariadb-qa/known_bugs.strings.SAN)"
+  OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ~/mariadb-qa/known_bugs.strings.SAN)"
+fi
 if [ -z "${OUT}" ]; then
   if [ -z "${OUT2}" ]; then 
     echo "BUG NOT FOUND IN KNOWN BUGS LIST! POTENTIALLY NEW BUG TO LOG; SEARCH FIRST:"
