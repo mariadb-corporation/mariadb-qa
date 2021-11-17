@@ -11,3 +11,4 @@ test_ps_fetch_corrupted                           Not real corruption, just a ta
 virtual THD...!debug_assert_on_not_freed_memory   https://jira.mariadb.org/browse/MDEV-25927
 next_free_value                                   Not related to freeing memory, just a variable name
 lock mutex.*sys_vars_shared.h, line 56            https://jira.mariadb.org/browse/MDEV-27039
+innodb-force-load-corrupted                       Not real corruption, just a variable name

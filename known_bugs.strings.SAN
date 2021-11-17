@@ -4,6 +4,7 @@
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 
 ##### CURRENT BUGS #####
+UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/ddl_log.cc|ddl_log_write_execute_entry|ddl_log_write_execute_entry|ddl_log_write|ddl_log_create_table   ## MDEV-27048
 TSAN|data race|storage/innobase/os/os0file.cc|__tsan_atomic64_fetch_add..|os_file_pread|os_file_read_page|os_file_read_func                                                    ## MDEV-24332
 ASAN|use-after-poison|mysys/hash.c|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|hashcmp|my_hash_first_from_hash_value                                         ## MDEV-26637
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                     ## MDEV-24193

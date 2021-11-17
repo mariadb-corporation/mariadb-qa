@@ -32,6 +32,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|value|VALUE|gi' | \
   sed 's|return|RETURN|gi' | \
   sed 's|returns|RETURNS|gi' | \
+  sed 's|constraint|CONSTRAINT|gi' | \
   sed 's|deterministic|DETERMINISTIC|gi' | \
   sed 's|commit|COMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
@@ -87,8 +88,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|partitions|PARTITIONS|gi' | \
   sed 's|subpartition|SUBPARTITION|gi' | \
   sed 's|subpartitions|SUBPARTITIONS|gi' | \
-  sed 's|by list|BY LIST|gi' | \
-  sed 's|by hash|BY HASH|gi' | \
+  sed 's|by |BY |gi' | \
+  sed 's|list|LIST|gi' | \
+  sed 's|hash|HASH|gi' | \
   sed 's|algorithm|ALGORITHM|gi' | \
   sed 's|inplace|INPLACE|gi' | \
   sed 's|database|DATABASE|gi' | \
