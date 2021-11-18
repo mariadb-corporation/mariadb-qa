@@ -7,8 +7,15 @@ SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for
 SERVER_VERSION="$(bin/mysqld --version | grep -om1 '[-0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
 LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
 BUILD_TYPE=
-if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
-if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
+SAN=
+SAN="$(echo "${PWD}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"
+if [ -z "${SAN}" ]; then
+  if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
+  if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
+else
+  if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, ${SAN})"; fi
+  if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug, ${SAN})"; fi
+fi
 echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
 echo ""
 echo "{noformat}"

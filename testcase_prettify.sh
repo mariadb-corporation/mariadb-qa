@@ -18,9 +18,13 @@ cat "${1}" | tr -d '`' | \
   sed 's|;#.*$|;|;s| ;$|;|g;s|;;$|;|g' | \
   sed 's|^[ ]\+||;s|;[ ]\+$|;|' | \
   sed 's|open|OPEN|gi' | \
+  sed 's|div|DIV|gi' | \
   sed 's|execute|EXECUTE|gi' | \
   sed 's|index|INDEX|g' | \
   sed 's|hex|HEX|gi' | \
+  sed 's| as | AS |gi' | \
+  sed 's|do |DO |gi' | \
+  sed 's|convert|CONVERT|gi' | \
   sed 's|int|INT|gi;s|integer|INT|gi' | \
   sed 's|float|FLOAT|gi' | \
   sed 's|real|REAL|gi' | \
@@ -30,6 +34,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|decimal|DECIMAL|gi' | \
   sed 's|numeric|NUMERIC|gi' | \
   sed 's|value|VALUE|gi' | \
+  sed 's|extractvalue|EXTRACTVALUE|gi' | \
   sed 's|return|RETURN|gi' | \
   sed 's|returns|RETURNS|gi' | \
   sed 's|constraint|CONSTRAINT|gi' | \
@@ -120,6 +125,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|use|USE|gi' | \
   sed 's|concurrent|CONCURRENT|gi' | \
   sed 's|user|USER|gi' | \
+  sed 's|host|HOST|gi' | \
+  sed 's|password|PASSWORD|gi' | \
   sed 's|natural|NATURAL|gi' | \
   sed 's|join|JOIN|gi' | \
   sed 's|straight|STRAIGHT|gi' | \
@@ -303,6 +310,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|char[ ]*(|CHAR(|gi' | \
   sed 's|if[ ]*(|IF(|gi' | \
   sed 's|current_user[ ]*(|CURRENT_USER(|gi' | \
+  sed 's|mysql\.\([a-z]\+\)|mysql.\L\1|gi' | \
   sed 's|password[ ]*(|PASSWORD(|gi' | \
   sed 's|old_password[ ]*(|OLD_PASSWORD(|gi' | \
   sed 's|make_set[ ]*(|MAKE_SET(|gi' | \
@@ -318,8 +326,11 @@ cat "${1}" | tr -d '`' | \
   sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \
   sed 's|timestamp[ ]*(|TIMESTAMP(|gi' | \
   sed 's|insert_method|INSERT_METHOD|gi' | \
+  sed 's|inet_aton|INET_ATON|gi' | \
+  sed 's|weight_string|WEIGHT_STRING|gi' | \
   sed 's|count[ ]*(|COUNT(|gi' | \
   sed 's|values[ ]*(|VALUES (|gi' | \
+  sed 's|substring[ ]*(|SUBSTRING(|gi' | \
   sed "s|'IN |' IN |gi" | \
   sed 's|AND(|AND (|gi' | \
   sed 's|transforms|transforms|gi' | \

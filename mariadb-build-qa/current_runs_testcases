@@ -1,0 +1,7 @@
+#!/bin/bash
+if [ ! -r /data/results.list -o ! -f /data/results.list ]; then
+  echo '/data/results.list not usable or readable!'
+  exit 1
+fi
+cd /data
+cat results.list | sed 's|.*=|/data/|' | xargs -I{} echo "wc -l {}/*/*_out 2>/dev/null | grep -v total | sed \\'s|^[ \t]*||\\'" | xargs -I{} bash -c "{}"
