@@ -26,7 +26,7 @@ ln -fs /home/$(whoami)/mariadb-qa/san_text_string.sh /home/$(whoami)/st 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /data/ 2>&1
 ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/current_runs_testcases /home/$(whoami)/crt 2>&1
-rm -f /data/[odu][0-9]  # Remove changedir scripts (like '. ./d7' etc.) normally only used in /test
+rm -f /data/[odut][0-9]  # Remove changedir scripts (like '. ./d7' etc.) normally only used in /test
 
 # Mass testcase scripts
 ln -fs /home/$(whoami)/mariadb-qa/testcase-scripts/* /test/TESTCASES/ 2>&1

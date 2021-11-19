@@ -1,19 +1,20 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-# This script generates a unique ID for all ASAN, TSAN and UBSAN errors seen in a mysqld error log
+# This script generates a uniqueID for the first ASAN, UBSAN or TSAN error seen in a given mysqld or mariadbd error log
+# Usage: ~/mariadb-qa/san_text_string.sh ${1}
 # ${1}: First input, only option, point to mysqld error log directly, or to a basedir which contains ./log/master.err
 #       If the option is not specified, the script will attempt to look in ${PWD}/log/master.err and ${PWD}/master.err
 
 # To 1) aid automation, and as 2) subsequent errors may be the result of former ones, and as 3) subsequent errors may
 # be standalone errors which can (and likely will, provided the random spread is wide enough) show in other test trials,
-# the script will output only the first FULL issue detected (whetter it be ASAN, TSAN or UBSAN). 
+# the script will output only the first FULL issue detected (whetter it be ASAN, UBSAN or TSAN).
 
-# "FULL": the first issue the script can parse into a full UniqueID. Thus, if there is a partial TSAN failure observed
+# "FULL": the first issue the script can parse into a full UniqueID. Thus, if there is a partial UBSAN failure observed
 # followed by a fully readable ASAN failure, the ASAN's failure UniqueID will be output. This solution is better than 
 # not outputing anything when the first failure is only partially readable, as herewith testcase reduction can happen 
 # against the second FULL failure observed (i.e. a benefit gained). One caveat is that the partial issue may be lost,
-# though often times one issue may show up in another way, etc.
+# though often times one issue may show up in other ways, etc.
 
 set +H
 PROFILING=0  # Set to 1 to profile Bash to /tmp/bashstart.$$.log (slows down script by a factor of 10x)
@@ -132,17 +133,21 @@ LINE_COUNTER=0
 
 # ASAN (and TSAN) file locations are obtained from the stack. UBSAN file locations are obtained from the first line of the UBSAN output.
 asan_file_preparse(){
-  ASAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|.* \([^ ]\+\)$|\1|;s|:[0-9]\+$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;')"  # Drop path prefix (build directory), leaving only relevant part for MD/MS
-  if [[ "${ASAN_FILE_PREPARSE}" == "("*")" ]]; then
-    # The location is a non-resolved maridbd/mysqld location (i.e. /bin/mariadbd+0x81e8edf), and not helpful - get it from the next frame
-    ASAN_FILE_PREPARSE=''
+  if [ -z "${ASAN_FILE_PREPARSE}" ]; then
+    ASAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|.* \([^ ]\+\)$|\1|;s|:[0-9]\+$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;')"  # Drop path prefix (build directory), leaving only relevant part for MD/MS
+    if [[ "${ASAN_FILE_PREPARSE}" == "("*")" ]]; then
+      # The location is a non-resolved maridbd/mysqld location (i.e. /bin/mariadbd+0x81e8edf), and not helpful - get it from the next frame
+      ASAN_FILE_PREPARSE=''
+    fi
   fi
 }
 tsan_file_preparse(){
-  TSAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|:.*||;s|:[0-9]\+:[0-9]\+:[ ]*$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;')"  # Drop path prefix (build directory), leaving only relevant part for MD/MS
-  if [[ "${TSAN_FILE_PREPARSE}" == "("*")" ]]; then
-    # The location is a non-resolved maridbd/mysqld location (i.e. /bin/mariadbd+0x81e8edf), and not helpful - get it from the next frame
-    TSAN_FILE_PREPARSE=''
+  if [ -z "${TSAN_FILE_PREPARSE}" ]; then
+    TSAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|:[^:]*$||;s|:[0-9]\+:[0-9]\+:[ ]*$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;s|.*/tsan/|tsan/|;')"  # Drop path prefix (build directories), leaving only relevant part for MD/MS
+    if [[ "${TSAN_FILE_PREPARSE}" == "("*")" ]]; then
+      # The location is a non-resolved maridbd/mysqld location (i.e. /bin/mariadbd+0x81e8edf), and not helpful - get it from the next frame
+      TSAN_FILE_PREPARSE=''
+    fi
   fi
 }
 
@@ -154,6 +159,7 @@ while IFS=$'\n' read LINE; do
       flag_ready_check
       FLAG_ASAN_IN_PROGRESS=1; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=0
       ASAN_FRAME1=; ASAN_FRAME2=; ASAN_FRAME3=; ASAN_FRAME4=
+      ASAN_FILE_PREPARSE=
       ASAN_ERROR="$(echo "${LINE}" | sed 's|.*ERROR:[ ]*||;s|.*AddressSanitizer:[ ]*||;s| on address.*||;s|thread T[0-9]\+|thread Tx|g;s|allocation size 0x[0-9a-f]\+|allocation size X|g;s|(0x[0-9a-f]\+ after adjustment|(Y after adjustment|g;s|supported size of 0x[0-9a-f]\+|supported size of Z|g;')"
     fi
     if [ "${FLAG_ASAN_IN_PROGRESS}" -eq 1 ]; then
@@ -177,43 +183,14 @@ while IFS=$'\n' read LINE; do
       fi
     fi
   fi
-  # ------------- TSAN Issue check (if present) -------------
-  if [ ${FLAG_TSAN_PRESENT} -eq 1 ]; then
-    if [[ "${LINE}" == *"ThreadSanitizer:"* ]]; then  # TSAN Issue detected, and commencing
-      flag_ready_check
-      FLAG_ASAN_IN_PROGRESS=0; FLAG_TSAN_IN_PROGRESS=1; FLAG_UBSAN_IN_PROGRESS=0
-      TSAN_FRAME1=; TSAN_FRAME2=; TSAN_FRAME3=; TSAN_FRAME4=
-      TSAN_ERROR="$(echo "${LINE}" | sed 's|.*WARNING:||;s|.*ThreadSanitizer:[ ]*||;s| (pid=.*||')"
-    fi
-    if [ "${FLAG_TSAN_IN_PROGRESS}" -eq 1 ]; then
-      # Parse first 4 stack frames if discovered in current line
-      if [[ "${LINE}" == *" #0 "* ]]; then
-        TSAN_FRAME1="$(echo "${LINE}" | sed 's|(.*)||g;s|,*#[0-9]\+ ||;s| ||g;s|/.*||;s|<.*||;')"
-        tsan_file_preparse
-      fi
-      if [[ "${LINE}" == *" #1 "* ]]; then
-        TSAN_FRAME2="$(echo "${LINE}" | sed 's|(.*)||g;s|,*#[0-9]\+ ||;s| ||g;s|/.*||;s|<.*||;')"
-        tsan_file_preparse
-      fi
-      if [[ "${LINE}" == *" #2 "* ]]; then
-        TSAN_FRAME3="$(echo "${LINE}" | sed 's|(.*)||g;s|,*#[0-9]\+ ||;s| ||g;s|/.*||;s|<.*||;')"
-        tsan_file_preparse
-      fi
-      if [[ "${LINE}" == *" #3 "* ]]; then
-        TSAN_FRAME4="$(echo "${LINE}" | sed 's|(.*)||g;s|,*#[0-9]\+ ||;s| ||g;s|/.*||;s|<.*||;')"
-        tsan_file_preparse
-        FLAG_TSAN_READY=1
-      fi
-    fi
-  fi
   # ------------- UBSAN Issue check (if present) -------------
   if [ ${FLAG_UBSAN_PRESENT} -eq 1 ]; then
     if [[ "${LINE}" == *"runtime error:"* ]]; then  # UBSAN Issue detected, and commencing
       flag_ready_check
       FLAG_ASAN_IN_PROGRESS=0; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=1
       UBSAN_FRAME1=; UBSAN_FRAME2=; UBSAN_FRAME3=; UBSAN_FRAME4=
-      UBSAN_ERROR="$(echo "${LINE}" | sed 's|.*runtime error:[ ]*||;s|load of value \(-*\)[0-9]\+|load of value \1X|g;s|negation of \([-]*\)[0-9]\+|negation of \1X|g;s|applying non-zero offset \([-+]*\)[0-9]\+|applying non-zero offset \1X|g;s|overflow: \(-*\)[0-9]\+ \([-+:\*]\) \(-*\)[0-9]\+ |overflow: \1X \2 \3Y |g;s|shift exponent \([-+]*\)[0-9]\+|shift exponent \1X|g;s|index \(-*\)[0-9]\+ out of bounds|index \1X out of bounds|g;s|member call on address 0x[^ ]\+|member call on address X|g;s|with base 0x[0-9a-f]\+|with base X|g;s|overflowed to 0x[0-9a-f]\+|overflowed to Y|g')"
       UBSAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's| runtime error:.*||;s|:[0-9]\+:[0-9]\+:[ ]*$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;')"  # Drop path prefix (build directory), leaving only relevant part for MD/MS
+      UBSAN_ERROR="$(echo "${LINE}" | sed 's|.*runtime error:[ ]*||;s|load of value \(-*\)[0-9]\+|load of value \1X|g;s|negation of \([-]*\)[0-9]\+|negation of \1X|g;s|applying non-zero offset \([-+]*\)[0-9]\+|applying non-zero offset \1X|g;s|overflow: \(-*\)[0-9]\+ \([-+:\*]\) \(-*\)[0-9]\+ |overflow: \1X \2 \3Y |g;s|shift exponent \([-+]*\)[0-9]\+|shift exponent \1X|g;s|index \(-*\)[0-9]\+ out of bounds|index \1X out of bounds|g;s|member call on address 0x[^ ]\+|member call on address X|g;s|with base 0x[0-9a-f]\+|with base X|g;s|overflowed to 0x[0-9a-f]\+|overflowed to Y|g')"
     fi
     if [ "${FLAG_UBSAN_IN_PROGRESS}" -eq 1 ]; then
       # Parse first 4 stack frames if discovered in current line
@@ -229,6 +206,36 @@ while IFS=$'\n' read LINE; do
       if [[ "${LINE}" == *" #3 0x"* ]]; then
         UBSAN_FRAME4="$(echo "${LINE}" | sed 's|^[^i]\+in[ ]\+||;s|(.*)||g;s|[ ]\+.*||')"
         FLAG_UBSAN_READY=1
+      fi
+    fi
+  fi
+  # ------------- TSAN Issue check (if present) -------------
+  if [ ${FLAG_TSAN_PRESENT} -eq 1 ]; then
+    if [[ "${LINE}" == *"ThreadSanitizer:"* ]]; then  # TSAN Issue detected, and commencing
+      flag_ready_check
+      FLAG_ASAN_IN_PROGRESS=0; FLAG_TSAN_IN_PROGRESS=1; FLAG_UBSAN_IN_PROGRESS=0
+      TSAN_FRAME1=; TSAN_FRAME2=; TSAN_FRAME3=; TSAN_FRAME4=
+      TSAN_FILE_PREPARSE= 
+      TSAN_ERROR="$(echo "${LINE}" | sed 's|.*WARNING:||;s|.*ThreadSanitizer:[ ]*||;s| (pid=.*||')"
+    fi
+    if [ "${FLAG_TSAN_IN_PROGRESS}" -eq 1 ]; then
+      # Parse first 4 stack frames if discovered in current line
+      if [[ "${LINE}" == *" #0 "* ]]; then
+        TSAN_FRAME1="$(echo "${LINE}" | sed 's|(.*)||g;s|,*#[0-9]\+ ||;s| ||g;s|[\.]\+/.*||;s|/.*||;s|<.*||;')"
+        tsan_file_preparse
+      fi
+      if [[ "${LINE}" == *" #1 "* ]]; then
+        TSAN_FRAME2="$(echo "${LINE}" | sed 's|(.*)||g;s|,*#[0-9]\+ ||;s| ||g;s|[\.]\+/.*||;s|/.*||;s|<.*||;')"
+        tsan_file_preparse
+      fi
+      if [[ "${LINE}" == *" #2 "* ]]; then
+        TSAN_FRAME3="$(echo "${LINE}" | sed 's|(.*)||g;s|,*#[0-9]\+ ||;s| ||g;s|[\.]\+/.*||;s|/.*||;s|<.*||;')"
+        tsan_file_preparse
+      fi
+      if [[ "${LINE}" == *" #3 "* ]]; then
+        TSAN_FRAME4="$(echo "${LINE}" | sed 's|(.*)||g;s|,*#[0-9]\+ ||;s| ||g;s|[\.]\+/.*||;s|/.*||;s|<.*||;')"
+        tsan_file_preparse
+        FLAG_TSAN_READY=1
       fi
     fi
   fi
