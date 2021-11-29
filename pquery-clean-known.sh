@@ -9,14 +9,20 @@ set +H
 
 # Check if this is a MariaDB Galera Cluster run
 MDG=0
-if [ "$(grep 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
+if [ "$(grep 'MDG Mode:' ./pquery-run.log 2>/dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
   MDG=1
 fi
 
 # Check if this is a group replication run
 GRP_RPL=0
-if [ "$(grep 'Group Replication Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*Group Replication Mode[: \t]*||')" == "TRUE" ]; then
+if [ "$(grep 'Group Replication Mode:' ./pquery-run.log 2>/dev/null | sed 's|^.*Group Replication Mode[: \t]*||')" == "TRUE" ]; then
   GRP_RPL=1
+fi
+
+# Check if this is a *SAN (ASAN, UBSAN, TSAN) run
+SAN=0
+if grep -Eq 'UBASAN_|TSAN_' ./pquery-run.log 2>/dev/null; then
+  SAN=1
 fi
 
 # Current location checks
@@ -65,10 +71,12 @@ cleanup(){
   done < ${STRINGS_FILE}
 }
 
-STRINGS_FILE=${SCRIPT_PWD}/known_bugs.strings  # All normal bugs (CS/ES/MDG)
+STRINGS_FILE=${SCRIPT_PWD}/known_bugs.strings  # All normal bugs (CS/ES/MDG). This will always run (i.e. even for *SAN runs)
 cleanup
-STRINGS_FILE=${SCRIPT_PWD}/known_bugs.strings.SAN  # All *SAN bugs(ASAN/TSAN/UBSAN) (CS/ES/MDG)
-cleanup
+if [ "${SAN}" -eq 1 ]; then
+  STRINGS_FILE=${SCRIPT_PWD}/known_bugs.strings.SAN  # All *SAN bugs(ASAN/TSAN/UBSAN) (CS/ES/MDG)
+  cleanup
+fi
  
 # Other cleanups
 if [ ${MDG} -ne 1 ]; then

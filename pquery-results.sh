@@ -81,13 +81,17 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
       done
       COUNT=$(grep --binary-files=text '^   TEXT=' reducer* 2>/dev/null | sort -u | sed 's|reducer\([0-9]\+\).sh:|reducer\1.sh:  |;s|  TEXT|TEXT|' | grep --binary-files=text "${STRING}" 2>/dev/null | wc -l)
     fi
+    SAN=0
     if [ ${COUNT} -gt 0 ]; then
       if [[ "${STRING}" == "=ERROR"* ]]; then  # ASAN bugs
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sASAN  ",$1}')"
+        SAN=1
       elif [[ "${STRING}" == "ThreadSanitizer:"* ]]; then  # TSAN bugs
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sTSAN  ",$1}')"
+        SAN=1
       elif [[ "${STRING}" == "runtime error:"* ]]; then  # UBSAN bugs
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sUBSAN ",$1}')"
+        SAN=1
       else
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-170s",$1}' | sed 's|\\"|"|g')"  # The s|\\"|"|g sed reverts the insertion of \ before " (i.e. \") as done by pquery-prep-reducer.sh and as used by reducer. It is not helpful here, and it is not part of the offial bug uniqueID string. Thus, pquery-results.sh and in-reducer TEXT slightly differ: " (pquery-results.sh, MYBUG, known_bug_string.sh) vs \" (reducer.sh, and as set by pquery-prep-reducer.sh, and pquery-clean-known.sh also uses this to be able to find failing reducers)
       fi
@@ -96,28 +100,33 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
     fi
     if [ ${SCANBUGS} -eq 1 ]; then
       # Look for exact match (except for allowing both .c and .cc to be used)
-      SCANSTRING="$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|')"
-      SCANOUTPUT="$(grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /')"
-      if [ "$(echo "${SCANOUTPUT}" | sed 's|[ \t]\+||g')" != "" ]; then
+      #OLD SCANSTRING="$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|')"
+      SCANSTRING="$(echo "${STRING}")"
+      KB="${SCRIPT_PWD}/known_bugs.strings"
+      if [ "${SAN}" -eq 1 ]; then
+        KB="${SCRIPT_PWD}/known_bugs.strings.SAN"
+      fi
+      SCANOUTPUT="$(grep ${NTS} --binary-files=text "${SCANSTRING}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /')"
+      if [ "$(echo "${SCANOUTPUT}" | sed 's|[ \t]\+||g')" != "" ]; then  # TODO: this does not work yet with new text string, as the strings are specific uniqueid's/bugs rather than for example the second/third frame only etc. It may help to just use 2nd/3rd frame alone. Add regex here if this functionality is going to be used more (it isn't atm and the new uniqueID's and the new dup bug search function of ~/tt have made this mostly redudant).
         # Note you cannot just echo ${SCANOUTPUT} here without processing; it does not contain newlines. If multiple matches are found, it will condense them into one line
-        grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /'
-      else
+        grep ${NTS} --binary-files=text "${SCANSTRING}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /'
+      else  # Also may provide backwards (old text string) compatibility
         # Look for a more generic string. Allow things like "line 1000" to match for "line 2100" (first digit match + neighbour numbers)
         SCANSTRING=$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|;s|\( line [0-9]\)[0-9]\+|\1|')
         SCANSTRINGLASTNR=$(echo "${SCANSTRING}" | sed 's|.*\(.\)$|\1|' | sed 's|[^0-9]||')
         if [ "${SCANSTRINGLASTNR}" == "" -o "${SCANSTRINGLASTNR}" == "0" ]; then  # The last character was not a digit, or a 0
-          grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
         else
           # Scan all nearest neighbours
           SCANSTRING=$(echo "${SCANSTRING}" | sed 's|.$||')  # Remove last character (the number)
           # Scan with the original string number
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
           # Scan with the original string number -1 (0 is not fine; already handled above)
           SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} - 1 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
           # Scan with the original string number +1 (9 is fine; this becomes 10 and that would be the next upper neighbour)
           SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} + 2 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
+          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
         fi
       fi
     fi
@@ -279,7 +288,7 @@ if [ "$(echo "${COREDUMPS}" | sed 's| \+||g')" != "" ]; then
   echo "========= Coredumps found in trials:"
   find . | grep --binary-files=text  'core' 2>/dev/null | grep --binary-files=text -vE 'parse|pquery|vault' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|'
 fi
-echo "========="
+
 if [ $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | wc -l) -gt 0 ]; then
   echo "Detected one or more empty (0 byte) reducer script(s): $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | tr '\n' ' ')- you may want to check what's causing this (possibly a bug in pquery-prep-red.sh, or did you simply run out of space while running pquery-prep-red.sh?) and do the analysis for these trial numbers manually, or free some space, delete the reducer*.sh scripts and re-run pquery-prep-red.sh"
 fi
@@ -288,8 +297,55 @@ fi
 if [ ! -z "$(grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null)" ]; then
   echo "========= Stack smashing detected:"
   grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null
-  echo "========="
 fi
+
+echo "========= Significant/Major errors"
+# Significant/major error scanning. This code is partially duplicated in pquery-del-trial.sh. Update both when making changes.
+ERRORS=
+ERROR_LOG=
+ERRORS_LAST_LINE=
+REGEX_ERRORS_SCAN=
+REGEX_ERRORS_LASTLINE=
+REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
+if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
+  REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
+  if [ -z "${REGEX_ERRORS_SCAN}" ]; then
+    echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
+    exit 1
+  fi
+else
+  echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
+  exit 1
+fi
+if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
+  REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
+  if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
+    echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
+    exit 1
+  fi
+else
+  echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
+  exit 1
+fi
+if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
+  REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
+fi
+rm -f ./errorlogs.tmp
+find . -type f -name "master.err" | grep '\./[0-9]\+/log/master.err' > ./errorlogs.tmp
+if [ -r ./errorlogs.tmp ]; then
+  while read ERROR_LOG; do
+    if [ -r ${ERROR_LOG} ]; then
+      # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
+      ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
+      ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"
+      if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then
+        echo "${ERROR_LOG}: $(DOUBLE=0; echo "$(if [ ! -z "${ERRORS}" ]; then echo -n "${ERRORS}"; DOUBLE=1; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then if [ "${DOUBLE}" -eq 1]; then echo ", ${ERRORS_LAST_LINE}"; else echo ", ${ERRORS_LAST_LINE}"; fi; else echo ''; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')"
+      fi
+    fi
+  done < ./errorlogs.tmp
+fi
+rm -f ./errorlogs.tmp
+
 extract_valgrind_error(){
   for i in $( ls  ${ERROR_LOG_LOC} 2>/dev/null); do
     TRIAL=$(echo $i | cut -d'/' -f1)

@@ -14,7 +14,7 @@
 # followed by a fully readable ASAN failure, the ASAN's failure UniqueID will be output. This solution is better than 
 # not outputing anything when the first failure is only partially readable, as herewith testcase reduction can happen 
 # against the second FULL failure observed (i.e. a benefit gained). One caveat is that the partial issue may be lost,
-# though often times one issue may show up in other ways, etc.
+# though often times a given issue may show up in other ways, etc.
 
 set +H
 PROFILING=0  # Set to 1 to profile Bash to /tmp/bashstart.$$.log (slows down script by a factor of 10x)
@@ -146,6 +146,10 @@ tsan_file_preparse(){
     TSAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|:[^:]*$||;s|:[0-9]\+:[0-9]\+:[ ]*$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;s|.*/tsan/|tsan/|;')"  # Drop path prefix (build directories), leaving only relevant part for MD/MS
     if [[ "${TSAN_FILE_PREPARSE}" == "("*")" ]]; then
       # The location is a non-resolved maridbd/mysqld location (i.e. /bin/mariadbd+0x81e8edf), and not helpful - get it from the next frame
+      TSAN_FILE_PREPARSE=''
+    fi
+    if [[ "${TSAN_FILE_PREPARSE}" == "tsan/"* ]]; then
+      # The location is a tsan location (i.e. tsan/tsan_interface_atomic.cpp with frame __tsan_atomic64_fetch_add) and likely not as helpful as a mysqld function which can likely be retrieved from the next frame
       TSAN_FILE_PREPARSE=''
     fi
   fi

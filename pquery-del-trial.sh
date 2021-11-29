@@ -61,7 +61,8 @@ elif [ ! -d ./${TRIAL} ]; then
   echo "Will still attempt to delete all related remaining files, if any"
   exit 1
 else 
-  # Delete trial directory
+  # Delete trial directory, provided it does not contain a significant/major error of interest. Scan first
+  # Significant/major error scanning. This code is partially duplicated in pquery-results.sh. Update both when making changes.
   ERRORS=
   ERROR_LOG=
   ERRORS_LAST_LINE=

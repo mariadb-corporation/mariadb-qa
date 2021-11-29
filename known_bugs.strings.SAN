@@ -4,8 +4,10 @@
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 
 ##### CURRENT BUGS #####
+TSAN|data race|storage/innobase/os/os0file.cc|LinuxAIOHandler::collect|LinuxAIOHandler::poll|os_aio_linux_handler|os_aio_handler                                               ## MDEV-27133
+TSAN|data race|tpool/aio_linux.cc|tpool::aio_linux::getevent_thread_routine|voidstd::__invoke_impl|std::__invoke_result|voidstd::thread::_Invoker                              ## MDEV-27133
 UBSAN|pointer index expression with base X overflowed to Y|mysys/my_thr_init.c|my_thread_init|timer_handler|start_thread|__clone                                               ## MDEV-27077
-TSAN|data race|storage/innobase/os/os0file.cc|__tsan_atomic64_fetch_add..|os_file_pread|os_file_read_page|os_file_read_func                                                    ## MDEV-24332
+TSAN|data race|storage/innobase/os/os0file.cc|__tsan_atomic64_fetch_add|os_file_pread|os_file_read_page|os_file_read_func                                                      ## MDEV-24332
 ASAN|use-after-poison|mysys/hash.c|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|hashcmp|my_hash_first_from_hash_value                                         ## MDEV-26637
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                     ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                       ## MDEV-24193
