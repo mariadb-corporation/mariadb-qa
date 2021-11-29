@@ -149,7 +149,7 @@ tsan_file_preparse(){
       TSAN_FILE_PREPARSE=''
     fi
     if [[ "${TSAN_FILE_PREPARSE}" == "tsan/"* ]]; then
-      # The location is a tsan location (i.e. tsan/tsan_interface_atomic.cpp with frame __tsan_atomic64_fetch_add) and likely not as helpful as a mysqld function which can likely be retrieved from the next frame
+      # The location is a tsan location (for example: tsan/tsan_interface_atomic.cpp with frame __tsan_atomic64_fetch_add) and likely not as helpful as a mysqld function which can likely be retrieved from the next frame
       TSAN_FILE_PREPARSE=''
     fi
   fi
