@@ -18,10 +18,10 @@
 # though often times a given issue may show up in other ways, etc.
 
 # Note that we scan for issues only after 'ready for connections' is seen. There may be other issues seen during
-# server init, which may be sporadic and may be connected to only a single version. This is greatly simplifies issue
-# handling as otherwise tools like './allstrings SAN' (and therefore '~/b SAN' (bug report) output also) may list
-# UniqueID's seen during startup etc. which are otherwise completely unrelated to the issue being scanned for, which
-# may lead (in error) UniqueID's unrelated to a particular issue ending up in the known bugs UniqueID's list.
+# server init, which may be sporadic and may be connected to only a single version. This greatly simplifies issue
+# handling, as otherwise tools like './allstrings SAN' (and therefore '~/b SAN' (bug report) output also) may list
+# UniqueID's seen during startup etc., which are otherwise completely unrelated to the issue being scanned for, which
+# may lead in turn (in error) to UniqueID's unrelated to a particular issue ending up in the known bugs UniqueID's list.
 
 set +H
 PROFILING=0  # Set to 1 to profile Bash to /tmp/bashstart.$$.log (slows down script by a factor of 10x)
