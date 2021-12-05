@@ -1,7 +1,8 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-# This script generates a uniqueID for the first ASAN, UBSAN or TSAN error seen in a given mysqld or mariadbd error log
+# This script generates a UniqueID for the first ASAN, UBSAN or TSAN error seen in a given mysqld or mariadbd error log
+# after the 'ready for connections' string is seen.
 # Usage: ~/mariadb-qa/san_text_string.sh ${1}
 # ${1}: First input, only option, point to mysqld error log directly, or to a basedir which contains ./log/master.err
 #       If the option is not specified, the script will attempt to look in ${PWD}/log/master.err and ${PWD}/master.err
@@ -15,6 +16,12 @@
 # not outputing anything when the first failure is only partially readable, as herewith testcase reduction can happen 
 # against the second FULL failure observed (i.e. a benefit gained). One caveat is that the partial issue may be lost,
 # though often times a given issue may show up in other ways, etc.
+
+# Note that we scan for issues only after 'ready for connections' is seen. There may be other issues seen during
+# server init, which may be sporadic and may be connected to only a single version. This is greatly simplifies issue
+# handling as otherwise tools like './allstrings SAN' (and therefore '~/b SAN' (bug report) output also) may list
+# UniqueID's seen during startup etc. which are otherwise completely unrelated to the issue being scanned for, which
+# may lead (in error) UniqueID's unrelated to a particular issue ending up in the known bugs UniqueID's list.
 
 set +H
 PROFILING=0  # Set to 1 to profile Bash to /tmp/bashstart.$$.log (slows down script by a factor of 10x)
@@ -155,8 +162,15 @@ tsan_file_preparse(){
   fi
 }
 
+STARTED=0
 while IFS=$'\n' read LINE; do
   LINE_COUNTER=$[ ${LINE_COUNTER} + 1 ]
+  if [ ${STARTED} -eq 0 ]; then
+    if [[ "${LINE}" == *"ready for connections"* ]]; then
+      STARTED=1
+    fi
+    continue
+  fi
   # ------------- ASAN Issue check (if present) -------------
   if [ ${FLAG_ASAN_PRESENT} -eq 1 ]; then
     if [[ "${LINE}" == *"AddressSanitizer:"* ]]; then  # ASAN Issue detected, and commencing

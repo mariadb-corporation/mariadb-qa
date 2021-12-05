@@ -4,6 +4,8 @@
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 
 ##### CURRENT BUGS #####
+TSAN|data race|sql/mysqld.cc|__tsan_atomic64_fetch_add|update_global_memory_status|my_malloc_size_cb_func|my_free                                                              ## MDEV-27170
+TSAN|data race|sql/mysqld.cc|__tsan_atomic64_fetch_add|update_global_memory_status|my_malloc_size_cb_func|my_malloc                                                            ## MDEV-27170
 TSAN|data race|storage/innobase/os/os0file.cc|LinuxAIOHandler::collect|LinuxAIOHandler::poll|os_aio_linux_handler|os_aio_handler                                               ## MDEV-27133
 TSAN|data race|tpool/aio_linux.cc|tpool::aio_linux::getevent_thread_routine|voidstd::__invoke_impl|std::__invoke_result|voidstd::thread::_Invoker                              ## MDEV-27133
 UBSAN|pointer index expression with base X overflowed to Y|mysys/my_thr_init.c|my_thread_init|timer_handler|start_thread|__clone                                               ## MDEV-27077

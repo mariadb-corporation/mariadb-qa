@@ -228,6 +228,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|InnoDB_|innodb_|g' | \
   sed 's|GLOBAL_|global_|g' | \
   sed 's|least|LEAST|gi' | \
+  sed 's|level|LEVEL|gi' | \
   sed 's|rpad|RPAD|gi' | \
   sed 's|lpad|LPAD|gi' | \
   sed 's|into|INTO|gi' | \

@@ -10,7 +10,7 @@ USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
 CUSTOM_COMPILER_LOCATION="/home/roel/GCC-5.5.0/bin"
 USE_CLANG=0             # 0 or 1 # Use the clang compiler instead of gcc
 USE_SAN=1               # 0 or 1 # Use [ASAN or MSAN], UBSAN
-USE_TSAN=0              # 0 or 1 # 1 Enables TSAN, disables ASAN+UBSAN. 0 Enables ASAN+UBSAN, disables TSAN
+USE_TSAN=1              # 0 or 1 # 1 Enables TSAN, disables ASAN+UBSAN. 0 Enables ASAN+UBSAN, disables TSAN
 ASAN_OR_MSAN=0          # 0 or 1 # 0: ASAN, 1: MSAN
 #CLANG_LOCATION="/home/roel/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 CLANG_LOCATION="/usr/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
@@ -277,7 +277,7 @@ if [ $FB -eq 0 ]; then
     sleep 0.1
     #XPAND='-DWITH_XPAND=1'  # Disabled ftm due to cnf limitation (https://mariadb.com/kb/en/mariadb-maxscale-25-maxscale-and-xpand-tutorial/)
   fi
-  CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_PERFSCHEMA_STORAGE_ENGINE=1 ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS}"
+  CMD="cmake . $CLANG $AFL $SSL -DWITH_URING=ON -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_PERFSCHEMA_STORAGE_ENGINE=1 ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
   $CMD | tee /tmp/psms_dbg_san_build_${RANDOMD}

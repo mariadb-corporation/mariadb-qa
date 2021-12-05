@@ -339,7 +339,7 @@ if [ -r ./errorlogs.tmp ]; then
       ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
       ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"
       if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then
-        echo "${ERROR_LOG}: $(DOUBLE=0; echo "$(if [ ! -z "${ERRORS}" ]; then echo -n "${ERRORS}"; DOUBLE=1; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then if [ "${DOUBLE}" -eq 1]; then echo ", ${ERRORS_LAST_LINE}"; else echo ", ${ERRORS_LAST_LINE}"; fi; else echo ''; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')"
+        echo "${ERROR_LOG}: $(DOUBLE=0; echo "$(if [ ! -z "${ERRORS}" ]; then echo -n "${ERRORS}"; DOUBLE=1; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then if [ "${DOUBLE}" -eq 1 ]; then echo ", ${ERRORS_LAST_LINE}"; else echo ", ${ERRORS_LAST_LINE}"; fi; else echo ''; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')"
       fi
     fi
   done < ./errorlogs.tmp
