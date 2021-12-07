@@ -42,8 +42,16 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|myrocks::ha_rocksdb::free_key_buffers                                                                                      ## MDEV-21799
 #***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|std::__shared_count<shared_ptr_base.h                                                                                      ## MDEV-21799
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                               ## MDEV-27184
 
 ##### CURRENT BUGS #####
+SIGSEGV|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|handler::ha_external_unlock                                                                  ## MDEV=27187
+thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_commit_trans|trans_begin|mysql_execute_command|mysql_parse                             ## MDEV=27187
+! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                                                                ## MDEV=27186
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                    ## MDEV=27186
+(old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)|SIGABRT|__malloc_assert|sysmalloc|_int_malloc|_int_realloc ## MDEV-27184
+str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27184
+SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::check_direct_order_limit|ha_spider::index_last_internal                                  ## MDEV-27171
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_rollback_trans|ha_commit_trans|trans_commit_implicit|mysql_execute_command             ## MDEV-27040
 SIGABRT|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|sync_dynamic_session_variables                                                                                  ## MDEV-27039
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-27007
@@ -59,6 +67,8 @@ SIGABRT|myrocks::rdb_i_s_global_info_fill_table|get_schema_tables_result|JOIN::e
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert|ha_spider::end_bulk_insert                                          ## MDEV-26587
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert                                                      ## MDEV-26587
 SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                                   ## MDEV-26583
+SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit_from_select_lex|spider_check_direct_order_limit|ha_spider::check_direct_order_limit                    ## MDEV-26583
+SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit_from_select_lex|spider_split_read_param|spider_set_result_list_param                                   ## MDEV-26583
 transaction_.active() == false|SIGABRT|wsrep::client_state::~client_state|Wsrep_client_state::~Wsrep_client_state|THD::~THD|THD::~THD                                          ## MDEV-26575
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-26546
 part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row                         ## MDEV-26544

@@ -39,10 +39,15 @@ cat "${1}" | tr -d '`' | \
   sed 's|returns|RETURNS|gi' | \
   sed 's|constraint|CONSTRAINT|gi' | \
   sed 's|deterministic|DETERMINISTIC|gi' | \
+  sed 's|transaction|TRANSACTION|gi' | \
+  sed 's|consistent|CONSISTENT|gi' | \
+  sed 's|snapshot|SNAPSHOT|gi' | \
   sed 's|commit|COMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
   sed 's|data|DATA|gi' | \
   sed 's|references|REFERENCES|gi' | \
+  sed 's|storage|STORAGE|gi' | \
+  sed 's|disk|DISK|gi' | \
   sed 's|plugin|PLUGIN|gi' | \
   sed 's|plugins|PLUGINS|gi' | \
   sed 's|local|LOCAL|gi' | \

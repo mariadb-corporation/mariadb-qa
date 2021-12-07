@@ -301,7 +301,7 @@ TS_VARIABILITY_SLEEP=1
 #    esac
 #    shift
 #   done
-# - Optimization: let 'Waiting for any forked subreducer threads to find a shorter file (Issue is deemed to be sporadic: this will take time)' work for 30 minutes
+# - Optimization: let 'Waiting for any forked subreducer threads to find a shorter file (Issue is deemed to be sporadic: this may take time)' work for 30 minutes
 #   or so, depending on file size. If no issue is found by then, restart or increase number of threads by 5.
 
 # ======== Internal variable Reference
@@ -1262,7 +1262,7 @@ multi_reducer(){
     # With FIREWORKS: to find a new bug
     # Note that the term/file '/VERIFIED' is used for both instances/occurences
     if [ "${FIREWORKS}" != "1" ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed to be sporadic: this will take time)"
+      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed to be sporadic: this may take time)"
     else
       echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked subreducer threads to find a new bug"
     fi
@@ -3654,7 +3654,7 @@ verify_not_found(){
 #STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
 verify(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed sporadic)"
+    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed to be sporadic)"
     # Ref https://jira.mariadb.org/browse/TODO-3017
     # Instead of using STAGE V to verify if the issue exists, one can simply test reproducibility using FORCE_SKIPV=1 with multi-threaded pre-reduction (with a high number of MULTI_THREADS like 30 or more) until such approximate time as pquery-go-expert.sh (~/pge) is normally needed.
     return
