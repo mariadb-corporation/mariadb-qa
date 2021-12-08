@@ -45,10 +45,10 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                               ## MDEV-27184
 
 ##### CURRENT BUGS #####
-SIGSEGV|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|handler::ha_external_unlock                                                                  ## MDEV=27187
-thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_commit_trans|trans_begin|mysql_execute_command|mysql_parse                             ## MDEV=27187
-! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                                                                ## MDEV=27186
-!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                    ## MDEV=27186
+! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_optimize_table::execute                                                                   ## MDEV-27198
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_optimize_table::execute                       ## MDEV-27198
+! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                                                                ## MDEV-27186
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                    ## MDEV-27186
 (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)|SIGABRT|__malloc_assert|sysmalloc|_int_malloc|_int_realloc ## MDEV-27184
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27184
 SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::check_direct_order_limit|ha_spider::index_last_internal                                  ## MDEV-27171
