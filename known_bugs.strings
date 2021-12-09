@@ -45,6 +45,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                               ## MDEV-27184
 
 ##### CURRENT BUGS #####
+!m_null_value|SIGABRT|FixedBinTypeBundle<UUID>::cmp_item_fbt::compare|cmp_item_row::compare|cmp_row|my_qsort2                                                                  ## MDEV-27207
+SIGSEGV|Table_scope_and_contents_source_st::vers_check_system_fields|Table_scope_and_contents_source_st::check_fields|select_create::create_table_from_items|select_create::prepare ## MDEV-27195
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_optimize_table::execute                                                                   ## MDEV-27198
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_optimize_table::execute                       ## MDEV-27198
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                                                                ## MDEV-27186
