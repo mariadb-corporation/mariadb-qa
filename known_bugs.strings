@@ -45,6 +45,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                               ## MDEV-27184
 
 ##### CURRENT BUGS #####
+bitmap_is_set(&(m_part_info->read_partitions), part_id)|SIGABRT|ha_partition::part_records|partition_info::vers_set_hist_part|ha_partition::external_lock|handler::ha_external_lock ## MDEV-27217
+SIGSEGV|ha_innobase::update_thd|ha_innobase::info_low|ha_partition::part_records|partition_info::vers_set_hist_part                                                            ## MDEV-27217
 btr_cur_get_rec(cursor) == ((next_page) + page_get_infimum_offset(next_page))|SIGABRT|btr_insert_into_right_sibling|btr_page_split_and_insert|btr_cur_pessimistic_insert|row_ins_sec_index_entry_low # MDEV-27209
 ((cursor)->page_cur.rec) == ((next_page) + page_get_infimum_offset(next_page))|SIGABRT|btr_insert_into_right_sibling|btr_page_split_and_insert|btr_cur_pessimistic_insert|row_ins_sec_index_entry_low # MDEV-27209
 !m_null_value|SIGABRT|FixedBinTypeBundle<UUID>::cmp_item_fbt::compare|cmp_item_row::compare|cmp_row|my_qsort2                                                                  ## MDEV-27207
