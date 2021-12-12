@@ -1,0 +1,6 @@
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+SET sql_mode='';
+CREATE TABLE t (a INT) ENGINE=SPIDER;
+INSERT DELAYED INTO t VALUES (1);
+INSERT DELAYED INTO t VALUES (1);
+SELECT 1;  # Shows server is gone

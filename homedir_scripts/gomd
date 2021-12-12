@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
-BASEDIR=/test/MD031221-mariadb-10.6.6-linux-x86_64-dbg
-RUNSOPT=10
-RUNSDBG=10
+BASEDIR=/test/MD121221-mariadb-10.8.0-linux-x86_64-opt
+RUNSOPT=5
+RUNSDBG=5
 CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD.conf  # File name only, no spaces, no directories
 #CONF=pquery-run-MD-buf.conf

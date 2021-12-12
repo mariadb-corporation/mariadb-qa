@@ -579,7 +579,12 @@ mdg_startup() {
   SOCKET3=${RUNDIR}/${TRIAL}/node3/node3_socket.sock
   mdg_startup_chk() {
     ERROR_LOG=$1
-    if grep -qi "ERROR. Aborting" $ERROR_LOG; then
+    if grep -qi "Can.t create.write to file" ${RUNDIR}/${TRIAL}/log/master.err; then
+      echoit "Assert! Likely an incorrect --init-file option was specified (check if the specified file actually exists)"  # Also see https://jira.mariadb.org/browse/MDEV-27232
+      echoit "Terminating run as there is no point in continuing; all trials will fail with this error."
+      removetrial
+      exit 1
+    elif grep -qi "ERROR. Aborting" $ERROR_LOG; then
       if grep -qi "TCP.IP port.*Address already in use" $ERROR_LOG; then
         echoit "Assert! The text '[ERROR] Aborting' was found in the error log due to a IP port conflict (the port was already in use)"
         removetrial
@@ -805,7 +810,12 @@ gr_startup() {
 
   gr_startup_chk() {
     ERROR_LOG=$1
-    if grep -qi "ERROR. Aborting" $ERROR_LOG; then
+    if grep -qi "Can.t create.write to file" ${RUNDIR}/${TRIAL}/log/master.err; then
+      echoit "Assert! Likely an incorrect --init-file option was specified (check if the specified file actually exists)"  # Also see https://jira.mariadb.org/browse/MDEV-27232
+      echoit "Terminating run as there is no point in continuing; all trials will fail with this error."
+      removetrial
+      exit 1
+    elif grep -qi "ERROR. Aborting" $ERROR_LOG; then
       if grep -qi "TCP.IP port.*Address already in use" $ERROR_LOG; then
         echoit "Assert! The text '[ERROR] Aborting' was found in the error log due to a IP port conflict (the port was already in use)"
         removetrial
@@ -1263,7 +1273,12 @@ pquery_test() {
           exit 1
         fi
       fi
-      if grep -qi "ERROR. Aborting" ${RUNDIR}/${TRIAL}/log/master.err; then
+      if grep -qi "Can.t create.write to file" ${RUNDIR}/${TRIAL}/log/master.err; then
+        echoit "Assert! Likely an incorrect --init-file option was specified (check if the specified file actually exists)"  # Also see https://jira.mariadb.org/browse/MDEV-27232
+        echoit "Terminating run as there is no point in continuing; all trials will fail with this error."
+        removetrial
+        exit 1
+      elif grep -qi "ERROR. Aborting" ${RUNDIR}/${TRIAL}/log/master.err; then
         if grep -qi "TCP.IP port.*Address already in use" ${RUNDIR}/${TRIAL}/log/master.err; then
           echoit "Assert! The text '[ERROR] Aborting' was found in the error log due to a IP port conflict (the port was already in use)"
           removetrial
@@ -1295,7 +1310,12 @@ pquery_test() {
         fi
       fi
       if [ "${REPL}" -eq 1 ]; then
-        if grep -qi "ERROR. Aborting" ${RUNDIR}/${TRIAL}/log/slave.err; then
+        if grep -qi "Can.t create.write to file" ${RUNDIR}/${TRIAL}/log/master.err; then
+          echoit "Assert! Likely an incorrect --init-file option was specified (check if the specified file actually exists)"  # Also see https://jira.mariadb.org/browse/MDEV-27232
+          echoit "Terminating run as there is no point in continuing; all trials will fail with this error."
+          removetrial
+          exit 1
+        elif grep -qi "ERROR. Aborting" ${RUNDIR}/${TRIAL}/log/slave.err; then
           echoit "Assert! The text '[ERROR] Aborting' was found in the slave error log"
           removetrial
         fi
