@@ -7,7 +7,10 @@ set +H  # Disables history substitution and avoids  -bash: !: event not found  l
 #ps -ef | grep -v $$ | grep bug_report | grep -v grep | grep -v mass_bug_report | awk '{print $2}' | xargs kill -9 2>/dev/null
 
 SAN_MODE=0
-USE_WIPE_AND_START=1   # Use ./kill, ./wipe and ./start with mysqld options passed to ./start only. This can be handy when for example using --innodb-force-recovery=x which only should be passed to ./start and will fail when used with ./all_no_cl. IOW instead of ./all_no_cl, ./kill, ./wipe and ./start are used and instead of passing all options to the init called by ./all_no_cl they are not passed to the init when this option is set to 1. Note that the reverse requirement can be required too; for example when using --innodb_page_size=4k, this should be set to 0 as that option is definitely required in the init startup (as arranged by ./all_no_cl). For general use, leave set to 0. For specific use (like --innodb-force-recovery=1 or --innodb-read-only=1).
+if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (like ~/b) has set this option. If not, set it here. If you want to use this option in combination with ~/b, set it there, or use export PASS_MYEXTRA_TO_START_ONLY=0 (or 1) before starting ~/b, or use ~/b0 or ~/b1 which are shortcuts
+  PASS_MYEXTRA_TO_START_ONLY=1  # If 0, then MYEXTRA_OPT is passed to ./all (i.e. options take effect on init and start). If 1, then MYEXTRA_OPT is passed to ./start only (i.e. options take effect on start only, not init). When using for example --innodb_page_size=4 (an option needed for both server init + start), 0 is required. When using for example --innodb-force-recovery=1 or --innodb-read-only=1 (options that can only be used with start and not with init), 1 is required. TODO: this option can be automated 0/1 towards known options that require either 0 or 1 for this setting. Scan MYEXSTRA_OPT to do so
+fi
+export PASS_MYEXTRA_TO_START_ONLY=${PASS_MYEXTRA_TO_START_ONLY}
 SHORTER_STOP_TIME=23   # TODO: this can be improved. Likely setting this smaller than 20 seconds is not a good idea, some cores/crashes may be missed (presumably on slow servers)
 
 MYEXTRA_OPT="$*"
@@ -99,54 +102,6 @@ else
 fi
 sleep 2.5  # For visual confirmation
 
-# Note that the following may do a duplicate run of the testcase on the current PWD basedir directory, which at first glance seems unnessary duplication. If the current PWD basedir directory is part of gendirs that is likely true. However, if it not (like for example a special build) then the code below will still test the testcase against this current PWD basedir directory and make a bug report on that (whilst also reporting on all other versions/dirs listed in gendirs). TODO this can then (if that reasoning about past reasons is correct) be slightly shortened by checking if the current PWD basedir is in gendirs and skip the re-test in such case, and just use the results already present in the current dir as created by test_all.
-if [ ${SAN_MODE} -eq 0 ]; then
-  if [ "${1}" == "GAL" ]; then
-    if [ ! -r ./gal_no_cl ]; then  # This is different from the 'Local' check above, as here all basedirs (as prepared/shown by ./gendirs.sh) are checked before execution
-      echo "Assert: ${PWD}/gal_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh (or use /data/startup_all"
-      exit 1
-    fi
-    ./gal_no_cl ${MYEXTRA_OPT_CLEANED}
-    ./gal_test
-    timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./gal_stop; sleep 0.2; ./kill 2>/dev/null; sleep 0.2
-    CORE_COUNT=$(ls node1/*core* 2>/dev/null | wc -l)
-    CORE_FILE=$(ls node1/*core* 2>/dev/null | head -1)
-  else
-    if [ ${USE_WIPE_AND_START} -eq 1 ]; then
-      ./kill
-      ./wipe  # Note that the init called here does not use MYEXTRA options, unlike when ./all_no_cl is used
-      ./start ${MYEXTRA_OPT_CLEANED}
-    else
-      if [ ! -r ./all_no_cl ]; then  # This is different from the 'Local' check above, as here all basedirs (as prepared/shown by ./gendirs.sh) are checked before execution
-        echo "Assert: ${PWD}/all_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
-        exit 1
-      fi
-      ./all_no_cl ${MYEXTRA_OPT_CLEANED}
-    fi
-    ./test
-    timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; sleep 0.2; ./kill 2>/dev/null; sleep 0.2
-    CORE_COUNT=$(ls data/*core* 2>/dev/null | wc -l)
-    CORE_FILE=$(ls data/*core* 2>/dev/null | head -1)
-  fi
-  if [ ${CORE_COUNT} -eq 0 ]; then
-    echo "INFO: no cores found at data/*core*"
-  elif [ ${CORE_COUNT} -gt 1 ]; then
-    echo "Assert: too many (${CORE_COUNT}) cores found at data/*core*, this should not happen (as ./all_no_cl was used which should have created a clean data directory)"
-    exit 1
-  else
-    # set print array on
-    # set print array-indexes on
-    # set print elements 0
-    gdb -q bin/mysqld $(ls $CORE_FILE) >/tmp/${RANDF}.gdba 2>&1 << EOF
-     set pagination off
-     set print pretty on
-     set print frame-arguments all
-     bt
-     quit
-EOF
-  fi
-fi
-
 rm -f ../in.sql
 if [ -r ../in.sql ]; then echo "Assert: ../in.sql still available after it was removed!"; exit 1; fi
 cp in.sql ..
@@ -204,6 +159,32 @@ LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
 BUILD_TYPE=
 if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE="(Optimized)"; fi
 if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE="(Debug)"; fi
+
+# Check the current directory for outcome
+if [ "${1}" == "GAL" ]; then
+  CORE_COUNT=$(ls node1/*core* 2>/dev/null | wc -l)
+  CORE_FILE=$(ls node1/*core* 2>/dev/null | head -1)
+else
+  CORE_COUNT=$(ls data/*core* 2>/dev/null | wc -l)
+  CORE_FILE=$(ls data/*core* 2>/dev/null | head -1)
+fi
+if [ ${CORE_COUNT} -eq 0 ]; then
+  echo "INFO: no cores found at data/*core*"
+elif [ ${CORE_COUNT} -gt 1 ]; then
+  echo "Assert: too many (${CORE_COUNT}) cores found at data/*core*, this should not happen (as ./all_no_cl was used which should have created a clean data directory)"
+  exit 1
+else
+  # set print array on
+  # set print array-indexes on
+  # set print elements 0
+  gdb -q bin/mysqld $(ls $CORE_FILE) >/tmp/${RANDF}.gdba 2>&1 << EOF
+   set pagination off
+   set print pretty on
+   set print frame-arguments all
+   bt
+   quit
+EOF
+fi
 
 echo '-------------------- BUG REPORT --------------------'
 echo '{code:sql}'
@@ -361,7 +342,7 @@ else
 fi
 if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then
   echo 'Remember to action:'
-  echo '*) If no engine is specified, add ENGINE=InnoDB'
+  echo '*) If no engine is specified, add ENGINE=InnoDB to table definitions and re-run the bug report'
   if [ ${NOCORE} -ne 1 -o ${SAN_MODE} -eq 1 ]; then
     cd ${RUN_PWD}
     TEXT=
