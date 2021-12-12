@@ -14,7 +14,7 @@ RANDOM=$(date +%s%N | cut -b10-19)
 while true; do
 	#REAL_PASSWORD=$(pwgen   --numerals   --capitalize  --symbols --secure 32 1)
 	read -r -d '' -N 200 REAL_PASSWORD < /dev/urandom
-  #echo "REAL_PASSWORD=${REAL_PASSWORD}"; sync 
+  #echo "REAL_PASSWORD=${REAL_PASSWORD}"; sync
   if [ -r pwd_done.txt ]; then
     mv pwd_done.txt pwd_done.prev
   fi

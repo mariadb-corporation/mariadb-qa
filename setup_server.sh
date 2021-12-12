@@ -210,13 +210,13 @@ sudo apt install libasio-dev check scons libboost-program-options-dev libboost-d
 
 sudo apt install libdata-dumper-simple-perl  # Required by mysql_install_db
 
-# rr claimes to require perf on machines where it does not work, yet on rr server it works without having perf installed. Besides requiring or not requiring it, it is a handy tool to have. 
+# rr claimes to require perf on machines where it does not work, yet on rr server it works without having perf installed. Besides requiring or not requiring it, it is a handy tool to have.
 # To use perf, do:  sudo perf top -p <pid_of_mysqld>  # And allow some time to sample
 # Update: it was found that the reason is does not work is that the instances where it did not work was tht the guest CPU type property was empty (likely in the vm hypervisor or similar). Adding all possible guest CPU types (long list) resolved the issue. Bare metal also works without issues. dmesg | grep PMU can help to debug. The first one below is where software mode is enabled only, the second correctly recognizes the CPU and hence rr will work:
 # Performance Events: unsupported p6 CPU model 94 no PMU driver, software events only.  # rr will fail, software VM
 # Performance Events: Skylake events, Intel PMU driver.  # rr will work, correct cpu type
 
-sudo apt install --reinstall linux-tools-common linux-tools-generic linux-tools-`uname -r` 
+sudo apt install --reinstall linux-tools-common linux-tools-generic linux-tools-`uname -r`
 # rr server Tuning (and perf)
 if [ "${1}" == "rr" ]; then
   sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target

@@ -55,8 +55,8 @@ if [ "${ERR_CODE}" != "0" ]; then
   echo "Server not reachable! Check settings. Error: ${CHK_OUT}"
   echo "Terminating!"
   exit 1
-else 
-  echo "Done!" 
+else
+  echo "Done!"
 fi
 
 echo -e "\n===== Starting pquery processes"

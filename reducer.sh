@@ -1367,15 +1367,16 @@ multi_reducer(){
             else
               # Only show this in non-fireworks mode. In fireworks mode, this outcome is expected.
               # TODO: The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in or "user specified as.*does not exist" (i.e. [ERROR] Event Scheduler: [..@..][test.t1] The user specified as a definer ('..'@'..') does not exist) in log/master.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
-              echo_out "[Debug Aid] This can happen on busy servers, - or - if this message is looping constantly; did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running?. This may also happen due to any of the following reasons: 1) (Most likely): The storage location you are using (${WORKD}) has run out of space temporarily  2) Another server running on the same port (check error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err  3) mysqld startup timeouts etc., 4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another option may be to 'just let it run'. 5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached. 6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4. You may also want to checkout the last few lines of the subreducer log which often help to find the specific issue. Ref: tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log and also check both tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err and tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out"  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue.
-              echo_out "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."
-              sleep 10
+              echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [Debug Aid] This can happen on busy servers, - or - if this message is looping constantly; did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running?. This may also happen due to any of the following reasons: 1) (Most likely): The storage location you are using (${WORKD}) has run out of space temporarily  2) Another server running on the same port (check error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err  3) mysqld startup timeouts etc., 4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another option may be to 'just let it run'. 5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached. 6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4. You may also want to checkout the last few lines of the subreducer log which often help to find the specific issue. Ref: tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log and also check both tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err and tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out"  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue.
               # TODO: Reason 1 does happen. Observed:
               # 2020-08-24  9:55:45 0 [ERROR] Can't start server: Bind on TCP/IP port. Got error: 98: Address already in use
               # 2020-08-24  9:55:45 0 [ERROR] Do you already have another mysqld server running on port: 49504 ?
               # 2020-08-24  9:55:45 0 [ERROR] Aborting
               # But it should not (and reducer does check for duplicate port use). One (unlikely) reason may be that the server crashed on a bug not-being-looked for and then restarted or something. Not sure what is causing this, needs work. Only very minor incovience in runs as happens infrequently and reducer does handle the restart correctly.
-            # Also search for 'A server likely crashed on a different bug' for additional related code. Also odd is that that other code is before this one; why did that code not pickup the 'already in use' before being caught here?
+              # Also search for 'A server likely crashed on a different bug' for additional related code. Also odd is that that other code is before this one; why did that code not pickup the 'already in use' before being caught here?
+              ### Disabled the sleep here as at times reducer is still able to continue/resume once this is seen (confirmed 12/12/21). An additional reason to disable the sleep is that, to debug, it's often best to repeatedly run things like tail -n5 /dev/shm/$EPOCH/subreducer/*/..., rather than pause and check given that that may not be the correct point-in-time capture (not confirmed).
+              ### echo_out "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."
+              ### sleep 10
             fi
           fi
         fi
@@ -1500,15 +1501,26 @@ TS_init_all_sql_files(){
 
 # Find empty port
 init_empty_port(){
-  NEWPORT=
+  # Choose a random port number in 10-65K range, double check if free, retry if needbe
+  NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+  DOUBLE_CHECK=0
   while :; do
-    # Choose a random port number in 10-65K range, check if free, increase if needbe
-    NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+    # Check if the port is free in three different ways
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
-      break  # Suitable port number found
+      if [ "${DOUBLE_CHECK}" -eq 1 ]; then  # If true, then the port was double checked (to avoid races) and twice free
+        break  # Suitable port number found
+      else
+        DOUBLE_CHECK=1
+        sleep 0.0${RANDOM}  # Random Microsleep
+        continue  # Loop the check
+      fi
+    else
+      NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]  # Try a new port
+      DOUBLE_CHECK=0  # Reset the double check
+      continue  # Recheck the new port
     fi
   done
 }

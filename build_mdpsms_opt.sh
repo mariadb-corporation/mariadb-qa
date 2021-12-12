@@ -217,8 +217,8 @@ else
     else  # Normal builds, not SAN
       if [ $USE_CLANG -ne 1 ]; then  # With thanks to Marko, 7/1/20, ref chat
         FLAGS="-DCMAKE_C_FLAGS='-Og -march=native -mtune=native' -DCMAKE_CXX_FLAGS='-Og -march=native -mtune=native'"
-      fi 
-    fi 
+      fi
+    fi
   fi
 fi
 # Also note that -k can be use for make to ignore any errors; if the build fails somewhere in the tests/unit tests then it matters

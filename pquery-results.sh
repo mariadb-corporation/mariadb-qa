@@ -176,7 +176,7 @@ IFS=$ORIG_IFS
 # MODE 4 TRIALS
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then
   COUNT=0
-  MATCHING_TRIALS=()  
+  MATCHING_TRIALS=()
   for MATCHING_TRIAL in $(grep -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | sort -u | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
     if [ ! -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]; then
       MATCHING_TRIALS+=($MATCHING_TRIAL)

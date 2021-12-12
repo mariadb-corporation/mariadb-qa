@@ -95,6 +95,7 @@ SIGSEGV|Item_func_concat::val_str|Item::save_in_field|TABLE::update_virtual_fiel
 SIGSEGV|flush_tables_with_read_lock|mysql_execute_command|mysql_parse|dispatch_command                                                                                         ## MDEV-26456
 field->col->is_binary() || field->prefix_len % field->col->mbmaxlen == 0|SIGABRT|dict_index_add_to_cache|dict_create_index_step|que_thr_step|que_run_threads_low               ## MDEV-26379
 SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|srw_mutex::wr_lock_try|srw_mutex::wr_lock|ssux_lock_low::wr_lock                                             ## MDEV-26373
+SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|srw_mutex_impl<true>::wr_lock_try|srw_mutex_impl<true>::wr_lock|ssux_lock_impl<true>::wr_lock                ## MDEV-26373
 info.max_leaf_size != 0|SIGABRT|create_table_info_t::row_size_is_acceptable|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table ## MDEV-26371
 !table->file || table->file->inited == handler::NONE|SIGABRT|close_thread_table|close_thread_tables|mysqld_show_create|mysql_execute_command                                   ## MDEV-26334
 SIGSEGV|bitmap_clear_bit|bitmap_lock_clear_bit|free_tmp_table|close_thread_tables                                                                                              ## MDEV-26334

@@ -148,15 +148,26 @@ check_for_version() {
 
 # Find empty port
 init_empty_port(){
-  NEWPORT=
+  # Choose a random port number in 10-65K range, double check if free, retry if needbe
+  NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+  DOUBLE_CHECK=0
   while :; do
-    # Choose a random port number in 10-65K range, check if free, increase if needbe
-    NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+    # Check if the port is free in three different ways
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
-      break  # Suitable port number found
+      if [ "${DOUBLE_CHECK}" -eq 1 ]; then  # If true, then the port was double checked (to avoid races) and twice free
+        break  # Suitable port number found
+      else
+        DOUBLE_CHECK=1
+        sleep 0.0${RANDOM}  # Random Microsleep
+        continue  # Loop the check
+      fi
+    else
+      NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]  # Try a new port
+      DOUBLE_CHECK=0  # Reset the double check
+      continue  # Recheck the new port
     fi
   done
 }
@@ -1100,7 +1111,7 @@ pquery_test() {
       CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp \
        --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} \
        --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
-    fi 
+    fi
     diskspace
     $CMD > ${RUNDIR}/${TRIAL}/log/master.err 2>&1 &
     MPID="$!"
@@ -1190,11 +1201,11 @@ pquery_test() {
     echo "${ACCMD}" | sed 's|ALTER TABLE|CHECK TABLE|g;s| QUICK||g;' > ${RUNDIR}/${TRIAL}/check_tables_quick
     ACCMD=
     chmod +x ${RUNDIR}/${TRIAL}/check_tables*
-    MCCMD="set +H; ${CLBIN}check --socket=${SOCKET} -uroot --force --check --extended --flush --databases test 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\"" 
+    MCCMD="set +H; ${CLBIN}check --socket=${SOCKET} -uroot --force --check --extended --flush --databases test 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\""
     CLBIN=
     echo "${MCCMD}" > ${RUNDIR}/${TRIAL}/mysqlcheck_test
     echo "${MCCMD}" | sed 's|\-\-check |--check-upgrade |' > ${RUNDIR}/${TRIAL}/mysqlcheck_upg_test
-    MCCMD= 
+    MCCMD=
     chmod +x ${RUNDIR}/${TRIAL}/mysqlcheck_*
     echo "# Recovery testing script." > ${RUNDIR}/${TRIAL}/start_recovery
     echo "# This script creates an all-privileges recovery@'%' user; ref recovery-user.sql in the wordir (no the trial dir))" >> ${RUNDIR}/${TRIAL}/start_recovery
@@ -2231,7 +2242,8 @@ diskspace
 mkdir ${WORKDIR} ${WORKDIR}/log ${RUNDIR}
 chmod -R +rX ${WORKDIR}
 echo "grep -E '^BASEDIR=|^INFILE=|^THREADS=|^MYEXTRA=|^MYINIT=|^ADD_RANDOM_OPTIONS=' pquery*run*conf | sed 's|   #.*||;s|ADD_RANDOM|RND|;s|=|: \\t|'" > ${WORKDIR}/i
-chmod +x ${WORKDIR}/i
+echo "find . | grep '_out$' | xargs -I{} wc -l {} | sort -n | sort -h" > ${WORKDIR}/my
+chmod +x ${WORKDIR}/i ${WORKDIR}/my
 WORKDIRACTIVE=1
 ONGOING=
 # User for recovery testing

@@ -84,7 +84,7 @@ PREFIX=
 FB=0
 MS=0
 MD=0
-if [ ${USE_SAN} -eq 1 ]; then 
+if [ ${USE_SAN} -eq 1 ]; then
   if [ ${USE_TSAN} -eq 1 ]; then
     PREFIX="TSAN_"
   else

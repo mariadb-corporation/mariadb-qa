@@ -82,7 +82,7 @@ fi
 
 echoit "Script work directory : ${WORKDIR}"
 # Get version specific options
-if [ ! -r ./BUILD_CMD_CMAKE ]; then 
+if [ ! -r ./BUILD_CMD_CMAKE ]; then
   echo "./BUILD_CMD_CMAKE not found! Are you usre you are in a BASEDIR directory?"
   echo "If you're sure (and for example ./bin/mysqld exists), then do this:"
   echo "touch ./BUILD_CMD_CMAKE   # And restart the script"
@@ -135,7 +135,7 @@ checkstatus(){
         echoit "[!] Server crash/shutdown found with correct TEXT ("${TEXT}") in the error log at ${WORKDIR}/${j}_error.log.out. Leaving state as-is and terminating. Consider using mariadb-qa/kill_all_procs.sh to cleanup after your research is done."
         exit 1
       else
-        echoit "[!] Server crash/shutdown found, however not with the correct TEXT ("${TEXT}") in the error log. Continuing..." 
+        echoit "[!] Server crash/shutdown found, however not with the correct TEXT ("${TEXT}") in the error log. Continuing..."
         CONTINUE=1
       fi
     else

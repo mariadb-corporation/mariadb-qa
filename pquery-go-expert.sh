@@ -106,7 +106,7 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
               fi
             fi
             TRIAL=;TERRIBLY_OFFSET=;SHUTDOWN_OFFSET=
-          fi 
+          fi
           echo '#DONEDONE' >> ${REDUCER}
         fi
       fi

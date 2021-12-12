@@ -6,7 +6,7 @@
 # ./new_text_string.sh 'FRAMESONLY'    # Used in automation, ref mass_bug_report.sh
 # ./new_text_string.sh "${mysqld_loc}" # Where mysqld
 
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd) 
+SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 FRAMESONLY=0
 MYSQLD=
 TRIAL=
@@ -80,7 +80,7 @@ if [[ ${MDG} -eq 1 ]]; then
       echo "Assert: no error log found for Galera run!"
       exit 1
     fi
-  fi 
+  fi
   if [ -z "${LATEST_CORE}" ]; then  # Interactive call from basedir
     LATEST_CORE="$(ls -t --color=never ${LOC}/node*/*core* 2>/dev/null)"
   fi
@@ -162,7 +162,7 @@ gdb -q ${MYSQLD} ${LATEST_CORE} >/tmp/${RANDF}.gdb1 2>&1 << EOF
 EOF
 
 # Cleanup (gdb) markers to allow frame #0 to be read
-sed -i 's|^(gdb)[ ]*||' /tmp/${RANDF}.gdb2 
+sed -i 's|^(gdb)[ ]*||' /tmp/${RANDF}.gdb2
 
 touch /tmp/${RANDF}.gdb3
 TEXT=

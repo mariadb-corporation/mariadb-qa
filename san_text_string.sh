@@ -12,8 +12,8 @@
 # the script will output only the first FULL issue detected (whetter it be ASAN, UBSAN or TSAN).
 
 # "FULL": the first issue the script can parse into a full UniqueID. Thus, if there is a partial UBSAN failure observed
-# followed by a fully readable ASAN failure, the ASAN's failure UniqueID will be output. This solution is better than 
-# not outputing anything when the first failure is only partially readable, as herewith testcase reduction can happen 
+# followed by a fully readable ASAN failure, the ASAN's failure UniqueID will be output. This solution is better than
+# not outputing anything when the first failure is only partially readable, as herewith testcase reduction can happen
 # against the second FULL failure observed (i.e. a benefit gained). One caveat is that the partial issue may be lost,
 # though often times a given issue may show up in other ways, etc.
 
@@ -233,7 +233,7 @@ while IFS=$'\n' read LINE; do
       flag_ready_check
       FLAG_ASAN_IN_PROGRESS=0; FLAG_TSAN_IN_PROGRESS=1; FLAG_UBSAN_IN_PROGRESS=0
       TSAN_FRAME1=; TSAN_FRAME2=; TSAN_FRAME3=; TSAN_FRAME4=
-      TSAN_FILE_PREPARSE= 
+      TSAN_FILE_PREPARSE=
       TSAN_ERROR="$(echo "${LINE}" | sed 's|.*WARNING:||;s|.*ThreadSanitizer:[ ]*||;s| (pid=.*||')"
     fi
     if [ "${FLAG_TSAN_IN_PROGRESS}" -eq 1 ]; then
@@ -287,7 +287,7 @@ while IFS=$'\n' read LINE; do
     if [ ! -z "${TSAN_FRAME4}" ];        then UNIQUE_ID="${UNIQUE_ID}|${TSAN_FRAME4}"; fi
     echo "${UNIQUE_ID}"
     exit 0
-  fi 
+  fi
   # ------------- UBSAN Issue roundup (if present) -------------
   if [ "${FLAG_UBSAN_PRESENT}" -eq 1 -a "${FLAG_UBSAN_READY}" -eq 1 ]; then
     UNIQUE_ID="UBSAN"

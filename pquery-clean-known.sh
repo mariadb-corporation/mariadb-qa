@@ -44,7 +44,7 @@ cleanup(){
     echo "Please scan the file for '<<<<<<<', '=======', and '>>>>>>>' strings"
     exit 1
   fi
-  
+
   while read line; do
     STRING="$(echo "$line" | sed 's|[ \t]*##.*$||' |  sed 's|"|\\\"|g')"  # For more information on the " to \" sed, ref pquery-prep-red.sh (search for:  The sed transforms "  ), and pquery-results.sh (search for:  sed reverts the insertion of  ). Note there is one backslash less in this one
     if [ -z "${STRING}" ]; then continue; fi
@@ -77,7 +77,7 @@ if [ "${SAN}" -eq 1 ]; then
   STRINGS_FILE=${SCRIPT_PWD}/known_bugs.strings.SAN  # All *SAN bugs(ASAN/TSAN/UBSAN) (CS/ES/MDG)
   cleanup
 fi
- 
+
 # Other cleanups
 if [ ${MDG} -ne 1 ]; then
   grep "CT NAME_CONST('a', -(1 [ANDOR]\+ 2)) [ANDOR]\+ 1" */log/master.err 2>/dev/null | sed 's|/.*||' | xargs -I{} ~/mariadb-qa/pquery-del-trial.sh {}  #http://bugs.mysql.com/bug.php?id=81407

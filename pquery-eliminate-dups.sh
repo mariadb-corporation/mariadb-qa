@@ -11,11 +11,11 @@ TRIALS_TO_KEEP=2  # Set high (for example: 10) when there are few bugs seen in e
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 
 # Checks
-if [ ! -r pquery-run.log -o ! -d mysqld ]; then 
+if [ ! -r pquery-run.log -o ! -d mysqld ]; then
   echo 'This directory is not a pquery run directory it seems! Terminating'
   exit 1
 fi
-if [ -z "${TRIALS_TO_KEEP}" ]; then 
+if [ -z "${TRIALS_TO_KEEP}" ]; then
   echo 'Assert: TRIALS_TO_KEEP is empty. Terminating'
   exit 1
 elif [ "$(echo "${TRIALS_TO_KEEP}" | grep -o '[0-9]\+')" != "${TRIALS_TO_KEEP}" ]; then
