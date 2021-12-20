@@ -54,6 +54,11 @@ SIGSEGV|ha_spider::store_lock|ha_spider::store_lock|get_lock_data|mysql_lock_tab
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_commit_trans|trans_begin|mysql_execute_command|mysql_parse                             ## MDEV-27239
 got_name == named_item_expected()|SIGABRT|Json_writer::on_start_object|Json_writer::start_object|Json_writer_object::Json_writer_object|Json_writer_object::Json_writer_object ## MDEV-27238
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_ha_open|mysql_execute_command                                        ## MDEV-27237
+((__builtin_expect(((global_system_variables.wsrep_on) != 0),0) && this->variables.wsrep_on) && wsrep_emulate_bin_log) || mysql_bin_log.is_open()|SIGABRT|THD::binlog_write_table_map|write_locked_table_maps|binlog_log_row_internal|binlog_log_row ## MDEV-27296
+((WSREP_PROVIDER_EXISTS_ && this->variables.wsrep_on) && wsrep_emulate_bin_log) || mysql_bin_log.is_open()|SIGABRT|THD::binlog_write_table_map|write_locked_table_maps|binlog_log_row_internal|binlog_log_row ## MDEV-27296
+((thd && (WSREP_PROVIDER_EXISTS_ && thd->variables.wsrep_on)) && wsrep_emulate_bin_log) || mysql_bin_log.is_open()|SIGABRT|binlog_trans_log_savepos|THD::binlog_set_stmt_begin|THD::binlog_start_trans_and_stmt|THD::binlog_write_table_maps ## MDEV-27296
+0|SIGABRT|Stat_table::update_stat|update_statistics_for_table|mysql_admin_table|Sql_cmd_analyze_table::execute                                                                 ## MDEV-27281
+block->type == PAGECACHE_EMPTY_PAGE || block->type == PAGECACHE_READ_UNKNOWN_PAGE || block->type == type || (block->type == PAGECACHE_PLAIN_PAGE && type == PAGECACHE_LSN_PAGE)|SIGABRT|pagecache_write_part|write_full_pages|write_block_record|allocate_and_write_block_record ## MDEV-27252
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|fil_crypt_set_encrypt_tables|innodb_encrypt_tables_update                                                                      ## MDEV-27235
 SIGSEGV|OSMutex::enter|os_event::set|os_event_set|fil_crypt_set_encrypt_tables
                                                        ## MDEV-27235

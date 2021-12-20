@@ -1,0 +1,9 @@
+# mysqld options required for replay:  --sql-mode=
+SET GLOBAL aria_encrypt_tables=1;
+CREATE TABLE t1 (a INT PRIMARY KEY,b INT) ENGINE=Aria;
+INSERT INTO t1 (a) VALUES ('ab12cd');
+ALTER TABLE t1 CHANGE b b TIMESTAMP DEFAULT '2017-05-08 16:32:54';
+LOAD INDEX INTO CACHE t1 INDEX (PRIMARY);
+DROP TABLE t1;
+SELECT LENGTH (DATA) AS len FROM (SELECT REPEAT ('a', 21846) AS DATA) AS sub;
+
