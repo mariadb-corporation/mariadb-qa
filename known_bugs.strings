@@ -45,6 +45,9 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                               ## MDEV-27184
 
 ##### CURRENT BUGS #####
+xid_seqno > wsrep_seqno|SIGABRT|trx_rseg_update_wsrep_checkpoint|trx_purge_add_undo_to_history|trx_write_serialisation_history|trx_t::commit_low                               ## MDEV-27317
+SIGSEGV|next_breadth_first_tab|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                              ## MDEV-27315
+info.length < field->field_length|SIGABRT|is_part_of_a_key_prefix|ha_innobase::can_convert_blob|Field_blob::can_be_converted_by_engine|fill_alter_inplace_info                 ## MDEV-27305
 old_part_id == m_last_part|SIGABRT|ha_partition::update_row|handler::ha_update_row|mysql_update|mysql_execute_command                                                          ## MDEV-27313
 SIGSEGV|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|lock_external                                                                                ## MDEV-27240
 SIGSEGV|ha_spider::store_lock|get_lock_data|mysql_lock_tables|lock_tables
