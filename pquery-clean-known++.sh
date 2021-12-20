@@ -6,13 +6,22 @@
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 echo "Extra cleaning up of known issues++ (expert mode)..."
 
-# Delete all known bugs which do not correctly produce unique bug ID's due to stack smashing etc
-grep 'Assertion .state_ == s_exec || state_ == s_quitting. failed.' */log/master.err 2>/dev/null | sed 's|^\([0-9]\+\)/.*|\1|' | grep -o '[0-9]\+' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}  # MDEV-22148
-grep 'Assertion .thd->transaction->stmt.is_empty() || thd->in_sub_stmt. failed.' */log/master.err 2>/dev/null | sed 's|^\([0-9]\+\)/.*|\1|' | grep -o '[0-9]\+' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}  # MDEV-22726
+# Delete all known bugs which do not correctly produce unique bug ID's due to stack smashing etc.
+# grep 'Assertion .state_ == s_exec || state_ == s_quitting. failed.' */log/master.err 2>/dev/null | sed 's|^\([0-9]\+\)/.*|\1|' | grep -o '[0-9]\+' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}  # MDEV-22148 # Fixed
+# grep 'Assertion .thd->transaction->stmt.is_empty() || thd->in_sub_stmt. failed.' */log/master.err 2>/dev/null | sed 's|^\([0-9]\+\)/.*|\1|' | grep -o '[0-9]\+' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}  # MDEV-22726 # Fixed
 
 # Delete all likely out of disk space trials
 ${SCRIPT_PWD}/pquery-results.sh | grep -A1 "Likely out of disk space trials" | \
  tail -n1 | tr ' ' '\n' | grep -v "^[ \t]*$" | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
+
+# Delete all trials which have "Access denied for user 'root'@'localhost'" on the last few lines of the error log and that have no core file
+if [ -r /home/$(whoami)/pr ]; then
+  rm -f ./temp_pck++.sh
+  /home/$(whoami)/pr | grep "no core file found" | grep -o "reducers [0-9].*)" | sed 's|[^0-9]| |g;s|^ \+||;s| \+$||;s| |\n|g' | xargs -I{} echo "if [[ \"\$(tail -n3 {}/log/master.err | grep -o \"Access denied for user 'root'@'localhost'\")\" == \"Access denied for user 'root'@'localhost'\" ]]; then ~/dt {}; fi" > ./temp_pck++.sh && chmod +x ./temp_pck++.sh && ./temp_pck++.sh
+  rm -f ./temp_pck++.sh
+else
+  echo "Warning: /home/$(whoami)/pr not found, run ~/mariadb-qa/linkit please. This may have resulted in a small drop in functionality of this script (less than 10%)."
+fi
 
 # Delete all likely 'Server has gone away' 200x due to 'RELEASE' sql trials
 # 25/01/2021 Temporarily disabled to see current results/status
@@ -22,6 +31,7 @@ ${SCRIPT_PWD}/pquery-results.sh | grep -A1 "Likely out of disk space trials" | \
 #            Note that previously, for issues without coredump, but with 'signal' present in the error log, they
 #            were marked as the '200x' and would result in 'Assert: no core...' by new_text_string.sh, and then
 #            would be subsequently deleted by this script. Likely the following line cannot be re-enabled either (TBD)
+# 20/12/2021 Note: see the new "Delete all trials which have "Access denied for user 'root'@'localhost'" on the last few lines of the error log" code above, which may in part cover the previous trials seen here
 #${SCRIPT_PWD}/pquery-results.sh | grep -A1 "Likely 'Server has gone away' 200x due to 'RELEASE' sql" | tail -n1 | tr ' ' '\n' | grep -v "^[ \t]*$" | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
 
 # Delete all Handlerton. error == 0 trials  # Temp re-enabled in MariaDB to test (12/9/20)

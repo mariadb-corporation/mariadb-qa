@@ -1,0 +1,5 @@
+SET sql_mode='';
+CREATE TABLE t (c INT) ENGINE=InnoDB PARTITION BY KEY(c) PARTITIONS 2;
+INSERT INTO t() VALUES();
+ALTER TABLE t MODIFY c INT NOT NULL;  # 1265 Data truncated for column 'c' at row 1
+UPDATE t SET c=-1 LIMIT 2;

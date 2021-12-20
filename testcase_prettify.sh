@@ -75,6 +75,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|begin|BEGIN|gi' | \
   sed 's|end|END|gi' | \
   sed 's|ends|ENDS|gi' | \
+  sed 's|work|WORK|gi' | \
   sed 's|rollback|ROLLBACK|gi' | \
   sed 's|load|LOAD|gi' | \
   sed 's|separator|SEPARATOR|gi' | \

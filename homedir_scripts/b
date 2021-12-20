@@ -73,23 +73,23 @@ fi
 echo '----- All strings merged -----' | tee -a report.log
 if [ -r ../allstrings_merged ]; then
   if [ "${1}" == "GAL" ]; then
-    cd .. && ./allstrings_merged GAL | tee -a report.log && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_merged GAL 2>&1 | tee -a report.log && cd - >/dev/null 2>&1
   elif [ "${1}" == "SAN" ]; then
-    cd .. && ./allstrings_merged SAN | tee -a report.log && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_merged SAN 2>&1 | tee -a report.log && cd - >/dev/null 2>&1
   else
-    cd .. && ./allstrings_merged | tee -a report.log && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_merged 2>&1 | tee -a report.log && cd - >/dev/null 2>&1
   fi
 fi
 if [ -r ../allstrings_new ]; then
   if [ "${1}" == "GAL" ]; then
     echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a report.log
-    cd .. && ./allstrings_new GAL | tee -a report.log && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_new GAL 2>&1 | tee -a report.log && cd - >/dev/null 2>&1
   elif [ "${1}" == "SAN" ]; then
     echo '----- All NEW (not known yet) strings merged (for adding to ~/kba) -----' | tee -a report.log
-    cd .. && ./allstrings_new SAN | tee -a report.log && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_new SAN 2>&1 | tee -a report.log && cd - >/dev/null 2>&1
   else
     echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a report.log
-    cd .. && ./allstrings_new | tee -a report.log && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_new 2>&1 | tee -a report.log && cd - >/dev/null 2>&1
   fi
 fi
 

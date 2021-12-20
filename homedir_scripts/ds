@@ -55,7 +55,8 @@ while true; do
   fi
   if [ ${COUNT2} -ge 60 ]; then
     sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches"  # Cleanup cache, may help avoid OOM
-    ~/mariadb-qa/tmpfs_clean.sh 1 >/dev/null &
+    #~/mariadb-qa/tmpfs_clean.sh 1 >/dev/null &
+    ~/mariadb-qa/tmpfs_clean.sh 1 
     sync
     if [ -d /data ]; then
       cd /data
