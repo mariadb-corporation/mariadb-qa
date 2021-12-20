@@ -45,6 +45,9 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                               ## MDEV-27184
 
 ##### CURRENT BUGS #####
+SIGSEGV|row_merge_tuple_sort|row_merge_tuple_sort|row_merge_tuple_sort|row_merge_tuple_sort                                                                                    ## MDEV-27318
+data_size < srv_sort_buf_size|SIGABRT|row_merge_bulk_buf_add|row_merge_bulk_t::bulk_insert_buffered|trx_mod_table_time_t::bulk_insert_buffered|trx_undo_report_row_operation   ## MDEV-27318
+!(index)->is_spatial()|SIGABRT|BtrBulk::BtrBulk|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table|trx_mod_table_time_t::write_bulk                             ## MDEV-27316
 old_part_id == m_last_part|SIGABRT|ha_partition::update_row|handler::ha_update_row|mysql_update|mysql_execute_command                                                          ## MDEV-27313
 SIGSEGV|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|lock_external                                                                                ## MDEV-27240
 SIGSEGV|ha_spider::store_lock|get_lock_data|mysql_lock_tables|lock_tables
