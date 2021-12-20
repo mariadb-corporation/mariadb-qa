@@ -45,6 +45,7 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                               ## MDEV-27184
 
 ##### CURRENT BUGS #####
+desync_count_ > 0|SIGABRT|wsrep::server_state::resync|wsrep::server_state::resync|wsrep::server_state::desync_and_pause|backup_block_ddl                                       ## MDEV-27319
 xid_seqno > wsrep_seqno|SIGABRT|trx_rseg_update_wsrep_checkpoint|trx_purge_add_undo_to_history|trx_write_serialisation_history|trx_t::commit_low                               ## MDEV-27317
 SIGSEGV|next_breadth_first_tab|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                              ## MDEV-27315
 info.length < field->field_length|SIGABRT|is_part_of_a_key_prefix|ha_innobase::can_convert_blob|Field_blob::can_be_converted_by_engine|fill_alter_inplace_info                 ## MDEV-27305
