@@ -48,6 +48,10 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 SIGSEGV|row_merge_tuple_sort|row_merge_tuple_sort|row_merge_tuple_sort|row_merge_tuple_sort                                                                                    ## MDEV-27318
 data_size < srv_sort_buf_size|SIGABRT|row_merge_bulk_buf_add|row_merge_bulk_t::bulk_insert_buffered|trx_mod_table_time_t::bulk_insert_buffered|trx_undo_report_row_operation   ## MDEV-27318
 !(index)->is_spatial()|SIGABRT|BtrBulk::BtrBulk|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table|trx_mod_table_time_t::write_bulk                             ## MDEV-27316
+desync_count_ > 0|SIGABRT|wsrep::server_state::resync|wsrep::server_state::resync|wsrep::server_state::desync_and_pause|backup_block_ddl                                       ## MDEV-27319
+xid_seqno > wsrep_seqno|SIGABRT|trx_rseg_update_wsrep_checkpoint|trx_purge_add_undo_to_history|trx_write_serialisation_history|trx_t::commit_low                               ## MDEV-27317
+SIGSEGV|next_breadth_first_tab|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                              ## MDEV-27315
+info.length < field->field_length|SIGABRT|is_part_of_a_key_prefix|ha_innobase::can_convert_blob|Field_blob::can_be_converted_by_engine|fill_alter_inplace_info                 ## MDEV-27305
 old_part_id == m_last_part|SIGABRT|ha_partition::update_row|handler::ha_update_row|mysql_update|mysql_execute_command                                                          ## MDEV-27313
 SIGSEGV|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|lock_external                                                                                ## MDEV-27240
 SIGSEGV|ha_spider::store_lock|get_lock_data|mysql_lock_tables|lock_tables
