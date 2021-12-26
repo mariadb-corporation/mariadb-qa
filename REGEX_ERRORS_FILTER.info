@@ -13,3 +13,6 @@ next_free_value                                   Not related to freeing memory,
 lock mutex.*sys_vars_shared.h, line 56            https://jira.mariadb.org/browse/MDEV-27039
 innodb-force-load-corrupted                       Not real corruption, just a variable name
 dict_index_t::is_corrupted                        Not real corruption, just a function name
+Internal MariaDB error code: 1593                 Presumed non-issue (empty master connection user name)
+Internal MariaDB error code: 2005                 Presumed non-issue (invalid master connection servername)
+Internal MariaDB error code: 2003                 Presumed non-issue (unreachable master connection IP address)

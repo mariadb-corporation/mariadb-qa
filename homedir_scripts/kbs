@@ -13,7 +13,7 @@ else  # Reverse search (show the string if it does not exist yet)
     SEARCH="$(grep --binary-files=text -Fi "${2}" ${KB})"
     if [[ "${SEARCH}" == "#"* ]]; then 
       echo "${2}"
-      echo "Note: a fixed bug with the same UniqueID was found ${KB}!"
+      echo "^ Note: a fixed bug with the same UniqueID was found ${KB}!"
     fi
   fi
 fi
