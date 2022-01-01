@@ -94,7 +94,8 @@ SIGSEGV|Table_scope_and_contents_source_st::vers_check_system_fields|Table_scope
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                    ## MDEV-27186
 (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)|SIGABRT|__malloc_assert|sysmalloc|_int_malloc|_int_realloc ## MDEV-27184
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27184
-SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::check_direct_order_limit|ha_spider::index_last_internal                                  ## MDEV-27171
+SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::check_direct_order_limit|ha_spider::index_read_map_internal                              ## MDEV-27388
+SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::index_read_map_internal|ha_spider::index_read_map                                        ## MDEV-27388
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_rollback_trans|ha_commit_trans|trans_commit_implicit|mysql_execute_command             ## MDEV-27040
 SIGABRT|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|sync_dynamic_session_variables                                                                                  ## MDEV-27039
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-27007
@@ -995,3 +996,4 @@ SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item::fix_fields_i
 # escape != -1|SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|Create_tmp_table::cleanup_on_failure                                                ## Fixed ## MDEV-25610
 # escape != -1|SIGABRT|Item_func_like::val_int|Item::send|Protocol::send_result_set_row|select_send::send_data                                                        ## Fixed ## MDEV-25610
 # escape != -1|SIGABRT|Item_func_like::val_int|Type_handler::Item_send_long|Type_handler_long::Item_send|Item::send                                                   ## Fixed ## MDEV-25610
+# SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::check_direct_order_limit|ha_spider::index_last_internal                       ## Fixed ## MDEV-27171
