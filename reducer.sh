@@ -3424,7 +3424,8 @@ stop_mysqld_or_mdg(){
           exit 1
         fi
       else
-        timeout -k40 -s9 40s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1  # Note it is myqladmin being terminated with -9, not mysqld !
+        # RV 02/01/2021: increased timeout to 60 up from 40 as even high end servers which are busy may take bit longer to write a core
+        timeout -k60 -s9 60s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1  # Note it is myqladmin being terminated with -9, not mysqld !
         if grep -qi "Access denied for user" $WORKD/log/mysqld.out; then
           echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"
           exit 1
