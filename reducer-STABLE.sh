@@ -17,8 +17,9 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
 # USA
 
-# In active development: 2012-2021
-# This program has been used to reduce thousands of SQL based testcases from tens or hundreds of thousands of lines to less then 10 lines. Learn more at;
+# In active development: 2012-2022
+
+# This program has been used to reduce many thousands of SQL based testcases from tens or hundreds of thousands of lines to less then 10 lines, each. Learn more at;
 # https://www.percona.com/blog/2014/09/03/reducer-sh-a-powerful-mysql-test-case-simplificationreducer-tool/
 # https://www.percona.com/blog/2015/07/21/mysql-qa-episode-7-single-threaded-reducer-sh-reducing-testcases-for-beginners
 # https://www.percona.com/blog/2015/07/23/mysql-qa-episode-8-reducing-testcases-engineers-tuning-reducer-sh/
@@ -301,7 +302,7 @@ TS_VARIABILITY_SLEEP=1
 #    esac
 #    shift
 #   done
-# - Optimization: let 'Waiting for any forked subreducer threads to find a shorter file (Issue is deemed to be sporadic: this will take time)' work for 30 minutes
+# - Optimization: let 'Waiting for any forked subreducer threads to find a shorter file (Issue is deemed to be sporadic: this may take time)' work for 30 minutes
 #   or so, depending on file size. If no issue is found by then, restart or increase number of threads by 5.
 
 # ======== Internal variable Reference
@@ -597,6 +598,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
   else
     echo_out "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
     echo_out "[Abort] The source for this reducer was likely deleted. Terminating."
+    trap SIGINT
     exit 3
   fi
   echo_out "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
@@ -630,6 +632,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
     echo_out "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
   fi
   finish 'abort'
+  trap SIGINT
   exit 2
 }
 
@@ -1260,7 +1263,7 @@ multi_reducer(){
     # With FIREWORKS: to find a new bug
     # Note that the term/file '/VERIFIED' is used for both instances/occurences
     if [ "${FIREWORKS}" != "1" ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed to be sporadic: this will take time)"
+      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed to be sporadic: this may take time)"
     else
       echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked subreducer threads to find a new bug"
     fi
@@ -1365,15 +1368,17 @@ multi_reducer(){
             else
               # Only show this in non-fireworks mode. In fireworks mode, this outcome is expected.
               # TODO: The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in or "user specified as.*does not exist" (i.e. [ERROR] Event Scheduler: [..@..][test.t1] The user specified as a definer ('..'@'..') does not exist) in log/master.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
-              echo_out "[Debug Aid] This can happen on busy servers, - or - if this message is looping constantly; did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running?. This may also happen due to any of the following reasons: 1) (Most likely): The storage location you are using (${WORKD}) has run out of space temporarily  2) Another server running on the same port (check error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err  3) mysqld startup timeouts etc., 4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another option may be to 'just let it run'. 5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached. 6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4. You may also want to checkout the last few lines of the subreducer log which often help to find the specific issue. Ref: tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log and also check both tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err and tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out"  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue.
-              echo_out "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."
-              sleep 10
+              echo -e "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\nThis can happen on busy servers.\nThis issue can also happen due to any of the following reasons:\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port (check error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err\n3) mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
+              echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] Issue detected. Debug info: cat /dev/shm/$EPOCH/debug.aid"
               # TODO: Reason 1 does happen. Observed:
               # 2020-08-24  9:55:45 0 [ERROR] Can't start server: Bind on TCP/IP port. Got error: 98: Address already in use
               # 2020-08-24  9:55:45 0 [ERROR] Do you already have another mysqld server running on port: 49504 ?
               # 2020-08-24  9:55:45 0 [ERROR] Aborting
               # But it should not (and reducer does check for duplicate port use). One (unlikely) reason may be that the server crashed on a bug not-being-looked for and then restarted or something. Not sure what is causing this, needs work. Only very minor incovience in runs as happens infrequently and reducer does handle the restart correctly.
-            # Also search for 'A server likely crashed on a different bug' for additional related code. Also odd is that that other code is before this one; why did that code not pickup the 'already in use' before being caught here?
+              # Also search for 'A server likely crashed on a different bug' for additional related code. Also odd is that that other code is before this one; why did that code not pickup the 'already in use' before being caught here?
+              ### Disabled the sleep here as at times reducer is still able to continue/resume once this is seen (confirmed 12/12/21). An additional reason to disable the sleep is that, to debug, it's often best to repeatedly run things like tail -n5 /dev/shm/$EPOCH/subreducer/*/..., rather than pause and check given that that may not be the correct point-in-time capture (not confirmed).
+              ### echo_out "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."
+              ### sleep 10
             fi
           fi
         fi
@@ -1498,15 +1503,26 @@ TS_init_all_sql_files(){
 
 # Find empty port
 init_empty_port(){
-  NEWPORT=
+  # Choose a random port number in 10-65K range, double check if free, retry if needbe
+  NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+  DOUBLE_CHECK=0
   while :; do
-    # Choose a random port number in 10-65K range, check if free, increase if needbe
-    NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+    # Check if the port is free in three different ways
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
-      break  # Suitable port number found
+      if [ "${DOUBLE_CHECK}" -eq 1 ]; then  # If true, then the port was double checked (to avoid races) and twice free
+        break  # Suitable port number found
+      else
+        DOUBLE_CHECK=1
+        sleep 0.0${RANDOM}  # Random Microsleep
+        continue  # Loop the check
+      fi
+    else
+      NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]  # Try a new port
+      DOUBLE_CHECK=0  # Reset the double check
+      continue  # Recheck the new port
     fi
   done
 }
@@ -1520,7 +1536,7 @@ init_workdir_and_files(){
     fi
     # Make sure that tmp has enough free space (some minor temporary files are stored there)
     if [ $(df -k -P /tmp | grep -E --binary-files=text -v "Mounted" | awk '{print $4}') -lt 400000 ]; then
-      echo 'Error: /tmp does not have enough free space (400Mb free space required for temporary files)'
+      echo 'Error: /tmp does not have enough free space (400Mb free space required for temporary files and any ongoing programs)'
       echo "Terminating now."
       exit 1
     fi
@@ -3533,6 +3549,7 @@ finish(){
   fi
   if [ "${1}" == 'abort' ]; then
     echo_out "[Abort] Done. Terminating reducer"
+    trap SIGINT
     exit 2
   fi
   exit 0
@@ -3651,7 +3668,7 @@ verify_not_found(){
 #STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
 verify(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed sporadic)"
+    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed to be sporadic)"
     # Ref https://jira.mariadb.org/browse/TODO-3017
     # Instead of using STAGE V to verify if the issue exists, one can simply test reproducibility using FORCE_SKIPV=1 with multi-threaded pre-reduction (with a high number of MULTI_THREADS like 30 or more) until such approximate time as pquery-go-expert.sh (~/pge) is normally needed.
     return
@@ -3962,22 +3979,18 @@ fireworks_setup(){
   fi
   echo_out "[Init] > STAGE1_LINES=-1: Avoid STAGE1 from ever terminating (required)"
   STAGE1_LINES=-1
-  if [ ${PQUERY_MULTI} -eq 0 ]; then  # If this is 1, then --shuffle is already active. If not, set it.
-    echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=1: As PQUERY_MULTI was set to 0, we need to ensure to enable random replay: --shuffle activated"
-    PQUERY_REVERSE_NOSHUFFLE_OPT=1
-  fi
-  PQUERY_MULTI=0
   echo_out "[Init] > MULTI_THREADS=25: If system overload is seen, decrease this in-code (preference)"
   MULTI_THREADS=25  # Setting this to a low number (1-5) will likely not yield great results. If the server supports it you can raise this. For 32 threads, 128GB and /dev/shm resized to 90GB, a good setting is MULTI_THREADS=25 with two reducer.sh scripts running both in fireworks mode, with /dev/shm cleaned out prior to starting them, and provided nothing else is running on the server. Watch out for OOS issues on /dev/shm tmpfs and/or OOM. Note that this setting basically means: x mysqld servers (with one client thread running against it) per reducer started in fireworks mode.
   # Note that MULTI_THREADS_INCREASE and MULTI_THREADS_MAX are of no significance as long as a reasonably lenght input SQL file is used; reducer will never reach this.
-  if [ "${PQUERY_MULTI}" != "0" ]; then
-    echo_out "[Init] > PQUERY_MULTI=0: disabled PQUERY_MULTI (not required)"
-    PQUERY_MULTI=0
-  fi
   if [ "${PQUERY_REVERSE_NOSHUFFLE_OPT}" != "0" ]; then
-    # Requires --no-shuffle option to pquery as reducer (in fireworks mode) will pre-shuffle the in.tmp (i.e. WORKT) file before execution. Using pquery without --no-shuffle is not the best solution for this, as it requires grabbing the SQL by pquery, whereas if it is pre-shuffled by reducer, issue reproducibility will, presumably, be much more perfect as there is zero post or re-parsing (i.e. the same SQL file can be used again in exactly the same way)
-    echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=0: disabled reversing the no shuffle option (required)"
-    PQUERY_REVERSE_NOSHUFFLE_OPT=0
+    # Requires --no-shuffle option to pquery as reducer (in fireworks mode) will pre-shuffle the in.tmp (i.e. WORKT) file before execution. Using pquery shuffling for this (i.e. without --no-shuffle,  is not the best solution for this, as it requires grabbing the SQL by pquery, whereas if it is pre-shuffled by reducer, issue reproducibility will, presumably, be much more perfect as there is zero post or re-parsing (i.e. the same SQL file can be used again in exactly the same way)
+    if [ ${PQUERY_MULTI} -eq 1 ]; then  # If this is 1, then --shuffle is already active and so it needs to be reversed
+      echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=1: As PQUERY_MULTI was set to 1, we need to ensure pquery shuffling is disabled in favor of in-reducer shuffling (required)"
+      PQUERY_REVERSE_NOSHUFFLE_OPT=1
+    else  # PQUERY_MULTI is 0, so --no-shuffle is effective if PQUERY_REVERSE_NOSHUFFLE_OPT=0
+      echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=0: As PQUERY_MULTI was set to 1, we need to ensure pquery shuffling is disabled in favor of in-reducer shuffling (required)"
+      PQUERY_REVERSE_NOSHUFFLE_OPT=0
+    fi
   fi
   if [ "${FORCE_SKIPV}" != "1" ]; then
     echo_out "[Init] > FORCE_SKIPV=1: enabled skipping verify stage (ensures 'free' runs)"

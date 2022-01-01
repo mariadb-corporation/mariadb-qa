@@ -17,8 +17,9 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
 # USA
 
-# In active development: 2012-2021
-# This program has been used to reduce thousands of SQL based testcases from tens or hundreds of thousands of lines to less then 10 lines. Learn more at;
+# In active development: 2012-2022
+
+# This program has been used to reduce many thousands of SQL based testcases from tens or hundreds of thousands of lines to less then 10 lines, each. Learn more at;
 # https://www.percona.com/blog/2014/09/03/reducer-sh-a-powerful-mysql-test-case-simplificationreducer-tool/
 # https://www.percona.com/blog/2015/07/21/mysql-qa-episode-7-single-threaded-reducer-sh-reducing-testcases-for-beginners
 # https://www.percona.com/blog/2015/07/23/mysql-qa-episode-8-reducing-testcases-engineers-tuning-reducer-sh/
