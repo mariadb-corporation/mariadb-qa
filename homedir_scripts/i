@@ -3,9 +3,19 @@ if [ -z "${1}" ]; then
   if [ -r ./pquery-run.log ]; then  # Likely inside a workdir, just run ~/ii as aid
     ~/ii
     echo ''
+    exit 0
+  elif [ -r ./default.node.tld_thread-0.sql ]; then  # Likely inside a trail dir, just re-exec from one level higher
+    TRIAL="$(pwd | sed 's|.*/||')"
+    if [ ! -z "${TRIAL}" ]; then  # Confirmed non-empty
+      if [ "$(echo "${TRIAL}" | grep -o '[0-9]\+')" == "${TRIAL}" ]; then  # Confirmed numeric
+        if [ -d ../${TRIAL} ]; then  # Confirmed existing (trial) directory
+          cd ..
+          ~/i ${TRIAL}
+          exit 0
+         fi
+      fi
+    fi
   fi
-  echo "Please pass trial number to locate the basedir for it!"
-  exit 1
 fi
 
 # Check if this is a mdg run
