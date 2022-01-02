@@ -35,6 +35,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|numeric|NUMERIC|gi' | \
   sed 's|value|VALUE|gi' | \
   sed 's|extractvalue|EXTRACTVALUE|gi' | \
+  sed 's|fast|FAST|gi' | \
   sed 's|return|RETURN|gi' | \
   sed 's|returns|RETURNS|gi' | \
   sed 's|constraint|CONSTRAINT|gi' | \
