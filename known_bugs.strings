@@ -45,6 +45,7 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                               ## MDEV-27184
 
 ##### CURRENT BUGS #####
+SIGSEGV|rbt_free_node|rbt_free_node|rbt_free_node|rbt_free_node                                                                                                                ## MDEV-27404
 SIGSEGV|spider_free_mem|ha_spider::~ha_spider|ha_partition::~ha_partition|open_table_from_share                                                                                ## MDEV-27369
 SIGSEGV|spider_free_mem|ha_spider::~ha_spider|ha_spider::~ha_spider|ha_partition::~ha_partition                                                                                ## MDEV-27369
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_repair_table::execute                                                                     ## MDEV-27367

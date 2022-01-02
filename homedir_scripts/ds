@@ -4,10 +4,13 @@
 WIPE_TMP_ENABLED=0  # /tmp cleaning
 
 if [ ! -r ~/sr ]; then echo "~/sr required! Please copy it from ~/mariadb-qa/homedir_scripts. Terminating."; exit 1; fi
+echo 'Starting up...'
 sudo sh -c "$(which echo) 4 > /proc/sys/vm/drop_caches"  # Disable bulk dmesg messages
 COUNT1=0
 COUNT2=0
 COUNT3=0
+NEWBUGCOUNT="$(cat /data/NEWBUGS/*.string 2>/dev/null | sort -u | wc -l)"
+TESTCASES="Pending"
 while true; do 
   clear
   COUNT1=$[ ${COUNT1} + 1 ]
@@ -20,14 +23,17 @@ while true; do
   #du -shc | grep total | sed "s|total||;s|^|${SHM}  |"
   #cd - >/dev/null
   if [ "${WIPE_TMP_ENABLED}" -eq 1 ]; then
-    echo -n "${COUNT1}/10 ${COUNT2}/60 ${COUNT3}/5000     "
+    echo -n "${COUNT1}/10 ${COUNT2}/60 ${COUNT3}/5000 | "
   else
-    echo -n "${COUNT1}/10 ${COUNT2}/60      "
+    echo -n "${COUNT1}/10 ${COUNT2}/60 | "
   fi
-  echo -n "Active reducers: $(~/count_reducers)    "
-  echo -n "Active mysqld's: $(ps -ef | grep mysqld | grep "no-defaults" | sed "s|..user=.*||;s|.*no-defaults ||" | sort -u | wc -l)"
+  echo -n "Reducers: $(~/count_reducers) | "
+  echo -n "mysqld's: $(ps -ef | grep mysqld | grep "no-defaults" | sed "s|..user=.*||;s|.*no-defaults ||" | sort -u | wc -l) | "
+  echo -n "Unique Newbugs: ${NEWBUGCOUNT} | "
+  echo -n "Testcases: ${TESTCASES}"
   sleep 2
   if [ ${COUNT1} -ge 10 ]; then
+    NEWBUGCOUNT="$(cat /data/NEWBUGS/*.string 2>/dev/null | sort -u | wc -l)"
     # Cleanup cache, may help avoid OOM
     sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches" &
     # Cleanup any processes which have dead files > 300MB open
@@ -54,6 +60,7 @@ while true; do
     COUNT1=0
   fi
   if [ ${COUNT2} -ge 60 ]; then
+    TESTCASES="$(cd /data && ./my | grep -v '^[ ]*0 ' | wc -l)"  # Expensive
     sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches"  # Cleanup cache, may help avoid OOM
     #~/mariadb-qa/tmpfs_clean.sh 1 >/dev/null &
     ~/mariadb-qa/tmpfs_clean.sh 1 
