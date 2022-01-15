@@ -22,6 +22,7 @@ while true; do
   #SHM="$(df -h | grep '^tmpfs' | grep 'shm' | sed 's|G.*|G|')"
   #du -shc | grep total | sed "s|total||;s|^|${SHM}  |"
   #cd - >/dev/null
+  echo ''
   if [ "${WIPE_TMP_ENABLED}" -eq 1 ]; then
     echo -n "${COUNT1}/10 ${COUNT2}/60 ${COUNT3}/5000 | "
   else

@@ -134,9 +134,6 @@ cat "${1}" | tr -d '`' | \
   sed 's|user|USER|gi' | \
   sed 's|host|HOST|gi' | \
   sed 's|password|PASSWORD|gi' | \
-  sed 's|natural|NATURAL|gi' | \
-  sed 's|join|JOIN|gi' | \
-  sed 's|straight|STRAIGHT|gi' | \
   sed 's|backup|BACKUP|gi' | \
   sed 's|alter|ALTER|gi' | \
   sed 's|desc|DESC|gi' | \
@@ -341,6 +338,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|substring[ ]*(|SUBSTRING(|gi' | \
   sed "s|'IN |' IN |gi" | \
   sed 's|AND(|AND (|gi' | \
+  sed 's|join|JOIN|gi' | \
+  sed 's|straight|STRAIGHT|gi' | \
+  sed 's|natural|NATURAL|gi' | \
   sed 's|transforms|transforms|gi' | \
   sed 's|identified by|IDENTIFIED BY|gi' | \
   sed 's|autocommit|autocommit|gi' | \
@@ -350,10 +350,12 @@ cat "${1}" | tr -d '`' | \
   sed 's| ()|()|gi' | \
   sed 's|), (|),(|gi' | \
   sed "s|BY''|BY ''|gi" | \
+  sed "s|port|PORT|gi" | \
   sed "s|[ ]*=[ ]*|=|gi;s|sql_mode=\([^ ']\)|sql_mode= \1|" | \
   sed 's|[ \t]\+| |g' | \
   sed 's|=on;$|=ON;|g' | \
   sed 's|=off;$|=OFF;|g' | \
+  sed 's|world|world|gi' | \
   sed 's|  | |gi'
 
 # Templates for copy/paste
