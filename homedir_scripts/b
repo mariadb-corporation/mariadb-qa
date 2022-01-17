@@ -80,6 +80,7 @@ if [ -r ../allstrings_merged ]; then
     cd .. && ./allstrings_merged 2>&1 | tee -a report.log && cd - >/dev/null 2>&1
   fi
 fi
+# TODO: The next section, which uses allstrings_new can be made much faster by re-using the strings found above rather than re-scanning (i.e. checking all cores again)
 if [ -r ../allstrings_new ]; then
   if [ "${1}" == "GAL" ]; then
     echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a report.log
