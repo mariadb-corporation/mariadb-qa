@@ -47,6 +47,7 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 ##### MDEV-27106 #####
 SIGSEGV|spider_parse_connect_info|spider_create_share|spider_get_share|ha_spider::open                                                                                         ## MDEV-27521
 SIGSEGV|spider_parse_connect_info|ha_spider::create|handler::ha_create|ha_partition::create                                                                                    ## MDEV-27521
+SIGSEGV|spider_parse_connect_info|ha_spider::create|handler::ha_create|ha_partition::prepare_new_partition                                                                     ## MDEV-27521
 
 ##### CURRENT BUGS #####
 SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::index_last_internal|ha_spider::index_last                                                ## MDEV-27522
@@ -73,12 +74,12 @@ SIGSEGV|next_breadth_first_tab|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanu
 info.length < field->field_length|SIGABRT|is_part_of_a_key_prefix|ha_innobase::can_convert_blob|Field_blob::can_be_converted_by_engine|fill_alter_inplace_info                 ## MDEV-27305
 old_part_id == m_last_part|SIGABRT|ha_partition::update_row|handler::ha_update_row|mysql_update|mysql_execute_command                                                          ## MDEV-27313
 SIGSEGV|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|lock_external                                                                                ## MDEV-27240
-SIGSEGV|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|handler::ha_external_unlock                                                                  ## MDEV-27240
 SIGSEGV|ha_spider::store_lock|get_lock_data|mysql_lock_tables|lock_tables                                                                                                      ## MDEV-27240
 SIGSEGV|ha_spider::store_lock|ha_spider::store_lock|get_lock_data|mysql_lock_tables                                                                                            ## MDEV-27240
 SIGSEGV|ha_spider::store_lock|ha_spider::store_lock|ha_partition::store_lock|ha_partition::store_lock                                                                          ## MDEV-27240
 SIGSEGV|ha_spider::append_lock_tables_list|ha_spider::store_lock|get_lock_data|mysql_lock_tables                                                                               ## MDEV-27240
 SIGSEGV|ha_spider::append_lock_tables_list|ha_spider::store_lock|ha_spider::store_lock|get_lock_data                                                                           ## MDEV-27240
+SIGSEGV|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|handler::ha_external_unlock                                                                  ## MDEV-27526
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_commit_trans|trans_begin|mysql_execute_command|mysql_parse                             ## MDEV-27239|27526
 got_name == named_item_expected()|SIGABRT|Json_writer::on_start_object|Json_writer::start_object|Json_writer_object::Json_writer_object|Json_writer_object::Json_writer_object ## MDEV-27238
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_ha_open|mysql_execute_command                                        ## MDEV-27237
