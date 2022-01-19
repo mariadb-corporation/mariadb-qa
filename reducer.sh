@@ -4189,7 +4189,7 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
   STAGE=1
   TRIAL=1
   if [ $LINECOUNTF -ge $STAGE1_LINES -o $PQUERY_MULTI -gt 0 -o $FORCE_SKIPV -gt 0 -o $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE (duration depends on initial input file size)"
+    echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE (trial duration depends on initial input file size)"
     while [ $LINECOUNTF -ge $STAGE1_LINES ]; do
       if [ $LINECOUNTF -eq $STAGE1_LINES  ]; then NEXTACTION="& Progress to the next stage"; fi
       if [ $TRIAL -gt 1 -a "${FIREWORKS}" != "1" ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
@@ -4229,7 +4229,7 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
   TRIAL_REPEAT_COUNT=0
   NOISSUEFLOW=0
   CURRENTLINE=1
-  echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
+  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while true; do
     if [ ${TRIAL} -gt 1 -a "${FIREWORKS}" != "1" ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
     if [ ${CURRENTLINE} -gt ${LINECOUNTF} ]; then
@@ -4279,7 +4279,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
   SIZEF=`stat -c %s $WORKF`
-  echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
+  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
     NOSKIP=0
 
@@ -4383,7 +4383,7 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
   SIZEF=`stat -c %s $WORKF`
-  echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
+  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
     NOSKIP=0
 
@@ -4581,7 +4581,7 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
   NEXTACTION="& try next testcase complexity reducing sed"
   STAGE=5
   TRIAL=1
-  echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
+  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
   # Change tablenames to tx
   COUNTTABLES=$(grep -E --binary-files=text "CREATE[\t ]*TABLE" $WORKF | wc -l)
@@ -4626,7 +4626,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
   STAGE=6
   TRIAL=1
   SIZEF=`stat -c %s $WORKF`
-  echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
+  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
   # CREATE TABLE name (...); statements on one line are split to obtain one column per line by the initial verification (STAGE V).
   # And, another situation, CREATE TABLE statements with each column on a new line is the usual RQG output. Both these cases are handled.
@@ -4847,7 +4847,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
   SIZEF=`stat -c %s $WORKF`
-  echo_out "$ATLEASTONCE [Stage $STAGE] Now executing first trial in stage $STAGE"
+  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
     NOSKIP=0
 
@@ -5087,6 +5087,7 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
   cp $WORKF $WORKT  # Setup STAGE8 to begin with the last known good testcase. WORKT is used as input in run_and_check
   FILE1="$WORKD/file1"
   FILE2="$WORKD/file2"
+  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
   myextra_split(){
     echo $MYEXTRA | sed 's|[ \t]\+| |g' | tr -s " " "\n" | grep -v "^[ \t]*$" > $WORKD/mysqld_opt.out
@@ -5193,6 +5194,7 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
   NEXTACTION=""
   STAGE=9
   TRIAL=1
+  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   cp $WORKF $WORKT  # Setup STAGE9 to begin with the last known good testcase. WORKT is used as input in run_and_check
 
   stage9_run(){

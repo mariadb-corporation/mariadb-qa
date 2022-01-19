@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "NOTE: Passing mysqld options to ./start only (options will be used for server startup only, and not for server init)"
+export PASS_MYEXTRA_TO_START_ONLY=1
+OPTIONS="$*"
+~/b ${OPTIONS}
