@@ -89,9 +89,6 @@ SIGSEGV|User_table::set_user|replace_user_table|mysql_grant|Sql_cmd_grant_proxy:
 SIGABRT|myrocks::rdb_i_s_global_info_fill_table|get_schema_tables_result|JOIN::exec_inner|JOIN::exec                                                                           ## MDEV-26677
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert|ha_spider::end_bulk_insert                                          ## MDEV-26587
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert                                                      ## MDEV-26587
-SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                                   ## MDEV-26583
-SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit_from_select_lex|spider_check_direct_order_limit|ha_spider::check_direct_order_limit                    ## MDEV-26583
-SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit_from_select_lex|spider_split_read_param|spider_set_result_list_param                                   ## MDEV-26583
 transaction_.active() == false|SIGABRT|wsrep::client_state::~client_state|Wsrep_client_state::~Wsrep_client_state|THD::~THD|THD::~THD                                          ## MDEV-26575
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-26546
 part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row                         ## MDEV-26544
@@ -178,7 +175,6 @@ used_tables_cache == 0|SIGABRT|Item_func::fix_fields|create_view_field|Field_ite
 !thd->wsrep_cs().current_error()|SIGABRT|wsrep_after_command_ignore_result|Event_job_data::execute|Event_worker_thread::run|event_worker_thread                                ## MDEV-25566
 readbytes != (size_t)-1 || (*__errno_location ()) != 9|SIGABRT|my_pread|azflush|ha_archive::info|ha_archive::update_create_info                                                ## MDEV-24420
 ctx->skip_pk_sort|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|mysql_inplace_alter_table          ## MDEV-25550
-*new_engine|SIGABRT|check_engine|create_table_impl|mysql_create_table_no_lock|mysql_create_table                                                                               ## MDEV-25549
 transactional_table || !changed || thd->transaction.stmt.modified_non_trans_table|SIGABRT|mysql_insert|mysql_execute_command|mysql_parse|wsrep_mysql_parse                     ## MDEV-25548
 transactional_table || !changed || thd->transaction.stmt.modified_non_trans_table|SIGABRT|select_insert::abort_result_set|select_create::abort_result_set|handle_select|Sql_cmd_create_table_like::execute ## MDEV-25548
 SIGSEGV|setup_table_map|setup_tables|setup_tables_and_check_access|JOIN::prepare                                                                                               ## MDEV-25538
@@ -307,6 +303,7 @@ SIGSEGV|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanu
 select_lex->leaf_tables.elements != 0|SIGABRT|mysql_insert_select_prepare|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core                ## MDEV-24559
 !(index)->is_spatial()|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild               ## MDEV-24558
 !dict_index_is_spatial(index)|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild        ## MDEV-24558
+!index->is_spatial()|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild                 ## MDEV-24558
 !is_current_stmt_binlog_format_row()|SIGABRT|THD::restore_stmt_binlog_format|Events::drop_event|Event_job_data::execute|Event_worker_thread::run                               ## MDEV-24534
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|Event_db_repository::drop_event|Events::drop_event|Event_job_data::execute ## MDEV-24534
 SIGSEGV|Bitmap<64u>::set_bit|sort_and_filter_keyuse|make_join_statistics|JOIN::optimize_inner                                                                                  ## MDEV-24513
@@ -1008,3 +1005,7 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::p
 # SIGSEGV|spider_parse_connect_info|spider_create_share|spider_get_share|ha_spider::open                                                                              ## Fixed ## MDEV-27521
 # SIGSEGV|spider_parse_connect_info|ha_spider::create|handler::ha_create|ha_partition::create                                                                         ## Fixed ## MDEV-27521
 # SIGSEGV|spider_parse_connect_info|ha_spider::create|handler::ha_create|ha_partition::prepare_new_partition                                                          ## Fixed ## MDEV-27521
+# *new_engine|SIGABRT|check_engine|create_table_impl|mysql_create_table_no_lock|mysql_create_table                                                                    ## Fixed ## MDEV-25549
+# SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                        ## Fixed ## MDEV-26583
+# SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit_from_select_lex|spider_check_direct_order_limit|ha_spider::check_direct_order_limit         ## Fixed ## MDEV-26583
+# SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit_from_select_lex|spider_split_read_param|spider_set_result_list_param                        ## Fixed ## MDEV-26583
