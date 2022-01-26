@@ -1,18 +1,20 @@
-Filter Text                                       Info at
---------------------------------------------------------------------------------------------
-Got error 170                                     https://jira.mariadb.org/browse/MDEV-26261
-Event invalid                                     https://jira.mariadb.org/browse/MDEV-26270
-InnoDB: Resetting invalid page                    https://jira.mariadb.org/browse/MDEV-26121
-Assertion .block_size                             https://jira.mariadb.org/browse/MDEV-26459
-Incorrect information in file: ...sys             Usually not due to bugs but /sys/ modifications
-Got error 12701                                   https://jira.mariadb.org/browse/MDEV-26543
-test_ps_create_on_corrupted                       Not real corruption, just a table name
-test_ps_fetch_corrupted                           Not real corruption, just a table name
-virtual THD...!debug_assert_on_not_freed_memory   https://jira.mariadb.org/browse/MDEV-25927
-next_free_value                                   Not related to freeing memory, just a variable name
-lock mutex.*sys_vars_shared.h, line 56            https://jira.mariadb.org/browse/MDEV-27039
-innodb-force-load-corrupted                       Not real corruption, just a variable name
-dict_index_t::is_corrupted                        Not real corruption, just a function name
-Internal MariaDB error code: 1593                 Presumed non-issue (empty master connection user name)
-Internal MariaDB error code: 2005                 Presumed non-issue (invalid master connection servername)
-Internal MariaDB error code: 2003                 Presumed non-issue (unreachable master connection IP address)
+Filter Text                                           Info at
+-----------------------------------------------------------------------------------------------------------------------
+Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
+Event invalid                                         https://jira.mariadb.org/browse/MDEV-26270
+InnoDB: Resetting invalid page                        https://jira.mariadb.org/browse/MDEV-26121
+Assertion .block_size                                 https://jira.mariadb.org/browse/MDEV-26459
+Incorrect information in file: ...sys                 Usually not due to bugs but /sys/ modifications
+Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543
+test_ps_create_on_corrupted                           Not real corruption, just a table name
+test_ps_fetch_corrupted                               Not real corruption, just a table name
+virtual THD...!debug_assert_on_not_freed_memory       https://jira.mariadb.org/browse/MDEV-25927
+next_free_value                                       Not related to freeing memory, just a variable name
+lock mutex.*sys_vars_shared.h, line 56                https://jira.mariadb.org/browse/MDEV-27039
+innodb-force-load-corrupted                           Not real corruption, just a variable name
+dict_index_t::is_corrupted                            Not real corruption, just a function name
+Internal MariaDB error code: 1593                     Presumed non-issue (empty master connection user name)
+Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
+Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master connection IP address)
+Internal MariaDB error code: 1064                     Presumed non-issue (slave cannot be initialized)  # TODO/TOCHECK
+thus rolled back too. Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-27536
