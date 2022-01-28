@@ -10,7 +10,7 @@ if [ -z $1 ]; then
 else
   TRIAL=$1
 fi
-ps -ef | grep $TRIAL |grep mysqld | grep -v grep | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
+ps -ef | grep $TRIAL | grep -e 'mysqld|maria' | grep -v grep | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
 
 # Start mysqld for recovery testing
 $PQUERY_PWD/$TRIAL/start_recovery > /dev/null &

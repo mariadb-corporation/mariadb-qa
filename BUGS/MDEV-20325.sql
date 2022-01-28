@@ -33,3 +33,12 @@ PREPARE s FROM 'SELECT * FROM (SELECT * FROM t0) AS d';
 EXECUTE s;
 SET SESSION optimizer_switch='derived_merge=OFF';
 EXECUTE s;
+
+CREATE TABLE t (c INT,c2 INT);
+SET optimizer_switch='derived_merge=off,derived_with_keys=off';
+SET @save_optimizer_switch=@@optimizer_switch;
+SET @@optimizer_switch=DEFAULT;
+PREPARE stmt FROM 'SELECT A.* FROM (SELECT tt.* FROM t tt) A ';
+EXECUTE stmt;
+SET @@optimizer_switch=@save_optimizer_switch;
+EXECUTE stmt;

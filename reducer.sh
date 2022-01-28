@@ -391,7 +391,7 @@ if [[ ${RR_TRACING} -eq 1 ]]; then
   fi
   export RR_OPTIONS="$(which rr) record --chaos"
 else
-  export RR_OPTIONS=""
+  export RR_OPTIONS=
 fi
 if [[ "${MYEXTRA}" == *"ha_rocksdb.so"* ]]; then
   if [ -r ${BASEDIR}/lib/mysql/plugin/ha_rocksdb.so ]; then
@@ -1394,7 +1394,7 @@ multi_reducer(){
 
   if [ "$STAGE" = "V" ]; then
     # Check thread outcomes
-    TXT_OUT=""
+    TXT_OUT=
     for t in $(eval echo {1..$MULTI_THREADS}); do
       export MULTI_WORKD=$(eval echo $(echo '$WORKD'"$t"))
       if [ -s $MULTI_WORKD/VERIFIED ]; then
@@ -2212,8 +2212,8 @@ start_mdg_main(){
   rm -rf $WORKD/tmp*
   unset MDG_PORTS
   unset MDG_LADDRS
-  MDG_PORTS=""
-  MDG_LADDRS=""
+  MDG_PORTS=
+  MDG_LADDRS=
   for i in $(seq 1 ${NR_OF_NODES}); do
     node=${WORKD}/node${i}
     mkdir -p $WORKD/tmp${i}
@@ -2959,8 +2959,8 @@ process_outcome(){
     else  # mysql CLI output testing run
       FILETOCHECK=$WORKD/log/mysql.out
     fi
-    NEWLINENUMBER=""
-    NEWLINENUMBER=$(grep -E --binary-files=text "$QCTEXT" $FILETOCHECK2|grep -E --binary-files=text -o "#[0-9]+$"|sed 's/#//g')
+    NEWLINENUMBER=
+    NEWLINENUMBER="$(grep -E --binary-files=text "$QCTEXT" $FILETOCHECK2|grep -E --binary-files=text -o "#[0-9]+$"|sed 's/#//g')"
     # TODO: Add check if same query has same output multiple times (add variable for number of occurences)
     if [ $(grep -E --binary-files=text -c "$TEXT#$NEWLINENUMBER$" $FILETOCHECK) -gt 0 ]; then
       if [ ! "$STAGE" = "V" ]; then
@@ -3488,7 +3488,7 @@ stop_mysqld_or_mdg(){
         done
       fi
     fi
-    PIDV=""
+    PIDV=
   fi
   RUN_TIME=$[ ${RUN_TIME} + $(date +'%s') - ${SHUTDOWN_TIME_START} ]  # Add shutdown runtime to overall runtime which is later checked against TIMEOUT_CHECK
 }
@@ -3637,7 +3637,7 @@ verify_not_found(){
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is the parent - change pathnames to reflect that issue was in a subreducer
     EXTRA_PATH="subreducer/<nr>/"
   else
-    EXTRA_PATH=""
+    EXTRA_PATH=
   fi
   echo_out "$ATLEASTONCE [Stage $STAGE] Initial verify of the issue: fail. Bug/issue is not present under given conditions, or is very sporadic. Terminating."
   echo_out "[Finish] Verification failed. It may help to check the following files to get an idea as to why this run did not reproduce the issue (if these files do not give any further hints, please check variable/initialization differences, enviroment differences etc. and also reference 'reproducing_and_simplification.txt' in mariadb-qa for many additional reproduction/simplification ideas):"
@@ -5191,7 +5191,7 @@ fi
 
 #STAGE9: Execute storage engine, binlogging, keyring and similar options simplification.
 if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
-  NEXTACTION=""
+  NEXTACTION=
   STAGE=9
   TRIAL=1
   echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
@@ -5200,10 +5200,10 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
   stage9_run(){
     TRIAL_REPEAT_COUNT=0
     STAGE9_CHK=0
-    SAVE_MYINIT=""
+    SAVE_MYINIT=
     if [[ ${MYINIT_DROP} -eq 1 ]]; then
       SAVE_MYINIT=${MYINIT}
-      MYINIT=""
+      MYINIT=
     fi
     STAGE9_NOT_STARTED_CORRECTLY=0
     SAVE_SPECIAL_MYEXTRA_OPTIONS=$SPECIAL_MYEXTRA_OPTIONS

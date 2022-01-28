@@ -42,6 +42,23 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 #***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|myrocks::ha_rocksdb::free_key_buffers                                                                                      ## MDEV-21799
 #***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|std::__shared_count<shared_ptr_base.h                                                                                      ## MDEV-21799
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
+
+##### Likely debug_dbug issues (normally these filters are disabled) #####
+info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## debug_dbug='d,simulate_find_log_pos_error'
+SIGSEGV|sp_head::show_create_routine|Sp_handler::sp_show_create_routine|mysql_execute_command|mysql_parse                                                                      ## debug_dbug='+d,cache_sp_in_show_create'
+fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|dict_create_index_space|dict_create_index_step                              ## debug_dbug='+d,fsp_flags_is_valid_failure'
+fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='d,row_ins_index_entry_timeout';
+fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='+d,fsp_flags_is_valid_failure'
+fil_space_t::is_valid_flags(flags & ~FSP_FLAGS_MEM_MASK, space_id)|SIGABRT|ut_dbg_assertion_failed|fil_ibd_create|dict_create_index_space|dict_create_index_step               ## debug_dbug='+d,dict_tf_to_fsp_flags_failure'
+n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                   ## debug_dbug='+d,external_lock_failure'
+!n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                  ## debug_dbug='+d,external_lock_failure'
+m_lock_type == 2|SIGABRT|handler::~handler|ha_myisam::~ha_myisam|ha_myisam::~ha_myisam|ha_sequence::~ha_sequence                                                               ## debug_dbug='+d,external_lock_failure'
+my_b_tell(log) == 0|SIGABRT|check_binlog_magic|init_relay_log_pos|handle_slave_sql|pfs_spawn_thread                                                                            ## debug_dbug='d,simulate_find_log_pos_error'
+SIGSEGV|add_pin|make_lock_and_pin|flush_cached_blocks|flush_pagecache_blocks_int                                                                                               ## debug_dbug='+d,alloc_sort_buffer_fail'
+thd->is_error() || kill_errno || thd->killed == ABORT_QUERY|SIGABRT|filesort|create_sort_index|st_join_table::sort_table|join_init_read_record                                 ## debug_dbug='+d,external_lock_failure'
+state == TRX_STATE_NOT_STARTED || (relaxed && thd_get_error_number(trx->mysql_thd))|SIGABRT|ut_dbg_assertion_failed|trx_state_eq|rw_trx_hash_t::validate_element|rw_trx_hash_t::insert ## debug_dbug='+d,innodb_table_deadlock'
+node->state == 1|SIGABRT|row_ins_step|row_insert_for_mysql|ha_innobase::write_row|ha_sequence::write_row                                                                       ## debug_dbug='d,row_ins_index_entry_timeout'
+
 ##### Current MDEV-27106 bugs (temporary) #####
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 
