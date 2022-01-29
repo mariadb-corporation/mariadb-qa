@@ -49,7 +49,7 @@ SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # The directory reducer.sh is in (to ref
 # === Sporadic testcases        # Used when testcases prove to be sporadic *and* fail to reduce using basic methods
 FORCE_SKIPV=0                   # On/Off (1/0) Forces verify stage to be skipped (auto-enables FORCE_SPORADIC)
 FORCE_SPORADIC=0                # On/Off (1/0) Forces issue to be treated as sporadic
-NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat/try/attempt each trial 1 time. Increase to re-attempt trials when reduction was not succesful for that trial; ideal for sporadic issues which need x attempts per trial. Will work irrespective of detected sporadicity.
+NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat/try/attempt each trial 1 time. Increase to re-attempt trials when reduction was not succesful for that trial; ideal for sporadic issues which need x attempts per trial. Will work irrespective of detected sporadicity. Ref https://jira.mariadb.org/browse/TODO-3017
 
 # === True Multi-Threaded       # True multi-threaded testcase reduction (only program in the world that does this) based on random replay (auto-covers sporadic testcases)
 PQUERY_MULTI=0                  # On/off (1/0) Enables true multi-threaded testcase reduction based on random replay (auto-enables USE_PQUERY)
@@ -974,6 +974,19 @@ options_check(){
     elif [ $PQUERY_MULTI_CLIENT_THREADS -lt 5 ]; then
       echo_out "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to $PQUERY_MULTI_CLIENT_THREADS, $PQUERY_MULTI_CLIENT_THREADS threads for reproducing a multi-threaded issue via random replay seems insufficient. You may want to increase PQUERY_MULTI_CLIENT_THREADS. Proceeding, but this is likely incorrect. Please check"
     fi
+    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+      # TODO: Can be partially automated by checking the testcase length (# of lines) versus STAGE1_LINES
+      echo_out "[Setup] Warning: possible misconfiguration: NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}) yet PQUERY_MULTI is turned on, which in turn ensured FORCE_SKIPV was turned on. Did you set STAGE1_LINES (value: ${STAGE1_LINES}) sufficiently low to ensure progression to stage 2?"
+    fi
+  else
+    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+      if [ ${SKIPSTAGEBELOW} -eq 0 ]; then
+        echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts (i.e. in stage 2). The verify stage will be skipped automatically"
+      else
+        echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts in stage $[ ${SKIPSTAGEBELOW} + 1 ]"
+      fi
+    fi
+    export -n FORCE_SKIPV=0
   fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
@@ -3673,9 +3686,7 @@ verify_not_found(){
 #STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
 verify(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed to be sporadic)"
-    # Ref https://jira.mariadb.org/browse/TODO-3017
-    # Instead of using STAGE V to verify if the issue exists, one can simply test reproducibility using FORCE_SKIPV=1 with multi-threaded pre-reduction (with a high number of MULTI_THREADS like 30 or more) until such approximate time as pquery-go-expert.sh (~/pge) is normally needed.
+    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed to be sporadic)"  # "issue deemed to be sporadic": it is good to display this here. as FORCE_SKIPV is always 0 when NR_OF_TRIAL_REPEATS > 1 (configured during setup), and because FORCE_SKIPV is 0, such message is not displayed in the log otherwise
     return
   fi
   STAGE='V'
