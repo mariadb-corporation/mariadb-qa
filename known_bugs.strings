@@ -1,4 +1,4 @@
-## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID etc.
+## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Otherwise, just follow the existing formatting.
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (REVIEW REGULARLY) #####
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-22663
@@ -58,6 +58,8 @@ SIGSEGV|add_pin|make_lock_and_pin|flush_cached_blocks|flush_pagecache_blocks_int
 thd->is_error() || kill_errno || thd->killed == ABORT_QUERY|SIGABRT|filesort|create_sort_index|st_join_table::sort_table|join_init_read_record                                 ## debug_dbug='+d,external_lock_failure'
 state == TRX_STATE_NOT_STARTED || (relaxed && thd_get_error_number(trx->mysql_thd))|SIGABRT|ut_dbg_assertion_failed|trx_state_eq|rw_trx_hash_t::validate_element|rw_trx_hash_t::insert ## debug_dbug='+d,innodb_table_deadlock'
 node->state == 1|SIGABRT|row_ins_step|row_insert_for_mysql|ha_innobase::write_row|ha_sequence::write_row                                                                       ## debug_dbug='d,row_ins_index_entry_timeout'
+Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_writer::write_internal                                                                           ## debug_dbug='d,simulate_find_log_pos_error'
+## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', debug_dbug='+d,crash_dispatch_command_before'
 
 ##### Current MDEV-27106 bugs (temporary) #####
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
