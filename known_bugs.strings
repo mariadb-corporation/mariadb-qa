@@ -63,6 +63,7 @@ Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_wr
 
 ##### Current MDEV-27106 bugs (temporary) #####
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
+str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
 SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::index_last_internal|ha_spider::index_last                                                ## MDEV-27522
@@ -183,6 +184,7 @@ SIGABRT|galera::FSM<galera::TrxHandle::State,galera::TrxHandle::Transition,galer
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|ha_commit_trans|trans_commit_implicit|mysql_execute_command ## MDEV-26597
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                                            ## MDEV-25738
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_help_internal|mysqld_help                                                                                    ## MDEV-25735
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_help_internal|mysqld_help                                        ## MDEV-25735
 page_rec_is_leaf(rec)|SIGABRT|lock_rec_queue_validate|lock_rec_validate_page|lock_rec_block_validate|lock_validate                                                             ## MDEV-25711
 mode_ == m_local|SIGABRT|wsrep::client_state::streaming_params|Wsrep_load_data_split::~Wsrep_load_data_split|mysql_load|mysql_execute_command                                  ## MDEV-25731
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|open_table_from_share|open_table                                  ## MDEV-25696

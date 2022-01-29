@@ -985,8 +985,8 @@ options_check(){
       else
         echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts in stage $[ ${SKIPSTAGEBELOW} + 1 ]"
       fi
+      export -n FORCE_SKIPV=0
     fi
-    export -n FORCE_SKIPV=0
   fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
@@ -1815,10 +1815,12 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  echo_out "[Init] Number of times each trial will be attempted: ${NR_OF_TRIAL_REPEATS}x"
+  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+    echo_out "[Init] Number of times each individual trial will be attempted: ${NR_OF_TRIAL_REPEATS}x"
+  fi
 
   if [ ${NR_OF_TRIAL_REPEATS} -gt 50 ]; then
-    echo "Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
+    echo_out "[Init] Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
   fi
   if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echo_out "[Init] Passing the following additional options to mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
   if [ "$MYINIT" != "" ]; then echo_out "[Init] Passing the following additional options to mysqld initialization: $MYINIT"; fi

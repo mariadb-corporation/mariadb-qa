@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
-BASEDIR=/test/MDEV-25440-MD220122-mariadb-10.4.23-linux-x86_64-dbg
+BASEDIR=/test/MD290122-mariadb-10.8.1-linux-x86_64-dbg
+#MDEV-25440-MD220122-mariadb-10.4.23-linux-x86_64-dbg
 #MDEV-27106-MD220122-mariadb-10.8.0-linux-x86_64-opt
 #MDEV-25440-MD210122-mariadb-10.4.22-linux-x86_64-dbg
 #MD190122-mariadb-10.8.0-linux-x86_64-dbg

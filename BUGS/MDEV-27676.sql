@@ -1,0 +1,3 @@
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+CREATE TABLE t (t_i INT,t_f FLOAT) ENGINE=Spider;
+INSERT INTO t SELECT SEQ,SEQ FROM seq_1_to_100000;

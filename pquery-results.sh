@@ -299,7 +299,7 @@ if [ ! -z "$(grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null)" 
   grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null
 fi
 
-echo "========= Significant/Major errors"
+echo "========= Significant/Major errors (if any)"
 # Significant/major error scanning. This code is partially duplicated in pquery-del-trial.sh. Update both when making changes.
 ERRORS=
 ERROR_LOG=
