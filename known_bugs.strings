@@ -17,7 +17,6 @@ table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_conditio
 marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-24658
 scale <= precision|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                         ## MDEV-25317
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_ha_read|mysql_execute_command                                                                                 ## MDEV-20207
-! is_set()|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_client_binlog_statement|mysql_execute_command                                                                   ## MDEV-27536
 open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                       ## MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql     ## MDEV-25927
 SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                                             ## MDEV-24686
@@ -66,6 +65,9 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-27688
+! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-22768
+!thd->rgi_fake || !thd->transaction->all.ha_list|SIGABRT|Format_description_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event|mysql_client_binlog_statement ## MDEV-27687
 SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::index_last_internal|ha_spider::index_last                                                ## MDEV-27522
 SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::check_direct_order_limit|ha_spider::index_last_internal                                  ## MDEV-27522
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|pfs_spawn_thread|start_thread ## MDEV-27515
@@ -190,7 +192,6 @@ mode_ == m_local|SIGABRT|wsrep::client_state::streaming_params|Wsrep_load_data_s
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|open_table_from_share|open_table                                  ## MDEV-25696
 thd->is_error()|SIGABRT|convert_error_to_warning|Show::get_geometry_column_record|fill_schema_table_by_open|get_all_tables                                                     ## MDEV-25692
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command                 ## MDEV-25668
-state_ == s_exec|SIGABRT|wsrep::client_state::after_row|wsrep_after_row|wsrep_after_row|handler::ha_write_row                                                                  ## MDEV-25661
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|create_view_field|Field_iterator_view::create_item|find_field_in_view                                                     ## MDEV-25650
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Item_param::get_date|Type_handler::Item_send_datetime|Type_handler_datetime_common::Item_send                            ## MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Type_handler::Item_send_datetime                              ## MDEV-25593
@@ -200,8 +201,6 @@ readbytes != (size_t)-1 || (*__errno_location ()) != 9|SIGABRT|my_pread|azflush|
 ctx->skip_pk_sort|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|mysql_inplace_alter_table          ## MDEV-25550
 transactional_table || !changed || thd->transaction.stmt.modified_non_trans_table|SIGABRT|mysql_insert|mysql_execute_command|mysql_parse|wsrep_mysql_parse                     ## MDEV-25548
 transactional_table || !changed || thd->transaction.stmt.modified_non_trans_table|SIGABRT|select_insert::abort_result_set|select_create::abort_result_set|handle_select|Sql_cmd_create_table_like::execute ## MDEV-25548
-SIGSEGV|setup_table_map|setup_tables|setup_tables_and_check_access|JOIN::prepare                                                                                               ## MDEV-25538
-SIGSEGV|TABLE_SHARE::period_info_t::start_field|period_get_condition|st_select_lex::vers_setup_conds|JOIN::prepare                                                             ## MDEV-25538
 server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::after_row|wsrep::client_state::after_row ## MDEV-25535
 server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::after_statement|wsrep::client_state::after_statement ## MDEV-25535
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|ha_delete_table|mysql_rm_table_no_locks                           ## MDEV-25500
@@ -524,7 +523,6 @@ maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Item_func_hybrid_fiel
 maybe_null() || !null_value|SIGABRT|Item_func_round::date_op|Item_func_hybrid_field_type::date_op_with_null_check|Item_func_hybrid_field_type::val_real_from_date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_val_real ## MDEV-20501
 maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-20501
 maybe_null() || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-20501
-SIGSEGV|JOIN::transform_in_predicates_into_in_subq|convert_join_subqueries_to_semijoins|JOIN::optimize_inner|JOIN::optimize                                                    ## MDEV-20770
 maybe_null || !null_value|SIGABRT|Item_func_round::time_op|Item_func_hybrid_field_type::time_op_with_null_check|Item_func_hybrid_field_type::val_str_from_time_op|Type_handler_time_common::Item_func_hybrid_field_type_val_str ## MDEV-20816
 part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## MDEV-21027
 SIGSEGV|ha_partition::compare_number_of_records|my_qsort2|ha_partition::info|ha_partition::open                                                                                ## MDEV-21134
@@ -558,9 +556,6 @@ SIGSEGV|heap_info|ha_heap::info|make_join_statistics|JOIN::optimize_inner       
 i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::range_selectivity|get_column_range_cardinality                                                  ## MDEV-23151
 i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::point_selectivity|get_column_range_cardinality                                                  ## MDEV-23151
 
-##### MONTY bb-10.6-monty MAY 2021 TESTING (DISABLED FILTERS TO AVOID FILTERING TRUNK RUNS) #####
-#to <= end|SIGABRT|process_args|my_vsnprintf_ex|my_error|change_master                                                                                                         ## MDEV-25612
-#SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                          ## MDEV-25612
 
 ##### 10.4.12+ InnoDB corrputions: dud uniqueID's fixed in 10.4.19 or earlier
 #SIGSEGV|my_b_write|write_keys|find_all_keys|filesort
@@ -982,7 +977,6 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::p
 # length == pack_length()|SIGABRT|Field_datetime_with_dec::sort_string|Field::make_sort_key_part|make_sortkey|make_sortkey                                            ## Fixed ## MDEV-22256
 # length == pack_length()|SIGABRT|Field_timestamp_with_dec::sort_string|Field::make_sort_key_part|make_sortkey|make_sortkey                                           ## Fixed ## MDEV-22256
 # col->len == len|SIGABRT|innobase_rename_or_enlarge_column_try|innobase_rename_or_enlarge_columns_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table   ## Fixed ## MDEV-22334
-# ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                            ## Fixed ## MDEV-22768
 # SIGSEGV|Item::fix_fields_if_needed|fix_fields_for_tvc|table_value_constr::prepare|st_select_lex_unit::prepare                                                       ## Fixed ## MDEV-23182
 # SIGSEGV|select_unit::cleanup|Item::fix_fields_if_needed|fix_fields_for_tvc|table_value_constr::prepare                                                              ## Fixed ## MDEV-23182
 # SIGSEGV|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc|table_value_constr::prepare|st_select_lex_unit::prepare                                            ## Fixed ## MDEV-23182
@@ -1032,3 +1026,10 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::p
 # SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                        ## Fixed ## MDEV-26583
 # SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit_from_select_lex|spider_check_direct_order_limit|ha_spider::check_direct_order_limit         ## Fixed ## MDEV-26583
 # SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit_from_select_lex|spider_split_read_param|spider_set_result_list_param                        ## Fixed ## MDEV-26583
+# SIGSEGV|JOIN::transform_in_predicates_into_in_subq|convert_join_subqueries_to_semijoins|JOIN::optimize_inner|JOIN::optimize                                         ## Fixed ## MDEV-20770
+# SIGSEGV|setup_table_map|setup_tables|setup_tables_and_check_access|JOIN::prepare                                                                                    ## Fixed ## MDEV-25538
+# SIGSEGV|TABLE_SHARE::period_info_t::start_field|period_get_condition|st_select_lex::vers_setup_conds|JOIN::prepare                                                  ## Fixed ## MDEV-25538
+# to <= end|SIGABRT|process_args|my_vsnprintf_ex|my_error|change_master                                                                                               ## Fixed ## MDEV-25612
+# SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|my_error                                                                                                ## Fixed ## MDEV-25612
+# state_ == s_exec|SIGABRT|wsrep::client_state::after_row|wsrep_after_row|wsrep_after_row|handler::ha_write_row                                                       ## Fixed ## MDEV-25661
+# ! is_set()|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_client_binlog_statement|mysql_execute_command                                                        ## Fixed ## MDEV-27536

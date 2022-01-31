@@ -72,8 +72,8 @@ while true; do
       # this may wipe reducers which have their string already included in known bugs whilst you are working on it
       #if [ -r ./clean_all ]; then ./clean_all; fi
       if [ -r ./clean_newbugs ]; then
-        if [ -z "$(ps -ef | grep clean_newbug | grep -v grep)" ]; then  # Ensure clean_newbugs is not running already! This also allows one to start a ./clean_newbugs in a seperate screen session and let it run for long cleanups with many newbugs
-          ./clean_newbugs
+        if [ -z "$(ps -ef | grep clean_newbug | grep -v grep)" ]; then  # Ensure clean_newbugs is not running already
+          ./clean_newbugs &  # RV 31/1/22: changed to background process so other processes are not held up
         fi
       fi
     fi

@@ -23,6 +23,8 @@ Internal MariaDB error code: 2003                     Presumed non-issue (unreac
 Internal MariaDB error code: 1064                     Presumed non-issue (slave cannot be initialized)  # TODO/TOCHECK
 Internal MariaDB error code: 1193                     Presumed non-issue (init_slave query cannot run)
 Internal MariaDB error code: 1146                     Presumed non-issue (table does not exist, normal in tests)
+Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
 thus rolled back too. Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-27536
 Memory not freed: 280                                 https://jira.mariadb.org/browse/MDEV-27627 (10.8 filtered only)
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-27661
+my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'

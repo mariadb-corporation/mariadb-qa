@@ -1276,7 +1276,7 @@ multi_reducer(){
     # With FIREWORKS: to find a new bug
     # Note that the term/file '/VERIFIED' is used for both instances/occurences
     if [ "${FIREWORKS}" != "1" ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed to be sporadic: this may take time)"
+      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed or assumed to be sporadic: this may take time)"
     else
       echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked subreducer threads to find a new bug"
     fi
