@@ -260,7 +260,7 @@ prepare_galera_startup() {
   for i in $(seq 1 ${NR_OF_NODES}); do
     sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS:1}" ${WORKDIR}/n${i}.cnf
     if [[ "${ENCRYPTION}" == "crypt" ]]; then
-      cat "${WORKDIR}"/conf/encryption.cnf >> ${WORKDIR}/n${j}.cnf
+      cat "${SCRIPT_PWD}"/conf/encryption.cnf >> ${WORKDIR}/n${j}.cnf
     fi
   done
 }
@@ -311,7 +311,7 @@ start_galera_nodes(){
   MYEXTRA=${1-}
   for j in $(seq 1 ${NR_OF_NODES}); do
     if [ -n "${CONF_TEST}" ]; then
-     cat ${WORKDIR}/conf/${CONF}.cnf-node${j} >> ${WORKDIR}/n${j}.cnf
+     cat ${SCRIPT_PWD}/conf/${CONF}.cnf-node${j} >> ${WORKDIR}/n${j}.cnf
     fi
     if [[ -n ${VERIFY_ENCRYPTION_OPT} ]]; then
       sed -i  "0,/^[ \t]*tkey[ \t]*=.*$/s|^[ \t]*tkey[ \t]*=.*$|tkey=${WORKDIR}/cert/server-key.pem|" ${WORKDIR}/n${j}.cnf
@@ -402,7 +402,7 @@ validate_table_checksum(){
     exit 1
   fi
   if [[ -n "${CONF_TEST}" ]]; then
-    TEST_NAME="galera_sst_${SST} - $(head -1 ${WORKDIR}/conf/${CONF}.cnf-node1) - ${IS_ENCRYPTION}"
+    TEST_NAME="galera_sst_${SST} - $(head -1 ${SCRIPT_PWD}/conf/${CONF}.cnf-node1) - ${IS_ENCRYPTION}"
   elif [[ -n "${SST_LOST_FOUND_TEST}" ]]; then
     TEST_NAME="galera_sst_${SST} - # lost+found test - ${IS_ENCRYPTION}"
   else
@@ -442,7 +442,7 @@ sst_run(){
     shutdown_nodes
     ## Encryption run
     prepare_galera_startup "crypt" "${INNO_PAGE_SIZE}"
-    start_galera_nodes "--plugin-load-add=file_key_management.so --loose-file-key-management --loose-file-key-management-filename=${WORKDIR}/conf/keys.txt --file-key-management-encryption-algorithm=aes_cbc ${INNO_PAGE_SIZE}"
+    start_galera_nodes "--plugin-load-add=file_key_management.so --loose-file-key-management --loose-file-key-management-filename=${SCRIPT_PWD}/conf/keys.txt --file-key-management-encryption-algorithm=aes_cbc ${INNO_PAGE_SIZE}"
     save_artifacts "crypt"
     if [[ "${SST}" == "mysqldump" ]]; then
       # Pausing 10 sec to sync node2 after mysqldump SST"
@@ -473,17 +473,17 @@ invoke_sst_run(){
   # Test SST using sst/mariadb/mysqld options
   ############################################
   CONF_ARRAY=()
-  while IFS='' read -r line; do CONF_ARRAY+=("$line"); done < <(find ${WORKDIR}/conf/ -type f -exec basename {} \; 2>/dev/null | grep conf*.*node | cut -d'.' -f1 | sort | uniq)
+  while IFS='' read -r line; do CONF_ARRAY+=("$line"); done < <(find ${SCRIPT_PWD}/conf/ -type f -exec basename {} \; 2>/dev/null | grep conf*.*node | cut -d'.' -f1 | sort | uniq)
   if [[ "${SST}" == "mariabackup" ]]; then
     CONF_TEST="multiple_config_test"
     for CONF in "${CONF_ARRAY[@]}"; do
-      BACKUP_LOCK=$(grep -o no-backup ${WORKDIR}/conf/${CONF}.cnf-node* 2>1)
+      BACKUP_LOCK=$(grep -o no-backup ${SCRIPT_PWD}/conf/${CONF}.cnf-node* 2>1)
       if [[ -n ${BACKUP_LOCK} ]]; then
         if [[ ${MYSQL_VERSION} != "10.6" ]]; then
           continue
         fi
       fi
-      VERIFY_ENCRYPTION_OPT=$(grep -o encrypt ${WORKDIR}/conf/${CONF}.cnf-node* 2>1)
+      VERIFY_ENCRYPTION_OPT=$(grep -o encrypt ${SCRIPT_PWD}/conf/${CONF}.cnf-node* 2>1)
       if [[ -n ${VERIFY_ENCRYPTION_OPT} ]]; then
         if [[ ! -f ${WORKDIR}/cert/server-cert.pem ]]; then
           echo "SSL certificates not found: Skipping SST encryption test"
