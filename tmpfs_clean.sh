@@ -3,6 +3,13 @@
 
 EXCLUDE_DIR_REGEX='multipath|var_'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
 
+# Check if not running already. The '$$' check is necessary as otherwise the command captures it's own process
+if [ ! -z "$(ps -ef | grep tmpfs_clean | grep -vE "grep|vi |$$")" ]; then
+  echo "Self terminating as tmpfs_clean.sh is running elsewhere already:"
+  ps -ef | grep tmpfs_clean | grep -vE "grep|vi |$$"
+  exit 2
+fi
+
 if [ "${1}" != "1" ]; then
   echo "(!) Script not armed! To arm it, include the number 1 behind it, e.g.: $ ~/mariadb-qa/tmpfs_clean.sh 1"
   echo "(!) This will enable actual tmpfs cleanup. Now executing a trial run only - no actual changes are made!"

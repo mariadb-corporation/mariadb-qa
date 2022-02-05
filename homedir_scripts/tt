@@ -44,16 +44,35 @@ noformat_strings(){
   fi
 }
 
+EXIT_CODE=
 if [ -r ~/mariadb-qa/new_text_string.sh ]; then
   TEXT="$(~/mariadb-qa/new_text_string.sh)"
+  if [ $? -eq 1 ]; then
+    EXIT_CODE=1
+  fi
 elif [ -r ${SCRIPT_PWD}/new_text_string.sh ]; then
   TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"
+  if [ $? -eq 1 ]; then
+    EXIT_CODE=1
+  fi
 elif [ -r ~/t ]; then
   TEXT="$(~/t)"
+  if [ $? -eq 1 ]; then
+    EXIT_CODE=1
+  fi
 else
   echo "Assert: new_text_string.sh cannot be located"
   exit 1
 fi
+
+if [ "${EXIT_CODE}" -eq 1 ]; then
+  echo "----- Bug String  -----"
+  echo "${TEXT}"
+  echo "-----------------------"
+  echo "Assert: new_text_string.sh yielded a non-0 exit code"
+  exit 1
+fi
+EXIT_CODE=
 
 if [[ "${TEXT}" == *"no core file found"* ]]; then 
   echo "Assert: no core file found in */*core* and no *SAN issue detected"

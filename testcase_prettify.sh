@@ -117,6 +117,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|and|AND|gi' | \
   sed 's|or|OR|gi' | \
   sed 's|else|ELSE|gi' | \
+  sed 's|substr|SUBSTR|gi' | \
   sed 's|substring_index|SUBSTRING_INDEX|gi' | \
   sed 's|handler|HANDLER|gi' | \
   sed 's|dual|DUAL|gi' | \
@@ -267,7 +268,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|(| (|g' | \
   sed 's|  | |g' | \
   sed 's| \([A-Z][A-Z][A-Z]\) (| \1(|g' | \
-  sed 's|FLOAT[ ]*(|FLOAT(|gi;s|INT[ ]*(|INT(|gi;s|VARBINARY[ ]*(|VARBINARY(|gi;s|TIME[ ]*(|TIME(|gi;s|DECIMAL[ ]*(|DECIMAL(|gi;s|TRIM[ ]*(|TRIM(|gi;s|REAL[ ]*(|REAL(|gi;s|NUMERIC[ ]*(|NUMERIC(|gi;s|KEY[ ]*(|KEY(|gi;' | \
+  sed 's|FLOAT[ ]*(|FLOAT(|gi;s|INT[ ]*(|INT(|gi;s|VARBINARY[ ]*(|VARBINARY(|gi;s|TIME[ ]*(|TIME(|gi;s|DECIMAL[ ]*(|DECIMAL(|gi;s|TRIM[ ]*(|TRIM(|gi;s|REAL[ ]*(|REAL(|gi;s|NUMERIC[ ]*(|NUMERIC(|gi;s|KEY[ ]*(|KEY(|gi;s|SUBSTR[ ]*(|SUBSTR(|gi;' | \
   sed 's|starts|STARTS|gi' | \
   sed 's|interval|INTERVAL|gi' | \
   sed 's|ifnull|IFNULL|gi' | \

@@ -58,13 +58,16 @@ thd->is_error() || kill_errno || thd->killed == ABORT_QUERY|SIGABRT|filesort|cre
 state == TRX_STATE_NOT_STARTED || (relaxed && thd_get_error_number(trx->mysql_thd))|SIGABRT|ut_dbg_assertion_failed|trx_state_eq|rw_trx_hash_t::validate_element|rw_trx_hash_t::insert ## debug_dbug='+d,innodb_table_deadlock'
 node->state == 1|SIGABRT|row_ins_step|row_insert_for_mysql|ha_innobase::write_row|ha_sequence::write_row                                                                       ## debug_dbug='d,row_ins_index_entry_timeout'
 Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_writer::write_internal                                                                           ## debug_dbug='d,simulate_find_log_pos_error'
-## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', debug_dbug='+d,crash_dispatch_command_before'
+## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### Current MDEV-27106 bugs (temporary) #####
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-27744
+!cursor->index->is_committed()|SIGABRT|ut_dbg_assertion_failed|row_ins_sec_index_entry_by_modify|row_ins_sec_index_entry_low|row_ins_sec_index_entry                           ## MDEV-27744
+!cursor->index->is_committed()|SIGABRT|ut_dbg_assertion_failed|row_ins_sec_index_entry_by_modify|row_ins_sec_index_entry_low|row_ins_sec_index_entry                           ## MDEV-27751
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-27688
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-22768
 !thd->rgi_fake || !thd->transaction->all.ha_list|SIGABRT|Format_description_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event|mysql_client_binlog_statement ## MDEV-27687

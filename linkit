@@ -50,5 +50,8 @@ if [ ! -r /test/REGEX_EXCLUDE ]; then
   echo 'MDEV|VALGRIND' > /test/REGEX_EXCLUDE
 fi
 
+# Protect homedir links which are easily overwritten by mistake
+chmod -w ~/b ~/c ~/i ~/m ~/o ~/p ~/r
+
 echo 'Done!'
 exit 0

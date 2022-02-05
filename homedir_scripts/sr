@@ -10,6 +10,8 @@ if [ "${1}" != "" -a -r reducer${1}.sh ]; then
 elif [ "${1}" != "" -a -r ${1} ]; then
   LOGNAME="$(echo ./${1} | sed 's|\.sh|.log|')"
   screen -admS s${1} bash -c "./${1} | tee -a ./reducer.logs/${LOGNAME};bash"
+elif [ -r ${1}.reducer.sh ]; then
+  screen -admS s${1} bash -c "./${1}.reducer.sh | tee -a ./reducer.logs/${1}.reducer.log;bash"
 else
   echo "Assert: No such reducer script: ./reducer${1}.sh, nor ${1}"
   exit 1

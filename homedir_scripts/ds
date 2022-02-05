@@ -34,6 +34,8 @@ while true; do
   echo -n "Testcases: ${TESTCASES}"
   sleep 2
   if [ ${COUNT1} -ge 10 ]; then
+    # RV-05/02/22 increased frequency of ~/mariadb-qa/tmpfs_clean.sh from 60 rounds to 10 rounds, and starting process as background process. Improved ~/mariadb-qa/tmpfs_clean.sh to self-terminate if running already.
+    ~/mariadb-qa/tmpfs_clean.sh 1 &
     NEWBUGCOUNT="$(cat /data/NEWBUGS/*.string 2>/dev/null | sort -u | wc -l)"
     # Cleanup cache, may help avoid OOM
     sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches" &
@@ -63,9 +65,6 @@ while true; do
   if [ ${COUNT2} -ge 60 ]; then
     TESTCASES="$(cd /data && ./my | grep -v '^[ ]*0 ' | wc -l)"  # Expensive
     sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches"  # Cleanup cache, may help avoid OOM
-    #~/mariadb-qa/tmpfs_clean.sh 1 >/dev/null &
-    ~/mariadb-qa/tmpfs_clean.sh 1 
-    sync
     if [ -d /data ]; then
       cd /data
       # The following seems handy, but it is not, and can use some improvements TODO. Reason: for ./clean_all, 
@@ -77,6 +76,7 @@ while true; do
         fi
       fi
     fi
+    sync
     COUNT2=0
   fi
   if [ ${COUNT3} -ge 5000 ]; then
