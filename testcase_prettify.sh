@@ -53,6 +53,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|plugins|PLUGINS|gi' | \
   sed 's|local|LOCAL|gi' | \
   sed 's|infile|INFILE|gi' | \
+  sed 's|duplicate|DUPLICATE|gi' | \
   sed 's|terminated by|TERMINATED BY|gi' | \
   sed 's|table|TABLE|gi' | \
   sed 's|tables|TABLES|gi' | \
@@ -112,6 +113,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|shutdown|SHUTDOWN|gi' | \
   sed 's|elt|ELT|gi' | \
   sed 's|trim|TRIM|gi' | \
+  sed 's|names|NAMES|gi' | \
   sed 's|case|CASE|gi' | \
   sed 's|when|WHEN|gi' | \
   sed 's|and|AND|gi' | \
@@ -356,6 +358,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|[ \t]\+| |g' | \
   sed 's|=on;$|=ON;|g' | \
   sed 's|=off;$|=OFF;|g' | \
+  sed 's|ignore|IGNORE|gi' | \
   sed 's|world|world|gi' | \
   sed 's|  | |gi'
 
