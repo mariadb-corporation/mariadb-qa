@@ -20,6 +20,7 @@ declare CONF=""
 declare VERIFY_ENCRYPTION_OPT=""
 declare SST_LOST_FOUND_TEST=""
 declare CONF_TEST=""
+declare DEBUG=""
 
 # Dispay script usage details
 usage () {
@@ -29,12 +30,14 @@ usage () {
   echo "Options:"
   echo "  -b, --basedir=PATH                                 Specify MariaDB Galera base directory, mention full path"
   echo "  -s, --sst-test=[all|mysql_dump|rsync|mariabackup]  Specify SST method for cluster data transfer"
+  echo "  -d, --debug                                        Used for debugging the failed test case"
+  echo "  -h, --help                                         Display help and exit"
 }
 
 # Check if we have a functional getopt(1)
 if ! getopt --test
   then
-  go_out="$(getopt --options=w:b:s:h --longoptions=basedir:,sst-test:,help \
+  go_out="$(getopt --options=w:b:s:dh --longoptions=basedir:,sst-test:,debug,help \
   --name="$(basename "$0")" -- "$@")"
   test $? -eq 0 || exit 1
   eval set -- "$go_out"
@@ -65,6 +68,10 @@ do
       echo "  Please choose any of these sst-test options: 'mysql_dump', 'rsync' or 'mariabackup'"
       exit 1
     fi
+    ;;
+    -d | --debug )
+    shift
+    DEBUG=1
     ;;
     -h | --help )
     usage
@@ -156,14 +163,12 @@ cd ${WORKDIR} || true
 #######################################
 # Setting seeddb creation configuration
 #######################################
-if [ "${MYSQL_VERSION}" == "10.4" -o "${MYSQL_VERSION}" == "10.5" -o "${MYSQL_VERSION}" == "10.6" ]; then
-  INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
-  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal "
-  START_OPT="--core-file --core"
-elif [ "${MYSQL_VERSION}" == "10.1" -o "${MYSQL_VERSION}" == "10.2" -o "${MYSQL_VERSION}" == "10.3" ]; then
+if [ "${MYSQL_VERSION}" == "10.1" ] || [ "${MYSQL_VERSION}" == "10.2" ] || [ "${MYSQL_VERSION}" == "10.3" ]; then
   INIT_TOOL="${BASEDIR}/scripts/mysql_install_db"
   INIT_OPT="--no-defaults --force "
-  START_OPT="--core"
+else
+  INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
+  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal "
 fi
 
 #######################################
@@ -213,6 +218,7 @@ prepare_galera_startup() {
   echo "basedir=${BASEDIR}" >> my-template.cnf
   echo "wsrep-debug=1" >> my-template.cnf
   echo "innodb_file_per_table" >> my-template.cnf
+  echo "innodb_buffer_pool_size=3G" >> my-template.cnf
   echo "innodb_autoinc_lock_mode=2" >> my-template.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> my-template.cnf
   echo "wsrep_sst_auth=$SUSER:$SPASS" >> my-template.cnf
@@ -260,7 +266,7 @@ prepare_galera_startup() {
   for i in $(seq 1 ${NR_OF_NODES}); do
     sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS:1}" ${WORKDIR}/n${i}.cnf
     if [[ "${ENCRYPTION}" == "crypt" ]]; then
-      cat "${SCRIPT_PWD}"/conf/encryption.cnf >> ${WORKDIR}/n${j}.cnf
+      cat "${SCRIPT_PWD}"/conf/encryption.cnf >> ${WORKDIR}/n${i}.cnf
     fi
   done
 }
@@ -488,7 +494,7 @@ invoke_sst_run(){
         if [[ ! -f ${WORKDIR}/cert/server-cert.pem ]]; then
           echo "SSL certificates not found: Skipping SST encryption test"
           continue
-        fi
+        fi    
       fi
       sst_run
     done
@@ -500,6 +506,9 @@ invoke_sst_run(){
   elif [[ "${SST}" == "rsync" ]]; then
     CONF_TEST="encrypt_config_test"
     CONF=conf3
+    sst_run
+    CONF_TEST="external_log_bin"
+    CONF=conf8
     sst_run
     CONF_TEST=""
   fi
