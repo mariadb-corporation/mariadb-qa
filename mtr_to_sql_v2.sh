@@ -132,6 +132,7 @@ cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Merge.*UNION" | sed 's|EN
 cat ${TEMP_SQL} | grep --binary-files=text -i "DROP TABLE t1" | head -n 3000 >> ${FINAL_SQL}   # Ensure plenty of DROP TABLE t1
 cat ${TEMP_SQL} | grep --binary-files=text -i "DROP TABLE t1" | head -n 3000 | sed 's|DROP TABLE t1|DROP VIEW v1|gi' >> ${FINAL_SQL} # Ensure plenty of DROP VIEW v1
 sed -i "s|\(CREATE.*VIEW.*\)t1\(.*\)|\1v1\2|gi" ${FINAL_SQL}  # Avoid views with name t1
+sed -i "s|IDENTIFIED[ \t]*BY[ \t]*[PASSWORD]*[ \t]*[^ ,;#/]\+\([ ,;#/]\)|\1|g" ${FINAL_SQL}  # Avoids 'IDENTIFIED BY [PASSWORD]' clauses which may lock out root with statements like 'GRANT INSERT ON *.* TO CURRENT_USER() IDENTIFIED BY 'somepwd';'
 
 # Shuffle final grammar
 echoit "> Stage 4: Shuffling final grammar..."

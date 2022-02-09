@@ -65,8 +65,11 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+(cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|partition_info_compare_column_values|check_range_constants                             ## MDEV-27768
+(cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|group_concat_key_cmp_with_distinct|tree_insert                                         ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|group_concat_key_cmp_with_order|tree_insert                                            ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|Field::key_cmp|SEL_ARG::sel_cmp                                                        ## MDEV-27768
+(cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_data_data|cmp_dfield_dfield                                                                 ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_dtuple_rec_with_match_low|cmp_dtuple_rec                                                    ## MDEV-27768 
 next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                     ## MDEV-27770
 l_offset >= 0 && table->s->rec_buff_length - l_offset > 0|SIGABRT|Field::ptr_in_record|Column_definition::Column_definition|Create_field::Create_field|mysql_prepare_alter_table ## MDEV-27769
