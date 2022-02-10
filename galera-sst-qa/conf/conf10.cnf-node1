@@ -1,0 +1,9 @@
+# [sst] external innodb files + encrypt3
+ssl-ca=/home/ramesh/mariadb-qa/galera-sst-qa/cert/ca.pem
+ssl-key=/home/ramesh/mariadb-qa/galera-sst-qa/cert/server-key.pem
+ssl-cert=/home/ramesh/mariadb-qa/galera-sst-qa/cert/server-cert.pem
+[sst]
+encrypt=3
+ssl-ca=/home/ramesh/mariadb-qa/galera-sst-qa/cert/ca.pem
+ssl-key=/home/ramesh/mariadb-qa/galera-sst-qa/cert/server-key.pem
+ssl-cert=/home/ramesh/mariadb-qa/galera-sst-qa/cert/server-cert.pem

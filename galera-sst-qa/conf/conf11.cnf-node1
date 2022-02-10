@@ -1,0 +1,5 @@
+# [sst] TLS Using OpenSSL Encryption Built into Socat
+[sst]
+encrypt=2
+tca=/home/ramesh/mariadb-qa/galera-sst-qa/cert/sst.crt
+tcert=/home/ramesh/mariadb-qa/galera-sst-qa/cert/sst.pem

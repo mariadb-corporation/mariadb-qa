@@ -1,5 +1,5 @@
 # [sst] xbstream + encrypt3
 [sst]
 encrypt=3
-tkey=/test/mtest/cert/server-key.pem
-tcert=/test/mtest/cert/server-cert.pem
+tkey=/home/ramesh/mariadb-qa/galera-sst-qa/cert/server-key.pem
+tcert=/home/ramesh/mariadb-qa/galera-sst-qa/cert/server-cert.pem
