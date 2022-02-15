@@ -65,6 +65,7 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+0|SIGABRT|wsrep::server_state::state|wsrep::server_state::on_sync|wsrep_provider_v26.cpp|galera::ReplicatorSMM::process_sync                                                   ## MDEV-27847
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|partition_info_compare_column_values|check_range_constants                             ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|group_concat_key_cmp_with_distinct|tree_insert                                         ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|group_concat_key_cmp_with_order|tree_insert                                            ## MDEV-27768

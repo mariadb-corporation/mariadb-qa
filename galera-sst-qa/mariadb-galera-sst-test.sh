@@ -349,8 +349,9 @@ start_galera_nodes(){
      cat ${SCRIPT_PWD}/conf/${CONF}.cnf-node${j} >> ${WORKDIR}/n${j}.cnf
     fi
     if [[ -n ${VERIFY_ENCRYPTION_OPT} ]]; then
-      sed -i  "0,/^[ \t]*tkey[ \t]*=.*$/s|^[ \t]*tkey[ \t]*=.*$|tkey=${WORKDIR}/cert/server-key.pem|" ${WORKDIR}/n${j}.cnf
-      sed -i  "0,/^[ \t]*tcert[ \t]*=.*$/s|^[ \t]*tcert[ \t]*=.*$|tcert=${WORKDIR}/cert/server-cert.pem|" ${WORKDIR}/n${j}.cnf
+      sed -i "s/\/home\/ramesh\/mariadb-qa\/galera-sst-qa\/cert/${SCRIPT_PWD}\/cert/g" ${WORKDIR}/n${j}.cnf
+      #sed -i  "0,/^[ \t]*tkey[ \t]*=.*$/s|^[ \t]*tkey[ \t]*=.*$|tkey=${WORKDIR}/cert/server-key.pem|" ${WORKDIR}/n${j}.cnf
+      #sed -i  "0,/^[ \t]*tcert[ \t]*=.*$/s|^[ \t]*tcert[ \t]*=.*$|tcert=${WORKDIR}/cert/server-cert.pem|" ${WORKDIR}/n${j}.cnf
     fi
     if [ ${j} -eq 1 ]; then
       echoit "${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/n${j}.cnf ${MYEXTRA} --wsrep-new-cluster > ${WORKDIR}/logs/node${j}.err 2>&1 &"
