@@ -49,7 +49,7 @@ SCRIPT_PWD=$(cd "`dirname $0`" && pwd)  # The directory reducer.sh is in (to ref
 # === Sporadic testcases        # Used when testcases prove to be sporadic *and* fail to reduce using basic methods
 FORCE_SKIPV=0                   # On/Off (1/0) Forces verify stage to be skipped (auto-enables FORCE_SPORADIC)
 FORCE_SPORADIC=0                # On/Off (1/0) Forces issue to be treated as sporadic
-NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat/try/attempt each trial 1 time. Increase to re-attempt trials when reduction was not succesful for that trial; ideal for sporadic issues which need x attempts per trial. Will work irrespective of detected sporadicity.
+NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat/try/attempt each trial 1 time. Increase to re-attempt trials when reduction was not succesful for that trial; ideal for sporadic issues which need x attempts per trial. Will work irrespective of detected sporadicity. Ref https://jira.mariadb.org/browse/TODO-3017
 
 # === True Multi-Threaded       # True multi-threaded testcase reduction (only program in the world that does this) based on random replay (auto-covers sporadic testcases)
 PQUERY_MULTI=0                  # On/off (1/0) Enables true multi-threaded testcase reduction based on random replay (auto-enables USE_PQUERY)
@@ -391,7 +391,7 @@ if [[ ${RR_TRACING} -eq 1 ]]; then
   fi
   export RR_OPTIONS="$(which rr) record --chaos"
 else
-  export RR_OPTIONS=""
+  export RR_OPTIONS=
 fi
 if [[ "${MYEXTRA}" == *"ha_rocksdb.so"* ]]; then
   if [ -r ${BASEDIR}/lib/mysql/plugin/ha_rocksdb.so ]; then
@@ -974,6 +974,19 @@ options_check(){
     elif [ $PQUERY_MULTI_CLIENT_THREADS -lt 5 ]; then
       echo_out "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to $PQUERY_MULTI_CLIENT_THREADS, $PQUERY_MULTI_CLIENT_THREADS threads for reproducing a multi-threaded issue via random replay seems insufficient. You may want to increase PQUERY_MULTI_CLIENT_THREADS. Proceeding, but this is likely incorrect. Please check"
     fi
+    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+      # TODO: Can be partially automated by checking the testcase length (# of lines) versus STAGE1_LINES
+      echo_out "[Setup] Warning: possible misconfiguration: NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}) yet PQUERY_MULTI is turned on, which in turn ensured FORCE_SKIPV was turned on. Did you set STAGE1_LINES (value: ${STAGE1_LINES}) sufficiently low to ensure progression to stage 2?"
+    fi
+  else
+    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+      if [ ${SKIPSTAGEBELOW} -eq 0 ]; then
+        echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts (i.e. in stage 2). The verify stage will be skipped automatically"
+      else
+        echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts in stage $[ ${SKIPSTAGEBELOW} + 1 ]"
+      fi
+      export -n FORCE_SKIPV=0
+    fi
   fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
@@ -1263,7 +1276,7 @@ multi_reducer(){
     # With FIREWORKS: to find a new bug
     # Note that the term/file '/VERIFIED' is used for both instances/occurences
     if [ "${FIREWORKS}" != "1" ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed to be sporadic: this may take time)"
+      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed or assumed to be sporadic: this may take time)"
     else
       echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked subreducer threads to find a new bug"
     fi
@@ -1394,7 +1407,7 @@ multi_reducer(){
 
   if [ "$STAGE" = "V" ]; then
     # Check thread outcomes
-    TXT_OUT=""
+    TXT_OUT=
     for t in $(eval echo {1..$MULTI_THREADS}); do
       export MULTI_WORKD=$(eval echo $(echo '$WORKD'"$t"))
       if [ -s $MULTI_WORKD/VERIFIED ]; then
@@ -1802,10 +1815,12 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  echo_out "[Init] Number of times each trial will be attempted: ${NR_OF_TRIAL_REPEATS}x"
+  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+    echo_out "[Init] Number of times each individual trial will be attempted: ${NR_OF_TRIAL_REPEATS}x"
+  fi
 
   if [ ${NR_OF_TRIAL_REPEATS} -gt 50 ]; then
-    echo "Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
+    echo_out "[Init] Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
   fi
   if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echo_out "[Init] Passing the following additional options to mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
   if [ "$MYINIT" != "" ]; then echo_out "[Init] Passing the following additional options to mysqld initialization: $MYINIT"; fi
@@ -1860,8 +1875,8 @@ init_workdir_and_files(){
     INIT_OPT="--no-defaults --initialize-insecure ${MYINIT}"  # Compatible with     5.7,8.0 (mysqld init)
     INIT_TOOL="${BIN}"                # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
     VERSION_INFO=$(${BIN} --version | grep -E --binary-files=text -oe '[58]\.[01567]' | head -n1)
-    VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-8]' | head -n1)
-    if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" ]; then
+    VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9]' | head -n1)
+    if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" -o "${VERSION_INFO_2}" == "10.9" ]; then
       VERSION_INFO="5.6"
       INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
       INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
@@ -1903,7 +1918,7 @@ init_workdir_and_files(){
         if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
           echo_out "[Init] [NOTE] Failed to cleanly start mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mysqld). Normally this would cause reducer.sh to halt here (and advice you to check $WORKD/log/master.err, $WORKD/log/mysqld.out, $WORKD/init.log, and maybe $WORKD/data/error.log + check that there is plenty of space on the device being used). However, because REDUCE_STARTUP_ISSUES is set to 1, we continue this reducer run. See above for more info on the REDUCE_STARTUP_ISSUES setting"
         else
-          echo_out "[Init] [ERROR] Failed to start mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mysqld), check $WORKD/log/master.err, $WORKD/log/mysqld.out, $WORKD/init.log, and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used (Ref: $WORKO)"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
+          echo_out "[Init] [ERROR] Failed to start mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mysqld), check $WORKD/log/master.err, $WORKD/log/mysqld.out, $WORKD/init.log, and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
           echo_out "[Init] [INFO] If however you want to debug a mysqld startup issue, for example caused by a misbehaving --option to mysqld, set REDUCE_STARTUP_ISSUES=1 and restart reducer.sh"
           echo "Terminating now."
           exit 1
@@ -1985,7 +2000,7 @@ generate_run_scripts(){
   echo -e "  echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;\nfi" >> $WORK_INIT
   echo "MID=\`find \${BASEDIR} -maxdepth 2 -name mariadb-install-db -o -name mysql_install_db | head -n1\`" >> $WORK_INIT
   echo "VERSION=\"\`\$BIN --version | grep -E --binary-files=text -oe '[58]\.[15670]' | head -n1\`\"" >> $WORK_INIT
-  echo "VERSION2=\"\`\$BIN --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-8]' | head -n1\`\"" >> $WORK_INIT
+  echo "VERSION2=\"\`\$BIN --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9]' | head -n1\`\"" >> $WORK_INIT
   echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then MID_OPTIONS='--no-defaults --initialize-insecure ${MYINIT}'; elif [ \"\$VERSION\" == \"5.6\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION}\" == \"5.5\" ]; then MID_OPTIONS='--force ${MYINIT}';elif [ \"\${VERSION2}\" == \"10.1\" -o \"\${VERSION2}\" == \"10.2\" -o \"\${VERSION2}\" == \"10.3\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION2}\" == \"10.4\" -o \"\${VERSION2}\" == \"10.5\" -o \"\${VERSION2}\" == \"10.6\" -o \"\${VERSION2}\" == \"10.7\" -o \"\${VERSION2}\" == \"10.8\" ]; then MID_OPTIONS='--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}'; else MID_OPTIONS='${MYINIT}'; fi" >> $WORK_INIT
   if [[ ${MDG} -eq 1 ]]; then
     for i in $(seq 1 ${NR_OF_NODES}); do
@@ -2144,7 +2159,7 @@ start_mysqld_or_valgrind_or_mdg(){
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
           echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, assuming this option set is required"
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/master.err, $WORKD/log/mysqld.out and $WORKD/init.log (Ref: $WORKO)"
+          echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/master.err, $WORKD/log/mysqld.out and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
           echo "Terminating now."
           exit 1
         fi
@@ -2212,8 +2227,8 @@ start_mdg_main(){
   rm -rf $WORKD/tmp*
   unset MDG_PORTS
   unset MDG_LADDRS
-  MDG_PORTS=""
-  MDG_LADDRS=""
+  MDG_PORTS=
+  MDG_LADDRS=
   for i in $(seq 1 ${NR_OF_NODES}); do
     node=${WORKD}/node${i}
     mkdir -p $WORKD/tmp${i}
@@ -2500,7 +2515,7 @@ start_valgrind_mysqld_main(){
   done
   if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
     if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer. No point in displaying this for subreducers, as the said files will already have been replaced
-      echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server under Valgrind, check $WORKD/log/master.err, $WORKD/valgrind.out and $WORKD/init.log (Ref: $WORKO)"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
+      echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server under Valgrind, check $WORKD/log/master.err, $WORKD/log/mysqld.out, $WORKD/init.log, and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
     fi
     echo "Terminating now."
     exit 1
@@ -2959,8 +2974,8 @@ process_outcome(){
     else  # mysql CLI output testing run
       FILETOCHECK=$WORKD/log/mysql.out
     fi
-    NEWLINENUMBER=""
-    NEWLINENUMBER=$(grep -E --binary-files=text "$QCTEXT" $FILETOCHECK2|grep -E --binary-files=text -o "#[0-9]+$"|sed 's/#//g')
+    NEWLINENUMBER=
+    NEWLINENUMBER="$(grep -E --binary-files=text "$QCTEXT" $FILETOCHECK2|grep -E --binary-files=text -o "#[0-9]+$"|sed 's/#//g')"
     # TODO: Add check if same query has same output multiple times (add variable for number of occurences)
     if [ $(grep -E --binary-files=text -c "$TEXT#$NEWLINENUMBER$" $FILETOCHECK) -gt 0 ]; then
       if [ ! "$STAGE" = "V" ]; then
@@ -3488,7 +3503,7 @@ stop_mysqld_or_mdg(){
         done
       fi
     fi
-    PIDV=""
+    PIDV=
   fi
   RUN_TIME=$[ ${RUN_TIME} + $(date +'%s') - ${SHUTDOWN_TIME_START} ]  # Add shutdown runtime to overall runtime which is later checked against TIMEOUT_CHECK
 }
@@ -3637,7 +3652,7 @@ verify_not_found(){
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is the parent - change pathnames to reflect that issue was in a subreducer
     EXTRA_PATH="subreducer/<nr>/"
   else
-    EXTRA_PATH=""
+    EXTRA_PATH=
   fi
   echo_out "$ATLEASTONCE [Stage $STAGE] Initial verify of the issue: fail. Bug/issue is not present under given conditions, or is very sporadic. Terminating."
   echo_out "[Finish] Verification failed. It may help to check the following files to get an idea as to why this run did not reproduce the issue (if these files do not give any further hints, please check variable/initialization differences, enviroment differences etc. and also reference 'reproducing_and_simplification.txt' in mariadb-qa for many additional reproduction/simplification ideas):"
@@ -3673,9 +3688,7 @@ verify_not_found(){
 #STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
 verify(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed to be sporadic)"
-    # Ref https://jira.mariadb.org/browse/TODO-3017
-    # Instead of using STAGE V to verify if the issue exists, one can simply test reproducibility using FORCE_SKIPV=1 with multi-threaded pre-reduction (with a high number of MULTI_THREADS like 30 or more) until such approximate time as pquery-go-expert.sh (~/pge) is normally needed.
+    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed to be sporadic)"  # "issue deemed to be sporadic": it is good to display this here. as FORCE_SKIPV is always 0 when NR_OF_TRIAL_REPEATS > 1 (configured during setup), and because FORCE_SKIPV is 0, such message is not displayed in the log otherwise
     return
   fi
   STAGE='V'
@@ -5191,7 +5204,7 @@ fi
 
 #STAGE9: Execute storage engine, binlogging, keyring and similar options simplification.
 if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
-  NEXTACTION=""
+  NEXTACTION=
   STAGE=9
   TRIAL=1
   echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
@@ -5200,10 +5213,10 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
   stage9_run(){
     TRIAL_REPEAT_COUNT=0
     STAGE9_CHK=0
-    SAVE_MYINIT=""
+    SAVE_MYINIT=
     if [[ ${MYINIT_DROP} -eq 1 ]]; then
       SAVE_MYINIT=${MYINIT}
-      MYINIT=""
+      MYINIT=
     fi
     STAGE9_NOT_STARTED_CORRECTLY=0
     SAVE_SPECIAL_MYEXTRA_OPTIONS=$SPECIAL_MYEXTRA_OPTIONS

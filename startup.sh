@@ -98,10 +98,10 @@ INIT_OPT="--no-defaults --initialize-insecure" # Compatible with     5.7,8.0 (my
 INIT_TOOL="${BIN}"                             # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
 VERSION_INFO=$(${BIN} --version | grep --binary-files=text -oe '[58]\.[01567]' | head -n1)
 if [ -z "${VERSION_INFO}" ]; then VERSION_INFO="NA"; fi
-VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-8]' | head -n1)
+VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9]' | head -n1)
 if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
 
-if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" ]; then
+if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" -o "${VERSION_INFO_2}" == "10.9" ]; then
   VERSION_INFO="5.6"
   INIT_TOOL="${PWD}/scripts/mariadb-install-db"
   INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
@@ -157,8 +157,8 @@ else
 fi
 
 # Setup scritps
-rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test wipe* clean_failing_queries memory_use_trace
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
+rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery wipe* clean_failing_queries memory_use_trace
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -683,9 +683,11 @@ echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprom
 touch cl_noprompt_nobinary
 add_san_options cl_noprompt_nobinary
 echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
-touch test
+touch test test_pquery
 add_san_options test
+add_san_options test_pquery
 echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
+echo "/home/$(whoami)/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery
 
 echo '#!/bin/bash' > clean_failing_queries
 echo '# This script elimiates failing queries from in.sql in two different ways and saves the results in cleaned1.sql and cleaned2.sql' >> clean_failing_queries
@@ -838,7 +840,7 @@ echo 'MYEXTRA_OPT="$*"' >all_rr
 echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10;./cl" >>all_rr
 echo "echo '1/4th sec memory snapshots, for the mysqld in this directory, logged to memory.txt'; rm -f memory.txt; echo '    PID %MEM   RSS    VSZ COMMAND'; while true; do if [ \"\$(ps -ef | grep ${PORT} | grep -v grep)\" ]; then ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep \"\$(ps -ef | grep ${PORT} | grep -v grep | head -n1 | awk '{print \$2}')\" | tee -a memory.txt ; sleep 0.25; else sleep 0.05; fi; done" >memory_use_trace
 if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
-chmod +x insert_start_marker insert_stop_marker start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr all_no_cl_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init repl_setup multirun* reducer_* clean_failing_queries memory_use_trace 2>/dev/null
+chmod +x insert_start_marker insert_stop_marker start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test test_pquery kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr all_no_cl_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init repl_setup multirun* reducer_* clean_failing_queries memory_use_trace 2>/dev/null
 
 # Adding galera all script
 echo './gal --sql_mode=' >gal_sqlmode

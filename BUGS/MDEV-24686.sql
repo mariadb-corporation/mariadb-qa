@@ -100,3 +100,24 @@ SET GLOBAL event_scheduler=ON;
 ALTER EVENT d ON SCHEDULE EVERY 1 DAY STARTS '2000-01-01 00:00:00';
 SELECT SLEEP (3);
 
+SET TIMESTAMP=1040323931;#NOERROR
+CREATE EVENT ev2 ON SCHEDULE EVERY 1 SECOND DO INSERT INTO t1  VALUES (SLEEP(0.01),CONCAT('ev2_',CONNECTION_ID()));#NOERROR
+create event _user1 on schedule every 10 second do select 42;#NOERROR
+SET GLOBAL event_scheduler= ON;#NOERROR
+CREATE EVENT event_starts_test ON SCHEDULE EVERY 10 SECOND COMMENT "" DO SELECT 1;#NOERROR
+ALTER EVENT event_starts_test ON SCHEDULE AT '2020-02-02 20:00:02';#NOERROR
+create event ev_log_general on schedule at now() on completion not preserve do select 'events_logs_test' as inside_event;#NOERROR
+create event e1 on schedule every 10 hour do select 1;#NOERROR
+DROP EVENT ev2;#NOERROR
+CREATE TABLE IF NOT EXISTS `������`(`������` char(1)) DEFAULT CHARSET = sjis engine=TokuDB;#ERROR: 1300 - Invalid utf8 character string: '\x82\xA0\x82\xA0\x82\xA0'
+
+SET TIMESTAMP=1040323931;
+CREATE EVENT ev2 ON SCHEDULE EVERY 1 SECOND DO INSERT INTO t1 VALUES (SLEEP (0.01),CONCAT ('ev2_',connection_id()));
+CREATE EVENT _user1 ON SCHEDULE EVERY 10 SECOND DO SELECT 42;
+SET GLOBAL event_scheduler=ON;
+CREATE EVENT event_STARTS_test ON SCHEDULE EVERY 10 SECOND COMMENT "" DO SELECT 1;
+ALTER EVENT event_STARTS_test ON SCHEDULE AT '2020-02-02 20:00:02';
+CREATE EVENT ev_log_general ON SCHEDULE at NOW() ON completion NOT preserve DO SELECT 'events_logs_test' AS inside_event;
+CREATE EVENT e1 ON SCHEDULE EVERY 10 HOUR DO SELECT 1;
+DROP EVENT ev2;
+CREATE TABLE IF NOT EXISTS ������ (������ CHAR(1)) DEFAULT CHARSET=sjis ENGINE=TokuDB;

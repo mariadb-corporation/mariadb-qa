@@ -11,6 +11,7 @@ rm -Rf 10.5
 rm -Rf 10.6
 rm -Rf 10.7
 rm -Rf 10.8
+rm -Rf 10.9
 echo ""
 sleep 0.1
 #./clone.sh 10.1 &
@@ -21,3 +22,4 @@ sleep 0.1
 ./clone.sh 10.6 &
 ./clone.sh 10.7 &
 ./clone.sh 10.8 &
+./clone.sh 10.9 &

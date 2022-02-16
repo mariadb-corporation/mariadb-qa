@@ -360,6 +360,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|=off;$|=OFF;|g' | \
   sed 's|ignore|IGNORE|gi' | \
   sed 's|world|world|gi' | \
+  sed 's|sql_mode= |sql_mode=|gi' | \
   sed 's|  | |gi'
 
 # Templates for copy/paste

@@ -41,29 +41,32 @@ grep --binary-files=text -i 'create table' "${INPUT}" | \
 echo "Stage #2/3 processing..."
 rm -f "${OUT}"
 touch "${OUT}"
-sed 's|ENGINE=DUMMY9000|ENGINE=InnoDB|gi' "${TMP}" >> "${OUT}"
-sed 's|ENGINE=DUMMY9000|ENGINE=Spider|gi' "${TMP}" >> "${OUT}"
-sed 's|ENGINE=DUMMY9000|ROW_FORMAT=DYNAMIC ENGINE=InnoDB|gi' "${TMP}" >> "${OUT}"
-sed 's|ENGINE=DUMMY9000|ROW_FORMAT=REDUNDANT ENGINE=InnoDB|gi' "${TMP}" >> "${OUT}"
 
+# Actual SE changes, edit as needed
+#sed 's|ENGINE=DUMMY9000|ENGINE=InnoDB|gi' "${TMP}" >> "${OUT}"
+sed 's|ENGINE=DUMMY9000|ENGINE=Spider|gi' "${TMP}" >> "${OUT}"
+#sed 's|ENGINE=DUMMY9000|ROW_FORMAT=DYNAMIC ENGINE=InnoDB|gi' "${TMP}" >> "${OUT}"
+#sed 's|ENGINE=DUMMY9000|ROW_FORMAT=REDUNDANT ENGINE=InnoDB|gi' "${TMP}" >> "${OUT}"
+
+# MDEV-25440 specific
 # Add all possible nopad collations. Data size increases x 37 (there are 37 collations)
 # Remove duplicates. Data size decreases approximately 2.7 fold (TODO: why?)
-echo "Stage #3/3 processing (input: $(wc -l "${OUT}" | tr -d '\n' | awk '{print $1}') lines)..."
-swap_out_tmp
-cd "${BRANCH}"
-grep --binary-files=text 'charset_info.*nopad' include/m_ctype.h | \
- sed 's|.*my_charset_||;s|;||' | \
- xargs -I{} sed "s|ENGINE=|COLLATE={} ENGINE=|gi" "${TMP}" | \
- sort -u > "${OUT}"
+#echo "Stage #3A/3A processing (input: $(wc -l "${OUT}" | tr -d '\n' | awk '{print $1}') lines)..."
+#swap_out_tmp
+#cd "${BRANCH}"
+#grep --binary-files=text 'charset_info.*nopad' include/m_ctype.h | \
+# sed 's|.*my_charset_||;s|;||' | \
+# xargs -I{} sed "s|ENGINE=|COLLATE={} ENGINE=|gi" "${TMP}" | \
+# sort -u > "${OUT}"
 
 # Interleave SQL with DROP TABLE statements. Note: do not add 'sort -u' to this command
-echo "Stage #4/4 processing..."
+echo "Stage #3/3 processing..."
 swap_out_tmp
 sed "s|$|\nDROP TABLE IF EXISTS t1;|" "${TMP}" > "${OUT}" 
 
 # Cleanup
 rm ${TMP}
-echo "Prelim done! ${OUT} ($(wc -l ${OUT} | tr -d '\n' | awk '{print $1}') lines)"
+echo "Preliminary done! ${OUT} ($(wc -l ${OUT} | tr -d '\n' | awk '{print $1}') lines)"
 echo ''
 echo 'Next step: cleanup SQL. Use something like:'
 echo ''
@@ -76,12 +79,13 @@ echo "~/mariadb-qa/pquery/pquery2-md --infile=${OUT} --threads=1 --queries-per-t
 echo "grep --binary-files=text -vEi '^DROP TABLE|Unknown database|Unknown collation|error in your SQL syntax' default.node.tld_thread-0.sql > final.tmp && wc -l final.tmp"
 echo "sed 's|$|\\nDROP TABLE IF EXISTS t1;|' final.tmp > final.sql && rm -f final.tmp"
 echo ''
-echo 'The resultiing SQL is in final.sql'
+echo 'The resulting SQL is in final.sql'
 echo ''
 echo 'To monitor progress while queries are being checked:'
 echo ''
 echo './cl'
 echo "sql> SHOW GLOBAL STATUS LIKE '%queries%';"
+echo "sql> SYSTEM wc -l ${OUT}"
 echo ''
-echo "And compare this with wc -l ${OUT}"
+echo 'And compare the two numbers'
 

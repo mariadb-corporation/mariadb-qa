@@ -107,6 +107,7 @@ else
     fi; STORE_COUNT_FOUND_AND_DEL=
   done
   if [ ${COUNT_FOUND_AND_NOT_DEL} -ge 1 -a ${COUNT_FOUND_AND_DEL} -eq 0 ]; then
+    echo ""
     echo "> Though $(ls -ld /dev/shm/* | wc -l) tmpfs directories were found on /dev/shm, they are all in use. Nothing was deleted."
   else
     if [ ${COUNT_FOUND_AND_DEL} -gt 0 ]; then

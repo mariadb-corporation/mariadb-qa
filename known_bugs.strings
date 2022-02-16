@@ -65,12 +65,17 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-27855
+! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|my_message_sql|my_error                                                   ## MDEV-27855
+SIGSEGV|replace_routine_table|mysql_routine_grant|Sql_cmd_grant_sp::execute|mysql_execute_command                                                                              ## MDEV-27842
+SIGSEGV|replace_routine_table|mysql_routine_grant|mysql_execute_command|mysql_parse                                                                                            ## MDEV-27842
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|partition_info_compare_column_values|check_range_constants                             ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|group_concat_key_cmp_with_distinct|tree_insert                                         ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|group_concat_key_cmp_with_order|tree_insert                                            ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|Field::key_cmp|SEL_ARG::sel_cmp                                                        ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_data_data|cmp_dfield_dfield                                                                 ## MDEV-27768
-(cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_dtuple_rec_with_match_low|cmp_dtuple_rec                                                    ## MDEV-27768 
+(cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_dtuple_rec_with_match_low|cmp_dtuple_rec                                                    ## MDEV-27768
+(cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_whole_field|cmp_data|cmp_dtuple_rec_with_match_low                                                   ## MDEV-27768
 next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                     ## MDEV-27770
 l_offset >= 0 && table->s->rec_buff_length - l_offset > 0|SIGABRT|Field::ptr_in_record|Column_definition::Column_definition|Create_field::Create_field|mysql_prepare_alter_table ## MDEV-27769
 SIGSEGV|ull_get_key|my_hash_key|hashcmp|my_hash_first_from_hash_value                                                                                                          ## MDEV-24143
@@ -311,6 +316,7 @@ SIGSEGV|my_strndup|Event_queue_element_for_exec::init|Event_queue::get_top_for_e
 SIGSEGV|Event_queue::drop_matching_events|Event_queue::drop_schema_events|Events::drop_schema_events|mysql_rm_db_internal                                                      ## MDEV-24686
 SIGSEGV|my_scan_weight_utf8_general_ci|my_strnncollsp_utf8_general_ci|sortcmp_lex_string|event_basic_identifier_equal                                                          ## MDEV-24686
 SIGSEGV|my_scan_weight_utf8mb3_general_ci|my_strnncollsp_utf8mb3_general_ci|charset_info_st::strnncollsp|sortcmp_lex_string                                                    ## MDEV-24686
+SIGSEGV|my_scan_weight_utf8mb3_general_ci|my_scan_weight_utf8mb3_general_ci|my_strnncollsp_utf8mb3_general_ci|event_basic_identifier_equal                                     ## MDEV-24686
 SIGSEGV|main_arena () from|Event_queue::empty_queue|Event_queue::deinit_queue|Event_queue::~Event_queue                                                                        ## MDEV-24686
 SIGSEGV|Event_db_repository::load_named_event|Events::create_event|mysql_execute_command|mysql_parse                                                                           ## MDEV-24686
 SIGSEGV|Event_queue::get_top_for_execution_if_time|Event_scheduler::run|event_scheduler_thread|start_thread                                                                    ## MDEV-24686
@@ -346,6 +352,7 @@ tmp != ((long long) 0x8000000000000000LL)|SIGABRT|TIME_from_longlong_datetime_pa
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, db, table_name, MDL_EXCLUSIVE)|SIGABRT|tdc_remove_table|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command            ## MDEV-24382
 SIGSEGV|heap_info|ha_heap::info|TABLE_LIST::fetch_number_of_rows|make_join_statistics                                                                                          ## MDEV-24383
 len < sizeof(tmp_buff)|SIGABRT|ut_dbg_assertion_failed|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_key_column_usage_record                               ## MDEV-24356
+len < sizeof(tmp_buff)|SIGABRT|ut_dbg_assertion_failed|get_foreign_key_info|ha_innobase::get_parent_foreign_key_list|prepare_fk_prelocking_list                                ## MDEV-24356
 len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_key_column_usage_record|fill_schema_table_by_open                             ## MDEV-24356
 len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_key_column_usage_record|get_schema_key_column_usage_record                    ## MDEV-24356
 SIGSEGV|__memset_avx2_erms|memset|log_t::create|srv_start                                                                                                                      ## MDEV-24269
@@ -375,6 +382,7 @@ length < 249|SIGABRT|Transaction_state_tracker::store|Session_tracker::store|Pro
 share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                         ## MDEV-23699
 SIGABRT|ib::fatal::~fatal|buf_page_io_complete|buf_read_page_low|buf_read_page                                                                                                 ## MDEV-23667
 length <= 64|SIGABRT|PFS_variable_name_row::make_row|User_variables::materialize|table_uvar_by_thread::materialize|table_uvar_by_thread::rnd_next                              ## MDEV-23665
+length <= NAME_CHAR_LEN|SIGABRT|PFS_variable_name_row::make_row|User_variables::materialize|table_uvar_by_thread::materialize|table_uvar_by_thread::rnd_next                   ## MDEV-23665
 (m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item_decimal_typecast::val_str                                          ## MDEV-23664
 (m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item::save_decimal_in_field                                             ## MDEV-23664
 fd != -1|SIGABRT|my_seek|azrewind|ha_archive::read_data_header|ha_archive::rnd_init                                                                                            ## MDEV-23448
@@ -387,6 +395,8 @@ t->s->tmp_table || thd->mdl_context.is_lock_owner(MDL_key::TABLE, t->s->db.str, 
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Column_definition::create_interval_from_interval_list|Column_definition::prepare_interval_field          ## MDEV-23210
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_ci_lengthsp|my_uca_strnxfrm_utf32|charset_info_st::strnxfrm                                                                     ## MDEV-23210
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_uca_strnxfrm_utf32|Type_handler_string_result::make_sort_key|make_sortkey                                                       ## MDEV-23210
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Field::save_in_field_str|Field_enum::save_in_field                                                               ## MDEV-23210
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Field_enum::store|Field::save_in_field_str                                                               ## MDEV-23210
 SIGSEGV|TABLE_LIST::print|print_table_array|print_join|st_select_lex::print                                                                                                    ## MDEV-23208
 s|SIGABRT|TABLE::versioned|TABLE_LIST::print|print_table_array|print_join                                                                                                      ## MDEV-23208
 tl->table == __null|SIGABRT|THD::open_temporary_table|THD::open_temporary_tables|open_only_one_table|mysql_admin_table                                                         ## MDEV-23207
@@ -548,6 +558,7 @@ m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_interna
 marked_for_read()|SIGABRT|Field_blob::val_str|Item_field::val_str|Item::val_str|Item_func_hash::val_int                                                                        ## ~MDEV-22551
 SIGSEGV|check_vcol_forward_refs|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table                                                                              ## MDEV-22525
 false|SIGABRT|set_field_lock_type|table_table_handles::read_row_values|PFS_engine_table::read_row|ha_perfschema::rnd_next                                                      ## MDEV-22576
+false|SIGABRT|set_field_lock_type|table_table_handles::read_row_values|table_table_handles::read_row_values|ha_perfschema::rnd_next                                            ## MDEV-22576
 offset < table->s->reclength|SIGABRT|dump_leaf_key|Item_func_group_concat::add|Item_func_group_concat::add|Aggregator_simple::add                                              ## MDEV-22675
 bitmap_is_set(&(m_part_info->read_partitions), m_last_part)|SIGABRT|ha_partition::position|multi_delete::send_data|select_result_sink::send_data_with_check|end_send           ## MDEV-22667
 result != FTS_INVALID|SIGABRT|ut_dbg_assertion_failed|fts_trx_row_get_new_state|fts_trx_table_add_op|fts_trx_add_op                                                            ## MDEV-22676
