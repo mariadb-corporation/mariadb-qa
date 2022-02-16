@@ -65,6 +65,7 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+SIGSEGV|spider_parse_connect_info|spider_create_share|spider_discover_table_structure|create_table_impl                                                                        ## MDEV-27860
 page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                                   ## MDEV-27858
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|execute_init_command                                          ## MDEV-27857
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|execute_init_command                                           ## MDEV-27857
