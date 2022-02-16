@@ -1,0 +1,7 @@
+SET unique_checks=0, foreign_key_checks=0, autocommit=0;
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+CREATE TABLE t2 (c INT) ENGINE=InnoDB;
+INSERT INTO t2 VALUES (1);
+LOCK TABLES t WRITE,t2 WRITE;
+INSERT INTO t VALUES (1);
+INSERT INTO t2 VALUES (1);

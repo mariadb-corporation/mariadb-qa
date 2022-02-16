@@ -375,20 +375,25 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then
       fi
     elif [ ! -z "${TEXT}" ]; then
       FRAMEX="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*|.*$/\1/')"
-      if [ ${SAN_MODE} -eq 1 ]; then
-        OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
+      if [ "${FRAMEX}" == "mysql_execute_command" ]; then
+        echo "BUG NOT FOUND (IDENTICALLY) IN KNOWN BUGS LIST! HOWEVER, A PARTIAL MATCH BASED ON THE 1st FRAME ('${FRAMEX}') WAS FOUND, BUT AS THAT STRING IS TOO GENERIC (AND THERE ARE THUS TOO MANY MATCHES), NO OUTPUT IS SHOWN HERE"
       else
-        OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"
-      fi
-      if [ -z "${OUT2}" ]; then
-        echo "NOT FOUND: Bug not found yet in known_bugs.strings!"
-        echo "*** THIS IS POSSIBLY A NEW BUG; BUT CHECK NEXT TODO ITEM BELOW FIRST! ***"
-      else
-        echo "BUG NOT FOUND (IDENTICALLY) IN KNOWN BUGS LIST! HOWEVER, A PARTIAL MATCH BASED ON THE 1st FRAME ('${FRAMEX}') WAS FOUND, AS FOLLOWS: (PLEASE CHECK IT IS NOT THE SAME BUG):"
-        echo "${OUT2}"
+        OUT2=
+        if [ ${SAN_MODE} -eq 1 ]; then
+          OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
+        else
+          OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"
+        fi
+        if [ -z "${OUT2}" ]; then
+          echo "NOT FOUND: Bug not found yet in known_bugs.strings!"
+          echo "*** THIS IS POSSIBLY A NEW BUG; BUT CHECK NEXT TODO ITEM BELOW FIRST! ***"
+        else
+          echo "BUG NOT FOUND (IDENTICALLY) IN KNOWN BUGS LIST! HOWEVER, A PARTIAL MATCH BASED ON THE 1st FRAME ('${FRAMEX}') WAS FOUND, AS FOLLOWS: (PLEASE CHECK IT IS NOT THE SAME BUG):"
+          echo "${OUT2}"
+        fi
+        OUT2=
       fi
       FRAMEX=
-      OUT2=
     fi
     FINDBUG=
   fi
