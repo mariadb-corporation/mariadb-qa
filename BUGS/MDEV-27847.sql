@@ -1,0 +1,5 @@
+SET SESSION wsrep_osu_method=RSU;
+CREATE FUNCTION fun1(x INT,y INT) RETURNS INT RETURN x;
+SELECT 1;
+SET GLOBAL wsrep_cluster_address=DEFAULT;
+
