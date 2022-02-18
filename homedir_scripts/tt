@@ -89,6 +89,11 @@ if [ -z "$(echo "${TEXT}" | sed 's|[ \t]||g')" ]; then
 fi
 echo "----- String Scan -----"
 FRAMEX="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*|.*|.*$/\1/')"
+FRAMESELECTED="1st"
+if [ "${FRAMEX}" == "ut_dbg_assertion_failed" ]; then  # Too generic a frame, select next one
+  FRAMEX="$(echo "${TEXT}" | sed 's/.*|.*|\(.*\)|.*|.*$/\1/')"
+  FRAMESELECTED="2nd"
+fi
 if [[ "${TEXT}" != *"SAN"* ]]; then  # Normal bug
   OUT="$(grep -Fi --binary-files=text "${TEXT}" ~/mariadb-qa/known_bugs.strings)"
   OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ~/mariadb-qa/known_bugs.strings)"
@@ -100,7 +105,7 @@ if [ -z "${OUT}" ]; then
   if [ -z "${OUT2}" ]; then 
     echo "BUG NOT FOUND IN KNOWN BUGS LIST! POTENTIALLY NEW BUG TO LOG; SEARCH FIRST:"
   else 
-    echo "BUG NOT FOUND (IDENTICALLY) IN KNOWN BUGS LIST! POTENTIALLY NEW BUG TO LOG. HOWEVER, A PARTIAL MATCH BASED ON THE 1st FRAME ('${FRAMEX}') WAS FOUND, AS FOLLOWS: (PLEASE CHECK IT IS NOT THE SAME BUG):"
+    echo "BUG NOT FOUND (IDENTICALLY) IN KNOWN BUGS LIST! POTENTIALLY NEW BUG TO LOG. HOWEVER, A PARTIAL MATCH BASED ON THE ${FRAMESELECTED} FRAME ('${FRAMEX}') WAS FOUND, AS FOLLOWS: (PLEASE CHECK IT IS NOT THE SAME BUG):"
     echo "${OUT2}"
   fi
 elif [[ "${OUT}" == "#"* ]]; then
