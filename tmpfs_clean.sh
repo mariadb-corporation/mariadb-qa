@@ -3,25 +3,34 @@
 
 EXCLUDE_DIR_REGEX='multipath|var_'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
 
-# Check if not running already. The '$$' check is necessary as otherwise the command captures it's own process
-if [ ! -z "$(ps -ef | grep tmpfs_clean | grep -vE "grep|vi |$$")" ]; then
-  echo "Self terminating as tmpfs_clean.sh is running elsewhere already:"
-  ps -ef | grep tmpfs_clean | grep -vE "grep|vi |$$"
-  exit 2
-fi
-
+ARMED=0
 if [ "${1}" != "1" ]; then
   echo "(!) Script not armed! To arm it, include the number 1 behind it, e.g.: $ ~/mariadb-qa/tmpfs_clean.sh 1"
   echo "(!) This will enable actual tmpfs cleanup. Now executing a trial run only - no actual changes are made!"
-  ARMED=0
 else
   ARMED=1
+fi
+
+SILENT=0
+if [ "${2}" != "" ]; then
+  SILENT=1
+fi
+
+# Check if not running already. The '$$' check is necessary as otherwise the command captures it's own process
+if [ ! -z "$(ps -ef | grep tmpfs_clean | grep -vE "grep|vi |$$")" ]; then
+  if [ ${SILENT} -eq 0 ]; then
+    echo "Self terminating as tmpfs_clean.sh is running elsewhere already:"
+    ps -ef | grep tmpfs_clean | grep -vE "grep|vi |$$"
+  fi
+  exit 2
 fi
 
 COUNT_FOUND_AND_DEL=0
 COUNT_FOUND_AND_NOT_DEL=0
 if [ $(ls --color=never -ld /dev/shm/* | grep --binary-files=text -vE "${EXCLUDE_DIR_REGEX}" | wc -l) -eq 0 ]; then
-  echo "> No /dev/shm/* erasable directories found"
+  if [ ${SILENT} -eq 0 ]; then
+    echo "> No /dev/shm/* erasable directories found"
+  fi
 else
   rm -f /tmp/tmpfs_clean_dirs
   # In the next line, 'var_' is excluded to avoid deleting MTR --mem directories
@@ -41,7 +50,9 @@ else
               if [ -r ${DIR}/reducer.log ]; then
                 AGEFILE=$[ $(date +%s) - $(stat -c %Z ${DIR}/reducer.log) ]  # File age in seconds
                 if [ ${AGEFILE} -ge 90 ]; then  # Yet another safety specifically for often-occuring reducer directories, don't delete very recent reducers
-                  echo "Deleting reducer directory ${DIR} (directory age: ${AGEDIR}s, file age: ${AGEFILE}s)"
+                  if [ ${SILENT} -eq 0 ]; then
+                    echo "Deleting reducer directory ${DIR} (directory age: ${AGEDIR}s, file age: ${AGEFILE}s)"
+                  fi
                   COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
                   if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi
                 fi
@@ -58,7 +69,9 @@ else
                       fi
                       AGEFILE=$(( $(date +%s) - $(stat -c %Z "${PR_FILE_TO_CHECK}")))  # File age in seconds
                       if [ ${AGEFILE} -ge 1200 ]; then  # Delete pquery-reach.sh directories aged >=20 minutes
-                        echo "Deleting pquery-reach.sh directory ${DIR} (pquery-reach log age: ${AGEFILE}s)"
+                        if [ ${SILENT} -eq 0 ]; then
+                          echo "Deleting pquery-reach.sh directory ${DIR} (pquery-reach log age: ${AGEFILE}s)"
+                        fi
                         COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
                         if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi
                       fi
@@ -82,17 +95,21 @@ else
                       else
                         AGESUBDIR=$(( $(date +%s) - $(stat -c %Z "${SUBDIR}") ))  # Current trial directory age in seconds
                         if [ ${AGESUBDIR} -ge 10800 ]; then  # Don't delete pquery-run.sh directories if they have recent trials in them (i.e. they are likely still running): >=3hr
-                          echo "Deleting directory ${DIR} (trial subdirectory age: ${AGESUBDIR}s)"
+                          if [ ${SILENT} -eq 0 ]; then
+                            echo "Deleting directory ${DIR} (trial subdirectory age: ${AGESUBDIR}s)"
+                          fi
                           COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
                           if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi
                         fi
                       fi
                     fi
                   else
-                    echo "Unrecognized directory structure: ${DIR} (Assert: >=1 sub directories found, not covered yet, please fixme)"
+                    echo "> Warning: Unrecognized directory structure: ${DIR} (Assert: >=1 sub directories found, not covered yet, please fixme)"
                   fi
                 else
-                  echo "Deleting directory ${DIR} (directory age: ${AGEDIR}s)"
+                  if [ ${SILENT} -eq 0 ]; then
+                    echo "Deleting directory ${DIR} (directory age: ${AGEDIR}s)"
+                  fi
                   COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
                   if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi
                 fi
@@ -106,14 +123,16 @@ else
       COUNT_FOUND_AND_NOT_DEL=$[ ${COUNT_FOUND_AND_NOT_DEL} + 1 ]
     fi; STORE_COUNT_FOUND_AND_DEL=
   done
-  if [ ${COUNT_FOUND_AND_NOT_DEL} -ge 1 -a ${COUNT_FOUND_AND_DEL} -eq 0 ]; then
-    echo ""
-    echo "> Though $(ls -ld /dev/shm/* | wc -l) tmpfs directories were found on /dev/shm, they are all in use. Nothing was deleted."
-  else
-    if [ ${COUNT_FOUND_AND_DEL} -gt 0 ]; then
-      echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories & skipped ${COUNT_FOUND_AND_NOT_DEL} tmpfs directories as they were in use."
+  if [ ${SILENT} -eq 0 ]; then
+    if [ ${COUNT_FOUND_AND_NOT_DEL} -ge 1 -a ${COUNT_FOUND_AND_DEL} -eq 0 ]; then
+      echo ""
+      echo "> Though $(ls -ld /dev/shm/* | wc -l) tmpfs directories were found on /dev/shm, they are all in use. Nothing was deleted."
     else
-      echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories. No other tmpfs directories exist. All good."
+      if [ ${COUNT_FOUND_AND_DEL} -gt 0 ]; then
+        echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories & skipped ${COUNT_FOUND_AND_NOT_DEL} tmpfs directories as they were in use."
+      else
+        echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories. No other tmpfs directories exist. All good."
+      fi
     fi
   fi
 fi
@@ -123,7 +142,9 @@ if [ ! -z "$(ls -d --color=never /dev/shm/var_* 2>/dev/null)" ]; then
   du -shc /dev/shm/var_* | grep -v total
 fi
 
-echo "> Done! /dev/shm available space is now: $(df -h | egrep --binary-files=text "/dev/shm" | awk '{print $4}')"
+if [ ${SILENT} -eq 0 ]; then
+  echo "> Done! /dev/shm available space is now: $(df -h | egrep --binary-files=text "/dev/shm" | awk '{print $4}')"
+fi
 exit 0
 
 # With thanks, https://linoxide.com/linux-command/linux-commad-to-list-directories-directory-names-only/

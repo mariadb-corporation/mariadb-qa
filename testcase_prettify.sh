@@ -283,7 +283,6 @@ cat "${1}" | tr -d '`' | \
   sed 's|to_days|TO_DAYS|gi' | \
   sed 's|range|RANGE|gi' | \
   sed 's|less than|LESS THAN|gi' | \
-  sed 's|auto_increment|AUTO_INCREMENT|gi' | \
   sed 's|column_format|COLUMN_FORMAT|gi' | \
   sed 's|column_create|COLUMN_CREATE|gi' | \
   sed 's|column_get|COLUMN_GET|gi' | \
@@ -359,6 +358,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|=on;$|=ON;|g' | \
   sed 's|=off;$|=OFF;|g' | \
   sed 's|ignore|IGNORE|gi' | \
+  sed 's|auto_increment|AUTO_INCREMENT|gi' | \
+  sed 's|auto_increment_offset|AUTO_INCREMENT_OFFSET|gi' | \
+  sed 's|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi' | \
   sed 's|world|world|gi' | \
   sed 's|sql_mode= |sql_mode=|gi' | \
   sed 's|  | |gi'
