@@ -25,6 +25,7 @@ Internal MariaDB error code: 1193                     Presumed non-issue (init_s
 Internal MariaDB error code: 1146                     Presumed non-issue (table does not exist, normal in tests)
 Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
 init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave thread cannot execute init_slave query)
+init_slave query, Internal MariaDB error code: 1237   Presumed non-issue (Slave thread cannot execute init_slave query)
 thus rolled back too. Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-27536
 Memory not freed: 280                                 https://jira.mariadb.org/browse/MDEV-27627 (10.8 filtered only)
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-27661

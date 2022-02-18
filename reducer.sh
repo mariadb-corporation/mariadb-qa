@@ -1909,7 +1909,11 @@ init_workdir_and_files(){
         mv ${WORKD}/data ${WORKD}/data.init
         cp -a ${WORKD}/data.init ${WORKD}/data  # We need this for the first mysqld startup attempt just below
       fi
-      #start_mysqld_main
+      if [ "$(du -sc $WORKD/data.init | grep -v 'total' | awk '{print $1}')" == "0" ]; then
+        echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data.init is 0 bytes. The volume likely ran out of space"
+        echo "Terminating now."
+        exit 1
+      fi
       echo_out "[Init] Attempting first mysqld startup with all MYEXTRA options passed to mysqld"
       FIRST_MYSQLD_START_FLAG=1
       if [ $MODE -ne 1 -a $MODE -ne 6 ]; then start_mysqld_main; else start_valgrind_mysqld_main; fi
@@ -2033,8 +2037,8 @@ generate_run_scripts(){
       echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
       echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
       echo "export LD_LIBRARY_PATH=\${BASEDIR}/lib" >> $WORK_RUN_PQUERY
-      # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
-      SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=$[ $[ $(wc -l ./${EPOCH}.sql | awk '{print $1}') * 13 / 10 ] + 100 ]
+      echo "# RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829" >> $WORK_RUN_PQUERY
+      echo "SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=\$[ \$[ \$(wc -l ./${EPOCH}.sql | awk '{print \$1}') * 13 / 10 ] + 100 ]" >> $WORK_RUN_PQUERY
       if [ $PQUERY_MULTI -eq 1 ]; then
         if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
         echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
@@ -2436,6 +2440,11 @@ gr_start_main(){
 }
 
 start_mysqld_main(){
+  if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
+    echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
+    echo "Terminating now."
+    exit 1
+  fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
   echo "echo \"Attempting to start mysqld (socket /dev/shm/${EPOCH}/socket.sock)...\"" >> $WORK_START
@@ -2488,6 +2497,11 @@ start_mysqld_main(){
 
 #                             --binlog-format=MIXED \
 start_valgrind_mysqld_main(){
+  if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
+    echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
+    echo "Terminating now."
+    exit 1
+  fi
   if [ -f $WORKD/valgrind.out ]; then mv -f $WORKD/valgrind.out $WORKD/valgrind.prev; fi
   SCHEDULER_OR_NOT=
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then SCHEDULER_OR_NOT="--event-scheduler=ON "; fi
