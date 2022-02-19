@@ -201,6 +201,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|replicate_do|REPLICATE_DO|gi' | \
   sed 's|order by|ORDER BY|gi' | \
   sed 's|drop|DROP|gi' | \
+  sed 's|analyze|ANALYZE|gi' | \
   sed 's|bit|BIT|gi' | \
   sed 's|set|SET|gi' | \
   sed 's|setval|SETVAL|gi' | \

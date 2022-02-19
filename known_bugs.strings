@@ -1,8 +1,7 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Otherwise, just follow the existing formatting.
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (REVIEW REGULARLY) #####
-0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-22663
-0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                                       ## MDEV-22663
+0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-26258
 
 ##### STACK SMASHING BUGS (not always auto-filtered; note prefix) (prefix the uniqueID with 'STACK_SMASHING|') #####
 
@@ -65,11 +64,13 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+SIGSEGV|replace_proxies_priv_table|mysql_grant|Sql_cmd_grant_proxy::execute|mysql_execute_command                                                                              ## MDEV-27893
+SIGSEGV|replace_proxies_priv_table|mysql_grant|mysql_execute_command|mysql_parse                                                                                               ## MDEV-27893
 SIGSEGV|buf_pool_t::resize|buf_resize_callback|tpool::task_group::execute|tpool::task::execute                                                                                 ## MDEV-27891
+!trx->check_foreigns|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_commit_implicit|mysql_execute_command                                                       ## MDEV-27890
 i > 0|SIGABRT|ut_dbg_assertion_failed|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|ha_innobase::info                                                          ## MDEV-27890
 i > 0|SIGABRT|ut_dbg_assertion_failed|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|handler::get_dup_key                                                       ## MDEV-27890
-SIGSEGV|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|handler::get_dup_key|handler::get_dup_key
-                                                        ## MDEV-27890
+SIGSEGV|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|handler::get_dup_key|handler::get_dup_key                                                                ## MDEV-27890
 table->magic_n == 76333786|SIGABRT|dict_table_get_first_index|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|ha_innobase::info                                  ## MDEV-27890
 SIGSEGV|spider_parse_connect_info|spider_create_share|spider_discover_table_structure|create_table_impl                                                                        ## MDEV-27860
 page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                                   ## MDEV-27858
@@ -266,6 +267,7 @@ state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGA
 SIGSEGV|prepare_or_error|ha_commit_trans|trans_commit|mysql_execute_command                                                                                                    ## |MENT-1175
 SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## MDEV-25158
 curr_op_type != INTERSECT_ALL|SIGABRT|select_unit_ext::send_eof|do_select|JOIN::exec_inner|JOIN::exec                                                                          ## MDEV-25158
+curr_op_type != INTERSECT_ALL|SIGABRT|select_unit_ext::send_eof|return_zero_rows|JOIN::exec_inner|JOIN::exec                                                                   ## MDEV-25158
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|THD::init                                                                                                        ## MDEV-25237
 SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init                                                                                               ## MDEV-25237
 global_system_variables.session_track_system_variables|SIGABRT|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init|THD::THD                                             ## MDEV-25237
@@ -357,6 +359,7 @@ select_lex->leaf_tables.elements != 0|SIGABRT|mysql_insert_select_prepare|mysql_
 !(index)->is_spatial()|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild               ## MDEV-24558
 !dict_index_is_spatial(index)|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild        ## MDEV-24558
 !index->is_spatial()|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild                 ## MDEV-24558
+index->is_btree()|SIGABRT|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_for_index|alter_stats_norebuild                    ## MDEV-24558
 !is_current_stmt_binlog_format_row()|SIGABRT|THD::restore_stmt_binlog_format|Events::drop_event|Event_job_data::execute|Event_worker_thread::run                               ## MDEV-24534
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|Event_db_repository::drop_event|Events::drop_event|Event_job_data::execute ## MDEV-24534
 SIGSEGV|Bitmap<64u>::set_bit|sort_and_filter_keyuse|make_join_statistics|JOIN::optimize_inner                                                                                  ## MDEV-24513
@@ -592,6 +595,12 @@ SIGSEGV|heap_info|ha_heap::info|make_join_statistics|JOIN::optimize_inner       
 !col->mbmaxlen || len >= col->mbminlen * (fixed_len / col->mbmaxlen)|SIGABRT|row_merge_buf_add|row_merge_read_clustered_index|row_merge_build_indexes|ha_innobase::inplace_alter_table ## MDEV-22365
 i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::range_selectivity|get_column_range_cardinality                                                  ## MDEV-23151
 i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::point_selectivity|get_column_range_cardinality                                                  ## MDEV-23151
+i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucket|Histogram_binary::range_selectivity|get_column_range_cardinality                             ## MDEV-23151
+i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::range_selectivity|get_column_range_cardinality                                                  ## MDEV-23151
+
+###### PARTIALLY FIXED BUGS ######
+# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                            ## 10.6+ Fixed ## MDEV-22663
+# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                              ## 10.6+ Fixed ## MDEV-22663
 
 ###### FIXED BUGS ######
 # cache_mngr->trx_cache.empty()|SIGABRT|binlog_close_connection|ha_close_connection|slave_applier_reset_xa_trans|trans_xa_prepare                                     ## Fixed ## |MENT-1113
