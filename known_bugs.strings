@@ -65,6 +65,9 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+SIGSEGV|buf_pool_t::resize|buf_resize_callback|tpool::task_group::execute|tpool::task::execute                                                                                 ## MDEV-27891
+i > 0|SIGABRT|ut_dbg_assertion_failed|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|ha_innobase::info                                                          ## MDEV-27890
+i > 0|SIGABRT|ut_dbg_assertion_failed|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|handler::get_dup_key                                                       ## MDEV-27890
 SIGSEGV|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|handler::get_dup_key|handler::get_dup_key
                                                         ## MDEV-27890
 table->magic_n == 76333786|SIGABRT|dict_table_get_first_index|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|ha_innobase::info                                  ## MDEV-27890
