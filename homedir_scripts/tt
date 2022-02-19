@@ -90,7 +90,7 @@ fi
 echo "----- String Scan -----"
 FRAMEX="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*|.*|.*$/\1/')"
 FRAMESELECTED="1st"
-if [ "${FRAMEX}" == "ut_dbg_assertion_failed" ]; then  # Too generic a frame, select next one
+if [ "${FRAMEX}" == "ut_dbg_assertion_failed" -o "${FRAMEX}" == "mysql_execute_command" ]; then  # Too generic a frame, select next one.
   FRAMEX="$(echo "${TEXT}" | sed 's/.*|.*|\(.*\)|.*|.*$/\1/')"
   FRAMESELECTED="2nd"
 fi

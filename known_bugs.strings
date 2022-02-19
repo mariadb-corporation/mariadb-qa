@@ -64,6 +64,9 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+SIGSEGV|handler::check_duplicate_long_entry_key|handler::check_duplicate_long_entries|handler::ha_write_row|write_record                                                       ## MDEV-27894
+SIGSEGV|check_vcol_forward_refs|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table                                                                              ## MDEV-27894 (ref MDEV-22525)
+inited == NONE || lookup_handler != this|SIGABRT|handler::ha_write_row|write_record|Delayed_insert::handle_inserts|handle_delayed_insert                                       ## MDEV-27894
 SIGSEGV|replace_proxies_priv_table|mysql_grant|Sql_cmd_grant_proxy::execute|mysql_execute_command                                                                              ## MDEV-27893
 SIGSEGV|replace_proxies_priv_table|mysql_grant|mysql_execute_command|mysql_parse                                                                                               ## MDEV-27893
 SIGSEGV|buf_pool_t::resize|buf_resize_callback|tpool::task_group::execute|tpool::task::execute                                                                                 ## MDEV-27891
@@ -326,6 +329,8 @@ thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_comm
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                     ## MDEV-24706
 thd->transaction->stmt.is_empty()|SIGABRT|trans_check|trans_rollback|THD::cleanup|unlink_thd                                                                                   ## MDEV-24706
 thd->transaction.stmt.is_empty()|SIGABRT|trans_check|trans_rollback|THD::cleanup|unlink_thd                                                                                    ## MDEV-24706
+thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute     ## MDEV-24706
+thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute      ## MDEV-24706
 SIGSEGV|my_strndup|Event_queue_element_for_exec::init|Event_queue::get_top_for_execution_if_time|Event_scheduler::run                                                          ## MDEV-24686
 SIGSEGV|Event_queue::drop_matching_events|Event_queue::drop_schema_events|Events::drop_schema_events|mysql_rm_db_internal                                                      ## MDEV-24686
 SIGSEGV|my_scan_weight_utf8_general_ci|my_strnncollsp_utf8_general_ci|sortcmp_lex_string|event_basic_identifier_equal                                                          ## MDEV-24686

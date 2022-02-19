@@ -21,3 +21,13 @@ CREATE TABLE t (c INT);
 SET GLOBAL general_log=1;
 SET GLOBAL log_output='TABLE,TABLE';
 SET SESSION tx_read_only=1;
+
+CREATE OR REPLACE TABLE mysql.general_log (a INT) ENGINE=InnoDB;
+SET GLOBAL event_scheduler=ON,general_log=1,log_output='TABLE';
+SET sql_log_off=ON;
+
+# Repeat 1-2 times
+CREATE OR REPLACE TABLE mysql.general_log (a INT);
+SET SESSION sql_log_off=ON;
+SET GLOBAL event_scheduler=ON,general_log=1,log_output='TABLE';
+CREATE EVENT two_event ON SCHEDULE EVERY 20 SECOND ON COMPLETION NOT PRESERVE COMMENT 'two EVENT' DO SELECT 123;
