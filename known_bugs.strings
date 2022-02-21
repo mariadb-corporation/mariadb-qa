@@ -268,6 +268,7 @@ scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size_inlin
 scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                ## MDEV-25317
 state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## |MENT-1175
 SIGSEGV|prepare_or_error|ha_commit_trans|trans_commit|mysql_execute_command                                                                                                    ## |MENT-1175
+SIGSEGV|__memcmp_avx2_movbe|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data                                                                                 ## MDEV-25158
 SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## MDEV-25158
 curr_op_type != INTERSECT_ALL|SIGABRT|select_unit_ext::send_eof|do_select|JOIN::exec_inner|JOIN::exec                                                                          ## MDEV-25158
 curr_op_type != INTERSECT_ALL|SIGABRT|select_unit_ext::send_eof|return_zero_rows|JOIN::exec_inner|JOIN::exec                                                                   ## MDEV-25158

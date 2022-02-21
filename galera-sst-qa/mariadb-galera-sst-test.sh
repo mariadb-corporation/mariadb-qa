@@ -154,7 +154,7 @@ sysbench_run(){
   if [[ ${LOAD_TEST} -eq 1 ]]; then
     DATA_SIZE="--table-size=100000 --tables=100 --threads=100"
   else
-    DATA_SIZE="--table-size=100 --tables=500 --threads=500"
+    DATA_SIZE="--table-size=1000 --tables=10 --threads=10"
   fi
   if [ "$(sysbench --version | grep -oe '[0-9]\.[0-9]')" == "0.5" ]; then
     if [ "$TEST_TYPE" == "load_data" ];then
@@ -475,9 +475,9 @@ sst_run(){
       # Pausing 10 sec to sync node2 after mysqldump SST"
       sleep 10
     fi
-    sysbench_run oltp
-    echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1"
-    sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1
+    #sysbench_run oltp
+    #echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1"
+    #sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1
     validate_table_checksum "clear"
     shutdown_nodes
     ## Encryption run
@@ -488,9 +488,9 @@ sst_run(){
       # Pausing 10 sec to sync node2 after mysqldump SST"
       sleep 10
     fi
-    sysbench_run oltp
-    echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1"
-    sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1
+    #sysbench_run oltp
+    #echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1"
+    #sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1
     validate_table_checksum "crypt"
     shutdown_nodes
 }
