@@ -29,6 +29,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|float|FLOAT|gi' | \
   sed 's|real|REAL|gi' | \
   sed 's|check|CHECK|gi' | \
+  sed 's|spatial|SPATIAL|gi' | \
   sed 's|enum|ENUM|gi' | \
   sed 's|varbinary|VARBINARY|gi;s|binary|BINARY|gi' | \
   sed 's|decimal|DECIMAL|gi' | \
@@ -224,6 +225,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|aria|Aria|gi' | \
   sed 's|memory|MEMORY|gi' | \
   sed 's|innodb|InnoDB|gi' | \
+  sed 's|spider|Spider|gi' | \
   sed 's|myisam|MyISAM|gi' | \
   sed 's|rocksdb|RocksDB|gi' | \
   sed 's|csv|CSV|gi' | \

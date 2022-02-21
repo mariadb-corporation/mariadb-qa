@@ -2,12 +2,10 @@ Note: bugs listed here should be checked regularly if they have been fixed, and 
 -----------------------------------------------------------------------------------------------------------------------
 Filter Text                                           Info at
 -----------------------------------------------------------------------------------------------------------------------
-Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
 Event invalid                                         https://jira.mariadb.org/browse/MDEV-26270
 InnoDB: Resetting invalid page                        https://jira.mariadb.org/browse/MDEV-26121
 Assertion .block_size                                 https://jira.mariadb.org/browse/MDEV-26459
 Incorrect information in file: ...sys                 Usually not due to bugs but /sys/ modifications
-Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name
 _corrupted_to_rename                                  Not real corruption, just a partial table name
@@ -30,3 +28,7 @@ thus rolled back too. Internal MariaDB error code: 0  https://jira.mariadb.org/b
 Memory not freed: 280                                 https://jira.mariadb.org/browse/MDEV-27627 (10.8 filtered only)
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-27661
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
+Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
+Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543
+Got error 127 when reading table                      https://jira.mariadb.org/browse/MDEV-27903
+# Got error 194 when reading table                    Disabled, cannot find filter reference

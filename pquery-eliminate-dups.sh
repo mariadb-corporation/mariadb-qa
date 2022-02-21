@@ -4,8 +4,8 @@
 # This script eliminates duplicate trials where at least x trials are present for a given issue, and x trials are kept for each such issue where duplicates are eliminated. Execute from within the pquery workdir. x is defined by the number of [0-9]\+, entries
 
 # User variables
-TRIALS_TO_KEEP=2  # Set high (for example: 10) when there are few bugs seen in each new round. Set low (for example: 2) when handling many new bugs/when many bugs are seen in the runs
-#TRIALS_TO_KEEP=3  # Set high (for example: 10) when there are few bugs seen in each new round. Set low (for example: 2) when handling many new bugs/when many bugs are seen in the runs
+#TRIALS_TO_KEEP=2  # Set high (for example: 10) when there are few bugs seen in each new round. Set low (for example: 2) when handling many new bugs/when many bugs are seen in the runs
+TRIALS_TO_KEEP=3  # Set high (for example: 10) when there are few bugs seen in each new round. Set low (for example: 2) when handling many new bugs/when many bugs are seen in the runs
 
 # Internal variables
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)

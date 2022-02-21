@@ -270,15 +270,11 @@ if [ "$(echo "${DI}" | sed "s| ||g")" != "" ]; then
   echo "$(echo "${DI}" | tr ' ' '\n' | sort -nu |  tr '\n' ' ' | sed 's|$|\n|;s|^ \+||')"
 fi
 
-# Likely result of 'RELEASE' command (client connection lost resulting in pquery seeing >200 x 'MySQL server has gone away'
-# For the moment, these can simply be deleted. In time, pquery itself should handle this better by reconnecting to mysqld
-# However, in such case reducer replay needs to be checked as well; does it continue replaying the SQL via a live client connection
-# when RELEASE was seen? Likely not for mysql cli mode, but for pquery (which is then updated to do so) it would be fine, and
-# many testcases would not end up with an eventual RELEASE so they would replay at the mysql cli just fine, or otherwise the
-# pquery replay method can be used in the replay only works via pquery (as usual).
-REL1=$(grep --binary-files=text -m1 -B2 "MySQL server has gone away" */default.node.tld_thread-0.sql 2>/dev/null | grep --binary-files=text -i "RELEASE[ \t]*;" 2>/dev/null | sed 's|/.*||' | sort -nu | tr '\n' ' ')
-if [ "$REL1" != "" ]; then
-  echo "========= Likely 'Server has gone away' 200x due to 'RELEASE' sql:"
+# Likely result of 'RELEASE' command (client connection lost resulting in pquery seeing >=250 x 'MySQL server has gone away'
+# For the moment, these can simply be deleted. In time, pquery itself (and reducer in CLI mode) should handle this better by reconnecting to mysqld. However, in such case reducer replay needs to be checked as well; does it continue replaying the SQL via a live client connection when RELEASE was seen? Likely not for mysql cli mode, but for pquery (which is then updated to do so) it would be fine, and many testcases would not end up with an eventual RELEASE so they would replay at the mysql cli just fine, or otherwise the pquery replay method can be used in the replay only works via pquery (as usual).
+REL1=$(grep --binary-files=text -l 'Last [0-9]\+ consecutive queries all failed' [0-9]*/pquery.log 2>/dev/null | sed 's|/.*||' | xargs -I{} grep --binary-files=text -m1 -B2 -H 'MySQL server has gone away' {}/default.node.tld_thread-0.sql 2>/dev/null | grep 'RELEASE' | sed 's|/.*||' | tr '\n' ',' | sed -E 's|,|, |g;s|^|Trials: |;s|, $||')
+if [ ! -z "$REL1" ]; then
+  echo "========= Trials with 'Server has gone away' 250x, likely due to 'RELEASE' being used in the input SQL:"
   echo "${REL1}"
 fi
 
@@ -299,7 +295,6 @@ if [ ! -z "$(grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null)" 
   grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null
 fi
 
-echo "========= Significant/Major errors (if any)"
 # Significant/major error scanning. This code is partially duplicated in pquery-del-trial.sh. Update both when making changes.
 ERRORS=
 ERROR_LOG=
@@ -310,20 +305,24 @@ REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering ev
 if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
   REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
   if [ -z "${REGEX_ERRORS_SCAN}" ]; then
+    echo "========= Significant/Major errors (if any)"
     echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
     exit 1
   fi
 else
+  echo "========= Significant/Major errors (if any)"
   echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
   exit 1
 fi
 if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
   REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
   if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
+    echo "========= Significant/Major errors (if any)"
     echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
     exit 1
   fi
 else
+  echo "========= Significant/Major errors (if any)"
   echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
   exit 1
 fi
@@ -339,6 +338,7 @@ if [ -r ./errorlogs.tmp ]; then
       ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
       ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"
       if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then
+        echo "========= Significant/Major errors (if any)"
         echo "${ERROR_LOG}: $(DOUBLE=0; echo "$(if [ ! -z "${ERRORS}" ]; then echo -n "${ERRORS}"; DOUBLE=1; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then if [ "${DOUBLE}" -eq 1 ]; then echo ", ${ERRORS_LAST_LINE}"; else echo ", ${ERRORS_LAST_LINE}"; fi; else echo ''; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')"
       fi
     fi

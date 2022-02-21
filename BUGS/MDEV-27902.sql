@@ -1,0 +1,14 @@
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+CREATE TABLE t (c INT) ENGINE=Spider;
+HANDLER t OPEN;
+HANDLER t READ next;
+dummy;
+HANDLER t READ next;
+
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+DROP TABLE t;
+CREATE TABLE t (c CHAR(1) PRIMARY KEY) ENGINE=Spider;
+HANDLER t OPEN;
+HANDLER t READ next;
+dummy;
+HANDLER t READ next;

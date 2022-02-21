@@ -23,16 +23,17 @@ else
   echo "Warning: /home/$(whoami)/pr not found, run ~/mariadb-qa/linkit please. This may have resulted in a small drop in functionality of this script (less than 10%)."
 fi
 
-# Delete all likely 'Server has gone away' 200x due to 'RELEASE' sql trials
+# Delete all likely 'Server has gone away' 250x due to 'RELEASE' sql trials
 # 25/01/2021 Temporarily disabled to see current results/status
 # 02/04/2021 Found that regularly there are crashes w/o coredumps, so implemented falllback_text_string.sh call in
 #            new_text_string.sh (where falllback_text_string.sh is the old text string script) for when there are
 #            no coredumps but an error log is available. Evaluate performance over time, but this should be better.
 #            Note that previously, for issues without coredump, but with 'signal' present in the error log, they
-#            were marked as the '200x' and would result in 'Assert: no core...' by new_text_string.sh, and then
+#            were marked as the '250x' and would result in 'Assert: no core...' by new_text_string.sh, and then
 #            would be subsequently deleted by this script. Likely the following line cannot be re-enabled either (TBD)
 # 20/12/2021 Note: see the new "Delete all trials which have "Access denied for user 'root'@'localhost'" on the last few lines of the error log" code above, which may in part cover the previous trials seen here
-#${SCRIPT_PWD}/pquery-results.sh | grep -A1 "Likely 'Server has gone away' 200x due to 'RELEASE' sql" | tail -n1 | tr ' ' '\n' | grep -v "^[ \t]*$" | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
+# 21/02/2022 Re-implemented deletion of 'Server has gone away' 250x due to 'RELEASE' sql trials after implementing a better/more reliable algo for disovering 'Server has gone away' trials (the 'MySQL server has gone away' has to come within 2 lines of an actual 'RELEASE' AND the pquery.log is checked for 'Last [0-9]\+ consecutive queries all failed'
+${SCRIPT_PWD}/pquery-results.sh | grep -A1 "'Server has gone away' 250x" | tail -n1 | grep -o '[0-9, ]*' | tr -d ' ' | tr ',' '\n' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
 
 # Delete all Handlerton. error == 0 trials  # Temp re-enabled in MariaDB to test (12/9/20)
 # ${SCRIPT_PWD}/pquery-results.sh | grep "Handlerton. error == 0" | grep -o "reducers.*[^)]" | sed 's|reducers ||;s|,|\n|g' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
