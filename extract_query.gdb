@@ -421,4 +421,3 @@ print do_command::thd->m_query_string.str
 print dispatch_command::packet
 set logging off
 quit
-print dispatch_command::packet

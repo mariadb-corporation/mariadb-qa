@@ -978,7 +978,7 @@ options_check(){
       echo_out "[Setup] Warning: possible misconfiguration: NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}) yet PQUERY_MULTI is turned on, which in turn ensured FORCE_SKIPV was turned on. Did you set STAGE1_LINES (value: ${STAGE1_LINES}) sufficiently low to ensure progression to stage 2?"
     fi
   else
-    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${FORCE_SKIPV} -ne 0 ]; then
       if [ ${SKIPSTAGEBELOW} -eq 0 ]; then
         echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts (i.e. in stage 2). The verify stage will be skipped automatically"
       else

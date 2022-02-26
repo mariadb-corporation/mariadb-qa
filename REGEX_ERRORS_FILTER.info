@@ -31,4 +31,4 @@ my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sy
 Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543
 Got error 127 when reading table                      https://jira.mariadb.org/browse/MDEV-27903
-# Got error 194 when reading table                    Disabled, cannot find filter reference
+Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
