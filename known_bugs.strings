@@ -65,6 +65,11 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+SIGABRT|__cxa_throw () from|gu::ThrowError::~ThrowError|galera::WriteSetOut::check_size|galera::WriteSetOut::gather                                                            ## MENT-1429
+thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|mysql_ha_close_table|mysql_ha_cleanup_no_free|mysql_ha_cleanup ## MENT-1427
+thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_detach|trans_xa_detach|THD::cleanup|unlink_thd                                                     ## MENT-1426
+ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## MENT-1424
+SIGSEGV|Item_change_list::rollback_item_tree_changes|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                               ## MDEV-27920
 SIGSEGV|spider_check_and_set_trx_isolation|ha_spider::external_lock|handler::ha_external_lock|lock_external                                                                    ## MDEV-27902
 SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                                    ## MDEV-27902
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_open_handler|ha_spider::rnd_handler_init                                        ## MDEV-27902
