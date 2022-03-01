@@ -26,6 +26,7 @@ init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave 
 init_slave query, Internal MariaDB error code: 1237   Presumed non-issue (Slave thread cannot execute init_slave query)
 thus rolled back too. Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-27536
 Memory not freed: 280                                 https://jira.mariadb.org/browse/MDEV-27627 (10.8 filtered only)
+Warning: Memory not freed: 32                         MDEV-25925 and MDEV-25977
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-27661
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
 Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261

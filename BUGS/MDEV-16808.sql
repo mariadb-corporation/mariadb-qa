@@ -15,3 +15,8 @@ CREATE TABLE t (c CHAR(0) NOT NULL);
 CREATE TABLE u LIKE t;
 SET join_cache_level=3;
 SELECT t.c,u.c FROM t JOIN u ON t.c=u.c;
+
+SET JOIN_cache_level=8;
+CREATE TABLE t (a TEXT COMPRESSED) ENGINE=InnoDB;
+INSERT INTO t VALUES (1),(2);
+SELECT * FROM t A,t B WHERE A.a=B.a AND A.a IN (1);
