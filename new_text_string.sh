@@ -6,6 +6,8 @@
 # ./new_text_string.sh 'FRAMESONLY'    # Used in automation, ref mass_bug_report.sh
 # ./new_text_string.sh "${mysqld_loc}" # Where mysqld
 
+sleep 3  # Do not remove, sometimes cores are slow to write!
+
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 FRAMESONLY=0
 MYSQLD=

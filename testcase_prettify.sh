@@ -135,6 +135,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|set @@session\.|SET SESSION |gi' | \
   sed 's|use|USE|gi' | \
   sed 's|concurrent|CONCURRENT|gi' | \
+  sed 's|current|CURRENT|gi' | \
   sed 's|user|USER|gi' | \
   sed 's|host|HOST|gi' | \
   sed 's|password|PASSWORD|gi' | \
@@ -304,6 +305,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|sql_big_result|SQL_BIG_RESULT|gi' | \
   sed 's|master_pos_wait|MASTER_POS_WAIT|gi' | \
   sed 's|initial_size|INITIAL_SIZE|gi' | \
+  sed 's|no_write_to_binlog|NO_WRITE_TO_BINLOG|gi' | \
   sed 's|user@localhost|user@localhost|gi' | \
   sed 's|root@localhost|root@localhost|gi' | \
   sed 's|@localhost|@localhost|gi' | \
@@ -364,7 +366,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|auto_increment|AUTO_INCREMENT|gi' | \
   sed 's|auto_increment_offset|AUTO_INCREMENT_OFFSET|gi' | \
   sed 's|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi' | \
-  sed 's|world|world|gi;s|history|history|gi' | \
+  sed 's|world|world|gi' | \
+  sed 's|history|HISTORY|gi;s|_history|_history|gi' | \
   sed 's|sql_mode= |sql_mode=|gi' | \
   sed 's|  | |gi'
 

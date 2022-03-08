@@ -61,6 +61,12 @@ grep -Ei --binary-files=text "${TEXT}" */log/master.err */node${NODE}/node${NODE
 FILT=
 if [ "${BBB_MODE}" -eq 1 ]; then
   mv /tmp/sec.t /tmp/sec.t.1
+  # Allow cores to be fully written. This is especially important when bug_report is running as many servers are terminatnig at once causing disk to backlog. The sleep code below likely resolves the issue sometimes seen when running ~/b (mariadb-qa/bug_report.sh) where a certain version would not show as affected, presumably because the core was still writing
+  if [ -z "$(ps -ef | grep bug_report | grep -v grep)" ]; then  # bug_report not running
+    sleep 2
+  else
+    sleep 5
+  fi 
   ls --color=never */data/core* */node${NODE}/core* 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t.2
   cat /tmp/sec.t.1 /tmp/sec.t.2 2>/dev/null | sort -u > /tmp/sec.t
   rm -f /tmp/sec.t.1 /tmp/sec.t.2

@@ -1,2 +1,0 @@
-#!/bin/bash
-screen -ls | grep -o 'ge[0-9]\+' | sed 's|ge||' | sort -u | sed 's|^|MON|' | grep -n '.*' | sed 's|\([^:]\+\):MON\(.*\)|MON[\1]=\2|'

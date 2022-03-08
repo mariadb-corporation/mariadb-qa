@@ -15,13 +15,15 @@ next_free_value                                       Not related to freeing mem
 lock mutex.*sys_vars_shared.h, line 56                https://jira.mariadb.org/browse/MDEV-27039
 innodb-force-load-corrupted                           Not real corruption, just a variable name
 dict_index_t::is_corrupted                            Not real corruption, just a function name
-Internal MariaDB error code: 1593                     Presumed non-issue (empty master connection user name)
-Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
-Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master connection IP address)
 Internal MariaDB error code: 1064                     Presumed non-issue (slave cannot be initialized)  # TODO/TOCHECK
-Internal MariaDB error code: 1193                     Presumed non-issue (init_slave query cannot run)
 Internal MariaDB error code: 1146                     Presumed non-issue (table does not exist, normal in tests)
+Internal MariaDB error code: 1193                     Presumed non-issue (init_slave query cannot run)
+Internal MariaDB error code: 1593                     Presumed non-issue (empty master connection user name)
+Internal MariaDB error code: 1677                     Presumed non-issue (table referenced in binlog does not exist)
+Internal MariaDB error code: 1792                     Presumed non-issue (tx_read_only=1 yet attempted BINLOG statement)
 Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
+Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master connection IP address)
+Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
 init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave thread cannot execute init_slave query)
 init_slave query, Internal MariaDB error code: 1237   Presumed non-issue (Slave thread cannot execute init_slave query)
 thus rolled back too. Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-27536

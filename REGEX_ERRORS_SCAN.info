@@ -1,0 +1,1 @@
+* 'DATA TUPLE' was removed as a scan string, as InnoDB will show DATA TUPLE in situations were there is no error. For example creating a FK referecing table with foreign_key_checks=0, then turning it back on and running into a 'the required table/ibd file/index does not exist' together with a DATA TUPLE record. This is legacy/historical InnoDB behavior.

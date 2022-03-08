@@ -42,23 +42,25 @@ SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                      
 #***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|std::__shared_count<shared_ptr_base.h                                                                                      ## MDEV-21799
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
-##### Likely debug_dbug issues (normally these filters are disabled) #####
-# info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## debug_dbug='d,simulate_find_log_pos_error'
-# inited==INDEX|SIGABRT|handler::ha_index_first|collect_statistics_for_index|collect_statistics_for_table|mysql_admin_table                                                      ## debug_dbug='+d,dict_set_index_corrupted'
-# SIGSEGV|sp_head::show_create_routine|Sp_handler::sp_show_create_routine|mysql_execute_command|mysql_parse                                                                      ## debug_dbug='+d,cache_sp_in_show_create'
-# fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|dict_create_index_space|dict_create_index_step                              ## debug_dbug='+d,fsp_flags_is_valid_failure'
-# fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='d,row_ins_index_entry_timeout';
-# fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='+d,fsp_flags_is_valid_failure'
-# fil_space_t::is_valid_flags(flags & ~FSP_FLAGS_MEM_MASK, space_id)|SIGABRT|ut_dbg_assertion_failed|fil_ibd_create|dict_create_index_space|dict_create_index_step               ## debug_dbug='+d,dict_tf_to_fsp_flags_failure'
-# n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                   ## debug_dbug='+d,external_lock_failure'
-# !n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                  ## debug_dbug='+d,external_lock_failure'
-# m_lock_type == 2|SIGABRT|handler::~handler|ha_myisam::~ha_myisam|ha_myisam::~ha_myisam|ha_sequence::~ha_sequence                                                               ## debug_dbug='+d,external_lock_failure'
-# my_b_tell(log) == 0|SIGABRT|check_binlog_magic|init_relay_log_pos|handle_slave_sql|pfs_spawn_thread                                                                            ## debug_dbug='d,simulate_find_log_pos_error'
-# SIGSEGV|add_pin|make_lock_and_pin|flush_cached_blocks|flush_pagecache_blocks_int                                                                                               ## debug_dbug='+d,alloc_sort_buffer_fail'
-# thd->is_error() || kill_errno || thd->killed == ABORT_QUERY|SIGABRT|filesort|create_sort_index|st_join_table::sort_table|join_init_read_record                                 ## debug_dbug='+d,external_lock_failure'
-# state == TRX_STATE_NOT_STARTED || (relaxed && thd_get_error_number(trx->mysql_thd))|SIGABRT|ut_dbg_assertion_failed|trx_state_eq|rw_trx_hash_t::validate_element|rw_trx_hash_t::insert ## debug_dbug='+d,innodb_table_deadlock'
-# node->state == 1|SIGABRT|row_ins_step|row_insert_for_mysql|ha_innobase::write_row|ha_sequence::write_row                                                                       ## debug_dbug='d,row_ins_index_entry_timeout'
-# Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_writer::write_internal                                                                           ## debug_dbug='d,simulate_find_log_pos_error'
+##### Likely debug_dbug issues (reduced once with debug_dbug shown to be the cause) #####
+inited==INDEX|SIGABRT|handler::ha_index_read_map|Stat_table_write_iter::init|rename_table_in_stat_tables|do_rename                                                             ## debug_dbug='+d,ha_index_init_fail'
+file_unreadable || space|SIGABRT|dict_table_t::is_readable|ha_innobase::optimize|handler::ha_optimize|mysql_admin_table                                                        ## debug_dbug='+d,ib_create_table_fail_too_many_trx'
+info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## debug_dbug='d,simulate_find_log_pos_error'
+inited==INDEX|SIGABRT|handler::ha_index_first|collect_statistics_for_index|collect_statistics_for_table|mysql_admin_table                                                      ## debug_dbug='+d,dict_set_index_corrupted'
+SIGSEGV|sp_head::show_create_routine|Sp_handler::sp_show_create_routine|mysql_execute_command|mysql_parse                                                                      ## debug_dbug='+d,cache_sp_in_show_create'
+fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|dict_create_index_space|dict_create_index_step                              ## debug_dbug='+d,fsp_flags_is_valid_failure'
+fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='d,row_ins_index_entry_timeout';
+fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='+d,fsp_flags_is_valid_failure'
+fil_space_t::is_valid_flags(flags & ~FSP_FLAGS_MEM_MASK, space_id)|SIGABRT|ut_dbg_assertion_failed|fil_ibd_create|dict_create_index_space|dict_create_index_step               ## debug_dbug='+d,dict_tf_to_fsp_flags_failure'
+n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                   ## debug_dbug='+d,external_lock_failure'
+!n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                  ## debug_dbug='+d,external_lock_failure'
+m_lock_type == 2|SIGABRT|handler::~handler|ha_myisam::~ha_myisam|ha_myisam::~ha_myisam|ha_sequence::~ha_sequence                                                               ## debug_dbug='+d,external_lock_failure'
+my_b_tell(log) == 0|SIGABRT|check_binlog_magic|init_relay_log_pos|handle_slave_sql|pfs_spawn_thread                                                                            ## debug_dbug='d,simulate_find_log_pos_error'
+SIGSEGV|add_pin|make_lock_and_pin|flush_cached_blocks|flush_pagecache_blocks_int                                                                                               ## debug_dbug='+d,alloc_sort_buffer_fail'
+thd->is_error() || kill_errno || thd->killed == ABORT_QUERY|SIGABRT|filesort|create_sort_index|st_join_table::sort_table|join_init_read_record                                 ## debug_dbug='+d,external_lock_failure'
+state == TRX_STATE_NOT_STARTED || (relaxed && thd_get_error_number(trx->mysql_thd))|SIGABRT|ut_dbg_assertion_failed|trx_state_eq|rw_trx_hash_t::validate_element|rw_trx_hash_t::insert ## debug_dbug='+d,innodb_table_deadlock'
+node->state == 1|SIGABRT|row_ins_step|row_insert_for_mysql|ha_innobase::write_row|ha_sequence::write_row                                                                       ## debug_dbug='d,row_ins_index_entry_timeout'
+Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_writer::write_internal                                                                           ## debug_dbug='d,simulate_find_log_pos_error'
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
  
 ##### Current MDEV-27106 bugs (temporary) #####
@@ -66,11 +68,12 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
-SIGSEGV|ha_innobase::reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables                                                    ## MDEV-27973
-SIGSEGV|ha_innobase::reset|handler::ha_reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse                                                      ## MDEV-27973
+inited == NONE|SIGABRT|handler::ha_reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables                                      ## MDEV-28023
+bitmap_is_set(&(m_part_info->read_partitions), m_last_part)|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                             ## MDEV-22667
+node->pcur->rel_pos == BTR_PCUR_ON|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row                                         ## MDEV-22667
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-27971
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|Backtrace stopped: Cannot access memo
-ry at address                                          ## MDEV-27971
+ry at address                                                             ## MDEV-27971
 fixed == 1|SIGABRT|Item_func_concat::val_str|Item::save_in_field|TABLE::update_virtual_fields|handler::ha_rnd_next                                                             ## MDEV-27966
 fixed == 1|SIGABRT|Item_func_concat::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                        ## MDEV-27966
 fixed()|SIGABRT|Item_func_concat::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                           ## MDEV-27966
@@ -125,7 +128,6 @@ SIGSEGV|ull_get_key|my_hash_key|hashcmp|my_hash_first_from_hash_value           
 !cursor->index->is_committed()|SIGABRT|ut_dbg_assertion_failed|row_ins_sec_index_entry_by_modify|row_ins_sec_index_entry_low|row_ins_sec_index_entry                           ## MDEV-27751
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-27688
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-22768
-!thd->rgi_fake || !thd->transaction->all.ha_list|SIGABRT|Format_description_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event|mysql_client_binlog_statement ## MDEV-27687
 SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::index_last_internal|ha_spider::index_last                                                ## MDEV-27522
 SIGSEGV|spider_set_direct_limit_offset|ha_spider::check_direct_order_limit|ha_spider::check_direct_order_limit|ha_spider::index_last_internal                                  ## MDEV-27522
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|pfs_spawn_thread|start_thread ## MDEV-27515
@@ -260,8 +262,6 @@ readbytes != (size_t)-1 || (*__errno_location ()) != 9|SIGABRT|my_pread|azflush|
 ctx->skip_pk_sort|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|mysql_inplace_alter_table          ## MDEV-25550
 transactional_table || !changed || thd->transaction.stmt.modified_non_trans_table|SIGABRT|mysql_insert|mysql_execute_command|mysql_parse|wsrep_mysql_parse                     ## MDEV-25548
 transactional_table || !changed || thd->transaction.stmt.modified_non_trans_table|SIGABRT|select_insert::abort_result_set|select_create::abort_result_set|handle_select|Sql_cmd_create_table_like::execute ## MDEV-25548
-server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::after_row|wsrep::client_state::after_row ## MDEV-25535
-server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::after_statement|wsrep::client_state::after_statement ## MDEV-25535
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|ha_delete_table|mysql_rm_table_no_locks                           ## MDEV-25500
 !((system_charset_info)->coll->strcasecmp((system_charset_info), (dict_table_get_col_name( ib_table, j)), (field->field_name.str)))|SIGABRT|innobase_build_v_templ|ha_innobase::inplace_alter_table|handler::ha_inplace_alter_table|mysql_inplace_alter_table ## MDEV-25533
 part_id == m_last_part|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                  ## MDEV-25532
@@ -499,9 +499,6 @@ time_type == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Datetime::is_valid_datetime_slow|D
 time_type == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Datetime::is_valid_datetime_slow|Datetime::Datetime|TR_table::query|Item_func_trt_id::get_by_commit_ts                           ## MDEV-22661
 SIGSEGV|in_vector::find|Item_func_in::val_int|TABLE::verify_constraints|TABLE_LIST::view_check_option                                                                          ## MDEV-22652
 SIGSEGV|flush_all_key_blocks|prepare_resize_simple_key_cache|resize_partitioned_key_cache|resize_key_cache                                                                     ## MDEV-22590
-thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|create_internal_tmp_table_from_heap                                    ## MDEV-22500
-thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|mysql_load                                                             ## MDEV-22500
-thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|select_insert::prepare_eof                                             ## MDEV-22500
 (uint) (table_check_constraints - share->check_constraints) == (uint) (share->table_check_constraints - share->field_check_constraints)|SIGABRT|TABLE_SHARE::init_from_binary_frm_image|ha_create_table|create_table_impl|mysql_create_table_no_lock ## MDEV-22499
 SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_lock, &MDL_ticket::prev_in_lock>, I_P_List_null_counter, I_P_List_fast_push_back<MDL_ticket> >::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket|MDL_context::release_lock ## MDEV-22448 NOW 20945
 SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> >::remove|MDL_context::set_explicit_duration_for_all_locks|THD::enter_locked_tables_mode|Locked_tables_list::init_locked_tables ## MDEV-22448 NOW 20945
@@ -575,8 +572,6 @@ length > 0|SIGABRT|create_ref_for_key|JOIN::get_best_combination|JOIN::optimize_
 SIGSEGV|store_key_field::copy_inner|store_key::copy|cp_buffer_from_ref|JOIN_CACHE_HASHED::put_record                                                                           ## MDEV-16808
 SIGSEGV|store_key::copy|cp_buffer_from_ref|JOIN_CACHE_HASHED::put_record|sub_select_cache                                                                                      ## MDEV-16808
 strcmp(share->unique_file_name,filename) || share->last_version|SIGABRT|test_if_reopen|mi_open|ha_myisam::open|handler::ha_open                                                ## MDEV-16985
-#thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|select_insert::prepare_eof                                             ## MDEV-17223, not sure where this particular uniqueID was obtained, but it is not repeatable. Remarked to update later.
-thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|copy_data_between_tables                                               ## MDEV-17223
 expr == default_value->expr|SIGABRT|make_empty_rec_store_default|make_empty_rec|build_frm_image|mysql_create_frm_image                                                         ## MDEV-19336
 entry->pos_in_table_list->table == entry|SIGABRT|free_tmp_table|close_thread_tables|mysql_execute_command|mysql_parse                                                          ## MDEV-19336
 inited==NONE|SIGABRT|handler::ha_index_read_idx_map|write_record|Delayed_insert::handle_inserts|handle_delayed_insert                                                          ## MDEV-19596
@@ -1105,3 +1100,13 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # state_ == s_exec|SIGABRT|wsrep::client_state::after_row|wsrep_after_row|wsrep_after_row|handler::ha_write_row                                                       ## Fixed ## MDEV-25661
 # ! is_set()|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_client_binlog_statement|mysql_execute_command                                                        ## Fixed ## MDEV-27536
 # SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                               ## Fixed ## MDEV-27007
+# thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|select_insert::prepare_eof                                  ## Fixed ## MDEV-17223 (presumed)
+# thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|copy_data_between_tables                                    ## Fixed ## MDEV-17223
+# thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|create_internal_tmp_table_from_heap                         ## Fixed ## MDEV-22500
+# thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|mysql_load                                                  ## Fixed ## MDEV-22500
+# thd->killed != 0|SIGABRT|ha_maria::enable_indexes|ha_maria::end_bulk_insert|handler::ha_end_bulk_insert|select_insert::prepare_eof                                  ## Fixed ## MDEV-22500
+# server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::after_row|wsrep::client_state::after_row ## Fixed ## MDEV-25535
+# server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::after_statement|wsrep::client_state::after_statement ## Fixed ## MDEV-25535
+# !thd->rgi_fake || !thd->transaction->all.ha_list|SIGABRT|Format_description_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event|mysql_client_binlog_statement ## Fixed ## MDEV-27687
+# SIGSEGV|ha_innobase::reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables                                         ## Fixed ## MDEV-27973
+# SIGSEGV|ha_innobase::reset|handler::ha_reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse                                           ## Fixed ## MDEV-27973

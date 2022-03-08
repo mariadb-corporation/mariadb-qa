@@ -1,0 +1,3 @@
+#!/bin/bash
+# ps -ef | grep 'SCREEN' | grep -o 'ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|ge||;s|^|MON[]=|'
+screen -ls | grep -o 'ge[0-9]\+' | sed 's|ge||' | sed 's|^|MON|' | grep -n '.*' | sed 's|\([^:]\+\):MON\(.*\)|MON[\1]=\2|'

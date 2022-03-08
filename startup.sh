@@ -687,7 +687,7 @@ touch test test_pquery
 add_san_options test
 add_san_options test_pquery
 echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
-echo "/home/$(whoami)/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery
+echo "/home/$(whoami)/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery
 
 echo '#!/bin/bash' > clean_failing_queries
 echo '# This script elimiates failing queries from in.sql in two different ways and saves the results in cleaned1.sql and cleaned2.sql' >> clean_failing_queries
