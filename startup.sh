@@ -855,7 +855,7 @@ echo 'MYEXTRA_OPT="$*"' >gal_no_cl
 echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT}" >>gal_no_cl
 echo 'MYEXTRA_OPT="$*"' >gal_rr
 echo "./gal_kill >/dev/null 2>&1;./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start_rr \${MYEXTRA_OPT};./gal_cl" >>gal_rr
-chmod +x gal gal_cl gal_sqlmode gal_binlog gal_stbe gal_no_cl gal_rr gal_gdb gal_test gal_cl_noprompt_nobinary gal_cl_noprompt gal_multirun gal_multirun_pquery gal_sysbench_measure gal_sysbench_prepare gal_sysbench_run 2>/dev/null
+chmod +x gal gal_cl gal_sqlmode gal_binlog gal_stbe gal_no_cl gal_rr gal_gdb gal_test gal_test_pquery gal_cl_noprompt_nobinary gal_cl_noprompt gal_multirun gal_multirun_pquery gal_sysbench_measure gal_sysbench_prepare gal_sysbench_run 2>/dev/null
 echo "Setting up server with default directories"
 
 if [[ $MDG -eq 0 ]]; then
