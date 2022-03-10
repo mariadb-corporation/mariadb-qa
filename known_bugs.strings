@@ -68,12 +68,13 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_rollback_trans|ha_start_consistent_snapshot|trans_begin|mysql_execute_command          ## MDEV-28024
+thd->transaction.stmt.ha_list == __null || trans == &thd->transaction.stmt|SIGABRT|ha_rollback_trans|ha_start_consistent_snapshot|trans_begin|mysql_execute_command            ## MDEV-28024
 inited == NONE|SIGABRT|handler::ha_reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables                                      ## MDEV-28023
 bitmap_is_set(&(m_part_info->read_partitions), m_last_part)|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                             ## MDEV-22667
 node->pcur->rel_pos == BTR_PCUR_ON|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row                                         ## MDEV-22667
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-27971
-SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|Backtrace stopped: Cannot access memo
-ry at address                                                             ## MDEV-27971
+SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|Backtrace stopped: Cannot access memory at address                                                               ## MDEV-27971
 fixed == 1|SIGABRT|Item_func_concat::val_str|Item::save_in_field|TABLE::update_virtual_fields|handler::ha_rnd_next                                                             ## MDEV-27966
 fixed == 1|SIGABRT|Item_func_concat::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                        ## MDEV-27966
 fixed()|SIGABRT|Item_func_concat::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                           ## MDEV-27966
@@ -119,6 +120,7 @@ SIGSEGV|replace_routine_table|mysql_routine_grant|mysql_execute_command|mysql_pa
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|Field::cmp|Cached_item_field::cmp                                                      ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_data_data|cmp_dfield_dfield                                                                 ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_dtuple_rec_with_match_low|cmp_dtuple_rec                                                    ## MDEV-27768
+(cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_dfield_dfield|row_merge_tuple_cmp                                                           ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_whole_field|cmp_data|cmp_dtuple_rec_with_match_low                                                   ## MDEV-27768
 next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                     ## MDEV-27770
 l_offset >= 0 && table->s->rec_buff_length - l_offset > 0|SIGABRT|Field::ptr_in_record|Column_definition::Column_definition|Create_field::Create_field|mysql_prepare_alter_table ## MDEV-27769
@@ -302,6 +304,11 @@ SIGSEGV|__strlen_avx2|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init
 global_system_variables.session_track_system_variables|SIGABRT|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init|THD::THD                                             ## MDEV-25237
 0|SIGABRT|wsrep::transaction::before_rollback|wsrep::client_state::before_rollback|wsrep_before_rollback|ha_rollback_trans                                                     ## MDEV-22063
 index->table->is_temporary() || !page_is_leaf(block->frame) || !!(index)->is_primary()|SIGABRT|btr_page_reorganize_low|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## MDEV-25283
+index->table->is_temporary() || !page_is_leaf(block->page.frame) || !!(index)->is_primary()|SIGABRT|btr_page_reorganize_low|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## MDEV-25283
+recovery || (index->table)->is_temporary() || !page_is_leaf(temp_page) || !dict_index_is_sec_or_ibuf(index) || page_get_max_trx_id(page) != 0|SIGABRT|btr_page_reorganize_low|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## MDEV-25283
+recovery || index->table->is_temporary() || !page_is_leaf(temp_page) || !!(index)->is_primary() || page_get_max_trx_id(page) != 0|SIGABRT|btr_page_reorganize_low|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## MDEV-25283
+recovery || index->table->is_temporary() || !page_is_leaf(temp_page) || !dict_index_is_sec_or_ibuf(index) || page_get_max_trx_id(page) != 0|SIGABRT|btr_page_reorganize_low|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## MDEV-25283
+(index)->is_clust() || !page_is_leaf(temp_page) || page_get_max_trx_id(page) != 0|SIGABRT|page_zip_reorganize|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## MDEV-25283
 is_last_prefix <= 0|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record                                                       ## MDEV-15656
 ds_control|SIGABRT|debug_sync_get_action|debug_sync_eval_action|debug_sync_set_action|mysql_alter_table                                                                        ## MDEV-25218
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                  ## MDEV-25219
@@ -790,7 +797,7 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # SIGSEGV|fill_record|fill_record_n_invoke_before_triggers|mysql_insert|mysql_execute_command                                                                         ## Fixed ## MDEV-23467
 # SIGILL|typeinfo for Item_func_set_collation|Item_singlerow_subselect::reset|Item_singlerow_subselect::bring_value|Arg_comparator::compare_e_row                     ## Fixed ## MDEV-23535
 # SIGSEGV|typeinfo for Item_func_set_collation|Item_singlerow_subselect::reset|Item_singlerow_subselect::bring_value|Arg_comparator::compare_e_row                    ## Fixed ## MDEV-23535
-# SIGABRT|__cxa_pure_virtual () from|Arg_comparator::compare_e_string|Arg_comparator::compare|Arg_comparator::compare_e_row                                           ## Fixed ## MDEV-23535
+# SIGABRT|__cxa_pure_virtual|Arg_comparator::compare_e_string|Arg_comparator::compare|Arg_comparator::compare_e_row                                                   ## Fixed ## MDEV-23535
 # SIGSEGV|mtr_t::init|fsp_init_file_page|fsp_page_create|fsp_alloc_free_page                                                                                          ## Fixed ## MDEV-23566
 # SIGSEGV|mtr_t::init|fsp_init_file_page|fsp_page_create|fseg_alloc_free_page_low                                                                                     ## Fixed ## MDEV-23566
 # tab->ref.use_count|SIGABRT|join_read_key_unlock_row|evaluate_join_record|sub_select|do_select                                                                       ## Fixed ## MDEV-23596

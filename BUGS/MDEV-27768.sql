@@ -28,3 +28,7 @@ INSERT INTO t VALUES (0,0);
 CREATE TABLE t (a CHAR,b CHAR) COLLATE=tis620_thai_nopad_ci;
 INSERT INTO t VALUES (0,0);
 SELECT a,SUM(DISTINCT a),MIN(b) FROM t GROUP BY a;
+
+CREATE TABLE t (a CHAR,b CHAR,KEY(a,b)) ROW_FORMAT=DYNAMIC COLLATE=tis620_thai_nopad_ci ENGINE=InnoDB;
+SET unique_checks=0,foreign_key_checks=0,autocommit=0;
+INSERT INTO t VALUES (0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0);

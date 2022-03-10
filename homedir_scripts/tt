@@ -117,9 +117,10 @@ else
 fi
 
 echo "----- Search URL (3 most significant frames) -----"  # Out of the 4 frames available
-# First frame (FRAMEX): ref code above
-FRAMEY="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*|.*$/\1/')"
-FRAMEZ="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*$/\1/')"
+# First frame (FRAMEX): ref FRAMEX generation code above. Here we just escape it if needed (for example for spaces and special chars
+FRAMEX="$(echo -n "${FRAMEX}" | perl -MURI::Escape -le 'print uri_escape <STDIN>' | sed 's|\%0A||g')"
+FRAMEY="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*|.*$/\1/' | perl -MURI::Escape -le 'print uri_escape <STDIN>' | sed 's|\%0A||g')"
+FRAMEZ="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*$/\1/' | perl -MURI::Escape -le 'print uri_escape <STDIN>' | sed 's|\%0A||g')"
 #FRAME4="$(echo "${TEXT}" | sed 's/.*|\(.*\)$/\1/')"  // Last frame not used
 echo "https://jira.mariadb.org/issues/?jql=text%20~%20%22%5C%22${FRAMEX}%5C%22%22%20and%20text%20~%20%22%5C%22${FRAMEY}%5C%22%22%20and%20text%20~%20%22%5C%22${FRAMEZ}%5C%22%22%20ORDER%20BY%20status%20ASC"
 
@@ -127,7 +128,7 @@ ASSERT="$(echo -n "${TEXT}" | sed 's/||/DUMMYREP/g' | sed 's/|.*//' | sed 's/DUM
 if [[ "${ASSERT}" != "SIGSEGV" && "${ASSERT}" != "SIGABRT" ]]; then
   echo "----- Search URL (assert message) -----"
   if [ ${NOPERL} -eq 0 ]; then  # Properly escape all special characters to generate a correct URL
-    ASSERT="$(echo -n "${ASSERT}" | perl -MURI::Escape -le 'print uri_escape <STDIN>')"
+    ASSERT="$(echo -n "${ASSERT}" | perl -MURI::Escape -le 'print uri_escape <STDIN>' | sed 's|\%0A||g')"
   fi
   echo "https://jira.mariadb.org/issues/?jql=text%20~%20%22%5C%22${ASSERT}%5C%22%22%20ORDER%20BY%20status%20ASC"
 fi

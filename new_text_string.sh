@@ -235,6 +235,9 @@ else
   exit 1
 fi
 
+# Minor adjustments
+TEXT="$(echo "${TEXT}" | sed 's|__cxa_pure_virtual () from|__cxa_pure_virtual|g')"
+
 # Report bug identifier string
 if [ "$(echo "${TEXT}" | sed 's|[ \t]*\(.\).*|\1|')" == "#" ]; then
   echo "Assert: leading character of unique bug id (${TEXT}) is a '#', which will lead to issues in other scripts. This would normally never happen, but it did. Please improve new_text_string.sh to handle this situation!"
