@@ -7,7 +7,7 @@ if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (
 fi
 export PASS_MYEXTRA_TO_START_ONLY=${PASS_MYEXTRA_TO_START_ONLY}
 
-if [ "${BPQUERY}" == "1" -a "${1}" != "GAL" ]; then  # TODO: once /test/test_all was updated to use ./gal_test_pquery then the -a GAL check can be removed
+if [ "${BPQUERY}" == "1" ]; then
   echo "Using pquery client for testcase replay"
 fi
 

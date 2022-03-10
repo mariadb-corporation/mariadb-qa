@@ -160,7 +160,7 @@ fi
 rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery wipe* clean_failing_queries memory_use_trace
 BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
-GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
+GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
   echo "Adding scripts: ${BASIC_SCRIPTS} | ${GRP_RPL_SCRIPTS}"
 elif [[ $MDG -eq 1 ]]; then
@@ -390,7 +390,7 @@ if [[ $MDG -eq 1 ]]; then
     fi
     echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>./gal_init
 
-    echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
+    echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock test --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
     echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>gal_wipe
     echo "if [ -r node1/node${i}.err ]; then mv node${i}/node${i}.err node${i}/node${i}.err.PREV; fi" >>gal_wipe
   done
@@ -717,7 +717,8 @@ if [[ $MDG -eq 1 ]]; then
   cp cl_noprompt gal_cl_noprompt
   cp cl_noprompt_nobinary gal_cl_noprompt_nobinary
   cp test gal_test
-  sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_cl gal_cl_noprompt gal_cl_noprompt_nobinary gal_test
+  cp test_pquery gal_test_pquery
+  sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_cl gal_cl_noprompt gal_cl_noprompt_nobinary gal_test gal_test_pquery
 fi
 
 if [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "0.5" ]; then
