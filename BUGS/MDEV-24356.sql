@@ -8,3 +8,9 @@ CREATE DATABASE `..................................................`;
 USE `..................................................`;
 CREATE TABLE t(a INT KEY,b INT,FOREIGN KEY (b)REFERENCES t (a)) ROW_FORMAT=REDUNDANT;
 INSERT INTO t VALUES(6,6,6);
+
+create database `db_new..............................................end`;
+set foreign_key_checks=0;
+USE `db_new..............................................end`;
+CREATE TABLE t0(a INT,b CHAR,FOREIGN KEY (a)REFERENCES t_0(a) ON DELETE CASCADE);
+SELECT * FROM information_schema.table_constraints;

@@ -5,4 +5,4 @@ if [ -d /data -a -r /data/find_reduced_bugs ]; then
   echo "Changing directory to /data"
   cd /data
 fi
-grep --binary-files=text -Fi "${1}" [0-9]*/*/MYBUG* 2>/dev/null | sed 's|^|wc -l |;s|MYBUG.*|\*_out|' | xargs -I {} bash -c "{}"
+grep --binary-files=text -Fi "${1}" [0-9]*/*/MYBUG* 2>/dev/null | sed "s|^|wc -l |;s|MYBUG.*|\*_out|;s=$= 2>/dev/null=" | xargs -I {} bash -c "{}" | grep -v 'total$' | sed 's|^[ \t]\+||'

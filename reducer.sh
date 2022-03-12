@@ -384,14 +384,13 @@ check_for_version()
 TOKUDB=
 ROCKSDB=
 #Check rr binary location and set startup option
+export RR_OPTIONS=
 if [[ ${RR_TRACING} -eq 1 ]]; then
   if [[ -z $(which rr) ]]; then
-    echo "Assert: $(which rr) not found!"
+    echo "Assert: rr binary not found! Please install rr and ensure  which rr  works correctly"
     exit 1
   fi
   export RR_OPTIONS="$(which rr) record --chaos"
-else
-  export RR_OPTIONS=
 fi
 if [[ "${MYEXTRA}" == *"ha_rocksdb.so"* ]]; then
   if [ -r ${BASEDIR}/lib/mysql/plugin/ha_rocksdb.so ]; then
@@ -3529,7 +3528,7 @@ finish(){
   if [[ ${RR_TRACING} -eq 1 ]]; then
     if [[ ${RR_SAVE_ALL_TRACES} -eq 0 ]]; then
       save_rr_trace "${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
-      echo_out "[Finish] Number of server startups         : Saved RR trace in ${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
+      echo_out "[Finish] Saved the final RR trace in ${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
     else
       echo_out "[Finish] RR traces saved in                : ${WORK_BUG_DIR}/rr"
     fi

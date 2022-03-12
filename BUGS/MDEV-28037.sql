@@ -1,0 +1,6 @@
+SET unique_checks=0,foreign_key_checks=0;
+CREATE TABLE t1 (c INT) ENGINE=InnoDB;
+CREATE TABLE t2 (c INT) ENGINE=InnoDB;
+CREATE TRIGGER tr AFTER INSERT ON t1 FOR EACH ROW UPDATE t2 SET c=1;
+SET autocommit=1;
+INSERT INTO t1 VALUES (0);
