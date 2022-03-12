@@ -20,7 +20,7 @@ Internal MariaDB error code: 1146                     Presumed non-issue (table 
 Internal MariaDB error code: 1193                     Presumed non-issue (init_slave query cannot run)
 Internal MariaDB error code: 1399                     Presumed non-issue (global transaction is in IDLE state)
 Internal MariaDB error code: 1593                     Presumed non-issue (empty master connection user name)
-Internal MariaDB error code: 1677                     Presumed non-issue (table referenced in binlog does not exist)
+Internal MariaDB error code: 1677                     Presumed non-issue (table referenced in binlog does not exist, or unconvertible column type difference)
 Internal MariaDB error code: 1792                     Presumed non-issue (tx_read_only=1 yet attempted BINLOG statement)
 Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
 Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master connection IP address)
@@ -35,4 +35,6 @@ my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sy
 Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543
 Got error 127 when reading table                      https://jira.mariadb.org/browse/MDEV-27903
+mysql_ha_read: Got error 188 when reading table       Presumed non-issue (Operation was interrupted)
 Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
+max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)

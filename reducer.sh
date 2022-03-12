@@ -19,7 +19,10 @@
 
 # In active development: 2012-2022
 
-# This program has been used to reduce many thousands of SQL based testcases from tens or hundreds of thousands of lines to less then 10 lines, each. Learn more at;
+# This program has been used to reduce many thousands of SQL based testcases,
+# from tens (or hundreds) of thousands of SQL lines to less then 10 lines, each.
+
+# Learn more at:
 # https://www.percona.com/blog/2014/09/03/reducer-sh-a-powerful-mysql-test-case-simplificationreducer-tool/
 # https://www.percona.com/blog/2015/07/21/mysql-qa-episode-7-single-threaded-reducer-sh-reducing-testcases-for-beginners
 # https://www.percona.com/blog/2015/07/23/mysql-qa-episode-8-reducing-testcases-engineers-tuning-reducer-sh/
@@ -78,6 +81,7 @@ NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (ot
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
 RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
 RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces
+PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause after each successful issue occurence
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -1325,6 +1329,10 @@ multi_reducer(){
             echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [${NR_OF_NEWBUGS} New Bugs Found] Thread #$t found a new unseen bug: $(cat $MULTI_WORKD/MYBUG.FOUND | head -n1)"
           fi
           FOUND_VERIFIED=1  # Outer loop terminate setup
+          if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
+            echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURENCE is active: reducer is pausing as the issue occured. Press 'Enter' to continue..."
+            read -p ''
+          fi
           break  # Inner loop terminate
         fi
         # Check if this subreducer ($MULTI_PID$t) is still running. For more info, see "However, ..." in few lines of comments above.a
@@ -1779,6 +1787,9 @@ init_workdir_and_files(){
   fi
   if [ $FORCE_SPORADIC -gt 0 ]; then
     echo_out "[Init] FORCE_SPORADIC active, so automatically enabled SLOW_DOWN_CHUNK_SCALING to speed up testcase reduction (SLOW_DOWN_CHUNK_SCALING_NR is set to $SLOW_DOWN_CHUNK_SCALING_NR)"
+  fi
+  if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
+    echo_out "[Init] PAUSE_AFTER_EACH_OCCURENCE active, so reducer will pause after each occurence of the issue"
   fi
   if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
     echo_out "[Init] REDUCE_STARTUP_ISSUES active. Issue is assumed to be a startup issue"

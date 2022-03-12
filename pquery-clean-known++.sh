@@ -14,6 +14,23 @@ echo "Extra cleaning up of known issues++ (expert mode)..."
 ${SCRIPT_PWD}/pquery-results.sh | grep -A1 "Likely out of disk space trials" | \
  tail -n1 | tr ' ' '\n' | grep -v "^[ \t]*$" | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
 
+# Delete all trials in /data/ workdirs which ran into either of the following to-be-expected issues:
+# 2022-03-12 16:14:19 4 [ERROR] Got error 126 when reading table './test/t'
+# 2022-03-12 16:14:19 4 [ERROR] mysqld: Index for table 't' is corrupt; try to repair it
+# As a direct result of:
+# 2022-03-12 16:14:19 4 [ERROR] mysqld: Unknown key id 1. Can't continue!
+# Which comes as a result of using 'SET GLOBAL aria_encrypt_tables=1;' without proper configuration
+# See also https://jira.mariadb.org/browse/MDEV-26258
+# The reason a thousands-line-before (-B1000) error log grep for these occurences is safe is that:
+# 1) The one-liner script below first confirms there are no cores for the given trial
+# 2) The one-liner script also confirms 'Unknown key id' is present for the given trial
+# 3) (minor) The 'Unknown key id' has to come before (-B) these errors to be considered
+if [ -d "/data" ]; then
+  cd /data
+  grep --binary-files=text -E -B1000 "Got error 126 when reading table|Index for table.*is corrupt; try to repair it" [0-9]*/[0-9]*/log/master.err | grep --binary-files=text "Unknown key id" | sed 's|/log/.*||' | sort -u | sed "s|^|cd |;s|/\([0-9]\+\)|; if grep -qi 'no core' ./\1/MYBUG; then ~/dt \1 1; fi; cd - >/dev/null 2>\&1|" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+  cd - >/dev/null 2>&1
+fi
+
 # Delete all trials which have "Access denied for user 'root'@'localhost'" on the last few lines of the error log and that have no core file
 if [ -r /home/$(whoami)/pr ]; then
   rm -f ./temp_pck++.sh
