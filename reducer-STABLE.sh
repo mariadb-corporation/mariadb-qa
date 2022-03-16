@@ -19,7 +19,10 @@
 
 # In active development: 2012-2022
 
-# This program has been used to reduce many thousands of SQL based testcases from tens or hundreds of thousands of lines to less then 10 lines, each. Learn more at;
+# This program has been used to reduce many thousands of SQL based testcases,
+# from tens (or hundreds) of thousands of SQL lines to less then 10 lines, each.
+
+# Learn more at:
 # https://www.percona.com/blog/2014/09/03/reducer-sh-a-powerful-mysql-test-case-simplificationreducer-tool/
 # https://www.percona.com/blog/2015/07/21/mysql-qa-episode-7-single-threaded-reducer-sh-reducing-testcases-for-beginners
 # https://www.percona.com/blog/2015/07/23/mysql-qa-episode-8-reducing-testcases-engineers-tuning-reducer-sh/
@@ -78,6 +81,7 @@ NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (ot
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
 RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
 RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces
+PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause after each successful issue occurence
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -384,14 +388,13 @@ check_for_version()
 TOKUDB=
 ROCKSDB=
 #Check rr binary location and set startup option
+export RR_OPTIONS=
 if [[ ${RR_TRACING} -eq 1 ]]; then
   if [[ -z $(which rr) ]]; then
-    echo "Assert: $(which rr) not found!"
+    echo "Assert: rr binary not found! Please install rr and ensure:  which rr  works correctly at the command line"
     exit 1
   fi
   export RR_OPTIONS="$(which rr) record --chaos"
-else
-  export RR_OPTIONS=
 fi
 if [[ "${MYEXTRA}" == *"ha_rocksdb.so"* ]]; then
   if [ -r ${BASEDIR}/lib/mysql/plugin/ha_rocksdb.so ]; then
@@ -598,8 +601,7 @@ abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE an
   else
     echo_out "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
     echo_out "[Abort] The source for this reducer was likely deleted. Terminating."
-    trap SIGINT
-    exit 3
+    kill -9 $$  # Effectively self-terminate
   fi
   echo_out "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
   if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
@@ -979,7 +981,7 @@ options_check(){
       echo_out "[Setup] Warning: possible misconfiguration: NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}) yet PQUERY_MULTI is turned on, which in turn ensured FORCE_SKIPV was turned on. Did you set STAGE1_LINES (value: ${STAGE1_LINES}) sufficiently low to ensure progression to stage 2?"
     fi
   else
-    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
+    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${FORCE_SKIPV} -ne 0 ]; then
       if [ ${SKIPSTAGEBELOW} -eq 0 ]; then
         echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts (i.e. in stage 2). The verify stage will be skipped automatically"
       else
@@ -1327,6 +1329,10 @@ multi_reducer(){
             echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [${NR_OF_NEWBUGS} New Bugs Found] Thread #$t found a new unseen bug: $(cat $MULTI_WORKD/MYBUG.FOUND | head -n1)"
           fi
           FOUND_VERIFIED=1  # Outer loop terminate setup
+          if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
+            echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURENCE is active: reducer is pausing as the issue occured. Press 'Enter' to continue..."
+            read -p ''
+          fi
           break  # Inner loop terminate
         fi
         # Check if this subreducer ($MULTI_PID$t) is still running. For more info, see "However, ..." in few lines of comments above.a
@@ -1335,13 +1341,13 @@ multi_reducer(){
         if [ "$(ps -p$PID_TO_CHECK | grep -E --binary-files=text -o $PID_TO_CHECK)" != "$PID_TO_CHECK" ]; then
           RESTART_WORKD=$(eval echo $(echo '$WORKD'"$t"))
           SUBR_SVR_START_FAILURE=0
-          if grep -E --binary-files=text ".ERROR. Failed to start mysqld server" $RESTART_WORKD/reducer.log; then  # Check if this was a subreducer who's mysqld failed to start
+          if grep -Eqi --binary-files=text ".ERROR. Failed to start mysqld server" $RESTART_WORKD/reducer.log; then  # Check if this was a subreducer who's mysqld failed to start
             SUBR_SVR_START_FAILURE=1
             TMP_RND_FILENAME="err_$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/').txt"  # Subshell creates random number with 6 digits
             cp $RESTART_WORKD/log/master.err /tmp/${TMP_RND_FILENAME}  # Copy the mysqld error log from the subreducer run which had a failed startup to /tmp for research
           fi
           if grep -E --binary-files=text "Do you already have another mysqld server running on port|Address already in use|Got error: 98" $RESTART_WORKD/log/master.err; then  # A server likely crashed on a different bug
-            echo_out "Assert: this script tried to restart the thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")), but failed due to a TCP/IP port address already in use error, which can be seen in $RESTART_WORKD/log/master.err - The most likely reason for this is that this thread previously crashed on another crash then the one specified in TEXT. It is highly unlikely that this script ran into an actual duplicate port issue due to the advanced checking for the same in multi_reducer(). If this message is looping, you want to:  tail -n5 $(echo "${RESTART_WORKD}" | sed 's|/$||;s|/[^/]\+$|/*/log/master.err|')  repeatadely untill you see a crash, followed by actually checking (i.e. vi) the error log quickly (to avoid overwrite) once you see a crash to see which crash is being generated, and then stop reducer and modify the search TEXT text or make other required changes (like updating MYEXTRA) to find the original bug being looked for. It may work out better to first reduce for the new issue seen; it is likely the same bug. Alternatively, set this reducer to MODE=4 to look for any crash (provided you are reducing for a crash), with the caveat that if the SQL is capable of introducing two different crashes (and it looks like it is), you may end up with the wrong crash reduced. In that case, try again, or research the crash seen as described using the tail command."
+            echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] this script tried to restart the thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")), but failed due to a TCP/IP port address already in use error, which can be seen in $RESTART_WORKD/log/master.err - The most likely reason for this is that this thread previously crashed on another crash then the one specified in TEXT. It is highly unlikely that this script ran into an actual duplicate port issue due to the advanced checking for the same in multi_reducer(). If this message is looping, you want to:  tail -n5 $(echo "${RESTART_WORKD}" | sed 's|/$||;s|/[^/]\+$|/*/log/master.err|')  repeatadely untill you see a crash, followed by actually checking (i.e. vi) the error log quickly (to avoid overwrite) once you see a crash, to see which crash is being generated, and then stop reducer and modify the search TEXT text or make other required changes (like updating MYEXTRA) to find the original bug being looked for. It may work out better to first reduce for the new issue seen; it is likely the same bug. Alternatively, set this reducer to MODE=4 to look for any crash (provided you are reducing for a crash), with the caveat that if the SQL is capable of introducing two different crashes (and it looks like it is), you may end up with the wrong crash reduced. In that case, try again, or research the crash seen as described using the tail command. This script will now attempt to terminate and restart the thread."
           fi
           # Ensure RESTART_WORKD is actually set
           if [ -z "${RESTART_WORKD}" ]; then echo "Assert: RESTART_WORKD is empty."; exit 1; fi
@@ -1370,7 +1376,7 @@ multi_reducer(){
               #echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review. Otherwise, please ignore the \"check...\" message just above; the files are no longer there given the restart above)"
             else
               if [ "${FIREWORKS}" != "1" ]; then  # Only show this is in non-fireworks mode
-                echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happens irregularly on busy servers. However, if the message is repeating continuously, please investigate; reducer has copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
+                echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happens irregularly on busy servers OR when there is not sufficient diskspace). If the message is repeating continuously, please investigate. reducer has also copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review, though an out of diskpace may not show in there.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
               else
                 echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))"
               fi
@@ -1520,8 +1526,8 @@ TS_init_all_sql_files(){
 
 # Find empty port
 init_empty_port(){
-  # Choose a random port number in 10-65K range, double check if free, retry if needbe
-  NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+  # Choose a random port number in 13-65K range, with triple check to confirm it is free
+  NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]
   DOUBLE_CHECK=0
   while :; do
     # Check if the port is free in three different ways
@@ -1529,15 +1535,15 @@ init_empty_port(){
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
-      if [ "${DOUBLE_CHECK}" -eq 1 ]; then  # If true, then the port was double checked (to avoid races) and twice free
+      if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
         break  # Suitable port number found
       else
-        DOUBLE_CHECK=1
-        sleep 0.0${RANDOM}  # Random Microsleep
+        DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
+        sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
         continue  # Loop the check
       fi
     else
-      NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]  # Try a new port
+      NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi
@@ -1782,6 +1788,9 @@ init_workdir_and_files(){
   if [ $FORCE_SPORADIC -gt 0 ]; then
     echo_out "[Init] FORCE_SPORADIC active, so automatically enabled SLOW_DOWN_CHUNK_SCALING to speed up testcase reduction (SLOW_DOWN_CHUNK_SCALING_NR is set to $SLOW_DOWN_CHUNK_SCALING_NR)"
   fi
+  if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
+    echo_out "[Init] PAUSE_AFTER_EACH_OCCURENCE active, so reducer will pause after each occurence of the issue"
+  fi
   if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
     echo_out "[Init] REDUCE_STARTUP_ISSUES active. Issue is assumed to be a startup issue"
     echo_out "[Info] Note: REDUCE_STARTUP_ISSUES is normally used for debugging mysqld startup issues only; for example caused by a misbehaving --option to mysqld. You may want to make the SQL input file really small (for example 'SELECT 1;' only) to ensure that when the particular issue being debugged is not seen, reducer will not spent a long time on executing SQL unrelated to the real issue, i.e. failing mysqld startup"
@@ -1910,7 +1919,11 @@ init_workdir_and_files(){
         mv ${WORKD}/data ${WORKD}/data.init
         cp -a ${WORKD}/data.init ${WORKD}/data  # We need this for the first mysqld startup attempt just below
       fi
-      #start_mysqld_main
+      if [ "$(du -sc $WORKD/data.init | grep -v 'total' | awk '{print $1}')" == "0" ]; then
+        echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data.init is 0 bytes. The volume likely ran out of space"
+        echo "Terminating now."
+        exit 1
+      fi
       echo_out "[Init] Attempting first mysqld startup with all MYEXTRA options passed to mysqld"
       FIRST_MYSQLD_START_FLAG=1
       if [ $MODE -ne 1 -a $MODE -ne 6 ]; then start_mysqld_main; else start_valgrind_mysqld_main; fi
@@ -2034,11 +2047,13 @@ generate_run_scripts(){
       echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
       echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
       echo "export LD_LIBRARY_PATH=\${BASEDIR}/lib" >> $WORK_RUN_PQUERY
+      echo "# RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829" >> $WORK_RUN_PQUERY
+      echo "SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=\$[ \$[ \$(wc -l ./${EPOCH}.sql | awk '{print \$1}') * 13 / 10 ] + 100 ]" >> $WORK_RUN_PQUERY
       if [ $PQUERY_MULTI -eq 1 ]; then
-        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
+        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
         echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
       else
-        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE=""; else PQUERY_SHUFFLE="--no-shuffle"; fi
+        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; else PQUERY_SHUFFLE="--no-shuffle"; fi
         echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=1 --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
       fi
       chmod +x $WORK_RUN_PQUERY
@@ -2435,6 +2450,11 @@ gr_start_main(){
 }
 
 start_mysqld_main(){
+  if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
+    echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
+    echo "Terminating now."
+    exit 1
+  fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
   echo "echo \"Attempting to start mysqld (socket /dev/shm/${EPOCH}/socket.sock)...\"" >> $WORK_START
@@ -2487,6 +2507,11 @@ start_mysqld_main(){
 
 #                             --binlog-format=MIXED \
 start_valgrind_mysqld_main(){
+  if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
+    echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
+    echo "Terminating now."
+    exit 1
+  fi
   if [ -f $WORKD/valgrind.out ]; then mv -f $WORKD/valgrind.out $WORKD/valgrind.prev; fi
   SCHEDULER_OR_NOT=
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then SCHEDULER_OR_NOT="--event-scheduler=ON "; fi
@@ -2780,20 +2805,22 @@ run_sql_code(){
       if [ $MODE -eq 2 ]; then
         USE_PQUERYE2_CLIENT_LOGGING="--log-all-queries --log-failed-queries"
       fi
+      # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
+      SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]
       if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         if [ $PQUERY_MULTI -eq 1 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         else
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE=""; else PQUERY_SHUFFLE="--no-shuffle"; fi
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; else PQUERY_SHUFFLE="--no-shuffle"; fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         fi
       else
         if [ $PQUERY_MULTI -eq 1 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE=""; fi
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         else
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE=""; else PQUERY_SHUFFLE="--no-shuffle"; fi
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; else PQUERY_SHUFFLE="--no-shuffle"; fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         fi
       fi
@@ -3512,7 +3539,7 @@ finish(){
   if [[ ${RR_TRACING} -eq 1 ]]; then
     if [[ ${RR_SAVE_ALL_TRACES} -eq 0 ]]; then
       save_rr_trace "${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
-      echo_out "[Finish] Number of server startups         : Saved RR trace in ${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
+      echo_out "[Finish] Saved the final RR trace in ${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
     else
       echo_out "[Finish] RR traces saved in                : ${WORK_BUG_DIR}/rr"
     fi
@@ -4230,7 +4257,7 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
       fi
     done
   else
-    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping stage $STAGE as remaining number of lines in input file <= $STAGE1_LINES"
+    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping stage $STAGE as remaining number of lines in input file <= $STAGE1_LINES (STAGE1_LINES)"
   fi
 fi
 

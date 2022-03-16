@@ -41,6 +41,11 @@ SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                      
 #***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|myrocks::ha_rocksdb::free_key_buffers                                                                                      ## MDEV-21799
 #***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|std::__shared_count<shared_ptr_base.h                                                                                      ## MDEV-21799
 #***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
+#***#SIGABRT|__libc_message|malloc_printerr|_int_malloc|__GI___libc_malloc                                                                                                          ## MDEV-28054
+#***#SIGSEGV|__memset_avx2_erms|memset|sort_insert_key|sort_key_write                                                                                                               ## MDEV-28054
+#***#SIGSEGV|_int_malloc|__GI___libc_malloc|my_malloc|alloc_root                                                                                                                    ## MDEV-28054
+#***#SIGSEGV|_int_malloc|__GI___libc_malloc|eval_node_alloc_val_buf|eval_node_ensure_val_buf                                                                                        ## MDEV-28054
+#***#SIGSEGV|_int_malloc|__GI___libc_malloc|sf_malloc|my_malloc                                                                                                                     ## MDEV-28054
 
 ##### Likely debug_dbug issues (reduced once with debug_dbug shown to be the cause) #####
 debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute                                 ## debug_dbug='+d,after_mysql_insert'

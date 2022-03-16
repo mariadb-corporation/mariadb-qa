@@ -391,7 +391,7 @@ ROCKSDB=
 export RR_OPTIONS=
 if [[ ${RR_TRACING} -eq 1 ]]; then
   if [[ -z $(which rr) ]]; then
-    echo "Assert: rr binary not found! Please install rr and ensure  which rr  works correctly"
+    echo "Assert: rr binary not found! Please install rr and ensure:  which rr  works correctly at the command line"
     exit 1
   fi
   export RR_OPTIONS="$(which rr) record --chaos"
@@ -1376,7 +1376,7 @@ multi_reducer(){
               #echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review. Otherwise, please ignore the \"check...\" message just above; the files are no longer there given the restart above)"
             else
               if [ "${FIREWORKS}" != "1" ]; then  # Only show this is in non-fireworks mode
-                echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happens irregularly on busy servers. However, if the message is repeating continuously, please investigate; reducer has copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
+                echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happens irregularly on busy servers OR when there is not sufficient diskspace). If the message is repeating continuously, please investigate. reducer has also copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review, though an out of diskpace may not show in there.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
               else
                 echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))"
               fi
@@ -1526,8 +1526,8 @@ TS_init_all_sql_files(){
 
 # Find empty port
 init_empty_port(){
-  # Choose a random port number in 10-65K range, double check if free, retry if needbe
-  NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]
+  # Choose a random port number in 13-65K range, with triple check to confirm it is free
+  NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]
   DOUBLE_CHECK=0
   while :; do
     # Check if the port is free in three different ways
@@ -1535,15 +1535,15 @@ init_empty_port(){
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
-      if [ "${DOUBLE_CHECK}" -eq 1 ]; then  # If true, then the port was double checked (to avoid races) and twice free
+      if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
         break  # Suitable port number found
       else
-        DOUBLE_CHECK=1
-        sleep 0.0${RANDOM}  # Random Microsleep
+        DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
+        sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
         continue  # Loop the check
       fi
     else
-      NEWPORT=$[ 10001 + ( ${RANDOM} % 55000 ) ]  # Try a new port
+      NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi

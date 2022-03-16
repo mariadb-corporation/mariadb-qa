@@ -2,4 +2,6 @@
 set +H
 
 echo "Live instances (based on gendirs.sh list):"
-./gendirs.sh | xargs -I{} echo "$(echo "{}" | sed 's|$|/log/master.err|')" | xargs -I{} echo "ps -ef | grep '{}' | grep -v grep" | xargs -I{} bash -c "{}"
+./gendirs.sh | xargs -I{} echo "cd {}; echo "{}"; ./bin/mysqladmin ping -uroot -S./socket.sock 2>/dev/null; cd - >/dev/null" | sort -r -n | xargs -I{} bash -c "{}" | grep -B1 "is alive" | grep -vE "is alive|^\-\-$" | sed 's|^|  |'
+
+# ./gendirs.sh | xargs -I{} echo "$(echo "{}" | sed 's|$|/log/master.err|')" | xargs -I{} echo "ps -ef | grep '{}' | grep -v grep" | xargs -I{} bash -c "{}"
