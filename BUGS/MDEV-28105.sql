@@ -1,0 +1,4 @@
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+SET @@insert_id=128;  # 127 does not crash
+CREATE TABLE t(c TINYINT AUTO_INCREMENT KEY) ENGINE=Spider;
+INSERT IGNORE INTO t VALUES(0);

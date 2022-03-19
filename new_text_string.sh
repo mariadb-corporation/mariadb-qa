@@ -115,7 +115,7 @@ fi
 if [ -z "${LATEST_CORE}" ]; then
   if [ -f ${SCRIPT_PWD}/mariadb-qa/fallback_text_string.sh -a -r ${SCRIPT_PWD}/mariadb-qa/fallback_text_string.sh ]; then
     if grep -qi 'signal' "${ERROR_LOG}"; then
-      TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "${ERROR_LOG}")"
+      TEXT="$(${SCRIPT_PWD}/mariadb-qa/fallback_text_string.sh "${ERROR_LOG}")"
       if [ -z "${TEXT}" ]; then
         echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
         exit 1

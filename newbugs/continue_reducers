@@ -1,0 +1,4 @@
+#!/bin/bash
+# This script continues all reducers which have been succesfully reducing testcases thus far
+
+mkdir -p reducer.logs; ls *out | sed 's|\.sql.*||;s|$|.reducer.sh|' | sort -u | xargs -I{} screen -admS s{} bash -c "./{} 2>&1 | tee -a ./reducer.logs/{}.log;bash"
