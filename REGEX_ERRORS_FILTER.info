@@ -40,3 +40,4 @@ Got error 127 when reading table                      https://jira.mariadb.org/b
 mysql_ha_read: Got error 188 when reading table       Presumed non-issue (Operation was interrupted)
 Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
 max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)
+Deleting the meta-data file                           Normal result of FLUSH TABLE WITH READ LOCK, also see MDEV-28110

@@ -74,6 +74,8 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-28237
+0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-28190
 SIGSEGV|replace_column_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute                                                           ## MDEV-28128
 SIGSEGV|replace_column_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command                                                                  ## MDEV-28128
 SIGSEGV|replace_column_table|mysql_table_grant|mysql_execute_command|mysql_parse                                                                                               ## MDEV-28128
@@ -393,6 +395,7 @@ SIGSEGV|Event_queue::find_n_remove_event|Event_queue::update_event|Events::updat
 SIGSEGV|Event_queue::get_top_for_execution_if_time|Event_scheduler::run|event_scheduler_thread|pfs_spawn_thread                                                                ## MDEV-24686
 SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncollsp_utf8_general_ci|event_basic_db_equal                                                      ## MDEV-24686
 SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncollsp_utf8_general_ci|event_basic_identifier_equal                                              ## MDEV-24686
+SIGSEGV|my_scan_weight_utf8mb3_general_ci|my_scan_weight_utf8mb3_general_ci|my_strnncollsp_utf8mb3_general_ci|event_basic_db_equal                                             ## MDEV-24686
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|select_insert::send_ok_packet|select_create::send_eof                      ## MDEV-24672
 marked_for_read()|SIGABRT|Field_long::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                          ## MDEV-24658
 marked_for_read()|SIGABRT|Field_varstring::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                     ## MDEV-24658
@@ -561,7 +564,6 @@ thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_comma
 field_max_length <= m_return_field_def.length || m_return_field_def.type_handler()->cmp_type() == INT_RESULT || (_current_thd()->stmt_arena->is_stmt_execute() && m_return_field_def.length == 8 && (m_return_field_def.pack_flag & (1024U|2048U)))|SIGABRT|sp_head::create_result_field|Item_sp::init_result_field|Item_func_sp::fix_fields|Item::fix_fields_if_needed ## MDEV-22368
 !thd || thd->locked_tables_mode || !thd->mdl_context.has_locks() || thd->handler_tables_hash.records || thd->ull_hash.records || thd->global_read_lock.is_acquired() || thd->current_backup_stage != BACKUP_FINISHED|SIGABRT|reload_acl_and_cache|mysql_execute_command|mysql_parse|dispatch_command ## MDEV-21994
 len <= fixed_len|SIGABRT|rec_get_converted_size_comp_prefix_low<>rem0rec.cc|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_insert                       ## MDEV-22333
-m_status == DA_ERROR|SIGABRT|Diagnostics_area::sql_errno|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                     ## MDEV-22266
 trx_id > 0 || (flags & BTR_KEEP_SYS_FLAG)|SIGABRT|btr_cur_optimistic_update|row_upd_clust_rec|row_upd_clust_step|row_upd                                                       ## MDEV-22257
 id|SIGABRT|trx_write_trx_id|row_upd_clust_rec_by_insert|row_upd_clust_step|row_upd                                                                                             ## MDEV-22257/5?
 SIGABRT|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                                                           ## MDEV-22133
@@ -1137,3 +1139,4 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # !thd->rgi_fake || !thd->transaction->all.ha_list|SIGABRT|Format_description_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event|mysql_client_binlog_statement ## Fixed ## MDEV-27687
 # SIGSEGV|ha_innobase::reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables                                         ## Fixed ## MDEV-27973
 # SIGSEGV|ha_innobase::reset|handler::ha_reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse                                           ## Fixed ## MDEV-27973
+# m_status == DA_ERROR|SIGABRT|Diagnostics_area::sql_errno|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                          ## Fixed ## MDEV-22266
