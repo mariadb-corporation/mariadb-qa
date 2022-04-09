@@ -75,9 +75,12 @@ Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_wr
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
-##### CURRENT BUGS #####
-bitmap_is_set(&read_partitions, next->id)|SIGABRT|partition_info::vers_set_hist_part|ha_partition::external_lock|handler::ha_external_lock|lock_external                      ## MDEV-28271
-0|SIGABRT|myrocks::Rdb_manual_compaction_thread::clear_manual_compaction_request|myrocks::rocksdb_compact_column_family|sys_var_pluginvar::do_check|sys_var::check            ## MDEV-28261
+##### CURRENT BUGS ##### Search key: Mac ###
+!is_null()|SIGABRT|FixedBinTypeBundle<Inet6>::Field_fbt::to_fbt|FixedBinTypeBundle<Inet6>::Field_fbt::val_str|Field::val_str|Item_func_group_concat::add                       ## MDEV-27015
+!is_null()|SIGABRT|FixedBinTypeBundle<Inet6>::Field_fbt::to_fbt|FixedBinTypeBundle<Inet6>::Field_fbt::val_str|Field::val_str|Field::val_str                                    ## MDEV-27015
+!is_null()|SIGABRT|FixedBinTypeBundle<UUID>::Field_fbt::to_fbt|FixedBinTypeBundle<UUID>::Field_fbt::val_str|Field::val_str|Field::val_str                                      ## MDEV-27015
+bitmap_is_set(&read_partitions, next->id)|SIGABRT|partition_info::vers_set_hist_part|ha_partition::external_lock|handler::ha_external_lock|lock_external                       ## MDEV-28271
+0|SIGABRT|myrocks::Rdb_manual_compaction_thread::clear_manual_compaction_request|myrocks::rocksdb_compact_column_family|sys_var_pluginvar::do_check|sys_var::check             ## MDEV-28261
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|myrocks::Rdb_manual_compaction_thread::request_manual_compaction|myrocks::rocksdb_compact_column_family                        ## MDEV-28261
 SIGSEGV|Field_string::is_var_string|Field_string::type_handler|Column_definition::Column_definition|Spvar_definition::Spvar_definition                                         ## MENT-1449
 !check_foreigns|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                                                          ## MDEV-28242
@@ -93,6 +96,11 @@ pos < table->n_v_def|SIGABRT|dict_table_get_nth_v_col|build_template_field|ha_in
 trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_commit_stmt|mysql_execute_command                                                               ## MDEV-28037
 SIGABRT|__cxa_pure_virtual|Item::check_type_scalar|Item_func::check_argument_types_scalar|Item_func::fix_fields                                                                ## MDEV-28034
 SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|fix_session_vcol_expr|TABLE::fix_vcol_exprs                                                                                ## MDEV-28034
+SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_column_deps|TABLE::mark_column_with_deps                                                               ## MDEV-28034
+SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_col|TABLE::mark_virtual_col                            
+                                                ## MDEV-28034
+SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_col|update_field_dependencies                          
+                                                ## MDEV-28034
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_rollback_trans|ha_start_consistent_snapshot|trans_begin|mysql_execute_command          ## MDEV-28024
 thd->transaction.stmt.ha_list == __null || trans == &thd->transaction.stmt|SIGABRT|ha_rollback_trans|ha_start_consistent_snapshot|trans_begin|mysql_execute_command            ## MDEV-28024
 inited == NONE|SIGABRT|handler::ha_reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables                                      ## MDEV-28023

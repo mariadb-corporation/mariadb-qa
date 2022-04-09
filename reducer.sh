@@ -1191,7 +1191,7 @@ multi_reducer(){
     echo_out "ASSERT: REDUCE_GLIBC_OR_SS_CRASHES is active, and we ended up in multi_reducer() function. This should not be possible as REDUCE_GLIBC_OR_SS_CRASHES uses a single thread only."
   fi
 
-  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any old related subreducer processes are terminated"
+  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any dangling subreducer processes are terminated"
   kill_multi_reducer
 
   if [ "$STAGE" = "V" ]; then
@@ -1827,9 +1827,13 @@ init_workdir_and_files(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
     echo_out "[Init] Number of times each individual trial will be attempted: ${NR_OF_TRIAL_REPEATS}x"
   fi
-
   if [ ${NR_OF_TRIAL_REPEATS} -gt 50 ]; then
     echo_out "[Init] Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
+  fi
+  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${SKIPSTAGEBELOW} -eq 0 ]; then
+    # As NR_OF_TRIAL_REPEATS is set >1, reducer sets SKIPSTAGEBELOW to 1 to avoid stage 1 single-threaded reduction attempts (with block chuncks, and without trial repeats) in the case where STAGE1_LINES was set to a number less than the (restructured) testcase. This is the most straightforward and best approach to negate this possibility.
+    echo_out "[Init] NR_OF_TRIAL_REPEATS>1: setting SKIPSTAGEBELOW=1, ensuring repeated line-by-line reduction trials"
+    SKIPSTAGEBELOW=1
   fi
   if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echo_out "[Init] Passing the following additional options to mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
   if [ "$MYINIT" != "" ]; then echo_out "[Init] Passing the following additional options to mysqld initialization: $MYINIT"; fi
