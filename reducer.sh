@@ -976,19 +976,6 @@ options_check(){
     elif [ $PQUERY_MULTI_CLIENT_THREADS -lt 5 ]; then
       echo_out "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to $PQUERY_MULTI_CLIENT_THREADS, $PQUERY_MULTI_CLIENT_THREADS threads for reproducing a multi-threaded issue via random replay seems insufficient. You may want to increase PQUERY_MULTI_CLIENT_THREADS. Proceeding, but this is likely incorrect. Please check"
     fi
-    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-      # TODO: Can be partially automated by checking the testcase length (# of lines) versus STAGE1_LINES
-      echo_out "[Setup] Warning: possible misconfiguration: NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}) yet PQUERY_MULTI is turned on, which in turn ensured FORCE_SKIPV was turned on. Did you set STAGE1_LINES (value: ${STAGE1_LINES}) sufficiently low to ensure progression to stage 2?"
-    fi
-  else
-    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${FORCE_SKIPV} -ne 0 ]; then
-      if [ ${SKIPSTAGEBELOW} -eq 0 ]; then
-        echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts (i.e. in stage 2). The verify stage will be skipped automatically"
-      else
-        echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts in stage $[ ${SKIPSTAGEBELOW} + 1 ]"
-      fi
-      export -n FORCE_SKIPV=0
-    fi
   fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
@@ -1830,10 +1817,14 @@ init_workdir_and_files(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 50 ]; then
     echo_out "[Init] Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
   fi
+  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${FORCE_SKIPV} -ne 0 ]; then
+    echo_out "[Init] NR_OF_TRIAL_REPEATS>1: setting FORCE_SKIPV=0, skipping the verify stage (issue is deemed to be sporadic)"
+    export -n FORCE_SKIPV=0
+  fi
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${SKIPSTAGEBELOW} -eq 0 ]; then
     # As NR_OF_TRIAL_REPEATS is set >1, reducer sets SKIPSTAGEBELOW to 1 to avoid stage 1 single-threaded reduction attempts (with block chuncks, and without trial repeats) in the case where STAGE1_LINES was set to a number less than the (restructured) testcase. This is the most straightforward and best approach to negate this possibility.
     echo_out "[Init] NR_OF_TRIAL_REPEATS>1: setting SKIPSTAGEBELOW=1, ensuring repeated line-by-line reduction trials"
-    SKIPSTAGEBELOW=1
+    export -n SKIPSTAGEBELOW=1
   fi
   if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echo_out "[Init] Passing the following additional options to mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
   if [ "$MYINIT" != "" ]; then echo_out "[Init] Passing the following additional options to mysqld initialization: $MYINIT"; fi
