@@ -32,6 +32,8 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 ##### RE-ENABLED MDEV-24560 STACKS AS THEY OCCUR REGULARLY #####
 SIGABRT|__libc_message|malloc_printerr|_int_free|free_root                                                                                                                     ## MDEV-24560
 SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                                                                                                                     ## MDEV-24560
+SIGSEGV|_int_free|free_root|free_tmp_table|JOIN::cleanup                                                                                                                       ## MDEV-24560
+SIGSEGV|_int_free|root_free|free_root|free_tmp_table                                                                                                                           ## MDEV-24560
 #***#SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<int>::deallocate                                                                                     ## MDEV-21799
 #***#SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<long>::deallocate                                                                                    ## MDEV-21799
 #***#SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<std::shared_ptr<rocksdb::EventListener> >::deallocate                                                ## MDEV-21799
@@ -74,6 +76,12 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS #####
+bitmap_is_set(&read_partitions, next->id)|SIGABRT|partition_info::vers_set_hist_part|ha_partition::external_lock|handler::ha_external_lock|lock_external                      ## MDEV-28271
+0|SIGABRT|myrocks::Rdb_manual_compaction_thread::clear_manual_compaction_request|myrocks::rocksdb_compact_column_family|sys_var_pluginvar::do_check|sys_var::check            ## MDEV-28261
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|myrocks::Rdb_manual_compaction_thread::request_manual_compaction|myrocks::rocksdb_compact_column_family                        ## MDEV-28261
+SIGSEGV|Field_string::is_var_string|Field_string::type_handler|Column_definition::Column_definition|Spvar_definition::Spvar_definition                                         ## MENT-1449
+!check_foreigns|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                                                          ## MDEV-28242
+! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|Diagnostics_area::set_error_status|Reprepare_observer::report_error|check_and_update_table_version ## MDEV-28241
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-28237
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-28190
 SIGSEGV|replace_column_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute                                                           ## MDEV-28128
@@ -641,6 +649,8 @@ SIGSEGV|select_value_catcher::setup|execute_degenerate_jtbm_semi_join|setup_jtbm
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|copy_fields|end_write                                                                                 ## MDEV-22702
 len == ref_length|SIGABRT|ha_innobase::position|find_all_keys|filesort|create_sort_index                                                                                       ## MDEV-22873
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion                                      ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|FixedBinTypeBundle<Inet6>::Type_handler_fbt::Item_val_native_with_conversion                        ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_inet6::Item_val_native_with_conversion                                                 ## MDEV-22885
 SIGSEGV|maria_status|ha_maria::info|TABLE_LIST::fetch_number_of_rows|make_join_statistics                                                                                      ## MDEV-23202
 SIGSEGV|heap_info|ha_heap::info|ha_heap::info|make_join_statistics                                                                                                             ## MDEV-23202
 SIGSEGV|maria_status|ha_maria::info|make_join_statistics|JOIN::optimize_inner                                                                                                  ## MDEV-23202

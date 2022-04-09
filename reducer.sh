@@ -2047,14 +2047,26 @@ generate_run_scripts(){
       echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
       echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
       echo "export LD_LIBRARY_PATH=\${BASEDIR}/lib" >> $WORK_RUN_PQUERY
-      echo "# RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829" >> $WORK_RUN_PQUERY
-      echo "SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=\$[ \$[ \$(wc -l ./${EPOCH}.sql | awk '{print \$1}') * 13 / 10 ] + 100 ]" >> $WORK_RUN_PQUERY
-      if [ $PQUERY_MULTI -eq 1 ]; then
-        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
-        echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
-      else
-        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; else PQUERY_SHUFFLE="--no-shuffle"; fi
+      PQUERY_SHUFFLE=
+      if [ $PQUERY_MULTI -eq 0 ]; then
+        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 0 ]; then
+          PQUERY_SHUFFLE="--no-shuffle"
+        else 
+          echo "# RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829" >> $WORK_RUN_PQUERY
+          echo "SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=\$[ \$[ \$(wc -l ./${EPOCH}.sql | awk '{print \$1}') * 13 / 10 ] + 100 ]" >> $WORK_RUN_PQUERY
+          PQUERY_SHUFFLE="--queries-per-thread=\${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"
+        fi
         echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=1 --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
+      else
+        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then 
+          PQUERY_SHUFFLE="--no-shuffle"
+        else 
+          echo "# RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829" >> $WORK_RUN_PQUERY
+          echo "SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=\$[ \$[ \$(wc -l ./${EPOCH}.sql | awk '{print \$1}') * 13 / 10 ] + 100 ]" >> $WORK_RUN_PQUERY
+          PQUERY_SHUFFLE="--queries-per-thread=\${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"
+        fi
+        # RV 09/04/22: Something may be amiss with the SHUFFLE_OVERRUN_PREVENTION_MAX_LINES code (i.e. the addition of --queries-per-thread=x in 3 places of the code), but only if true or semi-true multi-threaded reduction relies on ongoing queries to be sent to the server instance being tested, rather than a deterministic number (i.e. the ~lenght of the testcase). If so, that would mean that multi-threaded reduction no longer would function after https://github.com/mariadb-corporation/mariadb-qa/commit/9bc502e7edf2a12022e806e21839463b94f51e8c implementation. To be verified/checked. TODO
+        echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
       fi
       chmod +x $WORK_RUN_PQUERY
     fi
@@ -2805,23 +2817,44 @@ run_sql_code(){
       if [ $MODE -eq 2 ]; then
         USE_PQUERYE2_CLIENT_LOGGING="--log-all-queries --log-failed-queries"
       fi
-      # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
-      SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]
       if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-        if [ $PQUERY_MULTI -eq 1 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
-          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
-        else
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; else PQUERY_SHUFFLE="--no-shuffle"; fi
+        PQUERY_SHUFFLE=
+        if [ $PQUERY_MULTI -eq 0 ]; then
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 0 ]; then 
+            PQUERY_SHUFFLE="--no-shuffle"
+          else
+            # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+          fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
+        else
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then
+            PQUERY_SHUFFLE="--no-shuffle"
+          else
+            # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+          fi
+          # RV 09/04/22: Something may be amiss with the SHUFFLE_OVERRUN_PREVENTION_MAX_LINES code (i.e. the addition of --queries-per-thread=x in 3 places of the code), but only if true or semi-true multi-threaded reduction relies on ongoing queries to be sent to the server instance being tested, rather than a deterministic number (i.e. the ~lenght of the testcase). If so, that would mean that multi-threaded reduction no longer would function after https://github.com/mariadb-corporation/mariadb-qa/commit/9bc502e7edf2a12022e806e21839463b94f51e8c implementation. To be verified/checked. TODO
+          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         fi
       else
-        if [ $PQUERY_MULTI -eq 1 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
-          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
-        else
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; else PQUERY_SHUFFLE="--no-shuffle"; fi
+        if [ $PQUERY_MULTI -eq 0 ]; then
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 0 ]; then
+            PQUERY_SHUFFLE="--no-shuffle"
+          else 
+            # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+          fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
+        else
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then
+            PQUERY_SHUFFLE="--no-shuffle"
+          else 
+            # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+          fi
+          # RV 09/04/22: Something may be amiss with the SHUFFLE_OVERRUN_PREVENTION_MAX_LINES code (i.e. the addition of --queries-per-thread=x in 3 places of the code), but only if true or semi-true multi-threaded reduction relies on ongoing queries to be sent to the server instance being tested, rather than a deterministic number (i.e. the ~lenght of the testcase). If so, that would mean that multi-threaded reduction no longer would function after https://github.com/mariadb-corporation/mariadb-qa/commit/9bc502e7edf2a12022e806e21839463b94f51e8c implementation. To be verified/checked. TODO
+          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         fi
       fi
     else

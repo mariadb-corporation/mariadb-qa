@@ -11,3 +11,4 @@ ps -ef | egrep "pquery"    | grep "$(whoami)" | egrep -v "grep|vim|kill_all_proc
 ps -ef | egrep "go-expert" | grep "$(whoami)" | egrep -v "grep|vim|kill_all_procs" | awk '{print $2}' | xargs kill -9 2>/dev/null
 ps -ef | egrep "\./all"    | grep "$(whoami)" | egrep -v "grep|vim|kill_all_procs" | awk '{print $2}' | xargs kill -9 2>/dev/null
 ps -ef | egrep "bug"       | grep "$(whoami)" | egrep -v "grep|vim|kill_all_procs" | awk '{print $2}' | xargs kill -9 2>/dev/null
+ps -ef | egrep "multirun"  | grep "$(whoami)" | egrep -v "grep|vim|kill_all_procs" | awk '{print $2}' | xargs kill -9 2>/dev/null

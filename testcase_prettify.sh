@@ -67,8 +67,11 @@ cat "${1}" | tr -d '`' | \
   sed 's|check option|CHECK OPTION|gi' | \
   sed 's|comment|COMMENT|gi' | \
   sed 's|sformat|SFORMAT|gi' | \
+  sed 's|next|NEXT|gi' | \
   sed 's|md5|MD5|gi' | \
   sed 's|locate|LOCATE|gi' | \
+  sed 's|history|HISTORY|gi' | \
+  sed 's|current|CURRENT|gi' | \
   sed 's|query|QUERY|gi' | \
   sed 's|schedule|SCHEDULE|gi' | \
   sed 's|every|EVERY|gi' | \
@@ -254,6 +257,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|always|ALWAYS|gi' | \
   sed 's|invisible|INVISIBLE|gi' | \
   sed 's|virtual|VIRTUAL|gi' | \
+  sed 's|path|PATH|gi' | \
   sed 's|minvalue|MINVALUE|gi' | \
   sed 's|maxvalue|MAXVALUE|gi' | \
   sed 's|increment by|INCREMENT BY|gi' | \
@@ -367,6 +371,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|auto_increment_offset|AUTO_INCREMENT_OFFSET|gi' | \
   sed 's|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi' | \
   sed 's|world|world|gi' | \
+  sed 's|engine innodb|ENGINE=InnoDB|gi' | \
+  sed 's|engine spider|ENGINE=Spider|gi' | \
   sed 's|history|HISTORY|gi;s|_history|_history|gi' | \
   sed 's|sql_mode= |sql_mode=|gi' | \
   sed 's|  | |gi'

@@ -32,3 +32,6 @@ SELECT a,SUM(DISTINCT a),MIN(b) FROM t GROUP BY a;
 CREATE TABLE t (a CHAR,b CHAR,KEY(a,b)) ROW_FORMAT=DYNAMIC COLLATE=tis620_thai_nopad_ci ENGINE=InnoDB;
 SET unique_checks=0,foreign_key_checks=0,autocommit=0;
 INSERT INTO t VALUES (0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0);
+
+CREATE TABLE t (a INT KEY,b INT,c CHAR,KEY(b),KEY(c)) ROW_FORMAT=REDUNDANT COLLATE=tis620_thai_nopad_ci ENGINE=InnoDB;
+INSERT INTO t VALUES (3,4,4);
