@@ -229,10 +229,10 @@ prebuilt->magic_n == ROW_PREBUILT_ALLOCATED|SIGABRT|ut_dbg_assertion_failed|row_
 SIGSEGV|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc                                                                                                        ## MDEV-26330
 state_ == s_idle && mode_ == m_local && transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::sync_rollback_complete|wsrep_rollback_local|wsrep_rollback_process|start_wsrep_THD ## MDEV-26304
 thd->wsrep_trx().is_streaming()|SIGABRT|Wsrep_replayer_service::apply_write_set|apply_write_set|wsrep::server_state::on_apply|wsrep::high_priority_service::apply              ## MDEV-26303
-SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## |MENT-1287
-SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>::load|wait_for_commit::unregister_wait_for_prior_commit|wsrep_unregister_from_group_commit    ## |MENT-1287
-client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## |MENT-1286
-state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys                                                  ## |MENT-1286
+SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## MENT-1287
+SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>::load|wait_for_commit::unregister_wait_for_prior_commit|wsrep_unregister_from_group_commit    ## MENT-1287
+client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## MENT-1286
+state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys                                                  ## MENT-1286
 state() == s_preparing || (is_xa() && state() == s_replaying) || (ret && (state() == s_must_abort || state() == s_must_replay || state() == s_cert_failed || state() == s_aborted))|SIGABRT|wsrep::transaction::before_prepare|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-26266
 !killed_err || killed != NOT_KILLED|SIGABRT|THD::killed_errno|sp_head::execute|sp_head::execute_procedure|do_execute_sp                                                        ## MENT-1278
 (key_del_current != 0) && ((key_del_current == (~ (my_off_t) 0)) || (key_del_current <= (share->state.state.key_file_length - block_size)))|SIGABRT|_ma_new|_ma_enlarge_root|_ma_ck_real_write_btree|_ma_ck_write_btree_with_log ## MDEV-26258
@@ -297,8 +297,8 @@ inited==INDEX|SIGABRT|handler::ha_index_end|opt_sum_query|JOIN::optimize_inner|J
 SIGSEGV|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update|sql_set_variables                                                                       ## MDEV-25499
 SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update                                                                           ## MDEV-25499
 !writer.checksum_len || writer.remains == 0|SIGABRT|MYSQL_BIN_LOG::write_cache|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events ## MDEV-25488
-transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command                                 ## |MENT-1180
-transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep_before_command|do_command|do_handle_one_connection                                            ## |MENT-1180
+transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command                                 ## MENT-1180
+transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep_before_command|do_command|do_handle_one_connection                                            ## MENT-1180
 !thd->mdl_context.has_locks()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|start_thread                                                                   ## MDEV-25463
 !thd->mdl_context.has_locks()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|pfs_spawn_thread                                                               ## MDEV-25463
 thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|apply_fragment|apply_write_set|wsrep::server_state::on_apply                                          ## MDEV-25455
@@ -318,8 +318,11 @@ scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_
 scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                                               ## MDEV-25317
 scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size_inline|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::resolve_type                       ## MDEV-25317
 scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Item_sum_avg::fix_length_and_dec|Item_sum_num::fix_fields                ## MDEV-25317
-state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## |MENT-1175
-SIGSEGV|prepare_or_error|ha_commit_trans|trans_commit|mysql_execute_command                                                                                                    ## |MENT-1175
+scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Type_handler_decimal_result::sort_length|sortlength                                                     ## MDEV-25317
+scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Type_handler_decimal_result::sortlength|Item::sortlength                                                ## MDEV-25317
+scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Type_handler_decimal_result::sortlength|sortlength                                                      ## MDEV-25317
+state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## MENT-1175
+SIGSEGV|prepare_or_error|ha_commit_trans|trans_commit|mysql_execute_command                                                                                                    ## MENT-1175
 SIGSEGV|__memcmp_avx2_movbe|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data                                                                                 ## MDEV-25158
 SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## MDEV-25158
 curr_op_type != INTERSECT_ALL|SIGABRT|select_unit_ext::send_eof|do_select|JOIN::exec_inner|JOIN::exec                                                                          ## MDEV-25158
@@ -346,9 +349,9 @@ SIGSEGV|Event_queue::recalculate_activation_times|Event_scheduler::run|event_sch
 SIGSEGV|my_hash_first|my_hash_search|safe_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-25176
 SIGSEGV|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map                                                                   ## MDEV-25160
 ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## MENT-1151
-toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|Sql_cmd_alter_table::execute                                ## |MENT-1147
-toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|mysql_execute_command                                       ## |MENT-1147
-toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|Sql_cmd_optimize_table::execute                             ## |MENT-1147
+toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|Sql_cmd_alter_table::execute                                ## MENT-1147
+toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|mysql_execute_command                                       ## MENT-1147
+toi_mode_ == m_undefined|SIGABRT|wsrep::client_state::begin_nbo_phase_one|wsrep_NBO_begin|wsrep_to_isolation_begin|Sql_cmd_optimize_table::execute                             ## MENT-1147
 toi_mode_ == m_local|SIGABRT|wsrep::client_state::end_nbo_phase_two|wsrep_NBO_end|wsrep_to_isolation_end|mysql_execute_command                                                 ## MENT-1144
 error.len > 0|SIGABRT|galera::ReplicatorSMM::handle_apply_error|galera::ReplicatorSMM::to_isolation_end|galera_to_execute_end|wsrep::wsrep_provider_v26::leave_toi             ## MDEV-25089
 SIGABRT|DbugExit|_db_return_|my_malloc|JOIN_CACHE::alloc_buffer                                                                                                                ## MDEV-25027
@@ -365,9 +368,9 @@ client_state_.mode() != wsrep::client_state::m_toi|SIGABRT|wsrep::transaction::b
 SIGSEGV|wsrep_can_run_in_toi|wsrep_can_run_in_nbo|wsrep_NBO_begin|wsrep_to_isolation_begin                                                                                     ## MENT-1134
 SIGABRT|__cxa_rethrow () from|galera::WriteSetOut::gather|galera::TrxHandleMaster::gather|galera::ReplicatorSMM::replicate                                                     ## MDEV-25025
 m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                         ## MDEV-24960
-ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit                                  ## |MENT-1119
-ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare                               ## |MENT-1119
-server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare ## |MENT-1117 NOW MENT-1282
+ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit                                  ## MENT-1119
+ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare                               ## MENT-1119
+server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare ## MENT-1117 NOW MENT-1282
 m_thd == _current_thd()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service|Wsrep_prepared_applier_service::~Wsrep_prepared_applier_service ## MDEV-25516
 m_thd == _current_thd()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_state::close|wsrep_close|Wsrep_storage_service::~Wsrep_storage_service                         ## MDEV-25516
 !WSREP_EMULATE_BINLOG(thd) || total_length + thd->wsrep_sr().log_position() == saved_pos|SIGABRT|wsrep_write_cache_inc|wsrep_write_cache|Wsrep_client_service::prepare_data_for_replication|wsrep::transaction::certify_commit ## MENT-1112
@@ -670,8 +673,8 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                              ## 10.6+ Fixed ## MDEV-22663
 
 ###### FIXED BUGS ######
-# cache_mngr->trx_cache.empty()|SIGABRT|binlog_close_connection|ha_close_connection|slave_applier_reset_xa_trans|trans_xa_prepare                                     ## Fixed ## |MENT-1113
-# SIGSEGV|wsrep_thd_is_applying|dict_stats_update_if_needed|row_undo_ins|row_undo                                                                                     ## Fixed ## |MENT-1113
+# cache_mngr->trx_cache.empty()|SIGABRT|binlog_close_connection|ha_close_connection|slave_applier_reset_xa_trans|trans_xa_prepare                                     ## Fixed ## MENT-1113
+# SIGSEGV|wsrep_thd_is_applying|dict_stats_update_if_needed|row_undo_ins|row_undo                                                                                     ## Fixed ## MENT-1113
 # !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|wsrep_on_check|sys_var::check|set_var::check ## Fixed ## MENT-1258
 # state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|set_var::update              ## Fixed ## MENT-1266
 # transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse|dispatch_command         ## Fixed ## MENT-1195
@@ -909,7 +912,7 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # file->s->base.reclength < file->s->vreclength|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|mysql_admin_table                   ## Fixed ## MDEV-19011
 # file->s->base.reclength < file->s->vreclength|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert ## Fixed ## MDEV-19011
 # (create_info->tmp_table()) || thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->db.str, table->table_name.str, MDL_EXCLUSIVE)|SIGABRT|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse ## Fixed ## MDEV-19198
-# state_ == s_exec|SIGABRT|wsrep::client_state::start_transaction|Wsrep_storage_service::start_transaction|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step ## Fixed ## |MENT-1117/MDEV-22227
+# state_ == s_exec|SIGABRT|wsrep::client_state::start_transaction|Wsrep_storage_service::start_transaction|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step ## Fixed ## MENT-1117/MDEV-22227
 # id|SIGABRT|trx_write_trx_id|row_upd_clust_rec_by_insert|row_upd_clust_step|row_upd                                                                                  ## Fixed ## MDEV-22255/7?
 # id|SIGABRT|trx_write_trx_id|row_ins_step|row_insert_for_mysql|ha_innobase::write_row                                                                                ## Fixed ## MDEV-22255
 # thr_get_trx(thr)->id || index->table->no_rollback()|SIGABRT|row_ins_index_entry|row_ins_index_entry_step|row_ins|row_ins_step                                       ## Fixed ## MDEV-22255

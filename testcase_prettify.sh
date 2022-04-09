@@ -24,6 +24,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|hex|HEX|gi' | \
   sed 's| as | AS |gi' | \
   sed 's|do |DO |gi' | \
+  sed 's|round|ROUND|gi' | \
   sed 's|convert|CONVERT|gi' | \
   sed 's|int|INT|gi;s|integer|INT|gi' | \
   sed 's|float|FLOAT|gi' | \
