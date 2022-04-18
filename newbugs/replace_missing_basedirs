@@ -1,0 +1,41 @@
+#!/bin/bash
+# This script will replace missing base directory from new bug reducer.sh
+
+replace_base()
+{
+  BASEDIR=$1
+  BUILD=$2
+  TYPE=$3
+  VERSION=$4
+  FILE=$5
+  if echo $BASEDIR | grep -qi "\-${TYPE}"  2>/dev/null; then
+    NEWBASE=$(ls /test | grep "^${BUILD}" | grep "\-${TYPE}" | grep -e "${VERSION}" | grep -v 'tar.gz' | head -1)
+    sed -i "s|${BASEDIR}|\/test\/${NEWBASE}|g" ${FILE}
+  elif echo $BASEDIR | grep -qi '\{TYPE}'  2>/dev/null; then
+    NEWBASE=$(ls /test | grep "^${BUILD}" | grep "\-${TYPE}" | grep -e "${VERSION}" | grep -v 'tar.gz' | head -1)
+    sed -i "s|${BASEDIR}|\/test\/${NEWBASE}|g" ${FILE}
+  fi
+}
+
+
+
+ls newbug*.sh | while read FILE
+do
+  BASEDIR=$(grep -h '^BASEDIR' $FILE | sed 's|^[^"]\+"||;s|".*||')
+  if [[ ! -d /test/${BASEDIR} ]]; then
+    VERSION=$(echo $BASEDIR | grep -oe '10\.[1-9]')
+    if echo $BASEDIR | grep -qi 'GAL_MD'  2>/dev/null; then
+      replace_base $BASEDIR  GAL_MD dbg ${VERSION} ${FILE}
+      replace_base $BASEDIR  GAL_MD opt ${VERSION} ${FILE}
+    elif echo $BASEDIR | grep -qi 'GAL_EMD'  2>/dev/null; then
+      replace_base $BASEDIR  GAL_EMD dbg ${VERSION} ${FILE}
+      replace_base $BASEDIR  GAL_EMD opt ${VERSION} ${FILE}
+    elif echo $BASEDIR | grep -qi 'EMD'  2>/dev/null; then
+      replace_base $BASEDIR  EMD dbg ${VERSION} ${FILE}
+      replace_base $BASEDIR  EMD opt ${VERSION} ${FILE}
+    else
+      replace_base $BASEDIR  MD dbg ${VERSION} ${FILE}
+      replace_base $BASEDIR  MD opt ${VERSION} ${FILE}
+    fi
+  fi
+done
