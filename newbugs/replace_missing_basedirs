@@ -17,10 +17,7 @@ replace_base()
   fi
 }
 
-
-
-ls newbug*.sh | while read FILE
-do
+ls newbug*.sh | while read FILE; do
   BASEDIR=$(grep -h '^BASEDIR' $FILE | sed 's|^[^"]\+"||;s|".*||')
   if [[ ! -d /test/${BASEDIR} ]]; then
     VERSION=$(echo $BASEDIR | grep -oe '10\.[1-9]')
