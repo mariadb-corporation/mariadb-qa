@@ -178,7 +178,7 @@ while IFS=$'\n' read LINE; do
       FLAG_ASAN_IN_PROGRESS=1; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=0
       ASAN_FRAME1=; ASAN_FRAME2=; ASAN_FRAME3=; ASAN_FRAME4=
       ASAN_FILE_PREPARSE=
-      ASAN_ERROR="$(echo "${LINE}" | sed 's|.*ERROR:[ ]*||;s|.*AddressSanitizer:[ ]*||;s| o[nf] address.*||;s|thread T[0-9]\+|thread Tx|g;s|allocation size 0x[0-9a-f]\+|allocation size X|g;s|(0x[0-9a-f]\+ after adjustment|(Y after adjustment|g;s|supported size of 0x[0-9a-f]\+|supported size of Z|g;')"
+      ASAN_ERROR="$(echo "${LINE}" | sed 's|.*ERROR:[ ]*||;s|.*AddressSanitizer:[ ]*||;s| on address.*||;s|thread T[0-9]\+|thread Tx|g;s|allocation size 0x[0-9a-f]\+|allocation size X|g;s|(0x[0-9a-f]\+ after adjustment|(Y after adjustment|g;s|supported size of 0x[0-9a-f]\+|supported size of Z|g;')"
     fi
     if [ "${FLAG_ASAN_IN_PROGRESS}" -eq 1 ]; then
       # Parse first 4 stack frames if discovered in current line
@@ -208,7 +208,7 @@ while IFS=$'\n' read LINE; do
       FLAG_ASAN_IN_PROGRESS=0; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=1
       UBSAN_FRAME1=; UBSAN_FRAME2=; UBSAN_FRAME3=; UBSAN_FRAME4=
       UBSAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's| runtime error:.*||;s|:[0-9]\+:[0-9]\+:[ ]*$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;')"  # Drop path prefix (build directory), leaving only relevant part for MD/MS
-      UBSAN_ERROR="$(echo "${LINE}" | sed 's|.*runtime error:[ ]*||;s|load of value \(-*\)[0-9]\+|load of value \1X|g;s|negation of \([-]*\)[0-9]\+|negation of \1X|g;s|applying non-zero offset \([-+]*\)[0-9]\+|applying non-zero offset \1X|g;s|overflow: \(-*\)[0-9]\+ \([-+:\*]\) \(-*\)[0-9]\+ |overflow: \1X \2 \3Y |g;s|shift exponent \([-+]*\)[0-9]\+|shift exponent \1X|g;s|index \(-*\)[0-9]\+ out of bounds|index \1X out of bounds|g;s|member call o[nf] address 0x[^ ]\+|member call o[nf] address X|g;s|with base 0x[0-9a-f]\+|with base X|g;s|overflowed to 0x[0-9a-f]\+|overflowed to Y|g')"
+      UBSAN_ERROR="$(echo "${LINE}" | sed 's|.*runtime error:[ ]*||;s|load of value \(-*\)[0-9]\+|load of value \1X|g;s|negation of \([-]*\)[0-9]\+|negation of \1X|g;s|applying non-zero offset \([-+]*\)[0-9]\+|applying non-zero offset \1X|g;s|overflow: \(-*\)[0-9]\+ \([-+:\*]\) \(-*\)[0-9]\+ |overflow: \1X \2 \3Y |g;s|shift exponent \([-+]*\)[0-9]\+|shift exponent \1X|g;s|index \(-*\)[0-9]\+ out of bounds|index \1X out of bounds|g;s|member call on address 0x[^ ]\+|member call on address X|g;s|with base 0x[0-9a-f]\+|with base X|g;s|overflowed to 0x[0-9a-f]\+|overflowed to Y|g')"
     fi
     if [ "${FLAG_UBSAN_IN_PROGRESS}" -eq 1 ]; then
       # Parse first 4 stack frames if discovered in current line
