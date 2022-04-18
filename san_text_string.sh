@@ -171,9 +171,9 @@ while IFS=$'\n' read LINE; do
     fi
     continue
   fi
-  # ------------- ASAN Issue check (if present) -------------
+  # ------------- ASAN/LSAN Issue check (if present) -------------
   if [ ${FLAG_ASAN_PRESENT} -eq 1 ]; then
-    if [[ "${LINE}" == *"AddressSanitizer:"* ]]; then  # ASAN Issue detected, and commencing
+    if [[ "${LINE}" == *"AddressSanitizer:"* || "${LINE}" == *"LeakSanitizer:"* ]]; then  # ASAN or LSAN Issue detected, and commencing (this script handles LSAN issues in the same way as ASAN issues: all references are to ASAN for both ASAN and LSAN issues). Note that for LSAN issues it does not make much sense to include the actual number of bytes lost, as the UniqueID specifically flags a function/backtrace as the issue; this function will get due review/attention by develoment when the bug is reviewed, and thus any bugs present in the function or even area are likely to be fixed. On the other hand, different code paths triggered by different tests may lead to a different amount of bytes lost, leading to wasted QA work for each testcase reduction, as they are all likely to be the same issue (remembering it is the same function that fails, and the function, and the lead-up stack thereunto, are fully included in the UniqueID). Thus, no number of actual bytes lost is tracked. Later in the script it replaces 'ASAN|LeakSanitizer: detected memory leaks' with 'LSAN|memory leak' to make it clearer which issues are LSAN issues.
       flag_ready_check
       FLAG_ASAN_IN_PROGRESS=1; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=0
       ASAN_FRAME1=; ASAN_FRAME2=; ASAN_FRAME3=; ASAN_FRAME4=
@@ -264,7 +264,7 @@ while IFS=$'\n' read LINE; do
     echo "Assert: LINE_COUNTER > ERROR_LOG_LINES (${LINE_COUNTER} > ${ERROR_LOG_LINES})"
     exit 1
   fi
-  # ------------- ASAN Issue roundup (if present) -------------
+  # ------------- ASAN/LSAN Issue roundup (if present) -------------
   if [ "${FLAG_ASAN_PRESENT}" -eq 1 -a "${FLAG_ASAN_READY}" -eq 1 ]; then
     UNIQUE_ID="ASAN"
     if [ ! -z "${ASAN_ERROR}" ];         then UNIQUE_ID="${UNIQUE_ID}|${ASAN_ERROR}"; fi
@@ -273,6 +273,7 @@ while IFS=$'\n' read LINE; do
     if [ ! -z "${ASAN_FRAME2}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME2}"; fi
     if [ ! -z "${ASAN_FRAME3}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME3}"; fi
     if [ ! -z "${ASAN_FRAME4}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME4}"; fi
+    UNIQUE_ID="$(echo "${UNIQUE_ID}" | sed 's/ASAN|LeakSanitizer: detected memory leaks/LSAN|memory leak/')"  # LSAN
     echo "${UNIQUE_ID}"
     exit 0
   fi

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ ! -d /test -o ! -d /data/NEWBUGS ]; then
-  sudo mkdir -p /test /data/NEWBUGS  # Creates both /data and /data/NEWBUGS
+  sudo mkdir -p /test /data/NEWBUGS  # Creates both /test and /data/NEWBUGS
   sudo chown -R $(whoami):$(whoami) /test
   sudo chown -R $(whoami):$(whoami) /data
   sudo chmod -R +rX /test
