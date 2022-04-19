@@ -280,7 +280,7 @@ fi
 if [ ${SAN_MODE} -eq 1 ]; then
   echo -e '{noformat}\n\nSetup:\n'
   echo '{noformat}'
-  echo 'Compiled with GCC >=7.5.0 (I use GCC 9.3.0) and:'
+  echo 'Compiled with GCC >=7.5.0 (I use GCC 9.4.0) and:'
   if grep -qm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
     echo '    -DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys'
   fi

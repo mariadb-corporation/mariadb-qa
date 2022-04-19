@@ -1,6 +1,8 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
+set "${1^^}" # Make ${1} uppercase ('san' > 'SAN')
+
 if [ "${1}" == "GAL" ]; then
   ./gendirs.sh GAL | xargs -I{} echo "cd {}; ~/t; cd .." | xargs -P20 -I{} bash -c "{}" | grep -v "no core file found" | sort -u | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}"
 elif [ "${1}" == "SAN" ]; then  # Used ~/kbsa

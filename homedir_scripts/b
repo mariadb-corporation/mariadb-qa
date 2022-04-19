@@ -11,6 +11,8 @@ if [ "${BPQUERY}" == "1" ]; then
   echo "Using pquery client for testcase replay"
 fi
 
+set "${1^^}" "${2}"  # Make ${1} uppercase ('san' > 'SAN')
+
 rm -f report.log
 if [ -r report.log ]; then echo "Assert: report.log still present though this script tried to delete it!"; exit 1; fi
 
@@ -32,12 +34,12 @@ if [[ "${PWD}" == *"SAN"* ]]; then
   if [ -z "${1}" -o -z "${2}" ]; then
     echo "Assert: SAN builds are being used, yet no options were passed."
     echo "To check for an ASAN/UBSAN/TSAN bug, do:  ~/b SAN 'bug_to_look_for'"
-    echo "Where bug_to_look for is the ASAN/UBSAN/TSAN string to look for in the error log. Note that a generic 'runtime error:' can be used for UBSAN, a generic '=ERROR:' for ASAN, and a generic 'ThreadSanitizer:' for TSAN issues, though it is likely better to set a more specific string"
+    echo "Where bug_to_look for is the ASAN/UBSAN/TSAN string to look for in the error log. Note that a generic 'runtime error:' can be used for UBSAN, a generic '=ERROR:' for ASAN, and a generic 'ThreadSanitizer:' for TSAN issues, though it is likely better to set a more specific string, like 'use-after-poison'"
     exit 1
   fi
 fi
 if [ "${1}" == "SAN" ]; then
-  if [ ! -z "$(grep --binary-files=text -i "SAN" ../REGEX_EXCLUDE | grep -v 'SAN_MD[0-9]')" ]; then 
+  if [ ! -z "$(grep --binary-files=text -i "[^M]SAN" ../REGEX_EXCLUDE | grep -v 'SAN_MD[0-9]')" ]; then
     echo "Assert: remove SAN from ../REGEX_EXCLUDE"
     exit 1
   fi

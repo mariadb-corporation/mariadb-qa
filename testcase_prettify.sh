@@ -23,6 +23,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|index|INDEX|g' | \
   sed 's|hex|HEX|gi' | \
   sed 's| as | AS |gi' | \
+  sed 's|analyse|ANALYSE|gi' | \
   sed 's|do |DO |gi' | \
   sed 's|round|ROUND|gi' | \
   sed 's|convert|CONVERT|gi' | \
@@ -114,6 +115,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|database|DATABASE|gi' | \
   sed 's|where|WHERE|gi' | \
   sed 's|start|START|gi' | \
+  sed 's|stop|STOP|gi' | \
+  sed 's|slave|SLAVE|gi' | \
   sed 's|xa|XA|gi' | \
   sed 's|shutdown|SHUTDOWN|gi' | \
   sed 's|elt|ELT|gi' | \
@@ -376,6 +379,8 @@ cat "${1}" | tr -d '`' | \
   sed 's|engine spider|ENGINE=Spider|gi' | \
   sed 's|history|HISTORY|gi;s|_history|_history|gi' | \
   sed 's|sql_mode= |sql_mode=|gi' | \
+  sed 's|performance_schema|performance_schema|gi' | \
+  sed 's|performance_schema\.\([a-zA-Z]\+\)|performance_schema.\L\1|gi' | \
   sed 's|  | |gi'
 
 # Templates for copy/paste

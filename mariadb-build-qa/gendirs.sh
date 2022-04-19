@@ -1,5 +1,6 @@
 # Created by Roel Van de Paar, MariaDB
 
+set "${1^^}" # Make ${1} uppercase ('san' > 'SAN')
 REGEX_EXCLUDE="$(cat REGEX_EXCLUDE 2>/dev/null)"  # Handy to exclude a particular build
 if [ -z "${REGEX_EXCLUDE}" ]; then REGEX_EXCLUDE="DUMMYSTRINGNEVERSEEN"; fi
 
