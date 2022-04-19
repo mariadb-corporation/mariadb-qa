@@ -76,6 +76,13 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD  ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part  ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select                                                            ## MDEV-27259
+SIGSEGV|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|make_join_select|JOIN::optimize_inner                                                                 ## MDEV-27259
+SIGSEGV|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|make_join_select|JOIN::optimize_stage2                                                                ## MDEV-27259
+key_col_info.comparator|SIGABRT|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select                                    ## MDEV-27259
+SIGSEGV|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|SQL_SELECT::check_quick                                                     ## MDEV-27259
+SIGSEGV|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|SQL_SELECT::check_quick|mysql_delete                                                                  ## MDEV-27259
+key_col_info.comparator|SIGABRT|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|SQL_SELECT::check_quick                             ## MDEV-27259
 !is_null()|SIGABRT|FixedBinTypeBundle<Inet6>::Field_fbt::to_fbt|FixedBinTypeBundle<Inet6>::Field_fbt::val_str|Field::val_str|Item_func_group_concat::add                       ## MDEV-27015
 !is_null()|SIGABRT|FixedBinTypeBundle<Inet6>::Field_fbt::to_fbt|FixedBinTypeBundle<Inet6>::Field_fbt::val_str|Field::val_str|Field::val_str                                    ## MDEV-27015
 !is_null()|SIGABRT|FixedBinTypeBundle<UUID>::Field_fbt::to_fbt|FixedBinTypeBundle<UUID>::Field_fbt::val_str|Field::val_str|Field::val_str                                      ## MDEV-27015
