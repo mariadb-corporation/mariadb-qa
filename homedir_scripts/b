@@ -34,10 +34,12 @@ if [[ "${PWD}" == *"SAN"* ]]; then
   if [ -z "${1}" -o -z "${2}" ]; then
     echo "Assert: SAN builds are being used, yet no options were passed."
     echo "To check for an ASAN/UBSAN/TSAN bug, do:  ~/b SAN 'bug_to_look_for'"
-    echo "Where bug_to_look for is the ASAN/UBSAN/TSAN string to look for in the error log. Note that a generic 'runtime error:' can be used for UBSAN, a generic '=ERROR:' for ASAN, and a generic 'ThreadSanitizer:' for TSAN issues, though it is likely better to set a more specific string, like 'use-after-poison'"
+    echo "Where bug_to_look for is the ASAN/UBSAN/TSAN string to look for in the error log. Note that a generic 'runtime error:' can be used for UBSAN, a generic '=ERROR:' for ASAN, and a generic 'ThreadSanitizer:' for TSAN issues."
+    echo "Also note that setting a too specific string is not a good idea: different versions may fail in different ways and with different stacks."
     exit 1
   fi
 fi
+
 if [ "${1}" == "SAN" ]; then
   if [ ! -z "$(grep --binary-files=text -i "[^M]SAN" ../REGEX_EXCLUDE | grep -v 'SAN_MD[0-9]')" ]; then
     echo "Assert: remove SAN from ../REGEX_EXCLUDE"
@@ -72,7 +74,7 @@ fi
 
 if [ ! -z "$(~/t | grep -o 'no core file found')" ]; then
   echo "*) No core file was found, and no *SAN issue detected in the current directory, though other versions may have reproduced the issue! Check 'All strings merged' output below to confirm if any issues were seen in any version tested." | tee -a report.log
-  echo "*) As no issue was detected in the current directory, you may want to re-run this from another version's basedir where the issue was detected (Run and check ./allstrings output to find the exact basedir where the issue produced). This will then provide full stacks/a full report."
+  echo "*) As no issue was detected in the current directory, you may want to re-run this from another version's basedir where the issue was detected (Run and check ./allstrings output to find the exact basedir where the issue produced). This will then provide full stacks/a full report." | tee -a report.log
 else
   ~/tt | tee -a report.log
 fi

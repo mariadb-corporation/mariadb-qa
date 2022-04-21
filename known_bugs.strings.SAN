@@ -4,6 +4,8 @@
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 
 ##### CURRENT BUGS #####
+UBSAN|member call on null pointer of type 'struct Explain_node'|sql/sql_explain.cc|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain ## MDEV-18157
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|my_atof|test_if_number                                                                                            ## MDEV-28345
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|Value_source::Converter_strntod::Converter_strntod|Value_source::Converter_strntod_with_warn::Converter_strntod_with_warn ## MDEV-28345
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|charset_info_st::strntod|Value_source::Converter_strntod::Converter_strntod                                       ## MDEV-28345
@@ -18,6 +20,7 @@ TSAN|data race|storage/innobase/os/os0file.cc|__tsan_atomic64_fetch_add|os_file_
 ASAN|use-after-poison|mysys/hash.c|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|hashcmp|my_hash_first_from_hash_value                                         ## MDEV-26637
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                     ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                       ## MDEV-24193
+UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_rename_user|mysql_execute_command                     ## MDEV-24193
 ASAN|use-after-poison|sql/spatial.cc|wkb_get_double|Gis_point::init_from_wkb|Gis_geometry_collection::init_from_wkb|Geometry::create_from_wkb                                  ## MDEV-26813
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## MDEV-22742
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_shift_left::val_int ## MDEV-22742

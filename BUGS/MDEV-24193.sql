@@ -6,3 +6,6 @@ CREATE USER a@a;
 
 RENAME TABLE mysql.procs_priv TO mysql.procs_gone;
 DROP USER a;
+
+RENAME TABLE mysql.procs_priv TO mysql.procs_gone;
+RENAME USER 'a'@'a' TO 'a'@'a';
