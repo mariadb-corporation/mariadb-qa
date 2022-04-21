@@ -10,6 +10,7 @@ USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
 CUSTOM_COMPILER_LOCATION="/home/roel/GCC-5.5.0/bin"
 USE_CLANG=0             # 0 or 1 # Use the clang compiler instead of gcc
 USE_SAN=0               # 0 or 1 # Use ASAN, MSAN, UBSAN
+PERFSCHEMA=0            # 0 or 1 # Option value is directly passed to -DWITH_PERFSCHEMA_STORAGE_ENGINE=x (i.e. it should always be set to 0 or 1 here). 0=Off
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used (default)
 #CLANG_LOCATION="/home/roel/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 CLANG_LOCATION="/usr/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
@@ -26,6 +27,15 @@ AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"
 # TMP_CLANG/clang/scripts/update.py
 
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
+
+if [ "${PERFSCHEMA}" != "1" -a "${PERFSCHEMA}" != "0" ]; then
+  if [ -z "${PERFSCHEMA}" ]; then
+    echo "Assert: PERFSCHEMA is empty (should be set to 0 or 1 as it is directly passed to -DWITH_PERFSCHEMA_STORAGE_ENGINE)"
+  else
+    echo "Assert: PERFSCHEMA is not set to 0 or 1 (${PERFSCHEMA}), it should be set to 0 or 1 as it is directly passed to -DWITH_PERFSCHEMA_STORAGE_ENGINE."
+  fi
+  exit 1
+fi
 
 if [ ! -r VERSION ]; then
   echo "Assert: 'VERSION' file not found!"
@@ -248,14 +258,14 @@ if [ $FB -eq 0 ]; then
     sleep 0.1
     #XPAND='-DWITH_XPAND=1'  # Disabled ftm due to cnf limitation (https://mariadb.com/kb/en/mariadb-maxscale-25-maxscale-and-xpand-tutorial/)
   fi
-  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_PERFSCHEMA_STORAGE_ENGINE=1 ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS} -DWITH_VALGRIND=ON"
+  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_PERFSCHEMA_STORAGE_ENGINE=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS} -DWITH_VALGRIND=ON"
   echo "Build command used:"
   echo $CMD
   $CMD | tee /tmp/psms_opt_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 else
   # FB build
-  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_PERFSCHEMA_STORAGE_ENGINE=1 ${DBUG} ${ZLIB} -DMYSQL_MAINTAINER_MODE=OFF ${FLAGS} -DWITH_VALGRIND=ON"
+  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_PERFSCHEMA_STORAGE_ENGINE=${PERFSCHEMA} ${DBUG} ${ZLIB} -DMYSQL_MAINTAINER_MODE=OFF ${FLAGS} -DWITH_VALGRIND=ON"
   echo "Build command used:"
   echo $CMD
   $CMD | tee /tmp/psms_opt_build_${RANDOMD}
