@@ -381,7 +381,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|sql_mode= |sql_mode=|gi' | \
   sed 's|performance_schema|performance_schema|gi' | \
   sed 's|performance_schema\.\([a-zA-Z]\+\)|performance_schema.\L\1|gi' | \
-  sed 's|( (|((|g;s|) )|))|g'
+  sed 's|( (|((|g;s|) )|))|g' | \
   sed 's|  | |gi'
 
 # Templates for copy/paste

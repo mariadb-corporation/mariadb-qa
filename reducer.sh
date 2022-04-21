@@ -2181,7 +2181,7 @@ start_mysqld_or_valgrind_or_mdg(){
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
           echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, assuming this option set is required"
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/master.err, $WORKD/log/mysqld.out and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
+          echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/master.err and $WORKD/log/mysqld.out and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
           echo "Terminating now."
           exit 1
         fi
