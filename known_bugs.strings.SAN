@@ -4,6 +4,22 @@
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 
 ##### CURRENT BUGS #####
+UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|Type_handler_string_result::make_packed_sort_key_part|make_packed_sortkey|make_sortkey ## MDEV-27081
+UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|make_packed_sortkey|make_sortkey|find_all_keys   ## MDEV-27081
+UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_malloc.c|my_strdup|Session_sysvars_tracker::init|THD::init|THD::change_user               ## MDEV-25237
+UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_malloc.c|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init             ## MDEV-25237
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_get_user_var::val_int|Item_func_substr::fix_length_and_dec ## MDEV-28387
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_get_user_var::val_int|Item_func_substr::get_position ## MDEV-28387
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_substr::fix_length_and_dec|Item_func::fix_fields ## MDEV-28387
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item::save_in_field|Item_result_field::save_in_result_field ## MDEV-28386
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item::save_in_field|copy_funcs ## MDEV-28386
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item::save_str_in_field|Item::save_in_field ## MDEV-28386
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field ## MDEV-28386
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item::save_str_in_field ## MDEV-28386
+ASAN|heap-use-after-free|mysys/mf_keycache.c|flush_all_key_blocks|prepare_resize_simple_key_cache|resize_partitioned_key_cache|resize_key_cache                                ## MDEV-22590
+UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_eq::val_int ## MDEV-28384
+UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|sortcmp ## MDEV-28384
+UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|sortcmp|Arg_comparator::compare_string ## MDEV-28384
 UBSAN|member call on null pointer of type 'struct Explain_node'|sql/sql_explain.cc|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain ## MDEV-18157
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|my_atof|test_if_number                                                                                            ## MDEV-28345
