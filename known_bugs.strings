@@ -75,6 +75,7 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 ##### CURRENT BUGS ##### Search key: Mac ###
 SIGSEGV|ha_spider::index_last_internal|ha_spider::index_last_internal|ha_spider::get_auto_increment|handler::update_auto_increment                                             ## MDEV-28406
 SIGSEGV|ha_spider::index_last_internal|ha_spider::index_last|ha_spider::get_auto_increment|handler::update_auto_increment                                                      ## MDEV-28406
+SIGABRT|__cxa_throw () from|std::__throw_logic_error(char const*) () from|std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>|std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct_aux<char const*> ## MDEV-28433
 SIGSEGV|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select                                                            ## MDEV-27259
 SIGSEGV|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|make_join_select|JOIN::optimize_inner                                                                 ## MDEV-27259
 SIGSEGV|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|make_join_select|JOIN::optimize_stage2                                                                ## MDEV-27259
