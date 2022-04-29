@@ -137,14 +137,16 @@ if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then
   fi
 else
   if [ "${1}" == "SAN" ]; then
+    #echo "Searching error logs for the '=ERROR:|runtime error:|ThreadSanitizer:' (SAN mode enabled)"
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+    #CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '=ERROR:|runtime error:|ThreadSanitizer:' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "GAL" ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh GAL | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/node1/node1.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh GAL | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/node1/node1.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
   else
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
   fi
 fi
 cd - >/dev/null || exit 1

@@ -30,25 +30,16 @@ fi
 
 export TEXT=
 MYEXTRA_OPT=
-if [[ "${PWD}" == *"SAN"* ]]; then
-  if [ -z "${1}" -o -z "${2}" ]; then
-    echo "Assert: SAN builds are being used, yet no options were passed."
-    echo "To check for an ASAN/UBSAN/TSAN bug, do:  ~/b SAN 'bug_to_look_for'"
-    echo "Where bug_to_look for is the string to look for in the error log. Note that a generic string can ('should') be used:"
-    echo "For ASAN  issues: '=ERROR:'"
-    echo "For UBSAN issues: 'runtime error:'"
-    echo "For TSAN  issues: 'ThreadSanitizer:'"
-    echo "Also note that setting a too specific string is not a good idea: different versions may fail in different ways, and with different issues and/or stacks."
-    exit 1
-  fi
-fi
-
-if [ "${1}" == "SAN" ]; then
+if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
   if [ ! -z "$(grep --binary-files=text -i "[^M]SAN" ../REGEX_EXCLUDE | grep -v 'SAN_MD[0-9]')" ]; then
     echo "Assert: remove SAN from ../REGEX_EXCLUDE"
     exit 1
   fi
-  export TEXT="${2}"
+  if [ -z "${2}" ]; then
+    export TEXT="=ERROR:|runtime error:|ThreadSanitizer:"
+  else
+    export TEXT="${2}"
+  fi
   # MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||;s|${TEXT}||')"
   MYEXTRA_OPT="$3 $4 $5 $6 $7 $8 $9"
   ~/mariadb-qa/bug_report.sh SAN "${MYEXTRA_OPT}" | tee report.log
@@ -86,7 +77,7 @@ echo '----- All strings merged -----' | tee -a report.log
 if [ -r ../allstrings_merged ]; then
   if [ "${1}" == "GAL" ]; then
     cd .. && ./allstrings_merged GAL 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
-  elif [ "${1}" == "SAN" ]; then
+  elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
     cd .. && ./allstrings_merged SAN 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   else
     cd .. && ./allstrings_merged 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
@@ -97,7 +88,7 @@ if [ -r ../allstrings_new ]; then
   if [ "${1}" == "GAL" ]; then
     echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
     cd .. && ./allstrings_new GAL 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
-  elif [ "${1}" == "SAN" ]; then
+  elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
     echo '----- All NEW (not known yet) strings merged (for adding to ~/kba) -----' | tee -a "${REPORT_PATH}/report.log"
     cd .. && ./allstrings_new SAN 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   else

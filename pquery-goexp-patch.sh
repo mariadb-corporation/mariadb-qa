@@ -55,8 +55,14 @@ if [ ! -r ${REDUCER} -o ! -f ${REDUCER} ]; then
 fi
 
 # Patch reducer
-sed -i "s|^FORCE_SKIPV=1|FORCE_SKIPV=0|" ${REDUCER}
-sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=1000|" ${REDUCER}
+if [ "${2}" != "depge" ]; then  # Normal, i.e. ~/pge
+  sed -i "s|^FORCE_SKIPV=1|FORCE_SKIPV=0|" ${REDUCER}
+  sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=1000|" ${REDUCER}
+else  # Reverse (de-) pge changes, i.e. ~/depge, and increase threads to reduce more easily
+  sed -i "s|^FORCE_SKIPV=0|FORCE_SKIPV=1|" ${REDUCER}
+  sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=3|" ${REDUCER}
+  sed -i "s|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=11|" ${REDUCER}
+fi
 
 # Start reducer
 mkdir -p ./reducer.logs

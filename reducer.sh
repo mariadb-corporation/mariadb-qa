@@ -4127,7 +4127,7 @@ fireworks_setup(){
                            echo_out "[Init] Looking for this string: '$TEXT' in Valgrind output (@ $WORKD/valgrind.out when MULTI mode is not active)"; fi
   if [ $MODE -eq 0 ]; then echo_out "[Init] Run mode: MODE=0: Timeout/hang/shutdown"
                            echo_out "[Init] Looking for trial durations longer then ${TIMEOUT_CHECK_REAL} seconds (with timeout trigger @ ${TIMEOUT_CHECK} seconds)"; fi
-  echo_out "[Info] Leading [] = No bug/issue found yet | [*] = Bug/issue at least seen once"
+  echo_out "[Info] Leading [] = No bug/issue found yet, leading [*] = bug/issue at least seen once"
   report_linecounts
   if [ "$SKIPV" != "1" ]; then
     verify $1

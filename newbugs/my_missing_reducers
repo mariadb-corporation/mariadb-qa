@@ -1,0 +1,1 @@
+./my | grep -o 'newbug.*' | sed 's|\./*||;s|_out||g;s|sql||;' | sort -u | xargs -I{} ls {}.reducer.sh 2>&1 | grep 'cannot access' | grep -o 'newbug.*reducer.sh' | sed 's|$| is missing|'
