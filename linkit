@@ -1,49 +1,52 @@
 #!/bin/bash
+# Created by Ramesh Sivaraman and Roel Van de Paar, MariaDB
+
+USER="$(whoami)"
 
 if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
   sudo mkdir -p /test /data /test/TESTCASES/ /data/NEWBUGS
-  sudo chown -R $(whoami):$(whoami) /test
-  sudo chown -R $(whoami):$(whoami) /data
+  sudo chown -R ${USER}:${USER} /test
+  sudo chown -R ${USER}:${USER} /data
   sudo chmod -R +rX /test
   sudo chmod -R +rX /data
 fi
 
 # Homedir scripts
 rm -f ~/tcp ~/pge ~/pg ~/tr ~/tc ~/t ~/fc ~/mcl ~/s
-ln -fs /home/$(whoami)/mariadb-qa/homedir_scripts/* /home/$(whoami)/ 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/testcase_prettify.sh /home/$(whoami)/tcp 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/pquery-goexp-patch.sh /home/$(whoami)/pge 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/pquery-goexp-patch.sh /home/$(whoami)/depge 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/pquery-go-expert.sh /home/$(whoami)/pg 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/pquery-todays-runs.sh /home/$(whoami)/tr 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/copy_testcases.sh /home/$(whoami)/tc 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/new_text_string.sh /home/$(whoami)/t 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/find_cause.sh /home/$(whoami)/fc 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/pquery-allsubdir-del-string.sh /home/$(whoami)/mcl 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/pquery-screen.sh /home/$(whoami)/s 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/san_text_string.sh /home/$(whoami)/st 2>&1
+ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1
+ln -fs /home/${USER}/mariadb-qa/testcase_prettify.sh /home/${USER}/tcp 2>&1
+ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/pge 2>&1
+ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/depge 2>&1
+ln -fs /home/${USER}/mariadb-qa/pquery-go-expert.sh /home/${USER}/pg 2>&1
+ln -fs /home/${USER}/mariadb-qa/pquery-todays-runs.sh /home/${USER}/tr 2>&1
+ln -fs /home/${USER}/mariadb-qa/copy_testcases.sh /home/${USER}/tc 2>&1
+ln -fs /home/${USER}/mariadb-qa/new_text_string.sh /home/${USER}/t 2>&1
+ln -fs /home/${USER}/mariadb-qa/find_cause.sh /home/${USER}/fc 2>&1
+ln -fs /home/${USER}/mariadb-qa/pquery-allsubdir-del-string.sh /home/${USER}/mcl 2>&1
+ln -fs /home/${USER}/mariadb-qa/pquery-screen.sh /home/${USER}/s 2>&1
+ln -fs /home/${USER}/mariadb-qa/san_text_string.sh /home/${USER}/st 2>&1
 
 # Build scripts (mostly/mainly used from /test)
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/* /data/ 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/current_runs_testcases /home/$(whoami)/crt 2>&1
+ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
+ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/* /data/ 2>&1
+ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/current_runs_testcases /home/${USER}/crt 2>&1
 rm -f /data/[odut][0-9]  # Remove changedir scripts (like '. ./d7' etc.) normally only used in /test
 
 # Mass testcase scripts
-ln -fs /home/$(whoami)/mariadb-qa/testcase-scripts/* /test/TESTCASES/ 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/newbugs/uniq_newbugs /test/TESTCASES/uniq_newbugs 2>&1
+ln -fs /home/${USER}/mariadb-qa/testcase-scripts/* /test/TESTCASES/ 2>&1
+ln -fs /home/${USER}/mariadb-qa/newbugs/uniq_newbugs /test/TESTCASES/uniq_newbugs 2>&1
 
 # Newbugs (new bugs found by reducer while reducing) & Fireworks (new bugs found by reducer in fireworks mode)
-ln -fs /home/$(whoami)/mariadb-qa/newbugs/* /data/NEWBUGS/ 2>&1
-ln -fs /home/$(whoami)/mariadb-qa/mariadb-build-qa/clean_newbugs /data/NEWBUGS/clean_newbugs 2>&1
+ln -fs /home/${USER}/mariadb-qa/newbugs/* /data/NEWBUGS/ 2>&1
+ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /data/NEWBUGS/clean_newbugs 2>&1
 
 # Link ~/BUGS to ~/mariadb-qa/BUGS for ease-of-access
-if [ ! -d /home/$(whoami)/BUGS ]; then
-  ln -fs /home/$(whoami)/mariadb-qa/BUGS /home/$(whoami)/BUGS 2>&1
+if [ ! -d /home/${USER}/BUGS ]; then
+  ln -fs /home/${USER}/mariadb-qa/BUGS /home/${USER}/BUGS 2>&1
 fi
 
 # Add any bugs not commited yet
-cd /home/$(whoami)/mariadb-qa/BUGS
+cd /home/${USER}/mariadb-qa/BUGS
 git add *
 
 # Create REGEX_EXCLUDE if it does not exist yet, adding some common defaults

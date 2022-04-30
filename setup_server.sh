@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, Percona LLC
+# Updated by Roel Van de Paar, MariaDB
 
 # Handy command to see per-user pid max settings, and current status;
 # cat /sys/fs/cgroup/pids/user.slice/user-${UID}.slice/pids.max  # or use ${EUID}, change pids.max to others

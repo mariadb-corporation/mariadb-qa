@@ -32,7 +32,7 @@ while true; do
   echo -n "mysqld's: $(ps -ef | grep mysqld | grep "no-defaults" | sed "s|..user=.*||;s|.*no-defaults ||" | sort -u | wc -l) | "
   echo -n "Unique Newbugs: ${NEWBUGCOUNT} | "
   echo -n "Testcases: ${TESTCASES}"
-  sleep 2
+  sleep 3
   if [ ${COUNT1} -ge 10 ]; then
     # Check process list for any datadir=/dev/shm/16... and if found check if such directory is present. If not, terminate any processes associated with the non-existing directory. This command assist greatly in overall server memory management
     #ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | xargs -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -v grep | awk '{print \$2}' | xargs -I_ kill -9 _" > /tmp/kill_rogue && chmod +x /tmp/kill_rogue && /tmp/kill_rogue && rm -f /tmp/kill_rogue
@@ -77,7 +77,7 @@ while true; do
       #if [ -r ./clean_all ]; then ./clean_all; fi
       if [ -r ./clean_newbugs ]; then
         if [ -z "$(ps -ef | grep clean_newbug | grep -v grep)" ]; then  # Ensure clean_newbugs is not running already
-          ./clean_newbugs &  # RV 31/1/22: changed to background process so other processes are not held up
+          ./clean_newbugs >/dev/null &  # RV 31/1/22: changed to background process so other processes are not held up
         fi
       fi
     fi

@@ -1664,7 +1664,11 @@ init_workdir_and_files(){
     fi
     echo_out "[Init] Input file: $INPUTFILE"
     if [ "${WORK_BUG_DIR}" == "${INPUTFULE}" ]; then
-      echo_out "[Init] Output dir: $PWD"
+      if [ "${FIREWORKS}" != "1" ]; then
+        echo_out "[Init] Output dir: $PWD"
+      else
+        echo_out "[Init] Output dir (FIREWORKS mode): ${NEW_BUGS_SAVE_DIR}"
+      fi
     else
       echo_out "[Init] Output dir: $WORK_BUG_DIR"
     fi
@@ -1696,7 +1700,7 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  echo_out "[Init] Workdir: $WORKD"
+  echo_out "[Init] Work dir: $WORKD"
   echo_out "[Init] EPOCH ID: $EPOCH (used for various file and directory names)"
   if [ $MDG -eq 1 ]; then
     for i in $(seq 1 "${NR_OF_NODES}"); do
@@ -1711,7 +1715,12 @@ init_workdir_and_files(){
     if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
       echo_out "[Init] Client: $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
     else
-      echo_out "[Init] Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
+      if [ "${FIREWORKS}" != "1" ]; then
+        echo_out "[Init] Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
+        echo_out "[Init] Client example for subreducers (MULTI): $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
+      else
+        echo_out "[Init] Client example: $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
+      fi
     fi
   fi
   if [ $MDG -eq 1 ]; then
@@ -1737,14 +1746,14 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  if [ $FORCE_SKIPV -gt 0 ]; then
+  if [ $FORCE_SKIPV -gt 0 -a "${FIREWORKS}" != "1" ]; then
     if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer
       echo_out "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing multi threaded simplification"
     else  # This is a subreducer (i.e. not multi-threaded)
       echo_out "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing simplification"
     fi
   fi
-  if [ $FORCE_SKIPV -gt 0 -a $FORCE_SPORADIC -gt 0 ]; then echo_out "[Init] FORCE_SKIPV active, so FORCE_SPORADIC is automatically set active also" ; fi
+  if [ $FORCE_SKIPV -gt 0 -a $FORCE_SPORADIC -gt 0 -a "${FIREWORKS}" != "1" ]; then echo_out "[Init] FORCE_SKIPV active, so FORCE_SPORADIC is automatically set active also" ; fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ $FORCE_SKIPV -gt 0 ]; then
       echo_out "[Init] REDUCE_GLIBC_OR_SS_CRASHES active, so automatically skipping VERIFY mode as GLIBC crashes may be sporadic more often (this happens irrespective of FORCE_SKIPV=1)"
@@ -1762,7 +1771,7 @@ init_workdir_and_files(){
       echo_out "[WARNING] ---------------------"
     fi
   else
-    if [ $FORCE_SPORADIC -gt 0 ]; then
+    if [ $FORCE_SPORADIC -gt 0 -a "${FIREWORKS}" != "1" ]; then
       if [ $FORCE_SKIPV -gt 0 ]; then
         echo_out "[Init] FORCE_SPORADIC active. Issue is assumed to be sporadic"
       else
@@ -1773,7 +1782,9 @@ init_workdir_and_files(){
     fi
   fi
   if [ $FORCE_SPORADIC -gt 0 ]; then
-    echo_out "[Init] FORCE_SPORADIC active, so automatically enabled SLOW_DOWN_CHUNK_SCALING to speed up testcase reduction (SLOW_DOWN_CHUNK_SCALING_NR is set to $SLOW_DOWN_CHUNK_SCALING_NR)"
+    if [ "${FIREWORKS}" != "1" ]; then  # Does not make much/any sense to show this when FIREWORKS mode is enabled
+      echo_out "[Init] FORCE_SPORADIC active, so automatically enabled SLOW_DOWN_CHUNK_SCALING to speed up testcase reduction (SLOW_DOWN_CHUNK_SCALING_NR is set to $SLOW_DOWN_CHUNK_SCALING_NR)"
+    fi
   fi
   if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
     echo_out "[Init] PAUSE_AFTER_EACH_OCCURENCE active, so reducer will pause after each occurence of the issue"
@@ -4111,8 +4122,12 @@ fireworks_setup(){
                            echo_out "[Init] Run mode: MODE=3 with REDUCE_GLIBC_OR_SS_CRASHES=1: console typscript log"
                            echo_out "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then
+      if [ "${FIREWORKS}" != "1" ]; then
                            echo_out "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump matching with new_text_string.sh"
                            echo_out "[Init] Looking for this string: '$TEXT' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
+      else
+                           echo_out "[Init] Run mode: Fireworks with MODE=3, using new_text_string.sh for UniqueID generation"
+      fi
     else
                            echo_out "[Init] Run mode: MODE=3: mysqld error log"
                            echo_out "[Init] Looking for this string: '$TEXT' in mysqld error log output (@ $WORKD/log/master.err when MULTI mode is not active)"; fi; fi
@@ -4127,7 +4142,11 @@ fireworks_setup(){
                            echo_out "[Init] Looking for this string: '$TEXT' in Valgrind output (@ $WORKD/valgrind.out when MULTI mode is not active)"; fi
   if [ $MODE -eq 0 ]; then echo_out "[Init] Run mode: MODE=0: Timeout/hang/shutdown"
                            echo_out "[Init] Looking for trial durations longer then ${TIMEOUT_CHECK_REAL} seconds (with timeout trigger @ ${TIMEOUT_CHECK} seconds)"; fi
-  echo_out "[Info] Leading [] = No bug/issue found yet, leading [*] = bug/issue at least seen once"
+  if [ "${FIREWORKS}" != "1" ]; then
+    echo_out "[Info] Leading [] = No bug/issue found yet, leading [*] = bug/issue at least seen once"
+  else
+    echo_out "[Info] Leading [] = No bug found yet, leading [*] = at least one new previously unknown bug discovered"
+  fi
   report_linecounts
   if [ "$SKIPV" != "1" ]; then
     verify $1
@@ -4257,7 +4276,9 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
   STAGE=1
   TRIAL=1
   if [ $LINECOUNTF -ge $STAGE1_LINES -o $PQUERY_MULTI -gt 0 -o $FORCE_SKIPV -gt 0 -o $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE (trial duration depends on initial input file size)"
+    if [ "${FIREWORKS}" != "1" ]; then  # FIREWORKS mode will always stay in stage 1, and msg is nonsensical for FW
+      echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE (trial duration depends on initial input file size)"
+    fi
     while [ $LINECOUNTF -ge $STAGE1_LINES ]; do
       if [ $LINECOUNTF -eq $STAGE1_LINES  ]; then NEXTACTION="& Progress to the next stage"; fi
       if [ $TRIAL -gt 1 -a "${FIREWORKS}" != "1" ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
