@@ -3,7 +3,15 @@
 
 # Wasabi: highly automated, high quality and seamless database testing. Created for MariaDB server, easy to adapt
 
-# TODO ~/memory is terminating fireworks instances (process tree root can be filtered)
+# TODO List
+# 1. reducers have TEXT with no indent
+# 2. reducers have MODE=4 set instead of MODE=3
+# 3. reducers have USE_PQUERY=0 
+# 4. reducers have 10 threads set
+# 5. 1651298030055548371 files are written to the same directory, but it is by the newly created reducers (avoid?)
+# 6. The main reducer does not show new subreducer finds
+# 7. Large /dev/shm usage
+# 8. ~/ds is terminating fireworks instances (process tree root can be filtered)
 
 # User configurable variables
 WASABI_LOG='/data/wasabi/wasabi.log'  # Wasabi log, appended to once /data/wasabi/ (auto-created) exists
@@ -11,6 +19,9 @@ TERMINATE_ALL=1                       # Terminate all running processes on start
 VERSION_TO_TEST="10.9"                # The MariaDB version to test
 USE_SQL_DIR="/data/fireworks"         # Use specified SQL input dir. If empty, ~/mariadb-qa/pquery/ is used
 VERBOSE=1                             # Enable verbose output (on by default)
+REGEX_SQL_FILTER='root|passw|drop.*mysql|^use [^t]|^let|revoke|identified|release|dbug|kill|master_pos_wait'  # Problematic SQL filter
+
+# ls *.sql | xargs -I{} echo "grep -viE 'root|passw|drop.*mysql|^use [^t]|^let|revoke|identified|release|dbug|kill|master_pos_wait' '{}' > '{}.new'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" && ls *.new | xargs -I{} echo "mv {} {}" | sed 's|\.new$||' | xargs -I{} bash -c "{}"
 
 # Internal variables and settings, do not change
 USER="$(whoami)"                      # UserID capture for use in /home/${USER}/...

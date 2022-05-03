@@ -1,0 +1,26 @@
+#!/bin/bash
+# This script works differently than start_reducers, which starts from a numerically sorted list. Instead this script starts from a unique UniqueID sorted list. This will likely work better in a directory which is not constantly updated when >3 occurences of the same UniqueID are deleted.
+
+set +H
+
+if [ -z "${1}" ]; then
+  echo "Assert: please pass how many reducers (starting from a unique UniqueID sorted list) you would like to start. Optionally, indicate as a second parameter how many reducers to skip from the top of the list before starting to count and start reducers."
+  exit 1
+else
+  if [ ! -z "$(echo "${1}" | sed 's|[0-9]||g')" ]; then
+    echo "Assert: first variable is not numeric. please pass how many reducers (starting from a unique UniqueID sorted list) you would like to start. Optionally, indicate as a second parameter how many reducers to skip from the top of the list before starting to count and start reducers."
+  fi
+fi
+if [ ! -z "${2}" ]; then
+  if [ ! -z "$(echo "${2}" | sed 's|[0-9]||g')" ]; then
+    echo "Assert: second variable was passed and is not numeric. please pass how many reducers (starting from a unique UniqueID sorted list) you would like to start. Optionally, indicate as a second parameter how many reducers to skip from the top of the list before starting to count and start reducers."
+  fi
+fi
+
+mkdir -p ./reducer.logs
+# TODO: in contrast with ~/sr (same command, though not via final xargs pipe), the two screen commands below terminate as soon as ^C is pressed on a running reducer rather than presenting an interactive Bash shell. The difference is likely in xargs. The xargs -o (open tty) option does not resolve the issue. The -i (interactive) bash option (even if passed to all bash calls. Also tested these two combined. Also test things like: bash -ilc 'bash' for the bash terminal to be started.
+if [ -z "${2}" ]; then
+  cat *.string | sort -u | xargs -I{} grep -HFim1 '{}' *reducer.sh | sed 's|\(newbug_[0-9]\+\.reducer\.sh\):\(.*\)|\2\t\1|' | sort -uk1,1 | sed 's|.*newbug_|newbug_|' | head -n${1} | xargs -I{} echo 'screen -admS {} bash -c "./{} | tee -a ./reducer.logs/{}.log; bash"' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+else
+  cat *.string | sort -u | xargs -I{} grep -HFim1 '{}' *reducer.sh | sed 's|\(newbug_[0-9]\+\.reducer\.sh\):\(.*\)|\2\t\1|' | sort -uk1,1 | sed 's|.*newbug_|newbug_|' | head -n$[ ${1} + ${2} ] | tail -n${1} | xargs -I{} echo 'screen -admS {} bash -c "./{} | tee -a ./reducer.logs/{}.log; bash"' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+fi
