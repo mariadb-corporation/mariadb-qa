@@ -1711,37 +1711,33 @@ pquery_test() {
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
-            else  # Normal pquery run
-              local INFILE_SHUFFLED=
-              if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-                mkdir -p /data/tmp 2>/dev/null
-                if [ -d /data/tmp ]; then  # Do not proceed with PRE_SHUFFLE_SQL if /data/tmp does not exist. It will hold the (at times large) pre-shuffled SQL
-                  echoit "Randomly pre-shuffling SQL as PRE_SHUFFLE_SQL=1"
-                  local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
-                  INFILE_SHUFFLED="/data/tmp/${WORKNRDIR}_${TRIAL}.sql"
-                  WORKNRDIR=
-                  RANDOM=$(date +%s%N | cut -b10-19)
-                  shuf --random-source=/dev/urandom ${INFILE} > ${INFILE_SHUFFLED}
-                fi
-              fi
-              if [ ! -z "${INFILE_SHUFFLED}" ]; then
-                ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-                PQPID="$!"
-              else
-                ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-                PQPID="$!"
-              fi
-              if [ ! -z "${INFILE_SHUFFLED}" -a -r "${INFILE_SHUFFLED}" -a ! -d "${INFILE_SHUFFLED}" ]; then
-                echoit "Deleting pre-shuffled SQL file (${INFILE_SHUFFLED}) after trial completion"
-                rm -f "${INFILE_SHUFFLED}"
-              if
-              INFILE_SHUFFLED=
+            else  # Query duration testing run
+              ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+              PQPID="$!"
             fi
           fi
         else # Standard pquery run / Not a query duration testing run
           if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
-            ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-            PQPID="$!"
+            # Standard/default (non-GRP-RPL non-Galera non-Query-duration-testing) pquery run
+            INFILE_SHUFFLED=
+            if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+              mkdir -p /data/tmp 2>/dev/null
+              if [ -d /data/tmp ]; then  # Do not proceed with PRE_SHUFFLE_SQL if /data/tmp does not exist. It will hold the (at times large) pre-shuffled SQL
+                local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
+                INFILE_SHUFFLED="/data/tmp/${WORKNRDIR}_${TRIAL}.sql"
+                WORKNRDIR=
+                echoit "PRE_SHUFFLE_SQL=1: Randomly pre-shuffling SQL (Target: ${INFILE_SHUFFLED})"
+                RANDOM=$(date +%s%N | cut -b10-19)
+                shuf --random-source=/dev/urandom -n 5141189 ${INFILE} > ${INFILE_SHUFFLED}  # 5141189: max lines
+              fi
+            fi
+            if [ ! -z "${INFILE_SHUFFLED}" ]; then
+              ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+              PQPID="$!"
+            else
+              ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+              PQPID="$!"
+            fi
           else
             if [[ ${MDG_CLUSTER_RUN} -eq 1 ]]; then
               for i in $(seq 1 ${NR_OF_NODES}); do
@@ -1778,9 +1774,9 @@ EOF
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
-            else
-              ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-              PQPID="$!"
+            else  
+              echo "Assert: GRP_RPL_CLUSTER_RUN=${GRP_RPL_CLUSTER_RUN} and MDG_CLUSTER_RUN=${MDG_CLUSTER_RUN}"
+              exit 1
             fi
           fi
         fi
@@ -1948,6 +1944,12 @@ EOF
   fi
   TRIAL_SAVED=0
   sleep 2 # Delay to ensure core was written completely (if any)
+  # First cleanup any temporary SQL
+  if [ ! -z "${INFILE_SHUFFLED}" -a -r "${INFILE_SHUFFLED}" -a ! -d "${INFILE_SHUFFLED}" ]; then
+    echoit "Deleting pre-shuffled SQL file (${INFILE_SHUFFLED}) after trial completion"
+    rm -f "${INFILE_SHUFFLED}"
+  fi
+  INFILE_SHUFFLED=
   # NOTE**: Do not kill PQPID here/before shutdown. The reason is that pquery may still be writing queries it's executing to the log. The only way to halt pquery correctly is by actually shutting down the server which will auto-terminate pquery due to 250 consecutive queries failing. If 250 queries failed and ${PQUERY_RUN_TIMEOUT}s timeout was reached, and if there is no core/Valgrind issue and there is no output of mariadb-qa/text_string.sh either (in case core dumps are not configured correctly, and thus no core file is generated, text_string.sh will still produce output in case the server crashed based on the information in the error log), then we do not need to save this trial (as it is a standard occurence for this to happen). If however we saw 250 queries failed before the timeout was complete, then there may be another problem and the trial should be saved.
   if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
     if [ "${VALGRIND_RUN}" == "1" ]; then # For Valgrind, we want the full Valgrind output in the error log, hence we need a proper/clean (and slow...) shutdown
