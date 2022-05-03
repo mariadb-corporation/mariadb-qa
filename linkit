@@ -4,7 +4,7 @@
 USER="$(whoami)"
 
 if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
-  sudo mkdir -p /test /data /test/TESTCASES/ /data/NEWBUGS
+  sudo mkdir -p /test /data /test/TESTCASES/ /data/NEWBUGS /data/tmp
   sudo chown -R ${USER}:${USER} /test
   sudo chown -R ${USER}:${USER} /data
   sudo chmod -R +rX /test

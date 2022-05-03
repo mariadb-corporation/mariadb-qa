@@ -134,6 +134,9 @@ cat "${1}" | tr -d '`' | \
   sed 's|all|ALL|gi' | \
   sed 's|call|CALL|gi' | \
   sed 's|flush|FLUSH|gi' | \
+  sed 's|privileges|PRIVILEGES|gi' | \
+  sed 's| role | ROLE |gi' | \
+  sed 's| admin | ADMIN |gi' | \
   sed 's|with|WITH|gi' | \
   sed 's|recursive|RECURSIVE|gi' | \
   sed 's|dynamic|DYNAMIC|gi' | \

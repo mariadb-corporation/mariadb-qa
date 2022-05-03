@@ -1700,20 +1700,42 @@ pquery_test() {
             if [[ ${MDG_CLUSTER_RUN} -eq 1 ]]; then
               cat ${MDG_CLUSTER_CONFIG} |
                 sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
-                sed "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
+                sed "s|\/home\/$(whoami)\/mariadb-qa|${SCRIPT_PWD}|" \
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             elif [[ ${GRP_RPL_CLUSTER_RUN} -eq 1 ]]; then
               cat ${GRP_RPL_CLUSTER_CONFIG} |
                 sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
-                sed "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
+                sed "s|\/home\/$(whoami)\/mariadb-qa|${SCRIPT_PWD}|" \
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
-            else
-              ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-              PQPID="$!"
+            else  # Normal pquery run
+              local INFILE_SHUFFLED=
+              if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+                mkdir -p /data/tmp 2>/dev/null
+                if [ -d /data/tmp ]; then  # Do not proceed with PRE_SHUFFLE_SQL if /data/tmp does not exist. It will hold the (at times large) pre-shuffled SQL
+                  echoit "Randomly pre-shuffling SQL as PRE_SHUFFLE_SQL=1"
+                  local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
+                  INFILE_SHUFFLED="/data/tmp/${WORKNRDIR}_${TRIAL}.sql"
+                  WORKNRDIR=
+                  RANDOM=$(date +%s%N | cut -b10-19)
+                  shuf --random-source=/dev/urandom ${INFILE} > ${INFILE_SHUFFLED}
+                fi
+              fi
+              if [ ! -z "${INFILE_SHUFFLED}" ]; then
+                ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+                PQPID="$!"
+              else
+                ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+                PQPID="$!"
+              fi
+              if [ ! -z "${INFILE_SHUFFLED}" -a -r "${INFILE_SHUFFLED}" -a ! -d "${INFILE_SHUFFLED}" ]; then
+                echoit "Deleting pre-shuffled SQL file (${INFILE_SHUFFLED}) after trial completion"
+                rm -f "${INFILE_SHUFFLED}"
+              if
+              INFILE_SHUFFLED=
             fi
           fi
         else # Standard pquery run / Not a query duration testing run
@@ -1752,7 +1774,7 @@ EOF
             elif [[ ${GRP_RPL_CLUSTER_RUN} -eq 1 ]]; then
               cat ${GRP_RPL_CLUSTER_CONFIG} |
                 sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
-                sed "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
+                sed "s|\/home\/$(whoami)\/mariadb-qa|${SCRIPT_PWD}|" \
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
@@ -1796,7 +1818,7 @@ EOF
           if [[ ${MDG_CLUSTER_RUN} -eq 1 ]]; then
             cat ${MDG_CLUSTER_CONFIG} |
                sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
-               sed "s|\/home\/ramesh\/mariadb-qa|${SCRIPT_PWD}|" \
+               sed "s|\/home\/$(whoami)\/mariadb-qa|${SCRIPT_PWD}|" \
                  > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
             ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
             PQPID="$!"
