@@ -73,6 +73,8 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|memset|JOIN::make_aggr_tables_info|JOIN::optimize_inner|JOIN::optimize                                                                                                 ## MDEV-26395
+SIGSEGV|__strcmp_avx2|st_select_lex::add_table_to_list|MYSQLparse|parse_sql                                                                                                    ## MDEV-26396
 grantee->counter > 0|SIGABRT|merge_role_privileges|traverse_role_graph_impl|traverse_role_graph_up|propagate_role_grants_action                                                ## MDEV-18003
 SIGSEGV|ha_spider::index_last_internal|ha_spider::index_last_internal|ha_spider::get_auto_increment|handler::update_auto_increment                                             ## MDEV-28406
 SIGSEGV|ha_spider::index_last_internal|ha_spider::index_last|ha_spider::get_auto_increment|handler::update_auto_increment                                                      ## MDEV-28406
