@@ -27,7 +27,7 @@ TERMINATE_ALL=1                       # Terminate all running processes on start
 VERSION_TO_TEST="10.9"                # The MariaDB version to test
 USE_SQL_DIR="/data/fireworks"         # Use specified SQL input dir. If empty, ~/mariadb-qa/pquery/ is used
 VERBOSE=1                             # Enable verbose output (on by default)
-REGEX_SQL_FILTER='root|passw|drop.*mysql|shutdown|^use [^t]|^let|revoke|identified|release|dbug|kill|master_pos_wait'  # Problematic SQL filter
+REGEX_SQL_FILTER='root|passw|drop.*mysql|shutdown|^use [^t]|^let|revoke|identified|release|dbug|debug[ \t]*=|kill|master_pos_wait'  # Problematic SQL filter
 
 # ls *.sql | xargs -I{} echo "grep -viE 'root|passw|drop.*mysql|^use [^t]|^let|revoke|identified|release|dbug|kill|master_pos_wait' '{}' > '{}.new'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" && ls *.new | xargs -I{} echo "mv {} {}" | sed 's|\.new$||' | xargs -I{} bash -c "{}"
 

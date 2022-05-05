@@ -46,7 +46,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 #***#SIGSEGV|_int_malloc|__GI___libc_malloc|eval_node_alloc_val_buf|eval_node_ensure_val_buf                                                                                        ## MDEV-28054
 #***#SIGSEGV|_int_malloc|__GI___libc_malloc|sf_malloc|my_malloc                                                                                                                     ## MDEV-28054
 
-##### Likely debug_dbug issues (reduced once with debug_dbug shown to be the cause) #####
+##### Likely debug_dbug issues (reduced once with debug_dbug=... or debug=... demonstrated to be the cause) #####
+##### Note: these should be disabled if no debug_dbug=... or debug=... SQL statements are being used #####
 debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute                                 ## debug_dbug='+d,after_mysql_insert'
 inited==INDEX|SIGABRT|handler::ha_index_read_map|Stat_table_write_iter::init|rename_table_in_stat_tables|do_rename                                                             ## debug_dbug='+d,ha_index_init_fail'
 file_unreadable || space|SIGABRT|dict_table_t::is_readable|ha_innobase::optimize|handler::ha_optimize|mysql_admin_table                                                        ## debug_dbug='+d,ib_create_table_fail_too_many_trx'
@@ -66,6 +67,7 @@ thd->is_error() || kill_errno || thd->killed == ABORT_QUERY|SIGABRT|filesort|cre
 state == TRX_STATE_NOT_STARTED || (relaxed && thd_get_error_number(trx->mysql_thd))|SIGABRT|ut_dbg_assertion_failed|trx_state_eq|rw_trx_hash_t::validate_element|rw_trx_hash_t::insert ## debug_dbug='+d,innodb_table_deadlock'
 node->state == 1|SIGABRT|row_ins_step|row_insert_for_mysql|ha_innobase::write_row|ha_sequence::write_row                                                                       ## debug_dbug='d,row_ins_index_entry_timeout'
 Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_writer::write_internal                                                                           ## debug_dbug='d,simulate_find_log_pos_error'
+data != ((void *)0) || data_len == 0|SIGABRT|crcr32_calc_pclmulqdq|crc32_pclmul|my_checksum|Log_event_writer::write_data                                                       ## debug='+d,simulate_out_of_memory'
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
  
 ##### Current MDEV-27106 bugs (temporary) #####
@@ -323,9 +325,11 @@ transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep
 thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|apply_fragment|apply_write_set|wsrep::server_state::on_apply                                          ## MDEV-25455
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|multi_delete::send_eof|do_select                                           ## MDEV-25426
 !is_thread_specific || (mysqld_server_initialized && thd)|SIGABRT|my_malloc_size_cb_func|my_free|delete_dynamic|my_hash_free                                                   ## MDEV-25389
-0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item::send|Protocol::send_result_set_row                                                                                ## MDEV-25375
-0|SIGABRT|json_find_path|Item_func_json_value::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                       ## MDEV-25375
-0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler::Item_send_str                                                                ## MDEV-25375
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item::send|Protocol::send_result_set_row                                                                                ## MDEV-23187
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                       ## MDEV-23187
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_str_func::val_real|Item_func_plus::real_op                                                                         ## MDEV-23187
+0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler::Item_send_str                                                                ## MDEV-23187
+0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item_str_func::val_real                                                                    ## MDEV-23187
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## MDEV-25401
 allocated_status_memory != __null|SIGABRT|PROF_MEASUREMENT::set_label|PROF_MEASUREMENT::PROF_MEASUREMENT|QUERY_PROFILE::new_status|PROFILING::status_change                    ## MDEV-25329
 SIGSEGV|Field_iterator_natural_join::next|Field_iterator_table_ref::next|mark_common_columns|store_top_level_join_columns                                                      ## MDEV-24935
