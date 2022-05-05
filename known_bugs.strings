@@ -75,6 +75,12 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+mtr->get_log_mode() == MTR_LOG_NO_REDO|SIGABRT|page_cur_insert_rec_write_log|page_cur_insert_rec_low|page_cur_tuple_insert|btr_cur_optimistic_insert                           ## MDEV-28478
+elem->cmp_type() != TIME_RESULT|SIGABRT|cmp_item_row::store_value|cmp_item_row::store_value|Predicant_to_list_comparator::cmp_arg|Predicant_to_list_comparator::cmp            ## MDEV-28477
+item->element_index(i)->cmp_type() != TIME_RESULT|SIGABRT|cmp_item_row::store_value|cmp_item_row::store_value|Item_func_in::val_int|Item::save_in_field                        ## MDEV-28477
+null_value|SIGABRT|Item::send|Protocol::send_result_set_row|select_send::send_data|JOIN::exec_inner                                                                            ## MDEV-26394
+SIGSEGV|memset|JOIN::make_aggr_tables_info|JOIN::optimize_inner|JOIN::optimize                                                                                                 ## MDEV-26395
+SIGSEGV|__strcmp_avx2|st_select_lex::add_table_to_list|MYSQLparse|parse_sql                                                                                                    ## MDEV-26396
 grantee->counter > 0|SIGABRT|merge_role_privileges|traverse_role_graph_impl|traverse_role_graph_up|propagate_role_grants_action                                                ## MDEV-18003
 SIGSEGV|ha_spider::index_last_internal|ha_spider::index_last_internal|ha_spider::get_auto_increment|handler::update_auto_increment                                             ## MDEV-28406
 SIGSEGV|ha_spider::index_last_internal|ha_spider::index_last|ha_spider::get_auto_increment|handler::update_auto_increment                                                      ## MDEV-28406
