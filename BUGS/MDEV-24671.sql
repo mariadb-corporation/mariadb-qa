@@ -8,4 +8,3 @@ SET GLOBAL event_scheduler=on;
 CHANGE MASTER TO master_host='127.0.0.1';
 START SLAVE sql_thread;
 SELECT MASTER_POS_WAIT('MASTER-bin.000001', 1116, 300);
-

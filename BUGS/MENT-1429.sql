@@ -7,4 +7,3 @@ SET SESSION wsrep_trx_fragment_unit = 'bytes';
 INSERT INTO ti VALUES (100);
 SET GLOBAL wsrep_provider_options='repl.max_ws_size=128';
 INSERT INTO t1(a) VALUES (REPEAT('a', 2));
-

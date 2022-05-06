@@ -4,4 +4,3 @@ XA START 'test';
 INSERT INTO ti VALUES (14);
 SET SESSION wsrep_trx_fragment_unit='statements';
 CREATE TEMPORARY SEQUENCE t1 ENGINE=InnoDB;
-

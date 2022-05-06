@@ -8,4 +8,3 @@ XA START 'foo';
 INSERT INTO articles (title) VALUES ('test'),('test');
 SELECT * FROM articles;
 INSERT INTO articles (title,body) VALUES ('TEST','TEST');
-

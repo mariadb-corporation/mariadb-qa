@@ -5,4 +5,3 @@ SELECT * FROM mysql.innodb_index_stats WHERE table_name='t2' AND index_name='SEC
 INSERT INTO t2 VALUES (1);
 INSERT INTO t2 VALUES (2);
 UPDATE mysql.innodb_table_stats SET last_update="2020-01-01" WHERE database_name="mysql" AND table_name="t2";
-

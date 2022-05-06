@@ -1,5 +1,4 @@
 SET SESSION wsrep_on = OFF;
 XA START 'xatest';
-shutdown;
+SHUTDOWN;
 SELECT SLEEP(3);
-

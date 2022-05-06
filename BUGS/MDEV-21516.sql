@@ -5,5 +5,3 @@ XA START 'x';
 INSERT INTO t VALUES (ST_PointFromText('POINT(1.1 1.1)'), ST_PointFromText('POINT(1.1 1.1)')), (ST_PointFromText('POINT(1.1 1.1)'), ST_PointFromText('POINT(1.1 1.1)')), (ST_PointFromText('POINT(1.1 1.1)'), ST_PointFromText('POINT(1.1 1.1)')), (ST_PointFromText('POINT(1.1 1.1)'), ST_PointFromText('POINT(1.1 1.1)'));
 XA END 'x';
 LOAD INDEX INTO CACHE t1 IGNORE LEAVES;
-
-
