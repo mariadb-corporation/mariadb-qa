@@ -216,6 +216,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|analyze|ANALYZE|gi' | \
   sed 's|bit|BIT|gi' | \
   sed 's|set|SET|gi' | \
+  sed 's|reset|RESET|gi' | \
   sed 's|setval|SETVAL|gi' | \
   sed 's|fulltext|FULLTEXT|gi' | \
   sed 's|default|DEFAULT|gi' | \

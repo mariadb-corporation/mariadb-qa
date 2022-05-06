@@ -68,6 +68,9 @@ state == TRX_STATE_NOT_STARTED || (relaxed && thd_get_error_number(trx->mysql_th
 node->state == 1|SIGABRT|row_ins_step|row_insert_for_mysql|ha_innobase::write_row|ha_sequence::write_row                                                                       ## debug_dbug='d,row_ins_index_entry_timeout'
 Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_writer::write_internal                                                                           ## debug_dbug='d,simulate_find_log_pos_error'
 data != ((void *)0) || data_len == 0|SIGABRT|crcr32_calc_pclmulqdq|crc32_pclmul|my_checksum|Log_event_writer::write_data                                                       ## debug='+d,simulate_out_of_memory'
+fil_space_t::is_valid_flags(flags, space->id)|SIGABRT|fsp_flags_try_adjust|fil_ibd_open|dict_load_tablespace|dict_load_table_one                                               ## debug='+d,dict_tf_to_fsp_flags_failure'
+!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|Relay_log_info::init|init_master_info|start_slave                                                             ## debug='+d,error_unique_log_filename'
+!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|purge_relay_logs|reset_slave|reload_acl_and_cache                                                             ## debug='d,simulate_find_log_pos_error'
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
  
 ##### Current MDEV-27106 bugs (temporary) #####
@@ -75,6 +78,7 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+0|SIGABRT|Item_row::illegal_method_call|Item_row::val_str|ha_json_table::rnd_init|handler::ha_rnd_init                                                                         ## MDEV-28480
 mtr->get_log_mode() == MTR_LOG_NO_REDO|SIGABRT|page_cur_insert_rec_write_log|page_cur_insert_rec_low|page_cur_tuple_insert|btr_cur_optimistic_insert                           ## MDEV-28478
 elem->cmp_type() != TIME_RESULT|SIGABRT|cmp_item_row::store_value|cmp_item_row::store_value|Predicant_to_list_comparator::cmp_arg|Predicant_to_list_comparator::cmp            ## MDEV-28477
 item->element_index(i)->cmp_type() != TIME_RESULT|SIGABRT|cmp_item_row::store_value|cmp_item_row::store_value|Item_func_in::val_int|Item::save_in_field                        ## MDEV-28477
@@ -334,8 +338,14 @@ thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|apply_f
 0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item::send|Protocol::send_result_set_row                                                                                ## MDEV-23187
 0|SIGABRT|json_find_path|Item_func_json_value::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                       ## MDEV-23187
 0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_str_func::val_real|Item_func_plus::real_op                                                                         ## MDEV-23187
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_func_concat::val_str|Item::send                                                                                    ## MDEV-23187
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_func_concat::val_str|Type_handler::Item_send_str                                                                   ## MDEV-23187
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_str_func::val_decimal|Item_func_int_div::val_int                                                                   ## MDEV-23187
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_str_func::val_decimal|VDec::VDec                                                                                   ## MDEV-23187
 0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler::Item_send_str                                                                ## MDEV-23187
 0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item_str_func::val_real                                                                    ## MDEV-23187
+0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item_str_func::val_decimal                                                                 ## MDEV-23187
+0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item_func_concat::val_str                                                                  ## MDEV-23187
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## MDEV-25401
 allocated_status_memory != __null|SIGABRT|PROF_MEASUREMENT::set_label|PROF_MEASUREMENT::PROF_MEASUREMENT|QUERY_PROFILE::new_status|PROFILING::status_change                    ## MDEV-25329
 SIGSEGV|Field_iterator_natural_join::next|Field_iterator_table_ref::next|mark_common_columns|store_top_level_join_columns                                                      ## MDEV-24935

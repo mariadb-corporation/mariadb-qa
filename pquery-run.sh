@@ -1727,6 +1727,7 @@ pquery_test() {
                 INFILE_SHUFFLED="/data/tmp/${WORKNRDIR}_${TRIAL}.sql"
                 WORKNRDIR=
                 echoit "PRE_SHUFFLE_SQL=1: Randomly pre-shuffling SQL (Target: ${INFILE_SHUFFLED})"
+                # TODO: we can save/use the same infile for 10 (or n) trials (configurable setting)
                 RANDOM=$(date +%s%N | cut -b10-19)
                 shuf --random-source=/dev/urandom -n 5141189 ${INFILE} > ${INFILE_SHUFFLED}  # 5141189: max lines
               fi

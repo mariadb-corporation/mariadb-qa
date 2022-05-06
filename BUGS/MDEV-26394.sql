@@ -1,2 +1,1 @@
 SELECT ST_BOUNDARY (1);
-
