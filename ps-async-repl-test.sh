@@ -1,6 +1,7 @@
 #!/bin/bash
 # Created by Ramesh Sivaraman, Percona LLC
-# This will help us to test replication features
+
+# This script tests replication features:
 # Master-Slave replication test
 # Master-Master replication test
 # Multi Source replication test
@@ -9,7 +10,6 @@
 # Master Slave replication using XtraBackup test
 
 # Bash internal configuration
-#
 set -o nounset    # no undefined variables
 
 # Global variables

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 # Updated by Roel Van de Paar, MariaDB
+
 # The name of this script (pquery-prep-red.sh) was kept short so as to not clog directory listings - it's full name would be ./pquery-prepare-reducer.sh
 
 # To aid with correct bug to testcase generation for pquery trials, this script creates a local run script for reducer and sets #VARMOD#.

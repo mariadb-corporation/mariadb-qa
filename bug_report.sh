@@ -1,5 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 
 # Terminate any other bug_report.sh scripts ongoing

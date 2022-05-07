@@ -48,7 +48,7 @@ if [[ ${MDG} -eq 1 ]];then
   fi
 fi
 
-if [ "${TRIAL}" == "" ]; then
+if [ -z "${TRIAL}" ]; then
   echo "This script deletes a given pquery trial completely. Execute this script from within the pquery workdir"
   echo "Example: to delete trial 10 (./10), execute as: ./delete_single_trial.sh 10"
   exit 1
@@ -59,63 +59,62 @@ elif [ ! -d ./${TRIAL} ]; then
   echo "This script deletes a given pquery trial completely. Execute this script from within the pquery workdir"
   echo "Error: trial number '${TRIAL}' was passed as an option to this script. However, no trial ${TRIAL} directory (./${TRIAL}) exists!"
   echo "Will still attempt to delete all related remaining files, if any"
-  exit 1
+fi
+
+# Delete trial directory, provided it does not contain a significant/major error of interest. Scan first
+# Significant/major error scanning. This code is partially duplicated in pquery-results.sh. Update both when making changes.
+ERRORS=
+ERROR_LOG=
+ERRORS_LAST_LINE=
+REGEX_ERRORS_SCAN=
+REGEX_ERRORS_LASTLINE=
+REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
+if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
+REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
+if [ -z "${REGEX_ERRORS_SCAN}" ]; then
+  echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
+    exit 1
+  fi
 else
-  # Delete trial directory, provided it does not contain a significant/major error of interest. Scan first
-  # Significant/major error scanning. This code is partially duplicated in pquery-results.sh. Update both when making changes.
-  ERRORS=
-  ERROR_LOG=
-  ERRORS_LAST_LINE=
-  REGEX_ERRORS_SCAN=
-  REGEX_ERRORS_LASTLINE=
-  REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
-  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
-    REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
-    if [ -z "${REGEX_ERRORS_SCAN}" ]; then
-      echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
-      exit 1
-    fi
-  else
-    echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
+  echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
+  exit 1
+fi
+if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
+  REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
+  if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
+    echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
     exit 1
   fi
-  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
-    REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
-    if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
-      echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
-      exit 1
-    fi
+else
+  echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
+  exit 1
+fi
+if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
+  REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
+fi
+if [[ "${MDG}" -eq 1 ]]; then
+  if [ -z "${MDG_NODE}" ]; then
+    ERROR_LOG="./${TRIAL_DIR}/node*.err"
   else
-    echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
-    exit 1
+    ERROR_LOG="./${TRIAL_DIR}/node${MDG_NODE}.err"
   fi
-  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
-    REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
-  fi
-  if [[ "${MDG}" -eq 1 ]]; then
-    if [ -z "${MDG_NODE}" ]; then
-      ERROR_LOG="./${TRIAL_DIR}/node*.err"
-    else
-      ERROR_LOG="./${TRIAL_DIR}/node${MDG_NODE}.err"
-    fi
-  else
-    ERROR_LOG="./${TRIAL}/log/master.err"
-  fi
-  if [ -r ${ERROR_LOG} ]; then
-    # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
-    ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
-    ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"
-    if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
-      delete_trial
-    else
-      if [ "${2}" != "1" ]; then
-        echo "Not deleting trial ${TRIAL} as one ore more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script!"
-      else
-        delete_trial
-      fi
-    fi
-  else
-    echo "Warning: ${ERROR_LOG} not found, proceeding to delete all other trial files"
+else
+  ERROR_LOG="./${TRIAL}/log/master.err"
+fi
+if [ -r ${ERROR_LOG} ]; then
+  # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
+  ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
+  ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"
+  if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
     delete_trial
+  else
+    if [ "${2}" != "1" ]; then
+      echo "Not deleting trial ${TRIAL} as one ore more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script!"
+    else
+      delete_trial
+    fi
   fi
+else
+  echo "Warning: ${ERROR_LOG} not found, proceeding to delete all other trial files"
+  delete_trial
 fi

@@ -79,6 +79,13 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|charset_info_st::strnncoll|parse_option_list|mysql_prepare_create_table|mysql_create_frm_image                                                                         ## MDEV-28497
+SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncoll_utf8_general_ci|engine_option_value::link                                                   ## MDEV-28497
+SIGSEGV|my_scan_weight_utf8mb3_general_ci|my_scan_weight_utf8mb3_general_ci|my_strnncoll_utf8mb3_general_ci|charset_info_st::strnncoll                                         ## MDEV-28497
+SIGSEGV|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|charset_info_st::strnncoll|engine_option_value::link                                                     ## MDEV-28497
+SIGSEGV|parse_option_list|mysql_prepare_create_table|mysql_create_frm_image|create_table_impl                                                                                  ## MDEV-28497
+SIGSEGV|GRANT_TABLE::GRANT_TABLE|grant_load|grant_reload|reload_acl_and_cache                                                                                                  ## MDEV-28482
+SIGSEGV|get_access_value_from_val_int|GRANT_TABLE::GRANT_TABLE|grant_load|grant_reload                                                                                         ## MDEV-28482
 SIGSEGV|Lex_charset_collation_st::find_bin_collation|Lex_charset_collation_st::find_bin_collation|Column_definition::prepare_charset_for_string|Type_handler_string_result::Column_definition_prepare_stage1 ## MDEV-28481
 SIGSEGV|Lex_charset_collation_st::find_bin_collation|Lex_charset_collation_st::resolved_to_character_set|Column_definition::prepare_charset_for_string|Type_handler_string_result::Column_definition_prepare_stage1 ## MDEV-28481
 0|SIGABRT|Item_row::illegal_method_call|Item_row::val_str|ha_json_table::rnd_init|handler::ha_rnd_init                                                                         ## MDEV-28480

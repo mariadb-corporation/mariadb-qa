@@ -1,5 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+
 # TCP = Test Case Prettify
 # This script prettifies SQL code towards uppercase, and is made as an aid for testcase handling. It is also used by reducer.sh in one of it's testcase reduction/prettifying trials, and if uncessfull, the original testcase is left.
 
