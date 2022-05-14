@@ -19,7 +19,7 @@
 
 # In active development: 2012-2022
 
-# This program has been used to reduce many thousands of SQL based testcases,
+# This program has been used to reduce tens of thousands of SQL based testcases,
 # from tens (or hundreds) of thousands of SQL lines to less then 10 lines, each.
 
 # Learn more at:
@@ -124,9 +124,10 @@ MODE5_COUNTTEXT=1               # Number of times the text should appear (defaul
 MODE5_ADDITIONAL_TEXT=""        # An additional string to look for in the CLI output when using MODE 5. When not using this set to "" (=default)
 MODE5_ADDITIONAL_COUNTTEXT=1    # Number of times the additional text should appear (default=1 = minimum). Only used for MODE=5 and where MODE5_ADDITIONAL_TEXT is not ""
 
-# === FIREWORKS Settings
-FIREWORKS=0                     # Fireworks mode: setups reducer.sh in such a way that any new bug observed, using a given input file, will be stored, and no actual reduction will be done. Expert use only; turning this on changes many settings, and thus changes the operation of reducer completely (default=0 = off)
+# === FireWorks Mode Settings
+FIREWORKS=0                     # FireWorks mode: setups reducer.sh in such a way that any new bug observed, using a given input file, will be stored, and no actual reduction will be done. Expert use only; turning this on changes many settings, and thus changes the operation of reducer completely (default=0 = off)
 FIREWORKS_LINES=200000          # How many lines to slice from the provided input file. Previous testing seems to shows an almost even distribution to original testcase lenght. High number: higher possibility of hitting a bug per run, but slower. Low number: the same, both in reverse. (default=200000, needs testing with 50000, 100000 etc.)
+FIREWORKS_TIMEOUT=450           # Avoid runaway queries or hanging server instances from halting FireWorks runs. Server is terminated after this many seconds (using timeout command)
 
 # === Old ThreadSync options    # No longer commonly used
 TS_TRXS_SETS=0
@@ -976,19 +977,6 @@ options_check(){
     elif [ $PQUERY_MULTI_CLIENT_THREADS -lt 5 ]; then
       echo_out "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to $PQUERY_MULTI_CLIENT_THREADS, $PQUERY_MULTI_CLIENT_THREADS threads for reproducing a multi-threaded issue via random replay seems insufficient. You may want to increase PQUERY_MULTI_CLIENT_THREADS. Proceeding, but this is likely incorrect. Please check"
     fi
-    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-      # TODO: Can be partially automated by checking the testcase length (# of lines) versus STAGE1_LINES
-      echo_out "[Setup] Warning: possible misconfiguration: NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}) yet PQUERY_MULTI is turned on, which in turn ensured FORCE_SKIPV was turned on. Did you set STAGE1_LINES (value: ${STAGE1_LINES}) sufficiently low to ensure progression to stage 2?"
-    fi
-  else
-    if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${FORCE_SKIPV} -ne 0 ]; then
-      if [ ${SKIPSTAGEBELOW} -eq 0 ]; then
-        echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts (i.e. in stage 2). The verify stage will be skipped automatically"
-      else
-        echo_out "[Setup] NR_OF_TRIAL_REPEATS is greater than 1 (${NR_OF_TRIAL_REPEATS}): setting FORCE_SKIPV=0 to ensure immediate progression to repeated trial attempts in stage $[ ${SKIPSTAGEBELOW} + 1 ]"
-      fi
-      export -n FORCE_SKIPV=0
-    fi
   fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
@@ -1122,7 +1110,7 @@ set_internal_options(){  # Internal options: do not modify!
       ulimit -c 0 >/dev/null
     fi
   fi
-  # Runmode (when subreducers will be used in MULTI or FIREWORKS run modes)
+  # Runmode (whetter subreducers will be used in MULTI or FIREWORKS run modes) 
   RUNMODE='MULTI'
   if [ "${FIREWORKS}" == "1" ]; then
     RUNMODE='FIREWORKS'
@@ -1191,7 +1179,7 @@ multi_reducer(){
     echo_out "ASSERT: REDUCE_GLIBC_OR_SS_CRASHES is active, and we ended up in multi_reducer() function. This should not be possible as REDUCE_GLIBC_OR_SS_CRASHES uses a single thread only."
   fi
 
-  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any old related subreducer processes are terminated"
+  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any dangling subreducer processes are terminated"
   kill_multi_reducer
 
   if [ "$STAGE" = "V" ]; then
@@ -1341,13 +1329,15 @@ multi_reducer(){
         if [ "$(ps -p$PID_TO_CHECK | grep -E --binary-files=text -o $PID_TO_CHECK)" != "$PID_TO_CHECK" ]; then
           RESTART_WORKD=$(eval echo $(echo '$WORKD'"$t"))
           SUBR_SVR_START_FAILURE=0
-          if grep -Eqi --binary-files=text ".ERROR. Failed to start mysqld server" $RESTART_WORKD/reducer.log; then  # Check if this was a subreducer who's mysqld failed to start
+          if grep -Eqi --binary-files=text ".ERROR. Failed to start mysqld server" $RESTART_WORKD/reducer.log 2>/dev/null; then  # Check if this was a subreducer who's mysqld failed to start
             SUBR_SVR_START_FAILURE=1
             TMP_RND_FILENAME="err_$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/').txt"  # Subshell creates random number with 6 digits
             cp $RESTART_WORKD/log/master.err /tmp/${TMP_RND_FILENAME}  # Copy the mysqld error log from the subreducer run which had a failed startup to /tmp for research
           fi
-          if grep -E --binary-files=text "Do you already have another mysqld server running on port|Address already in use|Got error: 98" $RESTART_WORKD/log/master.err; then  # A server likely crashed on a different bug
-            echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] this script tried to restart the thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")), but failed due to a TCP/IP port address already in use error, which can be seen in $RESTART_WORKD/log/master.err - The most likely reason for this is that this thread previously crashed on another crash then the one specified in TEXT. It is highly unlikely that this script ran into an actual duplicate port issue due to the advanced checking for the same in multi_reducer(). If this message is looping, you want to:  tail -n5 $(echo "${RESTART_WORKD}" | sed 's|/$||;s|/[^/]\+$|/*/log/master.err|')  repeatadely untill you see a crash, followed by actually checking (i.e. vi) the error log quickly (to avoid overwrite) once you see a crash, to see which crash is being generated, and then stop reducer and modify the search TEXT text or make other required changes (like updating MYEXTRA) to find the original bug being looked for. It may work out better to first reduce for the new issue seen; it is likely the same bug. Alternatively, set this reducer to MODE=4 to look for any crash (provided you are reducing for a crash), with the caveat that if the SQL is capable of introducing two different crashes (and it looks like it is), you may end up with the wrong crash reduced. In that case, try again, or research the crash seen as described using the tail command. This script will now attempt to terminate and restart the thread."
+          if [ "${FIREWORKS}" != "1" ]; then  # We do not want to spam FireWorks mode output
+            if grep -E --binary-files=text "Do you already have another mysqld server running on port|Address already in use|Got error: 98" $RESTART_WORKD/log/master.err 2>/dev/null; then  # A server likely crashed on a different bug
+              echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] this script tried to restart the thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")), but failed due to a TCP/IP port address already in use error, which can be seen in $RESTART_WORKD/log/master.err - The most likely reason for this is that this thread previously crashed on another crash then the one specified in TEXT. It is highly unlikely that this script ran into an actual duplicate port issue due to the advanced checking for the same in multi_reducer(). If this message is looping, you want to:  tail -n5 $(echo "${RESTART_WORKD}" | sed 's|/$||;s|/[^/]\+$|/*/log/master.err|')  repeatadely untill you see a crash, followed by actually checking (i.e. vi) the error log quickly (to avoid overwrite) once you see a crash, to see which crash is being generated, and then stop reducer and modify the search TEXT text or make other required changes (like updating MYEXTRA) to find the original bug being looked for. It may work out better to first reduce for the new issue seen; it is likely the same bug. Alternatively, set this reducer to MODE=4 to look for any crash (provided you are reducing for a crash), with the caveat that if the SQL is capable of introducing two different crashes (and it looks like it is), you may end up with the wrong crash reduced. In that case, try again, or research the crash seen as described using the tail command. This script will now attempt to terminate and restart the thread."
+            fi
           fi
           # Ensure RESTART_WORKD is actually set
           if [ -z "${RESTART_WORKD}" ]; then echo "Assert: RESTART_WORKD is empty."; exit 1; fi
@@ -1375,10 +1365,10 @@ multi_reducer(){
               echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Thread #$t disappeared (mysqld start failed) due to running out of diskspace. Restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))."
               #echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review. Otherwise, please ignore the \"check...\" message just above; the files are no longer there given the restart above)"
             else
-              if [ "${FIREWORKS}" != "1" ]; then  # Only show this is in non-fireworks mode
+              if [ "${FIREWORKS}" != "1" ]; then  # Only show the full output in non-fireworks mode
                 echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happens irregularly on busy servers OR when there is not sufficient diskspace). If the message is repeating continuously, please investigate. reducer has also copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review, though an out of diskpace may not show in there.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
               else
-                echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))"
+                echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared. Thread restarted (PID #$(eval echo $(echo '$MULTI_PID'"$t")))"
               fi
             fi
           else
@@ -1387,7 +1377,7 @@ multi_reducer(){
             else
               # Only show this in non-fireworks mode. In fireworks mode, this outcome is expected.
               # TODO: The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in or "user specified as.*does not exist" (i.e. [ERROR] Event Scheduler: [..@..][test.t1] The user specified as a definer ('..'@'..') does not exist) in log/master.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
-              if grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log; then
+              if grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log 2>/dev/null; then
                 echo_out "Assert: Access denied for user detected in at least one of the subreducers. Check:  grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log  # This issue may be hard to recover from"
               else
                 echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err\n3) mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
@@ -1676,10 +1666,14 @@ init_workdir_and_files(){
       WORKO="$(echo $INPUTFILE | sed 's/$/_out/' | sed "s/^.*\//$(echo $WORKD | sed 's/\//\\\//g')\//")"  # Save output file in individual workdirs
     fi
     echo_out "[Init] Input file: $INPUTFILE"
-    if [ "${WORK_BUG_DIR}" == "${INPUTFULE}" ]; then
-      echo_out "[Init] Output dir: $PWD"
+    if [ "${FIREWORKS}" == "1" ]; then
+      echo_out "[Init] Output dir (FIREWORKS mode): ${NEW_BUGS_SAVE_DIR}"
     else
-      echo_out "[Init] Output dir: $WORK_BUG_DIR"
+      if [ "${WORK_BUG_DIR}" == "${INPUTFULE}" ]; then
+        echo_out "[Init] Output dir: $PWD"
+      else
+        echo_out "[Init] Output dir: $WORK_BUG_DIR"
+      fi
     fi
     # Initial INPUTFILE to WORKF copy
     if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not need a WORKF file (ref cut_fireworks_chunk_and_shuffle and note ${INPUTFILE} is used instead. The reason for setting it up this way is 1) it greatly improves /dev/shm diskspace as WORKF is not created per-thread, thereby saving let's say 450MB for a standard SQL input file, per-thread, 2) There is no need to maintain a working file (WORKF) as the input is never changed/reduced. INPUTFILE is shuffled and chuncked (as per FIREWORKS_LINES setting) and saved as in.tmp, and if a new bug is found, that file is copied to NEW_BUGS_SAVE_DIR.
@@ -1709,7 +1703,7 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  echo_out "[Init] Workdir: $WORKD"
+  echo_out "[Init] Work dir: $WORKD"
   echo_out "[Init] EPOCH ID: $EPOCH (used for various file and directory names)"
   if [ $MDG -eq 1 ]; then
     for i in $(seq 1 "${NR_OF_NODES}"); do
@@ -1724,7 +1718,12 @@ init_workdir_and_files(){
     if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
       echo_out "[Init] Client: $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
     else
-      echo_out "[Init] Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
+      if [ "${FIREWORKS}" != "1" ]; then
+        echo_out "[Init] Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
+        echo_out "[Init] Client example for subreducers (MULTI): $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
+      else
+        echo_out "[Init] Client example: $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
+      fi
     fi
   fi
   if [ $MDG -eq 1 ]; then
@@ -1750,14 +1749,14 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  if [ $FORCE_SKIPV -gt 0 ]; then
+  if [ $FORCE_SKIPV -gt 0 -a "${FIREWORKS}" != "1" ]; then
     if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer
       echo_out "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing multi threaded simplification"
     else  # This is a subreducer (i.e. not multi-threaded)
       echo_out "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing simplification"
     fi
   fi
-  if [ $FORCE_SKIPV -gt 0 -a $FORCE_SPORADIC -gt 0 ]; then echo_out "[Init] FORCE_SKIPV active, so FORCE_SPORADIC is automatically set active also" ; fi
+  if [ $FORCE_SKIPV -gt 0 -a $FORCE_SPORADIC -gt 0 -a "${FIREWORKS}" != "1" ]; then echo_out "[Init] FORCE_SKIPV active, so FORCE_SPORADIC is automatically set active also" ; fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ $FORCE_SKIPV -gt 0 ]; then
       echo_out "[Init] REDUCE_GLIBC_OR_SS_CRASHES active, so automatically skipping VERIFY mode as GLIBC crashes may be sporadic more often (this happens irrespective of FORCE_SKIPV=1)"
@@ -1775,7 +1774,7 @@ init_workdir_and_files(){
       echo_out "[WARNING] ---------------------"
     fi
   else
-    if [ $FORCE_SPORADIC -gt 0 ]; then
+    if [ $FORCE_SPORADIC -gt 0 -a "${FIREWORKS}" != "1" ]; then
       if [ $FORCE_SKIPV -gt 0 ]; then
         echo_out "[Init] FORCE_SPORADIC active. Issue is assumed to be sporadic"
       else
@@ -1786,7 +1785,9 @@ init_workdir_and_files(){
     fi
   fi
   if [ $FORCE_SPORADIC -gt 0 ]; then
-    echo_out "[Init] FORCE_SPORADIC active, so automatically enabled SLOW_DOWN_CHUNK_SCALING to speed up testcase reduction (SLOW_DOWN_CHUNK_SCALING_NR is set to $SLOW_DOWN_CHUNK_SCALING_NR)"
+    if [ "${FIREWORKS}" != "1" ]; then  # Does not make much/any sense to show this when FIREWORKS mode is enabled
+      echo_out "[Init] FORCE_SPORADIC active, so automatically enabled SLOW_DOWN_CHUNK_SCALING to speed up testcase reduction (SLOW_DOWN_CHUNK_SCALING_NR is set to $SLOW_DOWN_CHUNK_SCALING_NR)"
+    fi
   fi
   if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
     echo_out "[Init] PAUSE_AFTER_EACH_OCCURENCE active, so reducer will pause after each occurence of the issue"
@@ -1827,9 +1828,17 @@ init_workdir_and_files(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
     echo_out "[Init] Number of times each individual trial will be attempted: ${NR_OF_TRIAL_REPEATS}x"
   fi
-
   if [ ${NR_OF_TRIAL_REPEATS} -gt 50 ]; then
     echo_out "[Init] Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
+  fi
+  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${FORCE_SKIPV} -ne 0 ]; then
+    echo_out "[Init] NR_OF_TRIAL_REPEATS>1: setting FORCE_SKIPV=0, skipping the verify stage (issue is deemed to be sporadic)"
+    export -n FORCE_SKIPV=0
+  fi
+  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${SKIPSTAGEBELOW} -eq 0 ]; then
+    # As NR_OF_TRIAL_REPEATS is set >1, reducer sets SKIPSTAGEBELOW to 1 to avoid stage 1 single-threaded reduction attempts (with block chuncks, and without trial repeats) in the case where STAGE1_LINES was set to a number less than the (restructured) testcase. This is the most straightforward and best approach to negate this possibility.
+    echo_out "[Init] NR_OF_TRIAL_REPEATS>1: setting SKIPSTAGEBELOW=1, ensuring repeated line-by-line reduction trials"
+    export -n SKIPSTAGEBELOW=1
   fi
   if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echo_out "[Init] Passing the following additional options to mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
   if [ "$MYINIT" != "" ]; then echo_out "[Init] Passing the following additional options to mysqld initialization: $MYINIT"; fi
@@ -1983,6 +1992,9 @@ init_workdir_and_files(){
 }
 
 generate_run_scripts(){
+  if [ "${FIREWORKS}" == "1" ]; then  # No need to generate run sripts in FIREWORKS mode
+    return 0
+  fi
   # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a mysql cli), _stop (stop mysqld). _start (starts mysqld)
   # (start_mysqld_main and start_valgrind_mysqld_main). Togheter these scripts can be used for executing the final testcase ($WORKO_start > $WORKO_run)
   if [[ ${MDG} -eq 1 ]]; then
@@ -2014,7 +2026,7 @@ generate_run_scripts(){
   echo "MID=\`find \${BASEDIR} -maxdepth 2 -name mariadb-install-db -o -name mysql_install_db | head -n1\`" >> $WORK_INIT
   echo "VERSION=\"\`\$BIN --version | grep -E --binary-files=text -oe '[58]\.[15670]' | head -n1\`\"" >> $WORK_INIT
   echo "VERSION2=\"\`\$BIN --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9]' | head -n1\`\"" >> $WORK_INIT
-  echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then MID_OPTIONS='--no-defaults --initialize-insecure ${MYINIT}'; elif [ \"\$VERSION\" == \"5.6\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION}\" == \"5.5\" ]; then MID_OPTIONS='--force ${MYINIT}';elif [ \"\${VERSION2}\" == \"10.1\" -o \"\${VERSION2}\" == \"10.2\" -o \"\${VERSION2}\" == \"10.3\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION2}\" == \"10.4\" -o \"\${VERSION2}\" == \"10.5\" -o \"\${VERSION2}\" == \"10.6\" -o \"\${VERSION2}\" == \"10.7\" -o \"\${VERSION2}\" == \"10.8\" ]; then MID_OPTIONS='--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}'; else MID_OPTIONS='${MYINIT}'; fi" >> $WORK_INIT
+  echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then MID_OPTIONS='--no-defaults --initialize-insecure ${MYINIT}'; elif [ \"\$VERSION\" == \"5.6\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION}\" == \"5.5\" ]; then MID_OPTIONS='--force ${MYINIT}';elif [ \"\${VERSION2}\" == \"10.1\" -o \"\${VERSION2}\" == \"10.2\" -o \"\${VERSION2}\" == \"10.3\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION2}\" == \"10.4\" -o \"\${VERSION2}\" == \"10.5\" -o \"\${VERSION2}\" == \"10.6\" -o \"\${VERSION2}\" == \"10.7\" -o \"\${VERSION2}\" == \"10.8\" -o \"\${VERSION2}\" == \"10.9\" ]; then MID_OPTIONS='--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}'; else MID_OPTIONS='${MYINIT}'; fi" >> $WORK_INIT
   if [[ ${MDG} -eq 1 ]]; then
     for i in $(seq 1 ${NR_OF_NODES}); do
       mkdir -p /dev/shm/${EPOCH}/tmp${i}
@@ -2047,14 +2059,26 @@ generate_run_scripts(){
       echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
       echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
       echo "export LD_LIBRARY_PATH=\${BASEDIR}/lib" >> $WORK_RUN_PQUERY
-      echo "# RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829" >> $WORK_RUN_PQUERY
-      echo "SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=\$[ \$[ \$(wc -l ./${EPOCH}.sql | awk '{print \$1}') * 13 / 10 ] + 100 ]" >> $WORK_RUN_PQUERY
-      if [ $PQUERY_MULTI -eq 1 ]; then
-        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
-        echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
-      else
-        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; else PQUERY_SHUFFLE="--no-shuffle"; fi
+      PQUERY_SHUFFLE=
+      if [ $PQUERY_MULTI -eq 0 ]; then
+        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 0 ]; then
+          PQUERY_SHUFFLE="--no-shuffle"
+        else 
+          echo "# RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829" >> $WORK_RUN_PQUERY
+          echo "SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=\$[ \$[ \$(wc -l ./${EPOCH}.sql | awk '{print \$1}') * 13 / 10 ] + 100 ]" >> $WORK_RUN_PQUERY
+          PQUERY_SHUFFLE="--queries-per-thread=\${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"
+        fi
         echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=1 --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
+      else
+        if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then 
+          PQUERY_SHUFFLE="--no-shuffle"
+        else 
+          echo "# RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829" >> $WORK_RUN_PQUERY
+          echo "SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=\$[ \$[ \$(wc -l ./${EPOCH}.sql | awk '{print \$1}') * 13 / 10 ] + 100 ]" >> $WORK_RUN_PQUERY
+          PQUERY_SHUFFLE="--queries-per-thread=\${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"
+        fi
+        # RV 09/04/22: Something may be amiss with the SHUFFLE_OVERRUN_PREVENTION_MAX_LINES code (i.e. the addition of --queries-per-thread=x in 3 places of the code), but only if true or semi-true multi-threaded reduction relies on ongoing queries to be sent to the server instance being tested, rather than a deterministic number (i.e. the ~lenght of the testcase). If so, that would mean that multi-threaded reduction no longer would function after https://github.com/mariadb-corporation/mariadb-qa/commit/9bc502e7edf2a12022e806e21839463b94f51e8c implementation. To be verified/checked. TODO
+        echo "$(echo $PQUERY_LOC | sed "s|.*/|./${EPOCH}_|") --database=test --infile=./${EPOCH}.sql $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES --user=root --socket=${EPOCH_SOCKET} --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS" >> $WORK_RUN_PQUERY
       fi
       chmod +x $WORK_RUN_PQUERY
     fi
@@ -2174,7 +2198,7 @@ start_mysqld_or_valgrind_or_mdg(){
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
           echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, assuming this option set is required"
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/master.err, $WORKD/log/mysqld.out and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
+          echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/master.err and $WORKD/log/mysqld.out and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
           echo "Terminating now."
           exit 1
         fi
@@ -2805,23 +2829,44 @@ run_sql_code(){
       if [ $MODE -eq 2 ]; then
         USE_PQUERYE2_CLIENT_LOGGING="--log-all-queries --log-failed-queries"
       fi
-      # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
-      SHUFFLE_OVERRUN_PREVENTION_MAX_LINES=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]
       if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-        if [ $PQUERY_MULTI -eq 1 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
-          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
-        else
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; else PQUERY_SHUFFLE="--no-shuffle"; fi
+        PQUERY_SHUFFLE=
+        if [ $PQUERY_MULTI -eq 0 ]; then
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 0 ]; then 
+            PQUERY_SHUFFLE="--no-shuffle"
+          else
+            # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+          fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
+        else
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then
+            PQUERY_SHUFFLE="--no-shuffle"
+          else
+            # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+          fi
+          # RV 09/04/22: Something may be amiss with the SHUFFLE_OVERRUN_PREVENTION_MAX_LINES code (i.e. the addition of --queries-per-thread=x in 3 places of the code), but only if true or semi-true multi-threaded reduction relies on ongoing queries to be sent to the server instance being tested, rather than a deterministic number (i.e. the ~lenght of the testcase). If so, that would mean that multi-threaded reduction no longer would function after https://github.com/mariadb-corporation/mariadb-qa/commit/9bc502e7edf2a12022e806e21839463b94f51e8c implementation. To be verified/checked. TODO
+          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         fi
       else
-        if [ $PQUERY_MULTI -eq 1 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 1 ]; then PQUERY_SHUFFLE="--no-shuffle"; else PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; fi
-          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
-        else
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then PQUERY_SHUFFLE="--queries-per-thread=${SHUFFLE_OVERRUN_PREVENTION_MAX_LINES}"; else PQUERY_SHUFFLE="--no-shuffle"; fi
+        if [ $PQUERY_MULTI -eq 0 ]; then
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 0 ]; then
+            PQUERY_SHUFFLE="--no-shuffle"
+          else 
+            # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+          fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
+        else
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 1 ]; then
+            PQUERY_SHUFFLE="--no-shuffle"
+          else 
+            # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+          fi
+          # RV 09/04/22: Something may be amiss with the SHUFFLE_OVERRUN_PREVENTION_MAX_LINES code (i.e. the addition of --queries-per-thread=x in 3 places of the code), but only if true or semi-true multi-threaded reduction relies on ongoing queries to be sent to the server instance being tested, rather than a deterministic number (i.e. the ~lenght of the testcase). If so, that would mean that multi-threaded reduction no longer would function after https://github.com/mariadb-corporation/mariadb-qa/commit/9bc502e7edf2a12022e806e21839463b94f51e8c implementation. To be verified/checked. TODO
+          $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         fi
       fi
     else
@@ -4022,6 +4067,16 @@ fireworks_setup(){
     echo_out "[Init] > Failed to read KNOWN_BUGS_LOC file at '${KNOWN_BUGS_LOC}'. Please check. Terminating."
     exit 1
   fi
+  if [ -z "${FIREWORKS_TIMEOUT}" ]; then
+    echo_out "[Init] > FIREWORKS_TIMEOUT is empty (required). Default: 450 (seconds)"
+    exit 1
+  fi
+  if [ "$(echo "${FIREWORKS_TIMEOUT}" | grep -o '[0-9]\+')" != "${FIREWORKS_TIMEOUT}" ]; then
+    echo_out "[Init] > FIREWORKS_TIMEOUT is non-numeric. Set it to the desired number of seconds. Default: 450"
+    exit 1
+  fi
+  echo_out "[Init] > TIMEOUT_COMMAND=\"timeout -k${FIREWORKS_TIMEOUT} -s9 ${FIREWORKS_TIMEOUT}s\": runaway/hanging instances protection"
+  TIMEOUT_COMMAND="timeout -k${FIREWORKS_TIMEOUT} -s9 ${FIREWORKS_TIMEOUT}s"
   echo_out "[Init] > STAGE1_LINES=-1: Avoid STAGE1 from ever terminating (required)"
   STAGE1_LINES=-1
   echo_out "[Init] > MULTI_THREADS=25: If system overload is seen, decrease this in-code (preference)"
@@ -4083,8 +4138,12 @@ fireworks_setup(){
                            echo_out "[Init] Run mode: MODE=3 with REDUCE_GLIBC_OR_SS_CRASHES=1: console typscript log"
                            echo_out "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then
+      if [ "${FIREWORKS}" != "1" ]; then
                            echo_out "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump matching with new_text_string.sh"
                            echo_out "[Init] Looking for this string: '$TEXT' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
+      else
+                           echo_out "[Init] Run mode: FireWorks with MODE=3, using new_text_string.sh for UniqueID generation"
+      fi
     else
                            echo_out "[Init] Run mode: MODE=3: mysqld error log"
                            echo_out "[Init] Looking for this string: '$TEXT' in mysqld error log output (@ $WORKD/log/master.err when MULTI mode is not active)"; fi; fi
@@ -4099,7 +4158,11 @@ fireworks_setup(){
                            echo_out "[Init] Looking for this string: '$TEXT' in Valgrind output (@ $WORKD/valgrind.out when MULTI mode is not active)"; fi
   if [ $MODE -eq 0 ]; then echo_out "[Init] Run mode: MODE=0: Timeout/hang/shutdown"
                            echo_out "[Init] Looking for trial durations longer then ${TIMEOUT_CHECK_REAL} seconds (with timeout trigger @ ${TIMEOUT_CHECK} seconds)"; fi
-  echo_out "[Info] Leading [] = No bug/issue found yet | [*] = Bug/issue at least seen once"
+  if [ "${FIREWORKS}" != "1" ]; then
+    echo_out "[Info] Leading [] = No bug/issue found yet, leading [*] = bug/issue at least seen once"
+  else
+    echo_out "[Info] Leading [] = No bug found yet, leading [*] = at least one new previously unknown bug discovered"
+  fi
   report_linecounts
   if [ "$SKIPV" != "1" ]; then
     verify $1
@@ -4223,19 +4286,22 @@ fi
 if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
   if [ "${FIREWORKS}" != "1" ]; then
     NEXTACTION="& try removing next random line(set)"
+    STAGE=1
   else
     NEXTACTION="& create next FIREWORKS random lineset"
+    STAGE='F'
   fi
-  STAGE=1
   TRIAL=1
   if [ $LINECOUNTF -ge $STAGE1_LINES -o $PQUERY_MULTI -gt 0 -o $FORCE_SKIPV -gt 0 -o $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE (trial duration depends on initial input file size)"
+    if [ "${FIREWORKS}" != "1" ]; then  # FIREWORKS mode will always stay in stage 1, and msg is nonsensical for FW
+      echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE (trial duration depends on initial input file size)"
+    fi
     while [ $LINECOUNTF -ge $STAGE1_LINES ]; do
       if [ $LINECOUNTF -eq $STAGE1_LINES  ]; then NEXTACTION="& Progress to the next stage"; fi
       if [ $TRIAL -gt 1 -a "${FIREWORKS}" != "1" ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
       if [ "$MULTI_REDUCER" != "1" -a $SPORADIC -eq 1 -a $REDUCE_GLIBC_OR_SS_CRASHES -le 0 ]; then
         # This is the parent/main reducer AND the issue is sporadic (so; need to use multiple threads). Disabled for REDUCE_GLIBC_OR_SS_CRASHES as it is always single-threaded
-        if [ "${FIREWORKS}" == "1" ]; then  # Fireworks mode does not use WORKF but INPUTFILE
+        if [ "${FIREWORKS}" == "1" ]; then  # FireWorks mode does not use WORKF but INPUTFILE
           multi_reducer ${INPUTFILE}
         else
           multi_reducer ${WORKF}  # $WORKT is not used by the main reducer in this case. The subreducer uses $WORKT it's own session however (in the else below). Also note that the use of $WORKF is necessary due to the dropc code in init_workdir_and_files() - i.e. we need the modified WORKF file, not the original INPUTFILE.

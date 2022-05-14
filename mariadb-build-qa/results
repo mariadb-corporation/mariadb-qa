@@ -1,6 +1,10 @@
 #!/bin/bash
 DIR=/data
 MARIADB_QA="/home/$(whoami)/mariadb-qa"  # Adjust if needed, though storing mariadb-qa in ~/mariadb-qa is highly recommended
+if [ ! -r results.list ]; then
+  echo "Assert: results.list does not exist. Terminating"
+  exit 1
+fi
 source results.list  # This file should contain lines like: 
                      # MON[1]=532099
                      # MON[2]=398230
