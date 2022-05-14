@@ -42,7 +42,7 @@ MODE=4                          # Required. Most often used modes: 4=Any crash (
 TEXT="somebug"                  # The text string you want reducer to search for, in specific locations depending on the MODE selected. Regex capable. Use with MODEs=1,2,3,5,6,7,8
 WORKDIR_LOCATION=1              # 0: use /tmp (disk bound) | 1: use tmpfs (default) | 2: use ramfs (needs setup) | 3: use storage at WORKDIR_M3_DIRECTORY
 WORKDIR_M3_DIRECTORY="/data"     # Only relevant if WORKDIR_LOCATION is set to 3, use a specific directory/mount point
-MYEXTRA="--no-defaults --log-output=none --sql_mode=ONLY_FULL_GROUP_BY"  # mysqld options to be used (and reduced). Note: TokuDB plugin loading is checked/done automatically
+MYEXTRA="--no-defaults --log-output=none --sql_mode="  # mysqld options to be used (and reduced). Note: TokuDB plugin loading is checked/done automatically. # RV 14/05/22 ONLY_FULL_GROUP_BY removed 
 MYINIT=""                       # Extra options to pass to mysqld AND at data dir init time. See pquery-run-*.conf for more info
 BASEDIR="${PWD}"                # Path to the MySQL BASE directory to be used
 DISABLE_TOKUDB_AUTOLOAD=0       # On/Off (1/0) Prevents mysqld startup issues when using standard MySQL server (i.e. no TokuDB available) with a testcase containing TokuDB SQL

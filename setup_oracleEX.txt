@@ -1,0 +1,65 @@
+# This overview is not intended to be an executable script but a guide. Doing so would likely fail.
+
+# https://www.oracle.com/database/technologies/xe-downloads.html
+# https://www.oracle.com/database/technologies/appdev/xe/quickstart.html
+# With thanks, http://sampig.github.io/tutorial/2019/06/17/install-oracle-express-in-ubuntu
+
+# The procedure below has been modified from the original
+sudo su  # i.e. all or most commands below expect sudo
+apt install alien libaio1 unixodbc  # alien is a tool which can convert rpm to deb
+alien --scripts -d oracle-database-xe-21c-1.0-1.ol8.x86_64.rpm  # --scripts converts install scripts, -d converts rpm-2-deb (default). Note that this takes a *very* long time. Requires root. Sourve package ~2.2GB, target package ~2.1GB
+echo '#!/bin/bash
+# Oracle 11gR2 XE installer chkconfig hack for Ubuntu
+file=/etc/init.d/oracle-xe
+if [[ ! `tail -n1 $file | grep INIT` ]]; then
+    echo >> $file
+    echo '### BEGIN INIT INFO' >> $file
+    echo '# Provides: OracleXE' >> $file
+    echo '# Required-Start: $remote_fs $syslog' >> $file
+    echo '# Required-Stop: $remote_fs $syslog' >> $file
+    echo '# Default-Start: 2 3 4 5' >> $file
+    echo '# Default-Stop: 0 1 6' >> $file
+    echo '# Short-Description: Oracle 11g Express Edition' >> $file
+    echo '### END INIT INFO' >> $file
+fi
+update-rc.d oracle-xe defaults 80 01' > /sbin/chkconfig && chmod 755 /sbin/chkconfig
+echo '# Oracle 11g XE kernel parameters 
+fs.file-max=6815744  
+net.ipv4.ip_local_port_range=9000 65000  
+kernel.sem=250 32000 100 128 
+kernel.shmmax=536870912' > /etc/sysctl.d/60-oracle.conf
+service procps start
+sysctl -q fs.file-max  # Should show 6815744 or higher
+sysctl -q kernel.shmmax  # Should show 536870912 or higher
+# Now create /dev/shm at least 2GB (already setup on QA servers, ref end of mariadb-qa/setup_server.sh Then
+ln -s /usr/bin/awk /bin/awk 
+mkdir -p /var/lock/subsys 
+touch /var/lock/subsys/listener
+# Now reboot
+sudo su
+# Next command will show: "ln: failed to create symbolic link '/bin/awk': File exists error" (fine)
+dpkg --install oracle-database-xe-21c_1.0-2_amd64.deb  
+/etc/init.d/oracle-xe-21c configure   # Note the '21c' may differ based on what was installed
+# Provide SYS, SYSTEM and PDBADMIN password. qa
+# If you get any errors, check troubleshooting below, then re-attempt configure (cmd above)
+# If you get this error: [WARNING] ORA-00821: Specified value of sga_target xM is too small, needs to be at least xM
+# Then vi /opt/oracle/product/21c/dbhomeXE/assistants/dbca/templates/XE_Database.dbc and search for sga_target and increase
+# If you get this warning: [WARNING] [DBT-11207] Specified SGA size is greater than the shmmax on the system. The database creation might fail with "ORA-27125 - Unable to create shared memory segment error".
+# Then add the following to /etc/sysctl.conf:
+# For oracleXE
+kernel.shmmax=21474836479
+kernel.shmall=10485760
+vm.nr_hugepages=10240
+kernel.shmmni=32768  # This one should already be set/configured by mariadb-qa/setup_server.sh
+# Then execute:
+sysctl --system
+# If you get this warning: [WARNING] ORA-56752: Oracle Database Express Edition (XE) memory parameter invalid or not specified | ORA-01078: failure in processing system parameters
+# Then reconfigure /opt/oracle/product/21c/dbhomeXE/assistants/dbca/templates/XE_Database.dbc to these settings:
+         <initParam name="sga_max_size" value="1600" unit="MB"/>
+         <initParam name="sga_target" value="1600" unit="MB"/>
+...
+         <initParam name="pga_aggregate_target" value="400" unit="MB"/>
+# Note that sga_max_size setting was added (may not be required). note that total of sga+pga must be <=2GB
+# Note you can use /etc/init.d/oracle-xe-21c {start|stop|restart|configure|delete|status} to action various things
+
+# Regrettably, this still fails with [WARNING] ORA-03113: end-of-file on communication channel/[FATAL] ORA-03114: not connected to ORACLE in spite of showing x% (even 100%) complete. No other cause found including by checking extended logs at /opt/oracle/cfgtoollogs/dbca/XE/trace* and online
