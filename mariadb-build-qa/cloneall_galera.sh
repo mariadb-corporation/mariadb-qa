@@ -3,11 +3,12 @@
 # Modified by Ramesh Sivaraman, MariaDB
 
 MD_REPO=${1}
+
 clone_repos(){
   if [[ "$MD_REPO" == "ES" ]]; then
     git clone --depth=1 --recurse-submodules -j8 --branch=$1-enterprise https://$GIT_USERNAME@github.com/mariadb-corporation/MariaDBEnterprise  $1 &
     #clone galera repo
-    if [[ ${1} =~ 10.[4-8] ]]; then
+    if [[ ${1} =~ 10.[4-9] || ${1} =~ 10.10 ]]; then
       git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-4.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git $1_galera &
     else
       git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-3.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git $1_galera &
@@ -43,12 +44,13 @@ clone_multi_repos(){
   rm -Rf 10.6 10.6_galera
   rm -Rf 10.7 10.7_galera
   rm -Rf 10.8 10.8_galera
+  rm -Rf 10.9 10.9_galera
   sleep 0.1
   local GIT_USERNAME
   local GIT_ASKPASS
   echo ""
   if [[ $MD_REPO == "ES" ]]; then
-    read -p 'Github username: ' GIT_USERNAME
+    read -p 'Github username (not email): ' GIT_USERNAME
     read -sp 'Github authentication token: ' GIT_ASKPASS
   fi
   clone_repos 10.2 &
@@ -58,6 +60,7 @@ clone_multi_repos(){
   clone_repos 10.6 &
   clone_repos 10.7 &
   clone_repos 10.8 &
+  #clone_repos 10.9 &
   unset GIT_USERNAME
   unset GIT_ASKPASS
   GIT_USERNAME=''

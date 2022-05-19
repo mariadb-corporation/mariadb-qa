@@ -4599,10 +4599,10 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 102 ]; then sed "s/ DEFAULT NULL/ /gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 103 ]; then sed "s/ DEFAULT 0/ /i" $WORKF > $WORKT
     elif [ $TRIAL -eq 104 ]; then sed "s/ DEFAULT 0/ /gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 105 ]; then sed "s/ DEFAULT "2038-01-19 03:14:07"/ /i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 106 ]; then sed "s/ DEFAULT "2038-01-19 03:14:07"/ /gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 107 ]; then sed "s/ DEFAULT "1970-01-01 00:00:01"/ /i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 108 ]; then sed "s/ DEFAULT "1970-01-01 00:00:01"/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 105 ]; then sed "s/ DEFAULT .2038-01-19 03:14:07./ /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 106 ]; then sed "s/ DEFAULT .2038-01-19 03:14:07./ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 107 ]; then sed "s/ DEFAULT .1970-01-01 00:00:01./ /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 108 ]; then sed "s/ DEFAULT .1970-01-01 00:00:01./ /gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 109 ]; then sed "s/ DEFAULT CURRENT_TIMESTAMP/ /i" $WORKF > $WORKT
     elif [ $TRIAL -eq 110 ]; then sed "s/ DEFAULT CURRENT_TIMESTAMP/ /gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 111 ]; then sed "s/ ON UPDATE CURRENT_TIMESTAMP/ /i" $WORKF > $WORKT
@@ -4613,16 +4613,16 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 116 ]; then sed "s/CHARACTER SET[ ]*.*[ ]*COLLATE[ ]*.*\([, ]\)/\1/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 117 ]; then sed "s/CHARACTER SET[ ]*.*\([, ]\)/\1/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 118 ]; then sed "s/COLLATE[ ]*.*\([, ]\)/\1/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 119 ]; then sed "s/ LEFT / /gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 120 ]; then sed "s/ RIGHT / /gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 121 ]; then sed "s/ OUTER / /gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 122 ]; then sed -e "s/ INNER / /gi" -e "s/ CROSS / /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 119 ]; then awk '{ for (i=1; i<=NF; ++i) if ($i ~ "^v[0-9]+$") $i = (seen[$i] ? seen[$i] : seen[$i] = "v" ++n) }; 1' $WORKF > $WORKT  # With thanks, https://unix.stackexchange.com/a/702361/241016 (Kusalananda) - simplifies all fuzzer 'v[0-9]+' aliases etc.
+    elif [ $TRIAL -eq 120 ]; then sed "s|\(v[0-9]\+\)| \1 |g" $WORKF | awk '{ for (i=1; i<=NF; ++i) if ($i ~ "^v[0-9]+$") $i = (seen[$i] ? seen[$i] : seen[$i] = "v" ++n) }; 1' > $WORKT 
+    elif [ $TRIAL -eq 121 ]; then sed "s/DROP DATABASE transforms;CREATE DATABASE transforms;//" $WORKF > $WORKT
+    elif [ $TRIAL -eq 122 ]; then sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
     elif [ $TRIAL -eq 123 ]; then sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
     elif [ $TRIAL -eq 124 ]; then sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
     elif [ $TRIAL -eq 125 ]; then sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
     elif [ $TRIAL -eq 126 ]; then sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
-    elif [ $TRIAL -eq 127 ]; then sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
-    elif [ $TRIAL -eq 128 ]; then sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
+    elif [ $TRIAL -eq 127 ]; then sed "s/[0-9]\+\.//" $WORKF > $WORKT
+    elif [ $TRIAL -eq 128 ]; then sed "s/\.[0-9]\+//" $WORKF > $WORKT
     elif [ $TRIAL -eq 129 ]; then sed "s/alias/a/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 130 ]; then sed "s/SELECT .* /SELECT * /gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 131 ]; then sed "s/SELECT .* /SELECT * /i" $WORKF > $WORKT
@@ -4676,40 +4676,98 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 179 ]; then sed "s/BETWEEN[^A]\+AND/AND/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 180 ]; then sed "s/BETWEEN[^A]\+AND/AND/i" $WORKF > $WORKT
     elif [ $TRIAL -eq 181 ]; then sed "s/BETWEEN[^A]\+AND/AND/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 182 ]; then sed "s/FOLLOWING//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 183 ]; then sed "s/FOLLOWING//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 184 ]; then sed "s/DESC//gi;s/ASC//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 185 ]; then sed "s/DESC//i;s/ASC//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 182 ]; then sed "s/DESC//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 183 ]; then sed "s/DESC//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 184 ]; then sed "s/ASC//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 185 ]; then sed "s/ASC//i" $WORKF > $WORKT
     elif [ $TRIAL -eq 186 ]; then sed "s/SELECT[^F]\+FROM/SELECT * FROM/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 187 ]; then sed "s/SELECT[^F]\+FROM/SELECT * FROM/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 188 ]; then sed "s/SELECT[^F]\+FROM/SELECT * FROM/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 189 ]; then sed "s/SELECT[^F]\+FROM/SELECT * FROM/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 190 ]; then sed "s/NATURAL//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 191 ]; then sed "s/NATURAL//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 192 ]; then sed "s/NATURAL//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 193 ]; then sed "s/NATURAL//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 194 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/gi;s/BETWEEN([^)]\+)/BETWEEN 1/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 195 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^)]\+)/BETWEEN 1/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 196 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^)]\+)/BETWEEN 1/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 197 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^()]\+)/BETWEEN 1/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 198 ]; then sed "s/AS[ \t]\+(/AS(/gi;s/AS([^)]\+)/AS vvv1/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 199 ]; then sed "s/AS[ \t]\+(/AS(/i;s/AS([^)]\+)/AS vvv2/i" $WORKF > $WORKT  # vvv2: defensive coding
-    elif [ $TRIAL -eq 200 ]; then sed "s/AS[ \t]\+(/AS(/i;s/AS([^)]\+)/AS vvv3/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 201 ]; then sed "s/AS[ \t]\+(/AS(/i;s/AS([^()]\+)/AS vvv4/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 202 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1)/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 203 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 204 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 205 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 206 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t)/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 207 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 208 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 209 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1 FROM t)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 210 ]; then sed "s/(SELECT[^)]\+)/(SELECT * FROM t)/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 211 ]; then sed "s/(SELECT[^)]\+)/(SELECT * FROM t)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 212 ]; then sed "s/(SELECT[^)]\+)/(SELECT * FROM t)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 213 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM t)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 214 ]; then awk '{ for (i=1; i<=NF; ++i) if ($i ~ "^v[0-9]+$") $i = (seen[$i] ? seen[$i] : seen[$i] = "v" ++n) }; 1' $WORKF > $WORKT  # With thanks, https://unix.stackexchange.com/a/702361/241016 (Kusalananda) - simplifies all fuzzer 'v[0-9]+' aliases etc.
-    elif [ $TRIAL -eq 215 ]; then sed "s/DROP DATABASE transforms;CREATE DATABASE transforms;//" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    elif [ $TRIAL -eq 188 ]; then sed "s/SELECT[^F]\+FROM/SELECT 1 FROM/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 189 ]; then sed "s/SELECT[^F]\+FROM/SELECT 1 FROM/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 190 ]; then sed "s/LEFT/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 191 ]; then sed "s/LEFT/ /g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 192 ]; then sed "s/RIGHT/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 193 ]; then sed "s/RIGHT/ /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 194 ]; then sed "s/OUTER/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 195 ]; then sed "s/OUTER/ /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 196 ]; then sed "s/INNER/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 197 ]; then sed "s/INNER/ /g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 198 ]; then sed "s/CROSS/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 199 ]; then sed "s/CROSS/ /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 200 ]; then sed "s/NATURAL/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 201 ]; then sed "s/NATURAL/ /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 202 ]; then sed "s/FOLLOWING/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 203 ]; then sed "s/FOLLOWING/ /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 204 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/gi;s/BETWEEN([^)]\+)/BETWEEN 1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 205 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^)]\+)/BETWEEN 1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 206 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/gi;s/BETWEEN([^()]\+)/BETWEEN 1/gi" $WORKF > $WORKT  # i.e. single instances, potentially later in the file, which do not have double (())
+    elif [ $TRIAL -eq 207 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^()]\+)/BETWEEN 1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 208 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^)]\+)[^)]\+)/BETWEEN 1/gi" $WORKF > $WORKT  # i.e. double: (())
+    elif [ $TRIAL -eq 209 ]; then sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^)]\+)[^)]\+)/BETWEEN 1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 210 ]; then sed "s/AS[ \t]\+(/AS(/gi;s/AS([^)]\+)/AS vvv1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 211 ]; then sed "s/AS[ \t]\+(/AS(/i;s/AS([^)]\+)/AS vvv2/i" $WORKF > $WORKT  # vvv2: defensive coding
+    elif [ $TRIAL -eq 212 ]; then sed "s/AS[ \t]\+(/AS(/gi;s/AS([^()]\+)/AS vvv1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 213 ]; then sed "s/AS[ \t]\+(/AS(/i;s/AS([^()]\+)/AS vvv2/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 214 ]; then sed "s/AS[ \t]\+(/AS(/i;s/AS([^)]\+)[^)]\+)/AS vvv4/i" $WORKF > $WORKT  # i.e. double: (())
+    elif [ $TRIAL -eq 215 ]; then sed "s/AS[ \t]\+(/AS(/i;s/AS([^)]\+)[^)]\+)/AS vvv4/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 216 ]; then sed "s/WITH[^)]\+)//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 217 ]; then sed "s/WITH[^)]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 218 ]; then sed "s/WITH[^)]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 219 ]; then sed "s/WITH[^*]\+([^()]\+)//gi" $WORKF > $WORKT  # WITH followed by text followed by (
+    elif [ $TRIAL -eq 220 ]; then sed "s/WITH[^*]\+([^()]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 221 ]; then sed "s/WITH[^*]\+([^()]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 222 ]; then sed "s/WITH[^)]\+)[^)]\+)//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 223 ]; then sed "s/WITH[^)]\+)[^)]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 224 ]; then sed "s/WITH[^)]\+)[^)]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 225 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 226 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 227 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 228 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 229 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 230 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 231 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 232 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 233 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 234 ]; then sed "s/(SELECT[^(]\+)/(SELECT (/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 235 ]; then sed "s/(SELECT[^(]\+)/(SELECT (/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 236 ]; then sed "s/(SELECT[^(]\+)/(SELECT (/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 237 ]; then sed "s/(SELECT[^()]\+)/(SELECT (/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 238 ]; then sed "s/(SELECT[^()]\+)/(SELECT (/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 239 ]; then sed "s/(SELECT[^()]\+)/(SELECT (/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 240 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 241 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 242 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t1)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 243 ]; then sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 244 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1 FROM t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 245 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1 FROM t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 246 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1 FROM t1)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 247 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1 FROM t1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 248 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1 FROM t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 249 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1 FROM t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 250 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1 FROM t1)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 251 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1 FROM t1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 252 ]; then sed "s/(SELECT[^(]\+)/(SELECT 1 FROM (/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 253 ]; then sed "s/(SELECT[^(]\+)/(SELECT 1 FROM (/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 254 ]; then sed "s/(SELECT[^(]\+)/(SELECT 1 FROM (/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 255 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1 FROM (/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 256 ]; then sed "s/(SELECT[^()]\+)/(SELECT 1 FROM (/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 257 ]; then sed "s/(SELECT[^)]\+)/(SELECT * FROM t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 258 ]; then sed "s/(SELECT[^)]\+)/(SELECT * FROM t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 259 ]; then sed "s/(SELECT[^)]\+)/(SELECT * FROM t1)/ig" $WORKF > $WORKT
+    elif [ $TRIAL -eq 260 ]; then sed "s/(SELECT[^)]\+)/(SELECT * FROM t1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 261 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 262 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 263 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM t1)/ig" $WORKF > $WORKT
+    elif [ $TRIAL -eq 264 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM t1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 265 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT * FROM t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 266 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT * FROM t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 267 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT * FROM t1)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 268 ]; then sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT * FROM t1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 269 ]; then sed "s/(SELECT[^(]\+)/(SELECT * FROM (/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 270 ]; then sed "s/(SELECT[^(]\+)/(SELECT * FROM (/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 271 ]; then sed "s/(SELECT[^(]\+)/(SELECT * FROM (/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 272 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM (/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 273 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM (/i" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`
