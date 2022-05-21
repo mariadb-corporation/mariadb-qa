@@ -1,0 +1,152 @@
+# Install PostgreSQL 12 + PostgreSQL ODBC + UnixODBC on Ubuntu
+sudo apt install unixodbc postgresql postgresql-contrib odbc-postgresql
+
+# Location of PostgreSQL 12 config files
+ls /etc/postgresql/12/main/
+
+# Check service is active
+service postgresql status  # or stop/start/reload/force-reload
+
+# Access PostgreSQL shell
+sudo -u postgres psql
+
+# In the shell, set new password for user postgres
+ALTER USER postgres PASSWORD '1234';
+\q
+
+# Change to postgres user using sudo
+sudo su postgres
+
+# Create mtr user (as postgres user using sudo)
+createuser -a -d -U postgres -P mtr  # mtr x2 
+exit  # exit the sudo session
+
+# Create DB's relevant to MTR
+sudo -u postgres psql
+CREATE DATABASE test WITH OWNER mtr;
+CREATE DATABASE auto_test_remote WITH OWNER mtr;
+CREATE DATABASE auto_test_remote2 WITH OWNER mtr;
+CREATE DATABASE auto_test_remote3 WITH OWNER mtr;
+\q
+
+# An alternatve approach to the above may be: 
+# createdb -O mtr -U mtr test  # etc.
+# But this would require being authenticated first
+
+# Access client
+psql -U postgres -h localhost  # 1234
+
+# Update system configuration 1/4
+sudo vi /etc/odbcinst.ini  # Ensure it looks similar to:
+
+[PostgreSQL ANSI]
+Description=PostgreSQL ODBC driver (ANSI version)
+Driver=psqlodbca.so
+Setup=libodbcpsqlS.so
+Debug=0
+CommLog=1
+UsageCount=1
+
+[PostgreSQL Unicode]
+Description=PostgreSQL ODBC driver (Unicode version)
+Driver=psqlodbcw.so
+Setup=libodbcpsqlS.so
+Debug=0
+CommLog=1
+UsageCount=1
+
+# Update system configuration 2/4
+sudo vi /etc/postgresql/12/main/pg_hba.conf 
+# Change 'md5'/'peer' in all uncommented lines except the first to 'password':
+
+# Database administrative login by Unix domain socket
+local   all             postgres                                peer
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+# "local" is for Unix domain socket connections only
+local   all             all                                     password
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            password
+# IPv6 local connections:
+host    all             all             ::1/128                 password
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     password
+host    replication     all             127.0.0.1/32            password
+host    replication     all             ::1/128                 password
+
+# Update system configuration 3/4
+sudo vi /etc/postgresql/12/main/postgresql.conf  # And change lc_messages as follows:
+
+lc_messages = 'C'
+
+# Update system configuration 4/4
+sudo vi /etc/odbc.ini  # Add the following:
+
+[postgres_mysql]
+Description=test sample db
+Driver=PostgreSQL ANSI
+Trace=No
+TraceFile=sql.log
+Database=test
+Servername=
+UserName=mtr
+Password=mtr
+Port=5432
+ReadOnly=No
+RowVersioning=No
+ShowSystemTables=No
+ShowOidColumn=No
+FakeOidIndex=No
+ 
+[postgres_auto_test_remote]
+Description=auto_test_remote
+Driver=PostgreSQL ANSI
+Trace=No
+TraceFile=auto_test_remote.log
+Database=auto_test_remote
+Servername=
+UserName=mtr
+Password=mtr
+Port=5432
+ReadOnly=No
+RowVersioning=No
+ShowSystemTables=No
+ShowOidColumn=No
+FakeOidIndex=No
+ 
+[postgres_auto_test_remote2]
+Description=auto_test_remote2
+Driver=PostgreSQL ANSI
+Trace=No
+TraceFile=auto_test_remote2.log
+Database=auto_test_remote2
+Servername=
+UserName=mtr
+Password=mtr
+Port=5432
+ReadOnly=No
+RowVersioning=No
+ShowSystemTables=No
+ShowOidColumn=No
+FakeOidIndex=No
+ 
+[postgres_auto_test_remote3]
+Description=auto_test_remote3
+Driver=PostgreSQL ANSI
+Trace=No
+TraceFile=auto_test_remote3.log
+Database=auto_test_remote3
+Servername=
+UserName=mtr
+Password=mtr
+Port=5432
+ReadOnly=No
+RowVersioning=No
+ShowSystemTables=No
+ShowOidColumn=No
+FakeOidIndex=No
+
+# Build MariaDB Enterprise server as per your usual build procedure
+
+# Start the Spider ODBC PostgreSQL MTR tests
+cd your_ES_base_dir/mysql-test && ./mtr --suite=spider/odbc/pg --big-test --max-test-fail=0 --retry=0 --repeat=1 --parallel=10
