@@ -79,6 +79,13 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|find_field_in_table|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                                                ## MDEV-28506
+table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28506
+table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|find_order_in_list                                                               ## MDEV-28506
+(*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                           ## MDEV-28506
+(*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                             ## MDEV-28506
+(*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_func::fix_fields|JOIN::prepare                                                          ## MDEV-28506
+(*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                        ## MDEV-28506
 SIGSEGV|_dl_lookup_symbol_x|do_sym|_dl_sym|dlsym_doit                                                                                                                          ## MDEV-28625
 SIGSEGV|do_lookup_x|_dl_lookup_symbol_x|do_sym|_dl_sym                                                                                                                         ## MDEV-28625
 SIGSEGV|sub_select|do_select|JOIN::exec_inner|JOIN::exec                                                                                                                       ## MDEV-28505
@@ -104,6 +111,8 @@ SIGSEGV|GRANT_TABLE::GRANT_TABLE|grant_load|grant_reload|reload_acl_and_cache   
 SIGSEGV|get_access_value_from_val_int|GRANT_TABLE::GRANT_TABLE|grant_load|grant_reload                                                                                         ## MDEV-28482
 SIGSEGV|Lex_charset_collation_st::find_bin_collation|Lex_charset_collation_st::find_bin_collation|Column_definition::prepare_charset_for_string|Type_handler_string_result::Column_definition_prepare_stage1 ## MDEV-28481
 SIGSEGV|Lex_charset_collation_st::find_bin_collation|Lex_charset_collation_st::resolved_to_character_set|Column_definition::prepare_charset_for_string|Type_handler_string_result::Column_definition_prepare_stage1 ## MDEV-28481
+SIGSEGV|Lex_charset_collation_st::find_bin_collation|Lex_charset_collation_st::find_bin_collation|Column_definition::prepare_charset_for_string|Type_handler_typelib::Column_definition_prepare_stage1 ## MDEV-28481
+SIGSEGV|Lex_charset_collation_st::find_bin_collation|Lex_charset_collation_st::resolved_to_character_set|Column_definition::prepare_charset_for_string|Type_handler_typelib::Column_definition_prepare_stage1 ## MDEV-28481
 0|SIGABRT|Item_row::illegal_method_call|Item_row::val_str|ha_json_table::rnd_init|handler::ha_rnd_init                                                                         ## MDEV-28480
 mtr->get_log_mode() == MTR_LOG_NO_REDO|SIGABRT|page_cur_insert_rec_write_log|page_cur_insert_rec_low|page_cur_tuple_insert|btr_cur_optimistic_insert                           ## MDEV-28478
 elem->cmp_type() != TIME_RESULT|SIGABRT|cmp_item_row::store_value|cmp_item_row::store_value|Predicant_to_list_comparator::cmp_arg|Predicant_to_list_comparator::cmp            ## MDEV-28477
