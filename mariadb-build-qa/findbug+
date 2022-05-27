@@ -1,11 +1,11 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
+if [ ! -r ./gendirs.sh ]; then echo 'Assert: ./gendirs.sh missing'; exit 1; fi
+
 REGEX_EXCLUDE="$(cat REGEX_EXCLUDE 2>/dev/null)"  # Handy to exclude a particular build
 if [ -z "${REGEX_EXCLUDE}" ]; then REGEX_EXCLUDE="DUMMYSTRINGNEVERSEEN"; fi
 
-SAN_MODE=0
-GAL_MODE=0
 BBB_MODE=0
 ERROR_IN_OPTIONS=0
 if [ "${1}" == "SAN" -a -z "${2}" ]; then ERROR_IN_OPTIONS=1; fi
@@ -22,13 +22,14 @@ if [ "${ERROR_IN_OPTIONS}" -eq 1 ]; then
   echo "It expects that test_all was already executed"
   exit 1
 fi
+GENDIRS=
 TEXT="${1}"  # Note this may be 'SAN', 'GAL', 'BBB' or ''(='BBB'). If so, each one will be replaced respectively below
 if [ -z "${1}" ]; then TEXT='BBB'; fi
 if [ "${TEXT}" == "SAN" ]; then
-  SAN_MODE=1
+  GENDIRS='SAN'
   TEXT="${2}"  # Presence of ${2} was checked earlier above (ref ERROR_IN_OPTIONS)
 elif [ "${TEXT}" == "GAL" ]; then
-  GAL_MODE=1
+  GENDIRS='GAL'
   REGEX_EXCLUDE="${REGEX_EXCLUDE//EMD|/}"
   TEXT="${2}"  # Note this may be 'BBB' and if so it will be replaced below
   NODE=1
@@ -43,22 +44,12 @@ fi
 
 rm -f /tmp/pri.t /tmp/sec.t
 
-FILT=
-if [ "${SAN_MODE}" -eq 1 ]; then
-  FILT=('SAN')
-elif [ "${GAL_MODE}" -eq 1 ]; then
-  FILT=('GAL')
-else
-  FILT=(-vE 'SAN|GAL')
-fi
-
 VER_SCAN_STRING='mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]'
 
-ls --color=never | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/pri.t
+./gendirs.sh ${GENDIRS} | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -uV > /tmp/pri.t
 
 # Generate bug list
-grep -Ei --binary-files=text "${TEXT}" */log/master.err */node${NODE}/node${NODE}.err 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | grep --binary-files=text "${FILT[@]}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t
-FILT=
+./gendirs.sh ${GENDIRS} | xargs -I{} echo "grep -Ei --binary-files=text '${TEXT}' {}/log/master.err {}/node${NODE}/node${NODE}.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -uV > /tmp/sec.t
 if [ "${BBB_MODE}" -eq 1 ]; then
   mv /tmp/sec.t /tmp/sec.t.1
   # Allow cores to be fully written. This is especially important when bug_report is running as many servers are terminatnig at once causing disk to backlog. The sleep code below likely resolves the issue sometimes seen when running ~/b (mariadb-qa/bug_report.sh) where a certain version would not show as affected, presumably because the core was still writing
@@ -67,8 +58,8 @@ if [ "${BBB_MODE}" -eq 1 ]; then
   else
     sleep 5
   fi 
-  ls --color=never */data/core* */node${NODE}/core* 2>/dev/null | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -u > /tmp/sec.t.2
-  cat /tmp/sec.t.1 /tmp/sec.t.2 2>/dev/null | sort -u > /tmp/sec.t
+  ./gendirs.sh ${GENDIRS} | xargs -I{} echo "ls {}/data/core* {}/node${NODE}/core* 2>/dev/null" | xargs -I{} bash -c "{}" | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -uV > /tmp/sec.t.2
+  cat /tmp/sec.t.1 /tmp/sec.t.2 2>/dev/null | sort -uV > /tmp/sec.t
   rm -f /tmp/sec.t.1 /tmp/sec.t.2
 fi
 
