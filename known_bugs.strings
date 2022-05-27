@@ -542,6 +542,7 @@ SIGSEGV|__GI___pthread_mutex_lock|calloc () from|asn1_array2tree () from|call_in
 !result|SIGABRT|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator|Item_bool_rowready_func2::fix_length_and_dec          ## MDEV-23800
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|store_key_field::copy_inner|store_key::copy                                                           ## MDEV-23749
 SIGSEGV|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse                                                                                                  ## MDEV-23731
+SIGSEGV|replace_user_table|mysql_create_user|mysql_execute_command|mysql_parse                                                                                                 ## MDEV-23731
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|ha_maria::implicit_commit                                          ## MDEV-23701
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|maria_commit                                                       ## MDEV-23701
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|_ma_bitmap_mark_file_changed|_ma_change_bitmap_page                          ## MDEV-23701

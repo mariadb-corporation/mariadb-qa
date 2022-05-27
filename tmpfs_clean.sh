@@ -1,6 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
+# TODO: Idea: the current file check (only done for reducer.log) checks the file aga. Likely other directories could have a file age check by using ls -t | head -n1 and taking the age of that file. If any updates happen in the directory then this would show directory is still live/active
 EXCLUDE_DIR_REGEX='multipath|var_'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
 
 ARMED=0
