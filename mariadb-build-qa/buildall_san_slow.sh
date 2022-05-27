@@ -4,7 +4,7 @@
 BUILD_UBASAN=1  # Enable ASAN + UBSAN builds
 BUILD_TSAN=0    # Enable TSAN builds
 BUILD_10_1=0
-BUILD_10_2=1
+BUILD_10_2=0
 BUILD_10_3=1
 BUILD_10_4=1
 BUILD_10_5=1
@@ -12,6 +12,7 @@ BUILD_10_6=1
 BUILD_10_7=1
 BUILD_10_8=1
 BUILD_10_9=1
+BUILD_10_10=1
 
 if [ ! -r ./terminate_ds_memory.sh ]; then
   echo './terminate_ds_memory.sh missing!'
@@ -32,6 +33,11 @@ cleanup_dirs(){
 }
 
 buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use
+  if [ ${BUILD_10_10} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_opt_san.sh
+    cleanup_dirs; cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
+  fi
+
   if [ ${BUILD_10_9} -eq 1 ]; then
     cleanup_dirs; cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_opt_san.sh
     cleanup_dirs; cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_dbg_san.sh

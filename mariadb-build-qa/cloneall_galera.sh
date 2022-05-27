@@ -45,6 +45,7 @@ clone_multi_repos(){
   rm -Rf 10.7 10.7_galera
   rm -Rf 10.8 10.8_galera
   rm -Rf 10.9 10.9_galera
+  rm -Rf 10.10 10.10_galera
   sleep 0.1
   local GIT_USERNAME
   local GIT_ASKPASS
@@ -61,6 +62,7 @@ clone_multi_repos(){
   clone_repos 10.7 &
   clone_repos 10.8 &
   #clone_repos 10.9 &
+  #clone_repos 10.10 &
   unset GIT_USERNAME
   unset GIT_ASKPASS
   GIT_USERNAME=''
