@@ -98,9 +98,12 @@ SIGSEGV|Item_subselect::exec|Item_in_subselect::exec|Item_in_subselect::val_bool
 SIGSEGV|Item_subselect::exec|Item_singlerow_subselect::val_real|Item_cache_real::cache_value|Item_in_optimizer::val_int                                                        ## MDEV-28502
 SIGSEGV|Opt_trace_struct::add_select_number|Item_subselect::exec|Item_singlerow_subselect::val_real|Item_cache_real::cache_value                                               ## MDEV-28502
 SIGSEGV|Opt_trace_struct::add_select_number|Item_subselect::exec|Item_in_subselect::val_bool_naked|Item_in_optimizer::val_int                                                  ## MDEV-28502
-field->table == table|SIGABRT|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                         ## MDEV-28501
-field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_inner                                               ## MDEV-28501
-field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                              ## MDEV-28501
+SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_inner|JOIN::optimize                                                                                           ## MDEV-28501
+SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                                                                    ## MDEV-28501
+field->table == table|SIGABRT|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                         ## MDEV-28515
+field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_inner                                               ## MDEV-28515
+field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                              ## MDEV-28515
+SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                              ## MDEV-28516
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::check|handler::ha_check|ha_partition::handle_opt_part ## MDEV-28514
 SIGSEGV|charset_info_st::strnncoll|parse_option_list|mysql_prepare_create_table|mysql_create_frm_image                                                                         ## MDEV-28497
 SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncoll_utf8_general_ci|engine_option_value::link                                                   ## MDEV-28497
@@ -179,6 +182,7 @@ mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|psi_mutex_lock|inli
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_open_handler|ha_spider::rnd_handler_init                                                                             ## MDEV-27902
 SIGABRT|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|spider_db_open_handler                                                                                          ## MDEV-27902
 SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal                                                            ## MDEV-27902
+SIGSEGV|ha_spider::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables                                                                                     ## MDEV-27902
 host_length <= 255|SIGABRT|set_setup_actor_key|insert_setup_actor|table_setup_actors::write_row|PFS_engine_table_share::write_row                                              ## MDEV-27895
 host_length <= 60|SIGABRT|set_setup_actor_key|insert_setup_actor|table_setup_actors::write_row|PFS_engine_table_share::write_row                                               ## MDEV-27895
 host_length <= HOSTNAME_LENGTH|SIGABRT|set_setup_actor_key|insert_setup_actor|table_setup_actors::write_row|PFS_engine_table_share::write_row                                  ## MDEV-27895
