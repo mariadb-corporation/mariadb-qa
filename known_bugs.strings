@@ -79,6 +79,11 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28510
+table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28510
+SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields                                                                                     ## MDEV-28509
+SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## MDEV-28507
+SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                                                    ## MDEV-28507
 SIGSEGV|find_field_in_table|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                                                ## MDEV-28506
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28506
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|find_order_in_list                                                               ## MDEV-28506
@@ -103,7 +108,7 @@ SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::opt
 field->table == table|SIGABRT|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                         ## MDEV-28515
 field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_inner                                               ## MDEV-28515
 field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                              ## MDEV-28515
-SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                              ## MDEV-28516
+SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28516
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::check|handler::ha_check|ha_partition::handle_opt_part ## MDEV-28514
 SIGSEGV|charset_info_st::strnncoll|parse_option_list|mysql_prepare_create_table|mysql_create_frm_image                                                                         ## MDEV-28497
 SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncoll_utf8_general_ci|engine_option_value::link                                                   ## MDEV-28497
@@ -150,6 +155,7 @@ SIGSEGV|replace_column_table|mysql_table_grant|Sql_cmd_grant_table::execute_exac
 SIGSEGV|replace_column_table|mysql_table_grant|mysql_execute_command|mysql_parse                                                                                               ## MDEV-28128
 SIGSEGV|row_mysql_store_col_in_innobase_format|row_mysql_convert_row_to_innobase|row_insert_for_mysql|ha_innobase::write_row                                                   ## MDEV-28127
 pos < table->n_v_def|SIGABRT|dict_table_get_nth_v_col|build_template_field|ha_innobase::build_template|ha_innobase::write_row                                                  ## MDEV-28127
+table->s->db_options_in_use == part_table->s->db_options_in_use|SIGABRT|compare_table_with_partition|Sql_cmd_alter_table_exchange_partition::exchange_partition|Sql_cmd_alter_table_exchange_partition::execute|mysql_execute_command  ## MDEV-28127
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_insert|mysql_execute_command                                         ## MDEV-28105
 trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_commit_stmt|mysql_execute_command                                                               ## MDEV-28037
 SIGABRT|__cxa_pure_virtual|Item::check_type_scalar|Item_func::check_argument_types_scalar|Item_func::fix_fields                                                                ## MDEV-28034

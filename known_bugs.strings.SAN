@@ -4,6 +4,7 @@
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 
 ##### CURRENT BUGS #####
+UBSAN|member access within null pointer of type 'struct TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize               ## MDEV-28510
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|Type_handler_string_result::make_packed_sort_key_part|make_packed_sortkey|make_sortkey ## MDEV-27081
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|make_packed_sortkey|make_sortkey|find_all_keys   ## MDEV-27081
 UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_malloc.c|my_strdup|Session_sysvars_tracker::init|THD::init|THD::change_user               ## MDEV-25237

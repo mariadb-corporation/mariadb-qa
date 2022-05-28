@@ -24,7 +24,7 @@ while true; do
       kill -9 ${PID}
       kill -9 ${PID}
       kill -9 ${PID}
-      sleep 3  # Allows user to notice/read message
+      sleep 5  # Allows user to notice/read message
     fi
   fi
   echo ''
