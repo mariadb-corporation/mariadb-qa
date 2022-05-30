@@ -1,3 +1,4 @@
 # [sst] InnoDB backup opts parallel+no-backup-locks 
 [sst]
-inno-backup-opts=" --parallel=8 --no-backup-locks "
+#inno-backup-opts=" --parallel=8 --no-backup-locks "
+inno-backup-opts=" --parallel=8 "
