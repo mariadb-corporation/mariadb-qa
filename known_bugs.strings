@@ -86,6 +86,8 @@ SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|handler::ha_direct
 SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|mysql_delete|mysql_execute_command                                                                               ## MENT-1519
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-28683
 SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|handler::ha_direct_delete_rows|mysql_delete                                                                      ## MDEV-28683
+!expr->fixed()|SIGABRT|Virtual_column_info::fix_session_expr|TABLE::vcol_fix_expr|open_table|open_and_process_table                                                            ## MDEV-28566
+!expr->is_fixed()|SIGABRT|Virtual_column_info::fix_session_expr|TABLE::vcol_fix_expr|open_table|open_and_process_table                                                         ## MDEV-28566
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28510
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28510
 SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields                                                                                     ## MDEV-28509
