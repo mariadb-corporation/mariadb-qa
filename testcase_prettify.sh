@@ -292,6 +292,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|interval|INTERVAL|gi' | \
   sed 's|ifnull|IFNULL|gi' | \
   sed 's|rand|RAND|gi' | \
+  sed 's|seed|SEED|gi' | \
   sed 's|rowid|ROWID|gi' | \
   sed 's|tablespace|TABLESPACE|gi' | \
   sed 's|discard|DISCARD|gi' | \

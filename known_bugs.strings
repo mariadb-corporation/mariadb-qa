@@ -79,6 +79,13 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_direct_delete                                                   ## MENT-1519
+mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_direct_delete|ha_spider::direct_delete_rows                                     ## MENT-1519
+mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert|ha_spider::write_row                                                ## MENT-1519
+SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|handler::ha_direct_delete_rows|mysql_delete                                                                      ## MENT-1519
+SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|mysql_delete|mysql_execute_command                                                                               ## MENT-1519
+SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-28683
+SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|handler::ha_direct_delete_rows|mysql_delete                                                                      ## MDEV-28683
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28510
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28510
 SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields                                                                                     ## MDEV-28509
@@ -279,6 +286,7 @@ transaction_.active() == false|SIGABRT|wsrep::client_state::~client_state|Wsrep_
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-26546
 part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row                         ## MDEV-26544
 SIGSEGV|__strcmp_avx2|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MDEV-26546
+SIGSEGV|ha_spider::index_read_map_internal|ha_spider::index_read_map|handler::ha_index_read_map|handler::check_duplicate_long_entry_key                                        ## MDEV-26546
 inited==RND|SIGABRT|handler::ha_rnd_end|ha_partition::direct_delete_rows|handler::ha_direct_delete_rows|mysql_delete                                                           ## MDEV-26540
 maybe_null || !null_value|SIGABRT|Item_func_ceiling::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-26536
 maybe_null() || !null_value|SIGABRT|Item_func_ceiling::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-26536
