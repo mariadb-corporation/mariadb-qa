@@ -79,6 +79,10 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MDEV-23145
+SIGSEGV|handler::update_global_table_stats|close_thread_table|close_thread_tables|close_thread_tables_for_query                                                                ## MDEV-23145
+SIGSEGV|handler::update_global_table_stats|close_thread_table|close_thread_tables|mysql_execute_command                                                                        ## MDEV-23145
+inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|unlock_external|mysql_unlock_tables|mysql_unlock_tables                                             ## MDEV-23145
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_direct_delete                                                   ## MENT-1519
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_direct_delete|ha_spider::direct_delete_rows                                     ## MENT-1519
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert|ha_spider::write_row                                                ## MENT-1519
@@ -322,6 +326,7 @@ state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|ws
 state() == s_preparing || (is_xa() && state() == s_replaying) || (ret && (state() == s_must_abort || state() == s_must_replay || state() == s_cert_failed || state() == s_aborted))|SIGABRT|wsrep::transaction::before_prepare|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-26266
 !killed_err || killed != NOT_KILLED|SIGABRT|THD::killed_errno|sp_head::execute|sp_head::execute_procedure|do_execute_sp                                                        ## MENT-1278
 (key_del_current != 0) && ((key_del_current == (~ (my_off_t) 0)) || (key_del_current <= (share->state.state.key_file_length - block_size)))|SIGABRT|_ma_new|_ma_enlarge_root|_ma_ck_real_write_btree|_ma_ck_write_btree_with_log ## MDEV-26258
+!parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::drop_all_triggers|mysql_rm_table_no_locks|mysql_rm_db_internal                  ## MDEV-26258
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::drop_all_triggers|mysql_rm_table_no_locks|mysql_rm_table                        ## MDEV-26258
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_analyze_table::execute                        ## MDEV-26258
 fixed || state == NO_VALUE|SIGABRT|Item_param::basic_const_item|Item_param::eq|find_item_in_list|find_order_in_list                                                            ## MDEV-15704
