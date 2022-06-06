@@ -42,7 +42,7 @@ if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
   fi
   # MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||;s|${TEXT}||')"
   MYEXTRA_OPT="$3 $4 $5 $6 $7 $8 $9"
-  ~/mariadb-qa/bug_report.sh SAN "${MYEXTRA_OPT}" | tee report.log
+  ~/mariadb-qa/bug_report.sh SAN ${MYEXTRA_OPT} | tee report.log
 elif [ "${1}" == "GAL" ]; then
   MYEXTRA_OPT="$*"
   #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
@@ -50,12 +50,12 @@ elif [ "${1}" == "GAL" ]; then
   # Note 1/05/21: the reason this still works correctly for Galera is that the Galera build scripts do not have the build code patches for core dumps yet. Thus, "mysqld got signal" or "signal" would likely work fine at all times. Ref below in non-Galera section for more on this. Ideally this would be changed to look for all issues by using "BBB". < TODO
   export TEXT="mysqld got signal"  
   #rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
-  ~/mariadb-qa/bug_report.sh GAL "${MYEXTRA_OPT}" | tee report.log
+  ~/mariadb-qa/bug_report.sh GAL ${MYEXTRA_OPT} | tee report.log
 else
   MYEXTRA_OPT="$*"
   export TEXT="BBB"  # A dummy string to let findbug+ know we want to scan for a set of strings to establish crashes
   rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
-  ~/mariadb-qa/bug_report.sh "${MYEXTRA_OPT}" | tee report.log
+  ~/mariadb-qa/bug_report.sh ${MYEXTRA_OPT} | tee report.log
   # The following code is now precautionary/defensive coding as this is covered in the new port assignment code
   if grep --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err 2>/dev/null; then
     echo "------------------------------------------------------------------------------------------"
