@@ -79,10 +79,14 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|spider_db_bulk_insert|ha_spider::write_row|handler::ha_write_row|write_record                                                                                          ## MDEV-28764
+SIGSEGV|spider_db_set_names_internal|spider_db_set_names|spider_db_bulk_insert|ha_spider::write_row                                                                            ## MDEV-28764
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MDEV-23145
 SIGSEGV|handler::update_global_table_stats|close_thread_table|close_thread_tables|close_thread_tables_for_query                                                                ## MDEV-23145
 SIGSEGV|handler::update_global_table_stats|close_thread_table|close_thread_tables|mysql_execute_command                                                                        ## MDEV-23145
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|unlock_external|mysql_unlock_tables|mysql_unlock_tables                                             ## MDEV-23145
+mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_direct_delete|ha_spider::direct_delete_rows                                     ## MENT-1519
+SIGSEGV|ha_spider::rnd_next_internal|ha_spider::rnd_next|handler::ha_rnd_next|rr_sequential                                                                                    ## MENT-1519
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_direct_delete                                                   ## MENT-1519
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_direct_delete|ha_spider::direct_delete_rows                                     ## MENT-1519
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert|ha_spider::write_row                                                ## MENT-1519
