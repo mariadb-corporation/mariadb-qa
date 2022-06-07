@@ -81,6 +81,10 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 ##### CURRENT BUGS ##### Search key: Mac ###
 SIGSEGV|spider_db_bulk_insert|ha_spider::write_row|handler::ha_write_row|write_record                                                                                          ## MDEV-28764
 SIGSEGV|spider_db_set_names_internal|spider_db_set_names|spider_db_bulk_insert|ha_spider::write_row                                                                            ## MDEV-28764
+trans_safe || !updated || thd->transaction->stmt.modified_non_trans_table|SIGABRT|multi_update::send_eof|do_select|JOIN::exec_inner|JOIN::exec                                 ## MDEV-28750
+trans_safe || !updated || thd->transaction.stmt.modified_non_trans_table|SIGABRT|multi_update::send_eof|do_select|JOIN::exec_inner|JOIN::exec                                  ## MDEV-28750
+!thd->mdl_context.has_locks() || thd->transaction->xid_state.is_explicit_XA()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|start_thread                   ## MENT-1529
+streaming_context_.rolled_back() == false || state() == s_must_abort|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::after_row|wsrep::client_state::after_row ## MENT-1524
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MDEV-23145
 SIGSEGV|handler::update_global_table_stats|close_thread_table|close_thread_tables|close_thread_tables_for_query                                                                ## MDEV-23145
 SIGSEGV|handler::update_global_table_stats|close_thread_table|close_thread_tables|mysql_execute_command                                                                        ## MDEV-23145

@@ -1775,9 +1775,11 @@ EOF
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
-            else  
-              echo "Assert: GRP_RPL_CLUSTER_RUN=${GRP_RPL_CLUSTER_RUN} and MDG_CLUSTER_RUN=${MDG_CLUSTER_RUN}"
-              exit 1
+            else 
+              ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+              PQPID="$!" 
+              #echo "Assert: GRP_RPL_CLUSTER_RUN=${GRP_RPL_CLUSTER_RUN} and MDG_CLUSTER_RUN=${MDG_CLUSTER_RUN}"
+              #exit 1
             fi
           fi
         fi
