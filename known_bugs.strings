@@ -79,6 +79,8 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+(engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_int|JOIN::exec_inner ## MDEV-22375
+client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## MDEV-28198
 table->in_use && tdc->flushed|SIGABRT|TABLE_SHARE::visit_subgraph|Wait_for_flush::accept_visitor|MDL_context::visit_subgraph|MDL_context::find_deadlock                        ## MDEV-28774
 SIGSEGV|__GI___pthread_mutex_lock|rw_pr_rdlock|inline_mysql_prlock_rdlock|MDL_context::visit_subgraph                                                                          ## MDEV-28774
 SIGSEGV|TABLE::use_all_columns|replace_roles_mapping_table|mysql_create_user|mysql_execute_command                                                                             ## MDEV-28773
