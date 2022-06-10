@@ -87,7 +87,15 @@ file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABR
 table->in_use && tdc->flushed|SIGABRT|TABLE_SHARE::visit_subgraph|Wait_for_flush::accept_visitor|MDL_context::visit_subgraph|MDL_context::find_deadlock                        ## MDEV-28771
 SIGSEGV|__GI___pthread_mutex_lock|rw_pr_rdlock|inline_mysql_prlock_rdlock|MDL_context::visit_subgraph                                                                          ## MDEV-28771
 (m_ci->state & 32) || m_with_collate|SIGABRT|Lex_exact_charset_opt_extended_collate::Lex_exact_charset_opt_extended_collate|MYSQLparse|parse_sql|mysql_parse                   ## MDEV-28769
-(m_ci->state & 32) || m_with_collate|SIGABRT|Lex_exact_charset_opt_extended_collate::Lex_exact_charset_opt_extended_collate|ORAparse|parse_sql|mysql_parse                     ## 
+(m_ci->state & 32) || m_with_collate|SIGABRT|Lex_exact_charset_opt_extended_collate::Lex_exact_charset_opt_extended_collate|ORAparse|parse_sql|mysql_parse                     ## MDEV-28769
+SIGSEGV|Column_stat::set_full_table_name|Column_stat::set_key_fields|delete_statistics_for_column|mysql_prepare_alter_table                                                    ## MDEV-28780
+SIGSEGV|Column_stat::set_key_fields|delete_statistics_for_column|mysql_prepare_alter_table|mysql_alter_table                                                                   ## MDEV-28780
+SIGSEGV|Stat_table::common_init_stat_table|Stat_table::Stat_table|Column_stat::Column_stat|rename_column_in_stat_tables                                                        ## MDEV-28780
+(engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_int|JOIN::exec_inner ## MDEV-22375
+client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## MDEV-28198
+table->in_use && tdc->flushed|SIGABRT|TABLE_SHARE::visit_subgraph|Wait_for_flush::accept_visitor|MDL_context::visit_subgraph|MDL_context::find_deadlock                        ## MDEV-28774
+SIGSEGV|__GI___pthread_mutex_lock|rw_pr_rdlock|inline_mysql_prlock_rdlock|MDL_context::visit_subgraph                                                                          ## MDEV-28774
+SIGSEGV|TABLE::use_all_columns|replace_roles_mapping_table|mysql_create_user|mysql_execute_command                                                                             ## MDEV-28773
 SIGSEGV|spider_db_bulk_insert|ha_spider::write_row|handler::ha_write_row|write_record                                                                                          ## MDEV-28764
 SIGSEGV|spider_db_set_names_internal|spider_db_set_names|spider_db_bulk_insert|ha_spider::write_row                                                                            ## MDEV-28764
 trans_safe || !updated || thd->transaction->stmt.modified_non_trans_table|SIGABRT|multi_update::send_eof|do_select|JOIN::exec_inner|JOIN::exec                                 ## MDEV-28750
