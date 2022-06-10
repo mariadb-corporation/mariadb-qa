@@ -12,3 +12,6 @@ SELECT CONCAT (0,JSON_VALUE ('"1"','$'));
 
 SET character_set_connection=utf32;
 SELECT JSON_VALUE ('"123"','$') DIV 2;
+
+SET collation_connection='utf32_unicode_ci';
+SELECT CAST(JSON_VALUE ('"1234"','$') AS UNSIGNED);

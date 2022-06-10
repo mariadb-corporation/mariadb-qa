@@ -79,6 +79,15 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!(mysql_bin_log.is_open() && !thd.is_current_stmt_binlog_format_row())|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|pfs_spawn_thread|start_thread              ## MDEV-28791
+!(mysql_bin_log.is_open() && !thd.is_current_stmt_binlog_format_row())|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|start_thread|clone                         ## MDEV-28791
+!mysql_bin_log.is_open() || thd.is_current_stmt_binlog_format_row()|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|start_thread|clone                            ## MDEV-28791
+bitmap_is_set(&m_part_info->read_partitions, m_part_spec.start_part)|SIGABRT|ha_partition::handle_ordered_index_scan|ha_partition::common_first_last|ha_partition::index_last|handler::ha_index_last ## MDEV-24283
+file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert ## MDEV-26035
+table->in_use && tdc->flushed|SIGABRT|TABLE_SHARE::visit_subgraph|Wait_for_flush::accept_visitor|MDL_context::visit_subgraph|MDL_context::find_deadlock                        ## MDEV-28771
+SIGSEGV|__GI___pthread_mutex_lock|rw_pr_rdlock|inline_mysql_prlock_rdlock|MDL_context::visit_subgraph                                                                          ## MDEV-28771
+(m_ci->state & 32) || m_with_collate|SIGABRT|Lex_exact_charset_opt_extended_collate::Lex_exact_charset_opt_extended_collate|MYSQLparse|parse_sql|mysql_parse                   ## MDEV-28769
+(m_ci->state & 32) || m_with_collate|SIGABRT|Lex_exact_charset_opt_extended_collate::Lex_exact_charset_opt_extended_collate|ORAparse|parse_sql|mysql_parse                     ## 
 SIGSEGV|spider_db_bulk_insert|ha_spider::write_row|handler::ha_write_row|write_record                                                                                          ## MDEV-28764
 SIGSEGV|spider_db_set_names_internal|spider_db_set_names|spider_db_bulk_insert|ha_spider::write_row                                                                            ## MDEV-28764
 trans_safe || !updated || thd->transaction->stmt.modified_non_trans_table|SIGABRT|multi_update::send_eof|do_select|JOIN::exec_inner|JOIN::exec                                 ## MDEV-28750
@@ -230,6 +239,7 @@ page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_m
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|execute_init_command                                          ## MDEV-27857
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|execute_init_command                                           ## MDEV-27857
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                     ## MDEV-27857
+thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                    ## MDEV-27857
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-27855
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|my_message_sql|my_error                                                   ## MDEV-27855
 SIGSEGV|replace_routine_table|mysql_routine_grant|Sql_cmd_grant_sp::execute|mysql_execute_command                                                                              ## MDEV-27842
@@ -408,6 +418,8 @@ transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep
 thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|apply_fragment|apply_write_set|wsrep::server_state::on_apply                                          ## MDEV-25455
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|multi_delete::send_eof|do_select                                           ## MDEV-25426
 !is_thread_specific || (mysqld_server_initialized && thd)|SIGABRT|my_malloc_size_cb_func|my_free|delete_dynamic|my_hash_free                                                   ## MDEV-25389
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item::val_int_from_str|Item::val_int_unsigned_typecast_from_str                                                         ## MDEV-23187
+0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item::val_int_from_str                                                                     ## MDEV-23187
 0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item::send|Protocol::send_result_set_row                                                                                ## MDEV-23187
 0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item::temporal_precision|Item_func_seconds_hybrid::fix_length_and_dec                                                   ## MDEV-23187
 0|SIGABRT|json_find_path|Item_func_json_value::val_str|Type_handler_string_result::Item_temporal_precision|Type_handler_string_result::Item_time_precision                     ## MDEV-23187

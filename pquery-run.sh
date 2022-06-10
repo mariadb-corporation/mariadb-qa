@@ -1720,16 +1720,19 @@ pquery_test() {
           if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
             # Standard/default (non-GRP-RPL non-Galera non-Query-duration-testing) pquery run
             INFILE_SHUFFLED=
+            SHUFFLE_DIR="/dev/shm/sql_shuffled"  # Hardcoded, but can be changed here if so desired
             if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-              mkdir -p /data/tmp 2>/dev/null
-              if [ -d /data/tmp ]; then  # Do not proceed with PRE_SHUFFLE_SQL if /data/tmp does not exist. It will hold the (at times large) pre-shuffled SQL
+              mkdir -p ${SHUFFLE_DIR} 2>/dev/null
+              if [ -d ${SHUFFLE_DIR} ]; then  # Do not proceed with PRE_SHUFFLE_SQL if the created directory does not exist. It will hold the (at times large) pre-shuffled SQL
                 local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
-                INFILE_SHUFFLED="/data/tmp/${WORKNRDIR}_${TRIAL}.sql"
+                INFILE_SHUFFLED="${SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
                 WORKNRDIR=
                 echoit "PRE_SHUFFLE_SQL=1: Randomly pre-shuffling SQL (Target: ${INFILE_SHUFFLED})"
                 # TODO: we can save/use the same infile for 10 (or n) trials (configurable setting)
+                # TODO: move SHUFFLE_DIR var to .conf file, as well as number of lines to shuffle/use
                 RANDOM=$(date +%s%N | cut -b10-19)
-                shuf --random-source=/dev/urandom -n 5141189 ${INFILE} > ${INFILE_SHUFFLED}  # 5141189: max lines
+                #shuf --random-source=/dev/urandom -n 5141189 ${INFILE} > ${INFILE_SHUFFLED}  # 5141189: max lines
+                shuf --random-source=/dev/urandom -n 2300000 ${INFILE} > ${INFILE_SHUFFLED}  # 23M: attempt at better overal performance; less disk use, faster runs, and SQL is varied per trial in any case. May also yield better overall coverage due to more focused area testing
               fi
             fi
             if [ ! -z "${INFILE_SHUFFLED}" ]; then

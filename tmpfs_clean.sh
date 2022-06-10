@@ -96,11 +96,13 @@ else
                       else
                         AGESUBDIR=$(( $(date +%s) - $(stat -c %Z "${SUBDIR}") ))  # Current trial directory age in seconds
                         if [ ${AGESUBDIR} -ge 10800 ]; then  # Don't delete pquery-run.sh directories if they have recent trials in them (i.e. they are likely still running): >=3hr
-                          if [ ${SILENT} -eq 0 ]; then
-                            echo "Deleting directory ${DIR} (trial subdirectory age: ${AGESUBDIR}s)"
+                          if [ "${DIR}" != "/dev/shm/sql_shuffled" ]; then  # Don't delete the temporary SQL shuffle folder created and used by pquery-run.sh
+                            if [ ${SILENT} -eq 0 ]; then
+                              echo "Deleting directory ${DIR} (trial subdirectory age: ${AGESUBDIR}s)"
+                            fi
+                            COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
+                            if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi
                           fi
-                          COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
-                          if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi
                         fi
                       fi
                     fi
@@ -108,11 +110,13 @@ else
                     echo "> Warning: Unrecognized directory structure: ${DIR} (Assert: >=1 sub directories found, not covered yet, please fixme)"
                   fi
                 else
-                  if [ ${SILENT} -eq 0 ]; then
-                    echo "Deleting directory ${DIR} (directory age: ${AGEDIR}s)"
+                  if [ "${DIR}" != "/dev/shm/sql_shuffled" ]; then  # Don't delete the temporary SQL shuffle folder created and used by pquery-run.sh
+                    if [ ${SILENT} -eq 0 ]; then
+                      echo "Deleting directory ${DIR} (directory age: ${AGEDIR}s)"
+                    fi
+                    COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
+                    if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi
                   fi
-                  COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
-                  if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi
                 fi
               fi
             fi

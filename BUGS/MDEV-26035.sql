@@ -1,0 +1,9 @@
+CREATE TABLE t (f bit, key (f)) ENGINE=MyISAM;
+CREATE UNIQUE INDEX ind USING HASH ON t(f);
+
+CREATE or replace TABLE t (f bit(1), UNIQUE KEY (f) USING hash, KEY f1 (f)) engine=myisam;
+INSERT INTO t SELECT 1;
+INSERT INTO t SELECT seq from seq_1_to_100;
+
+CREATE TABLE t (c BIT KEY,c2 BIT) ENGINE=MyISAM;
+CREATE UNIQUE INDEX i1 USING HASH ON t (c);

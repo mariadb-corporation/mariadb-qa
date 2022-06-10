@@ -11,8 +11,16 @@ if [ "${BPQUERY}" == "1" ]; then
   echo "Using pquery client for testcase replay"
 fi
 
-set "${1^^}" "${2}"  # Make ${1} uppercase ('san' > 'SAN')
+if [[ "${1}" == "--"* ]]; then
+  echo "Assert: it looks like you are trying to specify a -- mysqld option to this script. This is incorrect."
+  echo "Instead, add the following to the testcase (in.sql):"
+  echo "# mysqld options required for replay: --your_option"
+  echo "As the first line, and this script will automatically parse and use it."
+  exit 1
+fi 
 
+set "${1^^}" "${2}"  # Make ${1} uppercase ('san' > 'SAN')
+sleep 10
 rm -f report.log
 if [ -r report.log ]; then echo "Assert: report.log still present though this script tried to delete it!"; exit 1; fi
 
