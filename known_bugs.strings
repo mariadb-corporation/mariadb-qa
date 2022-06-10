@@ -79,6 +79,8 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Column_stat::set_full_table_name|Column_stat::set_key_fields|delete_statistics_for_column|mysql_prepare_alter_table                                                    ## MDEV-28780
+SIGSEGV|Column_stat::set_key_fields|delete_statistics_for_column|mysql_prepare_alter_table|mysql_alter_table                                                                   ## MDEV-28780
 SIGSEGV|Stat_table::common_init_stat_table|Stat_table::Stat_table|Column_stat::Column_stat|rename_column_in_stat_tables                                                        ## MDEV-28780
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_int|JOIN::exec_inner ## MDEV-22375
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## MDEV-28198
