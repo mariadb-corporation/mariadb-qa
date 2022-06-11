@@ -33,6 +33,8 @@ MYSQLD_START_TIMEOUT=60
 TIMEOUT_REACHED=0
 PQUERY3=0
 NEWBUGS=0
+INFILE_SHUFFLED=
+PRE_SHUFFLE_TRIAL_ROUND=0  # Resets to 0 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
 
 # Set SAN options
 # https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
@@ -101,6 +103,29 @@ if [ "${RR_TRACING}" == "1" ]; then
   if [ ! -r /usr/bin/rr ]; then
     echo "Assert: /usr/bin/rr not found!"  # TODO: set to be automatic using whereis
     exit 1
+  fi
+fi
+if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+  if [ -z "${PRE_SHUFFLE_DIR}" ]; then
+    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_DIR is empty"
+    exit 1
+  fi
+  mkdir -p "${PRE_SHUFFLE_DIR}"
+  if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_DIR ('${PRE_SHUFFLE_DIR}') is not an actual directory or could not be created. Double check correctness of directory and that this script can write to the location provided (mkdir -p was attempted, any failure of the same would show above this message)"
+    exit 1
+  fi
+  if [ -z "${PRE_SHUFFLE_SQL_LINES}" ]; then
+    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_SQL_LINES is not configured"
+    exit 1
+  fi
+  if [ -z "${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}" ]; then
+    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_TRIALS_PER_SHUFFLE is not configured"
+    exit 1
+  fi
+  if [ ${PRE_SHUFFLE_SQL_LINES} < $[ $[ $[ ${PQUERY_RUN_TIMEOUT} / 15 ] * 25000 * ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ] -2 ] ]; then
+    echoit "Warning: PRE_SHUFFLE_SQL_LINES (${PRE_SHUFFLE_SQL_LINES}) is set to less than the minimum recommended 25k queries per 15 seconds times the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE (${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}) trials. You may want to increase this. See the formula here or in pquery-run.conf"
+    sleep 10
   fi
 fi
 
@@ -1719,20 +1744,32 @@ pquery_test() {
         else # Standard pquery run / Not a query duration testing run
           if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
             # Standard/default (non-GRP-RPL non-Galera non-Query-duration-testing) pquery run
-            INFILE_SHUFFLED=
-            SHUFFLE_DIR="/dev/shm/sql_shuffled"  # Hardcoded, but can be changed here if so desired
+            ## Check pre-shuffle directory
             if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-              mkdir -p ${SHUFFLE_DIR} 2>/dev/null
-              if [ -d ${SHUFFLE_DIR} ]; then  # Do not proceed with PRE_SHUFFLE_SQL if the created directory does not exist. It will hold the (at times large) pre-shuffled SQL
+              if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+                echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
+                mkdir -p "${PRE_SHUFFLE_SQL}"
+                if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+                  echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is gonig wrong"
+                  PRE_SHUFFLE_SQL=0
+                fi
+              fi
+            fi 
+            ## Pre-shuffle (if activated)
+            if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+              PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
+              if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then 
                 local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
-                INFILE_SHUFFLED="${SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
+                INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
                 WORKNRDIR=
-                echoit "PRE_SHUFFLE_SQL=1: Randomly pre-shuffling SQL (Target: ${INFILE_SHUFFLED})"
-                # TODO: we can save/use the same infile for 10 (or n) trials (configurable setting)
-                # TODO: move SHUFFLE_DIR var to .conf file, as well as number of lines to shuffle/use
+                echoit "Randomly pre-shuffling ${PRE_SHUFFLE_SQL_LINES} lines of SQL into ${INFILE_SHUFFLED} | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
                 RANDOM=$(date +%s%N | cut -b10-19)
-                #shuf --random-source=/dev/urandom -n 5141189 ${INFILE} > ${INFILE_SHUFFLED}  # 5141189: max lines
-                shuf --random-source=/dev/urandom -n 2300000 ${INFILE} > ${INFILE_SHUFFLED}  # 23M: attempt at better overal performance; less disk use, faster runs, and SQL is varied per trial in any case. May also yield better overall coverage due to more focused area testing
+                shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+              else
+                echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_SQL_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+              fi
+              if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
+                PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
               fi
             fi
             if [ ! -z "${INFILE_SHUFFLED}" ]; then
@@ -1950,12 +1987,14 @@ EOF
   fi
   TRIAL_SAVED=0
   sleep 2 # Delay to ensure core was written completely (if any)
-  # First cleanup any temporary SQL
+  # First cleanup any temporary SQL if PRE_SHUFFLE_TRIAL_ROUND=0 (i.e. the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE trials was completed)
   if [ ! -z "${INFILE_SHUFFLED}" -a -r "${INFILE_SHUFFLED}" -a ! -d "${INFILE_SHUFFLED}" ]; then
-    echoit "Deleting pre-shuffled SQL file (${INFILE_SHUFFLED}) after trial completion"
-    rm -f "${INFILE_SHUFFLED}"
+    if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 0 ]; then
+      echoit "Deleting pre-shuffle SQL file ${INFILE_SHUFFLED} as ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trials were completed"
+      rm -f "${INFILE_SHUFFLED}"
+      INFILE_SHUFFLED=
+    fi
   fi
-  INFILE_SHUFFLED=
   # NOTE**: Do not kill PQPID here/before shutdown. The reason is that pquery may still be writing queries it's executing to the log. The only way to halt pquery correctly is by actually shutting down the server which will auto-terminate pquery due to 250 consecutive queries failing. If 250 queries failed and ${PQUERY_RUN_TIMEOUT}s timeout was reached, and if there is no core/Valgrind issue and there is no output of mariadb-qa/text_string.sh either (in case core dumps are not configured correctly, and thus no core file is generated, text_string.sh will still produce output in case the server crashed based on the information in the error log), then we do not need to save this trial (as it is a standard occurence for this to happen). If however we saw 250 queries failed before the timeout was complete, then there may be another problem and the trial should be saved.
   if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
     if [ "${VALGRIND_RUN}" == "1" ]; then # For Valgrind, we want the full Valgrind output in the error log, hence we need a proper/clean (and slow...) shutdown
@@ -2356,6 +2395,11 @@ if [[ ${REPL} -eq 1 ]]; then
   fi
 fi
 
+if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+  echoit "PRE_SHUFFLE_SQL=1: This script will randomly pre-shuffle ${PRE_SHUFFLE_SQL_LINES} lines of SQL into a temporary file in ${PRE_SHUFFLE_DIR} and reuse this file for ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trial(s)"
+fi
+
+ 
 SQL_INPUT_TEXT="SQL file used: ${INFILE}"
 if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
   if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 0 ]; then
