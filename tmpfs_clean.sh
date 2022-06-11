@@ -142,6 +142,15 @@ else
   fi
 fi
 
+# TODO: somehow make this more universal in case PRE_SHUFFLE_DIR is changed in pquery-run.conf
+if [ -d /dev/shm/sql_shuffled ]; then 
+  echo "> Note: /dev/shm/sql_shuffled directory found (default PRE_SHUFFLE_DIR in pquery-run.conf): cleaning unused shuffled SQL files"
+  sleep 2
+  # The following oneliner takes the leading 6 digits of the shuffled .sql file (which is the workdir), then checkes if a pquery-go-expert screen (running in a 'ge' screen session) with the same workdir is running. If not, it will delete the file as it is then safe to do so. 
+ # TODO: how to make this safer for runs not started inside screen sessions (almost never the case for professional setups). Perhaps it is possible to do a similar "age check" as is used elsewhere in this script
+  ls --color=never /dev/shm/sql_shuffled | sed 's|_[0-9]\+\.sql||' | xargs -I{} echo "echo '{}' | grep -vE \$(screen -ls | grep -o '\.ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|\.ge||' | tr '\n' '|' | sed 's/|$//')" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "if [ ! -z '{}' ]; then echo 'rm -Rf /dev/shm/sql_shuffled/{}_*.sql'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+fi
+
 if [ ! -z "$(ls -d --color=never /dev/shm/var_* 2>/dev/null)" ]; then
   echo "> Note: MTR --mem directories found, please check/delete these manually as required (first column is space used):"
   du -shc /dev/shm/var_* | grep -v total

@@ -79,6 +79,9 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+mode == 16 || mode == 12 || state > buf_page_t::UNFIXED|SIGABRT|buf_page_get_low|buf_page_get_gen|btr_cur_search_to_nth_level_func|btr_pcur_open_low                           ## MDEV-28802
+SIGABRT|ib::fatal::~fatal|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_page_init_for_read                                                                 ## MDEV-28800
+SIGABRT|ib::fatal::~fatal|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|fsp_page_create                                                                        ## MDEV-28800
 SIGSEGV|JOIN_CACHE::reset_join|sub_select_cache|evaluate_join_record|sub_select                                                                                                ## MDEV-28799
 cache != __null|SIGABRT|sub_select_cache|evaluate_join_record|sub_select|do_select                                                                                             ## MDEV-28799
 !(mysql_bin_log.is_open() && !thd.is_current_stmt_binlog_format_row())|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|pfs_spawn_thread|start_thread              ## MDEV-28791

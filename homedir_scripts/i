@@ -1,4 +1,9 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+# Updated by Ramesh Sivaraman, MariaDB
+
+DISPLAY_CORE=0  # Run ~/t (produce UniqueID using gdb) on the core (if any). This slows the script down a bit
+
 if [ -z "${1}" ]; then
   if [ -r ./pquery-run.log ]; then  # Likely inside a workdir, just run ~/ii as aid
     ~/ii
@@ -67,20 +72,22 @@ if [ "${CHARS_MY_INIT}" -gt 1 ]; then
 fi
 cat ${1}/MYEXTRA | sed 's|\-\-no\-defaults ||;s|^|MYEXTRA           : |'
 
-if [[ ${MDG} -eq 1 ]]; then
-  for i in $(ls -lt ${1} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep -v tmp | tr -dc '0-9\n' | sort); do
-    if [ -z "$(ls ${1}/node${i}/*core 2>/dev/null)" ]; then
-      echo "NODE${i} CORE        : No core"
-    else
-      ls ${1}/node${i}/*core | sed "s|^|NODE${i} CORE        : ${PWD}/|" | sed 's|[/]\+|/|g'
-      ~/t ${1} | sed "s|^|CORE UNIQUEID N${i}  : |"
-    fi
-  done
-else
-  if [ -z "$(ls ${1}/data/*core 2>/dev/null)" ]; then
-    echo "CORE              : No core"
+if [ "${DISPLAY_CORE}" -eq 1 ]; then
+  if [[ ${MDG} -eq 1 ]]; then
+    for i in $(ls -lt ${1} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep -v tmp | tr -dc '0-9\n' | sort); do
+      if [ -z "$(ls ${1}/node${i}/*core 2>/dev/null)" ]; then
+        echo "NODE${i} CORE        : No core"
+      else
+        ls ${1}/node${i}/*core | sed "s|^|NODE${i} CORE        : ${PWD}/|" | sed 's|[/]\+|/|g'
+        ~/t ${1} | sed "s|^|CORE UNIQUEID N${i}  : |"
+      fi
+    done
   else
-    ls ${1}/data/*core | sed "s|^|CORE              : ${PWD}/|" | sed 's|[/]\+|/|g'
-    ~/t ${1} | sed "s|^|CORE UNIQUEID     : |"
+    if [ -z "$(ls ${1}/data/*core 2>/dev/null)" ]; then
+      echo "CORE              : No core"
+    else
+      ls ${1}/data/*core | sed "s|^|CORE              : ${PWD}/|" | sed 's|[/]\+|/|g'
+      ~/t ${1} | sed "s|^|CORE UNIQUEID     : |"
+    fi
   fi
 fi
