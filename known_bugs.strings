@@ -79,6 +79,10 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Item::save_in_field_inner|Item::save_in_field                                                                    ## MDEV-28835
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Item::save_in_field|fill_record                                                                                  ## MDEV-28835
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field                                           ## MDEV-28835
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Field_enum::store|Item::save_str_in_field                                                                ## MDEV-28835
 SIGSEGV|Item_field::used_tables|optimize_semijoin_nests|make_join_statistics|JOIN::optimize_inner                                                                              ## MDEV-28833
 SIGSEGV|buf_flush_LRU_list_batch|buf_do_LRU_batch|buf_flush_LRU|buf_pool_t::withdraw_blocks                                                                                    ## MDEV-28828
 mode == 16 || mode == 12 || state > buf_page_t::UNFIXED|SIGABRT|buf_page_get_low|buf_page_get_gen|btr_cur_search_to_nth_level_func|btr_pcur_open_low                           ## MDEV-28802
@@ -625,11 +629,6 @@ SIGSEGV|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::
 table_block_data->m_cached_query_count >= 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                  ## MDEV-23256
 inited == RND|SIGABRT|handler::ha_rnd_next|select_unit_ext::send_eof|do_select|JOIN::exec_inner                                                                                ## MDEV-23226
 t->s->tmp_table || thd->mdl_context.is_lock_owner(MDL_key::TABLE, t->s->db.str, t->s->table_name.str, t->reginfo.lock_type >= TL_WRITE_ALLOW_WRITE ? MDL_SHARED_WRITE : MDL_SHARED_READ)|SIGABRT|lock_tables_check|mysql_lock_tables|lock_tables|open_and_lock_tables ## MDEV-23211
-(length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Column_definition::create_interval_from_interval_list|Column_definition::prepare_interval_field          ## MDEV-23210
-(length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_ci_lengthsp|my_uca_strnxfrm_utf32|charset_info_st::strnxfrm                                                                     ## MDEV-23210
-(length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_uca_strnxfrm_utf32|Type_handler_string_result::make_sort_key|make_sortkey                                                       ## MDEV-23210
-(length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Field::save_in_field_str|Field_enum::save_in_field                                                               ## MDEV-23210
-(length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Field_enum::store|Field::save_in_field_str                                                               ## MDEV-23210
 SIGSEGV|TABLE_LIST::print|print_table_array|print_join|st_select_lex::print                                                                                                    ## MDEV-23208
 s|SIGABRT|TABLE::versioned|TABLE_LIST::print|print_table_array|print_join                                                                                                      ## MDEV-23208
 tl->table == __null|SIGABRT|THD::open_temporary_table|THD::open_temporary_tables|open_only_one_table|mysql_admin_table                                                         ## MDEV-23207
@@ -1301,3 +1300,8 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # m_status == DA_ERROR|SIGABRT|Diagnostics_area::sql_errno|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                          ## Fixed ## MDEV-22266
 # SIGABRT|__libc_message|malloc_printerr|_int_free|free_root                                                                                                          ## Fixed ## MDEV-24560
 # SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                                                                                                          ## Fixed ## MDEV-24560
+# (length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Column_definition::create_interval_from_interval_list|Column_definition::prepare_interval_field ## Fixed ## MDEV-23210
+# (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_ci_lengthsp|my_uca_strnxfrm_utf32|charset_info_st::strnxfrm                                                          ## Fixed ## MDEV-23210
+# (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_uca_strnxfrm_utf32|Type_handler_string_result::make_sort_key|make_sortkey                                            ## Fixed ## MDEV-23210
+# (length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Field::save_in_field_str|Field_enum::save_in_field                                                    ## Fixed ## MDEV-23210
+# (length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Field_enum::store|Field::save_in_field_str                                                    ## Fixed ## MDEV-23210

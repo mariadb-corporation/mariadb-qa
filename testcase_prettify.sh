@@ -380,6 +380,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|auto_increment|AUTO_INCREMENT|gi' | \
   sed 's|auto_increment_offset|AUTO_INCREMENT_OFFSET|gi' | \
   sed 's|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi' | \
+  sed 's|date_format[ \t]*(|DATE_FORMAT(|gi' | \
   sed 's|world|world|gi' | \
   sed 's|engine innodb|ENGINE=InnoDB|gi' | \
   sed 's|engine spider|ENGINE=Spider|gi' | \
