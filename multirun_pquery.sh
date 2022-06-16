@@ -59,7 +59,7 @@ else
   echo "Done!"
 fi
 
-echo -e "\n===== Starting pquery processes"
+echo -e "\n===== Starting pquery process(es)"
 if [ ${REPORT_THREADS} -eq 0 ]; then
   echo 'Running...'
 fi

@@ -4,7 +4,7 @@
 BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space
 RUNSOPT=5
-RUNSDBG=5
+RUNSDBG=7
 #CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD-btrfs.conf
 CONF=pquery-run-MD.conf  # File name only, no spaces, no directories

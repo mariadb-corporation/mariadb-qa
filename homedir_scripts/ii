@@ -14,5 +14,8 @@ if grep '^USE_GENERATOR_INSTEAD_OF_INFILE=1' pquery*.conf; then
 fi
 grep '^MYINIT' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
 grep '^MYSAFE' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
-grep '^MYEXTRA' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
-
+if grep '^QUERY_CORRECTNESS_TESTING=1' pquery*.conf; then
+  grep '^MYEXTRA' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+else
+  grep '^MYEXTRA' pquery*.conf | grep -v 'MYEXTRA2' | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+fi

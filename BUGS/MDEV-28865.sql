@@ -1,0 +1,7 @@
+SET unique_checks=0, foreign_key_checks=0, autocommit=0;
+CREATE TABLE t1 (c INT) ENGINE=MyISAM PARTITION BY LIST (c) (PARTITION p VALUES IN (1,2));
+FLUSH TABLES t1 FOR EXPORT;
+CREATE TEMPORARY TABLE t1 (id INT(10) NOT NULL UNIQUE);
+INSERT INTO t1 VALUES (1);
+SET SESSION foreign_key_checks=1;
+INSERT INTO t1 VALUES ('a'),('A'),('b'),('B');
