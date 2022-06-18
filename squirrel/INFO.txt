@@ -1,0 +1,1 @@
+For the moment, this directory simply contains notes/modified code/scripts etc. (as backup)

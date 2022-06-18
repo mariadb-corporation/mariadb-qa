@@ -1,0 +1,9 @@
+#!/bin/bash
+killall -9 afl-fuzz 2>/dev/null
+sleep 0.1
+killall -9 afl-fuzz 2>/dev/null
+sleep 0.1
+ps -ef | grep 'afl-fuzz' | grep -vE 'grep|g++' | grep 'defunct' | awk '{print $3}' | xargs -I{} kill -9 {}  # Kill the PPID
+sleep 0.1
+ps -ef | grep afl-fuzz | grep -vE 'grep|g++'  # Success or not status output
+screen -wipe

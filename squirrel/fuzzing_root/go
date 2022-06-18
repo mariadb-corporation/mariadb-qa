@@ -1,0 +1,77 @@
+#!/bin/bash
+COUNT="$(ps -ef | grep 'go$' | grep -v grep  | wc -l)"
+if [ ! -z ${COUNT} ]; then
+  if [ ${COUNT} -gt 2 ]; then  # 2: Script itself and it's PPID bash
+    echo './go already seems to be running elsewhere, terminating'
+    exit 1
+  fi
+else
+  echo "Assert: count is empty"
+  exit 1
+fi
+if [ -d /dev/shm/fuzzcache ]; then
+  rm -Rf /dev/shm/fuzzcache
+fi
+mkdir /dev/shm/fuzzcache
+if [ -d /dev/shm/fuzzcache ]; then
+  export AFL_TMPDIR=/dev/shm/fuzzcache
+else 
+  echo 'Directory /dev/shm/fuzzcache does not exist after creation?'
+  exit 1
+fi
+####export AFL_MAP_SIZE=700000  # testing without setting it
+#export AFL_MAP_SIZE=700
+#export AFL_DEBUG_CHILD=1  # Does not seem to work. Somehow the instrumentation is not working
+####export AFL_LLVM_INSTRUMENT=PCGUARD  # The default -- is this a build option only?  # testing without setting it
+#export AFL_LLVM_INSTRUMENT=CLASSIC
+#export AFL_LLVM_INSTRUMENT=LTO
+export AFL_NO_ARITH=1
+#export __AFL_SHM_ID=47
+#export LD_LIBRARY_PATH=/test/AFL-MD160622-mariadb-10.10.0-linux-x86_64-dbg/lib/
+#export LD_LIBRARY_PATH=/test/AFL-MD180622-mariadb-10.5.17-linux-x86_64_dbg/lib/
+export LD_LIBRARY_PATH=/test/AFL-MD180622-mariadb-10.3.36-linux-x86_64/lib/
+if [ ! -z "${AFL_LLVM_INSTRUMENT}" ]; then
+  echo 'Remember that the instrumentation selected (if any) should match the build process'
+  echo "AFL_LLVM_INSTRUMENT: ${AFL_LLVM_INSTRUMENT}"
+  echo ''
+fi
+echo 'Remember to set LD_LIBRARY_PATH correctly! Current setting:'
+echo "LD_LIBRARY_PATH    : ${LD_LIBRARY_PATH}"
+echo ''
+# Setting the AFL_MAP_SIZE size is not required on AFL side
+#if [ ! -z "${AFL_MAP_SIZE}" ]; then
+#  echo 'Remember that AFL_MAP_SIZE should match the one set for the server'
+#  echo "AFL_MAP_SIZE       : ${AFL_MAP_SIZE}"
+#  echo ''
+#fi
+if [ ! -z "${AFL_TMPDIR}" ]; then
+  echo "AFL_TMPDIR         : ${AFL_TMPDIR}"
+else
+  echo 'AFL_TMPDIR: empty?'
+fi
+sleep 3
+#../afl-fuzz -t 2000 -m 10000 -i ./init_lib/ -o ../$(date +%s) aaa
+#../afl-fuzz -t 2000 -m 10000 -i ./select1/ -x ./sql.lang -o ../$(date +%s) aaa
+#../afl-fuzz -t 3000 -m 30000 -i ./crashes/ -o ../$(date +%s) a1
+if [ -d ../multiple ]; then
+  rm -Rf ../multiple.prev
+  mv ../multiple ../multiple.prev 
+fi
+if [ -d ../multiple ]; then
+  echo "Assert: ../multiple exists after removal"
+  exit 1
+fi
+mkdir ../multiple
+echo 'Starting master node...'
+# to debug; add ;bash to the end of the command line and start manually, i.e. .../master.log;bash"
+screen -admS afl-master-node bash -c "../afl-fuzz -t 2000 -m 20000 -i ./select1/ -x ./sql.lang -o ../multiple -M master master 2> ../multiple/master.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
+echo 'Sleeping 60 seconds to allow master node to start, and to start the MariDB server.'
+echo 'Use this command to connect to the master node:'
+echo 'screen -d -r afl-master-node'
+sleep 60
+echo 'Starting 31 slave nodes...'
+for ((i=1;i<=31;i++)){
+  echo -n "${i}, "
+  screen -admS afl-slave-node-${i} bash -c "../afl-fuzz -t 2000 -m 10000 -i ./select1/ -x ./sql.lang -o ../multiple -S slave${i} slave${i}"
+}
+echo "DONE!"

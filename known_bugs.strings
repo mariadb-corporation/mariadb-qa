@@ -79,6 +79,8 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MDEV-25187
+SIGSEGV|Item_func_not::fix_fields|st_select_lex::pushdown_from_having_into_where|JOIN::optimize_inner|JOIN::optimize                                                           ## MDEV-19520
 !check_foreigns|SIGABRT|trx_t::bulk_insert_apply|ha_innobase::start_stmt|check_lock_and_start_stmt|lock_tables                                                                 ## MDEV-28865
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Item::save_in_field_inner|Item::save_in_field                                                                    ## MDEV-28835
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Item::save_in_field|fill_record                                                                                  ## MDEV-28835

@@ -97,7 +97,7 @@ else
                       else
                         AGESUBDIR=$(( $(date +%s) - $(stat -c %Z "${SUBDIR}") ))  # Current trial directory age in seconds
                         if [ ${AGESUBDIR} -ge 10800 ]; then  # Don't delete pquery-run.sh directories if they have recent trials in them (i.e. they are likely still running): >=3hr
-                          if [ "${DIR}" != "/dev/shm/sql_shuffled" ]; then  # Don't delete the temporary SQL shuffle folder created and used by pquery-run.sh
+                          if [ "${DIR}" != "/dev/shm/sql_shuffled" -a "${DIR}" != "/dev/shm/fuzzcache" ]; then  # Do not delete the temporary SQL shuffle directory created and used by pquery-run.sh, and do not delete the fuzzcache directory
                             if [ ${SILENT} -eq 0 ]; then
                               echo "Deleting directory ${DIR} (trial subdirectory age: ${AGESUBDIR}s)"
                             fi
@@ -111,7 +111,7 @@ else
                     echo "> Warning: Unrecognized directory structure: ${DIR} (Assert: >=1 sub directories found, not covered yet, please fixme)"
                   fi
                 else
-                  if [ "${DIR}" != "/dev/shm/sql_shuffled" ]; then  # Don't delete the temporary SQL shuffle folder created and used by pquery-run.sh
+                  if [ "${DIR}" != "/dev/shm/sql_shuffled" -a "${DIR}" != "/dev/shm/fuzzcache" ]; then  # As above
                     if [ ${SILENT} -eq 0 ]; then
                       echo "Deleting directory ${DIR} (directory age: ${AGEDIR}s)"
                     fi

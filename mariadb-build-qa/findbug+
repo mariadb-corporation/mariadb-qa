@@ -74,3 +74,6 @@ cat /tmp/sec.t | sed 's|-| |;s|mysql|DUMMY2|' | tr '\n' ',' | sed 's|DUMMY2|\nMy
 # Compile/output bug-not-present-in list
 echo -e "\nBug (or feature/syntax) confirmed not present in:"
 diff /tmp/pri.t /tmp/sec.t | grep --binary-files=text '<' | sed 's|^< ||' | sed 's|-| |;s|mysql|DUMMY2|' | tr '\n' ',' | sed 's|DUMMY2|\nMySQL:|;s|DUMMY2||g;s|,|, |g;s|^mariadb|DUMMY|;s|mariadb ||g;s|DUMMY|MariaDB:|;s|-dbg| (dbg)|g;s|-opt| (opt)|g;' | sed 's|, $||;s|  | |g'; echo ''
+
+# Cleanup
+rm -f /tmp/pri.t /tmp/sec.t
