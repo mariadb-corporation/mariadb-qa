@@ -1,9 +1,10 @@
 #!/bin/bash
   
-#if [ -z "${1}" ]; then
-#  echo "Need to specify AFL_SHM_ID number"
-#  exit 1
-#fi
+if [ -d "${1}" ]; then
+  echo "Please pass instance number"
+  exit 1
+fi
+INSTANCE="afl-${1}"
 
 if [ ! -d ./lib ]; then
   echo "Directory ./lib not found - are you in a MariaDB BASEDIR?"
@@ -25,7 +26,8 @@ sleep 3
 export AFL_TMPDIR=/dev/shm/fuzzcache
 #export LD_LIBRARY_PATH=${PWD}/lib/  # This is not required on the server side
 export AFL_MAP_SIZE=333041  # 10.3 specific!
-export __AFL_SHM_ID="$(cat ~/fuzzing/multiple/master.log | grep --binary-files=text 'SHM_ENV_VAR' | tail -n1 | grep --binary-files=text -o '[0-9]\+')"
+INSTANCE="afl-${1}"
+export __AFL_SHM_ID="$(cat ~/fuzzing/${INSTANCE}.log | grep --binary-files=text 'SHM_ENV_VAR' | tail -n1 | grep --binary-files=text -o '[0-9]\+')"
 ./start
 echo 'Ready!'
 echo "AFL_MAP_SIZE: ${AFL_MAP_SIZE} | __AFL_SHM_ID: ${__AFL_SHM_ID} | AFL_TMPDIR: ${AFL_TMPDIR}"

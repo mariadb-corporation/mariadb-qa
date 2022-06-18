@@ -1,12 +1,16 @@
 #!/bin/bash
-COUNT="$(ps -ef | grep 'go$' | grep -v grep  | wc -l)"
-if [ ! -z ${COUNT} ]; then
-  if [ ${COUNT} -gt 2 ]; then  # 2: Script itself and it's PPID bash
-    echo './go already seems to be running elsewhere, terminating'
-    exit 1
-  fi
-else
-  echo "Assert: count is empty"
+#COUNT="$(ps -ef | grep 'go$' | grep -v grep  | wc -l)"
+#if [ ! -z ${COUNT} ]; then
+##  if [ ${COUNT} -gt 2 ]; then  # 2: Script itself and it's PPID bash
+#    echo './go already seems to be running elsewhere, terminating'
+#    exit 1
+#  fi
+#else
+#  echo "Assert: count is empty"
+#  exit 1
+#fi
+if [ -z "${1}" ]; then
+  echo "Please pass instance number"
   exit 1
 fi
 if [ -d /dev/shm/fuzzcache ]; then
@@ -62,16 +66,20 @@ if [ -d ../multiple ]; then
   exit 1
 fi
 mkdir ../multiple
-echo 'Starting master node...'
+INSTANCE="afl-${1}"
+#screen -admS afl-1 bash -c "../afl-fuzz -t 2000 -m 20000 -i ./select1/ -x ./sql.lang -o ../multiple -M master master 2> ../multiple/master.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
+screen -admS ${INSTANCE} bash -c "../afl-fuzz -t 2000 -m 20000 -i ./init_lib/ -o ../$(date +%s) ${INSTANCE} 2> ~/fuzzing/${INSTANCE}.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
+# Parallel fuzzing does not work with Squirrel?
+#echo 'Starting master node...'
 # to debug; add ;bash to the end of the command line and start manually, i.e. .../master.log;bash"
-screen -admS afl-master-node bash -c "../afl-fuzz -t 2000 -m 20000 -i ./select1/ -x ./sql.lang -o ../multiple -M master master 2> ../multiple/master.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
-echo 'Sleeping 60 seconds to allow master node to start, and to start the MariDB server.'
-echo 'Use this command to connect to the master node:'
-echo 'screen -d -r afl-master-node'
-sleep 60
-echo 'Starting 31 slave nodes...'
-for ((i=1;i<=31;i++)){
-  echo -n "${i}, "
-  screen -admS afl-slave-node-${i} bash -c "../afl-fuzz -t 2000 -m 10000 -i ./select1/ -x ./sql.lang -o ../multiple -S slave${i} slave${i}"
-}
+#screen -admS afl-master-node bash -c "../afl-fuzz -t 2000 -m 20000 -i ./select1/ -x ./sql.lang -o ../multiple -M master master 2> ../multiple/master.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
+#echo 'Sleeping 60 seconds to allow master node to start, and to start the MariDB server.'
+#echo 'Use this command to connect to the master node:'
+#echo 'screen -d -r afl-master-node'
+#sleep 60
+#echo 'Starting 31 slave nodes...'
+#for ((i=1;i<=31;i++)){
+#  echo -n "${i}, "
+#  screen -admS afl-slave-node-${i} bash -c "../afl-fuzz -t 2000 -m 10000 -i ./select1/ -x ./sql.lang -o ../multiple -S slave${i} slave${i}"
+#}
 echo "DONE!"
