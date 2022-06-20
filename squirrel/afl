@@ -1,20 +1,41 @@
 #!/bin/bash
-  
-if [ -d "${1}" ]; then
-  echo "Please pass instance number"
-  exit 1
+MAX_RUNTIME_MIN=5
+
+if [ -z "${1}" ]; then
+  echo "Need to specify instanceID"
+  return 2> /dev/null; exit 1
+elif [ "$(echo "${1}" | sed 's|^[0-9]$|OK|')" != "OK" ]; then
+  echo "Option passed (instanceID: {1}) is not correct. Range: 0-9"
+  return 2> /dev/null; exit 1
 fi
 INSTANCE="afl-${1}"
 
+if [ "${STY}" == "" ]; then
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "afl-server-${1}" bash -c "./$0 ${1}"
+  sleep 1
+  screen -d -r afl-server-${1}
+  return 2> /dev/null; exit 0
+fi
+
 if [ ! -d ./lib ]; then
   echo "Directory ./lib not found - are you in a MariaDB BASEDIR?"
-  exit 1
+  return 2> /dev/null; exit 1
 fi
 
 if [ ! -r ./start ]; then
   echo "Start not present: execute ~/start"
-  exit 1
+  return 2> /dev/null; exit 1
 fi
+
+SCRIPTSTOMOD="cl cl_noprompt cl_noprompt_nobinary m multirun multirun_pquery multirun_pquery_rr multirun_rr repl_setup start_gypsy start_rr start_valgrind start stop sysbench_prepare sysbench_run test test_pquery wipe"
+sed -i "s|/test/[-\._A-Za-z0-9]\+x86_64/socket.sock|/test/afl_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
+sed -i "s|/test/afl_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # First replace
+sed -i "s|/test/afl[0-9]_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Subsequent replaces
+
+sed -i "s|^/test/|timeout --signal=9 ${MAX_RUNTIME_MIN}m /test/|" start  # Restart instance every 15 minutes to avoid lockups. Note: this will sometimes create a single dud testcase
+
+rm -f /test/afl${1}_socket.sock
 
 echo 'Remember that this needs to be run from a clean shell where no AFL variables were ever set, EVEN if they were made empty before starting! However, restarting this script is fine.'
 echo "If you see '.shmat for map: Bad file descriptor' then __AFL_SHM_ID was likely set incorrectly!"
@@ -23,28 +44,50 @@ sleep 2
 sleep 3
 ./stop
 
-export AFL_TMPDIR=/dev/shm/fuzzcache
+#export AFL_TMPDIR=/dev/shm/fuzzcache
 #export LD_LIBRARY_PATH=${PWD}/lib/  # This is not required on the server side
-export AFL_MAP_SIZE=333041  # 10.3 specific!
-INSTANCE="afl-${1}"
+#export AFL_MAP_SIZE=333041  # 10.3 specific!
+#export AFL_MAP_SIZE=375377  # 10.10 specific!
+export AFL_MAP_SIZE=5000000  # Generic, should always work
+
 export __AFL_SHM_ID="$(cat ~/fuzzing/${INSTANCE}.log | grep --binary-files=text 'SHM_ENV_VAR' | tail -n1 | grep --binary-files=text -o '[0-9]\+')"
 ./start
-echo 'Ready!'
-echo "AFL_MAP_SIZE: ${AFL_MAP_SIZE} | __AFL_SHM_ID: ${__AFL_SHM_ID} | AFL_TMPDIR: ${AFL_TMPDIR}"
-
+echo 'Status will show in 20 seconds...'
+sleep 20 # give server time start before starting loop
+clear
+echo "Server started at: $(date) | ID: ${INSTANCE} | Max runtime: ${MAX_RUNTIME_MIN}m (sig 9)"
+echo "Basedir: ${PWD}"
+echo "AFL_MAP_SIZE: ${AFL_MAP_SIZE} | __AFL_SHM_ID: ${__AFL_SHM_ID} | socket: /test/afl${1}_socket.sock"
+echo -n 'Queries: '
+ 
+echo "SHOW GLOBAL STATUS LIKE 'Queries';" > in.sql
 while true; do
-  if /test/AFL-MD180622-mariadb-10.3.36-linux-x86_64/bin/mysqladmin ping -uroot -S/test/AFL-MD180622-mariadb-10.3.36-linux-x86_64/socket.sock > /dev/null 2>&1; then 
-    sleep 3
+  if ${PWD}/bin/mysqladmin ping -uroot -S/test/afl${1}_socket.sock > /dev/null 2>&1; then 
+    sleep 10
+    ./test
+    QUERIES="$(cat ./mysql.out 2>/dev/null | grep Queries | grep -o '[0-9]\+')"
+    echo -n "${QUERIES}.."
     continue
   else
-    sleep 2
+    sleep 3  # Are we sure server is not up?
+    if ${PWD}/bin/mysqladmin ping -uroot -S/test/afl${1}_socket.sock > /dev/null 2>&1; then 
+      continue
+    fi
+    #echo 'Server unreachable... core?:'
+    #ls -l core 2>/dev/null
+    #ls -l ./data/core 2>/dev/null
+    #sleep 2
+    #echo 'Server unreachable... error log tail:'
+    #tail -n20 ./log/master.err
+    #sleep 20
     ./kill
     sleep 1
     ./all_no_cl
-    sleep 5
+    sleep 20 # give server time start before looping
     clear
-    echo "Server last restarted at: $(date)"
+    echo "Server restarted at: $(date) | ID: ${INSTANCE} | Max runtime: ${MAX_RUNTIME_MIN}m (sig 9)"
+    echo "Basedir: ${PWD}"
+    echo "AFL_MAP_SIZE: ${AFL_MAP_SIZE} | __AFL_SHM_ID: ${__AFL_SHM_ID} | socket: /test/afl${1}_socket.sock"
+    echo -n 'Queries: '
   fi
-  echo -n '.'
 done
-

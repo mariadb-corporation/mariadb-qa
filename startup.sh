@@ -886,3 +886,4 @@ else
 fi
 exit 0
 
+ln -s /home/roel/mariadb-qa/squirrel/afl ./afl
