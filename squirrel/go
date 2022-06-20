@@ -10,19 +10,28 @@
 #  exit 1
 #fi
 if [ -z "${1}" ]; then
-  echo "Please pass instance number"
+  echo "Please pass instanceID"
+  exit 1
+elif [ "$(echo "${1}" | sed 's|^[0-9]$|OK|')" != "OK" ]; then
+  echo "Option passed (instanceID: {1}) is not correct. Range: 0-9"
   exit 1
 fi
-if [ -d /dev/shm/fuzzcache ]; then
-  rm -Rf /dev/shm/fuzzcache
+INSTANCE="afl-${1}"
+rm -f ~/fuzzing/${INSTANCE}.log
+if [ -z "${2}" ]; then
+  echo "Please pass basedir to be tested"
+  exit 1 
 fi
-mkdir /dev/shm/fuzzcache
-if [ -d /dev/shm/fuzzcache ]; then
-  export AFL_TMPDIR=/dev/shm/fuzzcache
-else 
-  echo 'Directory /dev/shm/fuzzcache does not exist after creation?'
-  exit 1
-fi
+#if [ -d /dev/shm/fuzzcache ]; then
+#  rm -Rf /dev/shm/fuzzcache
+#fi
+#mkdir /dev/shm/fuzzcache
+#if [ -d /dev/shm/fuzzcache ]; then
+#  export AFL_TMPDIR=/dev/shm/fuzzcache
+#else 
+#  echo 'Directory /dev/shm/fuzzcache does not exist after creation?'
+#  exit 1
+#fi
 ####export AFL_MAP_SIZE=700000  # testing without setting it
 #export AFL_MAP_SIZE=700
 #export AFL_DEBUG_CHILD=1  # Does not seem to work. Somehow the instrumentation is not working
@@ -33,7 +42,21 @@ export AFL_NO_ARITH=1
 #export __AFL_SHM_ID=47
 #export LD_LIBRARY_PATH=/test/AFL-MD160622-mariadb-10.10.0-linux-x86_64-dbg/lib/
 #export LD_LIBRARY_PATH=/test/AFL-MD180622-mariadb-10.5.17-linux-x86_64_dbg/lib/
-export LD_LIBRARY_PATH=/test/AFL-MD180622-mariadb-10.3.36-linux-x86_64/lib/
+#export LD_LIBRARY_PATH=/test/AFL-MD180622-mariadb-10.3.36-linux-x86_64/lib/
+export LD_LIBRARY_PATH=${2}/lib/
+if [ ! -d ${LD_LIBRARY_PATH} ]; then
+  if [ -d /test/${2}/lib/ ]; then
+    export LD_LIBRARY_PATH=/test/${2}/lib/
+  else
+    echo "Assert: LD_LIBRARY_PATH (compiled from second option): ${LD_LIBRARY_PATH} does not exist"
+    exit 1
+  fi
+fi
+export BASEDIR="$(echo ${LD_LIBRARY_PATH} | sed 's|lib[/]*||')"
+if [ ! -r "${BASEDIR}bin/mysqld" ]; then
+  echo "Assert: ${BASEDIR}bin/mysqld cannot be found"
+  exit 1
+fi
 if [ ! -z "${AFL_LLVM_INSTRUMENT}" ]; then
   echo 'Remember that the instrumentation selected (if any) should match the build process'
   echo "AFL_LLVM_INSTRUMENT: ${AFL_LLVM_INSTRUMENT}"
@@ -48,27 +71,26 @@ echo ''
 #  echo "AFL_MAP_SIZE       : ${AFL_MAP_SIZE}"
 #  echo ''
 #fi
-if [ ! -z "${AFL_TMPDIR}" ]; then
-  echo "AFL_TMPDIR         : ${AFL_TMPDIR}"
-else
-  echo 'AFL_TMPDIR: empty?'
-fi
-sleep 3
+#if [ ! -z "${AFL_TMPDIR}" ]; then
+#  echo "AFL_TMPDIR         : ${AFL_TMPDIR}"
+#else
+#  echo 'AFL_TMPDIR: empty?'
+#fi
+#sleep 3
 #../afl-fuzz -t 2000 -m 10000 -i ./init_lib/ -o ../$(date +%s) aaa
 #../afl-fuzz -t 2000 -m 10000 -i ./select1/ -x ./sql.lang -o ../$(date +%s) aaa
 #../afl-fuzz -t 3000 -m 30000 -i ./crashes/ -o ../$(date +%s) a1
-if [ -d ../multiple ]; then
-  rm -Rf ../multiple.prev
-  mv ../multiple ../multiple.prev 
-fi
-if [ -d ../multiple ]; then
-  echo "Assert: ../multiple exists after removal"
-  exit 1
-fi
-mkdir ../multiple
-INSTANCE="afl-${1}"
+#if [ -d ../multiple ]; then
+#  rm -Rf ../multiple.prev
+#  mv ../multiple ../multiple.prev 
+#fi
+#if [ -d ../multiple ]; then
+#  echo "Assert: ../multiple exists after removal"
+#  exit 1
+#fi
+#mkdir ../multiple
 #screen -admS afl-1 bash -c "../afl-fuzz -t 2000 -m 20000 -i ./select1/ -x ./sql.lang -o ../multiple -M master master 2> ../multiple/master.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
-screen -admS ${INSTANCE} bash -c "../afl-fuzz -t 2000 -m 20000 -i ./init_lib/ -o ../$(date +%s) ${INSTANCE} 2> ~/fuzzing/${INSTANCE}.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
+screen -admS ${INSTANCE} bash -c "../afl${1}-fuzz -t 2000 -m 20000 -i ./init_lib/ -o ../$(date +%s) ${INSTANCE} 2> ~/fuzzing/${INSTANCE}.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
 # Parallel fuzzing does not work with Squirrel?
 #echo 'Starting master node...'
 # to debug; add ;bash to the end of the command line and start manually, i.e. .../master.log;bash"
@@ -83,3 +105,4 @@ screen -admS ${INSTANCE} bash -c "../afl-fuzz -t 2000 -m 20000 -i ./init_lib/ -o
 #  screen -admS afl-slave-node-${i} bash -c "../afl-fuzz -t 2000 -m 10000 -i ./select1/ -x ./sql.lang -o ../multiple -S slave${i} slave${i}"
 #}
 echo "DONE!"
+screen -d -r ${INSTANCE}

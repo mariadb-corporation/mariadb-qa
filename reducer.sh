@@ -4447,7 +4447,8 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     elif [ $TRIAL -eq 53 ]; then sed "s/'[^']\+'/''/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 54 ]; then sed "s/'[^']\+'/1/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 55 ]; then sed "s/'[^']\+'/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 56 ]; then sed 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    elif [ $TRIAL -eq 56 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 57 ]; then sed 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`
@@ -4770,8 +4771,14 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 271 ]; then sed "s/(SELECT[^(]\+)/(SELECT * FROM (/i" $WORKF > $WORKT
     elif [ $TRIAL -eq 272 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM (/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 273 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM (/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 274 ]; then sed "s/CONCURRENT//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 275 ]; then sed "s/CONCURRENT//i" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    elif [ $TRIAL -eq 274 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 275 ]; then sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /gi" $WORKF > $WORKT  # Long math calculations
+    elif [ $TRIAL -eq 276 ]; then sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /i" $WORKF > $WORKT 
+    elif [ $TRIAL -eq 277 ]; then sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /gi" $WORKF > $WORKT 
+    elif [ $TRIAL -eq 278 ]; then sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /i" $WORKF > $WORKT 
+    elif [ $TRIAL -eq 279 ]; then sed "s/ + 1 //gi" $WORKF > $WORKT 
+    elif [ $TRIAL -eq 280 ]; then sed "s/CONCURRENT//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 281 ]; then sed "s/CONCURRENT//i" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`
@@ -5189,7 +5196,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 102 ]; then sed "s/TINYINT/INT/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 103 ]; then sed "s/SMALLINT/INT/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 104 ]; then sed "s/MEDIUMINT/INT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 105 ]; then sed "s/BIGINT/INT/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 105 ]; then sed "s/BIGINT/INT/gi;s/BOOLEAN/INT/gi;" $WORKF > $WORKT
     elif [ $TRIAL -eq 106 ]; then sed "s/WHERE[ ]*(\(.*\),.*)/WHERE (\1)/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 107 ]; then sed "s/\\\'[0-9a-zA-Z]\\\'/0/g" $WORKF > $WORKT  # \'c\' in PS matching
     elif [ $TRIAL -eq 108 ]; then sed "s/\\\'[0-9a-zA-Z]\\\'/1/g" $WORKF > $WORKT
@@ -5229,7 +5236,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 142 ]; then NOSKIP=1; sed "s/ ENGINE=CSV/ ENGINE=InnoDB/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 143 ]; then NOSKIP=1; sed "s/ ENGINE=NDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 144 ]; then NOSKIP=1; sed "s/ ENGINE=[A-Za-z_-]\+/ ENGINE=InnoDB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 145 ]; then NOSKIP=1; sed "s/ ENGINE=[A-Za-z_-]\+/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 145 ]; then sed "s/ ENGINE=[A-Za-z_-]\+/ /gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 146 ]; then sed "s/ ENGINE=TokuDB/ ENGINE=none/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 147 ]; then sed "s/ ENGINE=RocksDB/ ENGINE=none/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 148 ]; then NOSKIP=1; sed "s/TokuDB/InnoDB/gi" $WORKF > $WORKT
@@ -5264,18 +5271,51 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 177 ]; then sed "s/c1/c/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 178 ]; then sed "s/p1/p/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 179 ]; then sed "s/f1/f/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 180 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
-    elif [ $TRIAL -eq 181 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
+    elif [ $TRIAL -eq 180 ]; then sed "s/v1/c/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 181 ]; then sed "s/c,c,c/c/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 182 ]; then sed "s/c,c/c/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 183 ]; then sed "s/t[ \t]*(v)/t/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 184 ]; then sed "s/[0-9][0-9][0-9][0-9][0-9]\+/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 185 ]; then sed "s/[0-9][0-9][0-9][0-9][0-9]\+/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 186 ]; then sed "s/[0-9][0-9][0-9][0-9]\+/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 187 ]; then sed "s/[0-9][0-9][0-9][0-9]\+/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 188 ]; then sed "s/[0-9][0-9][0-9]\+/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 189 ]; then sed "s/[0-9][0-9][0-9]\+/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 190 ]; then sed "s/[0-9][0-9]\+/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 191 ]; then sed "s/[0-9][0-9]\+/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 192 ]; then sed "s/[-+%^*]1//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 193 ]; then sed "s/[-+%^*]1//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 194 ]; then sed "s/[-+%^*] [-+%^*]/-/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 195 ]; then sed "s/[-+%^*] [-+%^*]/-/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 196 ]; then sed "s/- 1/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 197 ]; then sed "s/ORDER BY [^ ]\+//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 198 ]; then sed "s/ORDER BY [^ ]\+//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 199 ]; then sed "s/CASE.*END/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 200 ]; then sed "s/CASE[^E]\+END/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 201 ]; then sed "s/CASE.*END/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 202 ]; then sed "s/CASE[^E]\+END/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 203 ]; then sed "s/CASE.*END/CASE WHEN 1 THEN 2 ELSE 3 END/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 204 ]; then sed "s/CASE[^E]\+END/CASE WHEN 1 THEN 2 ELSE 3 END/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 205 ]; then sed "s/CASE.*END/CASE WHEN 1 THEN 2 ELSE 3 END/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 206 ]; then sed "s/CASE[^E]\+END/CASE WHEN 1 THEN 2 ELSE 3 END/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 207 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES (1),/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 208 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 209 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 210 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 211 ]; then sed "s/VALUES[ \t]\+(.*)/VALUES (1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 212 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
+    elif [ $TRIAL -eq 213 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
       if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
         ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT
       else
         cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
-    elif [ $TRIAL -eq 182 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 214 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
     # RV 25/01/21 Disabled next trial to see if this fixes the # mysqld options required insert
     # RV 09/05/22 It seems to help. Reinstated trial by temporary dummy swap instead
-    elif [ $TRIAL -eq 183 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
-    elif [ $TRIAL -eq 184 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 215 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
+    elif [ $TRIAL -eq 216 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 217 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`

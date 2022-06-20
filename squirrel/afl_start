@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ -z "${1}" ]; then
+  echo "Please pass instance number"
+  exit 1
+fi
+INSTANCE="afl-${1}"
+PORT="$(grep -o 'port=[0-9]\+' start | grep -o '[0-9]\+')"
+NEWPORT=$[ ${PORT} + 1 ]
+sed -i "s|port=${PORT}|port=${NEWPORT}|g" ./start
+screen -admS ${INSTANCE} bash -c "./afl ${1}"

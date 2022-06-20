@@ -50,6 +50,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|commit|COMMIT|gi' | \
   sed 's|create|CREATE|gi' | \
   sed 's|data|DATA|gi' | \
+  sed 's|over|OVER|gi' | \
   sed 's|references|REFERENCES|gi' | \
   sed 's|storage|STORAGE|gi' | \
   sed 's|disk|DISK|gi' | \
@@ -347,6 +348,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|sum[ ]*(|SUM(|gi' | \
   sed 's|min[ ]*(|MIN(|gi' | \
   sed 's|max[ ]*(|MAX(|gi' | \
+  sed 's|avg[ ]*(|AVG(|gi' | \
   sed 's|date_add[ ]*(|DATE_ADD(|gi' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
   sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \
