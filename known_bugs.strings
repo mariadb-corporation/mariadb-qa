@@ -79,6 +79,8 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                                          ## MDEV-28917
+n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields                                  ## MDEV-28917
 SIGSEGV|Item::save_decimal_in_field|Item::save_in_field|save_window_function_values|compute_window_func                                                                        ## MDEV-28903
 SIGSEGV|optimize_keyuse|JOIN::add_keyuses_for_splitting|st_join_table::add_keyuses_for_splitting|make_join_statistics                                                          ## MDEV-28901
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MDEV-25187

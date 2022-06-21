@@ -16,7 +16,7 @@ elif [ "$(echo "${1}" | sed 's|^[0-9]$|OK|')" != "OK" ]; then
   echo "Option passed (instanceID: {1}) is not correct. Range: 0-9"
   exit 1
 fi
-INSTANCE="afl-${1}"
+INSTANCE="afl${1}"
 rm -f ~/fuzzing/${INSTANCE}.log
 if [ -z "${2}" ]; then
   echo "Please pass basedir to be tested"
@@ -89,7 +89,7 @@ echo ''
 #  exit 1
 #fi
 #mkdir ../multiple
-#screen -admS afl-1 bash -c "../afl-fuzz -t 2000 -m 20000 -i ./select1/ -x ./sql.lang -o ../multiple -M master master 2> ../multiple/master.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
+#screen -admS afl1 bash -c "../afl-fuzz -t 2000 -m 20000 -i ./select1/ -x ./sql.lang -o ../multiple -M master master 2> ../multiple/master.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
 screen -admS ${INSTANCE} bash -c "../afl${1}-fuzz -t 2000 -m 20000 -i ./init_lib/ -o ../$(date +%s) ${INSTANCE} 2> ~/fuzzing/${INSTANCE}.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
 # Parallel fuzzing does not work with Squirrel?
 #echo 'Starting master node...'
@@ -105,4 +105,4 @@ screen -admS ${INSTANCE} bash -c "../afl${1}-fuzz -t 2000 -m 20000 -i ./init_lib
 #  screen -admS afl-slave-node-${i} bash -c "../afl-fuzz -t 2000 -m 10000 -i ./select1/ -x ./sql.lang -o ../multiple -S slave${i} slave${i}"
 #}
 echo "DONE!"
-screen -d -r ${INSTANCE}
+#screen -d -r ${INSTANCE}

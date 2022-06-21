@@ -4,10 +4,11 @@
 MYEXTRA_OPT="$*"  # Note that this is in addition to any '# mysqld options required for replay: --option1 --option2' etc. options listed inside the .sql testcases (as produced by reducer.sh), which are automatically included in the MYEXTRA options.
 TESTCASES_DIR=/test/TESTCASES
 #MAX_DURATION=900  # 15 Minutes, normal runtime (if not OOM) is <= 1 min with ~20 instances
-MAX_DURATION=300 # 5 min per case, for empty server and 2 instances only
+#MAX_DURATION=300 # 5 min per testcase, for empty server and 2 instances only
+MAX_DURATION=420 # 7 min per testcase
 RUN_BASEDIR=${PWD}
 
-if [ ! -r bin/mysqld ]; then
+if [ ! -r ./bin/mysqld ]; then
   echo "Assert: bin/mysqld not available, please run this from any basedir, preferably the most recent build/the latest version used for the intial testrun, as the backtrace and version/revision used in the bug reports will be based on this base directory"
   exit 1
 fi
@@ -18,15 +19,19 @@ if [ ! -r ./all_no_cl ]; then
 fi
 
 if [ ! -r ../kill_all ]; then
-  echo "Assert: ../kill_all not available, wrong infrastructure setup, please copy contents of ${SCRIPT_PWD}/mariadb-build-qa to .."
+  echo "Assert: ../kill_all not available, wrong infrastructure setup, please run ${SCRIPT_PWD}/linkit.sh"
   exit 1
 fi
 
 if [ ! -r ../check ]; then
-  echo "Assert: ../check not available, wrong infrastructure setup, please copy contents of ${SCRIPT_PWD}/mariadb-build-qa to .."
+  echo "Assert: ../check not available, wrong infrastructure setup, please run ${SCRIPT_PWD}/linkit.sh"
   exit 1
 fi
 
+if [ ! -r ~/b ]; then
+  echo "Assert: ~/b not available, wrong infrastructure setup, please run ${SCRIPT_PWD}/linkit.sh"
+  exit 1
+fi
 
 if [ "$(echo "${PWD}" | grep -o 'opt$')" == "opt" ]; then
   echo "Possible mistake; this script is being executed from an optimized build directory, however normally a solid subset of the testcases will require a debug build, and this script will use the current BASEDIR as the authorative source for producing the gdb backtrace displayed in the bug report. IOW, if there are debug-only testcases in ${TESTCASES_DIR} then there will likely not be any proper statck traces produced for those. To avoid this issue, simply CTRL+C now and run this script again from a debug build. This script will wait 5 seconds now to CTRL+C if necessary..."
@@ -68,15 +73,16 @@ for i in $(seq 1 ${NR_OF_TESTCASES}); do
   echo "Now testing testcase ${i}/${NR_OF_TESTCASES}: ${TESTCASE}..." > current.testcase
   sleep 1
   rm -f ${TESTCASE}.report ${TESTCASE}.report.NOCORE
-  cd ${RUN_BASEDIR}/..
-#  ./check  # Ensure that basedir dirs are still in top shape
-  if [ ${?} -ne 0 ]; then
-    echo "Assert: ./check failed!"
-    exit 1
-  fi
+  #cd ${RUN_BASEDIR}/..
+  #./check  # Ensure that basedir dirs are still in top shape
+  #if [ ${?} -ne 0 ]; then
+  #  echo "Assert: ./check failed!"
+  #  exit 1
+  #fi
   cd ${RUN_BASEDIR}
   cp ${TESTCASE} ./in.sql
-  timeout -k${MAX_DURATION} -s9 ${MAX_DURATION}s ${SCRIPT_PWD}/bug_report.sh ${MYEXTRA_OPT} > ${TESTCASE}.report
+  timeout -k${MAX_DURATION} -s9 ${MAX_DURATION}s ~/b ${MYEXTRA_OPT} > ${TESTCASE}.report 2>&1
+  #timeout -k${MAX_DURATION} -s9 ${MAX_DURATION}s ${SCRIPT_PWD}/bug_report.sh ${MYEXTRA_OPT} > ${TESTCASE}.report
   cd ${RUN_BASEDIR}/..
   ./kill_all  # If bug_report was halted, this will stop all running instaces
   sync

@@ -1,5 +1,5 @@
 #!/bin/bash
-MAX_RUNTIME_MIN=5
+MAX_RUNTIME_MIN=1440  # 24h
 
 if [ -z "${1}" ]; then
   echo "Need to specify instanceID"
@@ -8,13 +8,13 @@ elif [ "$(echo "${1}" | sed 's|^[0-9]$|OK|')" != "OK" ]; then
   echo "Option passed (instanceID: {1}) is not correct. Range: 0-9"
   return 2> /dev/null; exit 1
 fi
-INSTANCE="afl-${1}"
+INSTANCE="afl${1}"
 
 if [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
-  screen -admS "afl-server-${1}" bash -c "./$0 ${1}"
-  sleep 1
-  screen -d -r afl-server-${1}
+  screen -admS "srv${1}-afl" bash -c "./$0 ${1}"
+  #sleep 1
+  #screen -d -r srv${1}-afl
   return 2> /dev/null; exit 0
 fi
 
@@ -28,10 +28,16 @@ if [ ! -r ./start ]; then
   return 2> /dev/null; exit 1
 fi
 
+if ! grep --binary-files=text 'AFL_MAP_SIZE' ./bin/mysqld >/dev/null 2>&1; then
+  echo "Assert: binary at ${PWD}/bin/mysqld (or mariadbd) is not instrumented!"
+  exit 1
+fi
+
 SCRIPTSTOMOD="cl cl_noprompt cl_noprompt_nobinary m multirun multirun_pquery multirun_pquery_rr multirun_rr repl_setup start_gypsy start_rr start_valgrind start stop sysbench_prepare sysbench_run test test_pquery wipe"
-sed -i "s|/test/[-\._A-Za-z0-9]\+x86_64/socket.sock|/test/afl_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
-sed -i "s|/test/afl_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # First replace
-sed -i "s|/test/afl[0-9]_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Subsequent replaces
+#sed -i "s|/test/[-\._A-Za-z0-9]\+x86_64/socket.sock|/test/afl_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
+#sed -i "s|/test/afl_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # First replace
+#sed -i "s|/test/afl[0-9]_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Subsequent replaces
+sed -i "s|/dev/shm/afl-node-${1}/socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
 
 sed -i "s|^/test/|timeout --signal=9 ${MAX_RUNTIME_MIN}m /test/|" start  # Restart instance every 15 minutes to avoid lockups. Note: this will sometimes create a single dud testcase
 
@@ -48,7 +54,9 @@ sleep 3
 #export LD_LIBRARY_PATH=${PWD}/lib/  # This is not required on the server side
 #export AFL_MAP_SIZE=333041  # 10.3 specific!
 #export AFL_MAP_SIZE=375377  # 10.10 specific!
-export AFL_MAP_SIZE=5000000  # Generic, should always work
+#export AFL_MAP_SIZE=5000000  # Generic, should always work
+#export AFL_MAP_SIZE=1000000  # Generic, should always work, too small
+export AFL_MAP_SIZE=50000000  # Generic, should always work
 
 export __AFL_SHM_ID="$(cat ~/fuzzing/${INSTANCE}.log | grep --binary-files=text 'SHM_ENV_VAR' | tail -n1 | grep --binary-files=text -o '[0-9]\+')"
 ./start
@@ -56,14 +64,14 @@ echo 'Status will show in 20 seconds...'
 sleep 20 # give server time start before starting loop
 clear
 echo "Server started at: $(date) | ID: ${INSTANCE} | Max runtime: ${MAX_RUNTIME_MIN}m (sig 9)"
-echo "Basedir: ${PWD}"
-echo "AFL_MAP_SIZE: ${AFL_MAP_SIZE} | __AFL_SHM_ID: ${__AFL_SHM_ID} | socket: /test/afl${1}_socket.sock"
-echo -n 'Queries: '
+echo "Node: ${1} | Basedir: ${PWD} | socket: /test/afl${1}_socket.sock"
+echo "__AFL_SHM_ID: ${__AFL_SHM_ID} | AFL_MAP_SIZE: ${AFL_MAP_SIZE}"
+echo -n 'Queries (1m updates): '
  
 echo "SHOW GLOBAL STATUS LIKE 'Queries';" > in.sql
 while true; do
   if ${PWD}/bin/mysqladmin ping -uroot -S/test/afl${1}_socket.sock > /dev/null 2>&1; then 
-    sleep 10
+    sleep 60
     ./test
     QUERIES="$(cat ./mysql.out 2>/dev/null | grep Queries | grep -o '[0-9]\+')"
     echo -n "${QUERIES}.."
@@ -86,8 +94,8 @@ while true; do
     sleep 20 # give server time start before looping
     clear
     echo "Server restarted at: $(date) | ID: ${INSTANCE} | Max runtime: ${MAX_RUNTIME_MIN}m (sig 9)"
-    echo "Basedir: ${PWD}"
-    echo "AFL_MAP_SIZE: ${AFL_MAP_SIZE} | __AFL_SHM_ID: ${__AFL_SHM_ID} | socket: /test/afl${1}_socket.sock"
+    echo "Node: ${1} | Basedir: ${PWD} | socket: /test/afl${1}_socket.sock"
+    echo "__AFL_SHM_ID: ${__AFL_SHM_ID} | AFL_MAP_SIZE: ${AFL_MAP_SIZE}"
     echo -n 'Queries: '
   fi
 done

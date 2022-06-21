@@ -3,7 +3,7 @@
 
 # User variables
 KILL_LARGE=1    # Will kill any process consuming equal to or more then KILL_PERCENT.0 percent of memory
-KILL_PERCENT=7  # Ex: 4: All processes up to 3.99 will continue to live, 4.00 and onwards will be killed
+KILL_PERCENT=7  # For example: 4: All processes up to 3.99 will be left, 4.00 and onwards will be killed
 
 # Script variables
 while true; do

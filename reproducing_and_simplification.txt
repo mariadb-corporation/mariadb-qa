@@ -15,6 +15,8 @@ However, for issues that fail to reproduce, try these things (in this order):
 * If the issue reproduces in 'Verify stage' in reducer, set FORCE_SPORADIC=1 in settings to reducer faster/more easily (uses 10 threads for stage 1).
   End somewhere during stage 1 when you have 5-10 lines left and reduction does not seem to progress much anymore. Edit manually further if needed.
 
+* Often when a testcase only reproduces with a C-based client like pquery, reduce the issue (using reducer.sh with USE_PQUERY=1), then try the testcase again in the CLI, it may now reproduce just fine there too.
+
 * Reducer, when using the mysql client for replay may not be replaying the full SQL log. To check this, check the reducer client output log for errors like:
   "No connection. Trying to reconnect... ERROR 2005 (HY000): Unknown MySQL server host '{some random string}' (0)" if you are using the mysql client for replay.
   Then search the SQL input for {some random string}. Likely some sort of parsing error pointed the client at another server. When the mysql client is used for

@@ -178,6 +178,9 @@ else
   echo "Adding scripts: ${BASIC_SCRIPTS}"
 fi
 
+# AFL WIP TODO
+ln -s ~/mariadb-qa/squirrel/afl ./afl
+
 #GR startup scripts
 if [[ $GRP_RPL -eq 1 ]]; then
   echo -e "#!/bin/bash" >./start_group_replication
@@ -886,4 +889,3 @@ else
 fi
 exit 0
 
-ln -s /home/roel/mariadb-qa/squirrel/afl ./afl
