@@ -11,6 +11,14 @@ if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
   sudo chmod -R +rX /data
 fi
 
+# Temp AFL
+if [ ! -d /home/${USER}/fuzzing/fuzzing_root/go ]; then
+  mkdir -p /home/${USER}/fuzzing/fuzzing_root/go 
+fi
+ln -fs /home/${USER}/mariadb-qa/squirrel/afl_genstart_tmpfs_nodes /test/afl_genstart_tmpfs_nodes 2>&1
+ln -fs /home/${USER}/mariadb-qa/squirrel/go /home/${USER}/fuzzing/fuzzing_root/go 2>&1
+# And basedir afl script is done by ~/start
+
 # Homedir scripts
 rm -f ~/tcp ~/pge ~/pg ~/tr ~/tc ~/t ~/fc ~/mcl ~/s
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1

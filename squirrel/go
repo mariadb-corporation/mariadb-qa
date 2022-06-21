@@ -1,4 +1,6 @@
 #!/bin/bash
+#SQL_PATH=./init_lib/
+SQL_PATH=./knownbugs
 #COUNT="$(ps -ef | grep 'go$' | grep -v grep  | wc -l)"
 #if [ ! -z ${COUNT} ]; then
 ##  if [ ${COUNT} -gt 2 ]; then  # 2: Script itself and it's PPID bash
@@ -90,7 +92,7 @@ echo ''
 #fi
 #mkdir ../multiple
 #screen -admS afl1 bash -c "../afl-fuzz -t 2000 -m 20000 -i ./select1/ -x ./sql.lang -o ../multiple -M master master 2> ../multiple/master.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
-screen -admS ${INSTANCE} bash -c "../afl${1}-fuzz -t 2000 -m 20000 -i ./init_lib/ -o ../$(date +%s) ${INSTANCE} 2> ~/fuzzing/${INSTANCE}.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
+screen -admS ${INSTANCE} bash -c "../afl${1}-fuzz -t 2000 -m 20000 -i ${SQL_PATH} -o ../$(date +%s) ${INSTANCE} 2> ~/fuzzing/${INSTANCE}.log"  # master.log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
 # Parallel fuzzing does not work with Squirrel?
 #echo 'Starting master node...'
 # to debug; add ;bash to the end of the command line and start manually, i.e. .../master.log;bash"
