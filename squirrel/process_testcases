@@ -1,0 +1,2 @@
+#!/bin/bash
+BASEDIR="/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg"; find . | grep 'sig:' | grep -vE 'OLD|string|NOCORE' | sed 's|^\./||' | xargs -I{} echo "if [ ! -r '{}.string' -a ! -r '{}.NOCORE' ]; then cp '{}' ${BASEDIR}/in.sql; cd ${BASEDIR}; ./all_no_cl; ./test_pquery; sleep 2; if [ -r ./data/core ]; then ~/t > '/home/$(whoami)/fuzzing/{}.string'; else touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; cd /home/$(whoami)/fuzzing; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" 

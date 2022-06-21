@@ -37,9 +37,10 @@ for((i=0;i<10;i++)); do
   cp -r ${BASEDIR} /dev/shm/afl-node-${i}
   cd /dev/shm/afl-node-${i}
   if [ "${PWD}" == "/dev/shm/afl-node-${i}" ]; then
-    rm -Rf FIREWORKS-BUGS COPYING CREDITS INSTALL-BINARY README-wsrep README.md THIRDPARTY docs man mysql-test 16* scripts sql-bench support-files reducer* *gypsy *rr *valgrind sysbench* *multirun* repl* loop* insert* *stbe *.old gdb memory_use_trace multi* gal* clean_failing_queries *noprompt* fixin g binlog *.sql *.out share sqlmode test_pquery m include 
+    rm -Rf FIREWORKS-BUGS COPYING CREDITS INSTALL-BINARY README-wsrep README.md THIRDPARTY docs man mysql-test 16* sql-bench support-files reducer* *gypsy *rr *valgrind sysbench* *multirun* repl* loop* insert* *stbe *.old gdb memory_use_trace multi* gal* clean_failing_queries *noprompt* fixin g binlog *.sql *.out sqlmode test_pquery m include 
   fi
   if [ -r ~/start ]; then ~/start; else ~/startup; fi
+  sleep 2
   cd ${FUZZING_ROOT}
   ./go ${i} /dev/shm/afl-node-${i}
   cd /dev/shm/afl-node-${i}

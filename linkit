@@ -12,11 +12,14 @@ if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
 fi
 
 # Temp AFL
-if [ ! -d /home/${USER}/fuzzing/fuzzing_root/go ]; then
-  mkdir -p /home/${USER}/fuzzing/fuzzing_root/go 
+if [ ! -d /home/${USER}/fuzzing/fuzzing_root/ ]; then
+  mkdir -p /home/${USER}/fuzzing/fuzzing_root/ 
 fi
 ln -fs /home/${USER}/mariadb-qa/squirrel/afl_genstart_tmpfs_nodes /test/afl_genstart_tmpfs_nodes 2>&1
 ln -fs /home/${USER}/mariadb-qa/squirrel/go /home/${USER}/fuzzing/fuzzing_root/go 2>&1
+ln -fs /home/${USER}/mariadb-qa/squirrel/process_testcases /home/${USER}/fuzzing/process_testcases
+ln -fs /home/${USER}/mariadb-qa/squirrel/del_known_bugs /home/${USER}/fuzzing/del_known_bugs
+ln -fs /home/${USER}/mariadb-qa/squirrel/list_unique_bugs /home/${USER}/fuzzing/list_unique_bugs
 # And basedir afl script is done by ~/start
 
 # Homedir scripts
