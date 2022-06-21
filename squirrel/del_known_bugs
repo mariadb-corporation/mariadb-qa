@@ -1,2 +1,2 @@
 #!/bin/bash
-find . | grep string | xargs -I{} echo "STRING=\"\$(cat '{}')\"; if grep -Fli --binary-files=text \"\${STRING}\" /home/$(whoami)/mariadb-qa/known_bugs.strings >/dev/null 2>&1; then rm '{}'; FILE=\"\$(echo '{}'|sed 's|.string||')\"; if [ -d \"\${FILE}\" -a ! -d \"\${FILE}\" ]; then rm \"\${FILE}\"; rm -f \"\${FILE}.NOCORE\"; fi" > ./dk && chmod +x ./dk && ./dk; rm -f ./dk
+find . | grep string | xargs -I{} echo "STRING=\"\$(cat '{}')\"; if grep -Fli --binary-files=text \"\${STRING}\" /home/$(whoami)/mariadb-qa/known_bugs.strings >/dev/null 2>&1; then rm '{}'; FILE=\"\$(echo '{}'|sed 's|.string||')\"; if [ -d \"\${FILE}\" -a ! -d \"\${FILE}\" ]; then rm \"\${FILE}\"; rm -f \"\${FILE}.NOCORE\"; fi; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
