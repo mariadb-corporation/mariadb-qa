@@ -11,16 +11,24 @@ if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
   sudo chmod -R +rX /data
 fi
 
-# Temp AFL
+# Squirrel/AFL
 if [ ! -d /home/${USER}/fuzzing/fuzzing_root/ ]; then
   mkdir -p /home/${USER}/fuzzing/fuzzing_root/ 
 fi
 ln -fs /home/${USER}/mariadb-qa/squirrel/afl_genstart_tmpfs_nodes /test/afl_genstart_tmpfs_nodes 2>&1
 ln -fs /home/${USER}/mariadb-qa/squirrel/go /home/${USER}/fuzzing/fuzzing_root/go 2>&1
-ln -fs /home/${USER}/mariadb-qa/squirrel/process_testcases /home/${USER}/fuzzing/process_testcases
 ln -fs /home/${USER}/mariadb-qa/squirrel/del_known_bugs /home/${USER}/fuzzing/del_known_bugs
+ln -fs /home/${USER}/mariadb-qa/squirrel/stop_all_fuzzing /home/${USER}/fuzzing/stop_all_fuzzing
 ln -fs /home/${USER}/mariadb-qa/squirrel/list_unique_bugs /home/${USER}/fuzzing/list_unique_bugs
-# And basedir afl script is done by ~/start
+ln -fs /home/${USER}/mariadb-qa/squirrel/full_report /home/${USER}/fuzzing/full_report
+ln -fs /home/${USER}/mariadb-qa/squirrel/partial_report /home/${USER}/fuzzing/partial_report
+ln -fs /home/${USER}/mariadb-qa/squirrel/find_uniqueid /home/${USER}/fuzzing/find_uniqueid
+ln -fs /home/${USER}/mariadb-qa/squirrel/queue_stats /home/${USER}/fuzzing/queue_stats
+ln -fs /home/${USER}/mariadb-qa/squirrel/process_testcases /home/${USER}/fuzzing/process_testcases  # TEMP
+ln -fs /home/${USER}/mariadb-qa/squirrel/process_testcases2 /home/${USER}/fuzzing/process_testcases2  # TEMP
+ln -fs /home/${USER}/mariadb-qa/squirrel/afl_genstart_tmpfs_nodes /home/${USER}/fuzzing/afl_genstart_tmpfs_nodes
+# And basedir './afl' script is done by ~/start already, however it is copied to ~/fuzzing for editing convience ftm
+ln -fs /home/${USER}/mariadb-qa/squirrel/afl /home/${USER}/fuzzing/afl
 
 # Homedir scripts
 rm -f ~/tcp ~/pge ~/pg ~/tr ~/tc ~/t ~/fc ~/mcl ~/s

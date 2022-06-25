@@ -1,6 +1,7 @@
 #!/bin/bash
 #SQL_PATH=./init_lib/
 SQL_PATH=./knownbugs
+#SQL_PATH=./crashes
 #COUNT="$(ps -ef | grep 'go$' | grep -v grep  | wc -l)"
 #if [ ! -z ${COUNT} ]; then
 ##  if [ ${COUNT} -gt 2 ]; then  # 2: Script itself and it's PPID bash
@@ -40,7 +41,7 @@ fi
 ####export AFL_LLVM_INSTRUMENT=PCGUARD  # The default -- is this a build option only?  # testing without setting it
 #export AFL_LLVM_INSTRUMENT=CLASSIC
 #export AFL_LLVM_INSTRUMENT=LTO
-export AFL_NO_ARITH=1
+###export AFL_NO_ARITH=1
 #export __AFL_SHM_ID=47
 #export LD_LIBRARY_PATH=/test/AFL-MD160622-mariadb-10.10.0-linux-x86_64-dbg/lib/
 #export LD_LIBRARY_PATH=/test/AFL-MD180622-mariadb-10.5.17-linux-x86_64_dbg/lib/

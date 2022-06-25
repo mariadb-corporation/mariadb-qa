@@ -1,0 +1,8 @@
+#!/bin/bash 
+echo 'Deleting known bugs...'
+./del_known_bugs
+echo 'Reporting outcomes...'
+COUNT="$(./list_unique_bugs | wc -l)"
+echo "----------------------------------------- ${COUNT} Bugs ---------------"
+./list_unique_bugs
+echo '----------------------------------------------------------------'

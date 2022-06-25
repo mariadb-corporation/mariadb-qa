@@ -10,6 +10,7 @@ COUNT1=0
 COUNT2=0
 COUNT3=0
 NEWBUGCOUNT="$(cat /data/NEWBUGS/*.string 2>/dev/null | sort -u | wc -l)"
+FUZZERBUGCOUNT="Pending"
 TESTCASES="Pending"
 while true; do 
   clear
@@ -30,7 +31,7 @@ while true; do
   fi
   echo -n "Reducers: $(~/count_reducers) | "
   echo -n "mysqld's: $(ps -ef | grep mysqld | grep "no-defaults" | sed "s|..user=.*||;s|.*no-defaults ||" | sort -u | wc -l) | "
-  echo -n "Unique Newbugs: ${NEWBUGCOUNT} | "
+  echo -n "Unique New+Fuzzer: ${NEWBUGCOUNT}+${FUZZERBUGCOUNT} | "
   echo -n "Testcases: ${TESTCASES}"
   sleep 3
   if [ ${COUNT1} -ge 10 ]; then
@@ -39,6 +40,16 @@ while true; do
     #ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | xargs -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -v grep" | xargs -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {}  # Improved version without temporary file
     #ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -v grep" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {}  # Improved version, 0 terminated
     ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi 'grep|fireworks'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null  # Improved version, fireworks protection
+    # Cleanup known bugs from fuzzing
+    if [ -r /home/$(whoami)/fuzzing/del_known_bugs ]; then
+      CURPWD="${PWD}"
+      cd /home/$(whoami)/fuzzing
+      ./del_known_bugs
+      if [ -r ./list_unique_bugs ]; then
+        FUZZERBUGCOUNT="$(./list_unique_bugs | wc -l)"
+      fi
+      cd "${CURPWD}"
+    fi
     # Cleanup any processes which have dead files > 300MB open. This command too assist greatly in overall server memory management
     sudo lsof -s +L1 | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | grep -E "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]|^[3-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | awk '{print $2}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi 'grep|fireworks'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null
     # Cleanup cache, may help avoid OOM
@@ -48,7 +59,7 @@ while true; do
     NEWBUGCOUNT="$(cat /data/NEWBUGS/*.string 2>/dev/null | sort -u | wc -l)"
     cd /dev/shm
     # Check reducer.log in all /dev/shm/[0-9]* directories for the name of the reducer script. Then check ps -ef output to see if that reducer is still actually running. If not, delete the directory as it is no loger of any use. This script greatly helps with keeping especially swap space more empty, for an as yet unknown reason
-    head -n1 [0-9]*/reducer.log | grep 'Reducer: ' | sed 's|.*./||' | sort -u | xargs -I{} echo "if [ -z \"\$(ps -ef | grep '{}' | grep -v grep)\" ]; then echo '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} grep '{}' /dev/shm/1*/reducer.log | sed 's|/reducer.log.*||' | sort -u | xargs -I{} echo "if [ \"\$(echo '{}' | grep -o '^/dev/shm/16')\" == '/dev/shm/16' -a -d '{}' ]; then rm -Rf '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+    head -n1 [0-9]*/reducer.log 2>/dev/null | grep 'Reducer: ' | sed 's|.*./||' | sort -u | xargs -I{} echo "if [ -z \"\$(ps -ef | grep '{}' | grep -v grep)\" ]; then echo '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} grep '{}' /dev/shm/1*/reducer.log | sed 's|/reducer.log.*||' | sort -u | xargs -I{} echo "if [ \"\$(echo '{}' | grep -o '^/dev/shm/16')\" == '/dev/shm/16' -a -d '{}' ]; then rm -Rf '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
     # Check if we have reducer directories > 10GB on /dev/shm and drop them, saving the reducer file
     # Only one directory "per COUNT1 round" is done at the time
     # Updated line below to be safer, but not sure it will fix https://jira.mariadb.org/browse/TODO-3015

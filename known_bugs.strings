@@ -79,6 +79,7 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## MDEV-21310
 SIGSEGV|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                                          ## MDEV-28917
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields                                  ## MDEV-28917
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|close_thread_tables|close_thread_tables_for_query|mysql_execute_command ## MDEV-28913
@@ -790,7 +791,6 @@ maybe_null() || !null_value|SIGABRT|Item_func_round::date_op|Item_func_hybrid_fi
 maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-20501
 maybe_null() || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-20501
 maybe_null || !null_value|SIGABRT|Item_func_round::time_op|Item_func_hybrid_field_type::time_op_with_null_check|Item_func_hybrid_field_type::val_str_from_time_op|Type_handler_time_common::Item_func_hybrid_field_type_val_str ## MDEV-20816
-part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## MDEV-21027
 SIGSEGV|ha_partition::compare_number_of_records|my_qsort2|ha_partition::info|ha_partition::open                                                                                ## MDEV-21134
 inited==RND|SIGABRT|handler::ha_rnd_end|mysql_checksum_table|mysql_execute_command|mysql_parse                                                                                 ## MDEV-21415
 lock_rec_find_set_bit(lock) == ((ulint)(-1))|SIGABRT|lock_rec_free_all_from_discard_page_low|lock_update_discard|btr_discard_page|btr_cur_pessimistic_delete                   ## MDEV-21516
@@ -1319,3 +1319,4 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_uca_strnxfrm_utf32|Type_handler_string_result::make_sort_key|make_sortkey                                            ## Fixed ## MDEV-23210
 # (length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Field::save_in_field_str|Field_enum::save_in_field                                                    ## Fixed ## MDEV-23210
 # (length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Field_enum::store|Field::save_in_field_str                                                    ## Fixed ## MDEV-23210
+# part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## Fixed ## MDEV-21027

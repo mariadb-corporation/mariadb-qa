@@ -6,28 +6,30 @@ touch /dev/shm/tst 2>/dev/null
 if [ ! -r /dev/shm/tst ]; then
   echo "Assert: /dev/shm/tst does not exist after creation attempt?"
   exit 1
+else
+  rm -f /dev/shm/tst
+fi
+
+if [ ! -d /test ]; then
+  echo "Assert: /test does not exist"
+  exit 1
 elif [ ! -d ${FUZZING_ROOT} ]; then
   echo "Assert: FUZZING_ROOT ('${FUZZING_ROOT}') does not exist?"
-  rm -f /dev/shm/tst
   exit 1
 elif [ ! -d ${BASEDIR} ]; then
   echo "Assert: BASEDIR ('${BASEDIR}') does not exist?"
-  rm -f /dev/shm/tst
   exit 1
 elif [ ! -r ${BASEDIR}/bin/mysqld ]; then
   echo "Assert: BASEDIR/bin/mysqld ('${BASEDIR}/bin/mysqld') does not exist?"
-  rm -f /dev/shm/tst
   exit 1
 elif ! grep --binary-files=text 'AFL_MAP_SIZE' ${BASEDIR}/bin/mysqld >/dev/null 2>&1; then
   echo "Assert: binary at ${BASEDIR}/bin/mysqld (or mariadbd) is not instrumented!"
   exit 1
 elif [ ! -r ~/start -a ! -r ~/mariadb-qa/startup.sh ]; then
   echo "Assert: ~/start not available, run ~/mariadb-qa/linkit after cloning mariadb-qa from GitHub"
-  rm -f /dev/shm/tst
   exit 1
 fi
 
-rm -f /dev/shm/tst
 rm -f /test/afl[0-9]_socket.sock
 rm -f ~/fuzzing/afl[0-9].log
 rm -Rf /dev/shm/afl-node-[0-9]
