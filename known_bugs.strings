@@ -79,6 +79,8 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|AGGR_OP::put_record|evaluate_join_record|sub_select|sub_select                                                                                                         ## MDEV-28945
+aggr != __null|SIGABRT|sub_select_postjoin_aggr|evaluate_join_record|sub_select|do_select                                                                                      ## MDEV-28945
 part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## MDEV-21310
 SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                                                                                                                     ## MDEV-28941
 SIGSEGV|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables                                                              ## MDEV-28941

@@ -1,7 +1,4 @@
-- Review output screen differences reason
 - Move more to code to C
 - Update status reporting in afl-fuzz.c
 - Review system settings and add to setupserver
-- Cleanup automation scripts and integration
 - Move fuzzing root files to mariadb-qa
-- Move main fuzzing code to mariadb-qa

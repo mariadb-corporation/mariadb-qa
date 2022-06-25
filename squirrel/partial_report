@@ -3,7 +3,7 @@ echo 'Deleting known bugs...'
 ./del_known_bugs
 echo 'Reporting outcomes...'
 BUGS=$(./list_unique_bugs)
-COUNT="printf "%s\n" "${BUGS}" | wc -l)"
+COUNT="$(printf "%s\n" "${BUGS}" | wc -l)"
 echo "----------------------------------------- ${COUNT} Bugs ---------------"
 printf "%s\n" "${BUGS}"
 echo '----------------------------------------------------------------'

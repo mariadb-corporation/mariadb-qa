@@ -10,7 +10,7 @@ else
   rm -f /dev/shm/tst
 fi
 
-if [ ! -d /test ]; then
+if [ ! -d '/test' ]; then
   echo "Assert: /test does not exist"
   exit 1
 elif [ ! -d ${FUZZING_ROOT} ]; then
