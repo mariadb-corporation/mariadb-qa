@@ -1,17 +1,17 @@
 #!/bin/bash
 BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg
 
-if [ ! -r ${BASEDIR}/bin/mysqld ]; then
-  echo "BASEDIR (${BASEDIR}) does not contain bin/mysqld!"
-  exit 1
-fi
 cd /home/$(whoami)/fuzzing
 if [ "${PWD}" != "/home/$(whoami)/fuzzing" ]; then
   echo "Assert: PWD!=/home/$(whoami)/fuzzing"
   exit 1
-fi
-
-if [ "${STY}" == "" ]; then
+elif [ ! -r /home/$(whoami)/t ]; then
+  echo "Assert: /home/$(whoami)/t not present, try ~/mariadb-qa/linkit"
+  exit 1
+elif [ ! -r ${BASEDIR}/bin/mysqld ]; then
+  echo "BASEDIR (${BASEDIR}) does not contain bin/mysqld!"
+  exit 1
+elif [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
   screen -admS "process_testcases" bash -c "./$0"
   sleep 1
@@ -28,7 +28,7 @@ queue(){
     exit 1
   fi
   TODO[${1}]=$(awk "NR>=${NODE_START[${1}]} && NR<=${NODE_END[${1}]} {print \$0}" /tmp/afl_fulllist.txt)
-  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 2; if [ -r ./data/core ]; then echo '----------- /home/$(whoami)/fuzzing/{}.string:'; ~/t | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE:'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 5m bash -c "{}"
+  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 5; if [ -r ./data/core ]; then /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 5m bash -c "{}"
 }
 
 echo 'Computing runtime size...'

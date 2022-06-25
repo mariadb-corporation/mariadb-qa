@@ -30,6 +30,7 @@ elif [ ! -r ~/start -a ! -r ~/mariadb-qa/startup.sh ]; then
   exit 1
 fi
 
+cd /test
 rm -f /test/afl[0-9]_socket.sock
 rm -f ~/fuzzing/afl[0-9].log
 rm -Rf /dev/shm/afl-node-[0-9]

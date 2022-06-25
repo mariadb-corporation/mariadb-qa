@@ -10,6 +10,7 @@ sleep 3  # Do not remove, sometimes cores are slow to write!
 
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 FRAMESONLY=0
+SHOWINFO=0
 MYSQLD=
 TRIAL=
 LOC=${PWD}
@@ -21,7 +22,10 @@ if [ $(df -k -P /tmp | grep -E --binary-files=text -v "Mounted" | awk '{print $4
 fi
 
 if [ ! -z "${1}" ]; then
-  if [ "${1}" == "FRAMESONLY" ]; then  # Used in automation, ref mass_bug_report.sh
+  if [ "${1}" == "SHOWINFO" -a ! -z "${2}" ]; then  # Used in automation, ref squirrel/process_testcases
+    SHOWINFO=1
+    SHOWTEXT="${2}"
+  elif [ "${1}" == "FRAMESONLY" ]; then  # Used in automation, ref mass_bug_report.sh
     FRAMESONLY=1
   elif [ -f "${1}" -a -x "${1}" ]; then
     if [ "$(readlink -f "${1}" | xargs file | grep -o 'ELF 64-bit LSB shared object')" == "ELF 64-bit LSB shared object" ]; then
@@ -107,6 +111,9 @@ elif [ $(grep -im1 --binary-files=text "runtime error:" ${ERROR_LOG} 2>/dev/null
 fi
 if [ "${ASAN_OR_UBSAN_OR_TSAN_BUG}" -eq 1 ]; then
   TEXT="$(~/mariadb-qa/san_text_string.sh ${ERROR_LOG})"
+  if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
+    1>&2 echo "${SHOWTEXT}"
+  fi
   echo "${TEXT}"
   exit 0
 fi
@@ -116,6 +123,9 @@ if [ -z "${LATEST_CORE}" ]; then
   if [ -f ${SCRIPT_PWD}/mariadb-qa/fallback_text_string.sh -a -r ${SCRIPT_PWD}/mariadb-qa/fallback_text_string.sh ]; then
     if grep -qi 'signal' "${ERROR_LOG}"; then
       TEXT="$(${SCRIPT_PWD}/mariadb-qa/fallback_text_string.sh "${ERROR_LOG}")"
+      if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
+        1>&2 echo "${SHOWTEXT}"
+      fi
       if [ -z "${TEXT}" ]; then
         echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
         exit 1
@@ -124,10 +134,16 @@ if [ -z "${LATEST_CORE}" ]; then
         exit 0
       fi
     else
+      if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
+        1>&2 echo "${SHOWTEXT}"
+      fi
       echo "Assert: no core file found in */*core*, and no 'signal' found in the error log, so fallback_text_string.sh was not attempted"
       exit 1
     fi
   else
+    if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
+      1>&2 echo "${SHOWTEXT}"
+    fi
     echo "Assert: no core file found in */*core*, and fallback_text_string.sh was not found, or is not readable"
     exit 1
   fi
@@ -239,6 +255,9 @@ fi
 TEXT="$(echo "${TEXT}" | sed 's|__cxa_pure_virtual () from|__cxa_pure_virtual|g')"
 
 # Report bug identifier string
+if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
+  1>&2 echo "${SHOWTEXT}"
+fi
 if [ "$(echo "${TEXT}" | sed 's|[ \t]*\(.\).*|\1|')" == "#" ]; then
   echo "Assert: leading character of unique bug id (${TEXT}) is a '#', which will lead to issues in other scripts. This would normally never happen, but it did. Please improve new_text_string.sh to handle this situation!"
   exit 1
