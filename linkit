@@ -24,8 +24,7 @@ ln -fs /home/${USER}/mariadb-qa/squirrel/full_report /home/${USER}/fuzzing/full_
 ln -fs /home/${USER}/mariadb-qa/squirrel/partial_report /home/${USER}/fuzzing/partial_report
 ln -fs /home/${USER}/mariadb-qa/squirrel/find_uniqueid /home/${USER}/fuzzing/find_uniqueid
 ln -fs /home/${USER}/mariadb-qa/squirrel/queue_stats /home/${USER}/fuzzing/queue_stats
-ln -fs /home/${USER}/mariadb-qa/squirrel/process_testcases /home/${USER}/fuzzing/process_testcases  # TEMP
-ln -fs /home/${USER}/mariadb-qa/squirrel/process_testcases2 /home/${USER}/fuzzing/process_testcases2  # TEMP
+ln -fs /home/${USER}/mariadb-qa/squirrel/process_testcases /home/${USER}/fuzzing/process_testcases
 ln -fs /home/${USER}/mariadb-qa/squirrel/afl_genstart_tmpfs_nodes /home/${USER}/fuzzing/afl_genstart_tmpfs_nodes
 # And basedir './afl' script is done by ~/start already, however it is copied to ~/fuzzing for editing convience ftm
 ln -fs /home/${USER}/mariadb-qa/squirrel/afl /home/${USER}/fuzzing/afl

@@ -11,6 +11,14 @@ if [ "${PWD}" != "/home/$(whoami)/fuzzing" ]; then
   exit 1
 fi
 
+if [ "${STY}" == "" ]; then
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "process_testcases" bash -c "./$0"
+  sleep 1
+  screen -d -r "process_testcases"
+  return 2> /dev/null; exit 0
+fi
+
 queue(){
   if [ -z "${1}" ]; then
     echo 'Assert: queue() received blank $1'
@@ -20,10 +28,10 @@ queue(){
     exit 1
   fi
   TODO[${1}]=$(awk "NR>=${NODE_START[${1}]} && NR<=${NODE_END[${1}]} {print \$0}" /tmp/afl_fulllist.txt)
-  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "cp '{}' /dev/shm/node${1}/in.sql; cd /dev/shm/node${i}; ./all_no_cl; ./test_pquery; sleep 2; if [ -r ./data/core ]; then echo '----------- /home/\$(whoami)/fuzzing/{}.string:'; ~/t | tee '/home/\$(whoami)/fuzzing/{}.string'; else echo '----------- /home/\$(whoami)/fuzzing/{}.NOCORE:'; touch '/home/\$(whoami)/fuzzing/{}.NOCORE'; fi; cd /home/\$(whoami)/fuzzing;\"" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 5m bash -c \"{}\"
+  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 2; if [ -r ./data/core ]; then echo '----------- /home/$(whoami)/fuzzing/{}.string:'; ~/t | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE:'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 5m bash -c "{}"
 }
 
-echo 'Commencing processing testcases...'
+echo 'Computing runtime size...'
 # Find all testcases
 find . | grep 'sig:' | sed 's|^\./||' > /tmp/afl_fulllist.txt
 # Filter already done ones
@@ -43,7 +51,7 @@ else
     echo "Will use 4 nodes to process the testcases..."
     NODES=4
     PERNODE=$[ ${COUNT} / 4 ]
-    echo "Nodes 0 to 3 will process approximately ${PERNODE} testcases..."
+    echo "Nodes 0 to 3 will process approximately ${PERNODE} testcases each..."
     NODE_START[0]=1
     NODE_END[0]=${PERNODE}
     NODE_START[1]=$[ ${PERNODE} + 1 ]
@@ -66,10 +74,18 @@ if [ -z "${NODES}" ]; then
 fi
   
 # Prep verification nodes, and start processing queues
+echo 'Commencing processing testcases...'
 for ((NODE=0;NODE<${NODES};NODE++)){
-  cp -r ${BASEDIR} /dev/shm/node${NODE}
-  cd /dev/shm/node${NODE}
+  cp -r ${BASEDIR} /dev/shm/afl-tc-node${NODE}
+  cd /dev/shm/afl-tc-node${NODE}
   rm -Rf FIREWORKS-BUGS COPYING CREDITS INSTALL-BINARY README-wsrep README.md THIRDPARTY docs man mysql-test 16* sql-bench support-files reducer* *gypsy *rr *valgrind sysbench* *multirun* repl* loop* insert* *stbe *.old gdb memory_use_trace multi* gal* clean_failing_queries *noprompt* fixin g binlog *.sql *.out sqlmode test_pquery m include
   ~/start >/dev/null 2>&1
-  queue ${NODE}
+  queue ${NODE} &
+  PID[${NODE}]=$!
+  echo "Node ${NODE} started with PID ${PID[${NODE}]}..."
 }
+for ((NODE=0;NODE<${NODES};NODE++)){
+  wait ${PID[${NODE}]}
+}
+echo "${NODES} completed work... Done!"
+exit 0
