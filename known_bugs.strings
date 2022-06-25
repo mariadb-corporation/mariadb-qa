@@ -80,6 +80,10 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 
 ##### CURRENT BUGS ##### Search key: Mac ###
 part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## MDEV-21310
+SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                                                                                                                     ## MDEV-28941
+SIGSEGV|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables                                                              ## MDEV-28941
+"unexpected error" == 0|SIGABRT|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row|TABLE::delete_row                                                          ## MDEV-28916
+!"unexpected error"|SIGABRT|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row|TABLE::delete_row                                                              ## MDEV-28916
 SIGSEGV|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                                          ## MDEV-28917
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields                                  ## MDEV-28917
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|close_thread_tables|close_thread_tables_for_query|mysql_execute_command ## MDEV-28913

@@ -22,6 +22,7 @@ declare SST_LOST_FOUND_TEST=""
 declare CONF_TEST=""
 declare DEBUG=""
 declare LOAD_TEST=""
+declare IST_TEST=""
 
 # Dispay script usage details
 usage () {
@@ -32,6 +33,7 @@ usage () {
   echo "  -b, --basedir=PATH                                 Specify MariaDB Galera base directory, mention full path"
   echo "  -s, --sst-test=[all|mysql_dump|rsync|mariabackup]  Specify SST method for cluster data transfer"
   echo "  -l, --load-test                                    Used for load testing"
+  echo "  -i, --ist-test                                     Used for IST testing"
   echo "  -d, --debug                                        Used for debugging the failed test case"
   echo "  -h, --help                                         Display help and exit"
 }
@@ -39,7 +41,7 @@ usage () {
 # Check if we have a functional getopt(1)
 if ! getopt --test
   then
-  go_out="$(getopt --options=w:b:s:ldh --longoptions=basedir:,sst-test:,load-test,debug,help \
+  go_out="$(getopt --options=w:b:s:lidh --longoptions=basedir:,sst-test:,load-test,ist-test,debug,help \
   --name="$(basename "$0")" -- "$@")"
   test $? -eq 0 || exit 1
   eval set -- "$go_out"
@@ -74,6 +76,10 @@ do
     -l | --load-test )
     shift
     LOAD_TEST=1
+    ;;
+    -i | --ist-test )
+    shift
+    IST_TEST=1
     ;;
     -d | --debug )
     shift
@@ -137,7 +143,7 @@ fi
 #############################
 # Store mariadb version info
 #############################
-declare MYSQL_VERSION=$(${BASEDIR}/bin/mysqld --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-8]' | head -n1)
+declare MYSQL_VERSION=$(${BASEDIR}/bin/mysqld --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9][0]*' | head -n1)
 export PATH="$BASEDIR/bin:$PATH"
 
 rm -rf ${WORKDIR}/logs/mariadb-galera-sst-test.log &> /dev/null
@@ -158,15 +164,15 @@ sysbench_run(){
   fi
   if [ "$(sysbench --version | grep -oe '[0-9]\.[0-9]')" == "0.5" ]; then
     if [ "$TEST_TYPE" == "load_data" ];then
-      SYSBENCH_OPTIONS="--test=/usr/share/doc/sysbench/tests/db/parallel_prepare.lua --oltp-table-size=1000 --oltp_tables_count=10 --mysql-db=test --mysql-user=root  --num-threads=10 --db-driver=mysql"
+      SYSBENCH_OPTIONS="--test=/usr/share/doc/sysbench/tests/db/parallel_prepare.lua --oltp-table-size=100000000 --oltp_tables_count=10 --mysql-db=test --mysql-user=root  --num-threads=10 --db-driver=mysql"
     elif [ "$TEST_TYPE" == "oltp" ];then
-      SYSBENCH_OPTIONS="--test=/usr/share/doc/sysbench/tests/db/oltp.lua --oltp-table-size=1000 --oltp_tables_count=10 --max-time=50 --report-interval=1 --max-requests=1870000000 --mysql-db=test --mysql-user=root  --num-threads=10 --db-driver=mysql"
+      SYSBENCH_OPTIONS="--test=/usr/share/doc/sysbench/tests/db/oltp.lua --oltp-table-size=100000000 --oltp_tables_count=10 --max-time=100 --report-interval=1 --max-requests=1870000000 --mysql-db=test --mysql-user=root  --num-threads=10 --db-driver=mysql"
     fi
   elif [ "$(sysbench --version | grep -oe '[0-9]\.[0-9]')" == "1.0" ]; then
     if [ "$TEST_TYPE" == "load_data" ];then
       SYSBENCH_OPTIONS="/usr/share/sysbench/oltp_insert.lua ${DATA_SIZE} --mysql-db=test --mysql-user=root --db-driver=mysql"
     elif [ "$TEST_TYPE" == "oltp" ];then
-      SYSBENCH_OPTIONS="/usr/share/sysbench/oltp_insert.lua ${DATA_SIZE} --mysql-db=test --mysql-user=root --time=50 --report-interval=1 --events=1870000000 --db-driver=mysql"
+      SYSBENCH_OPTIONS="/usr/share/sysbench/oltp_read_write.lua ${DATA_SIZE} --mysql-db=test --mysql-user=root --time=100 --report-interval=1 --events=1870000000 --db-driver=mysql --db-ps-mode=disable"
     fi
   fi
 }
@@ -243,6 +249,8 @@ prepare_galera_startup() {
   echo "wsrep_on=1" >> my-template.cnf
   echo "wsrep_slave_threads=2" >> my-template.cnf
   echo "max_connections=1024" >> my-template.cnf
+  #echo "wsrep_status_file=wsrep_status_file" >> my-template.cnf
+  echo "innodb_log_file_size=2G" >> my-template.cnf
   if [[ ${CONF_TEST} != "external_log_bin" ]]; then
     echo "gtid_strict_mode=1" >> my-template.cnf
     echo "log_slave_updates=ON" >> my-template.cnf
@@ -370,6 +378,8 @@ start_galera_nodes(){
       else
         lost_found_test
       fi
+      echoit "${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node${j}/node${j}_socket.sock -e 'SET GLOBAL  innodb_log_file_size=5368709120;' > /dev/null 2>&1"
+      ${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node${j}/node${j}_socket.sock -e "SET GLOBAL  innodb_log_file_size=5368709120;" > /dev/null 2>&1
     else
       echoit "${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/n${j}.cnf ${MYEXTRA} > ${WORKDIR}/logs/node${j}.err 2>&1 &"
       ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/n${j}.cnf ${MYEXTRA} > ${WORKDIR}/logs/node${j}.err 2>&1 &
@@ -377,6 +387,14 @@ start_galera_nodes(){
     fi
   done
   ${BASEDIR}/bin/mysql -uroot -S${WORKDIR}/node1/node1_socket.sock -e "FLUSH LOGS;" > /dev/null 2>&1
+  if [[ ${IST_TEST} -eq 1 ]]; then
+    echoit "${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node${j}/node${j}_socket.sock shutdown > /dev/null 2>&1"
+    ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/node${j}/node${j}_socket.sock shutdown > /dev/null 2>&1
+    sysbench_run oltp
+    echoit "${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/n${j}.cnf ${MYEXTRA} > ${WORKDIR}/logs/node${j}.err 2>&1 &"
+    ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/n${j}.cnf ${MYEXTRA} > ${WORKDIR}/logs/node${j}.err 2>&1 &
+    mdg_startup_status "${WORKDIR}/node${j}/node${j}_socket.sock"
+  fi
 }
 
 ####################
@@ -475,12 +493,13 @@ sst_run(){
       # Pausing 10 sec to sync node2 after mysqldump SST"
       sleep 10
     fi
-    #sysbench_run oltp
-    #echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1"
-    #sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1
+    sysbench_run oltp
+    echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1"
+    sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1
+    sleep 10
     validate_table_checksum "clear"
     shutdown_nodes
-    ## Encryption run
+    # Encryption run
     prepare_galera_startup "crypt" "${INNO_PAGE_SIZE}"
     start_galera_nodes "--plugin-load-add=file_key_management.so --loose-file-key-management --loose-file-key-management-filename=${SCRIPT_PWD}/conf/keys.txt --file-key-management-encryption-algorithm=aes_cbc ${INNO_PAGE_SIZE}"
     save_artifacts "crypt"
@@ -488,9 +507,10 @@ sst_run(){
       # Pausing 10 sec to sync node2 after mysqldump SST"
       sleep 10
     fi
-    #sysbench_run oltp
-    #echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1"
-    #sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1
+    sysbench_run oltp
+    echoit "sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1"
+    sysbench $SYSBENCH_OPTIONS --mysql-socket=${WORKDIR}/node1/node1_socket.sock run > ${WORKDIR}/logs/sysbench_oltp.log 2>&1
+    sleep 10
     validate_table_checksum "crypt"
     shutdown_nodes
 }
