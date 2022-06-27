@@ -1,5 +1,6 @@
 #!/bin/bash
 BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg
+BASEDIRALT=/test/MD310522-mariadb-10.10.0-linux-x86_64-opt
 HOME=/home/$(whoami)
 
 if [ ! -r ./list_unique_bugs -o ! -r ${BASEDIR}/bin/mysqld -o ! -r ${HOME}/t -o ! -r /test/gendirs.sh -o ! -r ${BASEDIR}/reducer_new_text_string.sh -o "${PWD}" != "${HOME}/fuzzing" ]; then
@@ -7,13 +8,17 @@ if [ ! -r ./list_unique_bugs -o ! -r ${BASEDIR}/bin/mysqld -o ! -r ${HOME}/t -o 
   exit 1
 fi
 
+echo "Note: it is probably a good idea to run /test/startup_all (or ~/start for both directories below) to reset any local reducer modifications!"
+echo "BASEDIR: ${BASEDIR}"
+echo "BASEDIRALT: ${BASEDIRALT}"
+echo "HOME: ${HOME}"
+
 echo "Computing runtime size..."
 BUGS=$(./list_unique_bugs)
 COUNT="$(printf "%s\n" "${BUGS}" | wc -l)"
 
 echo "Processing ${COUNT} bugs..."
 for ((i=1;i<=${COUNT};i++)); do
-#for ((i=1;i<=1;i++)); do  # Testing
   BUG="$(printf "%s\n" "${BUGS}" | head -n${i} | tail -n1)"
   echo '-----------------------------------------------------------------------------------------'
   echo "BUG ${i}/${COUNT}: ${BUG}"
@@ -24,15 +29,59 @@ for ((i=1;i<=${COUNT};i++)); do
     echo "There already is a report for this testcase ('${TC}.report'), skipping..."
     continue;
   fi
+  if [ -r "${TC}.fail" ]; then
+    echo "This testcase was previously attempted against BASEDIR and BASEDIRALT (unless they were modified), and failed to reproduce, skipping..."
+    continue;
+  fi
+  TCSIZE="$(wc -l "${TC}" | sed 's| .*||')"
+  if [ -z "${TCSIZE}" ]; then
+    echo "Testcase '${TC}' is empty? Skipping..."
+    touch "${TC}.skipped_empty"
+    continue
+  fi
+  if [ "${TCSIZE}" -gt 490 ]; then
+    echo "Testcase '${TC}' is too large for a squirrel testcase, skipping..."
+    touch "${TC}.skipped_too_large"
+    continue
+  fi
   cp "${TC}" "${BASEDIR}/in.sql"
   cd ${BASEDIR}
   echo "Running reducer for testcase..."
+  rm -f in.sql_out
+  sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=500|' ./reducer_new_text_string.sh
   timeout --signal=9 75m ./reducer_new_text_string.sh "./in.sql" "${BUG}"
+  sleep 0.5
+  if [ ! -r ./in.sql_out ]; then
+    echo "Testcase did not reproduce/reduce on ${BASEDIR}, trying ${BASEDIRALT}..."
+    cd ${HOME}/fuzzing
+    cp "${TC}" "${BASEDIRALT}/in.sql"
+    cd ${BASEDIRALT}
+    echo "Running reducer for testcase on alternative BASEDIR..."
+    rm -f in.sql_out
+    sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=500|' ./reducer_new_text_string.sh
+    timeout --signal=9 75m ./reducer_new_text_string.sh "./in.sql" "${BUG}"
+    sleep 0.5
+    if [ ! -r ./in.sql_out ]; then
+      echo "Testcase did not reproduce/reduce on ${BASEDIRALT} either..."
+      cd ${HOME}/fuzzing
+      echo "Testcase failed to reproduce/reduce on both:" > "${TC}.fail"
+      echo "BASEDIR: ${BASEDIR}" >> "${TC}.fail"
+      echo "BASEDIRALT: ${BASEDIRALT}" >> "${TC}.fail"
+      continue;
+    fi  # Note that the implied else for this function is to also run the below code (ref [1])
+  fi  # Note that the implied else for this function is also to run the below code (ref [1])
+  # [1] Note that this will run if either BASEDIR or BASEDIRALT was able to reproduce & reduce the bug
+  # The current PWD can thus be either the BASEDIR or the BASEDIRALT one (and it does not matter for the below)
+  # In other words, in.sql_out was found to be present after reduction in either the BASEDIR or the BASEDIRALT dir
   mv in.sql_out in.sql
+  echo "~/b preflight: terminating any running instances..."
+  /test/kill_all
+  sleep 2
   echo "Running ~/b for testcase..."
   timeout --signal=9 15m ${HOME}/b
+  sleep 0.5
   cd ${HOME}/fuzzing
   echo "Copying report..."
-  mv ${BASEDIR}/report.log "${TC}.report"
+  cp ${BASEDIR}/report.log "${TC}.report"
   echo "${TC} completed..."
 done
