@@ -5309,24 +5309,28 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 215 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+]t[ \t+])/(t)/i" $WORKF > $WORKT
     elif [ $TRIAL -eq 216 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+][^)]\+)/(t)/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 217 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+][^)]\+)/(t)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 218 ]; then sed "s/HAVING[ \t]\+FIRST_VALUE[ \t]\+[^A-Z]\+[A-Z]//g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 219 ]; then sed "s/SUM[ \t]\+([ \t]\+)/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 220 ]; then sed "s/MAX[ \t]\+([ \t]\+)/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 221 ]; then sed "s/MIN[ \t]\+([ \t]\+)/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 222 ]; then sed "s/AVG[ \t]\+([ \t]\+)/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 223 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
-    elif [ $TRIAL -eq 224 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
+    elif [ $TRIAL -eq 218 ]; then sed "s/HAVING[ \t]\+FIRST_VALUE[ \t]\+[^A-Z]\+[A-Z]//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 219 ]; then sed "s/SUM[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 220 ]; then sed "s/MAX[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 221 ]; then sed "s/MIN[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 222 ]; then sed "s/AVG[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 223 ]; then sed "s/CHECK[ \t]\+([^)]\+)//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 224 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 225 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 226 ]; then sed "s/v0/c/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 227 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
+    elif [ $TRIAL -eq 228 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
       if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
         ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT
       else
         cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
-    elif [ $TRIAL -eq 225 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 229 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
     # RV 25/01/21 Disabled next trial to see if this fixes the # mysqld options required insert
     # RV 09/05/22 It seems to help. Reinstated trial by temporary dummy swap instead
-    elif [ $TRIAL -eq 226 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
-    elif [ $TRIAL -eq 227 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
-    elif [ $TRIAL -eq 228 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 230 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
+    elif [ $TRIAL -eq 231 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 232 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`

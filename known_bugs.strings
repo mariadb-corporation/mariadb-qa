@@ -79,6 +79,9 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                            ## MDEV-28958
+SIGSEGV|JOIN_CACHE::reset_join|sub_select_cache|do_select|JOIN::exec_inner                                                                                                     ## MDEV-28957
+table->no_keyread || !table->covering_keys.is_set(tab->index) || table->file->keyread == tab->index|SIGABRT|join_read_first|sub_select|do_select|JOIN::exec_inner              ## MDEV-28957
 SIGSEGV|AGGR_OP::put_record|evaluate_join_record|sub_select|sub_select                                                                                                         ## MDEV-28945
 aggr != __null|SIGABRT|sub_select_postjoin_aggr|evaluate_join_record|sub_select|do_select                                                                                      ## MDEV-28945
 part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## MDEV-21310

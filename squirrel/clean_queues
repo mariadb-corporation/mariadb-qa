@@ -1,0 +1,7 @@
+#!/bin/bash
+COUNT="$(~/s | grep 'afl' | wc -l)"
+if [ "${COUNT}" -gt 0 ]; then
+  echo "Only run this while there are no running AFL instances"
+  exit 1
+fi
+rm -Rf [0-9]*/queue [0-9]*/plot_data [0-9]*/fuzz_bitmap

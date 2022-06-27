@@ -1,6 +1,6 @@
 #!/bin/bash
 killall -9 process_testcases 2>/dev/null
-sleep 1
+sleep 2
 killall -9 process_testcases 2>/dev/null
-sleep 1
+sleep 2
 screen -wipe

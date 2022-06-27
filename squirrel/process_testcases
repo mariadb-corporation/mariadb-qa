@@ -1,5 +1,6 @@
 #!/bin/bash
-BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg
+#BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg
+BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-opt
 LOOP_SCRIPT=1  # Set to 1 to keep looping (handy when fuzzers are running)
 
 cd /home/$(whoami)/fuzzing
@@ -29,78 +30,86 @@ queue(){
     exit 1
   fi
   TODO[${1}]=$(awk "NR>=${NODE_START[${1}]} && NR<=${NODE_END[${1}]} {print \$0}" /tmp/afl_fulllist.txt)
-  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 10; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 5m bash -c "{}"
+  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 10m bash -c "{}"
 }
  
-while true; do
-  echo 'Computing runtime size...'
-  # Find all testcases
-  find . | grep 'sig:' | sed 's|^\./||' > /tmp/afl_fulllist.txt
-  # Filter already done ones
-  FILTER=$(cat /tmp/afl_fulllist.txt | grep -E '\.string|NOCORE' | sed 's|\.string||;s|\.NOCORE||')
-  printf "%s\n" "${FILTER}" | grep -v '^[ \t]*$' | xargs -I{} sed -i 's|{}.*||' /tmp/afl_fulllist.txt
-  FILTER=
-  TESTCASES=$(</tmp/afl_fulllist.txt)  # Re-read fullist after sed
-  printf "%s\n" "${TESTCASES}" | grep -v '^[ \t]*$' > /tmp/afl_fulllist.txt
-  TESTCASES=$(</tmp/afl_fulllist.txt)  # Re-read fullist after cleanup
-  COUNT=$(printf "%s\n" "${TESTCASES}" | wc -l)
-  if [ -z "${COUNT}" -o "${COUNT}" -eq 0 ]; then
-    echo "No testcases to process... Done"
-    exit 0
-  else
-    echo "${COUNT} testcases to process, splitting..."
-    if [ ${COUNT} -gt 40 ]; then
-      echo "Will use 4 nodes to process the testcases..."
-      NODES=4
-      PERNODE=$[ ${COUNT} / 4 ]
-      echo "Nodes 0 to 3 will process approximately ${PERNODE} testcases each..."
-      NODE_START[0]=1
-      NODE_END[0]=${PERNODE}
-      NODE_START[1]=$[ ${PERNODE} + 1 ]
-      NODE_END[1]=$[ ${PERNODE} * 2 ]
-      NODE_START[2]=$[ ${PERNODE} * 2 + 1 ]
-      NODE_END[2]=$[ ${PERNODE} * 3 ]
-      NODE_START[3]=$[ ${PERNODE} * 3 + 1 ]
-      NODE_END[3]=${COUNT}  # Avoid off-by-1 issues as a result of the PERNODE division
-    else 
-      echo "Only ${COUNT} testcases are present; will use a single node to process the testcases..."
-      echo "Node 0 will process ${COUNT} testcases..."
-      NODES=1
-      NODE_START[0]=1
-      NODE_END[0]=${COUNT}
-    fi
+echo "Using BASEDIR ${BASEDIR}"
+if [ "${LOOP_SCRIPT}" -eq 1 ]; then
+  echo 'On completion, this script will restart itself'
+fi
+echo 'Computing runtime size...'
+# Find all testcases
+rm -f /tmp/afl_fulllist.txt
+find . | grep 'sig:' | sed 's|^\./||' > /tmp/afl_fulllist.txt
+# Filter already done ones
+FILTER=$(cat /tmp/afl_fulllist.txt | grep -E '\.string|NOCORE' | sed 's|\.string||;s|\.NOCORE||')
+printf "%s\n" "${FILTER}" | grep -v '^[ \t]*$' | xargs -I{} sed -i 's|{}.*||' /tmp/afl_fulllist.txt
+FILTER=
+TESTCASES=$(</tmp/afl_fulllist.txt)  # Re-read fullist after sed
+printf "%s\n" "${TESTCASES}" | grep -v '^[ \t]*$' > /tmp/afl_fulllist.txt
+TESTCASES=$(</tmp/afl_fulllist.txt)  # Re-read fullist after cleanup
+COUNT=$(printf "%s\n" "${TESTCASES}" | wc -l)
+if [ -z "${COUNT}" -o "${COUNT}" -eq 0 ]; then
+  echo "No testcases to process... Done"
+  exit 0
+else
+  echo "${COUNT} testcases to process, splitting..."
+  if [ ${COUNT} -gt 40 ]; then
+    echo "Will use 4 nodes to process the testcases..."
+    NODES=4
+    PERNODE=$[ ${COUNT} / 4 ]
+    echo "Nodes 0 to 3 will process approximately ${PERNODE} testcases each..."
+    NODE_START[0]=1
+    NODE_END[0]=${PERNODE}
+    NODE_START[1]=$[ ${PERNODE} + 1 ]
+    NODE_END[1]=$[ ${PERNODE} * 2 ]
+    NODE_START[2]=$[ ${PERNODE} * 2 + 1 ]
+    NODE_END[2]=$[ ${PERNODE} * 3 ]
+    NODE_START[3]=$[ ${PERNODE} * 3 + 1 ]
+    NODE_END[3]=${COUNT}  # Avoid off-by-1 issues as a result of the PERNODE division
+  else 
+    echo "Only ${COUNT} testcases are present; will use a single node to process the testcases..."
+    echo "Node 0 will process ${COUNT} testcases..."
+    NODES=1
+    NODE_START[0]=1
+    NODE_END[0]=${COUNT}
   fi
-  if [ -z "${NODES}" ]; then
-    echo "Assert: NODES is empty"
-    exit 1
-  fi
-    
-  # Prep verification nodes, and start processing queues
-  echo 'Commencing processing testcases...'
-  rm -Rf /dev/shm/afl-tc-node*
+fi
+if [ -z "${NODES}" ]; then
+  echo "Assert: NODES is empty"
+  exit 1
+fi
+  
+# Prep verification nodes, and start processing queues
+echo 'Commencing processing testcases...'
+rm -Rf /dev/shm/afl-tc-node*
+sync
+for ((NODE=0;NODE<${NODES};NODE++)){
+  cp -r ${BASEDIR} /dev/shm/afl-tc-node${NODE}
+  cd /dev/shm/afl-tc-node${NODE}
+  rm -Rf FIREWORKS-BUGS COPYING CREDITS INSTALL-BINARY README-wsrep README.md THIRDPARTY docs man mysql-test 16* sql-bench support-files reducer* *gypsy *rr *valgrind sysbench* *multirun* repl* loop* insert* *stbe *.old gdb memory_use_trace multi* gal* clean_failing_queries *noprompt* fixin g binlog *.sql *.out sqlmode test_pquery m include
+  ~/start >/dev/null 2>&1
+  queue ${NODE} &
+  PID[${NODE}]=$!
+  echo "Node ${NODE} started with PID ${PID[${NODE}]}..."
+}
+for ((NODE=0;NODE<${NODES};NODE++)){
+  wait ${PID[${NODE}]}
+}
+rm -Rf /dev/shm/afl-tc-node*
+if [ "${LOOP_SCRIPT}" -eq 0 ]; then
+ echo "${NODES} completed work... Done!"
+  exit 0
+else
+  echo "${NODES} completed work... Looping!"
   for ((NODE=0;NODE<${NODES};NODE++)){
-    cp -r ${BASEDIR} /dev/shm/afl-tc-node${NODE}
-    cd /dev/shm/afl-tc-node${NODE}
-    rm -Rf FIREWORKS-BUGS COPYING CREDITS INSTALL-BINARY README-wsrep README.md THIRDPARTY docs man mysql-test 16* sql-bench support-files reducer* *gypsy *rr *valgrind sysbench* *multirun* repl* loop* insert* *stbe *.old gdb memory_use_trace multi* gal* clean_failing_queries *noprompt* fixin g binlog *.sql *.out sqlmode test_pquery m include
-    ~/start >/dev/null 2>&1
-    queue ${NODE} &
-    PID[${NODE}]=$!
-    echo "Node ${NODE} started with PID ${PID[${NODE}]}..."
+    kill -9 ${PID[${NODE}]} >/dev/null 2>&1  # Defensive coding
+    PID[${NODE}]=
   }
-  for ((NODE=0;NODE<${NODES};NODE++)){
-    wait ${PID[${NODE}]}
-  }
+  sleep 3
   rm -Rf /dev/shm/afl-tc-node*
-  if [ "${LOOP_SCRIPT}" -eq 0 ]; then
-    echo "${NODES} completed work... Done!"
-    exit 0
-  else
-    echo "${NODES} completed work... Looping!"
-    for ((NODE=0;NODE<${NODES};NODE++)){
-      kill -9 ${PID[${NODE}]} >/dev/null 2>&1  # Defensive coding
-      PID[${NODE}]=
-    }
-    sleep 3
-    continue
-  fi
-done
+  sync
+  screen -admS "process_testcases" bash -c "./$0"
+  sleep 3
+  exit 0
+fi
