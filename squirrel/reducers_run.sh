@@ -6,6 +6,12 @@ HOME=/home/$(whoami)
 if [ ! -r ./list_unique_bugs -o ! -r ${BASEDIR}/bin/mysqld -o ! -r ${HOME}/t -o ! -r /test/gendirs.sh -o ! -r ${BASEDIR}/reducer_new_text_string.sh -o "${PWD}" != "${HOME}/fuzzing" ]; then
   echo 'Check setup!'
   exit 1
+elif [ "${STY}" == "" ]; then
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "reducers_run" bash -c "./$0"
+  sleep 1
+  screen -d -r "reducers_run"
+  return 2> /dev/null; exit 0
 fi
 
 echo "Note: it is probably a good idea to run /test/startup_all (or ~/start for both directories below) to reset any local reducer modifications!"
@@ -29,6 +35,10 @@ for ((i=1;i<=${COUNT};i++)); do
     echo "There already is a report for this testcase ('${TC}.report'), skipping..."
     continue;
   fi
+  if [[ "${BUG}" == *"Assert:"* ]]; then
+    echo "This is an 'Assert:' bug string, skipping..."
+    continue;
+  fi
   if [ -r "${TC}.fail" ]; then
     echo "This testcase was previously attempted against BASEDIR and BASEDIRALT (unless they were modified), and failed to reproduce, skipping..."
     continue;
@@ -47,7 +57,7 @@ for ((i=1;i<=${COUNT};i++)); do
   cp "${TC}" "${BASEDIR}/in.sql"
   cd ${BASEDIR}
   echo "Running reducer for testcase..."
-  rm -f in.sql_out
+  rm -f ./in.sql_out
   sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=500|' ./reducer_new_text_string.sh
   timeout --signal=9 75m ./reducer_new_text_string.sh "./in.sql" "${BUG}"
   sleep 0.5
@@ -57,7 +67,7 @@ for ((i=1;i<=${COUNT};i++)); do
     cp "${TC}" "${BASEDIRALT}/in.sql"
     cd ${BASEDIRALT}
     echo "Running reducer for testcase on alternative BASEDIR..."
-    rm -f in.sql_out
+    rm -f ./in.sql_out
     sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=500|' ./reducer_new_text_string.sh
     timeout --signal=9 75m ./reducer_new_text_string.sh "./in.sql" "${BUG}"
     sleep 0.5
@@ -73,12 +83,20 @@ for ((i=1;i<=${COUNT};i++)); do
   # [1] Note that this will run if either BASEDIR or BASEDIRALT was able to reproduce & reduce the bug
   # The current PWD can thus be either the BASEDIR or the BASEDIRALT one (and it does not matter for the below)
   # In other words, in.sql_out was found to be present after reduction in either the BASEDIR or the BASEDIRALT dir
-  mv in.sql_out in.sql
+  mv ./in.sql_out ./in.sql
+  echo "Commencing secondary reducer run in ${PWD}..."
+  rm -f ./in.sql_out  # Defensive coding
+  timeout --signal=9 45m ./reducer_new_text_string.sh "./in.sql" "${BUG}"
+  sleep 0.5
+  if [ ! -r ./in.sql_out ]; then
+    echo "Secondary reducer run further simplified the testcase..."
+    mv ./in.sql_out ./in.sql
+  fi
   echo "~/b preflight: terminating any running instances..."
   /test/kill_all
   sleep 2
   echo "Running ~/b for testcase..."
-  timeout --signal=9 15m ${HOME}/b
+  timeout --signal=9 20m ${HOME}/b
   sleep 0.5
   cd ${HOME}/fuzzing
   echo "Copying report..."

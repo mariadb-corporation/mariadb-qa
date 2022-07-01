@@ -78,7 +78,11 @@ fil_space_t::is_valid_flags(flags, space->id)|SIGABRT|fsp_flags_try_adjust|fil_i
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                                                                                                               ## MDEV-27575
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
+##### Current MDEV-28883 bugs (temporary) #####
+table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|insert_fields|setup_wild                                     ## MDEV-28965
+
 ##### CURRENT BUGS ##### Search key: Mac ###
+cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28973
 SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                            ## MDEV-28958
 SIGSEGV|JOIN_CACHE::reset_join|sub_select_cache|do_select|JOIN::exec_inner                                                                                                     ## MDEV-28957
 table->no_keyread || !table->covering_keys.is_set(tab->index) || table->file->keyread == tab->index|SIGABRT|join_read_first|sub_select|do_select|JOIN::exec_inner              ## MDEV-28957

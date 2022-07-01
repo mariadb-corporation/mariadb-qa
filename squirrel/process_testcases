@@ -30,7 +30,7 @@ queue(){
     exit 1
   fi
   TODO[${1}]=$(awk "NR>=${NODE_START[${1}]} && NR<=${NODE_END[${1}]} {print \$0}" /tmp/afl_fulllist.txt)
-  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 10m bash -c "{}"
+  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "rm -f /dev/shm/afl-tc-node${1}/in.sql; cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; if [ -r ./in.sql ]; then ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 10m bash -c "{}"
 }
  
 echo "Using BASEDIR ${BASEDIR}"

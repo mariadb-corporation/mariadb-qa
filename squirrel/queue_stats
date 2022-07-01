@@ -3,8 +3,10 @@ echo 'Processing, this may take a minute...'
 DONE=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'string|NOCORE' | wc -l)   # already done
 TOTA=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -vE 'NOCORE|string' | wc -l)  # all testcases
 NOCO=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'NOCORE' | wc -l)          # no core
+REPR=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'report' | wc -l)          # completed reports
 echo "Already done (crashes): ${DONE}"
 echo "Still to do testcase:   $[ ${TOTA} - ${DONE} ]"
 echo "Total testcases:        ${TOTA}"
 echo "NOCORE testcases:       ${NOCO}  (Re-run these against the actual build used if you did not use the same build)"
+echo "Completed reports:      ${REPR}"
 echo "Note: crashes with duplicate UniqueID's are automatically deleted, so the 'Already done' number is skewed."
