@@ -80,8 +80,10 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 
 ##### Current MDEV-28883 bugs (temporary) #####
 table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|insert_fields|setup_wild                                     ## MDEV-28965
+*err == DB_SUCCESS|SIGABRT|btr_page_split_and_insert|btr_root_raise_and_insert|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low                                        ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+tbl->file->stats.records > null_count|SIGABRT|Ordered_key::Ordered_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                  ## MDEV-29005
 cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28973
 SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                            ## MDEV-28958
 SIGSEGV|JOIN_CACHE::reset_join|sub_select_cache|do_select|JOIN::exec_inner                                                                                                     ## MDEV-28957
