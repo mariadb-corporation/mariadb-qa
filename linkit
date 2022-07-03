@@ -13,7 +13,7 @@ fi
 
 # Squirrel/AFL
 if [ ! -d /home/${USER}/fuzzing/fuzzing_root/ ]; then
-  mkdir -p /home/${USER}/fuzzing/fuzzing_root/ 
+  mkdir -p /home/${USER}/fuzzing/fuzzing_root/ /home/${USER}/fuzzing/newbugs
 fi
 ln -fs /home/${USER}/mariadb-qa/squirrel/afl_genstart_tmpfs_nodes /test/afl_genstart_tmpfs_nodes 2>&1
 ln -fs /home/${USER}/mariadb-qa/squirrel/go /home/${USER}/fuzzing/fuzzing_root/go 2>&1

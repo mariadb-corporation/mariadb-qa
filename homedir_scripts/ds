@@ -92,6 +92,9 @@ while true; do
         if [ -z "$(ps -ef | grep clean_newbug | grep -v grep)" ]; then  # Ensure clean_newbugs is not running already
           ./clean_newbugs >/dev/null &  # RV 31/1/22: changed to background process so other processes are not held up
         fi
+        if [ -d /home/$(whoami)/fuzzing/newbugs ]; then
+          ./clean_newbugs /home/$(whoami)/fuzzing/newbugs
+        fi
       fi
     fi
     sync

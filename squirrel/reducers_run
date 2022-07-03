@@ -61,7 +61,9 @@ for ((i=1;i<=${COUNT};i++)); do
   echo "Running reducer for testcase..."
   rm -f ./in.sql_out
   sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=500|' ./reducer_new_text_string.sh
-  timeout --signal=9 75m ./reducer_new_text_string.sh "./in.sql" "${BUG}"
+  sed -i 's|^NEW_BUGS_SAVE_DIR="/data/NEWBUGS"|NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|' ./reducer_new_text_string.sh
+  timeout --signal=9 75m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${TC}.reducer"
+  sed -i 's|^NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|NEW_BUGS_SAVE_DIR="/data/NEWBUGS"' ./reducer_new_text_string.sh
   sleep 0.5
   if [ ! -r ./in.sql_out ]; then
     echo "Testcase did not reproduce/reduce on ${BASEDIR}, trying ${BASEDIRALT}..."
@@ -71,7 +73,9 @@ for ((i=1;i<=${COUNT};i++)); do
     echo "Running reducer for testcase on alternative BASEDIR..."
     rm -f ./in.sql_out
     sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=500|' ./reducer_new_text_string.sh
-    timeout --signal=9 75m ./reducer_new_text_string.sh "./in.sql" "${BUG}"
+    sed -i 's|^NEW_BUGS_SAVE_DIR="/data/NEWBUGS"|NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|' ./reducer_new_text_string.sh
+    timeout --signal=9 75m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${TC}.reducer"
+    sed -i 's|^NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|NEW_BUGS_SAVE_DIR="/data/NEWBUGS"' ./reducer_new_text_string.sh
     sleep 0.5
     if [ ! -r ./in.sql_out ]; then
       echo "Testcase did not reproduce/reduce on ${BASEDIRALT} either..."
@@ -88,7 +92,9 @@ for ((i=1;i<=${COUNT};i++)); do
   mv ./in.sql_out ./in.sql
   echo "Commencing secondary reducer run in ${PWD}..."
   rm -f ./in.sql_out  # Defensive coding
-  timeout --signal=9 45m ./reducer_new_text_string.sh "./in.sql" "${BUG}"
+  sed -i 's|^NEW_BUGS_SAVE_DIR="/data/NEWBUGS"|NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|' ./reducer_new_text_string.sh
+  timeout --signal=9 45m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${TC}.reducer"
+  sed -i 's|^NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|NEW_BUGS_SAVE_DIR="/data/NEWBUGS"' ./reducer_new_text_string.sh
   sleep 0.5
   if [ ! -r ./in.sql_out ]; then
     echo "Secondary reducer run further simplified the testcase..."

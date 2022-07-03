@@ -85,7 +85,7 @@ table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_itera
 ##### CURRENT BUGS ##### Search key: Mac ###
 tbl->file->stats.records > null_count|SIGABRT|Ordered_key::Ordered_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                  ## MDEV-29005
 cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28973
-SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                                            ## MDEV-28958
+SIGSEGV|Item::clear_extraction_flag|Item::check_pushable_cond|Item::check_pushable_cond|Item::check_pushable_cond                                                              ## MDEV-28958
 SIGSEGV|JOIN_CACHE::reset_join|sub_select_cache|do_select|JOIN::exec_inner                                                                                                     ## MDEV-28957
 table->no_keyread || !table->covering_keys.is_set(tab->index) || table->file->keyread == tab->index|SIGABRT|join_read_first|sub_select|do_select|JOIN::exec_inner              ## MDEV-28957
 SIGSEGV|AGGR_OP::put_record|evaluate_join_record|sub_select|sub_select                                                                                                         ## MDEV-28945
@@ -157,6 +157,7 @@ SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|handler::ha_direct
 !expr->is_fixed()|SIGABRT|Virtual_column_info::fix_session_expr|TABLE::vcol_fix_expr|open_table|open_and_process_table                                                         ## MDEV-28566
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28510
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28510
+SIGSEGV|Bitmap<64u>::merge|add_key_field|Item_equal::add_key_fields|Item_cond::add_key_fields                                                                                  ## MDEV-29017
 SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields                                                                                     ## MDEV-28509
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## MDEV-28507
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                                                    ## MDEV-28507

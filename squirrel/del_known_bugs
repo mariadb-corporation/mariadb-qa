@@ -11,4 +11,4 @@ elif [ ! -r ${KB} ]; then
   exit 1
 fi 
 # rm -f is used for the case where this script is being executed from two different places (~/ds and manually)
-find . | grep '\.string$' | xargs -I{} echo "STRING=\"\$(cat '{}')\"; if grep -Fli --binary-files=text \"\${STRING}\" ${KB} >/dev/null 2>&1; then FILE='{}'; FILESHORT=\"\$(echo \"\$FILE\" | sed 's|.string||')\"; if [ -r \"\${FILESHORT}.string\" ]; then rm -f \"\${FILESHORT}.string\"; fi; if [ -r \"\${FILESHORT}\" ]; then rm -f \"\${FILESHORT}\"; fi; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" 2>/dev/null
+find . | grep '\.string$' | xargs -I{} echo "STRING=\"\$(cat '{}')\"; if grep -Fli --binary-files=text \"\${STRING}\" ${KB} >/dev/null 2>&1; then FILE='{}'; FILESHORT=\"\$(echo \"\$FILE\" | sed 's|.string||')\"; rm -f \"\${FILESHORT}\".[a-z][a-z]*; if [ -r \"\${FILESHORT}\" ]; then rm -f \"\${FILESHORT}\"; fi; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" 2>/dev/null

@@ -1,14 +1,31 @@
 #!/bin/bash
 # With thanks, https://unix.stackexchange.com/a/46801/241016
-rm -f /test/multirun.[0-9]*  # Cleanup multirun logs
+
+rm -f /test/*/multirun.[0-9]* 2>/dev/null &  # Cleanup multirun logs
+rm -f /test/*/16*             2>/dev/null &  # Cleanup reducer generated scripts
+
+if [ -r /test/clean_newbugs ]; then
+  if [ -d /home/$(whoami)/fuzzing/newbugs ]; then
+    /test/clean_newbugs /home/$(whoami)/fuzzing/newbugs >/dev/null 2>&1 &
+  fi
+  if [ -d /data/NEWBUGS ]; then
+    /test/clean_newbugs /data/NEWBUGS >/dev/null 2>&1 &
+  fi
+fi
+
+if [ -r /home/$(whoami)/fuzzing/del_known_bugs ]; then
+  /home/$(whoami)/fuzzing/del_known_bugs &
+fi
+
+cd /data
 if [ -z "$PS1" ]; then
-  ~/mariadb-qa/pquery-clean-all.sh 1  # See pquery-clean-known.sh for more information on the "1"
+  ~/mariadb-qa/pquery-clean-all.sh 1  # See pquery-clean-known.sh for more information on the "1" paramater
 else
   ~/mariadb-qa/pquery-clean-all.sh cleanall
 fi
-#if [ -r ./clean_newbugs ]; then ./clean_newbugs; fi
 
 if [ -r /test/TESTCASES/mvknown ]; then
   cd /test/TESTCASES
   ~/mariadb-qa/move_known.sh
 fi
+

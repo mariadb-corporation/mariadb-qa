@@ -17,7 +17,7 @@ while true; do
     ps -ef | grep 'reducers_run' | grep -v 'grep' | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
     sync
-    echo "Restarting at $(data)..."
+    echo "Restarting at $(date)..."
     ./reducers_run
   fi
   sleep 30
