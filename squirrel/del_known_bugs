@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
 KB=/home/$(whoami)/mariadb-qa/known_bugs.strings
 cd /home/$(whoami)/fuzzing
 if [ "${PWD}" != "/home/$(whoami)/fuzzing" ]; then

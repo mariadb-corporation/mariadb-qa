@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
 BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg
 BASEDIRALT=/test/MD310522-mariadb-10.10.0-linux-x86_64-opt
 HOME=/home/$(whoami)

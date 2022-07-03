@@ -1,4 +1,6 @@
 #!/bin/bash 
+# Created by Roel Van de Paar, MariaDB
+
 echo 'Deleting known bugs...'
 ./del_known_bugs
 echo 'Reporting outcomes...'

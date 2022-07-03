@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
 killall -9 process_testcases 2>/dev/null
 sleep 2
 killall -9 process_testcases 2>/dev/null

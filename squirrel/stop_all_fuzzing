@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
 killall -9 afl-fuzz 2>/dev/null
 sleep 0.1
 killall -9 afl-fuzz 2>/dev/null

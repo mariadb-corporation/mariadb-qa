@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
 COUNT="$(~/s | grep 'afl' | wc -l)"
 if [ "${COUNT}" -gt 0 ]; then
   echo "Only run this while there are no running AFL instances"

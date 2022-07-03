@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
 echo 'Processing, this may take a minute...'
 DONE=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'string|NOCORE' | wc -l)   # already done
 TOTA=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -vE 'NOCORE|string' | wc -l)  # all testcases

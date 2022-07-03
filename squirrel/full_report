@@ -1,4 +1,6 @@
 #!/bin/bash 
+# Created by Roel Van de Paar, MariaDB
+
 echo 'Processing new testcases... This will take a while...'
 ./process_testcases >/dev/null 2>&1
 echo 'Deleting known bugs...'

@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
 FUZZING_ROOT=~/fuzzing/fuzzing_root
 BASEDIR=/test/AFL-MD200622-mariadb-10.10.0-linux-x86_64
 
