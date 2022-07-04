@@ -349,6 +349,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|min[ ]*(|MIN(|gi' | \
   sed 's|max[ ]*(|MAX(|gi' | \
   sed 's|avg[ ]*(|AVG(|gi' | \
+  sed 's|oct[ ]*(|OCT(|gi' | \
   sed 's|date_add[ ]*(|DATE_ADD(|gi' | \
   sed 's|year_month|YEAR_MONTH|gi' | \
   sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \

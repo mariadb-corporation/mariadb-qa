@@ -83,6 +83,8 @@ table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_itera
 *err == DB_SUCCESS|SIGABRT|btr_page_split_and_insert|btr_root_raise_and_insert|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low                                        ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_ci_lengthsp|my_uca_strnxfrm_utf32|charset_info_st::strnxfrm                                                                     ## MDEV-29019
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_uca_strnxfrm_utf32|Type_handler_string_result::make_sort_key|make_sortkey                                                       ## MDEV-29019
 tbl->file->stats.records > null_count|SIGABRT|Ordered_key::Ordered_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                  ## MDEV-29005
 cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28973
 SIGSEGV|Item::clear_extraction_flag|Item::check_pushable_cond|Item::check_pushable_cond|Item::check_pushable_cond                                                              ## MDEV-28958
