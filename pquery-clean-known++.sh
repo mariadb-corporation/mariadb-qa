@@ -33,8 +33,13 @@ fi
 
 # Delete all trials which have "Access denied for user 'root'@'localhost'" on the last few lines of the error log and that have no core file
 if [ -r /home/$(whoami)/pr ]; then
+  # English
   rm -f ./temp_pck++.sh
   /home/$(whoami)/pr | grep "no core file found" | grep -o "reducers [0-9].*)" | sed 's|[^0-9]| |g;s|^ \+||;s| \+$||;s| |\n|g' | xargs -I{} echo "if [[ \"\$(tail -n3 {}/log/master.err | grep -o \"Access denied for user 'root'@'localhost'\")\" == \"Access denied for user 'root'@'localhost'\" ]]; then ~/dt {}; fi" > ./temp_pck++.sh && chmod +x ./temp_pck++.sh && ./temp_pck++.sh
+  # Russian
+  rm -f ./temp_pck++.sh
+  /home/$(whoami)/pr | grep "no core file found" | grep -o "reducers [0-9].*)" | sed 's|[^0-9]| |g;s|^ \+||;s| \+$||;s| |\n|g' | xargs -I{} echo "if [[ \"\$(tail -n3 {}/log/master.err | grep -o \"Доступ закрыт для пользователя 'root'@'localhost'\")\" == \"Доступ закрыт для пользователя 'root'@'localhost'\" ]]; then ~/dt {}; fi" > ./temp_pck++.sh && chmod +x ./temp_pck++.sh && ./temp_pck++.sh
+  # Cleanup
   rm -f ./temp_pck++.sh
 else
   echo "Warning: /home/$(whoami)/pr not found, run ~/mariadb-qa/linkit please. This may have resulted in a small drop in functionality of this script (less than 10%)."
