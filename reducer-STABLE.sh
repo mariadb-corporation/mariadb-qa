@@ -1380,7 +1380,7 @@ multi_reducer(){
               if grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log 2>/dev/null; then
                 echo_out "Assert: Access denied for user detected in at least one of the subreducers. Check:  grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log  # This issue may be hard to recover from"
               else
-                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err\n3) mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
+                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err\n3) mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
               fi
               echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] Issue detected. Debug info: cat /dev/shm/$EPOCH/debug.aid"
               # TODO: Reason 1 does happen. Observed:
@@ -3510,14 +3510,14 @@ stop_mysqld_or_mdg(){
       # RV-22/03/17 To check for shutdown hangs, need to make sure that timeout of mysqladmin is longer then TIMEOUT_CHECK seconds + 10 seconds safety margin
       if [ $MODE -eq 0 ]; then
         timeout -k${MODE0_MIN_SHUTDOWN_TIME} -s9 ${MODE0_MIN_SHUTDOWN_TIME}s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
-        if grep -qi "Access denied for user" $WORKD/log/mysqld.out; then
+        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld.out; then
           echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
           # exit 1  # RV-11/01/2022 We should not unconditionally exit here, and potentially not exit at all; if this is a subreducer thread, the mysqld kill below is a much more sensible next step. For example, if the sql has had a chunck removed which caused this 'Access denied' than the next trial it may be perfectly possible reduce the testcase further in anohter way (for example, the sql that causes the 'Access denied' issue in the first place may be filtered out, etc. Even if an exit would be preferred here (unlikely), then it should be made conditional.
         fi
       else
         # RV 02/01/2021: increased timeout to 60 up from 40 as even high end servers which are busy may take bit longer to write a core
         timeout -k60 -s9 60s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1  # Note it is myqladmin being terminated with -9, not mysqld !
-        if grep -qi "Access denied for user" $WORKD/log/mysqld.out; then
+        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld.out; then
           echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
           # exit 1  # Ref RV-11/01/2022 note above
         fi
@@ -3544,7 +3544,7 @@ stop_mysqld_or_mdg(){
             if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 2; fi
             if kill -0 $PIDV >/dev/null 2>&1; then  # Retry shutdown one more time
               ${BASEDIR}/bin/mysqladmin -uroot -S${WORKD}/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
-              if grep -qi "Access denied for user" $WORKD/log/mysqld.out; then
+              if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld.out; then
                 echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
                 # exit 1  # Ref RV-11/01/2022 note above
               fi
@@ -4447,7 +4447,8 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     elif [ $TRIAL -eq 53 ]; then sed "s/'[^']\+'/''/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 54 ]; then sed "s/'[^']\+'/1/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 55 ]; then sed "s/'[^']\+'/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 56 ]; then sed 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    elif [ $TRIAL -eq 56 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 57 ]; then sed 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`
@@ -4770,8 +4771,14 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 271 ]; then sed "s/(SELECT[^(]\+)/(SELECT * FROM (/i" $WORKF > $WORKT
     elif [ $TRIAL -eq 272 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM (/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 273 ]; then sed "s/(SELECT[^()]\+)/(SELECT * FROM (/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 274 ]; then sed "s/CONCURRENT//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 275 ]; then sed "s/CONCURRENT//i" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    elif [ $TRIAL -eq 274 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 275 ]; then sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /gi" $WORKF > $WORKT  # Long math calculations
+    elif [ $TRIAL -eq 276 ]; then sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /i" $WORKF > $WORKT 
+    elif [ $TRIAL -eq 277 ]; then sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /gi" $WORKF > $WORKT 
+    elif [ $TRIAL -eq 278 ]; then sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /i" $WORKF > $WORKT 
+    elif [ $TRIAL -eq 279 ]; then sed "s/ + 1 //gi" $WORKF > $WORKT 
+    elif [ $TRIAL -eq 280 ]; then sed "s/CONCURRENT//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 281 ]; then sed "s/CONCURRENT//i" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`
@@ -5189,93 +5196,141 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 102 ]; then sed "s/TINYINT/INT/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 103 ]; then sed "s/SMALLINT/INT/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 104 ]; then sed "s/MEDIUMINT/INT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 105 ]; then sed "s/BIGINT/INT/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 106 ]; then sed "s/WHERE[ ]*(\(.*\),.*)/WHERE (\1)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 107 ]; then sed "s/\\\'[0-9a-zA-Z]\\\'/0/g" $WORKF > $WORKT  # \'c\' in PS matching
-    elif [ $TRIAL -eq 108 ]; then sed "s/\\\'[0-9a-zA-Z]\\\'/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 109 ]; then sed "s/\\\'[0-9a-zA-Z]*\\\'/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 110 ]; then sed "s/\\\'[0-9a-zA-Z]*\\\'/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 111 ]; then sed "s/\\\'[0-9a-zA-Z]*\\\'/\\\'\\\'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 112 ]; then sed "s/<>/=/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 113 ]; then sed "s/([ ]*(/((/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 114 ]; then sed "s/)[ ]*)/))/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 115 ]; then sed "s/([ ]*/(/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 116 ]; then sed "s/[ ]*)/)/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 117 ]; then sed "s/ prep_stmt_[0-9]*/ p1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 118 ]; then sed "/INSERT[ ]*INTO/,/)/{s/INSERT[ ]*INTO[ ]*\(.*\)[ ]*(/INSERT INTO \1/p;d}" $WORKF > $WORKT
-    elif [ $TRIAL -eq 119 ]; then sed "s/QUICK //gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 120 ]; then sed "s/LOW_PRIORITY //gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 121 ]; then sed "s/IGNORE //gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 122 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 123 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 105 ]; then sed "s/BIGINT/INT/gi;" $WORKF > $WORKT
+    elif [ $TRIAL -eq 106 ]; then sed "s/BOOLEAN/INT/gi;" $WORKF > $WORKT
+    elif [ $TRIAL -eq 107 ]; then sed "s/NUMERIC/INT/gi;" $WORKF > $WORKT
+    elif [ $TRIAL -eq 108 ]; then sed "s/WHERE[ ]*(\(.*\),.*)/WHERE (\1)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 109 ]; then sed "s/\\\'[0-9a-zA-Z]\\\'/0/g" $WORKF > $WORKT  # \'c\' in PS matching
+    elif [ $TRIAL -eq 110 ]; then sed "s/\\\'[0-9a-zA-Z]\\\'/1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 111 ]; then sed "s/\\\'[0-9a-zA-Z]*\\\'/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 112 ]; then sed "s/\\\'[0-9a-zA-Z]*\\\'/1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 113 ]; then sed "s/\\\'[0-9a-zA-Z]*\\\'/\\\'\\\'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 114 ]; then sed "s/<>/=/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 115 ]; then sed "s/([ ]*(/((/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 116 ]; then sed "s/)[ ]*)/))/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 117 ]; then sed "s/([ ]*/(/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 118 ]; then sed "s/[ ]*)/)/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 119 ]; then sed "s/ prep_stmt_[0-9]*/ p1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 120 ]; then sed "/INSERT[ ]*INTO/,/)/{s/INSERT[ ]*INTO[ ]*\(.*\)[ ]*(/INSERT INTO \1/p;d}" $WORKF > $WORKT
+    elif [ $TRIAL -eq 121 ]; then sed "s/QUICK //gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 122 ]; then sed "s/LOW_PRIORITY //gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 123 ]; then sed "s/IGNORE //gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 124 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 125 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 126 ]; then sed "s/enum[ ]*('','','','','','',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 127 ]; then sed "s/enum[ ]*('','','','',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 128 ]; then sed "s/enum[ ]*('','','',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 129 ]; then sed "s/enum[ ]*('','',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 130 ]; then sed "s/set[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 131 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 132 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 126 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 127 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 128 ]; then sed "s/enum[ ]*('','','','','','',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 129 ]; then sed "s/enum[ ]*('','','','',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 130 ]; then sed "s/enum[ ]*('','','',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 131 ]; then sed "s/enum[ ]*('','',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 132 ]; then sed "s/set[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 133 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 134 ]; then sed "s/set[ ]*('','','','','','',/SET('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 135 ]; then sed "s/set[ ]*('','','','',/SET('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 136 ]; then sed "s/set[ ]*('','','',/SET('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 137 ]; then sed "s/set[ ]*('','',/SET('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 138 ]; then NOSKIP=1; sed "s/ ENGINE=TokuDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT # NOSKIP as lenght of 'TokuDB' is same as 'InnoDB' and we want to check if the testcase is engine specific or not
-    elif [ $TRIAL -eq 139 ]; then sed "s/ ENGINE=RocksDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT  # NOSKIP not required; InnoDB is shorter then RocksDB
-    elif [ $TRIAL -eq 140 ]; then NOSKIP=1; sed "s/ ENGINE=MEMORY/ ENGINE=InnoDB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 141 ]; then NOSKIP=1; sed "s/ ENGINE=MyISAM/ ENGINE=InnoDB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 142 ]; then NOSKIP=1; sed "s/ ENGINE=CSV/ ENGINE=InnoDB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 143 ]; then NOSKIP=1; sed "s/ ENGINE=NDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 144 ]; then NOSKIP=1; sed "s/ ENGINE=[A-Za-z_-]\+/ ENGINE=InnoDB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 145 ]; then NOSKIP=1; sed "s/ ENGINE=[A-Za-z_-]\+/ /gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 146 ]; then sed "s/ ENGINE=TokuDB/ ENGINE=none/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 147 ]; then sed "s/ ENGINE=RocksDB/ ENGINE=none/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 148 ]; then NOSKIP=1; sed "s/TokuDB/InnoDB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 149 ]; then sed "s/RocksDB/InnoDB/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 150 ]; then sed -e "s/[\t ]\+/ /g" -e "s/ \([;,]\)/\1/g" -e "s/ $//g" -e "s/^ //g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 151 ]; then sed "s/.*/\L&/" $WORKF > $WORKT
-    elif [ $TRIAL -eq 152 ]; then sed "s/[ ]*([ ]*/(/;s/[ ]*)[ ]*/)/" $WORKF > $WORKT
-    elif [ $TRIAL -eq 153 ]; then sed "s/;.*/;/" $WORKF > $WORKT
-    elif [ $TRIAL -eq 154 ]; then sed "s/;#;.*$/;/" $WORKF > $WORKT
-    elif [ $TRIAL -eq 155 ]; then sed "s/''/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 156 ]; then sed "/INSERT/,/;/s/''/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 157 ]; then sed "/SELECT/,/;/s/''/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 158 ]; then sed "s/;[ \t]\+#/;#/" $WORKF > $WORKT  # Remove any spaces/tabs before #EOL comments if present
-    elif [ $TRIAL -eq 159 ]; then sed "s/;[ \t]*#.*/;/" $WORKF > $WORKT  # Attempt to remove #EOL comments
-    elif [ $TRIAL -eq 160 ]; then sed "s/#[^#]\+$/;/" $WORKF > $WORKT  # Another attempt at removing #EOL comments
-    elif [ $TRIAL -eq 161 ]; then sed "s/#[^#]\+$/#/" $WORKF > $WORKT  # If previous attempts do not work, attempt shorter comments
-    elif [ $TRIAL -eq 162 ]; then sed "s/[ \t]\+$//" $WORKF > $WORKT  # Remove spaces at end of line
-    elif [ $TRIAL -eq 163 ]; then NOSKIP=1; sed "s|\([^;]\)$|\1;|" $WORKF > $WORKT  # Add ";" on lines that do not have it
-    elif [ $TRIAL -eq 164 ]; then NOSKIP=1; sed "s|#;|;#|" $WORKF > $WORKT  # Ref line above/below for combination effect
-    elif [ $TRIAL -eq 165 ]; then sed "s/;[ \t]\+;/;/g" $WORKF > $WORKT  # Remove empty statements if possible
-    elif [ $TRIAL -eq 166 ]; then sed "s/[ \t]\+/ /g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 167 ]; then sed "s/  / /" $WORKF > $WORKT
-    elif [ $TRIAL -eq 168 ]; then sed "s/  / /" $WORKF > $WORKT
+    elif [ $TRIAL -eq 134 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 135 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 136 ]; then sed "s/set[ ]*('','','','','','',/SET('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 137 ]; then sed "s/set[ ]*('','','','',/SET('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 138 ]; then sed "s/set[ ]*('','','',/SET('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 139 ]; then sed "s/set[ ]*('','',/SET('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 140 ]; then NOSKIP=1; sed "s/ ENGINE=TokuDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT # NOSKIP as lenght of 'TokuDB' is same as 'InnoDB' and we want to check if the testcase is engine specific or not
+    elif [ $TRIAL -eq 141 ]; then sed "s/ ENGINE=RocksDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT  # NOSKIP not required; InnoDB is shorter then RocksDB
+    elif [ $TRIAL -eq 142 ]; then NOSKIP=1; sed "s/ ENGINE=MEMORY/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 143 ]; then NOSKIP=1; sed "s/ ENGINE=MyISAM/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 144 ]; then NOSKIP=1; sed "s/ ENGINE=CSV/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 145 ]; then NOSKIP=1; sed "s/ ENGINE=NDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 146 ]; then NOSKIP=1; sed "s/ ENGINE=[A-Za-z_-]\+/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 147 ]; then sed "s/ ENGINE=[A-Za-z_-]\+/ /gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 148 ]; then sed "s/ ENGINE=TokuDB/ ENGINE=none/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 149 ]; then sed "s/ ENGINE=RocksDB/ ENGINE=none/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 150 ]; then NOSKIP=1; sed "s/TokuDB/InnoDB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 151 ]; then sed "s/RocksDB/InnoDB/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 152 ]; then sed -e "s/[\t ]\+/ /g" -e "s/ \([;,]\)/\1/g" -e "s/ $//g" -e "s/^ //g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 153 ]; then sed "s/.*/\L&/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 154 ]; then sed "s/[ ]*([ ]*/(/;s/[ ]*)[ ]*/)/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 155 ]; then sed "s/;.*/;/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 156 ]; then sed "s/;#;.*$/;/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 157 ]; then sed "s/''/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 158 ]; then sed "/INSERT/,/;/s/''/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 159 ]; then sed "/SELECT/,/;/s/''/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 160 ]; then sed "s/;[ \t]\+#/;#/" $WORKF > $WORKT  # Remove any spaces/tabs before #EOL comments if present
+    elif [ $TRIAL -eq 161 ]; then sed "s/;[ \t]*#.*/;/" $WORKF > $WORKT  # Attempt to remove #EOL comments
+    elif [ $TRIAL -eq 162 ]; then sed "s/#[^#]\+$/;/" $WORKF > $WORKT  # Another attempt at removing #EOL comments
+    elif [ $TRIAL -eq 163 ]; then sed "s/#[^#]\+$/#/" $WORKF > $WORKT  # If previous attempts do not work, attempt shorter comments
+    elif [ $TRIAL -eq 164 ]; then sed "s/[ \t]\+$//" $WORKF > $WORKT  # Remove spaces at end of line
+    elif [ $TRIAL -eq 165 ]; then NOSKIP=1; sed "s|\([^;]\)$|\1;|" $WORKF > $WORKT  # Add ";" on lines that do not have it
+    elif [ $TRIAL -eq 166 ]; then NOSKIP=1; sed "s|#;|;#|" $WORKF > $WORKT  # Ref line above/below for combination effect
+    elif [ $TRIAL -eq 167 ]; then sed "s/;[ \t]\+;/;/g" $WORKF > $WORKT  # Remove empty statements if possible
+    elif [ $TRIAL -eq 168 ]; then sed "s/[ \t]\+/ /g" $WORKF > $WORKT
     elif [ $TRIAL -eq 169 ]; then sed "s/  / /" $WORKF > $WORKT
-    elif [ $TRIAL -eq 170 ]; then sed "s|;#.*$|;|" $WORKF > $WORKT
-    elif [ $TRIAL -eq 171 ]; then sed "s|;#[^#]\+$|;|" $WORKF > $WORKT
-    elif [ $TRIAL -eq 172 ]; then sed "s/;  ;/;/" $WORKF > $WORKT
-    elif [ $TRIAL -eq 173 ]; then sed "s/; ;/;/" $WORKF > $WORKT
-    elif [ $TRIAL -eq 174 ]; then sed "s/;;/;/" $WORKF > $WORKT
-    elif [ $TRIAL -eq 175 ]; then sed "s/; /;/" $WORKF > $WORKT
-    elif [ $TRIAL -eq 176 ]; then sed "s/t1/t/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 177 ]; then sed "s/c1/c/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 178 ]; then sed "s/p1/p/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 179 ]; then sed "s/f1/f/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 180 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
-    elif [ $TRIAL -eq 181 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
+    elif [ $TRIAL -eq 170 ]; then sed "s/  / /" $WORKF > $WORKT
+    elif [ $TRIAL -eq 171 ]; then sed "s/  / /" $WORKF > $WORKT
+    elif [ $TRIAL -eq 172 ]; then sed "s|;#.*$|;|" $WORKF > $WORKT
+    elif [ $TRIAL -eq 173 ]; then sed "s|;#[^#]\+$|;|" $WORKF > $WORKT
+    elif [ $TRIAL -eq 174 ]; then sed "s/;  ;/;/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 175 ]; then sed "s/; ;/;/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 176 ]; then sed "s/;;/;/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 177 ]; then sed "s/; /;/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 178 ]; then sed "s/t1/t/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 179 ]; then sed "s/c1/c/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 180 ]; then sed "s/p1/p/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 181 ]; then sed "s/f1/f/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 182 ]; then sed "s/v1/c/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 183 ]; then sed "s/c,c,c/c/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 184 ]; then sed "s/c,c/c/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 185 ]; then sed "s/t[ \t]*(v)/t/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 186 ]; then sed "s/[0-9][0-9][0-9][0-9][0-9]\+/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 187 ]; then sed "s/[0-9][0-9][0-9][0-9][0-9]\+/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 188 ]; then sed "s/[0-9][0-9][0-9][0-9]\+/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 189 ]; then sed "s/[0-9][0-9][0-9][0-9]\+/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 190 ]; then sed "s/[0-9][0-9][0-9]\+/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 191 ]; then sed "s/[0-9][0-9][0-9]\+/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 192 ]; then sed "s/[0-9][0-9]\+/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 193 ]; then sed "s/[0-9][0-9]\+/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 194 ]; then sed "s/[-+%^*]1//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 195 ]; then sed "s/[-+%^*]1//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 196 ]; then sed "s/[-+%^*] [-+%^*]/-/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 197 ]; then sed "s/[-+%^*] [-+%^*]/-/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 198 ]; then sed "s/- 1/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 199 ]; then sed "s/ORDER BY [^ ]\+//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 200 ]; then sed "s/ORDER BY [^ ]\+//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 201 ]; then sed "s/CASE.*END/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 202 ]; then sed "s/CASE[^E]\+END/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 203 ]; then sed "s/CASE.*END/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 204 ]; then sed "s/CASE[^E]\+END/1/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 205 ]; then sed "s/CASE.*END/CASE WHEN 1 THEN 2 ELSE 3 END/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 206 ]; then sed "s/CASE[^E]\+END/CASE WHEN 1 THEN 2 ELSE 3 END/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 207 ]; then sed "s/CASE.*END/CASE WHEN 1 THEN 2 ELSE 3 END/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 208 ]; then sed "s/CASE[^E]\+END/CASE WHEN 1 THEN 2 ELSE 3 END/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 209 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES (1),/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 210 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 211 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 212 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 213 ]; then sed "s/VALUES[ \t]\+(.*)/VALUES (1)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 214 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+]t[ \t+])/(t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 215 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+]t[ \t+])/(t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 216 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+][^)]\+)/(t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 217 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+][^)]\+)/(t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 218 ]; then sed "s/HAVING[ \t]\+FIRST_VALUE[ \t]\+[^A-Z]\+[A-Z]//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 219 ]; then sed "s/SUM[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 220 ]; then sed "s/MAX[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 221 ]; then sed "s/MIN[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 222 ]; then sed "s/AVG[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 223 ]; then sed "s/CHECK[ \t]\+([^)]\+)//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 224 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 225 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 226 ]; then sed "s/v0/c/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 227 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
+    elif [ $TRIAL -eq 228 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
       if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
         ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT
       else
         cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
-    elif [ $TRIAL -eq 182 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 229 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
     # RV 25/01/21 Disabled next trial to see if this fixes the # mysqld options required insert
     # RV 09/05/22 It seems to help. Reinstated trial by temporary dummy swap instead
-    elif [ $TRIAL -eq 183 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
-    elif [ $TRIAL -eq 184 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 230 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
+    elif [ $TRIAL -eq 231 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 232 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`
