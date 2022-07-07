@@ -4,6 +4,8 @@
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 
 ##### CURRENT BUGS #####
+ASAN|unknown-crash|storage/heap/hp_hash.c|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                             ## MDEV-24066
+UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-24066
 UBSAN|member access within null pointer of type 'struct TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize               ## MDEV-28510
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|Type_handler_string_result::make_packed_sort_key_part|make_packed_sortkey|make_sortkey ## MDEV-27081
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|make_packed_sortkey|make_sortkey|find_all_keys   ## MDEV-27081

@@ -1,0 +1,21 @@
+#!/bin/bash
+if [ -z "$1" ]; then
+  if [ -r "./log/master.err" ]; then
+    vi ./log/master.err
+    exit 0
+  else
+    echo './log/master.err does not exist, and no trial number was passed to this script; cannnot continue'
+    exit 1
+  fi
+else
+  if [ ! -d "./$1" ]; then
+    echo "Trial dir ./$1 does not exist"
+    exit 1
+  fi
+  if [ ! -r "./$1/log/master.err" ]; then
+    echo "Trial dir ./$1/log/master.err does not exist"
+    exit 1
+  fi
+  vi ./$1/log/master.err
+  exit 0
+fi

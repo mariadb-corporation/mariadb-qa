@@ -65,7 +65,7 @@ while true; do
         fi
         ERRORS_LAST_LINE=
       else
-        echo "Index ${i} seems to be invalid: directopry ${DIR}/${MON[${i}]} does not exist!"
+        echo "Index ${i} seems to be invalid: directory ${DIR}/${MON[${i}]} does not exist!"
         exit 1
       fi
     fi

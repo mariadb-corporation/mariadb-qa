@@ -7,6 +7,7 @@ rm -f /test/*/16*             2>/dev/null &  # Cleanup reducer generated scripts
 if [ -r /test/clean_newbugs ]; then
   if [ -d /home/$(whoami)/fuzzing/newbugs ]; then
     /test/clean_newbugs /home/$(whoami)/fuzzing/newbugs >/dev/null 2>&1 &
+    # Note: there is also /home/$(whoami)/fuzzing/newbugs/clean_newbugs which would do the same
   fi
   if [ -d /data/NEWBUGS ]; then
     /test/clean_newbugs /data/NEWBUGS >/dev/null 2>&1 &

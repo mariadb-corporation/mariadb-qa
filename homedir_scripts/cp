@@ -1,0 +1,4 @@
+echo 'Cleaning up of known issues...'
+~/mariadb-qa/pquery-clean-known.sh 
+~/mariadb-qa/pquery-clean-known++.sh 
+~/mariadb-qa/pquery-results.sh

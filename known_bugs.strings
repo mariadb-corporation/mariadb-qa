@@ -86,7 +86,8 @@ table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_itera
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_ci_lengthsp|my_uca_strnxfrm_utf32|charset_info_st::strnxfrm                                                                     ## MDEV-29019
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_uca_strnxfrm_utf32|Type_handler_string_result::make_sort_key|make_sortkey                                                       ## MDEV-29019
 tbl->file->stats.records > null_count|SIGABRT|Ordered_key::Ordered_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                  ## MDEV-29005
-cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28973
+cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28871
+cur_sj_inner_tables == 0|SIGABRT|Backtrace stopped: Cannot access memory at address                                                                                            ## MDEV-28871
 SIGSEGV|Item::clear_extraction_flag|Item::check_pushable_cond|Item::check_pushable_cond|Item::check_pushable_cond                                                              ## MDEV-28958
 SIGSEGV|JOIN_CACHE::reset_join|sub_select_cache|do_select|JOIN::exec_inner                                                                                                     ## MDEV-28957
 table->no_keyread || !table->covering_keys.is_set(tab->index) || table->file->keyread == tab->index|SIGABRT|join_read_first|sub_select|do_select|JOIN::exec_inner              ## MDEV-28957
@@ -184,9 +185,10 @@ SIGSEGV|Opt_trace_struct::add_select_number|Item_subselect::exec|Item_singlerow_
 SIGSEGV|Opt_trace_struct::add_select_number|Item_subselect::exec|Item_in_subselect::val_bool_naked|Item_in_optimizer::val_int                                                  ## MDEV-28502
 SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_inner|JOIN::optimize                                                                                           ## MDEV-28501
 SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                                                                    ## MDEV-28501
-field->table == table|SIGABRT|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                         ## MDEV-28515
+SIGSEGV|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                                                               ## MDEV-29052
+field->table == table|SIGABRT|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                         ## MDEV-28515(/29052)
 field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_inner                                               ## MDEV-28515
-field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                              ## MDEV-28515
+field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                              ## MDEV-28515(/29052)
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28516
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::check|handler::ha_check|ha_partition::handle_opt_part ## MDEV-28514
 SIGSEGV|charset_info_st::strnncoll|parse_option_list|mysql_prepare_create_table|mysql_create_frm_image                                                                         ## MDEV-28497

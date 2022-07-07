@@ -45,3 +45,4 @@ max-thread-mem-used=                                  Presumed non-issue (max-th
 Deleting the meta-data file                           Normal result of FLUSH TABLE WITH READ LOCK, also see MDEV-28110
 lock_rec_fr.*all.*discard.*ge_low.*set_bit.*ulint.*1  https://jira.mariadb.org/browse/MDEV-21516
 # errno: 168 "Unknown (generic) error from engine"    (Not filtered) https://jira.mariadb.org/browse/MDEV-28831
+Invalid .old.. table or database name                 https://jira.mariadb.org/browse/MDEV-29051
