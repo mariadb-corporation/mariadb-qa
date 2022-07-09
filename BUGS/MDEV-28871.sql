@@ -7,3 +7,6 @@ SELECT * FROM t1 WHERE a IN (SELECT b FROM t2 JOIN t1);
 
 SET optimizer_search_depth=1;
 SELECT * FROM INFORMATION_SCHEMA.FILES WHERE LOGFILE_GROUP_NAME IN (SELECT LOGFILE_GROUP_NAME FROM INFORMATION_SCHEMA.FILES WHERE  TABLESPACE_NAME IN (SELECT TABLESPACE_NAME FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA IN (NULL)));
+
+SET SESSION optimizer_search_depth=1;
+SELECT logfile_group_name,file_name,total_extents,INITIAL_SIZE,ENGINE,EXTRA FROM information_schema.FILES WHERE file_type=''AND file_name AND logfile_group_name AND logfile_group_name IN (SELECT logfile_group_name FROM information_schema.FILES WHERE file_type=''AND TABLESPACE_name IN (SELECT 1 FROM information_schema.PARTITIONS WHERE table_schema IN ('')));
