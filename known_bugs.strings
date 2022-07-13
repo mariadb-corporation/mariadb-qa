@@ -84,6 +84,9 @@ table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_itera
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+0|SIGABRT|Item_type_holder::val_int|Item::val_int_result|Item_cache_int::cache_value|Item_cache::has_value                                                                     ## MDEV-29093
+0|SIGABRT|Item_type_holder::val_str|Item::str_result|Item_cache_str::cache_value|Item_cache::has_value                                                                         ## MDEV-29093
+SIGSEGV|String::copy|Item_cache_str::cache_value|Item_cache::has_value|Item_cache_str::save_in_field                                                                           ## MDEV-29093
 length <= max_data_length()|SIGABRT|Field_blob::store_to_mem|Field_blob::store|Item::save_in_field_inner|Item::save_in_field                                                   ## MDEV-29087
 length <= max_data_length()|SIGABRT|Field_blob::store_to_mem|Field_blob::store|Item::save_in_field|Item_result_field::save_in_result_field                                     ## MDEV-29087
 length <= max_data_length()|SIGABRT|Field_blob::store|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                               ## MDEV-29087

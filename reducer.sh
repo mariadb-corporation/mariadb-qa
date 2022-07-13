@@ -5318,19 +5318,26 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 224 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
     elif [ $TRIAL -eq 225 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
     elif [ $TRIAL -eq 226 ]; then sed "s/v0/c/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 227 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
-    elif [ $TRIAL -eq 228 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
+    elif [ $TRIAL -eq 227 ]; then sed "s/ CHAR)/ INT)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 228 ]; then sed "s/c(c)/c/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 229 ]; then sed "s|0[+/- ]\+0|0|gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 230 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 231 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 232 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 233 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 234 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
+    elif [ $TRIAL -eq 235 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
       if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
         ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT
       else
         cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
-    elif [ $TRIAL -eq 229 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 236 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
     # RV 25/01/21 Disabled next trial to see if this fixes the # mysqld options required insert
     # RV 09/05/22 It seems to help. Reinstated trial by temporary dummy swap instead
-    elif [ $TRIAL -eq 230 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
-    elif [ $TRIAL -eq 231 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
-    elif [ $TRIAL -eq 232 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 237 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
+    elif [ $TRIAL -eq 238 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 239 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`
