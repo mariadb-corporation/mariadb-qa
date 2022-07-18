@@ -588,7 +588,7 @@ if [[ $MDG -eq 1 ]]; then
   echo "binlog_format=ROW" >> ${BASEDIR}/my.cnf
   echo "core-file" >> ${BASEDIR}/my.cnf
   echo "log-output=none" >> ${BASEDIR}/my.cnf
-  echo "wsrep_slave_threads=2" >> ${BASEDIR}/my.cnf
+  echo "wsrep_slave_threads=12" >> ${BASEDIR}/my.cnf
   echo "wsrep_on=1" >> ${BASEDIR}/my.cnf
   if [[ "$ENCRYPTION_RUN" == 1 ]]; then
     echo "encrypt_binlog=1" >> ${BASEDIR}/my.cnf
@@ -598,12 +598,11 @@ if [[ $MDG -eq 1 ]]; then
     echo "innodb_encrypt_tables=ON" >> ${BASEDIR}/my.cnf
     echo "innodb_encryption_rotate_key_age=0" >> ${BASEDIR}/my.cnf
     echo "innodb_encrypt_log=ON" >> ${BASEDIR}/my.cnf
-    echo "innodb_encryption_threads=0" >> ${BASEDIR}/my.cnf
+    echo "innodb_encryption_threads=4" >> ${BASEDIR}/my.cnf
     echo "innodb_encrypt_temporary_tables=ON" >> ${BASEDIR}/my.cnf
-    echo "encrypt-tmp-disk-tables=1" >> ${BASEDIR}/my.cnf
-    echo "encrypt-tmp-files=1" >> ${BASEDIR}/my.cnf
+    echo "encrypt_tmp_disk_tables=1" >> ${BASEDIR}/my.cnf
+    echo "encrypt_tmp_files=1" >> ${BASEDIR}/my.cnf
     echo "aria_encrypt_tables=ON" >> ${BASEDIR}/my.cnf
-    echo "innodb-tablespaces-encryption" >> ${BASEDIR}/my.cnf
   fi
 fi
 
