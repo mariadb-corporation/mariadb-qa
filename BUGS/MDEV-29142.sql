@@ -1,0 +1,12 @@
+SET @@global.tx_read_only = ON;
+SET default_storage_engine = SEQUENCE;
+create table t1 (c1 int);
+CREATE TABLE t1(c1 VARCHAR(20)) engine=innodb;
+INSERT INTO t1  VALUES(0xA9B8);
+create TABLE t1 (c1 int) engine=innodb;
+create TABLE t1 (c1 int) engine=innodb;
+SET GLOBAL wsrep_on=OFF;
+SET GLOBAL wsrep_cluster_address='gcomm://';
+INSERT INTO t1  VALUES (943,232105,37,'Nazis','humidly','joyfully','');
+SELECT 1;
+SELECT 1;
