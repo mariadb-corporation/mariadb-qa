@@ -67,6 +67,13 @@ else
   export MDG=0
 fi
 
+# Check if Data at rest encryption was enabled for the run
+if [ "$(grep 'MDG Encryption run:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Encryption run[: \t]*||' )" == "YES" ]; then
+  export ENCRYPTION_RUN=1
+else
+  export ENCRYPTION_RUN=0
+fi
+
 # Check if RR Tracing was enabled for the run
 if [ "$(grep 'RR Tracing enabled:' ./pquery-run.log 2> /dev/null | sed 's|^.*RR Tracing enabled[: \t]*||' )" == "YES" ]; then
   export RR_TRACING=1
@@ -498,6 +505,13 @@ generate_reducer_script(){
     MDG_CLEANUP1="s|ZERO0|ZERO0|"  # Idem as above
     MDG_STRING1="s|ZERO0|ZERO0|"
   fi
+  if [[ ${ENCRYPTION_RUN} -eq 1 ]]; then
+    ENCRYPTION_RUN_CLEANUP="0,/^[ \t]*ENCRYPTION_RUN[ \t]*=.*$/s|^[ \t]*ENCRYPTION_RUN[ \t]*=.*$|#ENCRYPTION_RUN=<set_below_in_machine_variables_section>|"
+    ENCRYPTION_RUNSTRING="0,/#VARMOD#/s:#VARMOD#:export ENCRYPTION_RUN=1\n#VARMOD#:"
+  else
+    ENCRYPTION_RUN_CLEANUP="s|ZERO0|ZERO0|"  # Idem as above
+    ENCRYPTION_RUN_STRING="s|ZERO0|ZERO0|"
+  fi
   if [[ ${RR_TRACING} -eq 1 ]]; then
     RR_TRACING_CLEANUP="0,/^[ \t]*RR_TRACING[ \t]*=.*$/s|^[ \t]*RR_TRACING[ \t]*=.*$|#RR_TRACING=<set_below_in_machine_variables_section>|"
     RR_TRACING_STRING="0,/#VARMOD#/s:#VARMOD#:export RR_TRACING=1\n#VARMOD#:"
@@ -557,6 +571,7 @@ generate_reducer_script(){
    | sed "0,/^[ \t]*PQUERY_LOC[ \t]*=.*$/s|^[ \t]*PQUERY_LOC[ \t]*=.*$|#PQUERY_LOC=<set_below_in_machine_variables_section>|" \
    | sed "${MDG_CLEANUP1}" \
    | sed "${MDG_CLEANUP2}" \
+   | sed "${ENCRYPTION_RUN_CLEANUP}" \
    | sed "${RR_TRACING_CLEANUP}" \
    | sed "${GRP_RPL_CLEANUP1}" \
    | sed "${SI_CLEANUP1}" \
@@ -583,6 +598,7 @@ generate_reducer_script(){
    | sed "0,/#VARMOD#/s:#VARMOD#:SAVE_RESULTS=0\n#VARMOD#:" \
    | sed "${MDG_STRING1}" \
    | sed "${MDG_STRING2}" \
+   | sed "${ENCRYPTION_RUN_STRING}" \
    | sed "${RR_TRACING_STRING}" \
    | sed "${GRP_RPL_STRING1}" \
    | sed "${QC_STRING1}" \

@@ -2231,9 +2231,23 @@ start_mdg_main(){
   echo "binlog_format=ROW" >> ${WORKD}/my.cnf
   echo "core-file" >> ${WORKD}/my.cnf
   echo "log-output=none" >> ${WORKD}/my.cnf
-  echo "wsrep_slave_threads=2" >> ${WORKD}/my.cnf
+  echo "wsrep_slave_threads=12" >> ${WORKD}/my.cnf
   echo "wsrep_on=1" >> ${WORKD}/my.cnf
   # TODO: Add encryption checks after implementing encryption functionalities in pquery-run.sh
+  if [[ "$ENCRYPTION_RUN" == 1 ]]; then
+    echo "encrypt_binlog=1" >> ${WORKD}/my.cnf
+    echo "plugin_load_add=file_key_management" >> ${WORKD}/my.cnf
+    echo "file_key_management_filename=${SCRIPT_PWD}/pquery/galera_encryption.key" >> ${WORKD}/my.cnf
+    echo "file_key_management_encryption_algorithm=aes_cbc" >> ${WORKD}/my.cnf
+    echo "innodb_encrypt_tables=ON" >> ${WORKD}/my.cnf
+    echo "innodb_encryption_rotate_key_age=0" >> ${WORKD}/my.cnf
+    echo "innodb_encrypt_log=ON" >> ${WORKD}/my.cnf
+    echo "innodb_encryption_threads=4" >> ${WORKD}/my.cnf
+    echo "innodb_encrypt_temporary_tables=ON" >> ${WORKD}/my.cnf
+    echo "encrypt_tmp_disk_tables=1" >> ${WORKD}/my.cnf
+    echo "encrypt_tmp_files=1" >> ${WORKD}/my.cnf
+    echo "aria_encrypt_tables=ON" >> ${WORKD}/my.cnf
+  fi
 #  if [[ "$ENCRYPTION_RUN" == 1 ]]; then
 #    echo "encrypt_binlog=ON" >> ${WORKD}/my.cnf
 #    if [[ $WITH_KEYRING_VAULT -ne 1 ]]; then

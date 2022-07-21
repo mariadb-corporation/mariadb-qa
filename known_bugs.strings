@@ -85,6 +85,11 @@ cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_sta
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!_current_thd()|SIGABRT|destroy_background_thd|innobase_destroy_background_thd|fts_optimize_shutdown|srv_shutdown_bg_undo_sources                                              ## MDEV-29142
+trx_list.empty()|SIGABRT|ut_dbg_assertion_failed|trx_sys_t::close|innodb_shutdown|innobase_end                                                                                 ## MDEV-29142
+UT_LIST_GET_LEN(trx_list) == 0|SIGABRT|ut_dbg_assertion_failed|trx_sys_t::close|innodb_shutdown|innobase_end                                                                   ## MDEV-29142
+state() == s_must_replay || client_state_.current_error()|SIGABRT|wsrep::transaction::before_prepare|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-29140
+status == 0|SIGABRT|add_role_user_mapping_action|my_hash_iterate|rebuild_role_grants|mysql_rename_user                                                                         ## MDEV-29131
 0|SIGABRT|Item_type_holder::val_int|Item::val_int_result|Item_cache_int::cache_value|Item_cache::has_value                                                                     ## MDEV-29093
 0|SIGABRT|Item_type_holder::val_str|Item::str_result|Item_cache_str::cache_value|Item_cache::has_value                                                                         ## MDEV-29093
 SIGSEGV|String::copy|Item_cache_str::cache_value|Item_cache::has_value|Item_cache_str::save_in_field                                                                           ## MDEV-29093
