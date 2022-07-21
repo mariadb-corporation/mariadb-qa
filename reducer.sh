@@ -87,7 +87,7 @@ PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause after each successful issue 
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
 MULTI_THREADS_INCREASE=5        # Default=5  | Increase of MULTI_THREADS per bug-failed-to-be-detected round, both for standard and PQUERY_MULTI=1 runs
 MULTI_THREADS_MAX=50            # Default=50 | Max number of MULTI_THREADS threads, both for standard and PQUERY_MULTI=1 runs
-PQUERY_EXTRA_OPTIONS=""         # Default="" | Adds extra options to pquery replay, used for QC trials
+PQUERY_EXTRA_OPTIONS=""         # Default="" | Adds extra options to pquery replay, used for Query Correctness (QC) trials
 PQUERY_MULTI_THREADS=3          # Default=3  | The numberof subreducers when PQUERY_MULTI=1 (MULTI_THREADS will be set to this number at startup)
 PQUERY_MULTI_CLIENT_THREADS=30  # Default=30 | The number of pquery client threads per subreducer/mysqld
 PQUERY_MULTI_QUERIES=99999999   # Default=99999999 | The number of queries to be executed per client per trial
@@ -3046,21 +3046,43 @@ process_outcome(){
     else  # mysql CLI output testing run
       FILETOCHECK=$WORKD/log/mysql.out
     fi
+    # TODO RV 21/07/2022: Found that QC was not implemented correctly previously (not implemented by me). Add variable QCTEXT 
+    # (wich is used as a feature on/off flag apparently) to the main variable config and cleanup code. Fixed code below.
     NEWLINENUMBER=
-    NEWLINENUMBER="$(grep -E --binary-files=text "$QCTEXT" $FILETOCHECK2|grep -E --binary-files=text -o "#[0-9]+$"|sed 's/#//g')"
+    if [ ! -z "$QCTEXT" ]; then
+      NEWLINENUMBER="$(grep -E --binary-files=text "$QCTEXT" $FILETOCHECK2|grep -E --binary-files=text -o "#[0-9]+$"|sed 's/#//g')"
+    fi
     # TODO: Add check if same query has same output multiple times (add variable for number of occurences)
-    if [ $(grep -E --binary-files=text -c "$TEXT#$NEWLINENUMBER$" $FILETOCHECK) -gt 0 ]; then
+    MODE2_OCCURENCE=0
+    if [ -z "$QCTEXT" ]; then  # Normal run, not QC
+      if [ $USE_PQUERY -eq 1 ]; then  # pquery client output testing run, check both logs ftm (TODO: check if this is needed)
+        if [ $(grep -E --binary-files=text -c "$TEXT" $FILETOCHECK $FILETOCHECK2 2>/dev/null) -gt 0 ]; then
+          MODE2_OCCURENCE=1
+        fi
+      else  # mysql CLI output testing run
+        if [ $(grep -E --binary-files=text -c "$TEXT" $FILETOCHECK 2>/dev/null) -gt 0 ]; then
+          MODE2_OCCURENCE=1
+        fi
+      fi
+    else  # QC  # TODO: RV 21/07/2022: It is not sure that the '$TEXT#$NEWLINENUMBER$' code is correct, it was what was here to start with. Test later when fixing up QC. Ref QC comment above. It may be that pquery vs CLI also needs to be split.
+      if [ $(grep -E --binary-files=text -c "$TEXT#$NEWLINENUMBER$" $FILETOCHECK 2>/dev/null) -gt 0 ]; then
+        MODE2_OCCURENCE=1
+      fi
+    fi
+    if [ $MODE2_OCCURENCE -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*ClientOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good client output issue in $WORKO"
         control_backtrack_flow
       fi
       cleanup_and_save
+      MODE2_OCCURENCE=
       return 1
     else
       if [ ! "$STAGE" = "V" ]; then
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoClientOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
+      MODE2_OCCURENCE=
       return 0
     fi
 
