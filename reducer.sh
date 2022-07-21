@@ -5342,7 +5342,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 226 ]; then sed "s/v0/c/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 227 ]; then sed "s/ CHAR)/ INT)/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 228 ]; then sed "s/c(c)/c/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 229 ]; then sed "s|0[+/- ]\+0|0|gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 229 ]; then sed "s|0[-+/ ]\+0|0|gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 230 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 231 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
     elif [ $TRIAL -eq 232 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT

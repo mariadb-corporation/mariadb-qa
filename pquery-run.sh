@@ -123,6 +123,7 @@ if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_TRIALS_PER_SHUFFLE is not configured"
     exit 1
   fi
+  # TODO: this seems to cause errors: ./pquery-run.sh: line 126: 324998: No such file or directory
   if [ ${PRE_SHUFFLE_SQL_LINES} < $[ $[ $[ ${PQUERY_RUN_TIMEOUT} / 15 ] * 25000 * ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ] -2 ] ]; then
     echoit "Warning: PRE_SHUFFLE_SQL_LINES (${PRE_SHUFFLE_SQL_LINES}) is set to less than the minimum recommended 25k queries per 15 seconds times the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE (${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}) trials. You may want to increase this. See the formula here or in pquery-run.conf"
     sleep 10
