@@ -79,8 +79,8 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### Current MDEV-28883 bugs (temporary) #####
-table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|insert_fields|setup_wild                                     ## MDEV-28965
-*err == DB_SUCCESS|SIGABRT|btr_page_split_and_insert|btr_root_raise_and_insert|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low                                        ## MDEV-28883
+# table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|insert_fields|setup_wild                          ## Fixed ## MDEV-28965
+*err == DB_SUCCESS|SIGABRT|btr_page_split_and_insert|btr_root_raise_and_insert|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low                                        ## MDEV-29003
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
@@ -171,6 +171,7 @@ SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|handler::ha_direct
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28510
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28510
 SIGSEGV|Bitmap<64u>::merge|add_key_field|Item_equal::add_key_fields|Item_cond::add_key_fields                                                                                  ## MDEV-29017
+SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_between::add_key_fields                                                                                ## MDEV-29017
 SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields                                                                                     ## MDEV-28509
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## MDEV-28507
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                                                    ## MDEV-28507
@@ -181,6 +182,8 @@ table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_fiel
 (*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                             ## MDEV-28506
 (*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_func::fix_fields|JOIN::prepare                                                          ## MDEV-28506
 (*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                        ## MDEV-28506
+(*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                   ## MDEV-28506
+(*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                ## MDEV-28506
 SIGSEGV|_dl_lookup_symbol_x|do_sym|_dl_sym|dlsym_doit                                                                                                                          ## MDEV-28625
 SIGSEGV|do_lookup_x|_dl_lookup_symbol_x|do_sym|_dl_sym                                                                                                                         ## MDEV-28625
 SIGSEGV|sub_select|do_select|JOIN::exec_inner|JOIN::exec                                                                                                                       ## MDEV-28505
