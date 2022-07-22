@@ -7,6 +7,6 @@ create TABLE t1 (c1 int) engine=innodb;
 create TABLE t1 (c1 int) engine=innodb;
 SET GLOBAL wsrep_on=OFF;
 SET GLOBAL wsrep_cluster_address='gcomm://';
-INSERT INTO t1  VALUES (943,232105,37,'Nazis','humidly','joyfully','');
+INSERT INTO t1  VALUES (1);
 SELECT 1;
 SELECT 1;
