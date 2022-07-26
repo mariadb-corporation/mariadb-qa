@@ -81,10 +81,13 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 ##### Current MDEV-28883 bugs (temporary) #####
 # table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|insert_fields|setup_wild                          ## Fixed ## MDEV-28965
 cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan ## Temporary filter to cleanup runs, known remaining issue in older branch
-*err == DB_SUCCESS|SIGABRT|btr_page_split_and_insert|btr_root_raise_and_insert|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low                                        ## MDEV-29003
+# *err == DB_SUCCESS|SIGABRT|btr_page_split_and_insert|btr_root_raise_and_insert|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low                             ## Fixed ## MDEV-29003
+tbl->pos_in_table_list == tables|SIGABRT|open_tables|open_tables|open_tables_for_query|Sql_cmd_dml::prepare                                                                    ## MDEV-29174
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+fixed == 1|SIGABRT|Item_func_date_format::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                   ## MDEV-29173
+fixed()|SIGABRT|Item_func_date_format::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                      ## MDEV-29173
 !_current_thd()|SIGABRT|destroy_background_thd|innobase_destroy_background_thd|fts_optimize_shutdown|srv_shutdown_bg_undo_sources                                              ## MDEV-29142
 trx_list.empty()|SIGABRT|ut_dbg_assertion_failed|trx_sys_t::close|innodb_shutdown|innobase_end                                                                                 ## MDEV-29142
 UT_LIST_GET_LEN(trx_list) == 0|SIGABRT|ut_dbg_assertion_failed|trx_sys_t::close|innodb_shutdown|innobase_end                                                                   ## MDEV-29142
