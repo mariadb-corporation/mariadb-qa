@@ -23,6 +23,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|execute|EXECUTE|gi' | \
   sed 's|index|INDEX|g' | \
   sed 's|hex|HEX|gi' | \
+  sed 's|having|HAVING|gi' | \
   sed 's| as | AS |gi' | \
   sed 's|analyse|ANALYSE|gi' | \
   sed 's|do |DO |gi' | \
