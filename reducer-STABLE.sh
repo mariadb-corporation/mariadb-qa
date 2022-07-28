@@ -87,7 +87,7 @@ PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause after each successful issue 
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
 MULTI_THREADS_INCREASE=5        # Default=5  | Increase of MULTI_THREADS per bug-failed-to-be-detected round, both for standard and PQUERY_MULTI=1 runs
 MULTI_THREADS_MAX=50            # Default=50 | Max number of MULTI_THREADS threads, both for standard and PQUERY_MULTI=1 runs
-PQUERY_EXTRA_OPTIONS=""         # Default="" | Adds extra options to pquery replay, used for QC trials
+PQUERY_EXTRA_OPTIONS=""         # Default="" | Adds extra options to pquery replay, used for Query Correctness (QC) trials
 PQUERY_MULTI_THREADS=3          # Default=3  | The numberof subreducers when PQUERY_MULTI=1 (MULTI_THREADS will be set to this number at startup)
 PQUERY_MULTI_CLIENT_THREADS=30  # Default=30 | The number of pquery client threads per subreducer/mysqld
 PQUERY_MULTI_QUERIES=99999999   # Default=99999999 | The number of queries to be executed per client per trial
@@ -2231,9 +2231,23 @@ start_mdg_main(){
   echo "binlog_format=ROW" >> ${WORKD}/my.cnf
   echo "core-file" >> ${WORKD}/my.cnf
   echo "log-output=none" >> ${WORKD}/my.cnf
-  echo "wsrep_slave_threads=2" >> ${WORKD}/my.cnf
+  echo "wsrep_slave_threads=12" >> ${WORKD}/my.cnf
   echo "wsrep_on=1" >> ${WORKD}/my.cnf
   # TODO: Add encryption checks after implementing encryption functionalities in pquery-run.sh
+  if [[ "$ENCRYPTION_RUN" == 1 ]]; then
+    echo "encrypt_binlog=1" >> ${WORKD}/my.cnf
+    echo "plugin_load_add=file_key_management" >> ${WORKD}/my.cnf
+    echo "file_key_management_filename=${SCRIPT_PWD}/pquery/galera_encryption.key" >> ${WORKD}/my.cnf
+    echo "file_key_management_encryption_algorithm=aes_cbc" >> ${WORKD}/my.cnf
+    echo "innodb_encrypt_tables=ON" >> ${WORKD}/my.cnf
+    echo "innodb_encryption_rotate_key_age=0" >> ${WORKD}/my.cnf
+    echo "innodb_encrypt_log=ON" >> ${WORKD}/my.cnf
+    echo "innodb_encryption_threads=4" >> ${WORKD}/my.cnf
+    echo "innodb_encrypt_temporary_tables=ON" >> ${WORKD}/my.cnf
+    echo "encrypt_tmp_disk_tables=1" >> ${WORKD}/my.cnf
+    echo "encrypt_tmp_files=1" >> ${WORKD}/my.cnf
+    echo "aria_encrypt_tables=ON" >> ${WORKD}/my.cnf
+  fi
 #  if [[ "$ENCRYPTION_RUN" == 1 ]]; then
 #    echo "encrypt_binlog=ON" >> ${WORKD}/my.cnf
 #    if [[ $WITH_KEYRING_VAULT -ne 1 ]]; then
@@ -3046,21 +3060,43 @@ process_outcome(){
     else  # mysql CLI output testing run
       FILETOCHECK=$WORKD/log/mysql.out
     fi
+    # TODO RV 21/07/2022: Found that QC was not implemented correctly previously (not implemented by me). Add variable QCTEXT 
+    # (wich is used as a feature on/off flag apparently) to the main variable config and cleanup code. Fixed code below.
     NEWLINENUMBER=
-    NEWLINENUMBER="$(grep -E --binary-files=text "$QCTEXT" $FILETOCHECK2|grep -E --binary-files=text -o "#[0-9]+$"|sed 's/#//g')"
+    if [ ! -z "$QCTEXT" ]; then
+      NEWLINENUMBER="$(grep -E --binary-files=text "$QCTEXT" $FILETOCHECK2|grep -E --binary-files=text -o "#[0-9]+$"|sed 's/#//g')"
+    fi
     # TODO: Add check if same query has same output multiple times (add variable for number of occurences)
-    if [ $(grep -E --binary-files=text -c "$TEXT#$NEWLINENUMBER$" $FILETOCHECK) -gt 0 ]; then
+    MODE2_OCCURENCE=0
+    if [ -z "$QCTEXT" ]; then  # Normal run, not QC
+      if [ $USE_PQUERY -eq 1 ]; then  # pquery client output testing run, check both logs ftm (TODO: check if this is needed)
+        if [ $(grep -E --binary-files=text -c "$TEXT" $FILETOCHECK $FILETOCHECK2 2>/dev/null) -gt 0 ]; then
+          MODE2_OCCURENCE=1
+        fi
+      else  # mysql CLI output testing run
+        if [ $(grep -E --binary-files=text -c "$TEXT" $FILETOCHECK 2>/dev/null) -gt 0 ]; then
+          MODE2_OCCURENCE=1
+        fi
+      fi
+    else  # QC  # TODO: RV 21/07/2022: It is not sure that the '$TEXT#$NEWLINENUMBER$' code is correct, it was what was here to start with. Test later when fixing up QC. Ref QC comment above. It may be that pquery vs CLI also needs to be split.
+      if [ $(grep -E --binary-files=text -c "$TEXT#$NEWLINENUMBER$" $FILETOCHECK 2>/dev/null) -gt 0 ]; then
+        MODE2_OCCURENCE=1
+      fi
+    fi
+    if [ $MODE2_OCCURENCE -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*ClientOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good client output issue in $WORKO"
         control_backtrack_flow
       fi
       cleanup_and_save
+      MODE2_OCCURENCE=
       return 1
     else
       if [ ! "$STAGE" = "V" ]; then
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoClientOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
+      MODE2_OCCURENCE=
       return 0
     fi
 
@@ -5268,7 +5304,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 174 ]; then sed "s/;  ;/;/" $WORKF > $WORKT
     elif [ $TRIAL -eq 175 ]; then sed "s/; ;/;/" $WORKF > $WORKT
     elif [ $TRIAL -eq 176 ]; then sed "s/;;/;/" $WORKF > $WORKT
-    elif [ $TRIAL -eq 177 ]; then sed "s/; /;/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 177 ]; then sed "s/; \+/;/" $WORKF > $WORKT
     elif [ $TRIAL -eq 178 ]; then sed "s/t1/t/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 179 ]; then sed "s/c1/c/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 180 ]; then sed "s/p1/p/g" $WORKF > $WORKT
@@ -5318,19 +5354,32 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 224 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
     elif [ $TRIAL -eq 225 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
     elif [ $TRIAL -eq 226 ]; then sed "s/v0/c/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 227 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
-    elif [ $TRIAL -eq 228 ]; then NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
+    elif [ $TRIAL -eq 227 ]; then sed "s/ CHAR)/ INT)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 228 ]; then sed "s/c(c)/c/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 229 ]; then sed "s|0[-+/ ]\+0|0|gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 230 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 231 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 232 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 233 ]; then sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 234 ]; then sed "s/stmt/s/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 235 ]; then sed "s/f1/f/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 236 ]; then sed "s/t1/t/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 237 ]; then sed "s/s1/s/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 238 ]; then sed "s/ps/p/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 239 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
+    elif [ $TRIAL -eq 240 ]; then
       if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
+        NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
         ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT
       else
         cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
-    elif [ $TRIAL -eq 229 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 241 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
     # RV 25/01/21 Disabled next trial to see if this fixes the # mysqld options required insert
     # RV 09/05/22 It seems to help. Reinstated trial by temporary dummy swap instead
-    elif [ $TRIAL -eq 230 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
-    elif [ $TRIAL -eq 231 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
-    elif [ $TRIAL -eq 232 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 242 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
+    elif [ $TRIAL -eq 243 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 244 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`
