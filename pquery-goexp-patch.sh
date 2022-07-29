@@ -32,6 +32,13 @@ else
     cd /data/NEWBUGS
     REDUCERLOG="$(echo "newbug_${R1}.log" | sed 's|\.sh||')"
   fi
+  R_TMP="$(echo "${R1}" | sed 's|^s||')"
+  if [ -f "/data/NEWBUGS/${R_TMP}" ]; then  # Correct name already, except leading 's', remove it
+    R1="${R_TMP}"
+    cd /data/NEWBUGS
+    REDUCERLOG="$(echo "newbug_${R1}.log" | sed 's|\.sh||')"
+  fi
+  R_TMP=
   if [[ "${R1}" == *"newbug"* ]]; then
     if [ -f "./${R1}" -a -r "./${R1}" ]; then
       REDUCER="${R1}"
