@@ -87,6 +87,7 @@ tbl->pos_in_table_list == tables|SIGABRT|open_tables|open_tables|open_tables_for
 SIGSEGV|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute|mysql_execute_command                                                      ## MDEV-29189
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+active()|SIGABRT|wsrep::transaction::append_data|wsrep::client_state::append_data|THD::binlog_start_trans_and_stmt|select_create::prepare                                      ## MDEV-29202
 fixed == 1|SIGABRT|Item_func_date_format::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                   ## MDEV-29173
 fixed()|SIGABRT|Item_func_date_format::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                      ## MDEV-29173
 !_current_thd()|SIGABRT|destroy_background_thd|innobase_destroy_background_thd|fts_optimize_shutdown|srv_shutdown_bg_undo_sources                                              ## MDEV-29142
