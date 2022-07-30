@@ -31,3 +31,10 @@ CREATE OR REPLACE TABLE mysql.general_log (a INT);
 SET SESSION sql_log_off=ON;
 SET GLOBAL event_scheduler=ON,general_log=1,log_output='TABLE';
 CREATE EVENT two_event ON SCHEDULE EVERY 20 SECOND ON COMPLETION NOT PRESERVE COMMENT 'two EVENT' DO SELECT 123;
+
+CREATE EVENT four_event ON SCHEDULE EVERY 1 SECOND DO SELECT 1;
+CREATE OR REPLACE TABLE mysql.slow_log (a INT);
+SET GLOBAL event_scheduler=ON;
+SET GLOBAL log_output='FILE,TABLE';
+SET GLOBAL slow_query_log=ON;
+SET GLOBAL long_query_time=FALSE;

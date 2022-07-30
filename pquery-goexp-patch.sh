@@ -48,7 +48,8 @@ else
       exit 1
     fi
   elif [ ! -z "$(echo "${R1}" | sed 's|[0-9]||g')" ]; then
-    echo "Assert: option passed is not numeric. If you do not know how to use this script, execute it without options to see more information"
+    echo "Assert: option passed is not numeric nor a valid newbug reducer"
+    echo "Execute this script without options to see more information"
     exit 1
   else
     REDUCER="reducer${1}.sh"

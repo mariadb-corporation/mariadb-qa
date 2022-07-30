@@ -601,6 +601,8 @@ thd->transaction->stmt.is_empty()|SIGABRT|trans_check|trans_rollback|THD::cleanu
 thd->transaction.stmt.is_empty()|SIGABRT|trans_check|trans_rollback|THD::cleanup|unlink_thd                                                                                    ## MDEV-24706
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute     ## MDEV-24706
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute      ## MDEV-24706
+thd->transaction->stmt.is_empty()|SIGABRT|trans_check|trans_rollback|THD::cleanup|THD::free_connection                                                                         ## MDEV-24706
+thd->transaction.stmt.is_empty()|SIGABRT|trans_check|trans_rollback|THD::cleanup|THD::free_connection                                                                          ## MDEV-24706
 SIGSEGV|my_strndup|Event_queue_element_for_exec::init|Event_queue::get_top_for_execution_if_time|Event_scheduler::run                                                          ## MDEV-24686
 SIGSEGV|Event_queue::drop_matching_events|Event_queue::drop_schema_events|Events::drop_schema_events|mysql_rm_db_internal                                                      ## MDEV-24686
 SIGSEGV|my_scan_weight_utf8_general_ci|my_strnncollsp_utf8_general_ci|sortcmp_lex_string|event_basic_identifier_equal                                                          ## MDEV-24686
@@ -861,6 +863,8 @@ SIGSEGV|maria_status|ha_maria::info|TABLE_LIST::fetch_number_of_rows|make_join_s
 SIGSEGV|heap_info|ha_heap::info|ha_heap::info|make_join_statistics                                                                                                             ## MDEV-23202
 SIGSEGV|maria_status|ha_maria::info|make_join_statistics|JOIN::optimize_inner                                                                                                  ## MDEV-23202
 SIGSEGV|heap_info|ha_heap::info|make_join_statistics|JOIN::optimize_inner                                                                                                      ## MDEV-23202
+SIGSEGV|heap_info|ha_heap::info|opt_sum_query|JOIN::optimize_inner                                                                                                             ## MDEV-23202
+SIGSEGV|maria_status|ha_maria::info|opt_sum_query|JOIN::optimize_inner
 !table || table->in_use == _current_thd()|SIGABRT|Field_long::val_int|Field_int::val_decimal|Item_field::val_decimal|VDec::set                                                 ## MDEV-23294
 !table || table->in_use == _current_thd()|SIGABRT|Field_string::val_str|Field::val_str|Field::save_in_field_str|Field_str::save_in_field                                       ## MDEV-23294
 !table || table->in_use == _current_thd()|SIGABRT|Field_string::val_str|Item_field::val_str|Item::val_str|Item_func_hash::val_int                                              ## MDEV-23294

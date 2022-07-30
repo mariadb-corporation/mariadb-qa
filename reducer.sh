@@ -3332,7 +3332,7 @@ process_outcome(){
     fi
     if [ $M3_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" -a "${FIREWORKS}" != "1" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*${M3_OUTPUT_TEXT}OutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good mysqld error log output issue in $WORKO"
+        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*${M3_OUTPUT_TEXT}OutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good testcase in $WORKO"
         control_backtrack_flow
       fi
       sleep 2; sync
