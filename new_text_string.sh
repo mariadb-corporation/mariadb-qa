@@ -22,7 +22,7 @@ if [ $(df -k -P /tmp | grep -E --binary-files=text -v "Mounted" | awk '{print $4
 fi
 
 if [ ! -z "${1}" ]; then
-  if [ "${1}" == "SHOWINFO" -a ! -z "${2}" ]; then  # Used in automation, ref squirrel/process_testcases
+  if [ "${1}" == "SHOWINFO" -a ! -z "${2}" ]; then  # Used in automation, ref mariadb-qa/fuzzer/process_testcases
     SHOWINFO=1
     SHOWTEXT="${2}"
   elif [ "${1}" == "FRAMESONLY" ]; then  # Used in automation, ref mass_bug_report.sh

@@ -2,7 +2,8 @@
 # Created by Roel Van de Paar, MariaDB
 
 #BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg
-BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-opt
+#BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-opt
+BASEDIR=/test/MD290722-mariadb-10.10.0-linux-x86_64-dbg
 LOOP_SCRIPT=1  # Set to 1 to keep looping (handy when fuzzers are running)
 
 cd /home/$(whoami)/fuzzing
@@ -15,7 +16,10 @@ elif [ ! -r /home/$(whoami)/t ]; then
 elif [ ! -r ${BASEDIR}/bin/mysqld ]; then
   echo "BASEDIR (${BASEDIR}) does not contain bin/mysqld!"
   exit 1
-elif [ "${STY}" == "" ]; then
+elif [ ! -r ~/start -a ! -r ~/mariadb-qa/startup.sh ]; then
+  echo "Assert: ~/start nor ~/mariadb-qa/startup.sh available: run ~/mariadb-qa/linkit after cloning mariadb-qa from GitHub"
+  exit 1
+elif [ "${STY}" == "" ]; then  # Disable this to debug the script when needed
   echo "Not a screen, restarting myself inside a screen"
   screen -admS "process_testcases" bash -c "./$0"
   sleep 1
@@ -27,17 +31,24 @@ queue(){
   if [ -z "${1}" ]; then
     echo 'Assert: queue() received blank $1'
     exit 1
-  elif [ "${1}" -lt 0 -o "${1}" -gt 3 ]; then
-    echo "Assert: queue() received ${1} as the node ID."
-    exit 1
+  elif [ "${NODES}" -eq 4 ]; then
+    if [ "${1}" -lt 0 -o "${1}" -gt 3 ]; then
+      echo "Assert: queue() received ${1} as the node ID, while NODES=4"
+      exit 1
+    fi
+  elif [ "${NODES}" -eq 1 ]; then
+    if [ "${1}" -lt 0 -o "${1}" -gt 1 ]; then
+      echo "Assert: queue() received ${1} as the node ID, while NODES=1"
+      exit 1
+    fi
   fi
   TODO[${1}]=$(awk "NR>=${NODE_START[${1}]} && NR<=${NODE_END[${1}]} {print \$0}" /tmp/afl_fulllist.txt)
-  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "rm -f /dev/shm/afl-tc-node${1}/in.sql; cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; if [ -r ./in.sql ]; then ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 10m bash -c "{}"
+  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "rm -f /dev/shm/afl-tc-node${1}/in.sql; cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; if [ -r ./in.sql ]; then ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 5m bash -c "{}"
 }
  
 echo "Using BASEDIR ${BASEDIR}"
 if [ "${LOOP_SCRIPT}" -eq 1 ]; then
-  echo 'On completion, this script will restart itself'
+  echo 'On completion, this script will restart itself to continue processing new testcases...'
 fi
 echo 'Computing runtime size...'
 # Find all testcases
@@ -69,32 +80,41 @@ else
     NODE_END[2]=$[ ${PERNODE} * 3 ]
     NODE_START[3]=$[ ${PERNODE} * 3 + 1 ]
     NODE_END[3]=${COUNT}  # Avoid off-by-1 issues as a result of the PERNODE division
+    echo "Node assignments: [0]: ${NODE_START[0]}-${NODE_END[0]}, [1]: ${NODE_START[1]}-${NODE_END[1]}, [2]: ${NODE_START[2]}-${NODE_END[2]}, [3]: ${NODE_START[3]}-${NODE_END[3]}"
   else 
     echo "Only ${COUNT} testcases are present; will use a single node to process the testcases..."
     echo "Node 0 will process ${COUNT} testcases..."
     NODES=1
     NODE_START[0]=1
     NODE_END[0]=${COUNT}
+    echo "Node assignment: [0]: ${NODE_START[0]}-${NODE_END[0]}"
   fi
 fi
 if [ -z "${NODES}" ]; then
   echo "Assert: NODES is empty"
   exit 1
 fi
-  
+
 # Prep verification nodes, and start processing queues
 echo 'Commencing processing testcases...'
 rm -Rf /dev/shm/afl-tc-node*
 sync
 for ((NODE=0;NODE<${NODES};NODE++)){
+  echo "Starting testcase verification node ${NODE}..."
   cp -r ${BASEDIR} /dev/shm/afl-tc-node${NODE}
   cd /dev/shm/afl-tc-node${NODE}
+  if [ "${PWD}" != "/dev/shm/afl-tc-node${NODE}" -o ! -r "${PWD}/all" ]; then
+    echo "Assert: PWD(${PWD})!=/dev/shm/afl-tc-node${NODE} || ${PWD}/all does not exist"
+    exit 1
+  fi
   rm -Rf FIREWORKS-BUGS COPYING CREDITS INSTALL-BINARY README-wsrep README.md THIRDPARTY docs man mysql-test 16* sql-bench support-files reducer* *gypsy *rr *valgrind sysbench* *multirun* repl* loop* insert* *stbe *.old gdb memory_use_trace multi* gal* clean_failing_queries *noprompt* fixin g binlog *.sql *.out sqlmode test_pquery m include
-  ~/start >/dev/null 2>&1
+  if [ -r ~/start ]; then ~/start >/dev/null 2>&1; else ~/mariadb-qa/startup.sh >/dev/null 2>&1; fi
+  sleep 3
   queue ${NODE} &
   PID[${NODE}]=$!
-  echo "Node ${NODE} started with PID ${PID[${NODE}]}..."
+  echo "Testcase verification node ${NODE} started with PID ${PID[${NODE}]}..."
 }
+# Wait for nodes to complete work
 for ((NODE=0;NODE<${NODES};NODE++)){
   wait ${PID[${NODE}]}
 }
@@ -111,7 +131,7 @@ else
   sleep 3
   rm -Rf /dev/shm/afl-tc-node*
   sync
+  sleep 1
   screen -admS "process_testcases" bash -c "./$0"
-  sleep 3
   exit 0
 fi

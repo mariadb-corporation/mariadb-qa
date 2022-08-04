@@ -1,4 +1,0 @@
-#!/bin/bash
-# Created by Roel Van de Paar, MariaDB
-
-find . | grep string | xargs -I{} cat {} | sort -u

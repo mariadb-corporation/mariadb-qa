@@ -178,8 +178,10 @@ else
   echo "Adding scripts: ${BASIC_SCRIPTS}"
 fi
 
-# AFL WIP TODO
-ln -s ~/mariadb-qa/squirrel/afl ./afl
+# AFL Squirrel
+if [ -r /home/$(whoami)/mariadb-qa/fuzzer/afl ]; then
+  ln -s /home/$(whoami)/mariadb-qa/fuzzer/afl ./afl
+fi
 
 #GR startup scripts
 if [[ $GRP_RPL -eq 1 ]]; then

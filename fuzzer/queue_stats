@@ -1,11 +1,15 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
+# Note: for TOTA, NOCORE|string|report are excluded as we are working on file level here: think (fictive example):
+# testcase.sql vs testcase.sql.NOCORE for example; you do not want to count both files, only the former
+
 echo 'Processing, this may take a minute...'
 DONE=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'string|NOCORE' | wc -l)   # already done
-TOTA=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -vE 'NOCORE|string' | wc -l)  # all testcases
+TOTA=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -vE 'NOCORE|string|report' | wc -l)  # all testcases
 NOCO=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'NOCORE' | wc -l)          # no core
 REPR=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'report' | wc -l)          # completed reports
+
 echo "Already done (crashes): ${DONE}"
 echo "Still to do testcase:   $[ ${TOTA} - ${DONE} ]"
 echo "Total testcases:        ${TOTA}"
