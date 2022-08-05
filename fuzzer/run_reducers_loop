@@ -12,13 +12,17 @@ fi
 while true; do
   if [ -z $(screen -ls | grep 'reducers_run') ]; then
     echo "reducers_run screen not found, terminating any running instances of reducers_run at $(date)..."
-    ps -ef | grep 'reducers_run' | grep -v 'grep' | awk '{print $2}' | xargs -I{} kill -9 {}
+    ps -ef | grep 'reducers_run' | grep -vE 'grep|vi reducers_run' | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
-    ps -ef | grep 'reducers_run' | grep -v 'grep' | awk '{print $2}' | xargs -I{} kill -9 {}
+    ps -ef | grep 'reducers_run' | grep -vE 'grep|vi reducers_run' | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
     sync
     echo "Restarting at $(date)..."
     ./reducers_run
+    if [ ${?} -eq 1 ]; then
+      echo "./reducers_run exited with status 1: terminating"
+      exit 1
+    fi
   fi
   sleep 30
 done

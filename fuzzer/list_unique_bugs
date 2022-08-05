@@ -1,4 +1,11 @@
-#!/bin/bash
+#!/bin/bash 
 # Created by Roel Van de Paar, MariaDB
 
-find . | grep '\.string' | xargs -I{} cat {} | sort -u
+echo 'Deleting known bugs...'
+./del_known_bugs
+echo 'Reporting outcomes...'
+BUGS=$(find . | grep '\.string' | xargs -I{} cat {} | sort -u)
+COUNT="$(printf "%s\n" "${BUGS}" | wc -l)"
+echo "----------------------------------------- ${COUNT} Bugs ---------------"
+printf "%s\n" "${BUGS}"
+echo '----------------------------------------------------------------'

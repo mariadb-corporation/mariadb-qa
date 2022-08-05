@@ -1,8 +1,8 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg
-BASEDIRALT=/test/MD310522-mariadb-10.10.0-linux-x86_64-opt
+BASEDIR=/test/MD290722-mariadb-10.10.0-linux-x86_64-dbg
+BASEDIRALT=/test/MD290722-mariadb-10.10.0-linux-x86_64-opt
 HOME=/home/$(whoami)
 
 if [ ! -r ./list_unique_bugs -o ! -r ${BASEDIR}/bin/mysqld -o ! -r ${HOME}/t -o ! -r /test/gendirs.sh -o ! -r ${BASEDIR}/reducer_new_text_string.sh -o "${PWD}" != "${HOME}/fuzzing" ]; then
@@ -101,7 +101,7 @@ for ((i=1;i<=${COUNT};i++)); do
   /test/kill_all
   sleep 2
   echo "Running ~/b for testcase..."
-  timeout --signal=9 20m ${HOME}/b
+  timeout --signal=9 20m ${HOME}/b   # Whilst ~/b produces a lot of output, it is handy to see where this script is at (i.e. whetter it is reducing a testcase using reducer.sh or if ~/b is being executed). This allows some level of dual work on the server at the same time. i.e. when reducer is running and has some time to finish, ~/b could be used on the server to generate a report for another bug. [A]
   sleep 0.5
   cd ${HOME}/fuzzing
   echo "Copying report..."

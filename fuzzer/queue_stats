@@ -1,6 +1,15 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
+if [ "${PWD}" != "/home/$(whoami)/fuzzing" ]; then
+  if [ -d "/home/$(whoami)/fuzzing" ]; then
+    cd /home/$(whoami)/fuzzing
+  else
+    echo "Assert: /home/$(whoami)/fuzzing does not exist"
+    exit 1
+  fi
+fi
+
 # Note: for TOTA, NOCORE|string|report are excluded as we are working on file level here: think (fictive example):
 # testcase.sql vs testcase.sql.NOCORE for example; you do not want to count both files, only the former
 

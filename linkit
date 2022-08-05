@@ -21,7 +21,7 @@ ln -fs /home/${USER}/mariadb-qa/fuzzer/go /home/${USER}/fuzzing/fuzzing_root/go 
 ln -fs /home/${USER}/mariadb-qa/fuzzer/del_known_bugs /home/${USER}/fuzzing/del_known_bugs
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_all_fuzzing /home/${USER}/fuzzing/stop_all_fuzzing
 ln -fs /home/${USER}/mariadb-qa/fuzzer/list_unique_bugs /home/${USER}/fuzzing/list_unique_bugs
-ln -fs /home/${USER}/mariadb-qa/fuzzer/report /home/${USER}/fuzzing/report
+ln -fs /home/${USER}/mariadb-qa/fuzzer/reports /home/${USER}/fuzzing/reports
 ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid /home/${USER}/fuzzing/find_uniqueid
 ln -fs /home/${USER}/mariadb-qa/fuzzer/queue_stats /home/${USER}/fuzzing/queue_stats
 ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases /home/${USER}/fuzzing/process_testcases

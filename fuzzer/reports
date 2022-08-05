@@ -1,0 +1,1 @@
+find . | grep '\.report' | head -n2 | xargs -I{} echo "FILE=\$(echo '{}' | sed 's|\.report$||'); echo \"------ '\${FILE}.report'\"; cat \"\${FILE}.string\"" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
