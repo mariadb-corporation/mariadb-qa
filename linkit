@@ -28,7 +28,7 @@ ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases /home/${USER}/fuzzing/p
 ln -fs /home/${USER}/mariadb-qa/fuzzer/clean_queues /home/${USER}/fuzzing/clean_queues
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_process_testcases /home/${USER}/fuzzing/stop_process_testcases
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run /home/${USER}/fuzzing/reducers_run
-ln -fs /home/${USER}/mariadb-qa/fuzzer/run_reducers_loop /home/${USER}/fuzzing/run_reducers_loop
+ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run_loop /home/${USER}/fuzzing/reducers_run_loop
 # And the basedir './afl' script is linked by ~/start already, however it isi also linked into ~/fuzzing for editing convience
 ln -fs /home/${USER}/mariadb-qa/fuzzer/afl /home/${USER}/fuzzing/afl
 

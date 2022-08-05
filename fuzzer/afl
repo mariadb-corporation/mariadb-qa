@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
 MAX_RUNTIME_MIN=1440  # 24h
 
 if [ "${PWD}" == "/home/$(whoami)/fuzzing" ]; then

@@ -5,8 +5,8 @@
 2] ./process_testcases       # Automatically starts 1 or 4 core analysis nodes. Best to run at the same time as fuzzing nodes
 
    # Testcase reduction and analysis
-3] ./run_reducers_loop       # Starts reducers for all testcases which do not have a report yet. Then generates ~/b reports
-   ./reducers_run            # Called by run_reducers_loop, the main script which executes the reducers + ~/b reports
+3] ./reducers_run_loop       # Starts reducers for all testcases which do not have a report yet. Then generates ~/b reports
+   ./reducers_run            # Called by reducers_run_loop, this is the main script which executes the reducers + ~/b reports
 
    # Run statistics and cleanup
 4] ./queue_stats             # Shows generic counter stats (number of testcases, core analysis count stats etc.)

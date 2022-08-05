@@ -1,1 +1,4 @@
-find . | grep '\.report' | head -n2 | xargs -I{} echo "FILE=\$(echo '{}' | sed 's|\.report$||'); echo \"------ '\${FILE}.report'\"; cat \"\${FILE}.string\"" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+#!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
+find . | grep '\.report' | xargs -I{} echo "FILE=\$(echo '{}' | sed 's|\.report$||'); echo \"------ cat '\${FILE}.report'\"; cat \"\${FILE}.string\"" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"

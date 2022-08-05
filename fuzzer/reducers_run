@@ -1,13 +1,30 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-BASEDIR=/test/MD290722-mariadb-10.10.0-linux-x86_64-dbg
-BASEDIRALT=/test/MD290722-mariadb-10.10.0-linux-x86_64-opt
+# User variables
+BASEDIR=/test/MD290722-mariadb-10.10.0-linux-x86_64-dbg  # -dbg or -opt is fine
+
+# Internal variables
+BASEDIRALT="$(echo "${BASEDIR}" | sed 's|-opt$|-dum|;s|-dbg$|-opt|;s|-dum$|-dbg|')"  # Swaps -dbg to -opt and vice versa
 HOME=/home/$(whoami)
 
-if [ ! -r ./list_unique_bugs -o ! -r ${BASEDIR}/bin/mysqld -o ! -r ${HOME}/t -o ! -r /test/gendirs.sh -o ! -r ${BASEDIR}/reducer_new_text_string.sh -o "${PWD}" != "${HOME}/fuzzing" ]; then
-  echo 'Check setup!'
+if [ ! -r ${BASEDIR}/bin/mysqld ]; then
+  echo "Check setup: ${BASEDIR}/bin/mysqld is missing"
   exit 1
+if [ ! -r ${HOME}/t ]; then
+  echo "Check setup: ${HOME}/t is missing (try running ~/mariadb-qa/linkit)"
+  exit 1
+if [ ! -r /test/gendirs.sh ]; then
+  echo "Check setup: /test/gendirs.sh is missing"
+  exit 1
+if [ ! -r ${BASEDIR}/reducer_new_text_string.sh ]; then
+  echo "Check setup: ${BASEDIR}/reducer_new_text_string.sh is missing (try running: cd ${BASEDIR} && ~/start)"
+  exit 1
+if [ "${PWD}" != "${HOME}/fuzzing" ]; then
+  cd "${HOME}/fuzzing" 2>/dev/null
+  if [ "${PWD}" != "${HOME}/fuzzing" ]; then
+    echo "Check setup: PWD (${PWD})!= ${HOME}/fuzzing, even after change directory attempt"
+    exit 1
 elif [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
   screen -admS "reducers_run" bash -c "./$0"
@@ -22,7 +39,7 @@ echo "BASEDIRALT: ${BASEDIRALT}"
 echo "HOME: ${HOME}"
 
 echo "Computing runtime size..."
-BUGS=$(./list_unique_bugs)
+BUGS=$(find . | grep '\.string' | xargs -I{} cat {} | sort -u)
 COUNT="$(printf "%s\n" "${BUGS}" | wc -l)"
 
 echo "Processing ${COUNT} bugs..."

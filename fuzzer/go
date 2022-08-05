@@ -1,4 +1,6 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
 #SQL_PATH=./init_lib/
 SQL_PATH=./knownbugs
 #SQL_PATH=./crashes
