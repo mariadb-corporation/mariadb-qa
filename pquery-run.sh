@@ -1933,8 +1933,8 @@ EOF
           if [ ${TIMEOUT_INCREMENT} != 0 ]; then
             echoit "TIMEOUT_INCREMENT option was enabled and set to ${TIMEOUT_INCREMENT} sec"
             echoit "${TIMEOUT_INCREMENT}s will be added to the next trial timeout."
-          else
-            echoit "TIMEOUT_INCREMENT option was disabled and set to 0"
+          #else  # No need to show this when it is was not set
+          #  echoit "TIMEOUT_INCREMENT option was disabled and set to 0"
           fi
           PQUERY_RUN_TIMEOUT=$((${PQUERY_RUN_TIMEOUT} + ${TIMEOUT_INCREMENT}))
           break
@@ -2000,19 +2000,11 @@ EOF
     if [ "${VALGRIND_RUN}" == "1" ]; then # For Valgrind, we want the full Valgrind output in the error log, hence we need a proper/clean (and slow...) shutdown
       # Note that even if mysqladmin is killed with the 'timeout --signal=9', it will not affect the actual state of mysqld, all that was terminated was mysqladmin.
       # Thus, mysqld would (presumably) have received a shutdown signal (even if the timeout was 2 seconds it likely would have)
-      # ==========================================================================================================================================================
-      # TODO: the timeout...mysqladmin shutdown can be improved further to catch shutdown issues. For this, a new special "CATCH_SHUTDOWN=0/1" mode should be
-      #       added (because the runs would be much slower, so you would want to run this on-demand), and a much longer timeout should be given for mysqladmin
-      #       to succeed getting the server down (3 minutes for single thread runs for example?) if the shutdown fails to complete (i.e. exit status code of
-      #       timeout is 137 as the timeout took place), then a shutdown issue is likely present. It should not take 3+ minutes to shutdown a server. There a
-      #       good number of trials that seem to run into this situation. Likely a subset of them will be related to the already seen shutdown issues in TokuDB.
-      # UPDATE: As an intial stopgap workaround, the timeout was increased to 90 seconds, and the timeout exit code is checked. Trials are saved when this
-      #         happens and a special "SHUTDOWN_TIMEOUT_ISSUE empty file is saved in the trial's directory. pquery-results has been updated to scan for this file
-      # ==========================================================================================================================================================
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
-      if [ $? -eq 137 ]; then
+      if [ $? -gt 124 ]; then
         echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+        # Note we are not checking for RR tracing here, as it is unlikely that Valgrind tracing + RR tracing is used at the same time
         savetrial
         TRIAL_SAVED=1
       fi
@@ -2044,15 +2036,62 @@ EOF
       fi
     else
       if [ ${QUERY_CORRECTNESS_TESTING} -ne 1 ]; then
-        timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 20 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
-        if [[ ${REPL} -eq 1 ]]; then
-          timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 20 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
-        fi
-        if [ $? -eq 137 ]; then
+        # This shutdown in the main shutdown done for every standard/default options pquery trial
+        timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
+        if [ $? -gt 124 ]; then
           echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
           touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+          if [ "${RR_TRACING}" == "1" ]; then
+            # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0)
+            # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld) so that the rr trace can finish correctly
+            echoit "RR Tracing is active, sending SIGABRT to tracee mysqld and providing time for RR trace to finish correctly"
+            kill -6 ${MPID}
+            kill -6 $(ps -o ppid= -p ${MPID})  # Kill the PPID, which is more succesful than killing the PID of the server
+            MAX_RR_WAIT=60; CUR_RR_WAIT=0;
+            while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete ]; do
+              sleep 1
+              CUR_RR_WAIT=$[ ${CUR_RR_WAIT} + 1 ]
+              if [ ${CUR_RR_WAIT} -gt ${MAX_RR_WAIT} ]; then
+                echoit "pquery-run waited ${CUR_RR_WAIT} seconds for the RR trace to finish correctly, but it did not complete within this time: terminating this trial, but the trace is highly likely to be incomplete"
+                break
+              fi
+            done
+            if [ ${CUR_RR_WAIT} -le ${MAX_RR_WAIT} ]; then
+              echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 directory inside the trial directory"
+            fi
+          fi
+          sleep 1
           savetrial
           TRIAL_SAVED=1
+        fi
+        if [[ ${REPL} -eq 1 ]]; then
+          timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
+          if [ $? -gt 124 ]; then
+            echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+            touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+            if [ "${RR_TRACING}" == "1" ]; then
+              # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0)
+              # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld) so that the rr trace can finish correctly
+              echoit "RR Tracing is active, sending SIGABRT to tracee mysqld and providing time for RR trace to finish correctly"
+              kill -6 ${SLAVE_MPID}
+              kill -6 $(ps -o ppid= -p ${SLAVE_MPID})  # Kill the PPID, which is more succesful than killing the PID of the server
+              MAX_RR_WAIT=60; CUR_RR_WAIT=0;
+              while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete ]; do
+                sleep 1
+                 CUR_RR_WAIT=$[ ${CUR_RR_WAIT} + 1 ]
+                if [ ${CUR_RR_WAIT} -gt ${MAX_RR_WAIT} ]; then
+                  echoit "pquery-run waited ${CUR_RR_WAIT} seconds for the RR trace to finish correctly, but it did not complete within this time: terminating this trial, but the trace is highly likely to be incomplete"
+                  break
+                fi
+              done
+              if [ ${CUR_RR_WAIT} -le ${MAX_RR_WAIT} ]; then
+                echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 directory inside the trial directory"
+              fi
+            fi
+            sleep 1
+            savetrial
+            TRIAL_SAVED=1
+          fi
         fi
         sleep 2
       fi
@@ -2081,23 +2120,44 @@ EOF
       # Thus, mysqld would (presumably) have received a shutdown signal (even if the timeout was 2 seconds it likely would have)
       # Proper/clean shutdown attempt (up to 20 sec wait), necessary to get full Valgrind output in error log
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET3} shutdown > /dev/null 2>&1
-      if [ $? -eq 137 ]; then
+      if [ $? -gt 124 ]; then
         echoit "mysqld for node3 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+        #if [ "${RR_TRACING}" == "1" ]; then
+        #  # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0)
+        #  # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld) so that the rr trace can finish correctly
+        #  echoit "RR Tracing is active, sending SIGABRT to tracee mysqld and providing time for RR trace to finish correctly"
+        #  kill -6 ${SLAVE_MPID}
+        #  kill -6 $(ps -o ppid= -p ${SLAVE_MPID})  # Kill the PPID, which is more succesful than killing the PID of the server
+        #  MAX_RR_WAIT=60; CUR_RR_WAIT=0;
+        #  while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete ]; do
+        #    sleep 1
+        #     CUR_RR_WAIT=$[ ${CUR_RR_WAIT} + 1 ]
+        #    if [ ${CUR_RR_WAIT} -gt ${MAX_RR_WAIT} ]; then
+        #      echoit "pquery-run waited ${CUR_RR_WAIT} seconds for the RR trace to finish correctly, but it did not complete within this time: terminating this trial, but the trace is highly likely to be incomplete"
+        #      break
+        #    fi
+        #   done
+        #  if [ ${CUR_RR_WAIT} -le ${MAX_RR_WAIT} ]; then
+        #    echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 directory inside the trial directory"
+        #  fi
+        sleep 1
         savetrial
         TRIAL_SAVED=1
       fi
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET2} shutdown > /dev/null 2>&1
-      if [ $? -eq 137 ]; then
+      if [ $? -gt 124 ]; then
         echoit "mysqld for node2 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+        sleep 1
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
         savetrial
         TRIAL_SAVED=1
       fi
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET1} shutdown > /dev/null 2>&1
-      if [ $? -eq 137 ]; then
+      if [ $? -gt 124 ]; then
         echoit "mysqld for node1 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+        sleep 1
         savetrial
         TRIAL_SAVED=1
       fi
