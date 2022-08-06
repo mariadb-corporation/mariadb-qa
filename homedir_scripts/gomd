@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
-BASEDIR=/test/MD060822-mariadb-10.6.9-linux-x86_64-dbg
+BASEDIR=/test/MD060822-mariadb-10.10.0-linux-x86_64-dbg
+#MD060822-mariadb-10.6.9-linux-x86_64-dbg
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space
 RUNSOPT=0
 RUNSDBG=4
