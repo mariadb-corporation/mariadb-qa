@@ -653,10 +653,10 @@ echo "## 10 pquery clients, 20 threads each (almost never used)" >>multirun_pque
 echo "#~/mariadb-qa/multirun_pquery.sh 10 100000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 20" >>multirun_pquery
 echo "" >>multirun_pquery
 echo "## Single pquery client, 220 threads (common)" >>multirun_pquery
-echo "~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 220" >>multirun_pquery
+echo "#~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 220" >>multirun_pquery
 echo "" >>multirun_pquery
 echo "## Single pquery client, single thread (most common)" >>multirun_pquery
-echo "#~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 1" >>multirun_pquery
+echo "~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 1" >>multirun_pquery
 
 cp ./multirun ./multirun_rr
 sed -i 's|all_no_cl|all_no_cl_rr|g' ./multirun_rr
