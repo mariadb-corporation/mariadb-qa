@@ -1,3 +1,3 @@
 #!/bin/bash
 
-screen -ls | grep -E 'process_testcases_loop|run_reducers_loop'
+screen -ls | grep -E 'process_testcases_loop|reducers_run_loop'

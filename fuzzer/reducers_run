@@ -12,26 +12,28 @@ RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
 if [ ! -r ${BASEDIR}/bin/mysqld ]; then
   echo "Check setup: ${BASEDIR}/bin/mysqld is missing"
   exit 1
-if [ ! -r ${HOME}/t ]; then
+elif [ ! -r ${HOME}/t ]; then
   echo "Check setup: ${HOME}/t is missing (try running ~/mariadb-qa/linkit)"
   exit 1
-if [ ! -r /test/gendirs.sh ]; then
+elif [ ! -r /test/gendirs.sh ]; then
   echo "Check setup: /test/gendirs.sh is missing"
   exit 1
-if [ ! -r ${BASEDIR}/reducer_new_text_string.sh ]; then
+elif [ ! -r ${BASEDIR}/reducer_new_text_string.sh ]; then
   echo "Check setup: ${BASEDIR}/reducer_new_text_string.sh is missing (try running: cd ${BASEDIR} && ~/start)"
   exit 1
-if [ "${PWD}" != "${HOME}/fuzzing" ]; then
-  cd "${HOME}/fuzzing" 2>/dev/null
-  if [ "${PWD}" != "${HOME}/fuzzing" ]; then
-    echo "Check setup: PWD (${PWD})!= ${HOME}/fuzzing, even after change directory attempt"
-    exit 1
 elif [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
   screen -admS "reducers_run" bash -c "./$0"
   sleep 1
   screen -d -r "reducers_run"
   return 2> /dev/null; exit 0
+fi
+if [ "${PWD}" != "${HOME}/fuzzing" ]; then
+  cd "${HOME}/fuzzing" 2>/dev/null
+  if [ "${PWD}" != "${HOME}/fuzzing" ]; then
+    echo "Check setup: PWD (${PWD})!= ${HOME}/fuzzing, even after change directory attempt"
+    exit 1
+  fi
 fi
 
 echo "Note: it is probably a good idea to run /test/startup_all (or ~/start for both directories below) to reset any local reducer modifications!"
@@ -71,12 +73,12 @@ for ((i=1;i<=${COUNT};i++)); do
   if [ "${OUTER_LOOP_CONTINUE}" == "1" ]; then
     continue
   fi
-  TC="$(printf "%s\n" "${TCS}" | shuf --random-source=/dev/urandom | head -n1 | sed 's|\.string:.*||')"  # A random testcase is selected from the pool of testcases which produces this given UniqueID. This is done so that when run_reducers_loop loops to the next cycle, if any previous TC did not reproduce an issue, then the next round, (highly likely) a different one will be used to attempt to reproduce the given UniqueID
+  TC="$(printf "%s\n" "${TCS}" | shuf --random-source=/dev/urandom | head -n1 | sed 's|\.string:.*||')"  # A random testcase is selected from the pool of testcases which produces this given UniqueID. This is done so that when reducers_run_loop loops to the next cycle, if any previous TC did not reproduce an issue, then the next round, (highly likely) a different one will be used to attempt to reproduce the given UniqueID
   echo "Testcase used: '${TC}'"
   # TODO: this can be slightly improved by attempting to find another testcase that does not have .fail, though in that case we also need to check if all testcases have .fail etc. Also consider highly sporadic issues; they may require multiple attempts. Given that the testcase selection per UniqueID is already random, and that this script loops (i.e. the next round this UniqueID will likely end up with a report as a different testcase will be used). Keep an eye on the frequency of .fail files to get a better idea too. Update: at least added one additional attempt to grab another testcase, which should "cover much" already
   if [ -r "${TC}.fail" ]; then
     echo "This testcase was previously attempted against BASEDIR and BASEDIRALT (unless they were modified), and failed to reproduce, trying one more testcase sample..."
-    TC="$(printf "%s\n" "${TCS}" | grep -Fv "${TC}" | shuf --random-source=/dev/urandom | head -n1 | sed 's|\.string:.*||')"  # A random testcase is selected from the pool of testcases which produces this given UniqueID. This is done so that when run_reducers_loop loops to the next cycle, if any previous TC did not reproduce an issue, then the next round, (highly likely) a different one will be used to attempt to reproduce the given UniqueID
+    TC="$(printf "%s\n" "${TCS}" | grep -Fv "${TC}" | shuf --random-source=/dev/urandom | head -n1 | sed 's|\.string:.*||')"  # A random testcase is selected from the pool of testcases which produces this given UniqueID. This is done so that when reducers_run_loop loops to the next cycle, if any previous TC did not reproduce an issue, then the next round, (highly likely) a different one will be used to attempt to reproduce the given UniqueID
     echo "Backup testcase used: '${TC}'"
     if [ -r "${TC}.fail" ]; then
       echo "This testcase was also previously attempted against BASEDIR and BASEDIRALT (unless they were modified), and failed to reproduce, skipping... (Note that this UniqueID will still be re-evaluated on the next loop of this script)..."
@@ -87,6 +89,7 @@ for ((i=1;i<=${COUNT};i++)); do
     echo "This is an 'Assert:' bug string, skipping..."  # Assert: bug strings indicate some issue with obtaining a UniqueID
     continue
   fi
+  # TODO: Just like above, we could have a backup procedure here to grab another testcase. Perhaps this needs to be moved into a function or better into a loop, but there are complexities: what if there are only few testcases (random won't work) or what if a TC always get stuck (random is good idea as another one can be used, but if random is used then how to mark already tried testcases, and if testcases are marked which have already been tried it should be done pre-reducer, but in that case reducer may be interrupted and so the mark is invalid). Too many deps :) A virtue-stands-in-the-middle solution may be to add secondary checks here too (for empty/too large) like the .fail secondary check above.
   TCSIZE="$(wc -l "${TC}" | sed 's| .*||')"
   if [ -z "${TCSIZE}" ]; then
     echo "Testcase '${TC}' is empty? Skipping..."

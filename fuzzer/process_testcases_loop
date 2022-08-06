@@ -1,5 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+# Start this script inside a screen session to debug it when necessary
 
 if [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
@@ -9,12 +10,13 @@ if [ "${STY}" == "" ]; then
   return 2> /dev/null; exit 0
 fi
 
+FILTER='grep|vi process_testcases|vim process_testcases|process_testcases_loop'
 while true; do
-  if [ -z "$(screen -ls | grep 'process_testcases' | grep -v grep)" ]; then
+  if [ -z "$(screen -ls | grep 'process_testcases' | grep -vE "${FILTER}")" ]; then
     echo "process_testcases screen not found, terminating any running instances of process_testcases at $(date)..."
-    ps -ef | grep 'process_testcases' | grep -vE 'grep|vi process_testcases' | awk '{print $2}' | xargs -I{} kill -9 {}
+    ps -ef | grep 'process_testcases' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
-    ps -ef | grep 'process_testcases' | grep -vE 'grep|vi process_testcases' | awk '{print $2}' | xargs -I{} kill -9 {}
+    ps -ef | grep 'process_testcases' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
     sync
     echo "Restarting at $(date)..."
