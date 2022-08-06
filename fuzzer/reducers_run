@@ -7,6 +7,7 @@ BASEDIR=/test/MD290722-mariadb-10.10.0-linux-x86_64-dbg  # -dbg or -opt is fine
 # Internal variables
 BASEDIRALT="$(echo "${BASEDIR}" | sed 's|-opt$|-dum|;s|-dbg$|-opt|;s|-dum$|-dbg|')"  # Swaps -dbg to -opt and vice versa
 HOME=/home/$(whoami)
+RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
 
 if [ ! -r ${BASEDIR}/bin/mysqld ]; then
   echo "Check setup: ${BASEDIR}/bin/mysqld is missing"
@@ -39,28 +40,52 @@ echo "BASEDIRALT: ${BASEDIRALT}"
 echo "HOME: ${HOME}"
 
 echo "Computing runtime size..."
-BUGS=$(find . | grep '\.string' | xargs -I{} cat {} | sort -u)
+BUGS=$(find . | grep '\.string' | xargs -I{} cat {} | sort -u)  # Note that the runtime comprises of only unique UniqueID's, not of all testcases. There can thus for example be 2k testcases but only 100 UniqueID's. In this case, the runtime is 100, and for each of those 100 this script will select a random testcase out of the 2k testcases to attempt to generate a bug report for the same (after reduction with reducer)
 COUNT="$(printf "%s\n" "${BUGS}" | wc -l)"
 
 echo "Processing ${COUNT} bugs..."
 for ((i=1;i<=${COUNT};i++)); do
+  OUTER_LOOP_CONTINUE=
   BUG="$(printf "%s\n" "${BUGS}" | head -n${i} | tail -n1)"
   echo '-----------------------------------------------------------------------------------------'
   echo "BUG ${i}/${COUNT}: ${BUG}"
   echo '-----------------------------------------------------------------------------------------'
-  TC=$(grep -F "${BUG}" */crashes/*.string | head -n1 | sed 's|\.string:.*||')
+  TCS="$(grep -F "${BUG}" */crashes/*.string)"  # All possible testcases for this particular UniqueID
+  # Check if any of the testcases already has a report (which means that we already have a report for this UniqueID and can thus skip ahead to the next UniqueID we need a report for, without doing anything for this UniqueID
+  COUNT_TCS="$(printf "%s\n" "${TCS}" | wc -l)"
+  if [ -z "${COUNT_TCS}" -o "${COUNT_TCS}" == "0" ]; then
+    echo "ERROR: COUNT_TCS (${COUNT_TCS}) was zero or empty for bug '${BUG}'"
+    continue
+  else
+    OUTER_LOOP_CONTINUE=0
+    for ((j=1;j<=${COUNT_TCS};j++)); do
+      TCC="$(printf "%s\n" "${TCS}" | head -n${j} | tail -n1)"
+      if [ -r "${TCC}.report" ]; then
+        echo "There already is a report for this UniqueID ('${TCC}.report'), skipping..."
+        OUTER_LOOP_CONTINUE=1
+        break
+      fi
+    done
+  fi
+  TCC=;COUNT_TCS=;j=
+  if [ "${OUTER_LOOP_CONTINUE}" == "1" ]; then
+    continue
+  fi
+  TC="$(printf "%s\n" "${TCS}" | shuf --random-source=/dev/urandom | head -n1 | sed 's|\.string:.*||')"  # A random testcase is selected from the pool of testcases which produces this given UniqueID. This is done so that when run_reducers_loop loops to the next cycle, if any previous TC did not reproduce an issue, then the next round, (highly likely) a different one will be used to attempt to reproduce the given UniqueID
   echo "Testcase used: '${TC}'"
-  if [ -r "${TC}.report" ]; then
-    echo "There already is a report for this testcase ('${TC}.report'), skipping..."
-    continue;
+  # TODO: this can be slightly improved by attempting to find another testcase that does not have .fail, though in that case we also need to check if all testcases have .fail etc. Also consider highly sporadic issues; they may require multiple attempts. Given that the testcase selection per UniqueID is already random, and that this script loops (i.e. the next round this UniqueID will likely end up with a report as a different testcase will be used). Keep an eye on the frequency of .fail files to get a better idea too. Update: at least added one additional attempt to grab another testcase, which should "cover much" already
+  if [ -r "${TC}.fail" ]; then
+    echo "This testcase was previously attempted against BASEDIR and BASEDIRALT (unless they were modified), and failed to reproduce, trying one more testcase sample..."
+    TC="$(printf "%s\n" "${TCS}" | grep -Fv "${TC}" | shuf --random-source=/dev/urandom | head -n1 | sed 's|\.string:.*||')"  # A random testcase is selected from the pool of testcases which produces this given UniqueID. This is done so that when run_reducers_loop loops to the next cycle, if any previous TC did not reproduce an issue, then the next round, (highly likely) a different one will be used to attempt to reproduce the given UniqueID
+    echo "Backup testcase used: '${TC}'"
+    if [ -r "${TC}.fail" ]; then
+      echo "This testcase was also previously attempted against BASEDIR and BASEDIRALT (unless they were modified), and failed to reproduce, skipping... (Note that this UniqueID will still be re-evaluated on the next loop of this script)..."
+      continue
+    fi
   fi
   if [[ "${BUG}" == *"Assert:"* ]]; then
-    echo "This is an 'Assert:' bug string, skipping..."
-    continue;
-  fi
-  if [ -r "${TC}.fail" ]; then
-    echo "This testcase was previously attempted against BASEDIR and BASEDIRALT (unless they were modified), and failed to reproduce, skipping..."
-    continue;
+    echo "This is an 'Assert:' bug string, skipping..."  # Assert: bug strings indicate some issue with obtaining a UniqueID
+    continue
   fi
   TCSIZE="$(wc -l "${TC}" | sed 's| .*||')"
   if [ -z "${TCSIZE}" ]; then
@@ -98,7 +123,7 @@ for ((i=1;i<=${COUNT};i++)); do
       echo "Testcase failed to reproduce/reduce on both:" > "${TC}.fail"
       echo "BASEDIR: ${BASEDIR}" >> "${TC}.fail"
       echo "BASEDIRALT: ${BASEDIRALT}" >> "${TC}.fail"
-      continue;
+      continue
     fi  # Note that the implied else for this function is to also run the below code (ref [1])
   fi  # Note that the implied else for this function is also to run the below code (ref [1])
   # [1] Note that this will run if either BASEDIR or BASEDIRALT was able to reproduce & reduce the bug

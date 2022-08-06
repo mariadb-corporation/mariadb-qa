@@ -87,6 +87,8 @@ tbl->pos_in_table_list == tables|SIGABRT|open_tables|open_tables|open_tables_for
 SIGSEGV|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute|mysql_execute_command                                                      ## MDEV-29189
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|JOIN::get_partial_cost_and_fanout|JOIN::choose_subquery_plan|make_join_statistics|JOIN::optimize_inner                                                                 ## MDEV-29263
+SIGSEGV|mark_select_range_as_dependent|find_field_in_tables|find_order_in_list|setup_group                                                                                     ## MDEV-29262
 SIGSEGV|subselect_indexsubquery_engine::print|Item_subselect::print|Item_func::print_args|Item_func::print                                                                     ## MDEV-29261
 SIGSEGV|subselect_indexsubquery_engine::print|Item_subselect::print|Item_in_subselect::print|Item_func::print_args                                                             ## MDEV-29261
 SIGSEGV|subselect_uniquesubquery_engine::print|Item_subselect::print|Item_func::print_args|Item_func::print                                                                    ## MDEV-29261
