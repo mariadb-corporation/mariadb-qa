@@ -2,11 +2,12 @@
 1] ./start_fuzzing           # Starts 10 fuzzing nodes using mariadb-qa/fuzzer/afl_genstart_tmpfs_nodes
 
    # Core analysis
-2] ./process_testcases       # Automatically starts 1 or 4 core analysis nodes. Best to run at the same time as fuzzing nodes
+2] ./rocess_testcases_loop   # Starts process_testcases and restarts it if necessary. Consider it a watchdog
+   ./process_testcases       # Automatically starts 1 or 4 core analysis nodes. Best to run at the same time as fuzzing nodes
 
    # Testcase reduction and analysis
-3] ./reducers_run_loop       # Starts reducers for all testcases which do not have a report yet. Then generates ~/b reports
-   ./reducers_run            # Called by reducers_run_loop, this is the main script which executes the reducers + ~/b reports
+3] ./reducers_run_loop       # Starts reducers_run and restarts it if necessary. Consider it a watchdog
+   ./reducers_run            # Automatically runs reducers and ~/b reports for all testcases which do not have a report yet
 
    # Run statistics and cleanup
 4] ./queue_stats             # Shows generic counter stats (number of testcases, core analysis count stats etc.)
@@ -23,6 +24,7 @@
 
    # Tools
 *] ./find_uniqueid           # Search all .string files for a given UniqueID, for example as observed in ./report
+*] ./check_loops             # Check if process_testcases_loop and run_reducers_loop are running
 
    # Other files
 *] ./afl                     # A link to the script as linked into basedirs by ~/start. Linked here for quick editing purposes
@@ -44,6 +46,7 @@ testcase.report              # A full, post-reducer, ~/b level report for the gi
 
    # Most prominent TODO's
 *] Improve GUI output to avoid AFL bit-flip reporting but rather correctly output squirrel SQL verification stats
-*] There is no script yet to stop run_reducers_loop/reducers_run
+*] It would be handy to have a monitor/loop script for process_testcases also (watch for presence of process_testcases screen)
+*] A ./status script (which includes ./check_loops bug also checks fuzzers running) woulpd be handy
 *] Is there a performance impact due to the map resize?
 *] Research SQL handling further; ref paper

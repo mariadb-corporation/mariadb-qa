@@ -18,10 +18,12 @@ DONE=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'string|NOCORE' 
 TOTA=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -vE 'NOCORE|string|report' | wc -l)  # all testcases
 NOCO=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'NOCORE' | wc -l)          # no core
 REPR=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'report' | wc -l)          # completed reports
+BCNT=$(find . | grep '\.string' | xargs -I{} cat {} | sort -u | wc -l)
 
 echo "Already done (crashes): ${DONE}"
 echo "Still to do testcase:   $[ ${TOTA} - ${DONE} ]"
 echo "Total testcases:        ${TOTA}"
 echo "NOCORE testcases:       ${NOCO}  (Re-run these against the actual build used if you did not use the same build)"
 echo "Completed reports:      ${REPR}"
+echo "Unique bugs seen:       ${BCNT}"
 echo "Note: crashes with duplicate UniqueID's are automatically deleted, so the 'Already done' number is skewed."

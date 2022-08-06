@@ -87,6 +87,10 @@ tbl->pos_in_table_list == tables|SIGABRT|open_tables|open_tables|open_tables_for
 SIGSEGV|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute|mysql_execute_command                                                      ## MDEV-29189
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|subselect_indexsubquery_engine::print|Item_subselect::print|Item_func::print_args|Item_func::print                                                                     ## MDEV-29261
+SIGSEGV|subselect_indexsubquery_engine::print|Item_subselect::print|Item_in_subselect::print|Item_func::print_args                                                             ## MDEV-29261
+SIGSEGV|subselect_uniquesubquery_engine::print|Item_subselect::print|Item_func::print_args|Item_func::print                                                                    ## MDEV-29261
+SIGSEGV|subselect_uniquesubquery_engine::print|Item_subselect::print|Item_in_subselect::print|Item_func::print_args                                                            ## MDEV-29261
 SIGSEGV|JOIN::make_sum_func_list|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                                                        ## MDEV-29210
 param->field_count > (uint) (copy - copy_start)|SIGABRT|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                               ## MDEV-29210
 active()|SIGABRT|wsrep::transaction::append_data|wsrep::client_state::append_data|THD::binlog_start_trans_and_stmt|select_create::prepare                                      ## MDEV-29202
@@ -183,6 +187,7 @@ SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|handler::ha_direct
 !expr->is_fixed()|SIGABRT|Virtual_column_info::fix_session_expr|TABLE::vcol_fix_expr|open_table|open_and_process_table                                                         ## MDEV-28566
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28510
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28510
+SIGSEGV|subquery_types_allow_materialization|convert_join_subqueries_to_semijoins|JOIN::optimize_inner|JOIN::optimize                                                          ## MDEV-28510
 SIGSEGV|Bitmap<64u>::merge|add_key_field|Item_equal::add_key_fields|Item_cond::add_key_fields                                                                                  ## MDEV-29017
 SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_between::add_key_fields                                                                                ## MDEV-29017
 SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields                                                                                     ## MDEV-28509

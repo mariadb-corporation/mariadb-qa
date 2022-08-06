@@ -25,7 +25,9 @@ ln -fs /home/${USER}/mariadb-qa/fuzzer/reports /home/${USER}/fuzzing/reports
 ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid /home/${USER}/fuzzing/find_uniqueid
 ln -fs /home/${USER}/mariadb-qa/fuzzer/queue_stats /home/${USER}/fuzzing/queue_stats
 ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases /home/${USER}/fuzzing/process_testcases
+ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases_loop /home/${USER}/fuzzing/process_testcases_loop
 ln -fs /home/${USER}/mariadb-qa/fuzzer/clean_queues /home/${USER}/fuzzing/clean_queues
+ln -fs /home/${USER}/mariadb-qa/fuzzer/check_loops /home/${USER}/fuzzing/check_loops
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_process_testcases /home/${USER}/fuzzing/stop_process_testcases
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run /home/${USER}/fuzzing/reducers_run
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run_loop /home/${USER}/fuzzing/reducers_run_loop

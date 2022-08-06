@@ -10,7 +10,7 @@ if [ "${STY}" == "" ]; then
 fi
 
 while true; do
-  if [ -z $(screen -ls | grep 'reducers_run') ]; then
+  if [ -z "$(screen -ls | grep 'reducers_run' | grep -v grep)" ]; then
     echo "reducers_run screen not found, terminating any running instances of reducers_run at $(date)..."
     ps -ef | grep 'reducers_run' | grep -vE 'grep|vi reducers_run' | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
