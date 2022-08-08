@@ -245,6 +245,7 @@ fi
 CURPATH=$(echo $PWD | sed 's|.*/||')
 
 cd ..
+rm -Rf ${CURPATH}_dbg
 rm -f /tmp/psms_dbg_build_${RANDOMD}
 cp -R ${CURPATH} ${CURPATH}_dbg
 cd ${CURPATH}_dbg
@@ -323,14 +324,17 @@ if [[ "${TAR_dbg}" == *".tar.gz"* ]]; then
     GALERA_BUILD_LOC=${PWD}/galera_4x
   fi
   if [ -d ${GALERA_BUILD_LOC}_dbg ]; then
+    ls -l ${GALERA_BUILD_LOC}_dbg/
     if [[ -f ${GALERA_BUILD_LOC}_dbg/libgalera_smm.so ]] || [[ -f ${GALERA_BUILD_LOC}_dbg/libgalera_enterprise_smm.so ]] ; then
       if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
-        cp ${GALERA_BUILD_LOC}_dbg/libgalera_enterprise_smm.so ${DIR_opt_new}/lib/libgalera_smm.so
+        cp ${GALERA_BUILD_LOC}_dbg/libgalera_enterprise_smm.so ${DIR_dbg_new}/lib/libgalera_smm.so
       else
-        cp ${GALERA_BUILD_LOC}_dbg/libgalera_smm.so ${DIR_opt_new}/lib/libgalera_smm.so
+        cp ${GALERA_BUILD_LOC}_dbg/libgalera_smm.so ${DIR_dbg_new}/lib/libgalera_smm.so
+        echo "cp ${GALERA_BUILD_LOC}_dbg/libgalera_smm.so ${DIR_dbg_new}/lib/libgalera_smm.so"
       fi
+      cp ${GALERA_BUILD_LOC}_dbg/garb/garbd ${DIR_dbg_new}/bin/
     else
-      echo "WARNING! Could not copy libgalera_smm.so to ${DIR_opt_new}, please copy manually"
+      echo "WARNING! Could not copy libgalera_smm.so to ${DIR_dbg_new}, please copy manually"
     fi
   else
     cp -r ${GALERA_BUILD_LOC} ${GALERA_BUILD_LOC}_dbg
@@ -338,10 +342,11 @@ if [[ "${TAR_dbg}" == *".tar.gz"* ]]; then
     cmake . | tee /tmp/psms_dbg_galera_build_${RANDOMD}
     make | tee -a /tmp/psms_dbg_galera_build_${RANDOMD}
     if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
-      cp libgalera_enterprise_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
+      cp libgalera_enterprise_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
     else
-      cp libgalera_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
+      cp libgalera_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
     fi
+    cp garb/garbd ${DIR_dbg_new}/bin/
     cd ..
   fi
 
