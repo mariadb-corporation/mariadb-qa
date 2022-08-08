@@ -735,6 +735,9 @@ m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_interna
 !str || str != Ptr|SIGABRT|String::copy|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str|Item::save_str_in_field                                             ## MDEV-22856
 !str || str != Ptr || !is_alloced()|SIGABRT|String::copy|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str|Item::save_str_in_field                            ## MDEV-22856
 !field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## MDEV-22855
+!field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|btr_pcur_open_low|row_search_index_entry            ## MDEV-22855
+!field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|ut_dbg_assertion_failed|dict_index_node_ptr_max_size|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low ## MDEV-22855
+SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|dict_index_node_ptr_max_size                                                                                          ## MDEV-22855
 ! thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute                                        ## MDEV-22853
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_commit_trans|trans_commit_implicit                                                              ## MDEV-22848
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_savepoint|ha_savepoint|trans_savepoint|mysql_execute_command                                                                   ## MDEV-22848
