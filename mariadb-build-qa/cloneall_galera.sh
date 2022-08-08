@@ -7,12 +7,6 @@ MD_REPO=${1}
 clone_repos(){
   if [[ "$MD_REPO" == "ES" ]]; then
     git clone --depth=1 --recurse-submodules -j8 --branch=$1-enterprise https://$GIT_USERNAME@github.com/mariadb-corporation/MariaDBEnterprise  $1 &
-    #clone galera repo
-    if [[ ${1} =~ 10.[4-9] || ${1} =~ 10.10 ]]; then
-      git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-4.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git $1_galera &
-    else
-      git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-3.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git $1_galera &
-    fi
     while ! grep -q "xpand" ${1}/.gitmodules 2&> /dev/null ; do
       sleep 2
       sed -i "s|url = git@github.com:mariadb-corporation/xpand.git|url = https://github.com/mariadb-corporation/xpand.git|" ${1}/.gitmodules 2&> /dev/null
@@ -26,26 +20,39 @@ clone_repos(){
     git clone --depth=1 --recurse-submodules -j8 --branch=$1 https://github.com/MariaDB/server.git $1 &
     # For full trees, use:
     #git clone --recurse-submodules -j8 --branch=$1 https://github.com/MariaDB/server.git $1 &
-    #clone galera repo
-    if [[ ${1} =~ 10.[4-9] ]]; then
-      git clone --depth=1 --recurse-submodules -j8 --branch=mariadb-4.x https://github.com/MariaDB/galera $1_galera &
+  fi
+}
+
+clone_galera_repo(){
+  if [[ "$MD_REPO" == "ES" ]]; then
+    if [[ "${1}" == "galera_3x" ]]; then
+      git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-3.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git galera_3x &
     else
-      git clone --depth=1 --recurse-submodules -j8 --branch=mariadb-3.x https://github.com/MariaDB/galera $1_galera &
+      git clone --depth=1 --recurse-submodules -j8 --branch=es-mariadb-4.x https://$GIT_USERNAME@github.com/mariadb-corporation/es-galera.git galera_4x &
+    fi
+  else
+    if [[ "${1}" == "galera_3x" ]]; then
+      git clone --depth=1 --recurse-submodules -j8 --branch=mariadb-3.x https://github.com/MariaDB/galera galera_3x &
+    else
+      git clone --depth=1 --recurse-submodules -j8 --branch=mariadb-4.x https://github.com/MariaDB/galera galera_4x &
     fi
   fi
+
 }
 
 clone_multi_repos(){
   sleep 0.1
   #rm -Rf 10.2 10.2_galera
-  rm -Rf 10.3 10.3_galera
-  rm -Rf 10.4 10.4_galera
-  rm -Rf 10.5 10.5_galera
-  rm -Rf 10.6 10.6_galera
-  rm -Rf 10.7 10.7_galera
-  rm -Rf 10.8 10.8_galera
-  rm -Rf 10.9 10.9_galera
-  #rm -Rf 10.10 10.10_galera
+  rm -Rf galera_3x
+  rm -Rf galera_4x
+  rm -Rf 10.3
+  rm -Rf 10.4
+  rm -Rf 10.5 
+  rm -Rf 10.6 
+  rm -Rf 10.7 
+  rm -Rf 10.8 
+  rm -Rf 10.9 
+  rm -Rf 10.10 
   sleep 0.1
   local GIT_USERNAME
   local GIT_ASKPASS
@@ -62,7 +69,9 @@ clone_multi_repos(){
   clone_repos 10.7 &
   clone_repos 10.8 &
   clone_repos 10.9 &
-  #clone_repos 10.10 &
+  clone_repos 10.10 &
+  clone_galera_repo galera_3x &
+  clone_galera_repo galera_4x &
   unset GIT_USERNAME
   unset GIT_ASKPASS
   GIT_USERNAME=''

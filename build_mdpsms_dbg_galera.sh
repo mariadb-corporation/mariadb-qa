@@ -245,7 +245,6 @@ fi
 CURPATH=$(echo $PWD | sed 's|.*/||')
 
 cd ..
-rm -Rf ${CURPATH}_dbg ${CURPATH}_galera_dbg
 rm -f /tmp/psms_dbg_build_${RANDOMD}
 cp -R ${CURPATH} ${CURPATH}_dbg
 cd ${CURPATH}_dbg
@@ -317,17 +316,35 @@ if [[ "${TAR_dbg}" == *".tar.gz"* ]]; then
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for moving of tarball (2)!"; exit 1; fi
   echo $CMD > ${DIR_dbg_new}/BUILD_CMD_CMAKE
   #rm -Rf ${CURPATH}_dbg  # Best not to delete it; this way gdb dbgging is better quality as source will be available!
-  # Create galera library
-  cp -R ${CURPATH}_galera ${CURPATH}_galera_dbg
-  cd ${CURPATH}_galera_dbg
-  cmake . | tee /tmp/psms_dbg_galera_build_${RANDOMD}
-  make | tee -a /tmp/psms_dbg_galera_build_${RANDOMD}
-  if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
-    cp libgalera_enterprise_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
+  # Create/Copy galera library
+  if [[ ${MYSQL_VERSION_MAJOR}.${MYSQL_VERSION_MINOR} =~ 10.[2-3] ]]; then
+    GALERA_BUILD_LOC=${PWD}/galera_3x
   else
-    cp libgalera_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
+    GALERA_BUILD_LOC=${PWD}/galera_4x
   fi
-  cd ..
+  if [ -d ${GALERA_BUILD_LOC}_dbg ]; then
+    if [[ -f ${GALERA_BUILD_LOC}_dbg/libgalera_smm.so ]] || [[ -f ${GALERA_BUILD_LOC}_dbg/libgalera_enterprise_smm.so ]] ; then
+      if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
+        cp ${GALERA_BUILD_LOC}_dbg/libgalera_enterprise_smm.so ${DIR_opt_new}/lib/libgalera_smm.so
+      else
+        cp ${GALERA_BUILD_LOC}_dbg/libgalera_smm.so ${DIR_opt_new}/lib/libgalera_smm.so
+      fi
+    else
+      echo "WARNING! Could not copy libgalera_smm.so to ${DIR_opt_new}, please copy manually"
+    fi
+  else
+    cp -r ${GALERA_BUILD_LOC} ${GALERA_BUILD_LOC}_dbg
+    cd ${GALERA_BUILD_LOC}_dbg
+    cmake . | tee /tmp/psms_dbg_galera_build_${RANDOMD}
+    make | tee -a /tmp/psms_dbg_galera_build_${RANDOMD}
+    if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
+      cp libgalera_enterprise_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
+    else
+      cp libgalera_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
+    fi
+    cd ..
+  fi
+
   exit 0
 else
   echo "There was some unknown build issue... Have a nice day!"
