@@ -11,7 +11,7 @@
 
    # Run statistics and cleanup
 4] ./queue_stats             # Shows generic counter stats (number of testcases, core analysis count stats etc.)
-5] ./list_unique_bugs        # First deletes known bugs, then produces a count and report of UniqueID's observed 
+5] ./list_unique_bugs_seen   # First deletes known bugs, then produces a count and report of all new UniqueID's observed 
    ./del_known_bugs          # Deletes, based on UnqiueID's, all already known/logged bugs. Used by the list_unique_bugs script
 6] ./reports                 # Outputs a list of all (completed and in progress) .report files together with their UniqueID
  
