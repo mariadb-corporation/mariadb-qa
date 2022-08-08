@@ -19,14 +19,17 @@ ln -fs /home/${USER}/mariadb-qa/fuzzer/PROCEDURE /home/${USER}/fuzzing/_PROCEDUR
 ln -fs /home/${USER}/mariadb-qa/fuzzer/afl_genstart_tmpfs_nodes /home/${USER}/fuzzing/start_fuzzing
 ln -fs /home/${USER}/mariadb-qa/fuzzer/go /home/${USER}/fuzzing/fuzzing_root/go 2>&1
 ln -fs /home/${USER}/mariadb-qa/fuzzer/del_known_bugs /home/${USER}/fuzzing/del_known_bugs
-ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_all_fuzzing /home/${USER}/fuzzing/stop_all_fuzzing
 ln -fs /home/${USER}/mariadb-qa/fuzzer/list_unique_bugs /home/${USER}/fuzzing/list_unique_bugs
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reports /home/${USER}/fuzzing/reports
 ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid /home/${USER}/fuzzing/find_uniqueid
 ln -fs /home/${USER}/mariadb-qa/fuzzer/queue_stats /home/${USER}/fuzzing/queue_stats
 ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases /home/${USER}/fuzzing/process_testcases
+ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases_loop /home/${USER}/fuzzing/process_testcases_loop
 ln -fs /home/${USER}/mariadb-qa/fuzzer/clean_queues /home/${USER}/fuzzing/clean_queues
+ln -fs /home/${USER}/mariadb-qa/fuzzer/check_loops /home/${USER}/fuzzing/check_loops
+ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_all_fuzzing /home/${USER}/fuzzing/stop_all_fuzzing
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_process_testcases /home/${USER}/fuzzing/stop_process_testcases
+ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_reducers_run /home/${USER}/fuzzing/stop_reducers_run
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run /home/${USER}/fuzzing/reducers_run
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run_loop /home/${USER}/fuzzing/reducers_run_loop
 # And the basedir './afl' script is linked by ~/start already, however it isi also linked into ~/fuzzing for editing convience

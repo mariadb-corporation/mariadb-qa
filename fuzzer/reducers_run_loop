@@ -1,20 +1,22 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+# Start this script inside a screen session to debug it when necessary
 
 if [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
-  screen -admS "run_reducers_loop" bash -c "./$0"
+  screen -admS "reducers_run_loop" bash -c "./$0"
   sleep 1
-  screen -d -r "run_reducers_loop"
+  screen -d -r "reducers_run_loop"
   return 2> /dev/null; exit 0
 fi
 
+FILTER='grep|vi reducers_run|vim reducers_run|reducers_run_loop'
 while true; do
-  if [ -z $(screen -ls | grep 'reducers_run') ]; then
+  if [ -z "$(screen -ls | grep 'reducers_run' | grep -vE "${FILTER}")" ]; then
     echo "reducers_run screen not found, terminating any running instances of reducers_run at $(date)..."
-    ps -ef | grep 'reducers_run' | grep -vE 'grep|vi reducers_run' | awk '{print $2}' | xargs -I{} kill -9 {}
+    ps -ef | grep 'reducers_run' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
-    ps -ef | grep 'reducers_run' | grep -vE 'grep|vi reducers_run' | awk '{print $2}' | xargs -I{} kill -9 {}
+    ps -ef | grep 'reducers_run' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
     sync
     echo "Restarting at $(date)..."

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+screen -ls | grep -E 'process_testcases_loop|reducers_run_loop'
