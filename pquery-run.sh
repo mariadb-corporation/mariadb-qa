@@ -2045,8 +2045,7 @@ EOF
             # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0)
             # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld) so that the rr trace can finish correctly
             echoit "RR Tracing is active, sending SIGABRT to tracee mysqld and providing time for RR trace to finish correctly"
-            kill -6 ${MPID}
-            kill -6 $(ps -o ppid= -p ${MPID})  # Kill the PPID, which is more succesful than killing the PID of the server
+            echo -n "$(cat ${RUNDIR}/${TRIAL}/pid.pid | xargs -I{} kill -6 {})"  # Hack, which works well
             MAX_RR_WAIT=60; CUR_RR_WAIT=0;
             while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete ]; do
               sleep 1
