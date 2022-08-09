@@ -34,6 +34,9 @@ ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run /home/${USER}/fuzzing/reduce
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run_loop /home/${USER}/fuzzing/reducers_run_loop
 # And the basedir './afl' script is linked by ~/start already, however it isi also linked into ~/fuzzing for editing convience
 ln -fs /home/${USER}/mariadb-qa/fuzzer/afl /home/${USER}/fuzzing/afl
+for ((i=0;i<10;i++)); do
+  ln -fs /home/${USER}/mariadb-qa/fuzzer/afl${i}-fuzz /home/${USER}/fuzzing/afl${i}-fuzz
+done
 
 # Homedir scripts
 rm -f ~/tcp ~/pge ~/pg ~/tr ~/tc ~/t ~/fc ~/mcl ~/s
