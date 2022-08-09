@@ -1,0 +1,4 @@
+CREATE TABLE t1 (a varchar(10) CHARACTER SET utf8mb4, key(a)) engine=innodb;
+INSERT INTO t1 VALUES (0xEFBFBF),(0xF0908080),(0xF48FBFBF);
+ALTER TABLE t1 MODIFY a varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+SELECT count(DISTINCT a) FROM t1;
