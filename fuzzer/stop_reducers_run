@@ -1,0 +1,8 @@
+#!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
+killall -9 reducers_run_loop reducers_run 2>/dev/null
+sleep 2
+killall -9 reducers_run_loop reducers_run 2>/dev/null
+sleep 2
+screen -wipe
