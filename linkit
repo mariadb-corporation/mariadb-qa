@@ -12,7 +12,7 @@ if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
 fi
 
 # Squirrel/AFL
-if [ ! -d /home/${USER}/fuzzing/fuzzing_root/ -o ! /home/${USER}/fuzzing/newbugs ]; then
+if [ ! -d /home/${USER}/fuzzing/fuzzing_root/ -o ! -d /home/${USER}/fuzzing/newbugs ]; then
   mkdir -p /home/${USER}/fuzzing/fuzzing_root/ /home/${USER}/fuzzing/newbugs
 fi
 ln -fs /home/${USER}/mariadb-qa/fuzzer/PROCEDURE /home/${USER}/fuzzing/_PROCEDURE
