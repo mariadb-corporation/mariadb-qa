@@ -179,8 +179,8 @@ else
 fi
 
 # AFL Squirrel
-if [ -r /home/$(whoami)/mariadb-qa/fuzzer/afl ]; then
-  ln -s /home/$(whoami)/mariadb-qa/fuzzer/afl ./afl
+if [ -r ${HOME}/mariadb-qa/fuzzer/afl ]; then
+  ln -s ${HOME}/mariadb-qa/fuzzer/afl ./afl
 fi
 
 #GR startup scripts

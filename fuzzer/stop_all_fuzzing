@@ -11,3 +11,5 @@ ps -ef | grep afl | grep -v grep | awk '{print $2}' | xargs -I{} kill -9 {} 2>/d
 screen -wipe >/dev/null 2>&1
 sleep 0.1
 ps -ef | grep afl-fuzz | grep -vE 'grep|g++'  # Success or not status output
+rm -f /test/afl[0-9]_socket.sock
+rm -Rf /dev/shm/afl-node-[0-9]
