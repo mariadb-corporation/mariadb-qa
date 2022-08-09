@@ -357,7 +357,7 @@ SPECIAL_MYEXTRA_OPTIONS=
 #                      2) Any reference to the engine is removed from MYEXTRA and stored in two variables TOKUDB/ROCKSDB to allow more control/testcase reducability
 #                      3) Testcase reduction removal of engines (one-by-one) is tested in STAGE9
 
-MYSQL_VERSION=$(${BASEDIR}/bin/mysqld --version 2>&1 | grep -oe '[0-9]\.[0-9][\.0-9]*' | head -n1)
+MYSQL_VERSION=$(${BASEDIR}/bin/mysqld --no-defaults --version 2>&1 | grep -oe '[0-9]\.[0-9][\.0-9]*' | head -n1)
 #Format version string (thanks to wsrep_sst_xtrabackup-v2)
 normalize_version(){
   local major=0
@@ -505,7 +505,7 @@ fi
 BINLOG=
 if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
   if [[ ! "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-    if [[ ! "$(${BASEDIR}/bin/mysqld --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
+    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
       echo "Error: --server-id is present in MYEXTRA whereas --log-bin is not. Please fix this."
       echo "Terminating now."
       exit 1
@@ -516,8 +516,8 @@ if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
   fi
 fi
 if [[ "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-  if [[ ! "$(${BASEDIR}/bin/mysqld --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
-    if [[ ! "$(${BASEDIR}/bin/mysqld --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
+  if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
+    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
       if [[ ! "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
         echo "Error: The version of mysqld is 5.7 or 8.0 and a --bin-log option was passed in MYEXTRA, yet no --server-id option was found whereas this is required for 5.7 and 8.0."
         echo "Terminating now."

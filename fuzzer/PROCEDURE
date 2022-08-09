@@ -53,3 +53,5 @@ testcase.report              # A full, post-reducer, ~/b level report for the gi
 *] A ./status script (which includes ./check_loops bug also checks fuzzers running) woulpd be handy
 *] Is there a performance impact due to the map resize?
 *] Research SQL handling further; ref paper
+*] Move more to code to C: socket
+*] Review system settings and add to setupserver

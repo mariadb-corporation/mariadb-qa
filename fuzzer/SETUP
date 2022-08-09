@@ -1,0 +1,13 @@
+= Clone mariadb-qa
+  cd ~
+  git clone --depth=1 https://github.com/mariadb-corporation/mariadb-qa.git
+= Run linkit 
+  # Note that this will create many scripts in your home dir, create /data and /test on the server, etc. This step is required.
+  # Create an additional userID for your server, and login with the same, and restart the procedure if you would like to keep things 'clean'
+  cd ~/mariadb-qa
+  ./linkit
+= Clone AFL++
+  cd ~
+  git clone --depth=1 https://github.com/AFLplusplus/AFLplusplus.git AFL
+  cd AFL
+
