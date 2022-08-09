@@ -37,7 +37,6 @@ clone_galera_repo(){
       git clone --depth=1 --recurse-submodules -j8 --branch=mariadb-4.x https://github.com/MariaDB/galera galera_4x &
     fi
   fi
-
 }
 
 clone_multi_repos(){

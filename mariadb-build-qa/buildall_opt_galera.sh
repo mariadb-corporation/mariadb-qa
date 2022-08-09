@@ -12,7 +12,14 @@ else
 fi
 
 DIR=${PWD}
-rm -Rf 10.3_opt 10.4_opt 10.5_opt 10.6_opt 10.7_opt 10.8_opt 10.9_opt 10.10_opt
+rm -Rf 10.3_opt 10.4_opt 10.5_opt 10.6_opt 10.7_opt 10.8_opt 10.9_opt 10.10_opt galera_3x_opt galera_4x_opt
+#Build Galera library
+cp -r ${DIR}/galera_3x ${DIR}/galera_3x_opt
+cd ${DIR}/galera_3x_opt && cmake . | tee /tmp/psms_opt_galera3x_build_${RANDOMD} && make | tee -a /tmp/psms_opt_galera3x_build_${RANDOMD} &
+cp -r ${DIR}/galera_4x ${DIR}/galera_4x_opt
+cd ${DIR}/galera_4x_opt && cmake . | tee /tmp/psms_opt_galera4x_build_${RANDOMD} && make | tee -a /tmp/psms_opt_galera4x_build_${RANDOMD} &
+
+sleep 10
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
 cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
@@ -23,7 +30,3 @@ cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
 cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
 cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
 cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
-#Build Galera library
-cp -r ${DIR}/galera_3x ${DIR}/galera_3x_opt && cd ${DIR}/galera_3x_opt && cmake . && make &
-cp -r ${DIR}/galera_4x ${DIR}/galera_4x_opt && cd ${DIR}/galera_4x_opt && cmake . && make &
-

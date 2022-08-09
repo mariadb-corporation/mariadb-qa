@@ -12,7 +12,14 @@ else
 fi
 
 DIR=${PWD}
-rm -Rf 10.3_dbg 10.4_dbg 10.5_dbg 10.6_dbg 10.7_dbg 10.8_dbg 10.9_dbg 10.10_dbg
+rm -Rf 10.3_dbg 10.4_dbg 10.5_dbg 10.6_dbg 10.7_dbg 10.8_dbg 10.9_dbg 10.10_dbg galera_3x_dbg galera_4x_dbg
+#Build Galera library
+cp -r ${DIR}/galera_3x ${DIR}/galera_3x_dbg
+cd ${DIR}/galera_3x_dbg && cmake . | tee /tmp/psms_dbg_galera3x_build_${RANDOMD} && make | tee -a /tmp/psms_dbg_galera3x_build_${RANDOMD} &
+cp -r ${DIR}/galera_4x ${DIR}/galera_4x_dbg
+cd ${DIR}/galera_4x_dbg && cmake . | tee /tmp/psms_dbg_galera4x_build_${RANDOMD} && make | tee -a /tmp/psms_dbg_galera4x_build_${RANDOMD} &
+
+sleep 10
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_dbg_galera.sh &
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_dbg_galera.sh &
 cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_dbg_galera.sh &
@@ -23,7 +30,3 @@ cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_dbg_galera.sh &
 cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_dbg_galera.sh &
 cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_dbg_galera.sh &
 cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_dbg_galera.sh &
-#Build Galera library
-cp -r ${DIR}/galera_3x ${DIR}/galera_3x_dbg && cd ${DIR}/galera_3x_dbg && cmake . && make &
-cp -r ${DIR}/galera_4x ${DIR}/galera_4x_dbg && cd ${DIR}/galera_4x_dbg && cmake . && make &
-
