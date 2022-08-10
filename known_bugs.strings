@@ -3,13 +3,19 @@
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (REVIEW REGULARLY) #####
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-26258
 
-##### STACK SMASHING BUGS (not always auto-filtered; note prefix) (prefix the uniqueID with 'STACK_SMASHING|') #####
+##### STACK SMASHING / MEMORY OVERFLOW/OVEWRITE BUGS (MOSTLY DISABLED FILTERS TO AVOID MISSING OTHER BUGS) #####
+#**# SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                          ## MDEV-29287
+#**# SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                             ## MDEV-29287
+#**# SIGABRT|__libc_message|malloc_printerr|_int_malloc|__GI___libc_malloc                                                                                                     ## MDEV-29287
+#**# SIGABRT|__libc_message|malloc_printerr|_int_malloc|_int_realloc                                                                                                           ## MDEV-29287
+#**# SIGABRT|__libc_message|malloc_printerr|_int_free|Rows_log_event::~Rows_log_event                                                                                          ## MDEV-29287
+#**# SIGSEGV|free_root|Warning_info::free_memory|Warning_info::clear|Warning_info::opt_clear                                                                                   ## MDEV-29287
+#**# (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)|SIGABRT|__malloc_assert|sysmalloc|_int_malloc|__GI___libc_malloc ## MDEV-29287
 
 ##### BUGS WHICH REQUIRE ADDITIONAL TESTCASES (MOSTLY DISABLED FILTERS) #####
-#**#SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                               ## MDEV-24911
-#**#index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                            ## MDEV-22714* NOW 23801
-#**#index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                     ## MDEV-22714* NOW 23801
-#**#b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                 ## MDEV-24660
+#**# SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                              ## MDEV-24911
+#**# index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                           ## MDEV-22714* NOW 23801
+#**# index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                    ## MDEV-22714* NOW 23801
 
 ##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-19569
@@ -87,6 +93,7 @@ tbl->pos_in_table_list == tables|SIGABRT|open_tables|open_tables|open_tables_for
 SIGSEGV|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute|mysql_execute_command                                                      ## MDEV-29189
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                     ## MDEV-24660
 SIGSEGV|JOIN::get_partial_cost_and_fanout|JOIN::choose_subquery_plan|make_join_statistics|JOIN::optimize_inner                                                                 ## MDEV-29263
 SIGSEGV|mark_select_range_as_dependent|find_field_in_tables|find_order_in_list|setup_group                                                                                     ## MDEV-29262
 SIGSEGV|subselect_indexsubquery_engine::print|Item_subselect::print|Item_func::print_args|Item_func::print                                                                     ## MDEV-29261
@@ -748,10 +755,9 @@ SIGSEGV|set_field_to_null_with_conversions|Item::save_in_field|Item_result_field
 SIGSEGV|fil_system_t::keyrotate_next|fil_crypt_find_space_to_rotate|fil_crypt_thread|start_thread                                                                              ## MDEV-20399
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22716
 (*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                       ## MDEV-22713
-(*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed
-(*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed
-(*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item_func::fix_fields
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_client_binlog_statement|mysql_execute_command                        ## MDEV-22712
+(*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                          ## MDEV-22713
+(*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                            ## MDEV-22713
+(*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item_func::fix_fields                                                 ## MDEV-22713
 llabs(next_free_value % real_increment) == offset|SIGABRT|sequence_definition::adjust_values|sequence_definition::check_and_adjust|MYSQLparse|parse_sql                        ## MDEV-22705
 llabs(next_free_value % real_increment) == offset|SIGABRT|sequence_definition::adjust_values|sequence_definition::check_and_adjust|ORAparse|parse_sql                          ## MDEV-22705
 fixed == 0|SIGABRT|Item_func::fix_fields|fix_fields_for_tvc|table_value_constr::prepare|st_select_lex_unit::prepare                                                            ## MDEV-22662
@@ -1383,3 +1389,4 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # part_share->auto_inc_initialized || !can_use_for_auto_inc_init()|SIGABRT|ha_partition::set_auto_increment_if_higher|ha_partition::write_row|handler::ha_write_row|write_record ## Fixed ## MDEV-21027
 # cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                        ## Fixed ## MDEV-28871
 # cur_sj_inner_tables == 0|SIGABRT|Backtrace stopped: Cannot access memory at address                                                                                 ## Fixed ## MDEV-28871
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_client_binlog_statement|mysql_execute_command             ## Fixed ## MDEV-22712

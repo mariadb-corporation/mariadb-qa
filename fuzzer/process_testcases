@@ -43,7 +43,9 @@ queue(){
     fi
   fi
   TODO[${1}]=$(awk "NR>=${NODE_START[${1}]} && NR<=${NODE_END[${1}]} {print \$0}" /tmp/afl_fulllist.txt)
-  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "rm -f /dev/shm/afl-tc-node${1}/in.sql; cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; if [ -r ./in.sql ]; then ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 5m bash -c "{}"
+  # The 5 minute timeout is for ~/t (which generally takes 1-20 seconds), the 150m timeout is for the full node run
+  # Likely 2.5h (150m) will not be sufficient for runs with many testcases to process, but remember the script loops
+  printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "rm -f /dev/shm/afl-tc-node${1}/in.sql; cp '/home/$(whoami)/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; if [ -r ./in.sql ]; then ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; timeout --signal=9 5m /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 150m bash -c "{}"
 }
  
 echo "Using BASEDIR ${BASEDIR}"

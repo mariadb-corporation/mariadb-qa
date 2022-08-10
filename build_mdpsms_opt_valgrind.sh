@@ -167,7 +167,7 @@ fi
 SAN=
 if [ $USE_SAN -eq 1 ]; then
   # MSAN and ASAN cannot be used at the same time, choose one of the two options below.
-  # Also note that for MSAN to have an affect, all libs linked to MySQL must also have been compiled with this option enabled
+  # Also note that for MSAN to have an effect, all libs linked to MySQL must also have been compiled with this option enabled
   # Ref https://dev.mysql.com/doc/refman/5.7/en/source-configuration-options.html#option_cmake_with_msan
   #SAN="--DWITH_MSAN=ON -DWITH_UBSAN=ON"
   SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON"  # Default

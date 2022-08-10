@@ -3,6 +3,7 @@
 
 #SQL_PATH=./init_lib/
 SQL_PATH=./knownbugs
+#SQL_PATH=./mysql_initlib
 #SQL_PATH=./crashes
 #COUNT="$(ps -ef | grep 'go$' | grep -v grep  | wc -l)"
 #if [ ! -z ${COUNT} ]; then

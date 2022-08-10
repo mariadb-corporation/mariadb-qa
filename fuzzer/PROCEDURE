@@ -2,7 +2,7 @@
 1] ./start_fuzzing           # Starts 10 fuzzing nodes using mariadb-qa/fuzzer/afl_genstart_tmpfs_nodes
 
    # Core analysis
-2] ./rocess_testcases_loop   # Starts process_testcases and restarts it if necessary. Consider it a watchdog
+2] ./process_testcases_loop  # Starts process_testcases and restarts it if necessary. Consider it a watchdog
    ./process_testcases       # Automatically starts 1 or 4 core analysis nodes. Best to run at the same time as fuzzing nodes
 
    # Testcase reduction and analysis
