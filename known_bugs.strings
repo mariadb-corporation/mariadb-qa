@@ -87,6 +87,7 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+functype() == ((Item_cond *) new_item)->functype()|SIGABRT|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                                        ## MDEV-29294
 !table->fts|SIGABRT|dict_table_can_be_evicted|dict_sys_t::evict_table_LRU|srv_master_do_idle_tasks|srv_master_callback                                                         ## MDEV-29291
 0|SIGABRT|Type_handler_string_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys                                                                               ## MDEV-29283
 b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                     ## MDEV-24660
