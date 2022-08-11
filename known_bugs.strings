@@ -87,6 +87,7 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!table->fts|SIGABRT|dict_table_can_be_evicted|dict_sys_t::evict_table_LRU|srv_master_do_idle_tasks|srv_master_callback                                                         ## MDEV-29291
 0|SIGABRT|Type_handler_string_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys                                                                               ## MDEV-29283
 b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                     ## MDEV-24660
 SIGSEGV|JOIN::get_partial_cost_and_fanout|JOIN::choose_subquery_plan|make_join_statistics|JOIN::optimize_inner                                                                 ## MDEV-29263
@@ -215,8 +216,9 @@ SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_inner|JOIN::opti
 SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                                                                    ## MDEV-28501
 SIGSEGV|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                                                               ## MDEV-29052
 field->table == table|SIGABRT|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                         ## MDEV-28515(/29052)
-field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_inner                                               ## MDEV-28515
 field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                              ## MDEV-28515(/29052)
+field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_inner                                               ## MDEV-28515
+SIGSEGV|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                                                               ## MDEV-28515
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28516
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::check|handler::ha_check|ha_partition::handle_opt_part ## MDEV-28514
 SIGSEGV|charset_info_st::strnncoll|parse_option_list|mysql_prepare_create_table|mysql_create_frm_image                                                                         ## MDEV-28497
