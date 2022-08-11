@@ -5,7 +5,7 @@ set +H
 
 # User variables
 ENABLE_OUTPUT=1    # 0 For silence, 1 For output
-KNOWN_BUGS="/home/$(whoami)/mariadb-qa/known_bugs.strings"
+KNOWN_BUGS="${HOME}/mariadb-qa/known_bugs.strings"
 
 # System variable(s) and options check
 NEWBUG_COUNT="$(ps -ef | grep clean_newbug | grep -v grep | wc -l)"  # +1 occurence due to subshell

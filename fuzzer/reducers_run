@@ -6,7 +6,7 @@ BASEDIR=/test/MD290722-mariadb-10.10.0-linux-x86_64-dbg  # -dbg or -opt is fine
 
 # Internal variables
 BASEDIRALT="$(echo "${BASEDIR}" | sed 's|-opt$|-dum|;s|-dbg$|-opt|;s|-dum$|-dbg|')"  # Swaps -dbg to -opt and vice versa
-HOME=/home/$(whoami)
+HOME=${HOME}
 RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
 
 if [ ! -r ${BASEDIR}/bin/mysqld ]; then

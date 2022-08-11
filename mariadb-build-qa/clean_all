@@ -5,17 +5,17 @@ rm -f /test/*/multirun.[0-9]* 2>/dev/null &  # Cleanup multirun logs
 rm -f /test/*/16*             2>/dev/null &  # Cleanup reducer generated scripts
 
 if [ -r /test/clean_newbugs ]; then
-  if [ -d /home/$(whoami)/fuzzing/newbugs ]; then
-    /test/clean_newbugs /home/$(whoami)/fuzzing/newbugs >/dev/null 2>&1 &
-    # Note: there is also /home/$(whoami)/fuzzing/newbugs/clean_newbugs which would do the same
+  if [ -d ${HOME}/fuzzing/newbugs ]; then
+    /test/clean_newbugs ${HOME}/fuzzing/newbugs >/dev/null 2>&1 &
+    # Note: there is also ${HOME}/fuzzing/newbugs/clean_newbugs which would do the same
   fi
   if [ -d /data/NEWBUGS ]; then
     /test/clean_newbugs /data/NEWBUGS >/dev/null 2>&1 &
   fi
 fi
 
-if [ -r /home/$(whoami)/fuzzing/del_known_bugs ]; then
-  /home/$(whoami)/fuzzing/del_known_bugs &
+if [ -r ${HOME}/fuzzing/del_known_bugs ]; then
+  ${HOME}/fuzzing/del_known_bugs &
 fi
 
 cd /data

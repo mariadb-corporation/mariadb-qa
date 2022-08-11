@@ -9,9 +9,9 @@ set +H
 BASEDIR="/test/MD260121-mariadb-10.5.9-linux-x86_64-dbg"  # Base directory to use for testing against
 
 # User variables, likely no change needed to these, ever
-REDUCER_MAIN="/home/$(whoami)/mariadb-qa/reducer.sh"  # Reducer template to use
-TEXT_STRING_LOC="/home/$(whoami)/mariadb-qa/new_text_string.sh"  # Text string location
-KNOWN_BUGS_LOC="/home/$(whoami)/mariadb-qa/known_bugs.strings"  # Known bugs location
+REDUCER_MAIN="${HOME}/mariadb-qa/reducer.sh"  # Reducer template to use
+TEXT_STRING_LOC="${HOME}/mariadb-qa/new_text_string.sh"  # Text string location
+KNOWN_BUGS_LOC="${HOME}/mariadb-qa/known_bugs.strings"  # Known bugs location
 
 # Checks
 if [ ! -r ${REDUCER_MAIN} ]; then

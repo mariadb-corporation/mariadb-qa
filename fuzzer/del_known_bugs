@@ -1,10 +1,10 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-KB=/home/$(whoami)/mariadb-qa/known_bugs.strings
-cd /home/$(whoami)/fuzzing
-if [ "${PWD}" != "/home/$(whoami)/fuzzing" ]; then
-  echo "Assert: PWD!=/home/$(whoami)/fuzzing"
+KB=${HOME}/mariadb-qa/known_bugs.strings
+cd ${HOME}/fuzzing
+if [ "${PWD}" != "${HOME}/fuzzing" ]; then
+  echo "Assert: PWD!=${HOME}/fuzzing"
   exit 1
 elif [ ! -r ${KB} ]; then
   echo "Assert: Known bugs list (${KB}) not present"

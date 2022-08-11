@@ -1,11 +1,11 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-if [ "${PWD}" != "/home/$(whoami)/fuzzing" ]; then
-  if [ -d "/home/$(whoami)/fuzzing" ]; then
-    cd /home/$(whoami)/fuzzing
+if [ "${PWD}" != "${HOME}/fuzzing" ]; then
+  if [ -d "${HOME}/fuzzing" ]; then
+    cd ${HOME}/fuzzing
   else
-    echo "Assert: /home/$(whoami)/fuzzing does not exist"
+    echo "Assert: ${HOME}/fuzzing does not exist"
     exit 1
   fi
 fi

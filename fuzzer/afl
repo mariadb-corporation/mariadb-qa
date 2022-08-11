@@ -3,7 +3,7 @@
 
 MAX_RUNTIME_MIN=1440  # 24h
 
-if [ "${PWD}" == "/home/$(whoami)/fuzzing" ]; then
+if [ "${PWD}" == "${HOME}/fuzzing" ]; then
   echo "This script is not meant to be executed from ~/fuzzing. It is here only for editing convience"
   exit 1
 fi
