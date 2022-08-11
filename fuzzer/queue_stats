@@ -27,3 +27,4 @@ echo "NOCORE testcases:       ${NOCO}  (Re-run these against the actual build us
 echo "Completed reports:      ${REPR}"
 echo "Unique bugs seen:       ${BCNT}"
 echo "Note: crashes with duplicate UniqueID's are automatically deleted, so the 'Already done' number is skewed."
+echo "Note: ./newbugs/ (new bugs found by reducer while reducing) are included in these statistics."

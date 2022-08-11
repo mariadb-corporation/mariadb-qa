@@ -19,7 +19,7 @@ if [ "" == "$7" ]; then
   echo "  basedir: the base directory of the MD/MS/PS build being used"
   echo "  pquery_threads: how many client threads pquery should instantiate (per pquery client)"
   echo "Example:"
-  echo "$ multirun_pquery.sh 1 5 bug.sql /home/roel/mariadb-qa/pquery/pquery2-md /test/MD201120-mariadb-10.6.0-linux-x86_64-opt/socket.sock /test/MD201120-mariadb-10.6.0-linux-x86_64-opt/ 10"
+  echo "$ multirun_pquery.sh 1 5 bug.sql ${HOME}/mariadb-qa/pquery/pquery2-md /test/MD201120-mariadb-10.6.0-linux-x86_64-opt/socket.sock /test/MD201120-mariadb-10.6.0-linux-x86_64-opt/ 10"
   echo "Cautionary Notes:"
   echo "  - Script does not check *yet* if options passed are all valid/present, make sure you get it right"
   echo "  - If root user uses a password, a script hack is suggested *ftm*"

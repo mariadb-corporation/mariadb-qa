@@ -11,9 +11,9 @@ ZLIB_MYSQL8_HACK=1      # 0 or 1 # Use -DWITH_ZLIB=bundled instead of =system fo
 USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re-download
 BOOST_LOCATION=/git/boost_1_59_0-debug/
 USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
-CUSTOM_COMPILER_LOCATION="/home/roel/GCC-5.5.0/bin"
+CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
 USE_CLANG=0             # 0 or 1 # Use the clang compiler instead of gcc
-CLANG_LOCATION="/home/roel/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
+CLANG_LOCATION="${HOME}/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 USE_AFL=0               # 0 or 1 # Use the American Fuzzy Lop gcc/g++ wrapper instead of gcc/g++
 AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"
 

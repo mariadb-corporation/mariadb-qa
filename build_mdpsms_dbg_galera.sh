@@ -8,12 +8,12 @@ WITH_LOCAL_INFILE=1     # 0 or 1 # Include the possibility to use LOAD DATA LOCA
 USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re-download
 BOOST_LOCATION=/tmp/boost_465114
 USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
-CUSTOM_COMPILER_LOCATION="/home/roel/GCC-5.5.0/bin"
+CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
 USE_CLANG=0             # 0 or 1 # Use the clang compiler instead of gcc
 USE_SAN=0               # 0 or 1 # Use ASAN, MSAN, UBSAN
 PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
-#CLANG_LOCATION="/home/roel/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
+#CLANG_LOCATION="${HOME}/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 CLANG_LOCATION="/usr/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 USE_AFL=0               # 0 or 1 # Use the American Fuzzy Lop gcc/g++ wrapper instead of gcc/g++
 AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"

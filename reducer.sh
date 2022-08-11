@@ -402,7 +402,7 @@ if [[ "${MYEXTRA}" == *"ha_rocksdb.so"* ]]; then
     ROCKSDB="$(echo "${MYEXTRA}" | grep -o "\-\-plugin[-_][^ ]\+ha_rocksdb.so" | head -n1)"  # Grep all text including and after ' --plugin[-_]' (upto any space as a new option starts there) upto and including the last 'ha_rocksdb.so' for that option
     MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${ROCKSDB}||g")"
     # The below issues should never happen in the Percona pquery framework as we simply use;
-    # --plugin-load-add=tokudb=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-load-add=rocksdb=ha_rocksdb.so --init-file=/home/roel/mariadb-qa/plugins_57.sql
+    # --plugin-load-add=tokudb=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-load-add=rocksdb=ha_rocksdb.so --init-file=${HOME}/mariadb-qa/plugins_57.sql
     # And the init-file loads any other required plugins using the same .so file. These options (in MYEXTRA) are not complex and easy too parse as per below -
     # and this is handled fine by the code here. It would only happen if someone used a complex string like the one shown in https://jira.percona.com/browse/DOC-444
     if [[ "${MYEXTRA}" == *"ha_rocksdb.so"* ]]; then

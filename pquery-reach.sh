@@ -7,7 +7,7 @@ BASEDIR=   # Likely already set in pquery-reach++.sh when using that
 THREADS=1
 WORKDIR=/dev/shm
 COPYDIR=/sda
-STATIC_PQUERY_BIN=/home/roel/mariadb-qa/pquery/pquery2-ps8  # Leave empty to use a random binary, i.e. mariadb-qa/pquery/pquery*
+STATIC_PQUERY_BIN=${HOME}/mariadb-qa/pquery/pquery2-ps8  # Leave empty to use a random binary, i.e. mariadb-qa/pquery/pquery*
 MYINIT=
 #MYINIT="--early-plugin-load=keyring_file.so --keyring_file_data=keyring --innodb_sys_tablespace_encrypt=ON"    # Variables to add to MID (MySQL init) (changes INIT_OPT in pquery-run.sh)
 MYEXTRA="--plugin-load=TokuDB=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-load-add=RocksDB=ha_rocksdb.so --expand_fast_index_creation=ON"

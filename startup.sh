@@ -650,13 +650,13 @@ echo "~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/mysql ${SOCKET}"
 echo "# Note that there are two levels of threading: the number of pquery clients started (as set by $1), and the number of pquery threads initiated/used by each of those pquery clients (as set by $7)." >>multirun_pquery
 echo "" >>multirun_pquery
 echo "## 10 pquery clients, 20 threads each (almost never used)" >>multirun_pquery
-echo "#~/mariadb-qa/multirun_pquery.sh 10 100000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 20" >>multirun_pquery
+echo "#~/mariadb-qa/multirun_pquery.sh 10 100000 in.sql \${HOME}/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 20" >>multirun_pquery
 echo "" >>multirun_pquery
 echo "## Single pquery client, 220 threads (common)" >>multirun_pquery
-echo "#~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 220" >>multirun_pquery
+echo "#~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql \${HOME}/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 220" >>multirun_pquery
 echo "" >>multirun_pquery
 echo "## Single pquery client, single thread (most common)" >>multirun_pquery
-echo "~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql /home/\$(whoami)/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 1" >>multirun_pquery
+echo "~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql \${HOME}/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 1" >>multirun_pquery
 
 cp ./multirun ./multirun_rr
 sed -i 's|all_no_cl|all_no_cl_rr|g' ./multirun_rr
@@ -703,7 +703,7 @@ touch test test_pquery
 add_san_options test
 add_san_options test_pquery
 echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
-echo "/home/$(whoami)/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery
+echo "${HOME}/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery
 
 echo '#!/bin/bash' > clean_failing_queries
 echo '# This script elimiates failing queries from in.sql in two different ways and saves the results in cleaned1.sql and cleaned2.sql' >> clean_failing_queries
@@ -789,14 +789,14 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   sed -i 's|^\(MYEXTRA="[^"]\+\)"|\1 ${3}"|' ./reducer_new_text_string.sh
   sed -i 's|^MODE=4|MODE=3|' ./reducer_new_text_string.sh
   sed -i 's|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=13|' ./reducer_new_text_string.sh
-  sed -i 's|^KNOWN_BUGS_LOC=[^#]\+|KNOWN_BUGS_LOC="/home/$(whoami)/mariadb-qa/known_bugs.strings"   |' ./reducer_new_text_string.sh
+  sed -i 's|^KNOWN_BUGS_LOC=[^#]\+|KNOWN_BUGS_LOC="${HOME}/mariadb-qa/known_bugs.strings"   |' ./reducer_new_text_string.sh
   sed -i 's|^FORCE_SKIPV=0|FORCE_SKIPV=1|' ./reducer_new_text_string.sh
   sed -i 's|^USE_NEW_TEXT_STRING=0|USE_NEW_TEXT_STRING=1|' ./reducer_new_text_string.sh
   sed -i 's|^STAGE1_LINES=[^#]\+|STAGE1_LINES=10   |' ./reducer_new_text_string.sh
   sed -i 's|^SCAN_FOR_NEW_BUGS=[^#]\+|SCAN_FOR_NEW_BUGS=1   |' ./reducer_new_text_string.sh
   sed -i 's|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR="/data/NEWBUGS"   |' ./reducer_new_text_string.sh
-  sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="/home/$(whoami)/mariadb-qa/new_text_string.sh"   |' ./reducer_new_text_string.sh
-  sed -i 's|^PQUERY_LOC=[^#]\+|PQUERY_LOC="/home/$(whoami)/mariadb-qa/pquery/pquery2-md"   |' ./reducer_new_text_string.sh
+  sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="${HOME}/mariadb-qa/new_text_string.sh"   |' ./reducer_new_text_string.sh
+  sed -i 's|^PQUERY_LOC=[^#]\+|PQUERY_LOC="${HOME}/mariadb-qa/pquery/pquery2-md"   |' ./reducer_new_text_string.sh
   # ------------------- ./reducer_errorlog.sh creation
   cp ./reducer_new_text_string.sh ./reducer_errorlog.sh
   sed -i 's|^USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|' ./reducer_errorlog.sh
@@ -811,9 +811,9 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   cp ${SCRIPT_PWD}/reducer.sh ./reducer_fireworks.sh
   mkdir -p ./FIREWORKS-BUGS
   sed -i "s|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR=\"${PWD}/FIREWORKS-BUGS\"   |"  ./reducer_fireworks.sh
-  sed -i 's|^KNOWN_BUGS_LOC=[^#]\+|KNOWN_BUGS_LOC="/home/$(whoami)/mariadb-qa/known_bugs.strings"   |' ./reducer_fireworks.sh
-  sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="/home/$(whoami)/mariadb-qa/new_text_string.sh"   |' ./reducer_fireworks.sh
-  sed -i 's|^PQUERY_LOC=[^#]\+|PQUERY_LOC="/home/$(whoami)/mariadb-qa/pquery/pquery2-md"   |' ./reducer_fireworks.sh
+  sed -i 's|^KNOWN_BUGS_LOC=[^#]\+|KNOWN_BUGS_LOC="${HOME}/mariadb-qa/known_bugs.strings"   |' ./reducer_fireworks.sh
+  sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="${HOME}/mariadb-qa/new_text_string.sh"   |' ./reducer_fireworks.sh
+  sed -i 's|^PQUERY_LOC=[^#]\+|PQUERY_LOC="${HOME}/mariadb-qa/pquery/pquery2-md"   |' ./reducer_fireworks.sh
   sed -i 's|^FIREWORKS=0|FIREWORKS=1|' ./reducer_fireworks.sh
   sed -i 's|^MYEXTRA=.*|MYEXTRA="--no-defaults ${3}"|' ./reducer_fireworks.sh  # It is best not to add --sql_mode=... as this will significantly affect CLI replay attempts as the CLI by default does not set --sql_mode=... as normally defined in reducer.sh's MYEXTRA default (--sql_mode=ONLY_FULL_GROUP_BY). Reason: with either --sql_mode= or --sql_mode=--sql_mode=ONLY_FULL_GROUP_BY engine substituion (to the default storage engine, i.e. InnoDB or MyISAM in MTR) is enabled. Replays at the CLI would thus look significantly different by default (i.e. unless this option was passed and by default it is not)
 fi
