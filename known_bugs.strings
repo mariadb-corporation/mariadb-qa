@@ -1,7 +1,9 @@
+b->xid_count == 0
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Otherwise, just follow the existing formatting.
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (MOSTLY DISABLED FILTERS TO AVOID MISSING OTHER BUGS) #####
 #**# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                    ## MDEV-26258
+#**# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                    ## MDEV-29289
 
 ##### CURRENT STACK SMASHING / MEMORY OVERFLOW/OVEWRITE BUGS (MOSTLY DISABLED FILTERS TO AVOID MISSING OTHER BUGS) #####
 #**# SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                          ## MDEV-29287
@@ -14,8 +16,8 @@
 
 ##### CURRENT BUGS WHICH REQUIRE ADDITIONAL TESTCASES (MOSTLY DISABLED FILTERS) #####
 #**# SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                              ## MDEV-24911
-#**# index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                           ## MDEV-22714* NOW 23801
-#**# index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                    ## MDEV-22714* NOW 23801
+#**# index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                           ## MDEV-23801 (was 22714)
+#**# index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                    ## MDEV-23801 (was 22714)
 
 ##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-19569
@@ -893,7 +895,7 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # lock_rec_get_first( lock_hash, receiver, receiver_heap_no) == __null || lock_hash == &lock_sys.prdt_hash || lock_hash == &lock_sys.prdt_page_hash|SIGABRT|lock_rec_move_low|lock_rec_move|lock_update_split_right|btr_page_split_and_insert ## Deemed Fixed ## MDEV-24914
 # SIGABRT|__libc_message|malloc_printerr|_int_free|DBUGCloseFile                                                                                                      ## Fixed ## MDEV-25072
 # SIGSEGV|free () from|_dl_close_worker|_dl_close_worker|_dl_close                                                                                                    ## Fixed ## MDEV-11727
-# bitmap_is_set_all(&table->s->all_set)|SIGABRT|handler::ha_reset|close_thread_table|close_thread_tables|mysql_execute_command                                        ## FIxed ## MDEV-17556
+# bitmap_is_set_all(&table->s->all_set)|SIGABRT|handler::ha_reset|close_thread_table|close_thread_tables|mysql_execute_command                                        ## Fixed ## MDEV-17556
 # ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|push_warning                              ## Fixed ## MDEV-17729
 # table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|rr_sequential|READ_RECORD::read_record|join_init_read_record                ## Fixed ## MDEV-18163
 # SIGSEGV|find_field_in_table|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                                     ## Fixed ## MDEV-18163
@@ -1035,7 +1037,7 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # page_has_next(block->frame) || rec_is_alter_metadata(p, *index)|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last     ## Fixed ## MDEV-24796
 # page_has_next(block->frame) || block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last ## Fixed ## MDEV-24796
 # page_has_next(block->frame) || rec_is_alter_metadata(p, *index) || block->page.id().page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last ## Fixed ## MDEV-24796
-# page_has_next(block->frame) || rec_is_alter_metadata(p, *index) || block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last ## MDEV-24796
+# page_has_next(block->frame) || rec_is_alter_metadata(p, *index) || block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last ## Fixed ## MDEV-24796
 # SIGSEGV|wsrep_can_run_in_toi|wsrep_TOI_begin|wsrep_to_isolation_begin|Sql_cmd_alter_table::execute                                                                  ## Fixed ## MDEV-24833
 # SIGABRT|__cxa_throw () from|std::__throw_logic_error(char const*) () from|std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>|std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct_aux<char const*> ## Fixed ## MDEV-24856
 # SIGABRT|DbugExit|_db_return_|my_malloc|Query_cache::init_cache                                                                                                      ## Fixed ## MDEV-24858
@@ -1103,7 +1105,7 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_def|pars_retrieve_table_list_defs                               ## Fixed ## MDEV-25536
 # sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement                                 ## Fixed ## MDEV-25536
 # pause_seqno_.is_undefined() == false|SIGABRT|wsrep::server_state::resume|Global_read_lock::unlock_global_read_lock|fix_read_only|sys_var::update                    ## Fixed ## MDEV-25562
-# pause_seqno_.is_undefined() == false|SIGABRT|wsrep::server_state::resume|wsrep::server_state::resume_and_resync|Global_read_lock::unlock_global_read_lock|mysql_execute_command ## MDEV-25562
+# pause_seqno_.is_undefined() == false|SIGABRT|wsrep::server_state::resume|wsrep::server_state::resume_and_resync|Global_read_lock::unlock_global_read_lock|mysql_execute_command ## Fixed ## MDEV-25562
 # SIGSEGV|my_strcasecmp_utf8mb3|get_table_category|wsrep_tables_accessible_when_detached|mysql_execute_command                                                        ## Fixed ## MDEV-25586
 # err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|handler::ha_rename_table                                 ## Fixed ## MDEV-25642
 # SIGSEGV|ilist<trx_t, void>::erase|ilist<trx_t, void>::remove|thread_safe_trx_ilist_t::remove|trx_sys_t::deregister_trx                                              ## Fixed ## MDEV-25663
@@ -1143,7 +1145,7 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table            ## Fixed ## MDEV-26273
 # SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|ha_innobase::commit_inplace_alter_table|mysql_inplace_alter_table                    ## Fixed ## MDEV-26273
 # SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::pfs_begin_lock|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|prepare_inplace_alter_table_dict ## Fixed ## MDEV-26273
-# SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::pfs_begin_lock|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|ha_innobase::commit_inplace_alter_table ## MDEV-26273
+# SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::pfs_begin_lock|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|fts_sync_during_ddl|ha_innobase::commit_inplace_alter_table ## Fixed ## MDEV-26273
 # SIGSEGV|inline_mysql_mutex_lock|fts_sync_during_ddl|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table                                       ## Fixed ## MDEV-26273
 # SIGSEGV|inline_mysql_mutex_lock|fts_sync_during_ddl|ha_innobase::commit_inplace_alter_table|mysql_inplace_alter_table                                               ## Fixed ## MDEV-26273
 # SIGSEGV|inline_mysql_mutex_lock|fts_sync_during_ddl|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                                  ## Fixed ## MDEV-26273

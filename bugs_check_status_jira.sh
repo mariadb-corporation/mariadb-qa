@@ -6,9 +6,12 @@ read -p '1x...'
 read -p '2x...'
 read -p '3x...'
 
-grep --binary-files=text -vE '^#|^[ \t]*$|Fixed' ~/mariadb-qa/known_bugs.strings | grep --binary-files=text -Eo 'MDEV-[0-9]+|MENT-[0-9]+' | sort -u | wc -l | sed 's|^|Scanning |;s|$| bugs...|'
+# Note that lines starting with '#' are not filtered, as regularly bug filters are disabled to avoid missing other bugs
+# Instead, only 'fixed' (and empty lines) are filtered, as the former are bugs which are truly fixed
+# This may sometimes also scan a bug number which is mentioned in a ##### header, but his is quite fine and can be informative
+grep --binary-files=text -vEi '^[ \t]*$|fixed|no parsable frames' ~/mariadb-qa/known_bugs.strings | grep --binary-files=text -Eo 'MDEV-[0-9]+|MENT-[0-9]+' | sort -u | wc -l | sed 's|^|Scanning |;s|$| bugs...|'
 echo "Only bugs which are fixed will be listed below, so they can be updated (add leading '# ' and '## Fixed' before MDEV number) in known_bugs.strings:"
-grep --binary-files=text -vE '^#|^[ \t]*$|Fixed' ~/mariadb-qa/known_bugs.strings | grep --binary-files=text -Eo 'MDEV-[0-9]+|MENT-[0-9]+' | sort -u | xargs -I{} echo "lynx -accept_all_cookies -dump -nobold -nobrowse -nolist -nolog -nomargins -nomore -nopause -noprint -nostatus https://jira.mariadb.org/browse/{} | grep -o 'Resolution: .*' | sed 's|Resolution:[ \\t]\\+||;s|^|{}: |' | grep 'Fixed'; sleep 1" > /tmp/check_bug_status.tsh
+grep --binary-files=text -vEi '^[ \t]*$|fixed|no parsable frames' ~/mariadb-qa/known_bugs.strings | grep --binary-files=text -Eo 'MDEV-[0-9]+|MENT-[0-9]+' | sort -u | xargs -I{} echo "lynx -accept_all_cookies -dump -nobold -nobrowse -nolist -nolog -nomargins -nomore -nopause -noprint -nostatus https://jira.mariadb.org/browse/{} | grep -o 'Resolution: .*' | sed 's|Resolution:[ \\t]\\+||;s|^|{}: |' | grep 'Fixed'; sleep 1" > /tmp/check_bug_status.tsh
 chmod +x /tmp/check_bug_status.tsh
 /tmp/check_bug_status.tsh
 rm -f /tmp/check_bug_status.tsh
