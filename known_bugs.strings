@@ -1,4 +1,3 @@
-b->xid_count == 0
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Otherwise, just follow the existing formatting.
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (MOSTLY DISABLED FILTERS TO AVOID MISSING OTHER BUGS) #####
