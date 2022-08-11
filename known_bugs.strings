@@ -87,7 +87,6 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
-(engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_int|Item::val_int_result ## MDEV-22375
 0|SIGABRT|Type_handler_string_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys                                                                               ## MDEV-29283
 b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                                     ## MDEV-24660
 SIGSEGV|JOIN::get_partial_cost_and_fanout|JOIN::choose_subquery_plan|make_join_statistics|JOIN::optimize_inner                                                                 ## MDEV-29263
