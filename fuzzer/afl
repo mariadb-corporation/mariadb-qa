@@ -72,6 +72,7 @@ sleep 20 # give server time start before starting loop
 clear
 echo "Server started at: $(date) | ID: ${INSTANCE} | Max runtime: ${MAX_RUNTIME_MIN}m (sig 9)"
 echo "Node: ${1} | Basedir: ${PWD} | socket: /test/afl${1}_socket.sock"
+echo "Client: ${PWD}/bin/mysql -S/test/afl${1}_socket.sock -uroot"
 echo "__AFL_SHM_ID: ${__AFL_SHM_ID} | AFL_MAP_SIZE: ${AFL_MAP_SIZE}"
 echo -n 'Queries (1m updates): '
  

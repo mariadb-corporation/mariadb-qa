@@ -6,8 +6,13 @@
   # Create an additional userID for your server, and login with the same, and restart the procedure if you would like to keep things 'clean'
   cd ~/mariadb-qa
   ./linkit
+= Setup server
+  setupserver
+  tmpfs  
+     Also make sure to adjust tmpfs (/dev/shm) sizing based on memory size
 = Clone AFL++
   cd ~
   git clone --depth=1 https://github.com/AFLplusplus/AFLplusplus.git AFL
   cd AFL
 
+* Add fuzzing_root setup via cp from Squirrel

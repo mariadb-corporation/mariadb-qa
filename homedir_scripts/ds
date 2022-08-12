@@ -81,6 +81,7 @@ while true; do
     COUNT1=0
   fi
   if [ ${COUNT2} -ge 60 ]; then
+    ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -v 'grep'" | xargs -I{} bash -c "{}" | awk '{print $2}' | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time. This command terminates subreducers which have been active for 1h+. It is unlikely that any subreducer will take that long to run. 
     TESTCASES="$(cd /data && ./my | grep -v '^[ ]*0 ' | wc -l)"  # Expensive
     sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches"  # Cleanup cache, may help avoid OOM
     if [ -d /data ]; then

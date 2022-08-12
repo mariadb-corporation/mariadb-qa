@@ -1,0 +1,58 @@
+Welcome to MariaDB QA's (mariadb-qa) implementation of the Squirrel fuzzer
+
+The MariaDB QA team has derived signifcant value from the Squirrel fuzzer, and we would like to thank:
+
+* The whole Squirrel team at https://github.com/s3team/Squirrel
+  With special thanks to:
+* Changochen @ https://github.com/Changochen
+* Rui Zhong @ https://github.com/zr950624
+
+White paper: https://arxiv.org/pdf/2006.02398.pdf
+
+The MariaDB QA team has added:
+* Further automation like multi-fuzzer-node and multi-mariadb-instance management
+* Removed the need to use docker instances
+* Non-shared parallelization up to 10 nodes on one physical instance. 20+ nodes possible with minor code/binary modifications
+* Automatic UniqueID creation for all fuzzer bugs seen
+* Automatic deletion and handling of all known/logged bugs
+* Fuzzing server resource management (ref ~/ds and ~/memory)
+* Database server building and state management
+* Multi-version database server testing
+* Automatic testcase reduction and sampling
+* Automatic testing of all database server versions (MariaDB and MySQL)
+* Detailed MariaDB JIRA bug report generation
+* And more...
+
+A number of these features were already present in the mariadb-qa framework, and these were modified to work with Squirrel
+
+We also plan to release additional grammars in the future!
+
+Continue your journey:
+
+./SETUP: How to setup a server for mariadb-qa (pquery framework + fuzzer framework + more) based testing
+         As this is quite change-intensive (changes many server settings) a dedicated instance is recommended
+         A physical instance is recommended, or a high-end cloud instance like a dedidcated 30+ vCPUs, 120 GB Memory, SSD
+         Minimum memory is 64GB, but to run with a reasonable level of reliability and speed, think 96GB+, SSD, 20 threads+
+         OS: Ubuntu highly recommended. Also make sure to adjust tmpfs (/dev/shm) sizing based on memory size
+
+./PROCEDURE: Once SETUP is fully complete, this brief guide will show you how to start fuzzing and more
+
+If you like to test the MariaDB, MySQL or Percona server using the pquery framework instead, you can use this course:
+(If you follow all steps in ./SETUP your server will already be setup for both the pquery and the Squirrel frameworks to run)
+https://www.percona.com/blog/2015/03/17/free-mysql-qa-and-bash-linux-training-series/
+
+When you find a bug, please create a JIRA ticket in the MDEV project at https://jira.mariadb.org/ (account creation required)
+
+Additionally, if you regularly test MariaDB, then please submit pull requests to include the UniqueID's for these bugs to:
+https://github.com/mariadb-corporation/mariadb-qa/blob/master/known_bugs.strings 
+
+And to include the required SQL for the bugs to mariadb-qa/BUGS:
+https://github.com/mariadb-corporation/mariadb-qa/tree/master/BUGS
+
+Note that doing so benefits the whole community of testers: any bug added to the UniqueID list will automatically filter
+from all other testing instances where the filters are being used.
+
+Feel free to contact https://github.com/mariadb-RoelVandePaar for more info, or feel free to create a issue ticket in 
+https://github.com/mariadb-corporation/mariadb-qa if you find a bug, run into any issues, or have any generic questions!
+
+Enjoy!
