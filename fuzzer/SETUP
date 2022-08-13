@@ -180,8 +180,7 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   vi /dev/shm/log/master.err  # The mariadbd/mysql error log (the database server error log) for the given node
   # If you see 'shmat for map: Bad file descriptor' then there is an instumentation communication breakdown between the
   # MariaDB server instance and the Squirrel/AFL instance. Check that ./afl0-fuzz works and does not give an undefined 
-  # symbol error. You can use ldd ./afl0-fuzz to check with symbol is missing. However, if this guide was followed this
-  # not have occured. You may want to try: sudo apt install libmysqlclient-dev liblldb-14 libmariadb3 mariadb-common
+  # symbol error. You can use ldd ./afl0-fuzz to check which symbol is missing.
 
 = Further steps
   # If you made it this far, super congratulations; you now have 10 instances fuzzing MariaDB server! Now checkout the other

@@ -50,7 +50,7 @@ COMM_HDR    = alloc-inl.h config.h debug.h types.h
 all: afl-fuzz
 
 afl-fuzz: afl-fuzz.c $(COMM_HDR)
-	$(CC) $(CFLAGS) -L$(MYSQL_LIB_PATH) -I$(MYSQL_HEADER_PATH) -g $@.c $(DEPEN_PATH) -o $@ $(LDFLAGS)  -lmysqlclient 
+	$(CC) $(CFLAGS) -L$(MYSQL_LIB_PATH) -I$(MYSQL_HEADER_PATH) -g $@.c $(DEPEN_PATH) -o $@ $(LDFLAGS) -lmysqlclient
 
 .NOTPARALLEL: clean
 
