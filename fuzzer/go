@@ -1,9 +1,21 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-#SQL_PATH=./knownbugs
+# User variables
+SQL_PATH=./knownbugs
 #SQL_PATH=./crashes
-SQL_PATH=./minimal
+#SQL_PATH=./minimal  # WIP, needs work
+#SQL_PATH=./input  # Default
+
+# Script variables
+INSTANCE="afl${1}"
+
+if [ -d ${HOME}/fuzzing ]; then
+  rm -f ${HOME}/fuzzing/${INSTANCE}.log
+else
+  echo "${HOME}/fuzzing does not exist, have you run ~/mariadb-qa/linkit already?"
+  exit 1
+fi
 
 if [ -z "${1}" ]; then
   echo "Please pass instanceID"
@@ -11,12 +23,12 @@ if [ -z "${1}" ]; then
 elif [ "$(echo "${1}" | sed 's|^[0-9]$|OK|')" != "OK" ]; then
   echo "Option passed (instanceID: {1}) is not correct. Range: 0-9"
   exit 1
-fi
-INSTANCE="afl${1}"
-rm -f ~/fuzzing/${INSTANCE}.log
-if [ -z "${2}" ]; then
+elif [ -z "${2}" ]; then
   echo "Please pass basedir to be tested"
   exit 1 
+elif [ ! -d ${SQL_PATH} ]; then
+  echo "The SQL_PATH provided (${SQL_PATH}) does not exist, cannot continue"
+  exit 1
 fi
 
 export LD_LIBRARY_PATH=${2}/lib/
@@ -29,22 +41,17 @@ if [ ! -d ${LD_LIBRARY_PATH} ]; then
   fi
 fi
 
-export BASEDIR="$(echo ${LD_LIBRARY_PATH} | sed 's|lib[/]*||')"
-if [ ! -r "${BASEDIR}bin/mysqld" ]; then
-  echo "Assert: ${BASEDIR}bin/mysqld cannot be found"
+# Note that LD_LIBRARY_PATH code above may have added /test/
+export BASEDIR="$(echo ${LD_LIBRARY_PATH} | sed 's|[/]*lib[/]*||')"
+if [ ! -r "${BASEDIR}/bin/mysqld" ]; then
+  echo "Assert: ${BASEDIR}/bin/mysqld cannot be found"
   exit 1
 fi
-if [ ! -z "${AFL_LLVM_INSTRUMENT}" ]; then
-  echo 'Remember that the instrumentation selected (if any) should match the build process'
-  echo "AFL_LLVM_INSTRUMENT: ${AFL_LLVM_INSTRUMENT}"
-  echo ''
-fi
-echo 'Remember to set LD_LIBRARY_PATH correctly! Current setting:'
-echo "LD_LIBRARY_PATH    : ${LD_LIBRARY_PATH}"
-echo ''
+
+echo "LD_LIBRARY_PATH    : ${LD_LIBRARY_PATH}"  # It is important that the LD_LIBRARY_PATH is correct
 
 # Setting the AFL_MAP_SIZE size is not required on AFL side
 # Instance log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
 screen -admS ${INSTANCE} bash -c "../afl${1}-fuzz -t 2000 -m 20000 -i ${SQL_PATH} -o ../$(date +%s) ${INSTANCE} 2> ~/fuzzing/${INSTANCE}.log"  
 
-echo "DONE!"
+echo "Start of instance ${1} complete!"

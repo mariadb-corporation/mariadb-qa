@@ -162,6 +162,9 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # In the following step, update the BASEDIR to the directory of the *instrumented* build created in the last step, i.e.
   # BASEDIR=/test/AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64  # or similar
   vi start_fuzzing
+  # Edit the ./fuzzing_root/go script to set the SQL_PATH to a grammar present in fuzzing_root (try './input' which is 
+  # automatically added by the linkit script). Read more about grammars here: https://github.com/s3team/Squirrel/issues/11
+  vi ./fuzzing_root/go
 
 = Start fuzzing
   ./start_fuzzing  # Wait for all screens to be created
@@ -176,7 +179,7 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
 
 = Troubleshooting
   # The first action item is always to check the logs. The examples below are for node 0, change 0 to 1-9 for other nodes
-  vi ./afl0.log  # This log outputs issues observed by Squirrel. Connections errors #1, #2 and #3 are not likely to be bugs
+  vi ./afl0.log  # This log outputs issues observed by Squirrel
   vi /dev/shm/log/master.err  # The mariadbd/mysql error log (the database server error log) for the given node
   # If you see 'shmat for map: Bad file descriptor' then there is an instumentation communication breakdown between the
   # MariaDB server instance and the Squirrel/AFL instance. Check that ./afl0-fuzz works and does not give an undefined 

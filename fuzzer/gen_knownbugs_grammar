@@ -1,0 +1,38 @@
+#!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
+if [ ! -d "${HOME}/mariadb-qa/BUGS" ]; then
+  echo "Assert: ${HOME}/mariadb-qa/BUGS does not exist"
+  exit 1
+fi
+
+if [ ! -d "${HOME}/fuzzing/fuzzing_root" ]; then
+  echo "Assert: ${HOME}/fuzzing/fuzzing_root does not exist, have you run ~/mariadb-qa/linkit already?"
+  exit 1
+fi
+
+if [ -d "${HOME}/fuzzing/fuzzing_root/knownbugs" ]; then
+  echo "Assert: ${HOME}/fuzzing/fuzzing_root/knownbugs already exists, please delete it first with:"
+  echo "rm -Rf ${HOME}/fuzzing/fuzzing_root/knownbugs"
+  echo "Then re-run this script"
+  exit 1
+fi
+
+mkdir -p "${HOME}/fuzzing/fuzzing_root/knownbugs"
+cd ${HOME}/mariadb-qa/BUGS
+
+exit 2  # WIP (it reads the whole list into every array element, or indexing is wrong). NTS: process_testcases + add to linkit
+rm -f /tmp/afl_tc_kb_lst
+ls --color=never *.sql > /tmp/afl_tc_kb_lst
+TESTCASES=$(</tmp/afl_tc_kb_lst)
+COUNT=$(printf "%s\n" "${TESTCASES}" | wc -l)
+if [ -z "${COUNT}" -o "${COUNT}" -eq 0 ]; then
+  echo "Assert: no testcases to process?"
+  exit 1
+else
+  for ((TC=0;TC<${COUNT};TC++)){
+    TCNR=$[ ${TC} + 1 ]
+    echo "${TCNR}/${COUNT}: $TESTCASES[${TC}]"
+    grep --binary-files=text -vE "^[ \t]*$|^[ \t]*#" $TESTCASES[${TC}] > "${HOME}/fuzzing/fuzzing_root/knownbugs/${TCNR}"
+  }
+fi

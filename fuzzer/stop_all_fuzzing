@@ -1,15 +1,16 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-killall -9 afl-fuzz 2>/dev/null
+killall -9 afl-fuzz afl0-fuzz afl1-fuzz afl2-fuzz afl3-fuzz afl4-fuzz afl5-fuzz afl6-fuzz afl7-fuzz afl8-fuzz afl9-fuzz 2>/dev/null
 sleep 0.1
-killall -9 afl-fuzz 2>/dev/null
+killall -9 afl-fuzz afl0-fuzz afl1-fuzz afl2-fuzz afl3-fuzz afl4-fuzz afl5-fuzz afl6-fuzz afl7-fuzz afl8-fuzz afl9-fuzz 2>/dev/null
 sleep 0.1
-ps -ef | grep 'afl-fuzz' | grep -vE 'grep|g++' | grep 'defunct' | awk '{print $3}' | xargs -I{} kill -9 {} 2>/dev/null  # Kill the PPID
+FILTER='grep|g++|vi.*fuzz'
+ps -ef | grep 'afl-fuzz' | grep -vE "${FILTER}" | grep 'defunct' | awk '{print $3}' | xargs -I{} kill -9 {} 2>/dev/null  # Kill the PPID
 screen -wipe >/dev/null 2>&1
-ps -ef | grep afl | grep -v grep | awk '{print $2}' | xargs -I{} kill -9 {} 2>/dev/null
+ps -ef | grep afl | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {} 2>/dev/null
 screen -wipe >/dev/null 2>&1
 sleep 0.1
-ps -ef | grep afl-fuzz | grep -vE 'grep|g++'  # Success or not status output
+ps -ef | grep afl-fuzz | grep -vE "${FILTER}"  # Success or not status output
 rm -f /test/afl[0-9]_socket.sock
 rm -Rf /dev/shm/afl-node-[0-9]

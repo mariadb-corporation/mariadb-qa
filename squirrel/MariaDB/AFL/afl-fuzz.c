@@ -127,7 +127,7 @@ deque<char*> g_previous_input;
 class MysqlClient{
   public:
     MysqlClient(const char * host, char * user_name, char * passwd):
-      host_(host), user_name_(user_name), passwd_(passwd), counter_(0){}
+      host_(host), user_name_(user_name), passwd_(passwd){}
 
     bool connect(){
       string dbname;
@@ -137,146 +137,116 @@ class MysqlClient{
       mysql_options(&m_,MYSQL_READ_DEFAULT_GROUP,"Squirrel");
       if(first_connect==1){dbname = "test";}  // test1 has not been created yet
       if(!mysql_real_connect(&m_, NULL, (char *)"root", NULL, dbname.c_str(), 0, (char *)"/test/afl0_socket.sock", CLIENT_MULTI_STATEMENTS)){ 
-        fprintf(stderr, "Failed to connect to database #1: Error: %s\n", mysql_error(&m_));
-        disconnect();
-        counter_++;
+        fprintf(stderr, "Failed to connect to database: Error: %s\n", mysql_error(&m_));
+        mysql_close(&m_);
         return false;
       }
       if(first_connect==1){
         string cmd = "CREATE DATABASE IF NOT EXISTS test1;";
         mysql_real_query(&m_, cmd.c_str(), cmd.size());
         first_connect=0;
-      }
-      return true;
-      }
-
-      void disconnect(){
-        mysql_close(&m_);
-      }
-
-      bool fix_database(){
-        MYSQL tmp_m;
-
+      }else{
         database_id += 1;
-        if(mysql_init(&tmp_m) == NULL) {mysql_close(&tmp_m); return false;}
-        mysql_options(&tmp_m,MYSQL_READ_DEFAULT_GROUP,"Squirrel");
-        //if(!mysql_real_connect(&tmp_m, NULL, (char *)"root", NULL, (char *)"test", 0, (char *)"/test/AFL-MD160622-mariadb-10.10.0-linux-x86_64-dbg/socket.sock", CLIENT_MULTI_STATEMENTS)){
-        if(!mysql_real_connect(&tmp_m, NULL, (char *)"root", NULL, (char *)"test", 0, (char *)"/test/afl0_socket.sock", CLIENT_MULTI_STATEMENTS)){
-          fprintf(stderr, "Failed to connect to database #2: Error: %s\n", mysql_error(&tmp_m));
-          mysql_close(&tmp_m);
-          return false;
-        }
         string cmd = "CREATE DATABASE IF NOT EXISTS test" + std::to_string(database_id) + ";";
-        mysql_real_query(&tmp_m, cmd.c_str(), cmd.size());
-        mysql_close(&tmp_m);
-        sleep(2);
-        return true;
+        mysql_real_query(&m_, cmd.c_str(), cmd.size());
       }
+      // Do not close &m_ here as this is the main connect before queries are executed
+      return true;
+    }
 
-      SQLSTATUS clean_up_connection(MYSQL &mm){
-        int res = -1;
-        do{
-          auto q_result = mysql_store_result(&mm);
-          if(q_result)
-            mysql_free_result(q_result);
-        }while((res = mysql_next_result(&mm))==0);
+    SQLSTATUS clean_up_connection(MYSQL &mm){
+      int res = -1;
+      do{
+        auto q_result = mysql_store_result(&mm);
+        if(q_result)
+          mysql_free_result(q_result);
+      }while((res = mysql_next_result(&mm))==0);
 
-        if(res != -1){
-          if(mysql_errno(&mm) == 1064){
-            return kSyntaxError;
-          }else{
-            return kSemanticError;
-          }
-        }
-        return kNormal;
-      }
-
-      SQLSTATUS execute(char * cmd){
-        auto conn = connect();
-
-        if(!conn){
-          string previous_inputs = "";
-          for(auto i: g_previous_input) previous_inputs += string(i) + "\n\n";
-          previous_inputs += "-------------\n\n";
-          write(crash_fd, previous_inputs.c_str(), previous_inputs.size());  
-        }
-
-        int retry_time = 0;
-        while(!conn){
-          //cout << "reconnecting..." << endl;
-          sleep(5);
-          conn = connect();
-          if(!conn)
-            fix_database();
-        }
-        //cout << "connect succeed!" << endl;
-        //cerr << "Trying to execute " << cmd << endl;
-        int server_response = mysql_real_query(&m_, cmd, strlen(cmd));
-
-        auto correctness = clean_up_connection(m_);
-
-        //if(server_response == CR_SERVER_LOST || server_response == CR_SERVER_GONE_ERROR){
-        if(server_response == 2013 || server_response == 2006 || server_response == 2055){
-          disconnect();
-          return kServerCrash;
+      if(res != -1){
+        if(mysql_errno(&mm) == 1064){
+          return kSyntaxError;
         }else{
-          cout << "Error: " << server_response << ". ";
+          return kSemanticError;
         }
-        auto res = kNormal;
+      }
+      return kNormal;
+    }
+
+    SQLSTATUS execute(char * cmd){
+      auto conn = connect();
+
+      if(!conn){
+        string previous_inputs = "";
+        for(auto i: g_previous_input) previous_inputs += string(i) + "\n\n";
+        previous_inputs += "-------------\n\n";
+        write(crash_fd, previous_inputs.c_str(), previous_inputs.size());  
+      }
+
+      while(!conn){
+        //cout << "reconnecting..." << endl;
+        first_connect=1;
+        sleep(5);
+        conn = connect();
+      }
+      //cout << "connect succeed!" << endl;
+      //cerr << "Trying to execute " << cmd << endl;
+      int server_response = mysql_real_query(&m_, cmd, strlen(cmd));
+
+      auto correctness = clean_up_connection(m_);
+      //if(server_response == CR_SERVER_LOST || server_response == CR_SERVER_GONE_ERROR){
+      if(server_response == 2013 || server_response == 2006 || server_response == 2055){
+        mysql_close(&m_);
+        return kServerCrash;
+      }//else{
+      //  cout << "Error: " << server_response << ". ";
+      //}
+      auto res = kNormal;
 #ifdef COUNT_ERROR
-        res = correctness;  
+      res = correctness;  
 #endif
-        auto check_res = check_server_alive();
+      auto check_res = check_server_alive();
+      if(check_res == false){
+        auto check_res = check_server_alive();  // Double check
         if(check_res == false){
-          auto check_res = check_server_alive();  // Double check
-          if(check_res == false){
-            disconnect();
-            sleep(20); // waiting for server to be up again
-            return kServerCrash;
-          }
+          mysql_close(&m_);
+          sleep(20);  // [R] waiting for server to be up again
+          return kServerCrash;
         }
-
-        reset_database();
-
-        counter_++;
-        disconnect();
-        return res;
       }
 
-      bool check_server_alive(){
-        MYSQL tmp_m;
+      reset_database();
 
-        if(mysql_init(&tmp_m) == NULL) {mysql_close(&tmp_m); return false;}
-        mysql_options(&tmp_m,MYSQL_READ_DEFAULT_GROUP,"Squirrel");
-        //if(!mysql_real_connect(&tmp_m, NULL, (char *)"root", NULL, (char *)"test", 0, (char *)"/test/AFL-MD160622-mariadb-10.10.0-linux-x86_64-dbg/socket.sock", CLIENT_MULTI_STATEMENTS)){    // < socket instead
-        if(!mysql_real_connect(&tmp_m, NULL, (char *)"root", NULL, (char *)"test", 0, (char *)"/test/afl0_socket.sock", CLIENT_MULTI_STATEMENTS)){    // < socket instead
-          fprintf(stderr, "Failed to connect to database #3: Error: %s\n", mysql_error(&tmp_m));
-          mysql_close(&tmp_m);
-          return false;
-        }
+      mysql_close(&m_);
+      return res;
+    }
+
+    bool check_server_alive(){
+      MYSQL tmp_m;
+      if(mysql_init(&tmp_m) == NULL) {mysql_close(&tmp_m); return false;}
+      mysql_options(&tmp_m,MYSQL_READ_DEFAULT_GROUP,"Squirrel");
+      if(!mysql_real_connect(&tmp_m, NULL, (char *)"root", NULL, (char *)"test", 0, (char *)"/test/afl0_socket.sock", CLIENT_MULTI_STATEMENTS)){ 
+        //No need to return an error to the log if the server is down, it is likely just a Squirrel/AFL generated crash
+        //fprintf(stderr, "check_server_alive found server down: Error: %s\n", mysql_error(&tmp_m));
         mysql_close(&tmp_m);
-        return true;
+        return false;
       }
+      mysql_close(&tmp_m);
+      return true;
+    }
 
       int reset_database(){
-        int server_response;
+      int server_response;
 
-        string reset_query = "DROP DATABASE IF EXISTS test" + std::to_string(database_id) + ";";
-        reset_query += "CREATE DATABASE IF NOT EXISTS test" + std::to_string(database_id+1) + ";";
+      string reset_query = "DROP DATABASE IF EXISTS test" + std::to_string(database_id) + ";";
+      reset_query += "CREATE DATABASE IF NOT EXISTS test" + std::to_string(database_id+1) + ";";
 
-        auto tmp_res = mysql_real_query(&m_, reset_query.c_str(), reset_query.size()); 
-        database_id++;
+      auto tmp_res = mysql_real_query(&m_, reset_query.c_str(), reset_query.size()); 
+      database_id++;
 
-        return server_response;
-      }
+      return server_response;
+    }
 
-      char * get_next_database_name(){
-        if(counter_ % 2 == 0) return "test2";
-
-        return "test";
-      }
-
-        private:
+    private:
       unsigned int database_id = 1;
       MYSQL m_;
       char * host_;
@@ -284,7 +254,6 @@ class MysqlClient{
       char * user_name_;
       char * passwd_;
       bool is_first_time;
-      unsigned counter_; //odd for "test", even for "test2"
       u8* fn;
       };
 
@@ -6482,7 +6451,7 @@ int main(int argc, char** argv) {
   struct timeval tv;
   struct timezone tz;
   memset_array();
-  SAYF(cCYA "SQLFuzzer " cBRI VERSION cRST " by hackers\n");//string_lib he common_string_lib YOUSHENME QUBIE
+  SAYF(cCYA "Squirrel (Modified) " cBRI VERSION cRST "\n");//string_lib he common_string_lib YOUSHENME QUBIE
 
   doc_path = access(DOC_PATH, F_OK) ? "docs" : DOC_PATH;
 

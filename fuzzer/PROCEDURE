@@ -3,7 +3,7 @@
 Welcome to MariaDB QA's (mariadb-qa) implementation of the Squirrel fuzzer usage procedures
 
    # Fuzzing
-1] ./start_fuzzing           # Starts 10 fuzzing nodes using mariadb-qa/fuzzer/afl_genstart_tmpfs_nodes
+1] ./start_fuzzing           # Starts 10 Squirrel/AFL fuzzing nodes
 
    # Core analysis
 2] ./process_testcases_loop  # Starts process_testcases and restarts it if necessary. Consider it a watchdog
@@ -20,7 +20,7 @@ Welcome to MariaDB QA's (mariadb-qa) implementation of the Squirrel fuzzer usage
 6] ./reports                 # Outputs a list of all (completed and in progress) .report files together with their UniqueID
  
    # Runs termination
-7] ./stop_all_fuzzing        # Stops all fuzzing (i.e. nodes started by start_fuzzing/afl_genstart_tmpfs_nodes)
+7] ./stop_all_fuzzing        # Stops all fuzzing (i.e. all nodes started by start_fuzzing)
 8] ./stop_process_testcases  # Stops process_testcases and process_testcases_loop
 9] ./stop_reducers_run       # Stops reducers_run and reducers_run_loop
 
@@ -52,6 +52,7 @@ testcase.report              # A full, post-reducer, ~/b level report for the gi
 *] Make sure to use ~/ds and ~/memory as usual
 
    # Most prominent TODO's
+*] At times the AFL instance does not immediately and correctly connect with the instrumented server, which keeps restarting
 *] There may be a shortcoming in ./reducers_run_loop > ./reducers_run if no new screen session is started for the latter
 *] Improve GUI output to avoid AFL bit-flip reporting but rather correctly output squirrel SQL verification stats
 *] It would be handy to have a monitor/loop script for process_testcases also (watch for presence of process_testcases screen)
