@@ -180,11 +180,13 @@ sudo sysctl -p
 # Disable news
 sudo sed -i 's|^ENABLED=1|ENABLED=0|' /etc/default/motd-news
 
-# Avoids any local my.cnf
+# Avoids any local my.cnf etc.
 # Note: do not install any database server on testing servers)
 # Rather, the framework will build/create BASEDIR's (simple tarball based directories containing all required binaries etc.)
 # That can be used and started completely independently of each other (with their own socket files, unique TCP/IP port etc.)
 sudo mv /etc/mysql /etc/mysql.old 2>/dev/null
+sudo mv /etc/alternatives/my.cnf /etc/alternatives/my.old 2>/dev/null
+sudo mv /etc/my.cnf /etc/my.old 2>/dev/null
 
 # Add additional repo's
 sudo add-apt-repository universe

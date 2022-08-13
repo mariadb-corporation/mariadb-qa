@@ -1,7 +1,15 @@
+# Created by Roel Van de Paar, MariaDB
+# Tested & updated by Ramesh Sivaraman, MariaDB
+
+Welcome to MariaDB QA's (mariadb-qa) implementation of the Squirrel fuzzer setup procedure
+
 Pre-Requisites: 
   * At least 64GB of ram, 95GB+ is better, and 128GB is recommended. SSD Recommended. 20+ Threads recommended.
   * Ubuntu 20.04 (or newer) or potentially Ubuntu 18.04 (ref 'Setup server' notes below)
-  * Do not use RHEL/Centos or other operating systems; libs will not match and pre-compiled binaries will not work 
+  * Do not use RHEL/Centos or other operating systems; libs will not match and pre-compiled binaries will not work
+  * Use a fresh installation of Ubuntu 20.04 and do not install (or uninstall) any MariaDB, MySQL, Percona servers
+
+Note: *ALL* steps below are required. If you skip a single step, things will fail. Backtrack if you missed something
 
 = Clone mariadb-qa
   # Note that it is necessary to clone mariadb-qa to your home (cd ~) directory. Many references are made to it in the code
@@ -9,12 +17,23 @@ Pre-Requisites:
   git clone --depth=1 https://github.com/mariadb-corporation/mariadb-qa.git
   cd ~/mariadb-qa
 
-= Run linkit 
-  # Note that this will create many scripts in your home dir, create /data and /test on the server, etc. This step is required
-  # Create an additional userID, and login with the same, and restart the procedure if you would like to keep things 'clean'
+= Setup password-less sudo (for the user account which is used in combination with the framework)
+  # Setting up and troubleshooting this is outside of scope of this guide. The instructions below are given as a guide only
+  sudo visudo
+  # Add this line:
+  %sudo ALL=(ALL:ALL) NOPASSWD:ALL
+  # Save and exit, and add your UserID to the sudo group:
+  adduser $(whoami) sudo  # Note that this assumes 
+  # Open a *completely new terminal session* and ensure the following command does not request a password:
+  sudo ls  # If you are prompted for a password, the password-less sudo setup failed. Check sudo visudo and research online
+
+= Run linkit to setup required directory, symlinks etc.
+  # * Note that this will create many scripts in your home dir, create /data and /test on the server, etc.
+  # * Create an additional UserID, login with the same, and restart the setup if you would like to keep things 'extra clean'
+  #   On a dedicated testing server (best), creating a seperate UserID is generally not required nor desired
   ./linkit
 
-= Setup server: Please read the precautionary WARNING notes first
+= Setup server: Please read the precautionary WARNING notes below first
   # * This script will make many changes to the operating system settings, installed packages etc. of your system
   # * Alike to other softwares which require the absolute maximum out of all available hardware and the operating system,
   #   some of the changes made by this script WILL affect the security of the system; ensure the server is firewalled etc.
@@ -25,7 +44,7 @@ Pre-Requisites:
   #   the script. Other operating systems like RHEL/Centos will be significantly more complex in almost every way, and 
   #   pre-compiled binaries will NOT run. A succesful setup on Ubuntu 20 (or 18) will take a few hours. Expect other
   #   operating systems to take ~1 week or more, as you would have to find all matching libraries, recompile binaries etc.
-# ./setup_server.sh  # Read notes above. This line is disabled for precautionary reasons.
+# ./setup_server.sh  # Read notes above. This line is disabled for precautionary reasons, but the setup is required.
   # Now setup a swapfile and especially tmpfs as indicated towards the end of the script
   # Make sure to adjust/scale the tmpfs (/dev/shm) size to your actual memory size (ref htop or 'total Mem' in free -g)
 
@@ -36,7 +55,7 @@ Pre-Requisites:
 
 = Setup Clang 14 build environment
   # Note that both Clang (and AFL++) are in constant flux, and these instructions can change on a monthly basis
-  # Note: we use version 14 (AFL++ is not compatible yet with 15; SanitizerCoveragePCGUARD.so will fail to build)
+  # Note we use version 14 (AFL++ is not compatible yet with 15; SanitizerCoveragePCGUARD.so will fail to build)
   sudo apt -y update && sudo apt-get -y upgrade
   # If any of the following clang-x items fail in the next line with E/Error, remove the corresponding items from the list
   sudo apt -y purge clang clang-10 clang-12 clang-14 clang-15 
@@ -64,8 +83,69 @@ Pre-Requisites:
   /usr/bin/llvm-config-14 --version  # Check output is 14.0.0 or later (likely 14.0.6 or later on Ubuntu 20.04)
   make -j20  # If any issues, try make without the parallelization to see the output/error (look for Error / red items)
 
-= Build an instrumented MariaDB server
-  # Note: it is very important for Squirrel/AFL that instrumentation is working correcetly. There is very little (read: no)
-  # point in running Squirrel/AFL with an uninstrumented binary as Squirrel/AFL will not be able able to "see" what paths
+= Build MariaDB server: optimized binaries, debug binaries
+  # Note: it is recommended to do three builds: an optimized (no debug symbols) version of MariaDB, a debug (debug symbols
+  # and asserts included) build and an instrumented build, all of the same version of MariaDB. This will allow other tools
+  # (ref PROCEDURE) to automatically test testcases, reduce their complexity etc. against non-instrumented builds whilst
+  # running mariadb-qa's version of Squirrel. Here we will first build the optimized and debug binaries
+  cd /test  # If this script is not available, you did not correctly run ~/mariadb-qa/linkit
+  ./clone.sh 10.8  # For MariaDB 10.8. Note clone.sh is a background script. You will need to wait till the process completes
+  cd 10.8
+  # The following command will build an optimized and debug build of MariaDB server (or MySQL or Percona server)
+  # Do not modify the sleep (the minimum is sleep 90 on a fast server) to avoid tarball/directory naming conflicts
+  ~/mariadb-qa/build_mdpsms_opt.sh & sleep 180; ~/mariadb-qa/build_mdpsms_dbg.sh  # Background, wait for these to finish
+  cd /test
+  ls -ld MD*  # This will show you the just-created builds and their tarballs, i.e. MD290122-mariadb-10.8.1-linux-x86_64-dbg
+  cd MD290122-mariadb-10.8.1-linux-x86_64-dbg  # Change the name as required (note the format is MDddmmyy
+  # The ~/start script creates a whole set of handy scripts in the current BASEDIR you are in
+  ~/start  # If this script is not available, you did not correctly run ~/mariadb-qa/linkit
+  # The ./all script (created by ~/start) creates a fresh data directory, starts the MariaDB server and brings up the client
+  ./all  # If this script is not available, something went amiss with running ~/start or the server (this should not happen)
+  # This should have brought you to the command line interface (CLI) of the MariaDB server. You should be able to do at least:
+  10.8.4-dbg>SELECT 1\G
+  *************************** 1. row ***************************
+  1: 1
+  1 row in set (0.000 sec)
+  10.8.4-dbg>exit;
+  # Once back that the Linux terminal prompt, issue ./stop to stop the MariaDB server
+  ./stop
+  # Repeat the same steps for the alternate installation (i.e. MD290122-mariadb-10.8.1-linux-x86_64-opt with 'opt' instead of
+  # 'dbg' in our example and vice versa if you did opt first) to ~/start and ./all ("test") the alternate installation
+  # Congratulations, if you made it thus far, you created a non-instrumented optimized and debug build of MariaDB server
+  # Note that these instances of MariaDB are all contained within BASEDIR directories - they are not installed using atp etc.
+  # This is of great advantage when wanting to bring up many instances
+
+= Build MariaDB server: instrumented binaries
+  # Note: it is very important for Squirrel/AFL that instrumentation is working correctly. There is very little (read: no)
+  # point in running Squirrel/AFL with an uninstrumented binary, as Squirrel/AFL will not be able able to "see" what paths
   # it is triggering in the server. The way that instrumentation works is as follows: when the database server is started,
-  # 
+  # the instrumentation code starts as well. Then, both the database server as well as Squirrel will use a shared memory
+  # space (ref SHM_ENV_VAR in the scripts) which passes information to Squirrel to let it know what code paths are being hit
+  cd /test
+  cp -r 10.8 10.8_instrumented
+  cd 10.8_instrumented
+  export CC=${HOME}/AFL/afl-clang-fast  
+  export CXX=${HOME}/AFL/afl-clang-fast++
+  export LLVM_CONFIG=
+  cmake . -DWITH_SSL=bundled -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=0 -DENABLE_DOWNLOADS=1 -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/tmp/boost_639515 -DENABLED_LOCAL_INFILE=1 -DENABLE_DTRACE=0 -DPLUGIN_PERFSCHEMA=NO -DWITH_DBUG_TRACE=OFF -DWITH_ZLIB=bundled -DWITH_ROCKSDB=0 -DWITH_PAM=OFF -DFORCE_INSOURCE_BUILD=1 -DCMAKE_C_FLAGS='-Og -march=native -mtune=native' -DCMAKE_CXX_FLAGS='-Og -march=native -mtune=native' -DMYSQL_MAINTAINER_MODE=OFF -DWITH_MARIABACKUP=0 -DWITH_UNIT_TESTS=OFF -DWITH_DBUG_TRACE=OFF -DWITH_EMBEDDED_SERVER=OFF -DWITH_ROCKSDB=OFF -DWITH_TOKUDB=OFF -DWITH_WSREP_ALL=OFF
+  # If the following command gets stuck long-term (5+ hours on a fast machine, 1 day+ on a slow machine), there is likely
+  # an issue with either AFL++ or with Clang. Expect issues here. We have thus far succesfully compiled 10.10, 10.8 and 10.3
+  # and the instructions here 
+  make -j32 | tee /tmp/afl_dbg_bld.log  # Note that the build process can take a very long time (up to several hours)
+  ./scripts/make_binary_distribution
+  mv mariadb-10.8.1-linux-x86_64.tar.gz /test
+  cd /test
+  tar -xf mariadb-10.8.1-linux-x86_64.tar.gz
+  # In the next two commands, change ddmmyy to day, month, year in 6 digits and change the version number as needed
+  mv mariadb-10.8.1-linux-x86_64.tar.gz AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64.tar.gz 
+  mv mariadb-10.8.1-linux-x86_64 AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64
+  # Add 'AFL' (without quotes) as an exclusion filter for some mariadb-qa framework scripts
+  vi /test/REGEX_EXCLUDE  # You will not need it now, but note that there is a '|' (without quotes) between exclusions
+  cd AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64
+  ~/start
+  # If this works, follow the steps above (SELECT 1, exit, ./stop) to round up
+  # Congratulations, if you made it thus far, you now have an AFL++ instrumented build of MariaDB ready for use with Squirrel
+
+= 
+
+ 
