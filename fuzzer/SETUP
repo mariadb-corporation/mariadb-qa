@@ -146,7 +146,7 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # If this works, follow the steps above (SELECT 1, exit, ./stop) to round up
   # Congratulations, if you made it thus far, you now have an AFL++ instrumented build of MariaDB ready for use with Squirrel
 
-= Getting ready to fuzz
+= Getting ready to fuzz: preliminary tests
   # Setup some directories
   cd ~/fuzzing
   ls -l afl0-fuzz afl start_fuzzing  # This should show 3 symlinks to ${HOME}/fuzzer scripts. Run ~/mariadb-qa/linkit if not
@@ -160,5 +160,20 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # the steps shown in 'Compile AFL++ using Clang 14' above. This is also the method to recompile all afl0-fuzz to afl9-fuzz
   # binaries if changes are made in the script. Future versions of the binary may accept command line options for the socket
   ./afl0-fuzz  # This should not give any errors and output a list of options. 
+  # In the following step, update the BASEDIR to the directory of the *instrumented* build created in the last step, i.e.
+  # BASEDIR=/test/AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64  # or similar
+  vi start_fuzzing
 
- 
+= Start fuzzing
+  ./start_fuzzing  # Wait for all screens to be created
+  # In the output of the following command, you should (when all nodes are started) see 20 screens: afl0 to afl9 are the
+  # 10 Squirrel/AFL fuzzing nodes. srv0-afl to srv9-afl are the database instances, with some relevant information
+  ~/s  # This lists all screens
+  # In the following screen, you should see 'last new path' being updated. If it continually says "none yet (odd...)" there
+  # is some issue and the instrumentation between the server and the AFL fuzzing instance is not working correctlyt
+  ~/s afl0  # This will bring you the AFL based overview of Squirrel fuzzing for node 0 (there are 10 nodes: 0-9)
+
+= Further steps
+  # If you made it this far, super congratulations, you now have 10 instances fuzzing MariaDB server! Now checkout the other
+  # tools available to you by viewing the PROCEDURE file in this directory. Note that some scripts need to have variables
+  # preset, just like was done above to configure start_fuzzing. You will also find more information inside the scripts
