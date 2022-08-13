@@ -136,9 +136,7 @@ class MysqlClient{
       if(mysql_init(&m_) == NULL) {mysql_close(&m_); return false;}
       mysql_options(&m_,MYSQL_READ_DEFAULT_GROUP,"Squirrel");
       if(first_connect==1){dbname = "test";}  // test1 has not been created yet
-      //if(!mysql_real_connect(&m_, NULL, (char *)"root", NULL, dbname.c_str(), 0, (char *)"/test/AFL-MD160622-mariadb-10.10.0-linux-x86_64-dbg/socket.sock", CLIENT_MULTI_STATEMENTS)){    // < socket instead
       if(!mysql_real_connect(&m_, NULL, (char *)"root", NULL, dbname.c_str(), 0, (char *)"/test/afl0_socket.sock", CLIENT_MULTI_STATEMENTS)){ 
-        //if(!mysql_real_connect(&m_, NULL, (char *)"root", NULL, dbname.c_str(), 0, (char *)*socket, CLIENT_MULTI_STATEMENTS)){    // < socket instead
         fprintf(stderr, "Failed to connect to database #1: Error: %s\n", mysql_error(&m_));
         disconnect();
         counter_++;

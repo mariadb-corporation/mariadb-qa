@@ -16,23 +16,25 @@
 PROGNAME    = afl
 VERSION     = $(shell grep '^\#define VERSION ' config.h | cut -d '"' -f2)
 
-MYSQL_LIB_PATH     = /usr/lib/x86_64-linux-gnu
-MYSQL_HEADER_PATH  = /usr/include/mysql
-PREFIX            ?= /usr/local
-BIN_PATH           = $(PREFIX)/bin
-HELPER_PATH        = $(PREFIX)/lib/afl
-DOC_PATH           = $(PREFIX)/share/doc/afl
-MISC_PATH          = $(PREFIX)/share/afl
-DEPEN_PATH         = ../src/*.cpp  ../parser/bison_parser.cpp ../parser/flex_lexer.cpp
+MYSQL_SRC_PATH            = /test/10.10                                      #REPLACE WITH YOUR PATH
+MYSQL_INSTALL_PATH        = /test/MD290722-mariadb-10.10.0-linux-x86_64-opt  #REPLACE WITH YOUR PATH
+MYSQL_LIB_PATH            = $(MYSQL_INSTALL_PATH)/lib 
+MYSQL_HEADER_PATH         = $(MYSQL_SRC_PATH)/include
+MYSQL_INSTALL_HEADER_PATH = $(MYSQL_INSTALL_PATH)/include
+PREFIX                   ?= /usr/local
+BIN_PATH                  = $(PREFIX)/bin
+HELPER_PATH               = $(PREFIX)/lib/afl
+DOC_PATH                  = $(PREFIX)/share/doc/afl
+MISC_PATH                 = $(PREFIX)/share/afl
+DEPEN_PATH                = ../src/*.cpp  ../parser/bison_parser.cpp ../parser/flex_lexer.cpp
 
 # PROGS intentionally omit afl-as, which gets installed elsewhere.
 
-PROGS       = afl-fuzz
-CC          = g++
+PROGS      = afl-fuzz
+CC         = g++
 CFLAGS     ?= -fpermissive --std=c++17
 CFLAGS     += -g -w \
-	            -DAFL_PATH=\"$(HELPER_PATH)\" \
-              -DDOC_PATH=\"$(DOC_PATH)\" \
+	            -DAFL_PATH=\"$(HELPER_PATH)\" -DDOC_PATH=\"$(DOC_PATH)\" \
 	            -DBIN_PATH=\"$(BIN_PATH)\"
 
 ifneq "$(filter Linux GNU%,$(shell uname))" ""
@@ -50,7 +52,7 @@ COMM_HDR    = alloc-inl.h config.h debug.h types.h
 all: afl-fuzz
 
 afl-fuzz: afl-fuzz.c $(COMM_HDR)
-	$(CC) $(CFLAGS) -L$(MYSQL_LIB_PATH) -I$(MYSQL_HEADER_PATH) -g $@.c $(DEPEN_PATH) -o $@ $(LDFLAGS)  -lmysqlclient 
+	$(CC) $(CFLAGS) -L$(MYSQL_LIB_PATH) -I$(MYSQL_HEADER_PATH) -I$(MYSQL_INSTALL_HEADER_PATH) -g $@.c $(DEPEN_PATH) -o $@ $(LDFLAGS)  -lmysqlclient 
 
 .NOTPARALLEL: clean
 

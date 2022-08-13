@@ -63,8 +63,7 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # The next line installs LLVM 14 and includes Clang 14, libc++ etc. -
   sudo bash llvm.sh 14
   sudo apt -y update && sudo apt-get -y upgrade
-  # For the next line, liblld is important, do not 'autoremove' it
-  sudo apt -y install gdb bison flex git make cmake build-essential gcc-multilib g++-multilib xinetd libreadline-dev zlib1g-dev libssl-dev libncurses5-dev clang-14 liblld-14 liblld-14-dev vim tmux python3-pip llvm llvm-dev llvm-runtime
+  sudo apt -y install gdb bison flex git make cmake build-essential gcc-multilib g++-multilib xinetd libreadline-dev zlib1g-dev libssl-dev libncurses5-dev clang-14 liblld-14 liblldb-14 liblld-14-dev vim tmux python3-pip llvm llvm-dev llvm-runtime libmysqlclient-dev
   # In the next line, we want to install gcc-9-plugin-dev - or any other version (like -9-) relevant to your GCC
   # Yyou can find out the version using gcc --version  
   sudo apt install gcc-$(gcc --version | grep -o 'Ubuntu [0-9]\+' | grep -o '[0-9]\+$' | head -n1)-plugin-dev
@@ -172,8 +171,20 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # In the following screen, you should see 'last new path' being updated. If it continually says "none yet (odd...)" there
   # is some issue and the instrumentation between the server and the AFL fuzzing instance is not working correctlyt
   ~/s afl0  # This will bring you the AFL based overview of Squirrel fuzzing for node 0 (there are 10 nodes: 0-9)
+  # From a secondary terminal session (or press CTRL+a+d to exit the screen you are currently in)
+  ~/s srv0-afl  # This will bring you to a brief overview 
+
+= Troubleshooting
+  # The first action item is always to check the logs. The examples below are for node 0, change 0 to 1-9 for other nodes
+  vi ./afl0.log  # This log outputs issues observed by Squirrel. Connections errors #1, #2 and #3 are not likely to be bugs
+  vi /dev/shm/log/master.err  # The mariadbd/mysql error log (the database server error log) for the given node
+  # If you see 'shmat for map: Bad file descriptor' then there is an instumentation communication breakdown between the
+  # MariaDB server instance and the Squirrel/AFL instance. Check that ./afl0-fuzz works and does not give an undefined 
+  # symbol error. You can use ldd ./afl0-fuzz to check with symbol is missing. However, if this guide was followed this
+  # not have occured. You may want to try: sudo apt install libmysqlclient-dev liblldb-14 libmariadb3 mariadb-common
 
 = Further steps
-  # If you made it this far, super congratulations, you now have 10 instances fuzzing MariaDB server! Now checkout the other
+  # If you made it this far, super congratulations; you now have 10 instances fuzzing MariaDB server! Now checkout the other
   # tools available to you by viewing the PROCEDURE file in this directory. Note that some scripts need to have variables
   # preset, just like was done above to configure start_fuzzing. You will also find more information inside the scripts
+  vi PROCEDURE
