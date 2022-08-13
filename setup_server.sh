@@ -180,6 +180,12 @@ sudo sysctl -p
 # Disable news
 sudo sed -i 's|^ENABLED=1|ENABLED=0|' /etc/default/motd-news
 
+# Avoids any local my.cnf
+# Note: do not install any database server on testing servers)
+# Rather, the framework will build/create BASEDIR's (simple tarball based directories containing all required binaries etc.)
+# That can be used and started completely independently of each other (with their own socket files, unique TCP/IP port etc.)
+sudo mv /etc/mysql /etc/mysql.old 2>/dev/null
+
 # Add additional repo's
 sudo add-apt-repository universe
 sudo add-apt-repository multiverse
@@ -237,21 +243,29 @@ if [ "${1}" == "rr" ]; then
   fi
 fi
 
-echo "An example for /etc/fstab:"
-echo "---------------------------------------------------------------------------------------"
-echo "LABEL=cloudimg-rootfs                     /         ext4  defaults 0 0"
+echo ""
+echo "MariaDB QA Testing servers (pquery framework or squirrel fuzzer framework, both present in mariadb-qa) require a large"
+echo "tmpfs space to be able to run much of the testing in memory. You should scale the tmpfs size to the memory size."
+echo "As a guide, with ~120GB of memory you will want a tmpfs size of ~95GB. Below is a reference example of /etc/fstab"
+echo "You can now edit/update your /etc/fstab as required. Some other optimizations for speed are made like noatime, etc."
+echo "----------------------------------------------------------------------------------------------------------------"
+echo "LABEL=somerootlabel                       /         ext4  defaults 0 0"
 echo "LABEL=UEFI                                /boot/efi vfat  defaults 0 0"
-echo "UUID=someuuid-uuid-uuid-uuid-uuidsomeuuid /data     ext4  defaults,discard,nofail 0 2"
+echo "UUID=someuuid-uuid-uuid-uuid-uuidsomeuuid /data     ext4  defaults,discard,noatime,nofail 0 2"
+echo "tmpfs                                     /dev/shm  tmpfs defaults,rw,nosuid,nodev,noatime,nofail,size=95G 0 0"
 echo "/swapfile                                 swap      swap  defaults,sw,nofail 0 0"
-echo "tmpfs                                     /dev/shm  tmpfs defaults,rw,nosuid,nodev,noatime,nofail,size=90G 0 0"
-echo "---------------------------------------------------------------------------------------"
-echo "Note the first 'swap' for /swapfile should be 'none' on Ubunto 20.04 (to be verified)"
-echo "Create swapfile like this:"
-echo "  sudo fallocate -l 64G /swapfile"
+echo "----------------------------------------------------------------------------------------------------------------"
+echo "Note: do not blindly copy/paste the above, interpretation is required like changing the tmpfs size and the LABEL's"
+echo ""
+echo "Create the swapfile as follows:"
+echo "  sudo fallocate -l 60G /swapfile"
 echo "  sudo chmod 600 /swapfile"
 echo "  sudo mkswap /swapfile"
 echo "  sudo swapon /swapfile"
+echo ""
 echo "Then add the /swapfile line to the /etc/fstab file as shown above"
+echo "Note that the swapfile (/swapfile) and tmpfs (/dev/shm) are two different items"
+echo "Note that on some systems the first 'swap' after '/swapfile' should be 'none' instead (i.e. /swapfile none swap...)"
 echo ""
 echo "To set timezone per-user, do:"
 echo "echo 'export TZ=\"/usr/share/zoneinfo/Australia/Sydney\"' >> ~/.basrc"

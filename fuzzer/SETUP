@@ -1,18 +1,71 @@
+Pre-Requisites: 
+  * At least 64GB of ram, 95GB+ is better, and 128GB is recommended. SSD Recommended. 20+ Threads recommended.
+  * Ubuntu 20.04 (or newer) or potentially Ubuntu 18.04 (ref 'Setup server' notes below)
+  * Do not use RHEL/Centos or other operating systems; libs will not match and pre-compiled binaries will not work 
+
 = Clone mariadb-qa
+  # Note that it is necessary to clone mariadb-qa to your home (cd ~) directory. Many references are made to it in the code
   cd ~
   git clone --depth=1 https://github.com/mariadb-corporation/mariadb-qa.git
-= Run linkit 
-  # Note that this will create many scripts in your home dir, create /data and /test on the server, etc. This step is required.
-  # Create an additional userID for your server, and login with the same, and restart the procedure if you would like to keep things 'clean'
   cd ~/mariadb-qa
+
+= Run linkit 
+  # Note that this will create many scripts in your home dir, create /data and /test on the server, etc. This step is required
+  # Create an additional userID, and login with the same, and restart the procedure if you would like to keep things 'clean'
   ./linkit
-= Setup server
-  setupserver
-  tmpfs  
-     Also make sure to adjust tmpfs (/dev/shm) sizing based on memory size
-= Clone AFL++
+
+= Setup server: Please read the precautionary WARNING notes first
+  # * This script will make many changes to the operating system settings, installed packages etc. of your system
+  # * Alike to other softwares which require the absolute maximum out of all available hardware and the operating system,
+  #   some of the changes made by this script WILL affect the security of the system; ensure the server is firewalled etc.
+  # * Whilst this script was build for running outright, even senior engineers using this framework will manually
+  #   copy and paste the various steps from this script and execute them at the command line to 'reason through things', 
+  #   see the output, make any fixes if there are issues, etc. It is highly recommended you do not run this script outright
+  #   Furthermore, if you are not using Ubuntu 20.04, changes wil be required. Ubuntu 18.04 instructions are included inside
+  #   the script. Other operating systems like RHEL/Centos will be significantly more complex in almost every way, and 
+  #   pre-compiled binaries will NOT run. A succesful setup on Ubuntu 20 (or 18) will take a few hours. Expect other
+  #   operating systems to take ~1 week or more, as you would have to find all matching libraries, recompile binaries etc.
+# ./setup_server.sh  # Read notes above. This line is disabled for precautionary reasons.
+  # Now setup a swapfile and especially tmpfs as indicated towards the end of the script
+  # Make sure to adjust/scale the tmpfs (/dev/shm) size to your actual memory size (ref htop or 'total Mem' in free -g)
+
+= Clone AFL++ (note that Squirrel at mariadb-qa/squirrel also has it's own AFL, but we will use AFL++ to instrument MariaDB)
   cd ~
   git clone --depth=1 https://github.com/AFLplusplus/AFLplusplus.git AFL
   cd AFL
 
-* Add fuzzing_root setup via cp from Squirrel
+= Setup Clang 14 build environment
+  # Note that both Clang (and AFL++) are in constant flux, and these instructions can change on a monthly basis
+  # Note: we use version 14 (AFL++ is not compatible yet with 15; SanitizerCoveragePCGUARD.so will fail to build)
+  sudo apt -y update && sudo apt-get -y upgrade
+  # If any of the following clang-x items fail in the next line with E/Error, remove the corresponding items from the list
+  sudo apt -y purge clang clang-10 clang-12 clang-14 clang-15 
+  sudo wget https://apt.llvm.org/llvm.sh
+  # The next line installs LLVM 14 and includes Clang 14, libc++ etc. -
+  sudo bash llvm.sh 14
+  sudo apt -y update && sudo apt-get -y upgrade
+  # For the next line, liblld is important, do not 'autoremove' it
+  sudo apt -y install gdb bison flex git make cmake build-essential gcc-multilib g++-multilib xinetd libreadline-dev zlib1g-dev libssl-dev libncurses5-dev clang-14 liblld-14 liblld-14-dev vim tmux python3-pip llvm llvm-dev llvm-runtime
+  # In the next line, we want to install gcc-9-plugin-dev - or any other version (like -9-) relevant to your GCC
+  # Yyou can find out the version using gcc --version  
+  sudo apt install gcc-$(gcc --version | grep -o 'Ubuntu [0-9]\+' | grep -o '[0-9]\+$' | head -n1)-plugin-dev
+  pip install libtmux
+  sudo reboot
+
+= Compile AFL++ using Clang 14
+  # The next line is very imporatnt, and ensures a sufficiently large MAP SIZE
+  sed -i 's/#define[ \t]\+MAP_SIZE_POW2[ \t]\+[12][0-9]/#define MAP_SIZE_POW2 22/' config.h
+  export CC=/usr/bin/clang-14
+  export CXX=/usr/bin/clang-cpp-14
+  export LLVM_CONFIG=/usr/bin/llvm-config-14
+  which clang-14        # Check output is /usr/bin/clang-14
+  which clang-cpp-14    # Check output is /usr/bin/clang-cpp-14
+  which llvm-config-14  # Check output is /usr/bin/llvm-config-14
+  /usr/bin/llvm-config-14 --version  # Check output is 14.0.0 or later (likely 14.0.6 or later on Ubuntu 20.04)
+  make -j20  # If any issues, try make without the parallelization to see the output/error (look for Error / red items)
+
+= Build an instrumented MariaDB server
+  # Note: it is very important for Squirrel/AFL that instrumentation is working correcetly. There is very little (read: no)
+  # point in running Squirrel/AFL with an uninstrumented binary as Squirrel/AFL will not be able able to "see" what paths
+  # it is triggering in the server. The way that instrumentation works is as follows: when the database server is started,
+  # 
