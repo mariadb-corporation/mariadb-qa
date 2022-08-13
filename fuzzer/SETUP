@@ -113,7 +113,7 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # 'dbg' in our example and vice versa if you did opt first) to ~/start and ./all ("test") the alternate installation
   # Congratulations, if you made it thus far, you created a non-instrumented optimized and debug build of MariaDB server
   # Note that these instances of MariaDB are all contained within BASEDIR directories - they are not installed using atp etc.
-  # This is of great advantage when wanting to bring up many instances
+  # This is of great advantage when wanting to bring up many instances etc.
 
 = Build MariaDB server: instrumented binaries
   # Note: it is very important for Squirrel/AFL that instrumentation is working correctly. There is very little (read: no)
@@ -146,6 +146,19 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # If this works, follow the steps above (SELECT 1, exit, ./stop) to round up
   # Congratulations, if you made it thus far, you now have an AFL++ instrumented build of MariaDB ready for use with Squirrel
 
-= 
+= Getting ready to fuzz
+  # Setup some directories
+  cd ~/fuzzing
+  ls -l afl0-fuzz afl start_fuzzing  # This should show 3 symlinks to ${HOME}/fuzzer scripts. Run ~/mariadb-qa/linkit if not
+  # If you see any issues with the following command, for example missing libraries, then there either is a package 
+  # missing on your system (which is unlikely if you followed this guide and actioned setup_server.sh and all other
+  # steps above), or you are trying to use an Ubuntu-compiled binary on a non-compatible operating system like RHEL or Centos
+  # You can recompile afl0-fuzz (and it's sister binaries afl1-fuzz to afl9-fuzz) by recompiling afl-fuzz.c which is located
+  # ~/mariadb-qa/squirrel/MariaDB/AFL/afl-fuzz.c, however you will need to change the socket inside the script from 0 to 9
+  # (/test/afl0_socket.sock) to build the corresponding binaries. You should also be careful to be compiling this with 
+  # Clang 14 (and *not* with the AFL-instrumented builder in ~/AFL). IOW, export CC=/usr/bin/clang-14 etc. i.e. similar to 
+  # the steps shown in 'Compile AFL++ using Clang 14' above. This is also the method to recompile all afl0-fuzz to afl9-fuzz
+  # binaries if changes are made in the script. Future versions of the binary may accept command line options for the socket
+  ./afl0-fuzz  # This should not give any errors and output a list of options. 
 
  
