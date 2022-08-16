@@ -1,0 +1,5 @@
+SELECT * FROM (( ((VALUES (2)) ORDER BY 1);
+
+SET @@sql_mode=CAST(pow (2,32)-1 AS UNSIGNED INT);
+SELECT * FROM (( ((VALUES (2)) ORDER BY 1);
+
