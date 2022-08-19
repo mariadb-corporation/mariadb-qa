@@ -101,8 +101,8 @@ START_OPT="--core-file"           # Compatible with 5.6,5.7,8.0
 INIT_OPT="--no-defaults --initialize-insecure ${MYINIT}"  # Compatible with     5.7,8.0 (mysqld init)
 INIT_TOOL="${BIN}"                # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
 VERSION_INFO=$(${BIN} --version | grep -E --binary-files=text -oe '[58]\.[01567]' | head -n1)
-VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9][0]*' | head -n1)
-if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" -o "${VERSION_INFO_2}" == "10.9" -o "${VERSION_INFO_2}" == "10.10" ]; then
+VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9][0-9]*' | head -n1)
+if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" -o "${VERSION_INFO_2}" == "10.9" -o "${VERSION_INFO_2}" == "10.10" -o "${VERSION_INFO_2}" == "10.11" -o "${VERSION_INFO_2}" == "10.12" -o "${VERSION_INFO_2}" == "10.13" ]; then
   VERSION_INFO="5.6"
   INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
   INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"

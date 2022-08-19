@@ -4,8 +4,9 @@ The MariaDB QA team has derived signifcant value from the Squirrel fuzzer, and w
 
 * The whole Squirrel team at https://github.com/s3team/Squirrel
   With special thanks to:
-* Changochen @ https://github.com/Changochen
-* Rui Zhong @ https://github.com/zr950624
+    * Changochen @ https://github.com/Changochen
+    * Rui Zhong @ https://github.com/zr950624
+* Shihao Wen
 
 White paper: https://arxiv.org/pdf/2006.02398.pdf
 
