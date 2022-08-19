@@ -87,6 +87,7 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+in_LRU_list|SIGABRT|buf_page_t::is_old|buf_flush_try_neighbors|buf_flush_LRU_list_batch|buf_do_LRU_batch                                                                       ## MDEV-29331
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql|mysql_parse|dispatch_command                                                                  ## MDEV-29312
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql|mysql_parse|wsrep_mysql_parse                                                                 ## MDEV-29312 
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|ORAparse|parse_sql|mysql_parse|dispatch_command                                                                    ## MDEV-29312
@@ -1403,3 +1404,4 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # SIGSEGV|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute|mysql_execute_command                                             ## Fixed ## MDEV-29189
 # table_ref->is_merged_derived()|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|insert_fields|setup_wild                          ## Fixed ## MDEV-28965
 # *err == DB_SUCCESS|SIGABRT|btr_page_split_and_insert|btr_root_raise_and_insert|btr_cur_pessimistic_insert|row_ins_clust_index_entry_low                             ## Fixed ## MDEV-29003
+# *err == DB_SUCCESS|SIGABRT|btr_page_split_and_insert|btr_root_raise_and_insert|btr_cur_pessimistic_insert|row_ins_sec_index_entry_low                               ## Fixed ## MDEV-29334
