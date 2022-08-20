@@ -21,5 +21,6 @@ cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_dbg.sh &
+cd ${DIR}/10.11 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 
 echo "All processes started as background threads... Output will commence soon."

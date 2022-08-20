@@ -36,10 +36,7 @@ while true; do
   sleep 3
   if [ ${COUNT1} -ge 10 ]; then
     # Check process list for any datadir=/dev/shm/16... and if found check if such directory is present. If not, terminate any processes associated with the non-existing directory. This command assist greatly in overall server memory management
-    #ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | xargs -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -v grep | awk '{print \$2}' | xargs -I_ kill -9 _" > /tmp/kill_rogue && chmod +x /tmp/kill_rogue && /tmp/kill_rogue && rm -f /tmp/kill_rogue
-    #ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | xargs -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -v grep" | xargs -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {}  # Improved version without temporary file
-    #ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -v grep" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {}  # Improved version, 0 terminated
-    ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi 'grep|fireworks'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null  # Improved version, fireworks protection
+    ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi 'grep|fireworks|cc|clang'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null  # Improved version, fireworks protection
     # Cleanup known bugs from fuzzing
     if [ -r /home/$(whoami)/fuzzing/del_known_bugs ]; then
       CURPWD="${PWD}"
@@ -51,7 +48,7 @@ while true; do
       cd "${CURPWD}"
     fi
     # Cleanup any processes which have dead files > 300MB open. This command too assist greatly in overall server memory management
-    sudo lsof -s +L1 | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | grep -E "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]|^[3-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | awk '{print $2}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi 'grep|fireworks'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null
+    sudo lsof -s +L1 | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | grep -E "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]|^[3-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | awk '{print $2}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi 'grep|fireworks|cc|clang'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null
     # Cleanup cache, may help avoid OOM
     sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches" &
     # RV-05/02/22 increased frequency of ~/mariadb-qa/tmpfs_clean.sh from 60 rounds to 10 rounds, and starting process as background process. Improved ~/mariadb-qa/tmpfs_clean.sh to self-terminate if running already.
@@ -70,7 +67,7 @@ while true; do
           # Copy log
           cp ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log ~/terminated_${ANY_SINGLE_LARGE_REDUCER_DIR}_reducer.log
           # Terminate instance
-          grep 'Init.*Reducer' ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log | sed 's|.*reducer|reducer|' | xargs -I{} echo "ps -ef | grep {}" | xargs -I{} bash -c "{}" | grep -v grep | awk '{print $2}' | xargs -I{} kill -9 {}
+          grep 'Init.*Reducer' ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log | sed 's|.*reducer|reducer|' | xargs -I{} echo "ps -ef | grep {}" | xargs -I{} bash -c "{}" | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs -I{} kill -9 {}
           # Check for continued dir presence and cleanup
           if [ -d ${ANY_SINGLE_LARGE_REDUCER_DIR} ]; then rm -Rf ${ANY_SINGLE_LARGE_REDUCER_DIR}; fi
         fi
@@ -81,8 +78,8 @@ while true; do
     COUNT1=0
   fi
   if [ ${COUNT2} -ge 60 ]; then
-    #ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -v 'grep'" | xargs -I{} bash -c "{}" | awk '{print $2}' | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time. This command terminates subreducers which have been active for 1h+. It is unlikely that any subreducer will take that long to run. 
-    ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command,pid | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] |[0-9]-[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' | awk '{print $4}' | xargs -I{} kill -9 {}  # Improved (works better + less resources used) command. Ref comment on remarked line above for more info
+    #ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vE 'grep|cc|clang'" | xargs -I{} bash -c "{}" | awk '{print $2}' | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time. This command terminates subreducers which have been active for 1h+. It is unlikely that any subreducer will take that long to run.
+    ps -ef | grep 'subreducer' | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command,pid | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] |[0-9]-[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' | awk '{print $4}' | xargs -I{} kill -9 {}  # Improved (works better + less resources used) command. Ref comment on remarked line above for more info
 
     TESTCASES="$(cd /data && ./my | grep -v '^[ ]*0 ' | wc -l)"  # Expensive
     sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches"  # Cleanup cache, may help avoid OOM
@@ -122,7 +119,7 @@ while true; do
     # Find the reducer connected with the particular epoch /dev/shm subdir
     REDUCER="$(grep -om1 ".Init. Reducer:.*" /dev/shm/${EPOCH}/reducer.log | sed 's|.*: ||')"
     # Kill all processes related to the epoch /dev/shm subdir (excluding reducer itself)
-    ps -ef | grep ${EPOCH} | grep -v grep | awk '{print $2}' | xargs kill -9
+    ps -ef | grep ${EPOCH} | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs kill -9
     # Change workdir to disk instead of tmpfs
     sed -i "s|^WORKDIR_LOCATION=1|WORKDIR_LOCATION=3|" ${REDUCER}
     sed -i "s|^WORKDIR_M3_DIRECTORY=.*|WORKDIR_M3_DIRECTORY=~/reducers|" ${REDUCER}
@@ -132,7 +129,7 @@ while true; do
       exit 1
     fi
     # Terminate reducer by reducing the corresponding screen (will also ensure all processes are gone)
-    ps -ef | grep "$(basename "${REDUCER}")" | grep -v grep | grep -i screen | awk '{print $2}' | xargs kill -9
+    ps -ef | grep "$(basename "${REDUCER}")" | grep -vE 'grep|cc|clang' | grep -i screen | awk '{print $2}' | xargs kill -9
     # Restart reducer with new setting
     # TODO: expand this script to check for presence of _out file to shorten time to reduced testcase. However, there is not real way to check if such an _out file was saved correctly. Use .prev perhaps if present
     eval $(cd $(echo ${REDUCER} | sed 's|$(basename "${REDUCER}")||'); ~/sr $(echo "$(basename "${REDUCER}")" | sed 's|[^0-9]||g'))

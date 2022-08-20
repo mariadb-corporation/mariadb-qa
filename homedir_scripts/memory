@@ -8,7 +8,7 @@ KILL_PERCENT=7  # For example: 4: All processes up to 3.99 will be left, 4.00 an
 # Script variables
 while true; do
   clear
-  CMD="ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep --binary-files=text -vE 'fireworks|mtr_to_sql|generator.sh|cc|reducer'"
+  CMD="ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep --binary-files=text -vE 'fireworks|mtr_to_sql|generator.sh|cc|clang|reducer'"
   eval "${CMD}" | head -n7
   HEADLINE=;PERCENT=;PID=
   if [ "${KILL_LARGE}" -eq 1 ]; then
