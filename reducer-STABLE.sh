@@ -80,8 +80,8 @@ KNOWN_BUGS_LOC="${SCRIPT_PWD}/known_bugs.strings"  # If SCAN_FOR_NEW_BUGS=1 then
 NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (otherwise it will be saved in the workdir)
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
 RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
-RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces
-PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause after each successful issue occurence
+RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces rather than only the final one
+PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause reducer after each successful issue occurence
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -357,7 +357,7 @@ SPECIAL_MYEXTRA_OPTIONS=
 #                      2) Any reference to the engine is removed from MYEXTRA and stored in two variables TOKUDB/ROCKSDB to allow more control/testcase reducability
 #                      3) Testcase reduction removal of engines (one-by-one) is tested in STAGE9
 
-MYSQL_VERSION=$(${BASEDIR}/bin/mysqld --version 2>&1 | grep -oe '[0-9]\.[0-9][\.0-9]*' | head -n1)
+MYSQL_VERSION=$(${BASEDIR}/bin/mysqld --no-defaults --version 2>&1 | grep -oe '[0-9]\.[0-9][\.0-9]*' | head -n1)
 #Format version string (thanks to wsrep_sst_xtrabackup-v2)
 normalize_version(){
   local major=0
@@ -505,7 +505,7 @@ fi
 BINLOG=
 if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
   if [[ ! "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-    if [[ ! "$(${BASEDIR}/bin/mysqld --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
+    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
       echo "Error: --server-id is present in MYEXTRA whereas --log-bin is not. Please fix this."
       echo "Terminating now."
       exit 1
@@ -516,8 +516,8 @@ if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
   fi
 fi
 if [[ "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-  if [[ ! "$(${BASEDIR}/bin/mysqld --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
-    if [[ ! "$(${BASEDIR}/bin/mysqld --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
+  if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
+    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
       if [[ ! "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
         echo "Error: The version of mysqld is 5.7 or 8.0 and a --bin-log option was passed in MYEXTRA, yet no --server-id option was found whereas this is required for 5.7 and 8.0."
         echo "Terminating now."
@@ -594,6 +594,8 @@ save_rr_trace(){
   mkdir -p "${RR_SAVE_LOCATION}/"
   cp -r ${WORKD}/rr/* ${RR_SAVE_LOCATION}/
   rm -rf ${WORKD}/rr
+  chmod -R 777 ${RR_SAVE_LOCATION}/
+  chmod -R +rX ${RR_SAVE_LOCATION}/
 }
 
 abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE anymore
@@ -3332,7 +3334,7 @@ process_outcome(){
     fi
     if [ $M3_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" -a "${FIREWORKS}" != "1" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*${M3_OUTPUT_TEXT}OutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good mysqld error log output issue in $WORKO"
+        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*${M3_OUTPUT_TEXT}OutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good testcase in $WORKO"
         control_backtrack_flow
       fi
       sleep 2; sync

@@ -80,8 +80,8 @@ KNOWN_BUGS_LOC="${SCRIPT_PWD}/known_bugs.strings"  # If SCAN_FOR_NEW_BUGS=1 then
 NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (otherwise it will be saved in the workdir)
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
 RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
-RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces
-PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause after each successful issue occurence
+RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces rather than only the final one
+PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause reducer after each successful issue occurence
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -594,6 +594,8 @@ save_rr_trace(){
   mkdir -p "${RR_SAVE_LOCATION}/"
   cp -r ${WORKD}/rr/* ${RR_SAVE_LOCATION}/
   rm -rf ${WORKD}/rr
+  chmod -R 777 ${RR_SAVE_LOCATION}/
+  chmod -R +rX ${RR_SAVE_LOCATION}/
 }
 
 abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE anymore
