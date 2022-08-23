@@ -1,6 +1,10 @@
 #!/bin/bash
-DIR=/data
+DATADIR=/data
 MARIADB_QA="${HOME}/mariadb-qa"  # Adjust if needed, though storing mariadb-qa in ~/mariadb-qa is highly recommended
+
+if [ -d "${DATADIR}" ]; then
+  cd "${DATADIR}"
+fi
 if [ ! -r results.list ]; then
   echo "Assert: results.list does not exist. Terminating"
   exit 1
@@ -48,8 +52,8 @@ fi
 while true; do
   for ((i=1;i<=100;i++)); do
     if [ ! -z "${MON[i]}" ]; then
-      if [ -d "${DIR}/${MON[${i}]}" ]; then
-        cd "${DIR}/${MON[${i}]}"
+      if [ -d "${DATADIR}/${MON[${i}]}" ]; then
+        cd "${DATADIR}/${MON[${i}]}"
         ~/pr | grep -vEi '^=========$|SHUTDOWN|no reducer scripts were found in this directory' | sed '/Coredumps found in trials/,+1d' | sed '/Significant.Major errors/,+9999d'
         TO_SCAN='*/*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err'
         ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
@@ -65,7 +69,7 @@ while true; do
         fi
         ERRORS_LAST_LINE=
       else
-        echo "Index ${i} seems to be invalid: directory ${DIR}/${MON[${i}]} does not exist!"
+        echo "Index ${i} seems to be invalid: directory ${DATADIR}/${MON[${i}]} does not exist!"
         exit 1
       fi
     fi

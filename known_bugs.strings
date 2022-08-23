@@ -90,6 +90,10 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+fixed == 1|SIGABRT|Item_func_dayname::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                       ## MDEV-29357
+fixed()|SIGABRT|Item_func_dayname::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                          ## MDEV-29357
+n_fields > n_cols|SIGABRT|dict_index_t::init_change_cols|ha_innobase_inplace_ctx::change_col_collation|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table ## MDEV-29314
+0|SIGABRT|Type_handler_row::Item_save_in_field|Item::save_in_field|Item_trigger_field::set_value|Item_trigger_field::set_value                                                 ## MDEV-29356
 SIGSEGV|_ma_make_key|maria_write|handler::ha_write_tmp_row|end_write                                                                                                           ## MDEV-29353
 SIGSEGV|_ma_unique_hash|maria_write|handler::ha_write_tmp_row|end_write                                                                                                        ## MDEV-29353
 (*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                           ## MDEV-29353

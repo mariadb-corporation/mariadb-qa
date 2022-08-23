@@ -83,6 +83,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|minute|MINUTE|gi' | \
   sed 's|hour|HOUR|gi' | \
   sed 's|day|DAY|gi' | \
+  sed 's|dayname|DAYNAME|gi' | \
   sed 's|begin|BEGIN|gi' | \
   sed 's|end|END|gi' | \
   sed 's|ends|ENDS|gi' | \
