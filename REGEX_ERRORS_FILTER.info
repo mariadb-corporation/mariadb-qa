@@ -51,3 +51,5 @@ Incorrect information in file:.*.frm                  https://jira.mariadb.org/b
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-29203 (UNIQUE HASH INDEX issue)
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-27661 (Charset issue)
 Please run mariadb-upgrade                            Often seen when a mysql db table has been modified by a testcase
+Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/browse/MDEV-26258
+Got error .126 .Index is corrupted..*sql-alter.*MAI   https://jira.mariadb.org/browse/MDEV-26258

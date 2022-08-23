@@ -87,6 +87,15 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item_direct_view_ref::fix_fields                                                          ## MDEV-16549
+context|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_direct_view_ref::fix_fields|Item::fix_fields_if_needed                                                  ## MDEV-16549
+field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_direct_view_ref::fix_fields|Item::fix_fields_if_needed                                                    ## MDEV-16549
+(*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                   ## MDEV-29351
+(*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                     ## MDEV-29351
+(*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                ## MDEV-29351
+SIGSEGV|Used_tables_and_const_cache::used_tables_and_const_cache_join|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                            ## MDEV-29351
+SIGSEGV|st_select_lex_node::exclude_from_tree|st_select_lex_node::exclude|Item_subselect::eliminate_subselect_processor|Item_in_subselect::walk                                ## MDEV-29350
+SIGSEGV|st_select_lex_node::exclude_from_tree|st_select_lex_node::exclude|Item_subselect::eliminate_subselect_processor|Item_subselect::walk                                   ## MDEV-29350
 in_LRU_list|SIGABRT|buf_page_t::is_old|buf_flush_try_neighbors|buf_flush_LRU_list_batch|buf_do_LRU_batch                                                                       ## MDEV-29331
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql|mysql_parse|dispatch_command                                                                  ## MDEV-29312
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql|mysql_parse|wsrep_mysql_parse                                                                 ## MDEV-29312 

@@ -3,7 +3,8 @@
 
 #BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-dbg
 #BASEDIR=/test/MD310522-mariadb-10.10.0-linux-x86_64-opt
-BASEDIR=/test/MD290722-mariadb-10.10.0-linux-x86_64-dbg
+#BASEDIR=/test/MD290722-mariadb-10.10.0-linux-x86_64-dbg
+BASEDIR=/test/MD190822-mariadb-10.11.0-linux-x86_64-opt
 LOOP_SCRIPT=1  # Set to 1 to keep looping (handy when fuzzers are running)
 
 cd ${HOME}/fuzzing

@@ -225,15 +225,13 @@ fi
 
 # 'MySQL server has gone away' seen >= 200 times + timeout was not reached
 if [ $(ls */GONEAWAY 2>/dev/null | wc -l) -gt 0 ]; then
-  echo "--------------"
-  echo "'MySQL server has gone away' trials found: $(ls */GONEAWAY | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||')"
+  echo "'** MySQL server has gone away' trials found: $(ls */GONEAWAY | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||')"
   echo "(> 'MySQL server has gone away' trials which did not hit the pquery timeout (i.e. the trial ended before pquery timeout was reached, hence something must have gone wrong) are not handled correctly yet by pquery-prep-red.sh (feel free to expand it), and cannot be filtered easily (idem). Frequency unknown. pquery-run.sh has only recently (26-08-2016) been expanded to not delete these. As they did not hit the pquery timeout, something must have gone wrong (in mysqld or in the pquery framework). Please check for existence of a core file (unlikely) and check the mysqld error log, the pquery logs and the SQL log, especially the last query before 'MySQL server has gone away' started happening. If it is a SELECT query on P_S, it's likely http://bugs.mysql.com/bug.php?id=82663 - a mysqld hang)"
 fi
 
 # 'SIGKILL myself' trials
 if [ $(grep --binary-files=text -l "SIGKILL myself" ${ERROR_LOG_LOC} 2>/dev/null | wc -l) -gt 0 ]; then
-  echo "--------------"
-  echo "'SIGKILL myself' trials found: $(grep --binary-files=text -l "SIGKILL myself" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||')"
+  echo "'** SIGKILL myself' trials found: $(grep --binary-files=text -l "SIGKILL myself" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||')"
   echo "(> 'SIGKILL myself' trials are of interest, but are not handled correctly yet by pquery-prep-red.sh (feel free to expand it), and cannot be filtered easily (idem). Frequency unknown. Easiest way to handle these ftm is to set them to MODE=3 and TEXT='SIGKILL myself' in their reducer<trialnr>.sh files (in the 'Machine configurable variables section'!). Then, simply reduce as normal.)"
 fi
 
