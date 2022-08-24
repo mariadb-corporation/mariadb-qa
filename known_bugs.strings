@@ -221,6 +221,7 @@ table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_fiel
 SIGSEGV|subquery_types_allow_materialization|convert_join_subqueries_to_semijoins|JOIN::optimize_inner|JOIN::optimize                                                          ## MDEV-28510
 SIGSEGV|Bitmap<64u>::merge|add_key_field|Item_equal::add_key_fields|Item_cond::add_key_fields                                                                                  ## MDEV-29017
 SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_between::add_key_fields                                                                                ## MDEV-29017
+SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_bool_func2::add_key_fields_optimize_op                                                                      ## MDEV029017
 SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields                                                                                     ## MDEV-28509
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## MDEV-28507
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                                                    ## MDEV-28507
@@ -514,11 +515,13 @@ thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|apply_f
 0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_func_concat::val_str|Type_handler::Item_send_str                                                                   ## MDEV-23187
 0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_str_func::val_decimal|Item_func_int_div::val_int                                                                   ## MDEV-23187
 0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_str_func::val_decimal|VDec::VDec                                                                                   ## MDEV-23187
+0|SIGABRT|json_find_path|Item_func_json_value::val_str|Item_func_concat_operator_oracle::val_str|Type_handler::Item_send_str                                                   ## MDEV-23187
 0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler::Item_send_str                                                                ## MDEV-23187
 0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item_str_func::val_real                                                                    ## MDEV-23187
 0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item_str_func::val_decimal                                                                 ## MDEV-23187
 0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item_func_concat::val_str                                                                  ## MDEV-23187
 0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler_string_result::Item_temporal_precision                                        ## MDEV-23187
+0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item_func_concat_operator_oracle::val_str                                                  ## MDEV-23187
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## MDEV-25401
 allocated_status_memory != __null|SIGABRT|PROF_MEASUREMENT::set_label|PROF_MEASUREMENT::PROF_MEASUREMENT|QUERY_PROFILE::new_status|PROFILING::status_change                    ## MDEV-25329
 SIGSEGV|Field_iterator_natural_join::next|Field_iterator_table_ref::next|mark_common_columns|store_top_level_join_columns                                                      ## MDEV-24935
@@ -696,8 +699,11 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->db.str, table->table_name.
 level <= 50|SIGABRT|btr_page_get_level|btr_cur_search_to_nth_level_func|btr_insert_on_non_leaf_level|btr_attach_half_pages                                                     ## MDEV-23165
 level <= 50|SIGABRT|btr_page_get_level|btr_cur_search_to_nth_level_func|btr_insert_on_non_leaf_level_func|btr_attach_half_pages                                                ## MDEV-23165
 level <= 50|SIGABRT|btr_page_set_level|btr_page_empty|btr_root_raise_and_insert|btr_cur_pessimistic_insert                                                                     ## MDEV-23165
+level < 50|SIGABRT|btr_page_alloc|btr_root_raise_and_insert|btr_cur_pessimistic_insert|btr_insert_on_non_leaf_level                                                            ## MDEV-23165 
+level <= 50|SIGABRT|ut_dbg_assertion_failed|btr_page_set_level|btr_page_empty|btr_root_raise_and_insert                                                                        ## MDEV-23165
 block->page.flush_observer == __null || block->page.flush_observer == observer|SIGABRT|buf_flush_note_modification|ReleaseBlocks::add_dirty_page_to_flush_list|ReleaseBlocks::operatormtr0mtr.cc|CIterate<ReleaseBlocks ## MDEV-23165
 size == space->size|SIGABRT|buf_read_ahead_random|buf_page_get_low|buf_page_get_gen|btr_cur_search_to_nth_level_func                                                           ## MDEV-23165
+SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|btr_page_set_level                                                                                                    ## MDEV-23165
 SIGSEGV|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_query::print_explain_str|print_explain_for_slow_log                                      ## MDEV-23160
 SIGSEGV|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_query::print_explain|Explain_query::print_explain_str                                    ## MDEV-23160
 SIGSEGV|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain                           ## MDEV-23160

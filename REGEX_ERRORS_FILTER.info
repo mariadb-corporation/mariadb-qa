@@ -53,3 +53,4 @@ Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/b
 Please run mariadb-upgrade                            Often seen when a mysql db table has been modified by a testcase
 Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/browse/MDEV-26258
 Got error .126 .Index is corrupted..*sql-alter.*MAI   https://jira.mariadb.org/browse/MDEV-26258
+Assertion .level < 50. failed                         https://jira.mariadb.org/browse/MDEV-23165
