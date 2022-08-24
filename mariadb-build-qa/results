@@ -4,6 +4,9 @@ MARIADB_QA="${HOME}/mariadb-qa"  # Adjust if needed, though storing mariadb-qa i
 
 if [ -d "${DATADIR}" ]; then
   cd "${DATADIR}"
+else
+  echo "Assert: DATADIR (${DATADIR}) does not exist"
+  exit 1
 fi
 if [ ! -r results.list ]; then
   echo "Assert: results.list does not exist. Terminating"

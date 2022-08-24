@@ -35,3 +35,8 @@ INSERT INTO t VALUES (0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0);
 
 CREATE TABLE t (a INT KEY,b INT,c CHAR,KEY(b),KEY(c)) ROW_FORMAT=REDUNDANT COLLATE=tis620_thai_nopad_ci ENGINE=InnoDB;
 INSERT INTO t VALUES (3,4,4);
+
+CREATE TABLE t (a CHAR,b CHAR,KEY(a,b)) ROW_FORMAT=DYNAMIC COLLATE=tis620_thai_nopad_ci;
+SET foreign_key_checks=0;
+SET SESSION unique_checks=0;
+INSERT IGNORE INTO t VALUES (1,0),(1,0),(0,0),(0,0),(0,0),(0,0);

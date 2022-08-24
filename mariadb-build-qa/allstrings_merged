@@ -3,10 +3,17 @@
 
 set "${1^^}" # Make ${1} uppercase ('san' > 'SAN')
 
+# Using OUT+subshell+final sort -u ensures a race condition or similar (likely in xargs -P20) is avoided where ./allstrings_merged ouput could show two indentical uniqueID's rather than those two having been merged: this was observed:
+# $ ./allstrings_merged 
+# trx->mysql_thd == thd|SIGABRT|innobase_kill_query|kill_handlerton|plugin_foreach_with_mask|ha_kill_query
+# trx->mysql_thd == thd|SIGABRT|innobase_kill_query|kill_handlerton|plugin_foreach_with_mask|ha_kill_query
+
+OUT=
 if [ "${1}" == "GAL" ]; then
-  ./gendirs.sh GAL | xargs -I{} echo "cd {}; ~/t; cd .." | xargs -P20 -I{} bash -c "{}" | grep -v "no core file found" | sort -u
+  OUT="$(./gendirs.sh GAL | xargs -I{} echo "cd {}; ~/t; cd .." | xargs -P20 -I{} bash -c "{}" | grep -v "no core file found" | sort -u)"
 elif [ "${1}" == "SAN" ]; then
-  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ~/t; cd .." | xargs -P20 -I{} bash -c "{}" | grep -v "no core file found" | sort -u
+  OUT=$(./gendirs.sh SAN | xargs -I{} echo "cd {}; ~/t; cd .." | xargs -P20 -I{} bash -c "{}" | grep -v "no core file found" | sort -u)
 else
-  ./gendirs.sh | xargs -I{} echo "cd {}; ~/t; cd .." | xargs -P20 -I{} bash -c "{}" | grep -v "no core file found" | sort -u
+  OUT=$(./gendirs.sh | xargs -I{} echo "cd {}; ~/t; cd .." | xargs -P20 -I{} bash -c "{}" | grep -v "no core file found" | sort -u)
 fi
+echo "${OUT}" | sort -u

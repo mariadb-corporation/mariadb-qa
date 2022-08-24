@@ -6,6 +6,7 @@ RND_DELAY_FUNCTION=0     # If set to 1, insert random delays after starting a ne
 RND_REPLAY_ORDER=0       # If set to 1, the tool will shuffle the input SQL in various ways
 REPORT_END_THREAD=0      # If set to 1, report the outcome of ended threads (slows things down considerably)
 REPORT_THREADS=0         # If set to 1, report the outcome of ongoing threads (slows things down considerably)
+                         # If set to 0, there will be still minimal output showing the repetition count every 100x rounds
 OUTPUT_FILES=0           # If set to 1, output files for each thread are written as: multirun.<thread number>.<repetition number>. This takes up much diskspace, clutters directories and reduced performance. Only enable for debugging.
 
 if [ "" == "$5" ]; then
@@ -57,7 +58,11 @@ else
   exit 1
 fi
 
-echo -e "\n===== Starting CLI processes"
+if [ "${1}" == "1" ]; then
+  echo -e "\n===== Starting CLI process"
+else
+  echo -e "\n===== Starting CLI processes"
+fi
 if [ ${REPORT_THREADS} -eq 0 ]; then
   echo 'Running...'
 fi
@@ -71,6 +76,10 @@ for (( ; ; )); do
         REPETITION=$[ $2 - ${RPT_LEFT[$thread]} + 1 ]
         if [ ${REPORT_THREADS} -eq 1 ]; then
           echo -n "Thread: $thread | Repetition: ${REPETITION}/$2 | "
+        else 
+          if [ $[ ${REPETITION} % 100 ] -eq 0 ]; then
+            echo -n "${REPETITION}.."
+          fi
         fi
         if [ $RND_REPLAY_ORDER -eq 1 ]; then
           shuf --random-source=/dev/urandom $3 > /tmp/tmp_mr.$thread.sql
