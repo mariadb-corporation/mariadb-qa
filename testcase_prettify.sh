@@ -393,6 +393,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|engine spider|ENGINE=Spider|gi' | \
   sed 's|history|HISTORY|gi;s|_history|_history|gi' | \
   sed 's|sql_mode= |sql_mode=|gi' | \
+  sed 's|semijoin|semijoin|gi' | \
   sed 's|performance_schema|performance_schema|gi' | \
   sed 's|performance_schema\.\([a-zA-Z]\+\)|performance_schema.\L\1|gi' | \
   sed 's|( (|((|g;s|) )|))|g' | \
