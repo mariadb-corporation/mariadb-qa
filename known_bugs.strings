@@ -95,6 +95,7 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 ##### CURRENT BUGS ##### Search key: Mac ###
 SIGSEGV|__gnu_cxx::__atomic_add|__gnu_cxx::__atomic_add_dispatch|std::_Sp_counted_base<shared_ptr_base.h|std::__shared_count<shared_ptr_base.h                                 ## MDEV-29393
 SIGSEGV|myrocks::ha_rocksdb::check_keyread_allowed|myrocks::ha_rocksdb::index_flags|TABLE_SHARE::init_from_binary_frm_image|ha_create_table                                    ## MDEV-29394
+pagecache->block_root[i].status == 0|SIGABRT|check_pagecache_is_cleaned_up|end_pagecache|maria_end|maria_panic                                                                 ## MDEV-29385
 trx->mysql_thd == thd|SIGABRT|innobase_kill_query|kill_handlerton|plugin_foreach_with_mask|ha_kill_query                                                                       ## MDEV-29368
 fixed == 1|SIGABRT|Item_func_dayname::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                       ## MDEV-29357
 fixed()|SIGABRT|Item_func_dayname::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                          ## MDEV-29357
