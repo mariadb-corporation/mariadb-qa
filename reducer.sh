@@ -901,12 +901,23 @@ options_check(){
   BIN="${BASEDIR}/bin/mysqld"
   if [ ! -s "${BIN}" ]; then
     BIN="${BASEDIR}/bin/mysqld-debug"
-    if [ ! -s "${BIN}" ]; then
-      echo "Assert: No mysqld or mysqld-debug binary was found in ${BASEDIR}/bin"
-      echo 'Please check script contents/options and set the $BASEDIR variable correctly'
-      echo "The $BASEDIR variable is currently set to ${BASEDIR}"
-      echo "Terminating now."
-      exit 1
+    if [ ! -s "${BIN}" ]; then  # Auto-attempt /data/VARIOUS_BUILDS at it often contains older BASEDIR directories
+      BIN_DV="$(echo "${BASEDIR}/bin/mysqld" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"
+      if [ -s "${BIN_DV}" ]; then
+        BASEDIR_OLD="${BASEDIR}"
+        BASEDIR="$(echo "${BASEDIR_OLD}" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"
+        echo "BASEDIR automatically updated from ${BASEDIR_OLD} to ${BASEDIR}"
+        BASEDIR_OLD=
+        BIN="${BIN_DV}"
+        BIN_DV=
+      else
+        BIN_DV=
+        echo "Assert: No mysqld or mysqld-debug binary was found in ${BASEDIR}/bin"
+        echo 'Please check script contents/options and set the $BASEDIR variable correctly'
+        echo "The $BASEDIR variable is currently set to ${BASEDIR}"
+        echo "Terminating now."
+        exit 1
+      fi
     fi
   fi
   if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 2 -a $MODE -ne 3 -a $MODE -ne 4 -a $MODE -ne 5 -a $MODE -ne 6 -a $MODE -ne 7 -a $MODE -ne 8 -a $MODE -ne 9 ]; then
