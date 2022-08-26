@@ -1,0 +1,12 @@
+#!/bin/bash
+# Build both: builds dbg + opt in a screen session
+# Simply, from any cloned instance, do ~/bb. The screen session will automatically show
+# The 90 second delay offset (with opt buid first as it will be quicker and thus the offset is even larger),
+# is to avoid directory name conflicts (both are build using scripts/make_binary_distribution and at some point
+# both tarballs/directories have the same name. This is renamed to MD-... or MS-... etc. immediately in the build
+# script, so an actual conflict with 90 seconds offset (and opt first) is near-impossible
+
+RANDOM=$(date +%s%N | cut -b10-19)
+RND=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
+screen -admS bb_${RND} bash -c "echo 'Commencing builds...';${HOME}/mariadb-qa/build_mdpsms_opt.sh & sleep 90; ${HOME}/mariadb-qa/build_mdpsms_dbg.sh; exec bash"
+screen -d -r bb_${RND}

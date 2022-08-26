@@ -47,8 +47,8 @@ fi
 
 # Delete all likely 'Server has gone away' 250x due to 'RELEASE' sql trials
 # 25/01/2021 Temporarily disabled to see current results/status
-# 02/04/2021 Found that regularly there are crashes w/o coredumps, so implemented falllback_text_string.sh call in
-#            new_text_string.sh (where falllback_text_string.sh is the old text string script) for when there are
+# 02/04/2021 Found that regularly there are crashes w/o coredumps, so implemented fallback_text_string.sh call in
+#            new_text_string.sh (where fallback_text_string.sh is the old text string script) for when there are
 #            no coredumps but an error log is available. Evaluate performance over time, but this should be better.
 #            Note that previously, for issues without coredump, but with 'signal' present in the error log, they
 #            were marked as the '250x' and would result in 'Assert: no core...' by new_text_string.sh, and then
@@ -65,14 +65,14 @@ tail -n2 */log/master.err | grep -B1 'Shutdown complete' | grep -o '==> [0-9]\+'
 
 # Delete all 'TRIALS TO CHECK MANUALLY' trials which do not have an associated core file in their data directories
 # Temporarily disabled this too (ref 02/04/2021 comment above)
-#rm -f ~/results_list++.tmp
-#${SCRIPT_PWD}/pquery-results.sh | grep "TRIALS.*MANUALLY" | grep -o "reducers.*[^)]" | sed 's|reducers ||;s|,|\n|g' > ~/results_list++.tmp
-#COUNT=$(wc -l ~/results_list++.tmp 2>/dev/null | sed 's| .*||')
-#for RESULT in $(seq 1 ${COUNT}); do
-#  if [ $(ls ${RESULT}/data/*core* 2>/dev/null | wc -l) -lt 1 ]; then
-#    ${SCRIPT_PWD}/pquery-del-trial.sh ${RESULT}
-#  fi
-#done
-#rm -f ~/results_list++.tmp
+rm -f ~/results_list++.tmp
+${SCRIPT_PWD}/pquery-results.sh | grep "TRIALS.*MANUALLY" | grep -o "reducers.*[^)]" | sed 's|reducers ||;s|,|\n|g' > ~/results_list++.tmp
+COUNT=$(wc -l ~/results_list++.tmp 2>/dev/null | sed 's| .*||')
+for RESULT in $(seq 1 ${COUNT}); do
+  if [ $(ls ${RESULT}/data/*core* 2>/dev/null | wc -l) -lt 1 ]; then
+    ${SCRIPT_PWD}/pquery-del-trial.sh ${RESULT}
+  fi
+done
+rm -f ~/results_list++.tmp
 
 echo "Done!"
