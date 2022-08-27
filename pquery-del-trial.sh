@@ -115,6 +115,8 @@ if [ -r ${ERROR_LOG} ]; then
     fi
   fi
 else
-  echo "Warning: ${ERROR_LOG} not found, proceeding to delete all other trial files"
+  if [ "${2}" != "NO_WARNINGS" ]; then
+    echo "Warning: ${ERROR_LOG} not found, proceeding to delete all other trial files"
+  fi
   delete_trial
 fi

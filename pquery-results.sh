@@ -252,9 +252,11 @@ if [ $COUNT -gt 0 ]; then
 fi
 
 # Likely out of disk space trials
-OOS1=$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')
-OOS2=$(ls -s */data/*core* 2>/dev/null | grep --binary-files=text -o "^ *0 [^/]\+" 2>/dev/null | awk '{print $2}' | tr '\n' ' ')  # Cores with a file size of 0: good indication of OOS
-OOS="$(echo "${OOS1} ${OOS2}" | sed "s|  | |g")"
+OOS1="$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')"
+OOS2="$(ls -s */data/*core* 2>/dev/null | grep --binary-files=text -o "^ *0 [^/]\+" 2>/dev/null | awk '{print $2}' | tr '\n' ' ')"  # Cores with a file size of 0: good indication of OOS
+OOS3="$(ls --color=never -l */pquery.log 2>/dev/null | grep --binary-files=text '   0' | grep -o '[0-9]\+/pquery.log' | grep -o '[0-9]\+' | tr '\n' ' ')"  # pquery.log has a file size of 0: good indication of OOS
+
+OOS="$(echo "${OOS1} ${OOS2} ${OOS3}" | sed 's|  | |g;s| $||g')"
 if [ "$(echo "${OOS}" | sed "s| ||g")" != "" ]; then
   echo "** Likely out of disk space trials:"
   echo "$(echo "${OOS}" | tr ' ' '\n' | sort -nu |  tr '\n' ' ' | sed 's|$|\n|;s|^ \+||')"
@@ -334,8 +336,9 @@ if [ -r ./errorlogs.tmp ]; then
   while read ERROR_LOG; do
     if [ -r ${ERROR_LOG} ]; then
       # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
-      ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
-      ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"
+      DEDUP_FILTERING='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code' # 'Warning: Memory not freed' etc. are now handled by new_text_string.sh and will show up in the UniqueID list already, not much point including them here again (except here it shows for example the actual memory lost in bytes size, but it also really clogs the output/screen)
+      ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep --binary-files=text -vE "${DEDUP_FILTERING}")"
+      ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "${DEDUP_FILTERING}")"
       if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then
         if [ "${FIRST_OCCURENCE}" != "1" ]; then
           echo "** Significant/Major errors (if any)"

@@ -306,10 +306,20 @@ generate_reducer_script(){
       MODE=3
       USE_NEW_TEXT_STRING=1  # As 'Memory not freed' is supported as of 27/08/22 by new_text_string.sh, we can use it here
       SCAN_FOR_NEW_BUGS=1 
-    elif [[ "$TEXT" == "GOTERROR"* ]]; then  # Memory not freed bugs
+    elif [[ "$TEXT" == "GOT_ERROR"* ]]; then  # Memory not freed bugs
       # UniqueID's will be in the form of: 'GOTERROR|mysqld: Got error .126 .Index is corrupted.', for example
       MODE=3
       USE_NEW_TEXT_STRING=1  # As 'Got error' is supported as of 27/08/22 by new_text_string.sh, we can use it here
+      SCAN_FOR_NEW_BUGS=1 
+    elif [[ "$TEXT" == "MARKED_AS_CRASHED"* ]]; then  # Table crashed bugs
+      # UniqueID's will be in the form of: 'MARKED_AS_CRASHED|mysqld: Table .t. is marked as crashed and should be repaired', for example
+      MODE=3
+      USE_NEW_TEXT_STRING=1  # As 'Table is crashed' bugs are supported as of 27/08/22 by new_text_string.sh, we can use it here
+      SCAN_FOR_NEW_BUGS=1 
+    elif [[ "$TEXT" == "MARIADB_ERROR_CODE"* ]]; then  # Table crashed bugs
+      # UniqueID's will be in the form of: 'MARIADB_ERROR_CODE|MariaDB error code: 1969'
+      MODE=3
+      USE_NEW_TEXT_STRING=1  # As 'Table is crashed' bugs are supported as of 27/08/22 by new_text_string.sh, we can use it here
       SCAN_FOR_NEW_BUGS=1 
     elif [ "${QC}" == "1" ]; then  # Query Correctness (QC) bug
       USE_NEW_TEXT_STRING=0  # As here we're doing QC (Query correctness testing)
@@ -995,8 +1005,8 @@ for MATCHING_TRIAL in `grep -H "^MODE=[0-9]$" reducer* 2>/dev/null | awk '{print
       rm -f ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
       echo "  > Creating ${MATCHING_TRIAL}/AVOID_FORCE_KILL flag to ensure pquery-go-expert does not set FORCE_KILL=1 for this trial"
       touch ${MATCHING_TRIAL}/AVOID_FORCE_KILL
-    elif [ $(grep -m1 --binary-files=text "MEMORY_NOT_FREED" ${MATCHING_TRIAL}/MYBUG ${TRIAL}/node*/MYBUG 2>/dev/null | wc -l) -gt 0 ]; then
-      echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however a MEMORY_NOT_FREED issue was present"
+    elif [ $(grep -Em1 --binary-files=text "MEMORY_NOT_FREED|GOT_ERROR|MARKED_AS_CRASHED|MARIADB_ERROR_CODE" ${MATCHING_TRIAL}/MYBUG ${TRIAL}/node*/MYBUG 2>/dev/null | wc -l) -gt 0 ]; then
+      echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however another interesting issue was present"
       echo "  > Removing ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE marker so normal reduction & result presentation can happen"
       rm -f ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
       echo "  > Creating ${MATCHING_TRIAL}/AVOID_FORCE_KILL flag to ensure pquery-go-expert does not set FORCE_KILL=1 for this trial"

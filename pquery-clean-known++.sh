@@ -1,10 +1,16 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 # Updated by Roel Van de Paar, MariaDB
-# Note that running this script does not execute pquery-clean-known.sh - run that script seperately as well, before or after this one
+# Note that running this script does not execute pquery-clean-known.sh - run that script seperately as well, before or after this one (though in modern-day use of the framework this is all automated; run linkit then see ~/gomd to start runs, which includes all these already)
 
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 echo "Extra cleaning up of known issues++ (expert mode)..."
+
+# Script variables
+SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
+RND=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
+TMP_FILE_1="/tmp/results_list++_${RND}.tmp"
+TMP_FILE_2="/tmp/temp_pck++.sh_${RND}.tmp"
 
 # Delete all known bugs which do not correctly produce unique bug ID's due to stack smashing etc.
 # grep 'Assertion .state_ == s_exec || state_ == s_quitting. failed.' */log/master.err 2>/dev/null | sed 's|^\([0-9]\+\)/.*|\1|' | grep -o '[0-9]\+' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}  # MDEV-22148 # Fixed
@@ -12,7 +18,7 @@ echo "Extra cleaning up of known issues++ (expert mode)..."
 
 # Delete all likely out of disk space trials
 ${SCRIPT_PWD}/pquery-results.sh | grep -A1 "Likely out of disk space trials" | \
- tail -n1 | tr ' ' '\n' | grep -v "^[ \t]*$" | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
+ tail -n1 | tr ' ' '\n' | grep -v "^[ \t]*$" | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {} 'NO_WARNINGS'
 
 # Delete all trials in /data/ workdirs which ran into either of the following to-be-expected issues:
 # 2022-03-12 16:14:19 4 [ERROR] Got error 126 when reading table './test/t'
@@ -27,20 +33,20 @@ ${SCRIPT_PWD}/pquery-results.sh | grep -A1 "Likely out of disk space trials" | \
 # 3) (minor) The 'Unknown key id' has to come before (-B) these errors to be considered
 if [ -d "/data" ]; then
   cd /data
-  grep --binary-files=text -E -B1000 "Got error 126 when reading table|Index for table.*is corrupt; try to repair it" [0-9]*/[0-9]*/log/master.err | grep --binary-files=text "Unknown key id" | sed 's|/log/.*||' | sort -u | sed "s|^|cd |;s|/\([0-9]\+\)|; if grep -qi 'no core' ./\1/MYBUG; then ~/dt \1 1; fi; cd - >/dev/null 2>\&1|" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+  grep --binary-files=text -E -B1000 "Got error 126 when reading table|Index for table.*is corrupt; try to repair it" [0-9]*/[0-9]*/log/master.err | grep --binary-files=text "Unknown key id" | sed 's|/log/.*||' | sort -u | sed "s|^|cd |;s|/\([0-9]\+\)|; if grep -qi 'no core' ./\1/MYBUG; then ${SCRIPT_PWD}/pquery-del-trial.sh \1 1; fi; cd - >/dev/null 2>\&1|" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
   cd - >/dev/null 2>&1
 fi
 
 # Delete all trials which have "Access denied for user 'root'@'localhost'" on the last few lines of the error log and that have no core file
 if [ -r ${HOME}/pr ]; then
   # English
-  rm -f ./temp_pck++.sh
-  ${HOME}/pr | grep "no core file found" | grep -o "reducers [0-9].*)" | sed 's|[^0-9]| |g;s|^ \+||;s| \+$||;s| |\n|g' | xargs -I{} echo "if [[ \"\$(tail -n3 {}/log/master.err | grep -o \"Access denied for user 'root'@'localhost'\")\" == \"Access denied for user 'root'@'localhost'\" ]]; then ~/dt {}; fi" > ./temp_pck++.sh && chmod +x ./temp_pck++.sh && ./temp_pck++.sh
+  rm -f ${TMP_FILE_2}
+  ${HOME}/pr | grep "no core file found" | grep -o "reducers [0-9].*)" | sed 's|[^0-9]| |g;s|^ \+||;s| \+$||;s| |\n|g' | xargs -I{} echo "if [[ \"\$(tail -n3 {}/log/master.err | grep -o \"Access denied for user 'root'@'localhost'\")\" == \"Access denied for user 'root'@'localhost'\" ]]; then ${SCRIPT_PWD}/pquery-del-trial.sh {}; fi" > ${TMP_FILE_2} && chmod +x ${TMP_FILE_2} && ${TMP_FILE_2}
   # Russian
-  rm -f ./temp_pck++.sh
-  ${HOME}/pr | grep "no core file found" | grep -o "reducers [0-9].*)" | sed 's|[^0-9]| |g;s|^ \+||;s| \+$||;s| |\n|g' | xargs -I{} echo "if [[ \"\$(tail -n3 {}/log/master.err | grep -o \"Доступ закрыт для пользователя 'root'@'localhost'\")\" == \"Доступ закрыт для пользователя 'root'@'localhost'\" ]]; then ~/dt {}; fi" > ./temp_pck++.sh && chmod +x ./temp_pck++.sh && ./temp_pck++.sh
+  rm -f ${TMP_FILE_2}
+  ${HOME}/pr | grep "no core file found" | grep -o "reducers [0-9].*)" | sed 's|[^0-9]| |g;s|^ \+||;s| \+$||;s| |\n|g' | xargs -I{} echo "if [[ \"\$(tail -n3 {}/log/master.err | grep -o \"Доступ закрыт для пользователя 'root'@'localhost'\")\" == \"Доступ закрыт для пользователя 'root'@'localhost'\" ]]; then ${SCRIPT_PWD}/pquery-del-trial.sh {}; fi" > ${TMP_FILE_2} && chmod +x ${TMP_FILE_2} && ${TMP_FILE_2}
   # Cleanup
-  rm -f ./temp_pck++.sh
+  rm -f ${TMP_FILE_2}
 else
   echo "Warning: ${HOME}/pr not found, run ~/mariadb-qa/linkit please. This may have resulted in a small drop in functionality of this script (less than 10%)."
 fi
@@ -65,14 +71,15 @@ tail -n2 */log/master.err | grep -B1 'Shutdown complete' | grep -o '==> [0-9]\+'
 
 # Delete all 'TRIALS TO CHECK MANUALLY' trials which do not have an associated core file in their data directories
 # Temporarily disabled this too (ref 02/04/2021 comment above)
-rm -f ~/results_list++.tmp
-${SCRIPT_PWD}/pquery-results.sh | grep "TRIALS.*MANUALLY" | grep -o "reducers.*[^)]" | sed 's|reducers ||;s|,|\n|g' > ~/results_list++.tmp
-COUNT=$(wc -l ~/results_list++.tmp 2>/dev/null | sed 's| .*||')
+# Re-enabled 27/8/22 - tempory test
+rm -f ${TMP_FILE_1}
+${SCRIPT_PWD}/pquery-results.sh | grep "TRIALS.*MANUALLY" | grep -o "reducers.*[^)]" | sed 's|reducers ||;s|,|\n|g' > ${TMP_FILE_1}
+COUNT=$(wc -l ${TMP_FILE_1} 2>/dev/null | sed 's| .*||')
 for RESULT in $(seq 1 ${COUNT}); do
   if [ $(ls ${RESULT}/data/*core* 2>/dev/null | wc -l) -lt 1 ]; then
     ${SCRIPT_PWD}/pquery-del-trial.sh ${RESULT}
   fi
 done
-rm -f ~/results_list++.tmp
+rm -f ${TMP_FILE_1}
 
 echo "Done!"

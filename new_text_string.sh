@@ -108,7 +108,7 @@ if [ ! -r "${ERROR_LOG}" ]; then
   exit 1
 fi
 
-check_mem_not_freed_or_got_error(){
+find_other_possible_issue_strings(){
   # If all else failed, check if there was a memory not freed issue at end of error log, or if there was a 'got error' issue 
   MEMNOTFREED="$(grep -i 'Warning: Memory not freed' "${ERROR_LOG}" | head -n1 | tr -d '\n')"
   if [ ! -z "${MEMNOTFREED}" ]; then
@@ -118,11 +118,24 @@ check_mem_not_freed_or_got_error(){
   fi
   GOTERROR="$(grep -io 'mysqld: Got error[^"]\+"[^"]\+"' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"|.|g' | sed "s|'|.|g" )"
   if [ ! -z "${GOTERROR}" ]; then
-    TEXT="GOTERROR|${GOTERROR}"
+    TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
   fi
-  # RV-27/08/22 If neither issue was found present, then the script will continue and such continuations will always result in exit 1 as check_mem_not_freed_or_got_error is a final attempt at returning a useful string if all other checks have already failed. It provides for one of the exit_code!=0 by mariadbd/mysyqld, previously reported as 'no core found' and similar, now covered.
+  MARKEDASCRASHED="$(grep -io 'mysqld: Table.*is marked as crashed and should be repaired' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"|.|g' | sed "s|'|.|g" )"
+  if [ ! -z "${MARKEDASCRASHED}" ]; then
+    TEXT="MARKED_AS_CRASHED|${MARKEDASCRASHED}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  MDERRORCODE="$(grep -io 'MariaDB error code: [0-9]\+' "${ERROR_LOG}" | head -n1 | tr -d '\n')"
+  if [ ! -z "${MDERRORCODE}" ]; then
+    TEXT="MARIADB_ERROR_CODE|${MDERRORCODE}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  MEMNOTFREED=;GOTERROR=;MARKEDASCRASHED=;MDERRORCODE=;
+  # RV-27/08/22 If none of these issues was found present, then the script will continue and such continuations will always result in exit 1 as find_other_possible_issue_strings is a final attempt at returning a useful string if all other checks have already failed. It provides for several of the exit_code!=0 by mariadbd/mysyqld, previously reported as 'no core found' and similar, yet now covered.
 }
 
 # Check first if this is an ASAN/UBSAN/TSAN issue
@@ -155,8 +168,8 @@ if [ -z "${LATEST_CORE}" ]; then
         TEXT=
       fi
       if [ -z "${TEXT}" ]; then
-        check_mem_not_freed_or_got_error
-        # If check_mem_not_freed_or_got_error did not terminate the script with exit 0, it failed
+        find_other_possible_issue_strings
+        # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
         echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
         exit 1
       else
@@ -167,8 +180,8 @@ if [ -z "${LATEST_CORE}" ]; then
       if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
         1>&2 echo "${SHOWTEXT}"
       fi
-      check_mem_not_freed_or_got_error
-      # If check_mem_not_freed_or_got_error did not terminate the script with exit 0, it failed
+      find_other_possible_issue_strings
+      # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
       echo "Assert: no core file found in */*core*, and no 'signal' found in the error log, so fallback_text_string.sh was not attempted"
       exit 1
     fi
@@ -176,8 +189,8 @@ if [ -z "${LATEST_CORE}" ]; then
     if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
       1>&2 echo "${SHOWTEXT}"
     fi
-    check_mem_not_freed_or_got_error
-    # If check_mem_not_freed_or_got_error did not terminate the script with exit 0, it failed
+    find_other_possible_issue_strings
+    # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
     echo "Assert: no core file found in */*core*, and fallback_text_string.sh was not found, or is not readable"
     exit 1
   fi
