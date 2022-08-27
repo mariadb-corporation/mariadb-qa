@@ -329,6 +329,9 @@ TS_VARIABILITY_SLEEP=1
 # Disable history substitution and avoid  -bash: !: event not found  like errors
 set +H
 
+# Provision ABORT_ACTIVE
+ABORT_ACTIVE=0
+
 # Random entropy init
 RANDOM=$(date +%s%N | cut -b10-19)
 
@@ -580,7 +583,9 @@ fi
 echo_out(){
   echo "$(date +'%F %T') $1"
   if [ -r $WORKD/reducer.log ]; then echo "$(date +'%F %T') $1" >> $WORKD/reducer.log; fi
-  if [ ! -r $INPUTFILE ]; then abort; fi  # The inputfile was removed (likely cleanup)
+  if [ "${ABORT_ACTIVE}" != "1" ]; then
+    if [ ! -r $INPUTFILE ]; then abort; fi  # The inputfile was removed (likely cleanup
+  fi
 }
 
 echo_out_overwrite(){
@@ -599,6 +604,7 @@ save_rr_trace(){
 }
 
 abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE anymore
+  ABORT_ACTIVE=1
   if [ -r $INPUTFILE ]; then
     echo_out "[Abort] CTRL+C Was pressed. Dumping variable stack"
   else

@@ -9,6 +9,9 @@
 sleep 3  # Do not remove, sometimes cores are slow to write!
 
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" ]; then  # Provision for ~/t symlink
+  SCRIPT_PWD="${HOME}/mariadb-qa"
+fi
 FRAMESONLY=0
 SHOWINFO=0
 MYSQLD=
@@ -100,6 +103,28 @@ if [ -z "${ERROR_LOG}" ]; then
   exit 1
 fi
 
+if [ ! -r "${ERROR_LOG}" ]; then
+  echo "Assert: ${ERROR_LOG} set but not readable (this should not happen!)"
+  exit 1
+fi
+
+check_mem_not_freed_or_got_error(){
+  # If all else failed, check if there was a memory not freed issue at end of error log, or if there was a 'got error' issue 
+  MEMNOTFREED="$(grep -i 'Warning: Memory not freed' "${ERROR_LOG}" | head -n1 | tr -d '\n')"
+  if [ ! -z "${MEMNOTFREED}" ]; then
+    TEXT="MEMORY_NOT_FREED|${MEMNOTFREED}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  GOTERROR="$(grep -io 'mysqld: Got error[^"]\+"[^"]\+"' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"|.|g' | sed "s|'|.|g" )"
+  if [ ! -z "${GOTERROR}" ]; then
+    TEXT="GOTERROR|${GOTERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  # RV-27/08/22 If neither issue was found present, then the script will continue and such continuations will always result in exit 1 as check_mem_not_freed_or_got_error is a final attempt at returning a useful string if all other checks have already failed. It provides for one of the exit_code!=0 by mariadbd/mysyqld, previously reported as 'no core found' and similar, now covered.
+}
+
 # Check first if this is an ASAN/UBSAN/TSAN issue
 ASAN_OR_UBSAN_OR_TSAN_BUG=0
 if [ $(grep -m1 --binary-files=text "=ERROR:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
@@ -126,7 +151,12 @@ if [ -z "${LATEST_CORE}" ]; then
       if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
         1>&2 echo "${SHOWTEXT}"
       fi
+      if [[ "${TEXT}" == *"No relevant strings were found"* ]]; then
+        TEXT=
+      fi
       if [ -z "${TEXT}" ]; then
+        check_mem_not_freed_or_got_error
+        # If check_mem_not_freed_or_got_error did not terminate the script with exit 0, it failed
         echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
         exit 1
       else
@@ -137,6 +167,8 @@ if [ -z "${LATEST_CORE}" ]; then
       if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
         1>&2 echo "${SHOWTEXT}"
       fi
+      check_mem_not_freed_or_got_error
+      # If check_mem_not_freed_or_got_error did not terminate the script with exit 0, it failed
       echo "Assert: no core file found in */*core*, and no 'signal' found in the error log, so fallback_text_string.sh was not attempted"
       exit 1
     fi
@@ -144,6 +176,8 @@ if [ -z "${LATEST_CORE}" ]; then
     if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
       1>&2 echo "${SHOWTEXT}"
     fi
+    check_mem_not_freed_or_got_error
+    # If check_mem_not_freed_or_got_error did not terminate the script with exit 0, it failed
     echo "Assert: no core file found in */*core*, and fallback_text_string.sh was not found, or is not readable"
     exit 1
   fi

@@ -16,13 +16,13 @@ if [ "$ERROR_LOG" == "" ]; then
   if [ -f ./log/master.err -a -r ./log/master.err ]; then
     ERROR_LOG=./log/master.err
   else
-    echo "$0 failed to extract string from an error log, as no error log file name was passed to this script"
+    echo "Assert: no error log file name was passed to fallback_text_string.sh"
     exit 1
   fi
 fi
 
 if [ ! -f ${ERROR_LOG} -o ! -a "${ERROR_LOG}" ]; then
-  echo "$0 failed to extract string from an error log, as ${ERROR_LOG} does not exist or could not be read by this script"
+  echo "Assert: ${ERROR_LOG} does not exist or could not be read by fallback_text_string.sh"
   exit 1
 fi
 
@@ -140,4 +140,10 @@ STRING=$(echo ${STRING} | sed "s| thread [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9
 # Filter out accidental path name insertions
 STRING=$(echo "${STRING}" | sed "s|/sda/[PM]S[0-9]\+[^ ]\+/bin/mysqld||g")
 
+if [ -z "${STRING}" ]; then
+  STRING="No relevant strings were found in ${ERROR_LOG} by fallback_text_string.sh"
+fi
+
+# Ensure that fallback_text_string.sh string use is clearly indicated by a 'FALLBACK|' marker
+# TODO: this marker can be used further in automation (turn off new_text_string.sh use)
 echo "FALLBACK|${STRING}"

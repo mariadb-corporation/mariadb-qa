@@ -17,6 +17,9 @@ SCAN_FOR_NEW_BUGS=1    # If set to 1, all generated reducders will scan for new 
 
 # Internal variables
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" ]; then  # Provision for symlinks (if needed) 
+  SCRIPT_PWD="${HOME}/mariadb-qa"
+fi
 WORKD_PWD=$PWD
 REDUCER="${SCRIPT_PWD}/reducer.sh"
 ASAN_OR_UBSAN_OR_TSAN_BUG=0
@@ -54,17 +57,12 @@ check_if_asan_or_ubsan_or_tsan(){
 if [ ! -r ${SCRIPT_PWD}/new_text_string.sh ]; then
   echo "Assert: ${SCRIPT_PWD}/new_text_string.sh not readable by this script!"
   exit 1
-fi
-if [ ${SCAN_FOR_NEW_BUGS} -eq 1 -a ! -r ${SCRIPT_PWD}/known_bugs.strings ]; then
+elif [ ! -r ${SCRIPT_PWD}/reducer.sh ]; then
+  echo "Assert: ${SCRIPT_PWD}/reducer.sh not readable by this script!"
+  exit 1
+elif [ ${SCAN_FOR_NEW_BUGS} -eq 1 -a ! -r ${SCRIPT_PWD}/known_bugs.strings ]; then
   echo "Assert: SCAN_FOR_NEW_BUGS=1, yet ${SCRIPT_PWD}/known_bugs.strings was not found?"
   exit 1
-fi
-
-# Check if this is a mdg run
-if [ "$(grep 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
-  export MDG=1
-else
-  export MDG=0
 fi
 
 # Check if Data at rest encryption was enabled for the run
@@ -80,7 +78,16 @@ if [ "$(grep 'RR Tracing enabled:' ./pquery-run.log 2> /dev/null | sed 's|^.*RR 
 else
   export RR_TRACING=0
 fi
-NR_OF_NODES=$(grep 'Number of Galera Cluster nodes:' ./pquery-run.log 2> /dev/null | sed 's|^.*Number of Galera Cluster nodes[: \t]*||')
+
+# Check if this is a MDG run
+if [ "$(grep 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
+  export MDG=1
+  NR_OF_NODES=$(grep 'Number of Galera Cluster nodes:' ./pquery-run.log 2> /dev/null | sed 's|^.*Number of Galera Cluster nodes[: \t]*||')
+else
+  export MDG=0
+  NR_OF_NODES=0
+fi
+
 # Check if this is a group replication run
 if [ "$(grep 'Group Replication Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*Group Replication Mode[: \t]*||')" == "TRUE" ]; then
   GRP_RPL=1
@@ -101,12 +108,6 @@ if [ $(ls */*.out */*.sql 2>/dev/null | egrep --binary-files=text -oi "innodb|ro
   if [ "$1" != "noqc" ]; then  # Even though query correctness trials were found, process this run as a crash/assert run only
     QC=1
   fi
-fi
-
-# Variable checks
-if [ ! -r ${REDUCER} ]; then
-  echo "Assert: this script could not read reducer.sh at ${REDUCER} - please set REDUCER variable inside the script correctly."
-  exit 1
 fi
 
 # Current location checks
@@ -159,7 +160,7 @@ check_if_startup_failure(){  # This function may not be 100% compatible with mul
     echo "  > This trial had a mysqld startup failure, the trial's reducer will be set to reduce as such (using REDUCE_STARTUP_ISSUES=1)"
     STARTUP_ISSUE=1
   else
-    echo "  > This trial is not marked by a mysqld startup failure"
+    echo "  > This trial did not have a mysqld startup failure"
   fi
 }
 
@@ -290,23 +291,33 @@ generate_reducer_script(){
     TEXT_CLEANUP="s|ZERO0|ZERO0|"  # A zero-effect change dummy (de-duplicates #VARMOD# code below)
     TEXT_STRING1="s|ZERO0|ZERO0|"
     TEXT_STRING2="s|ZERO0|ZERO0|"
-  else  # Bug-specific TEXT string found, use MODE=3 to let reducer.sh reduce for that specific string
-    if [ ${ASAN_OR_UBSAN_OR_TSAN_BUG} -eq 1 ]; then
-      USE_NEW_TEXT_STRING=1  # As the string is already set based on the ASAN '=ERROR:' or UBSAN 'runtime error:' seen in errorlog
-      SCAN_FOR_NEW_BUGS=1  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
+  else  # Bug-specific TEXT string found, use relevant MODE in reducer.sh to let it reduce for that specific string
+    if [ ${ASAN_OR_UBSAN_OR_TSAN_BUG} -eq 1 ]; then  # ASAN, UBSAN or TSAN bug
       MODE=3
-    elif [ ${VALGRIND_CHECK} -eq 1 ]; then
+      USE_NEW_TEXT_STRING=1  # As the string is already set based on the ASAN '=ERROR:' or UBSAN 'runtime error:' seen in errorlog
+      SCAN_FOR_NEW_BUGS=1
+    elif [ ${VALGRIND_CHECK} -eq 1 ]; then  # Valgrind bug
+      MODE=1
       USE_NEW_TEXT_STRING=0  # As here new_text_string.sh will not be used, but valgrind_string.sh
       SCAN_FOR_NEW_BUGS=0  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
-      MODE=1
-    else
-      if [ ${QC} -eq 0 ]; then
-        MODE=3
-      else
-        USE_NEW_TEXT_STRING=0  # As here we're doing QC (Query correctness testing), not crash testing
-        SCAN_FOR_NEW_BUGS=0  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
-        MODE=2
-      fi
+    elif [[ "$TEXT" == "MEMORY_NOT_FREED"* ]]; then  # Memory not freed bugs
+      # UniqueID's will be in the form of: 'MEMORY_NOT_FREED|Warning: Memory not freed: 280', for example
+      TEXT="$(echo "${TEXT}" | sed 's|: [0-9]\+||')"  # Remove # of bytes as often this significantly increases reproducibility
+      MODE=3
+      USE_NEW_TEXT_STRING=1  # As 'Memory not freed' is supported as of 27/08/22 by new_text_string.sh, we can use it here
+      SCAN_FOR_NEW_BUGS=1 
+    elif [[ "$TEXT" == "GOTERROR"* ]]; then  # Memory not freed bugs
+      # UniqueID's will be in the form of: 'GOTERROR|mysqld: Got error .126 .Index is corrupted.', for example
+      MODE=3
+      USE_NEW_TEXT_STRING=1  # As 'Got error' is supported as of 27/08/22 by new_text_string.sh, we can use it here
+      SCAN_FOR_NEW_BUGS=1 
+    elif [ "${QC}" == "1" ]; then  # Query Correctness (QC) bug
+      USE_NEW_TEXT_STRING=0  # As here we're doing QC (Query correctness testing)
+      SCAN_FOR_NEW_BUGS=0  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
+    else  # Standard bug, standard UniqueID
+      MODE=3
+      USE_NEW_TEXT_STRING=1
+      SCAN_FOR_NEW_BUGS=1 
     fi
     TEXT_CLEANUP="0,/^[ \t]*TEXT[ \t]*=.*$/s|^[ \t]*TEXT[ \t]*=.*$|#TEXT=<set_below_in_machine_variables_section>|"
     TEXT_STRING1="0,/#VARMOD#/s:#VARMOD#:# IMPORTANT NOTE; Leave the 3 spaces before TEXT on the next line; pquery-results.sh uses these\n#VARMOD#:"
@@ -725,13 +736,19 @@ if [ ${QC} -eq 0 ]; then
           cd - >/dev/null || exit 1
         fi
         TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # TODO: this change needs further testing for cluster/GR. Also, it is likely someting was missed for this in the updated pquery-run.sh: the need to generate a MYBUG file for each node!   # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.
+        if [[ "${TEXT}" == "Assert:"* ]]; then  # Try to re-generate MYBUG in case something went amiss during pquery-run.sh (i.e. when 'Assert:' is seen in MYBUG)
+          cd ./${TRIAL}/node${SUBDIR} || exit 1
+          ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+          cd - >/dev/null || exit 1
+        fi
+        TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # Ref TODO above
         check_if_asan_or_ubsan_or_tsan ${SUBDIR}
         if [ "${MULTI}" == "1" ]; then
            if [ -s ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/${TRIAL}.sql.failing ];then
              auto_interleave_failing_sql ${INPUTFILE}
            fi
         fi
-        if [[ "${TEXT}" != "Assert: no core file found"* ]]; then ## TODO: Check if this always works correctly (i.e. are cores present whereas it says there are no core files found)
+        if [[ "${TEXT}" != "Assert: no core file found"* ]]; then  ## TODO: Check if this always works correctly (i.e. are cores present whereas it says there are no core files found)
           echo "* TEXT variable set to: '${TEXT}'"
           if [ `cat ${INPUTFILE} | wc -l` -ne 0 ]; then
             if [ "$GALERA_CORE_LOC" != "" ]; then
@@ -870,6 +887,12 @@ if [ ${QC} -eq 0 ]; then
             cd - >/dev/null || exit 1
           fi
           TEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.
+          if [[ "${TEXT}" == "Assert:"* ]]; then  # Try to re-generate MYBUG in case something went amiss during pquery-run.sh (i.e. when 'Assert:' is seen in MYBUG)
+            cd ./${TRIAL} || exit 1
+            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+            cd - >/dev/null || exit 1
+          fi
+          TEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # As above
           check_if_asan_or_ubsan_or_tsan
           if [ "$(echo "${TEXT}" | wc -l)" != "1" ]; then
             echo "Assert: TEXT does not exactly contain one line only! TEXT seen (with newlines removed): '$(echo "${TEXT}" | tr '\n' ' ')'"
@@ -961,25 +984,33 @@ fi
 # Process shutdown timeout issues correctly
 # * Checking for a coredump ensures that there was no coredump found in the trial's directory, which would mean that this is not a shutdown issue
 # * The check for ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ensures that the issue was a shutdown issue
+# * Also check that this is not a MEMORY_NOT_FREED issue
 # If these 3 all apply, it is safe to change the MODE to =0 and assume that this is a shutdown issue only
+echo '========== Processing SHUTDOWN_TIMEOUT_ISSUE trials (if any)'
 for MATCHING_TRIAL in `grep -H "^MODE=[0-9]$" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un` ; do
   if [ -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]; then  # Only deal with shutdown timeout issues!
     if [ $(grep -m1 --binary-files=text "=ERROR:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 -o $(grep -m1 --binary-files=text "runtime error:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 ]; then  # ASAN or UBSAN error, do not set MODE=0
-      echo "* Trial found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however an ASAN or UBSAN issue was present"
+      echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however an ASAN or UBSAN issue was present"
+      echo "  > Removing ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE marker so normal reduction & result presentation can happen"
+      rm -f ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+      echo "  > Creating ${MATCHING_TRIAL}/AVOID_FORCE_KILL flag to ensure pquery-go-expert does not set FORCE_KILL=1 for this trial"
+      touch ${MATCHING_TRIAL}/AVOID_FORCE_KILL
+    elif [ $(grep -m1 --binary-files=text "MEMORY_NOT_FREED" ${MATCHING_TRIAL}/MYBUG ${TRIAL}/node*/MYBUG 2>/dev/null | wc -l) -gt 0 ]; then
+      echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however a MEMORY_NOT_FREED issue was present"
       echo "  > Removing ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE marker so normal reduction & result presentation can happen"
       rm -f ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
       echo "  > Creating ${MATCHING_TRIAL}/AVOID_FORCE_KILL flag to ensure pquery-go-expert does not set FORCE_KILL=1 for this trial"
       touch ${MATCHING_TRIAL}/AVOID_FORCE_KILL
     elif [ $(ls -1 ./${MATCHING_TRIAL}/data/*core* 2>&1 | grep -v "No such file" | wc -l) -eq 0 ]; then
-      echo "* Trial found to be a SHUTDOWN_TIMEOUT_ISSUE trial with no core dump present"
-      echo "  > Setting MODE=0 and TEXT='', and turning off USE_NEW_TEXT_STRING use"
+      echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial with no core dump nor memory free issue present"
+      echo "  > Setting MODE=0, TEXT='', and turning off USE_NEW_TEXT_STRING use"
       sed -i "s|^MODE=[1-9]|MODE=0|" reducer${MATCHING_TRIAL}.sh
       sed -i "s|^   TEXT=.*|TEXT=''|" reducer${MATCHING_TRIAL}.sh
       sed -i "s|^USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|" reducer${MATCHING_TRIAL}.sh
       sed -i "s|^SCAN_FOR_NEW_BUGS=1|SCAN_FOR_NEW_BUGS=0|" reducer${MATCHING_TRIAL}.sh  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
     else
       # There was a coredump found in this trial's directory. Thus, this issue should be handled as a non-shutdown problem (i.e. MODE=3 or MODE=4), even though the issue happens on shutdown. Thus: delete the SHUTDOWN_TIMEOUT_ISSUE flag. This basically makes the issue a normal MODE=3 or MODE=4 trial. Simply deleting the flag ensures that it will be listed in the normal crash output results of pquery-results.sh, and not as a 'mysqld Shutdown Issues' (which are joined together and thus would cause many such issues to be auto-deleted when pquery-eliminate-dups runs!). Also create the AVOID_FORCE_KILL flag to ensure reducer uses mysqladmin shutdown which will show the issue in shutdown instead of quick-reducing using FORCE_KILL=1 and thereby missing the issue-on-shutdown
-      echo "* Trial found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however a core dump was present"
+      echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however a core dump was present"
       echo "  > Removing ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE marker so normal reduction & result presentation can happen"
       rm -f ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
       echo "  > Creating ${MATCHING_TRIAL}/AVOID_FORCE_KILL flag to ensure pquery-go-expert does not set FORCE_KILL=1 for this trial"
