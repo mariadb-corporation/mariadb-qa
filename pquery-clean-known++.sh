@@ -66,8 +66,9 @@ ${SCRIPT_PWD}/pquery-results.sh | grep -A1 "'Server has gone away' 250x" | tail 
 # Delete all Handlerton. error == 0 trials  # Temp re-enabled in MariaDB to test (12/9/20)
 # ${SCRIPT_PWD}/pquery-results.sh | grep "Handlerton. error == 0" | grep -o "reducers.*[^)]" | sed 's|reducers ||;s|,|\n|g' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
 
-# Delete all trials which have a mysqld that terminated normally. As it uses 'tail -n2' from the outset, this will avoid trials with multiple startups (if any in the future, i.e. the initial init startup should already be seperate) from incorrectly being deleted.
-tail -n2 */log/master.err | grep -B1 'Shutdown complete' | grep -o '==> [0-9]\+' | sed 's|.* ||' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {}
+# Delete all trials which have a mysqld that terminated normally. As it uses 'tail -n2' from the outset, this will avoid trials with multiple startups (if any in the future, i.e. the initial init startup should already be seperate) from incorrectly being deleted. Updated 29/08/22 to ensure that trials which do have a core dump in spite of a seemingly normal shutdown are not deleted.
+# 29/08/2021 Is this cleanup a bit too wide? - Even if core containing trials are excluded (as well as 'not freed' trials as they have 'not freed' in the last two lines rathar than 'Shutdown complete'), there are still other possible errors for example 'mysqld got error...' etc. Disabled FTM.
+# tail -n2 */log/master.err | grep -B1 'Shutdown complete' | grep -o '==> [0-9]\+' | sed 's|.* ||' | xargs -I{} echo 'if [ "$(ls {}/data/core* 2>/dev/null | wc -l)" -eq 0 ]; then ${SCRIPT_PWD}/pquery-del-trial.sh {}; fi' | xargs -I{} bash -c "{}"
 
 # Delete all 'TRIALS TO CHECK MANUALLY' trials which do not have an associated core file in their data directories
 # Temporarily disabled this too (ref 02/04/2021 comment above)
@@ -76,8 +77,9 @@ rm -f ${TMP_FILE_1}
 ${SCRIPT_PWD}/pquery-results.sh | grep "TRIALS.*MANUALLY" | grep -o "reducers.*[^)]" | sed 's|reducers ||;s|,|\n|g' > ${TMP_FILE_1}
 COUNT=$(wc -l ${TMP_FILE_1} 2>/dev/null | sed 's| .*||')
 for RESULT in $(seq 1 ${COUNT}); do
+  TRIAL="$(cat ${TMP_FILE_1} | head -n${RESULT} | tail -n1)"
   if [ $(ls ${RESULT}/data/*core* 2>/dev/null | wc -l) -lt 1 ]; then
-    ${SCRIPT_PWD}/pquery-del-trial.sh ${RESULT}
+    ${SCRIPT_PWD}/pquery-del-trial.sh ${TRIAL}
   fi
 done
 rm -f ${TMP_FILE_1}
