@@ -1,5 +1,23 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Otherwise, just follow the existing formatting.
 
+##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
+MARIADB_ERROR_CODE|MariaDB error code: 1017
+MARIADB_ERROR_CODE|MariaDB error code: 1054
+MARIADB_ERROR_CODE|MariaDB error code: 1064
+MARIADB_ERROR_CODE|MariaDB error code: 1146
+MARIADB_ERROR_CODE|MariaDB error code: 1193
+MARIADB_ERROR_CODE|MariaDB error code: 1231
+MARIADB_ERROR_CODE|MariaDB error code: 1237
+MARIADB_ERROR_CODE|MariaDB error code: 1399
+MARIADB_ERROR_CODE|MariaDB error code: 1593
+MARIADB_ERROR_CODE|MariaDB error code: 1677
+MARIADB_ERROR_CODE|MariaDB error code: 1792
+MARIADB_ERROR_CODE|MariaDB error code: 1944
+MARIADB_ERROR_CODE|MariaDB error code: 2003
+MARIADB_ERROR_CODE|MariaDB error code: 2003
+MARIADB_ERROR_CODE|MariaDB error code: 2005
+GOT_ERROR|Got error 192|Table encrypted but decryption failed  # https://jira.mariadb.org/browse/MDEV-26258
+
 ##### MDEV-16329 TESTING TEMPORARY #####
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|start_thread|clone  ## INSERT DELAYED not supported on Spider (fixed already in trunk)
 
@@ -176,6 +194,7 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|close_thread_tables|mysql_execute_command|mysql_parse ## MDEV-28913
 SIGSEGV|Item::save_decimal_in_field|Item::save_in_field|save_window_function_values|compute_window_func                                                                        ## MDEV-28903
 SIGSEGV|optimize_keyuse|JOIN::add_keyuses_for_splitting|st_join_table::add_keyuses_for_splitting|make_join_statistics                                                          ## MDEV-28901
+SIGSEGV|optimize_keyuse|JOIN::add_keyuses_for_splitting|make_join_statistics|JOIN::optimize_inner                                                                              ## MDEV-28901
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MDEV-25187
 SIGSEGV|Item_func_not::fix_fields|st_select_lex::pushdown_from_having_into_where|JOIN::optimize_inner|JOIN::optimize                                                           ## MDEV-19520
 !check_foreigns|SIGABRT|trx_t::bulk_insert_apply|ha_innobase::start_stmt|check_lock_and_start_stmt|lock_tables                                                                 ## MDEV-28865

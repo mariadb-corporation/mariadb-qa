@@ -109,20 +109,23 @@ if [ ! -r "${ERROR_LOG}" ]; then
 fi
 
 find_other_possible_issue_strings(){
-  # If all else failed, check if there was a memory not freed issue at end of error log, or if there was a 'got error' issue 
-  MEMNOTFREED="$(grep -i 'Warning: Memory not freed' "${ERROR_LOG}" | head -n1 | tr -d '\n')"
+  # If all else failed, check if there are other interesting issues
+  # TODO, over time, it may make sense to rotate the issues below in to a different order. The benefit of this is increased
+  # coverage of issues which may appear together in a single trial, thereby maskign the other etc.
+  # sed 's|: [0-9]\+||': Remove the number of of bytes, as often this significantly increases reproducibility of the SQL
+  MEMNOTFREED="$(grep -i 'Warning: Memory not freed' "${ERROR_LOG}" | head -n1 | sed 's|: [0-9]\+||' | tr -d '\n')"
   if [ ! -z "${MEMNOTFREED}" ]; then
     TEXT="MEMORY_NOT_FREED|${MEMNOTFREED}"
     echo "${TEXT}"
     exit 0
   fi
-  GOTERROR="$(grep -io 'mysqld: Got error[^"]\+"[^"]\+"' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"|.|g' | sed "s|'|.|g" )"
+  GOTERROR="$(grep -io 'mysqld: Got error[^"]\+"[^"]\+"' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
   if [ ! -z "${GOTERROR}" ]; then
     TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
   fi
-  MARKEDASCRASHED="$(grep -io 'mysqld: Table.*is marked as crashed and should be repaired' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"|.|g' | sed "s|'|.|g" )"
+  MARKEDASCRASHED="$(grep -io 'mysqld: Table.*is marked as crashed and should be repaired' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" )"
   if [ ! -z "${MARKEDASCRASHED}" ]; then
     TEXT="MARKED_AS_CRASHED|${MARKEDASCRASHED}"
     echo "${TEXT}"

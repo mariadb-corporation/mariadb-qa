@@ -301,8 +301,7 @@ generate_reducer_script(){
       USE_NEW_TEXT_STRING=0  # As here new_text_string.sh will not be used, but valgrind_string.sh
       SCAN_FOR_NEW_BUGS=0  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
     elif [[ "$TEXT" == "MEMORY_NOT_FREED"* ]]; then  # Memory not freed bugs
-      # UniqueID's will be in the form of: 'MEMORY_NOT_FREED|Warning: Memory not freed: 280', for example
-      TEXT="$(echo "${TEXT}" | sed 's|: [0-9]\+||')"  # Remove # of bytes as often this significantly increases reproducibility
+      # UniqueID's will be: 'MEMORY_NOT_FREED|Warning: Memory not freed'
       MODE=3
       USE_NEW_TEXT_STRING=1  # As 'Memory not freed' is supported as of 27/08/22 by new_text_string.sh, we can use it here
       SCAN_FOR_NEW_BUGS=1 
