@@ -44,14 +44,14 @@ for ((i=0;i<10;i++)); do
 done
 # Setup a default/usable fuzzing_root if does not exist yet
 if [ ! -d /home/${USER}/fuzzing/fuzzing_root/init_lib ]; then
-  cp -r /home/${USER}/squirrel/MariaDB/docker/init_lib /home/${USER}/fuzzing/fuzzing_root/
-  cp -r /home/${USER}/squirrel/MariaDB/docker/input /home/${USER}/fuzzing/fuzzing_root/
-  cp /home/${USER}/squirrel/MariaDB/docker/global_data_lib_mysql /home/${USER}/fuzzing/fuzzing_root/global_data_lib_mysql
+  cp -r /home/${USER}/mariadb-qa/squirrel/MariaDB/docker/init_lib /home/${USER}/fuzzing/fuzzing_root/
+  cp -r /home/${USER}/mariadb-qa/squirrel/MariaDB/docker/input /home/${USER}/fuzzing/fuzzing_root/
+  cp /home/${USER}/mariadb-qa/squirrel/MariaDB/docker/global_data_lib_mysql /home/${USER}/fuzzing/fuzzing_root/global_data_lib_mysql
   # Apparently this file is not required, ref https://github.com/s3team/Squirrel/issues/11
   # However, it is used in the code (ref afl-fuzz.c):
   # #define SAFE_GENERATE_PATH "./safe_generate_type_mysql"
   # g_mutator.init_safe_generate_type(SAFE_GENERATE_PATH);
-  cp /home/${USER}/squirrel/MariaDB/docker/safe_generate_type_mysql /home/${USER}/fuzzing/fuzzing_root/safe_generate_type_mysql
+  cp /home/${USER}/mariadb-qa/squirrel/MariaDB/docker/safe_generate_type_mysql /home/${USER}/fuzzing/fuzzing_root/safe_generate_type_mysql
 fi
 
 # Homedir scripts
