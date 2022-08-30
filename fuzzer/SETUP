@@ -109,12 +109,12 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # Once back that the Linux terminal prompt, issue ./stop to stop the MariaDB server
   ./stop
   # Repeat the same steps for the alternate installation (i.e. MD290122-mariadb-10.8.1-linux-x86_64-opt with 'opt' instead of
-  # 'dbg' in our example and vice versa if you did opt first) to ~/start and ./all ("test") the alternate installation
+  # 'dbg' in the example, and vice versa if you did opt first) to ~/start and ./all ("test") the alternate installation
   # Congratulations, if you made it thus far, you created a non-instrumented optimized and debug build of MariaDB server
   # Note that these instances of MariaDB are all contained within BASEDIR directories - they are not installed using atp etc.
   # This is of great advantage when wanting to bring up many instances etc.
 
-= Build MariaDB server: instrumented binaries
+= Build MariaDB server: instrumented binaries (debug + optimized)
   # Note: it is very important for Squirrel/AFL that instrumentation is working correctly. There is very little (read: no)
   # point in running Squirrel/AFL with an uninstrumented binary, as Squirrel/AFL will not be able able to "see" what paths
   # it is triggering in the server. The way that instrumentation works is as follows: when the database server is started,
