@@ -94,8 +94,8 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # Do not modify the sleep (the minimum is sleep 90 on a fast server) to avoid tarball/directory naming conflicts
   ~/mariadb-qa/build_mdpsms_opt.sh & sleep 180; ~/mariadb-qa/build_mdpsms_dbg.sh  # Background, wait for these to finish
   cd /test
-  ls -ld MD*  # This will show you the just-created builds and their tarballs, i.e. MD290122-mariadb-10.8.1-linux-x86_64-dbg-dbg
-  cd MD290122-mariadb-10.8.1-linux-x86_64-dbg-dbg  # Change the name as required (note the format is MDddmmyy
+  ls -ld MD*  # This will show you the just-created builds and their tarballs, i.e. MD290122-mariadb-10.8.1-linux-x86_64-dbg
+  cd MD290122-mariadb-10.8.1-linux-x86_64-dbg  # Change the name as required (note the format is MDddmmyy
   # The ~/start script creates a whole set of handy scripts in the current BASEDIR you are in
   ~/start  # If this script is not available, you did not correctly run ~/mariadb-qa/linkit
   # The ./all script (created by ~/start) creates a fresh data directory, starts the MariaDB server and brings up the client
@@ -108,7 +108,7 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   10.8.4-dbg>exit;
   # Once back that the Linux terminal prompt, issue ./stop to stop the MariaDB server
   ./stop
-  # Repeat the same steps for the alternate installation (i.e. MD290122-mariadb-10.8.1-linux-x86_64-dbg-opt with 'opt' instead of
+  # Repeat the same steps for the alternate installation (i.e. MD290122-mariadb-10.8.1-linux-x86_64-opt with 'opt' instead of
   # 'dbg' in our example and vice versa if you did opt first) to ~/start and ./all ("test") the alternate installation
   # Congratulations, if you made it thus far, you created a non-instrumented optimized and debug build of MariaDB server
   # Note that these instances of MariaDB are all contained within BASEDIR directories - they are not installed using atp etc.
