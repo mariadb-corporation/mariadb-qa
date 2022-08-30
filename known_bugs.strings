@@ -20,6 +20,7 @@ GOT_ERROR|Got error 192|Table encrypted but decryption failed  # https://jira.ma
 
 ##### MDEV-16329 TESTING TEMPORARY #####
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|start_thread|clone  ## INSERT DELAYED not supported on Spider (fixed already in trunk)
+part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row  ## MDEV-26544 fixed in trunk but not in preview-10.10-ddl yet
 
 ##### TEMPORARY QA FILTERS: BUGS KNOWN TO BE FIXED, BUT PRESENT IN OLDER FEATURE BRANCHES #####
 cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28871
@@ -291,6 +292,7 @@ field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|
 SIGSEGV|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                                                               ## MDEV-28515
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28516
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::check|handler::ha_check|ha_partition::handle_opt_part ## MDEV-28514
+file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::check|handler::ha_check|mysql_admin_table       ## MDEV-28514
 SIGSEGV|charset_info_st::strnncoll|parse_option_list|mysql_prepare_create_table|mysql_create_frm_image                                                                         ## MDEV-28497
 SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncoll_utf8_general_ci|engine_option_value::link                                                   ## MDEV-28497
 SIGSEGV|my_scan_weight_utf8mb3_general_ci|my_scan_weight_utf8mb3_general_ci|my_strnncoll_utf8mb3_general_ci|charset_info_st::strnncoll                                         ## MDEV-28497
