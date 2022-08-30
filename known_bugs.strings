@@ -114,6 +114,12 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare                                          ## MDEV-29411
+!eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_real|Arg_comparator::compare_real|Arg_comparator::compare                                               ## MDEV-29411
+!eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_decimal|VDec::VDec|Arg_comparator::compare_decimal                                                      ## MDEV-29411
+!eliminated|SIGABRT|Item_subselect::exec|Item_in_subselect::exec|Item_in_subselect::val_bool|Item::val_bool_result                                                             ## MDEV-29411
+SIGSEGV|st_select_lex::get_offset|st_select_lex_unit::set_limit|subselect_single_select_engine::exec|Item_subselect::exec                                                      ## MDEV-29411
+SIGSEGV|st_select_lex_unit::set_limit|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_int                                              ## MDEV-29411
 SIGSEGV|__gnu_cxx::__atomic_add|__gnu_cxx::__atomic_add_dispatch|std::_Sp_counted_base<shared_ptr_base.h|std::__shared_count<shared_ptr_base.h                                 ## MDEV-29393
 SIGSEGV|myrocks::ha_rocksdb::check_keyread_allowed|myrocks::ha_rocksdb::index_flags|TABLE_SHARE::init_from_binary_frm_image|ha_create_table                                    ## MDEV-29394
 SIGSEGV|myrocks::ha_rocksdb::check_keyread_allowed|myrocks::ha_rocksdb::index_flags|ha_partition::index_flags|TABLE_SHARE::init_from_binary_frm_image                          ## MDEV-29394

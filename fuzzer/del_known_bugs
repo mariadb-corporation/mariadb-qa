@@ -1,5 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+set +H  # Prevent '-bash: !...: event not found' issues with '!' as a [leading] char in the known bug UniqueID strings
 
 KB=${HOME}/mariadb-qa/known_bugs.strings
 cd ${HOME}/fuzzing

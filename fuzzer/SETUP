@@ -94,8 +94,8 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # Do not modify the sleep (the minimum is sleep 90 on a fast server) to avoid tarball/directory naming conflicts
   ~/mariadb-qa/build_mdpsms_opt.sh & sleep 180; ~/mariadb-qa/build_mdpsms_dbg.sh  # Background, wait for these to finish
   cd /test
-  ls -ld MD*  # This will show you the just-created builds and their tarballs, i.e. MD290122-mariadb-10.8.1-linux-x86_64-dbg
-  cd MD290122-mariadb-10.8.1-linux-x86_64-dbg  # Change the name as required (note the format is MDddmmyy
+  ls -ld MD*  # This will show you the just-created builds and their tarballs, i.e. MD290122-mariadb-10.8.1-linux-x86_64-dbg-dbg
+  cd MD290122-mariadb-10.8.1-linux-x86_64-dbg-dbg  # Change the name as required (note the format is MDddmmyy
   # The ~/start script creates a whole set of handy scripts in the current BASEDIR you are in
   ~/start  # If this script is not available, you did not correctly run ~/mariadb-qa/linkit
   # The ./all script (created by ~/start) creates a fresh data directory, starts the MariaDB server and brings up the client
@@ -108,7 +108,7 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   10.8.4-dbg>exit;
   # Once back that the Linux terminal prompt, issue ./stop to stop the MariaDB server
   ./stop
-  # Repeat the same steps for the alternate installation (i.e. MD290122-mariadb-10.8.1-linux-x86_64-opt with 'opt' instead of
+  # Repeat the same steps for the alternate installation (i.e. MD290122-mariadb-10.8.1-linux-x86_64-dbg-opt with 'opt' instead of
   # 'dbg' in our example and vice versa if you did opt first) to ~/start and ./all ("test") the alternate installation
   # Congratulations, if you made it thus far, you created a non-instrumented optimized and debug build of MariaDB server
   # Note that these instances of MariaDB are all contained within BASEDIR directories - they are not installed using atp etc.
@@ -132,18 +132,22 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # and the instructions here 
   make -j32 | tee /tmp/afl_dbg_bld.log  # Note that the build process can take a very long time (up to several hours)
   ./scripts/make_binary_distribution
-  mv mariadb-10.8.1-linux-x86_64.tar.gz /test
+  mv mariadb-10.8.1-linux-x86_64-dbg.tar.gz /test
   cd /test
-  tar -xf mariadb-10.8.1-linux-x86_64.tar.gz
+  tar -xf mariadb-10.8.1-linux-x86_64-dbg.tar.gz
   # In the next two commands, change ddmmyy to day, month, year in 6 digits and change the version number as needed
-  mv mariadb-10.8.1-linux-x86_64.tar.gz AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64.tar.gz 
-  mv mariadb-10.8.1-linux-x86_64 AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64
+  mv mariadb-10.8.1-linux-x86_64-dbg.tar.gz AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64-dbg.tar.gz 
+  mv mariadb-10.8.1-linux-x86_64-dbg AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64-dbg
   # Add 'AFL' (without quotes) as an exclusion filter for some mariadb-qa framework scripts
   vi /test/REGEX_EXCLUDE  # You will not need it now, but note that there is a '|' (without quotes) between exclusions
-  cd AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64
+  cd AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64-dbg
   ~/start
   # If this works, follow the steps above (SELECT 1, exit, ./stop) to round up
   # Congratulations, if you made it thus far, you now have an AFL++ instrumented build of MariaDB ready for use with Squirrel
+  # Note that the above cmake command builds a debug version of MariaDB server, which has additional debug symbols added,
+  # debug assertions enabled etc. To build an optimized build of the server, which can also be tested, use the following
+  # command instead, and rename all files to '-opt' instead of '-dbg'. This naming convention is also used by scripts!
+  # cmake . -DWITH_SSL=bundled -DBUILD_CONFIG=mysql_release -DWITH_JEMALLOC=no -DWITH_TOKUDB=0 -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=0 -DENABLE_DOWNLOADS=1 -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/tmp/boost_801864 -DENABLED_LOCAL_INFILE=1 -DENABLE_DTRACE=0 -DPLUGIN_PERFSCHEMA=NO -DWITH_DBUG_TRACE=OFF -DWITH_ZLIB=bundled -DWITH_ROCKSDB=0 -DWITH_PAM=OFF -DFORCE_INSOURCE_BUILD=1 -DCMAKE_C_FLAGS='-Og -march=native -mtune=native' -DCMAKE_CXX_FLAGS='-Og -march=native -mtune=native' -DWITH_MARIABACKUP=0 -DWITH_UNIT_TESTS=OFF -DWITH_DBUG_TRACE=OFF -DWITH_EMBEDDED_SERVER=OFF -DWITH_ROCKSDB=OFF -DWITH_TOKUDB=OFF -DWITH_WSREP_ALL=OFF
 
 = Getting ready to fuzz: preliminary tests
   # Setup some directories
@@ -160,7 +164,7 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   # binaries if changes are made in the script. Future versions of the binary may accept command line options for the socket
   ./afl0-fuzz  # This should not give any errors and output a list of options. 
   # In the following step, update the BASEDIR to the directory of the *instrumented* build created in the last step, i.e.
-  # BASEDIR=/test/AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64  # or similar
+  # BASEDIR=/test/AFL-MDddmmyy-mariadb-10.8.1-linux-x86_64-dbg  # or similar
   vi start_fuzzing
   # Edit the ./fuzzing_root/go script to set the SQL_PATH to a grammar present in fuzzing_root (try './input' which is 
   # automatically added by the linkit script). Read more about grammars here: https://github.com/s3team/Squirrel/issues/11
