@@ -16,5 +16,5 @@ https://github.com/mariadb-corporation/mariadb-qa/blob/master/fuzzer/PROCEDURE
 
 Please Note: 
 * For a number of the scripts to run successfully, it is required that sudo is enabled and working and should not request a password.
-* Please contact Roel or Ramesh (see commits) if you have questions, or for information.
-* Most of the documentation is in-line in the code.
+* Please contact Roel or Ramesh (ref commits) if you have any questions, or for information.
+* Most of the documentation is in-line in the code: checkout the scripts to learn more.
