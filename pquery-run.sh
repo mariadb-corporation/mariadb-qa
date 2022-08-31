@@ -497,6 +497,12 @@ ctrl-c() {
 
 savetrial() { # Only call this if you definitely want to save a trial
   if [ "${PRELOAD}" == "1" ]; then
+    PQUERY_DEFAULT_FILE=
+    if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
+      PQUERY_DEFAULT_FILE="${RUNDIR}/${TRIAL}/node1.md.galera_thread-0.sql"
+    else
+      PQUERY_DEFAULT_FILE="${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql"
+    fi
     echoit "PRELOAD=1: Prepending SQL trace with executed SQL from ${PRELOAD_SQL}"
     if [ ! -d ${RUNDIR}/${TRIAL}/preload ]; then
       echoit "PRELOAD Error: PRELOAD=1, but ${RUNDIR}/${TRIAL}/preload did not exist in savetrial()"
@@ -509,9 +515,9 @@ savetrial() { # Only call this if you definitely want to save a trial
       elif ! diff -q ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql >/dev/null 2>&1; then
         echoit "PRELOAD cp Error: cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql  # FAILED (files are not indentical)"
       else
-        cat ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql >> ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql
-        mv ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/sql_without_preload.sql
-        mv ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql
+        cat ${PQUERY_DEFAULT_FILE} >> ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql
+        mv ${PQUERY_DEFAULT_FILE} ${RUNDIR}/${TRIAL}/sql_without_preload.sql
+        mv ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql ${PQUERY_DEFAULT_FILE}
       fi
     fi
   fi
@@ -523,6 +529,7 @@ savetrial() { # Only call this if you definitely want to save a trial
     sudo pmm-admin remove mysql pq${RANDOMD}-${TRIAL} > /dev/null
   fi
   SAVED=$(($SAVED + 1))
+  PQUERY_DEFAULT_FILE=
 }
 
 removetrial() {
@@ -1827,6 +1834,12 @@ pquery_test() {
               PQPID="$!"
             fi
           else
+            # Preload SQL if the PRELOAD feature is enabled (this SQL will be prepended to the trial's SQL later)
+            if [ "${PRELOAD}" == "1" -a ! -z "${PRELOAD_SQL}" ]; then
+              echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL}"
+              mkdir -p ${RUNDIR}/${TRIAL}/preload
+              ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1 &
+            fi
             if [[ ${MDG_CLUSTER_RUN} -eq 1 ]]; then
               for i in $(seq 1 ${NR_OF_NODES}); do
                 cat << EOF >> ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
@@ -2427,32 +2440,32 @@ echo "FLUSH PRIVILEGES;" >> ${WORKDIR}/recovery-user.sql
 echo "CREATE USER root@'%';" > ${WORKDIR}/root-access.sql
 echo "GRANT ALL ON *.* TO root@'%';" >> ${WORKDIR}/root-access.sql
 echo "FLUSH PRIVILEGES;" >> ${WORKDIR}/root-access.sql
-if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
+if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} "
   echoit "${ONGOING}"
-elif [[ ${MDG} -eq 1 ]]; then
+elif [[ "${MDG}" -eq 1 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} | MDG Mode: TRUE"
   echoit "${ONGOING}"
   echoit "Number of Galera Cluster nodes: $NR_OF_NODES"
-  if [ ${MDG_SST_METHOD} -eq 1 ] ; then
+  if [[ "${MDG_SST_METHOD}" -eq 1 ]] ; then
     echoit "MDG SST Method: 'rsync'"
   else
     echoit "MDG SST Method: 'mariabackup'"
   fi
-  if [ ${MDG_CLUSTER_RUN} -eq 1 ]; then
+  if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
     echoit "MDG Cluster run: 'YES'"
   else
     echoit "MDG Cluster run: 'NO'"
   fi
-  if [ ${ENCRYPTION_RUN} -eq 1 ]; then
+  if [[ "${ENCRYPTION_RUN}" -eq 1 ]]; then
     echoit "MDG Encryption run: 'YES'"
   else
     echoit "MDG Encryption run: 'NO'"
   fi
-elif [[ ${GRP_RPL} -eq 1 ]]; then
+elif [[ "${GRP_RPL}" -eq 1 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} | Group Replication Mode: TRUE"
   echoit "${ONGOING}"
-  if [ ${GRP_RPL_CLUSTER_RUN} -eq 1 ]; then
+  if [[ "${GRP_RPL_CLUSTER_RUN}" -eq 1 ]]; then
     echoit "Group Replication Cluster run: 'YES'"
   else
     echoit "Group Replication Cluster run: 'NO'"
@@ -2460,17 +2473,17 @@ elif [[ ${GRP_RPL} -eq 1 ]]; then
 fi
 echo "[$(date +'%D %T')] ${ONGOING}" >> ~/ongoing.pquery-runs.txt
 ONGOING=
-if [[ ${RR_TRACING} -eq 1 ]]; then
+if [[ "${RR_TRACING}" -eq 1 ]]; then
   echoit "RR Tracing enabled: YES"
 else
   echoit "RR Tracing enabled: NO"
 fi
 
-if [[ ${PXB_CRASH_RUN} -eq 1 ]]; then
+if [[ "${PXB_CRASH_RUN}" -eq 1 ]]; then
   echoit "PXB Base: ${PXB_BASEDIR}"
 fi
 # Start vault server for pquery encryption run
-if [[ $WITH_KEYRING_VAULT -eq 1 ]]; then
+if [[ "${WITH_KEYRING_VAULT}" -eq 1 ]]; then
   echoit "Setting up vault server"
   diskspace
   mkdir ${WORKDIR}/vault
