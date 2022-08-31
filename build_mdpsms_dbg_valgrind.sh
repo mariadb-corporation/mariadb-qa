@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
-MAKE_THREADS=13         # Number of build threads. There may be a bug for builds when setting this >1
+MAKE_THREADS=13         # Number of build threads
 WITH_EMBEDDED_SERVER=0  # 0 or 1 # Include the embedder server (removed in 8.0)
 WITH_LOCAL_INFILE=1     # 0 or 1 # Include the possibility to use LOAD DATA LOCAL INFILE (LOCAL option was removed in 8.0?)
 USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re-download
@@ -265,14 +265,14 @@ if [ $FB -eq 0 ]; then
     sleep 0.1
     #XPAND='-DWITH_XPAND=1'  # Disabled ftm due to cnf limitation (https://mariadb.com/kb/en/mariadb-maxscale-25-maxscale-and-xpand-tutorial/)
   fi
-  CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS} -DWITH_VALGRIND=ON"
+  CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS} -DWITH_VALGRIND=ON"
   echo "Build command used:"
   echo $CMD
   $CMD | tee /tmp/psms_dbg_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 else
   # FB build
-  CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} ${FLAGS} -DWITH_VALGRIND=ON"
+  CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} ${FLAGS} -DWITH_VALGRIND=ON"
   echo "Build command used:"
   echo $CMD
   $CMD | tee /tmp/psms_dbg_build_${RANDOMD}

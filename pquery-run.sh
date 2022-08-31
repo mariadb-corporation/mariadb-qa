@@ -4,21 +4,22 @@
 # Updated by Mohit Joshi, Percona LLC
 # Updated by Roel Van de Paar, MariaDB
 
-# ========================================= User configurable variables ==========================================================
+# ========================================= User configurable variables
 # Note: if an option is passed to this script, it will use that option as the configuration file instead, for example ./pquery-run.sh pquery-run-MD105.conf
 CONFIGURATION_FILE=pquery-run.conf # Do not use any path specifiers, the .conf file should be in the same path as pquery-run.sh
-#CONFIGURATION_FILE=pquery-run-RocksDB.conf  # RocksDB testing
 
-# ========================================= Improvement ideas ====================================================================
+# ========================================= Improvement ideas
 # * SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
 # * SQL hashing s/t2/t1/, hex values "0x"
 # * Full MTR grammar on one-liners
 # * Interleave all statements with another that is likely to cause issues, for example "USE mysql". This is already done regularly with feature testing through SQL interleaving, but it could be done per statement. For example, every second line a SELECT, next SQL file every second line an UPDATE, next SQL file every second line an ALTER etc. then use all (do not combine; too large input) files either randomly or sequentially. And instead of just SELECT, or UPDATE, or ALTER etc. use sql-interleaving to make a variety of 9 per statement.
 # * It would be possible to output all new bugs to a flat text file, so that when the new bug detection is operating, it will check not only known_bugs.strings but also this new flat text file, and if a bug is seen already, it could just delete the trial. This will only leave one trial in place for testcase reduction, but over time and over different runs this should be quite fine - especially as showstopper like bugs will be all over the runs and hence will reproduce every new run with ease. For the moment, pquery-eliminate-dups.sh reduces the max number to 3, so that is quite fine also.
 
-# ========================================= MAIN CODE ============================================================================
+# ========================================= MAIN CODE
+
 # MariaDB specific variables
 DISABLE_TOKUDB_AND_JEMALLOC=1
+
 # Internal variables: DO NOT CHANGE!
 RANDOM=$(date +%s%N | cut -b10-19)
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
@@ -48,6 +49,17 @@ export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs
 #export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:check_initialization_order=1:detect_stack_use_after_return=1:abort_on_error=1
 export UBSAN_OPTIONS=print_stacktrace=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
+
+# Print/Output function
+echoit() {
+  if [ "${ELIMINATE_KNOWN_BUGS}" == "1" ]; then
+    echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1"
+    if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1" >> /${WORKDIR}/pquery-run.log; fi
+  else
+    echo "[$(date +'%T')] [$SAVED] $1"
+    if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] $1" >> /${WORKDIR}/pquery-run.log; fi
+  fi
+}
 
 # Read configuration
 if [ "$1" != "" ]; then CONFIGURATION_FILE=$1; fi
@@ -92,12 +104,34 @@ if [ "$(echo ${PQUERY_BIN} | sed 's|\(^/pquery\)|\1|')" == "/pquery" ]; then
   exit 1
 fi
 if [ ! -r ${PQUERY_BIN} ]; then
-  echo "${PQUERY_BIN} specified in the configuration file used (${SCRIPT_PWD}/${CONFIGURATION_FILE}) cannot be found/read"
+  echo "Assert: ${PQUERY_BIN} specified in the configuration file used (${SCRIPT_PWD}/${CONFIGURATION_FILE}) cannot be found/read"
   exit 1
 fi
 if [ ! -r ${OPTIONS_INFILE} ]; then
-  echo "${OPTIONS_INFILE} specified in the configuration file used (${SCRIPT_PWD}/${CONFIGURATION_FILE}) cannot be found/read"
+  echo "Assert: ${OPTIONS_INFILE} specified in the configuration file used (${SCRIPT_PWD}/${CONFIGURATION_FILE}) cannot be found/read"
   exit 1
+fi
+if [ "${PRELOAD}" == "1" ]; then
+  if [ ${THREADS} -ne 1 ]; then
+    echo "Assert: PRELOAD is enabled (1), and THREADS!=1 (${THREADS}). This setup is not supported (yet) as this script would not be able to prepend the preload SQL to any particular thread's SQL trace (which one to pick?). It may be possible to do a rather large framework patch where PRELOAD SQL is built into reducer.sh etc. (for single threaded runs, it is simply prepended to the SQL trace), so that it is preloaded in all tools, especially reduction. Feel free to implement this if you like."
+    exit 1
+  elif [ "${QUERY_CORRECTNESS_TESTING}" == "1" ]; then
+    echo "Assert: PRELOAD is enabled (1), and QUERY_CORRECTNESS_TESTING is enabled (1). Pre-loading (pre-pending) SQL is not supported yet for Query Correctness Testing, feel free to add it!"
+    exit 1
+  elif [ -z "${PRELOAD_SQL}" ]; then
+    echo "Assert: PRELOAD is enabled (1), yet PRELOAD_SQL option has not been set. Please set it to the SQL preload file you would like to use"
+    exit 1
+  elif [ ! -r "${PRELOAD_SQL}" ]; then
+    echo "Assert: PRELOAD is enabled (1), yet the file configured with PRELOAD_SQL (${PRELOAD_SQL}) cannot be read by this script. Please check."
+    exit 1
+  elif [ "$(wc -l ${PRELOAD_SQL} | sed 's| .*||')" -eq "0" ]; then
+    echo "Assert: PRELOAD is enabled (1), yet the file configured with PRELOAD_SQL (${PRELOAD_SQL}) is empty. Please check."
+    exit 1
+  else
+    echo "PRELOAD SQL Active: (${PRELOAD_SQL} will be preloaded for all trials, and prepended to trial SQL traces"
+  fi 
+else
+  echo "PRELOAD SQL enabled: NO"
 fi
 if [ "${RR_TRACING}" == "1" ]; then
   if [ ! -r /usr/bin/rr ]; then
@@ -198,17 +232,6 @@ init_empty_port(){
   done
 }
 
-# Output function
-echoit() {
-  if [ "${ELIMINATE_KNOWN_BUGS}" == "1" ]; then
-    echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1"
-    if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1" >> /${WORKDIR}/pquery-run.log; fi
-  else
-    echo "[$(date +'%T')] [$SAVED] $1"
-    if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] $1" >> /${WORKDIR}/pquery-run.log; fi
-  fi
-}
-
 # Diskspace OOS check function
 diskspace() {
   while true; do
@@ -263,11 +286,11 @@ else
     if [ -r ${BASEDIR}/bin/mysqld-debug ]; then
       BIN=${BASEDIR}/bin/mysqld-debug
     else
-      echoit "Assert: there is no (script readable) mysqld binary at ${BASEDIR}/bin/mysqld[-debug] ?"
+      echo "Assert: there is no (script readable) mysqld binary at ${BASEDIR}/bin/mysqld[-debug] ?"
       exit 1
     fi
   else
-    echoit "Assert: there is no (script readable) mysqld binary at ${BASEDIR}/bin/mysqld ?"
+    echo "Assert: there is no (script readable) mysqld binary at ${BASEDIR}/bin/mysqld ?"
     exit 1
   fi
 fi
@@ -284,7 +307,7 @@ if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
       if [ -r $(find /usr/*lib*/ -name libjemalloc.so.1 | head -n1) ]; then
         export LD_PRELOAD=$(find /usr/*lib*/ -name libjemalloc.so.1 | head -n1)
       else
-        echoit "Assert! Binary (${BIN} reported itself as Percona Server, yet jemalloc was not found, please install it!"
+        echo "Assert! Binary (${BIN} reported itself as Percona Server, yet jemalloc was not found, please install it!"
         echoit "For Centos7 you can do this by:  sudo yum -y install epel-release; sudo yum -y install jemalloc;"
         echoit "For Ubuntu you can do this by: sudo apt-get install libjemalloc-dev;"
         exit 1
@@ -301,7 +324,7 @@ fi
 if [[ ${PXB_CRASH_RUN} -eq 1 ]]; then
   echoit "MODE: Percona Xtrabackup crash test run"
   if [[ ! -d ${PXB_BASEDIR} ]]; then
-    echoit "Assert: $PXB_BASEDIR does not exist. Terminating!"
+    echo "Assert: $PXB_BASEDIR does not exist. Terminating!"
     exit 1
   fi
 fi
@@ -473,6 +496,25 @@ ctrl-c() {
 }
 
 savetrial() { # Only call this if you definitely want to save a trial
+  if [ "${PRELOAD}" == "1" ]; then
+    echoit "PRELOAD=1: Prepending SQL trace with executed SQL from ${PRELOAD_SQL}"
+    if [ ! -d ${RUNDIR}/${TRIAL}/preload ]; then
+      echoit "PRELOAD Error: PRELOAD=1, but ${RUNDIR}/${TRIAL}/preload did not exist in savetrial()"
+    elif [ ! -r ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ]; then
+      echoit "PRELOAD Error: PRELOAD=1, but ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql did not exist in savetrial()"
+    else 
+      cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql
+      if [ ! -r ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql ]; then  
+        echoit "PRELOAD cp Error: cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql  # FAILED (target does not exist)"
+      elif ! diff -q ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql >/dev/null 2>&1; then
+        echoit "PRELOAD cp Error: cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql  # FAILED (files are not indentical)"
+      else
+        cat ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql >> ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql
+        mv ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/sql_without_preload.sql
+        mv ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql
+      fi
+    fi
+  fi
   echoit "Moving rundir from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
   mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1 | tee -a /${WORKDIR}/pquery-run.log
   chmod -R +rX ${WORKDIR}/${TRIAL}/
@@ -1743,6 +1785,12 @@ pquery_test() {
           fi
         else # Standard pquery run / Not a query duration testing run
           if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
+            # Preload SQL if the PRELOAD feature is enabled (this SQL will be prepended to the trial's SQL later)
+            if [ "${PRELOAD}" == "1" -a ! -z "${PRELOAD_SQL}" ]; then
+              echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL}"
+              mkdir -p ${RUNDIR}/${TRIAL}/preload
+              ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1 &
+            fi
             # Standard/default (non-GRP-RPL non-Galera non-Query-duration-testing) pquery run
             ## Check pre-shuffle directory
             if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
@@ -1771,11 +1819,10 @@ pquery_test() {
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
                 PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
               fi
-            fi
-            if [ ! -z "${INFILE_SHUFFLED}" ]; then
+              # Pre-shuffled trial
               ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
-            else
+            else  # Standard non-shuffled trial
               ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             fi
@@ -1818,7 +1865,7 @@ EOF
             else 
               ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!" 
-              #echo "Assert: GRP_RPL_CLUSTER_RUN=${GRP_RPL_CLUSTER_RUN} and MDG_CLUSTER_RUN=${MDG_CLUSTER_RUN}"
+              #echoit "Assert: GRP_RPL_CLUSTER_RUN=${GRP_RPL_CLUSTER_RUN} and MDG_CLUSTER_RUN=${MDG_CLUSTER_RUN}"
               #exit 1
             fi
           fi
@@ -2508,7 +2555,7 @@ elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERS
   START_OPT="--core"
 elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
   if [ -z "${MID}" ]; then
-    echo "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
+    echoit "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
     exit 1
   fi
   INIT_TOOL="${MID}"

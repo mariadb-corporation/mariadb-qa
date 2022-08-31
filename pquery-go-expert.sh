@@ -146,6 +146,6 @@ while(true); do                                     # Main loop
   fi
   while [ -r ${MUTEX} ]; do sleep 1; done           # Ensure kill of background_sed_loop only happens when background process has just started sleeping
   kill -9 ${PID} >/dev/null 2>&1                    # Kill the background_sed_loop
-  echo "Waiting for next round... Sleeping 300 seconds..."
-  sleep 300                                         # Sleep 5 minutes
+  echo "Waiting for next round... Sleeping 2 minutes..."
+  sleep 120                                         # Sleep 2 minutes
 done

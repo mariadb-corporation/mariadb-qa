@@ -39,6 +39,10 @@ cat "${1}" | tr -d '`' | \
   sed 's|decimal|DECIMAL|gi' | \
   sed 's|numeric|NUMERIC|gi' | \
   sed 's|value|VALUE|gi' | \
+  sed 's|server|SERVER|gi' | \
+  sed 's|wrapper|WRAPPER|gi;s|wrapper[ \t]\+mysql|WRAPPER MYSQL|gi' | \
+  sed 's|options|OPTIONS|gi' | \
+  sed 's|socket|SOCKET|gi;s|socket.sock|socket.sock|gi' | \
   sed 's|extractvalue|EXTRACTVALUE|gi' | \
   sed 's|fast|FAST|gi' | \
   sed 's|return|RETURN|gi' | \

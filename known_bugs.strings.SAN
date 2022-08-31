@@ -19,7 +19,6 @@ UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an u
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item::save_str_in_field|Item::save_in_field ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item::save_str_in_field ## MDEV-28386
-ASAN|heap-use-after-free|mysys/mf_keycache.c|flush_all_key_blocks|prepare_resize_simple_key_cache|resize_partitioned_key_cache|resize_key_cache                                ## MDEV-22590
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_eq::val_int ## MDEV-28384
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|sortcmp ## MDEV-28384
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|sortcmp|Arg_comparator::compare_string ## MDEV-28384
@@ -39,31 +38,10 @@ TSAN|data race|storage/innobase/os/os0file.cc|LinuxAIOHandler::collect|LinuxAIOH
 TSAN|data race|tpool/aio_linux.cc|tpool::aio_linux::getevent_thread_routine|voidstd::__invoke_impl|std::__invoke_result|voidstd::thread::_Invoker                              ## MDEV-27133
 UBSAN|pointer index expression with base X overflowed to Y|mysys/my_thr_init.c|my_thread_init|timer_handler|start_thread|__clone                                               ## MDEV-27077
 TSAN|data race|storage/innobase/os/os0file.cc|__tsan_atomic64_fetch_add|os_file_pread|os_file_read_page|os_file_read_func                                                      ## MDEV-24332
-ASAN|use-after-poison|mysys/hash.c|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|hashcmp|my_hash_first_from_hash_value                                         ## MDEV-26637
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                     ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                       ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_rename_user|mysql_execute_command                     ## MDEV-24193
 ASAN|use-after-poison|sql/spatial.cc|wkb_get_double|Gis_point::init_from_wkb|Gis_geometry_collection::init_from_wkb|Geometry::create_from_wkb                                  ## MDEV-26813
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_shift_left::val_int ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|max_length_for_string ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item::to_longlong_hybrid ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_insert::val_str ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_dyncol_create::prepare_arguments ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_locate::val_int ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_shift_left::val_int ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item::to_longlong_hybrid ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_str_func::left_right_max_length ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_pad::fix_length_and_dec ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_locate::val_int ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_insert::val_str ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_dyncol_create::prepare_arguments ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_dyncol_get::val_int|Item_dyncol_get::val_int_signed_typecast ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_func_int_div::val_int|Type_handler::Item_send_longlong ## MDEV-22742
-UBSAN|signed integer overflow: -X - Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Dec_ptr::to_longlong ## MDEV-22742
-UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Field::convert_decimal2longlong|Field_int::store_decimal ## MDEV-22742
-UBSAN|signed integer overflow: -X - Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Field::convert_decimal2longlong|Field_int::store_decimal ## MDEV-22742
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Item::send|Protocol::send_result_set_row|select_send::send_data     ## MDEV-26814
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-26814
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-26814
@@ -74,7 +52,6 @@ UBSAN|index X out of bounds for type 'json_string_char_classes [128]'|strings/js
 UBSAN|index X out of bounds for type 'json_string_char_classes [128]'|strings/json_lib.c|skip_key|json_scan_next|json_valid|Item_func_json_valid::val_int                      ## MDEV-26817
 ASAN|global-buffer-overflow|sql/item_jsonfunc.cc|skip_key|json_scan_next|json_valid|Item_func_json_valid::val_int                                                              ## MDEV-26817
 ASAN|global-buffer-overflow|sql/sql_type.cc|skip_key|json_scan_next|Item_func_json_valid::val_int|Type_handler::Item_send_long                                                 ## MDEV-26817
-UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/compat56.cc|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_temporal::save_in_field|Create_tmp_table::finalize ## MDEV-24510
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|ha_maria::write_row|handler::ha_write_row          ## MDEV-26839
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|handler::ha_write_row|copy_data_between_tables     ## MDEV-26839
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|handler::ha_write_row|write_record                 ## MDEV-26839
@@ -82,3 +59,26 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 
 ###### FIXED BUGS ######
 # UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/ddl_log.cc|ddl_log_write_execute_entry|ddl_log_write_execute_entry|ddl_log_write|ddl_log_create_table ## Fixed ## MDEV-27048
+# ASAN|heap-use-after-free|mysys/mf_keycache.c|flush_all_key_blocks|prepare_resize_simple_key_cache|resize_partitioned_key_cache|resize_key_cache                              ## Fixed ## MDEV-22590
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_shift_left::val_int ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|max_length_for_string ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item::to_longlong_hybrid ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_insert::val_str ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_dyncol_create::prepare_arguments ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_func_locate::val_int ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_shift_left::val_int ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item::to_longlong_hybrid ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_str_func::left_right_max_length ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_pad::fix_length_and_dec ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_locate::val_int ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_insert::val_str ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_decimal::val_int|Item_func_dyncol_create::prepare_arguments ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_dyncol_get::val_int|Item_dyncol_get::val_int_signed_typecast ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Item_func_int_div::val_int|Type_handler::Item_send_longlong ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X - Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Dec_ptr::to_longlong ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Field::convert_decimal2longlong|Field_int::store_decimal ## Fixed ## MDEV-22742
+# UBSAN|signed integer overflow: -X - Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Field::convert_decimal2longlong|Field_int::store_decimal ## Fixed ## MDEV-22742
+# UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/compat56.cc|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_temporal::save_in_field|Create_tmp_table::finalize ## Fixed ## MDEV-24510
+# ASAN|use-after-poison|mysys/hash.c|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|hashcmp|my_hash_first_from_hash_value                                       ## Fixed ## MDEV-26637

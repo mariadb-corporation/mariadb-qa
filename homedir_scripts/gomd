@@ -1,19 +1,21 @@
 #!/bin/bash
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
-BASEDIR=/test/MDEV-16329_bb-10.10-MDEV-16329_MD260822-mariadb-10.10.0-linux-x86_64-opt
+BASEDIR=/test/MD310822-mariadb-10.11.0-linux-x86_64-dbg
+#UBASAN_MD310822-mariadb-10.11.0-linux-x86_64-dbg
+#MDEV-16329_bb-10.10-MDEV-16329_MD260822-mariadb-10.10.0-linux-x86_64-opt
 #MD190822-mariadb-10.11.0-linux-x86_64-dbg
 #MD060822-mariadb-10.6.9-linux-x86_64-dbg
 #BASEDIR=/test/MD120722-mariadb-10.10.0-linux-x86_64-dbg
 #BASEDIR=/test/MDEV-28883_MD050822-mariadb-10.10.0-linux-x86_64-opt
 # BASEDIR=/test/MD060822-mariadb-10.6.9-linux-x86_64-dbg
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space
-RUNSOPT=3
-RUNSDBG=7
-#CONF=pquery-run-MD-spider.conf
+RUNSOPT=0
+RUNSDBG=1
+CONF=pquery-run-MD-spider-new.conf
 #CONF=pquery-run-MD-btrfs.conf
 #CONF=pquery-run-MDEV-24660.conf   # File name only, no spaces, no directories
-CONF=pquery-run-MD.conf
+#CONF=pquery-run-MD.conf
 #CONF=pquery-run-MD-buf.conf
 #CONF=pquery-run-MD-rr.conf
 #CONF=pquery-run-MD-idb1.conf
@@ -80,7 +82,7 @@ for RUN in $(seq 1 ${TOTALRUNS}); do
   done
 done
 echo ""
-echo "For updating the results script:"
+echo "For updating the results script (add/edit /data/results.list, then run the /data/results script):"
 for RUN in $(seq 1 ${TOTALRUNS}); do
   echo "MON[${RUN}]=${MON[${RUN}]}"
 done
