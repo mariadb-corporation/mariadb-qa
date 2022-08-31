@@ -115,6 +115,7 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_free_share|ha_spider::close                                                                                             ## MDEV-29421
 !eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare                                          ## MDEV-29411
 !eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_real|Arg_comparator::compare_real|Arg_comparator::compare                                               ## MDEV-29411
 !eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_decimal|VDec::VDec|Arg_comparator::compare_decimal                                                      ## MDEV-29411
