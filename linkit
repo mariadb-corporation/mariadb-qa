@@ -2,6 +2,7 @@
 # Created by Ramesh Sivaraman and Roel Van de Paar, MariaDB
 
 USER="$(whoami)"
+set +H
 
 if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
   sudo mkdir -p /test /data /test/TESTCASES/ /data/NEWBUGS /data/tmp
@@ -104,6 +105,10 @@ fi
 chmod -w ~/b ~/c ~/i ~/m ~/o ~/p ~/r
 
 # Suggest alias'es
+# If you run into issues with predefined system commands try
+# grep '^alias' ~/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /bin/{} 2>/dev/null  # Ignore start of output
+# grep '^alias' ~/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /usr/bin/{} 2>/dev/null
+# To find possible culprits. Also note things like 'fi' cannot be redefined
 echo "You can now add a list of helpful alias'es to the end of your ~/.bashrc script, by doing:"
 echo "
 alias a='./all'      # Start kill>wipe>start>cl in current BASEDIR
@@ -160,9 +165,9 @@ alias vt='~/vt '     # Open the error log for a trial (pass trial number), or in
 alias li='~/li'      # Run linkit (can be rerun as often as needed)
 alias m='~/myver'    # Shows handy JIRA-based version tags for the current BASEDIR
 alias ge='cd /test;./grep_in_errorlogs.sh ' # Search for string in all BASEDIR error logs (pass string)
-alias fi='vi ~/mariadb-qa/REGEX_ERRORS_FILTER'  # Open error log filter list
-alias fii='vi ~/mariadb-qa/REGEX_ERRORS_FILTER.info'  # Open error log filter list info file
-alias fil='vi ~/mariadb-qa/REGEX_ERRORS_LASTLINE'  # Open error log last line filter list
+alias rf='vi ~/mariadb-qa/REGEX_ERRORS_FILTER'  # Open error log filter list
+alias rfi='vi ~/mariadb-qa/REGEX_ERRORS_FILTER.info'  # Open error log filter list info file
+alias rfil='vi ~/mariadb-qa/REGEX_ERRORS_LASTLINE'  # Open error log last line filter list
 alias reg='vi /test/REGEX_EXCLUDE'  # Open the REGEX exclude dir for gendirs.sh (basedirs)
 alias v='~/v '       # Opens reducer{trial}.sh for a given trial (pass trial number)
 alias prg='~/pr | grep ' # Search ~/pr for a specific string or trial number (pass search string or trial number)
