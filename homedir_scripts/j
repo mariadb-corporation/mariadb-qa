@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ -d /data/${1} ]; then
+  cd /data/${1}
+  exit 0
+else
+  echo "/data/${1} does not exist?"
+  exit 1
+fi
