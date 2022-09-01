@@ -244,6 +244,9 @@ mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert|ha_spider::write_row                                                ## MENT-1519
 SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|handler::ha_direct_delete_rows|mysql_delete                                                                      ## MENT-1519
 SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|mysql_delete|mysql_execute_command                                                                               ## MENT-1519
+SIGSEGV|ha_spider::rnd_next_internal|ha_spider::rnd_next|handler::ha_rnd_next|mysql_ha_read                                                                                    ## MENT-1519
+SIGSEGV|spider_check_and_set_trx_isolation|ha_spider::external_lock|handler::ha_external_lock|lock_external                                                                    ## MENT-1519
+SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                                    ## MENT-1519
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-28683
 SIGSEGV|spider_db_direct_delete|ha_spider::direct_delete_rows|handler::ha_direct_delete_rows|mysql_delete                                                                      ## MDEV-28683
 !expr->fixed()|SIGABRT|Virtual_column_info::fix_session_expr|TABLE::vcol_fix_expr|open_table|open_and_process_table                                                            ## MDEV-28566
