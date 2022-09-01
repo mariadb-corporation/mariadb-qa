@@ -102,5 +102,35 @@ fi
 # Protect homedir links which are easily overwritten by mistake
 chmod -w ~/b ~/c ~/i ~/m ~/o ~/p ~/r
 
+# Suggest alias'es
+echo "You can now add the following list of helpful alias'es to the end of your ~/.bashrc script if you like:"
+echo "
+alias a='./all'      # Start kill>wipe>start>cl in current basedir
+alias all='./all'    # Idem
+alias c='clear'      # Clear screen
+alias b='~/b'        # Start bug report for in.sql in current basedir
+alias pr='~/pr'      # pquery-results for current workdir
+alias t='~/t'        # UniqueID (works in basedirs, and in workdir/trial dirs etc)
+alias tt='~/tt'      # UniqueID + known bugs scan + JIRA URL scan links
+alias sr='~/sr'      # Start reducer for a given trial (pass trial number)
+alias pg='~/pg'      # Start pquery-go-expert for current workdir
+alias pge='~/pge'    # Start pquery-goexp-patch for a given trial (pass trial number)
+alias s='~/s'        # Reconnect to given screen (pass start of screen name), list screens
+alias ss='~/s s'     # Reconnect to a reducer screen for a given trial (pass trial number)
+alias sc='~/sc'      # Check if the current bash session is running inside a screen
+alias d='cd /test;. ./d1'  # cd to the latest debug 10.11 in /test
+alias o='cd /test;. ./o1'  # cd to the latest optimized 10.11 in /test
+alias ds='cd /test;. ./u1'   # cd to the latest UBASAN debug 10.11 in /test
+alias os='cd /test;. ./uo1'  # cd to the latest UBASANoptimized 10.11 in /test
+alias i='~/i'        # Information about any trial in current workdir (pass trial number)
+alias ii='~/ii'      # Information about the current (pquery framework) workdir
+alias g='cd /test;./gendirs.sh'  # cd to test and run gendirs.sh (dirs which will be used in ~/b and d/o scripts)
+alias gs='cd /test;./gendirs.sh san'  # Idem, but for SAN builds
+alias da='cd /data'  # cd to /data where all workdirs live
+alias ct='cd /test'  # cd to /test where all basedirs/builds live
+alias cm='cd ~/mariadb-qa'  # cd to ~/mariadb-qa where all testing code lives
+alias cf='cd ~/fuzzing'     # cd to ~/fuzzing where all fuzzing results live
+"
+
 echo 'Done!'
 exit 0

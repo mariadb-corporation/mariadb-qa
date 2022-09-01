@@ -13,6 +13,7 @@ BUILD_10_7=1
 BUILD_10_8=1
 BUILD_10_9=1
 BUILD_10_10=1
+BUILD_10_11=1
 
 if [ ! -r ./terminate_ds_memory.sh ]; then
   echo './terminate_ds_memory.sh missing!'
@@ -28,11 +29,16 @@ cleanup_dirs(){
   if [ -d /data/TARS ]; then mv ${DIR}/*.tar.gz /data/TARS 2>/dev/null; sync; fi
   rm -Rf 10.1_dbg_san 10.2_dbg_san 10.3_dbg_san 10.4_dbg_san 10.5_dbg_san 10.6_dbg_san 10.7_dbg_san 10.8_dbg_san \
          10.1_opt_san 10.2_opt_san 10.3_opt_san 10.4_opt_san 10.5_opt_san 10.6_opt_san 10.7_opt_san 10.8_opt_san \
-         10.9_dbg_san \
-         10.9_opt_san
+         10.9_dbg_san 10.10_dbg_san 10.11_dbg_san \
+         10.9_opt_san 10.10_dbg_san 10.11_dbg_san
 }
 
-buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use
+buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use (newer builds=larger=longer)
+  if [ ${BUILD_10_11} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/10.11 && ~/mariadb-qa/build_mdpsms_opt_san.sh
+    cleanup_dirs; cd ${DIR}/10.11 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
+  fi
+
   if [ ${BUILD_10_10} -eq 1 ]; then
     cleanup_dirs; cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_opt_san.sh
     cleanup_dirs; cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_dbg_san.sh

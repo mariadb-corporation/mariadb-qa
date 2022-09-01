@@ -57,3 +57,4 @@ Warning: Memory not freed: 80/104/16400/16320/16424   https://jira.mariadb.org/b
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-27627 FOR..IN..DO
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' WHILE
 Warning: Memory not freed: 560                        https://jira.mariadb.org/browse/MDEV-26335 DROP USER CURRENT_USER()
+spider/spd_table.cc.*mutex.*spider/spd_table.cc       https://jira.mariadb.org/browse/MDEV-29421
