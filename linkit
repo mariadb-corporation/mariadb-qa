@@ -55,7 +55,7 @@ if [ ! -d /home/${USER}/fuzzing/fuzzing_root/init_lib ]; then
 fi
 
 # Homedir scripts
-rm -f ~/tcp ~/pge ~/pg ~/tr ~/tc ~/t ~/fc ~/mcl ~/s
+rm -f ~/tcp ~/pge ~/pg ~/tr ~/tc ~/t ~/fc ~/mcl ~/s ~/st ~/li
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/testcase_prettify.sh /home/${USER}/tcp 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/pge 2>&1
@@ -68,6 +68,7 @@ ln -fs /home/${USER}/mariadb-qa/find_cause.sh /home/${USER}/fc 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-allsubdir-del-string.sh /home/${USER}/mcl 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-screen.sh /home/${USER}/s 2>&1
 ln -fs /home/${USER}/mariadb-qa/san_text_string.sh /home/${USER}/st 2>&1
+ln -fs /home/${USER}/mariadb-qa/linkit /home/${USER}/li 2>&1
 
 # Build scripts (mostly/mainly used from /test)
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
@@ -103,7 +104,7 @@ fi
 chmod -w ~/b ~/c ~/i ~/m ~/o ~/p ~/r
 
 # Suggest alias'es
-echo "You can now add the following list of helpful alias'es to the end of your ~/.bashrc script if you like:"
+echo "You can now add a list of helpful alias'es to the end of your ~/.bashrc script, by doing:"
 echo "
 alias a='./all'      # Start kill>wipe>start>cl in current basedir
 alias all='./all'    # Idem
@@ -154,7 +155,9 @@ alias stack='./stack'  # Produce a stack for the core in /data (run from within 
 alias as='cd /test; ./allstrings'  # Show UniqueID's per version after running ~/b (b)
 alias asm='cd /test; ./allstrings_merged'  # Show a list of merged UniqueID's seen after running ~/b (b)
 alias asn='cd /test; ./allstrings_new'  # Show a list of new, merged, UniqueID's after running ~/b (b)
-"
-
-echo 'Done!'
+alias ve='vi ./log/master.err'  # Open the error log in a basedir
+alias vt='~/vt '     # Open the error log for a trial (pass trial number), or in a basedir
+alias li='~/li'      # Run linkit (can be rerun as often as needed)
+" > /tmp/.bashrc
+echo -e "cat /tmp/.bashrc >> ~/.bashrc\nRemember to cleanup old framework alias'es, though later ones replace earlier ones.\nDone!"
 exit 0
