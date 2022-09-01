@@ -35,6 +35,7 @@ Got error 170                                         https://jira.mariadb.org/b
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543
 Got error 127 when reading table                      https://jira.mariadb.org/browse/MDEV-27903
 Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
+Got error 1054 when reading table                     https://jira.mariadb.org/browse/MDEV-29430 (Spider)
 mysql_ha_read: Got error 188 when reading table       Presumed non-issue (Operation was interrupted)
 max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)
 ^Stats:                                               Prevents incorrect last line 'alloc' captures in ASAN output

@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ -d "${1}" ]; then
+  echo 'Please pass trial number'
+  exit 1
+if [ -r "./reducer${1}" ]; then
+  vi ./reducer${1}.sh
+  exit 0
+else
+  echo "./reducer${1}.sh (trial ${1}) does not exist?"
+  exit 1
+fi

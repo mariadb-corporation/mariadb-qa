@@ -1,0 +1,16 @@
+#!/bin/bash
+if [ -z "${1}" ]; then
+  if [ ! -r ./${1}/log/master.err ]; then
+    echo "./${1}/log/master.err does not exist?"
+    exit 1
+  else
+    vi ./${1}/log/master.err
+    exit 0
+  fi
+elif [ -r ./log/master.err ]; then
+  vi ./log/master.err
+  exit 0
+else
+  echo 'Run this from a BASEDIR, or pass trial number from a WORKDIR'
+  exit 2 
+fi

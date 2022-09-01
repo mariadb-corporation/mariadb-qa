@@ -37,7 +37,7 @@ ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_process_testcases /home/${USER}/fuzz
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_reducers_run /home/${USER}/fuzzing/stop_reducers_run
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run /home/${USER}/fuzzing/reducers_run
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run_loop /home/${USER}/fuzzing/reducers_run_loop
-# The ./afl script for basedirs is auto-linked by ~/start, and here it is also linked into ~/fuzzing for editing convience
+# The ./afl script for BASEDIRs is auto-linked by ~/start, and here it is also linked into ~/fuzzing for editing convience
 ln -fs /home/${USER}/mariadb-qa/fuzzer/afl /home/${USER}/fuzzing/afl
 for ((i=0;i<10;i++)); do
   ln -fs /home/${USER}/mariadb-qa/fuzzer/afl${i}-fuzz /home/${USER}/fuzzing/afl${i}-fuzz
@@ -106,12 +106,12 @@ chmod -w ~/b ~/c ~/i ~/m ~/o ~/p ~/r
 # Suggest alias'es
 echo "You can now add a list of helpful alias'es to the end of your ~/.bashrc script, by doing:"
 echo "
-alias a='./all'      # Start kill>wipe>start>cl in current basedir
+alias a='./all'      # Start kill>wipe>start>cl in current BASEDIR
 alias all='./all'    # Idem
 alias cl='~/cl'      # Run ~/mariadb-qa/pquery-clean-known.sh for the current (pquery) workdir
 alias c='cat '       # cat (display) a file (pass file name)
 alias k='clear'      # Clear screen
-alias b='~/b'        # Start bug report for in.sql in current basedir
+alias b='~/b'        # Start bug report for in.sql in current BASEDIR
 alias bd='screen -admS \"dbg_build\" bash -c \"~/mariadb-qa/build_mdpsms_dbg.sh; bash\"'  # Start a debug build for the current sourcedir (ref /test/clone.sh)
 alias bo='screen -admS \"opt_build\" bash -c \"~/mariadb-qa/build_mdpsms_opt.sh; bash\"'  # Idem, optimized build
 alias ba='screen -admS \"opt_build\" bash -c \"~/mariadb-qa/build_mdpsms_opt.sh & sleep 90; ~/mariadb-qa/build_mdpsms_dbg.sh; bash\"'  # Idem, both
@@ -120,7 +120,7 @@ alias gc='git commit -a -m '  # Commit to git with a given message (pass quoted 
 alias gs='git status'  # Show git status of current directory
 alias gp='git push'  # Push to git repository
 alias pr='~/pr'      # pquery-results for current workdir
-alias t='~/t'        # UniqueID (works in basedirs, and in workdir/trial dirs etc)
+alias t='~/t'        # UniqueID (works in BASEDIRs, and in workdir/trial dirs etc)
 alias tt='~/tt'      # UniqueID + known bugs scan + JIRA URL scan links
 alias sr='~/sr '     # Start reducer for a given trial (pass trial number)
 alias pg='~/pg'      # Start pquery-go-expert for current workdir
@@ -137,12 +137,12 @@ alias ds='cd /test;. ./u1'   # cd to the latest UBASAN debug 10.11 in /test
 alias os='cd /test;. ./uo1'  # cd to the latest UBASANoptimized 10.11 in /test
 alias i='~/i '       # Information about any trial in current workdir (pass trial number)
 alias ii='~/ii'      # Information about the current (pquery framework) workdir
-alias in='vi in.sql' # Edit ./in.sql in a basedir for example (usable with many other scripts in basedir and home)
+alias in='vi in.sql' # Edit ./in.sql in a BASEDIR for example (usable with many other scripts in BASEDIR and home)
 alias r='cd /data; timeout 120s ./results'  # Show results from workdirs in results.list (ref ~/gomd), stop at 120s
 alias g='cd /test;./gendirs.sh'  # cd to test and run gendirs.sh (dirs which will be used in ~/b and d/o scripts)
 alias gsan='cd /test;./gendirs.sh san'  # Idem, but for SAN builds
 alias da='cd /data'  # cd to /data where all workdirs live
-alias ct='cd /test'  # cd to /test where all basedirs/builds live
+alias ct='cd /test'  # cd to /test where all BASEDIRs/builds live
 alias cm='cd ~/mariadb-qa'  # cd to ~/mariadb-qa where all testing code lives
 alias cf='cd ~/fuzzing'     # cd to ~/fuzzing where all fuzzing results live
 alias eb='~/eb '     # Edit bug SQL (pass bug number, the numbers are sufficient but you can use MENT or MDEV)
@@ -150,14 +150,21 @@ alias kb='~/kb'      # Open the known bugs (knownbugs.list) file for editing
 alias kba='~/kba'    # Open the known SAN bugs (knownbugs.list.SAN) file for editing
 alias kbs='~/kbs '   # Search through all known bug UniqueID's (pass search string, for example a quoted UniqueID)
 alias my='./my'      # List simplified testcases in current (pquery) workdir
-alias gdb='./gdb'    # Start gdb in the current basedir or trial dir, assuming there is a core in /data
-alias stack='./stack'  # Produce a stack for the core in /data (run from within a basedir or trial dir)
+alias gdb='./gdb'    # Start gdb in the current BASEDIR or trial dir, assuming there is a core in /data
+alias stack='./stack'  # Produce a stack for the core in /data (run from within a BASEDIR or trial dir)
 alias as='cd /test; ./allstrings'  # Show UniqueID's per version after running ~/b (b)
 alias asm='cd /test; ./allstrings_merged'  # Show a list of merged UniqueID's seen after running ~/b (b)
 alias asn='cd /test; ./allstrings_new'  # Show a list of new, merged, UniqueID's after running ~/b (b)
-alias ve='vi ./log/master.err'  # Open the error log in a basedir
-alias vt='~/vt '     # Open the error log for a trial (pass trial number), or in a basedir
+alias ve='vi ./log/master.err'  # Open the error log in a BASEDIR
+alias vt='~/vt '     # Open the error log for a trial (pass trial number), or in a BASEDIR
 alias li='~/li'      # Run linkit (can be rerun as often as needed)
+alias mv='~/myver'   # Shows handy JIRA-based version tags for the current BASEDIR
+alias ge='cd /test;./grep_in_errorlogs.sh ' # Search for string in all BASEDIR error logs (pass string)
+alias fi='vi ~/mariadb-qa/REGEX_ERRORS_FILTER'  # Open error log filter list
+alias fii='vi ~/mariadb-qa/REGEX_ERRORS_FILTER.info'  # Open error log filter list info file
+alias fil='vi ~/mariadb-qa/REGEX_ERRORS_LASTLINE'  # Open error log last line filter list
+alias reg='vi /test/REGEX_EXCLUDE'  # Open the REGEX exclude dir for gendirs.sh (basedirs)
+alias v='~/v '       # Opens reducer{trial}.sh for a given trial (pass trial number)
 " > /tmp/.bashrc
 echo -e "cat /tmp/.bashrc >> ~/.bashrc\nRemember to cleanup old framework alias'es, though later ones replace earlier ones.\nDone!"
 exit 0
