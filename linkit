@@ -114,6 +114,7 @@ alias bo='screen -admS \"opt_build\" bash -c \"~/mariadb-qa/build_mdpsms_opt.sh;
 alias ba='screen -admS \"opt_build\" bash -c \"~/mariadb-qa/build_mdpsms_opt.sh & sleep 90; ~/mariadb-qa/build_mdpsms_dbg.sh; bash\"'  # Idem, both
 alias gc='git commit -a -m ' # Commit to git with a given message (pass quoted message)
 alias gs='git status'  # Show git status of current directory
+alias gp='git push'  # Push to git repository
 alias pr='~/pr'      # pquery-results for current workdir
 alias t='~/t'        # UniqueID (works in basedirs, and in workdir/trial dirs etc)
 alias tt='~/tt'      # UniqueID + known bugs scan + JIRA URL scan links
