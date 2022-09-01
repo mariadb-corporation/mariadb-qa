@@ -109,6 +109,11 @@ alias a='./all'      # Start kill>wipe>start>cl in current basedir
 alias all='./all'    # Idem
 alias c='clear'      # Clear screen
 alias b='~/b'        # Start bug report for in.sql in current basedir
+alias bd='screen -admS \"dbg_build\" bash -c \"~/mariadb-qa/build_mdpsms_dbg.sh; bash\"'  # Start a debug build for the current sourcedir (ref /test/clone.sh)
+alias bo='screen -admS \"opt_build\" bash -c \"~/mariadb-qa/build_mdpsms_opt.sh; bash\"'  # Idem, optimized build
+alias ba='screen -admS \"opt_build\" bash -c \"~/mariadb-qa/build_mdpsms_opt.sh & sleep 90; ~/mariadb-qa/build_mdpsms_dbg.sh; bash\"'  # Idem, both
+alias gc='git commit -a -m ' # Commit to git with a given message (pass quoted message)
+alias gs='git status'  # Show git status of current directory
 alias pr='~/pr'      # pquery-results for current workdir
 alias t='~/t'        # UniqueID (works in basedirs, and in workdir/trial dirs etc)
 alias tt='~/tt'      # UniqueID + known bugs scan + JIRA URL scan links
@@ -124,12 +129,18 @@ alias ds='cd /test;. ./u1'   # cd to the latest UBASAN debug 10.11 in /test
 alias os='cd /test;. ./uo1'  # cd to the latest UBASANoptimized 10.11 in /test
 alias i='~/i'        # Information about any trial in current workdir (pass trial number)
 alias ii='~/ii'      # Information about the current (pquery framework) workdir
+alias in='vi in.sql' # Edit ./in.sql in a basedir for example (usable with many other scripts in basedir and home)
+alias r='cd /data; timeout 120s ./results'  # Show results from workdirs in results.list (ref ~/gomd), stop at 120s
 alias g='cd /test;./gendirs.sh'  # cd to test and run gendirs.sh (dirs which will be used in ~/b and d/o scripts)
 alias gs='cd /test;./gendirs.sh san'  # Idem, but for SAN builds
 alias da='cd /data'  # cd to /data where all workdirs live
 alias ct='cd /test'  # cd to /test where all basedirs/builds live
 alias cm='cd ~/mariadb-qa'  # cd to ~/mariadb-qa where all testing code lives
 alias cf='cd ~/fuzzing'     # cd to ~/fuzzing where all fuzzing results live
+alias my='./my'      # List simplified testcases in current (pquery) workdir
+alias as='cd /test; ./allstrings'  # Show UniqueID's per version after running ~/b (b)
+alias asm='cd /test; ./allstrings_merged'  # Show a list of merged UniqueID's seen after running ~/b (b)
+alias asn='cd /test; ./allstrings_new'  # Show a list of new, merged, UniqueID's after running ~/b (b)
 "
 
 echo 'Done!'
