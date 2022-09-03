@@ -339,7 +339,6 @@ cat "${1}" | tr -d '`' | \
   sed 's|text|TEXT|gi' | \
   sed 's|date_sub[ ]*(|DATE_SUB(|gi' | \
   sed 's|concat_ws[ ]*(|CONCAT_WS(|gi' | \
-  sed 's|greatest[ ]*(|GREATEST(|gi' | \
   sed 's|coalesce[ ]*(|COALESCE(|gi' | \
   sed 's|char[ ]*(|CHAR(|gi' | \
   sed 's|if[ ]*(|IF(|gi' | \
@@ -377,6 +376,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|identified by|IDENTIFIED BY|gi' | \
   sed 's|autocommit|autocommit|gi' | \
   sed 's|test\([^ ]*\)|test\L\1|gi' | \
+  sed 's|greatest[ ]*(|GREATEST(|gi' | \
   sed 's|0x\([0-9A-Fa-f]\)|0x\1|gi' | \
   sed 's|)\([a-zA-Z]\+\)|) \1|gi' | \
   sed 's| ()|()|gi' | \

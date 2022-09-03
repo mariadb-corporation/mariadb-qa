@@ -104,7 +104,7 @@ fi
 # Protect homedir links which are easily overwritten by mistake
 chmod -w ~/b ~/c ~/i ~/m ~/o ~/p ~/r
 
-# Suggest alias'es
+# Suggest alias'es (Search key: Mac)
 # If you run into issues with predefined system commands try
 # grep '^alias' ~/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /bin/{} 2>/dev/null  # Ignore start of output
 # grep '^alias' ~/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /usr/bin/{} 2>/dev/null
@@ -153,6 +153,7 @@ alias ct='cd /test'  # cd to /test where all BASEDIRs/builds live
 alias cm='cd ~/mariadb-qa'  # cd to ~/mariadb-qa where all testing code lives
 alias cf='cd ~/fuzzing'     # cd to ~/fuzzing where all fuzzing results live
 alias eb='~/eb '     # Edit bug SQL (pass bug number, the numbers are sufficient but you can use MENT or MDEV)
+alias dt='~/dt '     # Delete a pquery trial in a WORKDIR (pass trial number)
 alias kb='~/kb'      # Open the known bugs (knownbugs.list) file for editing
 alias kba='~/kba'    # Open the known SAN bugs (knownbugs.list.SAN) file for editing
 alias kbs='~/kbs '   # Search through all known bug UniqueID's (pass search string, for example a quoted UniqueID)
@@ -177,6 +178,7 @@ alias rfi='vi ~/mariadb-qa/REGEX_ERRORS_FILTER.info'  # Open error log filter li
 alias rfil='vi ~/mariadb-qa/REGEX_ERRORS_LASTLINE'  # Open error log last line filter list
 alias reg='vi /test/REGEX_EXCLUDE'  # Open the REGEX exclude dir for gendirs.sh (basedirs)
 alias v='~/v '       # Opens reducer{trial}.sh for a given trial (pass trial number)
+alias tcp='~/tcp '   # Testcase prettify (pass SQL file)
 alias prg='~/pr | grep ' # Search ~/pr for a specific string or trial number (pass search string or trial number)
 alias j='. ~/j '     # Jump to a particular /data directory (pass, for example, workdir number)
 " > /tmp/.bashrc

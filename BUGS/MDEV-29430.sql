@@ -1,0 +1,6 @@
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY 'PWD0';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD0');
+CREATE TABLE t (c INT);
+CREATE TABLE t2 (a INT KEY,b CHAR(0),c CHAR(0)) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"' COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SELECT * FROM t2 WHERE a=' 0' AND (a XOR 0);
