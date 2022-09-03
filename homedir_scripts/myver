@@ -1,5 +1,8 @@
 #!/bin/bash
-if [ ! -r bin/mysqld -a ! -r ./mysqld ]; then
+if [ -d ./mysqld ]; then
+  echo "Assert: this does not look to be a BASEDIR but rather a WORKDIR. Please use this script from a BASEDIR only"
+  exit 1
+elif [ ! -r bin/mysqld -a ! -r ./mysqld ]; then
   echo "Assert: bin/mysqld nor ./mysqld not found!"
   exit 1
 fi
