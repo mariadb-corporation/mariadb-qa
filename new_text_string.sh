@@ -154,15 +154,17 @@ find_other_possible_issue_strings(){
 }
 
 # Check first if this is an ASAN/UBSAN/TSAN issue
-ASAN_OR_UBSAN_OR_TSAN_BUG=0
+SAN_BUG=0
 if [ $(grep -m1 --binary-files=text "=ERROR:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
-  ASAN_OR_UBSAN_OR_TSAN_BUG=1
+  SAN_BUG=1
 elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
-  ASAN_OR_UBSAN_OR_TSAN_BUG=1
+  SAN_BUG=1
 elif [ $(grep -im1 --binary-files=text "runtime error:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
-  ASAN_OR_UBSAN_OR_TSAN_BUG=1
+  SAN_BUG=1
+elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+  SAN_BUG=1
 fi
-if [ "${ASAN_OR_UBSAN_OR_TSAN_BUG}" -eq 1 ]; then
+if [ "${SAN_BUG}" -eq 1 ]; then
   TEXT="$(~/mariadb-qa/san_text_string.sh ${ERROR_LOG})"
   if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
     1>&2 echo "${SHOWTEXT}"

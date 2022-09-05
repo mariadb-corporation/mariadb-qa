@@ -610,12 +610,18 @@ echo 'wc -l out.sql' >>loopin
 echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DROP/CREATE/USE DATABASE test!"' >>loopin
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >>loopin
 echo "#!/bin/bash" >multirun_loop
-echo "while [ ! -r ./data/core ]; do ./all_no_cl; ./test; sleep 2; done; sleep 2; ~/tt" >>multirun_loop
+echo "NR_OF_LOOPS=0" >>multirun_loop
+echo "while [ ! -r ./data/core ]; do ./all_no_cl; ./test; NR_OF_LOOPS=\$[ \${NR_OF_LOOPS} + 1]; sleep 2; done; sleep 2; ~/tt" >>multirun_loop
+echo "echo \"Number of loops executed to obtain ./data/core: \${NR_OF_LOOPS}\"" >>multirun_loop
 echo "#!/bin/bash" >multirun_loop_shutdown
-echo "while [ ! -r ./data/core ]; do ./all_no_cl; ./test; ./stop; sleep 2; done; sleep 2; ~/tt" >>multirun_loop_shutdown
+echo "NR_OF_LOOPS=0" >>multirun_loop_shutdown
+echo "while [ ! -r ./data/core ]; do ./all_no_cl; ./test; ./stop; NR_OF_LOOPS=\$[ \${NR_OF_LOOPS} + 1]; sleep 2; done; sleep 2; ~/tt" >>multirun_loop_shutdown
+echo "echo \"Number of loops executed to obtain ./data/core: \${NR_OF_LOOPS}\"" >>multirun_loop_shutdown
 echo "#!/bin/bash" >multirun_loop_no_wipe
+echo "NR_OF_LOOPS=0" >>multirun_loop_no_wipe
 echo "./all_no_cl" >>multirun_loop_no_wipe
-echo "while [ ! -r ./data/core ]; do ./start; ./test; sleep 2; done; sleep 2; ~/tt" >>multirun_loop_no_wipe
+echo "while [ ! -r ./data/core ]; do ./start; ./test; NR_OF_LOOPS=\$[ \${NR_OF_LOOPS} + 1]; sleep 2; done; sleep 2; ~/tt" >>multirun_loop_no_wipe
+echo "echo \"Number of loops executed to obtain ./data/core: \${NR_OF_LOOPS}\"" >>multirun_loop_no_wipe
 echo "#!/bin/bash" >multirun_mysqld
 echo "~/mariadb-qa/multirun_mysqld.sh \"\${*}\"" >>multirun_mysqld
 echo "#!/bin/bash" >multirun_mysqld_text

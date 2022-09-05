@@ -119,8 +119,8 @@ flag_ready_check(){
 
 # Preflight check
 FLAG_ASAN_PRESENT=0; FLAG_TSAN_PRESENT=0; FLAG_UBSAN_PRESENT=0
-if grep -iq --binary-files=text "=ERROR:" "${ERROR_LOG}"; then
-  FLAG_ASAN_PRESENT=1
+if grep -iqE --binary-files=text "=ERROR:|LeakSanitizer:" "${ERROR_LOG}"; then  # Note that '=ERROR:' is likely enough as this includes LeakSanitizer. The common error is: ERROR: LeakSanitizer: detected memory leaks
+  FLAG_ASAN_PRESENT=1  # Includes LSAN handling
 fi
 if grep -iq --binary-files=text "ThreadSanitizer:" "${ERROR_LOG}"; then
   FLAG_TSAN_PRESENT=1
