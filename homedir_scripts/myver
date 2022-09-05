@@ -1,25 +1,48 @@
 #!/bin/bash
-if [ -d ./mysqld ]; then
-  echo "Assert: this does not look to be a BASEDIR but rather a WORKDIR. Please use this script from a BASEDIR only"
-  exit 1
-elif [ ! -r bin/mysqld -a ! -r ./mysqld ]; then
-  echo "Assert: bin/mysqld nor ./mysqld not found!"
-  exit 1
+# Created by Roel Van de Paar, MariaDB
+# Expanded by Ramesh Sivaraman, MariaDB
+
+# This script, when executed in proximity to mysqld (ref code below), shows handy JIRA formatting strings, showing the server version, source code revision and build type. These can then be used to surround stacks, log exerpts, code, etc.
+
+set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
+
+MYSQLD=
+if [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
+  MYSQLD="./bin/mysqld"
+elif [ -r ./mysqld ]; then  # Ported from previous version of myver script
+  MYSQLD="./mysqld"
+elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Not currently used, but provisioned alike to ~/t
+  MYSQLD="../mysqld"
+elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
+  MYSQLD="../mysqld/mysqld"
+elif [ -r ./log/master.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
+    MYSQLD="${POTENTIAL_MYSQLD}"
+  fi
+elif [ -r ./node1/node1.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
+    MYSQLD="${POTENTIAL_MYSQLD}"
+  fi
 fi
-if [ -r bin/mysqld ]; then BIN="bin/mysqld"; else BIN="./mysqld"; fi
-SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${BIN} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
-SERVER_VERSION="$(${BIN} --version | grep -om1 '[-0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
-LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
-BUILD_TYPE=
-SAN=
-SAN="$(echo "${PWD}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"
-if [ -z "${SAN}" ]; then
-  if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
-  if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
+if [ -z "${MYSQLD}" ]; then
+  echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld nor other potential mysqld's extracted from any logs at ./log/master.err or ./node1/node1.err"
+  exit 1
 else
-  if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, ${SAN})"; fi
-  if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug, ${SAN})"; fi
+  SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${MYSQLD} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_r[ei]vision||gi')"
+  SERVER_VERSION="$(${MYSQLD} --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
+  LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
+  BUILD_TYPE=
+  SAN="$(echo "${PWD}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"
+  if [ -z "${SAN}" ]; then
+    if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
+    if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
+  else
+    if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, ${SAN})"; fi
+    if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug, ${SAN})"; fi
+  fi
+  echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
+  echo ""
+  echo "{noformat}"
 fi
-echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
-echo ""
-echo "{noformat}"

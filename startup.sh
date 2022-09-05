@@ -167,7 +167,7 @@ fi
 
 # Setup scritps
 rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery wipe* clean_failing_queries memory_use_trace afl 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop | multirun_no_wipe | multirun_loop_shutdown | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -611,6 +611,11 @@ echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DR
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >>loopin
 echo "#!/bin/bash" >multirun_loop
 echo "while [ ! -r ./data/core ]; do ./all_no_cl; ./test; sleep 2; done; sleep 2; ~/tt" >>multirun_loop
+echo "#!/bin/bash" >multirun_loop_shutdown
+echo "while [ ! -r ./data/core ]; do ./all_no_cl; ./test; ./stop; sleep 2; done; sleep 2; ~/tt" >>multirun_loop_shutdown
+echo "#!/bin/bash" >multirun_loop_no_wipe
+echo "./all_no_cl" >>multirun_loop_no_wipe
+echo "while [ ! -r ./data/core ]; do ./start; ./test; sleep 2; done; sleep 2; ~/tt" >>multirun_loop_no_wipe
 echo "#!/bin/bash" >multirun_mysqld
 echo "~/mariadb-qa/multirun_mysqld.sh \"\${*}\"" >>multirun_mysqld
 echo "#!/bin/bash" >multirun_mysqld_text

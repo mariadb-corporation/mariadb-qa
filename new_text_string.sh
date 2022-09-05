@@ -1,5 +1,9 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+# Expanded by Ramesh Sivaraman, MariaDB
+
+# This script (new_text_string.sh) generates a UniqueID for a given crash, assert, ASAN, UBSAN, LSAN or TSAN issue
+# It is generall executed from within a BASEDIR which has experienced a failure of any of these types
 
 # Exit codes in this script are significant; used by reducer.sh and potentially other scripts
 # First option to this script can be;
