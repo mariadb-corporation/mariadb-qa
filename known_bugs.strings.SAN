@@ -4,10 +4,12 @@
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 
 ##### CURRENT BUGS (Search key: Mac) #####
-ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str_generic                                          ## MDEV-26822
-ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|String::copy|Item_char_typecast::val_str|Item::val_str_ascii                                                  ## MDEV-26822
-ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str                                                                ## MDEV-26822
-ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str_generic                                                        ## MDEV-26822
+ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                            ## MDEV-26822
+ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                          ## MDEV-26822
+ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str_generic                                          ## MDEV-29462
+ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|String::copy|Item_char_typecast::val_str|Item::val_str_ascii                                                  ## MDEV-29462
+ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str                                                                ## MDEV-29462
+ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str_generic                                                        ## MDEV-29462
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|deletefrm|create_table_impl|mysql_create_table_no_lock                                                                    ## MDEV-29461
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|deletefrm|rea_create_table|create_table_impl                                                                              ## MDEV-29461
 ASAN|use-after-poison|sql/handler.cc|ha_discover_table|open_table_def|tdc_acquire_share|open_table                                                                             ## MDEV-29434
