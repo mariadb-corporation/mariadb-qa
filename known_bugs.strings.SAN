@@ -4,6 +4,10 @@
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|Field_real::get_double|Field_double::store                     ## MDEV-29473
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|charset_info_st::strntod|Field_real::get_double                ## MDEV-29473
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|Field_real::get_double                         ## MDEV-29473
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                       ## MDEV-29473
 ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                            ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                          ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str_generic                                          ## MDEV-29462
