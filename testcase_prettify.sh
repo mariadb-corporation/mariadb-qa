@@ -180,6 +180,7 @@ cat "${1}" | tr -d '`' | \
   sed 's|show|SHOW|gi' | \
   sed 's|row|ROW|gi' | \
   sed 's|grant|GRANT|gi' | \
+  sed 's|grantee|GRANTEE|gi' | \
   sed 's|concat|CONCAT|gi' | \
   sed 's|cast|CAST|gi' | \
   sed 's|use_frm|USE_FRM|gi' | \
