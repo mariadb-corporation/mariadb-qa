@@ -612,6 +612,7 @@ echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will
 echo "#!/bin/bash" >multirun_loop
 echo "# This script will keep looping in.sql until ./data/core is present/detected. If loop cycles take 90 seconds or more, you may want to check that the server is not hanging in those 90 seconds (there is a 90 second timeout in ./stop which is being used, you could also increase that to establish if it is is the mysqladmin shutdown is hanging). Only other possible reason is a(very) large input SQL testcase. Generally loops will take 5 seconds or less with a small input file." >>multirun_loop
 echo "NR_OF_LOOPS=0" >>multirun_loop
+echo "echo \"Number of lines in in.sql: \$(wc -l in.sql | sed 's| .*||')\"" >>multirun_loop
 echo "rm -Rf ./data ./data.multirun" >> multirun_loop
 echo "./all_no_cl > ./last_all_no_cl.multirun.log 2>&1" >>multirun_loop
 echo "mv data data.multirun" >>multirun_loop

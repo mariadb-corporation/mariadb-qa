@@ -61,3 +61,4 @@ Warning: Memory not freed: 280                        https://jira.mariadb.org/b
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' WHILE
 Warning: Memory not freed: 560                        https://jira.mariadb.org/browse/MDEV-26335 DROP USER CURRENT_USER()
 spider/spd_table.cc.*mutex.*spider/spd_table.cc       https://jira.mariadb.org/browse/MDEV-29421
+invalid value in column mysql.proc.db_collation       Testcase artifact caused by direct mysql.proc INSERT
