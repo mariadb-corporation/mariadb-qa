@@ -99,7 +99,7 @@ else
                         if [ ${AGESUBDIR} -ge 10800 ]; then  # Don't delete pquery-run.sh directories if they have recent trials in them (i.e. they are likely still running): >=3hr
                           if [[ "${DIR}" != "/dev/shm/sql_shuffled" && "${DIR}" != "/dev/shm/afl"* ]]; then  # Do not delete the temporary SQL shuffle directory created and used by pquery-run.sh, and do not delete fuzzer directories
                             if [ ${SILENT} -eq 0 ]; then
-                              echo "Deleting directory ${DIR} (trial subdirectory age: ${AGESUBDIR}s)"
+                              echo "Deleting workdir ${DIR} (trial subdirectory age: ${AGESUBDIR}s)"
                             fi
                             COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
                             if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi

@@ -1101,9 +1101,25 @@ pquery_test() {
       echoit "Note that this can be caused by not having perl-Data-Dumper installed (sudo yum install perl-Data-Dumper  #OR#  sudo apt-get install libdata-dumper-simple-perl), which is required for mysql_install_db."
       exit 1
     elif [[ ${PQUERY3} -eq 1 && ${TRIAL} -gt 1 ]]; then
-      cp -R ${WORKDIR}/$((${TRIAL} - 1))/data/* ${RUNDIR}/${TRIAL}/data 2>&1
+      EXIT_CODE_CP=1
+      while [ ${EXIT_CODE_CP} -eq 1]; do  # Loop till no error is observed (caters for OOS issues)
+        if [ -d ${RUNDIR}/${TRIAL}/data ]; then  # Will exist if there was an OOS issue on second execution of this while loop
+          rm -Rf ${RUNDIR}/${TRIAL}/data
+          mkdir ${RUNDIR}/${TRIAL}/data
+        fi
+        cp -R ${WORKDIR}/$((${TRIAL} - 1))/data/* ${RUNDIR}/${TRIAL}/data 2>&1
+        EXIT_CODE_CP=$?
+      done
     else
-      cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data 2>&1
+      EXIT_CODE_CP=1
+      while [ ${EXIT_CODE_CP} -eq 1]; do  # Loop till no error is observed (caters for OOS issues)
+        if [ -d ${RUNDIR}/${TRIAL}/data ]; then  # Will exist if there was an OOS issue on second execution of this while loop
+          rm -Rf ${RUNDIR}/${TRIAL}/data
+          mkdir ${RUNDIR}/${TRIAL}/data
+        fi
+        cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data 2>&1
+        EXIT_CODE_CP=$?
+      done
     fi
     if [[ ${REPL} -eq 1 ]]; then
       mkdir -p ${RUNDIR}/${TRIAL}/tmp_slave
