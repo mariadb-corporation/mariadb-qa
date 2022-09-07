@@ -612,12 +612,12 @@ echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will
 echo "#!/bin/bash" >multirun_loop
 echo "# This script will keep looping in.sql until ./data/core is present/detected. If loop cycles take 90 seconds or more, you may want to check that the server is not hanging in those 90 seconds (there is a 90 second timeout in ./stop which is being used, you could also increase that to establish if it is is the mysqladmin shutdown is hanging). Only other possible reason is a(very) large input SQL testcase. Generally loops will take 5 seconds or less with a small input file." >>multirun_loop
 echo "NR_OF_LOOPS=0" >>multirun_loop
-echo "rm -Rf ./data" >> multirun_loop
+echo "rm -Rf ./data ./data.multirun" >> multirun_loop
 echo "./all_no_cl > ./last_all_no_cl.multirun.log 2>&1" >>multirun_loop
 echo "mv data data.multirun" >>multirun_loop
-echo "while [ ! -r ./data/core ]; do NR_OF_LOOPS=\$[ \${NR_OF_LOOPS} + 1]; echo \"\$(date +'%F %T') Loop: \${NR_OF_LOOPS}...\"; rm -Rf ./data; cp -r ./data.multirun ./data; ./all_no_cl > ./last_all_no_cl.multirun.log 2>&1; ./test; ./stop >/dev/null; NR_OF_LOOPS=\$[ \${NR_OF_LOOPS} + 1]; sleep 2; done; sleep 2; ~/tt" >>multirun_loop
+echo "while [ ! -r ./data/core ]; do NR_OF_LOOPS=\$[ \${NR_OF_LOOPS} + 1]; echo \"\$(date +'%F %T') Loop: \${NR_OF_LOOPS}...\"; rm -Rf ./data; cp -r ./data.multirun ./data; ./all_no_cl > ./last_all_no_cl.multirun.log 2>&1; ./test; ./stop >/dev/null; sleep 2; done; sleep 2; ~/tt" >>multirun_loop
 echo "echo \"Number of loops executed to obtain ./data/core: \${NR_OF_LOOPS}\"" >>multirun_loop
-echo "rm -Rf data.multirun" >>multirun_loop
+echo "rm -Rf ./data.multirun" >>multirun_loop
 echo "#!/bin/bash" >multirun_mysqld
 echo "~/mariadb-qa/multirun_mysqld.sh \"\${*}\"" >>multirun_mysqld
 echo "#!/bin/bash" >multirun_mysqld_text
