@@ -3,6 +3,7 @@
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1054
+MARIADB_ERROR_CODE|MariaDB error code: 1046
 MARIADB_ERROR_CODE|MariaDB error code: 1064
 MARIADB_ERROR_CODE|MariaDB error code: 1146
 MARIADB_ERROR_CODE|MariaDB error code: 1193
@@ -109,12 +110,14 @@ fil_space_t::is_valid_flags(flags, space->id)|SIGABRT|fsp_flags_try_adjust|fil_i
  
 ##### Current MDEV-27106 bugs (temporary) #####
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                                                                                                               ## MDEV-27575
-str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## MDEV-27676
 
 ##### Current MDEV-28883 bugs (temporary) #####
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func                                                   ## MDEV-29502
+SIGSEGV|Static_binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func                                            ## MDEV-29502
+SIGSEGV|my_strntoull10rnd_8bit|charset_info_st::strntoull10rnd|Field_longlong::store|spider_db_mbase_row::store_to_field                                                       ## MDEV-29502
 !trx_free || !trx->locked_connections|SIGABRT|spider_free_trx_conn|spider_free_trx_alloc|spider_free_trx|spider_close_connection
 MEMORY_NOT_FREED|Warning: Memory not freed     ## MDEV-29484
 SIGSEGV|spider_db_mbase_util::append_table|spider_db_mbase_util::append_tables_top_down|spider_db_mbase_util::append_embedding_tables|spider_db_mbase_util::append_table       ## MDEV-29163
@@ -1493,3 +1496,4 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # SIGSEGV|st_select_lex_node::exclude_from_tree|st_select_lex_node::exclude|Item_subselect::eliminate_subselect_processor|Item_in_subselect::walk                     ## Fixed ## MDEV-29350
 # SIGSEGV|st_select_lex_node::exclude_from_tree|st_select_lex_node::exclude|Item_subselect::eliminate_subselect_processor|Item_subselect::walk                        ## Fixed ## MDEV-29350
 # 0|SIGABRT|Type_handler_row::Item_save_in_field|Item::save_in_field|Item_trigger_field::set_value|Item_trigger_field::set_value                                      ## Fixed ## MDEV-29356
+# str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## Not Reproducible ## MDEV-27676

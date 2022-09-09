@@ -399,6 +399,8 @@ cat "${1}" | tr -d '`' | \
        s|semijoin|semijoin|gi; \
        s|performance_schema|performance_schema|gi; \
        s|performance_schema\.\([a-zA-Z]\+\)|performance_schema.\L\1|gi; \
+       s|des_encrypt|DES_ENCRYPT|gi; \
+       s|des_decrypt|DES_DECRYPT|gi; \
        s|sql_thread|SQL_THREAD|gi; \
        s|io_thread|IO_THREAD|gi; \
        s|( (|((|g;s|) )|))|g; \
