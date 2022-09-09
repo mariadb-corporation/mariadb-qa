@@ -118,6 +118,7 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 SIGSEGV|Binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func                                                   ## MDEV-29502
 SIGSEGV|Static_binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func                                            ## MDEV-29502
 SIGSEGV|my_strntoull10rnd_8bit|charset_info_st::strntoull10rnd|Field_longlong::store|spider_db_mbase_row::store_to_field                                                       ## MDEV-29502
+share->tdc->flushed|SIGABRT|close_all_tables_for_name|handle_alter_part_error|fast_alter_partition_table|mysql_alter_table                                                     ## MDEV-29503
 !trx_free || !trx->locked_connections|SIGABRT|spider_free_trx_conn|spider_free_trx_alloc|spider_free_trx|spider_close_connection
 MEMORY_NOT_FREED|Warning: Memory not freed     ## MDEV-29484
 SIGSEGV|spider_db_mbase_util::append_table|spider_db_mbase_util::append_tables_top_down|spider_db_mbase_util::append_embedding_tables|spider_db_mbase_util::append_table       ## MDEV-29163
