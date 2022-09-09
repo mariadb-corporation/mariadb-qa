@@ -115,6 +115,7 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+share->tdc->flushed|SIGABRT|close_all_tables_for_name|handle_alter_part_error|fast_alter_partition_table|mysql_alter_table                                                     ## MDEV-29503
 !trx_free || !trx->locked_connections|SIGABRT|spider_free_trx_conn|spider_free_trx_alloc|spider_free_trx|spider_close_connection
 MEMORY_NOT_FREED|Warning: Memory not freed     ## MDEV-29484
 SIGSEGV|spider_db_mbase_util::append_table|spider_db_mbase_util::append_tables_top_down|spider_db_mbase_util::append_embedding_tables|spider_db_mbase_util::append_table       ## MDEV-29163
