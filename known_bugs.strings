@@ -20,8 +20,9 @@ MARIADB_ERROR_CODE|MariaDB error code: 2005
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  # https://jira.mariadb.org/browse/MDEV-26258
 
 ##### MDEV-16329 TESTING TEMPORARY #####
-thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|start_thread|clone  ## INSERT DELAYED not supported on Spider (fixed already in trunk)
-part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row  ## MDEV-26544 fixed in trunk but not in preview-10.10-ddl yet
+thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|start_thread|clone ## INSERT DELAYED not supported on Spider (fixed already in trunk)
+part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row                         ## MDEV-26544 fixed in trunk but not in preview-10.10-ddl yet
+!table->pos_in_locked_tables|SIGABRT|tc_release_table|close_thread_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                          ## MDEV-16329
 
 ##### TEMPORARY QA FILTERS: BUGS KNOWN TO BE FIXED, BUT PRESENT IN OLDER FEATURE BRANCHES #####
 cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28871
@@ -115,12 +116,15 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                                           ## MDEV-29507
+table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|row_drop_table_for_mysql|ha_innobase::delete_table                                                  ## MDEV-29507
+table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_table_remove_from_cache_low|dict_table_remove_from_cache|row_drop_table_for_mysql                                 ## MDEV-29507
+table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_table_remove_from_cache_low|row_drop_table_for_mysql|ha_innobase::delete_table                                    ## MDEV-29507
 SIGSEGV|Binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func                                                   ## MDEV-29502
 SIGSEGV|Static_binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func                                            ## MDEV-29502
 SIGSEGV|my_strntoull10rnd_8bit|charset_info_st::strntoull10rnd|Field_longlong::store|spider_db_mbase_row::store_to_field                                                       ## MDEV-29502
 share->tdc->flushed|SIGABRT|close_all_tables_for_name|handle_alter_part_error|fast_alter_partition_table|mysql_alter_table                                                     ## MDEV-29503
 !trx_free || !trx->locked_connections|SIGABRT|spider_free_trx_conn|spider_free_trx_alloc|spider_free_trx|spider_close_connection
-MEMORY_NOT_FREED|Warning: Memory not freed     ## MDEV-29484
 SIGSEGV|spider_db_mbase_util::append_table|spider_db_mbase_util::append_tables_top_down|spider_db_mbase_util::append_embedding_tables|spider_db_mbase_util::append_table       ## MDEV-29163
 SIGSEGV|spider_db_mbase_util::append_table|spider_db_mbase_util::append_tables_top_down|spider_db_mbase_util::append_from_and_tables|spider_group_by_handler::init_scan        ## MDEV-29163
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|ha_partition::external_lock|handler::ha_external_lock|handler::ha_external_unlock                   ## MDEV-29450
@@ -304,6 +308,7 @@ SIGSEGV|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-28516
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::check|handler::ha_check|ha_partition::handle_opt_part ## MDEV-28514
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::check|handler::ha_check|mysql_admin_table       ## MDEV-28514
+file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::repair|handler::ha_repair|mysql_admin_table     ## MDEV-28514
 SIGSEGV|charset_info_st::strnncoll|parse_option_list|mysql_prepare_create_table|mysql_create_frm_image                                                                         ## MDEV-28497
 SIGSEGV|my_scan_weight_utf8_general_ci|my_scan_weight_utf8_general_ci|my_strnncoll_utf8_general_ci|engine_option_value::link                                                   ## MDEV-28497
 SIGSEGV|my_scan_weight_utf8mb3_general_ci|my_scan_weight_utf8mb3_general_ci|my_strnncoll_utf8mb3_general_ci|charset_info_st::strnncoll                                         ## MDEV-28497
@@ -484,6 +489,7 @@ state() == s_preparing || (is_xa() && state() == s_replaying) || (ret && (state(
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_analyze_table::execute                        ## MDEV-26258
 SIGSEGV|show_create_table_ex|show_create_table|mysqld_show_create_get_fields|mysqld_show_create                                                                                ## MDEV-26258
 SIGSEGV|show_create_table|mysqld_show_create_get_fields|mysqld_show_create|mysql_execute_command                                                                               ## MDEV-26258
+pagecache->block_root[i].status == 0|SIGABRT|check_pagecache_is_cleaned_up|end_pagecache|maria_end|maria_panic                                                                 ## MDEV-26258
 fixed || state == NO_VALUE|SIGABRT|Item_param::basic_const_item|Item_param::eq|find_item_in_list|find_order_in_list                                                            ## MDEV-15704
 fixed || state == NO_VALUE|SIGABRT|Item_param::basic_const_item|find_order_in_list|setup_order|setup_without_group                                                             ## MDEV-15704
 SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_lock::has_pending_conflicting_lock|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush                             ## MDEV-26216
