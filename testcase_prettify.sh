@@ -164,6 +164,7 @@ cat "${1}" | tr -d '`' | \
        s|master|MASTER|gi; \
        s|asc|ASC|gi; \
        s|limit|LIMIT|gi; \
+       s|DELIMITER|DELIMITER|gi; \
        s|group by|GROUP BY|gi; \
        s|count|COUNT|gi; \
        s| as | AS |gi; \

@@ -11,6 +11,8 @@ if [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, 
   MYSQLD="./bin/mysqld"
 elif [ -r ./mysqld ]; then  # Ported from previous version of myver script
   MYSQLD="./mysqld"
+elif [ -r ../bin/mysqld ]; then  # Handy when myver is being executed from the mysql-test dir
+  MYSQLD="../bin/mysqld"
 elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Not currently used, but provisioned alike to ~/t
   MYSQLD="../mysqld"
 elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories

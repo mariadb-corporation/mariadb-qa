@@ -27,9 +27,10 @@ part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handle
 ##### TEMPORARY QA FILTERS: BUGS KNOWN TO BE FIXED, BUT PRESENT IN OLDER FEATURE BRANCHES #####
 cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28871
 
-##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (MOSTLY DISABLED FILTERS TO AVOID MISSING OTHER BUGS) #####
+##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (DISABLED GENERIC FILTERS TO AVOID MISSING OTHER BUGS) #####
 #**# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                    ## MDEV-26258
 #**# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                    ## MDEV-29289
+#**# status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql ## MDEV-25927
 
 ##### CURRENT STACK SMASHING / MEMORY OVERFLOW/OVEWRITE BUGS (MOSTLY DISABLED FILTERS TO AVOID MISSING OTHER BUGS) #####
 #**# SIGSEGV|Backtrace stopped: Cannot access memory at address                                                                                                                ## MDEV-29352
@@ -52,7 +53,6 @@ SIGSEGV|strlen|__GI__dl_exception_create|__GI__dl_signal_error|_dl_close        
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-19569
 marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-24658
 open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                       ## MDEV-25927
-status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql     ## MDEV-25927
 SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                                             ## MDEV-24686
 
 ##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
