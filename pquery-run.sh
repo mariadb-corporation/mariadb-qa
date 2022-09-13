@@ -158,10 +158,10 @@ if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
     exit 1
   fi
   # TODO: this seems to cause errors: ./pquery-run.sh: line 126: 324998: No such file or directory
-  if [ ${PRE_SHUFFLE_SQL_LINES} < $[ $[ $[ ${PQUERY_RUN_TIMEOUT} / 15 ] * 25000 * ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ] -2 ] ]; then
-    echoit "Warning: PRE_SHUFFLE_SQL_LINES (${PRE_SHUFFLE_SQL_LINES}) is set to less than the minimum recommended 25k queries per 15 seconds times the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE (${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}) trials. You may want to increase this. See the formula here or in pquery-run.conf"
-    sleep 10
-  fi
+  #if [ ${PRE_SHUFFLE_SQL_LINES} < $[ $[ $[ ${PQUERY_RUN_TIMEOUT} / 15 ] * 25000 * ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ] -2 ] ]; then
+  #  echoit "Warning: PRE_SHUFFLE_SQL_LINES (${PRE_SHUFFLE_SQL_LINES}) is set to less than the minimum recommended 25k queries per 15 seconds times the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE (${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}) trials. You may want to increase this. See the formula here or in pquery-run.conf"
+  #  sleep 10
+  #fi
 fi
 
 # Nr of MDG nodes 1-n
@@ -1102,23 +1102,22 @@ pquery_test() {
       exit 1
     elif [[ ${PQUERY3} -eq 1 && ${TRIAL} -gt 1 ]]; then
       EXIT_CODE_CP=1
-      while [ ${EXIT_CODE_CP} -eq 1]; do  # Loop till no error is observed (caters for OOS issues)
-        if [ -d ${RUNDIR}/${TRIAL}/data ]; then  # Will exist if there was an OOS issue on second execution of this while loop
-          rm -Rf ${RUNDIR}/${TRIAL}/data
-          mkdir ${RUNDIR}/${TRIAL}/data
-        fi
-        cp -R ${WORKDIR}/$((${TRIAL} - 1))/data/* ${RUNDIR}/${TRIAL}/data 2>&1
+      while [ "${EXIT_CODE_CP}" -eq 1 ]; do  # Loop till no error is observed (caters for OOS issues)
+        rm -Rf ${RUNDIR}/${TRIAL}/data  # Cleanup if there was an OOS/OOM in previous loop etc.
+        mkdir ${RUNDIR}/${TRIAL}/data  # RUNDIR/TRIAL already exists, now create data dir
+        cp -R ${WORKDIR}/$((${TRIAL} - 1))/data/* ${RUNDIR}/${TRIAL}/ 2>&1
         EXIT_CODE_CP=$?
       done
     else
       EXIT_CODE_CP=1
-      while [ ${EXIT_CODE_CP} -eq 1]; do  # Loop till no error is observed (caters for OOS issues)
-        if [ -d ${RUNDIR}/${TRIAL}/data ]; then  # Will exist if there was an OOS issue on second execution of this while loop
-          rm -Rf ${RUNDIR}/${TRIAL}/data
-          mkdir ${RUNDIR}/${TRIAL}/data
-        fi
-        cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data 2>&1
+      while [ "${EXIT_CODE_CP}" -eq 1 ]; do  # Loop till no error is observed (caters for OOS issues)
+        rm -Rf ${RUNDIR}/${TRIAL}/data  # Cleanup if there was an OOS/OOM in previous loop etc.
+        mkdir ${RUNDIR}/${TRIAL}/data  # RUNDIR/TRIAL already exists, now create data dir
+        cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/ 2>&1
         EXIT_CODE_CP=$?
+        if [ -z "${EXIT_CODE_CP}" ]; then  # It seems to happen, TODO but not sure why
+          EXIT_CODE_CP=1
+        fi
       done
     fi
     if [[ ${REPL} -eq 1 ]]; then
@@ -1299,7 +1298,7 @@ pquery_test() {
     chmod +x ${RUNDIR}/${TRIAL}/mysqlcheck_*
     echo "# Recovery testing script." > ${RUNDIR}/${TRIAL}/start_recovery
     echo "# This script creates an all-privileges recovery@'%' user; ref recovery-user.sql in the wordir (no the trial dir))" >> ${RUNDIR}/${TRIAL}/start_recovery
-    echo "# It thens brings up the server for a crash recovery test." >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "# It then brings up the server for a crash recovery test." >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "BASEDIR=$BASEDIR" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "if [ ! -r ${WORKDIR}/${TRIAL}/log/master.original.err ]; then" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "  cp ${WORKDIR}/${TRIAL}/log/master.err ${WORKDIR}/${TRIAL}/log/master.original.err" >> ${RUNDIR}/${TRIAL}/start_recovery

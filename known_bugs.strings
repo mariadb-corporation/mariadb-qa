@@ -46,8 +46,7 @@ SIGSEGV|strlen|__GI__dl_exception_create|__GI__dl_signal_error|_dl_close        
 
 ##### CURRENT BUGS WHICH REQUIRE ADDITIONAL TESTCASES (MOSTLY DISABLED FILTERS) #####
 #**# SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                              ## MDEV-24911
-#**# index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                           ## MDEV-23801 (was 22714)
-#**# index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                    ## MDEV-23801 (was 22714)
+
 
 ##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-19569
@@ -116,6 +115,13 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+IGABRT|safe_mutex_destroy|inline_mysql_mutex_destroy|fts_cache_destroy|fts_t::~fts_t                                                                                           ## MDEV_29053
+table->get_ref_count() == 0|SIGABRT|Backtrace stopped: Cannot access memory at address                                                                                         ## MDEV-29277
+table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|dict_sys_t::close|innodb_shutdown                                                               ## MDEV-29277
+index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                                ## MDEV-23801 (was 22714)
+index->table->instant|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                                         ## MDEV-23801 (was 22714)
+block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                       ## MDEV-23801 (was 22714)
+index->table->instant || block->page.id.page_no() != index->page|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first              ## MDEV-23801 (was 22714)
 table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                                           ## MDEV-29507
 table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|row_drop_table_for_mysql|ha_innobase::delete_table                                                  ## MDEV-29507
 table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_table_remove_from_cache_low|dict_table_remove_from_cache|row_drop_table_for_mysql                                 ## MDEV-29507

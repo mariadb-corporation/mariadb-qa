@@ -18,10 +18,12 @@ fi
 INSTANCE="afl${1}"
 
 if [ "${STY}" == "" ]; then
+  THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
+  SCREEN_NAME="srv${1}-afl"
   echo "Not a screen, restarting myself inside a screen"
-  screen -admS "srv${1}-afl" bash -c "./$0 ${1}"
-  #sleep 1
-  #screen -d -r srv${1}-afl
+  screen -admS "${SCREEN_NAME}" bash -c "${THIS_SCRIPT} ${*}"
+  sleep 1
+  screen -d -r "${SCREEN_NAME}"
   return 2> /dev/null; exit 0
 fi
 
