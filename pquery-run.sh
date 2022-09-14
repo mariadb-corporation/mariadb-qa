@@ -43,10 +43,10 @@ PRE_SHUFFLE_TRIAL_ROUND=0  # Resets to 0 each time PRE_SHUFFLE_TRIALS_PER_SHUFFL
 # https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
 # https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer (LSAN is enabled by default except on OS X)
 # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1
+export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
 # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
-#export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:check_initialization_order=1:detect_stack_use_after_return=1:abort_on_error=1
+#export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 export UBSAN_OPTIONS=print_stacktrace=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
 

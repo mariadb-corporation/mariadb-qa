@@ -271,7 +271,7 @@ else
   $CMD | tee /tmp/psms_opt_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 fi
-# Previously we had: ASAN_OPTIONS="detect_leaks=0" make... here due to upstream http://bugs.mysql.com/bug.php?id=80014 but this was fixed
+
 make -j${MAKE_THREADS} | tee -a /tmp/psms_opt_build_${RANDOMD}
 if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 

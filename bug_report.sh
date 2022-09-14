@@ -302,10 +302,10 @@ if [ ${SAN_MODE} -eq 1 ]; then
   fi
   if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:' ../*SAN*/log/master.err; then  # ASAN
     # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-    echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1'
+    echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1'
     # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
     # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
-    #echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:check_initialization_order=1:detect_stack_use_after_return=1:abort_on_error=1'
+    #echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1'
   fi
   if grep -qm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
     echo '    export UBSAN_OPTIONS=print_stacktrace=1'
