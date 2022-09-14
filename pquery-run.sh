@@ -1081,13 +1081,13 @@ pquery_test() {
   echoit "Generating new trial workdir ${RUNDIR}/${TRIAL}..."
   ISSTARTED=0
   diskspace
-  if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
+  if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then  # Standard non-Galera/non-Group-Replication run
     if check_for_version $MYSQL_VERSION "8.0.0"; then
       mkdir -p ${RUNDIR}/${TRIAL}/data ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log # Cannot create /data/test, /data/mysql in 8.0
     else
       mkdir -p ${RUNDIR}/${TRIAL}/data/test ${RUNDIR}/${TRIAL}/data/mysql ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log
     fi
-    echo 'SELECT 1;' > ${RUNDIR}/${TRIAL}/startup_failure_thread-0.sql # Add fake file enabling pquery-prep-red.sh/reducer.sh to be used with/for mysqld startup issues
+    echo 'SELECT 1;' > ${RUNDIR}/${TRIAL}/startup_failure_thread-0.sql  # Add fake file enabling pquery-prep-red.sh/reducer.sh to be used with/for mysqld startup issues
     diskspace
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       echoit "Copying datadir from template for Primary mysqld..."
@@ -1102,20 +1102,19 @@ pquery_test() {
       exit 1
     elif [[ ${PQUERY3} -eq 1 && ${TRIAL} -gt 1 ]]; then
       EXIT_CODE_CP=1
-      while [ "${EXIT_CODE_CP}" -eq 1 ]; do  # Loop till no error is observed (caters for OOS issues)
-        rm -Rf ${RUNDIR}/${TRIAL}/data  # Cleanup if there was an OOS/OOM in previous loop etc.
-        mkdir ${RUNDIR}/${TRIAL}/data  # RUNDIR/TRIAL already exists, now create data dir
-        cp -R ${WORKDIR}/$((${TRIAL} - 1))/data/* ${RUNDIR}/${TRIAL}/ 2>&1
+      while [ "${EXIT_CODE_CP}" -eq 1 ]; do  # Loop till no error is observed (caters for OOS issues)a
+        cp -R ${WORKDIR}/$((${TRIAL} - 1))/data/* ${RUNDIR}/${TRIAL}/data 2>&1
         EXIT_CODE_CP=$?
+        if [ -z "${EXIT_CODE_CP}" ]; then
+          EXIT_CODE_CP=1
+        fi
       done
     else
       EXIT_CODE_CP=1
       while [ "${EXIT_CODE_CP}" -eq 1 ]; do  # Loop till no error is observed (caters for OOS issues)
-        rm -Rf ${RUNDIR}/${TRIAL}/data  # Cleanup if there was an OOS/OOM in previous loop etc.
-        mkdir ${RUNDIR}/${TRIAL}/data  # RUNDIR/TRIAL already exists, now create data dir
-        cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/ 2>&1
+        cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data 2>&1
         EXIT_CODE_CP=$?
-        if [ -z "${EXIT_CODE_CP}" ]; then  # It seems to happen, TODO but not sure why
+        if [ -z "${EXIT_CODE_CP}" ]; then
           EXIT_CODE_CP=1
         fi
       done

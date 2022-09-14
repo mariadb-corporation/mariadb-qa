@@ -22,8 +22,10 @@ cat "${1}" | tr -d '`' | \
        s|div|DIV|gi; \
        s|execute|EXECUTE|gi; \
        s|index|INDEX|g; \
+       s|immediate|IMMEDIATE|g; \
        s|hex|HEX|gi; \
        s|having|HAVING|gi; \
+       s|lead|LEAD|gi; \
        s| as | AS |gi; \
        s|analyse|ANALYSE|gi; \
        s|do |DO |gi; \
@@ -356,6 +358,7 @@ cat "${1}" | tr -d '`' | \
        s|max[ ]*(|MAX(|gi; \
        s|avg[ ]*(|AVG(|gi; \
        s|oct[ ]*(|OCT(|gi; \
+       s|lead[ ]*(|LEAD(|gi; \
        s|extract[ ]*(|EXTRACT(|gi; \
        s|date_add[ ]*(|DATE_ADD(|gi; \
        s|year_month|YEAR_MONTH|gi; \

@@ -115,7 +115,9 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
-IGABRT|safe_mutex_destroy|inline_mysql_mutex_destroy|fts_cache_destroy|fts_t::~fts_t                                                                                           ## MDEV_29053
+SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item_func::fix_fields                                                                     ## MDEV-28206
+SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed                                                                     ## MDEV-28206
+IGABRT|safe_mutex_destroy|inline_mysql_mutex_destroy|fts_cache_destroy|fts_t::~fts_t                                                                                           ## MDEV-29053
 table->get_ref_count() == 0|SIGABRT|Backtrace stopped: Cannot access memory at address                                                                                         ## MDEV-29277
 table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|dict_sys_t::close|innodb_shutdown                                                               ## MDEV-29277
 index->table->is_instant()|SIGABRT|btr_cur_upd_rec_in_place|btr_cur_update_in_place|btr_cur_optimistic_update|row_upd_clust_rec                                                ## MDEV-23801 (was 22714)

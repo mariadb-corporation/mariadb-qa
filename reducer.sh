@@ -4499,13 +4499,16 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     elif [ $TRIAL -eq 48 ]; then sed "s/'[^']\+'/'abcdefghijklm'/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 49 ]; then sed "s/'[^']\+'/'abcde'/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 50 ]; then sed "s/'[^']\+'/NULL/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 51 ]; then sed "s/'[^']\+'/'a'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 52 ]; then sed "s/'[^']\+'/'0'/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 53 ]; then sed "s/'[^']\+'/''/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 54 ]; then sed "s/'[^']\+'/1/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 55 ]; then sed "s/'[^']\+'/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 56 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
-    elif [ $TRIAL -eq 57 ]; then sed 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    elif [ $TRIAL -eq 51 ]; then sed "s/NULL,/,/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 52 ]; then sed "s/NULL,/,/" $WORKF > $WORKT  # 1st occurence only
+    elif [ $TRIAL -eq 53 ]; then sed "s/NULL,/,/" $WORKF > $WORKT  # 2nd occurence only
+    elif [ $TRIAL -eq 54 ]; then sed "s/'[^']\+'/'a'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 55 ]; then sed "s/'[^']\+'/'0'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 56 ]; then sed "s/'[^']\+'/''/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 57 ]; then sed "s/'[^']\+'/1/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 58 ]; then sed "s/'[^']\+'/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 59 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 60 ]; then sed 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     SIZET=`stat -c %s $WORKT`
@@ -5371,9 +5374,9 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 220 ]; then sed "s/MAX[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 221 ]; then sed "s/MIN[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 222 ]; then sed "s/AVG[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 223 ]; then sed "s/CHECK[ \t]\+([^)]\+)//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 224 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 225 ]; then sed "s/CHECK[ \t]\+([^)]\+)//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 223 ]; then sed "s/CHECK[ \t]\+([^)]\+[)]\+//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 224 ]; then sed "s/CHECK[ \t]\+([^)]\+[)]\+//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 225 ]; then sed "s/CHECK[ \t]\+([^)]\+[)]\+//i" $WORKF > $WORKT
     elif [ $TRIAL -eq 226 ]; then sed "s/v0/c/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 227 ]; then sed "s/ CHAR)/ INT)/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 228 ]; then sed "s/c(c)/c/gi" $WORKF > $WORKT
@@ -5393,6 +5396,9 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
       if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
         NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
         ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT
+      elif [ -r "${HOME}/mariadb-qa/testcase_prettify.sh" ]; then  # When started from BASEDIRs
+        NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
+        ${HOME}/mariadb-qa/testcase_prettify.sh $WORKF > $WORKT
       else
         cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
