@@ -1,6 +1,12 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
+# Set AFL_PRELOAD to fuzz Galera.
+if [ ! -z ${GAL_RUN} ]; then
+  export LD_LIBRARY_PATH=${PWD}/lib/  # This is not required on the server side
+  export AFL_PRELOAD=${PWD}/lib/libgalera_smm.so
+  export AFL_IGNORE_PROBLEMS=1
+fi
 MAX_RUNTIME_MIN=1440  # 24h
 
 if [ "${PWD}" == "${HOME}/fuzzing" ]; then
@@ -18,8 +24,6 @@ fi
 INSTANCE="afl${1}"
 
 if [ "${STY}" == "" ]; then
-  THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
-  SCREEN_NAME="srv${1}-afl"
   echo "Not a screen, restarting myself inside a screen"
   screen -admS "${SCREEN_NAME}" bash -c "${THIS_SCRIPT} ${*}"
   sleep 1
@@ -42,11 +46,17 @@ if ! grep --binary-files=text 'AFL_MAP_SIZE' ./bin/mysqld >/dev/null 2>&1; then
   exit 1
 fi
 
-SCRIPTSTOMOD="cl cl_noprompt cl_noprompt_nobinary m multirun multirun_pquery multirun_pquery_rr multirun_rr repl_setup start_gypsy start_rr start_valgrind start stop sysbench_prepare sysbench_run test test_pquery wipe"
 #sed -i "s|/test/[-\._A-Za-z0-9]\+x86_64/socket.sock|/test/afl_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
 #sed -i "s|/test/afl_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # First replace
 #sed -i "s|/test/afl[0-9]_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Subsequent replaces
-sed -i "s|/dev/shm/afl-node-${1}/socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
+
+if [ ! -z ${GAL_RUN} ]; then
+  SCRIPTSTOMOD="gal_cl gal_cl_noprompt gal_cl_noprompt_nobinary gal_multirun gal_multirun_pquery start_gypsy gal_start gal_stop gal_sysbench_prepare gal_sysbench_run gal_test gal_test_pquery gal_wipe n1.cnf"
+  sed -i "s|/dev/shm/afl-node-${1}/node1/node1_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
+else
+  SCRIPTSTOMOD="cl cl_noprompt cl_noprompt_nobinary m multirun multirun_pquery multirun_pquery_rr multirun_rr repl_setup start_gypsy start_rr start_valgrind start stop sysbench_prepare sysbench_run test test_pquery wipe"
+  sed -i "s|/dev/shm/afl-node-${1}/socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
+fi
 
 sed -i "s|^/test/|timeout --signal=9 ${MAX_RUNTIME_MIN}m /test/|" start  # Restart instance every 15 minutes to avoid lockups. Note: this will sometimes create a single dud testcase
 
@@ -55,12 +65,16 @@ rm -f /test/afl${1}_socket.sock
 echo 'Remember that this needs to be run from a clean shell where no AFL variables were ever set, EVEN if they were made empty before starting! However, restarting this script is fine.'
 echo "If you see '.shmat for map: Bad file descriptor' then __AFL_SHM_ID was likely set incorrectly!"
 sleep 2
-./all_no_cl
-sleep 3
-./stop
-
+if [ ! -z ${GAL_RUN} ]; then
+  ./gal_no_cl
+  sleep 3
+  ./gal_stop
+else
+  ./all_no_cl
+  sleep 3
+  ./stop
+fi
 #export AFL_TMPDIR=/dev/shm/fuzzcache
-#export LD_LIBRARY_PATH=${PWD}/lib/  # This is not required on the server side
 #export AFL_MAP_SIZE=333041  # 10.3 specific!
 #export AFL_MAP_SIZE=375377  # 10.10 specific!
 #export AFL_MAP_SIZE=5000000  # Generic, should always work
@@ -68,7 +82,11 @@ sleep 3
 export AFL_MAP_SIZE=50000000  # Generic, should always work
 
 export __AFL_SHM_ID="$(cat ~/fuzzing/${INSTANCE}.log | grep --binary-files=text 'SHM_ENV_VAR' | tail -n1 | grep --binary-files=text -o '[0-9]\+')"
-./start
+if [ ! -z ${GAL_RUN} ]; then
+  ./gal_start
+else
+  ./start
+fi
 echo 'Status will show in 20 seconds...'
 sleep 20 # give server time start before starting loop
 clear
@@ -82,7 +100,11 @@ echo "SHOW GLOBAL STATUS LIKE 'Queries';" > in.sql
 while true; do
   if ${PWD}/bin/mysqladmin ping -uroot -S/test/afl${1}_socket.sock > /dev/null 2>&1; then 
     sleep 60
-    ./test
+    if [ ! -z ${GAL_RUN} ]; then
+      ./gal_test
+    else
+      ./test
+    fi
     QUERIES="$(cat ./mysql.out 2>/dev/null | grep Queries | grep -o '[0-9]\+')"
     echo -n "${QUERIES}.."
     continue
@@ -98,9 +120,15 @@ while true; do
     #echo 'Server unreachable... error log tail:'
     #tail -n20 ./log/master.err
     #sleep 20
-    ./kill
-    sleep 1
-    ./all_no_cl
+    if [ ! -z ${GAL_RUN} ]; then
+      ./gal_kill
+      sleep 1
+      ./gal_no_cl
+    else
+      ./kill
+      sleep 1
+      ./all_no_cl
+    fi
     sleep 20 # give server time start before looping
     clear
     echo "Server restarted at: $(date) | ID: ${INSTANCE} | Max runtime: ${MAX_RUNTIME_MIN}m (sig 9)"
@@ -109,3 +137,4 @@ while true; do
     echo -n 'Queries: '
   fi
 done
+

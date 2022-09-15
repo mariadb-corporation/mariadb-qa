@@ -302,8 +302,8 @@ if [[ $MDG -eq 1 ]]; then
   echo "innodb_file_per_table" >>my.cnf
   echo "innodb_autoinc_lock_mode=2" >>my.cnf
   echo "wsrep-provider=${GALERA_LIB}" >>my.cnf
-  echo "#wsrep_sst_method=rsync" >>my.cnf
-  echo "wsrep_sst_method=mariabackup" >>my.cnf
+  echo "wsrep_sst_method=rsync" >>my.cnf
+  echo "#wsrep_sst_method=mariabackup" >>my.cnf
   echo "wsrep_sst_auth=root:" >>my.cnf
   echo "binlog_format=ROW" >>my.cnf
   echo "core-file" >>my.cnf

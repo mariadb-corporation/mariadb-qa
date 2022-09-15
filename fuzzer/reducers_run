@@ -3,7 +3,6 @@
 
 # User variables
 BASEDIR=/test/MD290722-mariadb-10.10.0-linux-x86_64-dbg  # -dbg or -opt is fine
-
 # Internal variables
 BASEDIRALT="$(echo "${BASEDIR}" | sed 's|-opt$|-dum|;s|-dbg$|-opt|;s|-dum$|-dbg|')"  # Swaps -dbg to -opt and vice versa
 HOME=${HOME}
@@ -118,6 +117,10 @@ for ((i=1;i<=${COUNT};i++)); do
     rm -f ./in.sql_out
     sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=500|' ./reducer_new_text_string.sh
     sed -i 's|^NEW_BUGS_SAVE_DIR="/data/NEWBUGS"|NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|' ./reducer_new_text_string.sh
+    if [ ! -z ${GAL_RUN} ]; then
+      sed -i 's|^MDG=0|MDG=1|' ./reducer_new_text_string.sh
+      sed -i 's|^NR_OF_NODES=[13]\+|NR_OF_NODES=2|' ./reducer_new_text_string.sh
+    fi
     timeout --signal=9 75m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${TC}.reducer"
     sleep 0.5
     if [ ! -r ./in.sql_out ]; then
@@ -153,3 +156,4 @@ for ((i=1;i<=${COUNT};i++)); do
   cp ${BASEDIR}/report.log "${TC}.report"
   echo "${TC} completed..."
 done
+
