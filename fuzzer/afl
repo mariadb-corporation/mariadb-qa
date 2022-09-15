@@ -3,7 +3,7 @@
 
 # Set AFL_PRELOAD to fuzz Galera.
 if [ ! -z ${GAL_RUN} ]; then
-  export LD_LIBRARY_PATH=${PWD}/lib/  # This is not required on the server side
+  export LD_LIBRARY_PATH=${PWD}/lib/
   export AFL_PRELOAD=${PWD}/lib/libgalera_smm.so
   export AFL_IGNORE_PROBLEMS=1
 fi
@@ -24,6 +24,8 @@ fi
 INSTANCE="afl${1}"
 
 if [ "${STY}" == "" ]; then
+  THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
+  SCREEN_NAME="srv${1}-afl"
   echo "Not a screen, restarting myself inside a screen"
   screen -admS "${SCREEN_NAME}" bash -c "${THIS_SCRIPT} ${*}"
   sleep 1
