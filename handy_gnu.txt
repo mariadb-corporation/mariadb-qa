@@ -361,6 +361,8 @@
   sudo yum install cabal-install; cabal update; cabal install shellcheck; ~/.cabal/bin/shellcheck
 # Expand DEB files
   ar x yourfile.deb; tar -xf data.tar.xz  # Each deb file has control.tar.xz and data.tar.xz
+# Compressing files while sending
+  ssh hostname 'tar cf - -C /path/to/source directory'|tar xvf - -C /path/to/target
 
 # ------ Shortcuts ------
 # Pquery, single-threaded run, mysqld pre-started, socket, testcase and ./lib/ in this directory, percona-qa bzr tree pulled to ~/percona-qa/

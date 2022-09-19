@@ -19,6 +19,10 @@ MARIADB_ERROR_CODE|MariaDB error code: 2003
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  # https://jira.mariadb.org/browse/MDEV-26258
 
+##### MDEV-29507 TESTING TEMPORARY #####
+SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute                                    ## MDEV-29544
+SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute|mysql_execute_command                                                     ## MDEV-29544
+
 ##### MDEV-16329 TESTING TEMPORARY #####
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|start_thread|clone ## INSERT DELAYED not supported on Spider (fixed already in trunk)
 part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row                         ## MDEV-26544 fixed in trunk but not in preview-10.10-ddl yet
@@ -210,7 +214,9 @@ SIGSEGV|Item::clear_extraction_flag|Item::check_pushable_cond|Item::check_pushab
 SIGSEGV|JOIN_CACHE::reset_join|sub_select_cache|do_select|JOIN::exec_inner                                                                                                     ## MDEV-28957
 table->no_keyread || !table->covering_keys.is_set(tab->index) || table->file->keyread == tab->index|SIGABRT|join_read_first|sub_select|do_select|JOIN::exec_inner              ## MDEV-28957
 SIGSEGV|AGGR_OP::put_record|evaluate_join_record|sub_select|sub_select                                                                                                         ## MDEV-28945
+SIGSEGV|AGGR_OP::end_send|sub_select_postjoin_aggr|do_select|JOIN::exec_inner                                                                                                  ## MDEV-28945
 aggr != __null|SIGABRT|sub_select_postjoin_aggr|evaluate_join_record|sub_select|do_select                                                                                      ## MDEV-28945
+aggr != __null|SIGABRT|sub_select_postjoin_aggr|sub_select|do_select|JOIN::exec_inner                                                                                          ## MDEV-28945
 SIGABRT|__libc_message|malloc_printerr|_int_free|root_free                                                                                                                     ## MDEV-28941
 SIGSEGV|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables                                                              ## MDEV-28941
 "unexpected error" == 0|SIGABRT|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row|TABLE::delete_row                                                          ## MDEV-28916
@@ -239,6 +245,7 @@ cache != __null|SIGABRT|sub_select_cache|evaluate_join_record|sub_select|do_sele
 !mysql_bin_log.is_open() || thd.is_current_stmt_binlog_format_row()|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|start_thread|clone                            ## MDEV-28791
 bitmap_is_set(&m_part_info->read_partitions, m_part_spec.start_part)|SIGABRT|ha_partition::handle_ordered_index_scan|ha_partition::common_first_last|ha_partition::index_last|handler::ha_index_last ## MDEV-24283
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert ## MDEV-26035
+file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|mysql_admin_table ## MDEV-26035
 table->in_use && tdc->flushed|SIGABRT|TABLE_SHARE::visit_subgraph|Wait_for_flush::accept_visitor|MDL_context::visit_subgraph|MDL_context::find_deadlock                        ## MDEV-28771
 SIGSEGV|__GI___pthread_mutex_lock|rw_pr_rdlock|inline_mysql_prlock_rdlock|MDL_context::visit_subgraph                                                                          ## MDEV-28771
 SIGSEGV|Stat_table::common_init_stat_table|Stat_table::Stat_table|Column_stat::Column_stat|delete_statistics_for_column                                                        ## MDEV-28780

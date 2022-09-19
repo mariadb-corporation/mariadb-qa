@@ -2,8 +2,13 @@
 
 ##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
+ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|make_join_select|JOIN::optimize_stage2 ## MDEV-28346
+UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select ## MDEV-28346
+UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-28346
+UBSAN|member call on null pointer of type 'struct Item'|sql/sql_select.cc|handle_select|execute_sqlcom_select|mysql_execute_command|mysql_parse                                ## MDEV-22447
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|Field_real::get_double|Field_double::store                     ## MDEV-29473
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|charset_info_st::strntod|Field_real::get_double                ## MDEV-29473
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|Field_real::get_double                         ## MDEV-29473
@@ -40,6 +45,7 @@ UBSAN|null pointer passed as argument 1, which is declared to never be null|stri
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|group_concat_key_cmp_with_order|tree_insert ## MDEV-28384
 UBSAN|member call on null pointer of type 'struct Explain_node'|sql/sql_explain.cc|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain ## MDEV-18157
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|do_select            ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select           ## MDEV-28374
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|my_atof|test_if_number                                                                                            ## MDEV-28345

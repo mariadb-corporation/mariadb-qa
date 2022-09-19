@@ -24,6 +24,19 @@ sleep 10
 rm -f report.log
 if [ -r report.log ]; then echo "Assert: report.log still present though this script tried to delete it!"; exit 1; fi
 
+# Likely mistaken use cases (reversed)
+if [[ "${PWD}" == *"SAN"* && "${1}" != "SAN" ]]; then
+  echo "Warning: you are starting '~/b' from a SAN basedir. Do you maybe want to use '~/b san' instead?"
+  echo "Pausing 3 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
+  echo ''
+  sleep 3
+elif [[ "${PWD}" != *"SAN"* && "${1}" == "SAN" ]]; then
+  echo "Warning: you are starting '~/b san' from a non-SAN basedir. Do you maybe want to use '~/b' instead?"
+  echo "Pausing 3 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
+  echo ''
+  sleep 3
+fi
+
 if [ ! -r ../gendirs.sh ]; then echo "Assert: ../gendirs.sh not available, are you executing this from within a BASEDIR?"; exit 1; fi
 
 if [ "${1}" == "GAL" ]; then
