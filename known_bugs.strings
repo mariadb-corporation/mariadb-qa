@@ -392,6 +392,12 @@ SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_open_handler|ha_spider
 SIGABRT|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|spider_db_open_handler                                                                                          ## MDEV-27902
 SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal                                                            ## MDEV-27902
 SIGSEGV|ha_spider::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables                                                                                     ## MDEV-27902
+SIGSEGV|__strlen_avx2|__vfprintf_internal|buffered_vfprintf|__vfprintf_internal                                                                                                ## MDEV-27902
+SIGSEGV|ha_spider::rnd_next_internal|ha_spider::rnd_next|handler::ha_rnd_next|mysql_ha_read                                                                                    ## MDEV-27902
+SIGSEGV|ha_spider::rnd_next_internal|handler::ha_rnd_next|mysql_ha_read|mysql_execute_command                                                                                  ## MDEV-27902
+new_prio == -1 || (new_prio >= fifo_min_prio && new_prio <= fifo_max_prio)|SIGABRT|__pthread_tpp_change_priority|__pthread_mutex_lock_full|__GI___pthread_mutex_lock|safe_mutex_lock ## MDEV-27902
+SIGSEGV|ha_spider::index_read_map_internal|ha_spider::index_read_map|handler::ha_index_read_map|mysql_ha_read                                                                  ## MDEV-27902
+SIGSEGV|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_read_map_internal|ha_spider::index_read_map                                                      ## MDEV-27902
 host_length <= 255|SIGABRT|set_setup_actor_key|insert_setup_actor|table_setup_actors::write_row|PFS_engine_table_share::write_row                                              ## MDEV-27895
 host_length <= 60|SIGABRT|set_setup_actor_key|insert_setup_actor|table_setup_actors::write_row|PFS_engine_table_share::write_row                                               ## MDEV-27895
 host_length <= HOSTNAME_LENGTH|SIGABRT|set_setup_actor_key|insert_setup_actor|table_setup_actors::write_row|PFS_engine_table_share::write_row                                  ## MDEV-27895
@@ -704,6 +710,8 @@ SIGSEGV|maria_status|ha_maria::info|make_join_statistics|JOIN::optimize_inner   
 auto_increment_value|SIGABRT|ha_partition::info|ha_partition::update_next_auto_inc_val|ha_partition::write_row|handler::ha_write_row                                           ## MDEV-24610
 auto_increment_value|SIGABRT|ha_partition::info|ha_partition::write_row|handler::ha_write_row|write_record                                                                     ## MDEV-24610
 auto_increment_value|SIGABRT|ha_partition::initialize_auto_increment|Partition_helper::set_auto_increment_if_higher|Partition_helper::ph_write_row|ha_partition::write_row     ## MDEV-24610
+auto_increment_value|SIGABRT|ha_partition::info|ha_partition::update_create_info|add_table_options|show_create_table                                                           ## MDEV-24610
+auto_increment_value|SIGABRT|ha_partition::info|ha_partition::update_create_info|add_table_options|show_create_table_ex                                                        ## MDEV-24610
 error == DB_SUCCESS || error == DB_DUPLICATE_KEY|SIGABRT|ut_dbg_assertion_failed|trx_t::commit_low|trx_t::commit|trx_commit_for_mysql                                          ## MDEV-24608
 error == DB_DUPLICATE_KEY || error == DB_LOCK_WAIT_TIMEOUT|SIGABRT|trx_t::commit_low|trx_t::commit_persist|trx_t::commit|trx_commit_for_mysql                                  ## MDEV-24608
 item->name && item->name[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                            ## MDEV-24588
