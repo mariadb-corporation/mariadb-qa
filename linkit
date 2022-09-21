@@ -181,6 +181,7 @@ alias v='${HOME}/v '       # Opens reducer{trial}.sh for a given trial (pass tri
 alias tcp='${HOME}/tcp '   # Testcase prettify (pass SQL file)
 alias prg='${HOME}/pr | grep ' # Search ${HOME}/pr for a specific string or trial number (pass search string or trial number)
 alias j='. ${HOME}/j '     # Jump to a particular /data directory (pass, for example, workdir number)
+alias ml='./multirun_loop ' # Execute ./multirun_loop in a BASEDIR
 " > /tmp/.bashrc
 echo -e "cat /tmp/.bashrc >> ${HOME}/.bashrc\nRemember to cleanup old framework alias'es, though later ones replace earlier ones.\nDone!"
 exit 0
