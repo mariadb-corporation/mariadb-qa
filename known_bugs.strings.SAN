@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-buffer-overflow|sql/sql_cache.cc|Query_cache_block::init|Query_cache::split_block|Query_cache::allocate_block|Query_cache::allocate_block                            ## MDEV-23256
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|make_join_select|JOIN::optimize_stage2 ## MDEV-28346
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select ## MDEV-28346
 UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-28346
@@ -22,6 +23,7 @@ ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::c
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|deletefrm|create_table_impl|mysql_create_table_no_lock                                                                    ## MDEV-29461
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|deletefrm|rea_create_table|create_table_impl                                                                              ## MDEV-29461
 ASAN|use-after-poison|sql/handler.cc|ha_discover_table|open_table_def|tdc_acquire_share|open_table                                                                             ## MDEV-29434
+ASAN|heap-use-after-free|sql/handler.cc|ha_discover_table|open_table_def|tdc_acquire_share|open_table                                                                          ## MDEV-29434
 ASAN|unknown-crash|storage/heap/hp_hash.c|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                             ## MDEV-24066
 UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-24066
 UBSAN|member access within null pointer of type 'struct TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize               ## MDEV-28510

@@ -770,6 +770,10 @@ table_list->prelocking_placeholder == TABLE_LIST::PRELOCK_NONE|SIGABRT|check_loc
 info->dfile.file == share->bitmap.file.file|SIGABRT|_ma_scan_init_block_record|maria_scan_init|ha_maria::rnd_init|handler::ha_rnd_init                                         ## MDEV-23297
 SIGSEGV|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                                                              ## MDEV-23256
 table_block_data->m_cached_query_count >= 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                  ## MDEV-23256
+table->foreign_set.empty()|SIGABRT|ut_dbg_assertion_failed|dict_table_can_be_evicted|dict_sys_t::evict_table_LRU|srv_master_do_idle_tasks                                      ## MDEV-23256
+SIGSEGV|my_hash_delete|Query_cache::store_query|execute_sqlcom_select|mysql_execute_command                                                                                    ## MDEV-23256
+SIGSEGV|Query_cache::double_linked_list_exclude|Query_cache::unlink_table|Query_cache::free_query_internal|Query_cache::free_query                                             ## MDEV-23256
+SIGSEGV|Query_cache::double_linked_list_exclude|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query                                            ## MDEV-23256
 inited == RND|SIGABRT|handler::ha_rnd_next|select_unit_ext::send_eof|do_select|JOIN::exec_inner                                                                                ## MDEV-23226
 t->s->tmp_table || thd->mdl_context.is_lock_owner(MDL_key::TABLE, t->s->db.str, t->s->table_name.str, t->reginfo.lock_type >= TL_WRITE_ALLOW_WRITE ? MDL_SHARED_WRITE : MDL_SHARED_READ)|SIGABRT|lock_tables_check|mysql_lock_tables|lock_tables|open_and_lock_tables ## MDEV-23211
 SIGSEGV|TABLE_LIST::print|print_table_array|print_join|st_select_lex::print                                                                                                    ## MDEV-23208

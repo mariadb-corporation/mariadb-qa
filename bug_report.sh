@@ -7,6 +7,24 @@ set +H  # Disables history substitution and avoids  -bash: !: event not found  l
 # Does not work correctly
 #ps -ef | grep -v $$ | grep bug_report | grep -v grep | grep -v mass_bug_report | awk '{print $2}' | xargs kill -9 2>/dev/null
 
+ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS=1
+SAN_BUILD_FOR_NON_SAN_REPORTS_OPT=/test/UBASAN_MD010922-mariadb-10.11.0-linux-x86_64-dbg
+SAN_BUILD_FOR_NON_SAN_REPORTS_DBG="$(echo "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" | sed 's|\-opt|-dbg|')"  # Do not modify
+
+if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
+  if [ "${1}" != "SAN" ]; then
+    if [ ! -d "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" ]; then
+      echo "Assert: ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled in the script (1), yet the directory SAN_BUILD_FOR_NON_SAN_REPORTS_OPT (${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}) does not exist"
+      exit 1
+    elif [ ! -d "${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}" ]; then
+      echo "Assert: ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled in the script (1), yet the directory SAN_BUILD_FOR_NON_SAN_REPORTS_DBG (${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}) does not exist"
+      exit 1
+    fi
+  #else  # We do not need to display this, it is unecessary info
+    #echo "ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled (1), however this is a SAN run already, so ignoring this setting (safe)"
+  fi
+fi
+
 SAN_MODE=0
 if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (like ~/b) has set this option. If not, set it here. If you want to use this option in combination with ~/b, set it there, or use export PASS_MYEXTRA_TO_START_ONLY=0 (or 1) before starting ~/b, or use ~/b0 or ~/b1 which are shortcuts
   PASS_MYEXTRA_TO_START_ONLY=1  # If 0, then MYEXTRA_OPT is passed to ./all (i.e. options take effect on init and start). If 1, then MYEXTRA_OPT is passed to ./start only (i.e. options take effect on start only, not init). When using for example --innodb_page_size=4 (an option needed for both server init + start), 0 is required. When using for example --innodb-force-recovery=1 or --innodb-read-only=1 (options that can only be used with start and not with init), 1 is required. TODO: this option can be automated 0/1 towards known options that require either 0 or 1 for this setting. Scan MYEXSTRA_OPT to do so
