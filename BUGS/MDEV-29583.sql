@@ -17,3 +17,13 @@ SET GLOBAL init_connect="SELECT 1";
 SELECT c FROM t;
 HANDLER t OPEN;
 HANDLER t READ FIRST;
+
+# [ERROR] Got error 12719 when reading table './test/t0'
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY 'PWD0';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD0');
+CREATE TABLE t (c INT);
+CREATE TABLE t0 (a INT,b INT,PRIMARY KEY(a),KEY ab (a,b)) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+ANALYZE SELECT 1 FROM t0;
+CREATE OR REPLACE TABLE t (a INT) WITH SYSTEM VERSIONING ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SELECT 1 FROM t0 WHERE a=LEFT (@inserted_value,0);
