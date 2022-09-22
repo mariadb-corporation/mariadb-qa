@@ -444,7 +444,7 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then
 fi
 
 if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
-  echo '-------------------- SAN EXECUTION OF THE TESTCASE --------------------'
+  echo '----- SAN Execution of the testcase -----'
   pushd ${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT} > /dev/null && echo -n "10.11 opt: " && ~/t && popd > /dev/null
   pushd ${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG} > /dev/null && echo -n "10.11 dbg: " && ~/t && popd > /dev/null
 fi
