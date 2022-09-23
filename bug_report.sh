@@ -443,11 +443,21 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then
   fi
 fi
 
+find_san_bug(){
+  pushd ${1} > /dev/null
+  BUG_STRING=$(~/t)
+  echo "$BUG_STRING" | if grep -Fq "no core file found" ; then echo  "10.11 $2: No SAN issue detected" ; \
+   elif echo $BUG_STRING | cut -d '|' -f1 | grep -Fq "SAN"; then echo "10.11 $2: $BUG_STRING" ; \
+   else echo "10.11 $2: No SAN issue detected, though saw $BUG_STRING"; fi
+  popd > /dev/null
+}
+
 if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
   echo '----- SAN Execution of the testcase -----'
-  pushd ${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT} > /dev/null && echo -n "10.11 opt: " && ~/t && popd > /dev/null
-  pushd ${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG} > /dev/null && echo -n "10.11 dbg: " && ~/t && popd > /dev/null
+  find_san_bug ${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT} opt
+  find_san_bug ${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG} dbg
 fi
+
 # OLD
 #  if [ ${NOCORE} -ne 1 ]; then
 #    cd ${RUN_PWD}
