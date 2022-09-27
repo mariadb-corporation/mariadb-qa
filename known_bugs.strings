@@ -121,6 +121,7 @@ SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                
 transaction->implicit_xid.is_null()|SIGABRT|THD::init_for_queries|prepare_new_connection_state|thd_prepare_connection|do_handle_one_connection                                 ## MDEV-29606
 transaction.is_empty()|SIGABRT|THD::init_for_queries|prepare_new_connection_state|thd_prepare_connection|do_handle_one_connection                                              ## MDEV-29606
 SIGSEGV|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                         ## MDEV-29605
+state_ == s_exec|SIGABRT|wsrep::client_state::enter_toi_local|wsrep_TOI_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute                                      ## MDEV-29602
 SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item_func::fix_fields                                                                     ## MDEV-28206
 SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed                                                                     ## MDEV-28206
 IGABRT|safe_mutex_destroy|inline_mysql_mutex_destroy|fts_cache_destroy|fts_t::~fts_t                                                                                           ## MDEV-29053

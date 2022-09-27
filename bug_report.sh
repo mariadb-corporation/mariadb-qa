@@ -8,7 +8,7 @@ set +H  # Disables history substitution and avoids  -bash: !: event not found  l
 #ps -ef | grep -v $$ | grep bug_report | grep -v grep | grep -v mass_bug_report | awk '{print $2}' | xargs kill -9 2>/dev/null
 
 ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS=1
-SAN_BUILD_FOR_NON_SAN_REPORTS_OPT=/test/UBASAN_MD010922-mariadb-10.11.0-linux-x86_64-dbg
+SAN_BUILD_FOR_NON_SAN_REPORTS_OPT=/test/UBASAN_MD210922-mariadb-10.11.0-linux-x86_64-opt
 SAN_BUILD_FOR_NON_SAN_REPORTS_DBG="$(echo "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" | sed 's|\-opt|-dbg|')"  # Do not modify
 
 if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
@@ -121,6 +121,18 @@ else
 fi
 sleep 2.5  # For visual confirmation
 
+test_san_build(){
+  pushd ${1} > /dev/null
+  cp ../in.sql .
+  if [ ! -r ./start ]; then
+    ~/start
+  fi
+  ./all_no_cl ${MYEXTRA_OPT_CLEANED}
+  ./test_pquery
+  ./stop
+  popd > /dev/null
+}
+
 rm -f ../in.sql
 if [ -r ../in.sql ]; then echo "Assert: ../in.sql still available after it was removed!"; exit 1; fi
 cp in.sql ..
@@ -133,6 +145,10 @@ elif [ "${1}" == "GAL" ]; then
   ./test_all GAL ${MYEXTRA_OPT_CLEANED}
 else
   ./test_all ${MYEXTRA_OPT_CLEANED}
+  if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
+    test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}"
+    test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}"
+  fi
 fi
 echo "Ensuring all servers are gone..."
 sync
@@ -425,6 +441,21 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then
   else
     echo "*) Check for duplicates before logging bug; run ~/tt from within the basedir of a failed instance"
   fi
+fi
+
+find_san_bug(){
+  pushd ${1} > /dev/null
+  BUG_STRING=$(~/t)
+  echo "$BUG_STRING" | if grep -Fq "no core file found" ; then echo  "10.11 $2: No SAN issue detected" ; \
+   elif echo $BUG_STRING | cut -d '|' -f1 | grep -Fq "SAN"; then echo "10.11 $2: $BUG_STRING" ; \
+   else echo "10.11 $2: No SAN issue detected, though saw $BUG_STRING"; fi
+  popd > /dev/null
+}
+
+if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
+  echo '----- SAN Execution of the testcase -----'
+  find_san_bug ${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT} opt
+  find_san_bug ${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG} dbg
 fi
 
 # OLD
