@@ -3,13 +3,18 @@
 
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 
-# Terminate any other bug_report.sh scripts ongoing
-# Does not work correctly
-#ps -ef | grep -v $$ | grep bug_report | grep -v grep | grep -v mass_bug_report | awk '{print $2}' | xargs kill -9 2>/dev/null
-
+# User variables
 ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS=1
-SAN_BUILD_FOR_NON_SAN_REPORTS_OPT=/test/UBASAN_MD210922-mariadb-10.11.0-linux-x86_64-opt
-SAN_BUILD_FOR_NON_SAN_REPORTS_DBG="$(echo "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" | sed 's|\-opt|-dbg|')"  # Do not modify
+
+if [ ! -r /test/gendirs.sh ]; then
+  echo 'Assert: /test/gendirs.sh not found, try running ~/mariadb-qa/linkit'
+  exit 1
+fi
+
+# Script variables: do not change
+SAN_BUILD_FOR_NON_SAN_REPORTS_OPT="/test/$(cd /test; ./gendirs.sh san | grep '10.1[0-9]' | grep 'opt' | sort -h | tail -n1)"
+SAN_BUILD_FOR_NON_SAN_REPORTS_DBG="$(echo "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" | sed 's|\-opt|-dbg|')"
+SAN_BUILD_FOR_NON_SAN_REPORTS_OPT=dummy
 
 if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
   if [ "${1}" != "SAN" ]; then
@@ -24,6 +29,10 @@ if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
     #echo "ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled (1), however this is a SAN run already, so ignoring this setting (safe)"
   fi
 fi
+
+# Terminate any other bug_report.sh scripts ongoing
+# Does not work correctly TODO
+#ps -ef | grep -v $$ | grep bug_report | grep -v grep | grep -v mass_bug_report | awk '{print $2}' | xargs kill -9 2>/dev/null
 
 SAN_MODE=0
 if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (like ~/b) has set this option. If not, set it here. If you want to use this option in combination with ~/b, set it there, or use export PASS_MYEXTRA_TO_START_ONLY=0 (or 1) before starting ~/b, or use ~/b0 or ~/b1 which are shortcuts

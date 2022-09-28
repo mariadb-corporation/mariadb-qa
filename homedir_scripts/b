@@ -64,6 +64,10 @@ if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
   # MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||;s|${TEXT}||')"
   MYEXTRA_OPT="$3 $4 $5 $6 $7 $8 $9"
   ~/mariadb-qa/bug_report.sh SAN ${MYEXTRA_OPT} | tee report.log
+  if [ "${PIPESTATUS[0]}" -eq 1 ]; then
+    echo "bug_report.sh SAN exited with status code 1. Terminating"
+    exit 1
+  fi
 elif [ "${1}" == "GAL" ]; then
   MYEXTRA_OPT="$*"
   #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
@@ -72,11 +76,19 @@ elif [ "${1}" == "GAL" ]; then
   export TEXT="mysqld got signal"  
   #rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh GAL ${MYEXTRA_OPT} | tee report.log
+  if [ "${PIPESTATUS[0]}" -eq 1 ]; then
+    echo "bug_report.sh GAL exited with status code 1. Terminating"
+    exit 1
+  fi
 else
   MYEXTRA_OPT="$*"
   export TEXT="BBB"  # A dummy string to let findbug+ know we want to scan for a set of strings to establish crashes
   rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh ${MYEXTRA_OPT} | tee report.log
+  if [ "${PIPESTATUS[0]}" -eq 1 ]; then
+    echo "bug_report.sh exited with status code 1. Terminating"
+    exit 1
+  fi
   # The following code is now precautionary/defensive coding as this is covered in the new port assignment code
   if grep --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err 2>/dev/null; then
     echo "------------------------------------------------------------------------------------------"
