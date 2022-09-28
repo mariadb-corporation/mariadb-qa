@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-tis620.c|my_strnxfrm_tis620|Item_func_weight_string::val_str|Item_str_func::val_int|Item_func_char::val_str ## MDEV-27164
+UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-tis620.c|my_strnxfrm_tis620|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int ## MDEV-27164
 ASAN|heap-buffer-overflow|sql/sql_cache.cc|Query_cache_block::init|Query_cache::split_block|Query_cache::allocate_block|Query_cache::allocate_block                            ## MDEV-23256
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|make_join_select|JOIN::optimize_stage2 ## MDEV-28346
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select ## MDEV-28346

@@ -1,0 +1,5 @@
+SET NAMES tis620;
+DO CHAR((WEIGHT_STRING (EXTRACTVALUE ((0),('t')) LEVEL 7 DESC)) USING cp852);
+
+SET collation_connection='tis620_thai_ci';
+DO CHAR((WEIGHT_STRING (EXTRACTVALUE ((0),('tX')) LEVEL 7)) USING cp852);

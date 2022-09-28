@@ -20,6 +20,7 @@ cat "${1}" | tr -d '`' | \
        s|^[ ]\+||;s|;[ ]\+$|;|; \
        s|open|OPEN|gi; \
        s|div|DIV|gi; \
+       s|rollup|ROLLUP|gi; \
        s|execute|EXECUTE|gi; \
        s|index|INDEX|g; \
        s|immediate|IMMEDIATE|g; \

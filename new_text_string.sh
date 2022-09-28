@@ -176,38 +176,43 @@ fi
 # Note: all asserts below exclude any 'PREV' directories, like data.PREV
 if [ -z "${LATEST_CORE}" ]; then
   if [ -f ${SCRIPT_PWD}/fallback_text_string.sh -a -r ${SCRIPT_PWD}/fallback_text_string.sh ]; then
-    if grep -qi 'signal' "${ERROR_LOG}"; then
-      TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "${ERROR_LOG}")"
-      if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
-        1>&2 echo "${SHOWTEXT}"
-      fi
-      if [[ "${TEXT}" == *"No relevant strings were found"* ]]; then
+    if [[ "${PWD}" != *"SAN"* ]]; then  # [*] When SAN is used, no cores are generated. As such, we don't want to produce a FALLBACK string here from the error log as they will be almost always dud's and there will be many of them (all the same issues which already have UniqueID's and are already logged etc.)
+      if grep -qi 'signal' "${ERROR_LOG}"; then
+        TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "${ERROR_LOG}")"
+        if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
+          1>&2 echo "${SHOWTEXT}"
+        fi
+        if [[ "${TEXT}" == *"No relevant strings were found"* ]]; then
         TEXT=
-      fi
-      if [ -z "${TEXT}" ]; then
+        fi
+        if [ -z "${TEXT}" ]; then
+          find_other_possible_issue_strings
+          # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
+          echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
+          exit 1
+        else
+          echo "${TEXT}"
+          exit 0
+        fi
+      else
+        if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
+          1>&2 echo "${SHOWTEXT}"
+        fi
         find_other_possible_issue_strings
         # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
-        echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
+        echo "Assert: no core file found in */*core*, and no 'signal' found in the error log, so fallback_text_string.sh was not attempted"
         exit 1
-      else
-        echo "${TEXT}"
-        exit 0
       fi
-    else
+    else  # This is a SAN build, so do not run a FALLBACK string generation attempt, but do try find_other_possible_issue_strings
       if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
         1>&2 echo "${SHOWTEXT}"
       fi
       find_other_possible_issue_strings
       # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
-      echo "Assert: no core file found in */*core*, and no 'signal' found in the error log, so fallback_text_string.sh was not attempted"
+      echo "Assert: no core file found in */*core*, and this is a SAN build, so fallback_text_string.sh was not attempted"  # See above for the reason [*]
       exit 1
     fi
-  else
-    if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
-      1>&2 echo "${SHOWTEXT}"
-    fi
-    find_other_possible_issue_strings
-    # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
+  else  # FALLBACK string script not found (should not happen!)
     echo "Assert: no core file found in */*core*, and fallback_text_string.sh was not found, or is not readable"
     exit 1
   fi
