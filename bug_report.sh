@@ -130,7 +130,8 @@ fi
 sleep 2.5  # For visual confirmation
 
 test_san_build(){
-  pushd ${1} > /dev/null
+  local TSB_PWD="${PWD}"
+  cd "${1}" 
   cp ../in.sql .
   if [ ! -r ./start ]; then
     ~/start
@@ -138,7 +139,7 @@ test_san_build(){
   ./all_no_cl ${MYEXTRA_OPT_CLEANED}
   ./test_pquery
   ./stop
-  popd > /dev/null
+  cd "${TSB_PWD}"
 }
 
 rm -f ../in.sql
