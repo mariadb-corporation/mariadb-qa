@@ -28,14 +28,13 @@ Internal MariaDB error code: 1593                     Presumed non-issue (empty 
 Internal MariaDB error code: 1677                     Presumed non-issue (table referenced in binlog does not exist, or unconvertible column type difference)
 Internal MariaDB error code: 1792                     Presumed non-issue (tx_read_only=1 yet attempted BINLOG statement)
 Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
+Internal MariaDB error code: 1969                     Presumed non-issue (max_statement_time exceeded, normal when it is set)
 Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master connection IP address)
 Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
 Internal MariaDB error code: 4145                     Presumed non-issue (binlog event cannot execute as BACKUP STAGE is active)
 thus rolled back too. Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-27536
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
 Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
-#Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543 (Spider) - WIP, getting more testcases
-#Got error 12701                                       https://jira.mariadb.org/browse/MDEV-29455 (Spider) - WIP, getting more testcases
 Got error 127 when reading table                      https://jira.mariadb.org/browse/MDEV-27903
 Got error 188 when reading table                      Presumed non-issue (Operation was interrupted)
 Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
@@ -43,6 +42,9 @@ Got error 1054 when reading table                     https://jira.mariadb.org/b
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
 Got error 1184 when reading table                     https://jira.mariadb.org/browse/MDEV-29583 (init_connect failed, Spider)
 Got error 1440 when reading table                     https://jira.mariadb.org/browse/MDEV-29454 (XAER_DUPID Spider)
+#Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543 (Spider) - WIP, getting more testcases
+#Got error 12701                                       https://jira.mariadb.org/browse/MDEV-29455 (Spider) - WIP, getting more testcases
+Got error 12719 when reading table                    https://jira.mariadb.org/browse/MDEV-29583 (Spider, well-defined)
 max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)
 ^Stats:                                               Prevents incorrect last line 'alloc' captures in ASAN output
 Deleting the meta-data file                           Normal result of FLUSH TABLE WITH READ LOCK, also see MDEV-28110
@@ -65,7 +67,8 @@ Warning: Memory not freed: 80/104/16400/16320/16424   https://jira.mariadb.org/b
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-27627 FOR..IN..DO
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' WHILE
 Warning: Memory not freed: 560                        https://jira.mariadb.org/browse/MDEV-26335 DROP USER CURRENT_USER()
-Warning: Memory not freed: 16448                      https://jira.mariadb.org/browse/MDEV-25927
+Warning: Memory not freed: 16448                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE
+Warning: Memory not freed: 16496                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE
 spider/spd_table.cc.*mutex.*spider/spd_table.cc       https://jira.mariadb.org/browse/MDEV-29421
 invalid value in column mysql.proc.db_collation       Testcase artifact caused by direct mysql.proc INSERT
 WSREP (galera) provider is not loaded                 Presumed non-issue (Galera provider not loaded)

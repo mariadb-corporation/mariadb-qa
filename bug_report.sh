@@ -5,6 +5,7 @@ set +H  # Disables history substitution and avoids  -bash: !: event not found  l
 
 # User variables
 ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS=1
+DEBUG_OUTPUT=0  # Set to 1 to see full output of test_all and kill_all (note: this generates lots of output, and it is in parallel threads, so it likely only useful for debugging major issues with test_all and/or kill_all, but it is likely better to check a ./test_all run in a BASEDIR directly). Default: 0, legacy default: 1 (i.e. before this option was implemented, all output was shown)
 
 if [ ! -r /test/gendirs.sh ]; then
   echo 'Assert: /test/gendirs.sh not found, try running ~/mariadb-qa/linkit'
@@ -124,7 +125,7 @@ MYEXTRA_OPT_CLEANED=$(cat /tmp/options_bug_report.${RANDF} | sed 's|  | |g' | tr
 if [ "$(echo "${MYEXTRA_OPT_CLEANED}" | sed 's|[ \t]||g')" != "" ]; then
   echo "Using the following options: ${MYEXTRA_OPT_CLEANED}"
 else
-  echo 'Note that any mysqld options need to be listed as follows on the first line in the testcase (as shown above):'
+  echo 'Note that any mysqld options need to be listed, as follows on the next line, as the first line of the testcase:'
   echo '# mysqld options required for replay:  --someoption[=somevalue]'
 fi
 sleep 2.5  # For visual confirmation
@@ -156,21 +157,25 @@ cp in.sql ..
 if [ ! -r ../in.sql ]; then echo "Assert: ../in.sql not available after copy attempt!"; exit 1; fi
 cd ..
 echo "Testing all..."
+REDIRECT=">/dev/null 2>&1"
+if [ "${DEBUG_OUTPUT}" -eq 1 ]; then
+  REDIRECT=
+fi
 if [ "${1}" == "SAN" ]; then
-  ./test_all SAN ${MYEXTRA_OPT_CLEANED}
+  ./test_all SAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 elif [ "${1}" == "GAL" ]; then
-  ./test_all GAL ${MYEXTRA_OPT_CLEANED}
+  ./test_all GAL ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 else
-  ./test_all ${MYEXTRA_OPT_CLEANED}
+  ./test_all ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 fi
 echo "Ensuring all servers are gone..."
 sync
 if [ "${1}" == "SAN" ]; then
-  ./kill_all SAN
+  ./kill_all SAN ${REDIRECT}
 elif [ "${1}" == "GAL" ]; then
-  ./kill_all GAL
+  ./kill_all GAL ${REDIRECT}
 else
-  ./kill_all # NOTE: Can not be executed as ../kill_all as it requires ./gendirs.sh
+  ./kill_all ${REDIRECT}  # NOTE: Can not be executed as ../kill_all as it requires ./gendirs.sh
 fi
 
 if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then

@@ -372,6 +372,8 @@ cat "${1}" | tr -d '`' | \
        s|substring[ ]*(|SUBSTRING(|gi; \
        s|'IN |' IN |gi; \
        s|AND(|AND (|gi; \
+       s|LEFT (|LEFT(|gi; \
+       s|RIGHT (|RIGHT(|gi; \
        s|join|JOIN|gi; \
        s|straight|STRAIGHT|gi; \
        s|natural|NATURAL|gi; \
