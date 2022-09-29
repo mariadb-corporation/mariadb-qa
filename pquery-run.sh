@@ -1419,7 +1419,7 @@ pquery_test() {
           removetrial
         fi
       fi
-      if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2> /dev/null | wc -l) -ge 1 ]; then break; fi # Break the wait-for-server-started loop if a core file is found. Handling of core is done below.
+      if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -ge 1 ]; then break; fi # Break the wait-for-server-started loop if a core file is found. Handling of core is done below.
     done
     # Check if mysqld is alive and if so, set ISSTARTED=1 so pquery will run
     if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then

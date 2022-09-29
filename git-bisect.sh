@@ -9,34 +9,36 @@ FIRST_KNOWN_BAD_COMMIT='8f9df08f02294f4828d40ef0a298dc0e72b01f60'   # Revision o
 TESTCASE='/test/in.sql'                                             # The testcase to be tested
 UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
+# Note: leave both UNIQUEID and TEXT empty to scan for cores instead
 
-die(){ 
-  echo "$2"; exit $1 
+die(){
+  echo "$2"; exit $1
 }
 
 if [ "${DBG_OR_OPT}" != 'dbg' -a "${DBG_OR_OPT}" != 'opt' ]; then
   echo "DBG_OR_OPT variable is incorrectly set: use 'dbg' or 'opt' only"
   exit 1
-fi
-if [[ "${VERSION}" != "10."* ]]; then
+elif [[ "${VERSION}" != "10."* ]]; then
   echo "Version (${VERSION}) does not look correct"
   exit 1
-fi
-if [ ! -z "${UNIQUEID}" -a ! -z "${TEXT}" ]; then
+elif [ ! -z "${UNIQUEID}" -a ! -z "${TEXT}" ]; then
   echo "Both UNIQUEID and TEXT were set. Please only specify one of them"
   exit 1
-fi
-if [ -z "${LAST_KNOWN_GOOD_COMMIT}" -o -z "${FIRST_KNOWN_BAD_COMMIT}" ]; then
+elif [ -z "${LAST_KNOWN_GOOD_COMMIT}" -o -z "${FIRST_KNOWN_BAD_COMMIT}" ]; then
   echo "LAST_KNOWN_GOOD_COMMIT or FIRST_KNOWN_BAD_COMMIT (or both) setting(s) missing"
   exit 1
-fi
-if [ ! -r "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh" ]; then
+elif [ ! -r "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh" ]; then
   echo "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh missing. Try cloning mariadb-qa again from Github into your home directory"
   exit 1
-fi
-if [ ! -r "${HOME}/start" ]; then
+elif [ ! -r "${HOME}/start" ]; then
   echo "${HOME}/start missing. Try running ${HOME}/mariadb-qa/linkit"
   exit 1
+elif [ "${STY}" == "" ]; then
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "git-bisect" bash -c "./$0"
+  sleep 1
+  screen -d -r "git-bisect"
+  return 2> /dev/null; exit 0
 fi
 
 cd /test || die 1 '/test does not exist'
@@ -58,40 +60,77 @@ fi
 
 if [ ! -z "${UNIQUEID}" ]; then
   echo "Searching for UniqueID Bug: '${UNIQUEID}'"
-else
+elif [ ! -z "${TEXT}" ]; then
   echo "Searching for Error log text Bug: '${TEXT}'"
+else
+  echo "Searching for core files in the data directory to validate issue occurence"
 fi
- 
-git reset --hard
-git checkout "${VERSION}" 
-git bisect start
-git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}"
-git bisect good "${LAST_KNOWN_GOOD_COMMIT}"
-while true; do
+
+bisect_good(){
+  cd "/test/TMP_git-bisect/${VERSION}" || die 1 "Could not change directory to /test/TMP_git-bisect/${VERSION}"
+  git bisect good
+  if [ "${?}" -ne 0 ]; then
+    echo "Finished"
+    exit 0
+  fi
+}
+
+bisect_bad(){
+  cd "/test/TMP_git-bisect/${VERSION}" || die 1 "Could not change directory to /test/TMP_git-bisect/${VERSION}"
+  git bisect bad
+  if [ "${?}" -ne 0 ]; then
+    echo "Finished"
+    exit 0
+  fi
+}
+
+git bisect reset  # Remove any previous bisect run data
+git reset --hard  # Revert tree to mainline
+git clean -xfd    # Cleanup tree
+git checkout "${VERSION}"   # Ensure we've got the right version
+git bisect start  # Start bisect run
+git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}"  # Starting point, bad
+git bisect good "${LAST_KNOWN_GOOD_COMMIT}"  # Starting point, good
+# Note that the starting points may not point git to a valid commit to test. i.e. git bisect may jump to a commit
+# which was done via a merge in the tree where the current branch is the second parent and not the first one, with
+# the result that the tree version (as seen in the VERSION file) is different from the $VERSION needing to be tested.
+# For this, the script (ref below) will use 'git bisect skip' until it has located a commit with the correct $VERSION
+while :; do
   echo "|> Validating revision"
-  while true; do
+  CUR_VERSION=;CUR_COMMIT=
+  while :; do
     source ./VERSION
     CUR_VERSION="${MYSQL_VERSION_MAJOR}.${MYSQL_VERSION_MINOR}"
     CUR_COMMIT="$(git log | head -n1 | tr -d '\n')"
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
-      echo "|> Commit ${CUR_COMMIT} is version ${CUR_VERSION}, skipping..."
+      echo "|> ${CUR_COMMIT} is version ${CUR_VERSION}, skipping..."
       git bisect skip
       continue
     else
-      echo "|> Commit ${CUR_COMMIT} is version ${CUR_VERSION}, proceeding..."
+      echo "|> ${CUR_COMMIT} is version ${CUR_VERSION}, proceeding..."
       break
     fi
   done
-  echo "|> Building revision in a screen session named 'git-bisect': use screen -d -r 'git-bisect' to see the build process"
-  screen -admS 'git-bisect' bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh"
-  if [ "${?}" -eq 1 ]; then
-    echo "Build failure... try ~/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh manually"
-    # TODO: git bisect supports the 'git bisect skip' command when for example there is a build issue but the build issue is unrelated to the actual problem being searched for. If we have a lot of build that fail (currently 0 known) then the next like is likely better than just terminating the script
-    # git bisect skip
-    exit 1
-  fi
+  while :; do
+    echo "|> Building revision in a screen session: use screen -d -r 'git-bisect-build' to see the build process"
+    rm -f /tmp/git-bisect-build.exitcode
+    screen -admS 'git-bisect-build' bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > /tmp/git-bisect-build.exitcode"
+    while [ "$(screen -ls | grep -o 'git-bisect-build')" == "git-bisect-build" ]; do
+      sleep 2
+    done
+    sleep 2
+    if [ "$(cat /tmp/git-bisect-build.exitcode | tr -d '\n')" -eq 1 ]; then
+      echo "Build failure... Skipping revision ${CUR_COMMIT}"
+      git bisect skip
+      continue
+    else
+      echo "Build successful... Testing revision ${CUR_COMMIT}"
+      break  # Successful build
+    fi
+    rm -f /tmp/git-bisect-build.exitcode
+  done
   cd /test/TMP_git-bisect || die 1 'Could not change directory to /test/TMP_git-bisect'
-  TEST_DIR="$(ls -ld MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
+  TEST_DIR="$(ls -d MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
   if [ -z "${TEST_DIR}" ]; then
     echo "Assert: TEST_DIR is empty"
     exit 1
@@ -100,25 +139,33 @@ while true; do
     exit 1
   fi
   cd "${TEST_DIR}" || die 1 "Could not change directory to TEST_DIR (${TEST_DIR})"
-  ${HOME}/start
+  ${HOME}/start  # Init BASEDIR with runtime scripts
   cp ${TESTCASE} ./in.sql
-  ./all_no_cl >/dev/null || die 1 "Could not execute ./all_no_cl in ${PWD}"
-  ./test_pquery >/dev/null || die 1 "Could not execute ./test_pquery in ${PWD}"
+  ./all_no_cl >/dev/null || die 1 "Could not execute ./all_no_cl in ${PWD}"  # wipe, start
+  ./test_pquery >/dev/null || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
   if [ ! -z "${UNIQUEID}" ]; then
     if [ "$(${HOME}/t)" == "${UNIQUEID}" ]; then
-      echo 'UniqueID Bug found, bad commit'
-      git bisect bad
+      echo 'UniqueID Bug found; bad commit'
+      bisect_bad
     else
-      echo 'UniqueID Bug not found, good commit'
-      git bisect good
+      echo 'UniqueID Bug not found; good commit'
+      bisect_good
+    fi
+  elif [ ! -z "${TEXT}" ]; then
+    if [ ! -z "$(grep "${TEXT}" log/master.err)" ]; then
+      echo 'TEXT Bug found; bad commit'
+      bisect_bad
+    else
+      echo 'TEXT Bug not found; good commit'
+      bisect_good
     fi
   else
-    if [ ! -z "$(grep "${TEXT}" log/master.err)" ]; then
-      echo 'TEXT Bug found, bad commit'
-      git bisect bad
+    if [ $(ls -l data/*core* 2>/dev/null | wc -l) -ge 1 ]; then
+      echo 'Core file found in ./data; bad commit'
+      bisect_bad
     else
-      echo 'TEXT Bug not found, good commit'
-      git bisect good
+      echo 'No core file found in ./data; good commit'
+      bisect_good
     fi
   fi
 done
