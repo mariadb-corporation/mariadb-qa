@@ -193,6 +193,7 @@ cat "${1}" | tr -d '`' | \
        s|char|CHAR|gi; \
        s|varchar|VARCHAR|gi; \
        s|character|CHARACTER|gi; \
+       s|collate|COLLATE|gi; \
        s|replace|REPLACE|gi; \
        s|delayed|DELAYED|gi; \
        s|lock|LOCK|gi; \

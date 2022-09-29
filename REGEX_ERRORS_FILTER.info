@@ -21,6 +21,7 @@ init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave 
 Internal MariaDB error code: 1064                     Presumed non-issue (init_slave query error), though see MDEV-26247 (1064)
 Internal MariaDB error code: 1146                     Presumed non-issue (table does not exist, normal in tests)
 Internal MariaDB error code: 1193                     Presumed non-issue (init_slave query cannot be executed)
+Internal MariaDB error code: 1227                     https://jira.mariadb.org/browse/MDEV-29659 (spider_internal_sql_log_off)
 Internal MariaDB error code: 1231                     Presumed non-issue (init_slave query cannot be executed)
 init_slave query, Internal MariaDB error code: 1237   Presumed non-issue (Slave thread cannot execute init_slave query)
 Internal MariaDB error code: 1399                     Presumed non-issue (global transaction is in IDLE state)

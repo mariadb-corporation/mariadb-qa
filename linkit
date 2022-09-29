@@ -72,6 +72,7 @@ ln -fs /home/${USER}/mariadb-qa/san_text_string.sh /home/${USER}/st 2>&1
 ln -fs /home/${USER}/mariadb-qa/linkit /home/${USER}/li 2>&1
 
 # Build scripts (mostly/mainly used from /test)
+ln -fs /home/${USER}/mariadb-qa/git-bisect.sh /test/git-bisect.sh 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/* /data/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/current_runs_testcases /home/${USER}/crt 2>&1

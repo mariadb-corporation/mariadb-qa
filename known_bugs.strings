@@ -86,31 +86,32 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 #***#SIGSEGV|_int_malloc|__GI___libc_malloc|sf_malloc|my_malloc                                                                                                                     ## MDEV-28054
 
 ##### Likely debug_dbug issues (reduced once with debug_dbug=... or debug=... demonstrated to be the cause) #####
-##### Note: these should be disabled if no debug_dbug=... or debug=... SQL statements are being used #####
-SIGSEGV|sp_head::show_create_routine|Sp_handler::sp_show_create_routine|mysql_execute_command|mysql_parse                                                                      ## debug_dbug='+d,cache_sp_in_show_create'
-SIGSEGV|add_pin|make_lock_and_pin|pagecache_write_part|write_changed_bitmap                                                                                                    ## debug='+d,alloc_sort_buffer_fail'
-SIGSEGV|add_pin|make_lock_and_pin|flush_cached_blocks|flush_pagecache_blocks_int                                                                                               ## debug_dbug='+d,alloc_sort_buffer_fail'
-data != ((void *)0) || data_len == 0|SIGABRT|crcr32_calc_pclmulqdq|crc32_pclmul|my_checksum|Log_event_writer::write_data                                                       ## debug='+d,simulate_out_of_memory'
-debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute                                 ## debug_dbug='+d,after_mysql_insert'
-inited==INDEX|SIGABRT|handler::ha_index_read_map|Stat_table_write_iter::init|rename_table_in_stat_tables|do_rename                                                             ## debug_dbug='+d,ha_index_init_fail'
-file_unreadable || space|SIGABRT|dict_table_t::is_readable|ha_innobase::optimize|handler::ha_optimize|mysql_admin_table                                                        ## debug_dbug='+d,ib_create_table_fail_too_many_trx'
-info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## debug_dbug='d,simulate_find_log_pos_error'
-inited==INDEX|SIGABRT|handler::ha_index_first|collect_statistics_for_index|collect_statistics_for_table|mysql_admin_table                                                      ## debug_dbug='+d,dict_set_index_corrupted'
-fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|dict_create_index_space|dict_create_index_step                              ## debug_dbug='+d,fsp_flags_is_valid_failure'
-fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='d,row_ins_index_entry_timeout';
-fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='+d,fsp_flags_is_valid_failure'
-fil_space_t::is_valid_flags(flags & ~FSP_FLAGS_MEM_MASK, space_id)|SIGABRT|ut_dbg_assertion_failed|fil_ibd_create|dict_create_index_space|dict_create_index_step               ## debug_dbug='+d,dict_tf_to_fsp_flags_failure'
-n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                   ## debug_dbug='+d,external_lock_failure'
-!n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                  ## debug_dbug='+d,external_lock_failure'
-m_lock_type == 2|SIGABRT|handler::~handler|ha_myisam::~ha_myisam|ha_myisam::~ha_myisam|ha_sequence::~ha_sequence                                                               ## debug_dbug='+d,external_lock_failure'
-my_b_tell(log) == 0|SIGABRT|check_binlog_magic|init_relay_log_pos|handle_slave_sql|pfs_spawn_thread                                                                            ## debug_dbug='d,simulate_find_log_pos_error'
-thd->is_error() || kill_errno || thd->killed == ABORT_QUERY|SIGABRT|filesort|create_sort_index|st_join_table::sort_table|join_init_read_record                                 ## debug_dbug='+d,external_lock_failure'
-state == TRX_STATE_NOT_STARTED || (relaxed && thd_get_error_number(trx->mysql_thd))|SIGABRT|ut_dbg_assertion_failed|trx_state_eq|rw_trx_hash_t::validate_element|rw_trx_hash_t::insert ## debug_dbug='+d,innodb_table_deadlock'
-node->state == 1|SIGABRT|row_ins_step|row_insert_for_mysql|ha_innobase::write_row|ha_sequence::write_row                                                                       ## debug_dbug='d,row_ins_index_entry_timeout'
-Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_writer::write_internal                                                                           ## debug_dbug='d,simulate_find_log_pos_error'
-fil_space_t::is_valid_flags(flags, space->id)|SIGABRT|fsp_flags_try_adjust|fil_ibd_open|dict_load_tablespace|dict_load_table_one                                               ## debug='+d,dict_tf_to_fsp_flags_failure'
-!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|Relay_log_info::init|init_master_info|start_slave                                                             ## debug='+d,error_unique_log_filename'
-!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|purge_relay_logs|reset_slave|reload_acl_and_cache                                                             ## debug='d,simulate_find_log_pos_error'
+##### Note: these should be disabled if no debug_dbug=... or debug=... SQL statements are being used        #####
+##### Update 29/09/22: In at least one case, a non debug_dbug originating issue was observed from this list #####
+#SIGSEGV|sp_head::show_create_routine|Sp_handler::sp_show_create_routine|mysql_execute_command|mysql_parse                                                                      ## debug_dbug='+d,cache_sp_in_show_create'
+#SIGSEGV|add_pin|make_lock_and_pin|pagecache_write_part|write_changed_bitmap                                                                                                    ## debug='+d,alloc_sort_buffer_fail'
+#SIGSEGV|add_pin|make_lock_and_pin|flush_cached_blocks|flush_pagecache_blocks_int                                                                                               ## debug_dbug='+d,alloc_sort_buffer_fail'
+#data != ((void *)0) || data_len == 0|SIGABRT|crcr32_calc_pclmulqdq|crc32_pclmul|my_checksum|Log_event_writer::write_data                                                       ## debug='+d,simulate_out_of_memory'
+#debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute                                 ## debug_dbug='+d,after_mysql_insert'
+#inited==INDEX|SIGABRT|handler::ha_index_read_map|Stat_table_write_iter::init|rename_table_in_stat_tables|do_rename                                                             ## debug_dbug='+d,ha_index_init_fail'
+#file_unreadable || space|SIGABRT|dict_table_t::is_readable|ha_innobase::optimize|handler::ha_optimize|mysql_admin_table                                                        ## debug_dbug='+d,ib_create_table_fail_too_many_trx'
+#info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## debug_dbug='d,simulate_find_log_pos_error'
+#inited==INDEX|SIGABRT|handler::ha_index_first|collect_statistics_for_index|collect_statistics_for_table|mysql_admin_table                                                      ## debug_dbug='+d,dict_set_index_corrupted'
+#fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|dict_create_index_space|dict_create_index_step                              ## debug_dbug='+d,fsp_flags_is_valid_failure'
+#fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='d,row_ins_index_entry_timeout';
+#fil_space_t::is_valid_flags(fsp_flags, false)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_fsp_flags|fil_space_for_table_exists_in_mem|dict_load_tablespace                      ## debug_dbug='+d,fsp_flags_is_valid_failure'
+#fil_space_t::is_valid_flags(flags & ~FSP_FLAGS_MEM_MASK, space_id)|SIGABRT|ut_dbg_assertion_failed|fil_ibd_create|dict_create_index_space|dict_create_index_step               ## debug_dbug='+d,dict_tf_to_fsp_flags_failure'
+#n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                   ## debug_dbug='+d,external_lock_failure'
+#!n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                  ## debug_dbug='+d,external_lock_failure'
+#m_lock_type == 2|SIGABRT|handler::~handler|ha_myisam::~ha_myisam|ha_myisam::~ha_myisam|ha_sequence::~ha_sequence                                                               ## debug_dbug='+d,external_lock_failure'
+#my_b_tell(log) == 0|SIGABRT|check_binlog_magic|init_relay_log_pos|handle_slave_sql|pfs_spawn_thread                                                                            ## debug_dbug='d,simulate_find_log_pos_error'
+#thd->is_error() || kill_errno || thd->killed == ABORT_QUERY|SIGABRT|filesort|create_sort_index|st_join_table::sort_table|join_init_read_record                                 ## debug_dbug='+d,external_lock_failure'
+#state == TRX_STATE_NOT_STARTED || (relaxed && thd_get_error_number(trx->mysql_thd))|SIGABRT|ut_dbg_assertion_failed|trx_state_eq|rw_trx_hash_t::validate_element|rw_trx_hash_t::insert ## debug_dbug='+d,innodb_table_deadlock'
+#node->state == 1|SIGABRT|row_ins_step|row_insert_for_mysql|ha_innobase::write_row|ha_sequence::write_row                                                                       ## debug_dbug='d,row_ins_index_entry_timeout'
+#Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_writer::write_internal                                                                           ## debug_dbug='d,simulate_find_log_pos_error'
+#fil_space_t::is_valid_flags(flags, space->id)|SIGABRT|fsp_flags_try_adjust|fil_ibd_open|dict_load_tablespace|dict_load_table_one                                               ## debug='+d,dict_tf_to_fsp_flags_failure'
+#!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|Relay_log_info::init|init_master_info|start_slave                                                             ## debug='+d,error_unique_log_filename'
+#!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|purge_relay_logs|reset_slave|reload_acl_and_cache                                                             ## debug='d,simulate_find_log_pos_error'
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
  
 ##### Current MDEV-27106 bugs (temporary) #####
