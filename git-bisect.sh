@@ -35,7 +35,7 @@ elif [ ! -r "${HOME}/start" ]; then
   exit 1
 elif [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
-  screen -admS "git-bisect" bash -c "./$0"
+  screen -admS "git-bisect" bash -c "./$0;bash"
   sleep 1
   screen -d -r "git-bisect"
   return 2> /dev/null; exit 0
