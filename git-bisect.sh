@@ -72,7 +72,7 @@ bisect_good(){
   git bisect good 2>&1 | tee /tmp/git_bisect.out
   if grep -qi 'first bad commit' /tmp/git_bisect.out; then
     rm -f /tmp/git_bisect.out
-    echo "Finished"
+    echo "Finished. Use 'cd /test/TMP_git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
     exit 0
   fi
   rm -f /tmp/git_bisect.out
@@ -84,7 +84,7 @@ bisect_bad(){
   git bisect bad 2>&1 | tee /tmp/git_bisect.out
   if grep -qi 'first bad commit' /tmp/git_bisect.out; then
     rm -f /tmp/git_bisect.out
-    echo "Finished"
+    echo "Finished. Use 'cd /test/TMP_git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
     exit 0
   fi
   rm -f /tmp/git_bisect.out
