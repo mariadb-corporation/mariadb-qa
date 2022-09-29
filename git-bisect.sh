@@ -143,8 +143,8 @@ while :; do
   cd "${TEST_DIR}" || die 1 "Could not change directory to TEST_DIR (${TEST_DIR})"
   ${HOME}/start  # Init BASEDIR with runtime scripts
   cp ${TESTCASE} ./in.sql
-  ./all_no_cl >/dev/null || die 1 "Could not execute ./all_no_cl in ${PWD}"  # wipe, start
-  ./test_pquery >/dev/null || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+  ./all_no_cl >/dev/null 2>&1 || die 1 "Could not execute ./all_no_cl in ${PWD}"  # wipe, start
+  ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
   if [ ! -z "${UNIQUEID}" ]; then
     if [ "$(${HOME}/t)" == "${UNIQUEID}" ]; then
       echo 'UniqueID Bug found; bad commit'
