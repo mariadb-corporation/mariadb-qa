@@ -9,7 +9,7 @@ FIRST_KNOWN_BAD_COMMIT='8f9df08f02294f4828d40ef0a298dc0e72b01f60'   # Revision o
 TESTCASE='/test/in.sql'                                             # The testcase to be tested
 UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
-# Note: leave both UNIQUEID and TEXT empty to scan for cores instead
+# Note: leave both UNIQUEID and TEXT empty to scan for core files instead
 
 die(){
   echo "$2"; exit $1
@@ -112,6 +112,8 @@ while :; do
     fi
   done
   while :; do
+    echo "|> Cleaning up any previous version ${VERSION} builds in /test/TMP_git-bisect"
+    rm -Rf /test/MD*${VERSION}*
     echo "|> Building revision in a screen session: use screen -d -r 'git-bisect-build' to see the build process"
     rm -f /tmp/git-bisect-build.exitcode
     screen -admS 'git-bisect-build' bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > /tmp/git-bisect-build.exitcode"
