@@ -22,7 +22,7 @@ COUNT3=0
 NEWBUGCOUNT="$(cat /data/NEWBUGS/*.string 2>/dev/null | sort -u | wc -l)"
 FUZZERBUGCOUNT="Pending"
 TESTCASES="Pending"
-while true; do 
+while :; do 
   clear
   COUNT1=$[ ${COUNT1} + 1 ]
   COUNT2=$[ ${COUNT2} + 1 ]

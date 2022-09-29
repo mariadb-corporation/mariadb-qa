@@ -99,7 +99,7 @@ echo "__AFL_SHM_ID: ${__AFL_SHM_ID} | AFL_MAP_SIZE: ${AFL_MAP_SIZE}"
 echo -n 'Queries (1m updates): '
  
 echo "SHOW GLOBAL STATUS LIKE 'Queries';" > in.sql
-while true; do
+while :; do
   if ${PWD}/bin/mysqladmin ping -uroot -S/test/afl${1}_socket.sock > /dev/null 2>&1; then 
     sleep 60
     if [ ! -z ${GAL_RUN} ]; then

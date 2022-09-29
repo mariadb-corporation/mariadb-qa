@@ -16,7 +16,7 @@ if [ "${STY}" == "" ]; then
 fi
 
 # Script variables
-while true; do
+while :; do
   clear
   CMD="ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep --binary-files=text -vE 'fireworks|mtr_to_sql|generator.sh|cc|clang|reducer'"
   eval "${CMD}" | head -n7

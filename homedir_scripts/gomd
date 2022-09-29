@@ -54,7 +54,7 @@ for RUN in $(seq 1 ${TOTALRUNS}); do
     sed -i 's|^BASEDIR=\([^#]\+\)-opt|BASEDIR=\1-dbg|' ${CONF}
   fi
   screen -admS pr${RUN} bash -c "cd ~/mariadb-qa; ./pquery-run.sh ${CONF}; bash"
-  while true; do
+  while :; do
     sleep 1
     if [ -r /tmp/gomd_helper ]; then
       sleep 0.3

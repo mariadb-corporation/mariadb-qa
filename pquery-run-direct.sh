@@ -58,7 +58,7 @@ egrep -vi "root|user.*%|%.*user" ${INFILE} > ${WORKDIR}/input.sql
 if [ ! -r  ${WORKDIR}/input.sql ]; then
   echoit "Assert: this script tried to create a filtered input file (${WORKDIR}/input.sql) based on ${INPUT}, but afterwards the resulting file ${WORKDIR}/input.sql was not available. Please check for out of disk space, and similar issues"
 fi
-while true; do
+while :; do
   TRIAL=$[ ${TRIAL} + 1 ]
   echoit "[Trial ${TRIAL}] Commencing trial #${TRIAL}, log is at ${WORKDIR}/${TRIAL}/pquery.log"
   mkdir -p ${WORKDIR}/${TRIAL}

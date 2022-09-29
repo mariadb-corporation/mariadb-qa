@@ -286,7 +286,7 @@ else
       echo ''
       echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV} ${BUILD_TYPE}}"
       LINE_TO_READ=${LINE_BEFORE_SAN_STACK}
-      while true; do  # Read stack line by line and print
+      while :; do  # Read stack line by line and print
         LINE_TO_READ=$[ ${LINE_TO_READ} + 1 ]
         LINE="$(head -n${LINE_TO_READ} ./log/master.err | tail -n1)"
         if [ -z "$(echo ${LINE} | sed 's|[ \t]||g')" ]; then break; fi
@@ -319,7 +319,7 @@ else
         ALT_SOURCE_CODE_REV=
         ALT_SERVER_VERSION=
         LINE_TO_READ=${LINE_BEFORE_SAN_STACK}
-        while true; do  # Read stack line by line and print
+        while :; do  # Read stack line by line and print
           LINE_TO_READ=$[ ${LINE_TO_READ} + 1 ]
           LINE="$(head -n${LINE_TO_READ} ${ALT_BASEDIR}/log/master.err | tail -n1)"
           if [ -z "$(echo ${LINE} | sed 's|[ \t]||g')" ]; then break; fi

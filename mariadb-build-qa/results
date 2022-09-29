@@ -52,7 +52,7 @@ if [ -r ${MARIADB_QA}/REGEX_ERRORS_FILTER ]; then
 fi
 
 # Loop dirs from results.list
-while true; do
+while :; do
   for ((i=1;i<=100;i++)); do
     if [ ! -z "${MON[i]}" ]; then
       if [ -d "${DATADIR}/${MON[${i}]}" ]; then

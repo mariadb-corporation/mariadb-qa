@@ -156,7 +156,7 @@ echoit "MYINIT: ${MYINIT}"
 echoit "MYEXTRA: ${MYEXTRA}"
 
 # Main Loop
-while true; do
+while :; do
   # Run pquery_run.sh with a randomly generated configuration
   pquery_run
   # Analyze the single trial executed by pquery_run.sh

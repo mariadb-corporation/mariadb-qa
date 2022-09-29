@@ -234,7 +234,7 @@ init_empty_port(){
 
 # Diskspace OOS check function
 diskspace() {
-  while true; do
+  while :; do
     if [ ! -d ${RUNDIR} ]; then mkdir -p ${RUNDIR}; fi
     echo "Diskspace Test" > ${RUNDIR}/diskspace 2>/dev/null
     if [ $? -eq 0 ]; then

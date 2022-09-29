@@ -4395,7 +4395,7 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
   NOISSUEFLOW=0
   CURRENTLINE=1
   echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
-  while true; do
+  while :; do
     if [ ${TRIAL} -gt 1 -a "${FIREWORKS}" != "1" ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
     if [ ${CURRENTLINE} -gt ${LINECOUNTF} ]; then
       break  # EOF reached
@@ -4404,7 +4404,7 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
     fi
     echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line ${CURRENTLINE} (Current chunk size: fixed to 1)"
     sed -n "$CURRENTLINE ! p" $WORKF > $WORKT
-    while true; do
+    while :; do
       run_and_check
       if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
@@ -5473,7 +5473,7 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
       STAGE8_NOT_STARTED_CORRECTLY=0
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Filtering mysqld option $line from MYEXTRA";
       MYEXTRA=$(echo $MYEXTRA | sed "s|$line||")
-      while true; do
+      while :; do
         run_and_check
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
@@ -5515,7 +5515,7 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
     elif [ $MYSQLD_OPTION_COUNT -ge 1 -a $MYSQLD_OPTION_COUNT -le 4 ]; then  # 1-4 options
       myextra_reduction
     else  # 4+ options
-      while true; do
+      while :; do
         SAVE_STAGE8_MYEXTRA=$MYEXTRA
         MYEXTRA=$(cat $FILE1 | tr -s "\n" " " | sed 's|[ \t]\+| |g;s| $||g;s|^ ||g')
         STAGE8_CHK=0
@@ -5579,7 +5579,7 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
     STAGE9_NOT_STARTED_CORRECTLY=0
     SAVE_SPECIAL_MYEXTRA_OPTIONS=$SPECIAL_MYEXTRA_OPTIONS
     SPECIAL_MYEXTRA_OPTIONS=$(echo "$SPECIAL_MYEXTRA_OPTIONS" | sed "s|$STAGE9_FILTER||");
-    while true; do
+    while :; do
       run_and_check
       TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
       if [ $STAGE9_CHK -eq 0 -o $STAGE9_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)

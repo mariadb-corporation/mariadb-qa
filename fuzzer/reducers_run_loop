@@ -17,7 +17,7 @@ if [ "${STY}" == "" ]; then
 fi
 
 FILTER='grep|vi reducers_run|vim reducers_run|reducers_run_loop'
-while true; do
+while :; do
   if [ -z "$(screen -ls | grep 'reducers_run' | grep -vE "${FILTER}")" ]; then
     echo "reducers_run screen not found, terminating any running instances of reducers_run at $(date)..."
     ps -ef | grep 'reducers_run' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {}
