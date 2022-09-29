@@ -1,14 +1,14 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-VERSION=10.11                                                          # 10.9, 10.10, 10.11, etc.
-DBG_OR_OPT='dbg'                                                       # Use 'dbg' or 'opt' only
-RECLONE=0                                                              # Set to 1 to reclone a tree before starting
-LAST_KNOWN_GOOD_COMMIT='fe1f8f2c6b6f3b8e3383168225f9ae7853028947'      # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='8f9df08f02294f4828d40ef0a298dc0e72b01f60'      # Revision of first known bad commit
-TESTCASE='/test/in.sql'                                                # The testcase to be tested
-UNIQUEID=''                                                            # The UniqueID to scan for [Exclusive]
-TEXT=''                                                                # The string to scan for in the error log [Exclusive]
+VERSION=10.11                                                       # 10.9, 10.10, 10.11, etc.
+DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
+RECLONE=0                                                           # Set to 1 to reclone a tree before starting
+LAST_KNOWN_GOOD_COMMIT='fe1f8f2c6b6f3b8e3383168225f9ae7853028947'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='8f9df08f02294f4828d40ef0a298dc0e72b01f60'   # Revision of first known bad commit
+TESTCASE='/test/in.sql'                                             # The testcase to be tested
+UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
+TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 
 die(){ 
   echo "$2"; exit $1 
@@ -41,6 +41,7 @@ fi
 
 cd /test || die 1 '/test does not exist'
 mkdir -p TMP_git-bisect || die 1 '/test/TMP_git-bisect could not be created'
+echo 'Changing directory to /test/TMP_git-bisect'
 cd TMP_git-bisect || die 1 'could not change directory to TMP_git-bisect'
 if [ "${RECLONE}" -eq 1 ]; then
   rm -Rf "${VERSION}"
@@ -66,8 +67,21 @@ git checkout "${VERSION}"
 git bisect start
 git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}"
 git bisect good "${LAST_KNOWN_GOOD_COMMIT}"
-git checkout "${VERSION}"  # Required to swap back to the right branch after the checkout enacted by the last two commands
 while true; do
+  echo "|> Validating revision"
+  while true; do
+    source ./VERSION
+    CUR_VERSION="${MYSQL_VERSION_MAJOR}.${MYSQL_VERSION_MINOR}"
+    CUR_COMMIT="$(git log | head -n1 | tr -d '\n')"
+    if [ "${CUR_VERSION}" != "${VERSION}" ]; then
+      echo "|> Commit ${CUR_COMMIT} is version ${CUR_VERSION}, skipping..."
+      git bisect skip
+      continue
+    else
+      echo "|> Commit ${CUR_COMMIT} is version ${CUR_VERSION}, proceeding..."
+      break
+    fi
+  done
   echo "|> Building revision in a screen session named 'git-bisect': use screen -d -r 'git-bisect' to see the build process"
   screen -admS 'git-bisect' bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh"
   if [ "${?}" -eq 1 ]; then
@@ -99,7 +113,7 @@ while true; do
       git bisect good
     fi
   else
-    if [ ! -z "$(grep "${TEXT}")" ]; then
+    if [ ! -z "$(grep "${TEXT}" log/master.err)" ]; then
       echo 'TEXT Bug found, bad commit'
       git bisect bad
     else
