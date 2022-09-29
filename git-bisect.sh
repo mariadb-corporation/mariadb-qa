@@ -68,20 +68,26 @@ fi
 
 bisect_good(){
   cd "/test/TMP_git-bisect/${VERSION}" || die 1 "Could not change directory to /test/TMP_git-bisect/${VERSION}"
-  git bisect good
-  if [ "${?}" -ne 0 ]; then
+  rm -f /tmp/git_bisect.out
+  git bisect good 2>&1 | tee /tmp/git_bisect.out
+  if grep -qi 'first bad commit' /tmp/git_bisect.out; then
+    rm -f /tmp/git_bisect.out
     echo "Finished"
     exit 0
   fi
+  rm -f /tmp/git_bisect.out
 }
 
 bisect_bad(){
   cd "/test/TMP_git-bisect/${VERSION}" || die 1 "Could not change directory to /test/TMP_git-bisect/${VERSION}"
-  git bisect bad
-  if [ "${?}" -ne 0 ]; then
+  rm -f /tmp/git_bisect.out
+  git bisect bad 2>&1 | tee /tmp/git_bisect.out
+  if grep -qi 'first bad commit' /tmp/git_bisect.out; then
+    rm -f /tmp/git_bisect.out
     echo "Finished"
     exit 0
   fi
+  rm -f /tmp/git_bisect.out
 }
 
 git bisect reset  # Remove any previous bisect run data
