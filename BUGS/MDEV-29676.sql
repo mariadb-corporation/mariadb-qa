@@ -1,0 +1,5 @@
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY 'PWD1';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD1');
+CREATE TABLE t (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+CREATE OR REPLACE TABLE t (c INT) ENGINE=Spider;  # Hangs

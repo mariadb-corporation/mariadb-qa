@@ -83,3 +83,12 @@ INSERT INTO t VALUES (4,0);
 LOAD INDEX INTO CACHE t IGNORE LEAVES;
 LOAD INDEX INTO CACHE t;
 SHUTDOWN;
+
+SET sql_mode='';
+SET GLOBAL aria_encrypt_tables=1;
+SET default_storage_engine=Aria;
+CREATE TABLE t (c INT,c2 BINARY (1),c3 INT(1),c4 BINARY (1) KEY,c5 INT UNIQUE KEY,c6 NUMERIC(0,0) DEFAULT 3);
+INSERT INTO t (c) VALUES (1),(1),(1),(1),(1);
+ALTER TABLE t ADD armscii8_f CHAR(1) CHARACTER SET armscii8;
+# Client: ERROR 192 (HY000): Unknown key id 1 for ./test/#sql-alter-268b58-4. Can't continue!
+# Error log: 2022-10-01 12:45:26 4 [ERROR] mysqld: Got error '126 "Index is corrupted"' for './test/#sql-alter-268b58-4.MAI'

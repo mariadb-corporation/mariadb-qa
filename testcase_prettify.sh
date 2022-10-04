@@ -149,6 +149,8 @@ cat "${1}" | tr -d '`' | \
        s| role | ROLE |gi; \
        s| admin | ADMIN |gi; \
        s|with|WITH|gi; \
+       s|without|WITHOUT|gi; \
+       s|overlaps|OVERLAPS|gi; \
        s|recursive|RECURSIVE|gi; \
        s|dynamic|DYNAMIC|gi; \
        s|transactional|TRANSACTIONAL|gi; \
@@ -215,6 +217,7 @@ cat "${1}" | tr -d '`' | \
        s|explain|EXPLAIN|gi; \
        s|extended|EXTENDED|gi; \
        s|date|DATE|gi; \
+       s|period|PERIOD|gi; \
        s|datetime|DATETIME|gi; \
        s|time|TIME|gi; \
        s|timestamp|TIMESTAMP|gi; \
@@ -241,6 +244,7 @@ cat "${1}" | tr -d '`' | \
        s|linestring|LINESTRING|gi; \
        s|polygon|POLYGON|gi; \
        s|geometry|GEOMETRY|gi; \
+       s|geometrycollection|GEOMETRYCOLLECTION|gi; \
        s|cache|CACHE|gi; \
        s|if |IF |gi; \
        s| in | IN |gi; \
