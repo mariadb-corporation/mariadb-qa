@@ -119,7 +119,7 @@ while :; do
   done
   while :; do
     echo "|> Cleaning up any previous version ${VERSION} builds in /test/TMP_git-bisect"
-    rm -Rf /test/MD*${VERSION}*
+    rm -Rf /test/TMP_git-bisect/MD*${VERSION}*
     echo "|> Building revision in a screen session: use screen -d -r 'git-bisect-build' to see the build process"
     rm -f /tmp/git-bisect-build.exitcode
     screen -admS 'git-bisect-build' bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > /tmp/git-bisect-build.exitcode"
