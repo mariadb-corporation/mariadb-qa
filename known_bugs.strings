@@ -122,6 +122,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|Query_cache::lock|Query_cache::invalidate_table                                                                                ## MDEV-29708
+SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute|mysql_execute_command                                                                      ## MDEV-29706
+SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute                                                                   ## MDEV-29706
 0|SIGABRT|Item_cache_row::illegal_method_call|Item_cache_row::val_str|spider_db_open_item_string|spider_db_open_item_cache                                                     ## MDEV-29653
 !n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                  ## MDEV-29664
 inited == NONE|SIGABRT|handler::ha_reset|ha_partition::reset|handler::ha_reset|mark_used_tables_as_free_for_reuse                                                              ## MDEV-29658

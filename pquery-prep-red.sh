@@ -215,17 +215,30 @@ add_select_ones_to_trace(){  # Improve issue reproducibility by adding 3x SELECT
   fi
 }
 
-add_select_sleep_to_trace(){  # Improve issue reproducibility by adding 2x SELECT SLEEP(3); to the sql trace
+add_select_sleep_to_trace(){  # Improve issue reproducibility by adding 3x SELECT SLEEP(2); to the sql trace
   if [ -z "${1}" ]; then echo "Assert: add_select_sleep_to_trace called without option!"; exit 1; fi
   if [[ "${1}" != *"quick"* ]]; then
-    echo "* Adding additional 'SELECT SLEEP(5);' queries to improve issue reproducibility"
+    echo "* Adding additional 'SELECT SLEEP(2);' queries to improve issue reproducibility"
   fi
   if [ ! -f ${1} ]; then touch ${1}; fi
   for i in {1..3}; do
-    echo "SELECT SLEEP(3);" >> ${1}
+    echo "SELECT SLEEP(2);" >> ${1}
   done
   if [[ "${1}" != *"quick"* ]]; then
-    echo "  > 3 'SELECT SLEEP(3);' queries added to the SQL trace"
+    echo "  > 3 'SELECT SLEEP(2);' queries added to the SQL trace"
+  fi
+}
+
+add_shutdown_to_trace(){
+  if [ -z "${1}" ]; then echo "Assert: add_shutdown_to_trace called without option!"; exit 1; fi
+  if [[ "${1}" != *"quick"* ]]; then
+    echo "* Adding additional 'SHUTDOWN;' and 'SELECT SLEEP(2);' queries to the trace to improve issue reproducibility"
+  fi
+  if [ ! -f ${1} ]; then touch ${1}; fi
+  echo "SHUTDOWN;" >> ${1}
+  echo "SELECT SLEEP(2);" >> ${1}
+  if [[ "${1}" != *"quick"* ]]; then
+    echo "  > 'SHUTDOWN;' and additional 'SELECT SLEEP(2);' queries added to the SQL trace"
   fi
 }
 
@@ -656,6 +669,7 @@ generate_reducer_script(){
         cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
         add_select_ones_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         add_select_sleep_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
+        add_shutdown_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         remove_non_sql_from_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         # Then interleave in extra failing queries all along the sql file (scaled/chuncked). This may increase
         # reproducibility, and is done for multi-threaded issues (who tend to be reduced by random-order replay!) only
@@ -777,6 +791,7 @@ if [ ${QC} -eq 0 ]; then
           fi
           add_select_ones_to_trace ${INPUTFILE}
           add_select_sleep_to_trace ${INPUTFILE}
+          add_shutdown_to_trace ${INPUTFILE}
           remove_non_sql_from_trace ${INPUTFILE}
           generate_reducer_script
           if [ "${MYEXTRA}" != "" ]; then
@@ -856,6 +871,7 @@ if [ ${QC} -eq 0 ]; then
         fi
         add_select_ones_to_trace ${INPUTFILE}
         add_select_sleep_to_trace ${INPUTFILE}
+        add_shutdown_to_trace ${INPUTFILE}
         remove_non_sql_from_trace ${INPUTFILE}
         # Check if this trial was/had a startup failure (which would take priority over anything else) - will be used to set REDUCE_STARTUP_ISSUES=1
         check_if_startup_failure

@@ -168,6 +168,7 @@ alias stack='./stack'  # Produce a stack for the core in /data (run from within 
 alias as='cd /test; ./allstrings'  # Show UniqueID's per version after running ${HOME}/b (b)
 alias asm='cd /test; ./allstrings_merged'  # Show a list of merged UniqueID's seen after running ${HOME}/b (b)
 alias asn='cd /test; ./allstrings_new'  # Show a list of new, merged, UniqueID's after running ${HOME}/b (b)
+alias anc='./all_no_cl'    # Run all_no_cl in a basedir (prepares new basedir setup for running ./test)
 alias vl='vi ./log/master.err'  # Open the error log in a BASEDIR
 alias vr='cd /data; vi results.list'  # Open /data/results.list for editing or review
 alias vt='${HOME}/vt '     # Open the error log for a trial (pass trial number), or in a BASEDIR

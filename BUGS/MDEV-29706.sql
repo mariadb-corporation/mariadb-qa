@@ -1,0 +1,2 @@
+SET GLOBAL wsrep_on=ON;
+CREATE TABLE t (c INT) ENGINE=InnoDB;
