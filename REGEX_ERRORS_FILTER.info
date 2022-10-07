@@ -38,6 +38,7 @@ my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sy
 Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
 Got error 127 when reading table                      https://jira.mariadb.org/browse/MDEV-27903
 Got error 188 when reading table                      Presumed non-issue (Operation was interrupted)
+Got error 192                                         https://jira.mariadb.org/browse/MDEV-26258
 Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
 Got error 1054 when reading table                     https://jira.mariadb.org/browse/MDEV-29430 (Spider)
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
@@ -61,6 +62,7 @@ Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/b
 Please run mariadb-upgrade                            Often seen when a mysql db table has been modified by a testcase
 Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/browse/MDEV-26258
 Got error .126 .Index is corrupted..*sql-alter.*MAI   https://jira.mariadb.org/browse/MDEV-26258
+Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26258
 Assertion .level < 50. failed                         https://jira.mariadb.org/browse/MDEV-23165
 Assertion ..trx_free .. .trx->locked_connections. failed  https://jira.mariadb.org/browse/MDEV-29484
 Warning: Memory not freed: 32                         https://jira.mariadb.org/browse/MDEV-25876 session_track_system_variables
@@ -74,3 +76,4 @@ Warning: Memory not freed: 16496                      https://jira.mariadb.org/b
 spider/spd_table.cc.*mutex.*spider/spd_table.cc       https://jira.mariadb.org/browse/MDEV-29421
 invalid value in column mysql.proc.db_collation       Testcase artifact caused by direct mysql.proc INSERT
 WSREP (galera) provider is not loaded                 Presumed non-issue (Galera provider not loaded)
+Trying to lock uninitialized mutex.*sql_cache.*72     https://jira.mariadb.org/browse/MDEV-29708

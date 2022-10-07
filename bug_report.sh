@@ -125,7 +125,7 @@ MYEXTRA_OPT_CLEANED=$(cat /tmp/options_bug_report.${RANDF} | sed 's|  | |g' | tr
 if [ "$(echo "${MYEXTRA_OPT_CLEANED}" | sed 's|[ \t]||g')" != "" ]; then
   echo "Using the following options: ${MYEXTRA_OPT_CLEANED}"
 else
-  echo 'Note that any mysqld options need to be listed, as follows on the next line, as the first line of the testcase:'
+  echo 'Note that any required mysqld options need to be listed, as exemplified on the next line, as the first line of the testcase:'
   echo '# mysqld options required for replay:  --someoption[=somevalue]'
 fi
 sleep 2.5  # For visual confirmation

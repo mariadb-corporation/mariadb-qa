@@ -5,6 +5,11 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|downcast of address X which does not point to an object of type 'Item_field'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool ## MDEV-29733
+UBSAN|downcast of address X which does not point to an object of type 'Item_field'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int ## MDEV-29733
+UBSAN|member access within null pointer of type 'struct Name_resolution_context'|sql/item.cc|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_like::fix_fields ## MDEV-29731
+UBSAN|member access within null pointer of type 'struct Name_resolution_context'|sql/item.cc|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed ## MDEV-29731
+UBSAN|member access within null pointer of type 'struct Name_resolution_context'|sql/item.cc|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|st_select_lex::pushdown_from_having_into_where ## MDEV-29731
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-tis620.c|my_strnxfrm_tis620|Item_func_weight_string::val_str|Item_str_func::val_int|Item_func_char::val_str ## MDEV-27164
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-tis620.c|my_strnxfrm_tis620|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int ## MDEV-27164
 ASAN|heap-buffer-overflow|sql/sql_cache.cc|Query_cache_block::init|Query_cache::split_block|Query_cache::allocate_block|Query_cache::allocate_block                            ## MDEV-23256

@@ -4946,9 +4946,9 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
 
       # Check if this table ($TABLENAME) is references in aother INSERT..INTO..$TABLENAME2..SELECT..$TABLENAME line.
       # If so, reducer does not need to process this table since it will be processed later when reducer gets to the table $TABLENAME2
-      # This is basically an optimization to avoid x (number of colums) unnecessary restarts which will definitely fail:
+      # This is basically an optimization to avoid x (number of columns) unnecessary restarts which will definitely fail:
       # Example: CREATE TABLE t1 (id INT); INSERT INTO t1 VALUES (1); CREATE TABLE t2 (id2 INT): INSERT INTO t2 SELECT * FROM t1;
-      # One cannot remove t1.id because t2 has the same number of columsn and does a select from t1
+      # One cannot remove t1.id because t2 has the same number of columns and does a select from t1
       if grep -E --binary-files=text -qi "INSERT.*INTO.*SELECT.*FROM.*$TABLENAME" $WORKF; then
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping column reduction for table '$TABLENAME' as it is present in a INSERT..SELECT..$TABLENAME. This will be/has been reduced elsewhere"
         echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Will now try and simplify the column names of this table ('$TABLENAME') to more uniform names"

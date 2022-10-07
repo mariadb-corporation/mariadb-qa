@@ -19,6 +19,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2003
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  # MDEV-26258
+GOT_ERROR|Got error 1440|when reading table                    # MDEV-29454
 #GOT_ERROR|Got error 126|Index is corrupted                    # MDEV-26258, likely. Leaving for other issues
 
 ##### MDEV-29507 TESTING TEMPORARY #####
@@ -37,6 +38,7 @@ cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_sta
 #**# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                    ## MDEV-26258
 #**# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                    ## MDEV-29289
 #**# status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql ## MDEV-25927
+#**# open_tables == __null|SIGABRT|THD::cleanup|THD::free_connection|THD::~THD|THD::~THD                                                                                       ## MDEV-23701 (Generic, not likely to be a valid bug-related UniqueID)
 
 ##### CURRENT STACK SMASHING / MEMORY OVERFLOW/OVEWRITE BUGS (MOSTLY DISABLED FILTERS TO AVOID MISSING OTHER BUGS) #####
 #**# SIGSEGV|Backtrace stopped: Cannot access memory at address                                                                                                                ## MDEV-29352
@@ -54,7 +56,7 @@ SIGSEGV|strlen|__GI__dl_exception_create|__GI__dl_signal_error|_dl_close        
 #**# SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                              ## MDEV-24911
 
 
-##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874
+##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874 and also discussed in Slack st 7 Oct 22 8am. Use lower level stack frames to differentiate
 table_list->table|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-19569
 marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-24658
 open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                       ## MDEV-25927
@@ -115,13 +117,22 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 #!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|purge_relay_logs|reset_slave|reload_acl_and_cache                                                             ## debug='d,simulate_find_log_pos_error'
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
  
-##### Current MDEV-27106 bugs (temporary) #####
-###TEMP_DISABLED_NEW_TC_CHECK_FOR_MDEV-27233##SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                                                                                                               ## MDEV-27575
-
 ##### Current MDEV-28883 bugs (temporary) #####
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                                                                                                               ## MDEV-27575
+SIGSEGV|Item_equal::val_int|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int                                                                   ## MDEV-29733
+SIGSEGV|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool|Item_cond_or::val_int                                                                        ## MDEV-29733
+field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_like::fix_fields                                                               ## MDEV-29731
+field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_case::fix_fields                                                               ## MDEV-29731
+field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|st_select_lex::pushdown_from_having_into_where                                           ## MDEV-29731
+field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed                                                               ## MDEV-29731
+context|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|st_select_lex::pushdown_from_having_into_where                                         ## MDEV-29731
+context|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed                                                             ## MDEV-29731
+context|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_case::fix_fields                                                             ## MDEV-29731
+context|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_like::fix_fields                                                             ## MDEV-29731
+SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item_func::fix_fields                                                                     ## MDEV-29731
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|Query_cache::lock|Query_cache::invalidate_table                                                                                ## MDEV-29708
 SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute|mysql_execute_command                                                                      ## MDEV-29706
 SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute                                                                   ## MDEV-29706
@@ -785,7 +796,6 @@ log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffe
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|maria_commit                                                       ## MDEV-23701
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|_ma_bitmap_mark_file_changed|_ma_change_bitmap_page                          ## MDEV-23701
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|flush_log_for_bitmap|pagecache_fwrite                                        ## MDEV-23701
-open_tables == __null|SIGABRT|THD::cleanup|THD::free_connection|THD::~THD|THD::~THD                                                                                            ## MDEV-23701
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|maria_delete_table|ha_maria::delete_table                                    ## MDEV-23701
 length < 249|SIGABRT|Transaction_state_tracker::store|Session_tracker::store|Protocol::net_send_ok|Protocol::send_ok                                                           ## MDEV-23173
 share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                         ## MDEV-23699

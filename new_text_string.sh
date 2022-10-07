@@ -136,6 +136,13 @@ find_other_possible_issue_strings(){
     TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
+  else
+    GOTERROR="$(grep -io 'Got error.*' "${ERROR_LOG}" | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
+    if [ ! -z "${GOTERROR}" ]; then
+      TEXT="GOT_ERROR|${GOTERROR}"
+      echo "${TEXT}"
+      exit 0
+    fi
   fi
   MARKEDASCRASHED="$(grep -io 'mysqld: Table.*is marked as crashed and should be repaired' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" )"
   if [ ! -z "${MARKEDASCRASHED}" ]; then
