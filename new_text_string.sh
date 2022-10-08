@@ -137,7 +137,7 @@ find_other_possible_issue_strings(){
     echo "${TEXT}"
     exit 0
   else
-    GOTERROR="$(grep -io 'Got error.*' "${ERROR_LOG}" | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
+    GOTERROR="$(grep -io 'Got error.*' "${ERROR_LOG}" | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
     if [ ! -z "${GOTERROR}" ]; then
       TEXT="GOT_ERROR|${GOTERROR}"
       echo "${TEXT}"
