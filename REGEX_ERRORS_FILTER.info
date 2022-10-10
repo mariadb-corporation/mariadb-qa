@@ -77,3 +77,5 @@ spider/spd_table.cc.*mutex.*spider/spd_table.cc       https://jira.mariadb.org/b
 invalid value in column mysql.proc.db_collation       Testcase artifact caused by direct mysql.proc INSERT
 WSREP (galera) provider is not loaded                 Presumed non-issue (Galera provider not loaded)
 Trying to lock uninitialized mutex.*sql_cache.*72     https://jira.mariadb.org/browse/MDEV-29708
+wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  https://jira.mariadb.org/browse/MDEV-29744
+wrong.*mutex.*LOCK_global_system_variables.*LOCK_log             https://jira.mariadb.org/browse/MDEV-29744
