@@ -324,7 +324,6 @@ if [[ "${TAR_dbg}" == *".tar.gz"* ]]; then
     GALERA_BUILD_LOC=${PWD}/galera_4x
   fi
   if [ -d ${GALERA_BUILD_LOC}_dbg ]; then
-    ls -l ${GALERA_BUILD_LOC}_dbg/
     if [[ -f ${GALERA_BUILD_LOC}_dbg/libgalera_smm.so ]] || [[ -f ${GALERA_BUILD_LOC}_dbg/libgalera_enterprise_smm.so ]] ; then
       if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
         cp ${GALERA_BUILD_LOC}_dbg/libgalera_enterprise_smm.so ${DIR_dbg_new}/lib/libgalera_smm.so
