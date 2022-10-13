@@ -122,6 +122,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## MDEV-25135
+charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|sp_head::fill_spvar_definition                        ## MDEV-25135
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-29775
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                                                                                                               ## MDEV-27575
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int                                                                   ## MDEV-29733
