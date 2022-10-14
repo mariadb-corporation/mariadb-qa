@@ -123,6 +123,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS ##### Search key: Mac ###
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-29761
+thd == _current_thd() || ((&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&thd->LOCK_thd_data)->m_mutex)->thread))|SIGABRT|thd_get_ha_data|thd_to_trx|wsrep_abort_transaction|ha_abort_transaction ## MDEV-29786
+SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## MDEV-25135
+charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|sp_head::fill_spvar_definition                        ## MDEV-25135
+0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-29775
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                                                                                                               ## MDEV-27575
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int                                                                   ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool|Item_cond_or::val_int                                                                        ## MDEV-29733
@@ -459,6 +463,7 @@ thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_comm
 SIGSEGV|replace_routine_table|mysql_routine_grant|Sql_cmd_grant_sp::execute|mysql_execute_command                                                                              ## MDEV-27842
 SIGSEGV|replace_routine_table|mysql_routine_grant|mysql_execute_command|mysql_parse                                                                                            ## MDEV-27842
 0|SIGABRT|wsrep::server_state::state|wsrep::server_state::on_sync|wsrep_provider_v26.cpp|galera::ReplicatorSMM::process_sync                                                   ## MDEV-27847
+0|SIGABRT|wsrep::server_state::state|wsrep::server_state::on_sync|wsrep_provider_v26.cpp|galera::ReplicatorSMM::shift_to_next_state                                            ## MDEV-27847
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|partition_info_compare_column_values|check_range_constants                             ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|group_concat_key_cmp_with_distinct|tree_insert                                         ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|Field_string::cmp|group_concat_key_cmp_with_order|tree_insert                                            ## MDEV-27768

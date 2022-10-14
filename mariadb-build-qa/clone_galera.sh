@@ -38,8 +38,10 @@ else
   git clone --depth=1 --recurse-submodules -j8 --branch=$1 https://github.com/MariaDB/server.git $1 &
   #clone galera repo
   if [[ ${1} =~ 10.[2-3] ]]; then
+    rm -Rf galera_3x
     git clone --depth=1 --recurse-submodules -j8 --branch=mariadb-3.x https://github.com/MariaDB/galera galera_3x &
   else
+    rm -Rf galera_4x
     git clone --depth=1 --recurse-submodules -j8 --branch=mariadb-4.x https://github.com/MariaDB/galera galera_4x &
   fi
 fi

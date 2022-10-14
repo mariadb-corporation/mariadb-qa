@@ -1,0 +1,4 @@
+SET @@storage_engine='MyISAM';
+CREATE TABLE t0 (a INT,b CHAR(0),UNIQUE (a),KEY(b));
+INSERT DELAYED INTO t0 VALUES ('0','');
+ALTER TABLE t0 MODIFY a CHAR(0);
