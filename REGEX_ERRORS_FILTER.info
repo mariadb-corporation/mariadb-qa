@@ -78,4 +78,8 @@ invalid value in column mysql.proc.db_collation       Testcase artifact caused b
 WSREP (galera) provider is not loaded                 Presumed non-issue (Galera provider not loaded)
 Trying to lock uninitialized mutex.*sql_cache.*72     https://jira.mariadb.org/browse/MDEV-29708
 wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  https://jira.mariadb.org/browse/MDEV-29744
-wrong.*mutex.*LOCK_global_system_variables.*LOCK_log             https://jira.mariadb.org/browse/MDEV-29744
+wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  https://jira.mariadb.org/browse/MDEV-29744
+InnoDB: User stopword table .* does not exist         Presumed non-issue (missing table?)
+InnoDB: Cannot add field.*which is greater than max   Presumed non-issue (max row size exceeded)
+InnoDB: The.*doesn't have.*tablespace.*was discarded  Presumed non-issue (tablespace removed from under table)
+InnoDB: Unable to import tablespace.*already exists   Presumed non-issue (import of a tablespace which already exists)
