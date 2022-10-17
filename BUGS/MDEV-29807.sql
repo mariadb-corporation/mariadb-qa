@@ -1,0 +1,6 @@
+CREATE TABLE t1 ( col_int_key INT, col_varchar_key VARCHAR(1)) ENGINE=INNODB;
+XA START 'a';
+INSERT INTO t1 VALUES(0xAAA6);
+SAVEPOINT s1;
+XA END 'a';
+XA PREPARE 'a';
