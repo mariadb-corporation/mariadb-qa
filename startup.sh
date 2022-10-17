@@ -678,6 +678,12 @@ echo "sed -i 's|^REPORT_THREADS=[0-9]|REPORT_THREADS=0|' ~/mariadb-qa/multirun_c
 echo "echo '===== Replay mode/order:'" >>multirun
 echo "echo \"Order: \$(if grep -qi 'RND_REPLAY_ORDER=1' ~/mariadb-qa/multirun_cli.sh; then echo -n 'RANDOM ORDER!'; else echo 'SEQUENTIAL SQL (NON-RANDOM)'; fi)\"" >>multirun
 echo "echo ''" >>multirun
+echo "echo '===== Testcase size:'" >>multirun
+echo "wc -l in.sql | tr -d '\n'; echo \" ($(wc -c in.sql | sed 's| .*||') bytes)\"" >>multirun
+echo "echo ''" >>multirun
+echo "echo '===== MYEXTRA options:'" >>multirun
+echo "echo \"\$* --max_connections=10000\"" >>multirun
+echo "echo ''" >>multirun
 ln -s ./multirun ./m 2>/dev/null
 cp ./multirun ./multirun_pquery
 

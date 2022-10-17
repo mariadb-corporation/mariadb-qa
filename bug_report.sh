@@ -402,6 +402,7 @@ if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then
     echo '----- SAN Execution of the testcase -----'
     test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" opt
     test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}" dbg
+    echo '-----------------------------------------'
   fi
 fi
 if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then

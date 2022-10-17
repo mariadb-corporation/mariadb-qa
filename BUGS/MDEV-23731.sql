@@ -8,3 +8,8 @@ RENAME TABLE mysql.user TO mysql.user_bak;
 DROP TABLE mysql.global_priv;
 CREATE TABLE mysql.user (HOST CHAR,USER CHAR);
 CREATE USER m@localhost;
+
+RENAME TABLE mysql.user TO mysql.user_bak;
+CREATE TABLE mysql.user (HOST CHAR,USER INT) ENGINE=InnoDB;
+DROP TABLE mysql.global_priv;
+GRANT PROXY ON a TO b;

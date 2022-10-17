@@ -18,10 +18,12 @@ MARIADB_ERROR_CODE|MariaDB error code: 1969
 MARIADB_ERROR_CODE|MariaDB error code: 2003
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 4145
-GOT_ERROR|Got error 192|Table encrypted but decryption failed  # MDEV-26258
-GOT_ERROR|Got error 194|when reading table                     # MDEV-27952 (discarded tablespace)
-GOT_ERROR|Got error 1440|when reading table                    # MDEV-29454
-#GOT_ERROR|Got error 126|Index is corrupted                    # MDEV-26258, likely. Leaving for other issues
+MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
+GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
+GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
+GOT_ERROR|Got error 1440|when reading table                    ## MDEV-29454
+#GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-26258, likely. Leaving for other issues
+# GOT_ERROR|Got error 1032|when trying to execute action for entry 6 of type 'rename table'  ## MDEV-29800 (temp disabled as testing more testcases)
 
 ##### MDEV-29507 TESTING TEMPORARY #####
 SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute                                    ## MDEV-29544
@@ -122,6 +124,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|lock_sys_t::hash_table::resize|lock_sys_t::resize|buf_pool_t::resize|buf_resize_callback                                                                               ## MDEV-29799
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-29761
 thd == _current_thd() || ((&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&thd->LOCK_thd_data)->m_mutex)->thread))|SIGABRT|thd_get_ha_data|thd_to_trx|wsrep_abort_transaction|ha_abort_transaction ## MDEV-29786
 SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## MDEV-25135
@@ -353,6 +356,8 @@ SIGSEGV|Opt_trace_struct::add_select_number|Item_subselect::exec|Item_singlerow_
 SIGSEGV|Opt_trace_struct::add_select_number|Item_subselect::exec|Item_in_subselect::val_bool_naked|Item_in_optimizer::val_int                                                  ## MDEV-28502
 SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_inner|JOIN::optimize                                                                                           ## MDEV-28501
 SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                                                                    ## MDEV-28501
+SIGSEGV|my_hash_sort_simple|hp_rec_hashnr|hp_write_key|heap_write                                                                                                              ## MDEV-29052
+SIGSEGV|my_hash_sort_simple|my_ci_hash_sort|hp_rec_hashnr|hp_write_key                                                                                                         ## MDEV-29052
 SIGSEGV|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                                                               ## MDEV-29052
 field->table == table|SIGABRT|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                         ## MDEV-28515(/29052)
 field->table == table|SIGABRT|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                              ## MDEV-28515(/29052)
@@ -422,6 +427,10 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table
 thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_detach|trans_xa_detach|THD::cleanup|unlink_thd                                                     ## MENT-1426
 ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## MENT-1424
 SIGSEGV|Item_change_list::rollback_item_tree_changes|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                               ## MDEV-27920
+SIGSEGV|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first|mysql_ha_read                                                                           ## MDEV-27902
+SIGSEGV|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_first_internal|ha_spider::index_first                                                            ## MDEV-27902
+SIGSEGV|spider_db_query|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_handler_init                                                                     ## MDEV-27902
+SIGSEGV|spider_db_set_names_internal|spider_db_set_names|ha_spider::index_first_internal|handler::ha_index_first                                                               ## MDEV-27902
 SIGSEGV|spider_check_and_set_trx_isolation|ha_spider::external_lock|handler::ha_external_lock|lock_external                                                                    ## MDEV-27902
 SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                                    ## MDEV-27902
 SIGSEGV|spider_db_query|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_handler_init                                                                         ## MDEV-27902
@@ -799,6 +808,8 @@ SIGSEGV|__GI___pthread_mutex_lock|calloc () from|asn1_array2tree () from|call_in
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|store_key_field::copy_inner|store_key::copy                                                           ## MDEV-23749
 SIGSEGV|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse                                                                                                  ## MDEV-23731
 SIGSEGV|replace_user_table|mysql_create_user|mysql_execute_command|mysql_parse                                                                                                 ## MDEV-23731
+SIGSEGV|replace_user_table|mysql_grant|Sql_cmd_grant_proxy::execute|mysql_execute_command                                                                                      ## MDEV-23731
+SIGSEGV|replace_user_table|mysql_grant|mysql_execute_command|mysql_parse                                                                                                       ## MDEV-23731
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|ha_maria::implicit_commit                                          ## MDEV-23701
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|maria_commit                                                       ## MDEV-23701
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|_ma_bitmap_mark_file_changed|_ma_change_bitmap_page                          ## MDEV-23701

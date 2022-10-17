@@ -5,6 +5,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_user_table|mysql_create_user|mysql_execute_command|mysql_parse                             ## MDEV-23731
+UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse                              ## MDEV-23731
+UBSAN|member call on null pointer of type 'struct Field'|sql/sql_acl.cc|User_table::set_user|replace_user_table|mysql_grant|Sql_cmd_grant_proxy::execute                       ## MDEV-26716
 UBSAN|downcast of address X which does not point to an object of type 'Item_field'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool ## MDEV-29733
 UBSAN|downcast of address X which does not point to an object of type 'Item_field'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int ## MDEV-29733
 UBSAN|member access within null pointer of type 'struct Name_resolution_context'|sql/item.cc|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_like::fix_fields ## MDEV-29731

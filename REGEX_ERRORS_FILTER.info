@@ -44,8 +44,8 @@ Got error 1054 when reading table                     https://jira.mariadb.org/b
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
 Got error 1184 when reading table                     https://jira.mariadb.org/browse/MDEV-29583 (init_connect failed, Spider)
 Got error 1440 when reading table                     https://jira.mariadb.org/browse/MDEV-29454 (XAER_DUPID Spider)
-#Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543 (Spider) - WIP, getting more testcases
-#Got error 12701                                       https://jira.mariadb.org/browse/MDEV-29455 (Spider) - WIP, getting more testcases
+Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543 (Spider)
+Got error 12701                                       https://jira.mariadb.org/browse/MDEV-29455 (Spider)
 Got error 12719 when reading table                    https://jira.mariadb.org/browse/MDEV-29583 (Spider, well-defined)
 max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)
 ^Stats:                                               Prevents incorrect last line 'alloc' captures in ASAN output
@@ -83,3 +83,9 @@ InnoDB: User stopword table .* does not exist         Presumed non-issue (missin
 InnoDB: Cannot add field.*which is greater than max   Presumed non-issue (max row size exceeded)
 InnoDB: The.*doesn't have.*tablespace.*was discarded  Presumed non-issue (tablespace removed from under table)
 InnoDB: Unable to import tablespace.*already exists   Presumed non-issue (import of a tablespace which already exists)
+InnoDB: Operating system error.* 17 in a file op      Presumed non-issue (attempt to create a tablespace when already there)
+InnoDB: Operating system error.* 2 in a file op       https://jira.mariadb.org/browse/MDEV-19849
+InnoDB: Table mysql.innodb.* not found                Presumed non-issue (table dropped)
+InnoDB: Column .* in table mysql.innodb.* is .* but   Presumed non-issue (column changed)
+mysqld: Table .slow_log. is marked as crashed         https://jira.mariadb.org/browse/MDEV-27076
+Warning. WSREP: handlerton rollback failed, thd       https://jira.mariadb.org/browse/MDEV-29583 (Spider)
