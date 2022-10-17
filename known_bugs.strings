@@ -122,6 +122,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+thd->ha_data[wsrep_hton->slot].ha_info[all].is_trx_read_write()|SIGABRT|wsrep_prepare|prepare_or_error|ha_prepare|trans_xa_prepare                                             ## MDEV-29807
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-29761
 thd == _current_thd() || ((&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&thd->LOCK_thd_data)->m_mutex)->thread))|SIGABRT|thd_get_ha_data|thd_to_trx|wsrep_abort_transaction|ha_abort_transaction ## MDEV-29786
 SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## MDEV-25135
