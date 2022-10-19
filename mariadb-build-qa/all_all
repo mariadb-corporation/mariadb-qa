@@ -6,6 +6,8 @@ MYEXTRA_OPT="$*"
 if [ "${1}" == "SAN" ]; then
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
+elif [ "${1}" == "SAN" ]; then
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
 fi
 
 # Stop (if running), wipe and start all instances in parallel
