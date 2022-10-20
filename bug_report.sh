@@ -75,6 +75,7 @@ if [ ! -r bin/mysqld ]; then
 fi
 
 if [ "${1}" == "GAL" ]; then
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
   if [ ! -r ./gal_no_cl ]; then  # Local
       echo "Assert: ./gal_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
       exit 1
