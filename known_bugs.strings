@@ -125,6 +125,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|select_create::abort_result_set|select_create::abort_result_set                          ## MDEV-29831
+SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|select_create::abort_result_set|select_create::send_eof|JOIN::exec_inner                                                        ## MDEV-29831
+SIGSEGV|gu_mutex_lock_SYS|gu::Mutex::lock|galera::TrxHandleMaster::lock|galera::TrxHandleLock::TrxHandleLock                                                                   ## MDEV-29824
 SIGSEGV|lock_sys_t::hash_table::resize|lock_sys_t::resize|buf_pool_t::resize|buf_resize_callback                                                                               ## MDEV-29799
 thd->wsrep_exec_mode == LOCAL_STATE|SIGABRT|wsrep_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                   ## MDEV-29808
 thd->ha_data[wsrep_hton->slot].ha_info[all].is_trx_read_write()|SIGABRT|wsrep_prepare|prepare_or_error|ha_prepare|trans_xa_prepare                                             ## MDEV-29807
