@@ -8,3 +8,6 @@ show scheduler-locking
 show schedule-multiple
 show non-stop
 show target-async
+display/i $pc
+disassemble
+info reg

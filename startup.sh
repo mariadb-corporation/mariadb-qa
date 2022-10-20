@@ -167,7 +167,7 @@ fi
 
 # Setup scritps
 rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery test*timed wipe* clean_failing_queries memory_use_trace afl 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop | multirun_loop_pquery | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -446,6 +446,7 @@ fi
 
 echo "echo '---------- START ----------' >> ./log/master.err" >insert_start_marker
 echo "echo '---------- STOP  ----------' >> ./log/master.err" >insert_stop_marker
+touch in.sql
 echo 'MYEXTRA_OPT="$*"' >start
 echo 'MYEXTRA=" --no-defaults "' >>start
 echo '#MYEXTRA=" --no-defaults --sql_mode="' >>start
@@ -610,6 +611,7 @@ echo 'wc -l out.sql' >>loopin
 echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DROP/CREATE/USE DATABASE test!"' >>loopin
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >>loopin
 echo "#!/bin/bash" >multirun_loop
+ln -s ./multirun_loop ./ml
 echo "# This script will keep looping in.sql until ./data/core is present/detected. If loop cycles take 90 seconds or more, you may want to check that the server is not hanging in those 90 seconds (there is a 90 second timeout in ./stop which is being used, you could also increase that to establish if it is is the mysqladmin shutdown is hanging). Only other possible reason is a(very) large input SQL testcase. Generally loops will take 5 seconds or less with a small input file." >>multirun_loop
 echo "# To look for a specific UniqueID bug, do:" >>multirun_loop
 echo "# export BUG='...'    # Where ... is a UniqueID" >>multirun_loop
@@ -644,6 +646,7 @@ echo "\${HOME}/tt" >>multirun_loop
 echo "echo \"Number of loops executed to obtain ./data/core: \${NR_OF_LOOPS}\"" >>multirun_loop
 echo "rm -Rf ./data.multirun" >>multirun_loop
 cp multirun_loop multirun_loop_pquery
+ln -s ./multirun_loop_pquery ./mlp
 sed -i 's|./test;|./test_pquery >/dev/null 2>\&1;|' multirun_loop_pquery
 echo "#!/bin/bash" >multirun_mysqld
 echo "~/mariadb-qa/multirun_mysqld.sh \"\${*}\"" >>multirun_mysqld

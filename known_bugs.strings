@@ -23,7 +23,8 @@ GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
 GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
 GOT_ERROR|Got error 1440|when reading table                    ## MDEV-29454
 #GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-26258, likely. Leaving for other issues
-# GOT_ERROR|Got error 1032|when trying to execute action for entry 6 of type 'rename table'  ## MDEV-29800 (temp disabled as testing more testcases)
+GOT_ERROR|Got error 1032|when trying to execute action for entry 6 of type 'rename table'  ## MDEV-29800
+GOT_ERROR|Got error 12524|when trying to execute action for entry 6 of type 'rename table'  ## MDEV-29800
 
 ##### MDEV-29507 TESTING TEMPORARY #####
 SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute                                    ## MDEV-29544
