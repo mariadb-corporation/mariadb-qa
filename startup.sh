@@ -6,6 +6,9 @@
 # Random entropy init
 RANDOM=$(date +%s%N | cut -b10-19)
 
+# Filter the following text (regex aware) from INIT_TOOL startup
+FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved|^[2-9][0-9][0-9][0-9][0-9][0-9] [0-2][0-9]:|^20[2-9][0-9]|See the manual|start the MySQL daemon|bin/mysqld_safe|test the MySQL daemon with|latest information about|http://|https://|by buying support/|Found existing config file|Because this file might be in use|but was used in bootstrap|when you later start the server|new default config file was created|compare it with your file|root.*new.*password|Alternatively you can run|will be used by default|You may edit this file to change|Filling help tables|TIMESTAMP with implicit DEFAULT value|You can find the latest source|the maria-discuss email list|Please check all of the above|Optimizer switch:'
+
 # Find empty port
 # (**) IMPORTANT WARNING! The init_empty_port scan in startup.sh uses a different range than the matching function in
 # pquery-run.sh, reducer.sh and reducer-STABLE.sh. These scripts use 13-65K whereas here we use 10-13K to avoid
@@ -90,6 +93,9 @@ if [ "$(uname -v | grep 'Ubuntu')" != "" ]; then
     sudo ln -s /lib/x86_64-linux-gnu/libcrypto.so.1.0.0 /lib/x86_64-linux-gnu/libcrypto.so.6 2>/dev/null
   fi
 fi
+
+# Delete any .cnf files. Whilst the framework takes care of not accidentally reading .cnf files (generally by using --no-defaults everwhere), it is best to delete these unnecessary files. Also cleanup some other non-used files
+rm -f *.cnf COPYING CREDITS README-wsrep THIRDPARTY README* LICENSE*
 
 # Get version specific options
 BIN=
@@ -402,10 +408,10 @@ if [[ $MDG -eq 1 ]]; then
       echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA > $PWD/node${i}/node${i}.err 2>&1 &" >> ./gal_start
       echo "check_node_startup ${i}" >> ./gal_start
     fi
-    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >>./gal_init
+    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>./gal_init
 
     echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock test --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
-    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >>gal_wipe
+    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>gal_wipe
     echo "if [ -r node1/node${i}.err ]; then mv node${i}/node${i}.err node${i}/node${i}.err.PREV; fi" >>gal_wipe
   done
   for i in $(seq "${NR_OF_NODES}" -1 1); do
@@ -520,7 +526,7 @@ echo "  else" >>repl_setup
 echo "    node=\"${PWD}/slavenode\"" >>repl_setup
 echo "  fi" >>repl_setup
 echo "  if [ ! -d \$node ]; then" >>repl_setup
-echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >>repl_setup
+echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>repl_setup
 echo '    if [ "${?}" -eq 1 ]; then exit 1; fi' >>repl_setup
 echo '  fi' >>repl_setup
 echo "  $BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=\${node} --datadir=\${node} ${TOKUDB} ${ROCKSDB} --socket=\$node/socket.sock --port=\$RBASE --report-host=$ADDR --report-port=\$RBASE  --server-id=10\$i --log-error=\$node/mysql.err 2>&1 &" >>repl_setup
@@ -586,7 +592,7 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>wipe
   echo $JE7 >>wipe
 fi
-echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >> wipe
+echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >> wipe
 echo "rm -f log/master.err.PREV" >>wipe
 echo "if [ -r log/master.err ]; then mv log/master.err log/master.err.PREV; fi" >>wipe
 # Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
@@ -594,7 +600,7 @@ echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CR
 # Creating init script
 echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
 echo "rm -Rf ${PWD}/data" >> init
-echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >>init
+echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>init
 echo "rm -f log/master.*" >>init
 
 
@@ -865,7 +871,7 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   # ------------------- ./reducer_errorlog_pquery.sh creation
   sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_errorlog.sh > ./reducer_errorlog_pquery.sh
   # ------------------- ./reducer_hang.sh creation
-  sed 's|^MODE=[0-9]|MODE=0|;s|TIMEOUT_CHECK=[0-9]*|TIMEOUT_CHECK=150|;s|MULTI_THREADS=[0-9]*|MULTI_THREADS=3' ./reducer_errorlog.sh > ./reducer_hang.sh  # Timeout of 150s is a best guess, it may need to be higher. 3 Threads is plenty as we need to wait for the timeout in any case (unless sporadic)
+  sed 's|^MODE=[0-9]|MODE=0|;s|TIMEOUT_CHECK=[0-9]*|TIMEOUT_CHECK=150|;s|MULTI_THREADS=[0-9]*|MULTI_THREADS=3|' ./reducer_errorlog.sh > ./reducer_hang.sh  # Timeout of 150s is a best guess, it may need to be higher. 3 Threads is plenty as we need to wait for the timeout in any case (unless sporadic)
   # ------------------- ./reducer_hang_pquery.sh creation
   sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_hang.sh > ./reducer_hang_pquery.sh
   # ------------------- ./reducer_new_text_string_pquery.sh creation

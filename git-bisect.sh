@@ -1,13 +1,15 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
+# Note that UNIQUEID and TEXT are mutually exclusive: do not set both
 VERSION=10.11                                                       # 10.9, 10.10, 10.11, etc.
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
-LAST_KNOWN_GOOD_COMMIT='fe1f8f2c6b6f3b8e3383168225f9ae7853028947'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='8f9df08f02294f4828d40ef0a298dc0e72b01f60'   # Revision of first known bad commit
-TESTCASE='/test/in.sql'                                             # The testcase to be tested
-UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
+UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
+LAST_KNOWN_GOOD_COMMIT='7253cdf89280409006cc392cd6728bc51be8b598'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='50c5743adc87e1cdec1431a02558f6540fe5a6d5'   # Revision of first known bad commit
+TESTCASE='/test/in2.sql'                                            # The testcase to be tested
+UNIQUEID='SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp'  # The UniqueID to scan for [Exclusive]
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # Note: leave both UNIQUEID and TEXT empty to scan for core files instead
 
@@ -69,7 +71,7 @@ fi
 bisect_good(){
   cd "/test/TMP_git-bisect/${VERSION}" || die 1 "Could not change directory to /test/TMP_git-bisect/${VERSION}"
   rm -f /tmp/git_bisect.out
-  git bisect good 2>&1 | tee /tmp/git_bisect.out
+  git bisect good 2>&1 | grep -v 'warning: unable to rmdir' | tee /tmp/git_bisect.out
   if grep -qi 'first bad commit' /tmp/git_bisect.out; then
     rm -f /tmp/git_bisect.out
     echo "Finished. Use 'cd /test/TMP_git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
@@ -81,7 +83,7 @@ bisect_good(){
 bisect_bad(){
   cd "/test/TMP_git-bisect/${VERSION}" || die 1 "Could not change directory to /test/TMP_git-bisect/${VERSION}"
   rm -f /tmp/git_bisect.out
-  git bisect bad 2>&1 | tee /tmp/git_bisect.out
+  git bisect bad 2>&1 | grep -v 'warning: unable to rmdir' | tee /tmp/git_bisect.out
   if grep -qi 'first bad commit' /tmp/git_bisect.out; then
     rm -f /tmp/git_bisect.out
     echo "Finished. Use 'cd /test/TMP_git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
@@ -90,13 +92,26 @@ bisect_bad(){
   rm -f /tmp/git_bisect.out
 }
 
+# Git setup
 git bisect reset  # Remove any previous bisect run data
 git reset --hard  # Revert tree to mainline
 git clean -xfd    # Cleanup tree
 git checkout "${VERSION}"   # Ensure we've got the right version
+if [ "${UPDATETREE}" -eq 1 ]; then
+  git pull        # Ensure we have the latest version
+fi
 git bisect start  # Start bisect run
 git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}"  # Starting point, bad
+if [ "${?}" -ne 0 ]; then 
+  echo "Bad revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
+  exit 1
+fi
 git bisect good "${LAST_KNOWN_GOOD_COMMIT}"  # Starting point, good
+if [ "${?}" -ne 0 ]; then 
+  echo "Good revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
+  exit 1
+fi
+
 # Note that the starting points may not point git to a valid commit to test. i.e. git bisect may jump to a commit
 # which was done via a merge in the tree where the current branch is the second parent and not the first one, with
 # the result that the tree version (as seen in the VERSION file) is different from the $VERSION needing to be tested.
@@ -110,7 +125,7 @@ while :; do
     CUR_COMMIT="$(git log | head -n1 | tr -d '\n')"
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
       echo "|> ${CUR_COMMIT} is version ${CUR_VERSION}, skipping..."
-      git bisect skip
+      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
       continue
     else
       echo "|> ${CUR_COMMIT} is version ${CUR_VERSION}, proceeding..."
@@ -128,11 +143,11 @@ while :; do
     done
     sleep 2
     if [ "$(cat /tmp/git-bisect-build.exitcode | tr -d '\n')" -eq 1 ]; then
-      echo "Build failure... Skipping revision ${CUR_COMMIT}"
-      git bisect skip
+      echo "|> Build failure... Skipping revision ${CUR_COMMIT}"
+      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
       continue
     else
-      echo "Build successful... Testing revision ${CUR_COMMIT}"
+      echo "|> Build successful... Testing revision ${CUR_COMMIT}"
       break  # Successful build
     fi
     rm -f /tmp/git-bisect-build.exitcode

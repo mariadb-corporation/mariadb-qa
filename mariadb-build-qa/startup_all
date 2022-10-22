@@ -14,11 +14,14 @@ fi
 sync
 # Next line only does EMD* MD* MS* (which is a handy alternative/hack if you have an ogoing *SAN run etc.)
 #./gendirs.sh | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} sh -c "{}"
-./gendirs.sh ALLALL | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} sh -c "{}"
+./gendirs.sh ALLALL | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} sh -c "{}" 2>&1 | grep --binary-files=text -vEi '^Adding scripts:|^Note: .*not found'
 
 sync
 
 sudo mv /etc/mysql /etc/mysql.old 2>/dev/null  # Avoids any local my.cnf from being used by any mysqld
 
 # The echo below will not show at the end due to the background processes. TODO: fix by waiting for no more startup.sh processes to be present
-echo "Complete! The information above (on ./all) refers to the script which were created INSIDE the base directories, i.e. you can do: cd somebasedir; ./all"
+echo "-------------------"
+echo "Complete! The last information above (on './all') refers to the scripts which were created INSIDE the"
+echo "BASEDIR directories, i.e. you can now do: cd someBASEDIR; ./all"
+echo "To get a list of available BASEDIR directories, ./gendirs.sh may help!"
