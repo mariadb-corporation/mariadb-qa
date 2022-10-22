@@ -145,7 +145,7 @@ fi
 if find . -name group_replication.so | grep -q .; then
   GRP_RPL=1
 else
-  echo "Warning! Group Replication plugin not found. Skipping Group Replication startup"
+  echo "Note: Group Replication plugin not found. Skipping Group Replication startup"
   GRP_RPL=0
 fi
 
@@ -162,12 +162,12 @@ elif [ -r lib/libgalera_enterprise_smm.so ]; then
   MDG=1
   GALERA_LIB=${PWD}/lib/libgalera_enterprise_smm.so
 else
-  echo "Warning! Galera plugin not found. Skipping Galera startup"
+  echo "Note: Galera plugin not found. Skipping Galera startup"
 fi
 
 # Setup scritps
-rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery test*timed wipe* clean_failing_queries memory_use_trace afl 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
+rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery test*timed wipe* clean_failing_queries memory_use_trace afl ml mlp 2>/dev/null
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -402,10 +402,10 @@ if [[ $MDG -eq 1 ]]; then
       echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA > $PWD/node${i}/node${i}.err 2>&1 &" >> ./gal_start
       echo "check_node_startup ${i}" >> ./gal_start
     fi
-    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>./gal_init
+    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >>./gal_init
 
     echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock test --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
-    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>gal_wipe
+    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >>gal_wipe
     echo "if [ -r node1/node${i}.err ]; then mv node${i}/node${i}.err node${i}/node${i}.err.PREV; fi" >>gal_wipe
   done
   for i in $(seq "${NR_OF_NODES}" -1 1); do
@@ -520,8 +520,9 @@ echo "  else" >>repl_setup
 echo "    node=\"${PWD}/slavenode\"" >>repl_setup
 echo "  fi" >>repl_setup
 echo "  if [ ! -d \$node ]; then" >>repl_setup
-echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 || exit 1;" >>repl_setup
-echo "  fi" >>repl_setup
+echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >>repl_setup
+echo '    if [ "${?}" -eq 1 ]; then exit 1; fi' >>repl_setup
+echo '  fi' >>repl_setup
 echo "  $BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=\${node} --datadir=\${node} ${TOKUDB} ${ROCKSDB} --socket=\$node/socket.sock --port=\$RBASE --report-host=$ADDR --report-port=\$RBASE  --server-id=10\$i --log-error=\$node/mysql.err 2>&1 &" >>repl_setup
 echo "  for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S\$node/socket.sock > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>repl_setup
 echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
@@ -585,7 +586,7 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>wipe
   echo $JE7 >>wipe
 fi
-echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data" >> wipe
+echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >> wipe
 echo "rm -f log/master.err.PREV" >>wipe
 echo "if [ -r log/master.err ]; then mv log/master.err log/master.err.PREV; fi" >>wipe
 # Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
@@ -593,7 +594,7 @@ echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CR
 # Creating init script
 echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
 echo "rm -Rf ${PWD}/data" >> init
-echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data" >>init
+echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep -vE '^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved'" >>init
 echo "rm -f log/master.*" >>init
 
 
@@ -630,11 +631,11 @@ echo "}" >>multirun_loop
 echo "if [ ! -z \"\${BUG}\" -a ! -z \"\${ELBUG}\" ]; then" >>multirun_loop
 echo "  echo \"Assert: both BUG and ELBUG variables are set, please only set one\"" >>multirun_loop
 echo "elif [ ! -z \"\${BUG}\" ]; then" >>multirun_loop
-echo "  echo -e \"Looking for UniqueID (BUG environment variable):\n   \${BUG}\"" >>multirun_loop
+echo "  echo -e \"Looking for UniqueID (As per the BUG environment variable):\n   \${BUG}\"" >>multirun_loop
 echo "  BUGSEEN=" >>multirun_loop
 echo "  while [ \"\${BUGSEEN}\" != \"\${BUG}\" ]; do BUGSEEN=; loop; BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-|Assert:' )\"; if [ ! -z \"\${BUGSEEN}\" -a \"\${BUGSEEN}\" != \"\${BUG}\" ]; then echo \"Another bug than the one being looked for was observed: \${BUGSEEN}\"; fi done" >>multirun_loop
 echo "elif [ ! -z \"\${ELBUG}\" ]; then" >>multirun_loop
-echo "  echo -e \"Looking for this string in the error log (ELBUG environment variable):\n   \${ELBUG}\"" >>multirun_loop
+echo "  echo -e \"Looking for this string in the error log (As per the ELBUG environment variable):\n   \${ELBUG}\"" >>multirun_loop
 echo "  BUGSEEN=" >>multirun_loop
 echo "  while [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; do loop; if [ -r ./data/core ]; then if [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; then BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-' )\"; echo \"While the searched for string was not found in the error log, a crash was observed with UniqueID: \${BUGSEEN}\"; fi; fi; done" >>multirun_loop
 echo "else" >>multirun_loop
@@ -862,11 +863,13 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   sed -i 's|^USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|' ./reducer_errorlog.sh
   sed -i 's|^SCAN_FOR_NEW_BUGS=1|SCAN_FOR_NEW_BUGS=0|' ./reducer_errorlog.sh  # SCAN_FOR_NEW_BUGS=1 Not supported yet when using USE_NEW_TEXT_STRING=0
   # ------------------- ./reducer_errorlog_pquery.sh creation
-  cp ./reducer_errorlog.sh ./reducer_errorlog_pquery.sh
-  sed -i 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_errorlog_pquery.sh
+  sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_errorlog.sh > ./reducer_errorlog_pquery.sh
+  # ------------------- ./reducer_hang.sh creation
+  sed 's|^MODE=[0-9]|MODE=0|;s|TIMEOUT_CHECK=[0-9]*|TIMEOUT_CHECK=150|;s|MULTI_THREADS=[0-9]*|MULTI_THREADS=3' ./reducer_errorlog.sh > ./reducer_hang.sh  # Timeout of 150s is a best guess, it may need to be higher. 3 Threads is plenty as we need to wait for the timeout in any case (unless sporadic)
+  # ------------------- ./reducer_hang_pquery.sh creation
+  sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_hang.sh > ./reducer_hang_pquery.sh
   # ------------------- ./reducer_new_text_string_pquery.sh creation
-  cp ./reducer_new_text_string.sh ./reducer_new_text_string_pquery.sh
-  sed -i 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_new_text_string_pquery.sh
+  sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_new_text_string.sh > ./reducer_new_text_string_pquery.sh
   # ------------------- ./reducer_fireworks.sh creation
   cp ${SCRIPT_PWD}/reducer.sh ./reducer_fireworks.sh
   mkdir -p ./FIREWORKS-BUGS
