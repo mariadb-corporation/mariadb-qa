@@ -6,6 +6,8 @@ VERSION=10.11                                                       # 10.9, 10.1
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
+BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
+BISECT_REPLAY_LOG='/test/git-bisect'                                # As saved with:  git bisect log > /test/git-bisect
 LAST_KNOWN_GOOD_COMMIT='7253cdf89280409006cc392cd6728bc51be8b598'   # Revision of last known good commit
 FIRST_KNOWN_BAD_COMMIT='50c5743adc87e1cdec1431a02558f6540fe5a6d5'   # Revision of first known bad commit
 TESTCASE='/test/in2.sql'                                            # The testcase to be tested
@@ -35,9 +37,12 @@ elif [ ! -r "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh" ]; then
 elif [ ! -r "${HOME}/start" ]; then
   echo "${HOME}/start missing. Try running ${HOME}/mariadb-qa/linkit"
   exit 1
+elif [ "${BISECT_REPLAY}" -eq 1 -a ! -r "${BISECT_REPLAY_LOG}" ]; then
+  echo "BISECT_REPLAY Enabled, yet BISECT_REPLAY_LOG (${BISECT_REPLAY_LOG}) cannot read by this script"
+  exit 1
 elif [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
-  screen -admS "git-bisect" bash -c "./$0;bash"
+  screen -admS "git-bisect" bash -c "$0;bash"
   sleep 1
   screen -d -r "git-bisect"
   return 2> /dev/null; exit 0
@@ -101,15 +106,25 @@ if [ "${UPDATETREE}" -eq 1 ]; then
   git pull        # Ensure we have the latest version
 fi
 git bisect start  # Start bisect run
-git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}"  # Starting point, bad
-if [ "${?}" -ne 0 ]; then 
-  echo "Bad revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
-  exit 1
-fi
-git bisect good "${LAST_KNOWN_GOOD_COMMIT}"  # Starting point, good
-if [ "${?}" -ne 0 ]; then 
-  echo "Good revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
-  exit 1
+if [ "${BISECT_REPLAY}" -eq 1 ]; then
+  git bisect replay "${BISECT_REPLAY_LOG}" 
+  if [ "${?}" -ne 0 ]; then 
+    echo "git bisect replay \"${BISECT_REPLAY_LOG}\" failed. Terminating for manual debugging."
+    exit 1
+  else
+    echo "git bisect replay \"${BISECT_REPLAY_LOG}\" succeeded. Proceding with regular git bisecting."
+  fi
+else
+  git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}"  # Starting point, bad
+  if [ "${?}" -ne 0 ]; then 
+    echo "Bad revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
+    exit 1
+  fi
+  git bisect good "${LAST_KNOWN_GOOD_COMMIT}"  # Starting point, good
+  if [ "${?}" -ne 0 ]; then 
+    echo "Good revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
+    exit 1
+  fi
 fi
 
 # Note that the starting points may not point git to a valid commit to test. i.e. git bisect may jump to a commit

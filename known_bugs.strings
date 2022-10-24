@@ -469,6 +469,8 @@ SIGSEGV|charset_info_st::strntoull10rnd|Field_num::get_int|Field_long::store|spi
 SIGSEGV|spider_conn_queue_and_merge_loop_check|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect                                         ## MDEV-27902
 SIGSEGV|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal|spider_db_set_names                                                                    ## MDEV-27902
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                                   ## MDEV-27902
+SIGSEGV|spider_conn_queue_and_merge_loop_check|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect                                         ## MDEV-27902
+SIGSEGV|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect|spider_db_ping_internal                                                        ## MDEV-27902
 host_length <= 255|SIGABRT|set_setup_actor_key|insert_setup_actor|table_setup_actors::write_row|PFS_engine_table_share::write_row                                              ## MDEV-27895
 host_length <= 60|SIGABRT|set_setup_actor_key|insert_setup_actor|table_setup_actors::write_row|PFS_engine_table_share::write_row                                               ## MDEV-27895
 host_length <= HOSTNAME_LENGTH|SIGABRT|set_setup_actor_key|insert_setup_actor|table_setup_actors::write_row|PFS_engine_table_share::write_row                                  ## MDEV-27895
