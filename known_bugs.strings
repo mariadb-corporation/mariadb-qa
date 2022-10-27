@@ -133,6 +133,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+sl->join == 0|SIGABRT|reinit_stmt_before_use|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute                                               ## MENT-1653
 SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp                                                                                                          ## MDEV-29854
 !strstr(table->name.m_name, "/FTS_") || purge_sys.must_wait_FTS()|SIGABRT|trx_t::commit|ha_innobase::delete_table|hton_drop_table|ha_delete_table                              ## MDEV-29853
 SIGSEGV|__strcmp_avx2|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                            ## MDEV-29852
