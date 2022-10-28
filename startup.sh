@@ -755,6 +755,7 @@ echo "#!/bin/bash" > test
 add_san_options test
 cp test test_pquery
 cp test test_timed
+echo "sed -i \"s|MYPORT|\$(grep -o 'port=[0-9]\+' start 2>/dev/null | sed 's|port=||')|\" in.sql" >>test
 echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
 echo "${HOME}/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery
 echo "# Timing code, with thanks, https://stackoverflow.com/a/42359046/1208218 (dormi330)" >>test_timed

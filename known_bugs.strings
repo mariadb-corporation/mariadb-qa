@@ -133,6 +133,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+sp > last_savepoint()|SIGABRT|federatedx_io_mysql::savepoint_set|federatedx_txn::sp_acquire|federatedx_txn::txn_begin|ha_federatedx::external_lock                             ## MDEV-29178
+sp > last_savepoint()|SIGABRT|federatedx_io_mysql::savepoint_set|federatedx_txn::sp_acquire|federatedx_txn::stmt_begin|ha_federatedx::external_lock                            ## MDEV-29178
+0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-29758
 SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp                                                                                                          ## MDEV-29854
 !strstr(table->name.m_name, "/FTS_") || purge_sys.must_wait_FTS()|SIGABRT|trx_t::commit|ha_innobase::delete_table|hton_drop_table|ha_delete_table                              ## MDEV-29853
 SIGSEGV|__strcmp_avx2|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                            ## MDEV-29852
@@ -192,6 +195,8 @@ SIGSEGV|Binary_string::q_append|spider_string::q_append|spider_db_mbase_util::op
 SIGSEGV|Binary_string::q_append|spider_string::q_append|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_list_item_select                                     ## MDEV-29502
 SIGSEGV|Static_binary_string::q_append|spider_string::q_append|spider_db_mbase_util::open_item_func|spider_db_open_item_func                                                   ## MDEV-29502
 SIGSEGV|Static_binary_string::q_append|spider_string::q_append|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_list_item_select                              ## MDEV-29502
+SIGSEGV|Binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_mbase_row::append_to_str                                                  ## MDEV-29502
+SIGSEGV|Static_binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_mbase_row::append_to_str                                           ## MDEV-29502
 share->tdc->flushed|SIGABRT|close_all_tables_for_name|handle_alter_part_error|fast_alter_partition_table|mysql_alter_table                                                     ## MDEV-29503
 !trx_free || !trx->locked_connections|SIGABRT|spider_free_trx_conn|spider_free_trx_alloc|spider_free_trx|spider_close_connection                                               ## MDEV-29484
 SIGSEGV|spider_db_mbase_util::append_table|spider_db_mbase_util::append_tables_top_down|spider_db_mbase_util::append_embedding_tables|spider_db_mbase_util::append_table       ## MDEV-29163
@@ -940,6 +945,9 @@ SIGSEGV|Item::val_uint|handle_select|execute_sqlcom_select|mysql_execute_command
 SIGSEGV|__strlen_avx2|Json_writer::add_str|Json_value_helper::add_str|Json_writer_object::add                                                                                  ## MDEV-22444
 SIGSEGV|__strlen_avx2|String_list::append_str|Explain_index_use::set|st_join_table::save_explain_data                                                                          ## MDEV-22444
 SIGSEGV|Field_iterator_table::create_item|Field_iterator_table_ref::create_item|insert_fields|setup_wild                                                                       ## MDEV-22444
+SIGSEGV|Item::operator new|Type_handler_json_common::make_json_valid_expr|JOIN::transform_in_predicates_into_in_subq|JOIN::optimize_inner                                      ## MDEV-22444
+SIGABRT|__cxa_pure_virtual|Item::real_type|Value_source::Context::Context|Item_func_in::propagate_equal_fields                                                                 ## MDEV-22444
+0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22444
 templ->mbmaxlen > templ->mbminlen || templ->mysql_col_len == len || (field_no == templ->icp_rec_field_no && field->prefix_len > 0)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc ## MDEV-22395
 0|SIGABRT|stored_field_cmp_to_item|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator                                    ## MDEV-22385
 SIGSEGV|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command|mysql_parse                                                                                       ## MDEV-22381

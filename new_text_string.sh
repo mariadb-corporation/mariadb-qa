@@ -284,10 +284,11 @@ rm -f /tmp/${RANDF}.gdb1
 
 # Stack catch
 IMPROVE_FLAG=''
-grep --binary-files=text -A100 'signal handler called' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vE 'std::terminate.*from|__GI_raise |__GI_abort |__assert_fail_base |__GI___assert_fail |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called' | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
+FRAMES_FILTER='std::terminate.*from|__GI_raise |__GI_abort |__assert_fail_base |__GI___assert_fail |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called|uw_update_context_1|uw_init_context_1|_Unwind_Resume'
+grep --binary-files=text -A100 'signal handler called' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vEi "${FRAMES_FILTER}" | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
 if [ "$(wc -m /tmp/${RANDF}.gdb4 2>/dev/null | sed 's| .*||')" == "0" ]; then
   # 'signal handler called' was not found, try another method
-  grep --binary-files=text -m1 -A100 '^#0' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vE 'std::terminate.*from|__GI_raise |__GI_abort |__assert_fail_base |__GI___assert_fail |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called' | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
+  grep --binary-files=text -m1 -A100 '^#0' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vEi "${FRAMES_FILTER}" | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
 fi
 if [ "$(wc -m /tmp/${RANDF}.gdb4 2>/dev/null | sed 's| .*||')" == "0" ]; then
   # '#0' was not found, which is unlikely to happen, but improvements may be possible, set flag
@@ -314,7 +315,7 @@ fi
 rm -f /tmp/${RANDF}.gdb4
 
 # Grap first 4 frames, if they exist, and add to TEXT
-FRAMES="$(cat /tmp/${RANDF}.gdb3 | head -n4 | sed 's| [^ ]\+$||' | tr '\n' '|' | sed 's/|$/\n/')"
+FRAMES="$(cat /tmp/${RANDF}.gdb3 | head -n4 | sed 's| [^ ]\+$||;s|[ ]*(.*||' | tr '\n' '|' | sed 's/|$/\n/')"
 rm -f /tmp/${RANDF}.gdb3
 if [ ! -z "${FRAMES}" ]; then
   if [ ${FRAMESONLY} -eq 1 -o -z "${TEXT}" ]; then
