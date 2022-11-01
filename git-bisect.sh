@@ -157,7 +157,11 @@ while :; do
       sleep 2
     done
     sleep 2
-    if [ "$(cat /tmp/git-bisect-build.exitcode | tr -d '\n')" -eq 1 ]; then
+    if [ -z "$(cat /tmp/git-bisect-build.exitcode 2>/dev/null | tr -d '\n')" ]; then
+      echo "|> Build failure... Skipping revision ${CUR_COMMIT}"
+      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
+      continue
+    elif [ "$(cat /tmp/git-bisect-build.exitcode 2>/dev/null | tr -d '\n')" -eq 1 ]; then
       echo "|> Build failure... Skipping revision ${CUR_COMMIT}"
       git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
       continue

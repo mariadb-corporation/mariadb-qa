@@ -5,19 +5,19 @@ SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 mkdir -p known mysql_bugs debug_dbug NOCORE
 
 # Move MySQL bugs to a seperate directory
-grep -A2 "Bug confirmed present in" *.report | grep MySQL | sed 's|\..*||' | sort -u | xargs -I{} mv "{}.sql" "{}.sql.report" "{}.sql.report.NOCORE" mysql_bugs 2>/dev/null
+grep --binary-files=text -A2 -i "Bug confirmed present in" *.report | grep --binary-files=text -i 'MySQL' | sed 's|\..*||' | sort -u | xargs -I{} mv "{}.sql" "{}.sql.report" "{}.sql.report.NOCORE" mysql_bugs 2>/dev/null
 
 # Move bugs which were already found to be dups (and are not fixed yet) by mass_bug_report.sh
-grep -o "FOUND: This is an already known bug, and not fixed yet" *.report | sed 's|\..*||' | sort -u | xargs -I{} mv "{}.sql" "{}.sql.report" "{}.sql.report.NOCORE" known 2>/dev/null
+grep --binary-files=text -oi "FOUND: This is an already known bug, and not fixed yet" *.report | sed 's|\..*||' | sort -u | xargs -I{} mv "{}.sql" "{}.sql.report" "{}.sql.report.NOCORE" known 2>/dev/null
 
 # Move testcases which have debug_dbug into debug_dbug directory for later research
-grep -oi "debug_dbug" *.report | sed 's|\..*||' | sort -u | xargs -I{} mv "{}.sql" "{}.sql.report" "{}.sql.report.NOCORE" debug_dbug 2>/dev/null
+grep --binary-files=text -oi "debug_dbug" *.report | sed 's|\..*||' | sort -u | xargs -I{} mv "{}.sql" "{}.sql.report" "{}.sql.report.NOCORE" debug_dbug 2>/dev/null
 
 # Move testcases which did not produce a core on ANY basedir
-grep -o "^TOTAL CORES SEEN ACCROSS ALL VERSIONS: 0$" *.report | sed 's|\..*||' | sort -u | xargs -I{} mv "{}.sql" "{}.sql.report" "{}.sql.report.NOCORE" NOCORE 2>/dev/null
+grep --binary-files=text -oi "^TOTAL CORES SEEN ACCROSS ALL VERSIONS: 0$" *.report | sed 's|\..*||' | sort -u | xargs -I{} mv "{}.sql" "{}.sql.report" "{}.sql.report.NOCORE" NOCORE 2>/dev/null
 
 # Move bugs which have since been logged and/or are dups
-grep -A1 "Add bug to known.strings" *.sql.report | grep -v "\-\-" | grep -vE "Add bug to known.strings|Check for duplicates before logging bug" > /tmp/tmpdups.list 2>/dev/null
+grep --binary-files=text -A1 -i "Add bug to known.strings" *.sql.report | grep --binary-files=text -v "\-\-" | grep --binary-files=text -vEi "Add bug to known.strings|Check for duplicates before logging bug" > /tmp/tmpdups.list 2>/dev/null
 COUNT=$(wc -l /tmp/tmpdups.list 2>/dev/null | sed 's| .*||')
 
 if [ ${COUNT} -gt 0 ]; then
