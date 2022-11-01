@@ -1,19 +1,26 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-# Note that UNIQUEID and TEXT are mutually exclusive: do not set both
-VERSION=10.4                                                        # 10.9, 10.10, 10.11, etc.
+# User variables
+VERSION=10.11                                                       # 10.9, 10.10, 10.11, etc.
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As saved with:  git bisect log > /test/git-bisect
+# WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 LAST_KNOWN_GOOD_COMMIT='b3df1ec97aacc27678c44eefe56ea8680456d608'   # Revision of last known good commit
 FIRST_KNOWN_BAD_COMMIT='50c5743adc87e1cdec1431a02558f6540fe5a6d5'   # Revision of first known bad commit
 TESTCASE='/test/in2.sql'                                            # The testcase to be tested
 UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
 TEXT='my_time_packed_to_binary'                                     # The string to scan for in the error log [Exclusive]
-# [Exclusive]: i.e. leave both UNIQUEID and TEXT empty to scan for core files instead
+# [Exclusove]: Note that UNIQUEID and TEXT are mutually exclusive: do not set both
+# Leave both UNIQUEID and TEXT empty to scan for core files instead
+
+# Script variables, do not change
+RANDOM=$(date +%s%N | cut -b10-19)
+TMPLOG1="/tmp/git_bisect_${RANDOM}${RANDOM}.out"
+TMPLOG2="/tmp/git-bisect-build_${RANDOM}${RANDOM}.exitcode"
 
 die(){
   echo "$2"; exit $1
@@ -75,26 +82,26 @@ fi
 
 bisect_good(){
   cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
-  rm -f /tmp/git_bisect.out
-  git bisect good 2>&1 | grep -v 'warning: unable to rmdir' | tee /tmp/git_bisect.out
-  if grep -qi 'first bad commit' /tmp/git_bisect.out; then
-    rm -f /tmp/git_bisect.out
+  rm -f ${TMPLOG1}
+  git bisect good 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
+  if grep -qi 'first bad commit' ${TMPLOG1}; then
+    rm -f ${TMPLOG1}
     echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
     exit 0
   fi
-  rm -f /tmp/git_bisect.out
+  rm -f ${TMPLOG1}
 }
 
 bisect_bad(){
   cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
-  rm -f /tmp/git_bisect.out
-  git bisect bad 2>&1 | grep -v 'warning: unable to rmdir' | tee /tmp/git_bisect.out
-  if grep -qi 'first bad commit' /tmp/git_bisect.out; then
-    rm -f /tmp/git_bisect.out
+  rm -f ${TMPLOG1}
+  git bisect bad 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
+  if grep -qi 'first bad commit' ${TMPLOG1}; then
+    rm -f ${TMPLOG1}
     echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
     exit 0
   fi
-  rm -f /tmp/git_bisect.out
+  rm -f ${TMPLOG1}
 }
 
 # Git setup
@@ -151,17 +158,17 @@ while :; do
     echo "|> Cleaning up any previous version ${VERSION} builds in /test/git-bisect"
     rm -Rf /test/git-bisect/MD*${VERSION}*
     echo "|> Building revision in a screen session: use screen -d -r 'git-bisect-build' to see the build process"
-    rm -f /tmp/git-bisect-build.exitcode
-    screen -admS 'git-bisect-build' bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > /tmp/git-bisect-build.exitcode"
+    rm -f ${TMPLOG2}
+    screen -admS 'git-bisect-build' bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > ${TMPLOG2}"
     while [ "$(screen -ls | grep -o 'git-bisect-build')" == "git-bisect-build" ]; do
       sleep 2
     done
     sleep 2
-    if [ -z "$(cat /tmp/git-bisect-build.exitcode 2>/dev/null | tr -d '\n')" ]; then
+    if [ -z "$(cat ${TMPLOG2} 2>/dev/null | tr -d '\n')" ]; then
       echo "|> Build failure... Skipping revision ${CUR_COMMIT}"
       git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
       continue
-    elif [ "$(cat /tmp/git-bisect-build.exitcode 2>/dev/null | tr -d '\n')" -eq 1 ]; then
+    elif [ "$(cat ${TMPLOG2} 2>/dev/null | tr -d '\n')" -eq 1 ]; then
       echo "|> Build failure... Skipping revision ${CUR_COMMIT}"
       git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
       continue
@@ -169,7 +176,7 @@ while :; do
       echo "|> Build successful... Testing revision ${CUR_COMMIT}"
       break  # Successful build
     fi
-    rm -f /tmp/git-bisect-build.exitcode
+    rm -f ${TMPLOG2}
   done
   cd /test/git-bisect || die 1 'Could not change directory to /test/git-bisect'
   TEST_DIR="$(ls -d MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
