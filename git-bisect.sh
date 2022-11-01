@@ -2,18 +2,18 @@
 # Created by Roel Van de Paar, MariaDB
 
 # Note that UNIQUEID and TEXT are mutually exclusive: do not set both
-VERSION=10.11                                                       # 10.9, 10.10, 10.11, etc.
+VERSION=10.4                                                        # 10.9, 10.10, 10.11, etc.
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
-BISECT_REPLAY_LOG='/test/git-bisect'                                # As saved with:  git bisect log > /test/git-bisect
-LAST_KNOWN_GOOD_COMMIT='7253cdf89280409006cc392cd6728bc51be8b598'   # Revision of last known good commit
+BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As saved with:  git bisect log > /test/git-bisect
+LAST_KNOWN_GOOD_COMMIT='b3df1ec97aacc27678c44eefe56ea8680456d608'   # Revision of last known good commit
 FIRST_KNOWN_BAD_COMMIT='50c5743adc87e1cdec1431a02558f6540fe5a6d5'   # Revision of first known bad commit
 TESTCASE='/test/in2.sql'                                            # The testcase to be tested
-UNIQUEID='SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp'  # The UniqueID to scan for [Exclusive]
-TEXT=''                                                             # The string to scan for in the error log [Exclusive]
-# Note: leave both UNIQUEID and TEXT empty to scan for core files instead
+UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
+TEXT='my_time_packed_to_binary'                                     # The string to scan for in the error log [Exclusive]
+# [Exclusive]: i.e. leave both UNIQUEID and TEXT empty to scan for core files instead
 
 die(){
   echo "$2"; exit $1
@@ -49,9 +49,9 @@ elif [ "${STY}" == "" ]; then
 fi
 
 cd /test || die 1 '/test does not exist'
-mkdir -p TMP_git-bisect || die 1 '/test/TMP_git-bisect could not be created'
-echo 'Changing directory to /test/TMP_git-bisect'
-cd TMP_git-bisect || die 1 'could not change directory to TMP_git-bisect'
+mkdir -p git-bisect || die 1 '/test/git-bisect could not be created'
+echo 'Changing directory to /test/git-bisect'
+cd git-bisect || die 1 'could not change directory to git-bisect'
 if [ "${RECLONE}" -eq 1 ]; then
   rm -Rf "${VERSION}"
   git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
@@ -74,34 +74,34 @@ else
 fi
 
 bisect_good(){
-  cd "/test/TMP_git-bisect/${VERSION}" || die 1 "Could not change directory to /test/TMP_git-bisect/${VERSION}"
+  cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
   rm -f /tmp/git_bisect.out
   git bisect good 2>&1 | grep -v 'warning: unable to rmdir' | tee /tmp/git_bisect.out
   if grep -qi 'first bad commit' /tmp/git_bisect.out; then
     rm -f /tmp/git_bisect.out
-    echo "Finished. Use 'cd /test/TMP_git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
+    echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
     exit 0
   fi
   rm -f /tmp/git_bisect.out
 }
 
 bisect_bad(){
-  cd "/test/TMP_git-bisect/${VERSION}" || die 1 "Could not change directory to /test/TMP_git-bisect/${VERSION}"
+  cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
   rm -f /tmp/git_bisect.out
   git bisect bad 2>&1 | grep -v 'warning: unable to rmdir' | tee /tmp/git_bisect.out
   if grep -qi 'first bad commit' /tmp/git_bisect.out; then
     rm -f /tmp/git_bisect.out
-    echo "Finished. Use 'cd /test/TMP_git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
+    echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
     exit 0
   fi
   rm -f /tmp/git_bisect.out
 }
 
 # Git setup
-git bisect reset  # Remove any previous bisect run data
+git bisect reset 2>&1 | grep -v 'We are not bisecting'  # Remove any previous bisect run data
 git reset --hard  # Revert tree to mainline
 git clean -xfd    # Cleanup tree
-git checkout "${VERSION}"   # Ensure we've got the right version
+git checkout "${VERSION}"   # Ensure we have the right version
 if [ "${UPDATETREE}" -eq 1 ]; then
   git pull        # Ensure we have the latest version
 fi
@@ -148,8 +148,8 @@ while :; do
     fi
   done
   while :; do
-    echo "|> Cleaning up any previous version ${VERSION} builds in /test/TMP_git-bisect"
-    rm -Rf /test/TMP_git-bisect/MD*${VERSION}*
+    echo "|> Cleaning up any previous version ${VERSION} builds in /test/git-bisect"
+    rm -Rf /test/git-bisect/MD*${VERSION}*
     echo "|> Building revision in a screen session: use screen -d -r 'git-bisect-build' to see the build process"
     rm -f /tmp/git-bisect-build.exitcode
     screen -admS 'git-bisect-build' bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > /tmp/git-bisect-build.exitcode"
@@ -167,7 +167,7 @@ while :; do
     fi
     rm -f /tmp/git-bisect-build.exitcode
   done
-  cd /test/TMP_git-bisect || die 1 'Could not change directory to /test/TMP_git-bisect'
+  cd /test/git-bisect || die 1 'Could not change directory to /test/git-bisect'
   TEST_DIR="$(ls -d MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
   if [ -z "${TEST_DIR}" ]; then
     echo "Assert: TEST_DIR is empty"
@@ -207,3 +207,11 @@ while :; do
     fi
   fi
 done
+
+# For for example checking YACC compilation errors, you can use 'git bisect run':
+# For automatic good/bad selection based on exit code, use 'git bisect run ./command_which_provides_exit_code':
+# git bisect reset && git bisect start
+# git bisect bad ...rev...
+# git bisect good ...rev...
+# git bisect run yacc -Wother -Wyacc -Wdeprecated --verbose sql/sql_yacc.yy 2>/dev/null  # 1 on error
+# This will very quickly find the revision where the YACC error was introduced

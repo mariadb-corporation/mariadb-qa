@@ -92,3 +92,11 @@ INSERT INTO t (c) VALUES (1),(1),(1),(1),(1);
 ALTER TABLE t ADD armscii8_f CHAR(1) CHARACTER SET armscii8;
 # Client: ERROR 192 (HY000): Unknown key id 1 for ./test/#sql-alter-268b58-4. Can't continue!
 # Error log: 2022-10-01 12:45:26 4 [ERROR] mysqld: Got error '126 "Index is corrupted"' for './test/#sql-alter-268b58-4.MAI'
+
+SET GLOBAL aria_encrypt_tables=1;
+SET SESSION storage_engine=Aria;
+CREATE TABLE t (c INT KEY,c2 CHAR(1),c3 TIMESTAMP);
+CREATE TRIGGER t_cnt_b BEFORE UPDATE ON t FOR EACH ROW UPDATE t SET cnt=cnt;
+INSERT INTO t (c) VALUES (1),(1),(1),(1),(1);
+LOCK TABLES t WRITE,t AS t0 READ;
+SET STATEMENT sql_mode=''FOR ALTER TABLE t CHANGE c c FLOAT(0,0) UNSIGNED,CHANGE c2 c2 FLOAT(0,0) SIGNED;

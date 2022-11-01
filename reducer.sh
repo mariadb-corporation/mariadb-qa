@@ -1200,8 +1200,8 @@ multi_reducer(){
     echo_out "ASSERT: REDUCE_GLIBC_OR_SS_CRASHES is active, and we ended up in multi_reducer() function. This should not be possible as REDUCE_GLIBC_OR_SS_CRASHES uses a single thread only."
   fi
 
-  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any dangling subreducer processes are terminated"
-  kill_multi_reducer
+  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating any dangling subreducer processes"  # Cleanup, necessary, do not remove
+  kill_multi_reducer  # Cleanup, necessary, do not remove
 
   if [ "$STAGE" = "V" ]; then
     echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Starting $MULTI_THREADS verification subreducer threads to verify if the issue is sporadic ($WORKD/subreducer/)"

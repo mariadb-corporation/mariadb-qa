@@ -19,11 +19,13 @@ MARIADB_ERROR_CODE|MariaDB error code: 2003
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
+#GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-26258, likely. Leaving for other issues
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
 GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
 GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and MDEV-29430
+GOT_ERROR|Got error 1430|when reading table                    ## Presumed non-issue (federatedx base table removed)
+GOT_ERROR|Got error 1430|Unknown error 1430                    ## MDEV-29923
 GOT_ERROR|Got error 1440|when reading table                    ## MDEV-29454
-#GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-26258, likely. Leaving for other issues
 GOT_ERROR|Got error 1032|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-29800
 GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-29800
 GOT_ERROR|Got error 1032|when trying to execute action for entry 3 of type 'rename table'  ## MDEV-29800
@@ -587,6 +589,7 @@ state() == s_preparing || (is_xa() && state() == s_replaying) || (ret && (state(
 (key_del_current != 0) && ((key_del_current == (~ (my_off_t) 0)) || (key_del_current <= (share->state.state.key_file_length - block_size)))|SIGABRT|_ma_new|_ma_enlarge_root|_ma_ck_real_write_btree|_ma_ck_write_btree_with_log ## MDEV-26258
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::drop_all_triggers|mysql_rm_table_no_locks|mysql_rm_db_internal                  ## MDEV-26258
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::drop_all_triggers|mysql_rm_table_no_locks|mysql_rm_table                        ## MDEV-26258
+!parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|open_table_entry_fini|open_table|Locked_tables_list::reopen_tables                                   ## MDEV-26258
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_analyze_table::execute                        ## MDEV-26258
 SIGSEGV|show_create_table_ex|show_create_table|mysqld_show_create_get_fields|mysqld_show_create                                                                                ## MDEV-26258
 SIGSEGV|show_create_table|mysqld_show_create_get_fields|mysqld_show_create|mysql_execute_command                                                                               ## MDEV-26258
@@ -914,6 +917,7 @@ SIGSEGV|fil_system_t::keyrotate_next|fil_crypt_find_space_to_rotate|fil_crypt_th
 (*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item_func::fix_fields                                                 ## MDEV-22713
 llabs(next_free_value % real_increment) == offset|SIGABRT|sequence_definition::adjust_values|sequence_definition::check_and_adjust|MYSQLparse|parse_sql                        ## MDEV-22705
 llabs(next_free_value % real_increment) == offset|SIGABRT|sequence_definition::adjust_values|sequence_definition::check_and_adjust|ORAparse|parse_sql                          ## MDEV-22705
+llabs(next_free_value % real_increment) == offset|SIGABRT|sequence_definition::adjust_values|SEQUENCE::read_stored_values|SEQUENCE::read_initial_values|ha_sequence::open      ## MDEV-22705
 fixed == 0|SIGABRT|Item_func::fix_fields|fix_fields_for_tvc|table_value_constr::prepare|st_select_lex_unit::prepare                                                            ## MDEV-22662
 time_type == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Datetime::is_valid_datetime_slow|Datetime::is_valid_value_slow|Datetime::Datetime|Item::val_datetime_packed                      ## MDEV-22661
 time_type == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Datetime::is_valid_datetime_slow|Datetime::Datetime|TR_table::query|Item_func_trt_id::get_by_commit_ts                           ## MDEV-22661

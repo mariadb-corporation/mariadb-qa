@@ -284,6 +284,7 @@ cat "${1}" | tr -d '`' | \
        s|path|PATH|gi; \
        s|minvalue|MINVALUE|gi; \
        s|maxvalue|MAXVALUE|gi; \
+       s|increment|INCREMENT|gi; \
        s|increment by|INCREMENT BY|gi; \
        s|checkpoint|checkpoint|gi; \
        s|coordinates|coordinates|gi; \

@@ -44,6 +44,8 @@ Got error 1054 when reading table                     https://jira.mariadb.org/b
 Got error 1054 when reading table                     https://jira.mariadb.org/browse/MDEV-29663 (Spider, 29430 duplicate)
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
 Got error 1184 when reading table                     https://jira.mariadb.org/browse/MDEV-29583 (init_connect failed, Spider)
+Got error 1430 when reading table                     Presumed non-issue (federatedx base table removed)
+Got error 1430 .Unknown error 1430                    https://jira.mariadb.org/browse/MDEV-29923
 Got error 1440 when reading table                     https://jira.mariadb.org/browse/MDEV-29454 (XAER_DUPID Spider)
 Got error 1032.*entry [1-7] of type.*rename           https://jira.mariadb.org/browse/MDEV-29800 (CoR bug)
 Got error 12524.*entry 6 of type.*rename              https://jira.mariadb.org/browse/MDEV-29800 (CoR bug)
