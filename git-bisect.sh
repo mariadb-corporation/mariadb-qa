@@ -7,7 +7,7 @@ DBG_OR_OPT='dbg'                                                    # Use 'dbg' 
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
-BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As saved with:  git bisect log > /test/git-bisect
+BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 LAST_KNOWN_GOOD_COMMIT='b3df1ec97aacc27678c44eefe56ea8680456d608'   # Revision of last known good commit
 FIRST_KNOWN_BAD_COMMIT='50c5743adc87e1cdec1431a02558f6540fe5a6d5'   # Revision of first known bad commit
@@ -19,7 +19,7 @@ TEXT='my_time_packed_to_binary'                                     # The string
 
 # Script variables, do not change
 RANDOM=$(date +%s%N | cut -b10-19)
-TMPLOG1="/tmp/git_bisect_${RANDOM}${RANDOM}.out"
+TMPLOG1="/tmp/git-bisect-${RANDOM}${RANDOM}.out"
 TMPLOG2="/tmp/git-bisect-build_${RANDOM}${RANDOM}.exitcode"
 
 die(){

@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ -z "${1}" ]; then
+if [ ! -z "${1}" ]; then
   if [ ! -r ./${1}/log/master.err ]; then
     echo "./${1}/log/master.err does not exist?"
     exit 1
