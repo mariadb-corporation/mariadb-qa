@@ -119,17 +119,12 @@ if [ -r ../allstrings_merged ]; then
     cd .. && ./allstrings_merged 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   fi
 fi
-# TODO: The next section, which uses allstrings_new can be made much faster by re-using the strings found above rather than re-scanning (i.e. checking all cores again)
-if [ -r ../allstrings_new ]; then
-  if [ "${1}" == "GAL" ]; then
-    echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
-    cd .. && ./allstrings_new GAL 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
-  elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
-    echo '----- All NEW (not known yet) strings merged (for adding to ~/kba) -----' | tee -a "${REPORT_PATH}/report.log"
-    cd .. && ./allstrings_new SAN 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
-  else
-    echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
-    cd .. && ./allstrings_new 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
-  fi
+# Print all new bugs that are not in the known bug list
+if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
+  echo '----- All NEW (not known yet) strings merged (for adding to ~/kba) -----' | tee -a "${REPORT_PATH}/report.log"
+  cat /tmp/allstrings_merged | sort -u | tr '\n' '\0' | xargs -0 -I{} ~/kbsa REVERSE "{}" | tee -a "${REPORT_PATH}/report.log"
+else
+  echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
+  cat /tmp/allstrings_merged | sort -u | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | tee -a "${REPORT_PATH}/report.log"
 fi
 
