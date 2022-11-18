@@ -135,6 +135,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+index->type & 32|SIGABRT|ha_innobase::defragment_table|ha_innobase::optimize|handler::ha_optimize|mysql_admin_table                                                            ## MDEV-30031
 transaction_.active() == false|SIGABRT|wsrep::client_state::~client_state|Wsrep_client_state::~Wsrep_client_state|THD::~THD|THD::~THD                                          ## MDEV-30029
 state() == s_aborting || state() == s_must_replay|SIGABRT|wsrep::transaction::after_rollback|wsrep::client_state::after_rollback|wsrep_after_rollback|ha_checktype             ## MDEV-30013
 SIGSEGV|spider_db_mbase::append_lock_tables|spider_db_mbase::append_lock_tables|spider_mbase_handler::lock_tables|ha_spider::lock_tables                                       ## MDEV-29963
