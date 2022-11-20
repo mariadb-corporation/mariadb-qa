@@ -5401,14 +5401,14 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 239 ]; then sed "s/ps/p/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 240 ]; then sed "s/[ ]*TABLESPACE [^ ]\+ STORAGE DISK[ ]*/ /gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 241 ]; then sed "s/GROUP_CONCAT([^)]\+)/*/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 242 ]; then sed "s/COMMENT='WRAPPER \"mysql\", srv \"srv\", TABLE \"t\"'//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 243 ]; then sed "s/COMMENT='WRAPPER \"mysql\", srv \"srv\", TABLE \"t\"'//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 244 ]; then sed "s/COMMENT='WRAPPER \"mysql\", srv \"srv\", TABLE \"t\"'//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 245 ]; then sed "s/COMMENT='WRAPPER \"mysql\", srv \"srv\", TABLE \"t\"'//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 242 ]; then sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 243 ]; then sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 244 ]; then sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 245 ]; then sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 246 ]; then sed "s/WITH SYSTEM VERSIONING//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 247 ]; then sed "s/WITH SYSTEM VERSIONING//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 248 ]; then sed "s|[ ]*'../socket.sock'|''|g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 249 ]; then sed "s|[ ]*'../socket.sock'|''|" $WORKF > $WORKT
+    elif [ $TRIAL -eq 248 ]; then sed "s|'../socket.sock'|''|g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 249 ]; then sed "s|'../socket.sock'|''|" $WORKF > $WORKT
     elif [ $TRIAL -eq 250 ]; then sed "s/PWD1//g" $WORKF > $WORKT
     elif [ $TRIAL -eq 251 ]; then sed "s/PWD1//" $WORKF > $WORKT
     elif [ $TRIAL -eq 252 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT

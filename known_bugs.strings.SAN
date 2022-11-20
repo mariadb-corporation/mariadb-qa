@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_lex.cc|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|st_select_lex_unit::explainable|JOIN::save_explain_data_intern ## MDEV-30007
+UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_lex.cc|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|JOIN::save_explain_data_intern|JOIN::save_explain_data ## MDEV-30007
 ASAN|use-after-poison|sql/sql_acl.cc|get_current_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                            ## MDEV-29852
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_user_table|mysql_create_user|mysql_execute_command|mysql_parse                             ## MDEV-23731
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse                              ## MDEV-23731

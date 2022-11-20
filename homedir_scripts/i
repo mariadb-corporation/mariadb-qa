@@ -51,6 +51,7 @@ else
   fi
   cat ${1}/MYBUG | sed 's|^|MYBUG             : |'
   grep '^[ ]*TEXT=' ./reducer${1}.sh | grep -v 'fireworks' | sed 's|^[ ]*TEXT="||;s|"$||' | head -n1 | sed 's|^|TEXT (REDUCER)    : |'
+  grep '^[ ]*MODE=' ./reducer${1}.sh | grep -v 'fireworks' | sed 's|^[ ]*MODE=[ \t]*||;s| .*$||' | head -n1 | sed 's|^|MODE (REDUCER)    : |'
   grep '^BASEDIR' ./reducer${1}.sh | sed 's|^[^"]\+"||;s|".*||' | sed 's|^|BASEDIR           : |'
 fi
 tail -n2 ${1}/pquery.log | head -n1 | sed 's|^|PQUERY            : |'

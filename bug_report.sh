@@ -191,9 +191,9 @@ if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then
   fi
 else
   if [ "${1}" == "SAN" ]; then
-    #echo "Searching error logs for the '=ERROR:|runtime error:|ThreadSanitizer:|LeakSanitizer:' (SAN mode enabled)"
+    #echo "Searching error logs for the '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:' (SAN mode enabled)"
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
-    #CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '=ERROR:|runtime error:|ThreadSanitizer:|LeakSanitizer:' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
+    #CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "GAL" ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
@@ -337,31 +337,25 @@ if [ ${SAN_MODE} -eq 1 ]; then
   echo -e '{noformat}\n\nSetup:\n'
   echo '{noformat}'
   echo 'Compiled with GCC >=7.5.0 (I use GCC 9.4.0) and:'
-  if grep -qm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
-    echo '    -DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys'
-  fi
-  if grep -qm1 --binary-files=text '=ERROR:' ../*SAN*/log/master.err; then  # UBSAN/ASAN (best not to split here, as options may interact: bug reproducibility max)
-    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
-  elif grep -qm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN/ASAN (best not to split ASAN vs UBSAN build here, and to just leave both enabled, as these features, when both are enabled, may affect the server differently then only one is enabled: we thus maximize bug reproducibility through leaving the same options enabled as where there during testing)  # elif; avoids double printing
-    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
-  elif grep -qm1 --binary-files=text 'LeakSanitizer:' ../*SAN*/log/master.err; then  # LSAN: this was an ASAN (or UBSAN/ASAN) build
-    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
-  fi
-  echo 'Set before execution:'
-  if grep -qm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
+  if grep -Eiqm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
     # A note on exitcode=0: whereas we do not use this in our runs, it is required to let MTR bootstrap succeed.
     # TODO: Once code becomes more stable add: halt_on_error=1
+    echo '    -DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys'
+    echo 'Set before execution:'
     echo '    export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1:exitcode=0'
-  fi
-  if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:' ../*SAN*/log/master.err; then  # ASAN
-    # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-    echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1'
-    # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
-    # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
-    #echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1'
-  fi
-  if grep -qm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
-    echo '    export UBSAN_OPTIONS=print_stacktrace=1'
+  elif grep -Eiqm1 --binary-files=text 'runtime error:|=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # UBSAN/ASAN/LSAN(ASAN) (best not to split ASAN vs UBSAN build here, and to just leave both enabled, as these features, when both are enabled, may affect the server differently then only one is enabled: we thus maximize bug reproducibility through leaving the same options enabled as where there during testing)  # elif; avoids double printing
+    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
+    if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # ASAN
+      # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
+      echo 'Set before execution:'
+      echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1'
+      # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
+      # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
+      #echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1'
+    elif grep -Eiqm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
+      echo 'Set before execution:'
+      echo '    export UBSAN_OPTIONS=print_stacktrace=1'
+    fi
   fi
 fi
 echo -e '{noformat}\n'

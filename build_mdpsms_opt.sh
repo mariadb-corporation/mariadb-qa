@@ -182,7 +182,10 @@ if [ $USE_SAN -eq 1 ]; then
   # Also note that for MSAN to have an effect, all libs linked to MySQL must also have been compiled with this option enabled
   # Ref https://dev.mysql.com/doc/refman/5.7/en/source-configuration-options.html#option_cmake_with_msan
   #SAN="--DWITH_MSAN=ON -DWITH_UBSAN=ON"
-  SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON"  # Default
+  SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON"  # Default ASAN+UBSAN
+  #PREFIX="UBSAN_SPIDER_"; SAN="-DWITH_UBSAN=ON"  # Spider UBSAN Only https://jira.mariadb.org/browse/MDEV-26541    
+  #PREFIX="ASAN_SPIDER_"; SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWSREP_LIB_WITH_ASAN=ON"  # Spider ASAN only, same URL 
+  
     # The -DWITH_RAPID=OFF is a workaround for https://bugs.mysql.com/bug.php?id=90211 - it disables GR and mysqlx (rapid plugins)
 fi
 

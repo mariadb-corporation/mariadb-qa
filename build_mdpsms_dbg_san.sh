@@ -195,9 +195,9 @@ if [ $USE_SAN -eq 1 ]; then
     SAN="-DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys -DWITH_INNODB=0"  # InnoDB disabled till rw-lock instrumentation is added
   else
     if [ ${ASAN_OR_MSAN} -eq 0 ]; then
-      #SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON"  # Both, default (not-Spider)
-      SAN="-DWITH_UBSAN=ON"  # Spider UBSAN Only https://jira.mariadb.org/browse/MDEV-26541
-      #SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWSREP_LIB_WITH_ASAN=ON"  # Spider ASAN only, same URL
+      SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON"  # Both, default (not-Spider)
+      #PREFIX="UBSAN_SPIDER_"; SAN="-DWITH_UBSAN=ON"  # Spider UBSAN Only https://jira.mariadb.org/browse/MDEV-26541
+      #PREFIX="ASAN_SPIDER_"; SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWSREP_LIB_WITH_ASAN=ON"  # Spider ASAN only, same URL
 
     else
       SAN="-DWITH_MSAN=ON -DWITH_UBSAN=ON"  # TODO: MD Does not have full MSAN support for InnoDB yet, and need to verify if -DWITH_UBSAN=ON works in combination with MSAN.
