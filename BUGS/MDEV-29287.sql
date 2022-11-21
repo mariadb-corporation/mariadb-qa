@@ -61,3 +61,22 @@ INSERT INTO t VALUES (1),(-1),(65),(66);
 INSERT INTO t SELECT A.a + 10* (B.a + 10*C.a) FROM t A,t B,t C;
 UPDATE t SET a=NULL WHERE a=2;
 UPDATE t SET a=NULL WHERE a=2;  # Repeat as needed #
+
+SET sql_mode='',max_error_count=1024;
+CREATE TABLE t (a SET('a','b') NOT NULL) ENGINE=CSV;
+INSERT INTO t VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+INSERT INTO t VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+INSERT INTO t VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+INSERT INTO t VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+INSERT INTO t VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+INSERT INTO t VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+INSERT INTO t SELECT A.a FROM t A,t B,t C;
+UPDATE t SET a=NULL;
+INSERT INTO t SELECT A.a FROM t A,t B,t C;
+UPDATE t SET a=NULL;
+INSERT INTO t SELECT A.a FROM t A,t B,t C;
+UPDATE t SET a=NULL;
+INSERT INTO t SELECT A.a FROM t A,t B,t C;
+UPDATE t SET a=NULL;
+INSERT INTO t SELECT A.a FROM t A,t B,t C;
+UPDATE t SET a=NULL;

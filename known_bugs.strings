@@ -65,7 +65,6 @@ SIGSEGV|strlen|__GI__dl_exception_create|__GI__dl_signal_error|_dl_close        
 #**# SIGABRT|__libc_message|malloc_printerr|_int_malloc|_int_realloc                                                                                                           ## MDEV-29287
 #**# SIGABRT|__libc_message|malloc_printerr|_int_free|Rows_log_event::~Rows_log_event                                                                                          ## MDEV-29287
 #**# SIGSEGV|free_root|Warning_info::free_memory|Warning_info::clear|Warning_info::opt_clear                                                                                   ## MDEV-29287
-#**# (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)|SIGABRT|__malloc_assert|sysmalloc|_int_malloc|__GI___libc_malloc ## MDEV-29287
 
 ##### CURRENT BUGS WHICH REQUIRE ADDITIONAL TESTCASES (MOSTLY DISABLED FILTERS) #####
 #**# SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                              ## MDEV-24911
@@ -136,6 +135,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+(old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)|SIGABRT|__malloc_assert|sysmalloc|_int_malloc|__GI___libc_malloc ## MDEV-29287
 (((nr) % (1LL << 24)) % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_time_packed_to_binary|Time::to_native|Item_cache_time::val_native|select_max_min_finder_subselect::cmp_native  ## MDEV-29924
 SIGSEGV|spider_db_mbase::fin_loop_check|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                     ## MDEV-30011
 SIGSEGV|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|JOIN::save_explain_data_intern|JOIN::save_explain_data                                       ## MDEV-30007
