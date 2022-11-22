@@ -1,0 +1,55 @@
+# [ERROR] mysql_ha_read: Got error 1184 when reading table 't' and [Warning] WSREP: handlerton rollback failed, thd 4 226 conf 0 SQL HANDLER t READ FIRST
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY 'PWD1';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD1');
+CREATE TABLE t (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SET GLOBAL init_connect="dummy";
+SELECT c FROM t;
+HANDLER t OPEN;
+HANDLER t READ FIRST;
+
+# [ERROR] mysql_ha_read: Got error 12719 when reading table 't'
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY 'PWD1';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD1');
+CREATE TABLE t (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SET GLOBAL init_connect="SELECT 1";
+SELECT c FROM t;
+HANDLER t OPEN;
+HANDLER t READ FIRST;
+
+# [ERROR] Got error 12719 when reading table './test/t0'
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY 'PWD0';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD0');
+CREATE TABLE t (c INT);
+CREATE TABLE t0 (a INT,b INT,PRIMARY KEY(a),KEY ab (a,b)) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+ANALYZE SELECT 1 FROM t0;
+CREATE OR REPLACE TABLE t (a INT) WITH SYSTEM VERSIONING ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SELECT 1 FROM t0 WHERE a=LEFT (@inserted_value,0);
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY 'PWD1';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD1');
+CREATE TABLE t (c INT);
+CREATE TABLE t1 (a DATE) ENGINE=MEMORY;
+CREATE TABLE t4 (c INT);
+CREATE TABLE t2 (d INT,KEY(d)) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+CREATE TABLE t5 (id_product INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+INSERT INTO t2 VALUES();
+CREATE TABLE t6 (a INT);
+CREATE OR REPLACE TABLE t (a INT,b INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SELECT * FROM t5;
+FLUSH TABLES WITH READ LOCK;
+UNLOCK TABLES;
+INSERT INTO t1 VALUES (NULL),('foo'),('bar'),(NULL);
+SELECT * FROM (t1 JOIN t2) NATURAL LEFT JOIN (t6 NATURAL JOIN t4);
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY 'PWD1';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD1');
+CREATE TABLE t (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SET GLOBAL init_connect="dummy";
+SELECT c FROM t;
+HANDLER t OPEN;
+HANDLER t READ FIRST;
