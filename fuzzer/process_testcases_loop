@@ -9,14 +9,16 @@ else
 fi
 
 if [ "${STY}" == "" ]; then
-  echo "Not a screen, restarting myself inside a screen"
+  echo "Not a screen, restarting myself inside a screen"a
+  echo "If the screen terminates quickly, check BASEDIR in process_testcases is set correctly!"
+  sleep 1
   screen -admS "process_testcases_loop" bash -c "./$0"
   sleep 1
   screen -d -r "process_testcases_loop"
   return 2> /dev/null; exit 0
 fi
 
-FILTER='grep|vi process_testcases|vim process_testcases|process_testcases_loop'
+FILTER='grep|vi process_testcases|vim process_testcases|loop'
 while :; do
   if [ -z "$(screen -ls | grep 'process_testcases' | grep -vE "${FILTER}")" ]; then
     echo "process_testcases screen not found, terminating any running instances of process_testcases at $(date)..."

@@ -5,6 +5,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1046
 MARIADB_ERROR_CODE|MariaDB error code: 1054
 MARIADB_ERROR_CODE|MariaDB error code: 1064
+MARIADB_ERROR_CODE|MariaDB error code: 1114  ## https://jira.mariadb.org/browse/MDEV-23212
 MARIADB_ERROR_CODE|MariaDB error code: 1146
 MARIADB_ERROR_CODE|MariaDB error code: 1193
 MARIADB_ERROR_CODE|MariaDB error code: 1231
@@ -135,6 +136,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!error|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                                  ## MDEV-30067
+!error|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|multi_delete::do_table_deletes                                                                ## MDEV-30067
+0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-23212
+SIGSEGV|subquery_types_allow_materialization|is_materialization_applicable|check_and_do_in_subquery_rewrites|JOIN::prepare                                                     ## MDEV-30052
+SIGSEGV|Item_equal_iterator<List_iterator_fast, Item>::get_curr_field|Item_equal::contains|Item_equal::merge_with_check|Item_equal::merge_into_list                            ## MDEV-30051
 (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)|SIGABRT|__malloc_assert|sysmalloc|_int_malloc|__GI___libc_malloc ## MDEV-29287
 (((nr) % (1LL << 24)) % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_time_packed_to_binary|Time::to_native|Item_cache_time::val_native|select_max_min_finder_subselect::cmp_native  ## MDEV-29924
 SIGSEGV|spider_db_mbase::fin_loop_check|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                     ## MDEV-30011
@@ -278,7 +284,9 @@ UT_LIST_GET_LEN(trx_list) == 0|SIGABRT|ut_dbg_assertion_failed|trx_sys_t::close|
 state() == s_must_replay || client_state_.current_error()|SIGABRT|wsrep::transaction::before_prepare|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-29140
 0|SIGABRT|Item_type_holder::val_int|Item::val_int_result|Item_cache_int::cache_value|Item_cache::has_value                                                                     ## MDEV-29093
 0|SIGABRT|Item_type_holder::val_str|Item::str_result|Item_cache_str::cache_value|Item_cache::has_value                                                                         ## MDEV-29093
+0|SIGABRT|Item_type_holder::val_real|Item::val_result|Item_cache_real::cache_value|Item_cache::has_value                                                                       ## MDEV-29093
 SIGSEGV|String::copy|Item_cache_str::cache_value|Item_cache::has_value|Item_cache_str::save_in_field                                                                           ## MDEV-29093
+SIGSEGV|String::copy|Item_cache_str::cache_value|Item_cache::has_value|Item_cache_str::val_str                                                                                 ## MDEV-29093
 length <= max_data_length()|SIGABRT|Field_blob::store_to_mem|Field_blob::store|Item::save_in_field_inner|Item::save_in_field                                                   ## MDEV-29087
 length <= max_data_length()|SIGABRT|Field_blob::store_to_mem|Field_blob::store|Item::save_in_field|Item_result_field::save_in_result_field                                     ## MDEV-29087
 length <= max_data_length()|SIGABRT|Field_blob::store|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                               ## MDEV-29087
