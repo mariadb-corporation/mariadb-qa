@@ -496,7 +496,7 @@ ctrl-c() {
 }
 
 savetrial() { # Only call this if you definitely want to save a trial
-  if [ "${PRELOAD}" == "1" ]; then
+  if [ "${PRELOAD}" == "1" -a ${ISSTARTED} -eq 1 ]; then  # It only makes sense to save the preload in case the server was ever started (and besides, the preload trace won't exist unless the server was started correctly), otherwise we will get incorrect messages here saying 'preload did not exist in savetrial()' which is correct, but not applicable
     PQUERY_DEFAULT_FILE=
     if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
       PQUERY_DEFAULT_FILE="${RUNDIR}/${TRIAL}/node1.md.galera_thread-0.sql"
@@ -520,8 +520,9 @@ savetrial() { # Only call this if you definitely want to save a trial
         mv ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql ${PQUERY_DEFAULT_FILE}
       fi
     fi
+    PQUERY_DEFAULT_FILE=
   fi
-  echoit "Moving rundir from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
+  echoit "Saving Trial: Moving rundir from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
   mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1 | tee -a /${WORKDIR}/pquery-run.log
   chmod -R +rX ${WORKDIR}/${TRIAL}/
   if [ "$PMM_CLEAN_TRIAL" == "1" ]; then
@@ -529,7 +530,6 @@ savetrial() { # Only call this if you definitely want to save a trial
     sudo pmm-admin remove mysql pq${RANDOMD}-${TRIAL} > /dev/null
   fi
   SAVED=$(($SAVED + 1))
-  PQUERY_DEFAULT_FILE=
 }
 
 removetrial() {
@@ -1819,7 +1819,7 @@ pquery_test() {
                 echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
                 mkdir -p "${PRE_SHUFFLE_SQL}"
                 if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-                  echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is gonig wrong"
+                  echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is going wrong"
                   PRE_SHUFFLE_SQL=0
                 fi
               fi
@@ -2113,7 +2113,9 @@ EOF
         # This shutdown in the main shutdown done for every standard/default options pquery trial
         timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
         if [ $? -gt 124 ]; then
-          echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+          if [ ${ISSTARTED} -eq 1 ]; then  # Only display a failed shutdown message if the server was correctly started to being with. We still try and do the shutdown above, "just in case" the server came up with a large delay
+            echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+          fi
           touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
           if [ "${RR_TRACING}" == "1" ]; then
             # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0)

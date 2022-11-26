@@ -1,0 +1,17 @@
+SET sql_mode='', GLOBAL table_open_cache=1;
+INSTALL SONAME 'ha_federatedx.so';
+CREATE USER federatedx@localhost IDENTIFIED BY '';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'federatedx',PASSWORD'');
+CREATE TABLE t1 (c INT) ENGINE=InnoDB;
+CREATE TABLE t2 (c INT) ENGINE=InnoDB;
+CREATE TABLE t3 CONNECTION='srv/t2' ENGINE=FEDERATED;
+INSERT INTO t1 (c) VALUES (0);
+XA START 0x1;
+SELECT * FROM mysql.roles_mapping;
+INSERT INTO t3 VALUES();
+UPDATE t2 SET a=0;
+SELECT * FROM mysql.roles_mapping;
+SELECT a();
+HANDLER t1 OPEN;
+INSERT INTO t1 SELECT * FROM t1;
+DELETE FROM mysql.tables_priv;

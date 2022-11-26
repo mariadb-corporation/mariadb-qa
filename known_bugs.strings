@@ -136,6 +136,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|federatedx_txn::sp_acquire|ha_federatedx::savepoint_set|ha_savepoint|trans_savepoint                                                                                   ## MDEV-30083
+SIGSEGV|federatedx_txn::acquire|ha_federatedx::open|handler::ha_open|open_table_from_share                                                                                     ## MDEV-30083
+SIGSEGV|federatedx_txn::txn_rollback|federatedx_txn::txn_rollback|ha_rollback_trans|xa_trans_force_rollback                                                                    ## MDEV-30083
+server->io_count == 0|SIGABRT|free_server|free_share|ha_federatedx::close|handler::ha_close                                                                                    ## MDEV-29214
 !error|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                                  ## MDEV-30067
 !error|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|multi_delete::do_table_deletes                                                                ## MDEV-30067
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-23212

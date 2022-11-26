@@ -860,7 +860,7 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   sed -i 's|^KNOWN_BUGS_LOC=[^#]\+|KNOWN_BUGS_LOC="${HOME}/mariadb-qa/known_bugs.strings"   |' ./reducer_new_text_string.sh
   sed -i 's|^FORCE_SKIPV=0|FORCE_SKIPV=1|' ./reducer_new_text_string.sh
   sed -i 's|^USE_NEW_TEXT_STRING=0|USE_NEW_TEXT_STRING=1|' ./reducer_new_text_string.sh
-  sed -i 's|^STAGE1_LINES=[^#]\+|STAGE1_LINES=10   |' ./reducer_new_text_string.sh
+  sed -i 's|^STAGE1_LINES=[^#]\+|STAGE1_LINES=100  |' ./reducer_new_text_string.sh
   sed -i 's|^SCAN_FOR_NEW_BUGS=[^#]\+|SCAN_FOR_NEW_BUGS=1   |' ./reducer_new_text_string.sh
   sed -i 's|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR="/data/NEWBUGS"   |' ./reducer_new_text_string.sh
   sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="${HOME}/mariadb-qa/new_text_string.sh"   |' ./reducer_new_text_string.sh
