@@ -136,6 +136,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+status == 0|SIGABRT|add_role_user_mapping_action|my_hash_iterate|rebuild_role_grants|mysql_rename_user                                                                         ## MDEV-30138
 SIGSEGV|federatedx_txn::sp_acquire|ha_federatedx::savepoint_set|ha_savepoint|trans_savepoint                                                                                   ## MDEV-30083
 SIGSEGV|federatedx_txn::acquire|ha_federatedx::open|handler::ha_open|open_table_from_share                                                                                     ## MDEV-30083
 SIGSEGV|federatedx_txn::txn_rollback|federatedx_txn::txn_rollback|ha_rollback_trans|xa_trans_force_rollback                                                                    ## MDEV-30083
