@@ -9,6 +9,10 @@ RANDOM=$(date +%s%N | cut -b10-19)
 # Filter the following text (regex aware) from INIT_TOOL startup
 FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved|^[2-9][0-9][0-9][0-9][0-9][0-9] [0-2][0-9]:|^20[2-9][0-9]|See the manual|start the MySQL daemon|bin/mysqld_safe|test the MySQL daemon with|latest information about|http://|https://|by buying support/|Found existing config file|Because this file might be in use|but was used in bootstrap|when you later start the server|new default config file was created|compare it with your file|root.*new.*password|Alternatively you can run|will be used by default|You may edit this file to change|Filling help tables|TIMESTAMP with implicit DEFAULT value|You can find the latest source|the maria-discuss email list|Please check all of the above|Optimizer switch:'
 
+# Ensure that if AFL variables were set, they are cleared first to avoid the server not starting due to 'shmat for map: Bad file descriptor'
+export -n __AFL_SHM_ID
+export -n AFL_MAP_SIZE
+
 # Find empty port
 # (**) IMPORTANT WARNING! The init_empty_port scan in startup.sh uses a different range than the matching function in
 # pquery-run.sh, reducer.sh and reducer-STABLE.sh. These scripts use 13-65K whereas here we use 10-13K to avoid
@@ -172,8 +176,8 @@ else
 fi
 
 # Setup scritps
-rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery test*timed wipe* clean_failing_queries memory_use_trace afl ml mlp 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
+rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery test*timed wipe* clean_failing_queries memory_use_trace afl* ml mlp 2>/dev/null
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init | aflnew"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -185,9 +189,13 @@ else
 fi
 
 # AFL Squirrel
-if [ -r ${HOME}/mariadb-qa/fuzzer/afl ]; then
-  ln -s ${HOME}/mariadb-qa/fuzzer/afl ./afl
-fi
+# OLD
+#if [ -r ${HOME}/mariadb-qa/fuzzer/afl ]; then
+#  ln -s ${HOME}/mariadb-qa/fuzzer/afl ./afl
+#fi
+# NEW  (Note that we can clear __AFL_SHM_ID and AFL_MAP_SIZE ocne server is started as it maintains the same when already started)
+echo "./kill >/dev/null 2>&1; rm ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
+chmod +x aflnew
 
 #GR startup scripts
 if [[ $GRP_RPL -eq 1 ]]; then

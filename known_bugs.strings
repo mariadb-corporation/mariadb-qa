@@ -136,6 +136,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables|handle_delayed_insert                                                                                  ## MDEV-29932
+SIGSEGV|Virtual_column_info::cleanup_session_expr|Backtrace stopped: Cannot access memory at address                                                                           ## MDEV-29932
+SIGSEGV|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables                                                              ## MDEV-29932
 SIGSEGV|federatedx_txn::sp_acquire|ha_federatedx::savepoint_set|ha_savepoint|trans_savepoint                                                                                   ## MDEV-30083
 SIGSEGV|federatedx_txn::acquire|ha_federatedx::open|handler::ha_open|open_table_from_share                                                                                     ## MDEV-30083
 SIGSEGV|federatedx_txn::txn_rollback|federatedx_txn::txn_rollback|ha_rollback_trans|xa_trans_force_rollback                                                                    ## MDEV-30083

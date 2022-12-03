@@ -83,6 +83,9 @@ if [ ${MDG} -ne 1 ]; then
   grep "CT NAME_CONST('a', -(1 [ANDOR]\+ 2)) [ANDOR]\+ 1" */log/master.err 2>/dev/null | sed 's|/.*||' | xargs -I{} ~/mariadb-qa/pquery-del-trial.sh {}  #http://bugs.mysql.com/bug.php?id=81407
 fi
 
+# Delete trials which have a corrupted index (error 126) as main outcome/uniqueID, almost surely caused by enabling aria_encrypt_tables without correct setup
+${HOME}/pr | grep -m1 'GOT_ERROR|Got error 126|Index is corrupted' | grep -o 'times: reducers.*' | tr ',' '\n' | grep -o '[0-9]\+' | xargs -I{} grep --binary-files=text -iEl 'aria_encrypt_tables[ \t]*=[ \t]*1|aria_encrypt_tables[ \t]*=[ \t]*ON' {}/default.node.tld_thread-0.sql | grep -o '^[0-9]\+' | xargs -I{} ${HOME}/dt {} 1
+
 # Check if this an automated (pquery-reach.sh or /data/clean_all) run, which should have no output
 if [ "${1}" != "reach" ]; then
   if [ -d ./bundles ]; then

@@ -166,7 +166,6 @@ alias mul='./multirun_loop'  # From a BASEDIR, loop in.sql till a core is found 
 alias mu='./multirun'  # From a BASEDIR, loop in.sql till a crash is observed 
 alias mup='./multirun_pquery'  # From a BASEDIR, loop in.sql, using pquery, till a crash is observed
 alias my='./my'      # List simplified testcases in current (pquery) workdir
-alias gdb='./gdb'    # Start gdb in the current BASEDIR or trial dir, assuming there is a core in /data
 alias stack='./stack'  # Produce a stack for the core in /data (run from within a BASEDIR or trial dir)
 alias as='cd /test; ./allstrings'  # Show UniqueID's per version after running ${HOME}/b (b)
 alias asm='cd /test; ./allstrings_merged'  # Show a list of merged UniqueID's seen after running ${HOME}/b (b)
