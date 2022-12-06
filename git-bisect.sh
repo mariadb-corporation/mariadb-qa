@@ -9,11 +9,11 @@ UPDATETREE=1                                                        # Set to 1 t
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-LAST_KNOWN_GOOD_COMMIT='b3df1ec97aacc27678c44eefe56ea8680456d608'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='50c5743adc87e1cdec1431a02558f6540fe5a6d5'   # Revision of first known bad commit
-TESTCASE='/test/in2.sql'                                            # The testcase to be tested
+LAST_KNOWN_GOOD_COMMIT='b4e7803a6f4c734fc5f06a0b0d78285510ae0f48'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='936436ef437c73911c18854a8ce8dad1216331b8'   # Revision of first known bad commit
+TESTCASE='/test/in3.sql'                                            # The testcase to be tested
 UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
-TEXT='my_time_packed_to_binary'                                     # The string to scan for in the error log [Exclusive]
+TEXT='void acl_update_role'                                         # The string to scan for in the error log [Exclusive]
 # [Exclusove]: Note that UNIQUEID and TEXT are mutually exclusive: do not set both
 # Leave both UNIQUEID and TEXT empty to scan for core files instead
 

@@ -136,6 +136,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+strcasecmp(rolename, public_name.str) || acl_public == role|SIGABRT|acl_update_role|replace_user_table|mysql_grant|Sql_cmd_grant_table::execute_table_mask                     ## MDEV-30154
 SIGSEGV|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables|handle_delayed_insert                                                                                  ## MDEV-29932
 SIGSEGV|Virtual_column_info::cleanup_session_expr|Backtrace stopped: Cannot access memory at address                                                                           ## MDEV-29932
 SIGSEGV|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables                                                              ## MDEV-29932

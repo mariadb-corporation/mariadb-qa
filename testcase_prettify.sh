@@ -30,6 +30,7 @@ cat "${1}" | tr -d '`' | \
        s| as | AS |gi; \
        s|analyse|ANALYSE|gi; \
        s|do |DO |gi; \
+       s|public|PUBLIC|gi; \
        s|round|ROUND|gi; \
        s|convert|CONVERT|gi; \
        s|int|INT|gi;s|integer|INT|gi; \

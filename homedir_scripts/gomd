@@ -9,8 +9,8 @@ RUNSOPT=1
 RUNSDBG=2
 #CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD-spider-all.conf
-CONF=pquery-run-MD-federated.conf
-#CONF=pquery-run-MD.conf
+#CONF=pquery-run-MD-federated.conf
+CONF=pquery-run-MD.conf
 #CONF=pquery-run-MD-allb.conf
 
 #CONF=pquery-run-MD-btrfs.conf
