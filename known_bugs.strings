@@ -141,6 +141,8 @@ SIGABRT|__cxa_pure_virtual|spider_db_print_item_type|spider_mbase_handler::appen
 SIGSEGV|spider_db_print_item_type|spider_mbase_handler::append_condition|spider_mbase_handler::append_condition_part|ha_spider::append_condition_sql_part                      ## MDEV-30191
 fixed()|SIGABRT|Item_sp_variable::val_str|spider_db_open_item_string|spider_db_print_item_type|spider_db_mbase_util::open_item_func                                            ## MDEV-30191
 fixed|SIGABRT|Item_sp_variable::val_str|spider_db_open_item_string|spider_db_print_item_type|spider_db_mbase_util::open_item_func                                              ## MDEV-30191
+info->end_of_file - (info->append_read_pos-info->write_buffer) == (res= inline_mysql_file_tell(info->file, (myf) (0)))|SIGABRT|my_b_append_tell|my_b_safe_tell|Log_event_writer::pos|Log_event::write_header ## MDEV-30176
+args[0]->type_handler()->mysql_timestamp_type() == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-30175
 strcasecmp(rolename, public_name.str) || acl_public == role|SIGABRT|acl_update_role|replace_user_table|mysql_grant|Sql_cmd_grant_table::execute_table_mask                     ## MDEV-30154
 SIGSEGV|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables|handle_delayed_insert                                                                                  ## MDEV-29932
 SIGSEGV|Virtual_column_info::cleanup_session_expr|Backtrace stopped: Cannot access memory at address                                                                           ## MDEV-29932
