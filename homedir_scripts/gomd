@@ -5,7 +5,7 @@
 BASEDIR=/test/MD291122-mariadb-10.11.2-linux-x86_64-dbg
 #SLEEP_MD071022-mariadb-10.11.0-linux-x86_64-opt
 #MDEV-27233_MD011022-mariadb-10.7.7-linux-x86_64-dbg
-RUNSOPT=1
+RUNSOPT=2
 RUNSDBG=2
 #CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD-spider-all.conf

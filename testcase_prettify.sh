@@ -330,6 +330,7 @@ cat "${1}" | tr -d '`' | \
        s|day_second|DAY_SECOND|gi; \
        s|day_minute|DAY_MINUTE|gi; \
        s|day_hour|DAY_HOUR|gi; \
+       s|minute_second|MINUTE_SECOND|gi; \
        s|system_time|SYSTEM_TIME|gi; \
        s|export_set|EXPORT_SET|gi; \
        s|unix_timestamp|UNIX_TIMESTAMP|gi; \

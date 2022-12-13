@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_print_item_type|spider_mbase_handler::append_condition|spider_mbase_handler::append_condition_part|ha_spider::append_condition_sql_part ## MDEV-30191
 ASAN|use-after-poison|sql/table.cc|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables                                   ## MDEV-29932
 ASAN|use-after-poison|sql/field.h|Virtual_column_info::need_refix|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table                        ## MDEV-29932
 ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next|List_iterator<Item>::operator++|subquery_types_allow_materialization|is_materialization_applicable               ## MDEV-30052
