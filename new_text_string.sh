@@ -26,6 +26,7 @@ if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" 
 fi
 FRAMESONLY=0
 SHOWINFO=0
+ERROR_LOG=
 MYSQLD=
 TRIAL=
 LOC=${PWD}
@@ -46,14 +47,17 @@ if [ ! -z "${1}" ]; then
     if [ "$(readlink -f "${1}" | xargs file | grep -o 'ELF 64-bit LSB shared object')" == "ELF 64-bit LSB shared object" ]; then
       MYSQLD="${1}"
     else
-      echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script"
+      echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script [ref #1]"
       exit 1
     fi
   elif [ -d "${1}" -a "$(echo "${1}" | grep -o '[0-9]\+')" == "${1}" ]; then
     TRIAL="${1}"
     LOC="${PWD}/${TRIAL}"
+  elif grep --binary-files=text -q '#[0-9]  ' "${1}"; then  # Likely raw GDB trace was passed, parse as such
+    echo "$(cat "${1}" | grep --binary-files=text -v '^[ \t]*$' | tr '\n' ' ' | sed 's|\(#[0-9]\+[ ]\+\)|\n\1|g' | grep --binary-files=text -v '^[ \t]*$' | head -n4 | sed 's|^#[0-9]\+[ ]\+||;s|^0x[0-9A-Fa-f]\+[ ]\+||;s| [^ ]\+$||;s|[ ]*(.*||' | tr '\n' '|' | sed 's/|$/\n/' | sed 's/^/RAW_GDB_UID|/' )"  # Output is based on GDB trace only (not a true UniqueID)
+    exit 0
   else
-    echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script"
+    echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script [ref #2]"
     exit 1
   fi
 fi
