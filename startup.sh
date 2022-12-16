@@ -194,7 +194,7 @@ fi
 #  ln -s ${HOME}/mariadb-qa/fuzzer/afl ./afl
 #fi
 # NEW  (Note that we can clear __AFL_SHM_ID and AFL_MAP_SIZE ocne server is started as it maintains the same when already started)
-echo "./kill >/dev/null 2>&1; rm ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
+echo "./kill >/dev/null 2>&1; rm -f ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
 chmod +x aflnew
 
 #GR startup scripts
