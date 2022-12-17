@@ -205,7 +205,9 @@ context|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix
 context|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed                                                             ## MDEV-29731
 context|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_case::fix_fields                                                             ## MDEV-29731
 context|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_like::fix_fields                                                             ## MDEV-29731
+SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|find_field_in_natural_join|find_field_in_table_ref                                                                   ## MDEV-29731
 SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item_func::fix_fields                                                                     ## MDEV-29731
+SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed|find_field_in_natural_join                                                                ## MDEV-29731 (25292 tree only)
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|Query_cache::lock|Query_cache::invalidate_table                                                                                ## MDEV-29708
 SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute|mysql_execute_command                                                                      ## MDEV-29706
 SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute                                                                   ## MDEV-29706
@@ -415,6 +417,7 @@ SIGSEGV|do_lookup_x|_dl_lookup_symbol_x|do_sym|_dl_sym                          
 SIGSEGV|sub_select|do_select|JOIN::exec_inner|JOIN::exec                                                                                                                       ## MDEV-28505
 SIGSEGV|With_element::get_name|With_element::get_name_str|With_clause::find_table_def|find_table_def_in_with_clauses                                                           ## MDEV-28504
 SIGSEGV|get_addon_fields|Sort_param::init_for_filesort|filesort|create_sort_index                                                                                              ## MDEV-28503
+SIGSEGV|Item_subselect::is_expensive|Item_args::walk_args|Item_func_or_sum::walk|Item_args::walk_args                                                                          ## MDEV-28502 (25292 tree only)
 SIGSEGV|Item_subselect::is_expensive|Item_args::walk_args|Item_func_or_sum::walk|Item_direct_view_ref::walk                                                                    ## MDEV-28502
 SIGSEGV|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_args::walk_args                                                          ## MDEV-28502
 SIGSEGV|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_in_subselect::walk                                                       ## MDEV-28502

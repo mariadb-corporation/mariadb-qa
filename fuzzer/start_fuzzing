@@ -7,7 +7,7 @@ else
   export GAL_RUN=""
 fi
 # User variables
-BASEDIR=/test/AFL-MD200622-mariadb-10.10.0-linux-x86_64  # BASEDIR directory of server to test (MariaDB, MySQL, Percona)
+BASEDIR=/test/AFL-ASAN-MD171222-mariadb-10.11.2-linux-x86_64  # BASEDIR directory of server to test (MariaDB, MySQL, Percona)
 
 # Script variables; do not change
 FUZZING_ROOT=~/fuzzing/fuzzing_root
@@ -92,6 +92,11 @@ for((i=0;i<10;i++)); do
   cd ${FUZZING_ROOT}
   ./go ${i} /dev/shm/afl-node-${i}
   cd /dev/shm/afl-node-${i}
+  if [ ! -r ./afl ]; then
+    echo "Assert: ./afl is missing in the AFL node basedir /dev/shm/afl-node-${i}" 
+    echo "This is likely an issue with the ~/start script (~/mariadb-qa/startup.sh) not creating the ./afl link script"
+    exit 1
+  fi
   ./afl ${i}
   cd ${CURDIR}
   echo "Fuzzing node ${i}/9 started..."

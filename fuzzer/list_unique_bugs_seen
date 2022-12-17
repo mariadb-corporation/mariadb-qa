@@ -4,8 +4,8 @@
 echo 'Deleting known bugs...'
 ./del_known_bugs
 echo 'Reporting outcomes...'
-BUGS=$(find . | grep '\.string' | xargs -I{} cat {} | sort -u)
-COUNT="$(printf "%s\n" "${BUGS}" | wc -l)"
+BUGS=$(find . | grep -vEi 'PREVIOUS|OLD|DONE' | grep '\.string' | xargs -I{} cat {} | sort -u)
+COUNT="$(printf "%s\n" "${BUGS}" | grep -v '^[ \t]*$' | wc -l)"
 echo "----------------------------------------- ${COUNT} Bugs ---------------"
 printf "%s\n" "${BUGS}"
 echo '----------------------------------------------------------------'

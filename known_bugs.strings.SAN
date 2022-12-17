@@ -5,6 +5,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|stack-buffer-overflow|storage/spider/spd_db_mysql.cc|__interceptor_strlen.part.0|spider_db_mbase_util::open_item_func|spider_db_open_item_func|spider_db_print_item_type  ## MDEV-29502
+ASAN|stack-buffer-overflow|storage/spider/spd_db_mysql.cc|__interceptor_strlen.part.0|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_list_item_select|spider_group_by_handler::init_scan ## MDEV-29502
+ASAN|heap-buffer-overflow|storage/spider/spd_db_mysql.cc|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func|spider_db_fetch_for_item_sum_funcs|spider_db_fetch_table ## MDEV-29502
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_print_item_type|spider_mbase_handler::append_condition|spider_mbase_handler::append_condition_part|ha_spider::append_condition_sql_part ## MDEV-30191
 ASAN|use-after-poison|sql/table.cc|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables                                   ## MDEV-29932
 ASAN|use-after-poison|sql/field.h|Virtual_column_info::need_refix|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table                        ## MDEV-29932

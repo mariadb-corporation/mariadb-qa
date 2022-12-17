@@ -28,11 +28,13 @@ ln -fs /home/${USER}/mariadb-qa/fuzzer/del_known_bugs /home/${USER}/fuzzing/del_
 ln -fs /home/${USER}/mariadb-qa/fuzzer/list_unique_bugs_seen /home/${USER}/fuzzing/list_unique_bugs_seen
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reports /home/${USER}/fuzzing/reports
 ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid /home/${USER}/fuzzing/find_uniqueid
+ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid_sql /home/${USER}/fuzzing/find_uniqueid_sql
 ln -fs /home/${USER}/mariadb-qa/fuzzer/queue_stats /home/${USER}/fuzzing/queue_stats
 ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases /home/${USER}/fuzzing/process_testcases
 ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases_loop /home/${USER}/fuzzing/process_testcases_loop
 ln -fs /home/${USER}/mariadb-qa/fuzzer/clean_queues /home/${USER}/fuzzing/clean_queues
 ln -fs /home/${USER}/mariadb-qa/fuzzer/check_loops /home/${USER}/fuzzing/check_loops
+ln -fs /home/${USER}/mariadb-qa/fuzzer/loop_screens /home/${USER}/fuzzing/loop_screens
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_all_fuzzing /home/${USER}/fuzzing/stop_all_fuzzing
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_process_testcases /home/${USER}/fuzzing/stop_process_testcases
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_reducers_run /home/${USER}/fuzzing/stop_reducers_run
@@ -124,7 +126,7 @@ alias b='${HOME}/b'        # Start bug report for in.sql in current BASEDIR
 alias bs='${HOME}/b SAN'   # Start SAN based bug report for in.sql in current BASEDIR
 alias bd='screen -admS \"dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_dbg.sh; bash\"; screen -d -r dbg_build'  # Start a debug build for the current sourcedir (ref /test/clone.sh)
 alias bo='screen -admS \"opt_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh; bash\"; screen -d -r opt_build'  # Idem, optimized build
-alias ba='screen -admS \"opt_and_dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh & sleep 90; ${HOME}/mariadb-qa/build_mdpsms_dbg.sh; bash\"; screen -d -r opt_and_dbg_build'  # Idem, both
+alias ba='screen -admS \"opt_and_dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh & sleep 70; ${HOME}/mariadb-qa/build_mdpsms_dbg.sh; bash\"; screen -d -r opt_and_dbg_build'  # Idem, both
 alias ca='cd /data; ./clean_all'  # Goes through all workdirs, deleting all [recently] added known bugs'
 alias gc='git commit -a -m '  # Commit to git with a given message (pass quoted message)
 alias gs='git status'  # Show git status of current directory

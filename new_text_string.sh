@@ -44,7 +44,7 @@ if [ ! -z "${1}" ]; then
   elif [ "${1}" == "FRAMESONLY" ]; then  # Used in automation, ref mass_bug_report.sh
     FRAMESONLY=1
   elif [ -f "${1}" -a -x "${1}" ]; then
-    if [ "$(readlink -f "${1}" | xargs file | grep -o 'ELF 64-bit LSB shared object')" == "ELF 64-bit LSB shared object" ]; then
+    if [ "$(readlink -f "${1}" | xargs file | grep -o 'ELF 64-bit LSB')" == "ELF 64-bit LSB" ]; then
       MYSQLD="${1}"
     else
       echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script [ref #1]"

@@ -19,9 +19,14 @@ if [ "${STY}" == "" ]; then
 fi
 
 FILTER='grep|vi process_testcases|vim process_testcases|loop'
+STARTUP=1
 while :; do
   if [ -z "$(screen -ls | grep 'process_testcases' | grep -vE "${FILTER}")" ]; then
-    echo "process_testcases screen not found, terminating any running instances of process_testcases at $(date)..."
+    if [ "${STARTUP}" -ne 1 ]; then
+      echo "process_testcases screen not found, terminating any running instances of process_testcases at $(date)..."
+    else
+      STARTUP=0  # First startup, i.e. message does not make sense yet
+    fi
     ps -ef | grep 'process_testcases' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
     ps -ef | grep 'process_testcases' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {}

@@ -25,11 +25,11 @@ INSTANCE="afl${1}"
 
 if [ "${STY}" == "" ]; then
   THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
-  SCREEN_NAME="srv${1}-afl"
-  echo "Not a screen, restarting myself inside a screen"
+  SCREEN_NAME="afl${1}-srv"
+  #echo "Not a screen, restarting myself inside a screen"  # Do not report on this as it confuses ~/fuzzing/startup.sh script output
   screen -admS "${SCREEN_NAME}" bash -c "${THIS_SCRIPT} ${*}"
   sleep 1
-  screen -d -r "${SCREEN_NAME}"
+  #screen -d -r "${SCREEN_NAME}"  # Do not connect to the screen as this halts ~/fuzzing/startup.sh from starting up correctly (i.e. the screen is connected to for the/this particular node being started but the startup.sh script is thereby halted/paused)
   return 2> /dev/null; exit 0
 fi
 
@@ -52,27 +52,32 @@ fi
 #sed -i "s|/test/afl_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # First replace
 #sed -i "s|/test/afl[0-9]_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Subsequent replaces
 
-if [ ! -z ${GAL_RUN} ]; then
+if [ ! -z "${GAL_RUN}" ]; then
   SCRIPTSTOMOD="gal_cl gal_cl_noprompt gal_cl_noprompt_nobinary gal_multirun gal_multirun_pquery start_gypsy gal_start gal_stop gal_sysbench_prepare gal_sysbench_run gal_test gal_test_pquery gal_wipe n1.cnf"
-  sed -i "s|/dev/shm/afl-node-${1}/node1/node1_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
+  sed -i "s|/dev/shm/afl-node-${1}/node1/node1_socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -vE 'FIREWORKS-BUGS|No such file or directory'  # Make it universal if not done already
 else
   SCRIPTSTOMOD="cl cl_noprompt cl_noprompt_nobinary m multirun multirun_pquery multirun_pquery_rr multirun_rr repl_setup start_gypsy start_rr start_valgrind start stop sysbench_prepare sysbench_run test test_pquery wipe"
-  sed -i "s|/dev/shm/afl-node-${1}/socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -v 'FIREWORKS-BUGS'  # Make it universal if not done already
+  sed -i "s|/dev/shm/afl-node-${1}/socket.sock|/test/afl${1}_socket.sock|g" ${SCRIPTSTOMOD} 2>&1 | grep -vE 'FIREWORKS-BUGS|No such file or directory'  # Make it universal if not done already
 fi
 
 sed -i "s|^/test/|timeout --signal=9 ${MAX_RUNTIME_MIN}m /test/|" start  # Restart instance every 15 minutes to avoid lockups. Note: this will sometimes create a single dud testcase
 
 rm -f /test/afl${1}_socket.sock
 
+# Prep *SAN
+export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
+export UBSAN_OPTIONS=print_stacktrace=1
+export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
+
 echo 'Remember that this needs to be run from a clean shell where no AFL variables were ever set, EVEN if they were made empty before starting! However, restarting this script is fine.'
 echo "If you see '.shmat for map: Bad file descriptor' then __AFL_SHM_ID was likely set incorrectly!"
 sleep 2
 if [ ! -z ${GAL_RUN} ]; then
-  ./gal_no_cl
+  ./gal_no_cl --max_statement_time=1
   sleep 3
   ./gal_stop
 else
-  ./all_no_cl
+  ./all_no_cl --max_statement_time=1
   sleep 3
   ./stop
 fi
@@ -125,11 +130,11 @@ while :; do
     if [ ! -z ${GAL_RUN} ]; then
       ./gal_kill
       sleep 1
-      ./gal_no_cl
+      ./gal_no_cl --max_statement_time=1
     else
       ./kill
       sleep 1
-      ./all_no_cl
+      ./all_no_cl --max_statement_time=1
     fi
     sleep 20 # give server time start before looping
     clear
