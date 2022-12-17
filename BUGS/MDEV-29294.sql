@@ -1,2 +1,6 @@
-CREATE TABLE t ( c INT ) ENGINE=MYISAM ;
-SELECT *  FROM t WHERE c = 1 AND ( 3 = 0 OR  (SELECT c = 1 OR (SELECT 3 WHERE c = c ) = 3));
+CREATE TABLE t (c INT)
+SELECT * FROM t WHERE c = 1 AND ( 3 = 0 OR  (SELECT c = 1 OR (SELECT 3 WHERE c = c ) = 3));
+
+CREATE TABLE t (c TEXT) ENGINE=InnoDB;
+SET SESSION query_alloc_block_size=1;
+SELECT * FROM t WHERE c=1 AND (3=0 OR (SELECT c=1 OR (SELECT 3 WHERE c=c)=3));

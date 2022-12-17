@@ -5,6 +5,13 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct Item_subselect'|sql/item.cc|mark_select_range_as_dependent|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed ## MDEV-29262
+UBSAN|member access within null pointer of type 'struct Item_subselect'|sql/item.cc|mark_select_range_as_dependent|find_field_in_tables|find_order_in_list|setup_group         ## MDEV-29262
+ASAN|use-after-poison|sql/sql_list.h|base_list::operator=|base_list::append|List<Item_equal>::append|Item_cond::remove_eq_conds                                                ## MDEV-29294
+UBSAN|downcast of address X which does not point to an object of type 'Item_cond_and'|sql/sql_select.cc|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize ## MDEV-29294
+UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_args::walk_args ## MDEV-28502
+UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_in_subselect::walk ## MDEV-28502
+UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::walk|Item_args::walk_args|Item_func_or_sum::walk ## MDEV-28502
 ASAN|stack-buffer-overflow|storage/spider/spd_db_mysql.cc|__interceptor_strlen.part.0|spider_db_mbase_util::open_item_func|spider_db_open_item_func|spider_db_print_item_type  ## MDEV-29502
 ASAN|stack-buffer-overflow|storage/spider/spd_db_mysql.cc|__interceptor_strlen.part.0|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_list_item_select|spider_group_by_handler::init_scan ## MDEV-29502
 ASAN|heap-buffer-overflow|storage/spider/spd_db_mysql.cc|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func|spider_db_fetch_for_item_sum_funcs|spider_db_fetch_table ## MDEV-29502
