@@ -27,8 +27,9 @@ ln -fs /home/${USER}/mariadb-qa/fuzzer/start_fuzzing /home/${USER}/fuzzing/start
 ln -fs /home/${USER}/mariadb-qa/fuzzer/del_known_bugs /home/${USER}/fuzzing/del_known_bugs
 ln -fs /home/${USER}/mariadb-qa/fuzzer/list_unique_bugs_seen /home/${USER}/fuzzing/list_unique_bugs_seen
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reports /home/${USER}/fuzzing/reports
+rm -f /home/${USER}/fuzzing/find_uniqueid_sql  # REMOVE LATER (TEMPORARY BROKEN LINK FIXUP)
 ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid /home/${USER}/fuzzing/find_uniqueid
-ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid_sql /home/${USER}/fuzzing/find_uniqueid_sql
+ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid_strings /home/${USER}/fuzzing/find_uniqueid_strings
 ln -fs /home/${USER}/mariadb-qa/fuzzer/queue_stats /home/${USER}/fuzzing/queue_stats
 ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases /home/${USER}/fuzzing/process_testcases
 ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases_loop /home/${USER}/fuzzing/process_testcases_loop

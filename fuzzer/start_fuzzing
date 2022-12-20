@@ -1,16 +1,18 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+# Expanded by Ramesh Sivaraman, MariaDB
+
+# User variables
+BASEDIR=/test/AFL-ASAN-MD171222-mariadb-10.11.2-linux-x86_64  # BASEDIR directory of server to test (MariaDB, MySQL, Percona)
+
+# Script variables; do not change
+FUZZING_ROOT=~/fuzzing/fuzzing_root
 
 if [[ "${1}" == "GAL" ]]; then
   export GAL_RUN="GAL"
 else
   export GAL_RUN=""
 fi
-# User variables
-BASEDIR=/test/AFL-ASAN-MD171222-mariadb-10.11.2-linux-x86_64  # BASEDIR directory of server to test (MariaDB, MySQL, Percona)
-
-# Script variables; do not change
-FUZZING_ROOT=~/fuzzing/fuzzing_root
 
 touch /dev/shm/tst 2>/dev/null
 if [ ! -r /dev/shm/tst ]; then
