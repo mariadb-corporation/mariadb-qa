@@ -91,6 +91,9 @@ PREFIX=
 FB=0
 MS=0
 MD=0
+if [ ${MYSQL_VERSION_MAJOR} -eq 8 ]; then  # CMake Error at cmake/zlib.cmake:136 (MESSAGE): ZLIB version must be at least 1.2.12, found 1.2.11.
+  ZLIB="-DWITH_ZLIB=bundled"
+fi
 if [ ${MYSQL_VERSION_MAJOR} -eq 10 ]; then
   MD=1
   if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then
@@ -113,7 +116,7 @@ else
 fi
 
 # Fix pcre2 link
-sed -i 's|http://ftp.pcre.org/pub/pcre/|https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.37/|' cmake/pcre.cmake
+sed -i 's|http://ftp.pcre.org/pub/pcre/|https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.37/|' cmake/pcre.cmake 2>/dev/null
 
 # MySQL8 zlib Hack
 # Use -DWITH_ZLIB=bundled instead of =system for bug https://bugs.mysql.com/bug.php?id=89373

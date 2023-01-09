@@ -418,6 +418,7 @@ cat "${1}" | tr -d '`' | \
        s|des_decrypt|DES_DECRYPT|gi; \
        s|sql_thread|SQL_THREAD|gi; \
        s|io_thread|IO_THREAD|gi; \
+       s|(VALUE|(value|g; \
        s|( (|((|g;s|) )|))|g; \
        s|  | |gi"
 
