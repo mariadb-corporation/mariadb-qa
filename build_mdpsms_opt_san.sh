@@ -107,7 +107,7 @@ if [ ${MYSQL_VERSION_MAJOR} -eq 8 ]; then  # CMake Error at cmake/zlib.cmake:136
   ZLIB="-DWITH_ZLIB=bundled"
 fi
 DATE=$(date +'%d%m%y')
-if [ ${MYSQL_VERSION_MAJOR} -eq 10 ]; then
+if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-1]$ ]]; then
   MD=1
   PREFIX="${PREFIX}MD${DATE}"
   ZLIB="-DWITH_ZLIB=bundled"  # 10.1 will fail with requirement for WITH_ZLIB=bundled. Building 10.1-10.5 with bundled ftm.
