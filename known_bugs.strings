@@ -136,6 +136,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+trx->error_state == DB_SUCCESS|SIGABRT|ut_dbg_assertion_failed|que_run_threads|fts_eval_sql|fts_config_set_value                                                               ## MDEV-30363
+trx->error_state == DB_SUCCESS|SIGABRT|ut_dbg_assertion_failed|que_run_threads|que_run_threads|fts_eval_sql                                                                    ## MDEV-30363
 SIGSEGV|st_select_lex_unit::first_select|st_select_lex_unit::set_unique_exclude|st_select_lex_unit::set_unique_exclude|st_select_lex_unit::set_unique_exclude                  ## MDEV-30248
 auto_increment_value|SIGABRT|ha_partition::info|ha_partition::update_next_auto_inc_val|ha_partition::update_row|handler::ha_update_row                                         ## MDEV-21007
 SIGSEGV|spider_db_print_item_type|spider_mbase_handler::append_condition|ha_spider::append_condition_sql_part|spider_db_append_condition                                       ## MDEV-30191
