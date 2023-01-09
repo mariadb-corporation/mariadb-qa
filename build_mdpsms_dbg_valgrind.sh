@@ -91,7 +91,7 @@ MD=0
 if [ ${MYSQL_VERSION_MAJOR} -eq 8 ]; then  # CMake Error at cmake/zlib.cmake:136 (MESSAGE): ZLIB version must be at least 1.2.12, found 1.2.11.
   ZLIB="-DWITH_ZLIB=bundled"
 fi
-if [ ${MYSQL_VERSION_MAJOR} -eq 10 ]; then
+if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-1]$ ]]; then
   MD=1
   PREFIX="MD${DATE}"
   ZLIB="-DWITH_ZLIB=bundled"  # 10.1 will fail with requirement for WITH_ZLIB=bundled. Building 10.1-10.5 with bundled ftm.
