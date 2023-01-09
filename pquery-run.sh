@@ -2572,16 +2572,16 @@ VERSION_INFO=$(${BIN} --version | grep -oe '[58]\.[01567]' | head -n1)
 VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9][0-9]*' | head -n1)
 if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
 
-if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" -o "${VERSION_INFO_2}" == "10.9" -o "${VERSION_INFO_2}" == "10.10" -o "${VERSION_INFO_2}" == "10.11" -o "${VERSION_INFO_2}" == "10.12" -o "${VERSION_INFO_2}" == "10.13" ]; then
-  VERSION_INFO="5.6"
-  INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
-  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
-  START_OPT="--core-file --core"
-elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
+if [[ "${VERSION_INFO_2}" =~ ^10.[1-3]$ ]]; then
   VERSION_INFO="5.1"
   INIT_TOOL="${BASEDIR}/scripts/mysql_install_db"
   INIT_OPT="--no-defaults --force ${MYINIT}"
   START_OPT="--core"
+elif [[ "${VERSION_INFO_2}" =~ ^1[0-1].[0-9][0-9]* ]]; then
+  VERSION_INFO="5.6"
+  INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
+  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
+  START_OPT="--core-file --core"
 elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
   if [ -z "${MID}" ]; then
     echoit "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
