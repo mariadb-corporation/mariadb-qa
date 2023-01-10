@@ -25,7 +25,7 @@ fi
 #   - Scan original MTR file for multi-line statements and reconstruct (tr '\n' ' ' for example) to avoid half-statements ending up in resulting file
 
 # Internal variables
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')  # RANDOM: Random entropy pool init
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # RANDOM: Random entropy pool init
 TEMP_SQL=${FINAL_SQL}.tmp
 DIRECTORY="${1}"  # Should contain mysql-test directory as a first level subdirectory, see TESTS_PATH
 TESTS_PATH=$(echo ${DIRECTORY} | sed 's|$|/mysql-test/|;s|//|/|g')

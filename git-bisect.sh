@@ -18,7 +18,7 @@ TEXT='void acl_update_role'                                         # The string
 # Leave both UNIQUEID and TEXT empty to scan for core files instead
 
 # Script variables, do not change
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 TMPLOG1="/tmp/git-bisect-${RANDOM}${RANDOM}.out"
 TMPLOG2="/tmp/git-bisect-build_${RANDOM}${RANDOM}.exitcode"
 

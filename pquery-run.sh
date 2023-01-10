@@ -21,7 +21,7 @@ CONFIGURATION_FILE=pquery-run.conf # Do not use any path specifiers, the .conf f
 DISABLE_TOKUDB_AND_JEMALLOC=1
 
 # Internal variables: DO NOT CHANGE!
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
 SCRIPT_AND_PATH=$(readlink -f $0)
 SCRIPT=$(echo ${SCRIPT_AND_PATH} | sed 's|.*/||')
@@ -1832,7 +1832,7 @@ pquery_test() {
                 INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
                 WORKNRDIR=
                 echoit "Randomly pre-shuffling ${PRE_SHUFFLE_SQL_LINES} lines of SQL into ${INFILE_SHUFFLED} | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
-                RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')
+                RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
                 shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
               else
                 echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_SQL_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"

@@ -100,7 +100,7 @@ USE_PQUERY=0                    # On/Off (1/0) Enable to use pquery instead of t
 PQUERY_LOC="${SCRIPT_PWD}/pquery/pquery2-md"  # The pquery binary in mariadb-qa. To get this binary use:  cd ~; git clone https://github.com/Percona-QA/mariadb-qa.git
 
 # === Other options             # The options are not often changed
-CLI_MODE=1                      # When using the CLI; 0: sent SQL using a pipe, 1: sent SQL using --execute="SOURCE ..." command, 2: sent SQL using redirection (mysql < input.sql)
+CLI_MODE=2                      # When using the CLI; 0: sent SQL using a pipe, 1: sent SQL using --execute="SOURCE ..." command, 2: sent SQL using redirection (mysql < input.sql)
 ENABLE_QUERYTIMEOUT=0           # On/Off (1/0) Enable the Query Timeout function (which also enables and uses the MySQL event scheduler)
 QUERYTIMEOUT=90                 # Query timeout in sec. Note: queries terminated by the query timeout did not fully replay, and thus overall issue reproducibility may be affected
 LOAD_TIMEZONE_DATA=0            # On/Off (1/0) Enable loading Timezone data into the database (mainly applicable for RQG runs) (turned off by default=0 since 26.05.2016)
@@ -333,7 +333,7 @@ set +H
 ABORT_ACTIVE=0
 
 # Random entropy init
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 
 # Set SAN options
 # https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
@@ -1200,8 +1200,8 @@ multi_reducer(){
     echo_out "ASSERT: REDUCE_GLIBC_OR_SS_CRASHES is active, and we ended up in multi_reducer() function. This should not be possible as REDUCE_GLIBC_OR_SS_CRASHES uses a single thread only."
   fi
 
-  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any dangling subreducer processes are terminated"
-  kill_multi_reducer
+  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating any dangling subreducer processes"  # Cleanup, necessary, do not remove
+  kill_multi_reducer  # Cleanup, necessary, do not remove
 
   if [ "$STAGE" = "V" ]; then
     echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Starting $MULTI_THREADS verification subreducer threads to verify if the issue is sporadic ($WORKD/subreducer/)"
@@ -1828,6 +1828,14 @@ init_workdir_and_files(){
   if [ $USE_PQUERY -eq 0 ]; then
     if   [ ${CLI_MODE} -eq 0 ]; then echo_out "[Init] Using the mysql client for SQL replay. CLI_MODE: 0 (cat input.sql | mysql)";
     elif [ ${CLI_MODE} -eq 1 ]; then echo_out "[Init] Using the mysql client for SQL replay. CLI_MODE: 1 (mysql --execute='SOURCE input.sql')";  # input.sql is not the actual name, it is just use here for brevity/clarification purposes
+      # TODO: Remove this additional output once #81782 is fixed and --binary-mode is added elsewhere in this script (both in the actual replay module as well as in the WORK_RUN file creation)
+      echo_out "[Warning] Please note CLI_MODE=1 is currently not recommended for use, due to MySQL Bug #81782"
+      echo_out "[Warning] If your issue fails to reproduce, is is recommended to parse the input file as follows:"
+      echo_out "[Warning]   cat yourinputfile.sql | tr -d '\\0' > newinputfile.sql  # Then use newinputfile.sql instead"
+      echo_out "[Warning] before using this CLI mode - to avoid the SOURCE replay terminating early on a NULL character"
+      echo_out "[Warning] Once bug #81782 is fixed, --binary-mode can be used instead as CLI_MODE 0 and 2 currently use"
+      echo_out "[Warning] Note however that removing NULL characters from the input may reduce reproducibility"
+      echo_out "[Warning] In summary, please consider using CLI_MODE=0 or CLI_MODE=2 instead of CLI_MODE=1"
     elif [ ${CLI_MODE} -eq 2 ]; then echo_out "[Init] Using the mysql client for SQL replay. CLI_MODE: 2 (mysql < input.sql)";
     else echo "Error: CLI_MODE!=0,1,2: CLI_MODE=${CLI_MODE}"; exit 1; fi
   else
@@ -2069,7 +2077,7 @@ generate_run_scripts(){
     if [ "$CLI_MODE" == "" ]; then CLI_MODE=99; fi  # Leads to assert below
     case $CLI_MODE in
       0) echo "cat ./${EPOCH}.sql | \${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --binary-mode --force test" >> $WORK_RUN ;;
-      1) echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --execute=\"SOURCE ./${EPOCH}.sql;\" --force test" >> $WORK_RUN ;;  # When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.
+      1) echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --execute=\"SOURCE ./${EPOCH}.sql;\" --force test" >> $WORK_RUN ;;  # TODO When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.
       2) echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --binary-mode --force test < ./${EPOCH}.sql" >> $WORK_RUN ;;
       *) echo_out "Assert: default clause in CLI_MODE switchcase hit (in generate_run_scripts). This should not happen. CLI_MODE=${CLI_MODE}"; exit 1 ;;
     esac
@@ -2712,7 +2720,7 @@ cut_random_chunk(){
 
 cut_fireworks_chunk_and_shuffle(){
   echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [FIREWORKS] Chunking, shuffling and executing ${FIREWORKS_LINES} lines"  # The 'executing' is a bit premature (as it happens a bit later outside of this procedure), but the text makes sense here
-  RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')  # Resetting random entropy to ensure highest quality entropy
+  RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Resetting random entropy to ensure highest quality entropy
   shuf -n${FIREWORKS_LINES} --random-source=/dev/urandom ${INPUTFILE} > ${WORKT}
 }
 
@@ -5393,14 +5401,18 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 239 ]; then sed "s/ps/p/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 240 ]; then sed "s/[ ]*TABLESPACE [^ ]\+ STORAGE DISK[ ]*/ /gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 241 ]; then sed "s/GROUP_CONCAT([^)]\+)/*/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 242 ]; then sed "s/COMMENT='WRAPPER \"mysql\", srv \"srv\", TABLE \"t\"'//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 243 ]; then sed "s/COMMENT='WRAPPER \"mysql\", srv \"srv\", TABLE \"t\"'//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 244 ]; then sed "s/COMMENT='WRAPPER \"mysql\", srv \"srv\", TABLE \"t\"'//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 245 ]; then sed "s/COMMENT='WRAPPER \"mysql\", srv \"srv\", TABLE \"t\"'//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 242 ]; then sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 243 ]; then sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 244 ]; then sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 245 ]; then sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 246 ]; then sed "s/WITH SYSTEM VERSIONING//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 247 ]; then sed "s/WITH SYSTEM VERSIONING//i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 248 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
-    elif [ $TRIAL -eq 249 ]; then
+    elif [ $TRIAL -eq 248 ]; then sed "s|'../socket.sock'|''|g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 249 ]; then sed "s|'../socket.sock'|''|" $WORKF > $WORKT
+    elif [ $TRIAL -eq 250 ]; then sed "s/PWD1//g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 251 ]; then sed "s/PWD1//" $WORKF > $WORKT
+    elif [ $TRIAL -eq 252 ]; then grep -E --binary-files=text -v "^$" $WORKF > $WORKT
+    elif [ $TRIAL -eq 253 ]; then
       if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then
         NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality
         ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT
@@ -5410,12 +5422,12 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
       else
         cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
-    elif [ $TRIAL -eq 250 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 254 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
     # RV 25/01/21 Disabled next trial to see if this fixes the # mysqld options required insert
     # RV 09/05/22 It seems to help. Reinstated trial by temporary dummy swap instead
-    elif [ $TRIAL -eq 251 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
-    elif [ $TRIAL -eq 252 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
-    elif [ $TRIAL -eq 253 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 255 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
+    elif [ $TRIAL -eq 256 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+    elif [ $TRIAL -eq 257 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`

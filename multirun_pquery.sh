@@ -31,7 +31,7 @@ fi
 
 if [ ! -d $6/lib ]; then echo "Assert: $6/lib does not exist?"; exit 1; fi
 
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 EXE_TODO=$[$1 * $7 * $2]
 EXE_DONE=0
 echo "===== Total planned executions:"

@@ -2,7 +2,7 @@
 # Created by Roel Van de Paar, Percona LLC
 
 # Internal variables: please do not change! Ref below for user configurable variables
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')  # Random entropy init
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
 SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 TRIAL=0
