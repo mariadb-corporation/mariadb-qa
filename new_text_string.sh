@@ -229,7 +229,7 @@ if [ -z "${LATEST_CORE}" ]; then
   fi
 fi
 
-RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')  # Random entropy init
 RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
 
 rm -f /tmp/${RANDF}.gdb*

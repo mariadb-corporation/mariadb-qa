@@ -333,7 +333,7 @@ set +H
 ABORT_ACTIVE=0
 
 # Random entropy init
-RANDOM=$(date +%s%N | cut -b10-19)
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')
 
 # Set SAN options
 # https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
@@ -2712,7 +2712,7 @@ cut_random_chunk(){
 
 cut_fireworks_chunk_and_shuffle(){
   echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [FIREWORKS] Chunking, shuffling and executing ${FIREWORKS_LINES} lines"  # The 'executing' is a bit premature (as it happens a bit later outside of this procedure), but the text makes sense here
-  RANDOM=$(date +%s%N | cut -b10-19)  # Resetting random entropy to ensure highest quality entropy
+  RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^0+||')  # Resetting random entropy to ensure highest quality entropy
   shuf -n${FIREWORKS_LINES} --random-source=/dev/urandom ${INPUTFILE} > ${WORKT}
 }
 
