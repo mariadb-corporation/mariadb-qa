@@ -164,6 +164,7 @@ trid >= info->s->state.create_trid|SIGABRT|transid_store_packed|_ma_make_key|mar
 !error|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                                  ## MDEV-30067
 !error|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|multi_delete::do_table_deletes                                                                ## MDEV-30067
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-23212
+SIGSEGV|st_select_lex::print|opt_trace_print_expanded_query|JOIN::prepare|subselect_single_select_engine::prepare                                                              ## MDEV-30052
 SIGSEGV|JOIN::eval_select_list_used_tables|JOIN::optimize_inner|JOIN::optimize|st_select_lex::optimize_unflattened_subqueries                                                  ## MDEV-30052
 SIGSEGV|subquery_types_allow_materialization|is_materialization_applicable|check_and_do_in_subquery_rewrites|JOIN::prepare                                                     ## MDEV-30052
 SIGSEGV|Item_equal_iterator<List_iterator_fast, Item>::get_curr_field|Item_equal::contains|Item_equal::merge_with_check|Item_equal::merge_into_list                            ## MDEV-30051
