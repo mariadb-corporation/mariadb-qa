@@ -7,3 +7,12 @@ CREATE TABLE t1 (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "
 XA START 'a';
 SET GLOBAL general_log=1;
 INSERT DELAYED INTO t1 (pk) VALUES (1);
+
+CREATE OR REPLACE TABLE mysql.general_log (c INT) ENGINE=InnoDB;
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE'',USER 'Spider',PASSWORD '');
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE TABLE t (d INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SET SESSION sql_log_off=1;
+CREATE USER Spider@localhost IDENTIFIED BY '';
+SET GLOBAL general_log=1,log_output='TABLE';
+INSERT INTO t VALUES (1);

@@ -21,6 +21,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
 #GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-26258, likely. Leaving for other issues
+GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 # MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
 GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
 GOT_ERROR|Got error 194|"Tablespace is missing for a table" from storage engine InnoDB ## MDEV-27952 (idem)
@@ -137,6 +138,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+prefix_size <= width|SIGABRT|Bitmap<64u>::is_prefix|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                   ## MDEV-24931
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.str, MDL_EXCLUSIVE)|SIGABRT|TDC_element::flush|mysql_discard_or_import_tablespace|Sql_cmd_discard_import_tablespace::execute|mysql_execute_command ## MDEV-30364
 height == btr_page_get_level(page_cur_get_page(page_cursor))|SIGABRT|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low|row_ins_sec_index_entry|row_ins_index_entry       ## MDEV-30400
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row()) || thd->wsrep_cs().transaction().state() == wsrep::transaction::s_aborted|SIGABRT|wsrep_commit_empty|mysql_execute_command|mysql_parse|wsrep_mysql_parse ## MDEV-30388
@@ -171,6 +173,7 @@ trid >= info->s->state.create_trid|SIGABRT|transid_store_packed|_ma_make_key|mar
 SIGSEGV|st_select_lex::print|opt_trace_print_expanded_query|JOIN::prepare|subselect_single_select_engine::prepare                                                              ## MDEV-30052
 SIGSEGV|JOIN::eval_select_list_used_tables|JOIN::optimize_inner|JOIN::optimize|st_select_lex::optimize_unflattened_subqueries                                                  ## MDEV-30052
 SIGSEGV|subquery_types_allow_materialization|is_materialization_applicable|check_and_do_in_subquery_rewrites|JOIN::prepare                                                     ## MDEV-30052
+SIGSEGV|Field::eq|Item_equal::contains|Item_equal::merge_with_check|Item_equal::merge_into_list                                                                                ## MDEV-30051
 SIGSEGV|Item_equal_iterator<List_iterator_fast, Item>::get_curr_field|Item_equal::contains|Item_equal::merge_with_check|Item_equal::merge_into_list                            ## MDEV-30051
 ib_table->stat_initialized|SIGABRT|ut_dbg_assertion_failed|ha_innobase::info_low|ha_innobase::info|ha_innobase::open                                                           ## MDEV-30063
 total_length + thd->wsrep_sr().log_position() == saved_pos|SIGABRT|wsrep_write_cache_inc|wsrep_write_cache|Wsrep_client_service::prepare_data_for_replication|wsrep::transaction::certify_commit ## MDEV-28971

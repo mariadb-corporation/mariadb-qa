@@ -18,5 +18,10 @@ INSERT INTO t1 VALUES();
 SET sql_mode=TRADITIONAL;
 SELECT 1 FROM t1 WHERE ROW(a,a) NOT IN ((1,1),(2,2));
 
+CREATE TABLE t (a DATE NOT NULL) ENGINE=CSV;
+SET sql_mode='no_zero_date';
+INSERT INTO t VALUES (0);
+SELECT * FROM t;
+
 # Then check error log for:
 # [ERROR] mysqld: Table 't' is marked as crashed and should be repaired
