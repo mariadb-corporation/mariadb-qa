@@ -26,3 +26,6 @@ SELECT JSON_VALUE(@json, '$.A[last-1][last-1].key1');
 SET collation_connection=eucjpms_bin;
 SET @json='{ "A": [ [{"k":"v"},[1]],true],"B": {"C": 1} }';
 SELECT JSON_VALUE(@json,'$.A[last-1][last-1].key1');
+
+SET @json='{ "A": [ [{"k":"v"},[1]],true],"B": {"C": 1} }';
+SELECT JSON_VALUE(@json,'$.A[last-1][last-1].key1');

@@ -23,6 +23,7 @@ MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repa
 #GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-26258, likely. Leaving for other issues
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
 GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
+GOT_ERROR|Got error 194|"Tablespace is missing for a table" from storage engine InnoDB ## MDEV-27952 (idem)
 GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and MDEV-29430
 GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
 GOT_ERROR|Got error 1430|when reading table                    ## Presumed non-issue (federatedx base table removed)
@@ -136,6 +137,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.str, MDL_EXCLUSIVE)|SIGABRT|TDC_element::flush|mysql_discard_or_import_tablespace|Sql_cmd_discard_import_tablespace::execute|mysql_execute_command ## MDEV-30364
+height == btr_page_get_level(page_cur_get_page(page_cursor))|SIGABRT|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low|row_ins_sec_index_entry|row_ins_index_entry       ## MDEV-30400
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row()) || thd->wsrep_cs().transaction().state() == wsrep::transaction::s_aborted|SIGABRT|wsrep_commit_empty|mysql_execute_command|mysql_parse|wsrep_mysql_parse ## MDEV-30388
 0|SIGABRT|Type_handler_string_result::make_packed_sort_key_part|make_packed_sortkey|make_sortkey|find_all_keys                                                                 ## MDEV-30371
 0|SIGABRT|Type_handler_string_result::make_sort_key|make_sortkey|find_all_keys|filesort                                                                                        ## MDEV-30371
@@ -749,6 +752,7 @@ thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|apply_f
 0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler_string_result::Item_temporal_precision                                        ## MDEV-23187
 0|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Item_func_concat_operator_oracle::val_str                                                  ## MDEV-23187
 SIGSEGV|my_mb_wc_utf8mb3_quick|my_utf8mb3_uni|json_read_string_const_chr|json_key_matches                                                                                      ## MDEV-23187
+cur_step->type & JSON_PATH_ARRAY|SIGABRT|json_find_path|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler::Item_send_str                                 ## MDEV-23187
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## MDEV-25401
 allocated_status_memory != __null|SIGABRT|PROF_MEASUREMENT::set_label|PROF_MEASUREMENT::PROF_MEASUREMENT|QUERY_PROFILE::new_status|PROFILING::status_change                    ## MDEV-25329
 SIGSEGV|Field_iterator_natural_join::next|Field_iterator_table_ref::next|mark_common_columns|store_top_level_join_columns                                                      ## MDEV-24935
@@ -915,8 +919,6 @@ share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::d
 SIGABRT|ib::fatal::~fatal|buf_page_io_complete|buf_read_page_low|buf_read_page                                                                                                 ## MDEV-23667
 length <= 64|SIGABRT|PFS_variable_name_row::make_row|User_variables::materialize|table_uvar_by_thread::materialize|table_uvar_by_thread::rnd_next                              ## MDEV-23665
 length <= NAME_CHAR_LEN|SIGABRT|PFS_variable_name_row::make_row|User_variables::materialize|table_uvar_by_thread::materialize|table_uvar_by_thread::rnd_next                   ## MDEV-23665
-(m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item_decimal_typecast::val_str                                          ## MDEV-23664
-(m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item::save_decimal_in_field                                             ## MDEV-23664
 fd != -1|SIGABRT|my_seek|azrewind|ha_archive::read_data_header|ha_archive::rnd_init                                                                                            ## MDEV-23448
 table_list->prelocking_placeholder == TABLE_LIST::PRELOCK_NONE|SIGABRT|check_lock_and_start_stmt|restart_trans_for_tables|create_table_impl|mysql_create_table_no_lock         ## MDEV-23298
 info->dfile.file == share->bitmap.file.file|SIGABRT|_ma_scan_init_block_record|maria_scan_init|ha_maria::rnd_init|handler::ha_rnd_init                                         ## MDEV-23297
@@ -1688,3 +1690,5 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # SIGSEGV|st_select_lex_node::exclude_from_tree|st_select_lex_node::exclude|Item_subselect::eliminate_subselect_processor|Item_subselect::walk                        ## Fixed ## MDEV-29350
 # 0|SIGABRT|Type_handler_row::Item_save_in_field|Item::save_in_field|Item_trigger_field::set_value|Item_trigger_field::set_value                                      ## Fixed ## MDEV-29356
 # str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_mariadb_util::append_column_value|spider_mbase_handler::append_insert_values|spider_mbase_handler::append_insert_values_part ## Not Reproducible ## MDEV-27676
+# (m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item_decimal_typecast::val_str                               ## Fixed ## MDEV-23664
+# (m_ptr == __null) == item->null_value|SIGABRT|VDec::VDec|Item_decimal_typecast::val_decimal|VDec::VDec|Item::save_decimal_in_field                                  ## Fixed ## MDEV-23664

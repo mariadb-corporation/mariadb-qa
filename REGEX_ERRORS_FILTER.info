@@ -42,6 +42,7 @@ Got error 127 when reading table                      https://jira.mariadb.org/b
 Got error 188 when reading table                      Presumed non-issue (Operation was interrupted)
 Got error 192                                         https://jira.mariadb.org/browse/MDEV-26258
 Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
+Got error 194 .Tablespace is missing .* engine InnoDB https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
 Got error 1054 when reading table                     https://jira.mariadb.org/browse/MDEV-29430 (Spider)
 Got error 1054 when reading table                     https://jira.mariadb.org/browse/MDEV-29663 (Spider, 29430 duplicate)
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
@@ -98,3 +99,4 @@ InnoDB: Column .* in table mysql.innodb.* is .* but   Presumed non-issue (column
 mysqld: Table .slow_log. is marked as crashed         https://jira.mariadb.org/browse/MDEV-27076
 Warning. WSREP: handlerton rollback failed, thd       https://jira.mariadb.org/browse/MDEV-29583 (Spider)
 InnoDB: FTS_DOC_ID must be larger than 0              Presumed non-issue (text insert into FTS_DOC_ID for example)
+InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap

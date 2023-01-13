@@ -1,0 +1,3 @@
+CREATE TABLE t (c POINT NOT NULL,SPATIAL (c)) ENGINE=InnoDB;
+SET GLOBAL innodb_limit_optimistic_insert_debug=2;
+INSERT INTO t SELECT POINTFROMTEXT ('POINT(0 0)') FROM seq_1_to_366;
