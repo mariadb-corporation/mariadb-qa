@@ -278,8 +278,8 @@
 # Gotcha: do not use:  some command | uniq  assuming you will get unique items only. uniq and uniq -u can produce very unexpected results. To see some examples, try these;
   echo -e "1\n2\n2\n3\n2">test;echo "test:";cat test;echo "sort -u test:";sort -u test;echo "uniq test:";uniq test;echo "uniq -u test:";uniq -u test
   echo -e "1\n2\n2\n3">test;echo "test:";cat test;echo "uniq -u test:";uniq -u test
-  With uniq -u it keeps any line which is truly unique, and this is why the first uniq, the first uniq -u and the second uniq -u results all so different
-  Thus; uniq is a versatile tool, but only if you are after very specific functionality. If not, always use short -u
+  With uniq -u it keeps any line which is truly unique, and this is why the first uniq, the first uniq -u and the second uniq -u results are all so different
+  Thus; uniq is a versatile tool, but only if you are after very specific functionality. If not, always use sort -u
 # Sort unique vs uniq: sort -u sorts the input list and only leaves unique entries. uniq on the other hand does not sort and removes only adjoining same entries
   cat need_sorted_file_with_unique_results_only.txt | sort -u; cat need_adjoining_same_entries_removed; | uniq; # cat need_all_duplicates_removed.txt | uniq -u
 # Gotcha: This will not work: $ if [[ "a-b" == *"a[-_]b"* ]]; then echo "yes"; fi

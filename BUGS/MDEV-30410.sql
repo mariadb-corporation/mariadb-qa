@@ -1,0 +1,12 @@
+INSTALL SONAME 'ha_federatedx.so';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'federatedx',PASSWORD'');
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+CREATE TABLE t2 CONNECTION='srv/t' ENGINE=FEDERATED;
+SET GLOBAL table_open_cache=4;
+XA START 'xa';
+INSERT INTO t2 VALUES (0);
+INSERT INTO t VALUES (0);
+HELP 'a';
+SHOW CREATE EVENT e;
+DELETE FROM mysql.user;
+SELECT * FROM information_schema.check_constraints;

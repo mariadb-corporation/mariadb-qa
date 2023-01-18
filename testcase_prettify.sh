@@ -354,6 +354,7 @@ cat "${1}" | tr -d '`' | \
        s|char[ ]*(|CHAR(|gi; \
        s|if[ ]*(|IF(|gi; \
        s|current_user[ ]*(|CURRENT_USER(|gi; \
+       s|current_timestamp|CURRENT_TIMESTAMP|gi; \
        s|mysql\.\([a-z]\+\)|mysql.\L\1|gi; \
        s|password[ ]*(|PASSWORD(|gi; \
        s|old_password[ ]*(|OLD_PASSWORD(|gi; \

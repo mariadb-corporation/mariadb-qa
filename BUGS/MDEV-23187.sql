@@ -29,3 +29,15 @@ SELECT JSON_VALUE(@json,'$.A[last-1][last-1].key1');
 
 SET @json='{ "A": [ [{"k":"v"},[1]],true],"B": {"C": 1} }';
 SELECT JSON_VALUE(@json,'$.A[last-1][last-1].key1');
+
+SET @json='{ "A": [ [{"k":"v"},[1]],true],"B": {"C": 1} }';
+SET collation_connection='ucs2_bin';
+SELECT JSON_VALUE(@json,'$.A[last-1][last-1].key1');
+
+SET @json='{ "A": [ [{"k":"v"},[15]],true],"B": {"C": 1} }';
+SET sql_mode=0,character_set_connection=utf32;
+SELECT JSON_VALUE(@json,'$.A[last-1][last-1].key1');
+
+SET @json='{ "A": [ [{"k":"v"},[15]],true],"B": {"C": 1} }';
+SET collation_connection='tis620_bin';
+SELECT JSON_VALUE(@json,'$.A[last-1][last-1].key1');

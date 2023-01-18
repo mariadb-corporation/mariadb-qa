@@ -17,3 +17,6 @@ SELECT * FROM t WHERE c IN (CURDATE(),ADDDATE(CURDATE(),'a')) ORDER BY c;
 SET @@in_predicate_conversion_threshold=2;
 CREATE TABLE t (a INT KEY) ENGINE=InnoDB;
 SELECT 1 FROM t WHERE ROW(a, (a,a)) IN ((1, (1,1)),(2, (2,2)));
+
+SET @@in_predicate_conversion_threshold=2;
+SELECT 1 FROM (SELECT 1 AS c) AS t WHERE ROW(c,(c,c)) IN ((1,(1,1)),(2,(2,1)));

@@ -5,6 +5,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|execution reached an unreachable program point|sql/sql_type.h|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform ## MDEV-22444
+UBSAN|execution reached an unreachable program point|sql/sql_type.h|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform ## MDEV-22444
+UBSAN|store to null pointer of type 'struct Item *'|sql/item_cmpfunc.cc|Item_func_not::fix_fields|st_select_lex::pushdown_from_having_into_where|JOIN::optimize_inner|JOIN::optimize ## MDEV-19520
 UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/sql_select.cc|generate_derived_keys_for_table|generate_derived_keys|sort_and_filter_keyuse|make_join_statistics  ## MDEV-24931
 UBSAN|member access within null pointer of type 'struct Item_subselect'|sql/item.cc|mark_select_range_as_dependent|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed ## MDEV-29262
 UBSAN|member access within null pointer of type 'struct Item_subselect'|sql/item.cc|mark_select_range_as_dependent|find_field_in_tables|find_order_in_list|setup_group         ## MDEV-29262

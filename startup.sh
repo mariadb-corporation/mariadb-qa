@@ -627,7 +627,7 @@ echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DR
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >>loopin
 echo "#!/bin/bash" >multirun_loop
 ln -s ./multirun_loop ./ml
-echo "# This script will keep looping in.sql until ./data/core is present/detected. If loop cycles take 90 seconds or more, you may want to check that the server is not hanging in those 90 seconds (there is a 90 second timeout in ./stop which is being used, you could also increase that to establish if it is is the mysqladmin shutdown is hanging). Only other possible reason is a(very) large input SQL testcase. Generally loops will take 5 seconds or less with a small input file." >>multirun_loop
+echo "# This script will keep looping in.sql until ./data/core* is present/detected. If loop cycles take 90 seconds or more, you may want to check that the server is not hanging in those 90 seconds (there is a 90 second timeout in ./stop which is being used, you could also increase that to establish if it is is the mysqladmin shutdown is hanging). Only other possible reason is a(very) large input SQL testcase. Generally loops will take 5 seconds or less with a small input file." >>multirun_loop
 echo "# To look for a specific UniqueID bug, do:" >>multirun_loop
 echo "# export BUG='...'    # Where ... is a UniqueID" >>multirun_loop
 echo "# or, to look for a specific error log based bug, do:" >>multirun_loop
@@ -651,14 +651,14 @@ echo "  while [ \"\${BUGSEEN}\" != \"\${BUG}\" ]; do BUGSEEN=; loop; BUGSEEN=\"\
 echo "elif [ ! -z \"\${ELBUG}\" ]; then" >>multirun_loop
 echo "  echo -e \"Looking for this string in the error log (As per the ELBUG environment variable):\n   \${ELBUG}\"" >>multirun_loop
 echo "  BUGSEEN=" >>multirun_loop
-echo "  while [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; do loop; if [ -r ./data/core ]; then if [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; then BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-' )\"; echo \"While the searched for string was not found in the error log, a crash was observed with UniqueID: \${BUGSEEN}\"; fi; fi; done" >>multirun_loop
+echo "  while [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; do loop; if [ -r ./data/core* ]; then if [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; then BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-' )\"; echo \"While the searched for string was not found in the error log, a crash was observed with UniqueID: \${BUGSEEN}\"; fi; fi; done" >>multirun_loop
 echo "else" >>multirun_loop
-echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till a core is found\"" >>multirun_loop
-echo "  while [ ! -r ./data/core ]; do loop; done;" >>multirun_loop
+echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till a core* is found\"" >>multirun_loop
+echo "  while [ ! -r ./data/core* ]; do loop; done;" >>multirun_loop
 echo "fi" >>multirun_loop
 echo "sleep 2" >>multirun_loop
 echo "\${HOME}/tt" >>multirun_loop
-echo "echo \"Number of loops executed to obtain ./data/core: \${NR_OF_LOOPS}\"" >>multirun_loop
+echo "echo \"Number of loops executed to obtain ./data/core*: \${NR_OF_LOOPS}\"" >>multirun_loop
 echo "rm -Rf ./data.multirun" >>multirun_loop
 cp multirun_loop multirun_loop_pquery
 ln -s ./multirun_loop_pquery ./mlp
@@ -880,7 +880,7 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   # ------------------- ./reducer_errorlog_pquery.sh creation
   sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_errorlog.sh > ./reducer_errorlog_pquery.sh
   # ------------------- ./reducer_hang.sh creation
-  sed 's|^MODE=[0-9]|MODE=0|;s|TIMEOUT_CHECK=[0-9]*|TIMEOUT_CHECK=150|;s|MULTI_THREADS=[0-9]*|MULTI_THREADS=3|' ./reducer_errorlog.sh > ./reducer_hang.sh  # Timeout of 150s is a best guess, it may need to be higher. 3 Threads is plenty as we need to wait for the timeout in any case (unless sporadic)
+  sed 's|^MODE=[0-9]|MODE=0|;s|TIMEOUT_CHECK=[0-9]*|TIMEOUT_CHECK=150|;s|MULTI_THREADS=[0-9]*|MULTI_THREADS=3|;s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=10|' ./reducer_errorlog.sh > ./reducer_hang.sh  # Timeout of 150s is a best guess, it may need to be higher. 3 Threads is plenty as we need to wait for the timeout in any case (unless sporadic)
   # ------------------- ./reducer_hang_pquery.sh creation
   sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_hang.sh > ./reducer_hang_pquery.sh
   # ------------------- ./reducer_new_text_string_pquery.sh creation
