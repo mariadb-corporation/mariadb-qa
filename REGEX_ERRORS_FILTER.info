@@ -3,7 +3,6 @@ Note: bugs listed here should be checked regularly if they have been fixed, and 
 Filter Text                                           Info at
 -----------------------------------------------------------------------------------------------------------------------
 Event invalid                                         https://jira.mariadb.org/browse/MDEV-26270
-InnoDB: Resetting invalid page                        https://jira.mariadb.org/browse/MDEV-26121
 Assertion .block_size                                 https://jira.mariadb.org/browse/MDEV-26459
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name
@@ -12,7 +11,6 @@ t[0-9]*_corrupted                                     Not real corruption, just 
 t[0-9]*_inc_corrupted                                 Not real corruption, just a regex table name
 virtual THD...!debug_assert_on_not_freed_memory       https://jira.mariadb.org/browse/MDEV-25927
 next_free_value                                       Not related to freeing memory, just a variable name
-lock mutex.*sys_vars_shared.h, line 56                https://jira.mariadb.org/browse/MDEV-27039
 innodb-force-load-corrupted                           Not real corruption, just a variable name
 dict_index_t::is_corrupted                            Not real corruption, just a function name
 Internal MariaDB error code: 1017                     Presumed non-issue (mysql db was dropped causing slave issues)
@@ -35,7 +33,6 @@ Internal MariaDB error code: 1969                     Presumed non-issue (max_st
 Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master connection IP address)
 Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
 Internal MariaDB error code: 4145                     Presumed non-issue (binlog event cannot execute as BACKUP STAGE is active)
-thus rolled back too. Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-27536
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
 Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
 Got error 171 .The event was corrupt                  https://jira.mariadb.org/browse/MDEV-22936 (May mask other bugs?)
@@ -73,7 +70,6 @@ Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/b
 Got error .126 .Index is corrupted..*sql-alter.*MAI   https://jira.mariadb.org/browse/MDEV-26258
 Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26258
 Assertion .level < 50. failed                         https://jira.mariadb.org/browse/MDEV-23165
-Assertion ..trx_free .. .trx->locked_connections. failed  https://jira.mariadb.org/browse/MDEV-29484
 Warning: Memory not freed: 32                         https://jira.mariadb.org/browse/MDEV-25876 session_track_system_variables
 Warning: Memory not freed: 80/104/16400/16320/16424   https://jira.mariadb.org/browse/MDEV-29404 PREPARE (not filtered)
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' WHILE
@@ -102,4 +98,9 @@ Warning. WSREP: handlerton rollback failed, thd       https://jira.mariadb.org/b
 InnoDB: FTS_DOC_ID must be larger than 0              Presumed non-issue (text insert into FTS_DOC_ID for example)
 InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap
 Operating system error number 36 in a file operation  https://jira.mariadb.org/browse/MDEV-19849 (file name too long)
+
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
+#InnoDB: Resetting invalid page                       https://jira.mariadb.org/browse/MDEV-26121, Fixed
+#lock mutex.*sys_vars_shared.h, line 56               https://jira.mariadb.org/browse/MDEV-27039, Fixed
+#thus rolled back too. Internal MariaDB error code: 0 https://jira.mariadb.org/browse/MDEV-27536, Fixed
+#Assertion ..trx_free .. .trx->locked_connections. failed  https://jira.mariadb.org/browse/MDEV-29484, Fixed

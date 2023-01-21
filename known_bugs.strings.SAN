@@ -11,23 +11,15 @@ UBSAN|store to null pointer of type 'struct Item *'|sql/item_cmpfunc.cc|Item_fun
 UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/sql_select.cc|generate_derived_keys_for_table|generate_derived_keys|sort_and_filter_keyuse|make_join_statistics  ## MDEV-24931
 UBSAN|member access within null pointer of type 'struct Item_subselect'|sql/item.cc|mark_select_range_as_dependent|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed ## MDEV-29262
 UBSAN|member access within null pointer of type 'struct Item_subselect'|sql/item.cc|mark_select_range_as_dependent|find_field_in_tables|find_order_in_list|setup_group         ## MDEV-29262
-ASAN|use-after-poison|sql/sql_list.h|base_list::operator=|base_list::append|List<Item_equal>::append|Item_cond::remove_eq_conds                                                ## MDEV-29294
-UBSAN|downcast of address X which does not point to an object of type 'Item_cond_and'|sql/sql_select.cc|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize ## MDEV-29294
 UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_args::walk_args ## MDEV-28502
 UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_in_subselect::walk ## MDEV-28502
 UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::walk|Item_args::walk_args|Item_func_or_sum::walk ## MDEV-28502
 ASAN|stack-buffer-overflow|storage/spider/spd_db_mysql.cc|__interceptor_strlen.part.0|spider_db_mbase_util::open_item_func|spider_db_open_item_func|spider_db_print_item_type  ## MDEV-29502
 ASAN|stack-buffer-overflow|storage/spider/spd_db_mysql.cc|__interceptor_strlen.part.0|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_list_item_select|spider_group_by_handler::init_scan ## MDEV-29502
 ASAN|heap-buffer-overflow|storage/spider/spd_db_mysql.cc|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func|spider_db_fetch_for_item_sum_funcs|spider_db_fetch_table ## MDEV-29502
-ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_print_item_type|spider_mbase_handler::append_condition|spider_mbase_handler::append_condition_part|ha_spider::append_condition_sql_part ## MDEV-30191
 ASAN|use-after-poison|sql/table.cc|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables                                   ## MDEV-29932
 ASAN|use-after-poison|sql/field.h|Virtual_column_info::need_refix|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table                        ## MDEV-29932
-ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next_fast|List_iterator_fast<Item>::operator++|JOIN::eval_select_list_used_tables|JOIN::optimize_inner                ## MDEV-30052
-ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next|List_iterator<Item>::operator++|subquery_types_allow_materialization|is_materialization_applicable               ## MDEV-30052
 UBSAN|member call on address X which does not point to an object of type 'Item_equal'|sql/item_cmpfunc.cc|Item_equal::merge_into_list|propagate_new_equalities|propagate_new_equalities|and_new_conditions_to_optimized_cond ## DEV-30051
-UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_lex.cc|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|st_select_lex_unit::explainable|JOIN::save_explain_data_intern ## MDEV-30007
-UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_lex.cc|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|JOIN::save_explain_data_intern|JOIN::save_explain_data ## MDEV-30007
-ASAN|use-after-poison|sql/sql_acl.cc|get_current_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                            ## MDEV-29852
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_user_table|mysql_create_user|mysql_execute_command|mysql_parse                             ## MDEV-23731
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse                              ## MDEV-23731
 UBSAN|member call on null pointer of type 'struct Field'|sql/sql_acl.cc|User_table::set_user|replace_user_table|mysql_grant|Sql_cmd_grant_proxy::execute                       ## MDEV-26716
@@ -43,10 +35,6 @@ UBSAN|downcast of address X which does not point to an object of type 'Item_row'
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select ## MDEV-28346
 UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-28346
 UBSAN|member call on null pointer of type 'struct Item'|sql/sql_select.cc|handle_select|execute_sqlcom_select|mysql_execute_command|mysql_parse                                ## MDEV-22447
-UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|Field_real::get_double|Field_double::store                     ## MDEV-29473
-UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|charset_info_st::strntod|Field_real::get_double                ## MDEV-29473
-UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|Field_real::get_double                         ## MDEV-29473
-UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                       ## MDEV-29473
 ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                            ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                          ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str_generic                                          ## MDEV-29462
@@ -140,3 +128,15 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # UBSAN|signed integer overflow: -X - Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|Field::convert_decimal2longlong|Field_int::store_decimal ## Fixed ## MDEV-22742
 # UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/compat56.cc|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_temporal::save_in_field|Create_tmp_table::finalize ## Fixed ## MDEV-24510
 # ASAN|use-after-poison|mysys/hash.c|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|hashcmp|my_hash_first_from_hash_value                                       ## Fixed ## MDEV-26637
+# ASAN|use-after-poison|sql/sql_list.h|base_list::operator=|base_list::append|List<Item_equal>::append|Item_cond::remove_eq_conds                                              ## Fixed ## MDEV-29294
+# UBSAN|downcast of address X which does not point to an object of type 'Item_cond_and'|sql/sql_select.cc|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize ## Fixed ## MDEV-29294
+# UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|Field_real::get_double|Field_double::store                   ## Fixed ## MDEV-29473
+# UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|charset_info_st::strntod|Field_real::get_double              ## Fixed ## MDEV-29473
+# UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|Field_real::get_double                       ## Fixed ## MDEV-29473
+# UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                     ## Fixed ## MDEV-29473
+# ASAN|use-after-poison|sql/sql_acl.cc|get_current_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                          ## Fixed ## MDEV-29852
+# UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_lex.cc|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|st_select_lex_unit::explainable|JOIN::save_explain_data_intern ## Fixed ## MDEV-30007
+# UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_lex.cc|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|JOIN::save_explain_data_intern|JOIN::save_explain_data ## Fixed ## MDEV-30007
+# ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next_fast|List_iterator_fast<Item>::operator++|JOIN::eval_select_list_used_tables|JOIN::optimize_inner               ## Fixed ## MDEV-30052
+# ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next|List_iterator<Item>::operator++|subquery_types_allow_materialization|is_materialization_applicable              ## Fixed ## MDEV-30052
+# ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_print_item_type|spider_mbase_handler::append_condition|spider_mbase_handler::append_condition_part|ha_spider::append_condition_sql_part ## Fixed ## MDEV-30191
