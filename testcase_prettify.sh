@@ -25,6 +25,7 @@ cat "${1}" | tr -d '`' | \
        s|index|INDEX|g; \
        s|immediate|IMMEDIATE|g; \
        s|hex|HEX|gi; \
+       s|declare|DECLARE|gi; \
        s|having|HAVING|gi; \
        s|lead|LEAD|gi; \
        s| as | AS |gi; \
