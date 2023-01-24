@@ -43,6 +43,7 @@ GOT_ERROR|Got error 1146|when reading table                    ## MDEV-29663
 ##### MDEV-29507 TESTING TEMPORARY #####
 SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute                                    ## MDEV-29544
 SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute|mysql_execute_command                                                     ## MDEV-29544
+!m_innodb|SIGABRT|ha_partition::cmp_ref|refpos_order_cmp|tree_insert|Unique::unique_add                                                                                        ## MDEV-30442
 
 ##### MDEV-16329 TESTING TEMPORARY #####
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|start_thread|clone ## INSERT DELAYED not supported on Spider (fixed already in trunk)
@@ -236,6 +237,7 @@ SIGSEGV|spider_db_open_item_field|spider_db_mbase_util::open_item_func|spider_mb
 SIGSEGV|spider_db_open_item_field|spider_db_print_item_type|spider_db_mbase_util::open_item_func|spider_db_open_item_func                                                      ## MDEV-29447
 SIGSEGV|spider_db_open_item_field|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_item_type_part|spider_mbase_handler::append_item_type_part                 ## MDEV-29447
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_free_share|ha_spider::close                                                                                             ## MDEV-29421
+SIGSEGV|st_select_lex_unit::set_limit|subselect_single_select_engine::exec|Item_subselect::exec|Item_in_subselect::val_bool                                                    ## MDEV-29411
 SIGSEGV|st_select_lex_unit::set_limit|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_decimal                                          ## MDEV-29411
 !eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare                                          ## MDEV-29411
 !eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_real|Arg_comparator::compare_real|Arg_comparator::compare                                               ## MDEV-29411

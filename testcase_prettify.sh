@@ -272,6 +272,7 @@ cat "${1}" | tr -d '`' | \
        s|lpad|LPAD|gi; \
        s|into|INTO|gi; \
        s|column|COLUMN|gi; \
+       s|columns|COLUMNS|gi; \
        s|left|LEFT|gi; \
        s|right|RIGHT|gi; \
        s|threads|THREADS|gi; \
