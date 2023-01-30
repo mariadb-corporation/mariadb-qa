@@ -135,6 +135,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|set_var::update                         ## MDEV-29236
+state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|sys_var::set_default                    ## MDEV-29236
+state_ == s_exec|SIGABRT|wsrep::client_state::enter_toi_local|wsrep_TOI_begin|wsrep_to_isolation_begin|Sql_cmd_truncate_table::truncate_table                                  ## MDEV-30513
+state_ == s_exec|SIGABRT|wsrep::client_state::start_transaction|Wsrep_storage_service::start_transaction|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step ## MDEV-30513
 state() == s_executing || state() == s_preparing || state() == s_prepared || state() == s_must_abort || state() == s_aborting || state() == s_cert_failed || state() == s_must_replay|SIGABRT|wsrep::transaction::before_rollback|wsrep::client_state::before_rollback|wsrep_before_rollback|ha_rollback_trans ## MDEV-30372
 SIGABRT|__cxa_throw|std::__throw_logic_error|std::__cxx11::basic_string<char,std::char_traits<char>,std::allocator<char> >::_M_construct<char const*>|std::__cxx11::basic_string<char,std::char_traits<char>,std::allocator<char> >::_M_construct_aux<char const*> ## MDEV-30510
 SIGSEGV|___pthread_mutex_lock|inline_mysql_mutex_lock|federatedx_txn::release_scan|federatedx_txn::release                                                                     ## MDEV-30410
