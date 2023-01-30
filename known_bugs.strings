@@ -135,6 +135,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+state() == s_executing || state() == s_preparing || state() == s_prepared || state() == s_must_abort || state() == s_aborting || state() == s_cert_failed || state() == s_must_replay|SIGABRT|wsrep::transaction::before_rollback|wsrep::client_state::before_rollback|wsrep_before_rollback|ha_rollback_trans ## MDEV-30372
+SIGABRT|__cxa_throw|std::__throw_logic_error|std::__cxx11::basic_string<char,std::char_traits<char>,std::allocator<char> >::_M_construct<char const*>|std::__cxx11::basic_string<char,std::char_traits<char>,std::allocator<char> >::_M_construct_aux<char const*> ## MDEV-30510
 SIGSEGV|___pthread_mutex_lock|inline_mysql_mutex_lock|federatedx_txn::release_scan|federatedx_txn::release                                                                     ## MDEV-30410
 Count >= rest_length|SIGABRT|_my_b_write|my_b_write|my_b_safe_write|Log_event_writer::write_internal                                                                           ## MDEV-30409
 SIGSEGV|_my_b_write|Log_event_writer::write_internal|Log_event::write_header|Gtid_log_event::write                                                                             ## MDEV-30409
@@ -698,6 +700,7 @@ transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep
 !thd->mdl_context.has_locks()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|start_thread                                                                   ## MDEV-25463
 !thd->mdl_context.has_locks()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|pfs_spawn_thread                                                               ## MDEV-25463
 thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|apply_fragment|apply_write_set|wsrep::server_state::on_apply                                          ## MDEV-25455
+thd->wsrep_trx().active()|SIGABRT|Wsrep_applier_service::apply_write_set|commit_fragment|apply_write_set|wsrep::server_state::on_apply                                         ## MDEV-25455
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|multi_delete::send_eof|do_select                                           ## MDEV-25426
 SIGSEGV|my_mb_wc_tis620|json_read_string_const_chr|json_key_matches|json_find_path                                                                                             ## MDEV-23187
 SIGSEGV|my_mb_wc_ucs2_quick|my_ucs2_uni|json_read_string_const_chr|json_key_matches                                                                                            ## MDEV-23187
