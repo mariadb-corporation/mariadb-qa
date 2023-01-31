@@ -328,6 +328,7 @@ cat "${1}" | tr -d '`' | \
        s|row_format|ROW_FORMAT|gi; \
        s|row_start|ROW_START|gi; \
        s|row_end|ROW_END|gi; \
+       s|use_frm|USE_FRM|gi; \
        s|date_add|DATE_ADD|gi; \
        s|day_second|DAY_SECOND|gi; \
        s|day_minute|DAY_MINUTE|gi; \
@@ -409,6 +410,7 @@ cat "${1}" | tr -d '`' | \
        s|auto_increment_offset|AUTO_INCREMENT_OFFSET|gi; \
        s|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi; \
        s|date_format[ \t]*(|DATE_FORMAT(|gi; \
+       s|time_format[ \t]*(|TIME_FORMAT(|gi; \
        s|world|world|gi; \
        s|engine innodb|ENGINE=InnoDB|gi; \
        s|engine spider|ENGINE=Spider|gi; \

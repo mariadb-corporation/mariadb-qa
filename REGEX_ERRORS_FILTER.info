@@ -66,9 +66,10 @@ Incorrect information in file:.*.frm                  https://jira.mariadb.org/b
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-29203 (UNIQUE HASH INDEX issue)
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-27661 (Charset issue)
 Please run mariadb-upgrade                            Often seen when a mysql db table has been modified by a testcase
-Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/browse/MDEV-26258
-Got error .126 .Index is corrupted..*sql-alter.*MAI   https://jira.mariadb.org/browse/MDEV-26258
+#Got error .126 .Index is corrupted.*test.*MAI        https://jira.mariadb.org/browse/MDEV-30488 (leaving disabled to catch any others)
+Got error .126 .Index is corrupted.*sql-alter.*MAI    https://jira.mariadb.org/browse/MDEV-26258
 Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26258
+Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/browse/MDEV-26258
 Assertion .level < 50. failed                         https://jira.mariadb.org/browse/MDEV-23165
 Warning: Memory not freed: 32                         https://jira.mariadb.org/browse/MDEV-25876 session_track_system_variables
 Warning: Memory not freed: 80/104/16400/16320/16424   https://jira.mariadb.org/browse/MDEV-29404 PREPARE (not filtered)
@@ -98,6 +99,7 @@ Warning. WSREP: handlerton rollback failed, thd       https://jira.mariadb.org/b
 InnoDB: FTS_DOC_ID must be larger than 0              Presumed non-issue (text insert into FTS_DOC_ID for example)
 InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap
 Operating system error number 36 in a file operation  https://jira.mariadb.org/browse/MDEV-19849 (file name too long)
+Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
 
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
 #InnoDB: Resetting invalid page                       https://jira.mariadb.org/browse/MDEV-26121, Fixed
