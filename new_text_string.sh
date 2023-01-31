@@ -83,6 +83,11 @@ if [ -z "${MYSQLD}" ]; then
     if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
       MYSQLD="${POTENTIAL_MYSQLD}"
     fi
+  elif [ -r ./node2/node2.err ]; then
+    POTENTIAL_MYSQLD="$(grep "ready for connections" ./node2/node2.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+    if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
+      MYSQLD="${POTENTIAL_MYSQLD}"
+    fi
   else
     echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld nor other potential mysqld's extracted from any logs at ./log/master.err or ./node1/node1.err"
     exit 1
@@ -101,6 +106,8 @@ if [[ ${MDG} -eq 1 ]]; then
   if [ -z "${ERROR_LOG}" ]; then  # Interactive call from basedir
     if [ -r ${LOC}/node1/node1.err ]; then
       ERROR_LOG="${LOC}/node1/node1.err"
+    elif [ -r ${LOC}/node2/node2.err ]; then
+      ERROR_LOG="${LOC}/node2/node2.err"
     else
       echo "Assert: no error log found for Galera run!"
       exit 1

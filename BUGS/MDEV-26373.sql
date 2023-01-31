@@ -20,3 +20,11 @@ SET SESSION tx_read_only=0;
 INSERT INTO t1 VALUES (1);
 SELECT SLEEP (3);
 SET SESSION tx_read_only=1;  # added for looping
+
+SET sql_mode=ORACLE;
+SET @@session.enforce_storage_engine=innodb;
+ALTER TABLE mysql.general_log engine = CSV;
+SET GLOBAL tx_read_only=1;
+SET GLOBAL general_log=ON;
+SET GLOBAL log_output='TABLE,FILE';
+SELECT 1;
