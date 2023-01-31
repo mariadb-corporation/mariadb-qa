@@ -621,6 +621,7 @@ field->col->is_binary() || field->prefix_len % field->col->mbmaxlen == 0|SIGABRT
 SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|srw_mutex::wr_lock_try|srw_mutex::wr_lock|ssux_lock_low::wr_lock                                             ## MDEV-26373
 SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|srw_mutex_impl<true>::wr_lock_try|srw_mutex_impl<true>::wr_lock|ssux_lock_impl<true>::wr_lock                ## MDEV-26373
 thr_get_trx(thr)->id || index->table->no_rollback() || index->table->is_temporary()|SIGABRT|row_ins_index_entry|row_ins_index_entry_step|row_ins|row_ins_step                  ## MDEV-26373
+thr_get_trx(thr)->id || index->table->no_rollback() || index->table->is_temporary()|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low ## MDEV-26373
 !table->file || table->file->inited == handler::NONE|SIGABRT|close_thread_table|close_thread_tables|mysqld_show_create|mysql_execute_command                                   ## MDEV-26334
 SIGSEGV|bitmap_clear_bit|bitmap_lock_clear_bit|free_tmp_table|close_thread_tables                                                                                              ## MDEV-26334
 SIGSEGV|handler::ha_close|closefrm|intern_close_table|tc_purge                                                                                                                 ## MDEV-26334
