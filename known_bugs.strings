@@ -150,6 +150,7 @@ SIGSEGV|_my_b_write|Log_event_writer::write_internal|Log_event_writer::encrypt_a
 prefix_size <= width|SIGABRT|Bitmap<64u>::is_prefix|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                   ## MDEV-24931
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.str, MDL_EXCLUSIVE)|SIGABRT|TDC_element::flush|mysql_discard_or_import_tablespace|Sql_cmd_discard_import_tablespace::execute|mysql_execute_command ## MDEV-30364
 height == btr_page_get_level(page_cur_get_page(page_cursor))|SIGABRT|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low|row_ins_sec_index_entry|row_ins_index_entry       ## MDEV-30400
+!wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row()) || thd->wsrep_cs().transaction().state() == wsrep::transaction::s_aborted|SIGABRT|wsrep_commit_empty|ha_commit_trans|trans_commit_implicit|mysql_execute_command ## MDEV-30388
 !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row()) || thd->wsrep_cs().transaction().state() == wsrep::transaction::s_aborted|SIGABRT|wsrep_commit_empty|mysql_execute_command|mysql_parse|wsrep_mysql_parse ## MDEV-30388
 0|SIGABRT|Type_handler_string_result::make_packed_sort_key_part|make_packed_sortkey|make_sortkey|find_all_keys                                                                 ## MDEV-30371
 0|SIGABRT|Type_handler_string_result::make_sort_key|make_sortkey|find_all_keys|filesort                                                                                        ## MDEV-30371
@@ -695,6 +696,7 @@ readbytes != (size_t)-1 || (*__errno_location ()) != 9|SIGABRT|my_pread|azflush|
 ctx->skip_pk_sort|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|mysql_inplace_alter_table          ## MDEV-25550
 transactional_table || !changed || thd->transaction.stmt.modified_non_trans_table|SIGABRT|mysql_insert|mysql_execute_command|mysql_parse|wsrep_mysql_parse                     ## MDEV-25548
 transactional_table || !changed || thd->transaction.stmt.modified_non_trans_table|SIGABRT|select_insert::abort_result_set|select_create::abort_result_set|handle_select|Sql_cmd_create_table_like::execute ## MDEV-25548
+transactional_table || !changed || thd->transaction->stmt.modified_non_trans_table|SIGABRT|select_insert::abort_result_set|select_create::abort_result_set|select_create::send_eof|JOIN::exec_inner ## MDEV-25548
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|ha_delete_table|mysql_rm_table_no_locks                           ## MDEV-25500
 !((system_charset_info)->coll->strcasecmp((system_charset_info), (dict_table_get_col_name( ib_table, j)), (field->field_name.str)))|SIGABRT|innobase_build_v_templ|ha_innobase::inplace_alter_table|handler::ha_inplace_alter_table|mysql_inplace_alter_table ## MDEV-25533
 part_id == m_last_part|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                  ## MDEV-25532
@@ -996,6 +998,7 @@ ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlo
 SIGSEGV|MDL_lock::hog_lock_types_bitmap|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_context::release_lock                                                         ## MDEV-22448 NOW 20945/MDEV-25037
 SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::rollback_to_savepoint|THD::restore_backup_open_tables_state                                         ## MDEV-22448 NOW 20945
 SIGSEGV|Item::val_uint|handle_select|execute_sqlcom_select|mysql_execute_command                                                                                               ## MDEV-22447
+h == h->type_handler_for_comparison()|SIGABRT|Value_source::Context::Context|Item_func_in::propagate_equal_fields|Item_func::build_equal_items|build_equal_items               ## MDEV-22444
 SIGSEGV|__GI___dl_iterate_phdr|_Unwind_Find_FDE|uw_frame_state_for|Item::operator new                                                                                          ## MDEV-22444
 SIGSEGV|__GI___dl_iterate_phdr|_Unwind_Find_FDE|uw_frame_state_for|Sql_alloc::operator new                                                                                     ## MDEV-22444
 SIGSEGV|__GI___dl_iterate_phdr|_Unwind_Find_FDE|uw_frame_state_for|Type_all_attributes::~Type_all_attributes                                                                   ## MDEV-22444
