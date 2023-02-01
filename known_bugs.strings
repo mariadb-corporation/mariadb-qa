@@ -21,6 +21,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
 #GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-26258, likely. Leaving for other issues
+#GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-30488
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 # MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
 GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
@@ -135,6 +136,13 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+precision > 0|SIGABRT|Item_func_div::result_precision|Item_func_div::fix_length_and_dec|Item_func::fix_fields|setup_fields                                                     ## MDEV-23444
+precision > 0|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::Field_new_decimal|Type_handler_newdecimal::make_table_field                               ## MDEV-23444
+precision > 0|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::set_and_validate_prec|Field_new_decimal::Field_new_decimal                                ## MDEV-23444
+scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::Field_new_decimal|Field_new_decimal::create_from_item ## MDEV-23444
+(*endptr - (const char *) s) % 2 == 0|SIGABRT|my_strtoll10_mb2|Value_source::Converter_strtoll10::Converter_strtoll10|Value_source::Converter_strtoll10_with_warn::Converter_strtoll10_with_warn|Value_source::longlong_from_string_with_check ## MDEV-23150
+(*endptr - (const char *) s) % 2 == 0|SIGABRT|my_strtoll10_mb2|charset_info_st::strtoll10|Value_source::Converter_strtoll10::Converter_strtoll10|Value_source::Converter_strtoll10_with_warn::Converter_strtoll10_with_warn ## MDEV-23150
+(*endptr - s) % 2 == 0|SIGABRT|my_strtoll10_mb2|longlong_from_string_with_check|Item::val_int_from_string|Item_str_func::val_int                                               ## MDEV-23150
 wsrep_cluster_address[0]|SIGABRT|wsrep_create_rollbacker|wsrep_cluster_address_update|sys_var::update|set_var::update                                                          ## MDEV-30516
 SIGSEGV|__strnlen_avx2|process_str_arg|my_vsnprintf_ex|my_error                                                                                                                ## MDEV-28018
 state_ == s_exec || state_ == s_quitting|SIGABRT|wsrep::client_state::disable_streaming|wsrep_trx_fragment_size_update|sys_var::update|set_var::update                         ## MDEV-29236
@@ -349,6 +357,7 @@ cache != __null|SIGABRT|sub_select_cache|evaluate_join_record|sub_select|do_sele
 !(mysql_bin_log.is_open() && !thd.is_current_stmt_binlog_format_row())|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|start_thread|clone                         ## MDEV-28791
 !mysql_bin_log.is_open() || thd.is_current_stmt_binlog_format_row()|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|start_thread|clone                            ## MDEV-28791
 bitmap_is_set(&m_part_info->read_partitions, m_part_spec.start_part)|SIGABRT|ha_partition::handle_ordered_index_scan|ha_partition::common_first_last|ha_partition::index_last|handler::ha_index_last ## MDEV-24283
+file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|ha_partition::handle_opt_part ## MDEV-26035
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert ## MDEV-26035
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|mysql_admin_table ## MDEV-26035
 table->in_use && tdc->flushed|SIGABRT|TABLE_SHARE::visit_subgraph|Wait_for_flush::accept_visitor|MDL_context::visit_subgraph|MDL_context::find_deadlock                        ## MDEV-28771
@@ -1720,7 +1729,7 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute|mysql_execute_command                                                           ## Fixed ## MDEV-29706
 # SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute                                                        ## Fixed ## MDEV-29706
 # 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-29761
-# SIGSEGV|__strcmp_avx2|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                 ## Fixed ## MDEV-29852
+SIGSEGV|__strcmp_avx2|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                 ## Fixed ## MDEV-29852  # Fixed, but still present in 10.11 (not merged yet), remark later
 # SIGSEGV|is_acl_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                   ## Fixed ## MDEV-29852
 # !strstr(table->name.m_name, "/FTS_") || purge_sys.must_wait_FTS()|SIGABRT|trx_t::commit|ha_innobase::delete_table|hton_drop_table|ha_delete_table                   ## Fixed ## MDEV-29853
 # (((nr) % (1LL << 24)) % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_time_packed_to_binary|Time::to_native|Item_cache_time::val_native|select_max_min_finder_subselect::cmp_native ## Fixed ## MDEV-29924
