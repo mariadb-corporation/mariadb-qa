@@ -205,7 +205,7 @@ else
 fi
 cd - >/dev/null || exit 1
 
-SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" bin/mysqld 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
+SOURCE_CODE_REV="$(cat ./include/mysql/server/private/source_revision.h 2> /dev/null | cut -d'"' -f2)"
 if echo "${PWD}" | grep -q EMD ; then
   SERVER_VERSION="$(bin/mysqld --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]-MariaDB' | sed 's|-MariaDB||')"
 else
@@ -313,7 +313,7 @@ else
       LINE_BEFORE_SAN_STACK=$(grep -n "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o '^[0-9]\+')
       if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
         echo '{noformat}'
-        ALT_SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${ALT_BASEDIR}/bin/mysqld 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
+        ALT_SOURCE_CODE_REV="$(cat ${ALT_BASEDIR}/include/mysql/server/private/source_revision.h 2> /dev/null | cut -d'"' -f2)"
         ALT_SERVER_VERSION="$(${ALT_BASEDIR}/bin/mysqld --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
         echo ''
         echo "{noformat:title=${ALT_SERVER_VERSION} ${ALT_SOURCE_CODE_REV} ${ALT_BUILD_TYPE}}"

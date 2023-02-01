@@ -7,7 +7,17 @@ if [ -r ./bin/mysqld ]; then BIN='./bin/mysqld'; fi
 if [ -z "${BIN}" -a -r ../mysqld/mysqld ]; then BIN='../mysqld/mysqld'; fi
 if [ -z "${BIN}" ]; then echo "Assert: bin/mysqld not found!" exit 1; fi
 
-SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${BIN} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
+# Thanks to https://www.cyberciti.biz/faq/howto-grep-text-between-two-words-in-unix-linux/
+if [ -r ./log/master.err ]; then
+  SOURCE_CODE_REV=$(grep -oP '(?<=source revision )(?s).*(?= as process)' ./log/master.err 2> /dev/null)
+elif [ -r ./node1/node1.err -o -r ./node1/node1.err ]; then
+  SOURCE_CODE_REV=$(grep -oPh '(?<=source revision )(?s).*(?= as process)' ./node*/node*.err 2> /dev/null | head -1)
+fi
+
+if [ -z "$SOURCE_CODE_REV" ]; then
+  SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${BIN} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
+fi
+
 if echo "${PWD}" | grep -q EMD ; then
   SERVER_VERSION="$(${BIN}  --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]-MariaDB' | sed 's|-MariaDB||')"
 else
