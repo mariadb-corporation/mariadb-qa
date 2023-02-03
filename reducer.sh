@@ -360,37 +360,19 @@ SPECIAL_MYEXTRA_OPTIONS=
 #                      2) Any reference to the engine is removed from MYEXTRA and stored in two variables TOKUDB/ROCKSDB to allow more control/testcase reducability
 #                      3) Testcase reduction removal of engines (one-by-one) is tested in STAGE9
 
-MYSQL_VERSION=$(${BASEDIR}/bin/mysqld --no-defaults --version 2>&1 | grep -oe '[0-9]\.[0-9][\.0-9]*' | head -n1)
-#Format version string (thanks to wsrep_sst_xtrabackup-v2)
-normalize_version(){
-  local major=0
-  local minor=0
-  local patch=0
-
-  # Only parses purely numeric version numbers, 1.2.3
-  # Everything after the first three values are ignored
-  if [[ $1 =~ ^([0-9]+)\.([0-9]+)\.?([0-9]*)([\.0-9])*$ ]]; then
-    major=${BASH_REMATCH[1]}
-    minor=${BASH_REMATCH[2]}
-    patch=${BASH_REMATCH[3]}
-  fi
-  printf %02d%02d%02d $major $minor $patch
-}
-
-#Version comparison script (thanks to wsrep_sst_xtrabackup-v2)
-check_for_version()
-{
-  local local_version_str="$( normalize_version $1 )"
-  local required_version_str="$( normalize_version $2 )"
-
-  if [[ "$local_version_str" < "$required_version_str" ]]; then
-    return 1
-  else
-    return 0
-  fi
-}
 TOKUDB=
 ROCKSDB=
+#Check BASEDIR and auto-update to a build in /data/VARIOUS_BUILDS/ if BASEDIR directory does not exist
+ALT_BASEDIR="$(echo "${BASEDIR}" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"  # Check /data/VARIOUS_BUILDS (and use any dir found there if BASEDIR does not exist), as it often contains older BASEDIR directories. This aids in just starting reducer.sh without having to update the BASEDIR path/directory
+if [[ ! -d "${PWD}" -a ! -d "${ALT_BASEDIR}" ]]; then
+  echo "Assert: Neither '${PWD}' nor '${ALT_BASEDIR}' directories exist, please set the BASEDIR variable correctly"
+  exit 1
+elif [[ -d "${ALT_BASEDIR}" ]]; then  # BASEDIR not found, but BASEDIR_ALT (/data/VARIOUS_BUILDS/ archive) found
+  echo "Note: Updating BASEDIR from '${BASEDIR}' to '${BASEDIR_ALT}' as BASEDIR did not exist, but the same/required server build was found in /data/VARIOUS_BUILDS/"
+  sleep 2
+  BASEDIR="${ALT_BASEDIR}"
+fi
+ALT_BASEDIR=
 #Check rr binary location and set startup option
 export RR_OPTIONS=
 if [[ ${RR_TRACING} -eq 1 ]]; then
@@ -908,20 +890,12 @@ options_check(){
   fi
   BIN="${BASEDIR}/bin/mysqld"
   if [ ! -s "${BIN}" ]; then
-    BIN="${BASEDIR}/bin/mysqld-debug"
-    if [ ! -s "${BIN}" ]; then  # Auto-attempt /data/VARIOUS_BUILDS at it often contains older BASEDIR directories
-      BIN_DV="$(echo "${BASEDIR}/bin/mysqld" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"
-      if [ -s "${BIN_DV}" ]; then
-        BASEDIR_OLD="${BASEDIR}"
-        BASEDIR="$(echo "${BASEDIR_OLD}" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"
-        echo "BASEDIR automatically updated from ${BASEDIR_OLD} to ${BASEDIR}"
-        BASEDIR_OLD=
-        BIN="${BIN_DV}"
-        BIN_DV=
-      else
-        BIN_DV=
-        echo "Assert: No mysqld or mysqld-debug binary was found in ${BASEDIR}/bin"
-        echo 'Please check script contents/options and set the $BASEDIR variable correctly'
+    BIN="${BASEDIR}/bin/mariadbd"
+    if [ ! -s "${BIN}" ]; then
+      BIN="${BASEDIR}/bin/mysqld-debug"
+      if [ ! -s "${BIN}" ]; then
+        echo "Assert: No mysqld, mariadbd or mysqld-debug binary was found in ${BASEDIR}/bin"
+        echo 'Please check script options and please set the $BASEDIR variable correctly'
         echo "The $BASEDIR variable is currently set to ${BASEDIR}"
         echo "Terminating now."
         exit 1
