@@ -32,7 +32,7 @@ if [ -z "${MYSQLD}" ]; then
   echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld nor other potential mysqld's extracted from any logs at ./log/master.err or ./node1/node1.err"
   exit 1
 else
-  SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${MYSQLD} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_r[ei]vision||gi')"
+  SOURCE_CODE_REV="$(cat ./include/mysql/server/private/source_revision.h 2> /dev/null | cut -d'"' -f2)"
   SERVER_VERSION="$(${MYSQLD} --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
   LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
   BUILD_TYPE=
