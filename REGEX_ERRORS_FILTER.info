@@ -100,6 +100,8 @@ InnoDB: FTS_DOC_ID must be larger than 0              Presumed non-issue (text i
 InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap
 Operating system error number 36 in a file operation  https://jira.mariadb.org/browse/MDEV-19849 (file name too long)
 Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
+Error on rename.*errno: 150.*Foreign key.*incorrectly formed          https://jira.mariadb.org/browse/MDEV-29092
+ERROR.*InnoDB.*or.*ref.*foreign k.*constr.*not compat.*new table def  https://jira.mariadb.org/browse/MDEV-29092
 
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
 #InnoDB: Resetting invalid page                       https://jira.mariadb.org/browse/MDEV-26121, Fixed

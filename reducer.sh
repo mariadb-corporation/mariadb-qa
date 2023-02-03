@@ -2985,7 +2985,7 @@ cleanup_and_save(){
       echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
     fi
     grep -E --binary-files=text -v "^# mysqld options required for replay:" $WORKT > $WORKO
-    MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|--sql_mode=|--sql_mode= |g;s|[ \t]\+| |g")
+    MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|sql_mode=\([^ ]\)|sql_mode= \1|g;s|[ \t]\+| |g")
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
       if [ -s $WORKO ]; then
         if [ "${MYINIT}" == "" ]; then

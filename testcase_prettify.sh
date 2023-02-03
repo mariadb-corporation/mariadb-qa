@@ -296,7 +296,6 @@ cat "${1}" | tr -d '`' | \
        s|\([^\.]\)st_|\1ST_|gi; \
        s|geomfromtext|GEOMFROMTEXT|gi; \
        s|ST_\([_a-zA-Z]\+\)|\UST_\1|gi; \
-       s|^. mysqld options required for replay.*|${OPTIONS}|i; \
        s|crc32|CRC32|g; \
        s|\t| |g; \
        s|  | |g; \
@@ -425,7 +424,8 @@ cat "${1}" | tr -d '`' | \
        s|io_thread|IO_THREAD|gi; \
        s|(VALUE|(value|g; \
        s|( (|((|g;s|) )|))|g; \
-       s|  | |gi"
+       s|  | |gi; \
+       s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 
 # Templates for copy/paste
 #       s|||gi; \

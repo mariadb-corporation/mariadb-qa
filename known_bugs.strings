@@ -1726,7 +1726,7 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute                                                        ## Fixed ## MDEV-29706
 # 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-29761
 SIGSEGV|__strcmp_avx2|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                 ## Fixed ## MDEV-29852  # Fixed, but still present in 10.11 (not merged yet), remark later
-# SIGSEGV|is_acl_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                   ## Fixed ## MDEV-29852
+SIGSEGV|is_acl_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                   ## Fixed ## MDEV-29852  # Fixed, but still present in 10.11 (not merged yet), remark later
 # !strstr(table->name.m_name, "/FTS_") || purge_sys.must_wait_FTS()|SIGABRT|trx_t::commit|ha_innobase::delete_table|hton_drop_table|ha_delete_table                   ## Fixed ## MDEV-29853
 # (((nr) % (1LL << 24)) % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_time_packed_to_binary|Time::to_native|Item_cache_time::val_native|select_max_min_finder_subselect::cmp_native ## Fixed ## MDEV-29924
 # SIGSEGV|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|JOIN::save_explain_data_intern|JOIN::save_explain_data                            ## Fixed ## MDEV-30007

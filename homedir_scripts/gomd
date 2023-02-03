@@ -5,7 +5,7 @@
 BASEDIR=/test/
 RUNSOPT=2
 RUNSDBG=2
-#CONF=pqUery-run-MD-spider.conf
+#CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD-spider-all.conf
 #CONF=pquery-run-MD-federated.conf
 CONF=pquery-run-MD.conf
