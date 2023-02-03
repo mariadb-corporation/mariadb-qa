@@ -136,6 +136,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGABRT|__cxa_throw|gu::ThrowError::~ThrowError|galera::WriteSetOut::check_size|galera::WriteSetOut::gather                                                                    ## MENT-1725
+state() == s_executing || state() == s_prepared || state() == s_committed || state() == s_aborted || state() == s_must_replay|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse ## MDEV-30550
 precision > 0|SIGABRT|Item_func_div::result_precision|Item_func_div::fix_length_and_dec|Item_func::fix_fields|setup_fields                                                     ## MDEV-23444
 precision > 0|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::Field_new_decimal|Type_handler_newdecimal::make_table_field                               ## MDEV-23444
 precision > 0|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::set_and_validate_prec|Field_new_decimal::Field_new_decimal                                ## MDEV-23444

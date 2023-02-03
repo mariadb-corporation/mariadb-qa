@@ -1,0 +1,15 @@
+CREATE TABLE t1 (c1 BIGINT NOT NULL);
+INSERT INTO t1  (c1) VALUES(10);
+SET GLOBAL wsrep_on = OFF;
+XA START 't';
+SET @@session.query_prealloc_size   = 0;
+SET SESSION max_session_mem_used = 8192;
+LOAD INDEX INTO CACHE t1 IGNORE LEAVES;
+SET SESSION wsrep_dirty_reads=1;
+SET GLOBAL wsrep_on = TRUE;
+SET SESSION wsrep_trx_fragment_unit = 'statements';
+SET SESSION wsrep_trx_fragment_size = 3;
+SET GLOBAL wsrep_cluster_address='gcomm://';
+SAVEPOINT my_sp;
+SELECT 1;
+CREATE TABLE tbl2(c1 VARCHAR(20)) engine=InnoDB;
