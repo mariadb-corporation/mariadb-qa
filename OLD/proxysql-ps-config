@@ -8,7 +8,7 @@ PORT=$[50000 + ( $RANDOM % ( 9999 ) ) ]
 WORKDIR=$1
 INTANCES=$2
 STARTUP_OPTION=$3
-SCRIPT_PWD=$(cd `dirname $0` && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 PS_START_TIMEOUT=60
 
 if ! pidof proxysql >/dev/null ; then

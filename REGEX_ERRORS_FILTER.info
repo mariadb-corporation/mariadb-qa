@@ -21,6 +21,7 @@ Internal MariaDB error code: 1114                     https://jira.mariadb.org/b
 mysqld: The table .(temporary). is full               https://jira.mariadb.org/browse/MDEV-23212
 Internal MariaDB error code: 1146                     Presumed non-issue (table does not exist, normal in tests)
 Internal MariaDB error code: 1193                     Presumed non-issue (init_slave query cannot be executed)
+Internal MariaDB error code: 1223                     https://jira.mariadb.org/browse/MDEV-22936 (May mask other bugs?)
 Internal MariaDB error code: 1227                     https://jira.mariadb.org/browse/MDEV-29659 (spider_internal_sql_log_off)
 Internal MariaDB error code: 1231                     Presumed non-issue (init_slave query cannot be executed)
 init_slave query, Internal MariaDB error code: 1237   Presumed non-issue (Slave thread cannot execute init_slave query)
@@ -38,7 +39,7 @@ Got error 170                                         https://jira.mariadb.org/b
 Got error 171 .The event was corrupt                  https://jira.mariadb.org/browse/MDEV-22936 (May mask other bugs?)
 Got error 127 when reading table                      https://jira.mariadb.org/browse/MDEV-27903
 Got error 188 when reading table                      Presumed non-issue (Operation was interrupted)
-Got error 192                                         https://jira.mariadb.org/browse/MDEV-26258
+Got error 192                                         https://jira.mariadb.org/browse/MDEV-26258 (various error 192 msgs)
 Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
 Got error 194 .Tablespace is missing .* engine InnoDB https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
 Got error 1054 when reading table                     https://jira.mariadb.org/browse/MDEV-29430 (Spider)
@@ -100,8 +101,12 @@ InnoDB: FTS_DOC_ID must be larger than 0              Presumed non-issue (text i
 InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap
 Operating system error number 36 in a file operation  https://jira.mariadb.org/browse/MDEV-19849 (file name too long)
 Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
-Error on rename.*errno: 150.*Foreign key.*incorrectly formed          https://jira.mariadb.org/browse/MDEV-29092
-ERROR.*InnoDB.*or.*ref.*foreign k.*constr.*not compat.*new table def  https://jira.mariadb.org/browse/MDEV-29092
+Error on rename.*errno: 150.*Foreign key.*incorrectly formed           https://jira.mariadb.org/browse/MDEV-29092
+ERROR.*InnoDB.*or.*ref.*foreign k.*constr.*not compat.*new table def   https://jira.mariadb.org/browse/MDEV-29092
+ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussion (ref email thread 'Discuss')
+Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
+ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussion (ref email thread 'Discuss')
+ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5)
 
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
 #InnoDB: Resetting invalid page                       https://jira.mariadb.org/browse/MDEV-26121, Fixed

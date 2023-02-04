@@ -2,6 +2,7 @@
 # Created by Roel Van de Paar, MariaDB
 
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 
 # User variables
 ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS=1
@@ -66,7 +67,6 @@ else
   fi
 fi
 sleep 1
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 RUN_PWD=${PWD}
 
 if [ ! -r bin/mysqld ]; then
@@ -205,7 +205,7 @@ else
 fi
 cd - >/dev/null || exit 1
 
-SOURCE_CODE_REV="$(cat ./include/mysql/server/private/source_revision.h 2> /dev/null | cut -d'"' -f2)"
+SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
 if echo "${PWD}" | grep -q EMD ; then
   SERVER_VERSION="$(bin/mysqld --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]-MariaDB' | sed 's|-MariaDB||')"
 else
@@ -313,7 +313,9 @@ else
       LINE_BEFORE_SAN_STACK=$(grep -n "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o '^[0-9]\+')
       if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
         echo '{noformat}'
-        ALT_SOURCE_CODE_REV="$(cat ${ALT_BASEDIR}/include/mysql/server/private/source_revision.h 2> /dev/null | cut -d'"' -f2)"
+        cd ${ALT_BASEDIR}
+        ALT_SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
+        cd - >/dev/null
         ALT_SERVER_VERSION="$(${ALT_BASEDIR}/bin/mysqld --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
         echo ''
         echo "{noformat:title=${ALT_SERVER_VERSION} ${ALT_SOURCE_CODE_REV} ${ALT_BUILD_TYPE}}"

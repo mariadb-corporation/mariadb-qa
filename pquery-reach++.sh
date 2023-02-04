@@ -12,7 +12,7 @@ STATIC_PQUERY_BIN=${HOME}/mariadb-qa/pquery/pquery2-ps8  # Leave empty to use a 
 SESSIONS=11
 
 # Internal variables: Do not change!
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 
 # Trap ctrl-c
 trap ctrl-c SIGINT

@@ -329,6 +329,8 @@ if [[ "${TAR_opt_san}" == *".tar.gz"* ]]; then
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for tar!"; exit 1; fi
   mv ${DIR_opt_san} ${DIR_opt_san_new}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for moving of tarball (2)!"; exit 1; fi
+  # Store revision (used by source_code_rev.sh to find revision for, for example, MS builds)
+  git log | grep -om1 'commit.*' | awk '{print $2}' | sed 's|[ \n\t]\+||g' > ${DIR_opt_san_new}/git_revision.txt
   echo $CMD > ${DIR_opt_san_new}/BUILD_CMD_CMAKE
   #rm -Rf ${CURPATH}_opt_san  # Best not to delete it; this way gdb debugging is better quality as source will be available!
   exit 0

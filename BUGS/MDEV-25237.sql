@@ -23,3 +23,8 @@ CREATE TABLE t (a INT,b INT,c INT,d INT,e INT,f INT GENERATED ALWAYS AS (a+b) VI
 INSERT INTO t VALUES (0,0,0,0,0,0,0,0,0);
 SET GLOBAL session_track_system_variables='a';
 INSERT INTO t SET c=CONCAT (REPEAT (0,0),0,0);
+
+CREATE TABLE t (c INT,KEY(c)) ENGINE=InnoDB;
+SET @@autocommit=0;
+SET GLOBAL session_track_system_variables='a';
+INSERT INTO t (c) VALUES (1);

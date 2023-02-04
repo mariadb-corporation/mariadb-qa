@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 
 for i in $(ls */*.result | egrep -i "innodb|rocksdb|tokudb|myisam|memory|csv|ndb|merge" | sed 's|/.*||' | sort -u); do
   if [ -d ${i} ]; then

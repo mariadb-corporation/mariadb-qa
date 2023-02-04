@@ -5,6 +5,7 @@
 # This script, when executed in proximity to mysqld (ref code below), shows handy JIRA formatting strings, showing the server version, source code revision and build type. These can then be used to surround stacks, log exerpts, code, etc.
 
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 
 MYSQLD=
 if [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
@@ -32,8 +33,11 @@ if [ -z "${MYSQLD}" ]; then
   echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld nor other potential mysqld's extracted from any logs at ./log/master.err or ./node1/node1.err"
   exit 1
 else
-  SOURCE_CODE_REV="$(cat ./include/mysql/server/private/source_revision.h 2> /dev/null | cut -d'"' -f2)"
+  SOURCE_CODE_REV="$(${SCRIPT_PWD}/../source_code_rev.sh)"
   SERVER_VERSION="$(${MYSQLD} --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
+  if [ -z "${SERVER_VERSION}" ]; then  # Likely MS
+    SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
+  fi
   LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
   BUILD_TYPE=
   SAN="$(echo "${PWD}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"

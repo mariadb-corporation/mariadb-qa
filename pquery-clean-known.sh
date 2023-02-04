@@ -4,7 +4,7 @@
 # This script deletes all known found bugs from a pquery work directory. Execute from within the pquery workdir.
 
 # Internal variables
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 set +H
 
 # Check if this is a MariaDB Galera Cluster run

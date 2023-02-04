@@ -5,7 +5,7 @@
 # This script starts x (first option) new reducers based on the pquery-results.sh output (one reducer per issue seen - using the first failing trail for that issue), skipping the first n reducers (second option)
 
 # Internal variables
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 
 if [ "$1" == "" ]; then
   echo "Assert: This script expects one option: how many reducers to start on pquery-results.sh output."

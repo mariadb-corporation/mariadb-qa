@@ -50,6 +50,7 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 UBSAN|member access within null pointer of type 'struct TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize               ## MDEV-28510
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|Type_handler_string_result::make_packed_sort_key_part|make_packed_sortkey|make_sortkey ## MDEV-27081
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|make_packed_sortkey|make_sortkey|find_all_keys   ## MDEV-27081
+UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_malloc.c|my_strdup|Session_sysvars_tracker::init|THD::init|THD::THD                       ## MDEV-25373
 UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_malloc.c|my_strdup|Session_sysvars_tracker::init|THD::init|THD::change_user               ## MDEV-25237
 UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_malloc.c|my_strdup|Session_sysvars_tracker::init|plugin_thdvar_init|THD::init             ## MDEV-25237
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_get_user_var::val_int|Item_func_substr::fix_length_and_dec ## MDEV-28387

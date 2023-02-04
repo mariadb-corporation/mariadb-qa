@@ -100,3 +100,14 @@ CREATE TRIGGER t_cnt_b BEFORE UPDATE ON t FOR EACH ROW UPDATE t SET cnt=cnt;
 INSERT INTO t (c) VALUES (1),(1),(1),(1),(1);
 LOCK TABLES t WRITE,t AS t0 READ;
 SET STATEMENT sql_mode=''FOR ALTER TABLE t CHANGE c c FLOAT(0,0) UNSIGNED,CHANGE c2 c2 FLOAT(0,0) SIGNED;
+
+# Not added to bug yet (bulk update later)
+SET GLOBAL aria_encrypt_tables=ON;
+CREATE TABLE t2 (c INT);
+INSERT INTO t2 VALUES (1);
+INSERT INTO t2 VALUES();
+SET storage_engine=Aria;
+CREATE TABLE t3 (c INT,INDEX (c)) UNION=(t,t2);
+INSERT INTO t3 SELECT * FROM t2;
+SELECT * FROM t3;
+# Error log: [ERROR] Got error 192 when reading table '/dev/shm/021808/6103/tmp/#sql-temptable-ebdb7-8-2e'") 

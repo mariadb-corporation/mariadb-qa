@@ -8,6 +8,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1064
 MARIADB_ERROR_CODE|MariaDB error code: 1114  ## https://jira.mariadb.org/browse/MDEV-23212
 MARIADB_ERROR_CODE|MariaDB error code: 1146
 MARIADB_ERROR_CODE|MariaDB error code: 1193
+MARIADB_ERROR_CODE|MariaDB error code: 1223  ## https://jira.mariadb.org/browse/MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1231
 MARIADB_ERROR_CODE|MariaDB error code: 1237
 MARIADB_ERROR_CODE|MariaDB error code: 1399
@@ -55,22 +56,19 @@ part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handle
 cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28871
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (DISABLED GENERIC FILTERS TO AVOID MISSING OTHER BUGS) #####
-#**# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                    ## MDEV-26258
-#**# 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                    ## MDEV-29289
-#**# status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql ## MDEV-25927
-#**# open_tables == __null|SIGABRT|THD::cleanup|THD::free_connection|THD::~THD|THD::~THD                                                                                       ## MDEV-23701 (Generic, not likely to be a valid bug-related UniqueID)
+### status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql ## MDEV-25927
+### open_tables == __null|SIGABRT|THD::cleanup|THD::free_connection|THD::~THD|THD::~THD                                                                                        ## MDEV-23701 (Generic, not likely to be a valid bug-related UniqueID)
 
 ##### CURRENT STACK SMASHING / MEMORY OVERFLOW/OVEWRITE BUGS (MOSTLY DISABLED FILTERS TO AVOID MISSING OTHER BUGS) #####
-#**# SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                          ## MDEV-29287
-#**# SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                             ## MDEV-29287
-#**# SIGABRT|__libc_message|malloc_printerr|_int_malloc|__GI___libc_malloc                                                                                                     ## MDEV-29287
-#**# SIGABRT|__libc_message|malloc_printerr|_int_malloc|_int_realloc                                                                                                           ## MDEV-29287
-#**# SIGABRT|__libc_message|malloc_printerr|_int_free|Rows_log_event::~Rows_log_event                                                                                          ## MDEV-29287
-#**# SIGSEGV|free_root|Warning_info::free_memory|Warning_info::clear|Warning_info::opt_clear                                                                                   ## MDEV-29287
+### SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                           ## MDEV-29287
+### SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                              ## MDEV-29287
+### SIGABRT|__libc_message|malloc_printerr|_int_malloc|__GI___libc_malloc                                                                                                      ## MDEV-29287
+### SIGABRT|__libc_message|malloc_printerr|_int_malloc|_int_realloc                                                                                                            ## MDEV-29287
+### SIGABRT|__libc_message|malloc_printerr|_int_free|Rows_log_event::~Rows_log_event                                                                                           ## MDEV-29287
+### SIGSEGV|free_root|Warning_info::free_memory|Warning_info::clear|Warning_info::opt_clear                                                                                    ## MDEV-29287
 
 ##### CURRENT BUGS WHICH REQUIRE ADDITIONAL TESTCASES (MOSTLY DISABLED FILTERS) #####
-#**# SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                              ## MDEV-24911
-
+### SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                               ## MDEV-24911
 
 ##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874 and also discussed in Slack st 7 Oct 22 8am. Use lower level stack frames to differentiate
 marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-24658
@@ -82,26 +80,26 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 !maria_assert_if_crashed_table|SIGABRT|_ma_set_fatal_error|_ma_flush_table_files|_ma_reenable_logging_for_table|ha_maria::external_lock                                        ## SPECIAL-2
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
-#***#(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl            ## MDEV-24749
-#***#SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                    ## MDEV-26457
+###(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl            ## MDEV-24749
+###SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                    ## MDEV-26457
 
 ##### DISABLED MEMORY FILTERS; DUE TO GENERIC/NON-SPECIFIC MEMORY STACKS #####
 SIGSEGV|_int_free|free_root|free_tmp_table|JOIN::cleanup                                                                                                                       ## MDEV-28354
 SIGSEGV|_int_free|root_free|free_root|free_tmp_table                                                                                                                           ## MDEV-28354
-#***#SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<int>::deallocate                                                                                     ## MDEV-21799
-#***#SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<long>::deallocate                                                                                    ## MDEV-21799
-#***#SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<std::shared_ptr<rocksdb::EventListener> >::deallocate                                                ## MDEV-21799
-#***#SIGABRT|__libc_message|malloc_printerr|_int_free|myrocks::ha_rocksdb::free_key_buffers                                                                                         ## MDEV-21799
-#***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|cleanup_variables                                                                                                          ## MDEV-21799
-#***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|free_root                                                                                                                  ## MDEV-21799
-#***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|myrocks::ha_rocksdb::free_key_buffers                                                                                      ## MDEV-21799
-#***#SIGABRT|__libc_message|malloc_printerr|munmap_chunk|std::__shared_count<shared_ptr_base.h                                                                                      ## MDEV-21799
-#***#SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
-#***#SIGABRT|__libc_message|malloc_printerr|_int_malloc|__GI___libc_malloc                                                                                                          ## MDEV-28054
-#***#SIGSEGV|__memset_avx2_erms|memset|sort_insert_key|sort_key_write                                                                                                               ## MDEV-28054
-#***#SIGSEGV|_int_malloc|__GI___libc_malloc|my_malloc|alloc_root                                                                                                                    ## MDEV-28054
-#***#SIGSEGV|_int_malloc|__GI___libc_malloc|eval_node_alloc_val_buf|eval_node_ensure_val_buf                                                                                        ## MDEV-28054
-#***#SIGSEGV|_int_malloc|__GI___libc_malloc|sf_malloc|my_malloc                                                                                                                     ## MDEV-28054
+###SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<int>::deallocate                                                                                     ## MDEV-21799
+###SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<long>::deallocate                                                                                    ## MDEV-21799
+###SIGABRT|__libc_message|malloc_printerr|_int_free|__gnu_cxx::new_allocator<std::shared_ptr<rocksdb::EventListener> >::deallocate                                                ## MDEV-21799
+###SIGABRT|__libc_message|malloc_printerr|_int_free|myrocks::ha_rocksdb::free_key_buffers                                                                                         ## MDEV-21799
+###SIGABRT|__libc_message|malloc_printerr|munmap_chunk|cleanup_variables                                                                                                          ## MDEV-21799
+###SIGABRT|__libc_message|malloc_printerr|munmap_chunk|free_root                                                                                                                  ## MDEV-21799
+###SIGABRT|__libc_message|malloc_printerr|munmap_chunk|myrocks::ha_rocksdb::free_key_buffers                                                                                      ## MDEV-21799
+###SIGABRT|__libc_message|malloc_printerr|munmap_chunk|std::__shared_count<shared_ptr_base.h                                                                                      ## MDEV-21799
+###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
+###SIGABRT|__libc_message|malloc_printerr|_int_malloc|__GI___libc_malloc                                                                                                          ## MDEV-28054
+###SIGSEGV|__memset_avx2_erms|memset|sort_insert_key|sort_key_write                                                                                                               ## MDEV-28054
+###SIGSEGV|_int_malloc|__GI___libc_malloc|my_malloc|alloc_root                                                                                                                    ## MDEV-28054
+###SIGSEGV|_int_malloc|__GI___libc_malloc|eval_node_alloc_val_buf|eval_node_ensure_val_buf                                                                                        ## MDEV-28054
+###SIGSEGV|_int_malloc|__GI___libc_malloc|sf_malloc|my_malloc                                                                                                                     ## MDEV-28054
 
 ##### Likely debug_dbug issues (reduced once with debug_dbug=... or debug=... demonstrated to be the cause) #####
 ##### Note: these should be disabled if no debug_dbug=... or debug=... SQL statements are being used        #####
@@ -136,6 +134,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-29289
 SIGABRT|__cxa_throw|gu::ThrowError::~ThrowError|galera::WriteSetOut::check_size|galera::WriteSetOut::gather                                                                    ## MENT-1725
 state() == s_executing || state() == s_prepared || state() == s_committed || state() == s_aborted || state() == s_must_replay|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse ## MDEV-30550
 precision > 0|SIGABRT|Item_func_div::result_precision|Item_func_div::fix_length_and_dec|Item_func::fix_fields|setup_fields                                                     ## MDEV-23444
@@ -650,6 +649,7 @@ client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_ke
 state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys                                                  ## MENT-1286
 state() == s_preparing || (is_xa() && state() == s_replaying) || (ret && (state() == s_must_abort || state() == s_must_replay || state() == s_cert_failed || state() == s_aborted))|SIGABRT|wsrep::transaction::before_prepare|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-26266
 !killed_err || killed != NOT_KILLED|SIGABRT|THD::killed_errno|sp_head::execute|sp_head::execute_procedure|do_execute_sp                                                        ## MENT-1278
+0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-26258
 (key_del_current != 0) && ((key_del_current == (~ (my_off_t) 0)) || (key_del_current <= (share->state.state.key_file_length - block_size)))|SIGABRT|_ma_new|_ma_enlarge_root|_ma_ck_real_write_btree|_ma_ck_write_btree_with_log ## MDEV-26258
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::drop_all_triggers|mysql_rm_table_no_locks|mysql_rm_db_internal                  ## MDEV-26258
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::drop_all_triggers|mysql_rm_table_no_locks|mysql_rm_table                        ## MDEV-26258
@@ -1008,6 +1008,7 @@ ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlo
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|backup_lock|mysql_execute_command                                                           ## MDEV-22448 NOW 20945
 SIGSEGV|MDL_lock::hog_lock_types_bitmap|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_context::release_lock                                                         ## MDEV-22448 NOW 20945/MDEV-25037
 SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::rollback_to_savepoint|THD::restore_backup_open_tables_state                                         ## MDEV-22448 NOW 20945
+0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-22447
 SIGSEGV|Item::val_uint|handle_select|execute_sqlcom_select|mysql_execute_command                                                                                               ## MDEV-22447
 h == h->type_handler_for_comparison()|SIGABRT|Value_source::Context::Context|Item_func_in::propagate_equal_fields|Item_func::build_equal_items|build_equal_items               ## MDEV-22444
 SIGSEGV|__GI___dl_iterate_phdr|_Unwind_Find_FDE|uw_frame_state_for|Item::operator new                                                                                          ## MDEV-22444
@@ -1716,8 +1717,8 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # UT_LIST_GET_LEN(trx_list) == 0|SIGABRT|ut_dbg_assertion_failed|trx_sys_t::close|innodb_shutdown|innobase_end                                                        ## Fixed ## MDEV-29142
 # table->get_ref_count() == 0|SIGABRT|Backtrace stopped: Cannot access memory at address                                                                              ## Fixed ## MDEV-29277
 # table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|dict_sys_t::close|innodb_shutdown                                                    ## Fixed ## MDEV-29277
-# functype() == ((Item_cond *) new_item)->functype()|SIGABRT|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                             ## Fixed ## MDEV-29294
-# SIGSEGV|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                                                                                ## Fixed ## MDEV-29294
+functype() == ((Item_cond *) new_item)->functype()|SIGABRT|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                             ## Fixed ## MDEV-29294 # Fixed, but still present in 10.11 (not merged yet), remark later
+SIGSEGV|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                                                                                ## Fixed ## MDEV-29294 # Fixed, but still present in 10.11 (not merged yet), remark later
 # SIGSEGV|Backtrace stopped: Cannot access memory at address                                                                                                          ## Fixed ## MDEV-29352
 # SIGSEGV|strlen|Backtrace stopped: Cannot access memory at address                                                                                                   ## Fixed ## MDEV-29352
 # SIGSEGV|strlen|__GI__dl_exception_create|__GI__dl_signal_error|_dl_close                                                                                            ## Fixed ## MDEV-29352

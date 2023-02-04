@@ -20,7 +20,7 @@ if [ $(grep -m1 --binary-files=text -E "=ERROR:|ThreadSanitizer:|runtime error:|
   sleep 2  # Do not remove, sometimes cores are slow to write!
 fi
 
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" ]; then  # Provision for ~/t symlink
   SCRIPT_PWD="${HOME}/mariadb-qa"
 fi

@@ -1,4 +1,6 @@
 #!/bin/bash
+set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
 
@@ -7,21 +9,15 @@ if [ -r ./bin/mysqld ]; then BIN='./bin/mysqld'; fi
 if [ -z "${BIN}" -a -r ../mysqld/mysqld ]; then BIN='../mysqld/mysqld'; fi
 if [ -z "${BIN}" ]; then echo "Assert: bin/mysqld not found!" exit 1; fi
 
-# Thanks to https://www.cyberciti.biz/faq/howto-grep-text-between-two-words-in-unix-linux/
-if [ -r ./log/master.err ]; then
-  SOURCE_CODE_REV=$(grep -oP '(?<=source revision )(?s).*(?= as process)' ./log/master.err 2> /dev/null)
-elif [ -r ./node1/node1.err -o -r ./node1/node1.err ]; then
-  SOURCE_CODE_REV=$(grep -oPh '(?<=source revision )(?s).*(?= as process)' ./node*/node*.err 2> /dev/null | head -1)
-fi
-
-if [ -z "$SOURCE_CODE_REV" ]; then
-  SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${BIN} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
-fi
+SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
 
 if echo "${PWD}" | grep -q EMD ; then
   SERVER_VERSION="$(${BIN}  --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]-MariaDB' | sed 's|-MariaDB||')"
 else
   SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
+fi
+if [ -z "${SERVER_VERSION}" ]; then  # Likely MS
+  SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
 fi
 
 BUILD_TYPE=
