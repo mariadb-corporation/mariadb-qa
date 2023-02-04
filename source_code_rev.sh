@@ -46,16 +46,16 @@ if [ -z "$SOURCE_CODE_REV" ]; then
   elif [ -r ./bin/mysqld-debug ]; then BIN='./bin/mysqld-debug'; 
   fi
   if [ -r "${BIN}" ]; then
-    # Older method, worked up till circa early Feb 2023
-    SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${BIN} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
-    clean_and_validate
-    if [ -z "$SOURCE_CODE_REV" ]; then  # Newer method, after Feb 2023
-      SOURCE_CODE_REV="$(strings ${BIN} | grep --binary-files=text -im1 -A1 '^Source control revision id for MariaDB source code' | grep -v 'Source control revision id for MariaDB source code')"
+    # Newer method, after Feb 2023
+    SOURCE_CODE_REV="$(strings ${BIN} | grep --binary-files=text -im1 -A1 '^Source control revision id for MariaDB source code' | grep -v 'Source control revision id for MariaDB source code')"
+    clean_and_validate  # Important format check; in case the next line (-A1) was NOT a revision but some other arbritary string
+    if [ -z "$SOURCE_CODE_REV" ]; then
+      # Older method, worked up till circa early Feb 2023. Left for backwards compatibility if SOURCE_CODE_REV still not found (unlikely)
+      SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${BIN} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
     fi
     clean_and_validate
   fi
 fi
-
 
 if [ ! -z "$SOURCE_CODE_REV" ]; then
   echo "${SOURCE_CODE_REV}"
