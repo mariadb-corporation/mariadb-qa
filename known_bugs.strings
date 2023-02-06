@@ -134,6 +134,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|my_charlen_utf8mb3|my_ismbchar|my_charpos_mb|my_ci_charpos                                                                                                             ## MDEV-30575
+SIGSEGV|my_charlen_utf8|my_ismbchar|my_charpos_mb|hp_rec_hashnr                                                                                                                ## MDEV-30575
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-29289
 SIGABRT|__cxa_throw|gu::ThrowError::~ThrowError|galera::WriteSetOut::check_size|galera::WriteSetOut::gather                                                                    ## MENT-1725
 state() == s_executing || state() == s_prepared || state() == s_committed || state() == s_aborted || state() == s_must_replay|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse ## MDEV-30550
@@ -1106,6 +1108,7 @@ len == ref_length|SIGABRT|ha_innobase::position|find_all_keys|filesort|create_so
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|FixedBinTypeBundle<Inet6>::Type_handler_fbt::Item_val_native_with_conversion                        ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_inet6::Item_val_native_with_conversion                                                 ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|FixedBinTypeBundle<UUID>::Type_handler_fbt::Item_val_native_with_conversion                         ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|FixedBinTypeBundle<Inet6>::Fbt::make_from_item                                                      ## MDEV-22885
 SIGSEGV|maria_status|ha_maria::info|TABLE_LIST::fetch_number_of_rows|make_join_statistics                                                                                      ## MDEV-23202
 SIGSEGV|heap_info|ha_heap::info|ha_heap::info|make_join_statistics                                                                                                             ## MDEV-23202
 SIGSEGV|maria_status|ha_maria::info|make_join_statistics|JOIN::optimize_inner                                                                                                  ## MDEV-23202
@@ -1734,6 +1737,7 @@ SIGSEGV|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::opti
 # 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-29761
 SIGSEGV|__strcmp_avx2|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                 ## Fixed ## MDEV-29852  # Fixed, but still present in 10.11 (not merged yet), remark later
 SIGSEGV|is_acl_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                   ## Fixed ## MDEV-29852  # Fixed, but still present in 10.11 (not merged yet), remark later
+SIGSEGV|LEX_USER::has_auth|has_auth|get_current_user|get_current_user                                                                                               ## Fixed ## MDEV-29852  # Fixed, but still present in 10.11 (not merged yet), remark later
 # !strstr(table->name.m_name, "/FTS_") || purge_sys.must_wait_FTS()|SIGABRT|trx_t::commit|ha_innobase::delete_table|hton_drop_table|ha_delete_table                   ## Fixed ## MDEV-29853
 # (((nr) % (1LL << 24)) % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_time_packed_to_binary|Time::to_native|Item_cache_time::val_native|select_max_min_finder_subselect::cmp_native ## Fixed ## MDEV-29924
 # SIGSEGV|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|JOIN::save_explain_data_intern|JOIN::save_explain_data                            ## Fixed ## MDEV-30007

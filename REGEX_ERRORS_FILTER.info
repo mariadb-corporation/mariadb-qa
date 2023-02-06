@@ -67,7 +67,7 @@ Incorrect information in file:.*.frm                  https://jira.mariadb.org/b
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-29203 (UNIQUE HASH INDEX issue)
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-27661 (Charset issue)
 Please run mariadb-upgrade                            Often seen when a mysql db table has been modified by a testcase
-#Got error .126 .Index is corrupted.*test.*MAI        https://jira.mariadb.org/browse/MDEV-30488 (leaving disabled to catch any others)
+Got error .126 .Index is corrupted.*test.*MAI         https://jira.mariadb.org/browse/MDEV-30488
 Got error .126 .Index is corrupted.*sql-alter.*MAI    https://jira.mariadb.org/browse/MDEV-26258
 Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26258
 Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/browse/MDEV-26258
@@ -107,6 +107,8 @@ ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussio
 Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
 ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussion (ref email thread 'Discuss')
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5)
+ERROR.*BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      https://jira.mariadb.org/browse/MDEV-22936
+ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    https://jira.mariadb.org/browse/MDEV-22936
 
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
 #InnoDB: Resetting invalid page                       https://jira.mariadb.org/browse/MDEV-26121, Fixed

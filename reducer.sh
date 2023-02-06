@@ -364,10 +364,10 @@ TOKUDB=
 ROCKSDB=
 #Check BASEDIR and auto-update to a build in /data/VARIOUS_BUILDS/ if BASEDIR directory does not exist
 ALT_BASEDIR="$(echo "${BASEDIR}" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"  # Check /data/VARIOUS_BUILDS (and use any dir found there if BASEDIR does not exist), as it often contains older BASEDIR directories. This aids in just starting reducer.sh without having to update the BASEDIR path/directory
-if [[ ! -d "${PWD}" -a ! -d "${ALT_BASEDIR}" ]]; then
+if [ ! -d "${PWD}" -a ! -d "${ALT_BASEDIR}" ]; then
   echo "Assert: Neither '${PWD}' nor '${ALT_BASEDIR}' directories exist, please set the BASEDIR variable correctly"
   exit 1
-elif [[ -d "${ALT_BASEDIR}" ]]; then  # BASEDIR not found, but BASEDIR_ALT (/data/VARIOUS_BUILDS/ archive) found
+elif [ -d "${ALT_BASEDIR}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/VARIOUS_BUILDS/ archive) found
   echo "Note: Updating BASEDIR from '${BASEDIR}' to '${BASEDIR_ALT}' as BASEDIR did not exist, but the same/required server build was found in /data/VARIOUS_BUILDS/"
   sleep 2
   BASEDIR="${ALT_BASEDIR}"

@@ -14,3 +14,11 @@ PREPARE s FROM @cmd;
 EXECUTE s;########;
 SHOW SLAVE HOSTS;########;
 EXECUTE s;########################################################;
+
+# mysqld options required for replay: --log-bin 
+SET SESSION size=0;
+SET @cmd:='CREATE DEFINER=current_user PROCEDURE p0 (INOUT i0 DOUBLE (0,0) UNSIGNED) LANGUAGE SQL RELEASE SAVEPOINT sp0';
+PREPARE stmt FROM @cmd;
+EXECUTE stmt;
+PURGE BINARY LOGS BEFORE CURRENT_TIMESTAMP();
+EXECUTE stmt;
