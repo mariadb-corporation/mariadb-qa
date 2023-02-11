@@ -30,7 +30,7 @@ cleanup_dirs(){
   rm -Rf 10.1_dbg_san 10.2_dbg_san 10.3_dbg_san 10.4_dbg_san 10.5_dbg_san 10.6_dbg_san 10.7_dbg_san 10.8_dbg_san \
          10.1_opt_san 10.2_opt_san 10.3_opt_san 10.4_opt_san 10.5_opt_san 10.6_opt_san 10.7_opt_san 10.8_opt_san \
          10.9_dbg_san 10.10_dbg_san 10.11_dbg_san \
-         10.9_opt_san 10.10_dbg_san 10.11_dbg_san
+         10.9_opt_san 10.10_opt_san 10.11_opt_san
 }
 
 buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use (newer builds=larger=longer)
