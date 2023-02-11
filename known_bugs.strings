@@ -134,6 +134,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|__strcmp_avx2|sp_process_definer|Table_triggers_list::create_trigger|mysql_create_or_drop_trigger                                                                      ## MDEV-30612
+SIGSEGV|require_quotes|get_quote_char_for_identifier|append_identifier|append_identifier                                                                                       ## MDEV-30612
 owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|wsrep::client_state::before_commit|wsrep_before_commit|wsrep_ha_commit_or_rollback_by_xid|trans_xa_commit            ## MENT-1729
 owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service|Wsrep_prepared_applier_service::~Wsrep_prepared_applier_service ## MENT-1729
 SIGSEGV|thd_get_thread_id|lock_wait_wsrep|lock_wait|row_mysql_handle_errors                                                                                                    ## MENT-1728
