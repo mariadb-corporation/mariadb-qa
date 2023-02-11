@@ -139,7 +139,7 @@ if [ "${RR_TRACING}" == "1" ]; then
     exit 1
   fi
 fi
-if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
   if [ -z "${PRE_SHUFFLE_DIR}" ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_DIR is empty"
     exit 1
@@ -149,10 +149,12 @@ if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_DIR ('${PRE_SHUFFLE_DIR}') is not an actual directory or could not be created. Double check correctness of directory and that this script can write to the location provided (mkdir -p was attempted, any failure of the same would show above this message)"
     exit 1
   fi
+  PRE_SHUFFLE_SQL_LINES="$(echo "${PRE_SHUFFLE_SQL_LINES}" | tr -d '\n')"
   if [ -z "${PRE_SHUFFLE_SQL_LINES}" ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_SQL_LINES is not configured"
     exit 1
   fi
+  PRE_SHUFFLE_TRIALS_PER_SHUFFLE="$(echo "${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}" | tr -d '\n')"
   if [ -z "${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}" ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_TRIALS_PER_SHUFFLE is not configured"
     exit 1
@@ -1825,15 +1827,37 @@ pquery_test() {
               fi
             fi 
             ## Pre-shuffle (if activated)
-            if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+            if [ "${PRE_SHUFFLE_SQL}" == "1" -o "${PRE_SHUFFLE_SQL}" == "2" ]; then
               PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
-              if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then 
+              if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+                mkdir -p "${PRE_SHUFFLE_DIR}"
+                echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
+              fi
+              if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
                 local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
                 INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
                 WORKNRDIR=
                 echoit "Randomly pre-shuffling ${PRE_SHUFFLE_SQL_LINES} lines of SQL into ${INFILE_SHUFFLED} | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+                PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
                 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
-                shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+                if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+                  shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+                  echoit "Obtaining the pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+                elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
+                  SHUFFLE_FILELIST="$(ls ${SCRIPT_PWD}/*.sql ${SCRIPT_PWD}/*.sql ${HOME}/mariadb-qa/*.sql ${HOME}/mariadb-qa/*/*.sql /data/SQL/*.sql /data/SQL/*/*.sql /test/TESTCASES/*.sql /test/TESTCASES/*/*.sql 2>/dev/null | sort -u | shuf --random-source=/dev/urandom | tr '\n' ' ' | tr -d '\n')"
+                  if [ "$(echo "${SHUFFLE_FILELIST}" grep -v '^$' | wc -l)" -le 0 ]; then
+                    echoit "Assert: could not locate at least one SQL file (odd for normal testing server setups), and this is a prerequisite for using PRE_SHUFFLE_SQL=2. The easiest solution is likely to either set PRE_SHUFFLE_SQL to 1 or perhaps better 0 (and configure a correct INFILE), or to: cd ~; git clone --depth=1 https://github.com/mariadb-corporation/mariadb-qa.git"
+                    exit 1
+                  fi
+                  ADV_FILTER_LIST="debug_dbug|debug_|_debug|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables"
+                  grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
+                  echoit "Obtaining the pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+                else
+                  echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
+                  exit 1
+                fi
+                SHUFFLE_FILELIST=
+                PRE_SHUFFLE_DUR_START=
               else
                 echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_SQL_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
               fi
