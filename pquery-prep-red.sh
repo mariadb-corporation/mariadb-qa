@@ -11,12 +11,6 @@
 # Improvement ideas
 # - It would be better if failing queries were added like this; 3x{query_from_err_log,query_from_core},3{SELECT 1},3{SELECT SLEEP(3)} instead of 3{query_from_core},3{query_from_err_log},3{SELECT 1},3{SELECT SLEEP(3)}
 
-#for i in `ls -1 | grep -E '^[0-9]+$'` ;  do
-#  cnt=$(ls $i/node*/core* 2>/dev/null | wc -l)
-#  if [[ $cnt -eq 0 ]]; then
-#    rm -rf $i
-#  fi
-#done
 # User configurable variables
 VALGRIND_OVERRIDE=0    # If set to 1, Valgrind issues are handled as if they were a crash (core dump required)
 SCAN_FOR_NEW_BUGS=1    # If set to 1, all generated reducders will scan for new issues while reducing!
