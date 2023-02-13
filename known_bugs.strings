@@ -128,12 +128,16 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 #fil_space_t::is_valid_flags(flags, space->id)|SIGABRT|fsp_flags_try_adjust|fil_ibd_open|dict_load_tablespace|dict_load_table_one                                               ## debug='+d,dict_tf_to_fsp_flags_failure'
 #!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|Relay_log_info::init|init_master_info|start_slave                                                             ## debug='+d,error_unique_log_filename'
 #!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|purge_relay_logs|reset_slave|reload_acl_and_cache                                                             ## debug='d,simulate_find_log_pos_error'
+#SIGSEGV|ilist_node<void>::ilist_node|ilist<MDL_ticket, void>::ilist|MDL_lock::Ticket_list::Ticket_list|MDL_lock::MDL_lock                                                      ## debug='+d,simulate_out_of_memory'
+#SIGABRT|my_malloc|ilink::operator new|handle_accepted_socket|handle_connections_sockets                                                                                        ## debug='+d,simulate_out_of_memory'
+#
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
  
 ##### Current MDEV-28883 bugs (temporary) #####
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::truncate|handler::ha_truncate                                                                        ## MDEV-30527
 SIGSEGV|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                                               ## MDEV-28622
 SIGSEGV|Item_exists_subselect::exists2in_processor|Item_subselect::walk|Item_direct_view_ref::walk|Item_args::walk_args                                                        ## MDEV-28622
 owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|wsrep::client_state::before_commit|wsrep_before_commit|wsrep_ha_commit_or_rollback_by_xid|trans_xa_commit            ## MENT-1729
@@ -175,6 +179,8 @@ height == btr_page_get_level(page_cur_get_page(page_cursor))|SIGABRT|btr_cur_sea
 trx->error_state == DB_SUCCESS|SIGABRT|ut_dbg_assertion_failed|que_run_threads|fts_eval_sql|fts_config_set_value                                                               ## MDEV-30363
 trx->error_state == DB_SUCCESS|SIGABRT|ut_dbg_assertion_failed|que_run_threads|que_run_threads|fts_eval_sql                                                                    ## MDEV-30363
 SIGSEGV|st_select_lex_unit::first_select|st_select_lex_unit::set_unique_exclude|st_select_lex_unit::set_unique_exclude|st_select_lex_unit::set_unique_exclude                  ## MDEV-30248
+SIGSEGV|st_select_lex::first_inner_unit|st_select_lex_unit::set_unique_exclude|st_select_lex_unit::set_unique_exclude|st_select_lex_unit::set_unique_exclude                   ## MDEV-30248
+SIGSEGV|st_select_lex_unit::set_unique_exclude|st_select_lex_unit::set_unique_exclude|st_select_lex_unit::set_unique_exclude|st_select_lex_unit::set_unique_exclude            ## MDEV-30248
 auto_increment_value|SIGABRT|ha_partition::info|ha_partition::update_next_auto_inc_val|ha_partition::update_row|handler::ha_update_row                                         ## MDEV-21007
 info->end_of_file - (info->append_read_pos-info->write_buffer) == (res= inline_mysql_file_tell(info->file, (myf) (0)))|SIGABRT|my_b_append_tell|my_b_safe_tell|Log_event_writer::pos|Log_event::write_header ## MDEV-30176
 args[0]->type_handler()->mysql_timestamp_type() == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-30175
@@ -872,6 +878,7 @@ auto_increment_value|SIGABRT|ha_partition::info|ha_partition::update_create_info
 auto_increment_value|SIGABRT|ha_partition::info|ha_partition::update_create_info|add_table_options|show_create_table_ex                                                        ## MDEV-24610
 error == DB_SUCCESS || error == DB_DUPLICATE_KEY|SIGABRT|ut_dbg_assertion_failed|trx_t::commit_low|trx_t::commit|trx_commit_for_mysql                                          ## MDEV-24608
 error == DB_DUPLICATE_KEY || error == DB_LOCK_WAIT_TIMEOUT|SIGABRT|trx_t::commit_low|trx_t::commit_persist|trx_t::commit|trx_commit_for_mysql                                  ## MDEV-24608
+item->name.str && item->name.str[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_derived                           ## MDEV-24588
 item->name && item->name[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                            ## MDEV-24588
 item->name.str && item->name.str[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                    ## MDEV-24588
 SIGSEGV|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                              ## MDEV-28354

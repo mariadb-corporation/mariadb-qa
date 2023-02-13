@@ -1849,7 +1849,7 @@ pquery_test() {
                     echoit "Assert: could not locate at least one SQL file (odd for normal testing server setups), and this is a prerequisite for using PRE_SHUFFLE_SQL=2. The easiest solution is likely to either set PRE_SHUFFLE_SQL to 1 or perhaps better 0 (and configure a correct INFILE), or to: cd ~; git clone --depth=1 https://github.com/mariadb-corporation/mariadb-qa.git"
                     exit 1
                   fi
-                  ADV_FILTER_LIST="debug_dbug|debug_|_debug|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables"
+                  ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables"
                   grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
                   echoit "Obtaining the pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
                 else

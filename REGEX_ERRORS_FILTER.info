@@ -109,6 +109,7 @@ ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussio
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5)
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      https://jira.mariadb.org/browse/MDEV-22936
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    https://jira.mariadb.org/browse/MDEV-22936
+Assertion .!m_freed_pages. failed                     https://jira.mariadb.org/browse/MDEV-30527
 
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
 #InnoDB: Resetting invalid page                       https://jira.mariadb.org/browse/MDEV-26121, Fixed
