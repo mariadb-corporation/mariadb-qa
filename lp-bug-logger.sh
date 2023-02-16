@@ -69,7 +69,7 @@ else
   BUGNO=$2
 fi
 
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 BUNDLE_DIR=./BUNDLE_$TRIAL
 info
 

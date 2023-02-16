@@ -8,7 +8,7 @@
 TRIALS_TO_KEEP=3  # Set high (for example: 10) when there are few bugs seen in each new round. Set low (for example: 2) when handling many new bugs/when many bugs are seen in the runs
 
 # Internal variables
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 # Checks
 if [ ! -r pquery-run.log -o ! -d mysqld ]; then
