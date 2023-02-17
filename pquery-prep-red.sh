@@ -16,7 +16,7 @@ VALGRIND_OVERRIDE=0    # If set to 1, Valgrind issues are handled as if they wer
 SCAN_FOR_NEW_BUGS=1    # If set to 1, all generated reducders will scan for new issues while reducing!
 
 # Internal variables
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" ]; then  # Provision for symlinks (if needed) 
   SCRIPT_PWD="${HOME}/mariadb-qa"
 fi

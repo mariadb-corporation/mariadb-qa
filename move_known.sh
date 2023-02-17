@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 mkdir -p known mysql_bugs debug_dbug NOCORE
 

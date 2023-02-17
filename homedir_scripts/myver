@@ -5,7 +5,7 @@
 # This script, when executed in proximity to mysqld (ref code below), shows handy JIRA formatting strings, showing the server version, source code revision and build type. These can then be used to surround stacks, log exerpts, code, etc.
 
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 MYSQLD=
 if [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt

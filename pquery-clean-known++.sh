@@ -6,7 +6,7 @@
 echo "Extra cleaning up of known issues++ (expert mode)..."
 
 # Script variables
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RND=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
 TMP_FILE_1="/tmp/results_list++_${RND}.tmp"

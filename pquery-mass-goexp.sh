@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 if [ "$1" == "" ]; then
   echo "Error: please specify the workdir number (for example '123456') in /data to run pquery-go-expert.sh against. Terminating."

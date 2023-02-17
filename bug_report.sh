@@ -2,7 +2,7 @@
 # Created by Roel Van de Paar, MariaDB
 
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 # User variables
 ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS=1
