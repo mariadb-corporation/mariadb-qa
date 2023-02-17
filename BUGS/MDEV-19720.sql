@@ -1,0 +1,10 @@
+CREATE TABLE t1 (a INT);
+INSERT INTO t1 VALUES (1),(2);
+ 
+CREATE TABLE t2 (pk INT, b INT, PRIMARY KEY(pk), KEY(b)) ENGINE=MyISAM;
+INSERT INTO t2 VALUES
+(1,10),(2,20),(3,30),(4,40),(5,50),(6,60),(7,70),(8,80),(9,90),(10,15),
+(11,25),(12,35),(13,45),(14,55),(15,65),(16,75),(17,85),(18,95),(19,12),
+(20,22),(21,32),(22,42),(23,52) ,(24,62);
+ 
+SELECT * FROM t1 JOIN t2 ON a = b WHERE b IS NULL AND b > 6 OR pk <= 12 OR b > 2 AND pk > 3 AND pk < 12 OR pk <= 10;
