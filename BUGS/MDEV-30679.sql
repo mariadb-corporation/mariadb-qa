@@ -1,0 +1,7 @@
+INSTALL PLUGIN RocksDB SONAME 'ha_rocksdb.so';
+CREATE TABLE t1 (f INT) ENGINE=InnoDB;
+SELECT * FROM t1 INTO OUTFILE 'a';
+SET SESSION collation_server=filename;
+DROP DATABASE test;
+SELECT User FROM mysql.user;
+CREATE TABLE t2 (a VARCHAR(2),b TEXT,KEY(a,b(1))) ENGINE=RocksDB;

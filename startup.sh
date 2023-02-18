@@ -103,10 +103,12 @@ rm -f *.cnf COPYING CREDITS README-wsrep THIRDPARTY README* LICENSE*
 
 # Get version specific options
 BIN=
-if [ -r ${PWD}/bin/mysqld-debug ]; then BIN="${PWD}/bin/mysqld-debug"; fi # Needs to come first so it's overwritten in next line if both exist
-if [ -r ${PWD}/bin/mysqld ]; then BIN="${PWD}/bin/mysqld"; fi
+if [ -r ${PWD}/bin/mariadbd ]; then BIN="${PWD}/bin/mariadbd"; 
+elif [ -r ${PWD}/bin/mysqld-debug ]; then BIN="${PWD}/bin/mysqld-debug";  # Needs to come first so it's overwritten in next line if both exist
+elif [ -r ${PWD}/bin/mysqld ]; then BIN="${PWD}/bin/mysqld"; 
+fi
 if [ -z "${BIN}" ]; then
-  echo "Assert: no mysqld or mysqld-debug binary was found!"
+  echo "Assert: no mariadb, mysqld-debug or mysqld binary was found!"
   exit 1
 fi
 MID=
@@ -483,7 +485,7 @@ fi
 cp start start_valgrind # Idem setup for Valgrind
 cp start start_gypsy    # Idem setup for gypsy
 cp start start_rr       # Idem setup for rr
-echo "$BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT}  2>&1 &" >>start
+echo "$BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
 echo "for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
 if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO}" != "5.6" ]; then
   echo "${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
@@ -582,7 +584,11 @@ echo "fi" >>repl_setup
 # TODO: fix the line below somehow, and add binary-files=text for all greps. Also revert redirect to >> for second line
 #echo "set +H" > kill  # Fails with odd './kill: 1: set: Illegal option -H' when kill_all is used?
 echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
-echo "timeout -k90 -s9 90s ${PWD}/bin/mysqladmin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
+if [ -r ./bin/mariadb-admin ]; then
+  echo "timeout -k90 -s9 90s ${PWD}/bin/mariadb-admin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
+else
+  echo "timeout -k90 -s9 90s ${PWD}/bin/mysqladmin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
+fi
 echo "./kill >/dev/null 2>&1" >>stop
 echo "echo 'Server on socket ${SOCKET} with datadir ${PWD}/data halted'" >>stop
 echo "./init;./start;./cl;./stop;./kill >/dev/null 2>&1;tail log/master.err" >setup

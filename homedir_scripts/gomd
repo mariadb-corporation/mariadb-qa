@@ -2,8 +2,8 @@
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space
-BASEDIR=/test/MD110223-mariadb-11.0.1-linux-x86_64-opt
-RUNSOPT=3
+BASEDIR=/test/MD180223-mariadb-11.0.1-linux-x86_64-dbg
+RUNSOPT=2
 RUNSDBG=3
 #CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD-spider-all.conf

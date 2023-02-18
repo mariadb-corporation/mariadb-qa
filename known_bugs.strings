@@ -137,11 +137,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+cs->mbmaxlen <= MAX_MULTI_BYTE_CHAR_SIZE|SIGABRT|myrocks::rdb_get_mem_comparable_space|myrocks::Rdb_field_packing::setup|myrocks::ha_rocksdb::check_keyread_allowed|myrocks::ha_rocksdb::index_flags ## MDEV-30679
 SIGSEGV|wsrep_thd_trx_seqno|wsrep_thd_order_before|lock_rec_has_to_wait_in_queue|lock_rec_queue_validate                                                                       ## MENT-1737
 cache_mngr->trx_cache.empty()|SIGABRT|binlog_close_connection|ha_close_connection|slave_applier_reset_xa_trans|trans_xa_prepare                                                ## MENT-1733
 m_thd == _current_thd()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_state::close|wsrep_close|Wsrep_storage_service::~Wsrep_storage_service                         ## MENT-1731
-!m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::truncate|handler::ha_truncate                                                                        ## MDEV-30527
-!m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::delete_table|hton_drop_table                                                                         ## MDEV-30527
 SIGSEGV|__strcmp_avx2|sp_process_definer|Table_triggers_list::create_trigger|mysql_create_or_drop_trigger                                                                      ## MDEV-30612
 SIGSEGV|require_quotes|get_quote_char_for_identifier|append_identifier|append_identifier                                                                                       ## MDEV-30612
 SIGSEGV|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                                               ## MDEV-28622
@@ -1772,3 +1771,8 @@ SIGSEGV|LEX_USER::has_auth|has_auth|get_current_user|get_current_user           
 # fixed|SIGABRT|Item_sp_variable::val_str|spider_db_open_item_string|spider_db_print_item_type|spider_db_mbase_util::open_item_func                                   ## Fixed ## MDEV-30191
 # b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                          ## Fixed ## MDEV-24660
 # !is_thread_specific || (mysqld_server_initialized && thd)|SIGABRT|my_malloc_size_cb_func|my_free|delete_dynamic|my_hash_free                                        ## Fixed ## MDEV-25389
+# !m_freed_pages|SIGABRT|mtr_t::start|btr_free_but_not_root|btr_drop_temporary_table|ha_innobase::delete_table                                                        ## Fixed ## MDEV-30527 (no tc)
+# !m_freed_pages|SIGABRT|mtr_t::start|trx_undo_seg_free|trx_undo_commit_cleanup|trx_t::commit_in_memory                                                               ## Fixed ## MDEV-30527 (no tc)
+# !m_freed_pages|SIGABRT|mtr_t::start|trx_undo_truncate_end|trx_undo_try_truncate|row_undo_rec_get                                                                    ## Fixed ## MDEV-30527 (no tc)
+# !m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::truncate|handler::ha_truncate                                                             ## Fixed ## MDEV-30527
+# !m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::delete_table|hton_drop_table                                                              ## Fixed ## MDEV-30527
