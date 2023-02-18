@@ -145,12 +145,13 @@ while :; do
     source ./VERSION
     CUR_VERSION="${MYSQL_VERSION_MAJOR}.${MYSQL_VERSION_MINOR}"
     CUR_COMMIT="$(git log | head -n1 | tr -d '\n')"
+    CUR_DATE="$(git log | head -n3 | tail -n1 | sed 's|Date:[ \t]*||;s|[ \t]*+.*||' | tr -d '\n')"
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
-      echo "|> ${CUR_COMMIT} is version ${CUR_VERSION}, skipping..."
+      echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, skipping..."
       git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
       continue
     else
-      echo "|> ${CUR_COMMIT} is version ${CUR_VERSION}, proceeding..."
+      echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, proceeding..."
       break
     fi
   done
