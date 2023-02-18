@@ -2,25 +2,26 @@
 # Created by Roel Van de Paar, MariaDB
 
 # User variables
-VERSION=10.11                                                       # 10.9, 10.10, 10.11, etc.
+VERSION=10.9                                                        # 10.9, 10.10, 10.11, etc.
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-LAST_KNOWN_GOOD_COMMIT='b4e7803a6f4c734fc5f06a0b0d78285510ae0f48'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='936436ef437c73911c18854a8ce8dad1216331b8'   # Revision of first known bad commit
-TESTCASE='/test/in3.sql'                                            # The testcase to be tested
-UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
-TEXT='void acl_update_role'                                         # The string to scan for in the error log [Exclusive]
-# [Exclusove]: Note that UNIQUEID and TEXT are mutually exclusive: do not set both
+LAST_KNOWN_GOOD_COMMIT='93509450237ec597d25803ea6f29de4ceddb4564'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='ef930dcad58ae6c3f334a32bd63e26c65fd66fa6'   # Revision of first known bad commit
+TESTCASE='/test/in4.sql'                                            # The testcase to be tested
+UNIQUEID='SIGFPE|String::needs_conversion|String::copy|Type_handler::partition_field_append_value|add_column_list_values'                                                         # The UniqueID to scan for [Exclusive]
+TEXT=''                                                             # The string to scan for in the error log [Exclusive]
+# [Exclusive]: UNIQUEID and TEXT are mutually exclusive: do not set both
 # Leave both UNIQUEID and TEXT empty to scan for core files instead
 
 # Script variables, do not change
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
-TMPLOG1="/tmp/git-bisect-${RANDOM}${RANDOM}.out"
-TMPLOG2="/tmp/git-bisect-build_${RANDOM}${RANDOM}.exitcode"
+SEED="${RANDOM}${RANDOM}"
+TMPLOG1="/tmp/git-bisect-${SEED}.out"
+TMPLOG2="/tmp/git-bisect-build_${SEED}.exitcode"
 
 die(){
   echo "$2"; exit $1
@@ -139,7 +140,6 @@ fi
 # the result that the tree version (as seen in the VERSION file) is different from the $VERSION needing to be tested.
 # For this, the script (ref below) will use 'git bisect skip' until it has located a commit with the correct $VERSION
 while :; do
-  echo "|> Validating revision"
   CUR_VERSION=;CUR_COMMIT=
   while :; do
     source ./VERSION
@@ -154,30 +154,34 @@ while :; do
       break
     fi
   done
+  CONTINUE_MAIN_LOOP=0
   while :; do
     echo "|> Cleaning up any previous version ${VERSION} builds in /test/git-bisect"
     rm -Rf /test/git-bisect/MD*${VERSION}*
-    echo "|> Building revision in a screen session: use screen -d -r 'git-bisect-build' to see the build process"
+    SCREEN_NAME="git-bisect-build.${SEED}"
+    echo "|> Building revision in a screen session: use  screen -d -r '${SCREEN_NAME}'  to see the build process"
     rm -f ${TMPLOG2}
-    screen -admS 'git-bisect-build' bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > ${TMPLOG2}"
-    while [ "$(screen -ls | grep -o 'git-bisect-build')" == "git-bisect-build" ]; do
+    screen -admS "${SCREEN_NAME}" bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > ${TMPLOG2}"
+    while [ "$(screen -ls | grep -o "${SCREEN_NAME}")" == "${SCREEN_NAME}" ]; do
       sleep 2
     done
     sleep 2
-    if [ -z "$(cat ${TMPLOG2} 2>/dev/null | tr -d '\n')" ]; then
+    OUTCOME_BUILD="$(cat ${TMPLOG2} 2>/dev/null | head -n1 | tr -d '\n')"
+    if [ "${OUTCOME_BUILD}" != "0" ]; then
       echo "|> Build failure... Skipping revision ${CUR_COMMIT}"
-      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
-      continue
-    elif [ "$(cat ${TMPLOG2} 2>/dev/null | tr -d '\n')" -eq 1 ]; then
-      echo "|> Build failure... Skipping revision ${CUR_COMMIT}"
-      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
-      continue
+      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'  # The 'unable to rmdir' is just for 3rd party/plugins etc. it not a fatal error
+      CONTINUE_MAIN_LOOP=1
+      break  # Failed build, CONTINUE_MAIN_LOOP=1 set, break, then 'continue' in main loop for next revision
     else
+      rm -f ${TMPLOG2}  # Only delete log if build succeeded
       echo "|> Build successful... Testing revision ${CUR_COMMIT}"
-      break  # Successful build
+      break  # Successful build, continue with test (CONTINUE_MAIN_LOOP=0)
     fi
-    rm -f ${TMPLOG2}
   done
+  if [ "${CONTINUE_MAIN_LOOP}" != "0" ]; then
+    CONTINUE_MAIN_LOOP=0
+    continue
+  fi
   cd /test/git-bisect || die 1 'Could not change directory to /test/git-bisect'
   TEST_DIR="$(ls -d MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
   if [ -z "${TEST_DIR}" ]; then
