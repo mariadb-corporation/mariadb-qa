@@ -63,14 +63,24 @@ if [ ! -z "${1}" ]; then
 fi
 
 if [ -z "${MYSQLD}" ]; then
-  if [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
+  if [ -r ./bin/mariadbd -a ! -d ./bin/mariadbd ]; then  # For direct use in BASEDIR, like ~/tt
+    MYSQLD="./bin/mariadbd"
+  elif [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
     MYSQLD="./bin/mysqld"
+  elif [ -r ./mysqld/mariadbd -a ! -z "${TRIAL}" ]; then  # For trial sub dirs in workdirs
+    MYSQLD="./mysqld/mariadbd"
   elif [ -r ./mysqld/mysqld -a ! -z "${TRIAL}" ]; then  # For trial sub dirs in workdirs
     MYSQLD="./mysqld/mysqld"
+  elif [ -r ../mariadbd -a ! -d ../mariadbd ]; then  # Used by pquery-run.sh when analyzing trial cores in-run
+    MYSQLD="../mariadbd"
   elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Used by pquery-run.sh when analyzing trial cores in-run
     MYSQLD="../mysqld"
+  elif [ -r ../mysqld/mariadbd -a ! -d ../mysqld/mariadbd ]; then  # For direct use inside trial directories
+    MYSQLD="../mysqld/mariadbd"
   elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
     MYSQLD="../mysqld/mysqld"
+  elif [ -r ../../mysqld/mariadbd -a ! -d ../../mysqld/mariadbd ]; then  # Used by pquery-pre-red.sh to re-generate MYBUG string with valid input
+    MYSQLD="../../mysqld/mariadbd"
   elif [ -r ../../mysqld/mysqld -a ! -d ../../mysqld/mysqld ]; then  # Used by pquery-pre-red.sh to re-generate MYBUG string with valid input
     MYSQLD="../../mysqld/mysqld"
   elif [ -r ./log/master.err ]; then

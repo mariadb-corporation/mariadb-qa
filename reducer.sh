@@ -888,15 +888,15 @@ options_check(){
       fi
     fi
   fi
-  BIN="${BASEDIR}/bin/mysqld"
+  BIN="${BASEDIR}/bin/mariadbd"
   if [ ! -s "${BIN}" ]; then
-    BIN="${BASEDIR}/bin/mariadbd"
+    BIN="${BASEDIR}/bin/mysqld"
     if [ ! -s "${BIN}" ]; then
       BIN="${BASEDIR}/bin/mysqld-debug"
       if [ ! -s "${BIN}" ]; then
-        echo "Assert: No mysqld, mariadbd or mysqld-debug binary was found in ${BASEDIR}/bin"
+        echo "Assert: No mariadbd, mysqld or mysqld-debug binary was found in ${BASEDIR}/bin"
         echo 'Please check script options and please set the $BASEDIR variable correctly'
-        echo "The $BASEDIR variable is currently set to ${BASEDIR}"
+        echo "The BASEDIR variable is currently set to ${BASEDIR}"
         echo "Terminating now."
         exit 1
       fi

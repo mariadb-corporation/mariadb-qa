@@ -8,14 +8,24 @@ set +H  # Disables history substitution and avoids  -bash: !: event not found  l
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 MYSQLD=
-if [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
+if [ -r ./bin/mariadbd -a ! -d ./bin/mariadbd ]; then
+  MYSQLD="./bin/mariadbd"
+elif [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
   MYSQLD="./bin/mysqld"
+elif [ -r ./mariadbd ]; then  # Ported from previous version of myver script
+  MYSQLD="./mariadbd"
 elif [ -r ./mysqld ]; then  # Ported from previous version of myver script
   MYSQLD="./mysqld"
+elif [ -r ../bin/mariadbd ]; then  # Handy when myver is being executed from the mysql-test dir
+  MYSQLD="../bin/mariadbd"
 elif [ -r ../bin/mysqld ]; then  # Handy when myver is being executed from the mysql-test dir
   MYSQLD="../bin/mysqld"
+elif [ -r ../mariadbd -a ! -d ../mariadbd ]; then  # Not currently used, but provisioned alike to ~/t
+  MYSQLD="../mariadbd"
 elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Not currently used, but provisioned alike to ~/t
   MYSQLD="../mysqld"
+elif [ -r ../mysqld/mariadbd -a ! -d ../mysqld/mariadbd ]; then  # For direct use inside trial directories
+  MYSQLD="../mysqld/mariadbd"
 elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
   MYSQLD="../mysqld/mysqld"
 elif [ -r ./log/master.err ]; then
