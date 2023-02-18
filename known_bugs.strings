@@ -137,6 +137,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+(longlong) n_rows >= 0|SIGABRT|get_frame_cursor|get_window_functions_required_cursors|Window_func_runner::exec|Window_funcs_sort::exec                                         ## MDEV-30682
+SIGFPE|String::needs_conversion|String::copy|Type_handler::partition_field_append_value|add_column_list_values                                                                 ## MDEV-30681
 cs->mbmaxlen <= MAX_MULTI_BYTE_CHAR_SIZE|SIGABRT|myrocks::rdb_get_mem_comparable_space|myrocks::Rdb_field_packing::setup|myrocks::ha_rocksdb::check_keyread_allowed|myrocks::ha_rocksdb::index_flags ## MDEV-30679
 SIGSEGV|wsrep_thd_trx_seqno|wsrep_thd_order_before|lock_rec_has_to_wait_in_queue|lock_rec_queue_validate                                                                       ## MENT-1737
 cache_mngr->trx_cache.empty()|SIGABRT|binlog_close_connection|ha_close_connection|slave_applier_reset_xa_trans|trans_xa_prepare                                                ## MENT-1733
