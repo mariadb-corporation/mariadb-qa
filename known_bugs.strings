@@ -137,6 +137,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|json_nice|Item_func_json_format::val_str|Type_handler::Item_send_str                                              ## MDEV-30691
 state_ == s_idle || state_ == s_exec || state_ == s_result || state_ == s_quitting|SIGABRT|wsrep::client_state::before_rollback|Wsrep_storage_service::commit|wsrep::transaction::after_commit|wsrep::client_state::after_commit ## MENT-1740
 SIGSEGV|galera::ReplicatorSMM::stats_get|wsrep::wsrep_provider_v26::status|wsrep::server_state::status|export_wsrep_status_to_mysql                                            ## MENT-1739
 SIGABRT|gu::Mutex::~Mutex|galera::Monitor<galera::ReplicatorSMM::ApplyOrder>::~Monitor|galera::ReplicatorSMM::~ReplicatorSMM|galera::ReplicatorSMM::~ReplicatorSMM             ## MENT-1738
