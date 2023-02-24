@@ -665,25 +665,29 @@ mdg_startup() {
   SOCKET2=${RUNDIR}/${TRIAL}/node2/node2_socket.sock
   SOCKET3=${RUNDIR}/${TRIAL}/node3/node3_socket.sock
   mdg_startup_chk() {
+    if [ -z "${1}" ]; then
+      echo 'Assert: $1 was empty on call of mdg_startup_chk()'
+      exit 1
+    fi
     ERROR_LOG=$1
-    if grep -qi "Can.t create.write to file" ${RUNDIR}/${TRIAL}/log/master.err; then
+    if grep -qi "Can.t create.write to file" ${ERROR_LOG}; then
       echoit "Assert! Likely an incorrect --init-file option was specified (check if the specified file actually exists)"  # Also see https://jira.mariadb.org/browse/MDEV-27232
       echoit "Terminating run as there is no point in continuing; all trials will fail with this error."
       removetrial
       exit 1
-    elif grep -qi "ERROR. Aborting" $ERROR_LOG; then
-      if grep -qi "TCP.IP port.*Address already in use" $ERROR_LOG; then
+    elif grep -qi "ERROR. Aborting" ${ERROR_LOG}; then
+      if grep -qi "TCP.IP port.*Address already in use" ${ERROR_LOG}; then
         echoit "Assert! The text '[ERROR] Aborting' was found in the error log due to a IP port conflict (the port was already in use)"
         removetrial
       else
         if [ ${MDG_ADD_RANDOM_OPTIONS} -eq 0 ]; then # Halt for MDG_ADD_RANDOM_OPTIONS=0 runs which have 'ERROR. Aborting' in the error log, as they should not produce errors like these, given that the MDG_MYEXTRA and WSREP_PROVIDER_OPT lists are/should be high-quality/non-faulty
           echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MDG_MYEXTRA (${MDG_MYEXTRA}) startup or \$WSREP_PROVIDER_OPT ($WSREP_PROVIDER_OPT) congifuration options. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against these variables settings. The respective files for these options (${MDG_WSREP_OPTIONS_INFILE} and ${MDG_WSREP_PROVIDER_OPTIONS_INFILE}) may require editing."
-          grep "ERROR" -B5 -A3 $ERROR_LOG | tee -a /${WORKDIR}/pquery-run.log
+          grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
           if [ ${MDG_IGNORE_ALL_OPTION_ISSUES} -eq 1 ]; then
             echoit "MDG_IGNORE_ALL_OPTION_ISSUES=1, so irrespective of the assert given, pquery-run.sh will continue running. Please check your option files!"
           else
-            if grep -qi "Could not open mysql.plugin" $ERROR_LOG; then  # Likely OOS on /dev/shm
-              echoit "Found 'Could not open mysql.plugin' in error log, likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
+            if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${ERROR_LOG}; then  # Likely OOS on /dev/shm
+              echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
               removetrial
               sleep 1800
               echoit "Slept 0.5h, resuming pquery-run.sh run..."
@@ -695,7 +699,7 @@ mdg_startup() {
           fi
         else # Do not halt for MDG_ADD_RANDOM_OPTIONS=1 runs, they are likely to produce errors like these as MDG_MYEXTRA was randomly changed
           echoit "'[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MDG_MYEXTRA (${MDG_MYEXTRA}) startup options. As \$MDG_ADD_RANDOM_OPTIONS=1, this is likely to be encountered given the random addition of mysqld options. Not saving trial. If you see this error for every trial however, set \$MDG_ADD_RANDOM_OPTIONS=0 & try running pquery-run.sh again. If it still fails, it is likely that your base \$MYEXTRA (${MYEXTRA}) setting is faulty."
-          grep "ERROR" -B5 -A3 $ERROR_LOG | tee -a /${WORKDIR}/pquery-run.log
+          grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
           FAILEDSTARTABORT=1
           return
         fi
@@ -896,21 +900,25 @@ gr_startup() {
   fi
 
   gr_startup_chk() {
+    if [ -z "${1}" ]; then
+      echo 'Assert: $1 was empty on call of gr_startup_chk()'
+      exit 1
+    fi
     ERROR_LOG=$1
-    if grep -qi "Can.t create.write to file" ${RUNDIR}/${TRIAL}/log/master.err; then
+    if grep -qi "Can.t create.write to file" ${ERROR_LOG}; then
       echoit "Assert! Likely an incorrect --init-file option was specified (check if the specified file actually exists)"  # Also see https://jira.mariadb.org/browse/MDEV-27232
       echoit "Terminating run as there is no point in continuing; all trials will fail with this error."
       removetrial
       exit 1
-    elif grep -qi "ERROR. Aborting" $ERROR_LOG; then
-      if grep -qi "TCP.IP port.*Address already in use" $ERROR_LOG; then
+    elif grep -qi "ERROR. Aborting" ${ERROR_LOG}; then
+      if grep -qi "TCP.IP port.*Address already in use" ${ERROR_LOG}; then
         echoit "Assert! The text '[ERROR] Aborting' was found in the error log due to a IP port conflict (the port was already in use)"
         removetrial
       else
         echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (${MYEXTRA}) startup options. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against these variables settings."
-        grep "ERROR" -B5 -A3 $ERROR_LOG | tee -a /${WORKDIR}/pquery-run.log
-        if grep -qi "Could not open mysql.plugin" $ERROR_LOG; then  # Likely OOS on /dev/shm
-          echoit "Found 'Could not open mysql.plugin' in error log, likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
+        grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
+        if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${ERROR_LOG}; then  # Likely OOS on /dev/shm
+          echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
           removetrial
           sleep 1800
           echoit "Slept 0.5h, resuming pquery-run.sh run..."
@@ -1389,10 +1397,10 @@ pquery_test() {
               echoit "Error! '[ERROR] Aborting' was found in the error log, due to a 'Can't initialize timers' issue, ref https://jira.mariadb.org/browse/MDEV-22286, currently being researched. The run should be able to continue normally. Not saving trial."
               removetrial
             else
-              echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MEXTRA (or \$MYSAFE) startup parameters. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against the \$MYEXTRA (or \$MYSAFE if it was modified) settings. You may also want to try setting \$MYEXTRA=\"${MYEXTRA}\" directly in start (as created by startup.sh using your base directory)."
+              echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (or \$MYSAFE) startup parameters. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against the \$MYEXTRA (or \$MYSAFE if it was modified) settings. You may also want to try setting \$MYEXTRA=\"${MYEXTRA}\" directly in start (as created by startup.sh using your base directory)."
               grep "ERROR" ${RUNDIR}/${TRIAL}/log/master.err | tee -a /${WORKDIR}/pquery-run.log
-              if grep -qi "Could not open mysql.plugin" $ERROR_LOG; then  # Likely OOS on /dev/shm
-                echoit "Found 'Could not open mysql.plugin' in error log, likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
+              if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${RUNDIR}/${TRIAL}/log/master.err; then  # Likely OOS on /dev/shm
+                echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
                 removetrial
                 sleep 1800
                 echoit "Slept 0.5h, resuming pquery-run.sh run..."
