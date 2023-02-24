@@ -18,4 +18,30 @@ INSERT INTO t(d) VALUES (1),(1);
 SET GLOBAL key_buffer_size=50000;
 SELECT 1 FROM t;
 
-# Observe '[ERROR] Got error 126 when reading table' in error log, or 'ERROR 126 (HY000): Index for table 'data/#sql-temptable-2d0059-4-0.MYI' is corrupt; try to repair it' in CLI
+CREATE TABLE t (c INT) ENGINE=MyISAM;
+INSERT INTO t VALUES (0);
+SET GLOBAL key_cache_segments=1;
+CREATE TEMPORARY TABLE t (a INT,KEY (a)) ENGINE=MyISAM;
+INSERT INTO t VALUES (NULL);
+SET GLOBAL key_cache_segments=1;
+INSERT INTO t VALUES (0);
+
+SET sql_mode='';
+SET GLOBAL key_cache_segments=2;
+SET SESSION default_tmp_storage_engine=MyISAM;
+CREATE TEMPORARY TABLE t (a INT KEY);
+INSERT INTO t VALUES (0x7FFF);
+INSERT INTO t VALUES();
+SET GLOBAL key_cache_segments=1;
+SELECT * FROM t;
+
+# For all of the above testcases: observe '[ERROR] Got error 126 when reading table' in error log, or 'ERROR 126 (HY000): Index for table 'data/#sql-temptable-2d0059-4-0.MYI' is corrupt; try to repair it' in CLI. The testcase below crashes the server
+
+CREATE TABLE t (c INT) ENGINE=MyISAM;
+INSERT INTO t VALUES (0);
+SELECT * FROM t INTO OUTFILE 'a';
+SET GLOBAL key_cache_segments=1;
+CREATE TEMPORARY TABLE t (a INT,KEY (a)) ENGINE=MyISAM;
+INSERT INTO t VALUES (NULL);
+SET GLOBAL key_cache_segments=1;
+LOAD DATA INFILE 'a' INTO TABLE t;

@@ -129,30 +129,54 @@ else
       COUNT_FOUND_AND_NOT_DEL=$[ ${COUNT_FOUND_AND_NOT_DEL} + 1 ]
     fi; STORE_COUNT_FOUND_AND_DEL=
   done
+  # Check for out-of-use sql_shuffled files (new method)
+  cd /dev/shm/sql_shuffled
+  TEMP=$(mktemp)
+  touch -d '5 hours ago' ${TEMP}
+  FILELIST=$(mktemp)
+  ls --color=never | grep -vE "$(find . -type p,f,s,l -newer ${TEMP} 2>&1 | sed 's|^\./||;s/\n/|/g' )" > ${FILELIST}  # -v: older
+  rm -f ${TEMP}
+  NROFFILES=$(cat ${FILELIST} 2>/dev/null | wc -l)
+  if [ "${NROFFILES}" -gt 0 ]; then
+    for i in `seq 1 ${NROFFILES}`; do  
+      FILETODEL="/dev/shm/sql_shuffled/$(head -n${i} ${FILELIST} 2>/dev/null | tail -n1)"
+      if [ -r "${FILETODEL}" ]; then 
+        echo "Deleting outdated sql shuffle file ${FILETODEL} (file age: $[ $(date +%s) - $(stat -c %Z ${FILETODEL}) ]s)"
+        if [ ${ARMED} -eq 1 ]; then rm -f "${FILETODEL}" ; fi
+        COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
+      fi
+      FILETODEL=
+    done
+  fi
+  rm -f ${FILELIST}
+  NROFFILES=
+  cd - >/dev/null
+  # Final output
   if [ ${SILENT} -eq 0 ]; then
     if [ ${COUNT_FOUND_AND_NOT_DEL} -ge 1 -a ${COUNT_FOUND_AND_DEL} -eq 0 ]; then
       echo ""
-      echo "> Though $(ls -ld /dev/shm/* | wc -l) tmpfs directories were found on /dev/shm, they are all in use. Nothing was deleted."
+      echo "> Though $(ls -ld /dev/shm/* | wc -l) tmpfs directories/files were found on /dev/shm, they are all in use. Nothing was deleted."
     else
       if [ ${COUNT_FOUND_AND_DEL} -gt 0 ]; then
-        echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories & skipped ${COUNT_FOUND_AND_NOT_DEL} tmpfs directories as they were in use."
+        echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories/files & skipped ${COUNT_FOUND_AND_NOT_DEL} tmpfs directories/files as they were in use."
       else
-        echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories. No other tmpfs directories exist. All good."
+        echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories/files. No other tmpfs directories/files exist. All good."
       fi
     fi
   fi
 fi
 
+# This is now handles above in 'Check for out-of-use sql_shuffled files (new method)'
 # TODO: somehow make this more universal in case PRE_SHUFFLE_DIR is changed in pquery-run.conf
-if [ -d /dev/shm/sql_shuffled ]; then
-  if [ ${SILENT} -eq 0 ]; then
-    echo "> Note: /dev/shm/sql_shuffled directory found (default PRE_SHUFFLE_DIR in pquery-run.conf): cleaning unused shuffled SQL files"
-  fi
-  sleep 2
-  # The following oneliner takes the leading 6 digits of the shuffled .sql file (which is the workdir), then checkes if a pquery-go-expert screen (running in a 'ge' screen session) with the same workdir is running. If not, it will delete the file as it is then safe to do so. 
- # TODO: how to make this safer for runs not started inside screen sessions (almost never the case for professional setups). Perhaps it is possible to do a similar "age check" as is used elsewhere in this script
-  ls --color=never /dev/shm/sql_shuffled | sed 's|_[0-9]\+\.sql||' | xargs -I{} echo "echo '{}' | grep -vE \$(screen -ls | grep -o '\.ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|\.ge||' | tr '\n' '|' | sed 's/|$//') 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "if [ ! -z '{}' ]; then echo 'rm -Rf /dev/shm/sql_shuffled/{}_*.sql'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
-fi
+#if [ -d /dev/shm/sql_shuffled ]; then
+#  if [ ${SILENT} -eq 0 ]; then
+#    echo "> Note: /dev/shm/sql_shuffled directory found (default PRE_SHUFFLE_DIR in pquery-run.conf): cleaning unused shuffled SQL files"
+#  fi
+#  sleep 2
+#  # The following oneliner takes the leading 6 digits of the shuffled .sql file (which is the workdir), then checkes if a pquery-go-expert screen (running in a 'ge' screen session) with the same workdir is running. If not, it will delete the file as it is then safe to do so. 
+# # TODO: how to make this safer for runs not started inside screen sessions (almost never the case for professional setups). Perhaps it is possible to do a similar "age check" as is used elsewhere in this script
+#  ls --color=never /dev/shm/sql_shuffled | sed 's|_[0-9]\+\.sql||' | xargs -I{} echo "echo '{}' | grep -vE \$(screen -ls | grep -o '\.ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|\.ge||' | tr '\n' '|' | sed 's/|$//') 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "if [ ! -z '{}' ]; then echo 'rm -Rf /dev/shm/sql_shuffled/{}_*.sql'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+#fi
 
 if [ ! -z "$(ls -d --color=never /dev/shm/var_* 2>/dev/null)" ]; then
   echo "> Note: MTR --mem directories found, please check/delete these manually as required (first column is space used):"

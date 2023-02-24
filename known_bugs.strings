@@ -21,8 +21,9 @@ MARIADB_ERROR_CODE|MariaDB error code: 2003
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
-#GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-26258, likely. Leaving for other issues
-#GOT_ERROR|Got error 126|Index is corrupted                    ## MDEV-30488
+GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26258  ## Note: it is possible there are other 126's
+GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ## so it may be worthwhile to once in a while
+GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## to disable these entries
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 # MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
 GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
@@ -41,11 +42,13 @@ GOT_ERROR|Got error 1032|when trying to execute action for entry 6 of type 'rena
 GOT_ERROR|Got error 1032|when trying to execute action for entry 7 of type 'rename table'  ## MDEV-29800
 GOT_ERROR|Got error 12524|when trying to execute action for entry 6 of type 'rename table'  ## MDEV-29800
 GOT_ERROR|Got error 1146|when reading table                    ## MDEV-29663
+GOT_ERROR|Got error 12701|when reading table                   ## MDEV-26543
+GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
+GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
 
 ##### MDEV-29507 TESTING TEMPORARY #####
 SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute                                    ## MDEV-29544
 SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute|mysql_execute_command                                                     ## MDEV-29544
-!m_innodb|SIGABRT|ha_partition::cmp_ref|refpos_order_cmp|tree_insert|Unique::unique_add                                                                                        ## MDEV-30442
 
 ##### MDEV-16329 TESTING TEMPORARY #####
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|start_thread|clone ## INSERT DELAYED not supported on Spider (fixed already in trunk)
@@ -137,6 +140,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+is_started()|SIGABRT|Ha_trx_info::is_trx_read_write|ha_count_rw_2pc|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event                                             ## MDEV-28988
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_load|mysql_execute_command                                           ## MDEV-26492
+!m_innodb|SIGABRT|ha_partition::cmp_ref|refpos_order_cmp|my_qsort2|Refpos_container_sorted_array::sort                                                                         ## MDEV-30672
+!m_innodb|SIGABRT|ha_partition::cmp_ref|refpos_order_cmp|tree_insert|Unique::unique_add                                                                                        ## MDEV-30442
 dbl_records <= s->records|SIGABRT|apply_selectivity_for_table|best_access_path|get_costs_for_tables|best_extension_by_limited_search                                           ## MDEV-30693
 strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|json_nice|Item_func_json_format::val_str|Type_handler::Item_send_str                                              ## MDEV-30691
 state_ == s_idle || state_ == s_exec || state_ == s_result || state_ == s_quitting|SIGABRT|wsrep::client_state::before_rollback|Wsrep_storage_service::commit|wsrep::transaction::after_commit|wsrep::client_state::after_commit ## MENT-1740
@@ -987,6 +994,7 @@ m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_interna
 !thd->get_stmt_da()->is_sent() || thd->killed|SIGABRT|ha_maria::external_lock|handler::ha_external_lock|handler::ha_external_unlock|unlock_external                            ## MDEV-22857
 !str || str != Ptr|SIGABRT|String::copy|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str|Item::save_str_in_field                                             ## MDEV-22856
 !str || str != Ptr || !is_alloced()|SIGABRT|String::copy|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str|Item::save_str_in_field                            ## MDEV-22856
+!field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|btr_node_ptr_max_size|btr_cur_t::search_leaf|row_ins_sec_index_entry_low|row_ins_sec_index_entry           ## MDEV-22856
 !field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## MDEV-22855
 !field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|btr_pcur_open_low|row_search_index_entry            ## MDEV-22855
 !field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|ut_dbg_assertion_failed|dict_index_node_ptr_max_size|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low ## MDEV-22855

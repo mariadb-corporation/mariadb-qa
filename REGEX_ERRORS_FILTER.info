@@ -52,6 +52,7 @@ Got error 1440 when reading table                     https://jira.mariadb.org/b
 Got error 1032.*entry [1-7] of type.*rename           https://jira.mariadb.org/browse/MDEV-29800 (CoR bug)
 Got error 12524.*entry 6 of type.*rename              https://jira.mariadb.org/browse/MDEV-29800 (CoR bug)
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543 (Spider)
+Got error 12701                                       https://jira.mariadb.org/browse/MDEV-28676 (Spider)
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-29455 (Spider)
 Got error 12719 when reading table                    https://jira.mariadb.org/browse/MDEV-29583 (Spider, well-defined)
 max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)
