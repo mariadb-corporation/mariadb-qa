@@ -38,7 +38,7 @@ my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sy
 Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
 Got error 171 .The event was corrupt                  https://jira.mariadb.org/browse/MDEV-22936 (May mask other bugs?)
 Got error 127 when reading table                      https://jira.mariadb.org/browse/MDEV-27903
-Got error 188 when reading table                      Presumed non-issue (Operation was interrupted)
+Got error 188 when reading table                      Presumed non-issue (Operation was interrupted, max_statement_time)
 Got error 192                                         https://jira.mariadb.org/browse/MDEV-26258 (various error 192 msgs)
 Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
 Got error 194 .Tablespace is missing .* engine InnoDB https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)

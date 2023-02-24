@@ -25,6 +25,7 @@ GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26258  ##
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ## so it may be worthwhile to once in a while
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## to disable these entries
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 # MDEV-22936 (May mask other bugs?)
+GOT_ERROR|Got error 188|when reading table                     ## Presumed non-issue (Operation was interrupted, max_statement_time)
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
 GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
 GOT_ERROR|Got error 194|"Tablespace is missing for a table" from storage engine InnoDB ## MDEV-27952 (idem)
@@ -140,8 +141,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+0|SIGABRT|subselect_hash_sj_engine::init|Item_in_subselect::setup_mat_engine|JOIN::choose_subquery_plan|make_join_statistics                                                   ## MDEV-30724
+0|SIGABRT|Item_func_round::native_op|Item_func_hybrid_field_type::val_native|Arg_comparator::min_max_update_field_native|Item_sum_min_max::min_max_update_native_field         ## MDEV-23838
 fixed == 1|SIGABRT|Item_cond_and::val_int|Item_func::is_simplified_cond_processor|Item_func_or_sum::walk|Item_cond::walk                                                       ## MDEV-30721
 fixed()|SIGABRT|Item_cond_and::val_int|Item_func::is_simplified_cond_processor|Item_func_or_sum::walk|Item_cond::walk                                                          ## MDEV-30721
+trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_commit|fix_autocommit                                                                           ## MDEV-30489
 is_started()|SIGABRT|Ha_trx_info::is_trx_read_write|ha_count_rw_2pc|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event                                             ## MDEV-28988
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_load|mysql_execute_command                                           ## MDEV-26492
 !m_innodb|SIGABRT|ha_partition::cmp_ref|refpos_order_cmp|my_qsort2|Refpos_container_sorted_array::sort                                                                         ## MDEV-30672
