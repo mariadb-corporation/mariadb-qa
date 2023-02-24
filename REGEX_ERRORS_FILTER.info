@@ -116,6 +116,7 @@ InnoDB: Cannot reset all values.*while it is on.*off  Presumed non-issue (resett
 ERROR. InnoDB: Cannot delete.*Is a directory          https://jira.mariadb.org/browse/MDEV-30453
 Flagged corruption of.*in table.*in CHECK TABLE; Wrong count https://jira.mariadb.org/browse/MDEV-29954
 Got an error from thread_id.*myisam/ha_myisam.cc:1120 https://jira.mariadb.org/browse/MDEV-29954
+unable to load buffer pool                            Presumed non-issue (setting innodb_buffer_pool_filename='' then load)
 
 # Fixed/disabled
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
