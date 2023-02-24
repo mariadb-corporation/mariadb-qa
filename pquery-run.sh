@@ -421,10 +421,10 @@ if [ ${CRASH_RECOVERY_TESTING} -eq 1 ]; then
     echoit "CRASH_RECOVERY_TESTING and QUERY_CORRECTNESS_TESTING cannot be both active at the same time due to parsing limitations. This is the case. Please disable one of them."
     exit 1
   fi
-  if [ ${THREADS} -lt 50 ]; then
-    echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and THREADS was set to only ${THREADS}, this script is setting the number of threads to the required minimum of 50 for this run."
-    THREADS=50
-  fi
+  #if [ ${THREADS} -lt 50 ]; then
+  #  echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and THREADS was set to only ${THREADS}, this script is setting the number of threads to the required minimum of 50 for this run."
+  #  THREADS=50
+  #fi
   if [ ${PQUERY_RUN_TIMEOUT} -lt 30 ]; then
     echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 30 for this run."
     PQUERY_RUN_TIMEOUT=30
@@ -1932,6 +1932,7 @@ EOF
       fi
     else
       # Multi-threaded run using a chunk from INFILE (${THREADS} clients)
+      # TODO: expand this code to enable PRE_SHUFFLE_SQL=1 and PRE_SHUFFLE_SQL=2 functionality for multi-thread runs also
       if [ ${PQUERY3} -eq 1 ]; then
         if [ "${TRIAL}" == "1" ]; then
           echoit "Creating metadata randomly using random seed ${SEED} ..."
@@ -2005,7 +2006,7 @@ EOF
                 timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1
               fi
               sleep 2
-              echoit "killed for crash testing"
+              echoit "Killed for crash recovery testing"
               CRASH_CHECK=1
               break
             fi
@@ -2018,7 +2019,7 @@ EOF
               fi
             fi
             sleep 2
-            echoit "killed for crash testing"
+            echoit "Killed for crash recovery testing"
             CRASH_CHECK=1
             break
           fi

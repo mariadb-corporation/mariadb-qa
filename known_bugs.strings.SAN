@@ -5,6 +5,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|sql/sql_derived.cc|mysql_derived_prepare|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end|open_tables                                 ## MDEV-21630
+ASAN|heap-use-after-free|sql/sql_derived.cc|mysql_derived_prepare|mysql_derived_merge_for_insert|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end              ## MDEV-21630
+ASAN|heap-use-after-free|sql/sql_derived.cc|mysql_derived_prepare|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end|mysql_multi_update_prepare                  ## MDEV-21630
 UBSAN|member access within null pointer of type 'struct Field'|sql/sql_select.cc|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info ## MDEV-28622
 UBSAN|member access within null pointer of type 'struct SELECT_LEX'|sql/item_subselect.cc|Item_exists_subselect::exists2in_processor|Item_subselect::walk|Item_direct_view_ref::walk|Item_args::walk_args ## MDEV-28622
 UBSAN|execution reached an unreachable program point|sql/sql_type.h|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform ## MDEV-22444
