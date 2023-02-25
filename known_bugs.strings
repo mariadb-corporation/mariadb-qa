@@ -141,6 +141,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|spider_direct_sql_body|spider_direct_sql|udf_handler::val_int|Item_func_udf_int::val_int                                                                               ## MDEV-30727
+SIGSEGV|spider_direct_sql_body|udf_handler::val_int|udf_handler::val_int|Item_func_udf_int::val_int                                                                            ## MDEV-30727
+SIGSEGV|thd_ha_data|thd_get_ha_data|spider_direct_sql_body|spider_direct_sql                                                                                                   ## MDEV-30727
+SIGSEGV|thd_ha_data|thd_get_ha_data|spider_direct_sql_body|udf_handler::val_int                                                                                                ## MDEV-30727
 SIGSEGV|mysql_derived_prepare|mysql_derived_merge_for_insert|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end                                                  ## MDEV-21630
 SIGSEGV|Binary_string::free|Binary_string::~Binary_string|String::~String|Copy_field::~Copy_field                                                                              ## MDEV-21630
 SIGSEGV|mysql_derived_prepare|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end|Multiupdate_prelocking_strategy::handle_end                                     ## MDEV-21630
