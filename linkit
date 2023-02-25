@@ -73,6 +73,7 @@ ln -fs /home/${USER}/mariadb-qa/pquery-allsubdir-del-string.sh /home/${USER}/mcl
 ln -fs /home/${USER}/mariadb-qa/pquery-screen.sh /home/${USER}/s 2>&1
 ln -fs /home/${USER}/mariadb-qa/san_text_string.sh /home/${USER}/st 2>&1
 ln -fs /home/${USER}/mariadb-qa/linkit /home/${USER}/li 2>&1
+ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${USER}/crc 2>&1
 
 # Git bisect clone script
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1

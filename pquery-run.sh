@@ -1280,15 +1280,19 @@ pquery_test() {
     fi
     chmod +x ${RUNDIR}/${TRIAL}/start_dev_shm
     CLBIN="$(echo "${BIN}" | sed 's|/mysqld|/mysql|')"
-    echo "${CLBIN} --socket=${SOCKET} -uroot" > ${RUNDIR}/${TRIAL}/cl_dev_shm
+    MDBIN="$(echo "${BIN}" | sed 's|/mysqld|/mariadb|')"
+    if [ -r "${MDBIN}" ]; then CLBIN="${MDBIN}"; else MDBIN=; fi  # mariadb client
+    echo "${CLBIN} -A --force --socket=${SOCKET} -uroot --binary-mode test" > ${RUNDIR}/${TRIAL}/cl_dev_shm
     chmod +x ${RUNDIR}/${TRIAL}/cl_dev_shm
-    cat ${RUNDIR}/${TRIAL}/cl_dev_shm | sed "s|/dev/shm|/data|" > ${RUNDIR}/${TRIAL}/cl
+    cat ${RUNDIR}/${TRIAL}/cl_dev_shm | sed 's|/dev/shm|/data|' > ${RUNDIR}/${TRIAL}/cl
     chmod +x ${RUNDIR}/${TRIAL}/cl
+    if [ ! -z "${MDBIN}" ]; then CLBIN="${CLBIN}-"; fi  # mariadb-admin
     echo "${CLBIN}admin --socket=$(echo "${SOCKET}" sed "s|/dev/shm|/data|") -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop
     echo "${CLBIN}admin --socket=${SOCKET} -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop_dev_shm
     chmod +x ${RUNDIR}/${TRIAL}/stop ${RUNDIR}/${TRIAL}/stop_dev_shm
     echo "grep -o 'port=[0-9]\\+' start | sed 's|port=||' | xargs -I{} echo \"ps -ef | grep '{}'\" | xargs -I{} bash -c \"{}\" | grep \"\${PWD}\" | awk '{print \$2}' | xargs kill -9" > ${RUNDIR}/${TRIAL}/kill
     chmod +x ${RUNDIR}/${TRIAL}/kill
+    if [ -r "${MDBIN}" ]; then CLBIN="${MDBIN}"; fi  # mariadb client
     ACCMD="$(echo "set +H; ${CLBIN} --socket=${SOCKET} -uroot --batch --force -A -e 'SELECT CONCAT(\"ALTER TABLE \`\",TABLE_SCHEMA,\".\",TABLE_NAME,\"\` ENGINE=THEENGINEDUMMY;\") FROM information_schema.TABLES WHERE TABLE_SCHEMA=\"test\"' | sed 's|\`test.|\`|' | xargs -I{} echo \"echo '{}'; echo '{}' | ${CLBIN} --socket=${SOCKET} -uroot --force --binary-mode -A test | tee -a alter_test.txt\" | xargs -0 -I{} bash -c \"{}\"" | sed "s|/dev/shm|/data|g")"
     echo "${ACCMD}" | sed 's|THEENGINEDUMMY|InnoDB|g' > ${RUNDIR}/${TRIAL}/alter_tables_to_innodb_test
     echo "${ACCMD}" | sed 's|THEENGINEDUMMY|MyISAM|g' > ${RUNDIR}/${TRIAL}/alter_tables_to_myisam_test
@@ -1299,10 +1303,12 @@ pquery_test() {
     echo "${ACCMD}" | sed 's|ALTER TABLE|CHECK TABLE|g;s| QUICK||g;' > ${RUNDIR}/${TRIAL}/check_tables_quick
     ACCMD=
     chmod +x ${RUNDIR}/${TRIAL}/check_tables*
-    MCCMD="set +H; ${CLBIN}check --socket=${SOCKET} -uroot --force --check --extended --flush --databases test 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\""
+    if [ ! -z "${MDBIN}" ]; then CLBIN="${CLBIN}-"; fi  # mariadb-check
+    MCCMD="set +H; ${CLBIN}check --socket=${SOCKET} -uroot -Acfe 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\""
     CLBIN=
-    echo "${MCCMD}" > ${RUNDIR}/${TRIAL}/mysqlcheck_test
-    echo "${MCCMD}" | sed 's|\-\-check |--check-upgrade |' > ${RUNDIR}/${TRIAL}/mysqlcheck_upg_test
+    MDBIN=
+    echo "${MCCMD}" | sed 's|/dev/shm|/data|' > ${RUNDIR}/${TRIAL}/mysqlcheck_test
+    echo "${MCCMD}" | sed 's|/dev/shm|/data|;s|\-\-check |--check-upgrade |' > ${RUNDIR}/${TRIAL}/mysqlcheck_upg_test
     MCCMD=
     chmod +x ${RUNDIR}/${TRIAL}/mysqlcheck_*
     echo "# Recovery testing script." > ${RUNDIR}/${TRIAL}/start_recovery
@@ -1314,6 +1320,9 @@ pquery_test() {
     echo "fi" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "if [ ! -d ./data.original ]; then" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "  cp -r ./data ./data.original" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "fi" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "if [ ! -d ./tmp.original ]; then" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "  cp -r ./tmp ./tmp.original" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "fi" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "${CMD//$RUNDIR/${WORKDIR}} --init-file=${WORKDIR}/recovery-user.sql > ${WORKDIR}/${TRIAL}/log/master.err 2>&1 &" | sed 's|[ \t]\+| |g'  >> ${RUNDIR}/${TRIAL}/start_recovery
     chmod +x ${RUNDIR}/${TRIAL}/start_recovery
