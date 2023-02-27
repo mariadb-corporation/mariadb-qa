@@ -112,6 +112,11 @@ fi
 # Protect homedir links which are easily overwritten by mistake
 chmod -w ${HOME}/b ${HOME}/c ${HOME}/i ${HOME}/m ${HOME}/o ${HOME}/p ${HOME}/r
 
+# Cater for self-built rr instances (https://github.com/rr-debugger/rr/wiki/Building-And-Installing) rather than system installations of rr
+if [ ! -r /usr/bin/rr -a -r /usr/local/bin/rr ]; then
+  sudo ln -s /usr/local/bin/rr /usr/bin/rr
+fi
+
 # Suggest alias'es (Search key: Mac)
 # If you run into issues with predefined system commands try
 # grep '^alias' ${HOME}/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /bin/{} 2>/dev/null  # Ignore start of output
@@ -193,4 +198,5 @@ alias j='. ${HOME}/j '     # Jump to a particular /data directory (pass, for exa
 alias ml='./multirun_loop ' # Execute ./multirun_loop in a BASEDIR
 " > /tmp/.bashrc
 echo -e "cat /tmp/.bashrc >> ${HOME}/.bashrc\nRemember to cleanup old framework alias'es, though later ones replace earlier ones.\nDone!"
+
 exit 0
