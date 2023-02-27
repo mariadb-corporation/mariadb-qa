@@ -4,27 +4,28 @@
 # Updated by Mohit Joshi, Percona LLC
 # Updated by Roel Van de Paar, MariaDB
 
-# ========================================= User configurable variables ==========================================================
+# ========================================= User configurable variables
 # Note: if an option is passed to this script, it will use that option as the configuration file instead, for example ./pquery-run.sh pquery-run-MD105.conf
 CONFIGURATION_FILE=pquery-run.conf # Do not use any path specifiers, the .conf file should be in the same path as pquery-run.sh
-#CONFIGURATION_FILE=pquery-run-RocksDB.conf  # RocksDB testing
 
-# ========================================= Improvement ideas ====================================================================
+# ========================================= Improvement ideas
 # * SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
 # * SQL hashing s/t2/t1/, hex values "0x"
 # * Full MTR grammar on one-liners
 # * Interleave all statements with another that is likely to cause issues, for example "USE mysql". This is already done regularly with feature testing through SQL interleaving, but it could be done per statement. For example, every second line a SELECT, next SQL file every second line an UPDATE, next SQL file every second line an ALTER etc. then use all (do not combine; too large input) files either randomly or sequentially. And instead of just SELECT, or UPDATE, or ALTER etc. use sql-interleaving to make a variety of 9 per statement.
 # * It would be possible to output all new bugs to a flat text file, so that when the new bug detection is operating, it will check not only known_bugs.strings but also this new flat text file, and if a bug is seen already, it could just delete the trial. This will only leave one trial in place for testcase reduction, but over time and over different runs this should be quite fine - especially as showstopper like bugs will be all over the runs and hence will reproduce every new run with ease. For the moment, pquery-eliminate-dups.sh reduces the max number to 3, so that is quite fine also.
 
-# ========================================= MAIN CODE ============================================================================
+# ========================================= MAIN CODE
+
 # MariaDB specific variables
 DISABLE_TOKUDB_AND_JEMALLOC=1
+
 # Internal variables: DO NOT CHANGE!
-RANDOM=$(date +%s%N | cut -b10-19)
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
 SCRIPT_AND_PATH=$(readlink -f $0)
 SCRIPT=$(echo ${SCRIPT_AND_PATH} | sed 's|.*/||')
-SCRIPT_PWD=$(cd "$(dirname $0)" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 WORKDIRACTIVE=0
 SAVED=0
 ALREADY_KNOWN=0
@@ -42,12 +43,23 @@ PRE_SHUFFLE_TRIAL_ROUND=0  # Resets to 0 each time PRE_SHUFFLE_TRIALS_PER_SHUFFL
 # https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
 # https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer (LSAN is enabled by default except on OS X)
 # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1
+export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
 # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
-#export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:check_initialization_order=1:detect_stack_use_after_return=1:abort_on_error=1
+#export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 export UBSAN_OPTIONS=print_stacktrace=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
+
+# Print/Output function
+echoit() {
+  if [ "${ELIMINATE_KNOWN_BUGS}" == "1" ]; then
+    echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1"
+    if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1" >> /${WORKDIR}/pquery-run.log; fi
+  else
+    echo "[$(date +'%T')] [$SAVED] $1"
+    if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] $1" >> /${WORKDIR}/pquery-run.log; fi
+  fi
+}
 
 # Read configuration
 if [ "$1" != "" ]; then CONFIGURATION_FILE=$1; fi
@@ -92,12 +104,34 @@ if [ "$(echo ${PQUERY_BIN} | sed 's|\(^/pquery\)|\1|')" == "/pquery" ]; then
   exit 1
 fi
 if [ ! -r ${PQUERY_BIN} ]; then
-  echo "${PQUERY_BIN} specified in the configuration file used (${SCRIPT_PWD}/${CONFIGURATION_FILE}) cannot be found/read"
+  echo "Assert: ${PQUERY_BIN} specified in the configuration file used (${SCRIPT_PWD}/${CONFIGURATION_FILE}) cannot be found/read"
   exit 1
 fi
 if [ ! -r ${OPTIONS_INFILE} ]; then
-  echo "${OPTIONS_INFILE} specified in the configuration file used (${SCRIPT_PWD}/${CONFIGURATION_FILE}) cannot be found/read"
+  echo "Assert: ${OPTIONS_INFILE} specified in the configuration file used (${SCRIPT_PWD}/${CONFIGURATION_FILE}) cannot be found/read"
   exit 1
+fi
+if [ "${PRELOAD}" == "1" ]; then
+  if [ ${THREADS} -ne 1 ]; then
+    echo "Assert: PRELOAD is enabled (1), and THREADS!=1 (${THREADS}). This setup is not supported (yet) as this script would not be able to prepend the preload SQL to any particular thread's SQL trace (which one to pick?). It may be possible to do a rather large framework patch where PRELOAD SQL is built into reducer.sh etc. (for single threaded runs, it is simply prepended to the SQL trace), so that it is preloaded in all tools, especially reduction. Feel free to implement this if you like."
+    exit 1
+  elif [ "${QUERY_CORRECTNESS_TESTING}" == "1" ]; then
+    echo "Assert: PRELOAD is enabled (1), and QUERY_CORRECTNESS_TESTING is enabled (1). Pre-loading (pre-pending) SQL is not supported yet for Query Correctness Testing, feel free to add it!"
+    exit 1
+  elif [ -z "${PRELOAD_SQL}" ]; then
+    echo "Assert: PRELOAD is enabled (1), yet PRELOAD_SQL option has not been set. Please set it to the SQL preload file you would like to use"
+    exit 1
+  elif [ ! -r "${PRELOAD_SQL}" ]; then
+    echo "Assert: PRELOAD is enabled (1), yet the file configured with PRELOAD_SQL (${PRELOAD_SQL}) cannot be read by this script. Please check."
+    exit 1
+  elif [ "$(wc -l ${PRELOAD_SQL} | sed 's| .*||')" -eq "0" ]; then
+    echo "Assert: PRELOAD is enabled (1), yet the file configured with PRELOAD_SQL (${PRELOAD_SQL}) is empty. Please check."
+    exit 1
+  else
+    echo "PRELOAD SQL Active: (${PRELOAD_SQL} will be preloaded for all trials, and prepended to trial SQL traces"
+  fi 
+else
+  echo "PRELOAD SQL enabled: NO"
 fi
 if [ "${RR_TRACING}" == "1" ]; then
   if [ ! -r /usr/bin/rr ]; then
@@ -105,7 +139,7 @@ if [ "${RR_TRACING}" == "1" ]; then
     exit 1
   fi
 fi
-if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
   if [ -z "${PRE_SHUFFLE_DIR}" ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_DIR is empty"
     exit 1
@@ -115,19 +149,21 @@ if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_DIR ('${PRE_SHUFFLE_DIR}') is not an actual directory or could not be created. Double check correctness of directory and that this script can write to the location provided (mkdir -p was attempted, any failure of the same would show above this message)"
     exit 1
   fi
+  PRE_SHUFFLE_SQL_LINES="$(echo "${PRE_SHUFFLE_SQL_LINES}" | tr -d '\n')"
   if [ -z "${PRE_SHUFFLE_SQL_LINES}" ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_SQL_LINES is not configured"
     exit 1
   fi
+  PRE_SHUFFLE_TRIALS_PER_SHUFFLE="$(echo "${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}" | tr -d '\n')"
   if [ -z "${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}" ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_TRIALS_PER_SHUFFLE is not configured"
     exit 1
   fi
   # TODO: this seems to cause errors: ./pquery-run.sh: line 126: 324998: No such file or directory
-  if [ ${PRE_SHUFFLE_SQL_LINES} < $[ $[ $[ ${PQUERY_RUN_TIMEOUT} / 15 ] * 25000 * ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ] -2 ] ]; then
-    echoit "Warning: PRE_SHUFFLE_SQL_LINES (${PRE_SHUFFLE_SQL_LINES}) is set to less than the minimum recommended 25k queries per 15 seconds times the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE (${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}) trials. You may want to increase this. See the formula here or in pquery-run.conf"
-    sleep 10
-  fi
+  #if [ ${PRE_SHUFFLE_SQL_LINES} < $[ $[ $[ ${PQUERY_RUN_TIMEOUT} / 15 ] * 25000 * ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ] -2 ] ]; then
+  #  echoit "Warning: PRE_SHUFFLE_SQL_LINES (${PRE_SHUFFLE_SQL_LINES}) is set to less than the minimum recommended 25k queries per 15 seconds times the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE (${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}) trials. You may want to increase this. See the formula here or in pquery-run.conf"
+  #  sleep 10
+  #fi
 fi
 
 # Nr of MDG nodes 1-n
@@ -198,20 +234,9 @@ init_empty_port(){
   done
 }
 
-# Output function
-echoit() {
-  if [ "${ELIMINATE_KNOWN_BUGS}" == "1" ]; then
-    echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1"
-    if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1" >> /${WORKDIR}/pquery-run.log; fi
-  else
-    echo "[$(date +'%T')] [$SAVED] $1"
-    if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] $1" >> /${WORKDIR}/pquery-run.log; fi
-  fi
-}
-
 # Diskspace OOS check function
 diskspace() {
-  while true; do
+  while :; do
     if [ ! -d ${RUNDIR} ]; then mkdir -p ${RUNDIR}; fi
     echo "Diskspace Test" > ${RUNDIR}/diskspace 2>/dev/null
     if [ $? -eq 0 ]; then
@@ -263,11 +288,11 @@ else
     if [ -r ${BASEDIR}/bin/mysqld-debug ]; then
       BIN=${BASEDIR}/bin/mysqld-debug
     else
-      echoit "Assert: there is no (script readable) mysqld binary at ${BASEDIR}/bin/mysqld[-debug] ?"
+      echo "Assert: there is no (script readable) mysqld binary at ${BASEDIR}/bin/mysqld[-debug] ?"
       exit 1
     fi
   else
-    echoit "Assert: there is no (script readable) mysqld binary at ${BASEDIR}/bin/mysqld ?"
+    echo "Assert: there is no (script readable) mysqld binary at ${BASEDIR}/bin/mysqld ?"
     exit 1
   fi
 fi
@@ -284,7 +309,7 @@ if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
       if [ -r $(find /usr/*lib*/ -name libjemalloc.so.1 | head -n1) ]; then
         export LD_PRELOAD=$(find /usr/*lib*/ -name libjemalloc.so.1 | head -n1)
       else
-        echoit "Assert! Binary (${BIN} reported itself as Percona Server, yet jemalloc was not found, please install it!"
+        echo "Assert! Binary (${BIN} reported itself as Percona Server, yet jemalloc was not found, please install it!"
         echoit "For Centos7 you can do this by:  sudo yum -y install epel-release; sudo yum -y install jemalloc;"
         echoit "For Ubuntu you can do this by: sudo apt-get install libjemalloc-dev;"
         exit 1
@@ -301,7 +326,7 @@ fi
 if [[ ${PXB_CRASH_RUN} -eq 1 ]]; then
   echoit "MODE: Percona Xtrabackup crash test run"
   if [[ ! -d ${PXB_BASEDIR} ]]; then
-    echoit "Assert: $PXB_BASEDIR does not exist. Terminating!"
+    echo "Assert: $PXB_BASEDIR does not exist. Terminating!"
     exit 1
   fi
 fi
@@ -396,10 +421,10 @@ if [ ${CRASH_RECOVERY_TESTING} -eq 1 ]; then
     echoit "CRASH_RECOVERY_TESTING and QUERY_CORRECTNESS_TESTING cannot be both active at the same time due to parsing limitations. This is the case. Please disable one of them."
     exit 1
   fi
-  if [ ${THREADS} -lt 50 ]; then
-    echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and THREADS was set to only ${THREADS}, this script is setting the number of threads to the required minimum of 50 for this run."
-    THREADS=50
-  fi
+  #if [ ${THREADS} -lt 50 ]; then
+  #  echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and THREADS was set to only ${THREADS}, this script is setting the number of threads to the required minimum of 50 for this run."
+  #  THREADS=50
+  #fi
   if [ ${PQUERY_RUN_TIMEOUT} -lt 30 ]; then
     echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 30 for this run."
     PQUERY_RUN_TIMEOUT=30
@@ -473,7 +498,33 @@ ctrl-c() {
 }
 
 savetrial() { # Only call this if you definitely want to save a trial
-  echoit "Moving rundir from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
+  if [ "${PRELOAD}" == "1" -a ${ISSTARTED} -eq 1 ]; then  # It only makes sense to save the preload in case the server was ever started (and besides, the preload trace won't exist unless the server was started correctly), otherwise we will get incorrect messages here saying 'preload did not exist in savetrial()' which is correct, but not applicable
+    PQUERY_DEFAULT_FILE=
+    if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
+      PQUERY_DEFAULT_FILE="${RUNDIR}/${TRIAL}/node1.md.galera_thread-0.sql"
+    else
+      PQUERY_DEFAULT_FILE="${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql"
+    fi
+    echoit "PRELOAD=1: Prepending SQL trace with executed SQL from ${PRELOAD_SQL}"
+    if [ ! -d ${RUNDIR}/${TRIAL}/preload ]; then
+      echoit "PRELOAD Error: PRELOAD=1, but ${RUNDIR}/${TRIAL}/preload did not exist in savetrial()"
+    elif [ ! -r ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ]; then
+      echoit "PRELOAD Error: PRELOAD=1, but ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql did not exist in savetrial()"
+    else 
+      cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql
+      if [ ! -r ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql ]; then  
+        echoit "PRELOAD cp Error: cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql  # FAILED (target does not exist)"
+      elif ! diff -q ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql >/dev/null 2>&1; then
+        echoit "PRELOAD cp Error: cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql  # FAILED (files are not indentical)"
+      else
+        cat ${PQUERY_DEFAULT_FILE} >> ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql
+        mv ${PQUERY_DEFAULT_FILE} ${RUNDIR}/${TRIAL}/sql_without_preload.sql
+        mv ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql ${PQUERY_DEFAULT_FILE}
+      fi
+    fi
+    PQUERY_DEFAULT_FILE=
+  fi
+  echoit "Saving Trial: Moving rundir from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
   mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1 | tee -a /${WORKDIR}/pquery-run.log
   chmod -R +rX ${WORKDIR}/${TRIAL}/
   if [ "$PMM_CLEAN_TRIAL" == "1" ]; then
@@ -614,25 +665,29 @@ mdg_startup() {
   SOCKET2=${RUNDIR}/${TRIAL}/node2/node2_socket.sock
   SOCKET3=${RUNDIR}/${TRIAL}/node3/node3_socket.sock
   mdg_startup_chk() {
+    if [ -z "${1}" ]; then
+      echo 'Assert: $1 was empty on call of mdg_startup_chk()'
+      exit 1
+    fi
     ERROR_LOG=$1
-    if grep -qi "Can.t create.write to file" ${RUNDIR}/${TRIAL}/log/master.err; then
+    if grep -qi "Can.t create.write to file" ${ERROR_LOG}; then
       echoit "Assert! Likely an incorrect --init-file option was specified (check if the specified file actually exists)"  # Also see https://jira.mariadb.org/browse/MDEV-27232
       echoit "Terminating run as there is no point in continuing; all trials will fail with this error."
       removetrial
       exit 1
-    elif grep -qi "ERROR. Aborting" $ERROR_LOG; then
-      if grep -qi "TCP.IP port.*Address already in use" $ERROR_LOG; then
+    elif grep -qi "ERROR. Aborting" ${ERROR_LOG}; then
+      if grep -qi "TCP.IP port.*Address already in use" ${ERROR_LOG}; then
         echoit "Assert! The text '[ERROR] Aborting' was found in the error log due to a IP port conflict (the port was already in use)"
         removetrial
       else
         if [ ${MDG_ADD_RANDOM_OPTIONS} -eq 0 ]; then # Halt for MDG_ADD_RANDOM_OPTIONS=0 runs which have 'ERROR. Aborting' in the error log, as they should not produce errors like these, given that the MDG_MYEXTRA and WSREP_PROVIDER_OPT lists are/should be high-quality/non-faulty
           echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MDG_MYEXTRA (${MDG_MYEXTRA}) startup or \$WSREP_PROVIDER_OPT ($WSREP_PROVIDER_OPT) congifuration options. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against these variables settings. The respective files for these options (${MDG_WSREP_OPTIONS_INFILE} and ${MDG_WSREP_PROVIDER_OPTIONS_INFILE}) may require editing."
-          grep "ERROR" -B5 -A3 $ERROR_LOG | tee -a /${WORKDIR}/pquery-run.log
+          grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
           if [ ${MDG_IGNORE_ALL_OPTION_ISSUES} -eq 1 ]; then
             echoit "MDG_IGNORE_ALL_OPTION_ISSUES=1, so irrespective of the assert given, pquery-run.sh will continue running. Please check your option files!"
           else
-            if grep -qi "Could not open mysql.plugin" $ERROR_LOG; then  # Likely OOS on /dev/shm
-              echoit "Found 'Could not open mysql.plugin' in error log, likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
+            if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${ERROR_LOG}; then  # Likely OOS on /dev/shm
+              echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
               removetrial
               sleep 1800
               echoit "Slept 0.5h, resuming pquery-run.sh run..."
@@ -644,7 +699,7 @@ mdg_startup() {
           fi
         else # Do not halt for MDG_ADD_RANDOM_OPTIONS=1 runs, they are likely to produce errors like these as MDG_MYEXTRA was randomly changed
           echoit "'[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MDG_MYEXTRA (${MDG_MYEXTRA}) startup options. As \$MDG_ADD_RANDOM_OPTIONS=1, this is likely to be encountered given the random addition of mysqld options. Not saving trial. If you see this error for every trial however, set \$MDG_ADD_RANDOM_OPTIONS=0 & try running pquery-run.sh again. If it still fails, it is likely that your base \$MYEXTRA (${MYEXTRA}) setting is faulty."
-          grep "ERROR" -B5 -A3 $ERROR_LOG | tee -a /${WORKDIR}/pquery-run.log
+          grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
           FAILEDSTARTABORT=1
           return
         fi
@@ -845,21 +900,25 @@ gr_startup() {
   fi
 
   gr_startup_chk() {
+    if [ -z "${1}" ]; then
+      echo 'Assert: $1 was empty on call of gr_startup_chk()'
+      exit 1
+    fi
     ERROR_LOG=$1
-    if grep -qi "Can.t create.write to file" ${RUNDIR}/${TRIAL}/log/master.err; then
+    if grep -qi "Can.t create.write to file" ${ERROR_LOG}; then
       echoit "Assert! Likely an incorrect --init-file option was specified (check if the specified file actually exists)"  # Also see https://jira.mariadb.org/browse/MDEV-27232
       echoit "Terminating run as there is no point in continuing; all trials will fail with this error."
       removetrial
       exit 1
-    elif grep -qi "ERROR. Aborting" $ERROR_LOG; then
-      if grep -qi "TCP.IP port.*Address already in use" $ERROR_LOG; then
+    elif grep -qi "ERROR. Aborting" ${ERROR_LOG}; then
+      if grep -qi "TCP.IP port.*Address already in use" ${ERROR_LOG}; then
         echoit "Assert! The text '[ERROR] Aborting' was found in the error log due to a IP port conflict (the port was already in use)"
         removetrial
       else
         echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (${MYEXTRA}) startup options. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against these variables settings."
-        grep "ERROR" -B5 -A3 $ERROR_LOG | tee -a /${WORKDIR}/pquery-run.log
-        if grep -qi "Could not open mysql.plugin" $ERROR_LOG; then  # Likely OOS on /dev/shm
-          echoit "Found 'Could not open mysql.plugin' in error log, likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
+        grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
+        if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${ERROR_LOG}; then  # Likely OOS on /dev/shm
+          echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
           removetrial
           sleep 1800
           echoit "Slept 0.5h, resuming pquery-run.sh run..."
@@ -1032,13 +1091,13 @@ pquery_test() {
   echoit "Generating new trial workdir ${RUNDIR}/${TRIAL}..."
   ISSTARTED=0
   diskspace
-  if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
+  if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then  # Standard non-Galera/non-Group-Replication run
     if check_for_version $MYSQL_VERSION "8.0.0"; then
       mkdir -p ${RUNDIR}/${TRIAL}/data ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log # Cannot create /data/test, /data/mysql in 8.0
     else
       mkdir -p ${RUNDIR}/${TRIAL}/data/test ${RUNDIR}/${TRIAL}/data/mysql ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log
     fi
-    echo 'SELECT 1;' > ${RUNDIR}/${TRIAL}/startup_failure_thread-0.sql # Add fake file enabling pquery-prep-red.sh/reducer.sh to be used with/for mysqld startup issues
+    echo 'SELECT 1;' > ${RUNDIR}/${TRIAL}/startup_failure_thread-0.sql  # Add fake file enabling pquery-prep-red.sh/reducer.sh to be used with/for mysqld startup issues
     diskspace
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       echoit "Copying datadir from template for Primary mysqld..."
@@ -1052,9 +1111,23 @@ pquery_test() {
       echoit "Note that this can be caused by not having perl-Data-Dumper installed (sudo yum install perl-Data-Dumper  #OR#  sudo apt-get install libdata-dumper-simple-perl), which is required for mysql_install_db."
       exit 1
     elif [[ ${PQUERY3} -eq 1 && ${TRIAL} -gt 1 ]]; then
-      cp -R ${WORKDIR}/$((${TRIAL} - 1))/data/* ${RUNDIR}/${TRIAL}/data 2>&1
+      EXIT_CODE_CP=1
+      while [ "${EXIT_CODE_CP}" -eq 1 ]; do  # Loop till no error is observed (caters for OOS issues)a
+        cp -R ${WORKDIR}/$((${TRIAL} - 1))/data/* ${RUNDIR}/${TRIAL}/data 2>&1
+        EXIT_CODE_CP=$?
+        if [ -z "${EXIT_CODE_CP}" ]; then
+          EXIT_CODE_CP=1
+        fi
+      done
     else
-      cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data 2>&1
+      EXIT_CODE_CP=1
+      while [ "${EXIT_CODE_CP}" -eq 1 ]; do  # Loop till no error is observed (caters for OOS issues)
+        cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data 2>&1
+        EXIT_CODE_CP=$?
+        if [ -z "${EXIT_CODE_CP}" ]; then
+          EXIT_CODE_CP=1
+        fi
+      done
     fi
     if [[ ${REPL} -eq 1 ]]; then
       mkdir -p ${RUNDIR}/${TRIAL}/tmp_slave
@@ -1207,15 +1280,19 @@ pquery_test() {
     fi
     chmod +x ${RUNDIR}/${TRIAL}/start_dev_shm
     CLBIN="$(echo "${BIN}" | sed 's|/mysqld|/mysql|')"
-    echo "${CLBIN} --socket=${SOCKET} -uroot" > ${RUNDIR}/${TRIAL}/cl_dev_shm
+    MDBIN="$(echo "${BIN}" | sed 's|/mysqld|/mariadb|')"
+    if [ -r "${MDBIN}" ]; then CLBIN="${MDBIN}"; else MDBIN=; fi  # mariadb client
+    echo "${CLBIN} -A --force --socket=${SOCKET} -uroot --binary-mode test" > ${RUNDIR}/${TRIAL}/cl_dev_shm
     chmod +x ${RUNDIR}/${TRIAL}/cl_dev_shm
-    cat ${RUNDIR}/${TRIAL}/cl_dev_shm | sed "s|/dev/shm|/data|" > ${RUNDIR}/${TRIAL}/cl
+    cat ${RUNDIR}/${TRIAL}/cl_dev_shm | sed 's|/dev/shm|/data|' > ${RUNDIR}/${TRIAL}/cl
     chmod +x ${RUNDIR}/${TRIAL}/cl
+    if [ ! -z "${MDBIN}" ]; then CLBIN="${CLBIN}-"; fi  # mariadb-admin
     echo "${CLBIN}admin --socket=$(echo "${SOCKET}" sed "s|/dev/shm|/data|") -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop
     echo "${CLBIN}admin --socket=${SOCKET} -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop_dev_shm
     chmod +x ${RUNDIR}/${TRIAL}/stop ${RUNDIR}/${TRIAL}/stop_dev_shm
     echo "grep -o 'port=[0-9]\\+' start | sed 's|port=||' | xargs -I{} echo \"ps -ef | grep '{}'\" | xargs -I{} bash -c \"{}\" | grep \"\${PWD}\" | awk '{print \$2}' | xargs kill -9" > ${RUNDIR}/${TRIAL}/kill
     chmod +x ${RUNDIR}/${TRIAL}/kill
+    if [ -r "${MDBIN}" ]; then CLBIN="${MDBIN}"; fi  # mariadb client
     ACCMD="$(echo "set +H; ${CLBIN} --socket=${SOCKET} -uroot --batch --force -A -e 'SELECT CONCAT(\"ALTER TABLE \`\",TABLE_SCHEMA,\".\",TABLE_NAME,\"\` ENGINE=THEENGINEDUMMY;\") FROM information_schema.TABLES WHERE TABLE_SCHEMA=\"test\"' | sed 's|\`test.|\`|' | xargs -I{} echo \"echo '{}'; echo '{}' | ${CLBIN} --socket=${SOCKET} -uroot --force --binary-mode -A test | tee -a alter_test.txt\" | xargs -0 -I{} bash -c \"{}\"" | sed "s|/dev/shm|/data|g")"
     echo "${ACCMD}" | sed 's|THEENGINEDUMMY|InnoDB|g' > ${RUNDIR}/${TRIAL}/alter_tables_to_innodb_test
     echo "${ACCMD}" | sed 's|THEENGINEDUMMY|MyISAM|g' > ${RUNDIR}/${TRIAL}/alter_tables_to_myisam_test
@@ -1226,21 +1303,26 @@ pquery_test() {
     echo "${ACCMD}" | sed 's|ALTER TABLE|CHECK TABLE|g;s| QUICK||g;' > ${RUNDIR}/${TRIAL}/check_tables_quick
     ACCMD=
     chmod +x ${RUNDIR}/${TRIAL}/check_tables*
-    MCCMD="set +H; ${CLBIN}check --socket=${SOCKET} -uroot --force --check --extended --flush --databases test 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\""
+    if [ ! -z "${MDBIN}" ]; then CLBIN="${CLBIN}-"; fi  # mariadb-check
+    MCCMD="set +H; ${CLBIN}check --socket=${SOCKET} -uroot -Acfe 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\""
     CLBIN=
-    echo "${MCCMD}" > ${RUNDIR}/${TRIAL}/mysqlcheck_test
-    echo "${MCCMD}" | sed 's|\-\-check |--check-upgrade |' > ${RUNDIR}/${TRIAL}/mysqlcheck_upg_test
+    MDBIN=
+    echo "${MCCMD}" | sed 's|/dev/shm|/data|' > ${RUNDIR}/${TRIAL}/mysqlcheck_test
+    echo "${MCCMD}" | sed 's|/dev/shm|/data|;s|\-\-check |--check-upgrade |' > ${RUNDIR}/${TRIAL}/mysqlcheck_upg_test
     MCCMD=
     chmod +x ${RUNDIR}/${TRIAL}/mysqlcheck_*
     echo "# Recovery testing script." > ${RUNDIR}/${TRIAL}/start_recovery
     echo "# This script creates an all-privileges recovery@'%' user; ref recovery-user.sql in the wordir (no the trial dir))" >> ${RUNDIR}/${TRIAL}/start_recovery
-    echo "# It thens brings up the server for a crash recovery test." >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "# It then brings up the server for a crash recovery test." >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "BASEDIR=$BASEDIR" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "if [ ! -r ${WORKDIR}/${TRIAL}/log/master.original.err ]; then" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "  cp ${WORKDIR}/${TRIAL}/log/master.err ${WORKDIR}/${TRIAL}/log/master.original.err" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "fi" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "if [ ! -d ./data.original ]; then" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "  cp -r ./data ./data.original" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "fi" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "if [ ! -d ./tmp.original ]; then" >> ${RUNDIR}/${TRIAL}/start_recovery
+    echo "  cp -r ./tmp ./tmp.original" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "fi" >> ${RUNDIR}/${TRIAL}/start_recovery
     echo "${CMD//$RUNDIR/${WORKDIR}} --init-file=${WORKDIR}/recovery-user.sql > ${WORKDIR}/${TRIAL}/log/master.err 2>&1 &" | sed 's|[ \t]\+| |g'  >> ${RUNDIR}/${TRIAL}/start_recovery
     chmod +x ${RUNDIR}/${TRIAL}/start_recovery
@@ -1324,10 +1406,10 @@ pquery_test() {
               echoit "Error! '[ERROR] Aborting' was found in the error log, due to a 'Can't initialize timers' issue, ref https://jira.mariadb.org/browse/MDEV-22286, currently being researched. The run should be able to continue normally. Not saving trial."
               removetrial
             else
-              echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MEXTRA (or \$MYSAFE) startup parameters. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against the \$MYEXTRA (or \$MYSAFE if it was modified) settings. You may also want to try setting \$MYEXTRA=\"${MYEXTRA}\" directly in start (as created by startup.sh using your base directory)."
+              echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (or \$MYSAFE) startup parameters. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against the \$MYEXTRA (or \$MYSAFE if it was modified) settings. You may also want to try setting \$MYEXTRA=\"${MYEXTRA}\" directly in start (as created by startup.sh using your base directory)."
               grep "ERROR" ${RUNDIR}/${TRIAL}/log/master.err | tee -a /${WORKDIR}/pquery-run.log
-              if grep -qi "Could not open mysql.plugin" $ERROR_LOG; then  # Likely OOS on /dev/shm
-                echoit "Found 'Could not open mysql.plugin' in error log, likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
+              if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${RUNDIR}/${TRIAL}/log/master.err; then  # Likely OOS on /dev/shm
+                echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
                 removetrial
                 sleep 1800
                 echoit "Slept 0.5h, resuming pquery-run.sh run..."
@@ -1356,7 +1438,7 @@ pquery_test() {
           removetrial
         fi
       fi
-      if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2> /dev/null | wc -l) -ge 1 ]; then break; fi # Break the wait-for-server-started loop if a core file is found. Handling of core is done below.
+      if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -ge 1 ]; then break; fi # Break the wait-for-server-started loop if a core file is found. Handling of core is done below.
     done
     # Check if mysqld is alive and if so, set ISSTARTED=1 so pquery will run
     if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
@@ -1743,6 +1825,12 @@ pquery_test() {
           fi
         else # Standard pquery run / Not a query duration testing run
           if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
+            # Preload SQL if the PRELOAD feature is enabled (this SQL will be prepended to the trial's SQL later)
+            if [ "${PRELOAD}" == "1" -a ! -z "${PRELOAD_SQL}" ]; then
+              echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL}"
+              mkdir -p ${RUNDIR}/${TRIAL}/preload
+              ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1 &
+            fi
             # Standard/default (non-GRP-RPL non-Galera non-Query-duration-testing) pquery run
             ## Check pre-shuffle directory
             if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
@@ -1750,36 +1838,63 @@ pquery_test() {
                 echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
                 mkdir -p "${PRE_SHUFFLE_SQL}"
                 if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-                  echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is gonig wrong"
+                  echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is going wrong"
                   PRE_SHUFFLE_SQL=0
                 fi
               fi
             fi 
             ## Pre-shuffle (if activated)
-            if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+            if [ "${PRE_SHUFFLE_SQL}" == "1" -o "${PRE_SHUFFLE_SQL}" == "2" ]; then
               PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
-              if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then 
+              if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+                mkdir -p "${PRE_SHUFFLE_DIR}"
+                echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
+              fi
+              if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
                 local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
                 INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
                 WORKNRDIR=
                 echoit "Randomly pre-shuffling ${PRE_SHUFFLE_SQL_LINES} lines of SQL into ${INFILE_SHUFFLED} | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
-                RANDOM=$(date +%s%N | cut -b10-19)
-                shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+                PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
+                RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
+                if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+                  shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+                  echoit "Obtaining the pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+                elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
+                  SHUFFLE_FILELIST="$(ls ${SCRIPT_PWD}/*.sql ${SCRIPT_PWD}/*.sql ${HOME}/mariadb-qa/*.sql ${HOME}/mariadb-qa/*/*.sql /data/SQL/*.sql /data/SQL/*/*.sql /test/TESTCASES/*.sql /test/TESTCASES/*/*.sql 2>/dev/null | sort -u | shuf --random-source=/dev/urandom | tr '\n' ' ' | tr -d '\n')"
+                  if [ "$(echo "${SHUFFLE_FILELIST}" grep -v '^$' | wc -l)" -le 0 ]; then
+                    echoit "Assert: could not locate at least one SQL file (odd for normal testing server setups), and this is a prerequisite for using PRE_SHUFFLE_SQL=2. The easiest solution is likely to either set PRE_SHUFFLE_SQL to 1 or perhaps better 0 (and configure a correct INFILE), or to: cd ~; git clone --depth=1 https://github.com/mariadb-corporation/mariadb-qa.git"
+                    exit 1
+                  fi
+                  ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables"
+                  grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
+                  echoit "Obtaining the pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+                else
+                  echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
+                  exit 1
+                fi
+                SHUFFLE_FILELIST=
+                PRE_SHUFFLE_DUR_START=
               else
                 echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_SQL_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
               fi
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
                 PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
               fi
-            fi
-            if [ ! -z "${INFILE_SHUFFLED}" ]; then
+              # Pre-shuffled trial
               ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
-            else
+            else  # Standard non-shuffled trial
               ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             fi
           else
+            # Preload SQL if the PRELOAD feature is enabled (this SQL will be prepended to the trial's SQL later)
+            if [ "${PRELOAD}" == "1" -a ! -z "${PRELOAD_SQL}" ]; then
+              echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL}"
+              mkdir -p ${RUNDIR}/${TRIAL}/preload
+              ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1 &
+            fi
             if [[ ${MDG_CLUSTER_RUN} -eq 1 ]]; then
               for i in $(seq 1 ${NR_OF_NODES}); do
                 cat << EOF >> ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
@@ -1818,7 +1933,7 @@ EOF
             else 
               ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!" 
-              #echo "Assert: GRP_RPL_CLUSTER_RUN=${GRP_RPL_CLUSTER_RUN} and MDG_CLUSTER_RUN=${MDG_CLUSTER_RUN}"
+              #echoit "Assert: GRP_RPL_CLUSTER_RUN=${GRP_RPL_CLUSTER_RUN} and MDG_CLUSTER_RUN=${MDG_CLUSTER_RUN}"
               #exit 1
             fi
           fi
@@ -1826,6 +1941,7 @@ EOF
       fi
     else
       # Multi-threaded run using a chunk from INFILE (${THREADS} clients)
+      # TODO: expand this code to enable PRE_SHUFFLE_SQL=1 and PRE_SHUFFLE_SQL=2 functionality for multi-thread runs also
       if [ ${PQUERY3} -eq 1 ]; then
         if [ "${TRIAL}" == "1" ]; then
           echoit "Creating metadata randomly using random seed ${SEED} ..."
@@ -1899,7 +2015,7 @@ EOF
                 timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1
               fi
               sleep 2
-              echoit "killed for crash testing"
+              echoit "Killed for crash recovery testing"
               CRASH_CHECK=1
               break
             fi
@@ -1912,7 +2028,7 @@ EOF
               fi
             fi
             sleep 2
-            echoit "killed for crash testing"
+            echoit "Killed for crash recovery testing"
             CRASH_CHECK=1
             break
           fi
@@ -2039,7 +2155,9 @@ EOF
         # This shutdown in the main shutdown done for every standard/default options pquery trial
         timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
         if [ $? -gt 124 ]; then
-          echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+          if [ ${ISSTARTED} -eq 1 ]; then  # Only display a failed shutdown message if the server was correctly started to being with. We still try and do the shutdown above, "just in case" the server came up with a large delay
+            echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+          fi
           touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
           if [ "${RR_TRACING}" == "1" ]; then
             # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0)
@@ -2380,32 +2498,32 @@ echo "FLUSH PRIVILEGES;" >> ${WORKDIR}/recovery-user.sql
 echo "CREATE USER root@'%';" > ${WORKDIR}/root-access.sql
 echo "GRANT ALL ON *.* TO root@'%';" >> ${WORKDIR}/root-access.sql
 echo "FLUSH PRIVILEGES;" >> ${WORKDIR}/root-access.sql
-if [[ ${MDG} -eq 0 && ${GRP_RPL} -eq 0 ]]; then
+if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} "
   echoit "${ONGOING}"
-elif [[ ${MDG} -eq 1 ]]; then
+elif [[ "${MDG}" -eq 1 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} | MDG Mode: TRUE"
   echoit "${ONGOING}"
   echoit "Number of Galera Cluster nodes: $NR_OF_NODES"
-  if [ ${MDG_SST_METHOD} -eq 1 ] ; then
+  if [[ "${MDG_SST_METHOD}" -eq 1 ]] ; then
     echoit "MDG SST Method: 'rsync'"
   else
     echoit "MDG SST Method: 'mariabackup'"
   fi
-  if [ ${MDG_CLUSTER_RUN} -eq 1 ]; then
+  if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
     echoit "MDG Cluster run: 'YES'"
   else
     echoit "MDG Cluster run: 'NO'"
   fi
-  if [ ${ENCRYPTION_RUN} -eq 1 ]; then
+  if [[ "${ENCRYPTION_RUN}" -eq 1 ]]; then
     echoit "MDG Encryption run: 'YES'"
   else
     echoit "MDG Encryption run: 'NO'"
   fi
-elif [[ ${GRP_RPL} -eq 1 ]]; then
+elif [[ "${GRP_RPL}" -eq 1 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} | Group Replication Mode: TRUE"
   echoit "${ONGOING}"
-  if [ ${GRP_RPL_CLUSTER_RUN} -eq 1 ]; then
+  if [[ "${GRP_RPL_CLUSTER_RUN}" -eq 1 ]]; then
     echoit "Group Replication Cluster run: 'YES'"
   else
     echoit "Group Replication Cluster run: 'NO'"
@@ -2413,17 +2531,17 @@ elif [[ ${GRP_RPL} -eq 1 ]]; then
 fi
 echo "[$(date +'%D %T')] ${ONGOING}" >> ~/ongoing.pquery-runs.txt
 ONGOING=
-if [[ ${RR_TRACING} -eq 1 ]]; then
+if [[ "${RR_TRACING}" -eq 1 ]]; then
   echoit "RR Tracing enabled: YES"
 else
   echoit "RR Tracing enabled: NO"
 fi
 
-if [[ ${PXB_CRASH_RUN} -eq 1 ]]; then
+if [[ "${PXB_CRASH_RUN}" -eq 1 ]]; then
   echoit "PXB Base: ${PXB_BASEDIR}"
 fi
 # Start vault server for pquery encryption run
-if [[ $WITH_KEYRING_VAULT -eq 1 ]]; then
+if [[ "${WITH_KEYRING_VAULT}" -eq 1 ]]; then
   echoit "Setting up vault server"
   diskspace
   mkdir ${WORKDIR}/vault
@@ -2493,22 +2611,22 @@ START_OPT="--core-file"                                  # Compatible with 5.6,5
 INIT_OPT="--no-defaults --initialize-insecure ${MYINIT}" # Compatible with 5.7,8.0 (mysqld init)
 INIT_TOOL="${BIN}"                                       # Compatible with 5.7,8.0 (mysqld init), changed to MID later if version <=5.6
 VERSION_INFO=$(${BIN} --version | grep -oe '[58]\.[01567]' | head -n1)
-VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9][0-9]*' | head -n1)
+VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-1]\.[0-9][0-9]*' | head -n1)
 if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
 
-if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" -o "${VERSION_INFO_2}" == "10.9" -o "${VERSION_INFO_2}" == "10.10" -o "${VERSION_INFO_2}" == "10.11" -o "${VERSION_INFO_2}" == "10.12" -o "${VERSION_INFO_2}" == "10.13" ]; then
-  VERSION_INFO="5.6"
-  INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
-  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
-  START_OPT="--core-file --core"
-elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
+if [[ "${VERSION_INFO_2}" =~ ^10.[1-3]$ ]]; then
   VERSION_INFO="5.1"
   INIT_TOOL="${BASEDIR}/scripts/mysql_install_db"
   INIT_OPT="--no-defaults --force ${MYINIT}"
   START_OPT="--core"
+elif [[ "${VERSION_INFO_2}" =~ ^1[0-1].[0-9][0-9]* ]]; then
+  VERSION_INFO="5.6"
+  INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
+  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
+  START_OPT="--core-file --core"
 elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
   if [ -z "${MID}" ]; then
-    echo "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
+    echoit "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
     exit 1
   fi
   INIT_TOOL="${MID}"

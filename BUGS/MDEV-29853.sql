@@ -1,0 +1,3 @@
+CREATE DATABASE t;  # Any database name
+CREATE TABLE t.FTS_1 (c INT) ENGINE=InnoDB;
+DROP DATABASE t;

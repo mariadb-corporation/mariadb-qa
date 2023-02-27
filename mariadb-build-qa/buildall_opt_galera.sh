@@ -26,7 +26,7 @@ cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
 cd ${DIR}/10.4 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
 cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
 cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
-cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
-cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
-cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
-cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
+#cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
+#cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
+#cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &
+#cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_opt_galera.sh &

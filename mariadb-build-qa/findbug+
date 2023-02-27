@@ -6,6 +6,11 @@ if [ ! -r ./gendirs.sh ]; then echo 'Assert: ./gendirs.sh missing'; exit 1; fi
 REGEX_EXCLUDE="$(cat REGEX_EXCLUDE 2>/dev/null)"  # Handy to exclude a particular build
 if [ -z "${REGEX_EXCLUDE}" ]; then REGEX_EXCLUDE="DUMMYSTRINGNEVERSEEN"; fi
 
+# The following is not perfect (other upper/lowercase combinations are possible, but we cannot universally change $1 to uppercase as $1 may be a bug string to search for. At least most common combinations are covered.
+if [ "${1}" == "san" -o "${1}" == "gal" -o "${1}" == "bbb" -o "${1}" == "San" -o "${1}" == "Gal" -o "${1}" == "Bbb" ]; then
+  set "${1^^}" "${2}" "${3}"  # Make ${1} uppercase ('san' > 'SAN')
+fi
+
 BBB_MODE=0
 ERROR_IN_OPTIONS=0
 if [ "${1}" == "SAN" -a -z "${2}" ]; then ERROR_IN_OPTIONS=1; fi
@@ -17,7 +22,7 @@ if [ "${ERROR_IN_OPTIONS}" -eq 1 ]; then
   echo "  > For GAL crashing bugs, specify: ./findbug+ 'GAL' 'BBB' (BBB=Common crash strings are all scanned)"
   echo "  > For SAN bugs, specify: ./findbug+ SAN 'bug_string_to_look_for' (SAN=UBSAN,ASAN,TSAN)"
   echo "  > For GAL bugs, specify: ./findbug+ GAL 'bug_string_to_look_for' (GAL=Galera)"
-  echo "  > For all other bugs, specify: ./findbug+ 'bug_string_to_look_for' without a first option"
+  echo "  > For all other bugs, specify: ./findbug+ 'bug_string_to_look_for' without a second option"
   echo "After testing of in.sql is complete, this script will look for the string 'bug_string_to_look_for' in the error log."
   echo "It expects that test_all was already executed"
   exit 1

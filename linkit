@@ -2,9 +2,10 @@
 # Created by Ramesh Sivaraman and Roel Van de Paar, MariaDB
 
 USER="$(whoami)"
+set +H
 
 if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
-  sudo mkdir -p /test /data /test/TESTCASES/ /data/NEWBUGS /data/tmp
+  sudo mkdir -p /test /data /test/TESTCASES/ /test/git-bisect /data/NEWBUGS /data/tmp
   sudo chown -R ${USER}:${USER} /test
   sudo chown -R ${USER}:${USER} /data
   sudo chmod -R +rX /test
@@ -26,18 +27,21 @@ ln -fs /home/${USER}/mariadb-qa/fuzzer/start_fuzzing /home/${USER}/fuzzing/start
 ln -fs /home/${USER}/mariadb-qa/fuzzer/del_known_bugs /home/${USER}/fuzzing/del_known_bugs
 ln -fs /home/${USER}/mariadb-qa/fuzzer/list_unique_bugs_seen /home/${USER}/fuzzing/list_unique_bugs_seen
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reports /home/${USER}/fuzzing/reports
+rm -f /home/${USER}/fuzzing/find_uniqueid_sql  # REMOVE LATER (TEMPORARY BROKEN LINK FIXUP)
 ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid /home/${USER}/fuzzing/find_uniqueid
+ln -fs /home/${USER}/mariadb-qa/fuzzer/find_uniqueid_strings /home/${USER}/fuzzing/find_uniqueid_strings
 ln -fs /home/${USER}/mariadb-qa/fuzzer/queue_stats /home/${USER}/fuzzing/queue_stats
 ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases /home/${USER}/fuzzing/process_testcases
 ln -fs /home/${USER}/mariadb-qa/fuzzer/process_testcases_loop /home/${USER}/fuzzing/process_testcases_loop
 ln -fs /home/${USER}/mariadb-qa/fuzzer/clean_queues /home/${USER}/fuzzing/clean_queues
 ln -fs /home/${USER}/mariadb-qa/fuzzer/check_loops /home/${USER}/fuzzing/check_loops
+ln -fs /home/${USER}/mariadb-qa/fuzzer/loop_screens /home/${USER}/fuzzing/loop_screens
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_all_fuzzing /home/${USER}/fuzzing/stop_all_fuzzing
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_process_testcases /home/${USER}/fuzzing/stop_process_testcases
 ln -fs /home/${USER}/mariadb-qa/fuzzer/stop_reducers_run /home/${USER}/fuzzing/stop_reducers_run
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run /home/${USER}/fuzzing/reducers_run
 ln -fs /home/${USER}/mariadb-qa/fuzzer/reducers_run_loop /home/${USER}/fuzzing/reducers_run_loop
-# The ./afl script for basedirs is auto-linked by ~/start, and here it is also linked into ~/fuzzing for editing convience
+# The ./afl script for BASEDIRs is auto-linked by ${HOME}/start, and here it is also linked into ${HOME}/fuzzing for editing convience
 ln -fs /home/${USER}/mariadb-qa/fuzzer/afl /home/${USER}/fuzzing/afl
 for ((i=0;i<10;i++)); do
   ln -fs /home/${USER}/mariadb-qa/fuzzer/afl${i}-fuzz /home/${USER}/fuzzing/afl${i}-fuzz
@@ -55,7 +59,7 @@ if [ ! -d /home/${USER}/fuzzing/fuzzing_root/init_lib ]; then
 fi
 
 # Homedir scripts
-rm -f ~/tcp ~/pge ~/pg ~/tr ~/tc ~/t ~/fc ~/mcl ~/s
+rm -f ${HOME}/tcp ${HOME}/pge ${HOME}/pg ${HOME}/tr ${HOME}/tc ${HOME}/t ${HOME}/fc ${HOME}/mcl ${HOME}/s ${HOME}/st ${HOME}/li
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/testcase_prettify.sh /home/${USER}/tcp 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/pge 2>&1
@@ -68,8 +72,14 @@ ln -fs /home/${USER}/mariadb-qa/find_cause.sh /home/${USER}/fc 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-allsubdir-del-string.sh /home/${USER}/mcl 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-screen.sh /home/${USER}/s 2>&1
 ln -fs /home/${USER}/mariadb-qa/san_text_string.sh /home/${USER}/st 2>&1
+ln -fs /home/${USER}/mariadb-qa/linkit /home/${USER}/li 2>&1
+ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${USER}/crc 2>&1
+
+# Git bisect clone script
+ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
 
 # Build scripts (mostly/mainly used from /test)
+ln -fs /home/${USER}/mariadb-qa/git-bisect.sh /test/git-bisect.sh 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/* /data/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/current_runs_testcases /home/${USER}/crt 2>&1
@@ -85,7 +95,7 @@ ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /data/NEWBUGS/cle
 ln -fs /home/${USER}/mariadb-qa/newbugs/* /home/${USER}/fuzzing/newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /home/${USER}/fuzzing/newbugs/clean_newbugs 2>&1
 
-# Link ~/BUGS to ~/mariadb-qa/BUGS for ease-of-access
+# Link ${HOME}/BUGS to ${HOME}/mariadb-qa/BUGS for ease-of-access
 if [ ! -d /home/${USER}/BUGS ]; then
   ln -fs /home/${USER}/mariadb-qa/BUGS /home/${USER}/BUGS 2>&1
 fi
@@ -100,12 +110,93 @@ if [ ! -r /test/REGEX_EXCLUDE ]; then
 fi
 
 # Protect homedir links which are easily overwritten by mistake
-chmod -w ~/b ~/c ~/i ~/m ~/o ~/p ~/r
+chmod -w ${HOME}/b ${HOME}/c ${HOME}/i ${HOME}/m ${HOME}/o ${HOME}/p ${HOME}/r
 
 # Cater for self-built rr instances (https://github.com/rr-debugger/rr/wiki/Building-And-Installing) rather than system installations of rr
 if [ ! -r /usr/bin/rr -a -r /usr/local/bin/rr ]; then
   sudo ln -s /usr/local/bin/rr /usr/bin/rr
 fi
 
-echo 'Done!'
+# Suggest alias'es (Search key: Mac)
+# If you run into issues with predefined system commands try
+# grep '^alias' ${HOME}/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /bin/{} 2>/dev/null  # Ignore start of output
+# grep '^alias' ${HOME}/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /usr/bin/{} 2>/dev/null
+# To find possible culprits. Also note things like 'fi' cannot be redefined
+echo "You can now add a list of helpful alias'es to the end of your ${HOME}/.bashrc script, by doing:"
+echo "
+alias a='./all'      # Start kill>wipe>start>cl in current BASEDIR
+alias all='./all'    # Idem
+alias cl='${HOME}/cl &'    # Run ${HOME}/mariadb-qa/pquery-clean-known.sh for the current (pquery) workdir, in background (it is slow)
+alias c='cat '       # cat (display) a file (pass file name)
+alias k='clear'      # Clear screen
+alias b='${HOME}/b'        # Start bug report for in.sql in current BASEDIR
+alias bs='${HOME}/b SAN'   # Start SAN based bug report for in.sql in current BASEDIR
+alias bd='screen -admS \"dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_dbg.sh; bash\"; screen -d -r dbg_build'  # Start a debug build for the current sourcedir (ref /test/clone.sh)
+alias bo='screen -admS \"opt_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh; bash\"; screen -d -r opt_build'  # Idem, optimized build
+alias ba='screen -admS \"opt_and_dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh & sleep 70; ${HOME}/mariadb-qa/build_mdpsms_dbg.sh; bash\"; screen -d -r opt_and_dbg_build'  # Idem, both
+alias ca='cd /data; ./clean_all'  # Goes through all workdirs, deleting all [recently] added known bugs'
+alias gc='git commit -a -m '  # Commit to git with a given message (pass quoted message)
+alias gs='git status'  # Show git status of current directory
+alias gp='git push'  # Push to git repository
+alias pr='${HOME}/pr'      # pquery-results for current workdir
+alias t='${HOME}/t'        # UniqueID (works in BASEDIRs, and in workdir/trial dirs etc)
+alias tt='${HOME}/tt'      # UniqueID + known bugs scan + JIRA URL scan links
+alias sr='${HOME}/sr '     # Start reducer for a given trial (pass trial number)
+alias pg='${HOME}/pg'      # Start pquery-go-expert for current workdir
+alias pge='${HOME}/pge '   # Start pquery-goexp-patch for a given trial (pass trial number)
+alias pga='${HOME}/pg_all' # Start new pquery-go-expert runs for all workdirs
+alias pgar='${HOME}/pg_all REGEN' # Not often used. Regenerate all reducer scripts for all workdirs (resource intensive)
+alias s='${HOME}/s '       # Reconnect to given screen (pass start of screen name, or 's{trialnr}'), list screens
+alias sc='${HOME}/sc'      # Check if the current bash session is running inside a screen
+alias sg='screen -list | grep '  # List screens that match a search pattern (pass quoted search pattern)
+alias sb='source ${HOME}/.bashrc' # Re-source ${HOME}/.bashrc, handy to use when this alias list was updated
+alias st='${HOME}/start'   # Prepare a BASEDIR with all runtime scripts for it
+alias d='cd /test;. ./d1'  # cd to the latest debug 10.11 in /test
+alias o='cd /test;. ./o1'  # cd to the latest optimized 10.11 in /test
+alias ds='cd /test;. ./u1'   # cd to the latest UBASAN debug 10.11 in /test
+alias os='cd /test;. ./uo1'  # cd to the latest UBASANoptimized 10.11 in /test
+alias i='${HOME}/i '       # Information about any trial in current workdir (pass trial number)
+alias ii='${HOME}/ii'      # Information about the current (pquery framework) workdir
+alias in='vi in.sql' # Edit ./in.sql in a BASEDIR for example (usable with many other scripts in BASEDIR and home)
+alias r='cd /data; timeout 120s ./results'  # Show results from workdirs in results.list (ref ${HOME}/gomd), stop at 120s
+alias g='cd /test;./gendirs.sh'  # cd to test and run gendirs.sh (dirs which will be used in ${HOME}/b and d/o scripts)
+alias gsan='cd /test;./gendirs.sh san'  # Idem, but for SAN builds
+alias da='cd /data'  # cd to /data where all workdirs live
+alias ct='cd /test'  # cd to /test where all BASEDIRs/builds live
+alias cm='cd ${HOME}/mariadb-qa'  # cd to ${HOME}/mariadb-qa where all testing code lives
+alias cf='cd ${HOME}/fuzzing'     # cd to ${HOME}/fuzzing where all fuzzing results live
+alias eb='${HOME}/eb '     # Edit bug SQL (pass bug number, the numbers are sufficient but you can use MENT or MDEV)
+alias dt='${HOME}/dt '     # Delete a pquery trial in a WORKDIR (pass trial number)
+alias kb='${HOME}/kb'      # Open the known bugs (knownbugs.list) file for editing
+alias kba='${HOME}/kba'    # Open the known SAN bugs (knownbugs.list.SAN) file for editing
+alias kbs='${HOME}/kbs '   # Search through all known bug UniqueID's (pass search string, for example a quoted UniqueID)
+alias kbsa='${HOME}/kbsa ' # Search through all known SAN bug UniqueID's (pass search string, for example a quoted UniqueID)
+alias mul='./multirun_loop'  # From a BASEDIR, loop in.sql till a core is found (handy for SHUTDOWN based issues)
+alias mu='./multirun'  # From a BASEDIR, loop in.sql till a crash is observed 
+alias mup='./multirun_pquery'  # From a BASEDIR, loop in.sql, using pquery, till a crash is observed
+alias my='./my'      # List simplified testcases in current (pquery) workdir
+alias stack='./stack'  # Produce a stack for the core in /data (run from within a BASEDIR or trial dir)
+alias as='cd /test; ./allstrings'  # Show UniqueID's per version after running ${HOME}/b (b)
+alias asm='cd /test; ./allstrings_merged'  # Show a list of merged UniqueID's seen after running ${HOME}/b (b)
+alias asn='cd /test; ./allstrings_new'  # Show a list of new, merged, UniqueID's after running ${HOME}/b (b)
+alias anc='./all_no_cl'    # Run all_no_cl in a basedir (prepares new basedir setup for running ./test)
+alias vl='vi ./log/master.err'  # Open the error log in a BASEDIR
+alias vr='cd /data; vi results.list'  # Open /data/results.list for editing or review
+alias vt='${HOME}/vt '     # Open the error log for a trial (pass trial number), or in a BASEDIR
+alias li='${HOME}/li'      # Run linkit (can be rerun as often as needed)
+alias m='${HOME}/myver'    # Shows handy JIRA-based version tags for the current BASEDIR
+alias ge='cd /test;./grep_in_errorlogs.sh ' # Search for string in all BASEDIR error logs (pass string)
+alias rf='vi ${HOME}/mariadb-qa/REGEX_ERRORS_FILTER'  # Open error log filter list
+alias rfi='vi ${HOME}/mariadb-qa/REGEX_ERRORS_FILTER.info'  # Open error log filter list info file
+alias rfil='vi ${HOME}/mariadb-qa/REGEX_ERRORS_LASTLINE'  # Open error log last line filter list
+alias reg='vi /test/REGEX_EXCLUDE'  # Open the REGEX exclude dir for gendirs.sh (basedirs)
+alias v='${HOME}/v '       # Opens reducer{trial}.sh for a given trial (pass trial number)
+alias tcp='${HOME}/tcp '   # Testcase prettify (pass SQL file)
+alias tl='tail log/master.err' # Display tail of mariadbd/mysqld error log in the current BASEDIR or pquery trial dir
+alias prg='${HOME}/pr | grep ' # Search ${HOME}/pr for a specific string or trial number (pass search string or trial number)
+alias j='. ${HOME}/j '     # Jump to a particular /data directory (pass, for example, workdir number)
+alias ml='./multirun_loop ' # Execute ./multirun_loop in a BASEDIR
+" > /tmp/.bashrc
+echo -e "cat /tmp/.bashrc >> ${HOME}/.bashrc\nRemember to cleanup old framework alias'es, though later ones replace earlier ones.\nDone!"
+
 exit 0

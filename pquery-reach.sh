@@ -15,10 +15,10 @@ MYEXTRA="--plugin-load=TokuDB=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-lo
 EARLYCOPY=0  # Make a copy to the COPYDIR before starting reducer. Not strictly required, but handy if your machine may power off and you were using /dev/shm as WORKDIR
 
 # Internal variables: Do not change!
-RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDOMR=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(.......\).*/\1/')  # Create random dir nr | 7 digits to separate it from other runs
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')   # Create random dir/file nr
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 RUN_DONE=0
 
 echoit(){
@@ -156,7 +156,7 @@ echoit "MYINIT: ${MYINIT}"
 echoit "MYEXTRA: ${MYEXTRA}"
 
 # Main Loop
-while true; do
+while :; do
   # Run pquery_run.sh with a randomly generated configuration
   pquery_run
   # Analyze the single trial executed by pquery_run.sh

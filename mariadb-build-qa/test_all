@@ -16,6 +16,8 @@ if [ "${1}" == "SAN" ]; then
   fi
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
+elif [ "${1}" == "SAN" ]; then
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
 fi
 
 rm -f test.result
@@ -62,7 +64,11 @@ else
 fi
 
 # Run the test and stop the servers
-TEST_SCRIPT="./test"
+if [ "${1}" == "GAL" ]; then
+  TEST_SCRIPT="./gal_test"
+else
+  TEST_SCRIPT="./test"
+fi
 if [ "${BPQUERY}" == "1" ]; then
   if [ "${1}" == "GAL" ]; then
     TEST_SCRIPT="./gal_test_pquery"

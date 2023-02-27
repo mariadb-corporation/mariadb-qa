@@ -1,4 +1,8 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-find . | grep '\.report' | xargs -I{} echo "FILE=\$(echo '{}' | sed 's|\.report$||'); echo \"------ cat '\${FILE}.report'\"; cat \"\${FILE}.string\"" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+if [ -z "${1}" ]; then
+  find . | grep '\.report' | xargs -I{} echo "FILE=\$(echo '{}' | sed 's|\.report$||'); echo \"------ cat '\${FILE}.report'\"; cat \"\${FILE}.string\"; cat \"\${FILE}.string\" | awk -F'|' '{print \$3}' | xargs -I_ ~/kbs _ | sed 's/^/   | /';" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+else
+  find . | grep '\.report' | xargs -I{} echo "FILE=\$(echo '{}' | sed 's|\.report$||'); echo \"------ cat '\${FILE}.report'\"; cat \"\${FILE}.string\";" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+fi

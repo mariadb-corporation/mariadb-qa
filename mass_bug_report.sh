@@ -43,8 +43,8 @@ if [ ! -d "${TESTCASES_DIR}" ]; then
   exit 1
 fi
 
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
-RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDFL=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
 
 LIST="/tmp/list_of_testcases.${RANDFL}"

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
+# This script finds directories which
+# 1) Do not have reduced testcases in them (i.e. no '_out' files)
+# 2) Are not currently in progress (checked against /dev/shm active runs only)
+# This is handy when trying to find directories which can be safely deleted when OOS is near
+# You may want to check the rundate and BASEDIR of the resulting directories before removing them to avoid deleting recent runs and/or feature testing runs
+
+ls -d [0-9]* | grep -vE "$(ls -d [0-9]* | xargs -I{} echo "cd {}; find . | grep -m1 '_out' | sed 's|^\.|{}|'; cd .." | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | tr '\n' '|' | sed "s/|$/$(ls -d /dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9] 2>/dev/null | sed 's|/dev/shm/||' | tr '\n' '|' | sed 's/|$//')/")"

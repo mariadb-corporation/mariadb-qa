@@ -6,6 +6,8 @@ grep '^PQUERY_BIN' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|;s|\${SCRIPT_PWD
 grep '^ADD_RANDOM_OPTIONS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
 grep '^PQUERY_RUN_TIMEOUT' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
 grep '^THREADS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+grep '^PRELOAD=' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+grep '^PRELOAD_SQL' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|;s|\${SCRIPT_PWD}|~/mariadb-qa|'
 if grep '^USE_GENERATOR_INSTEAD_OF_INFILE=1' pquery*.conf; then
   grep '^USE_GENERATOR_INSTEAD_OF_INFILE' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
   grep '^ADD_INFILE_TO_GENERATED_SQL' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'

@@ -7,5 +7,5 @@ elif [ ! -d "${1}" ]; then
   exit 1
 fi
 cd $1
-while true; do clear; ls */*_out | xargs wc -l; sleep 3; done
+while :; do clear; ls */*_out | xargs wc -l; sleep 3; done
 exit 0

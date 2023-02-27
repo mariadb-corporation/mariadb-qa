@@ -4,7 +4,14 @@
 # Updated by Ramesh Sivaraman, MariaDB
 
 # Random entropy init
-RANDOM=$(date +%s%N | cut -b10-19)
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
+
+# Filter the following text (regex aware) from INIT_TOOL startup
+FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|To start mariadbd at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved|^[2-9][0-9][0-9][0-9][0-9][0-9] [0-2][0-9]:|^20[2-9][0-9]|See the manual|start the MySQL daemon|bin/mysqld_safe|test the MySQL daemon with|latest information about|http://|https://|by buying support/|Found existing config file|Because this file might be in use|but was used in bootstrap|when you later start the server|new default config file was created|compare it with your file|root.*new.*password|Alternatively you can run|will be used by default|You may edit this file to change|Filling help tables|TIMESTAMP with implicit DEFAULT value|You can find the latest source|the maria-discuss email list|Please check all of the above|Optimizer switch:|perl mariadb|^cd ./test|bin/mariadb-secure-installation|secure-file-priv value as server is running with|starting as process|Using unique option prefix core|Deprecated program name'
+
+# Ensure that if AFL variables were set, they are cleared first to avoid the server not starting due to 'shmat for map: Bad file descriptor'
+export -n __AFL_SHM_ID
+export -n AFL_MAP_SIZE
 
 # Find empty port
 # (**) IMPORTANT WARNING! The init_empty_port scan in startup.sh uses a different range than the matching function in
@@ -49,7 +56,7 @@ init_empty_port
 PORT=$NEWPORT
 MTRT=$((${RANDOM} % 100 + 700))
 BUILD=$(pwd | sed 's|^.*/||')
-SCRIPT_PWD=$(cd "$(dirname $0)" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 ADDR="127.0.0.1"
 USE_JE=0 # Use jemalloc (requires builds which were made with jemalloc enabled. Current build scripts explicitly disable jemalloc with -DWITH_JEMALLOC=no hardcoded, as TokuDB is deprecated in MariaDB 10.5)
 
@@ -65,10 +72,10 @@ fi
 
 add_san_options() {
   # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-  echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1  # Set atexit=1 to get full at-binary-exit memory stats' >>"${1}"
+  echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1' >>"${1}"
   # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
   # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
-  #echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:check_initialization_order=1:detect_stack_use_after_return=1:abort_on_error=1' >> "${1}"
+  #echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1' >> "${1}"
   echo 'export UBSAN_OPTIONS=print_stacktrace=1' >>"${1}"
   echo 'export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1' >>"${1}"
 }
@@ -91,12 +98,17 @@ if [ "$(uname -v | grep 'Ubuntu')" != "" ]; then
   fi
 fi
 
+# Delete any .cnf files. Whilst the framework takes care of not accidentally reading .cnf files (generally by using --no-defaults everwhere), it is best to delete these unnecessary files. Also cleanup some other non-used files
+rm -f *.cnf COPYING CREDITS README-wsrep THIRDPARTY README* LICENSE*
+
 # Get version specific options
 BIN=
-if [ -r ${PWD}/bin/mysqld-debug ]; then BIN="${PWD}/bin/mysqld-debug"; fi # Needs to come first so it's overwritten in next line if both exist
-if [ -r ${PWD}/bin/mysqld ]; then BIN="${PWD}/bin/mysqld"; fi
+if [ -r ${PWD}/bin/mariadbd ]; then BIN="${PWD}/bin/mariadbd"; 
+elif [ -r ${PWD}/bin/mysqld-debug ]; then BIN="${PWD}/bin/mysqld-debug";  # Needs to come first so it's overwritten in next line if both exist
+elif [ -r ${PWD}/bin/mysqld ]; then BIN="${PWD}/bin/mysqld"; 
+fi
 if [ -z "${BIN}" ]; then
-  echo "Assert: no mysqld or mysqld-debug binary was found!"
+  echo "Assert: no mariadb, mysqld-debug or mysqld binary was found!"
   exit 1
 fi
 MID=
@@ -107,20 +119,20 @@ INIT_OPT="--no-defaults --initialize-insecure" # Compatible with     5.7,8.0 (my
 INIT_TOOL="${BIN}"                             # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
 VERSION_INFO=$(${BIN} --version | grep --binary-files=text -oe '[58]\.[01567]' | head -n1)
 if [ -z "${VERSION_INFO}" ]; then VERSION_INFO="NA"; fi
-VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9][0-9]*' | head -n1)
+VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-1]\.[0-9][0-9]*' | head -n1)
 if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
 
-if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" -o "${VERSION_INFO_2}" == "10.9" -o "${VERSION_INFO_2}" == "10.10" -o "${VERSION_INFO_2}" == "10.11" -o "${VERSION_INFO_2}" == "10.12" -o "${VERSION_INFO_2}" == "10.13" ]; then
+if [[ "${VERSION_INFO_2}" =~ ^10.[1-3]$ ]]; then
+  VERSION_INFO="5.1"
+  INIT_TOOL="${PWD}/scripts/mysql_install_db"
+  INIT_OPT="--no-defaults --force"
+  START_OPT="--core"
+elif [[ "${VERSION_INFO_2}" =~ ^1[0-1].[0-9][0-9]* ]]; then
   VERSION_INFO="5.6"
   INIT_TOOL="${PWD}/scripts/mariadb-install-db"
   INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
   #START_OPT="--core-file --core"
   START_OPT="--core-file"
-elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
-  VERSION_INFO="5.1"
-  INIT_TOOL="${PWD}/scripts/mysql_install_db"
-  INIT_OPT="--no-defaults --force"
-  START_OPT="--core"
 elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
   if [ -z "${MID}" ]; then
     echo "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
@@ -145,7 +157,7 @@ fi
 if find . -name group_replication.so | grep -q .; then
   GRP_RPL=1
 else
-  echo "Warning! Group Replication plugin not found. Skipping Group Replication startup"
+  echo "Note: Group Replication plugin not found. Skipping Group Replication startup"
   GRP_RPL=0
 fi
 
@@ -162,12 +174,12 @@ elif [ -r lib/libgalera_enterprise_smm.so ]; then
   MDG=1
   GALERA_LIB=${PWD}/lib/libgalera_enterprise_smm.so
 else
-  echo "Warning! Galera plugin not found. Skipping Galera startup"
+  echo "Note: Galera plugin not found. Skipping Galera startup"
 fi
 
 # Setup scritps
-rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery wipe* clean_failing_queries memory_use_trace afl 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init"
+rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery test*timed wipe* clean_failing_queries memory_use_trace afl* ml mlp 2>/dev/null
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init | afl | aflnew"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -179,9 +191,13 @@ else
 fi
 
 # AFL Squirrel
+# OLD
 if [ -r ${HOME}/mariadb-qa/fuzzer/afl ]; then
   ln -s ${HOME}/mariadb-qa/fuzzer/afl ./afl
 fi
+# NEW  (Note that we can clear __AFL_SHM_ID and AFL_MAP_SIZE ocne server is started as it maintains the same when already started)
+echo "export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1; export UBSAN_OPTIONS=print_stacktrace=1; export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1; ./kill >/dev/null 2>&1; rm -f ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
+chmod +x aflnew
 
 #GR startup scripts
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -302,8 +318,8 @@ if [[ $MDG -eq 1 ]]; then
   echo "innodb_file_per_table" >>my.cnf
   echo "innodb_autoinc_lock_mode=2" >>my.cnf
   echo "wsrep-provider=${GALERA_LIB}" >>my.cnf
-  echo "#wsrep_sst_method=rsync" >>my.cnf
-  echo "wsrep_sst_method=mariabackup" >>my.cnf
+  echo "wsrep_sst_method=rsync" >>my.cnf
+  echo "#wsrep_sst_method=mariabackup" >>my.cnf
   echo "wsrep_sst_auth=root:" >>my.cnf
   echo "binlog_format=ROW" >>my.cnf
   echo "core-file" >>my.cnf
@@ -402,10 +418,10 @@ if [[ $MDG -eq 1 ]]; then
       echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA > $PWD/node${i}/node${i}.err 2>&1 &" >> ./gal_start
       echo "check_node_startup ${i}" >> ./gal_start
     fi
-    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>./gal_init
+    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>./gal_init
 
     echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock test --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
-    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i}" >>gal_wipe
+    echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>gal_wipe
     echo "if [ -r node1/node${i}.err ]; then mv node${i}/node${i}.err node${i}/node${i}.err.PREV; fi" >>gal_wipe
   done
   for i in $(seq "${NR_OF_NODES}" -1 1); do
@@ -446,6 +462,7 @@ fi
 
 echo "echo '---------- START ----------' >> ./log/master.err" >insert_start_marker
 echo "echo '---------- STOP  ----------' >> ./log/master.err" >insert_stop_marker
+touch in.sql
 echo 'MYEXTRA_OPT="$*"' >start
 echo 'MYEXTRA=" --no-defaults "' >>start
 echo '#MYEXTRA=" --no-defaults --sql_mode="' >>start
@@ -468,7 +485,7 @@ fi
 cp start start_valgrind # Idem setup for Valgrind
 cp start start_gypsy    # Idem setup for gypsy
 cp start start_rr       # Idem setup for rr
-echo "$BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT}  2>&1 &" >>start
+echo "$BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
 echo "for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
 if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO}" != "5.6" ]; then
   echo "${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
@@ -519,8 +536,9 @@ echo "  else" >>repl_setup
 echo "    node=\"${PWD}/slavenode\"" >>repl_setup
 echo "  fi" >>repl_setup
 echo "  if [ ! -d \$node ]; then" >>repl_setup
-echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 || exit 1;" >>repl_setup
-echo "  fi" >>repl_setup
+echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>repl_setup
+echo '    if [ "${?}" -eq 1 ]; then exit 1; fi' >>repl_setup
+echo '  fi' >>repl_setup
 echo "  $BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=\${node} --datadir=\${node} ${TOKUDB} ${ROCKSDB} --socket=\$node/socket.sock --port=\$RBASE --report-host=$ADDR --report-port=\$RBASE  --server-id=10\$i --log-error=\$node/mysql.err 2>&1 &" >>repl_setup
 echo "  for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S\$node/socket.sock > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>repl_setup
 echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
@@ -566,7 +584,11 @@ echo "fi" >>repl_setup
 # TODO: fix the line below somehow, and add binary-files=text for all greps. Also revert redirect to >> for second line
 #echo "set +H" > kill  # Fails with odd './kill: 1: set: Illegal option -H' when kill_all is used?
 echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
-echo "timeout -k90 -s9 90s ${PWD}/bin/mysqladmin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
+if [ -r ./bin/mariadb-admin ]; then
+  echo "timeout -k90 -s9 90s ${PWD}/bin/mariadb-admin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
+else
+  echo "timeout -k90 -s9 90s ${PWD}/bin/mysqladmin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
+fi
 echo "./kill >/dev/null 2>&1" >>stop
 echo "echo 'Server on socket ${SOCKET} with datadir ${PWD}/data halted'" >>stop
 echo "./init;./start;./cl;./stop;./kill >/dev/null 2>&1;tail log/master.err" >setup
@@ -584,7 +606,7 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>wipe
   echo $JE7 >>wipe
 fi
-echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data" >> wipe
+echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >> wipe
 echo "rm -f log/master.err.PREV" >>wipe
 echo "if [ -r log/master.err ]; then mv log/master.err log/master.err.PREV; fi" >>wipe
 # Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
@@ -592,7 +614,7 @@ echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CR
 # Creating init script
 echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
 echo "rm -Rf ${PWD}/data" >> init
-echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data" >>init
+echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>init
 echo "rm -f log/master.*" >>init
 
 
@@ -609,6 +631,44 @@ echo 'wc -l in.sql' >>loopin
 echo 'wc -l out.sql' >>loopin
 echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DROP/CREATE/USE DATABASE test!"' >>loopin
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >>loopin
+echo "#!/bin/bash" >multirun_loop
+ln -s ./multirun_loop ./ml
+echo "# This script will keep looping in.sql until ./data/core* is present/detected. If loop cycles take 90 seconds or more, you may want to check that the server is not hanging in those 90 seconds (there is a 90 second timeout in ./stop which is being used, you could also increase that to establish if it is is the mysqladmin shutdown is hanging). Only other possible reason is a(very) large input SQL testcase. Generally loops will take 5 seconds or less with a small input file." >>multirun_loop
+echo "# To look for a specific UniqueID bug, do:" >>multirun_loop
+echo "# export BUG='...'    # Where ... is a UniqueID" >>multirun_loop
+echo "# or, to look for a specific error log based bug, do:" >>multirun_loop
+echo "# export ELBUG='...'  # Where ... is the text you want to scan for in the error log" >>multirun_loop
+echo "# Note that you can also use a dummy search (export BUG='dummy') to see all possible UniqueID's a bug produces!" >>multirun_loop
+echo "# Please do not set BUG and ELBUG variables at the same time, and remember to clear them before running a new unrelated multirun_loop" >>multirun_loop
+echo "NR_OF_LOOPS=0" >>multirun_loop
+echo "echo \"Number of lines in in.sql: \$(wc -l in.sql | sed 's| .*||')\"" >>multirun_loop
+echo "rm -Rf ./data ./data.multirun" >>multirun_loop
+echo "./all_no_cl \${*} > ./last_all_no_cl.multirun.log 2>&1" >>multirun_loop
+echo "mv data data.multirun" >>multirun_loop
+echo "loop(){" >>multirun_loop
+echo "  NR_OF_LOOPS=\$[ \${NR_OF_LOOPS} + 1]; echo \"\$(date +'%F %T') Loop: \${NR_OF_LOOPS}...\"; rm -Rf ./data; cp -r ./data.multirun ./data; ./all_no_cl \${*} > ./last_all_no_cl.multirun.log 2>&1; ./test; ./stop >/dev/null 2>&1; sleep 2" >>multirun_loop
+echo "}" >>multirun_loop
+echo "if [ ! -z \"\${BUG}\" -a ! -z \"\${ELBUG}\" ]; then" >>multirun_loop
+echo "  echo \"Assert: both BUG and ELBUG variables are set, please only set one\"" >>multirun_loop
+echo "elif [ ! -z \"\${BUG}\" ]; then" >>multirun_loop
+echo "  echo -e \"Looking for UniqueID (As per the BUG environment variable):\n   \${BUG}\"" >>multirun_loop
+echo "  BUGSEEN=" >>multirun_loop
+echo "  while [ \"\${BUGSEEN}\" != \"\${BUG}\" ]; do BUGSEEN=; loop; BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-|Assert:' )\"; if [ ! -z \"\${BUGSEEN}\" -a \"\${BUGSEEN}\" != \"\${BUG}\" ]; then echo \"Another bug than the one being looked for was observed: \${BUGSEEN}\"; fi done" >>multirun_loop
+echo "elif [ ! -z \"\${ELBUG}\" ]; then" >>multirun_loop
+echo "  echo -e \"Looking for this string in the error log (As per the ELBUG environment variable):\n   \${ELBUG}\"" >>multirun_loop
+echo "  BUGSEEN=" >>multirun_loop
+echo "  while [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; do loop; if [ -r ./data/core* ]; then if [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; then BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-' )\"; echo \"While the searched for string was not found in the error log, a crash was observed with UniqueID: \${BUGSEEN}\"; fi; fi; done" >>multirun_loop
+echo "else" >>multirun_loop
+echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till a core* is found\"" >>multirun_loop
+echo "  while [ ! -r ./data/core* ]; do loop; done;" >>multirun_loop
+echo "fi" >>multirun_loop
+echo "sleep 2" >>multirun_loop
+echo "\${HOME}/tt" >>multirun_loop
+echo "echo \"Number of loops executed to obtain ./data/core*: \${NR_OF_LOOPS}\"" >>multirun_loop
+echo "rm -Rf ./data.multirun" >>multirun_loop
+cp multirun_loop multirun_loop_pquery
+ln -s ./multirun_loop_pquery ./mlp
+sed -i 's|./test;|./test_pquery >/dev/null 2>\&1;|' multirun_loop_pquery
 echo "#!/bin/bash" >multirun_mysqld
 echo "~/mariadb-qa/multirun_mysqld.sh \"\${*}\"" >>multirun_mysqld
 echo "#!/bin/bash" >multirun_mysqld_text
@@ -641,6 +701,12 @@ echo "sed -i 's|^REPORT_END_THREAD=[0-9]|REPORT_END_THREAD=0|' ~/mariadb-qa/mult
 echo "sed -i 's|^REPORT_THREADS=[0-9]|REPORT_THREADS=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
 echo "echo '===== Replay mode/order:'" >>multirun
 echo "echo \"Order: \$(if grep -qi 'RND_REPLAY_ORDER=1' ~/mariadb-qa/multirun_cli.sh; then echo -n 'RANDOM ORDER!'; else echo 'SEQUENTIAL SQL (NON-RANDOM)'; fi)\"" >>multirun
+echo "echo ''" >>multirun
+echo "echo '===== Testcase size:'" >>multirun
+echo "wc -l in.sql | tr -d '\n'; echo \" ($(wc -c in.sql | sed 's| .*||') bytes)\"" >>multirun
+echo "echo ''" >>multirun
+echo "echo '===== MYEXTRA options:'" >>multirun
+echo "echo \"\$* --max_connections=10000\"" >>multirun
 echo "echo ''" >>multirun
 ln -s ./multirun ./m 2>/dev/null
 cp ./multirun ./multirun_pquery
@@ -699,12 +765,28 @@ echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprom
 touch cl_noprompt_nobinary
 add_san_options cl_noprompt_nobinary
 echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
-touch test test_pquery
+echo "#!/bin/bash" > test
 add_san_options test
-add_san_options test_pquery
+cp test test_pquery
+cp test test_timed
+echo "sed -i \"s|MYPORT|\$(grep -o 'port=[0-9]\+' start 2>/dev/null | sed 's|port=||')|\" in.sql" >>test
 echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
 echo "${HOME}/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery
-
+echo "# Timing code, with thanks, https://stackoverflow.com/a/42359046/1208218 (dormi330)" >>test_timed
+echo "start_at=\$(date +%s,%N)" >>test_timed
+cp test_timed test_pquery_timed
+echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test_timed
+echo "${HOME}/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --log-query-duration --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery_timed
+echo "end_at=\$(date +%s,%N)" >t_tmp1  # Temporary file to avoid duplicating commands here
+echo "_s1=\$(echo \${start_at} | cut -d',' -f1)   # sec" >>t_tmp1
+echo "_s2=\$(echo \${start_at} | cut -d',' -f2)   # nano sec" >>t_tmp1
+echo "_e1=\$(echo \${end_at} | cut -d',' -f1)" >>t_tmp1
+echo "_e2=\$(echo \${end_at} | cut -d',' -f2)" >>t_tmp1
+echo "time_cost=\"\$(bc <<< \"scale=3; \${_e1} - \${_s1} + (\${_e2} - \${_s2})/1000000000\")\"" >>t_tmp1
+echo "echo \"\${PWD} Duration: \${time_cost} seconds\" | sed 's|Duration: \\.|Duration: 0.|'" >>t_tmp1
+cat t_tmp1 >>test_timed
+cat t_tmp1 >>test_pquery_timed
+rm -f t_tmp1
 echo '#!/bin/bash' > clean_failing_queries
 echo '# This script elimiates failing queries from in.sql in two different ways and saves the results in cleaned1.sql and cleaned2.sql' >> clean_failing_queries
 echo "echo ''" >> clean_failing_queries
@@ -788,11 +870,11 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   sed -i 's|somebug|${2}|' ./reducer_new_text_string.sh
   sed -i 's|^\(MYEXTRA="[^"]\+\)"|\1 ${3}"|' ./reducer_new_text_string.sh
   sed -i 's|^MODE=4|MODE=3|' ./reducer_new_text_string.sh
-  sed -i 's|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=13|' ./reducer_new_text_string.sh
+  sed -i 's|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=5|' ./reducer_new_text_string.sh
   sed -i 's|^KNOWN_BUGS_LOC=[^#]\+|KNOWN_BUGS_LOC="${HOME}/mariadb-qa/known_bugs.strings"   |' ./reducer_new_text_string.sh
   sed -i 's|^FORCE_SKIPV=0|FORCE_SKIPV=1|' ./reducer_new_text_string.sh
   sed -i 's|^USE_NEW_TEXT_STRING=0|USE_NEW_TEXT_STRING=1|' ./reducer_new_text_string.sh
-  sed -i 's|^STAGE1_LINES=[^#]\+|STAGE1_LINES=10   |' ./reducer_new_text_string.sh
+  sed -i 's|^STAGE1_LINES=[^#]\+|STAGE1_LINES=100  |' ./reducer_new_text_string.sh
   sed -i 's|^SCAN_FOR_NEW_BUGS=[^#]\+|SCAN_FOR_NEW_BUGS=1   |' ./reducer_new_text_string.sh
   sed -i 's|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR="/data/NEWBUGS"   |' ./reducer_new_text_string.sh
   sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="${HOME}/mariadb-qa/new_text_string.sh"   |' ./reducer_new_text_string.sh
@@ -802,11 +884,13 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   sed -i 's|^USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|' ./reducer_errorlog.sh
   sed -i 's|^SCAN_FOR_NEW_BUGS=1|SCAN_FOR_NEW_BUGS=0|' ./reducer_errorlog.sh  # SCAN_FOR_NEW_BUGS=1 Not supported yet when using USE_NEW_TEXT_STRING=0
   # ------------------- ./reducer_errorlog_pquery.sh creation
-  cp ./reducer_errorlog.sh ./reducer_errorlog_pquery.sh
-  sed -i 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_errorlog_pquery.sh
+  sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_errorlog.sh > ./reducer_errorlog_pquery.sh
+  # ------------------- ./reducer_hang.sh creation
+  sed 's|^MODE=[0-9]|MODE=0|;s|TIMEOUT_CHECK=[0-9]*|TIMEOUT_CHECK=150|;s|MULTI_THREADS=[0-9]*|MULTI_THREADS=3|;s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=10|' ./reducer_errorlog.sh > ./reducer_hang.sh  # Timeout of 150s is a best guess, it may need to be higher. 3 Threads is plenty as we need to wait for the timeout in any case (unless sporadic)
+  # ------------------- ./reducer_hang_pquery.sh creation
+  sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_hang.sh > ./reducer_hang_pquery.sh
   # ------------------- ./reducer_new_text_string_pquery.sh creation
-  cp ./reducer_new_text_string.sh ./reducer_new_text_string_pquery.sh
-  sed -i 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_new_text_string_pquery.sh
+  sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_new_text_string.sh > ./reducer_new_text_string_pquery.sh
   # ------------------- ./reducer_fireworks.sh creation
   cp ${SCRIPT_PWD}/reducer.sh ./reducer_fireworks.sh
   mkdir -p ./FIREWORKS-BUGS
@@ -855,9 +939,9 @@ echo 'MYEXTRA_OPT="$*"' >all_no_cl_rr
 echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10" >>all_no_cl_rr
 echo 'MYEXTRA_OPT="$*"' >all_rr
 echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10;./cl" >>all_rr
-echo "echo '1/4th sec memory snapshots, for the mysqld in this directory, logged to memory.txt'; rm -f memory.txt; echo '    PID %MEM   RSS    VSZ COMMAND'; while true; do if [ \"\$(ps -ef | grep ${PORT} | grep -v grep)\" ]; then ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep \"\$(ps -ef | grep ${PORT} | grep -v grep | head -n1 | awk '{print \$2}')\" | tee -a memory.txt ; sleep 0.25; else sleep 0.05; fi; done" >memory_use_trace
+echo "echo '1/4th sec memory snapshots, for the mysqld in this directory, logged to memory.txt'; rm -f memory.txt; echo '    PID %MEM   RSS    VSZ COMMAND'; while :; do if [ \"\$(ps -ef | grep 'port=${PORT}' | grep -v grep)\" ]; then ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep \"\$(ps -ef | grep 'port=${PORT}' | grep -v grep | head -n1 | awk '{print \$2}')\" | tee -a memory.txt ; sleep 0.25; else sleep 0.05; fi; done" >memory_use_trace
 if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
-chmod +x insert_start_marker insert_stop_marker start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test test_pquery kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr all_no_cl_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init repl_setup *multirun* reducer_* clean_failing_queries memory_use_trace 2>/dev/null
+chmod +x insert_start_marker insert_stop_marker start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test test_pquery test_timed test_pquery_timed kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr all_no_cl_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init repl_setup *multirun* reducer_* clean_failing_queries memory_use_trace 2>/dev/null
 
 # Adding galera all script
 echo './gal --sql_mode=' >gal_sqlmode

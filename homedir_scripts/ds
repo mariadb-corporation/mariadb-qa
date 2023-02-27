@@ -3,6 +3,16 @@
 
 WIPE_TMP_ENABLED=0  # /tmp cleaning
 
+if [ "${STY}" == "" ]; then
+  THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
+  SCREEN_NAME='ds'
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "${SCREEN_NAME}" bash -c "${THIS_SCRIPT} ${*}"
+  sleep 1
+  screen -d -r "${SCREEN_NAME}"
+  return 2> /dev/null; exit 0
+fi
+
 if [ ! -r ~/sr ]; then echo "~/sr required! Please copy it from ~/mariadb-qa/homedir_scripts. Terminating."; exit 1; fi
 echo 'Starting up...'
 sudo sh -c "$(which echo) 4 > /proc/sys/vm/drop_caches"  # Disable bulk dmesg messages
@@ -12,7 +22,7 @@ COUNT3=0
 NEWBUGCOUNT="$(cat /data/NEWBUGS/*.string 2>/dev/null | sort -u | wc -l)"
 FUZZERBUGCOUNT="Pending"
 TESTCASES="Pending"
-while true; do 
+while :; do 
   clear
   COUNT1=$[ ${COUNT1} + 1 ]
   COUNT2=$[ ${COUNT2} + 1 ]

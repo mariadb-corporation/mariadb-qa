@@ -1,19 +1,20 @@
 #!/bin/bash
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
-BASEDIR=/test/MDEV-16329_bb-10.10-MDEV-16329_MD260822-mariadb-10.10.0-linux-x86_64-opt
-#MD190822-mariadb-10.11.0-linux-x86_64-dbg
-#MD060822-mariadb-10.6.9-linux-x86_64-dbg
-#BASEDIR=/test/MD120722-mariadb-10.10.0-linux-x86_64-dbg
-#BASEDIR=/test/MDEV-28883_MD050822-mariadb-10.10.0-linux-x86_64-opt
-# BASEDIR=/test/MD060822-mariadb-10.6.9-linux-x86_64-dbg
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space
-RUNSOPT=3
-RUNSDBG=7
+BASEDIR=/test/MD180223-mariadb-11.0.1-linux-x86_64-opt
+#BASEDIR=/test/MDEV-16329_bb-11.0-oalter_MD210223-mariadb-11.0.1-linux-x86_64-opt
+RUNSOPT=4
+RUNSDBG=0
 #CONF=pquery-run-MD-spider.conf
+#CONF=pquery-run-MD-spider-all.conf
+#CONF=pquery-run-MD-federated.conf
+#CONF=pquery-run-MD.conf  # Using PRE_SHUFFLE_SQL=2
+CONF=pquery-run-MD-crt.conf  # Using PRE_SHUFFLE_SQL=2
+#CONF=pquery-run-MD-allb.conf
+
 #CONF=pquery-run-MD-btrfs.conf
 #CONF=pquery-run-MDEV-24660.conf   # File name only, no spaces, no directories
-CONF=pquery-run-MD.conf
 #CONF=pquery-run-MD-buf.conf
 #CONF=pquery-run-MD-rr.conf
 #CONF=pquery-run-MD-idb1.conf
@@ -50,7 +51,7 @@ for RUN in $(seq 1 ${TOTALRUNS}); do
     sed -i 's|^BASEDIR=\([^#]\+\)-opt|BASEDIR=\1-dbg|' ${CONF}
   fi
   screen -admS pr${RUN} bash -c "cd ~/mariadb-qa; ./pquery-run.sh ${CONF}; bash"
-  while true; do
+  while :; do
     sleep 1
     if [ -r /tmp/gomd_helper ]; then
       sleep 0.3
@@ -63,14 +64,22 @@ for RUN in $(seq 1 ${TOTALRUNS}); do
           echo "Assert: ./${DIREND} should exist, based on directory passed by gomd_helper (${DIR})"
           exit 1; break
         else
-          if [ ! -r ~/sge ]; then 
-            echo "Assert: ~/sge not available! Cannot start pquery-go-expert!" 
-            exit 1; break
+          if [[ "${CONF}" != *"crt"* && "${CONF}" != *"CRT"* ]]; then  # Do not stat ge instances for crash recovery runs
+            if [ ! -r ~/sge ]; then 
+              echo "Assert: ~/sge not available! Cannot start pquery-go-expert!" 
+              exit 1; break
+            else
+              ~/sge "${DIREND}" "pr${RUN}"
+              TYPE="DBG"
+              if [ ${RUN} -le ${RUNSOPT} ]; then TYPE="OPT"; fi
+              echo "MD ${TYPE} Run ${RUN} started (Dir: ${DIR} Screen: pr${RUN}), and pquery-go-expert started for the same!"
+              MON[RUN]="$(echo "${DIR}" | sed 's|.*/||' | grep -o '[0-9]\+')"
+              break
+            fi
           else
-            ~/sge "${DIREND}" "pr${RUN}"
             TYPE="DBG"
             if [ ${RUN} -le ${RUNSOPT} ]; then TYPE="OPT"; fi
-            echo "MD ${TYPE} Run ${RUN} started (Dir: ${DIR} Screen: pr${RUN}), and pquery-go-expert started for the same!"
+            echo "MD ${TYPE} Run ${RUN} started (Dir: ${DIR} Screen: pr${RUN})!"
             MON[RUN]="$(echo "${DIR}" | sed 's|.*/||' | grep -o '[0-9]\+')"
             break
           fi
@@ -80,7 +89,7 @@ for RUN in $(seq 1 ${TOTALRUNS}); do
   done
 done
 echo ""
-echo "For updating the results script:"
+echo "For updating the results script (add/edit /data/results.list, then run the /data/results script):"
 for RUN in $(seq 1 ${TOTALRUNS}); do
   echo "MON[${RUN}]=${MON[${RUN}]}"
 done

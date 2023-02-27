@@ -16,388 +16,416 @@ set +H
 # keyword instead of a name, i.e. CREATE TABLE (PRIMARY INT), and that will fail at the command line
 # Adding sed's to change this does not work as we do not know if the name is used elsehwere.
 cat "${1}" | tr -d '`' | \
-  sed 's|;#.*$|;|;s| ;$|;|g;s|;;$|;|g' | \
-  sed 's|^[ ]\+||;s|;[ ]\+$|;|' | \
-  sed 's|open|OPEN|gi' | \
-  sed 's|div|DIV|gi' | \
-  sed 's|execute|EXECUTE|gi' | \
-  sed 's|index|INDEX|g' | \
-  sed 's|hex|HEX|gi' | \
-  sed 's|having|HAVING|gi' | \
-  sed 's| as | AS |gi' | \
-  sed 's|analyse|ANALYSE|gi' | \
-  sed 's|do |DO |gi' | \
-  sed 's|round|ROUND|gi' | \
-  sed 's|convert|CONVERT|gi' | \
-  sed 's|int|INT|gi;s|integer|INT|gi' | \
-  sed 's|float|FLOAT|gi' | \
-  sed 's|real|REAL|gi' | \
-  sed 's|check|CHECK|gi' | \
-  sed 's|spatial|SPATIAL|gi' | \
-  sed 's|enum|ENUM|gi' | \
-  sed 's|varbinary|VARBINARY|gi;s|binary|BINARY|gi' | \
-  sed 's|decimal|DECIMAL|gi' | \
-  sed 's|numeric|NUMERIC|gi' | \
-  sed 's|value|VALUE|gi' | \
-  sed 's|extractvalue|EXTRACTVALUE|gi' | \
-  sed 's|fast|FAST|gi' | \
-  sed 's|return|RETURN|gi' | \
-  sed 's|returns|RETURNS|gi' | \
-  sed 's|constraint|CONSTRAINT|gi' | \
-  sed 's|deterministic|DETERMINISTIC|gi' | \
-  sed 's|transaction|TRANSACTION|gi' | \
-  sed 's|consistent|CONSISTENT|gi' | \
-  sed 's|snapshot|SNAPSHOT|gi' | \
-  sed 's|commit|COMMIT|gi' | \
-  sed 's|create|CREATE|gi' | \
-  sed 's|data|DATA|gi' | \
-  sed 's|over|OVER|gi' | \
-  sed 's|references|REFERENCES|gi' | \
-  sed 's|storage|STORAGE|gi' | \
-  sed 's|disk|DISK|gi' | \
-  sed 's|plugin|PLUGIN|gi' | \
-  sed 's|plugins|PLUGINS|gi' | \
-  sed 's|local|LOCAL|gi' | \
-  sed 's|infile|INFILE|gi' | \
-  sed 's|duplicate|DUPLICATE|gi' | \
-  sed 's|terminated by|TERMINATED BY|gi' | \
-  sed 's|table|TABLE|gi' | \
-  sed 's|tables|TABLES|gi' | \
-  sed 's|view|VIEW|gi' | \
-  sed 's|merge|MERGE|gi' | \
-  sed 's|status|STATUS|gi' | \
-  sed 's|using|USING|gi' | \
-  sed 's|distinct|DISTINCT|gi' | \
-  sed 's|cascaded|CASCADED|gi' | \
-  sed 's|check option|CHECK OPTION|gi' | \
-  sed 's|comment|COMMENT|gi' | \
-  sed 's|sformat|SFORMAT|gi' | \
-  sed 's|next|NEXT|gi' | \
-  sed 's|md5|MD5|gi' | \
-  sed 's|locate|LOCATE|gi' | \
-  sed 's|history|HISTORY|gi' | \
-  sed 's|current|CURRENT|gi' | \
-  sed 's|query|QUERY|gi' | \
-  sed 's|schedule|SCHEDULE|gi' | \
-  sed 's|every|EVERY|gi' | \
-  sed 's|minute|MINUTE|gi' | \
-  sed 's|hour|HOUR|gi' | \
-  sed 's|day|DAY|gi' | \
-  sed 's|dayname|DAYNAME|gi' | \
-  sed 's|begin|BEGIN|gi' | \
-  sed 's|end|END|gi' | \
-  sed 's|ends|ENDS|gi' | \
-  sed 's|work|WORK|gi' | \
-  sed 's|rollback|ROLLBACK|gi' | \
-  sed 's|load|LOAD|gi' | \
-  sed 's|separator|SEPARATOR|gi' | \
-  sed 's|serial|SERIAL|gi' | \
-  sed 's|then|THEN|gi' | \
-  sed 's|add|ADD|gi' | \
-  sed 's|savepoint|SAVEPOINT|gi' | \
-  sed 's|checksum|CHECKSUM|gi' | \
-  sed 's|events|EVENTS|gi;s|event|EVENT|gi' | \
-  sed 's|procedure|PROCEDURE|gi' | \
-  sed 's|function|FUNCTION|gi' | \
-  sed 's|install|INSTALL|gi' | \
-  sed 's|soname|SONAME|gi' | \
-  sed 's|seq|SEQ|gi' | \
-  sed 's|sequence|SEQUENCE|gi' | \
-  sed 's|exists|EXISTS|gi' | \
-  sed 's|help|HELP|gi' | \
-  sed 's|like|LIKE|gi' | \
-  sed 's|partition|PARTITION|gi' | \
-  sed 's|partition by|PARTITION BY|gi' | \
-  sed 's|partitions|PARTITIONS|gi' | \
-  sed 's|subpartition|SUBPARTITION|gi' | \
-  sed 's|subpartitions|SUBPARTITIONS|gi' | \
-  sed 's|by |BY |gi' | \
-  sed 's|list|LIST|gi' | \
-  sed 's|hash|HASH|gi' | \
-  sed 's|algorithm|ALGORITHM|gi' | \
-  sed 's|inplace|INPLACE|gi' | \
-  sed 's|database|DATABASE|gi' | \
-  sed 's|where|WHERE|gi' | \
-  sed 's|start|START|gi' | \
-  sed 's|stop|STOP|gi' | \
-  sed 's|slave|SLAVE|gi' | \
-  sed 's|xa|XA|gi' | \
-  sed 's|shutdown|SHUTDOWN|gi' | \
-  sed 's|elt|ELT|gi' | \
-  sed 's|trim|TRIM|gi' | \
-  sed 's|names|NAMES|gi' | \
-  sed 's|case|CASE|gi' | \
-  sed 's|when|WHEN|gi' | \
-  sed 's|and|AND|gi' | \
-  sed 's|or|OR|gi' | \
-  sed 's|else|ELSE|gi' | \
-  sed 's|substr|SUBSTR|gi' | \
-  sed 's|substring_index|SUBSTRING_INDEX|gi' | \
-  sed 's|handler|HANDLER|gi' | \
-  sed 's|dual|DUAL|gi' | \
-  sed 's|all|ALL|gi' | \
-  sed 's|call|CALL|gi' | \
-  sed 's|flush|FLUSH|gi' | \
-  sed 's|privileges|PRIVILEGES|gi' | \
-  sed 's| role | ROLE |gi' | \
-  sed 's| admin | ADMIN |gi' | \
-  sed 's|with|WITH|gi' | \
-  sed 's|recursive|RECURSIVE|gi' | \
-  sed 's|dynamic|DYNAMIC|gi' | \
-  sed 's|transactional|TRANSACTIONAL|gi' | \
-  sed 's|set @@global\.|SET GLOBAL |gi' | \
-  sed 's|set @@session\.|SET SESSION |gi' | \
-  sed 's|use|USE|gi' | \
-  sed 's|concurrent|CONCURRENT|gi' | \
-  sed 's|current|CURRENT|gi' | \
-  sed 's|user|USER|gi' | \
-  sed 's|host|HOST|gi' | \
-  sed 's|password|PASSWORD|gi' | \
-  sed 's|backup|BACKUP|gi' | \
-  sed 's|alter|ALTER|gi' | \
-  sed 's|desc|DESC|gi' | \
-  sed 's|change|CHANGE|gi' | \
-  sed 's|master|MASTER|gi' | \
-  sed 's|sql_thread|SQL_THREAD|gi' | \
-  sed 's|io_thread|IO_THREAD|gi' | \
-  sed 's|asc|ASC|gi' | \
-  sed 's|limit|LIMIT|gi' | \
-  sed 's|group by|GROUP BY|gi' | \
-  sed 's|count|COUNT|gi' | \
-  sed 's| as | AS |gi' | \
-  sed 's| to | TO |gi' | \
-  sed 's| do | DO |gi' | \
-  sed 's| on | ON |gi' | \
-  sed 's|unsigned|UNSIGNED|gi' | \
-  sed 's|versioning|VERSIONING|gi;s|system versioning|SYSTEM VERSIONING|gi' | \
-  sed 's|trigger|TRIGGER|gi' | \
-  sed 's|each|EACH|gi' | \
-  sed 's|prepare|PREPARE|gi' | \
-  sed 's|show|SHOW|gi' | \
-  sed 's|row|ROW|gi' | \
-  sed 's|grant|GRANT|gi' | \
-  sed 's|concat|CONCAT|gi' | \
-  sed 's|cast|CAST|gi' | \
-  sed 's|use_frm|USE_FRM|gi' | \
-  sed 's|after|AFTER|gi' | \
-  sed 's|before|BEFORE|gi' | \
-  sed 's|foreign|FOREIGN|gi' | \
-  sed 's|blob|BLOB|gi' | \
-  sed 's|char|CHAR|gi' | \
-  sed 's|varchar|VARCHAR|gi' | \
-  sed 's|character|CHARACTER|gi' | \
-  sed 's|replace|REPLACE|gi' | \
-  sed 's|delayed|DELAYED|gi' | \
-  sed 's|lock|LOCK|gi' | \
-  sed 's|read|READ|gi' | \
-  sed 's|write|WRITE|gi' | \
-  sed 's|big|BIG|gi' | \
-  sed 's|small|SMALL|gi' | \
-  sed 's|large|LARGE|gi' | \
-  sed 's|medium|MEDIUM|gi' | \
-  sed 's|from|FROM|gi' | \
-  sed 's|union|UNION|gi' | \
-  sed 's|select|SELECT|gi' | \
-  sed 's|update|UPDATE|gi' | \
-  sed 's|insert|INSERT|gi' | \
-  sed 's|rename|RENAME|gi' | \
-  sed 's|identified|IDENTIFIED|gi' | \
-  sed 's|delete|DELETE|gi' | \
-  sed 's|truncate|TRUNCATE|gi' | \
-  sed 's|explain|EXPLAIN|gi' | \
-  sed 's|extended|EXTENDED|gi' | \
-  sed 's|date|DATE|gi' | \
-  sed 's|datetime|DATETIME|gi' | \
-  sed 's|time|TIME|gi' | \
-  sed 's|timestamp|TIMESTAMP|gi' | \
-  sed 's|repair|REPAIR|gi' | \
-  sed 's|repeat|REPEAT|gi' | \
-  sed 's|engine|ENGINE|gi' | \
-  sed 's|temporary|TEMPORARY|gi' | \
-  sed 's|replicate_do|REPLICATE_DO|gi' | \
-  sed 's|order by|ORDER BY|gi' | \
-  sed 's|drop|DROP|gi' | \
-  sed 's|analyze|ANALYZE|gi' | \
-  sed 's|bit|BIT|gi' | \
-  sed 's|set|SET|gi' | \
-  sed 's|reset|RESET|gi' | \
-  sed 's|setval|SETVAL|gi' | \
-  sed 's|fulltext|FULLTEXT|gi' | \
-  sed 's|default|DEFAULT|gi' | \
-  sed 's|session|SESSION|gi' | \
-  sed 's|global|GLOBAL|gi' | \
-  sed 's|primary|PRIMARY|gi' | \
-  sed 's|key|KEY|gi' | \
-  sed 's|null|NULL|gi' | \
-  sed 's|not |NOT |gi' | \
-  sed 's|linestring|LINESTRING|gi' | \
-  sed 's|polygon|POLYGON|gi' | \
-  sed 's|geometry|GEOMETRY|gi' | \
-  sed 's|cache|CACHE|gi' | \
-  sed 's|if |IF |gi' | \
-  sed 's| in | IN |gi' | \
-  sed 's| on | ON |gi' | \
-  sed 's| for | FOR |gi' | \
-  sed 's|aria|Aria|gi' | \
-  sed 's|memory|MEMORY|gi' | \
-  sed 's|innodb|InnoDB|gi' | \
-  sed 's|spider|Spider|gi' | \
-  sed 's|myisam|MyISAM|gi' | \
-  sed 's|rocksdb|RocksDB|gi' | \
-  sed 's|csv|CSV|gi' | \
-  sed 's|archive|ARCHIVE|gi' | \
-  sed 's|values|VALUES|gi' | \
-  sed 's|against|AGAINST|gi' | \
-  sed 's|row_format|ROW_FORMAT|gi' | \
-  sed 's|key_block_size|KEY_BLOCK_SIZE|gi' | \
-  sed 's|compressed|COMPRESSED|gi' | \
-  sed 's|InnoDB_|innodb_|g' | \
-  sed 's|GLOBAL_|global_|g' | \
-  sed 's|least|LEAST|gi' | \
-  sed 's|level|LEVEL|gi' | \
-  sed 's|rpad|RPAD|gi' | \
-  sed 's|lpad|LPAD|gi' | \
-  sed 's|into|INTO|gi' | \
-  sed 's|column|COLUMN|gi' | \
-  sed 's|left|LEFT|gi' | \
-  sed 's|right|RIGHT|gi' | \
-  sed 's|threads|THREADS|gi' | \
-  sed 's|unique|UNIQUE|gi' | \
-  sed 's|point|POINT|gi' | \
-  sed 's|variables|VARIABLES|gi' | \
-  sed 's|generated|GENERATED|gi' | \
-  sed 's|always|ALWAYS|gi' | \
-  sed 's|invisible|INVISIBLE|gi' | \
-  sed 's|virtual|VIRTUAL|gi' | \
-  sed 's|path|PATH|gi' | \
-  sed 's|minvalue|MINVALUE|gi' | \
-  sed 's|maxvalue|MAXVALUE|gi' | \
-  sed 's|increment by|INCREMENT BY|gi' | \
-  sed 's|checkpoint|checkpoint|gi' | \
-  sed 's|coordinates|coordinates|gi' | \
-  sed 's|_\([a-zA-Z]\+\)|_\L\1|gi;s|\([a-zA-Z]\+\)_|\L\1_|gi' | \
-  sed 's|json_\([_a-zA-Z]\+\)|JSON_\U\1|gi' | \
-  sed 's|\([^\.]\)st_|\1ST_|gi' | \
-  sed 's|geomfromtext|GEOMFROMTEXT|gi' | \
-  sed 's|ST_\([_a-zA-Z]\+\)|\UST_\1|gi' | \
-  sed "s|^. mysqld options required for replay.*|${OPTIONS}|i" | \
-  sed 's|crc32|CRC32|g' | \
-  sed 's|\t| |g' | \
-  sed 's|  | |g' | \
-  sed 's| ,|,|g' | \
-  sed 's|( |(|g' | \
-  sed 's| )|)|g' | \
-  sed 's|(| (|g' | \
-  sed 's|  | |g' | \
-  sed 's| \([A-Z][A-Z][A-Z]\) (| \1(|g' | \
-  sed 's|FLOAT[ ]*(|FLOAT(|gi;s|INT[ ]*(|INT(|gi;s|VARBINARY[ ]*(|VARBINARY(|gi;s|TIME[ ]*(|TIME(|gi;s|DECIMAL[ ]*(|DECIMAL(|gi;s|TRIM[ ]*(|TRIM(|gi;s|REAL[ ]*(|REAL(|gi;s|NUMERIC[ ]*(|NUMERIC(|gi;s|KEY[ ]*(|KEY(|gi;s|SUBSTR[ ]*(|SUBSTR(|gi;' | \
-  sed 's|starts|STARTS|gi' | \
-  sed 's|intersect|INTERSECT|gi' | \
-  sed 's|interval|INTERVAL|gi' | \
-  sed 's|ifnull|IFNULL|gi' | \
-  sed 's|rand|RAND|gi' | \
-  sed 's|seed|SEED|gi' | \
-  sed 's|rowid|ROWID|gi' | \
-  sed 's|tablespace|TABLESPACE|gi' | \
-  sed 's|discard|DISCARD|gi' | \
-  sed 's|fts_doc_id|FTS_DOC_ID|gi' | \
-  sed 's|mysql\.\([^ ]\+\)|mysql.\L\1|gi' | \
-  sed 's|to_days|TO_DAYS|gi' | \
-  sed 's|range|RANGE|gi' | \
-  sed 's|less than|LESS THAN|gi' | \
-  sed 's|column_format|COLUMN_FORMAT|gi' | \
-  sed 's|column_create|COLUMN_CREATE|gi' | \
-  sed 's|column_get|COLUMN_GET|gi' | \
-  sed 's|low_priority|LOW_PRIORITY|gi' | \
-  sed 's|row_format|ROW_FORMAT|gi' | \
-  sed 's|row_start|ROW_START|gi' | \
-  sed 's|row_end|ROW_END|gi' | \
-  sed 's|date_add|DATE_ADD|gi' | \
-  sed 's|day_second|DAY_SECOND|gi' | \
-  sed 's|day_minute|DAY_MINUTE|gi' | \
-  sed 's|day_hour|DAY_HOUR|gi' | \
-  sed 's|system_time|SYSTEM_TIME|gi' | \
-  sed 's|export_set|EXPORT_SET|gi' | \
-  sed 's|unix_timestamp|UNIX_TIMESTAMP|gi' | \
-  sed 's|key_block_size|KEY_BLOCK_SIZE|gi' | \
-  sed 's|sql_big_result|SQL_BIG_RESULT|gi' | \
-  sed 's|master_pos_wait|MASTER_POS_WAIT|gi' | \
-  sed 's|initial_size|INITIAL_SIZE|gi' | \
-  sed 's|no_write_to_binlog|NO_WRITE_TO_BINLOG|gi' | \
-  sed 's|user@localhost|user@localhost|gi' | \
-  sed 's|root@localhost|root@localhost|gi' | \
-  sed 's|@localhost|@localhost|gi' | \
-  sed 's|log_bin_trust_function_creators|log_bin_trust_function_creators|gi' | \
-  sed 's|\.TABLES|\.tables|gi' | \
-  sed 's|first|FIRST|gi' | \
-  sed 's|second|SECOND|gi' | \
-  sed 's|last|LAST|gi' | \
-  sed 's|text|TEXT|gi' | \
-  sed 's|date_sub[ ]*(|DATE_SUB(|gi' | \
-  sed 's|concat_ws[ ]*(|CONCAT_WS(|gi' | \
-  sed 's|greatest[ ]*(|GREATEST(|gi' | \
-  sed 's|coalesce[ ]*(|COALESCE(|gi' | \
-  sed 's|char[ ]*(|CHAR(|gi' | \
-  sed 's|if[ ]*(|IF(|gi' | \
-  sed 's|current_user[ ]*(|CURRENT_USER(|gi' | \
-  sed 's|mysql\.\([a-z]\+\)|mysql.\L\1|gi' | \
-  sed 's|password[ ]*(|PASSWORD(|gi' | \
-  sed 's|old_password[ ]*(|OLD_PASSWORD(|gi' | \
-  sed 's|make_set[ ]*(|MAKE_SET(|gi' | \
-  sed 's|substring_index[ ]*(|SUBSTRING_INDEX(|gi' | \
-  sed 's|cast[ ]*(|CAST(|gi' | \
-  sed 's|space[ ]*(|SPACE(|gi' | \
-  sed 's|now[ ]*(|NOW(|gi' | \
-  sed 's|sum[ ]*(|SUM(|gi' | \
-  sed 's|min[ ]*(|MIN(|gi' | \
-  sed 's|max[ ]*(|MAX(|gi' | \
-  sed 's|avg[ ]*(|AVG(|gi' | \
-  sed 's|oct[ ]*(|OCT(|gi' | \
-  sed 's|extract[ ]*(|EXTRACT(|gi' | \
-  sed 's|date_add[ ]*(|DATE_ADD(|gi' | \
-  sed 's|year_month|YEAR_MONTH|gi' | \
-  sed 's|group_concat[ ]*(|GROUP_CONCAT(|gi' | \
-  sed 's|timestamp[ ]*(|TIMESTAMP(|gi' | \
-  sed 's|insert_method|INSERT_METHOD|gi' | \
-  sed 's|inet_aton|INET_ATON|gi' | \
-  sed 's|weight_string|WEIGHT_STRING|gi' | \
-  sed 's|count[ ]*(|COUNT(|gi' | \
-  sed 's|values[ ]*(|VALUES (|gi' | \
-  sed 's|substring[ ]*(|SUBSTRING(|gi' | \
-  sed "s|'IN |' IN |gi" | \
-  sed 's|AND(|AND (|gi' | \
-  sed 's|join|JOIN|gi' | \
-  sed 's|straight|STRAIGHT|gi' | \
-  sed 's|natural|NATURAL|gi' | \
-  sed 's|transforms|transforms|gi' | \
-  sed 's|identified by|IDENTIFIED BY|gi' | \
-  sed 's|autocommit|autocommit|gi' | \
-  sed 's|test\([^ ]*\)|test\L\1|gi' | \
-  sed 's|0x\([0-9A-Fa-f]\)|0x\1|gi' | \
-  sed 's|)\([a-zA-Z]\+\)|) \1|gi' | \
-  sed 's| ()|()|gi' | \
-  sed 's|), (|),(|gi' | \
-  sed "s|BY''|BY ''|gi" | \
-  sed "s|port|PORT|gi" | \
-  sed "s|[ ]*=[ ]*|=|gi;s|sql_mode=\([^ ']\)|sql_mode= \1|" | \
-  sed 's|[ \t]\+| |g' | \
-  sed 's|=on;$|=ON;|g' | \
-  sed 's|=off;$|=OFF;|g' | \
-  sed 's|ignore|IGNORE|gi' | \
-  sed 's|auto_increment|AUTO_INCREMENT|gi' | \
-  sed 's|auto_increment_offset|AUTO_INCREMENT_OFFSET|gi' | \
-  sed 's|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi' | \
-  sed 's|date_format[ \t]*(|DATE_FORMAT(|gi' | \
-  sed 's|world|world|gi' | \
-  sed 's|engine innodb|ENGINE=InnoDB|gi' | \
-  sed 's|engine spider|ENGINE=Spider|gi' | \
-  sed 's|history|HISTORY|gi;s|_history|_history|gi' | \
-  sed 's|sql_mode= |sql_mode=|gi' | \
-  sed 's|semijoin|semijoin|gi' | \
-  sed 's|performance_schema|performance_schema|gi' | \
-  sed 's|performance_schema\.\([a-zA-Z]\+\)|performance_schema.\L\1|gi' | \
-  sed 's|( (|((|g;s|) )|))|g' | \
-  sed 's|  | |gi'
+  sed "s|;#.*$|;|;s| ;$|;|g;s|;;$|;|g; \
+       s|^[ ]\+||;s|;[ ]\+$|;|; \
+       s|open|OPEN|gi; \
+       s|div|DIV|gi; \
+       s|rollup|ROLLUP|gi; \
+       s|execute|EXECUTE|gi; \
+       s|index|INDEX|g; \
+       s|immediate|IMMEDIATE|g; \
+       s|hex|HEX|gi; \
+       s|declare|DECLARE|gi; \
+       s|having|HAVING|gi; \
+       s|lead|LEAD|gi; \
+       s| as | AS |gi; \
+       s|analyse|ANALYSE|gi; \
+       s|do |DO |gi; \
+       s|public|PUBLIC|gi; \
+       s|round|ROUND|gi; \
+       s|convert|CONVERT|gi; \
+       s|int|INT|gi;s|integer|INT|gi; \
+       s|float|FLOAT|gi; \
+       s|real|REAL|gi; \
+       s|check|CHECK|gi; \
+       s|spatial|SPATIAL|gi; \
+       s|enum|ENUM|gi; \
+       s|varbinary|VARBINARY|gi;s|binary|BINARY|gi; \
+       s|decimal|DECIMAL|gi; \
+       s|numeric|NUMERIC|gi; \
+       s|value|VALUE|gi; \
+       s|server|SERVER|gi; \
+       s|wrapper|WRAPPER|gi;s|wrapper[ \t]\+mysql|WRAPPER MYSQL|gi; \
+       s|options|OPTIONS|gi; \
+       s|socket|SOCKET|gi;s|socket.sock|socket.sock|gi; \
+       s|extractvalue|EXTRACTVALUE|gi; \
+       s|fast|FAST|gi; \
+       s|return|RETURN|gi; \
+       s|returns|RETURNS|gi; \
+       s|constraint|CONSTRAINT|gi; \
+       s|deterministic|DETERMINISTIC|gi; \
+       s|transaction|TRANSACTION|gi; \
+       s|consistent|CONSISTENT|gi; \
+       s|snapshot|SNAPSHOT|gi; \
+       s|commit|COMMIT|gi; \
+       s|create|CREATE|gi; \
+       s|data|DATA|gi; \
+       s|over|OVER|gi; \
+       s|references|REFERENCES|gi; \
+       s|storage|STORAGE|gi; \
+       s|disk|DISK|gi; \
+       s|plugin|PLUGIN|gi; \
+       s|plugins|PLUGINS|gi; \
+       s|local|LOCAL|gi; \
+       s|infile|INFILE|gi; \
+       s|duplicate|DUPLICATE|gi; \
+       s|terminated by|TERMINATED BY|gi; \
+       s|table|TABLE|gi; \
+       s|tables|TABLES|gi; \
+       s|view|VIEW|gi; \
+       s|merge|MERGE|gi; \
+       s|status|STATUS|gi; \
+       s|using|USING|gi; \
+       s|distinct|DISTINCT|gi; \
+       s|cascaded|CASCADED|gi; \
+       s|check option|CHECK OPTION|gi; \
+       s|comment|COMMENT|gi; \
+       s|sformat|SFORMAT|gi; \
+       s|next|NEXT|gi; \
+       s|md5|MD5|gi; \
+       s|locate|LOCATE|gi; \
+       s|history|HISTORY|gi; \
+       s|current|CURRENT|gi; \
+       s|query|QUERY|gi; \
+       s|schedule|SCHEDULE|gi; \
+       s|every|EVERY|gi; \
+       s|minute|MINUTE|gi; \
+       s|hour|HOUR|gi; \
+       s|day|DAY|gi; \
+       s|dayname|DAYNAME|gi; \
+       s|begin|BEGIN|gi; \
+       s|end|END|gi; \
+       s|ends|ENDS|gi; \
+       s|work|WORK|gi; \
+       s|rollback|ROLLBACK|gi; \
+       s|load|LOAD|gi; \
+       s|separator|SEPARATOR|gi; \
+       s|serial|SERIAL|gi; \
+       s|then|THEN|gi; \
+       s|add|ADD|gi; \
+       s|savepoint|SAVEPOINT|gi; \
+       s|checksum|CHECKSUM|gi; \
+       s|events|EVENTS|gi;s|event|EVENT|gi; \
+       s|procedure|PROCEDURE|gi; \
+       s|function|FUNCTION|gi; \
+       s|install|INSTALL|gi; \
+       s|soname|SONAME|gi; \
+       s|seq|SEQ|gi; \
+       s|sequence|SEQUENCE|gi; \
+       s|exists|EXISTS|gi; \
+       s|help|HELP|gi; \
+       s|like|LIKE|gi; \
+       s|partition|PARTITION|gi; \
+       s|partition by|PARTITION BY|gi; \
+       s|partitions|PARTITIONS|gi; \
+       s|subpartition|SUBPARTITION|gi; \
+       s|subpartitions|SUBPARTITIONS|gi; \
+       s|by |BY |gi; \
+       s|list|LIST|gi; \
+       s|hash|HASH|gi; \
+       s|algorithm|ALGORITHM|gi; \
+       s|inplace|INPLACE|gi; \
+       s|database|DATABASE|gi; \
+       s|where|WHERE|gi; \
+       s|start|START|gi; \
+       s|stop|STOP|gi; \
+       s|slave|SLAVE|gi; \
+       s|xa|XA|gi; \
+       s|shutdown|SHUTDOWN|gi; \
+       s|elt|ELT|gi; \
+       s|trim|TRIM|gi; \
+       s|names|NAMES|gi; \
+       s|case|CASE|gi; \
+       s|when|WHEN|gi; \
+       s|and|AND|gi; \
+       s|or|OR|gi; \
+       s|else|ELSE|gi; \
+       s|substr|SUBSTR|gi; \
+       s|substring_index|SUBSTRING_INDEX|gi; \
+       s|handler|HANDLER|gi; \
+       s|dual|DUAL|gi; \
+       s|all|ALL|gi; \
+       s|call|CALL|gi; \
+       s|flush|FLUSH|gi; \
+       s|privileges|PRIVILEGES|gi; \
+       s| role | ROLE |gi; \
+       s| admin | ADMIN |gi; \
+       s|with|WITH|gi; \
+       s|without|WITHOUT|gi; \
+       s|overlaps|OVERLAPS|gi; \
+       s|recursive|RECURSIVE|gi; \
+       s|dynamic|DYNAMIC|gi; \
+       s|transactional|TRANSACTIONAL|gi; \
+       s|set @@global\.|SET GLOBAL |gi; \
+       s|set @@session\.|SET SESSION |gi; \
+       s|use|USE|gi; \
+       s|concurrent|CONCURRENT|gi; \
+       s|current|CURRENT|gi; \
+       s|user|USER|gi; \
+       s|host|HOST|gi; \
+       s|password|PASSWORD|gi; \
+       s|backup|BACKUP|gi; \
+       s|alter|ALTER|gi; \
+       s|desc|DESC|gi; \
+       s|change|CHANGE|gi; \
+       s|master|MASTER|gi; \
+       s|asc|ASC|gi; \
+       s|limit|LIMIT|gi; \
+       s|DELIMITER|DELIMITER|gi; \
+       s|group by|GROUP BY|gi; \
+       s|count|COUNT|gi; \
+       s| as | AS |gi; \
+       s| to | TO |gi; \
+       s| do | DO |gi; \
+       s| on | ON |gi; \
+       s|unsigned|UNSIGNED|gi; \
+       s|versioning|VERSIONING|gi;s|system versioning|SYSTEM VERSIONING|gi; \
+       s|trigger|TRIGGER|gi; \
+       s|each|EACH|gi; \
+       s|prepare|PREPARE|gi; \
+       s|show|SHOW|gi; \
+       s|row|ROW|gi; \
+       s|grant|GRANT|gi; \
+       s|grantee|GRANTEE|gi; \
+       s|concat|CONCAT|gi; \
+       s|cast|CAST|gi; \
+       s|use_frm|USE_FRM|gi; \
+       s|after|AFTER|gi; \
+       s|before|BEFORE|gi; \
+       s|foreign|FOREIGN|gi; \
+       s|blob|BLOB|gi; \
+       s|char|CHAR|gi; \
+       s|varchar|VARCHAR|gi; \
+       s|character|CHARACTER|gi; \
+       s|collate|COLLATE|gi; \
+       s|replace|REPLACE|gi; \
+       s|delayed|DELAYED|gi; \
+       s|lock|LOCK|gi; \
+       s|read|READ|gi; \
+       s|write|WRITE|gi; \
+       s|big|BIG|gi; \
+       s|small|SMALL|gi; \
+       s|large|LARGE|gi; \
+       s|medium|MEDIUM|gi; \
+       s|from|FROM|gi; \
+       s|union|UNION|gi; \
+       s|select|SELECT|gi; \
+       s|update|UPDATE|gi; \
+       s|insert|INSERT|gi; \
+       s|rename|RENAME|gi; \
+       s|identified|IDENTIFIED|gi; \
+       s|delete|DELETE|gi; \
+       s|truncate|TRUNCATE|gi; \
+       s|explain|EXPLAIN|gi; \
+       s|extended|EXTENDED|gi; \
+       s|date|DATE|gi; \
+       s|period|PERIOD|gi; \
+       s|datetime|DATETIME|gi; \
+       s|time|TIME|gi; \
+       s|timestamp|TIMESTAMP|gi; \
+       s|repair|REPAIR|gi; \
+       s|repeat|REPEAT|gi; \
+       s|engine|ENGINE|gi; \
+       s|temporary|TEMPORARY|gi; \
+       s|replicate_do|REPLICATE_DO|gi; \
+       s|order by|ORDER BY|gi; \
+       s|drop|DROP|gi; \
+       s|analyze|ANALYZE|gi; \
+       s|bit|BIT|gi; \
+       s|set|SET|gi; \
+       s|reset|RESET|gi; \
+       s|setval|SETVAL|gi; \
+       s|fulltext|FULLTEXT|gi; \
+       s|default|DEFAULT|gi; \
+       s|session|SESSION|gi; \
+       s|global|GLOBAL|gi; \
+       s|primary|PRIMARY|gi; \
+       s|key|KEY|gi; \
+       s|null|NULL|gi; \
+       s|not |NOT |gi; \
+       s|linestring|LINESTRING|gi; \
+       s|polygon|POLYGON|gi; \
+       s|geometry|GEOMETRY|gi; \
+       s|geometrycollection|GEOMETRYCOLLECTION|gi; \
+       s|cache|CACHE|gi; \
+       s|if |IF |gi; \
+       s| in | IN |gi; \
+       s| on | ON |gi; \
+       s| for | FOR |gi; \
+       s|aria|Aria|gi; \
+       s|memory|MEMORY|gi; \
+       s|innodb|InnoDB|gi; \
+       s|spider|Spider|gi; \
+       s|myisam|MyISAM|gi; \
+       s|rocksdb|RocksDB|gi; \
+       s|csv|CSV|gi; \
+       s|archive|ARCHIVE|gi; \
+       s|values|VALUES|gi; \
+       s|against|AGAINST|gi; \
+       s|row_format|ROW_FORMAT|gi; \
+       s|key_block_size|KEY_BLOCK_SIZE|gi; \
+       s|compressed|COMPRESSED|gi; \
+       s|InnoDB_|innodb_|g; \
+       s|GLOBAL_|global_|g; \
+       s|least|LEAST|gi; \
+       s|level|LEVEL|gi; \
+       s|rpad|RPAD|gi; \
+       s|lpad|LPAD|gi; \
+       s|into|INTO|gi; \
+       s|column|COLUMN|gi; \
+       s|columns|COLUMNS|gi; \
+       s|left|LEFT|gi; \
+       s|right|RIGHT|gi; \
+       s|threads|THREADS|gi; \
+       s|unique|UNIQUE|gi; \
+       s|point|POINT|gi; \
+       s|variables|VARIABLES|gi; \
+       s|generated|GENERATED|gi; \
+       s|always|ALWAYS|gi; \
+       s|invisible|INVISIBLE|gi; \
+       s|virtual|VIRTUAL|gi; \
+       s|path|PATH|gi; \
+       s|minvalue|MINVALUE|gi; \
+       s|maxvalue|MAXVALUE|gi; \
+       s|increment|INCREMENT|gi; \
+       s|increment by|INCREMENT BY|gi; \
+       s|checkpoint|checkpoint|gi; \
+       s|coordinates|coordinates|gi; \
+       s|_\([a-zA-Z]\+\)|_\L\1|gi;s|\([a-zA-Z]\+\)_|\L\1_|gi; \
+       s|json_\([_a-zA-Z]\+\)|JSON_\U\1|gi; \
+       s|\([^\.]\)st_|\1ST_|gi; \
+       s|geomfromtext|GEOMFROMTEXT|gi; \
+       s|ST_\([_a-zA-Z]\+\)|\UST_\1|gi; \
+       s|crc32|CRC32|g; \
+       s|\t| |g; \
+       s|  | |g; \
+       s| ,|,|g; \
+       s|( |(|g; \
+       s| )|)|g; \
+       s|(| (|g; \
+       s|  | |g; \
+       s| \([A-Z][A-Z][A-Z]\) (| \1(|g; \
+       s|FLOAT[ ]*(|FLOAT(|gi;s|INT[ ]*(|INT(|gi;s|VARBINARY[ ]*(|VARBINARY(|gi;s|TIME[ ]*(|TIME(|gi;s|DECIMAL[ ]*(|DECIMAL(|gi;s|TRIM[ ]*(|TRIM(|gi;s|REAL[ ]*(|REAL(|gi;s|NUMERIC[ ]*(|NUMERIC(|gi;s|KEY[ ]*(|KEY(|gi;s|SUBSTR[ ]*(|SUBSTR(|gi;; \
+       s|starts|STARTS|gi; \
+       s|intersect|INTERSECT|gi; \
+       s|interval|INTERVAL|gi; \
+       s|ifnull|IFNULL|gi; \
+       s|rand|RAND|gi; \
+       s|seed|SEED|gi; \
+       s|rowid|ROWID|gi; \
+       s|tablespace|TABLESPACE|gi; \
+       s|discard|DISCARD|gi; \
+       s|fts_doc_id|FTS_DOC_ID|gi; \
+       s|mysql\.\([^ ]\+\)|mysql.\L\1|gi; \
+       s|to_days|TO_DAYS|gi; \
+       s|range|RANGE|gi; \
+       s|less than|LESS THAN|gi; \
+       s|column_format|COLUMN_FORMAT|gi; \
+       s|column_create|COLUMN_CREATE|gi; \
+       s|column_get|COLUMN_GET|gi; \
+       s|low_priority|LOW_PRIORITY|gi; \
+       s|row_format|ROW_FORMAT|gi; \
+       s|row_start|ROW_START|gi; \
+       s|row_end|ROW_END|gi; \
+       s|use_frm|USE_FRM|gi; \
+       s|date_add|DATE_ADD|gi; \
+       s|day_second|DAY_SECOND|gi; \
+       s|day_minute|DAY_MINUTE|gi; \
+       s|day_hour|DAY_HOUR|gi; \
+       s|minute_second|MINUTE_SECOND|gi; \
+       s|system_time|SYSTEM_TIME|gi; \
+       s|export_set|EXPORT_SET|gi; \
+       s|unix_timestamp|UNIX_TIMESTAMP|gi; \
+       s|key_block_size|KEY_BLOCK_SIZE|gi; \
+       s|sql_big_result|SQL_BIG_RESULT|gi; \
+       s|master_pos_wait|MASTER_POS_WAIT|gi; \
+       s|initial_size|INITIAL_SIZE|gi; \
+       s|no_write_to_binlog|NO_WRITE_TO_BINLOG|gi; \
+       s|user@localhost|user@localhost|gi; \
+       s|root@localhost|root@localhost|gi; \
+       s|@localhost|@localhost|gi; \
+       s|log_bin_trust_function_creators|log_bin_trust_function_creators|gi; \
+       s|\.TABLES|\.tables|gi; \
+       s|first|FIRST|gi; \
+       s|second|SECOND|gi; \
+       s|last|LAST|gi; \
+       s|text|TEXT|gi; \
+       s|date_sub[ ]*(|DATE_SUB(|gi; \
+       s|concat_ws[ ]*(|CONCAT_WS(|gi; \
+       s|coalesce[ ]*(|COALESCE(|gi; \
+       s|char[ ]*(|CHAR(|gi; \
+       s|if[ ]*(|IF(|gi; \
+       s|current_user[ ]*(|CURRENT_USER(|gi; \
+       s|current_timestamp|CURRENT_TIMESTAMP|gi; \
+       s|mysql\.\([a-z]\+\)|mysql.\L\1|gi; \
+       s|password[ ]*(|PASSWORD(|gi; \
+       s|old_password[ ]*(|OLD_PASSWORD(|gi; \
+       s|make_set[ ]*(|MAKE_SET(|gi; \
+       s|substring_index[ ]*(|SUBSTRING_INDEX(|gi; \
+       s|cast[ ]*(|CAST(|gi; \
+       s|space[ ]*(|SPACE(|gi; \
+       s|now[ ]*(|NOW(|gi; \
+       s|sum[ ]*(|SUM(|gi; \
+       s|min[ ]*(|MIN(|gi; \
+       s|max[ ]*(|MAX(|gi; \
+       s|avg[ ]*(|AVG(|gi; \
+       s|oct[ ]*(|OCT(|gi; \
+       s|lead[ ]*(|LEAD(|gi; \
+       s|extract[ ]*(|EXTRACT(|gi; \
+       s|date_add[ ]*(|DATE_ADD(|gi; \
+       s|year_month|YEAR_MONTH|gi; \
+       s|group_concat[ ]*(|GROUP_CONCAT(|gi; \
+       s|timestamp[ ]*(|TIMESTAMP(|gi; \
+       s|insert_method|INSERT_METHOD|gi; \
+       s|inet_aton|INET_ATON|gi; \
+       s|weight_string|WEIGHT_STRING|gi; \
+       s|count[ ]*(|COUNT(|gi; \
+       s|values[ ]*(|VALUES (|gi; \
+       s|substring[ ]*(|SUBSTRING(|gi; \
+       s|'IN |' IN |gi; \
+       s|AND(|AND (|gi; \
+       s|LEFT (|LEFT(|gi; \
+       s|RIGHT (|RIGHT(|gi; \
+       s|join|JOIN|gi; \
+       s|straight|STRAIGHT|gi; \
+       s|natural|NATURAL|gi; \
+       s|transforms|transforms|gi; \
+       s|identified by|IDENTIFIED BY|gi; \
+       s|autocommit|autocommit|gi; \
+       s|test\([^ ]*\)|test\L\1|gi; \
+       s|greatest[ ]*(|GREATEST(|gi; \
+       s|0x\([0-9A-Fa-f]\)|0x\1|gi; \
+       s|)\([a-zA-Z]\+\)|) \1|gi; \
+       s| ()|()|gi; \
+       s|), (|),(|gi; \
+       s|BY''|BY ''|gi; \
+       s|port|PORT|gi; \
+       s|[ ]*=[ ]*|=|gi;s|sql_mode=\([^ ']\)|sql_mode= \1|; \
+       s|[ \t]\+| |g; \
+       s|=on;$|=ON;|g; \
+       s|=off;$|=OFF;|g; \
+       s|ignore|IGNORE|gi; \
+       s|auto_increment|AUTO_INCREMENT|gi; \
+       s|auto_increment_offset|AUTO_INCREMENT_OFFSET|gi; \
+       s|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi; \
+       s|date_format[ \t]*(|DATE_FORMAT(|gi; \
+       s|time_format[ \t]*(|TIME_FORMAT(|gi; \
+       s|world|world|gi; \
+       s|engine innodb|ENGINE=InnoDB|gi; \
+       s|engine spider|ENGINE=Spider|gi; \
+       s|history|HISTORY|gi;s|_history|_history|gi; \
+       s|sql_mode= |sql_mode=|gi; \
+       s|semijoin|semijoin|gi; \
+       s|performance_schema|performance_schema|gi; \
+       s|performance_schema\.\([a-zA-Z]\+\)|performance_schema.\L\1|gi; \
+       s|des_encrypt|DES_ENCRYPT|gi; \
+       s|des_decrypt|DES_DECRYPT|gi; \
+       s|sql_thread|SQL_THREAD|gi; \
+       s|io_thread|IO_THREAD|gi; \
+       s|(VALUE|(value|g; \
+       s|( (|((|g;s|) )|))|g; \
+       s|  | |gi; \
+       s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 
 # Templates for copy/paste
-#  sed 's|||gi' | \
+#       s|||gi; \

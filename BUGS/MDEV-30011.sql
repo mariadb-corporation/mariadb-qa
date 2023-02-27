@@ -1,0 +1,14 @@
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY '';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD '');
+SET GLOBAL table_open_cache=1;
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+CREATE TABLE t1 (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+CREATE TABLE t2 (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+CREATE TABLE t3 (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SELECT * FROM information_schema.key_column_usage;
+CREATE TABLE t4 (c INT) ENGINE=Spider;
+INSERT INTO t4 VALUES (0);
+CREATE TABLE t5 (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+CREATE TABLE spider_spider (a INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SELECT * FROM information_schema.tables;

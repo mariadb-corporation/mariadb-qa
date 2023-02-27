@@ -16,13 +16,13 @@ VALGRIND_OVERRIDE=0    # If set to 1, Valgrind issues are handled as if they wer
 SCAN_FOR_NEW_BUGS=1    # If set to 1, all generated reducders will scan for new issues while reducing!
 
 # Internal variables
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" ]; then  # Provision for symlinks (if needed) 
   SCRIPT_PWD="${HOME}/mariadb-qa"
 fi
 WORKD_PWD=$PWD
 REDUCER="${SCRIPT_PWD}/reducer.sh"
-ASAN_OR_UBSAN_OR_TSAN_BUG=0
+SAN_BUG=0
 
 # Disable history substitution and avoid  -bash: !: event not found  like errors
 set +H
@@ -31,23 +31,26 @@ check_if_asan_or_ubsan_or_tsan(){
   if [[ "${TEXT}" == *"Assert: no core file found in"* ]]; then
     if [ $(grep -m1 --binary-files=text "=ERROR:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* ASAN bug found!"
-      ASAN_OR_UBSAN_OR_TSAN_BUG=1
+      SAN_BUG=1
     elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* TSAN bug found!"
-      ASAN_OR_UBSAN_OR_TSAN_BUG=1
+      SAN_BUG=1
     elif [ $(grep -im1 --binary-files=text "runtime error:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* UBSAN bug found!"
-      ASAN_OR_UBSAN_OR_TSAN_BUG=1
+      SAN_BUG=1
+    elif [ $(grep -m1 --binary-files=text "LeakSanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
+      echo "* LSAN bug found!"
+      SAN_BUG=1
     fi
   fi
-  if [ "${ASAN_OR_UBSAN_OR_TSAN_BUG}" -eq 1 ]; then
+  if [ "${SAN_BUG}" -eq 1 ]; then
     if [ -r "./${TRIAL}/node${1}/node${1}.err" ]; then
       TEXT="$(~/mariadb-qa/san_text_string.sh ./${TRIAL}/node${1}/node${1}.err)"
     elif [ -r "./${TRIAL}/log/master.err" ]; then
       TEXT="$(~/mariadb-qa/san_text_string.sh ./${TRIAL}/log/master.err)"
     else
       TEXT=
-      echo "Assert: ASAN_OR_UBSAN_OR_TSAN_BUG=1 yet neither ./${TRIAL}/log/master.err nor ./${TRIAL}/node${1}/node${1}.err was found"
+      echo "Assert: SAN_BUG=1 yet neither ./${TRIAL}/log/master.err nor ./${TRIAL}/node${1}/node${1}.err was found"
       exit 1
     fi
   fi
@@ -212,17 +215,30 @@ add_select_ones_to_trace(){  # Improve issue reproducibility by adding 3x SELECT
   fi
 }
 
-add_select_sleep_to_trace(){  # Improve issue reproducibility by adding 2x SELECT SLEEP(3); to the sql trace
+add_select_sleep_to_trace(){  # Improve issue reproducibility by adding 3x SELECT SLEEP(2); to the sql trace
   if [ -z "${1}" ]; then echo "Assert: add_select_sleep_to_trace called without option!"; exit 1; fi
   if [[ "${1}" != *"quick"* ]]; then
-    echo "* Adding additional 'SELECT SLEEP(5);' queries to improve issue reproducibility"
+    echo "* Adding additional 'SELECT SLEEP(2);' queries to improve issue reproducibility"
   fi
   if [ ! -f ${1} ]; then touch ${1}; fi
   for i in {1..3}; do
-    echo "SELECT SLEEP(3);" >> ${1}
+    echo "SELECT SLEEP(2);" >> ${1}
   done
   if [[ "${1}" != *"quick"* ]]; then
-    echo "  > 3 'SELECT SLEEP(3);' queries added to the SQL trace"
+    echo "  > 3 'SELECT SLEEP(2);' queries added to the SQL trace"
+  fi
+}
+
+add_shutdown_to_trace(){
+  if [ -z "${1}" ]; then echo "Assert: add_shutdown_to_trace called without option!"; exit 1; fi
+  if [[ "${1}" != *"quick"* ]]; then
+    echo "* Adding additional 'SHUTDOWN;' and 'SELECT SLEEP(2);' queries to the trace to improve issue reproducibility"
+  fi
+  if [ ! -f ${1} ]; then touch ${1}; fi
+  echo "SHUTDOWN;" >> ${1}
+  echo "SELECT SLEEP(2);" >> ${1}
+  if [[ "${1}" != *"quick"* ]]; then
+    echo "  > 'SHUTDOWN;' and additional 'SELECT SLEEP(2);' queries added to the SQL trace"
   fi
 }
 
@@ -284,7 +300,7 @@ generate_reducer_script(){
     PQUERY_EXTRA_OPTIONS="0,/#VARMOD#/s|#VARMOD#|PQUERY_EXTRA_OPTIONS=\"--log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --log-client-output --log-query-number\"\n#VARMOD#|"
     PQUERYOPT_CLEANUP="0,/^[ \t]*PQUERY_EXTRA_OPTIONS[ \t]*=.*$/s|^[ \t]*PQUERY_EXTRA_OPTIONS[ \t]*=.*$|#PQUERY_EXTRA_OPTIONS=<set_below_in_machine_variables_section>|"
   fi
-  if [ "$TEXT" == "" -o "$TEXT" == "my_print_stacktrace" -o "$TEXT" == "0" -o "$TEXT" == "NULL" -o "$TEXT" == "Assert: no core file found in */*core*" -a ${ASAN_OR_UBSAN_OR_TSAN_BUG} -ne 1 ]; then  # Too general strings, or no TEXT found, use MODE=4 (any crash)
+  if [ "$TEXT" == "" -o "$TEXT" == "my_print_stacktrace" -o "$TEXT" == "0" -o "$TEXT" == "NULL" -o "$TEXT" == "Assert: no core file found in */*core*" -a ${SAN_BUG} -ne 1 ]; then  # Too general strings, or no TEXT found, use MODE=4 (any crash)
     MODE=4
     USE_NEW_TEXT_STRING=0  # As MODE=4 (any crash) is used, new_text_string.sh is not relevant
     SCAN_FOR_NEW_BUGS=0  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
@@ -292,9 +308,9 @@ generate_reducer_script(){
     TEXT_STRING1="s|ZERO0|ZERO0|"
     TEXT_STRING2="s|ZERO0|ZERO0|"
   else  # Bug-specific TEXT string found, use relevant MODE in reducer.sh to let it reduce for that specific string
-    if [ ${ASAN_OR_UBSAN_OR_TSAN_BUG} -eq 1 ]; then  # ASAN, UBSAN or TSAN bug
+    if [ ${SAN_BUG} -eq 1 ]; then  # ASAN, UBSAN or TSAN bug
       MODE=3
-      USE_NEW_TEXT_STRING=1  # As the string is already set based on the ASAN '=ERROR:' or UBSAN 'runtime error:' seen in errorlog
+      USE_NEW_TEXT_STRING=1  # As the string is already set based on the SAN issue observed in the errorlog
       SCAN_FOR_NEW_BUGS=1
     elif [ ${VALGRIND_CHECK} -eq 1 ]; then  # Valgrind bug
       MODE=1
@@ -653,6 +669,7 @@ generate_reducer_script(){
         cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
         add_select_ones_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         add_select_sleep_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
+        add_shutdown_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         remove_non_sql_from_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         # Then interleave in extra failing queries all along the sql file (scaled/chuncked). This may increase
         # reproducibility, and is done for multi-threaded issues (who tend to be reduced by random-order replay!) only
@@ -688,7 +705,7 @@ generate_reducer_script(){
 }
 
 # Main pquery results processing
-ASAN_OR_UBSAN_OR_TSAN_BUG=0
+SAN_BUG=0
 if [ ${QC} -eq 0 ]; then
   if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
     for TRIAL in $(ls ./*/node*/*core* 2>/dev/null | sed 's|./||;s|/.*||' | sort | sort -u); do
@@ -774,6 +791,7 @@ if [ ${QC} -eq 0 ]; then
           fi
           add_select_ones_to_trace ${INPUTFILE}
           add_select_sleep_to_trace ${INPUTFILE}
+          add_shutdown_to_trace ${INPUTFILE}
           remove_non_sql_from_trace ${INPUTFILE}
           generate_reducer_script
           if [ "${MYEXTRA}" != "" ]; then
@@ -853,6 +871,7 @@ if [ ${QC} -eq 0 ]; then
         fi
         add_select_ones_to_trace ${INPUTFILE}
         add_select_sleep_to_trace ${INPUTFILE}
+        add_shutdown_to_trace ${INPUTFILE}
         remove_non_sql_from_trace ${INPUTFILE}
         # Check if this trial was/had a startup failure (which would take priority over anything else) - will be used to set REDUCE_STARTUP_ISSUES=1
         check_if_startup_failure
@@ -998,8 +1017,8 @@ fi
 echo '========== Processing SHUTDOWN_TIMEOUT_ISSUE trials (if any)'
 for MATCHING_TRIAL in `grep -H "^MODE=[0-9]$" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un` ; do
   if [ -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]; then  # Only deal with shutdown timeout issues!
-    if [ $(grep -m1 --binary-files=text "=ERROR:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 -o $(grep -m1 --binary-files=text "runtime error:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 ]; then  # ASAN or UBSAN error, do not set MODE=0
-      echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however an ASAN or UBSAN issue was present"
+    if [ $(grep -m1 --binary-files=text "=ERROR:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 -o ${SAN} -eq 1 ]; then  # SAN issue: do not set MODE=0
+      echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however a SAN issue was [also] present"
       echo "  > Removing ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE marker so normal reduction & result presentation can happen"
       rm -f ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
       echo "  > Creating ${MATCHING_TRIAL}/AVOID_FORCE_KILL flag to ensure pquery-go-expert does not set FORCE_KILL=1 for this trial"

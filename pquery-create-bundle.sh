@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 if [ "" == "$1" ]; then
   echo "This script expects one parameter: the trial number that this BUNDLE will be created for."

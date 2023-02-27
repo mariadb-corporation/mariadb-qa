@@ -1,19 +1,29 @@
 #!/bin/bash
+PGE_LOOPS=13  # Immediately improves testcase quality after first reducer round. Ideal to maxout machine time. Set to 0 to disable. At least 1 recommended as it can greatly improve testcase quality
+
 if [ -z "${1}" ]; then
   echo "Assert: please pass reducer/trial nr to start"
+  exit 1
+fi
+PGE=
+if [ -r "${HOME}/pge" ]; then PGE="${HOME}/pge";
+elif [ -r "${HOME}/mariadb-qa/pquery-goexp-patch.sh" ]; then PGE="${HOME}/mariadb-qa/pquery-goexp-patch.sh"; 
+fi
+if [ -z "${PGE}" -o -z "${PGE_LOOPS}" ]; then
+  echo "Assert: PGE or PGE_LOOPS is empty?"
   exit 1
 fi
 mkdir -p ./reducer.logs
 if [ "${1}" != "" -a -r reducer${1}.sh ]; then
   #screen -admS s${1} bash -c "ulimit -u 4000;./reducer${1}.sh;bash"
-  screen -admS s${1} bash -c "./reducer${1}.sh 2>&1 | tee -a ./reducer.logs/reducer${1}.log;bash"
+  screen -admS s${1} bash -c "./reducer${1}.sh 2>&1 | tee -a ./reducer.logs/reducer${1}.log; for((i=0;i<${PGE_LOOPS};i++)); do echo '---------------- PGE Run \${i}/${PGE_LOOPS} ----------------' >> ./reducer.logs/reducer${1}.log; ${PGE} ${1} | tee -a ./reducer.logs/reducer${1}.log; done; bash"
 elif [ "${1}" != "" -a -r ${1} ]; then
   LOGNAME="$(echo ./${1} | sed 's|\.sh|.log|')"
-  screen -admS s${1} bash -c "./${1} 2>&1 | tee -a ./reducer.logs/${LOGNAME};bash"
+  screen -admS s${1} bash -c "./${1} 2>&1 | tee -a ./reducer.logs/${LOGNAME}; for((i=0;i<${PGE_LOOPS};i++)); do echo '---------------- PGE Run \${i}/${PGE_LOOPS} ----------------' >> ./reducer.logs/reducer${1}.log; ${PGE} ${1} | tee -a ./reducer.logs/reducer${1}.log; done; bash"
 elif [ -r ${1}.reducer.sh ]; then
-  screen -admS s${1} bash -c "./${1}.reducer.sh 2>&1 | tee -a ./reducer.logs/${1}.reducer.log;bash"
+  screen -admS s${1} bash -c "./${1}.reducer.sh 2>&1 | tee -a ./reducer.logs/${1}.reducer.log; for((i=0;i<${PGE_LOOPS};i++)); do echo '---------------- PGE Run \${i}/${PGE_LOOPS} ----------------' >> ./reducer.logs/reducer${1}.log; ${PGE} ${1} | tee -a ./reducer.logs/reducer${1}.log; done; bash"
 elif [ -r ${1}.sh ]; then
-  screen -admS s${1} bash -c "./${1}.sh 2>&1 | tee -a ./reducer.logs/${1}.log;bash"
+  screen -admS s${1} bash -c "./${1}.sh 2>&1 | tee -a ./reducer.logs/${1}.log; for((i=0;i<${PGE_LOOPS};i++)); do echo '---------------- PGE Run \${i}/${PGE_LOOPS} ----------------' >> ./reducer.logs/reducer${1}.log; ${PGE} ${1} | tee -a ./reducer.logs/reducer${1}.log; done; bash"
 else
   echo "Assert: No such reducer script: ./reducer${1}.sh, nor ${1}, nor ${1}.sh"
   exit 1

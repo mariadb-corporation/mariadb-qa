@@ -2,6 +2,8 @@
 # Created by Roel Van de Paar, MariaDB
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 
+echo 'Starting up...'
+
 if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (like ~/b) has set this option. If not, set it here                                                                                         
   PASS_MYEXTRA_TO_START_ONLY=1  # If 0, then MYEXTRA_OPT is passed to ./all (i.e. options take effect on init and start). If 1, then MYEXTRA_OPT is passed to ./start only (i.e. options take effect on start only, not init). When using for example --innodb_page_size=4 (an option needed for both server init + start), 0 is required. When using for example --innodb-force-recovery=1 or --innodb-read-only=1 (options that can only be used with start and not with init), 1 is required. TODO: this option can be automated 0/1 towards known options that require either 0 or 1 for this setting. Scan MYEXSTRA_OPT to do so
 fi
@@ -24,6 +26,19 @@ sleep 10
 rm -f report.log
 if [ -r report.log ]; then echo "Assert: report.log still present though this script tried to delete it!"; exit 1; fi
 
+# Likely mistaken use cases (reversed)
+if [[ "${PWD}" == *"SAN"* && "${1}" != "SAN" ]]; then
+  echo "Warning: you are starting '~/b' from a SAN basedir. Do you maybe want to use '~/b san' instead?"
+  echo "Pausing 3 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
+  echo ''
+  sleep 3
+elif [[ "${PWD}" != *"SAN"* && "${1}" == "SAN" ]]; then
+  echo "Warning: you are starting '~/b san' from a non-SAN basedir. Do you maybe want to use '~/b' instead?"
+  echo "Pausing 3 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
+  echo ''
+  sleep 3
+fi
+
 if [ ! -r ../gendirs.sh ]; then echo "Assert: ../gendirs.sh not available, are you executing this from within a BASEDIR?"; exit 1; fi
 
 if [ "${1}" == "GAL" ]; then
@@ -44,26 +59,39 @@ if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
     exit 1
   fi
   if [ -z "${2}" ]; then
-    export TEXT="=ERROR:|runtime error:|ThreadSanitizer:"
+    export TEXT="=ERROR:|runtime error:|ThreadSanitizer:|LeakSanitizer:"
   else
     export TEXT="${2}"
   fi
   # MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||;s|${TEXT}||')"
   MYEXTRA_OPT="$3 $4 $5 $6 $7 $8 $9"
   ~/mariadb-qa/bug_report.sh SAN ${MYEXTRA_OPT} | tee report.log
+  if [ "${PIPESTATUS[0]}" -eq 1 ]; then
+    echo "bug_report.sh SAN exited with status code 1. Terminating"
+    exit 1
+  fi
 elif [ "${1}" == "GAL" ]; then
   MYEXTRA_OPT="$*"
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
   #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
   # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
   # Note 1/05/21: the reason this still works correctly for Galera is that the Galera build scripts do not have the build code patches for core dumps yet. Thus, "mysqld got signal" or "signal" would likely work fine at all times. Ref below in non-Galera section for more on this. Ideally this would be changed to look for all issues by using "BBB". < TODO
   export TEXT="mysqld got signal"  
   #rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh GAL ${MYEXTRA_OPT} | tee report.log
+  if [ "${PIPESTATUS[0]}" -eq 1 ]; then
+    echo "bug_report.sh GAL exited with status code 1. Terminating"
+    exit 1
+  fi
 else
   MYEXTRA_OPT="$*"
   export TEXT="BBB"  # A dummy string to let findbug+ know we want to scan for a set of strings to establish crashes
   rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh ${MYEXTRA_OPT} | tee report.log
+  if [ "${PIPESTATUS[0]}" -eq 1 ]; then
+    echo "bug_report.sh exited with status code 1. Terminating"
+    exit 1
+  fi
   # The following code is now precautionary/defensive coding as this is covered in the new port assignment code
   if grep --binary-files=text 'Do you already have another mysqld server running on port' */log/master.err 2>/dev/null; then
     echo "------------------------------------------------------------------------------------------"
@@ -91,17 +119,12 @@ if [ -r ../allstrings_merged ]; then
     cd .. && ./allstrings_merged 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   fi
 fi
-# TODO: The next section, which uses allstrings_new can be made much faster by re-using the strings found above rather than re-scanning (i.e. checking all cores again)
-if [ -r ../allstrings_new ]; then
-  if [ "${1}" == "GAL" ]; then
-    echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
-    cd .. && ./allstrings_new GAL 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
-  elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
-    echo '----- All NEW (not known yet) strings merged (for adding to ~/kba) -----' | tee -a "${REPORT_PATH}/report.log"
-    cd .. && ./allstrings_new SAN 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
-  else
-    echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
-    cd .. && ./allstrings_new 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
-  fi
+# Print all new bugs that are not in the known bug list
+if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
+  echo '----- All NEW (not known yet) strings merged (for adding to ~/kba) -----' | tee -a "${REPORT_PATH}/report.log"
+  cat /tmp/allstrings_merged | sort -u | tr '\n' '\0' | xargs -0 -I{} ~/kbsa REVERSE "{}" | tee -a "${REPORT_PATH}/report.log"
+else
+  echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
+  cat /tmp/allstrings_merged | sort -u | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | tee -a "${REPORT_PATH}/report.log"
 fi
 

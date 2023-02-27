@@ -10,7 +10,7 @@ if [ ! -r "${1}" ]; then
   exit 1
 fi
 
-RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 OUT="/tmp/out.${RANDOM}"
 
 rm -f "${OUT}"

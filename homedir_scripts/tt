@@ -1,48 +1,16 @@
 #!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
+# This script generates a UniqueID (using new_text_string.sh) for a given crash, assert, ASAN, UBSAN, LSAN or TSAN issue
+# It is generall executed from within a BASEDIR which has experienced a failure of any of these types
+# It also outputs handy JIRA search URL's and handy JIRA formatting strings to aid with logging bugs at jira.mariadb.org
+
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 
 NOPERL=0
 perl --version >/dev/null 2>&1
 if [ $? -ne 0 ]; then echo "This script requires perl, please install it"; NOPERL=1; fi
 SCRIPT_PWD=$(dirname $(readlink -f $0))
-
-noformat_strings(){
-  echo "----- Handy extra noformat strings -----"
-  MYSQLD=
-  if [ -z "${MYSQLD}" ]; then
-    if [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
-      MYSQLD="./bin/mysqld"
-    elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Not currently used, but provisioned alike to ~/t
-      MYSQLD="../mysqld"
-    elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
-      MYSQLD="../mysqld/mysqld"
-    elif [ -r ./log/master.err ]; then
-      POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-      if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
-        MYSQLD="${POTENTIAL_MYSQLD}"
-      fi
-    elif [ -r ./node1/node1.err ]; then
-      POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-      if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
-        MYSQLD="${POTENTIAL_MYSQLD}"
-      fi
-    else
-      echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld nor other potential mysqld's extracted from any logs at ./log/master.err or ./node1/node1.err"
-      exit 1
-    fi
-  fi
-  if [ ! -z "${MYSQLD}" ]; then
-    SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${MYSQLD} 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||')"
-    SERVER_VERSION="$(${MYSQLD} --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
-    LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
-    BUILD_TYPE=
-    if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
-    if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
-    echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
-    echo ""
-    echo "{noformat}"
-  fi
-}
 
 EXIT_CODE=0
 if [ -r ${HOME}/mariadb-qa/new_text_string.sh ]; then
@@ -127,7 +95,7 @@ FRAMEX="$(echo -n "${FRAMEX}" | perl -MURI::Escape -le 'print uri_escape <STDIN>
 FRAMEY="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*|.*$/\1/' | perl -MURI::Escape -le 'print uri_escape <STDIN>' | sed 's|\%0A||g')"
 FRAMEZ="$(echo "${TEXT}" | sed 's/.*|\(.*\)|.*$/\1/' | perl -MURI::Escape -le 'print uri_escape <STDIN>' | sed 's|\%0A||g')"
 #FRAME4="$(echo "${TEXT}" | sed 's/.*|\(.*\)$/\1/')"  // Last frame not used
-echo "https://jira.mariadb.org/issues/?jql=text%20~%20%22%5C%22${FRAMEX}%5C%22%22%20and%20text%20~%20%22%5C%22${FRAMEY}%5C%22%22%20and%20text%20~%20%22%5C%22${FRAMEZ}%5C%22%22%20ORDER%20BY%20status%20ASC"
+echo "https://jira.mariadb.org/issues/?jql=text%20~%20%22%5C%22${FRAMEX}%5C%22%22%20and%20text%20~%20%22%5C%22${FRAMEY}%5C%22%22%20and%20text%20~%20%22%5C%22${FRAMEZ}%5C%22%22%20ORDER%20BY%20status%20ASC%2Cupdated%20DESC"
 
 ASSERT="$(echo -n "${TEXT}" | sed 's/||/DUMMYREP/g' | sed 's/|.*//' | sed 's/DUMMYREP/||/g;')"
 if [[ "${ASSERT}" != "SIGSEGV" && "${ASSERT}" != "SIGABRT" ]]; then
@@ -135,9 +103,15 @@ if [[ "${ASSERT}" != "SIGSEGV" && "${ASSERT}" != "SIGABRT" ]]; then
   if [ ${NOPERL} -eq 0 ]; then  # Properly escape all special characters to generate a correct URL
     ASSERT="$(echo -n "${ASSERT}" | perl -MURI::Escape -le 'print uri_escape <STDIN>' | sed 's|\%0A||g')"
   fi
-  echo "https://jira.mariadb.org/issues/?jql=text%20~%20%22%5C%22${ASSERT}%5C%22%22%20ORDER%20BY%20status%20ASC"
+  echo "https://jira.mariadb.org/issues/?jql=text%20~%20%22%5C%22${ASSERT}%5C%22%22%20ORDER%20BY%20status%20ASC%2Cupdated%20DESC"
 fi
 
-noformat_strings
+echo '----- Handy extra noformat strings -----'
+if [ -r ${SCRIPT_PWD}/myver ]; then
+  ${SCRIPT_PWD}/myver
+else
+  echo "Assert: ${SCRIPT_PWD}/myver not found"
+  exit 1
+fi
 
 exit 0

@@ -2,25 +2,38 @@
 # Created by Roel Van de Paar, MariaDB
 # Start this script inside a screen session to debug it when necessary
 
+if [[ "${1}" == "GAL" ]]; then
+  export GAL_RUN="GAL"
+else
+  export GAL_RUN=""
+fi
+
 if [ "${STY}" == "" ]; then
-  echo "Not a screen, restarting myself inside a screen"
+  echo "Not a screen, restarting myself inside a screen"a
+  echo "If the screen terminates quickly, check BASEDIR in process_testcases is set correctly!"
+  sleep 1
   screen -admS "process_testcases_loop" bash -c "./$0"
   sleep 1
   screen -d -r "process_testcases_loop"
   return 2> /dev/null; exit 0
 fi
 
-FILTER='grep|vi process_testcases|vim process_testcases|process_testcases_loop'
-while true; do
+FILTER='grep|vi process_testcases|vim process_testcases|loop'
+STARTUP=1
+while :; do
   if [ -z "$(screen -ls | grep 'process_testcases' | grep -vE "${FILTER}")" ]; then
-    echo "process_testcases screen not found, terminating any running instances of process_testcases at $(date)..."
+    if [ "${STARTUP}" -ne 1 ]; then
+      echo "process_testcases screen not found, terminating any running instances of process_testcases at $(date)..."
+    else
+      STARTUP=0  # First startup, i.e. message does not make sense yet
+    fi
     ps -ef | grep 'process_testcases' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
     ps -ef | grep 'process_testcases' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} kill -9 {}
     sleep 3
     sync
     echo "Restarting at $(date)..."
-    ./process_testcases
+    ./process_testcases ${GAL_RUN}
     if [ ${?} -eq 1 ]; then
       echo "./process_testcases exited with status 1: terminating"
       exit 1
@@ -28,3 +41,4 @@ while true; do
   fi
   sleep 30
 done
+

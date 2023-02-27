@@ -1,19 +1,32 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+# Expanded by Ramesh Sivaraman, MariaDB
+
+# This script (new_text_string.sh) generates a UniqueID for a given crash, assert, ASAN, UBSAN, LSAN or TSAN issue
+# It is generall executed from within a BASEDIR which has experienced a failure of any of these types
 
 # Exit codes in this script are significant; used by reducer.sh and potentially other scripts
 # First option to this script can be;
 # ./new_text_string.sh 'FRAMESONLY'    # Used in automation, ref mass_bug_report.sh
 # ./new_text_string.sh "${mysqld_loc}" # Where mysqld
 
-sleep 3  # Do not remove, sometimes cores are slow to write!
+# Quick check to see if sleep can be skipped for *SAN issues (much faster output and automation)
+if [ $(grep -m1 --binary-files=text -E "=ERROR:|ThreadSanitizer:|runtime error:|LeakSanitizer:" ./log/master.err 2>/dev/null | wc -l) -eq 0 ]; then  # If no such issue found (count is 0), sleep x seconds to allow core, if any, to finish writing
+  # Whilst 2 seconds is almost surely not sufficient for all cores to finish writing on heavily loaded machines,
+  # There is a tradeoff here - this script is very often called during automation and all sorts of other processing,
+  # thus many things are affected even by a single second more. On the flip side, more failures may be observed
+  # with a shorter sleep duration. Test over time. 3 Seconds was the original setting and this worked reasonably,
+  # now testing with a shorter 2 seconds sleep
+  sleep 2  # Do not remove, sometimes cores are slow to write!
+fi
 
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" ]; then  # Provision for ~/t symlink
   SCRIPT_PWD="${HOME}/mariadb-qa"
 fi
 FRAMESONLY=0
 SHOWINFO=0
+ERROR_LOG=
 MYSQLD=
 TRIAL=
 LOC=${PWD}
@@ -31,30 +44,43 @@ if [ ! -z "${1}" ]; then
   elif [ "${1}" == "FRAMESONLY" ]; then  # Used in automation, ref mass_bug_report.sh
     FRAMESONLY=1
   elif [ -f "${1}" -a -x "${1}" ]; then
-    if [ "$(readlink -f "${1}" | xargs file | grep -o 'ELF 64-bit LSB shared object')" == "ELF 64-bit LSB shared object" ]; then
+    if [ "$(readlink -f "${1}" | xargs file | grep -o 'ELF 64-bit LSB')" == "ELF 64-bit LSB" ]; then
       MYSQLD="${1}"
     else
-      echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script"
+      echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script [ref #1]"
       exit 1
     fi
   elif [ -d "${1}" -a "$(echo "${1}" | grep -o '[0-9]\+')" == "${1}" ]; then
     TRIAL="${1}"
     LOC="${PWD}/${TRIAL}"
+  elif grep --binary-files=text -q '#[0-9]  ' "${1}"; then  # Likely raw GDB trace was passed, parse as such
+    echo "$(cat "${1}" | grep --binary-files=text -v '^[ \t]*$' | tr '\n' ' ' | sed 's|\(#[0-9]\+[ ]\+\)|\n\1|g' | grep --binary-files=text -v '^[ \t]*$' | head -n4 | sed 's|^#[0-9]\+[ ]\+||;s|^0x[0-9A-Fa-f]\+[ ]\+||;s| [^ ]\+$||;s|[ ]*(.*||' | tr '\n' '|' | sed 's/|$/\n/' | sed 's/^/RAW_GDB_UID|/' )"  # Output is based on GDB trace only (not a true UniqueID)
+    exit 0
   else
-    echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script"
+    echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script [ref #2]"
     exit 1
   fi
 fi
 
 if [ -z "${MYSQLD}" ]; then
-  if [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
+  if [ -r ./bin/mariadbd -a ! -d ./bin/mariadbd ]; then  # For direct use in BASEDIR, like ~/tt
+    MYSQLD="./bin/mariadbd"
+  elif [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
     MYSQLD="./bin/mysqld"
+  elif [ -r ./mysqld/mariadbd -a ! -z "${TRIAL}" ]; then  # For trial sub dirs in workdirs
+    MYSQLD="./mysqld/mariadbd"
   elif [ -r ./mysqld/mysqld -a ! -z "${TRIAL}" ]; then  # For trial sub dirs in workdirs
     MYSQLD="./mysqld/mysqld"
+  elif [ -r ../mariadbd -a ! -d ../mariadbd ]; then  # Used by pquery-run.sh when analyzing trial cores in-run
+    MYSQLD="../mariadbd"
   elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Used by pquery-run.sh when analyzing trial cores in-run
     MYSQLD="../mysqld"
+  elif [ -r ../mysqld/mariadbd -a ! -d ../mysqld/mariadbd ]; then  # For direct use inside trial directories
+    MYSQLD="../mysqld/mariadbd"
   elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
     MYSQLD="../mysqld/mysqld"
+  elif [ -r ../../mysqld/mariadbd -a ! -d ../../mysqld/mariadbd ]; then  # Used by pquery-pre-red.sh to re-generate MYBUG string with valid input
+    MYSQLD="../../mysqld/mariadbd"
   elif [ -r ../../mysqld/mysqld -a ! -d ../../mysqld/mysqld ]; then  # Used by pquery-pre-red.sh to re-generate MYBUG string with valid input
     MYSQLD="../../mysqld/mysqld"
   elif [ -r ./log/master.err ]; then
@@ -64,6 +90,11 @@ if [ -z "${MYSQLD}" ]; then
     fi
   elif [ -r ./node1/node1.err ]; then
     POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+    if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
+      MYSQLD="${POTENTIAL_MYSQLD}"
+    fi
+  elif [ -r ./node2/node2.err ]; then
+    POTENTIAL_MYSQLD="$(grep "ready for connections" ./node2/node2.err | sed 's|: .*||;s|^.* ||' | head -n1)"
     if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
       MYSQLD="${POTENTIAL_MYSQLD}"
     fi
@@ -85,6 +116,8 @@ if [[ ${MDG} -eq 1 ]]; then
   if [ -z "${ERROR_LOG}" ]; then  # Interactive call from basedir
     if [ -r ${LOC}/node1/node1.err ]; then
       ERROR_LOG="${LOC}/node1/node1.err"
+    elif [ -r ${LOC}/node2/node2.err ]; then
+      ERROR_LOG="${LOC}/node2/node2.err"
     else
       echo "Assert: no error log found for Galera run!"
       exit 1
@@ -124,6 +157,13 @@ find_other_possible_issue_strings(){
     TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
+  else
+    GOTERROR="$(grep -io 'Got error.*' "${ERROR_LOG}" | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
+    if [ ! -z "${GOTERROR}" ]; then
+      TEXT="GOT_ERROR|${GOTERROR}"
+      echo "${TEXT}"
+      exit 0
+    fi
   fi
   MARKEDASCRASHED="$(grep -io 'mysqld: Table.*is marked as crashed and should be repaired' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" )"
   if [ ! -z "${MARKEDASCRASHED}" ]; then
@@ -142,15 +182,17 @@ find_other_possible_issue_strings(){
 }
 
 # Check first if this is an ASAN/UBSAN/TSAN issue
-ASAN_OR_UBSAN_OR_TSAN_BUG=0
+SAN_BUG=0
 if [ $(grep -m1 --binary-files=text "=ERROR:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
-  ASAN_OR_UBSAN_OR_TSAN_BUG=1
+  SAN_BUG=1
 elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
-  ASAN_OR_UBSAN_OR_TSAN_BUG=1
+  SAN_BUG=1
 elif [ $(grep -im1 --binary-files=text "runtime error:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
-  ASAN_OR_UBSAN_OR_TSAN_BUG=1
+  SAN_BUG=1
+elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+  SAN_BUG=1
 fi
-if [ "${ASAN_OR_UBSAN_OR_TSAN_BUG}" -eq 1 ]; then
+if [ "${SAN_BUG}" -eq 1 ]; then
   TEXT="$(~/mariadb-qa/san_text_string.sh ${ERROR_LOG})"
   if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
     1>&2 echo "${SHOWTEXT}"
@@ -162,44 +204,49 @@ fi
 # Note: all asserts below exclude any 'PREV' directories, like data.PREV
 if [ -z "${LATEST_CORE}" ]; then
   if [ -f ${SCRIPT_PWD}/fallback_text_string.sh -a -r ${SCRIPT_PWD}/fallback_text_string.sh ]; then
-    if grep -qi 'signal' "${ERROR_LOG}"; then
-      TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "${ERROR_LOG}")"
-      if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
-        1>&2 echo "${SHOWTEXT}"
-      fi
-      if [[ "${TEXT}" == *"No relevant strings were found"* ]]; then
+    if [[ "${PWD}" != *"SAN"* ]]; then  # [*] When SAN is used, no cores are generated. As such, we don't want to produce a FALLBACK string here from the error log as they will be almost always dud's and there will be many of them (all the same issues which already have UniqueID's and are already logged etc.)
+      if grep -qi 'signal' "${ERROR_LOG}"; then
+        TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "${ERROR_LOG}")"
+        if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
+          1>&2 echo "${SHOWTEXT}"
+        fi
+        if [[ "${TEXT}" == *"No relevant strings were found"* ]]; then
         TEXT=
-      fi
-      if [ -z "${TEXT}" ]; then
+        fi
+        if [ -z "${TEXT}" ]; then
+          find_other_possible_issue_strings
+          # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
+          echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
+          exit 1
+        else
+          echo "${TEXT}"
+          exit 0
+        fi
+      else
+        if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
+          1>&2 echo "${SHOWTEXT}"
+        fi
         find_other_possible_issue_strings
         # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
-        echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
+        echo "Assert: no core file found in */*core*, and no 'signal' found in the error log, so fallback_text_string.sh was not attempted"
         exit 1
-      else
-        echo "${TEXT}"
-        exit 0
       fi
-    else
+    else  # This is a SAN build, so do not run a FALLBACK string generation attempt, but do try find_other_possible_issue_strings
       if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
         1>&2 echo "${SHOWTEXT}"
       fi
       find_other_possible_issue_strings
       # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
-      echo "Assert: no core file found in */*core*, and no 'signal' found in the error log, so fallback_text_string.sh was not attempted"
+      echo "Assert: no core file found in */*core*, and this is a SAN build, so fallback_text_string.sh was not attempted"  # See above for the reason [*]
       exit 1
     fi
-  else
-    if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
-      1>&2 echo "${SHOWTEXT}"
-    fi
-    find_other_possible_issue_strings
-    # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
+  else  # FALLBACK string script not found (should not happen!)
     echo "Assert: no core file found in */*core*, and fallback_text_string.sh was not found, or is not readable"
     exit 1
   fi
 fi
 
-RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
 
 rm -f /tmp/${RANDF}.gdb*
@@ -258,10 +305,11 @@ rm -f /tmp/${RANDF}.gdb1
 
 # Stack catch
 IMPROVE_FLAG=''
-grep --binary-files=text -A100 'signal handler called' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vE 'std::terminate.*from|__GI_raise |__GI_abort |__assert_fail_base |__GI___assert_fail |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called' | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
+FRAMES_FILTER='std::terminate.*from|__pthread_kill_.*|__GI___pthread_kill|__GI_raise |__GI_abort |__GI___assert_fail |__assert_fail_base |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called|uw_update_context_1|uw_init_context_1|_Unwind_Resume'
+grep --binary-files=text -A100 'signal handler called' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vEi "${FRAMES_FILTER}" | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
 if [ "$(wc -m /tmp/${RANDF}.gdb4 2>/dev/null | sed 's| .*||')" == "0" ]; then
   # 'signal handler called' was not found, try another method
-  grep --binary-files=text -m1 -A100 '^#0' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vE 'std::terminate.*from|__GI_raise |__GI_abort |__assert_fail_base |__GI___assert_fail |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called' | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
+  grep --binary-files=text -m1 -A100 '^#0' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vEi "${FRAMES_FILTER}" | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
 fi
 if [ "$(wc -m /tmp/${RANDF}.gdb4 2>/dev/null | sed 's| .*||')" == "0" ]; then
   # '#0' was not found, which is unlikely to happen, but improvements may be possible, set flag
@@ -288,7 +336,7 @@ fi
 rm -f /tmp/${RANDF}.gdb4
 
 # Grap first 4 frames, if they exist, and add to TEXT
-FRAMES="$(cat /tmp/${RANDF}.gdb3 | head -n4 | sed 's| [^ ]\+$||' | tr '\n' '|' | sed 's/|$/\n/')"
+FRAMES="$(cat /tmp/${RANDF}.gdb3 | head -n4 | sed 's| [^ ]\+$||;s|[ ]*(.*||' | tr '\n' '|' | sed 's/|$/\n/')"
 rm -f /tmp/${RANDF}.gdb3
 if [ ! -z "${FRAMES}" ]; then
   if [ ${FRAMESONLY} -eq 1 -o -z "${TEXT}" ]; then

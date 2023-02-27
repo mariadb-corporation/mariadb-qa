@@ -4,9 +4,9 @@
 # Please make sure your server is up and running before using this tool
 
 # Internal variables: please do not change! Ref below for user configurable variables
-RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 # User Configurable Variables
 BASEDIR=/sda/Percona-Server-5.7.13-6-Linux.x86_64.ssl101

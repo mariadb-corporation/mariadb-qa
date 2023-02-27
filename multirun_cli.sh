@@ -31,7 +31,7 @@ if [ "" == "$5" ]; then
   exit 1
 fi
 
-RANDOM=$(date +%s%N | cut -b10-19)
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 EXE_TODO=$[$1 * $2]
 EXE_DONE=0
 echo "===== Total planned executions:"

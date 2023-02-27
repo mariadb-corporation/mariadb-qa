@@ -10,8 +10,8 @@ $m -e "SET GLOBAL SQL_MODE = REPLACE(@@SQL_MODE, 'NO_BACKSLASH_ESCAPES', '');"
 PREV_PWD=''
 FIRST_RUN=1
 # Random entropy init
-RANDOM=$(date +%s%N | cut -b10-19)
-while true; do
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
+while :; do
 	#REAL_PASSWORD=$(pwgen   --numerals   --capitalize  --symbols --secure 32 1)
 	read -r -d '' -N 200 REAL_PASSWORD < /dev/urandom
   #echo "REAL_PASSWORD=${REAL_PASSWORD}"; sync

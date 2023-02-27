@@ -123,10 +123,10 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   cd /test
   cp -r 10.8 10.8_instrumented
   cd 10.8_instrumented
-  export CC=${HOME}/AFL/afl-clang-fast  
-  export CXX=${HOME}/AFL/afl-clang-fast++
+  export CC=${HOME}/AFL/afl-clang-fast     # export CC=${HOME}/squirrel/AFLplusplus/afl-clang-fast   # For new Squirrel release
+  export CXX=${HOME}/AFL/afl-clang-fast++  # export CXX=${HOME}/squirrel/AFLplusplus/afl-clang-fast++  # Idem
   export LLVM_CONFIG=
-  cmake . -DWITH_SSL=bundled -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=0 -DENABLE_DOWNLOADS=1 -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/tmp/boost_639515 -DENABLED_LOCAL_INFILE=1 -DENABLE_DTRACE=0 -DPLUGIN_PERFSCHEMA=NO -DWITH_DBUG_TRACE=OFF -DWITH_ZLIB=bundled -DWITH_ROCKSDB=0 -DWITH_PAM=OFF -DFORCE_INSOURCE_BUILD=1 -DCMAKE_C_FLAGS='-Og -march=native -mtune=native' -DCMAKE_CXX_FLAGS='-Og -march=native -mtune=native' -DMYSQL_MAINTAINER_MODE=OFF -DWITH_MARIABACKUP=0 -DWITH_UNIT_TESTS=OFF -DWITH_DBUG_TRACE=OFF -DWITH_EMBEDDED_SERVER=OFF -DWITH_ROCKSDB=OFF -DWITH_TOKUDB=OFF -DWITH_WSREP_ALL=OFF
+  cmake . -DWITH_SSL=bundled -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=0 -DENABLE_DOWNLOADS=1 -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/tmp/boost_639515 -DENABLED_LOCAL_INFILE=1 -DENABLE_DTRACE=0 -DPLUGIN_PERFSCHEMA=NO -DWITH_DBUG_TRACE=OFF -DWITH_ZLIB=bundled -DWITH_ROCKSDB=0 -DWITH_PAM=OFF -DFORCE_INSOURCE_BUILD=1 -DCMAKE_C_FLAGS='-Og -march=native -mtune=native' -DCMAKE_CXX_FLAGS='-Og -march=native -mtune=native' -DMYSQL_MAINTAINER_MODE=OFF -DWITH_MARIABACKUP=0 -DWITH_UNIT_TESTS=OFF -DWITH_DBUG_TRACE=OFF -DWITH_EMBEDDED_SERVER=OFF -DWITH_ROCKSDB=OFF -DWITH_TOKUDB=OFF -DWITH_WSREP_ALL=OFF | tee /tmp/afl_cmake.log
   # If the following command gets stuck long-term (5+ hours on a fast machine, 1 day+ on a slow machine), there is likely
   # an issue with either AFL++ or with Clang. Expect issues here. We have thus far succesfully compiled 10.10, 10.8 and 10.3
   # and the instructions here 

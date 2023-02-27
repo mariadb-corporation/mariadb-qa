@@ -1,0 +1,5 @@
+SET sql_mode='';
+CREATE TABLE t (c INT KEY) ENGINE=InnoDB;
+ALTER TABLE mysql.innodb_index_stats MODIFY stat_description CHAR(10) COLLATE utf8_bin;
+LOCK TABLE t WRITE;
+CREATE OR REPLACE TABLE t (id INT,s DATE,e DATE,PERIOD FOR p (s,e),PRIMARY KEY(id,p WITHOUT OVERLAPS)) PARTITION BY HASH (id);

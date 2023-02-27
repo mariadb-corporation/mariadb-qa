@@ -1,0 +1,9 @@
+SET sql_mode='';
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY 'PWD123';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD123');
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+CREATE TABLE ts (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SELECT * FROM ts;
+SET GLOBAL query_cache_type=ON;
+SHUTDOWN;

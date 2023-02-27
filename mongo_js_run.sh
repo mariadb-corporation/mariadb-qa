@@ -16,7 +16,7 @@ PRI_ENGINE=PerconaFT                       # Primary engine to use for testing (
 SEC_ENGINE=MMAPv1
 
 # Internal variables
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 TEST_IN_PROGRESS=0
 WORKDIR=""
 RESULTSDIR=""
@@ -246,7 +246,7 @@ fi
 echoit "Segregation complete. ${TEST_COUNT} (main) + ${SINGLE_TEST_COUNT} (single-threaded) JS tests armed..."
 
 echoit "Starting MJR main test loop (non-segregated tests)..."
-while true; do
+while :; do
   if [ -r ${RESULTSDIR}/ctrl_c_was_pressed_during_this_run ]; then break; fi
   while [ $(jobs -r | wc -l) -lt ${THREADS} ]; do  # Fixed 1 thread max
     if [ ${TEST_IN_PROGRESS} -ge ${TEST_COUNT} ]; then  # All tests done or started
@@ -265,7 +265,7 @@ echoit "Starting MJR main test loop (segregated single thread tests)..."
 SEGREGATED=1
 TEST_IN_PROGRESS=0
 MUTEX1=0;MUTEX2=0
-while true; do
+while :; do
   if [ -r ${RESULTSDIR}/ctrl_c_was_pressed_during_this_run ]; then break; fi
   while [ $(jobs -r | wc -l) -lt 1 ]; do  # Fixed 1 thread max
     if [ ${TEST_IN_PROGRESS} -ge ${SINGLE_TEST_COUNT} ]; then  # All tests done or started

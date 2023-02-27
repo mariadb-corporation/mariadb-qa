@@ -69,7 +69,7 @@ else
   BUGNO=$2
 fi
 
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 BUNDLE_DIR=./BUNDLE_$TRIAL
 info
 

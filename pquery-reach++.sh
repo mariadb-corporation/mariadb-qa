@@ -12,7 +12,7 @@ STATIC_PQUERY_BIN=${HOME}/mariadb-qa/pquery/pquery2-ps8  # Leave empty to use a 
 SESSIONS=11
 
 # Internal variables: Do not change!
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 # Trap ctrl-c
 trap ctrl-c SIGINT
@@ -52,7 +52,7 @@ rm -f /tmp/pqr_status.cnt
 echo "0" > /tmp/pqr_status.cnt
 
 # Generate random copydir
-RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(........\).*/\1/')   # Create random dir/file nr, 8 digits
 COPYDIR=$(echo "${COPYDIR}/${RANDOMD}")
 if [ -d ${COPYDIR} ]; then

@@ -183,7 +183,7 @@ cd ${WORKDIR} || true
 #######################################
 # Setting seeddb creation configuration
 #######################################
-if [ "${MYSQL_VERSION}" == "10.1" ] || [ "${MYSQL_VERSION}" == "10.2" ] || [ "${MYSQL_VERSION}" == "10.3" ]; then
+if [ "${MYSQL_VERSION}" == "10.2" ] || [ "${MYSQL_VERSION}" == "10.3" ]; then
   INIT_TOOL="${BASEDIR}/scripts/mysql_install_db"
   INIT_OPT="--no-defaults --force "
 else

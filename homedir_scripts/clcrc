@@ -1,0 +1,45 @@
+#!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+set +H
+rm -Rf data alter_* mysqlcheck_* check_tables* *_dev_shm SHUTDOWN_TIMEOUT_ISSUE pid.pid pquery.log socket.sock default.node.tld_general.log all
+echo '* Consider removing MYINIT etc.'
+cp -r ../mysqld/ .
+cp ../recovery-user.sql ../root-access.sql .
+sed -i "s|${PWD}|./|g;s|$(cd ..; pwd)|./|g;s|/[/]\+|/|g;s|=\./|=\${PWD}/|g" start stop start_recovery kill cl
+echo '* Copied in mysqld to ./mysqld with libs'
+echo '* Use  ~/mariadb-qa/taritxz_parallel_max.sh  when ready'
+echo '------ Bug report info #1: ------'
+cat <<EOF
+* Single SQL input thread
+* The original run client was pquery (not required)
+* About $(wc -l default.node.tld_thread-0.sql | awk '{print $1}') SQL lines were processed before kill -9 of server (runtime: 10 seconds)
+* A copy of the data directory was taken before the first crash recovery attempt
+* The default server storage engine was InnoDB (unless changed in the SQL)
+* This crash recovery issue is readily reproducible using the original data directory
+///* The branch in use was bb-11.0-oalter (MDEV-16329), _likely_ unrelated
+* On startup, crash recovery fails with:
+$(~/myver)
+$(~/myver)
+A full copy of the data dir is available in this ticket, allowing 'first startup after the crash' to be attempted as often as necessary to locate the bug
+EOF
+echo '------ Bug report info #2: ------'
+cat <<EOF
+The xz archive contains the following files:
+
+* {{MYEXTRA}}: This file contains the options used during the test. The most relevant ones are usually located towards the end of the file
+* {{start_recovery}}: Running this script creates a recovery user with all privileges. Please make sure to change {{BASEDIR}} first
+* {{start}}, {{stop}}, {{cl}}, {{kill}}: Handy scripts to start, stop, client into, and kill the server. Remember to change directories as needed
+* {{root-access.sql}}, {{recovery-user.sql}}: used by start and start_recovery respectively for access (where necessary)
+* {{mysqld}}: This directory contains the mysqld (or a copy of mariadbd renamed to mysqld) along with the required {{ldd}} libs
+* {{default.node.tld_thread-0.sql}}: the full SQL trace used, including the server responses where still received
+* {{data.original}}: This is the original data directory. Copy its contents to ./data and use the latter instead
+* {{tmp.original}}: This is the original temporary storage directory. Copy its contents to ./tmp and use the latter instead
+* {{log/master.original.err}}: This contains the error log from the original trial prior to the "kill -9" command. It may provide debug clues
+* {{log/master.err}}: This file provides an example of what the error log looks like after crash recovery fails
+
+Note that the data directory may contain additional relevant/helpful files.
+
+To debug any issues, (repeat as necessary): First, change {{BASEDIR}} in start_recovery. Then: 
+{{rm -Rf data tmp; cp -r data.original data; cp -r tmp.original tmp; ./start_recovery; sleep 4; vi ./log/master.err}}
+EOF
+echo '--------------------------------'

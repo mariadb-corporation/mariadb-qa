@@ -10,7 +10,7 @@
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 
 # Internal variables
-SCRIPT_PWD=$(cd "$(dirname $0)" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 VALGRINDOUTPUT=0
 SCANBUGS=0
 if [ "$1" == "valgrind" ]; then

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
+if [ -z "${1}" ]; then
+  echo "This tool finds a given UniqueID in all subdirs and lists the .string file, as well as any .report file, for the same"
+  echo "Usage: ./find_uniqueid 'uniqueid'"
+  exit 1
+fi
+
+find . | grep '\.string$' | xargs -I{} grep --binary-files=text -Fli "${1}" '{}' | sed 's|\.string||' | xargs -I{} echo "ls '{}.string' '{}.report' 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"

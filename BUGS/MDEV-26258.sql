@@ -76,3 +76,38 @@ INSTALL PLUGIN Spider SONAME 'ha_spider.so';
 CREATE TABLE t (a INT KEY,b CHAR(1)) ENGINE=Spider;
 SET GLOBAL table_open_cache=FALSE;
 DROP DATABASE test;
+
+SET GLOBAL aria_encrypt_tables=ON;
+CREATE TABLE t (a INT KEY,b INT,KEY(b)) ENGINE=Aria;
+INSERT INTO t VALUES (4,0);
+LOAD INDEX INTO CACHE t IGNORE LEAVES;
+LOAD INDEX INTO CACHE t;
+SHUTDOWN;
+
+SET sql_mode='';
+SET GLOBAL aria_encrypt_tables=1;
+SET default_storage_engine=Aria;
+CREATE TABLE t (c INT,c2 BINARY (1),c3 INT(1),c4 BINARY (1) KEY,c5 INT UNIQUE KEY,c6 NUMERIC(0,0) DEFAULT 3);
+INSERT INTO t (c) VALUES (1),(1),(1),(1),(1);
+ALTER TABLE t ADD armscii8_f CHAR(1) CHARACTER SET armscii8;
+# Client: ERROR 192 (HY000): Unknown key id 1 for ./test/#sql-alter-268b58-4. Can't continue!
+# Error log: 2022-10-01 12:45:26 4 [ERROR] mysqld: Got error '126 "Index is corrupted"' for './test/#sql-alter-268b58-4.MAI'
+
+SET GLOBAL aria_encrypt_tables=1;
+SET SESSION storage_engine=Aria;
+CREATE TABLE t (c INT KEY,c2 CHAR(1),c3 TIMESTAMP);
+CREATE TRIGGER t_cnt_b BEFORE UPDATE ON t FOR EACH ROW UPDATE t SET cnt=cnt;
+INSERT INTO t (c) VALUES (1),(1),(1),(1),(1);
+LOCK TABLES t WRITE,t AS t0 READ;
+SET STATEMENT sql_mode=''FOR ALTER TABLE t CHANGE c c FLOAT(0,0) UNSIGNED,CHANGE c2 c2 FLOAT(0,0) SIGNED;
+
+# Not added to bug yet (bulk update later)
+SET GLOBAL aria_encrypt_tables=ON;
+CREATE TABLE t2 (c INT);
+INSERT INTO t2 VALUES (1);
+INSERT INTO t2 VALUES();
+SET storage_engine=Aria;
+CREATE TABLE t3 (c INT,INDEX (c)) UNION=(t,t2);
+INSERT INTO t3 SELECT * FROM t2;
+SELECT * FROM t3;
+# Error log: [ERROR] Got error 192 when reading table '/dev/shm/021808/6103/tmp/#sql-temptable-ebdb7-8-2e'") 

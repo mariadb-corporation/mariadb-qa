@@ -2,7 +2,7 @@
 COUNT=0
 clear
 echo "Generating inital list..."
-while true; do 
+while :; do 
   ls --color=never */*/*_out | grep -v "VARIOUS_BUILDS" | xargs wc -l | nl -nrz -w3 | grep -v "^$" | sed 's|^\(.............\)|\1/data/|;s|...\(.*\)total$|-->\1total|' > /tmp/monitor_runs
   if [ -r /tmp/monitor_runs ]; then
     clear

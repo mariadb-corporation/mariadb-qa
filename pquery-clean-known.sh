@@ -4,7 +4,7 @@
 # This script deletes all known found bugs from a pquery work directory. Execute from within the pquery workdir.
 
 # Internal variables
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 set +H
 
 # Check if this is a MariaDB Galera Cluster run
@@ -56,7 +56,11 @@ cleanup(){
         # sleep 1  # For debugging
         if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
   	      # grep -Fli "${STRING}" reducer[0-9]*  # For debugging (use script utility, then search for the reducer<nr>.sh in the typescript)
-          grep -Fli --binary-files=text "${STRING}" reducer[0-9]* | awk -F'.'  '{print substr($1,8)}' | xargs -I{} $SCRIPT_PWD/pquery-del-trial.sh {}
+          if [ "${1}" == "1" ]; then
+            grep -Fli --binary-files=text "${STRING}" reducer[0-9]* | awk -F'.'  '{print substr($1,8)}' | xargs -I{} $SCRIPT_PWD/pquery-del-trial.sh {} 1
+          else
+            grep -Fli --binary-files=text "${STRING}" reducer[0-9]* | awk -F'.'  '{print substr($1,8)}' | xargs -I{} $SCRIPT_PWD/pquery-del-trial.sh {}
+          fi
         else
   	      # grep -Fli "${STRING}" reducer[0-9]*  # For debugging (use script utility, then search for the reducer<nr>.sh in the typescript)
           if [ "${1}" == "1" ]; then  # Also wipe trials which pquery-del-trial.sh would normal prevent from being deleted by the fact that they have error messages within them. This is used for when clean_all calls pquery-clean-all.sh which in turn calls this script. The "1" is passed in all cases, and here set to be the second option to pquery-del-trial thereby enabling pquery-del-trial to delete all trials. Note this does not delete all trials which have error log items in it, it only enables deleting trials which would normally be deleted by ./clean_all (i.e. they have a matched crash UniqueID in known_bugs.strings) and happen to have an error log string as well.
@@ -82,6 +86,9 @@ fi
 if [ ${MDG} -ne 1 ]; then
   grep "CT NAME_CONST('a', -(1 [ANDOR]\+ 2)) [ANDOR]\+ 1" */log/master.err 2>/dev/null | sed 's|/.*||' | xargs -I{} ~/mariadb-qa/pquery-del-trial.sh {}  #http://bugs.mysql.com/bug.php?id=81407
 fi
+
+# Delete trials which have a corrupted index (error 126) as main outcome/uniqueID, almost surely caused by enabling aria_encrypt_tables without correct setup
+${HOME}/pr | grep -m1 'GOT_ERROR|Got error 126|Index is corrupted' | grep -o 'times: reducers.*' | tr ',' '\n' | grep -o '[0-9]\+' | xargs -I{} grep --binary-files=text -iEl 'aria_encrypt_tables[ \t]*=[ \t]*1|aria_encrypt_tables[ \t]*=[ \t]*ON' {}/default.node.tld_thread-0.sql | grep -o '^[0-9]\+' | xargs -I{} ${HOME}/dt {} 1
 
 # Check if this an automated (pquery-reach.sh or /data/clean_all) run, which should have no output
 if [ "${1}" != "reach" ]; then

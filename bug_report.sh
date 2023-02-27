@@ -2,9 +2,37 @@
 # Created by Roel Van de Paar, MariaDB
 
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
+
+# User variables
+ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS=1
+DEBUG_OUTPUT=0  # Set to 1 to see full output of test_all and kill_all (note: this generates lots of output, and it is in parallel threads, so it likely only useful for debugging major issues with test_all and/or kill_all, but it is likely better to check a ./test_all run in a BASEDIR directly). Default: 0, legacy default: 1 (i.e. before this option was implemented, all output was shown)
+
+if [ ! -r /test/gendirs.sh ]; then
+  echo 'Assert: /test/gendirs.sh not found, try running ~/mariadb-qa/linkit'
+  exit 1
+fi
+
+# Script variables: do not change
+SAN_BUILD_FOR_NON_SAN_REPORTS_OPT="/test/$(cd /test; ./gendirs.sh san | grep 'MD' | grep '1[0-3].[0-9]' | grep 'opt' | sort -h | tail -n1)"
+SAN_BUILD_FOR_NON_SAN_REPORTS_DBG="$(echo "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" | sed 's|\-opt|-dbg|')"
+
+if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
+  if [ "${1}" != "SAN" ]; then
+    if [ ! -d "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" ]; then
+      echo "Assert: ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled in the script (1), yet the directory SAN_BUILD_FOR_NON_SAN_REPORTS_OPT (${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}) does not exist"
+      exit 1
+    elif [ ! -d "${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}" ]; then
+      echo "Assert: ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled in the script (1), yet the directory SAN_BUILD_FOR_NON_SAN_REPORTS_DBG (${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}) does not exist"
+      exit 1
+    fi
+  #else  # We do not need to display this, it is unecessary info
+    #echo "ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled (1), however this is a SAN run already, so ignoring this setting (safe)"
+  fi
+fi
 
 # Terminate any other bug_report.sh scripts ongoing
-# Does not work correctly
+# Does not work correctly TODO
 #ps -ef | grep -v $$ | grep bug_report | grep -v grep | grep -v mass_bug_report | awk '{print $2}' | xargs kill -9 2>/dev/null
 
 SAN_MODE=0
@@ -39,7 +67,6 @@ else
   fi
 fi
 sleep 1
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
 RUN_PWD=${PWD}
 
 if [ ! -r bin/mysqld ]; then
@@ -48,6 +75,7 @@ if [ ! -r bin/mysqld ]; then
 fi
 
 if [ "${1}" == "GAL" ]; then
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
   if [ ! -r ./gal_no_cl ]; then  # Local
       echo "Assert: ./gal_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
       exit 1
@@ -84,7 +112,7 @@ echo '----------------------------------------------------------------'
 cat in.sql | grep -v --binary-files=text '^$'
 echo '----------------------------------------------------------------'
 
-RANDOM=$(date +%s%N | cut -b10-19)  # Random entropy init
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
 
 if [ ! -r bin/mysqld ]; then
@@ -98,10 +126,31 @@ MYEXTRA_OPT_CLEANED=$(cat /tmp/options_bug_report.${RANDF} | sed 's|  | |g' | tr
 if [ "$(echo "${MYEXTRA_OPT_CLEANED}" | sed 's|[ \t]||g')" != "" ]; then
   echo "Using the following options: ${MYEXTRA_OPT_CLEANED}"
 else
-  echo 'Note that any mysqld options need to be listed as follows on the first line in the testcase (as shown above):'
+  echo 'Note that any required mysqld options need to be listed, as exemplified on the next line, as the first line of the testcase:'
   echo '# mysqld options required for replay:  --someoption[=somevalue]'
 fi
 sleep 2.5  # For visual confirmation
+
+test_san_build(){
+  local TSB_PWD="${PWD}"
+  cd "${1}" 
+  cp ../in.sql .
+  if [ ! -r ./start ]; then
+    ~/start >/dev/null 2>&1
+  fi
+  ./all_no_cl ${MYEXTRA_OPT_CLEANED} >/dev/null 2>&1
+  ./test_pquery >/dev/null 2>&1
+  ./stop >/dev/null 2>&1
+  sleep 1
+  BUG_STRING="$(~/t)"
+  VERSION="$(echo "${1}" | grep -o '10\.1[0-9]')"
+  echo "${BUG_STRING}" | \
+   if grep -Fq "no core file found" ; then echo "${VERSION} ${2}: No SAN issue detected"; \
+   elif echo ${BUG_STRING} | cut -d '|' -f1 | grep -Fq "SAN"; then echo "${VERSION} ${2}: ${BUG_STRING}"; \
+   else echo "${VERSION} ${2}: No SAN issue detected, though saw ${BUG_STRING}"; \
+   fi
+  cd "${TSB_PWD}"
+}
 
 rm -f ../in.sql
 if [ -r ../in.sql ]; then echo "Assert: ../in.sql still available after it was removed!"; exit 1; fi
@@ -109,21 +158,25 @@ cp in.sql ..
 if [ ! -r ../in.sql ]; then echo "Assert: ../in.sql not available after copy attempt!"; exit 1; fi
 cd ..
 echo "Testing all..."
+REDIRECT=">/dev/null 2>&1"
+if [ "${DEBUG_OUTPUT}" -eq 1 ]; then
+  REDIRECT=
+fi
 if [ "${1}" == "SAN" ]; then
-  ./test_all SAN ${MYEXTRA_OPT_CLEANED}
+  ./test_all SAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 elif [ "${1}" == "GAL" ]; then
-  ./test_all GAL ${MYEXTRA_OPT_CLEANED}
+  ./test_all GAL ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 else
-  ./test_all ${MYEXTRA_OPT_CLEANED}
+  ./test_all ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 fi
 echo "Ensuring all servers are gone..."
 sync
 if [ "${1}" == "SAN" ]; then
-  ./kill_all SAN
+  ./kill_all SAN ${REDIRECT}
 elif [ "${1}" == "GAL" ]; then
-  ./kill_all GAL
+  ./kill_all GAL ${REDIRECT}
 else
-  ./kill_all # NOTE: Can not be executed as ../kill_all as it requires ./gendirs.sh
+  ./kill_all ${REDIRECT}  # NOTE: Can not be executed as ../kill_all as it requires ./gendirs.sh
 fi
 
 if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then
@@ -138,9 +191,9 @@ if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then
   fi
 else
   if [ "${1}" == "SAN" ]; then
-    #echo "Searching error logs for the '=ERROR:|runtime error:|ThreadSanitizer:' (SAN mode enabled)"
+    #echo "Searching error logs for the '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:' (SAN mode enabled)"
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
-    #CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '=ERROR:|runtime error:|ThreadSanitizer:' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
+    #CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "GAL" ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
@@ -152,7 +205,7 @@ else
 fi
 cd - >/dev/null || exit 1
 
-SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" bin/mysqld 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
+SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
 if echo "${PWD}" | grep -q EMD ; then
   SERVER_VERSION="$(bin/mysqld --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]-MariaDB' | sed 's|-MariaDB||')"
 else
@@ -234,7 +287,7 @@ else
       echo ''
       echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV} ${BUILD_TYPE}}"
       LINE_TO_READ=${LINE_BEFORE_SAN_STACK}
-      while true; do  # Read stack line by line and print
+      while :; do  # Read stack line by line and print
         LINE_TO_READ=$[ ${LINE_TO_READ} + 1 ]
         LINE="$(head -n${LINE_TO_READ} ./log/master.err | tail -n1)"
         if [ -z "$(echo ${LINE} | sed 's|[ \t]||g')" ]; then break; fi
@@ -260,14 +313,16 @@ else
       LINE_BEFORE_SAN_STACK=$(grep -n "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o '^[0-9]\+')
       if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
         echo '{noformat}'
-        ALT_SOURCE_CODE_REV="$(grep -om1 --binary-files=text "Source control revision id for MariaDB source code[^ ]\+" ${ALT_BASEDIR}/bin/mysqld 2>/dev/null | tr -d '\0' | sed 's|.*source code||;s|Version||;s|version_source_revision||')"
+        cd ${ALT_BASEDIR}
+        ALT_SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
+        cd - >/dev/null
         ALT_SERVER_VERSION="$(${ALT_BASEDIR}/bin/mysqld --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
         echo ''
         echo "{noformat:title=${ALT_SERVER_VERSION} ${ALT_SOURCE_CODE_REV} ${ALT_BUILD_TYPE}}"
         ALT_SOURCE_CODE_REV=
         ALT_SERVER_VERSION=
         LINE_TO_READ=${LINE_BEFORE_SAN_STACK}
-        while true; do  # Read stack line by line and print
+        while :; do  # Read stack line by line and print
           LINE_TO_READ=$[ ${LINE_TO_READ} + 1 ]
           LINE="$(head -n${LINE_TO_READ} ${ALT_BASEDIR}/log/master.err | tail -n1)"
           if [ -z "$(echo ${LINE} | sed 's|[ \t]||g')" ]; then break; fi
@@ -284,29 +339,25 @@ if [ ${SAN_MODE} -eq 1 ]; then
   echo -e '{noformat}\n\nSetup:\n'
   echo '{noformat}'
   echo 'Compiled with GCC >=7.5.0 (I use GCC 9.4.0) and:'
-  if grep -qm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
-    echo '    -DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys'
-  fi
-  if grep -qm1 --binary-files=text '=ERROR:' ../*SAN*/log/master.err; then  # UBSAN/ASAN (best not to split here, as options may interact: bug reproducibility max)
-    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
-  elif grep -qm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN/ASAN (best not to split here, as options may interact: bug reproducibility max)  # elif; avoids double printing
-    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
-  fi
-  echo 'Set before execution:'
-  if grep -qm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
+  if grep -Eiqm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
     # A note on exitcode=0: whereas we do not use this in our runs, it is required to let MTR bootstrap succeed.
     # TODO: Once code becomes more stable add: halt_on_error=1
+    echo '    -DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys'
+    echo 'Set before execution:'
     echo '    export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1:exitcode=0'
-  fi
-  if grep -qm1 --binary-files=text '=ERROR:' ../*SAN*/log/master.err; then  # ASAN
-    # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-    echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1'
-    # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
-    # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
-    #echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:check_initialization_order=1:detect_stack_use_after_return=1:abort_on_error=1'
-  fi
-  if grep -qm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
-    echo '    export UBSAN_OPTIONS=print_stacktrace=1'
+  elif grep -Eiqm1 --binary-files=text 'runtime error:|=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # UBSAN/ASAN/LSAN(ASAN) (best not to split ASAN vs UBSAN build here, and to just leave both enabled, as these features, when both are enabled, may affect the server differently then only one is enabled: we thus maximize bug reproducibility through leaving the same options enabled as where there during testing)  # elif; avoids double printing
+    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
+    if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # ASAN
+      # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
+      echo 'Set before execution:'
+      echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1'
+      # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
+      # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
+      #echo '    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1'
+    elif grep -Eiqm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
+      echo 'Set before execution:'
+      echo '    export UBSAN_OPTIONS=print_stacktrace=1'
+    fi
   fi
 fi
 echo -e '{noformat}\n'
@@ -342,6 +393,14 @@ elif [ "${1}" == "GAL" ]; then
   echo "TOTAL GALERA CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 else
   echo "TOTAL CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
+fi
+if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then
+  if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
+    echo '----- SAN Execution of the testcase -----'
+    test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" opt
+    test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}" dbg
+    echo '-----------------------------------------'
+  fi
 fi
 if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then
   echo 'Remember to action:'
@@ -411,7 +470,7 @@ fi
 #  if [ ${NOCORE} -ne 1 ]; then
 #    cd ${RUN_PWD}
 #    FIRSTFRAME=$(${SCRIPT_PWD}/new_text_string.sh FRAMESONLY | sed 's/|.*//')
-#    echo "https://jira.mariadb.org/browse/MDEV-21938?jql=text%20~%20%22%5C%22${FIRSTFRAME}%5C%22%22%20ORDER%20BY%20status%20ASC"
+#    echo "https://jira.mariadb.org/browse/MDEV-21938?jql=text%20~%20%22%5C%22${FIRSTFRAME}%5C%22%22%20ORDER%20BY%20status%20ASC%2Cupdated%20DESC
 #    echo "https://www.google.com/search?q=site%3Amariadb.org+%22${FIRSTFRAME}%22"
 #  else
 #    echo "https://jira.mariadb.org/browse/MDEV-21938?jql=text%20~%20%22%5C%22\${FIRSTFRAME}%5C%22%22"

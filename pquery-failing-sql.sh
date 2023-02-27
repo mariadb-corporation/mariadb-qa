@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Internal variables
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 WORKD_PWD=$PWD
 
 #Checking TRIAL number

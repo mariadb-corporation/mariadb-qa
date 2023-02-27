@@ -119,8 +119,8 @@ flag_ready_check(){
 
 # Preflight check
 FLAG_ASAN_PRESENT=0; FLAG_TSAN_PRESENT=0; FLAG_UBSAN_PRESENT=0
-if grep -iq --binary-files=text "=ERROR:" "${ERROR_LOG}"; then
-  FLAG_ASAN_PRESENT=1
+if grep -iqE --binary-files=text "=ERROR:|LeakSanitizer:" "${ERROR_LOG}"; then  # Note that '=ERROR:' is likely enough as this includes LeakSanitizer. The common error is: ERROR: LeakSanitizer: detected memory leaks
+  FLAG_ASAN_PRESENT=1  # Includes LSAN handling
 fi
 if grep -iq --binary-files=text "ThreadSanitizer:" "${ERROR_LOG}"; then
   FLAG_TSAN_PRESENT=1
@@ -141,7 +141,7 @@ LINE_COUNTER=0
 # ASAN (and TSAN) file locations are obtained from the stack. UBSAN file locations are obtained from the first line of the UBSAN output.
 asan_file_preparse(){
   if [ -z "${ASAN_FILE_PREPARSE}" ]; then
-    ASAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|.* \([^ ]\+\)$|\1|;s|:[0-9]\+$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;')"  # Drop path prefix (build directory), leaving only relevant part for MD/MS
+    ASAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|.* \([^ ]\+\)$|\1|;s|:[0-9]\+:[0-9]\+$||;s|:[0-9]\+$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;')"  # Drop path prefix (build directory), leaving only relevant part for MD/MS
     if [[ "${ASAN_FILE_PREPARSE}" == "("*")" ]]; then
       # The location is a non-resolved maridbd/mysqld location (i.e. /bin/mariadbd+0x81e8edf), and not helpful - get it from the next frame
       ASAN_FILE_PREPARSE=''
@@ -187,7 +187,7 @@ while IFS=$'\n' read LINE; do
         asan_file_preparse
       fi
       if [[ "${LINE}" == *" #1 0x"* ]]; then
-        ASAN_FRAME2="$(echo "${LINE}" | sed 's|^[^i]\+in[ ]\+||;s|(.*)||g;s|[ ]\+.*||')"
+        ASAN_FRAME2="$(echo "__${LINE}" | sed 's|^[^i]\+in[ ]\+||;s|(.*)||g;s|[ ]\+.*||')"
         asan_file_preparse
       fi
       if [[ "${LINE}" == *" #2 0x"* ]]; then

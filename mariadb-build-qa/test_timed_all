@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Currently only suitable for standard builds (not Galera, not SAN) (And SAN builds do not need to be timed).
+
+# User variables
+SHORTER_STOP_TIME=10        # Allow x seconds for shutdown rather than the 90 second default of ./stop
+                            # If there is a hang, or if the stop time is too short, this option may cause 'Killed' messages
+TEST_SCRIPT='./test_timed'  # './test_timed' or './test_pquery_timed'
+                            # Note that if you use test_pquery_timed as the client, it will also log query durations in 
+                            # milliseconds in default.node.tld_thread-0.sql (in the basedir where you execute this script)
+                            # To see queries which took more than a second, use:
+                            # grep 'Duration: [1-9][0-9][0-9][0-9]' default.node.tld_thread-0.sql
+                            # To add all query durations (should be approx same as runtime calculated below), do:
+                            # With thanks, https://stackoverflow.com/a/3096575/1208218 (Dimitre Radoulov, Arne)
+                            # grep -o 'Duration: [\.0-9]\+ ms' default.node.tld_thread-0.sql | grep -o '[\.0-9]\+' | paste -sd+ | bc -l
+
+echo 'Make sure to place the test (which is to be timed accross versions) in /test/in.sql'
+echo 'Press CTRL+C to interrupt'
+cd /test 
+if [ "${PWD}" != "/test" ]; then echo "Assert: cd /test failed. Try and run ~/mariadb-qa/linkit"; exit 1; fi
+if [ ! -r ./in.sql ]; then echo 'Assert: ./in.sql not found'; fi
+echo "$(date +'%F %T') The testcase /test/in.sql has $(wc -l ./in.sql | sed 's| .*||') lines"
+echo "$(date +'%F %T') Starting instances..."
+./all_all >/dev/null 2>&1
+sleep 1
+echo "$(date +'%F %T') Coying testcases to basedirs..."
+./copy_in.sql_all >/dev/null 2>&1
+echo "$(date +'%F %T') Testing..."
+./gendirs.sh | xargs -I{} echo "cd {}; ${TEST_SCRIPT};\$(timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop >/dev/null 2>&1) >/dev/null 2>&1; cd .." | xargs -P50 -I{} sh -c "{}"

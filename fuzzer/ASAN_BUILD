@@ -1,0 +1,17 @@
+Building full AFL++ (the new version) instrumented Galera build including ASAN and RocksDB:
+
+cd /test
+./clone.sh 10.11
+cp -r 10.11 10.11_instrumented
+cd 10.11_instrumented
+export CC=${HOME}/squirrel/AFLplusplus/afl-clang-fast
+export CXX=${HOME}/squirrel/AFLplusplus/afl-clang-fast++
+export LLVM_CONFIG=
+cmake . -DWITH_SSL=bundled -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=0 -DENABLE_DOWNLOADS=1 -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/tmp/boost_639515 -DENABLED_LOCAL_INFILE=1 -DENABLE_DTRACE=0 -DPLUGIN_PERFSCHEMA=YES -DWITH_DBUG_TRACE=OFF -DWITH_ZLIB=bundled -DWITH_ROCKSDB=0 -DFORCE_INSOURCE_BUILD=1 -DCMAKE_C_FLAGS='-Og -march=native -mtune=native' -DCMAKE_CXX_FLAGS='-Og -march=native -mtune=native' -DMYSQL_MAINTAINER_MODE=OFF -DWITH_MARIABACKUP=0 -DWITH_UNIT_TESTS=OFF -DWITH_DBUG_TRACE=OFF -DWITH_ROCKSDB=ON -DWITH_WSREP=ON -DWITH_ASAN=ON -DWITH_PAM=ON -DWITH_MARIABACKUP=1 -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=OFF -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON | tee /tmp/afl_cmake.log
+make -j200 | tee /tmp/afl_dbg_bld.log
+./scripts/make_binary_distribution
+mv mariadb-...-dbg.tar.gz /test  # swap name
+cd /test
+tar -xf mariadb-...-dbg.tar.gz  # swap name
+mv mariadb-...-dbg.tar.gz AFL-ASAN-MDddmmyy-...-dbg.tar.gz  # swap name
+mv mariadb-...-dbg AFL-ASAN-MDddmmyy-...-dbg  # swap name

@@ -1,11 +1,18 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+# Expanded by Ramesh Sivaraman, MariaDB
 
 # User variables
-BASEDIR=/test/AFL-MD200622-mariadb-10.10.0-linux-x86_64  # BASEDIR directory of server to test (MariaDB, MySQL, Percona)
+BASEDIR=/test/AFL-ASAN-MD171222-mariadb-10.11.2-linux-x86_64  # BASEDIR directory of server to test (MariaDB, MySQL, Percona)
 
 # Script variables; do not change
 FUZZING_ROOT=~/fuzzing/fuzzing_root
+
+if [[ "${1}" == "GAL" ]]; then
+  export GAL_RUN="GAL"
+else
+  export GAL_RUN=""
+fi
 
 touch /dev/shm/tst 2>/dev/null
 if [ ! -r /dev/shm/tst ]; then
@@ -42,7 +49,7 @@ rm -Rf /dev/shm/afl-node-[0-9]
 
 cleanup_dev_shm_dir(){
   if [[ "${PWD}" == "/dev/shm/"* ]]; then  # Defensive coding
-    rm -Rf FIREWORKS-BUGS COPYING CREDITS INSTALL-BINARY README-wsrep README.md THIRDPARTY docs man mysql-test 16* sql-bench support-files reducer* *gypsy *rr *valgrind sysbench* *multirun* multitest repl* loop* insert* *stbe *.old gdb memory_use_trace multi* gal* clean_failing_queries *noprompt* fixin g binlog *.sql *.out sqlmode test_pquery m include 
+    rm -Rf FIREWORKS-BUGS COPYING CREDITS INSTALL-BINARY README-wsrep README.md THIRDPARTY docs man mysql-test 16* sql-bench support-files reducer* *gypsy *rr *valgrind sysbench* *multirun* multitest repl* loop* insert* *stbe *.old gdb memory_use_trace multi* clean_failing_queries *noprompt* fixin g binlog *.sql *.out sqlmode test_pquery m include 
   fi
 }
 
@@ -53,12 +60,22 @@ for((i=0;i<10;i++)); do
   cd /dev/shm/afl-node-${i}
   if [ "${PWD}" == "/dev/shm/afl-node-${i}" ]; then
     # Cleanup as much space as possible, as soon as possible
-    if [ -d ./data -a -r ./data/ibdata1 ]; then
-      rm -Rf ./data
+    if [[ "${1}" == "GAL" ]]; then
+      if [ -d ./node1 -a -r ./node1/ibdata1 ]; then
+         rm -Rf ./node1 ./node2
+      fi
+    else
+      if [ -d ./data -a -r ./data/ibdata1 ]; then
+        rm -Rf ./data
+      fi
     fi
     cleanup_dev_shm_dir  
   fi
-  if [ -r ~/start ]; then ~/start >/dev/null 2>&1; else ~/mariadb-qa/startup.sh >/dev/null 2>&1; fi
+  if [ ! -z ${GAL_RUN} ]; then
+    if [ -r ~/start ]; then ~/start 2 >/dev/null 2>&1; else ~/mariadb-qa/startup.sh 2 >/dev/null 2>&1; fi
+  else
+    if [ -r ~/start ]; then ~/start >/dev/null 2>&1; else ~/mariadb-qa/startup.sh >/dev/null 2>&1; fi
+  fi
   if [ "${PWD}" == "/dev/shm/afl-node-${i}" ]; then
     cleanup_dev_shm_dir
   fi
@@ -77,9 +94,15 @@ for((i=0;i<10;i++)); do
   cd ${FUZZING_ROOT}
   ./go ${i} /dev/shm/afl-node-${i}
   cd /dev/shm/afl-node-${i}
+  if [ ! -r ./afl ]; then
+    echo "Assert: ./afl is missing in the AFL node basedir /dev/shm/afl-node-${i}" 
+    echo "This is likely an issue with the ~/start script (~/mariadb-qa/startup.sh) not creating the ./afl link script"
+    exit 1
+  fi
   ./afl ${i}
   cd ${CURDIR}
   echo "Fuzzing node ${i}/9 started..."
 done
 echo 'Note: you can access CLI clients for each of the fuzzing nodes by using:'
 echo '/dev/shm/afl-node-0/bin/mysql -S/test/afl0_socket.sock -uroot  # wherea afl-node-0 and afl0 can be 0 to 9'
+

@@ -3,7 +3,7 @@ set +H
 if [ ! -z "${1}" ]; then
   if [ "$(echo "${1}" | grep -o '[0-9]')" == "${1}" ]; then
     echo "== Monitoring /dev/shm/${1}/subreducer/*/MYBUG.FOUND..."
-    while true; do cat /dev/shm/${1}/subreducer/*/MYBUG.FOUND 2>/dev/null | grep -v 'no core'; done
+    while :; do cat /dev/shm/${1}/subreducer/*/MYBUG.FOUND 2>/dev/null | grep -v 'no core'; done
   else
     echo "== Scanning /dev/shm/[1-3]*/subreducer/*/MYBUG.FOUND for: ${1}"
     grep --binary-files=text -Fi "${1}" /dev/shm/[1-3]*/subreducer/*/MYBUG.FOUND | sed 's|MYBUG.FOUND:|MYBUG.FOUND:\n  |' | sed 's|^|   |' 
@@ -25,7 +25,7 @@ if [ ! -z "${1}" ]; then
     fi
   fi
 else
-  while true; do
+  while :; do
     clear
     echo "== Monitoring /dev/shm/[1-3]*/subreducer/*/MYBUG.FOUND..."
     cat /dev/shm/[1-3]*/subreducer/*/MYBUG.FOUND 2>/dev/null | grep -v 'no core' | sort -u | cat -b | sed 's|^[ \t]\+||;s|\t|  |'

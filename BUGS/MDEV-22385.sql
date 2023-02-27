@@ -1,3 +1,8 @@
 USE test;
 CREATE TABLE t(c BIGINT);
 SELECT 1 FROM t WHERE c<GEOMFROMTEXT('LINESTRING(-1 1)');
+
+CREATE TABLE t (c INT, c2 BIGINT) ENGINE=InnoDB;
+SELECT * FROM t where c2=ST_GeomFromText('POINT(1 1)');
+SELECT * FROM t where c2=ST_GeomFromText('POINT(1 1)');
+SELECT * FROM t where c2=ST_GeomFromText('POINT(1 1)');  # Repeat as needed

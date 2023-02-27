@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Created by Tomislav Plavcic, Percona LLC
 
-SCRIPT_PWD=$(cd "`dirname $0`" && pwd)
+SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 
 GEN_MYSQL_CONFIG=1
 GEN_PSMDB_CONFIG=1
