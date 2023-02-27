@@ -5,7 +5,7 @@ USER="$(whoami)"
 set +H
 
 if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
-  sudo mkdir -p /test /data /test/TESTCASES/ /test/git-bisect /data/NEWBUGS /data/tmp
+  sudo mkdir -p /test /data /test/TESTCASES/ /test/git-bisect /data/NEWBUGS /data/tmp /test/git-bisect
   sudo chown -R ${USER}:${USER} /test
   sudo chown -R ${USER}:${USER} /data
   sudo chmod -R +rX /test
