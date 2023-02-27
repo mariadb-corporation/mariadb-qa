@@ -424,7 +424,6 @@ if [ ${CRASH_RECOVERY_TESTING} -eq 1 ]; then
   echoit "MODE: Crash Recovery Testing"
   if [[ ${REPL} -eq 0 ]]; then
     echoit "MODE: Crash Recovery Testing"
-    INFILE=$CRASH_RECOVERY_INFILE
   else
     echoit "Enabling crash recovery variable as part of replication testing"
   fi
@@ -2029,8 +2028,8 @@ EOF
                 timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1
                 timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1
               fi
+              echoit "Killed for crash recovery testing (or server crashed, or 250 queries failed)"
               sleep 2
-              echoit "Killed for crash recovery testing"
               CRASH_CHECK=1
               break
             fi
@@ -2043,11 +2042,11 @@ EOF
                 wait ${MPID}
                 sync
               fi
+              echoit "Killed for crash recovery testing (or server crashed, or 250 queries failed)"
+              sleep 2
+              CRASH_CHECK=1
+              break
             fi
-            sleep 2
-            echoit "Killed for crash recovery testing"
-            CRASH_CHECK=1
-            break
           fi
         fi
         # Initiate Percona Xtrabackup
