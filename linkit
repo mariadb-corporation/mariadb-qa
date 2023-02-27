@@ -102,5 +102,10 @@ fi
 # Protect homedir links which are easily overwritten by mistake
 chmod -w ~/b ~/c ~/i ~/m ~/o ~/p ~/r
 
+# Cater for self-built rr instances (https://github.com/rr-debugger/rr/wiki/Building-And-Installing) rather than system installations of rr
+if [ ! -r /usr/bin/rr -a -r /usr/local/bin/rr ]; then
+  sudo ln -s /usr/local/bin/rr /usr/bin/rr
+fi
+
 echo 'Done!'
 exit 0
