@@ -174,10 +174,25 @@ fi
 # Try and raise ulimit for user processes (see setup_server.sh for how to set correct soft/hard nproc settings in limits.conf)
 #ulimit -u 7000
 
-# Check input file (when generator is not used)
-if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -ne 1 ] && [ ! -r ${INFILE} ]; then
-  echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
-  exit 1
+# Input file compressed? preflight check (when generator is not in use)
+if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -ne 1 ]; then
+  if [ ! -r ${INFILE} ]; then
+    echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
+    exit 1
+  elif [[ "${INFILE}" == *".tar."* ]]; then
+    echoit "The input file is a compressed tarball. This script will untar the file in the same location as the tarball. Please note this overwrites any existing files with the same names as those in the tarball, if any. If the sql input file needs patching (and is part of the github repo), please remember to update the tarball with the new file."
+    STORECURPWD=${PWD}
+    cd $(echo ${INFILE} | sed 's|/[^/]\+\.tar\..*|/|') || exit 1 # Change to the directory containing the input file
+    tar -xf ${INFILE}
+    cd ${STORECURPWD} || exit 1
+    ORIGINAL_INFILE="${INFILE}"
+    INFILE=$(echo ${INFILE} | sed 's|\.tar\..*||')
+    if [ ! -r ${INFILE} ]; then
+      echo "Assert! \$INFILE (${INFILE}) cannot be read after decompression (original input file: '${ORIGINAL_INFILE}?'"
+      exit 1
+    fi
+    ORIGINAL_INFILE=
+  fi
 fi
 
 #Format version string (thanks to wsrep_sst_xtrabackup-v2)
@@ -2471,14 +2486,6 @@ EOF
 }
 
 # Setup
-if [[ "${INFILE}" == *".tar."* ]]; then
-  echoit "The input file is a compressed tarball. This script will untar the file in the same location as the tarball. Please note this overwrites any existing files with the same names as those in the tarball, if any. If the sql input file needs patching (and is part of the github repo), please remember to update the tarball with the new file."
-  STORECURPWD=${PWD}
-  cd $(echo ${INFILE} | sed 's|/[^/]\+\.tar\..*|/|') || exit 1 # Change to the directory containing the input file
-  tar -xf ${INFILE}
-  cd ${STORECURPWD} || exit 1
-  INFILE=$(echo ${INFILE} | sed 's|\.tar\..*||')
-fi
 rm -Rf ${WORKDIR} ${RUNDIR}
 diskspace
 mkdir ${WORKDIR} ${WORKDIR}/log ${RUNDIR}
