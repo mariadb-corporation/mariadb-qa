@@ -4,13 +4,13 @@
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space
 BASEDIR=/test/MD180223-mariadb-11.0.1-linux-x86_64-opt
 #BASEDIR=/test/MDEV-16329_bb-11.0-oalter_MD210223-mariadb-11.0.1-linux-x86_64-opt
-RUNSOPT=4
-RUNSDBG=0
+RUNSOPT=0
+RUNSDBG=3
 #CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD-spider-all.conf
 #CONF=pquery-run-MD-federated.conf
-#CONF=pquery-run-MD.conf  # Using PRE_SHUFFLE_SQL=2
-CONF=pquery-run-MD-crt.conf  # Using PRE_SHUFFLE_SQL=2
+CONF=pquery-run-MD.conf  # Using PRE_SHUFFLE_SQL=2
+#CONF=pquery-run-MD-crt.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-allb.conf
 
 #CONF=pquery-run-MD-btrfs.conf
