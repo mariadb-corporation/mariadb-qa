@@ -2040,6 +2040,8 @@ EOF
                 ps -ef | grep -e 'node1_socket\|node2_socket\|node3_socket' | grep -v grep | grep $RANDOMD | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
               else
                 kill -9 ${MPID} > /dev/null 2>&1
+                wait ${MPID}
+                sync
               fi
             fi
             sleep 2
