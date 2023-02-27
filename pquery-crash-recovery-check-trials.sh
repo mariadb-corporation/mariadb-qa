@@ -3,16 +3,20 @@
 # Updated by Roel Van de Paar, MariaDB
 # This script will check crash recovery of all pquery trials which were killed for crash recovery testing in a given WORKDIR
 
-BASEDIR=$(grep 'Basedir:' ./pquery-run.log | sed 's|^.*Basedir[: \t]*||;;s/|.*$//' | tr -d '[[:space:]]')
-WORK_PWD=$PWD
-
-if [ ! -r ./pquery-run.log -o -z "$(grep -i -m 1 'Killed for crash.*testing' ./pquery-run.log 2>/dev/null)" ]; then
-  echo "Assert: ./pquery-run.log not found. Please start this script from within a given WORKDIR (usually /data/some_6_digit_nr/), where the pquery run was specifically setup for crash recovery testing ("
+# Sanity checks and main vars setup
+if [ ! -r ./pquery-run.log ]; then
+  echo "Assert: ./pquery-run.log not found. Please start this script from within WORKDIR (usually /data/some_6_digit_nr/), where the pquery run was specifically setup for crash recovery testing"
   exit 1
-elif [ ! -d "${BASEDIR}" ]; then
+elif [ -z "$(grep -i -m 1 'Killed for crash.*testing' ./pquery-run.log 2>/dev/null)" ]; then
+  echo "Assert: ./pquery-run.log was found, however it did not contain the text 'Killed for crash.*testing' which should not be the case. Please start this script from within a WORKDIR where the pquery run was specifically setup for crash recovery testing"
+  exit 1
+fi
+BASEDIR=$(grep 'Basedir:' ./pquery-run.log 2>/dev/null | sed 's|^.*Basedir[: \t]*||;;s/|.*$//' | tr -d '[[:space:]]')
+if [ ! -d "${BASEDIR}" ]; then
   echo "Assert: Basedir '${BASEDIR}' does not exist"
   exit 1
 fi
+WORK_PWD=$PWD
 
 while read TRIAL ; do
   cd ${WORK_PWD}
