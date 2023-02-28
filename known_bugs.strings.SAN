@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of value X, which is not a valid value for type 'enum_yes_no_unknown'|sql/sql_parse.cc                                                                              ## MDEV-30747
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/handler/ha_innodb.cc                                                              ## MDEV-30732
 ASAN|heap-use-after-free|sql/sql_derived.cc|mysql_derived_prepare|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end|open_tables                                 ## MDEV-21630
 ASAN|heap-use-after-free|sql/sql_derived.cc|mysql_derived_prepare|mysql_derived_merge_for_insert|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end              ## MDEV-21630
