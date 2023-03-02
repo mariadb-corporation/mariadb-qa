@@ -1,0 +1,11 @@
+CREATE TABLE t (a INT);
+SET SESSION max_session_mem_used=1;
+SET GLOBAL wsrep_on=OFF;
+XA START 'a';
+SET SESSION query_prealloc_size=1;
+LOAD INDEX INTO CACHE t PARTITION (p,p0) IGNORE LEAVES;
+SET GLOBAL wsrep_on=ON;
+SET GLOBAL wsrep_max_ws_rows=1;
+SET @@max_session_mem_used=DEFAULT;
+SET SESSION wsrep_trx_fragment_size=1;
+INSERT INTO t VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
