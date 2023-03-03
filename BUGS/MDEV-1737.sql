@@ -8,3 +8,11 @@ SELECT * FROM t1;
 XA END 'a';
 XA PREPARE 'a';
 INSERT INTO t1 (c) VALUES (0);
+
+CREATE TABLE t (c CHAR(1));
+XA START 'a';
+INSERT INTO t VALUES (1),(1),(1);
+XA END 'a';
+SET SESSION pseudo_slave_mode=1;
+XA PREPARE 'a';
+DELETE FROM t;
