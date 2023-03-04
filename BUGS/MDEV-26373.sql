@@ -28,3 +28,13 @@ SET GLOBAL tx_read_only=1;
 SET GLOBAL general_log=ON;
 SET GLOBAL log_output='TABLE,FILE';
 SELECT 1;
+
+SET sql_mode='';
+SET SESSION enforce_storage_engine=InnoDB;
+CREATE TABLE t (ind SET('') DEFAULT'',string1 CHAR,KEY(ind)) ENGINE=Spider DEFAULT CHARSET=utf8;
+ALTER TABLE mysql.general_log ENGINE=MyISAM;
+SET SESSION tx_read_only=ON;
+XA START 'a';
+SET GLOBAL log_output='TABLE';
+SELECT * FROM t;
+SET GLOBAL general_log=ON;

@@ -6,4 +6,4 @@ CREATE TABLE t1 (c1 INT UNSIGNED AUTO_INCREMENT NOT NULL UNIQUE KEY);
 LOCK TABLES t1 WRITE, v1 READ;
 CREATE VIEW v2 AS SELECT * FROM v1 WITH CASCADED CHECK OPTION;
 SHUTDOWN;
-# Then check error log for 'Warning: Memory not freed: 560' and similar
+# Then check error log for 'Warning: Memory not freed: 560' or '512'

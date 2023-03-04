@@ -75,11 +75,14 @@ Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/b
 Assertion .level < 50. failed                         https://jira.mariadb.org/browse/MDEV-23165
 Warning: Memory not freed: 32                         https://jira.mariadb.org/browse/MDEV-25876 session_track_system_variables
 Warning: Memory not freed: 80/104/16400/16320/16424   https://jira.mariadb.org/browse/MDEV-29404 PREPARE (not filtered)
+Warning: Memory not freed: 264                        https://jira.mariadb.org/browse/MDEV-30784 log_bin_trust_function_creators
+Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-30784 log_bin_trust_function_creators
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' WHILE
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' BEGIN
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-30680 IF(NOT (scalar... mangled
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-27627 FOR..IN..DO
 Warning: Memory not freed: 312                        https://jira.mariadb.org/browse/MDEV-27627 FOR..IN..DO + track_sysvar
+Warning: Memory not freed: 512                        https://jira.mariadb.org/browse/MDEV-26335 log_bin_trust_function_creators
 Warning: Memory not freed: 560                        https://jira.mariadb.org/browse/MDEV-26335 DROP USER CURRENT_USER()
 Warning: Memory not freed: 16448                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE
 Warning: Memory not freed: 16496                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE

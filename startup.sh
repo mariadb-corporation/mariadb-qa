@@ -659,7 +659,7 @@ echo "  echo -e \"Looking for this string in the error log (As per the ELBUG env
 echo "  BUGSEEN=" >>multirun_loop
 echo "  while [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; do loop; if [ -r ./data/core* ]; then if [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; then BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-' )\"; echo \"While the searched for string was not found in the error log, a crash was observed with UniqueID: \${BUGSEEN}\"; fi; fi; done" >>multirun_loop
 echo "else" >>multirun_loop
-echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till a core* is found\"" >>multirun_loop
+echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till a core* file is found\"" >>multirun_loop
 echo "  while [ ! -r ./data/core* ]; do loop; done;" >>multirun_loop
 echo "fi" >>multirun_loop
 echo "sleep 2" >>multirun_loop
