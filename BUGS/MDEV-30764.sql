@@ -1,0 +1,13 @@
+SET GLOBAL read_only=1;
+SET SESSION wsrep_trx_fragment_size = 64;
+set default_storage_engine=SEQUENCE;
+SET AUTOCOMMIT = OFF;
+CREATE TABLE t1(c1 NUMERIC NOT NULL);
+CREATE TABLE t1 (id INT PRIMARY KEY) engine=innodb;
+SET SESSION SQL_MODE='HIGH_NOT_PRECEDENCE';
+INSERT INTO t1  VALUES (1),(2),(3);
+SET GLOBAL SQL_MODE='NO_ENGINE_SUBSTITUTION';
+DROP TABLE dummy;
+INSERT INTO t1  VALUES('a');
+SET @@global.wsrep_cluster_address='gcomm://';
+SET SESSION SQL_MODE='TRADITIONAL ';

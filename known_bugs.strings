@@ -142,6 +142,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS ##### Search key: Mac ###
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|row_merge_sort|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                              ## MDEV-29913
+transaction.is_streaming()|SIGABRT|wsrep::transaction::adopt|wsrep::client_state::adopt_transaction|Wsrep_high_priority_service::adopt_transaction|wsrep::server_state::close_orphaned_sr_transactions ## MDEV-30764
+transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse|dispatch_command                    ## MDEV-29271
 marked_for_read()|SIGABRT|Field_newdate::get_TIME|Field_newdate::get_date|Item_field::get_date|Item_func_date_format::val_str                                                  ## MDEV-30730
 !default_table_charset || thd->stmt_arena->is_stmt_execute()|SIGABRT|HA_CREATE_INFO::resolve_to_charset_collation_context|Table_specification_st::resolve_to_charset_collation_context|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-30003
 SIGSEGV|spider_direct_sql_body|spider_direct_sql|udf_handler::val_int|Item_func_udf_int::val_int                                                                               ## MDEV-30727
@@ -169,6 +171,7 @@ SIGABRT|gu::Mutex::~Mutex|galera::Monitor<galera::ReplicatorSMM::ApplyOrder>::~M
 (longlong) n_rows >= 0|SIGABRT|get_frame_cursor|get_window_functions_required_cursors|Window_func_runner::exec|Window_funcs_sort::exec                                         ## MDEV-30682
 SIGFPE|String::needs_conversion|String::copy|Type_handler::partition_field_append_value|add_column_list_values                                                                 ## MDEV-30681
 cs->mbmaxlen <= MAX_MULTI_BYTE_CHAR_SIZE|SIGABRT|myrocks::rdb_get_mem_comparable_space|myrocks::Rdb_field_packing::setup|myrocks::ha_rocksdb::check_keyread_allowed|myrocks::ha_rocksdb::index_flags ## MDEV-30679
+SIGSEGV|wsrep_thd_trx_seqno|wsrep_thd_order_before|lock_rec_has_to_wait|lock_rec_other_has_conflicting                                                                         ## MENT-1737
 SIGSEGV|wsrep_thd_trx_seqno|wsrep_thd_order_before|lock_rec_has_to_wait_in_queue|lock_rec_queue_validate                                                                       ## MENT-1737
 cache_mngr->trx_cache.empty()|SIGABRT|binlog_close_connection|ha_close_connection|slave_applier_reset_xa_trans|trans_xa_prepare                                                ## MENT-1733
 m_thd == _current_thd()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_state::close|wsrep_close|Wsrep_storage_service::~Wsrep_storage_service                         ## MENT-1731
@@ -858,6 +861,7 @@ SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy
 SIGSEGV|best_extension_by_limited_search|greedy_search|choose_plan|make_join_statistics                                                                                        ## MDEV-25013
 thd|SIGABRT|wsrep_innobase_kill_one_trx|wsrep_kill_victim|lock_table_other_has_incompatible|lock_table                                                                         ## MENT-1141
 transaction_.active() == false || (transaction_.state() == wsrep::transaction::s_executing || transaction_.state() == wsrep::transaction::s_prepared || transaction_.state() == wsrep::transaction::s_aborted || transaction_.state() == wsrep::transaction::s_must_abort)|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command ## MENT-1139
+0|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans                                                             ## MDEV-25045
 client_state_.mode() != wsrep::client_state::m_toi|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans            ## MDEV-25045
 SIGSEGV|wsrep_can_run_in_toi|wsrep_can_run_in_nbo|wsrep_NBO_begin|wsrep_to_isolation_begin                                                                                     ## MENT-1134
 SIGABRT|__cxa_rethrow () from|galera::WriteSetOut::gather|galera::TrxHandleMaster::gather|galera::ReplicatorSMM::replicate                                                     ## MDEV-25025
