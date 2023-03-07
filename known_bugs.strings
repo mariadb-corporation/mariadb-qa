@@ -146,6 +146,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 SIGSEGV|my_convert|copy_and_convert|String::copy|String::copy                                                                                                                  ## MDEV-30805
 SIGSEGV|my_convert|copy_and_convert|String::copy|Type_handler::partition_field_append_value                                                                                    ## MDEV-30805
 SIGABRT|ut_dbg_assertion_failed|trx_start_if_not_started_low|innobase_query_caching_table_check|innobase_query_caching_of_table_permitted                                      ## MDEV-30801
+state() == s_committing|SIGABRT|wsrep::transaction::ordered_commit|wsrep::client_state::ordered_commit|wsrep_ordered_commit|MYSQL_BIN_LOG::queue_for_group_commit              ## MDEV-30804
 SIGSEGV|json_string_set_cs|json_string_setup|json_scan_start|Item_func_json_insert::val_str                                                                                    ## MDEV-30785
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|row_merge_sort|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                              ## MDEV-29913
 transaction.is_streaming()|SIGABRT|wsrep::transaction::adopt|wsrep::client_state::adopt_transaction|Wsrep_high_priority_service::adopt_transaction|wsrep::server_state::close_orphaned_sr_transactions ## MDEV-30764
