@@ -1,11 +1,23 @@
 #!/bin/bash
 # This script shows significant crash recovery failure trials
 
-# Asserts on crash recovery
-grep -m1 -i 'Killed for crash.*testing' [0-9]*/pquery-run.log | grep -o '^[0-9]\+' | sort -u | xargs -I{} echo "grep -i 'assert' {}/[0-9]*/log/master.err" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+if [ "${PWD}" == "/data" ]; then
+  # Asserts on crash recovery
+  #grep -m1 -i 'Killed for crash.*testing' [0-9]*/pquery-run.log | grep -o '^[0-9]\+' | sort -u | xargs -I{} echo "grep -i 'assert' {}/[0-9]*/log/master.err" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+  ls --color=never [0-9][0-9][0-9][0-9][0-9][0-9]/[0-9]*/CRC_DONE_SKIP | sed 's|/CRC.*||' | xargs -I{} echo "grep --binary-files=text -iHE 'assert' {}/log/master.err" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | grep --binary-files=text -ivE 'debug_assert'
 
-# Serious corruptions only  TODO: WIP
-ls --color=never [0-9][0-9][0-9][0-9][0-9][0-9]/*/crc* | xargs grep -i 'error' | grep -vEi 'is differently defined|: Corrupt$|Unable to open underlying table|Tablespace has been discarded'
+  # Serious corruptions only
+  ls --color=never [0-9][0-9][0-9][0-9][0-9][0-9]/[0-9]*/crc* | xargs grep -i 'error' | grep -vEi 'is differently defined|: Corrupt$|Unable to open underlying table|Tablespace has been discarded'
 
-# All corruption issues
-#ls --color=never [0-9][0-9][0-9][0-9][0-9][0-9]/*/crc* | xargs grep -i 'error'
+  # All corruption issues
+  #ls --color=never [0-9][0-9][0-9][0-9][0-9][0-9]/*/crc* | xargs grep -i 'error'
+else  # In a workdir
+  # Asserts on crash recovery
+  ls --color=never [0-9]*/CRC_DONE_SKIP | sed 's|/CRC.*||' | xargs -I{} echo "grep --binary-files=text -iHE 'assert' {}/log/master.err" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+
+  # Serious corruptions only
+  ls --color=never [0-9]*/crc* | xargs grep -i 'error' | grep -vEi 'is differently defined|: Corrupt$|Unable to open underlying table|Tablespace has been discarded'
+
+  # All corruption issues
+  #ls --color=never [0-9][0-9][0-9][0-9][0-9][0-9]/*/crc* | xargs grep -i 'error'
+fi
