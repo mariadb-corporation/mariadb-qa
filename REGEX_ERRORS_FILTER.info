@@ -102,12 +102,13 @@ InnoDB: Table mysql.innodb.* not found                Presumed non-issue (table 
 InnoDB: Column .* in table mysql.innodb.* is .* but   Presumed non-issue (column changed)
 mysqld: Table .slow_log. is marked as crashed         https://jira.mariadb.org/browse/MDEV-27076
 Warning. WSREP: handlerton rollback failed, thd       https://jira.mariadb.org/browse/MDEV-29583 (Spider)
-InnoDB: FTS_DOC_ID must be larger than 0              Presumed non-issue (text insert into FTS_DOC_ID for example)
+InnoDB: FTS_DOC_ID must be larger than [0-9]          Presumed non-issue (text insert into FTS_DOC_ID, or too low value)
 InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap
 Operating system error number 36 in a file operation  https://jira.mariadb.org/browse/MDEV-19849 (file name too long)
 Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
 Error on rename.*errno: 150.*Foreign key.*incorrectly formed           https://jira.mariadb.org/browse/MDEV-29092
 ERROR.*InnoDB.*or.*ref.*foreign k.*constr.*not compat.*new table def   https://jira.mariadb.org/browse/MDEV-29092
+
 ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussion (ref email thread 'Discuss')
 Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
 ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussion (ref email thread 'Discuss')
@@ -120,6 +121,7 @@ ERROR. InnoDB: Cannot delete.*Is a directory          https://jira.mariadb.org/b
 Flagged corruption of.*in table.*in CHECK TABLE; Wrong count https://jira.mariadb.org/browse/MDEV-29954
 Got an error from thread_id.*myisam/ha_myisam.cc:1120 https://jira.mariadb.org/browse/MDEV-29954
 unable to load buffer pool                            Presumed non-issue (setting innodb_buffer_pool_filename='' then load)
+Fetch.*stat.*_table_stats.*_index_stats.*not present  Presumed non-issue (mysql tables changed by testcase)
 
 # Fixed/disabled
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1

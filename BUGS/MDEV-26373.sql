@@ -38,3 +38,10 @@ XA START 'a';
 SET GLOBAL log_output='TABLE';
 SELECT * FROM t;
 SET GLOBAL general_log=ON;
+
+SET sql_mode='',enforce_storage_engine=InnoDB;
+ALTER TABLE mysql.general_log ENGINE=MyISAM;
+SET unique_checks=0,tx_read_only=ON,foreign_key_checks=0;
+SET GLOBAL general_log=ON;
+SET GLOBAL log_output='TABLE,FILE';
+SELECT 1;

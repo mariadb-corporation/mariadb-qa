@@ -85,7 +85,10 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 ###(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl            ## MDEV-24749
-###SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables                                                                                    ## MDEV-26457
+
+##### DISABLED FILTERS; these strings are likely symptomatic of as yet undiscovered races in the server rather than being related to a bug which happens to show one of these popup
+###SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables   # DIFFERENT-ISSUE
+###open_tables == __null|SIGABRT|THD::cleanup|THD::free_connection|THD::~THD|THD::~THD      # DIFFERENT-ISSUE
 
 ##### DISABLED MEMORY FILTERS; DUE TO GENERIC/NON-SPECIFIC MEMORY STACKS #####
 SIGSEGV|_int_free|free_root|free_tmp_table|JOIN::cleanup                                                                                                                       ## MDEV-28354
@@ -141,6 +144,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|json_string_set_cs|json_string_setup|json_scan_start|Item_func_json_insert::val_str                                                                                    ## MDEV-30785
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|row_merge_sort|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                              ## MDEV-29913
 transaction.is_streaming()|SIGABRT|wsrep::transaction::adopt|wsrep::client_state::adopt_transaction|Wsrep_high_priority_service::adopt_transaction|wsrep::server_state::close_orphaned_sr_transactions ## MDEV-30764
 transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse|dispatch_command                    ## MDEV-29271
@@ -683,12 +687,14 @@ SIGSEGV|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_
 SIGSEGV|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field                                        ## MDEV-26457
 SIGSEGV|Item_func_concat::val_str|Item::save_in_field|TABLE::update_virtual_field|compute_vcols                                                                                ## MDEV-26457
 field->col->is_binary() || field->prefix_len % field->col->mbmaxlen == 0|SIGABRT|dict_index_add_to_cache|dict_create_index_step|que_thr_step|que_run_threads_low               ## MDEV-26379
+!trx->read_only|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low                                        ## MDEV-26373
+!trx->read_only|SIGABRT|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry                                              ## MDEV-26373
 SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|srw_mutex::wr_lock_try|srw_mutex::wr_lock|ssux_lock_low::wr_lock                                             ## MDEV-26373
 SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|srw_mutex_impl<true>::wr_lock_try|srw_mutex_impl<true>::wr_lock|ssux_lock_impl<true>::wr_lock                ## MDEV-26373
+SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|TTASEventMutex<GenericPolicy>::try_lock|TTASEventMutex<GenericPolicy>::enter|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter ## MDEV-26373
 thr_get_trx(thr)->id || index->table->no_rollback() || index->table->is_temporary()|SIGABRT|row_ins_index_entry|row_ins_index_entry_step|row_ins|row_ins_step                  ## MDEV-26373
 thr_get_trx(thr)->id || index->table->no_rollback() || index->table->is_temporary()|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low ## MDEV-26373
 SIGSEGV|TTASEventMutex<GenericPolicy>::try_lock|TTASEventMutex<GenericPolicy>::enter|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_low                    ## MDEV-26373
-SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|TTASEventMutex<GenericPolicy>::try_lock|TTASEventMutex<GenericPolicy>::enter|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter ## MDEV-26373
 trx->id || index->table->no_rollback() || index->table->is_temporary()|SIGABRT|row_ins_index_entry|row_ins_index_entry_step|row_ins|row_ins_step                               ## MDEV-26373
 !table->file || table->file->inited == handler::NONE|SIGABRT|close_thread_table|close_thread_tables|mysqld_show_create|mysql_execute_command                                   ## MDEV-26334
 SIGSEGV|bitmap_clear_bit|bitmap_lock_clear_bit|free_tmp_table|close_thread_tables                                                                                              ## MDEV-26334
@@ -1173,7 +1179,8 @@ SIGSEGV|heap_info|ha_heap::info|ha_heap::info|make_join_statistics              
 SIGSEGV|maria_status|ha_maria::info|make_join_statistics|JOIN::optimize_inner                                                                                                  ## MDEV-23202
 SIGSEGV|heap_info|ha_heap::info|make_join_statistics|JOIN::optimize_inner                                                                                                      ## MDEV-23202
 SIGSEGV|heap_info|ha_heap::info|opt_sum_query|JOIN::optimize_inner                                                                                                             ## MDEV-23202
-SIGSEGV|maria_status|ha_maria::info|opt_sum_query|JOIN::optimize_inner
+SIGSEGV|maria_status|ha_maria::info|opt_sum_query|JOIN::optimize_inner                                                                                                         ## MDEV-23202
+!table || table->in_use == _current_thd()|SIGABRT|Field_string::val_str|Item_field::val_str|Item_func_concat::val_str|Item::save_str_in_field                                  ## MDEV-23294
 !table || table->in_use == _current_thd()|SIGABRT|Field_long::val_int|Field_int::val_decimal|Item_field::val_decimal|VDec::set                                                 ## MDEV-23294
 !table || table->in_use == _current_thd()|SIGABRT|Field_string::val_str|Field::val_str|Field::save_in_field_str|Field_str::save_in_field                                       ## MDEV-23294
 !table || table->in_use == _current_thd()|SIGABRT|Field_string::val_str|Item_field::val_str|Item::val_str|Item_func_hash::val_int                                              ## MDEV-23294

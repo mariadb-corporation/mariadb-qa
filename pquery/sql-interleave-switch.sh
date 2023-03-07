@@ -7,12 +7,12 @@
 # This is a solid core for feature testing. Here, we have a solid core sql file (like main.sql) being interleaved with feature-specific SQL, and then stress
 # tested with the pquery framework (starting with pquery-run.sh)
 
-CHUNK_SIZE=100;   # Copy x number of lines ('chunks') from the INPUT_FILE before inserting the interleave SQL.
+CHUNK_SIZE=30;   # Copy x number of lines ('chunks') from the INPUT_FILE before inserting the interleave SQL.
                   # Default: 100 (== insert interleave SQL on every 100th line). Do not set lower then 1. 
                   # Weigh off the following: Low setting (ie. low nr) = (too) large resulting a file. High setting = (too) infrequent hits of the interleaved SQL
                   # Setting this even to something like 40 will take an overnight run to complete
 #INPUT_FILE=./main-merged.sql
-INPUT_FILE=${HOME}/newsql/main-ms-ps-md.sql
+INPUT_FILE=${HOME}/mariadb-qa/pquery/main-ms-ps-md.sql
 OUTPUT_FILE=./main-interleaved-switch.sql
 RANDOM_NUMBER_OF_OPTIONS=9;  # If this is changed from the default (9), then the case/esac switch needs to be updated in the code also.
                              # It is easier to just use "" (a blank string) for the slots ('options') you do not want to use. This way the code stays as-is.
@@ -31,15 +31,15 @@ RANDOM=`date +%s%N | cut -b14-19`  # Random entropy pool init, do not change
 # SQL_OPTION_1="DROP TABLE t1;\nCREATE TABLE t1 (c1 INT PRIMARY KEY);"
 # SQL_OPTION_2="SET @@GLOBAL.TOKUDB_FANOUT=$(( RANDOM % 16385 + 1 ));"  # 1-16385
 # SQL_OPTION_3="SELECT 1;"
-SQL_OPTION_1="SET @@GLOBAL.expand_fast_index_creation=ON;"
-SQL_OPTION_2="SET @@GLOBAL.expand_fast_index_creation=OFF;"
-SQL_OPTION_3="SET @@SESSION.expand_fast_index_creation=ON;"
-SQL_OPTION_4="SET @@SESSION.expand_fast_index_creation=OFF;"
-SQL_OPTION_5="SET @@GLOBAL.expand_fast_index_creation=ON;"
-SQL_OPTION_6="SET @@GLOBAL.expand_fast_index_creation=OFF;"
-SQL_OPTION_7="SET @@SESSION.expand_fast_index_creation=ON;"
-SQL_OPTION_8="SET @@SESSION.expand_fast_index_creation=OFF;"
-SQL_OPTION_9="SET @@GLOBAL.expand_fast_index_creation=ON;"
+SQL_OPTION_1="INSERT t SELECT SEQ FROM seq_1_to_100000;"
+SQL_OPTION_2="INSERT t SELECT SEQ,SEQ+100000 FROM seq_1_to_100000;"
+SQL_OPTION_3="INSERT t SELECT SEQ,SEQ+100000,SEQ+200000 FROM seq_1_to_100000;"
+SQL_OPTION_4="INSERT t1 SELECT SEQ FROM seq_1_to_100000;"
+SQL_OPTION_5="INSERT t1 SELECT SEQ,SEQ+100000 FROM seq_1_to_100000;"
+SQL_OPTION_6="INSERT t1 SELECT SEQ,SEQ+100000,SEQ+200000 FROM seq_1_to_100000;"
+SQL_OPTION_7="INSERT t2 SELECT SEQ FROM seq_1_to_100000;"
+SQL_OPTION_8="INSERT t2 SELECT SEQ,SEQ+100000 FROM seq_1_to_100000;"
+SQL_OPTION_9="INSERT t2 SELECT SEQ,SEQ+100000,SEQ+200000 FROM seq_1_to_100000;"
 
 if [ ! -r ${INPUT_FILE} ]; then
   echo "Assert: ${INPUT_FILE} was not found. Please check. Terminating."

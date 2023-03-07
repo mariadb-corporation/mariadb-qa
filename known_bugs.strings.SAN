@@ -5,6 +5,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct THD'|sql/item_strfunc.cc|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Item::save_in_field ## MDEV-23294
+ASAN|use-after-poison|sql/sql_string.h|__interceptor_memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                               ## MDEV-30785
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-26373
 UBSAN|load of value X, which is not a valid value for type 'enum_yes_no_unknown'|sql/sql_parse.cc                                                                              ## MDEV-30747
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/handler/ha_innodb.cc                                                              ## MDEV-30732
 ASAN|heap-use-after-free|sql/sql_derived.cc|mysql_derived_prepare|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end|open_tables                                 ## MDEV-21630
