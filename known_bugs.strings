@@ -144,6 +144,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+state() == s_committing|SIGABRT|wsrep::transaction::ordered_commit|wsrep::client_state::ordered_commit|wsrep_ordered_commit|MYSQL_BIN_LOG::queue_for_group_commit              ## MDEV-30804
 SIGSEGV|json_string_set_cs|json_string_setup|json_scan_start|Item_func_json_insert::val_str                                                                                    ## MDEV-30785
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|row_merge_sort|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                              ## MDEV-29913
 transaction.is_streaming()|SIGABRT|wsrep::transaction::adopt|wsrep::client_state::adopt_transaction|Wsrep_high_priority_service::adopt_transaction|wsrep::server_state::close_orphaned_sr_transactions ## MDEV-30764
