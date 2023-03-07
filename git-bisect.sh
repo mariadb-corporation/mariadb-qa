@@ -2,17 +2,17 @@
 # Created by Roel Van de Paar, MariaDB
 
 # User variables
-VERSION=11.0                                                        # 10.9, 10.10, 10.11, etc.
+VERSION=10.9                                                        # 10.9, 10.10, 10.11, etc.
 DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-LAST_KNOWN_GOOD_COMMIT='b075191ba8598af6aff5549e6e19f6255aef258a'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='f2dc4d4c10ac36a73b5c1eb765352d3aee808d66'   # Revision of first known bad commit
-TESTCASE='/test/in5.sql'                                            # The testcase to be tested
-UNIQUEID='SIGFPE|cost_group_min_max|get_best_group_min_max|SQL_SELECT::test_quick_select|get_quick_record_count'  # The UniqueID to scan for [Exclusive]
+LAST_KNOWN_GOOD_COMMIT='177345dadc9250387343164be0053b1952fc59c1'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='ef930dcad58ae6c3f334a32bd63e26c65fd66fa6'   # Revision of first known bad commit
+TESTCASE='/test/in6.sql'                                            # The testcase to be tested
+UNIQUEID='SIGSEGV|my_convert|copy_and_convert|String::copy|String::copy'  # The UniqueID to scan for [Exclusive]
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: UNIQUEID and TEXT are mutually exclusive: do not set both
 # Leave both UNIQUEID and TEXT empty to scan for core files instead
