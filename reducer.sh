@@ -2035,6 +2035,7 @@ generate_run_scripts(){
   if [[ ${MDG} -eq 1 ]]; then
     for i in $(seq 1 ${NR_OF_NODES}); do
       mkdir -p /dev/shm/${EPOCH}/tmp${i}
+      echo "mkdir -p /dev/shm/${EPOCH}/tmp${i}" >> $WORK_INIT
       echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node${i}" >> $WORK_INIT
     done
   else
@@ -2231,7 +2232,7 @@ start_mdg_main(){
   echo "innodb_file_per_table" >> ${WORKD}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${WORKD}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${WORKD}/my.cnf
-  echo "wsrep_sst_method=mariabackup" >> ${WORKD}/my.cnf
+  echo "wsrep_sst_method=rsync" >> ${WORKD}/my.cnf
   echo "wsrep_sst_auth=$SUSER:$SPASS" >> ${WORKD}/my.cnf
   echo "binlog_format=ROW" >> ${WORKD}/my.cnf
   echo "core-file" >> ${WORKD}/my.cnf
