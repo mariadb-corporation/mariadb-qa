@@ -488,39 +488,41 @@ else
 fi
 # === Check Binary logging options, split it into a BINLOG variable, and cleanup MYEXTRA to remove the related options
 BINLOG=
-if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
-  if [[ ! "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
-      echo "Error: --server-id is present in MYEXTRA whereas --log-bin is not. Please fix this."
-      echo "Terminating now."
-      exit 1
-    else
-      echo "Warning: --server-id is present in MYEXTRA whereas --log-bin is not. This is a valid setup for 8.0 in which binary logging is enabled by default already. Still, reduction may fail in STAGE9 as reducer has not been updated yet to handle this situation. As a workaround, add --log-bin to MYEXTRA, or simply stop at STAGE8 reduction, or add this functionality to STAGE9 and please push it back to the repository"
-      # To add this functionality, it is likely required to just handle the --server-id option removal using the BINLOG variable whilst setting --log-bin=0 at the same time or something - and this would be a good improvement for 8.0 (and beyond) testcase reduction in any case, as it would show/prove whetter it is necesary to have binlog on or not for a given testcase
-    fi
-  fi
-fi
-if [[ "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-  if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
-    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
-      if [[ ! "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
-        echo "Error: The version of mysqld is 5.7 or 8.0 and a --bin-log option was passed in MYEXTRA, yet no --server-id option was found whereas this is required for 5.7 and 8.0."
+if [[ ${MDG} -ne 1 ]]; then
+  if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
+    if [[ ! "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
+      if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
+        echo "Error: --server-id is present in MYEXTRA whereas --log-bin is not. Please fix this."
         echo "Terminating now."
         exit 1
+      else
+        echo "Warning: --server-id is present in MYEXTRA whereas --log-bin is not. This is a valid setup for 8.0 in which binary logging is enabled by default already. Still, reduction may fail in STAGE9 as reducer has not been updated yet to handle this situation. As a workaround, add --log-bin to MYEXTRA, or simply stop at STAGE8 reduction, or add this functionality to STAGE9 and please push it back to the repository"
+        # To add this functionality, it is likely required to just handle the --server-id option removal using the BINLOG variable whilst setting --log-bin=0 at the same time or something - and this would be a good improvement for 8.0 (and beyond) testcase reduction in any case, as it would show/prove whetter it is necesary to have binlog on or not for a given testcase
       fi
     fi
   fi
-  BINLOG="$(echo "${MYEXTRA}" | grep -o "\-\-log[-_]bin[^ ]*" | head -n1)"  # Grep all text including and after '--log[-_]bin' upto a space
-  MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${BINLOG}||g")"
-  if [[ "${MYEXTRA}" == *"--server"[-_]"id"* ]]; then
-    BINLOGSI="$(echo "${MYEXTRA}" | grep -o "\-\-server[-_]id[^ ]*" | head -n1)"  # Grep all text including and after '--server[-_]id' upto the first space
-    MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${BINLOGSI}||g")"
-    BINLOG="$(echo "${BINLOG} ${BINLOGSI}")"
-  fi
-  if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
-    echo "Error: --server-id seems to be present twice in MYEXTRA. Please remove at least one instance."
-    echo "Terminating now."
-    exit 1
+  if [[ "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
+    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
+      if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
+        if [[ ! "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
+          echo "Error: The version of mysqld is 5.7 or 8.0 and a --bin-log option was passed in MYEXTRA, yet no --server-id option was found whereas this is required for 5.7 and 8.0."
+          echo "Terminating now."
+          exit 1
+        fi
+      fi
+    fi
+    BINLOG="$(echo "${MYEXTRA}" | grep -o "\-\-log[-_]bin[^ ]*" | head -n1)"  # Grep all text including and after '--log[-_]bin' upto a space
+    MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${BINLOG}||g")"
+    if [[ "${MYEXTRA}" == *"--server"[-_]"id"* ]]; then
+      BINLOGSI="$(echo "${MYEXTRA}" | grep -o "\-\-server[-_]id[^ ]*" | head -n1)"  # Grep all text including and after '--server[-_]id' upto the first space
+      MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${BINLOGSI}||g")"
+      BINLOG="$(echo "${BINLOG} ${BINLOGSI}")"
+    fi
+    if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
+      echo "Error: --server-id seems to be present twice in MYEXTRA. Please remove at least one instance."
+      echo "Terminating now."
+      exit 1
+    fi
   fi
 fi
 # === Check for ONLY_FULL_GROUP_BY sql mode, split it into a ONLYFULLGROUPBY variable, and cleanup MYEXTRA to remove the option
