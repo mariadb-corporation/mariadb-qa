@@ -366,6 +366,7 @@ SIGSEGV|subselect_uniquesubquery_engine::print|Item_subselect::print|Item_func::
 SIGSEGV|subselect_uniquesubquery_engine::print|Item_subselect::print|Item_in_subselect::print|Item_func::print_args                                                            ## MDEV-29261
 SIGSEGV|JOIN::make_sum_func_list|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                                                        ## MDEV-29210
 param->field_count > (uint) (copy - copy_start)|SIGABRT|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                               ## MDEV-29210
+active()|SIGABRT|wsrep::transaction::append_data|wsrep::client_state::append_data|THD::binlog_start_trans_and_stmt|MYSQL_BIN_LOG::write                                        ## MDEV-29202
 active()|SIGABRT|wsrep::transaction::append_data|wsrep::client_state::append_data|THD::binlog_start_trans_and_stmt|select_create::prepare                                      ## MDEV-29202
 fixed == 1|SIGABRT|Item_func_date_format::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                   ## MDEV-29173
 fixed()|SIGABRT|Item_func_date_format::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                      ## MDEV-29173
