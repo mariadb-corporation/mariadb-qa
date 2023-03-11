@@ -143,6 +143,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+flag == 1|SIGABRT|row_build_index_entry_low|row_build_index_entry|row_vers_old_has_index_entry|row_undo_mod_del_mark_or_remove_sec_low                                         ## MDEV-30597
 SIGSEGV|my_convert|copy_and_convert|String::copy|String::copy                                                                                                                  ## MDEV-30805
 SIGSEGV|my_convert|copy_and_convert|String::copy|Type_handler::partition_field_append_value                                                                                    ## MDEV-30805
 SIGABRT|ut_dbg_assertion_failed|trx_start_if_not_started_low|innobase_query_caching_table_check|innobase_query_caching_of_table_permitted                                      ## MDEV-30801
@@ -655,6 +656,7 @@ xid_seqno > wsrep_seqno|SIGABRT|trx_rseg_update_wsrep_checkpoint|trx_purge_add_u
 SIGSEGV|next_breadth_first_tab|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                              ## MDEV-27315
 info.length < field->field_length|SIGABRT|is_part_of_a_key_prefix|ha_innobase::can_convert_blob|Field_blob::can_be_converted_by_engine|fill_alter_inplace_info                 ## MDEV-27305
 old_part_id == m_last_part|SIGABRT|ha_partition::update_row|handler::ha_update_row|mysql_update|mysql_execute_command                                                          ## MDEV-27313
+old_part_id == m_last_part|SIGABRT|ha_partition::update_row|handler::ha_update_row|multi_update::do_updates|multi_update::send_eof                                             ## MDEV-27313
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_ha_open|mysql_execute_command                                        ## MDEV-27237
 ((__builtin_expect(((global_system_variables.wsrep_on) != 0),0) && this->variables.wsrep_on) && wsrep_emulate_bin_log) || mysql_bin_log.is_open()|SIGABRT|THD::binlog_write_table_map|write_locked_table_maps|binlog_log_row_internal|binlog_log_row ## MDEV-27296
 ((WSREP_PROVIDER_EXISTS_ && this->variables.wsrep_on) && wsrep_emulate_bin_log) || mysql_bin_log.is_open()|SIGABRT|THD::binlog_write_table_map|write_locked_table_maps|binlog_log_row_internal|binlog_log_row ## MDEV-27296

@@ -2596,7 +2596,7 @@ if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
 fi
 
  
-SQL_INPUT_TEXT="SQL file used: ${INFILE}"
+SQL_INPUT_TEXT="SQL file used: ${INFILE} ($(wc -l ${INFILE} | awk '{print $1}') lines)"
 if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
   if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 0 ]; then
     SQL_INPUT_TEXT="Using SQL Generator"
