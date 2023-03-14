@@ -74,6 +74,7 @@ ln -fs /home/${USER}/mariadb-qa/pquery-screen.sh /home/${USER}/s 2>&1
 ln -fs /home/${USER}/mariadb-qa/san_text_string.sh /home/${USER}/st 2>&1
 ln -fs /home/${USER}/mariadb-qa/linkit /home/${USER}/li 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${USER}/crc 2>&1
+ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/count_testcases_out /home/${USER}/cto 2>&1
 
 # Git bisect clone script
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
@@ -138,6 +139,7 @@ alias ca='cd /data; ./clean_all'  # Goes through all workdirs, deleting all [rec
 alias gc='git commit -a -m '  # Commit to git with a given message (pass quoted message)
 alias gs='git status'  # Show git status of current directory
 alias gp='git push'  # Push to git repository
+alias cto='${HOME}/cto'    # Overview of pending reduced testcases work in /data
 alias pr='${HOME}/pr'      # pquery-results for current workdir
 alias t='${HOME}/t'        # UniqueID (works in BASEDIRs, and in workdir/trial dirs etc)
 alias tt='${HOME}/tt'      # UniqueID + known bugs scan + JIRA URL scan links
