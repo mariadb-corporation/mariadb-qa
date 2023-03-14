@@ -315,6 +315,7 @@ SIGSEGV|Static_binary_string::q_append|spider_string::q_append|spider_db_mbase_u
 SIGSEGV|Static_binary_string::q_append|spider_string::q_append|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_list_item_select                              ## MDEV-29502
 SIGSEGV|Binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_mbase_row::append_to_str                                                  ## MDEV-29502
 SIGSEGV|Static_binary_string::q_append|spider_string::q_append|spider_db_mbase_row::append_to_str|spider_db_mbase_row::append_to_str                                           ## MDEV-29502
+SIGSEGV|internal_str2dec|str2my_decimal|str2my_decimal|spider_db_mbase_row::val_decimal                                                                                        ## MDEV-29502
 share->tdc->flushed|SIGABRT|close_all_tables_for_name|handle_alter_part_error|fast_alter_partition_table|mysql_alter_table                                                     ## MDEV-29503
 SIGSEGV|spider_db_mbase_util::append_table|spider_db_mbase_util::append_tables_top_down|spider_db_mbase_util::append_embedding_tables|spider_db_mbase_util::append_table       ## MDEV-29163
 SIGSEGV|spider_db_mbase_util::append_table|spider_db_mbase_util::append_tables_top_down|spider_db_mbase_util::append_from_and_tables|spider_group_by_handler::init_scan        ## MDEV-29163
@@ -323,6 +324,7 @@ inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|ha_pa
 SIGSEGV|spider_db_open_item_field|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_list_item_select|spider_group_by_handler::init_scan                        ## MDEV-29447
 SIGSEGV|spider_db_open_item_field|spider_db_print_item_type|spider_db_mbase_util::open_item_func|spider_db_open_item_func                                                      ## MDEV-29447
 SIGSEGV|spider_db_open_item_field|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_item_type_part|spider_mbase_handler::append_item_type_part                 ## MDEV-29447
+SIGSEGV|spider_db_open_item_field|spider_db_mbase_util::open_item_func|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_list_item_select                      ## MDEV-29447
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_free_share|ha_spider::close                                                                                             ## MDEV-29421
 SIGSEGV|st_select_lex_unit::set_limit|subselect_single_select_engine::exec|Item_subselect::exec|Item_in_subselect::val_bool                                                    ## MDEV-29411
 SIGSEGV|st_select_lex_unit::set_limit|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_real                                             ## MDEV-29411
