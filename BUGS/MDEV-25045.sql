@@ -8,3 +8,9 @@ SET SESSION wsrep_OSU_method='RSU';
 CREATE TABLE t1(c1 VARCHAR(10));
 INSERT INTO t1 (c1) VALUES('');
 CREATE TEMPORARY SEQUENCE s1 ENGINE=INNODB;
+
+# mysqld options required for replay:  --log-bin
+SET autocommit=OFF;
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+INSERT INTO t VALUES (0);
+CREATE TEMPORARY SEQUENCE s;
