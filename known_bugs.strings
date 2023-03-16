@@ -143,6 +143,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|THD::store_globals|wsrep_store_threadvars|Wsrep_high_priority_service::store_globals|wsrep::high_priority_switch::high_priority_switch                                 ## MDEV-30857
+state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_thd_append_table_key|row_ins_wsrep_start_bulk                                              ## MDEV-30817
 flag == 1|SIGABRT|row_build_index_entry_low|row_build_index_entry|row_vers_old_has_index_entry|row_undo_mod_del_mark_or_remove_sec_low                                         ## MDEV-30597
 SIGSEGV|my_convert|copy_and_convert|String::copy|String::copy                                                                                                                  ## MDEV-30805
 SIGSEGV|my_convert|copy_and_convert|String::copy|Type_handler::partition_field_append_value                                                                                    ## MDEV-30805
