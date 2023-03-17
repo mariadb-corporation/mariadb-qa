@@ -717,8 +717,9 @@ bit < map->n_bits|SIGABRT|bitmap_clear_bit|temp_pool_clear_bit|free_tmp_table|cl
 SIGSEGV|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc                                                                                                        ## MDEV-26330
 state_ == s_idle && mode_ == m_local && transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::sync_rollback_complete|wsrep_rollback_local|wsrep_rollback_process|start_wsrep_THD ## MDEV-26304
 thd->wsrep_trx().is_streaming()|SIGABRT|Wsrep_replayer_service::apply_write_set|apply_write_set|wsrep::server_state::on_apply|wsrep::high_priority_service::apply              ## MDEV-26303
-SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## MENT-1287
-SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>::load|wait_for_commit::unregister_wait_for_prior_commit|wsrep_unregister_from_group_commit    ## MENT-1287
+SIGSEGV|wsrep_get_apply_format|wsrep_dump_rbr_buf_with_header|apply_events|Wsrep_applier_service::apply_write_set                                                              ## MDEV-30862
+SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## MENT-1287 NOW MDEV-30862
+SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>::load|wait_for_commit::unregister_wait_for_prior_commit|wsrep_unregister_from_group_commit    ## MENT-1287 NOW MDEV-30862
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## MENT-1286
 state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys                                                  ## MENT-1286
 state() == s_preparing || (is_xa() && state() == s_replaying) || (ret && (state() == s_must_abort || state() == s_must_replay || state() == s_cert_failed || state() == s_aborted))|SIGABRT|wsrep::transaction::before_prepare|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-26266
