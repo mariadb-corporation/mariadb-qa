@@ -143,6 +143,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Item_subselect::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache                             ## MDEV-30842
+SIGSEGV|Item_subselect::get_cache_parameters|Item_in_optimizer::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache                        ## MDEV-30842
+SIGSEGV|Item_field::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived|Item_equal::create_pushable_equalities                           ## MDEV-30841
+SIGSEGV|Item_field::used_tables|Item_direct_view_ref::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived                                ## MDEV-30841
 flag == 1|SIGABRT|row_build_index_entry_low|row_build_index_entry|row_vers_old_has_index_entry|row_undo_mod_del_mark_or_remove_sec_low                                         ## MDEV-30597
 SIGSEGV|my_convert|copy_and_convert|String::copy|String::copy                                                                                                                  ## MDEV-30805
 SIGSEGV|my_convert|copy_and_convert|String::copy|Type_handler::partition_field_append_value                                                                                    ## MDEV-30805
@@ -167,6 +171,7 @@ SIGSEGV|mysql_derived_prepare|mysql_handle_derived|Multiupdate_prelocking_strate
 fixed == 1|SIGABRT|Item_cond_and::val_int|Item_func::is_simplified_cond_processor|Item_func_or_sum::walk|Item_cond::walk                                                       ## MDEV-30721
 fixed()|SIGABRT|Item_cond_and::val_int|Item_func::is_simplified_cond_processor|Item_func_or_sum::walk|Item_cond::walk                                                          ## MDEV-30721
 trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_commit_implicit|mysql_execute_command                                                           ## MDEV-30489
+trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_xa_commit|mysql_execute_command                                                                 ## MDEV-30489
 trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_commit|fix_autocommit                                                                           ## MDEV-30489
 is_started()|SIGABRT|Ha_trx_info::is_trx_read_write|ha_count_rw_2pc|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event                                             ## MDEV-28988
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_load|mysql_execute_command                                           ## MDEV-26492

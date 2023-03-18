@@ -19,8 +19,8 @@ RANDOM_NUMBER_OF_OPTIONS=9;  # If this is changed from the default (9), then the
                              # Note that if you only set SQL_OPTION_1 and have the others blank, then this effectively means that there is a 1-in-9 insertion
                              # (approximately - it's random after all). of this SQL. If you like it to be more, set SQL_OPTION_2 to the same etc.
                              # Also, if you use blank slots/options ("") then note these will not show as blank strings in the OUTPUT_FILE (they are filtered)	
-                             # Note that if you put multiple statements on one line with '\n', then
-RANDOM=`date +%s%N | cut -b14-19`  # Random entropy pool init, do not change
+                             # Note that if you put multiple statements on one line with '\n', thena
+RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy pool init
 # SQL_OPTION Syntax: 
 # * Use ";" as a EOL/terminating character. You also need to use '\n' if you want to list 2 statements per option. Do not put '\n' at the end of a string/line.
 # * Note that if you put multiple statements on one line with '\n', then it does not mean these statements are executed sequentially. They are rather listed
@@ -64,7 +64,6 @@ while [ ${COUNT} -lt `wc -l <${INPUT_FILE}` ]; do
   # awk "NR>=${COUNT}&&NR<=$[ ${COUNT} + ${CHUNK_SIZE} - 1 ]" ${INPUT_FILE} >> ${OUTPUT_FILE}
   head -n$[ ${COUNT} + ${CHUNK_SIZE} - 1 ] ${INPUT_FILE} | tail -n${CHUNK_SIZE} | grep -E --binary-files=text -v "^[ \t]*$" >> ${OUTPUT_FILE}
   # Insert random SQL_OPTION
-  RANDOM=$(date +%s%N | cut -b14-19)
   case $[$RANDOM % ${RANDOM_NUMBER_OF_OPTIONS} + 1] in
     1) echo -e "${SQL_OPTION_1}" | grep -E --binary-files=text -v "^[ \t]*$" >> ${OUTPUT_FILE} ;;
     2) echo -e "${SQL_OPTION_2}" | grep -E --binary-files=text -v "^[ \t]*$" >> ${OUTPUT_FILE} ;;
