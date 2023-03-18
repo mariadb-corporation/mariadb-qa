@@ -147,6 +147,8 @@ SIGSEGV|Item_subselect::get_cache_parameters|Item_cache_wrapper::init_on_demand|
 SIGSEGV|Item_subselect::get_cache_parameters|Item_in_optimizer::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache                        ## MDEV-30842
 SIGSEGV|Item_field::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived|Item_equal::create_pushable_equalities                           ## MDEV-30841
 SIGSEGV|Item_field::used_tables|Item_direct_view_ref::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived                                ## MDEV-30841
+SIGSEGV|THD::store_globals|wsrep_store_threadvars|Wsrep_high_priority_service::store_globals|wsrep::high_priority_switch::high_priority_switch                                 ## MDEV-30857
+state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_thd_append_table_key|row_ins_wsrep_start_bulk                                              ## MDEV-30817
 flag == 1|SIGABRT|row_build_index_entry_low|row_build_index_entry|row_vers_old_has_index_entry|row_undo_mod_del_mark_or_remove_sec_low                                         ## MDEV-30597
 SIGSEGV|my_convert|copy_and_convert|String::copy|String::copy                                                                                                                  ## MDEV-30805
 SIGSEGV|my_convert|copy_and_convert|String::copy|Type_handler::partition_field_append_value                                                                                    ## MDEV-30805
@@ -720,8 +722,9 @@ bit < map->n_bits|SIGABRT|bitmap_clear_bit|temp_pool_clear_bit|free_tmp_table|cl
 SIGSEGV|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc                                                                                                        ## MDEV-26330
 state_ == s_idle && mode_ == m_local && transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::sync_rollback_complete|wsrep_rollback_local|wsrep_rollback_process|start_wsrep_THD ## MDEV-26304
 thd->wsrep_trx().is_streaming()|SIGABRT|Wsrep_replayer_service::apply_write_set|apply_write_set|wsrep::server_state::on_apply|wsrep::high_priority_service::apply              ## MDEV-26303
-SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## MENT-1287
-SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>::load|wait_for_commit::unregister_wait_for_prior_commit|wsrep_unregister_from_group_commit    ## MENT-1287
+SIGSEGV|wsrep_get_apply_format|wsrep_dump_rbr_buf_with_header|apply_events|Wsrep_applier_service::apply_write_set                                                              ## MDEV-30862
+SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## MENT-1287 NOW MDEV-30862
+SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>::load|wait_for_commit::unregister_wait_for_prior_commit|wsrep_unregister_from_group_commit    ## MENT-1287 NOW MDEV-30862
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## MENT-1286
 state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys                                                  ## MENT-1286
 state() == s_preparing || (is_xa() && state() == s_replaying) || (ret && (state() == s_must_abort || state() == s_must_replay || state() == s_cert_failed || state() == s_aborted))|SIGABRT|wsrep::transaction::before_prepare|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-26266
@@ -881,6 +884,8 @@ SIGSEGV|best_extension_by_limited_search|best_extension_by_limited_search|greedy
 SIGSEGV|best_extension_by_limited_search|greedy_search|choose_plan|make_join_statistics                                                                                        ## MDEV-25013
 thd|SIGABRT|wsrep_innobase_kill_one_trx|wsrep_kill_victim|lock_table_other_has_incompatible|lock_table                                                                         ## MENT-1141
 transaction_.active() == false || (transaction_.state() == wsrep::transaction::s_executing || transaction_.state() == wsrep::transaction::s_prepared || transaction_.state() == wsrep::transaction::s_aborted || transaction_.state() == wsrep::transaction::s_must_abort)|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command ## MENT-1139
+SIGSEGV|galera::ReplicatorSMM::CommitOrder::CommitOrder|galera::ReplicatorSMM::commit_order_leave|galera_commit_order_leave|wsrep::wsrep_provider_v26::commit_order_leave      ## MDEV-25045
+0|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|prepare_or_error                                                         ## MDEV-25045
 0|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans                                                             ## MDEV-25045
 client_state_.mode() != wsrep::client_state::m_toi|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans            ## MDEV-25045
 SIGSEGV|wsrep_can_run_in_toi|wsrep_can_run_in_nbo|wsrep_NBO_begin|wsrep_to_isolation_begin                                                                                     ## MENT-1134

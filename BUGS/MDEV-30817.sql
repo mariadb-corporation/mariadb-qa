@@ -1,0 +1,11 @@
+SET sql_mode=0;
+SET SESSION enforce_storage_engine=InnoDB;
+SET unique_checks=0;
+SET SESSION slow_query_log=ON;
+ALTER TABLE mysql.slow_log ENGINE=MyISAM;
+START TRANSACTION;
+SET SESSION log_slow_filter='not_using_index';
+SET foreign_key_checks=OFF;
+SET GLOBAL slow_query_log=ON;
+SET GLOBAL log_output='TABLE';
+SELECT * FROM information_schema.global_status;
