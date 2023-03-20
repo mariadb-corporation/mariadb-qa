@@ -86,6 +86,7 @@ Warning: Memory not freed: 512                        https://jira.mariadb.org/b
 Warning: Memory not freed: 560                        https://jira.mariadb.org/browse/MDEV-26335 DROP USER CURRENT_USER()
 Warning: Memory not freed: 16448                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE
 Warning: Memory not freed: 16496                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE
+Warning: Memory not freed: 16808                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE
 spider/spd_table.cc.*mutex.*spider/spd_table.cc       https://jira.mariadb.org/browse/MDEV-29421
 invalid value in column mysql.proc.db_collation       Testcase artifact caused by direct mysql.proc INSERT
 WSREP (galera) provider is not loaded                 Presumed non-issue (Galera provider not loaded)

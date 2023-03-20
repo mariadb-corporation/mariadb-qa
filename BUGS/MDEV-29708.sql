@@ -7,3 +7,13 @@ CREATE TABLE ts (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "
 SELECT * FROM ts;
 SET GLOBAL query_cache_type=ON;
 SHUTDOWN;
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE USER Spider@localhost IDENTIFIED BY '';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD '');
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+CREATE TABLE t_s (c INT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+SHOW CREATE TABLE t_s;
+SET GLOBAL query_cache_type=1;
+SHUTDOWN;
+SELECT SLEEP (1);

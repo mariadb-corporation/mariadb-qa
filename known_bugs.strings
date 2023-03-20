@@ -1806,8 +1806,9 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # UT_LIST_GET_LEN(trx_list) == 0|SIGABRT|ut_dbg_assertion_failed|trx_sys_t::close|innodb_shutdown|innobase_end                                                        ## Fixed ## MDEV-29142
 # table->get_ref_count() == 0|SIGABRT|Backtrace stopped: Cannot access memory at address                                                                              ## Fixed ## MDEV-29277
 # table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|dict_sys_t::close|innodb_shutdown                                                    ## Fixed ## MDEV-29277
-functype() == ((Item_cond *) new_item)->functype()|SIGABRT|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                             ## Fixed ## MDEV-29294 # Fixed, but still present in 10.11 (not merged yet), remark later
-SIGSEGV|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                                                                                ## Fixed ## MDEV-29294 # Fixed, but still present in 10.11 (not merged yet), remark later
+# functype() == ((Item_cond *) new_item)->functype()|SIGABRT|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                             ## Fixed ## MDEV-29294
+# SIGSEGV|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                                                                                ## Fixed ## MDEV-29294
+# SIGSEGV|base_list_iterator::next_fast|List_iterator_fast<Item_equal>::operator++|Item_cond::remove_eq_conds|optimize_cond                                           ## Fixed ## MDEV-29294
 # SIGSEGV|Backtrace stopped: Cannot access memory at address                                                                                                          ## Fixed ## MDEV-29352
 # SIGSEGV|strlen|Backtrace stopped: Cannot access memory at address                                                                                                   ## Fixed ## MDEV-29352
 # SIGSEGV|strlen|__GI__dl_exception_create|__GI__dl_signal_error|_dl_close                                                                                            ## Fixed ## MDEV-29352
