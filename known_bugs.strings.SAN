@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|include/c++/11/bits/shared_ptr_base.h|std::__shared_ptr<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|myrocks::ha_rocksdb::index_first ## MDEV-23956
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache|Item_cache_wrapper::val_int ## MDEV-30842
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::get_cache_parameters|Item_in_optimizer::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache ## MDEV-30842
 UBSAN|member access within null pointer of type 'struct Field'|sql/item.cc|Item_field::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived|Item_equal::create_pushable_equalities ## MDEV-30841

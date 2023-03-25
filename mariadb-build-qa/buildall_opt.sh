@@ -10,6 +10,15 @@
 #  ./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
 #fi
 
+# Restart inside a screen if this terminal session isn't one already
+if [ "${STY}" == "" ]; then
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "buildall_opt" bash -c "$0;bash"
+  sleep 1
+  screen -d -r "buildall_opt"
+  return 2> /dev/null; exit 0
+fi
+
 DIR=${PWD}
 rm -Rf 10.1_opt 10.2_opt 10.3_opt 10.4_opt 10.5_opt 10.6_opt 10.7_opt 10.8_opt 10.9_opt 10.10_opt 11.0_opt
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_opt.sh &

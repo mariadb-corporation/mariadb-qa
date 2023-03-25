@@ -143,6 +143,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_last_intern ## MDEV-23956
+SIGSEGV|myrocks::ha_rocksdb::index_first|myrocks::ha_rocksdb::inplace_populate_sk|myrocks::ha_rocksdb::inplace_alter_table|handler::ha_inplace_alter_table                     ## MDEV-23956
+SIGSEGV|rocksdb::DBImpl::NewIterator|rocksdb::TransactionBaseImpl::GetIterator|myrocks::Rdb_transaction::get_iterator|myrocks::ha_rocksdb::setup_scan_iterator                 ## MDEV-23956
+SIGSEGV|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_first_intern ## MDEV-23956
+SIGSEGV|rocksdb::DBImpl::NewIterator|rocksdb::TransactionBaseImpl::GetIterator|myrocks::Rdb_transaction_impl::get_iterator|myrocks::Rdb_transaction::get_iterator              ## MDEV-23956
 SIGSEGV|Item_subselect::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache                             ## MDEV-30842
 SIGSEGV|Item_subselect::get_cache_parameters|Item_in_optimizer::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache                        ## MDEV-30842
 SIGSEGV|Item_field::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived|Item_equal::create_pushable_equalities                           ## MDEV-30841
@@ -287,6 +292,11 @@ thd->ha_data[wsrep_hton->slot].ha_info[all].is_trx_read_write()|SIGABRT|wsrep_pr
 thd == _current_thd() || ((&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&thd->LOCK_thd_data)->m_mutex)->thread))|SIGABRT|thd_get_ha_data|thd_to_trx|wsrep_abort_transaction|ha_abort_transaction ## MDEV-29786
 SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|sp_head::fill_spvar_definition                        ## MDEV-25135
+SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## MDEV-25135
+SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Type_handler_string_result::Column_definition_prepare_stage1|Column_definition::prepare_stage1 ## MDEV-25135
+charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|LEX::sf_return_fill_definition|MYSQLparse                                            ## MDEV-25135
+charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|MYSQLparse|parse_sql                                                                 ## MDEV-25135
+charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|sp_head::row_fill_field_definitions                   ## MDEV-25135
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-29775
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                                                                                                               ## MDEV-27575
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int                                                                   ## MDEV-29733
@@ -422,6 +432,10 @@ SIGSEGV|Item_func_not::fix_fields|st_select_lex::pushdown_from_having_into_where
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Item::save_in_field|fill_record                                                                                  ## MDEV-28835
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|Field_enum::store|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field                                           ## MDEV-28835
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|Field_enum::store|Item::save_str_in_field                                                                ## MDEV-28835
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|charset_info_st::lengthsp|find_set|Field_set::store                                                                                ## MDEV-28835
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|find_set|Field_set::store|Item::save_in_field                                                                                      ## MDEV-28835
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|find_set|Field_set::store|Item::save_in_field_inner                                                                                ## MDEV-28835
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|find_set|Field_set::store|Item::save_str_in_field                                                                                  ## MDEV-28835
 SIGSEGV|Item_field::used_tables|optimize_semijoin_nests|make_join_statistics|JOIN::optimize_inner                                                                              ## MDEV-28833
 SIGABRT|ib::fatal::~fatal|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_page_init_for_read                                                                 ## MDEV-28800
 SIGABRT|ib::fatal::~fatal|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|fsp_page_create                                                                        ## MDEV-28800
@@ -675,6 +689,8 @@ block->type == PAGECACHE_EMPTY_PAGE || block->type == PAGECACHE_READ_UNKNOWN_PAG
 btr_cur_get_rec(cursor) == ((next_page) + page_get_infimum_offset(next_page))|SIGABRT|btr_insert_into_right_sibling|btr_page_split_and_insert|btr_cur_pessimistic_insert|row_ins_sec_index_entry_low ## MDEV-27209
 ((cursor)->page_cur.rec) == ((next_page) + page_get_infimum_offset(next_page))|SIGABRT|btr_insert_into_right_sibling|btr_page_split_and_insert|btr_cur_pessimistic_insert|row_ins_sec_index_entry_low ## MDEV-27209
 !m_null_value|SIGABRT|FixedBinTypeBundle<UUID>::cmp_item_fbt::compare|cmp_item_row::compare|cmp_row|my_qsort2                                                                  ## MDEV-27207
+!m_null_value|SIGABRT|FixedBinTypeBundle<Inet6>::cmp_item_fbt::compare|cmp_item_row::compare|cmp_row|my_qsort2                                                                 ## MDEV-27207
+!m_null_value|SIGABRT|cmp_item_inet6::compare|cmp_item_row::compare|cmp_row|my_qsort2                                                                                          ## MDEV-27207
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_optimize_table::execute                                                                   ## MDEV-27198
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_optimize_table::execute                       ## MDEV-27198
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                                                                ## MDEV-27186

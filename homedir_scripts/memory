@@ -2,8 +2,9 @@
 # Also see ~/mariadb-qa/memory_leaks_howto.txt for related throubleshooting info, otherwise unrelated to the monitoring script below
 
 # User variables
-KILL_LARGE=1    # Will kill any process consuming equal to or more then KILL_PERCENT.0 percent of memory
-KILL_PERCENT=7  # For example: 4: All processes up to 3.99 will be left, 4.00 and onwards will be killed
+KILL_LARGE=1         # Will kill any process consuming equal to or more then KILL_PERCENT.0 percent of memory
+KILL_PERCENT=7       # For example: 4: All processes up to 3.99 will be left, 4.00 and onwards will be killed
+KILL_LONG_RUNNING=1  # Terminate all relevant too-long-running processes, ref terminate_long_running.sh
 
 if [ "${STY}" == "" ]; then
   THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
@@ -15,10 +16,19 @@ if [ "${STY}" == "" ]; then
   return 2> /dev/null; exit 0
 fi
 
-# Script variables
 while :; do
+  # Terminate all relevant (servers, clients, pquery) too-long-running processes
+  if [ "${KILL_LONG_RUNNING}" -eq 1 ]; then
+    if [ -r "/test/terminate_long_running.sh" ]; then
+      /test/terminate_long_running.sh
+    elif [ -r "${HOME}/mariadb-qa/mariadb-build-qa/terminate_long_running.sh" ]; then
+      ${HOME}/mariadb-qa/mariadb-build-qa/terminate_long_running.sh
+    fi
+    sleep 1
+  fi
   clear
-  CMD="ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep --binary-files=text -vE 'fireworks|mtr_to_sql|generator.sh|cc|clang|reducer'"
+  # Do not include pquery in the next filter statement; it is fine to terminate a memory-hogging pquery instance (never actually seen, but in principle)
+  CMD="ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep --binary-files=text -vE 'fireworks|mtr_to_sql|generator.sh|cc|clang|reducer|build'"
   eval "${CMD}" | head -n7
   HEADLINE=;PERCENT=;PID=
   if [ "${KILL_LARGE}" -eq 1 ]; then

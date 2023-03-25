@@ -1,7 +1,8 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
+# Diskspace monitor
 
-WIPE_TMP_ENABLED=0  # /tmp cleaning
+WIPE_TMP_ENABLED=0  # /tmp cleaning, generally should NOT be enabled
 
 if [ "${STY}" == "" ]; then
   THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory

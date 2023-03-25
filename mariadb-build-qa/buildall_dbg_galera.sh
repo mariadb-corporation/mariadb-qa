@@ -4,11 +4,21 @@
 
 # This script can likely be sourced (. ./buildall_dbg.sh) to be able to use job control ('jobs', 'fg' etc)
 
-if [ ! -r ./terminate_ds_memory.sh ]; then
-  echo './terminate_ds_memory.sh missing!'
-  exit 1
-else
-  ./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
+# No longer needed
+#if [ ! -r ./terminate_ds_memory.sh ]; then
+#  echo './terminate_ds_memory.sh missing!'
+#  exit 1
+#else
+#  ./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
+#fi
+
+# Restart inside a screen if this terminal session isn't one already
+if [ "${STY}" == "" ]; then
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "buildall_dbg_gal" bash -c "$0;bash"
+  sleep 1
+  screen -d -r "buildall_dbg_gal"
+  return 2> /dev/null; exit 0
 fi
 
 DIR=${PWD}

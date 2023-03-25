@@ -10,6 +10,15 @@
 #  ./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
 #fi
 
+# Restart inside a screen if this terminal session isn't one already
+if [ "${STY}" == "" ]; then
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "buildall_dbg" bash -c "$0;bash"
+  sleep 1
+  screen -d -r "buildall_dbg"
+  return 2> /dev/null; exit 0
+fi
+
 DIR=${PWD}
 rm -Rf 10.1_dbg 10.2_dbg 10.3_dbg 10.4_dbg 10.5_dbg 10.6_dbg 10.7_dbg 10.8_dbg 10.9_dbg 10.10_dbg 11.0_dbg
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_dbg.sh &
