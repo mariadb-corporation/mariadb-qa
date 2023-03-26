@@ -83,6 +83,10 @@ if [ -z "${MYSQLD}" ]; then
     MYSQLD="../../mysqld/mariadbd"
   elif [ -r ../../mysqld/mysqld -a ! -d ../../mysqld/mysqld ]; then  # Used by pquery-pre-red.sh to re-generate MYBUG string with valid input
     MYSQLD="../../mysqld/mysqld"
+  elif [ -r ../../../../../bin/mariadbd -a ! -d ../../../../../bin/mariadbd ]; then  # Used with/for MTR 
+    mariadbd="../../../../../bin/mariadbd"
+  elif [ -r ../../../../../bin/mysqld -a ! -d ../../../../../bin/mysqld ]; then  # Used with/for MTR 
+    MYSQLD="../../../../../bin/mysqld"
   elif [ -r ./log/master.err ]; then
     POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
     if [ -r ${POTENTIAL_MYSQLD} ]; then
@@ -132,8 +136,12 @@ else
 fi
 
 if [ -z "${ERROR_LOG}" ]; then
-  echo "Assert: no error log found at ${ERROR_LOG} - exiting"
-  exit 1
+  if [ -r "../../mysqld.1.err" ]; then
+    ERROR_LOG="../../mysqld.1.err"
+  else
+    echo "Assert: no error log found - exiting"
+    exit 1
+  fi
 fi
 
 if [ ! -r "${ERROR_LOG}" ]; then

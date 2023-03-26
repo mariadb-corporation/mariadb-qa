@@ -2,7 +2,7 @@
 # Created by Roel Van de Paar, Percona LLC
 # Modified by Ramesh Sivaraman, MariaDB
 
-MAKE_THREADS=16        # Number of build threads
+MAKE_THREADS=25        # Number of build threads
 WITH_EMBEDDED_SERVER=0  # 0 or 1 # Include the embedder server (removed in 8.0)
 WITH_LOCAL_INFILE=1     # 0 or 1 # Include the possibility to use LOAD DATA LOCAL INFILE (LOCAL option was removed in 8.0?)
 USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re-download

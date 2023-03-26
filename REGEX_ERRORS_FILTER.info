@@ -71,6 +71,7 @@ Please run mariadb-upgrade                            Often seen when a mysql db
 Got error .126 .Index is corrupted.*test.*MAI         https://jira.mariadb.org/browse/MDEV-30488
 Got error .126 .Index is corrupted.*sql-alter.*MAI    https://jira.mariadb.org/browse/MDEV-26258
 Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26258
+Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26492
 Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/browse/MDEV-26258
 Assertion .level < 50. failed                         https://jira.mariadb.org/browse/MDEV-23165
 Warning: Memory not freed: 32                         https://jira.mariadb.org/browse/MDEV-25876 session_track_system_variables

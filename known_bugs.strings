@@ -21,9 +21,10 @@ MARIADB_ERROR_CODE|MariaDB error code: 2003
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
-GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26258  ## Note: it is possible there are other 126's
-GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ## so it may be worthwhile to once in a while
-GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## to disable these entries
+GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26258  ## Note: it is possible there are other
+GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ## 126's, so it may be worthwhile to once 
+GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
+GOT_ERROR|Got error 126|when reading table                     ## MDEV-26492  ## entries to check
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 # MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 188|when reading table                     ## Presumed non-issue (Operation was interrupted, max_statement_time)
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
@@ -143,6 +144,13 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|l_find|lf_hash_iterate|tdc_iterate|tc_purge                                                                                                                            ## MDEV-30926
+SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|tdc_acquire_share                                                                                                      ## MDEV-30926
+SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|lf_hash_search                                                                                                         ## MDEV-30926
+SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|MDL_map::find_or_insert                                                                                                ## MDEV-30926
+SIGSEGV|lf_hash_destroy|MDL_map::destroy|mdl_destroy|clean_up                                                                                                                  ## MDEV-30926
+SIGSEGV|lf_hash_destroy|clean_up|clean_up|mysqld_main                                                                                                                          ## MDEV-30926
+ASAN|heap-use-after-free|sql/field.h|Field::set_notnull|save_int_value_in_field|Item_int::save_in_field|TABLE::update_virtual_fields  # ASAN builds
 SIGSEGV|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_last_intern ## MDEV-23956
 SIGSEGV|myrocks::ha_rocksdb::index_first|myrocks::ha_rocksdb::inplace_populate_sk|myrocks::ha_rocksdb::inplace_alter_table|handler::ha_inplace_alter_table                     ## MDEV-23956
 SIGSEGV|rocksdb::DBImpl::NewIterator|rocksdb::TransactionBaseImpl::GetIterator|myrocks::Rdb_transaction::get_iterator|myrocks::ha_rocksdb::setup_scan_iterator                 ## MDEV-23956

@@ -26,14 +26,23 @@ rm -Rf 10.1_opt 10.2_opt 10.3_opt 10.4_opt 10.5_opt 10.6_opt 10.7_opt 10.8_opt 1
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 1
 cd ${DIR}/10.4 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 2
 cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 3
 cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 4
 cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 5
 cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 6
 cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 7
 cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 8
 cd ${DIR}/10.11 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 9
 cd ${DIR}/11.0 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 
 echo "All processes started as background threads... Output will commence soon."

@@ -45,3 +45,26 @@ CREATE TEMPORARY TABLE t (a INT,KEY (a)) ENGINE=MyISAM;
 INSERT INTO t VALUES (NULL);
 SET GLOBAL key_cache_segments=1;
 LOAD DATA INFILE 'a' INTO TABLE t;
+
+# mysqld options required for replay:  --sql_mode=
+SET SESSION enforce_storage_engine=MyISAM;
+SET GLOBAL key_cache_segments=1;
+CREATE TEMPORARY TABLE t (c TIME KEY,c2 TEXT BINARY CHARACTER SET 'BINARY' COLLATE 'BINARY',c3 CHAR(2) CHARACTER SET 'BINARY' COLLATE 'BINARY');
+SET sql_select_limit=2;
+INSERT INTO t (c) VALUES (7),(8),(9);
+SET GLOBAL key_cache_segments=1;
+SELECT * FROM t ORDER BY c;
+
+SET GLOBAL key_cache_segments=2;
+CREATE TEMPORARY TABLE t (a INT KEY) ENGINE=MyISAM;
+INSERT INTO t VALUES (1);
+INSERT INTO t VALUES (1+1);
+SET GLOBAL key_cache_segments=0;
+SELECT * FROM t;
+
+SET @start_global_value=@@GLOBAL.sync_master_info;
+SET GLOBAL key_cache_segments=@start_global_value;
+CREATE TEMPORARY TABLE t2 (c BINARY,c2 DECIMAL UNSIGNED,c3 REAL(1,0) UNSIGNED ZEROFILL,KEY(c)) ENGINE=MyISAM;
+INSERT INTO t2 (c) VALUES (8),(9);
+SET GLOBAL key_cache_segments=2;
+SELECT 1 FROM t2;
