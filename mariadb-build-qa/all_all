@@ -12,7 +12,7 @@ fi
 
 # Stop (if running), wipe and start all instances in parallel
 if [ ${SAN_MODE} -eq 1 ]; then
-  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./all_no_cl ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
+  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./all_no_cl ${MYEXTRA_OPT}" | xargs -P1 -I{} sh -c "{}"  # 1: SAN mode struggles with a high number of threads for starting up servers
 elif [ "${1}" == "GAL" ]; then
   ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_no_cl ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
 else

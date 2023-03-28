@@ -2,17 +2,18 @@
 # Created by Roel Van de Paar, MariaDB
 
 # User variables
-VERSION=10.9                                                        # 10.9, 10.10, 10.11, etc.
+VERSION=10.6                                                        # Use the earliest major version affected by the bug
 DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-LAST_KNOWN_GOOD_COMMIT='177345dadc9250387343164be0053b1952fc59c1'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='ef930dcad58ae6c3f334a32bd63e26c65fd66fa6'   # Revision of first known bad commit
-TESTCASE='/test/in6.sql'                                            # The testcase to be tested
-UNIQUEID='SIGSEGV|my_convert|copy_and_convert|String::copy|String::copy'  # The UniqueID to scan for [Exclusive]
+LAST_KNOWN_GOOD_COMMIT='efc3cb9322df26e957f55dcd42f679251e273c68'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='216d99bb395c4fda43b4e3583672ef925103fae5'   # Revision of first known bad commit
+TESTCASE='/test/in7.sql'                                            # The testcase to be tested
+UNIQUEID='ASAN|heap-use-after-free|include/c++/9/bits/atomic_base.h|std::__atomic_base<long>::store|Atomic_relaxed<long>::store|Atomic_relaxed<long>::operator=|trx_t::commit_tables'  # The UniqueID to scan for [Exclusive]
+UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: UNIQUEID and TEXT are mutually exclusive: do not set both
 # Leave both UNIQUEID and TEXT empty to scan for core files instead
@@ -41,6 +42,9 @@ elif [ -z "${LAST_KNOWN_GOOD_COMMIT}" -o -z "${FIRST_KNOWN_BAD_COMMIT}" ]; then
   exit 1
 elif [ ! -r "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh" ]; then
   echo "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh missing. Try cloning mariadb-qa again from Github into your home directory"
+  if [ "${UBASAN}" -eq 1 ]; then
+    echo "(note: UBASAN=1 so a UBASAN build would have been used to build the server in any case, however the script looks for this script above, as asimple verification whetter mariadb-qa was cloned and is generally ready to be used)"
+  fi
   exit 1
 elif [ ! -r "${HOME}/start" ]; then
   echo "${HOME}/start missing. Try running ${HOME}/mariadb-qa/linkit"
@@ -162,7 +166,11 @@ while :; do
     SCREEN_NAME="git-bisect-build.${SEED}"
     echo "|> Building revision in a screen session: use  screen -d -r '${SCREEN_NAME}'  to see the build process"
     rm -f ${TMPLOG2}
-    screen -admS "${SCREEN_NAME}" bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > ${TMPLOG2}"
+    if [ "${UBASAN}" -eq 1 ]; then
+      screen -admS "${SCREEN_NAME}" bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}_san.sh; echo \"\${?}\" > ${TMPLOG2}"
+    else
+      screen -admS "${SCREEN_NAME}" bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > ${TMPLOG2}"
+    fi
     while [ "$(screen -ls | grep -o "${SCREEN_NAME}")" == "${SCREEN_NAME}" ]; do
       sleep 2
     done

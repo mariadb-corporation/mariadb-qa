@@ -52,8 +52,13 @@ else
     echo "Execute this script without options to see more information"
     exit 1
   else
-    REDUCER="reducer${1}.sh"
-    REDUCERLOG="reducer${1}.log"
+    if [ -r ./reducer_val${1}.sh ]; then  # Valgrind
+      REDUCER="reducer_val${1}.sh"
+      REDUCERLOG="reducer_val${1}.log"
+    else  # All regular ~/pge calls (generic server, SAN)
+      REDUCER="reducer${1}.sh"
+      REDUCERLOG="reducer${1}.log"
+    fi
   fi
 fi
 

@@ -281,7 +281,7 @@ else
   grep -Ei --binary-files=text "${TEXT}" ./log/master.err | grep --binary-files=text -v "^[ \t]*$"
   # Check if a SAN stack is present and add it to output seperately
   if [ "$(grep -Ei --binary-files=text -A1 "${TEXT}" ./log/master.err | tail -n1 | grep -o '^[ ]*#0' | sed 's|[^#0]||g')" == "#0" ]; then
-    LINE_BEFORE_SAN_STACK=$(grep -nEi --binary-files=text "${TEXT}" ./log/master.err | grep -o --binary-files=text '^[0-9]\+')
+    LINE_BEFORE_SAN_STACK=$(grep -nEi --binary-files=text "${TEXT}" ./log/master.err | grep -o --binary-files=text '^[0-9]\+' | head -n1)
     if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
       echo '{noformat}'
       echo ''
@@ -310,7 +310,7 @@ else
   fi
   if [ ! -z "${ALT_BASEDIR}" -a "${ALT_BASEDIR}" != "${PWD}" ]; then
     if [ "$(grep -A1 --binary-files=text "${TEXT}" ${ALT_BASEDIR}/log/master.err | tail -n1 | grep -o '^[ ]*#0' | sed 's|[^#0]||g')" == "#0" ]; then
-      LINE_BEFORE_SAN_STACK=$(grep -n "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o '^[0-9]\+')
+      LINE_BEFORE_SAN_STACK=$(grep -n "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o '^[0-9]\+' | head -n1)
       if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
         echo '{noformat}'
         cd ${ALT_BASEDIR}
@@ -338,7 +338,7 @@ fi
 if [ ${SAN_MODE} -eq 1 ]; then
   echo -e '{noformat}\n\nSetup:\n'
   echo '{noformat}'
-  echo 'Compiled with GCC >=7.5.0 (I use GCC 9.4.0) and:'
+  echo 'Compiled with GCC >=7.5.0 (I use GCC 11.3.0) and:'
   if grep -Eiqm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
     # A note on exitcode=0: whereas we do not use this in our runs, it is required to let MTR bootstrap succeed.
     # TODO: Once code becomes more stable add: halt_on_error=1
