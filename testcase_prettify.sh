@@ -18,6 +18,8 @@ set +H
 cat "${1}" | tr -d '`' | \
   sed "s|;#.*$|;|;s| ;$|;|g;s|;;$|;|g; \
        s|^[ ]\+||;s|;[ ]\+$|;|; \
+       s|do |DO |gi; \
+       s| as | AS |gi; \
        s|open|OPEN|gi; \
        s|div|DIV|gi; \
        s|rollup|ROLLUP|gi; \
@@ -28,7 +30,6 @@ cat "${1}" | tr -d '`' | \
        s|declare|DECLARE|gi; \
        s|having|HAVING|gi; \
        s|lead|LEAD|gi; \
-       s| as | AS |gi; \
        s|analyse|ANALYSE|gi; \
        s|do |DO |gi; \
        s|public|PUBLIC|gi; \
@@ -381,6 +382,7 @@ cat "${1}" | tr -d '`' | \
        s|weight_string|WEIGHT_STRING|gi; \
        s|count[ ]*(|COUNT(|gi; \
        s|values[ ]*(|VALUES (|gi; \
+       s|str_to_date[ ]*(|STR_TO_DATE(|gi; \
        s|substring[ ]*(|SUBSTRING(|gi; \
        s|'IN |' IN |gi; \
        s|AND(|AND (|gi; \
@@ -398,6 +400,7 @@ cat "${1}" | tr -d '`' | \
        s|)\([a-zA-Z]\+\)|) \1|gi; \
        s| ()|()|gi; \
        s|), (|),(|gi; \
+       s|)[ \t]*\([\*+-^%]\+\)[ \t]*(|)\1(|gi; \
        s|BY''|BY ''|gi; \
        s|port|PORT|gi; \
        s|[ ]*=[ ]*|=|gi;s|sql_mode=\([^ ']\)|sql_mode= \1|; \
@@ -422,6 +425,7 @@ cat "${1}" | tr -d '`' | \
        s|des_decrypt|DES_DECRYPT|gi; \
        s|sql_thread|SQL_THREAD|gi; \
        s|io_thread|IO_THREAD|gi; \
+       s|do[ \t]*(|DO(|gi; \
        s|(VALUE|(value|g; \
        s|( (|((|g;s|) )|))|g; \
        s|  | |gi; \

@@ -1,6 +1,8 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
+# Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
+
 # User variables
 VERSION=10.6                                                        # Use the earliest major version affected by the bug
 DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
@@ -12,7 +14,7 @@ BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manuall
 LAST_KNOWN_GOOD_COMMIT='efc3cb9322df26e957f55dcd42f679251e273c68'   # Revision of last known good commit
 FIRST_KNOWN_BAD_COMMIT='216d99bb395c4fda43b4e3583672ef925103fae5'   # Revision of first known bad commit
 TESTCASE='/test/in7.sql'                                            # The testcase to be tested
-UNIQUEID='ASAN|heap-use-after-free|include/c++/9/bits/atomic_base.h|std::__atomic_base<long>::store|Atomic_relaxed<long>::store|Atomic_relaxed<long>::operator=|trx_t::commit_tables'  # The UniqueID to scan for [Exclusive]
+UNIQUEID='ASAN|heap-use-after-free|include/c++/current_version/bits/atomic_base.h|std::__atomic_base<long>::store|Atomic_relaxed<long>::store|Atomic_relaxed<long>::operator=|trx_t::commit_tables'  # The UniqueID to scan for [Exclusive]
 UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: UNIQUEID and TEXT are mutually exclusive: do not set both
@@ -21,6 +23,7 @@ TEXT=''                                                             # The string
 # Script variables, do not change
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 SEED="${RANDOM}${RANDOM}"
+MAINLOG="/test/git-bisect/bisect.log"
 TMPLOG1="/tmp/git-bisect-${SEED}.out"
 TMPLOG2="/tmp/git-bisect-build_${SEED}.exitcode"
 
@@ -60,9 +63,10 @@ elif [ "${STY}" == "" ]; then
   return 2> /dev/null; exit 0
 fi
 
+rm -f "${MAINLOG}"
 cd /test || die 1 '/test does not exist'
 mkdir -p git-bisect || die 1 '/test/git-bisect could not be created'
-echo 'Changing directory to /test/git-bisect'
+echo 'Changing directory to /test/git-bisect' | tee -a "${MAINLOG}"
 cd git-bisect || die 1 'could not change directory to git-bisect'
 if [ "${RECLONE}" -eq 1 ]; then
   rm -Rf "${VERSION}"
@@ -78,20 +82,21 @@ else
 fi
 
 if [ ! -z "${UNIQUEID}" ]; then
-  echo "Searching for UniqueID Bug: '${UNIQUEID}'"
+  echo "Searching for UniqueID Bug: '${UNIQUEID}'" | tee -a "${MAINLOG}"
 elif [ ! -z "${TEXT}" ]; then
-  echo "Searching for Error log text Bug: '${TEXT}'"
+  echo "Searching for Error log text Bug: '${TEXT}'" | tee -a "${MAINLOG}"
 else
-  echo "Searching for core files in the data directory to validate issue occurence"
+  echo "Searching for core files in the data directory to validate issue occurence" | tee -a "${MAINLOG}"
 fi
 
 bisect_good(){
   cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
   rm -f ${TMPLOG1}
   git bisect good 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
+  cat "${TMPLOG1}" >> "${MAINLOG}"
   if grep -qi 'first bad commit' ${TMPLOG1}; then
     rm -f ${TMPLOG1}
-    echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
+    echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log" | tee -a "${MAINLOG}"
     exit 0
   fi
   rm -f ${TMPLOG1}
@@ -101,38 +106,39 @@ bisect_bad(){
   cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
   rm -f ${TMPLOG1}
   git bisect bad 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
+  cat "${TMPLOG1}" >> "${MAINLOG}"
   if grep -qi 'first bad commit' ${TMPLOG1}; then
     rm -f ${TMPLOG1}
-    echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log"
+    echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log" | tee -a "${MAINLOG}"
     exit 0
   fi
   rm -f ${TMPLOG1}
 }
 
 # Git setup
-git bisect reset 2>&1 | grep -v 'We are not bisecting'  # Remove any previous bisect run data
-git reset --hard  # Revert tree to mainline
-git clean -xfd    # Cleanup tree
-git checkout "${VERSION}"   # Ensure we have the right version
+git bisect reset 2>&1 | grep -v 'We are not bisecting' | tee -a "${MAINLOG}"  # Remove any previous bisect run data
+git reset --hard | tee -a "${MAINLOG}"  # Revert tree to mainline
+git clean -xfd | tee -a "${MAINLOG}"    # Cleanup tree
+git checkout "${VERSION}" | tee -a "${MAINLOG}"   # Ensure we have the right version
 if [ "${UPDATETREE}" -eq 1 ]; then
-  git pull        # Ensure we have the latest version
+  git pull | tee -a "${MAINLOG}"        # Ensure we have the latest version
 fi
-git bisect start  # Start bisect run
+git bisect start | tee -a "${MAINLOG}"  # Start bisect run
 if [ "${BISECT_REPLAY}" -eq 1 ]; then
-  git bisect replay "${BISECT_REPLAY_LOG}" 
+  git bisect replay "${BISECT_REPLAY_LOG}" | tee -a "${MAINLOG}"
   if [ "${?}" -ne 0 ]; then 
-    echo "git bisect replay \"${BISECT_REPLAY_LOG}\" failed. Terminating for manual debugging."
+    echo "git bisect replay \"${BISECT_REPLAY_LOG}\" failed. Terminating for manual debugging." | tee -a "${MAINLOG}"
     exit 1
   else
-    echo "git bisect replay \"${BISECT_REPLAY_LOG}\" succeeded. Proceding with regular git bisecting."
+    echo "git bisect replay \"${BISECT_REPLAY_LOG}\" succeeded. Proceding with regular git bisecting." | tee -a "${MAINLOG}"
   fi
 else
-  git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}"  # Starting point, bad
+  git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, bad
   if [ "${?}" -ne 0 ]; then 
     echo "Bad revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
     exit 1
   fi
-  git bisect good "${LAST_KNOWN_GOOD_COMMIT}"  # Starting point, good
+  git bisect good "${LAST_KNOWN_GOOD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, good
   if [ "${?}" -ne 0 ]; then 
     echo "Good revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
     exit 1
@@ -151,20 +157,20 @@ while :; do
     CUR_COMMIT="$(git log | head -n1 | tr -d '\n')"
     CUR_DATE="$(git log | head -n3 | tail -n1 | sed 's|Date:[ \t]*||;s|[ \t]*+.*||' | tr -d '\n')"
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
-      echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, skipping..."
-      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'
+      echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, skipping..." | tee -a "${MAINLOG}"
+      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"
       continue
     else
-      echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, proceeding..."
+      echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, proceeding..." | tee -a "${MAINLOG}"
       break
     fi
   done
   CONTINUE_MAIN_LOOP=0
   while :; do
-    echo "|> Cleaning up any previous version ${VERSION} builds in /test/git-bisect"
+    echo "|> Cleaning up any previous version ${VERSION} builds in /test/git-bisect" | tee -a "${MAINLOG}"
     rm -Rf /test/git-bisect/MD*${VERSION}*
     SCREEN_NAME="git-bisect-build.${SEED}"
-    echo "|> Building revision in a screen session: use  screen -d -r '${SCREEN_NAME}'  to see the build process"
+    echo "|> Building revision in a screen session: use  screen -d -r '${SCREEN_NAME}'  to see the build process" | tee -a "${MAINLOG}"
     rm -f ${TMPLOG2}
     if [ "${UBASAN}" -eq 1 ]; then
       screen -admS "${SCREEN_NAME}" bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}_san.sh; echo \"\${?}\" > ${TMPLOG2}"
@@ -177,13 +183,13 @@ while :; do
     sleep 2
     OUTCOME_BUILD="$(cat ${TMPLOG2} 2>/dev/null | head -n1 | tr -d '\n')"
     if [ "${OUTCOME_BUILD}" != "0" ]; then
-      echo "|> Build failure... Skipping revision ${CUR_COMMIT}"
-      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir'  # The 'unable to rmdir' is just for 3rd party/plugins etc. it not a fatal error
+      echo "|> Build failure... Skipping revision ${CUR_COMMIT}" | tee -a "${MAINLOG}"
+      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # The 'unable to rmdir' is just for 3rd party/plugins etc. it not a fatal error
       CONTINUE_MAIN_LOOP=1
       break  # Failed build, CONTINUE_MAIN_LOOP=1 set, break, then 'continue' in main loop for next revision
     else
       rm -f ${TMPLOG2}  # Only delete log if build succeeded
-      echo "|> Build successful... Testing revision ${CUR_COMMIT}"
+      echo "|> Build successful... Testing revision ${CUR_COMMIT}" | tee -a "${MAINLOG}"
       break  # Successful build, continue with test (CONTINUE_MAIN_LOOP=0)
     fi
   done
@@ -194,10 +200,10 @@ while :; do
   cd /test/git-bisect || die 1 'Could not change directory to /test/git-bisect'
   TEST_DIR="$(ls -d MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
   if [ -z "${TEST_DIR}" ]; then
-    echo "Assert: TEST_DIR is empty"
+    echo "Assert: TEST_DIR is empty" | tee -a "${MAINLOG}"
     exit 1
   elif [ ! -d "${TEST_DIR}" ]; then
-    echo "Assert: TEST_DIR (${TEST_DIR}) does not exist"
+    echo "Assert: TEST_DIR (${TEST_DIR}) does not exist" | tee -a "${MAINLOG}"
     exit 1
   fi
   cd "${TEST_DIR}" || die 1 "Could not change directory to TEST_DIR (${TEST_DIR})"
@@ -207,26 +213,26 @@ while :; do
   ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
   if [ ! -z "${UNIQUEID}" ]; then
     if [ "$(${HOME}/t)" == "${UNIQUEID}" ]; then
-      echo 'UniqueID Bug found; bad commit'
+      echo 'UniqueID Bug found; bad commit' | tee -a "${MAINLOG}"
       bisect_bad
     else
-      echo 'UniqueID Bug not found; good commit'
+      echo 'UniqueID Bug not found; good commit' | tee -a "${MAINLOG}"
       bisect_good
     fi
   elif [ ! -z "${TEXT}" ]; then
     if [ ! -z "$(grep "${TEXT}" log/master.err)" ]; then
-      echo 'TEXT Bug found; bad commit'
+      echo 'TEXT Bug found; bad commit' | tee -a "${MAINLOG}"
       bisect_bad
     else
-      echo 'TEXT Bug not found; good commit'
+      echo 'TEXT Bug not found; good commit' | tee -a "${MAINLOG}"
       bisect_good
     fi
   else
     if [ $(ls -l data/*core* 2>/dev/null | wc -l) -ge 1 ]; then
-      echo 'Core file found in ./data; bad commit'
+      echo 'Core file found in ./data; bad commit' | tee -a "${MAINLOG}"
       bisect_bad
     else
-      echo 'No core file found in ./data; good commit'
+      echo 'No core file found in ./data; good commit' | tee -a "${MAINLOG}"
       bisect_good
     fi
   fi
