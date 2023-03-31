@@ -413,6 +413,7 @@ SIGSEGV|st_select_lex::mark_as_dependent|mark_as_dependent|Item_field::fix_outer
 outer_context || !*from_field || *from_field == not_found_field|SIGABRT|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields    ## MDEV-29071
 0|SIGABRT|Item_type_holder::val_decimal|Item::val_decimal_result|Item_cache_decimal::cache_value|Item_cache::has_value                                                         ## MDEV-29070
 SIGSEGV|my_decimal::operator=|my_decimal2decimal|Item_cache_decimal::cache_value|Item_cache::has_value                                                                         ## MDEV-29070
+(length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_hash_sort_utf32|my_ci_hash_sort|my_hash_sort                                                                                    ## MDEV-30976
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_ci_lengthsp|my_uca_strnxfrm_utf32|charset_info_st::strnxfrm                                                                     ## MDEV-29019
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_uca_strnxfrm_utf32|Type_handler_string_result::make_sort_key|make_sortkey                                                       ## MDEV-29019
 tbl->file->stats.records > null_count|SIGABRT|Ordered_key::Ordered_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                  ## MDEV-29005
