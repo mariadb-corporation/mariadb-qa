@@ -318,7 +318,6 @@ cat "${1}" | tr -d '`' | \
        s|discard|DISCARD|gi; \
        s|fts_doc_id|FTS_DOC_ID|gi; \
        s|mysql\.\([^ ]\+\)|mysql.\L\1|gi; \
-       s|to_days|TO_DAYS|gi; \
        s|range|RANGE|gi; \
        s|less than|LESS THAN|gi; \
        s|column_format|COLUMN_FORMAT|gi; \
@@ -371,9 +370,13 @@ cat "${1}" | tr -d '`' | \
        s|max[ ]*(|MAX(|gi; \
        s|avg[ ]*(|AVG(|gi; \
        s|oct[ ]*(|OCT(|gi; \
+       s|pow[ ]*(|POW(|gi; \
        s|lead[ ]*(|LEAD(|gi; \
        s|extract[ ]*(|EXTRACT(|gi; \
        s|date_add[ ]*(|DATE_ADD(|gi; \
+       s|get_format[ ]*(|GET_FORMAT(|gi; \
+       s|to_days[ ]*(|TO_DAYS(|gi; \
+       s|from_days[ ]*(|FROM_DAYS(|gi; \
        s|year_month|YEAR_MONTH|gi; \
        s|group_concat[ ]*(|GROUP_CONCAT(|gi; \
        s|timestamp[ ]*(|TIMESTAMP(|gi; \

@@ -5,12 +5,17 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::update_create_info|ha_partition::update_create_info|mysql_prepare_alter_table ## MDEV-30981
+SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ReportIncompatibleRT|__asan::AsanCheckIncompatibleRT                                                                       ## MDEV-30950
 LSAN|memory leak|include/trx0trx.h|operator|trx_mod_table_time_t::start_bulk_insert|trx_undo_report_row_operation|row_ins_clust_index_entry_low                                ## MDEV-30943
 ASAN|heap-use-after-free|include/c++/current_version/bits/atomic_base.h|std::__atomic_base<long>::store|Atomic_relaxed<long>::store|Atomic_relaxed<long>::operator=|trx_t::commit_tables ## MDEV-30941
 ASAN|heap-use-after-free|sql/event_queue.cc|event_queue_element_compare_q|insert_at|queue_insert|queue_insert_safe                                                             ## MDEV-24686
 ASAN|heap-use-after-free|sql/event_queue.cc|event_queue_element_compare_q|insert_at|queue_insert_safe|Event_queue::update_event                                                ## MDEV-24686
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/sql_select.h|POSITION::operator=|optimize_wo_join_buffering|LooseScan_picker::check_qep|optimize_semi_joins ## MDEV-30939
 UBSAN|load of value X, which is not a valid value for type 'sj_strategy_enum'|sql/sql_select.h|st_position::operator=|optimize_wo_join_buffering|LooseScan_picker::check_qep|optimize_semi_joins ## MDEV-30939
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_func.cc|Item_func_mul::int_op|Item_func_hybrid_field_type::val_decimal_from_int_op|Item_func_int_div::val_int|Type_handler::Item_send_longlong ## MDEV-30932
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_func.cc|Item_func_mul::int_op|Item_func_hybrid_field_type::val_decimal_from_int_op|Type_handler_int_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal ## MDEV-30932
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_func.cc|Item_func_mul::int_op|Item_func_hybrid_field_type::val_decimal_from_int_op|VDec::set|VDec2_lazy::VDec2_lazy ## MDEV-30932
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_func.cc|Item_func_mul::int_op|Item_func_hybrid_field_type::val_int_from_int_op|Type_handler_int_result::Item_func_hybrid_field_type_val_int|Item_func_hybrid_field_type::val_int ## MDEV-30932
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_func.cc|Item_func_mul::int_op|Type_handler::Item_send_long|Protocol::send_result_set_row|select_send::send_data ## MDEV-30932
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_func.cc|Item_func_mul::int_op|Item::update_null_value|Item_func::is_null|mysql_do ## MDEV-30932
@@ -98,11 +103,15 @@ UBSAN|null pointer passed as argument 1, which is declared to never be null|stri
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Field_blob::cmp|Field_blob::cmp      ## MDEV-28384
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|Field_blob::cmp ## MDEV-28384
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|group_concat_key_cmp_with_order|tree_insert ## MDEV-28384
+UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Field_blob::cmp|Field_blob::cmp ## MDEV-28384
+UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|Field_blob::cmp ## MDEV-28384
+UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|group_concat_key_cmp_with_distinct|tree_insert ## MDEV-28384
 UBSAN|member call on null pointer of type 'struct Explain_node'|sql/sql_explain.cc|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain ## MDEV-18157
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|do_select            ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select           ## MDEV-28374
+UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record    ## MDEV-28374
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|my_atof|test_if_number                                                                                            ## MDEV-28345
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|Value_source::Converter_strntod::Converter_strntod|Value_source::Converter_strntod_with_warn::Converter_strntod_with_warn ## MDEV-28345
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|charset_info_st::strntod|Value_source::Converter_strntod::Converter_strntod                                       ## MDEV-28345

@@ -178,7 +178,7 @@ while IFS=$'\n' read LINE; do
       FLAG_ASAN_IN_PROGRESS=1; FLAG_TSAN_IN_PROGRESS=0; FLAG_UBSAN_IN_PROGRESS=0
       ASAN_FRAME1=; ASAN_FRAME2=; ASAN_FRAME3=; ASAN_FRAME4=
       ASAN_FILE_PREPARSE=
-      ASAN_ERROR="$(echo "${LINE}" | sed 's|.*ERROR:[ ]*||;s|.*AddressSanitizer:[ ]*||;s| on address.*||;s|thread T[0-9]\+|thread Tx|g;s|allocation size 0x[0-9a-f]\+|allocation size X|g;s|(0x[0-9a-f]\+ after adjustment|(Y after adjustment|g;s|supported size of 0x[0-9a-f]\+|supported size of Z|g;s|/c++/[0-9]\+/|/c++/current_version/|g;')"
+      ASAN_ERROR="$(echo "${LINE}" | sed 's|.*ERROR:[ ]*||;s|.*AddressSanitizer:[ ]*||;s| on address.*||;s|thread T[0-9]\+|thread Tx|g;s|allocation size 0x[0-9a-f]\+|allocation size X|g;s|(0x[0-9a-f]\+ after adjustment|(Y after adjustment|g;s|supported size of 0x[0-9a-f]\+|supported size of Z|g;')"
     fi
     if [ "${FLAG_ASAN_IN_PROGRESS}" -eq 1 ]; then
       # Parse first 4 stack frames if discovered in current line
