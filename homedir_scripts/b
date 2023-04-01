@@ -121,8 +121,9 @@ if [ -r ../allstrings_merged ]; then
 fi
 # Print all new bugs that are not in the known bug list
 if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
-  echo '----- All NEW (not known yet) strings merged (for adding to ~/kba) -----' | tee -a "${REPORT_PATH}/report.log"
-  cat /tmp/allstrings_merged | sort -u | tr '\n' '\0' | xargs -0 -I{} ~/kbsa REVERSE "{}" | tee -a "${REPORT_PATH}/report.log"
+  echo '----- All NEW (not known yet) strings merged (for adding to ~/kba or ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
+  # When dealing with SAN builds, we also need to check the default (non-SAN) known bugs list (i.e. the second ~/jbs search filter besides the first SAN based ~/kbsa search filter) as SAN builds can at times crash with already known bug strings without reporting a SAN issue
+  cat /tmp/allstrings_merged | sort -u | tr '\n' '\0' | xargs -0 -I{} ~/kbsa REVERSE "{}" | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | tee -a "${REPORT_PATH}/report.log"
 else
   echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
   cat /tmp/allstrings_merged | sort -u | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | tee -a "${REPORT_PATH}/report.log"

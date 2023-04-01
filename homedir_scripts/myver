@@ -48,9 +48,11 @@ else
   if [ -z "${SERVER_VERSION}" ]; then  # Likely MS
     SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
   fi
-  LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"
+  # mysql-testi, bin etc. can always be filtered
+  DIRFILTER='s|/mysql-test$||;s|/bin$||'
+  LAST_THREE="$(echo "${PWD}" | sed "${DIRFILTER}" | sed 's|.*\(...\)$|\1|')"
   BUILD_TYPE=
-  SAN="$(echo "${PWD}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"
+  SAN="$(echo "${PWD}" | sed "${DIRFILTER}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"
   if [ -z "${SAN}" ]; then
     if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
     if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi

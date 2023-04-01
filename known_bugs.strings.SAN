@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+LSAN|memory leak|storage/innobase/trx/trx0roll.cc|__interceptor_malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                 ## MDEV-23073
+LSAN|memory leak|storage/innobase/trx/trx0roll.cc|malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                               ## MDEV-23073
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::update_create_info|ha_partition::update_create_info|mysql_prepare_alter_table ## MDEV-30981
 SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ReportIncompatibleRT|__asan::AsanCheckIncompatibleRT                                                                       ## MDEV-30950
 LSAN|memory leak|include/trx0trx.h|operator|trx_mod_table_time_t::start_bulk_insert|trx_undo_report_row_operation|row_ins_clust_index_entry_low                                ## MDEV-30943

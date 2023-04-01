@@ -18,8 +18,18 @@ if [ -z "$SOURCE_CODE_REV" -a -r ./include/mysql/server/private/source_revision.
 fi
 clean_and_validate
 
+if [ -z "$SOURCE_CODE_REV" -a -r ../include/mysql/server/private/source_revision.h ]; then
+  SOURCE_CODE_REV="$(cat ../include/mysql/server/private/source_revision.h 2>/dev/null | cut -d'"' -f2)"
+fi
+clean_and_validate
+
 if [ -z "$SOURCE_CODE_REV" -a -r ./docs/INFO_SRC ]; then  # MS build
-  SOURCE_CODE_REV="$(grep -om1 'commit.*' docs/INFO_SRC | awk '{print $2}' | sed 's|[ \n\t]\+||g')"
+  SOURCE_CODE_REV="$(grep -om1 'commit.*' ./docs/INFO_SRC | awk '{print $2}' | sed 's|[ \n\t]\+||g')"
+fi
+clean_and_validate
+
+if [ -z "$SOURCE_CODE_REV" -a -r ../docs/INFO_SRC ]; then  # MS build
+  SOURCE_CODE_REV="$(grep -om1 'commit.*' ../docs/INFO_SRC | awk '{print $2}' | sed 's|[ \n\t]\+||g')"
 fi
 clean_and_validate
 
@@ -39,11 +49,20 @@ if [ -z "$SOURCE_CODE_REV" -a -r ./git_revision.txt ]; then
 fi
 clean_and_validate
 
+if [ -z "$SOURCE_CODE_REV" -a -r ../git_revision.txt ]; then
+  # This file is being added by mariadb-qa/build_mdpsms_opt/dbg.sh as of early Feb 2023
+  SOURCE_CODE_REV="$(cat ../git_revision.txt 2>/dev/null)"
+fi
+clean_and_validate
+
 if [ -z "$SOURCE_CODE_REV" ]; then
   BIN=
-  if [ -r ./bin/mysqld ]; then BIN='./bin/mysqld'; 
-  elif [ -r ./bin/mariadbd ]; then BIN='./bin/mariadbd'; 
+  if [ -r ./bin/mariadbd ]; then BIN='./bin/mariadbd'; 
+  elif [ -r ../bin/mariadbd ]; then BIN='../bin/mariadbd'; 
+  elif [ -r ./bin/mysqld ]; then BIN='./bin/mysqld'; 
+  elif [ -r ../bin/mysqld ]; then BIN='../bin/mysqld'; 
   elif [ -r ./bin/mysqld-debug ]; then BIN='./bin/mysqld-debug'; 
+  elif [ -r ../bin/mysqld-debug ]; then BIN='../bin/mysqld-debug'; 
   fi
   if [ -r "${BIN}" ]; then
     # Newer method, after Feb 2023

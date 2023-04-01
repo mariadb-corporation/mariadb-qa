@@ -3,6 +3,7 @@
 # Updated by Ramesh Sivaraman, Percona LLC
 # Updated by Mohit Joshi, Percona LLC
 # Updated by Roel Van de Paar, MariaDB
+# Updated by Ramesh Sivaraman, MariaDB
 
 # ========================================= User configurable variables
 # Note: if an option is passed to this script, it will use that option as the configuration file instead, for example ./pquery-run.sh pquery-run-MD105.conf

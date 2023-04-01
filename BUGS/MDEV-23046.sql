@@ -16,3 +16,11 @@ XA END 'a';
 SET GLOBAL general_log=ON;
 XA PREPARE 'a';
 SET GLOBAL general_log=ON;
+
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+CREATE OR REPLACE TABLE mysql.slow_log (c INT);
+XA START 'a';
+INSERT INTO t VALUES (1);
+XA END 'a';
+XA PREPARE 'a';
+SET GLOBAL slow_query_log=1;
