@@ -361,6 +361,7 @@ cat "${1}" | tr -d '`' | \
        s|password[ ]*(|PASSWORD(|gi; \
        s|old_password[ ]*(|OLD_PASSWORD(|gi; \
        s|make_set[ ]*(|MAKE_SET(|gi; \
+       s|json_array_insert[ ]*(|JSON_ARRAY_INSERT(|gi; \
        s|substring_index[ ]*(|SUBSTRING_INDEX(|gi; \
        s|cast[ ]*(|CAST(|gi; \
        s|space[ ]*(|SPACE(|gi; \

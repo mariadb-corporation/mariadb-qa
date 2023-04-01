@@ -71,10 +71,14 @@ if [ -z "${MYSQLD}" ]; then
     MYSQLD="./mysqld/mariadbd"
   elif [ -r ./mysqld/mysqld -a ! -z "${TRIAL}" ]; then  # For trial sub dirs in workdirs
     MYSQLD="./mysqld/mysqld"
+  elif [ -r ../bin/mariadbd -a ! -d ../bin/mariadbd ]; then  # Used by pquery-run.sh when analyzing trial cores in-run
+    MYSQLD="../bin/mariadbd"
   elif [ -r ../mariadbd -a ! -d ../mariadbd ]; then  # Used by pquery-run.sh when analyzing trial cores in-run
     MYSQLD="../mariadbd"
   elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Used by pquery-run.sh when analyzing trial cores in-run
     MYSQLD="../mysqld"
+  elif [ -r ../bin/mysqld -a ! -d ../bin/mysqld ]; then  # Used by pquery-run.sh when analyzing trial cores in-run
+    MYSQLD="../bin/mysqld"
   elif [ -r ../mysqld/mariadbd -a ! -d ../mysqld/mariadbd ]; then  # For direct use inside trial directories
     MYSQLD="../mysqld/mariadbd"
   elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
@@ -138,6 +142,8 @@ fi
 if [ -z "${ERROR_LOG}" ]; then
   if [ -r "../../mysqld.1.err" ]; then
     ERROR_LOG="../../mysqld.1.err"
+  elif [ -r "./var/log/mysqld.1.err" ]; then  # For MTR, default ./mtr test runs (e.g. testcase in main/test.test)
+    ERROR_LOG="./var/log/mysqld.1.err"
   else
     echo "Assert: no error log found - exiting"
     exit 1
