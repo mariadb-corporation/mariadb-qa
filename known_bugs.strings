@@ -144,6 +144,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|__strlen_avx2|make_date_time|Item_func_date_format::val_str|Type_handler::Item_send_str                                                                                ## MDEV-30997
+SIGSEGV|make_date_time|Item_func_date_format::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                        ## MDEV-30997
 SIGSEGV|l_find|lf_hash_iterate|tdc_iterate|tc_purge                                                                                                                            ## MDEV-30926
 SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|tdc_acquire_share                                                                                                      ## MDEV-30926
 SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|lf_hash_search                                                                                                         ## MDEV-30926
