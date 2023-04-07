@@ -412,6 +412,7 @@ cat "${1}" | tr -d '`' | \
        s|=on;$|=ON;|g; \
        s|=off;$|=OFF;|g; \
        s|ignore|IGNORE|gi; \
+       s|row_format|row_format|gi; \
        s|auto_increment|AUTO_INCREMENT|gi; \
        s|auto_increment_offset|AUTO_INCREMENT_OFFSET|gi; \
        s|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi; \
@@ -433,6 +434,7 @@ cat "${1}" | tr -d '`' | \
        s|(VALUE|(value|g; \
        s|( (|((|g;s|) )|))|g; \
        s|  | |gi; \
+       s|[ ]\+(\([^)]\+\))VALUES(|(\1) VALUES (|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 
 # Templates for copy/paste

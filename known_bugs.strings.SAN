@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|storage/maria/ha_maria.cc|ha_maria::info|ha_maria::open|handler::ha_open|open_tmp_table                                                                  ## MDEV-31022
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/item_timefunc.cc|Item_func_monthname::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-31019
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/item_timefunc.cc|Item_func_monthname::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-31019
 LSAN|memory leak|storage/innobase/rem/rem0rec.cc|__interceptor_malloc|rec_copy_prefix_to_buf_old|rec_copy_prefix_to_buf|btr_pcur_store_position                                ## MDEV-28613
