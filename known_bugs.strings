@@ -144,6 +144,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|maria_create|create_internal_tmp_table|mysql_handle_single_derived|Backtrace stopped: frame did not save the                                                           ## MDEV-31022
+SIGSEGV|maria_create|create_internal_tmp_table|mysql_derived_create|mysql_handle_single_derived                                                                                ## MDEV-31022
+SIGSEGV|__strlen_avx2|Item_func_monthname::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                                                                   ## MDEV-31019
+SIGSEGV|__strlen_avx2|Item_func_monthname::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                           ## MDEV-31019
 ctx->new_table->space != fil_system.sys_space|SIGABRT|commit_cache_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table|mysql_inplace_alter_table ## MDEV-31000
 SIGSEGV|__strlen_avx2|make_date_time|Item_func_date_format::val_str|Type_handler::Item_send_str                                                                                ## MDEV-30997
 SIGSEGV|make_date_time|Item_func_date_format::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                        ## MDEV-30997
@@ -1198,7 +1202,9 @@ maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Item_func_hybrid_fiel
 maybe_null() || !null_value|SIGABRT|Item_func_round::date_op|Item_func_hybrid_field_type::date_op_with_null_check|Item_func_hybrid_field_type::val_real_from_date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_val_real ## MDEV-20501
 maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-20501
 maybe_null() || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-20501
+args[0]->type_handler()->mysql_timestamp_type() == MYSQL_TIMESTAMP_TIME|SIGABRT|Item_func_round::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date                                 ## MDEV-20816
 maybe_null || !null_value|SIGABRT|Item_func_round::time_op|Item_func_hybrid_field_type::time_op_with_null_check|Item_func_hybrid_field_type::val_str_from_time_op|Type_handler_time_common::Item_func_hybrid_field_type_val_str ## MDEV-20816
+maybe_null() || !null_value|SIGABRT|Item_func_round::time_op|Item_func_hybrid_field_type::time_op_with_null_check|Item_func_hybrid_field_type::val_str_from_time_op|Type_handler_time_common::Item_func_hybrid_field_type_val_str ## MDEV-20816
 inited==RND|SIGABRT|handler::ha_rnd_end|mysql_checksum_table|mysql_execute_command|mysql_parse                                                                                 ## MDEV-21415
 inited==RND|SIGABRT|handler::ha_rnd_end|mysql_checksum_table|mysql_execute_command|Prepared_statement::execute                                                                 ## MDEV-21415
 lock_rec_find_set_bit(lock) == ((ulint)(-1))|SIGABRT|lock_rec_free_all_from_discard_page_low|lock_update_discard|btr_discard_page|btr_cur_pessimistic_delete                   ## MDEV-21516

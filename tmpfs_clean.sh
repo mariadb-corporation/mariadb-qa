@@ -143,27 +143,31 @@ else
     fi; STORE_COUNT_FOUND_AND_DEL=
   done
   # Check for out-of-use sql_shuffled files (new method)
-  cd /dev/shm/sql_shuffled
-  TEMP=$(mktemp)
-  touch -d '5 hours ago' ${TEMP}
-  FILELIST=$(mktemp)
-  ls --color=never | grep -vE "$(find . -type p,f,s,l -newer ${TEMP} 2>&1 | sed 's|^\./||;s/\n/|/g' )" > ${FILELIST}  # -v: older
-  rm -f ${TEMP}
-  NROFFILES=$(cat ${FILELIST} 2>/dev/null | wc -l)
-  if [ "${NROFFILES}" -gt 0 ]; then
-    for i in `seq 1 ${NROFFILES}`; do  
-      FILETODEL="/dev/shm/sql_shuffled/$(head -n${i} ${FILELIST} 2>/dev/null | tail -n1)"
-      if [ -r "${FILETODEL}" ]; then 
-        echo "Deleting outdated sql shuffle file ${FILETODEL} (file age: $[ $(date +%s) - $(stat -c %Z ${FILETODEL}) ]s)"
-        if [ ${ARMED} -eq 1 ]; then rm -f "${FILETODEL}" ; fi
-        COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
-      fi
-      FILETODEL=
-    done
+  if [ -d /dev/shm/sql_shuffled ]; then
+    cd /dev/shm/sql_shuffled
+    TEMP=$(mktemp)
+    touch -d '5 hours ago' ${TEMP}
+    FILELIST=$(mktemp)
+    ls --color=never | grep -vE "$(find . -type p,f,s,l -newer ${TEMP} 2>&1 | sed 's|^\./||;s/\n/|/g' )" > ${FILELIST}  # -v: older
+    rm -f ${TEMP}
+    NROFFILES=$(cat ${FILELIST} 2>/dev/null | wc -l)
+    if [ "${NROFFILES}" -gt 0 ]; then
+      for i in `seq 1 ${NROFFILES}`; do  
+        FILETODEL="/dev/shm/sql_shuffled/$(head -n${i} ${FILELIST} 2>/dev/null | tail -n1)"
+        if [ -r "${FILETODEL}" ]; then 
+          echo "Deleting outdated sql shuffle file ${FILETODEL} (file age: $[ $(date +%s) - $(stat -c %Z ${FILETODEL}) ]s)"
+          if [ ${ARMED} -eq 1 ]; then rm -f "${FILETODEL}" ; fi
+          COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
+        fi
+        FILETODEL=
+      done
+    fi
+    rm -f ${FILELIST}
+    FILELIST=
+    NROFFILES=
+    TEMP=
+    cd - >/dev/null
   fi
-  rm -f ${FILELIST}
-  NROFFILES=
-  cd - >/dev/null
   # Final output
   if [ ${SILENT} -eq 0 ]; then
     if [ ${COUNT_FOUND_AND_NOT_DEL} -ge 1 -a ${COUNT_FOUND_AND_DEL} -eq 0 ]; then

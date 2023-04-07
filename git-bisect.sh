@@ -4,18 +4,18 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=10.6                                                        # Use the earliest major version affected by the bug
+VERSION=11.0                                                        # Use the earliest major version affected by the bug
 DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-LAST_KNOWN_GOOD_COMMIT='efc3cb9322df26e957f55dcd42f679251e273c68'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='216d99bb395c4fda43b4e3583672ef925103fae5'   # Revision of first known bad commit
-TESTCASE='/test/in7.sql'                                            # The testcase to be tested
-UNIQUEID='ASAN|heap-use-after-free|include/c++/current_version/bits/atomic_base.h|std::__atomic_base<long>::store|Atomic_relaxed<long>::store|Atomic_relaxed<long>::operator=|trx_t::commit_tables'  # The UniqueID to scan for [Exclusive]
-UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+LAST_KNOWN_GOOD_COMMIT='f2dc4d4c10ac36a73b5c1eb765352d3aee808d66'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='2b61ff8f2221745f0a96855a0feb0825c426f993'   # Revision of first known bad commit
+TESTCASE='/test/in8.sql'                                            # The testcase to be tested
+UNIQUEID='SIGSEGV|maria_create|create_internal_tmp_table|mysql_handle_single_derived|Backtrace stopped: frame did not save the'  # The UniqueID to scan for [Exclusive]
+UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: UNIQUEID and TEXT are mutually exclusive: do not set both
 # Leave both UNIQUEID and TEXT empty to scan for core files instead

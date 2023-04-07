@@ -1,0 +1,2 @@
+SET lc_time_names=111;
+SELECT MONTHNAME('2010-12-12');
