@@ -25,6 +25,7 @@ GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26258  ##
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ## 126's, so it may be worthwhile to once 
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
 GOT_ERROR|Got error 126|when reading table                     ## MDEV-26492  ## entries to check
+GOT_ERROR|Got error '126 "Index is corrupted"' for './test/t.MAI' ## MDEV-31029
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 # MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 188|when reading table                     ## Presumed non-issue (Operation was interrupted, max_statement_time)
 GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## MDEV-26258
@@ -89,6 +90,7 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 ##### DISABLED FILTERS; these strings are likely symptomatic of as yet undiscovered races in the server rather than being related to a bug which happens to show one of these popup
 ###SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables   # DIFFERENT-ISSUE
 ###open_tables == __null|SIGABRT|THD::cleanup|THD::free_connection|THD::~THD|THD::~THD      # DIFFERENT-ISSUE
+###SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse         # DIFFERENT-ISSUE
 
 ##### DISABLED MEMORY FILTERS; DUE TO GENERIC/NON-SPECIFIC MEMORY STACKS #####
 SIGSEGV|_int_free|free_root|free_tmp_table|JOIN::cleanup                                                                                                                       ## MDEV-28354
@@ -144,6 +146,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+trid >= info->s->state.create_trid|SIGABRT|transid_store_packed|_ma_make_key|maria_delete|ha_maria::delete_row                                                                 ## MDEV-31029
+m_tickets[MDL_STATEMENT].is_empty()|SIGABRT|MDL_context::set_transaction_duration_for_all_locks|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlock_locked_table ## MDEV-31028
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|Prepared_statement::execut                           ## MDEV-31027
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-31026
 o->ind == vers_start|SIGABRT|dict_table_t::instant_column|ha_innobase_inplace_ctx::instant_column|innobase_instant_try|commit_try_norebuild                                    ## MDEV-29034
@@ -1054,8 +1058,6 @@ SIGSEGV|TABLE_LIST::print|print_table_array|print_join|st_select_lex::print     
 s|SIGABRT|TABLE::versioned|TABLE_LIST::print|print_table_array|print_join                                                                                                      ## MDEV-23208
 tl->table == __null|SIGABRT|THD::open_temporary_table|THD::open_temporary_tables|open_only_one_table|mysql_admin_table                                                         ## MDEV-23207
 SIGSEGV|btr_search_sys_t::get_part|dict_index_t::n_ahi_pages|dict_index_remove_from_cache_low|dict_sys_t::remove                                                               ## MDEV-23206
-thd->mdl_context.is_lock_owner(MDL_key::TABLE, db.str, table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse            ## MDEV-23205
-thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->db.str, table->table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse ## MDEV-23205
 level <= 50|SIGABRT|btr_page_get_level|btr_cur_search_to_nth_level_func|btr_insert_on_non_leaf_level|btr_attach_half_pages                                                     ## MDEV-23165
 level <= 50|SIGABRT|btr_page_get_level|btr_cur_search_to_nth_level_func|btr_insert_on_non_leaf_level_func|btr_attach_half_pages                                                ## MDEV-23165
 level <= 50|SIGABRT|btr_page_set_level|btr_page_empty|btr_root_raise_and_insert|btr_cur_pessimistic_insert                                                                     ## MDEV-23165
@@ -1888,3 +1890,5 @@ SIGSEGV|LEX_USER::has_auth|has_auth|get_current_user|get_current_user           
 # !m_freed_pages|SIGABRT|mtr_t::start|trx_undo_truncate_end|trx_undo_try_truncate|row_undo_rec_get                                                                    ## Fixed ## MDEV-30527 (no tc)
 # !m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::truncate|handler::ha_truncate                                                             ## Fixed ## MDEV-30527
 # !m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::delete_table|hton_drop_table                                                              ## Fixed ## MDEV-30527
+# thd->mdl_context.is_lock_owner(MDL_key::TABLE, db.str, table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse ## Fixed ## MDEV-23205
+# thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->db.str, table->table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse ## Fixed ## MDEV-23205

@@ -1,0 +1,4 @@
+CREATE TABLE t (c ENUM ('''')) ENGINE=InnoDB;
+LOCK TABLE t WRITE;
+SET sql_mode=strict_all_tables;
+CREATE OR REPLACE TABLE t (a INT) ENGINE=Aria COMMENT=''SELECT'' AS a;

@@ -4,17 +4,17 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=11.0                                                        # Use the earliest major version affected by the bug
-DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
+VERSION=10.6                                                        # Use the earliest major version affected by the bug
+DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-LAST_KNOWN_GOOD_COMMIT='f2dc4d4c10ac36a73b5c1eb765352d3aee808d66'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='2b61ff8f2221745f0a96855a0feb0825c426f993'   # Revision of first known bad commit
-TESTCASE='/test/in8.sql'                                            # The testcase to be tested
-UNIQUEID='SIGSEGV|maria_create|create_internal_tmp_table|mysql_handle_single_derived|Backtrace stopped: frame did not save the'  # The UniqueID to scan for [Exclusive]
+LAST_KNOWN_GOOD_COMMIT='6d40274f65b8d145fbf496e9b1b1d46f258de227'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='12a85c6caf595c685336455e416099b6a8020534'   # Revision of first known bad commit
+TESTCASE='/test/in9.sql'                                            # The testcase to be tested
+UNIQUEID='m_tickets[MDL_STATEMENT].is_empty()|SIGABRT|MDL_context::set_transaction_duration_for_all_locks|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlock_locked_table' # The UniqueID to scan for [Exclusive]
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: UNIQUEID and TEXT are mutually exclusive: do not set both
@@ -108,8 +108,12 @@ bisect_bad(){
   git bisect bad 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
   cat "${TMPLOG1}" >> "${MAINLOG}"
   if grep -qi 'first bad commit' ${TMPLOG1}; then
+    echo "Finished: $(grep 'first bad commit' ${TMPLOG1})" | tee -a "${MAINLOG}"
+    grep -A5 '^commit' /test/git-bisect/bisect.log
+    echo '--'
+    echo "Use 'cat ${MAINLOG}' to see the full git-bisect.sh log'" | tee -a "${MAINLOG}"
+    echo "Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the actual git bisect log" | tee -a "${MAINLOG}"
     rm -f ${TMPLOG1}
-    echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log" | tee -a "${MAINLOG}"
     exit 0
   fi
   rm -f ${TMPLOG1}
