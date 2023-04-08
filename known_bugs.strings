@@ -144,6 +144,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+o->ind == vers_start|SIGABRT|dict_table_t::instant_column|ha_innobase_inplace_ctx::instant_column|innobase_instant_try|commit_try_norebuild                                    ## MDEV-29034
+!"wrong page type"|SIGABRT|innobase_instant_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                            ## MDEV-18322
+"wrong page type" == 0|SIGABRT|innobase_instant_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                        ## MDEV-18322
+SIGFPE|cost_group_min_max|get_best_group_min_max|SQL_SELECT::test_quick_select|get_quick_record_count                                                                          ## MDEV-30786
 err != DB_SUCCESS || btr_validate_index(m_index, __null) == DB_SUCCESS|SIGABRT|BtrBulk::finish|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table|trx_mod_table_time_t::write_bulk ## MDEV-31025
 SIGSEGV|maria_create|create_internal_tmp_table|mysql_handle_single_derived|Backtrace stopped: frame did not save the                                                           ## MDEV-31022
 SIGSEGV|maria_create|create_internal_tmp_table|mysql_derived_create|mysql_handle_single_derived                                                                                ## MDEV-31022

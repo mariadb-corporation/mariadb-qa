@@ -95,6 +95,7 @@ Trying to lock uninitialized mutex.*sql_cache.*72     https://jira.mariadb.org/b
 wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  https://jira.mariadb.org/browse/MDEV-29744
 wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  https://jira.mariadb.org/browse/MDEV-29744
 InnoDB: Invalid column name for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
+InnoDB: Invalid column type for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
 InnoDB: User stopword table .* does not exist         Presumed non-issue (missing table?)
 InnoDB: Cannot add field.*which is greater than max   Presumed non-issue (max row size exceeded)
 InnoDB: The.*doesn't have.*tablespace.*was discarded  Presumed non-issue (tablespace removed from under table)

@@ -1,0 +1,9 @@
+SET use_stat_tables='preferably';
+CREATE TABLE t (a INT,b INT,KEY i1 (a),KEY i2 (b)) ENGINE=MRG_MyISAM;
+ANALYZE LOCAL TABLE t;
+EXPLAIN SELECT DISTINCT a FROM t;
+
+SET use_stat_tables=preferably;
+CREATE TABLE t (a INT,INDEX (a)) ENGINE=MRG_MyISAM;
+ANALYZE TABLE t;
+EXPLAIN SELECT 1 FROM t GROUP BY a;

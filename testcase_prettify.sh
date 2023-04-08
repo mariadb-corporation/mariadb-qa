@@ -16,8 +16,9 @@ set +H
 # keyword instead of a name, i.e. CREATE TABLE (PRIMARY INT), and that will fail at the command line
 # Adding sed's to change this does not work as we do not know if the name is used elsehwere.
 cat "${1}" | tr -d '`' | \
-  sed "s|;#.*$|;|;s| ;$|;|g;s|;;$|;|g; \
-       s|^[ ]\+||;s|;[ ]\+$|;|; \
+  sed "s|[ \t]\+| |g; \
+       s|;#.*$|;|;s| ;$|;|g;s|;;$|;|g; \
+       s|^ \+||;s|; \+$|;|; \
        s|do |DO |gi; \
        s| as | AS |gi; \
        s|open|OPEN|gi; \
@@ -46,7 +47,7 @@ cat "${1}" | tr -d '`' | \
        s|numeric|NUMERIC|gi; \
        s|value|VALUE|gi; \
        s|server|SERVER|gi; \
-       s|wrapper|WRAPPER|gi;s|wrapper[ \t]\+mysql|WRAPPER MYSQL|gi; \
+       s|wrapper|WRAPPER|gi;s|wrapper \+mysql|WRAPPER MYSQL|gi; \
        s|options|OPTIONS|gi; \
        s|socket|SOCKET|gi;s|socket.sock|socket.sock|gi; \
        s|extractvalue|EXTRACTVALUE|gi; \
@@ -298,15 +299,12 @@ cat "${1}" | tr -d '`' | \
        s|geomfromtext|GEOMFROMTEXT|gi; \
        s|ST_\([_a-zA-Z]\+\)|\UST_\1|gi; \
        s|crc32|CRC32|g; \
-       s|\t| |g; \
-       s|  | |g; \
        s| ,|,|g; \
        s|( |(|g; \
        s| )|)|g; \
        s|(| (|g; \
-       s|  | |g; \
        s| \([A-Z][A-Z][A-Z]\) (| \1(|g; \
-       s|FLOAT[ ]*(|FLOAT(|gi;s|INT[ ]*(|INT(|gi;s|VARBINARY[ ]*(|VARBINARY(|gi;s|TIME[ ]*(|TIME(|gi;s|DECIMAL[ ]*(|DECIMAL(|gi;s|TRIM[ ]*(|TRIM(|gi;s|REAL[ ]*(|REAL(|gi;s|NUMERIC[ ]*(|NUMERIC(|gi;s|KEY[ ]*(|KEY(|gi;s|SUBSTR[ ]*(|SUBSTR(|gi;; \
+       s|FLOAT *(|FLOAT(|gi;s|INT *(|INT(|gi;s|VARBINARY *(|VARBINARY(|gi;s|TIME *(|TIME(|gi;s|DECIMAL *(|DECIMAL(|gi;s|TRIM *(|TRIM(|gi;s|REAL *(|REAL(|gi;s|NUMERIC *(|NUMERIC(|gi;s|KEY *(|KEY(|gi;s|SUBSTR *(|SUBSTR(|gi;; \
        s|starts|STARTS|gi; \
        s|intersect|INTERSECT|gi; \
        s|interval|INTERVAL|gi; \
@@ -350,48 +348,53 @@ cat "${1}" | tr -d '`' | \
        s|second|SECOND|gi; \
        s|last|LAST|gi; \
        s|text|TEXT|gi; \
-       s|date_sub[ ]*(|DATE_SUB(|gi; \
-       s|concat_ws[ ]*(|CONCAT_WS(|gi; \
-       s|coalesce[ ]*(|COALESCE(|gi; \
-       s|char[ ]*(|CHAR(|gi; \
-       s|if[ ]*(|IF(|gi; \
-       s|current_user[ ]*(|CURRENT_USER(|gi; \
+       s|date_sub *(|DATE_SUB(|gi; \
+       s|concat_ws *(|CONCAT_WS(|gi; \
+       s|coalesce *(|COALESCE(|gi; \
+       s|char *(|CHAR(|gi; \
+       s|if *(|IF(|gi; \
+       s|current_user *(|CURRENT_USER(|gi; \
        s|current_timestamp|CURRENT_TIMESTAMP|gi; \
        s|mysql\.\([a-z]\+\)|mysql.\L\1|gi; \
-       s|password[ ]*(|PASSWORD(|gi; \
-       s|old_password[ ]*(|OLD_PASSWORD(|gi; \
-       s|make_set[ ]*(|MAKE_SET(|gi; \
-       s|json_array_insert[ ]*(|JSON_ARRAY_INSERT(|gi; \
-       s|substring_index[ ]*(|SUBSTRING_INDEX(|gi; \
-       s|cast[ ]*(|CAST(|gi; \
-       s|space[ ]*(|SPACE(|gi; \
-       s|now[ ]*(|NOW(|gi; \
-       s|sum[ ]*(|SUM(|gi; \
-       s|min[ ]*(|MIN(|gi; \
-       s|max[ ]*(|MAX(|gi; \
-       s|avg[ ]*(|AVG(|gi; \
-       s|oct[ ]*(|OCT(|gi; \
-       s|pow[ ]*(|POW(|gi; \
-       s|lead[ ]*(|LEAD(|gi; \
-       s|extract[ ]*(|EXTRACT(|gi; \
-       s|date_add[ ]*(|DATE_ADD(|gi; \
-       s|get_format[ ]*(|GET_FORMAT(|gi; \
-       s|to_days[ ]*(|TO_DAYS(|gi; \
-       s|from_days[ ]*(|FROM_DAYS(|gi; \
+       s|password *(|PASSWORD(|gi; \
+       s|old_password *(|OLD_PASSWORD(|gi; \
+       s|make_set *(|MAKE_SET(|gi; \
+       s|json_array_insert *(|JSON_ARRAY_INSERT(|gi; \
+       s|substring_index *(|SUBSTRING_INDEX(|gi; \
+       s|cast *(|CAST(|gi; \
+       s|space *(|SPACE(|gi; \
+       s|now *(|NOW(|gi; \
+       s|sum *(|SUM(|gi; \
+       s|min *(|MIN(|gi; \
+       s|max *(|MAX(|gi; \
+       s|avg *(|AVG(|gi; \
+       s|oct *(|OCT(|gi; \
+       s|pow *(|POW(|gi; \
+       s|div *(|DIV(|gi; \
+       s|lead *(|LEAD(|gi; \
+       s|extract *(|EXTRACT(|gi; \
+       s|date_add *(|DATE_ADD(|gi; \
+       s|get_format *(|GET_FORMAT(|gi; \
+       s|to_days *(|TO_DAYS(|gi; \
+       s|from_days *(|FROM_DAYS(|gi; \
        s|year_month|YEAR_MONTH|gi; \
-       s|group_concat[ ]*(|GROUP_CONCAT(|gi; \
-       s|timestamp[ ]*(|TIMESTAMP(|gi; \
+       s|group_concat *(|GROUP_CONCAT(|gi; \
+       s|timestamp *(|TIMESTAMP(|gi; \
        s|insert_method|INSERT_METHOD|gi; \
        s|inet_aton|INET_ATON|gi; \
        s|weight_string|WEIGHT_STRING|gi; \
-       s|count[ ]*(|COUNT(|gi; \
-       s|values[ ]*(|VALUES (|gi; \
-       s|str_to_date[ ]*(|STR_TO_DATE(|gi; \
-       s|substring[ ]*(|SUBSTRING(|gi; \
+       s|count *(|COUNT(|gi; \
+       s|values *(|VALUES (|gi; \
+       s|str_to_date *(|STR_TO_DATE(|gi; \
+       s|substring *(|SUBSTRING(|gi; \
+       s| \+| |g; \
        s|'IN |' IN |gi; \
        s|AND(|AND (|gi; \
-       s|LEFT (|LEFT(|gi; \
-       s|RIGHT (|RIGHT(|gi; \
+       s|LEFT *(|LEFT(|gi; \
+       s|RIGHT *(|RIGHT(|gi; \
+       s|CONV *(|CONV(|gi; \
+       s|MONTHNAME *(|MONTHNAME(|gi; \
+       s|RAND *(|RAND(|gi; \
        s|join|JOIN|gi; \
        s|straight|STRAIGHT|gi; \
        s|natural|NATURAL|gi; \
@@ -399,16 +402,16 @@ cat "${1}" | tr -d '`' | \
        s|identified by|IDENTIFIED BY|gi; \
        s|autocommit|autocommit|gi; \
        s|test\([^ ]*\)|test\L\1|gi; \
-       s|greatest[ ]*(|GREATEST(|gi; \
+       s|greatest *(|GREATEST(|gi; \
        s|0x\([0-9A-Fa-f]\)|0x\1|gi; \
        s|)\([a-zA-Z]\+\)|) \1|gi; \
+       s|) *\([\^\*+%/-]\+\) *(|)\1(|gi; \
+       s| *\([\^\*+%/-]\+\) *|\1|gi; \
        s| ()|()|gi; \
        s|), (|),(|gi; \
-       s|)[ \t]*\([\*+-^%]\+\)[ \t]*(|)\1(|gi; \
        s|BY''|BY ''|gi; \
        s|port|PORT|gi; \
-       s|[ ]*=[ ]*|=|gi;s|sql_mode=\([^ ']\)|sql_mode= \1|; \
-       s|[ \t]\+| |g; \
+       s| *= *|=|gi;s|sql_mode=\([^ ']\)|sql_mode= \1|; \
        s|=on;$|=ON;|g; \
        s|=off;$|=OFF;|g; \
        s|ignore|IGNORE|gi; \
@@ -416,8 +419,8 @@ cat "${1}" | tr -d '`' | \
        s|auto_increment|AUTO_INCREMENT|gi; \
        s|auto_increment_offset|AUTO_INCREMENT_OFFSET|gi; \
        s|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi; \
-       s|date_format[ \t]*(|DATE_FORMAT(|gi; \
-       s|time_format[ \t]*(|TIME_FORMAT(|gi; \
+       s|date_format *(|DATE_FORMAT(|gi; \
+       s|time_format *(|TIME_FORMAT(|gi; \
        s|world|world|gi; \
        s|engine innodb|ENGINE=InnoDB|gi; \
        s|engine spider|ENGINE=Spider|gi; \
@@ -430,11 +433,11 @@ cat "${1}" | tr -d '`' | \
        s|des_decrypt|DES_DECRYPT|gi; \
        s|sql_thread|SQL_THREAD|gi; \
        s|io_thread|IO_THREAD|gi; \
-       s|do[ \t]*(|DO(|gi; \
+       s|do *(|DO(|gi; \
        s|(VALUE|(value|g; \
        s|( (|((|g;s|) )|))|g; \
-       s|  | |gi; \
-       s|[ ]\+(\([^)]\+\))VALUES(|(\1) VALUES (|gi; \
+       s| \+(\([^)]\+\))VALUES(|(\1) VALUES (|gi; \
+       s| \+| |g; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 
 # Templates for copy/paste
