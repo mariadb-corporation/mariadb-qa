@@ -146,6 +146,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+fixed()|SIGABRT|Item_func_rand::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                             ## MDEV-31081
+fixed()|SIGABRT|Item_func_hybrid_field_type::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                ## MDEV-31081
 !error|SIGABRT|ha_partition::update_row|handler::ha_update_row|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                                               ## MDEV-31030
 !error|SIGABRT|ha_partition::update_row|handler::ha_update_row|mysql_update|mysql_execute_command                                                                              ## MDEV-31030
 trid >= info->s->state.create_trid|SIGABRT|transid_store_packed|_ma_make_key|maria_delete|ha_maria::delete_row                                                                 ## MDEV-31029
