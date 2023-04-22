@@ -1890,7 +1890,12 @@ pquery_test() {
                     exit 1
                   fi
                   ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables"
-                  grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
+                  if [[ ${FILTER_SQL} -eq 0 ]]; then
+                    grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
+                  else
+                    grep --binary-files=text -hivE "${ADV_FILTER_LIST}|$(paste -s -d '|' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g')" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
+                  fi
+                  # grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
                   echoit "Obtaining the pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
                 else
                   echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
@@ -2589,6 +2594,14 @@ if [[ ${REPL} -eq 1 ]]; then
     echoit "Replication testing: YES | Mode: Normal shutdown"
   else
     echoit "Replication testing: YES | Mode: Forceful shutdown using kill -9 command"
+  fi
+fi
+
+# Filter SQL from the main input file
+if [[ ${FILTER_SQL} -eq 1 ]]; then
+  if [ "${PRE_SHUFFLE_SQL}" == "0" -o "${PRE_SHUFFLE_SQL}" == "1" ]; then
+     paste -s -d '|' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | xargs -I{} grep --binary-files=text -ivE {} ${INFILE} > ${WORKDIR}/filtered_infile.sql
+     INFILE=${WORKDIR}/filtered_infile.sql
   fi
 fi
 

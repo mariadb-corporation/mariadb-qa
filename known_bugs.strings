@@ -146,6 +146,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+fixed()|SIGABRT|Item_func_rand::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                             ## MDEV-31081
+fixed()|SIGABRT|Item_func_hybrid_field_type::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                ## MDEV-31081
 !error|SIGABRT|ha_partition::update_row|handler::ha_update_row|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                                               ## MDEV-31030
 !error|SIGABRT|ha_partition::update_row|handler::ha_update_row|mysql_update|mysql_execute_command                                                                              ## MDEV-31030
 trid >= info->s->state.create_trid|SIGABRT|transid_store_packed|_ma_make_key|maria_delete|ha_maria::delete_row                                                                 ## MDEV-31029
@@ -193,6 +195,7 @@ SIGSEGV|json_string_set_cs|json_string_setup|json_scan_start|Item_func_json_inse
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|row_merge_sort|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                              ## MDEV-29913
 transaction.is_streaming()|SIGABRT|wsrep::transaction::adopt|wsrep::client_state::adopt_transaction|Wsrep_high_priority_service::adopt_transaction|wsrep::server_state::close_orphaned_sr_transactions ## MDEV-30764
 transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse|dispatch_command                    ## MDEV-29271
+marked_for_read()|SIGABRT|Field_bit::val_int|Field_bit::update_min|Column_statistics_collected::add|collect_statistics_for_table                                               ## MDEV-31063
 marked_for_read()|SIGABRT|Field_newdate::get_TIME|Field_newdate::get_date|Item_field::get_date|Item_func_date_format::val_str                                                  ## MDEV-30730
 !default_table_charset || thd->stmt_arena->is_stmt_execute()|SIGABRT|HA_CREATE_INFO::resolve_to_charset_collation_context|Table_specification_st::resolve_to_charset_collation_context|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-30003
 SIGSEGV|spider_direct_sql_body|spider_direct_sql|udf_handler::val_int|Item_func_udf_int::val_int                                                                               ## MDEV-30727
@@ -1236,6 +1239,7 @@ subq_pred->engine->engine_type() == subselect_engine::SINGLE_SELECT_ENGINE|SIGAB
 SIGSEGV|select_value_catcher::setup|execute_degenerate_jtbm_semi_join|setup_jtbm_semi_joins|JOIN::optimize_inner                                                               ## MDEV-22700
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|copy_fields|end_write                                                                                 ## MDEV-22702
 len == ref_length|SIGABRT|ha_innobase::position|find_all_keys|filesort|create_sort_index                                                                                       ## MDEV-22873
+0|SIGABRT|Item::val_native|Item::val_native_result|Type_handler_timestamp_common::Item_val_native_with_conversion_result|Item::val_native_with_conversion_result               ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion                                      ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|FixedBinTypeBundle<Inet6>::Type_handler_fbt::Item_val_native_with_conversion                        ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_inet6::Item_val_native_with_conversion                                                 ## MDEV-22885
