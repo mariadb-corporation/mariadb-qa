@@ -43,6 +43,9 @@ GOT_ERROR|Got error 1032|when trying to execute action for entry 4 of type 'rena
 GOT_ERROR|Got error 1032|when trying to execute action for entry 5 of type 'rename table'  ## MDEV-29800
 GOT_ERROR|Got error 1032|when trying to execute action for entry 6 of type 'rename table'  ## MDEV-29800
 GOT_ERROR|Got error 1032|when trying to execute action for entry 7 of type 'rename table'  ## MDEV-29800
+GOT_ERROR|Got error 1062|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-31111 (Spider)
+GOT_ERROR|Got error 1062|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-31111 (Spider)
+GOT_ERROR|Got error 1062|when trying to execute action for entry 3 of type 'rename table'  ## MDEV-31111 (Spider)
 GOT_ERROR|Got error 12524|when trying to execute action for entry 6 of type 'rename table'  ## MDEV-29800
 GOT_ERROR|Got error 1146|when reading table                    ## MDEV-29663
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-26543
@@ -146,6 +149,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Table_function_json_table::print|TABLE_LIST::print|print_table_array|print_join                                                                                        ## MDEV-25784 
 fixed()|SIGABRT|Item_func_rand::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                             ## MDEV-31081
 fixed()|SIGABRT|Item_func_hybrid_field_type::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                ## MDEV-31081
 !error|SIGABRT|ha_partition::update_row|handler::ha_update_row|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                                               ## MDEV-31030

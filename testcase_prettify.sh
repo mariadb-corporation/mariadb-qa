@@ -371,6 +371,7 @@ cat "${1}" | tr -d '`' | \
        s|oct *(|OCT(|gi; \
        s|pow *(|POW(|gi; \
        s|div *(|DIV(|gi; \
+       s|exp *(|EXP(|gi; \
        s|lead *(|LEAD(|gi; \
        s|extract *(|EXTRACT(|gi; \
        s|date_add *(|DATE_ADD(|gi; \

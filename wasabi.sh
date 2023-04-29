@@ -109,13 +109,14 @@ secure_kill_proc(){
     fi
   fi
   for ((i=1; i<=10; i++)); do
-    kill -9 ${CLONE_PID}
+    kill -9 ${1}
     sync
     sleep 1
     if [ -z "$(ps -ef | grep "${1}" | grep ${USER} | grep -v grep)" ]; then
       wecho 1 'killpr' "Process with PID ${1} terminated"
       break
     else
+      # TODO: this is flaky as ps -ef output is extensive and can contain the PID in other places, especially short PID's
       wecho 1 'killpr' "** WARNING: secure_kill_proc(): process with PID ${1} still exists after ${i} kill attempt(s)"
     fi 
   done

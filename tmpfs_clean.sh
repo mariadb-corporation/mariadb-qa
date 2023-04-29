@@ -9,7 +9,7 @@ LOW_MEMORY=20  # A number, reflecting a minimum 'directly free available memory'
 ARMED=0
 if [ "${1}" != "1" ]; then
   echo "(!) Script not armed! To arm it, include the number 1 behind it, e.g.: $ ~/mariadb-qa/tmpfs_clean.sh 1"
-  echo "(!) This will enable actual tmpfs cleanup. Now executing a trial run only - no actual changes are made!"
+  echo "(!) Doing so would enable actual tmpfs cleanup. Now executing a trial run only: no actual changes are made!"
 else
   ARMED=1
 fi
