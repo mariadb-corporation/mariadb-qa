@@ -5,6 +5,8 @@
 
 # Random entropy init
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
+source $SCRIPT_PWD/init_empty_port.sh
 
 # Filter the following text (regex aware) from INIT_TOOL startup
 FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|To start mariadbd at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved|^[2-9][0-9][0-9][0-9][0-9][0-9] [0-2][0-9]:|^20[2-9][0-9]|See the manual|start the MySQL daemon|bin/mysqld_safe|test the MySQL daemon with|latest information about|http://|https://|by buying support/|Found existing config file|Because this file might be in use|but was used in bootstrap|when you later start the server|new default config file was created|compare it with your file|root.*new.*password|Alternatively you can run|will be used by default|You may edit this file to change|Filling help tables|TIMESTAMP with implicit DEFAULT value|You can find the latest source|the maria-discuss email list|Please check all of the above|Optimizer switch:|perl mariadb|^cd ./test|bin/mariadb-secure-installation|secure-file-priv value as server is running with|starting as process|Using unique option prefix core|Deprecated program name'
@@ -12,40 +14,6 @@ FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot 
 # Ensure that if AFL variables were set, they are cleared first to avoid the server not starting due to 'shmat for map: Bad file descriptor'
 export -n __AFL_SHM_ID
 export -n AFL_MAP_SIZE
-
-# Find empty port
-# (**) IMPORTANT WARNING! The init_empty_port scan in startup.sh uses a different range than the matching function in
-# pquery-run.sh, reducer.sh and reducer-STABLE.sh. These scripts use 13-65K whereas here we use 10-13K to avoid
-# conflicts between the initially-random, but hard coded (whenever ~/start is run) port allocations in the basedir
-# scripts which use port numbers, like ./start. The script further checks that a given random port is not already
-# in use in the startup script of other basedirs. These two methods should avoid as good as all possible port conflicts.
-# Originally all scripts used 10-65K but it was relatively easy to get a port conflict as non-started basedir servers
-# may have had their ports allocated by for example a reducer, and then cause a conflict when started. The result of the
-# port alloc range difference is that this function here (in startup.sh) cannot be copied verbatim to other scripts.
-init_empty_port(){
-  # Choose a random port number in 10-13K range (**), with triple check to confirm it is free
-  NEWPORT=$[ 10001 + ( ${RANDOM} % 3000 ) ]
-  DOUBLE_CHECK=0
-  while :; do
-    # Check if the port is free in three different ways
-    ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
-    ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
-    ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
-    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
-      if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
-        break  # Suitable port number found
-      else
-        DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
-        sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
-        continue  # Loop the check
-      fi
-    else
-      NEWPORT=$[ 10001 + ( ${RANDOM} % 3000 ) ]  # Try a new port
-      DOUBLE_CHECK=0  # Reset the double check
-      continue  # Recheck the new port
-    fi
-  done
-}
 
 # Nr of MDG nodes 1-n
 NR_OF_NODES=${1}
@@ -482,16 +450,19 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>start
   echo $JE7 >>start
 fi
+echo "source $SCRIPT_PWD/init_empty_port.sh" >>start
+echo "init_empty_port" >>start
+echo "PORT=\$NEWPORT" >>start
 cp start start_valgrind # Idem setup for Valgrind
 cp start start_gypsy    # Idem setup for gypsy
 cp start start_rr       # Idem setup for rr
-echo "$BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
+echo "$BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
 echo "for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
 if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO}" != "5.6" ]; then
   echo "${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
 fi
-echo " valgrind --suppressions=${PWD}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
-echo "$BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_gypsy
+echo " valgrind --suppressions=${PWD}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
+echo "$BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_gypsy
 echo "export _RR_TRACE_DIR=\"${PWD}/rr\"" >>start_rr
 echo "if [ -d \"\${_RR_TRACE_DIR}\" ]; then  # Security measure to avoid incorrect mass-rm" >>start_rr
 echo "  if [ \"\${_RR_TRACE_DIR}\" == \"\${PWD}/rr\" ]; then  # Security measure to avoid incorrect mass-rm" >>start_rr
@@ -499,7 +470,7 @@ echo "    rm -Rf \"\${_RR_TRACE_DIR}\"" >>start_rr
 echo "  fi" >>start_rr
 echo "fi" >>start_rr
 echo "mkdir -p \"\${_RR_TRACE_DIR}\"" >>start_rr
-echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} ${START_OPT} --loose-innodb-flush-method=fsync --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
+echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} ${START_OPT} --loose-innodb-flush-method=fsync --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
 echo "echo 'Server socket: ${SOCKET} with datadir: ${PWD}/data'" >>start
 tail -n1 start >>start_valgrind
 tail -n1 start >>start_gypsy
