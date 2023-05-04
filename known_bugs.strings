@@ -149,6 +149,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+index->table->not_redundant()|SIGABRT|row_merge_buf_add|row_merge_read_clustered_index|row_merge_build_indexes|ha_innobase::inplace_alter_table                                ## MDEV-31176
 SIGSEGV|__cxa_throw|gu::ThrowError::~ThrowError|throw_sync_op_error|gu::AsioAcceptorReact::accept                                                                              ## MDEV-31173
 SIGSEGV|Table_function_json_table::print|TABLE_LIST::print|print_table_array|print_join                                                                                        ## MDEV-25784 
 SIGSEGV|test_if_skip_sort_order|JOIN::optimize_stage2|JOIN::optimize_inner|JOIN::optimize                                                                                      ## MDEV-31116
