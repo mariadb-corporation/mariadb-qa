@@ -151,9 +151,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### CURRENT BUGS ##### Search key: Mac ###
 SIGSEGV|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc|table_value_constr::prepare|st_select_lex_unit::prepare                                                       ## MDEV-31178
 SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc|table_value_constr::prepare                                                        ## MDEV-31178
-SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc
-                                                         ## MDEV-31178
+SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc                                                         ## MDEV-31178
 args[0]->max_length <= ((9 * 9) + 2)|SIGABRT|Item_func_int_val::fix_length_and_dec_int_or_decimal|Type_handler_decimal_result::Item_func_int_val_fix_length_and_dec|Item_func_int_val::fix_length_and_dec|Item_func::fix_fields ## MDEV-23654
+index->table->not_redundant()|SIGABRT|row_merge_buf_add|row_merge_read_clustered_index|row_merge_build_indexes|ha_innobase::inplace_alter_table                                ## MDEV-31176
+SIGSEGV|__cxa_throw|gu::ThrowError::~ThrowError|throw_sync_op_error|gu::AsioAcceptorReact::accept                                                                              ## MDEV-31173
 SIGSEGV|Table_function_json_table::print|TABLE_LIST::print|print_table_array|print_join                                                                                        ## MDEV-25784 
 SIGSEGV|test_if_skip_sort_order|JOIN::optimize_stage2|JOIN::optimize_inner|JOIN::optimize                                                                                      ## MDEV-31116
 fixed()|SIGABRT|Item_func_rand::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                             ## MDEV-31081
