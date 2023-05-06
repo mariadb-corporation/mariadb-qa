@@ -41,7 +41,7 @@ while :; do
     echo -n "${COUNT1}/10 ${COUNT2}/60 | "
   fi
   echo -n "Reducers: $(~/count_reducers) | "
-  echo -n "mysqld's: $(ps -ef | grep mysqld | grep "no-defaults" | sed "s|..user=.*||;s|.*no-defaults ||" | sort -u | wc -l) | "
+  echo -n "mysqld/mariadbd's: $(ps -ef | grep -E 'mysqld|mariadbd' | grep 'no-defaults' | sed "s|..user=.*||;s|.*no-defaults ||" | sort -u | wc -l) | "
   echo -n "Unique New+Fuzzer: ${NEWBUGCOUNT}+${FUZZERBUGCOUNT} | "
   echo -n "Testcases: ${TESTCASES}"
   sleep 3

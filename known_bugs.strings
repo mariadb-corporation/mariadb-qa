@@ -90,7 +90,7 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC DEBUG ASSERTS ######
 ###(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|THD::set_db|mysql_change_db_impl            ## MDEV-24749
 
-##### DISABLED FILTERS; these strings are likely symptomatic of as yet undiscovered races in the server rather than being related to a bug which happens to show one of these popup
+##### DISABLED FILTERS; these strings are likely symptomatic of as yet undiscovered races in the server rather than being related to a bug testcase which happens to show one of these popup
 ###SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables   # DIFFERENT-ISSUE
 ###open_tables == __null|SIGABRT|THD::cleanup|THD::free_connection|THD::~THD|THD::~THD      # DIFFERENT-ISSUE
 ###SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse         # DIFFERENT-ISSUE
@@ -149,6 +149,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc|table_value_constr::prepare|st_select_lex_unit::prepare                                                       ## MDEV-31178
+SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc|table_value_constr::prepare                                                        ## MDEV-31178
+SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc
+                                                         ## MDEV-31178
+args[0]->max_length <= ((9 * 9) + 2)|SIGABRT|Item_func_int_val::fix_length_and_dec_int_or_decimal|Type_handler_decimal_result::Item_func_int_val_fix_length_and_dec|Item_func_int_val::fix_length_and_dec|Item_func::fix_fields ## MDEV-23654
 SIGSEGV|Table_function_json_table::print|TABLE_LIST::print|print_table_array|print_join                                                                                        ## MDEV-25784 
 SIGSEGV|test_if_skip_sort_order|JOIN::optimize_stage2|JOIN::optimize_inner|JOIN::optimize                                                                                      ## MDEV-31116
 fixed()|SIGABRT|Item_func_rand::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                             ## MDEV-31081

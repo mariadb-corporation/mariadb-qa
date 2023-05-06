@@ -9,7 +9,13 @@ if [ -r ./bin/mysqld ]; then BIN='./bin/mysqld'; fi
 if [ -z "${BIN}" -a -r ../mysqld/mysqld ]; then BIN='../mysqld/mysqld'; fi
 if [ -z "${BIN}" ]; then echo "Assert: bin/mysqld not found!" exit 1; fi
 
-SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
+if [ -r "${SCRIPT_PWD}/source_code_rev.sh" ]; then
+  SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
+elif [ -r "${HOME}/mariadb-qa/source_code_rev.sh" ]; then
+  SOURCE_CODE_REV="$(${HOME}/mariadb-qa/source_code_rev.sh)"
+else
+  SOURCE_CODE_REV='unknown'
+fi
 
 if echo "${PWD}" | grep -q EMD ; then
   SERVER_VERSION="$(${BIN}  --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]-MariaDB' | sed 's|-MariaDB||')"

@@ -1,2 +1,2 @@
 #!/bin/bash
-/home/${whoami}/mariadb-qa/stack.sh
+${HOME}/mariadb-qa/stack.sh

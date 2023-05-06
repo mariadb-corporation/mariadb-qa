@@ -287,18 +287,28 @@ add_handy_scripts(){
   echo "echo 'OR simple one-thread backtrace instead of all threads (i.e. instead of last line):'" >> ${SAVE_STACK_LOC}/gdb
   echo "echo '  bt'" >> ${SAVE_STACK_LOC}/gdb
   echo "sleep 5" >> ${SAVE_STACK_LOC}/gdb
+  CORE_TO_ANALYZE="./data/*core*"
   if [[ "${MDG}" -eq 1 ]]; then
-    echo "gdb ../mysqld/mysqld ${GALERA_CORE_LOC}" >> ${SAVE_STACK_LOC}/gdb
+    CORE_TO_ANALYZE="${GALERA_CORE_LOC}"
+  fi
+  if [ -r ../mysqld/mysqld ]; then
+    echo "gdb ../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
+  elif [ -r ../mysqld/mariadbd ]; then
+    echo "gdb ../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
   else
-    echo "gdb ../mysqld/mysqld ./data/*core*" >> ${SAVE_STACK_LOC}/gdb
+    echo "Assert: neither ../mysqld/mysqld nor ../mysqld/mariadbd was found (PWD: ${PWD})"
+    exit 1
   fi
   chmod +x ${SAVE_STACK_LOC}/gdb
+  CORE_TO_ANALYZE=
   SAVE_STACK_LOC=
 }
 
 # Find mysqld binary
 if [ -r ${BASEDIR}/bin/mysqld ]; then
   BIN=${BASEDIR}/bin/mysqld
+elif [ -r ${BASEDIR}/bin/mariadbd ]; then
+  BIN=${BASEDIR}/bin/mariadbd
 else
   # Check if this is a debug build by checking if debug string is present in dirname
   if [[ ${BASEDIR} = *debug* ]]; then
@@ -315,7 +325,7 @@ else
 fi
 
 #Store MySQL version string
-MYSQL_VERSION=$(${BASEDIR}/bin/mysqld --version 2>&1 | grep -oe '[0-9]\.[0-9][\.0-9]*' | head -n1)
+MYSQL_VERSION=$(${BIN} --version 2>&1 | grep -oe '[0-9]\.[0-9][\.0-9]*' | head -n1)
 # JEMALLOC for PS/TokuDB
 if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
   PSORNOT1=$(${BIN} --version | grep -oi 'Percona' | sed 's|p|P|' | head -n1)
@@ -334,7 +344,7 @@ if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
     fi
   else
     if [ "${PSORNOT1}" == "Percona" ] || [ ${PSORNOT2} -ge 1 ]; then
-      echoit "*** IMPORTANT WARNING ***: SKIP_JEMALLOC_FOR_PS was set to 1, and thus JEMALLOC will not be LD_PRELOAD'ed. However, the mysqld binary (${BIN}) reports itself as Percona Server. If you are going to test TokuDB, JEMALLOC should be LD_PRELOAD'ed. If not testing TokuDB, then this warning can be safely ignored."
+      echoit "*** IMPORTANT WARNING ***: SKIP_JEMALLOC_FOR_PS was set to 1, and thus JEMALLOC will not be LD_PRELOAD'ed. However, the mysqld/mariadbd binary (${BIN}) reports itself as Percona Server. If you are going to test TokuDB, JEMALLOC should be LD_PRELOAD'ed. If not testing TokuDB, then this warning can be safely ignored."
     fi
   fi
 fi
@@ -469,7 +479,7 @@ if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 -a ${STORE_COPY_OF_INFILE} -eq 1 ]
   STORE_COPY_OF_INFILE=0
 fi
 if [ "${VALGRIND_RUN}" == "1" ]; then
-  echoit "Note: As this is a VALGRIND_RUN=1 run, this script is increasing MYSQLD_START_TIMEOUT (${MYSQLD_START_TIMEOUT}) by 240 seconds because Valgrind is very slow in starting up mysqld."
+  echoit "Note: As this is a VALGRIND_RUN=1 run, this script is increasing MYSQLD_START_TIMEOUT (${MYSQLD_START_TIMEOUT}) by 240 seconds because Valgrind is very slow in starting up mysqld/mariadbd."
   MYSQLD_START_TIMEOUT=$((${MYSQLD_START_TIMEOUT} + 240))
   if [ ${MYSQLD_START_TIMEOUT} -lt 300 ]; then
     echoit "Note: As this is a VALGRIND_RUN=1 run, and MYSQLD_START_TIMEOUT was set to only ${MYSQLD_START_TIMEOUT}), this script is setting the timeout to the required minimum of 300 for this run."
@@ -591,7 +601,7 @@ savesql() {
   if [ -d ${RUNDIR}/${TRIAL} ]; then
     echoit "Assert: tried to remove ${RUNDIR}/${TRIAL}, but it looks like removal failed. Check what is holding lock? (lsof tool may help)."
     echoit "As this is not necessarily a fatal error (there is likely enough space on ${RUNDIR} to continue working), pquery-run.sh will NOT terminate."
-    echoit "However, this looks like a shortcoming in pquery-run.sh (likely in the mysqld termination code) which needs debugging and fixing. Please do."
+    echoit "However, this looks like a shortcoming in pquery-run.sh (likely in the mysqld/mariadbd termination code) which needs debugging and fixing. Please do."
   fi
 }
 
@@ -721,7 +731,7 @@ mdg_startup() {
             fi
           fi
         else # Do not halt for MDG_ADD_RANDOM_OPTIONS=1 runs, they are likely to produce errors like these as MDG_MYEXTRA was randomly changed
-          echoit "'[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MDG_MYEXTRA (${MDG_MYEXTRA}) startup options. As \$MDG_ADD_RANDOM_OPTIONS=1, this is likely to be encountered given the random addition of mysqld options. Not saving trial. If you see this error for every trial however, set \$MDG_ADD_RANDOM_OPTIONS=0 & try running pquery-run.sh again. If it still fails, it is likely that your base \$MYEXTRA (${MYEXTRA}) setting is faulty."
+          echoit "'[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MDG_MYEXTRA (${MDG_MYEXTRA}) startup options. As \$MDG_ADD_RANDOM_OPTIONS=1, this is likely to be encountered given the random addition of mysqld/mariadbd options. Not saving trial. If you see this error for every trial however, set \$MDG_ADD_RANDOM_OPTIONS=0 & try running pquery-run.sh again. If it still fails, it is likely that your base \$MYEXTRA (${MYEXTRA}) setting is faulty."
           grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
           FAILEDSTARTABORT=1
           return
@@ -843,20 +853,20 @@ mdg_startup() {
     get_error_socket_file ${j}
     if [ ${j} -eq 1 ]; then
       if [ "${RR_TRACING}" == "0" ]; then
-        $VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
+        $VALGRIND_CMD ${BIN} --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
       else
         if [ "$IS_STARTUP" == "startup" ]; then
-          ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
+          ${BIN} --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
         else
           export _RR_TRACE_DIR="${RUNDIR}/${TRIAL}/rr"
           mkdir -p "${_RR_TRACE_DIR}"
-          /usr/bin/rr record --chaos ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
+          /usr/bin/rr record --chaos ${BIN} --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
         fi
       fi
       mdg_startup_status ${j}
     else
       get_error_socket_file ${j}
-      $VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${DATADIR}/n${j}.cnf \
+      $VALGRIND_CMD ${BIN} --defaults-file=${DATADIR}/n${j}.cnf \
         $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA > ${ERR_FILE} 2>&1 &
       mdg_startup_status ${j}
     fi
@@ -875,10 +885,10 @@ mdg_startup() {
         echo "}" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
         echo "" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
         echo "sed -i \"s|\$RUNDIR|\${WORKDIR}|g\" ${WORKDIR}/${TRIAL}/n${j}.cnf" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
-        echo "$VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/${TRIAL}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA  --wsrep-new-cluster > ${RUNDIR}/${TRIAL}/node${j}/node${j}.err 2>&1 &" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+        echo "$VALGRIND_CMD ${BIN} --defaults-file=${WORKDIR}/${TRIAL}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA  --wsrep-new-cluster > ${RUNDIR}/${TRIAL}/node${j}/node${j}.err 2>&1 &" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
         echo "startup_check $node/node${j}_socket.sock" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
       fi
-      echo "$VALGRIND_CMD ${BASEDIR}/bin/mysqld --defaults-file=${WORKDIR}/${TRIAL}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA > ${RUNDIR}/${TRIAL}/node${j}/node${j}.err  2>&1 &" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
+      echo "$VALGRIND_CMD ${BIN} --defaults-file=${WORKDIR}/${TRIAL}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA > ${RUNDIR}/${TRIAL}/node${j}/node${j}.err  2>&1 &" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
       echo "startup_check $node/node${j}_socket.sock" >> ${RUNDIR}/${TRIAL}/start_mdg_recovery
     fi
   done
@@ -906,7 +916,7 @@ gr_startup() {
   SUSER=root
   SPASS=
 
-  MID="${BASEDIR}/bin/mysqld --no-defaults --initialize-insecure --basedir=${BASEDIR}"
+  MID="${BIN} --no-defaults --initialize-insecure --basedir=${BASEDIR}"
   if [ ${GRP_RPL_CLUSTER_RUN} -eq 1 ]; then
     MYEXTRA="$MYEXTRA --plugin-load=group_replication.so --group_replication_single_primary_mode=OFF"
   else
@@ -958,7 +968,7 @@ gr_startup() {
     ${MID} --datadir=$node1 > ${WORKDIR}/startup_node1.err 2>&1 || exit 1
   fi
 
-  ${BASEDIR}/bin/mysqld --no-defaults \
+  ${BIN} --no-defaults \
     --basedir=${BASEDIR} --datadir=$node1 \
     --innodb_file_per_table $MYEXTRA --innodb_autoinc_lock_mode=2 --innodb_locks_unsafe_for_binlog=1 \
     --server_id=1 --gtid_mode=ON --enforce_gtid_consistency=ON \
@@ -996,7 +1006,7 @@ gr_startup() {
     ${MID} --datadir=$node2 > ${WORKDIR}/startup_node2.err 2>&1 || exit 1
   fi
 
-  ${BASEDIR}/bin/mysqld --no-defaults \
+  ${BIN} --no-defaults \
     --basedir=${BASEDIR} --datadir=$node2 \
     --innodb_file_per_table $MYEXTRA --innodb_autoinc_lock_mode=2 --innodb_locks_unsafe_for_binlog=1 \
     --server_id=1 --gtid_mode=ON --enforce_gtid_consistency=ON \
@@ -1033,7 +1043,7 @@ gr_startup() {
     ${MID} --datadir=$node3 > ${WORKDIR}/startup_node3.err 2>&1 || exit 1
   fi
 
-  ${BASEDIR}/bin/mysqld --no-defaults \
+  ${BIN} --no-defaults \
     --basedir=${BASEDIR} --datadir=$node3 \
     --innodb_file_per_table $MYEXTRA --innodb_autoinc_lock_mode=2 --innodb_locks_unsafe_for_binlog=1 \
     --server_id=1 --gtid_mode=ON --enforce_gtid_consistency=ON \
@@ -1080,7 +1090,7 @@ pquery_test() {
   ) &
   timeout -k5 -s9 5s wait $KILLPID > /dev/null 2>&1 # The sleep 0.2 + subsequent wait (cought before the kill) avoids the annoying 'Killed' message from being displayed in the output. Thank you to user 'Foonly' @ forums.whirlpool.net.au
   echoit "Clearing rundir..."
-  rm -Rf ${RUNDIR}/[0-9A-Za-ln-z]* # m* is avoided to leave ./mysqld in place
+  rm -Rf ${RUNDIR}/[0-9A-Za-ln-z]* # m* is avoided to leave ./mysqld or ./mariadbd in place
   if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
     echoit "Generating new SQL inputfile using the SQL Generator..."
     SAVEDIR=${PWD}
@@ -1120,10 +1130,10 @@ pquery_test() {
     else
       mkdir -p ${RUNDIR}/${TRIAL}/data/test ${RUNDIR}/${TRIAL}/data/mysql ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log
     fi
-    echo 'SELECT 1;' > ${RUNDIR}/${TRIAL}/startup_failure_thread-0.sql  # Add fake file enabling pquery-prep-red.sh/reducer.sh to be used with/for mysqld startup issues
+    echo 'SELECT 1;' > ${RUNDIR}/${TRIAL}/startup_failure_thread-0.sql  # Add fake file enabling pquery-prep-red.sh/reducer.sh to be used with/for mysqld/mariadbd startup issues
     diskspace
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-      echoit "Copying datadir from template for Primary mysqld..."
+      echoit "Copying datadir from template for Primary mysqld/mariadbd..."
     elif [[ ${PQUERY3} -eq 1 && ${TRIAL} -gt 1 ]]; then
       echoit "Copying datadir from Trial ${WORKDIR}/$((${TRIAL} - 1)) into ${WORKDIR}/${TRIAL}..."
     else
@@ -1158,7 +1168,7 @@ pquery_test() {
       SLAVE_SOCKET=${RUNDIR}/${TRIAL}/slave_socket.sock
     fi
     MYEXTRA_SAVE_IT=${MYEXTRA}
-    if [ ${ADD_RANDOM_OPTIONS} -eq 1 ]; then # Add random mysqld --options to MYEXTRA
+    if [ ${ADD_RANDOM_OPTIONS} -eq 1 ]; then # Add random mysqld/mariadbd --options to MYEXTRA
       OPTIONS_TO_ADD=
       NR_OF_OPTIONS_TO_ADD=$((RANDOM % MAX_NR_OF_RND_OPTS_TO_ADD + 1))
       for X in $(seq 1 ${NR_OF_OPTIONS_TO_ADD}); do
@@ -1167,7 +1177,7 @@ pquery_test() {
           OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
         fi
       done
-      echoit "ADD_RANDOM_OPTIONS=1: adding mysqld option(s) ${OPTIONS_TO_ADD} to this run's MYEXTRA..."
+      echoit "ADD_RANDOM_OPTIONS=1: adding mysqld/mariadbd option(s) ${OPTIONS_TO_ADD} to this run's MYEXTRA..."
       MYEXTRA="${MYEXTRA} ${OPTIONS_TO_ADD}"
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
         MYEXTRA2="${MYEXTRA2} ${OPTIONS_TO_ADD}"
@@ -1181,7 +1191,7 @@ pquery_test() {
         OPTION_TO_ADD="$(shuf --random-source=/dev/urandom ${TOKUDB_OPTIONS_INFILE} | head -n1)"
         OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
       done
-      echoit "ADD_RANDOM_TOKUDB_OPTIONS=1: adding TokuDB mysqld option(s) ${OPTIONS_TO_ADD} to this run's MYEXTRA..."
+      echoit "ADD_RANDOM_TOKUDB_OPTIONS=1: adding TokuDB mysqld/mariadbd option(s) ${OPTIONS_TO_ADD} to this run's MYEXTRA..."
       MYEXTRA="${MYEXTRA} ${OPTIONS_TO_ADD}"
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
         MYEXTRA2="${MYEXTRA2} ${OPTIONS_TO_ADD}"
@@ -1198,23 +1208,23 @@ pquery_test() {
         OPTION_TO_ADD="$(shuf --random-source=/dev/urandom ${ROCKSDB_OPTIONS_INFILE} | head -n1)"
         OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
       done
-      echoit "ADD_RANDOM_ROCKSDB_OPTIONS=1: adding RocksDB mysqld option(s) ${OPTIONS_TO_ADD} to this run's MYEXTRA..."
+      echoit "ADD_RANDOM_ROCKSDB_OPTIONS=1: adding RocksDB mysqld/mariadbd option(s) ${OPTIONS_TO_ADD} to this run's MYEXTRA..."
       MYEXTRA="${MYEXTRA} ${OPTIONS_TO_ADD}"
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
         MYEXTRA2="${MYEXTRA2} ${OPTIONS_TO_ADD}"
       fi
     fi
     echo "${MYEXTRA}" | if grep -qi "innodb[_-]log[_-]checksum[_-]algorithm"; then
-      # Ensure that mysqld server startup will not fail due to a mismatched checksum algo between the original MID and the changed MYEXTRA options
+      # Ensure that mysqld/mariadbd server startup will not fail due to a mismatched checksum algo between the original MID and the changed MYEXTRA options
       rm ${RUNDIR}/${TRIAL}/data/ib_log*
     fi
     init_empty_port
     PORT=${NEWPORT}
     NEWPORT=
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-      echoit "Starting Primary mysqld. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
+      echoit "Starting Primary mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
     else
-      echoit "Starting mysqld. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
+      echoit "Starting mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
     fi
     if [ "${RR_TRACING}" == "0" ]; then
       if [ "${VALGRIND_RUN}" == "0" ]; then  ## Standard run
@@ -1253,14 +1263,14 @@ pquery_test() {
       SLAVE_MPID="$!"
     fi
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-      echoit "Starting Secondary mysqld. Error log is stored at ${RUNDIR}/${TRIAL}/log2/master.err"
+      echoit "Starting Secondary mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log2/master.err"
       diskspace
       if check_for_version $MYSQL_VERSION "8.0.0"; then
         mkdir -p ${RUNDIR}/${TRIAL}/data2 ${RUNDIR}/${TRIAL}/tmp2 ${RUNDIR}/${TRIAL}/log2 # Cannot create /data/test, /data/mysql in 8.0
       else
         mkdir -p ${RUNDIR}/${TRIAL}/data2/test ${RUNDIR}/${TRIAL}/data2/mysql ${RUNDIR}/${TRIAL}/tmp2 ${RUNDIR}/${TRIAL}/log2
       fi
-      echoit "Copying datadir from template for Secondary mysqld..."
+      echoit "Copying datadir from template for Secondary mysqld/mariadbd..."
       cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data2 2>&1
       PORT2=$(($PORT + 1))
       if [ "${VALGRIND_RUN}" == "0" ]; then
@@ -1279,14 +1289,14 @@ pquery_test() {
     fi
     diskspace
     echo "This script recreates the /dev/shm dirs for the trial and copies the current (crashed/ended state) data state to it." > ${RUNDIR}/${TRIAL}/start_dev_shm
-    echo "This script can be considered safe to run as many times as needed, but remember to kill the running mysqld each time." >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "This script can be considered safe to run as many times as needed, but remember to kill the running mysqld/mariadbd each time." >> ${RUNDIR}/${TRIAL}/start_dev_shm
     echo "echo '=== Setting up directories...'" >> ${RUNDIR}/${TRIAL}/start_dev_shm
     echo "rm -Rf ${RUNDIR}/${TRIAL}" >> ${RUNDIR}/${TRIAL}/start_dev_shm
     echo "mkdir -p ${RUNDIR}/${TRIAL}/data ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log" >> ${RUNDIR}/${TRIAL}/start_dev_shm
     echo "cp -R ./data/* ${RUNDIR}/${TRIAL}/data  # Copy the servers current (crashed/ended state) data directory" >> ${RUNDIR}/${TRIAL}/start_dev_shm
     echo "#echo '=== Data dir init (only use when doing option startup testing)...'" >> ${RUNDIR}/${TRIAL}/start_dev_shm
     echo "#${BIN} --no-defaults --initialize-insecure --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err" | sed 's|[ \t]\+| |g' >> ${RUNDIR}/${TRIAL}/start_dev_shm
-    echo "echo '=== Starting mysqld...'" >> ${RUNDIR}/${TRIAL}/start_dev_shm
+    echo "echo '=== Starting mysqld/mariadbd...'" >> ${RUNDIR}/${TRIAL}/start_dev_shm
     echo "${CMD} > ${RUNDIR}/${TRIAL}/log/master.err 2>&1" >> ${RUNDIR}/${TRIAL}/start_dev_shm
     if [ "${MYEXTRA}" != "" ]; then
       echo "# Same startup command, but without MYEXTRA included:" >> ${RUNDIR}/${TRIAL}/start_dev_shm
@@ -1370,16 +1380,16 @@ pquery_test() {
     fi
     # Restore orignal MYEXTRA for the next trial (MYEXTRA is no longer needed anywhere else. If this changes in the future, relocate this to below the changed code)
     MYEXTRA=${MYEXTRA_SAVE_IT}
-    # Give up to x (start timeout) seconds for mysqld to start, but check intelligently for known startup issues like "Error while setting value" for options
+    # Give up to x (start timeout) seconds for mysqld/mariadbd to start, but check intelligently for known startup issues like "Error while setting value" for options
     if [ "${VALGRIND_RUN}" == "0" ]; then
-      echoit "Waiting for mysqld (pid: ${MPID}) to fully start..."
+      echoit "Waiting for mysqld/mariadbd (pid: ${MPID}) to fully start..."
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-        echoit "Waiting for mysqld (pid: ${MPID2}) to fully start..."
+        echoit "Waiting for mysqld/mariadbd (pid: ${MPID2}) to fully start..."
       fi
     else
-      echoit "Waiting for mysqld (pid: ${MPID}) to fully start (note this is slow for Valgrind runs, and can easily take 35-90 seconds even on an high end server)..."
+      echoit "Waiting for mysqld/mariadbd (pid: ${MPID}) to fully start (note this is slow for Valgrind runs, and can easily take 35-90 seconds even on an high end server)..."
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-        echoit "Waiting for mysqld (pid: ${MPID2}) to fully start (note this is slow for Valgrind runs, and can easily take 35-90 seconds even on an high end server)..."
+        echoit "Waiting for mysqld/mariadbd (pid: ${MPID2}) to fully start (note this is slow for Valgrind runs, and can easily take 35-90 seconds even on an high end server)..."
       fi
     fi
     FAILEDSTARTABORT=0
@@ -1463,17 +1473,17 @@ pquery_test() {
       fi
       if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -ge 1 ]; then break; fi # Break the wait-for-server-started loop if a core file is found. Handling of core is done below.
     done
-    # Check if mysqld is alive and if so, set ISSTARTED=1 so pquery will run
+    # Check if mysqld/mariadbd is alive and if so, set ISSTARTED=1 so pquery will run
     if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
       ISSTARTED=1
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-        echoit "Primary Server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${SOCKET}"
+        echoit "Primary Server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}"
         if ${BASEDIR}/bin/mysqladmin -uroot -S${RUNDIR}/${TRIAL}/socket2.sock ping > /dev/null 2>&1; then
-          echoit "Secondary server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${SOCKET}"
+          echoit "Secondary server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}"
           ${BASEDIR}/bin/mysql -uroot -S${RUNDIR}/${TRIAL}/socket2.sock -e "CREATE DATABASE IF NOT EXISTS test;" > /dev/null 2>&1
         fi
       else
-        echoit "Server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${SOCKET}"
+        echoit "Server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}"
         ${BASEDIR}/bin/mysql -uroot -S${SOCKET} -e "CREATE DATABASE IF NOT EXISTS test;" > /dev/null 2>&1
       fi
       if [[ ${REPL} -eq 1 ]]; then
@@ -1505,7 +1515,7 @@ pquery_test() {
       fi
     done
     MDG_MYEXTRA=
-    # === MDG Options Stage 1: Add random mysqld options to MDG_MYEXTRA
+    # === MDG Options Stage 1: Add random mysqld/mariadbd options to MDG_MYEXTRA
     if [ "${MDG_ADD_RANDOM_OPTIONS}" -eq 1 ]; then
       OPTIONS_TO_ADD=
       NR_OF_OPTIONS_TO_ADD=$((RANDOM % MDG_MAX_NR_OF_RND_OPTS_TO_ADD + 1))
@@ -1515,13 +1525,13 @@ pquery_test() {
           OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
         fi
       done
-      echoit "MDG_ADD_RANDOM_OPTIONS=1: adding mysqld option(s) ${OPTIONS_TO_ADD} to this run's MDG_MYEXTRA..."
+      echoit "MDG_ADD_RANDOM_OPTIONS=1: adding mysqld/mariadbd option(s) ${OPTIONS_TO_ADD} to this run's MDG_MYEXTRA..."
       MDG_MYEXTRA="${OPTIONS_TO_ADD}"
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
         MYEXTRA2="${MYEXTRA2} ${OPTIONS_TO_ADD}"
       fi
     fi
-    # === MDG Options Stage 2: Add random wsrep mysqld options to MDG_MYEXTRA
+    # === MDG Options Stage 2: Add random wsrep mysqld/mariadbd options to MDG_MYEXTRA
     if [ "${MDG_WSREP_ADD_RANDOM_WSREP_MYSQLD_OPTIONS}" -eq 1 ]; then
       OPTIONS_TO_ADD=
       NR_OF_OPTIONS_TO_ADD=$((RANDOM % MDG_WSREP_MAX_NR_OF_RND_OPTS_TO_ADD + 1))
@@ -1529,7 +1539,7 @@ pquery_test() {
         OPTION_TO_ADD="$(shuf --random-source=/dev/urandom ${MDG_WSREP_OPTIONS_INFILE} | head -n1)"
         OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
       done
-      echoit "MDG_WSREP_ADD_RANDOM_WSREP_MYSQLD_OPTIONS=1: adding wsrep provider mysqld option(s) ${OPTIONS_TO_ADD} to this run's MDG_MYEXTRA..."
+      echoit "MDG_WSREP_ADD_RANDOM_WSREP_MYSQLD_OPTIONS=1: adding wsrep provider mysqld/mariadbd option(s) ${OPTIONS_TO_ADD} to this run's MDG_MYEXTRA..."
       MDG_MYEXTRA="${MDG_MYEXTRA} ${OPTIONS_TO_ADD}"
     fi
     # === MDG Options Stage 3: Add random wsrep (Galera) configuration options
@@ -1561,7 +1571,7 @@ pquery_test() {
       ISSTARTED=1
       for i in $(seq 1 ${NR_OF_NODES}); do
         echoit "${NR_OF_NODES} Node MDG Cluster started ok. Clients:"
-        echoit "Node #${i}: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${RUNDIR}/${TRIAL}/node${i}/node${i}_socket.sock"
+        echoit "Node #${i}: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${RUNDIR}/${TRIAL}/node${i}/node${i}_socket.sock"
       done
     fi
   elif [[ ${GRP_RPL} -eq 1 ]]; then
@@ -1581,9 +1591,9 @@ pquery_test() {
     if [ ${CLUSTER_UP} -eq 3 ]; then
       ISSTARTED=1
       echoit "3 Node Group Replication Cluster started ok. Clients:"
-      echoit "Node #1: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${SOCKET1}"
-      echoit "Node #2: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${SOCKET2}"
-      echoit "Node #3: $(echo ${BIN} | sed 's|/mysqld|/mysql|') -uroot -S${SOCKET3}"
+      echoit "Node #1: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET1}"
+      echoit "Node #2: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET2}"
+      echoit "Node #3: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET3}"
     fi
   fi
 
@@ -2147,11 +2157,11 @@ EOF
   # NOTE**: Do not kill PQPID here/before shutdown. The reason is that pquery may still be writing queries it's executing to the log. The only way to halt pquery correctly is by actually shutting down the server which will auto-terminate pquery due to 250 consecutive queries failing. If 250 queries failed and ${PQUERY_RUN_TIMEOUT}s timeout was reached, and if there is no core/Valgrind issue and there is no output of mariadb-qa/text_string.sh either (in case core dumps are not configured correctly, and thus no core file is generated, text_string.sh will still produce output in case the server crashed based on the information in the error log), then we do not need to save this trial (as it is a standard occurence for this to happen). If however we saw 250 queries failed before the timeout was complete, then there may be another problem and the trial should be saved.
   if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
     if [ "${VALGRIND_RUN}" == "1" ]; then # For Valgrind, we want the full Valgrind output in the error log, hence we need a proper/clean (and slow...) shutdown
-      # Note that even if mysqladmin is killed with the 'timeout --signal=9', it will not affect the actual state of mysqld, all that was terminated was mysqladmin.
-      # Thus, mysqld would (presumably) have received a shutdown signal (even if the timeout was 2 seconds it likely would have)
+      # Note that even if mysqladmin is killed with the 'timeout --signal=9', it will not affect the actual state of mysqld/mariadbd, all that was terminated was mysqladmin.
+      # Thus, mysqld/mariadbd would (presumably) have received a shutdown signal (even if the timeout was 2 seconds it likely would have)
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
       if [ $? -gt 124 ]; then
-        echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+        echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
         # Note we are not checking for RR tracing here, as it is unlikely that Valgrind tracing + RR tracing is used at the same time
         savetrial
@@ -2176,8 +2186,8 @@ EOF
         if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
           kill -9 ${MPID2} > /dev/null 2>&1
         fi
-        sleep 2 # <^ Make sure mysqld is gone
-        echoit "Odd mysqld hang detected (mysqld did not terminate even after 600 seconds), saving this trial... "
+        sleep 2 # <^ Make sure mysqld/mariadbd is gone
+        echoit "Odd mysqld/mariadbd hang detected (binary did not terminate even after 600 seconds), saving this trial... "
         if [ ${TRIAL_SAVED} -eq 0 ]; then
           savetrial
           TRIAL_SAVED=1
@@ -2189,16 +2199,16 @@ EOF
         timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
         if [ $? -gt 124 ]; then
           if [ ${ISSTARTED} -eq 1 ]; then  # Only display a failed shutdown message if the server was correctly started to being with. We still try and do the shutdown above, "just in case" the server came up with a large delay
-            echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+            echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
           fi
           touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
           if [ "${RR_TRACING}" == "1" ]; then
-            # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0)
-            # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld) so that the rr trace can finish correctly
-            echoit "RR Tracing is active, sending SIGABRT to tracee mysqld and providing time for RR trace to finish correctly"
+            # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0/mariadbd-0)
+            # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld/mariadbd) so that the rr trace can finish correctly
+            echoit "RR Tracing is active, sending SIGABRT to tracee mysqld/mariadbd and providing time for RR trace to finish correctly"
             echo -n "$(cat ${RUNDIR}/${TRIAL}/pid.pid | xargs -I{} kill -6 {})"  # Hack, which works well
             MAX_RR_WAIT=60; CUR_RR_WAIT=0;
-            while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete ]; do
+            while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete -o ${RUNDIR}/${TRIAL}/rr/mariadbd-0/incomplete ]; do
               sleep 1
               CUR_RR_WAIT=$[ ${CUR_RR_WAIT} + 1 ]
               if [ ${CUR_RR_WAIT} -gt ${MAX_RR_WAIT} ]; then
@@ -2207,7 +2217,7 @@ EOF
               fi
             done
             if [ ${CUR_RR_WAIT} -le ${MAX_RR_WAIT} ]; then
-              echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 directory inside the trial directory"
+              echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 or rr/mariadbd-0 directory inside the trial directory"
             fi
           fi
           sleep 1
@@ -2217,16 +2227,16 @@ EOF
         if [[ ${REPL} -eq 1 ]]; then
           timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
           if [ $? -gt 124 ]; then
-            echoit "mysqld failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+            echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
             touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
             if [ "${RR_TRACING}" == "1" ]; then
-              # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0)
-              # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld) so that the rr trace can finish correctly
-              echoit "RR Tracing is active, sending SIGABRT to tracee mysqld and providing time for RR trace to finish correctly"
+              # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0 or mariadbd-0)
+              # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld/mariadbd) so that the rr trace can finish correctly
+              echoit "RR Tracing is active, sending SIGABRT to tracee mysqld/mariadbd and providing time for RR trace to finish correctly"
               kill -6 ${SLAVE_MPID}
               kill -6 $(ps -o ppid= -p ${SLAVE_MPID})  # Kill the PPID, which is more succesful than killing the PID of the server
               MAX_RR_WAIT=60; CUR_RR_WAIT=0;
-              while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete ]; do
+              while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete -o -r ${RUNDIR}/${TRIAL}/rr/mariadbd-0/incomplete ]; do
                 sleep 1
                  CUR_RR_WAIT=$[ ${CUR_RR_WAIT} + 1 ]
                 if [ ${CUR_RR_WAIT} -gt ${MAX_RR_WAIT} ]; then
@@ -2235,7 +2245,7 @@ EOF
                 fi
               done
               if [ ${CUR_RR_WAIT} -le ${MAX_RR_WAIT} ]; then
-                echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 directory inside the trial directory"
+                echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 or rr/mariadbd-0 directory inside the trial directory"
               fi
             fi
             sleep 1
@@ -2250,13 +2260,13 @@ EOF
       sleep 0.2
       kill -9 ${MPID} ${SLAVE_MPID} > /dev/null 2>&1
       timeout -k5 -s9 5s wait ${MPID} ${SLAVE_MPID} > /dev/null 2>&1
-    ) & # Terminate mysqld
+    ) & # Terminate mysqld/mariadbd
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       (
         sleep 0.2
         kill -9 ${MPID2} > /dev/null 2>&1
         timeout -k5 -s9 5s wait ${MPID2} > /dev/null 2>&1
-      ) & # Terminate mysqld
+      ) & # Terminate mysqld/mariadbd
       (
         sleep 0.2
         kill -9 ${PQPID2} > /dev/null 2>&1
@@ -2266,21 +2276,21 @@ EOF
     sleep 1 # <^ Make sure all is gone
   elif [[ "${MDG}" -eq 1 || "${GRP_RPL}" -eq 1 ]]; then
     if [ "${VALGRIND_RUN}" == "1" ]; then # For Valgrind, we want the full Valgrind output in the error log, hence we need a proper/clean (and slow...) shutdown
-      # Note that even if mysqladmin is killed with the 'timeout --signal=9', it will not affect the actual state of mysqld, all that was terminated was mysqladmin.
-      # Thus, mysqld would (presumably) have received a shutdown signal (even if the timeout was 2 seconds it likely would have)
+      # Note that even if mysqladmin is killed with the 'timeout --signal=9', it will not affect the actual state of mysqld/mariadbd, all that was terminated was mysqladmin.
+      # Thus, mysqld/mariadbd would (presumably) have received a shutdown signal (even if the timeout was 2 seconds it likely would have)
       # Proper/clean shutdown attempt (up to 20 sec wait), necessary to get full Valgrind output in error log
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET3} shutdown > /dev/null 2>&1
       if [ $? -gt 124 ]; then
-        echoit "mysqld for node3 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+        echoit "mysqld/mariadbd for node3 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
         #if [ "${RR_TRACING}" == "1" ]; then
-        #  # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0)
-        #  # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld) so that the rr trace can finish correctly
-        #  echoit "RR Tracing is active, sending SIGABRT to tracee mysqld and providing time for RR trace to finish correctly"
+        #  # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0 or mariadbd-0)
+        #  # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld/mariadbd) so that the rr trace can finish correctly
+        #  echoit "RR Tracing is active, sending SIGABRT to tracee mysqld/mariadbd and providing time for RR trace to finish correctly"
         #  kill -6 ${SLAVE_MPID}
         #  kill -6 $(ps -o ppid= -p ${SLAVE_MPID})  # Kill the PPID, which is more succesful than killing the PID of the server
         #  MAX_RR_WAIT=60; CUR_RR_WAIT=0;
-        #  while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete ]; do
+        #  while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete -o -r ${RUNDIR}/${TRIAL}/rr/mariadbd-0/incomplete ]; do
         #    sleep 1
         #     CUR_RR_WAIT=$[ ${CUR_RR_WAIT} + 1 ]
         #    if [ ${CUR_RR_WAIT} -gt ${MAX_RR_WAIT} ]; then
@@ -2289,7 +2299,7 @@ EOF
         #    fi
         #   done
         #  if [ ${CUR_RR_WAIT} -le ${MAX_RR_WAIT} ]; then
-        #    echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 directory inside the trial directory"
+        #    echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 or rr/mariadbd-0 directory inside the trial directory"
         #  fi
         sleep 1
         savetrial
@@ -2297,7 +2307,7 @@ EOF
       fi
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET2} shutdown > /dev/null 2>&1
       if [ $? -gt 124 ]; then
-        echoit "mysqld for node2 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+        echoit "mysqld/mariadbd for node2 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         sleep 1
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
         savetrial
@@ -2305,7 +2315,7 @@ EOF
       fi
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET1} shutdown > /dev/null 2>&1
       if [ $? -gt 124 ]; then
-        echoit "mysqld for node1 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+        echoit "mysqld/mariadbd for node1 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
         sleep 1
         savetrial
@@ -2327,8 +2337,8 @@ EOF
       if [ ${VALGRIND_SUMMARY_FOUND} -eq 0 ]; then
         kill -9 ${PQPID} > /dev/null 2>&1
         (ps -ef | grep 'node[0-9]_socket' | grep ${RUNDIR} | grep -v grep | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1 || true)
-        sleep 1 # <^ Make sure mysqld is gone
-        echoit "Odd mysqld hang detected (mysqld did not terminate even after 600 seconds), saving this trial... "
+        sleep 1 # <^ Make sure mysqld/mariadbd is gone
+        echoit "Odd mysqld/mariadbd hang detected (binary did not terminate even after 600 seconds), saving this trial... "
         if [ ${TRIAL_SAVED} -eq 0 ]; then
           savetrial
           TRIAL_SAVED=1
@@ -2339,7 +2349,7 @@ EOF
     sleep 2
     sync
   fi
-  if [ ${ISSTARTED} -eq 1 -a ${TRIAL_SAVED} -ne 1 ]; then # Do not try and print pquery log for a failed mysqld start
+  if [ ${ISSTARTED} -eq 1 -a ${TRIAL_SAVED} -ne 1 ]; then # Do not try and print pquery log for a failed mysqld/mariadbd start
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       echoit "Pri engine pquery run details:$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log | sed 's|.*:||')"
       echoit "Sec engine pquery run details:$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log | sed 's|.*:||')"
@@ -2411,16 +2421,16 @@ EOF
                 export GALERA_ERROR_LOG=${RUNDIR}/${TRIAL}/node${j}/node${j}.err
                 export GALERA_CORE_LOC=$(ls -t ${RUNDIR}/${TRIAL}/node${j}/*core* 2> /dev/null)
                 export node=node${j}
-                echoit "mysqld coredump detected at $(ls ${RUNDIR}/${TRIAL}/node${j}/*core* 2> /dev/null)"
+                echoit "mysqld/mariadbd coredump detected at $(ls ${RUNDIR}/${TRIAL}/node${j}/*core* 2> /dev/null)"
                 handle_bugs
               fi
             done
           else
-            echoit "mysqld coredump detected at $(ls ${RUNDIR}/${TRIAL}/*/*core* 2> /dev/null)"
+            echoit "mysqld/mariadbd coredump detected at $(ls ${RUNDIR}/${TRIAL}/*/*core* 2> /dev/null)"
             handle_bugs
           fi
         else
-          echoit "mysqld crash detected in the error log via old text_string.sh scan #TODO" #TODO marker is placed here because the new_text_string.sh may not be able to handle all cases correctly yet (like where there is an error log with a crash, but no coredump - though that may be OOS caused also). Also adding a #TODO marker into ${RUNDIR}/${TRIAL}/MYBUG to make it easy to scan for these trials.
+          echoit "mysqld/mariadbd crash detected in the error log via old text_string.sh scan #TODO" #TODO marker is placed here because the new_text_string.sh may not be able to handle all cases correctly yet (like where there is an error log with a crash, but no coredump - though that may be OOS caused also). Also adding a #TODO marker into ${RUNDIR}/${TRIAL}/MYBUG to make it easy to scan for these trials.
           echo "#TODO" > ${RUNDIR}/${TRIAL}/MYBUG
         fi
         if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 && -r ${WORKDIR}/${TRIAL}/log/master.err ]]; then
@@ -2435,7 +2445,7 @@ EOF
           TRIAL_SAVED=1
         fi
       elif [ $(grep "SIGKILL myself" ${RUNDIR}/${TRIAL}/log/master.err 2> /dev/null | wc -l) -ge 1 ]; then
-        echoit "'SIGKILL myself' detected in the mysqld error log for this trial; saving this trial"
+        echoit "'SIGKILL myself' detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [[ ${CRASH_CHECK} -eq 1 ]]; then
@@ -2448,15 +2458,15 @@ EOF
         savetrial
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "=ERROR:" ${RUNDIR}/${TRIAL}/log/master.err 2> /dev/null | wc -l) -ge 1 ]; then
-        echoit "ASAN issue detected in the mysqld error log for this trial; saving this trial"
+        echoit "ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${RUNDIR}/${TRIAL}/log/master.err 2> /dev/null | wc -l) -ge 1 ]; then
-        echoit "TSAN issue detected in the mysqld error log for this trial; saving this trial"
+        echoit "TSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "runtime error:" ${RUNDIR}/${TRIAL}/log/master.err 2> /dev/null | wc -l) -ge 1 ]; then
-        echoit "UBSAN issue detected in the mysqld error log for this trial; saving this trial"
+        echoit "UBSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ ${SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY} -eq 0 ]; then
@@ -2581,9 +2591,9 @@ if [[ "${WITH_KEYRING_VAULT}" -eq 1 ]]; then
 fi
 
 if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-  echoit "mysqld Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Trials: ${TRIALS} | Statements per trial: ${QC_NR_OF_STATEMENTS_PER_TRIAL} | Primary Engine: ${QC_PRI_ENGINE} | Secondary Engine: ${QC_SEC_ENGINE} | Eliminate Known Bugs: ${ELIMINATE_KNOWN_BUGS}"
+  echoit "mysqld/mariadbd Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Trials: ${TRIALS} | Statements per trial: ${QC_NR_OF_STATEMENTS_PER_TRIAL} | Primary Engine: ${QC_PRI_ENGINE} | Secondary Engine: ${QC_SEC_ENGINE} | Eliminate Known Bugs: ${ELIMINATE_KNOWN_BUGS}"
 else
-  echoit "mysqld Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Queries/Thread: ${QUERIES_PER_THREAD} | Trials: ${TRIALS} | Save coredump/valgrind issue trials only: $(if [ ${SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY} -eq 1 ]; then
+  echoit "mysqld/mariadbd Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Queries/Thread: ${QUERIES_PER_THREAD} | Trials: ${TRIALS} | Save coredump/valgrind issue trials only: $(if [ ${SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY} -eq 1 ]; then
     echo -n 'TRUE'
     if [ ${SAVE_SQL} -eq 1 ]; then echo ' + save all SQL traces'; else echo ''; fi
   else echo 'FALSE'; fi)"
@@ -2667,11 +2677,11 @@ elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_IN
   START_OPT="--core"
 elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
   echo "=========================================================================================="
-  echo "WARNING: mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld, or simply because this directory is not a proper MySQL[-fork] base directory. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may and will likely fail."
+  echo "WARNING: mysqld/mariadbd (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld/mariadbd, or simply because this directory is not a proper MySQL[-fork] base directory. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may and will likely fail."
   echo "=========================================================================================="
 fi
 
-echoit "Generating datadir template (using mysql_install_db or mysqld --init)..."
+echoit "Generating datadir template (using mysql_install_db or mysqld/mariadbd --init)..."
 if [ ! -r ${INIT_TOOL} ]; then  # TODO: This is a hack, improve it
   ALT_INIT_TOOL="$(echo "${INIT_TOOL}" | sed 's|mariadb-install-db|mysql_install_db|')"
   if [ -r ${ALT_INIT_TOOL} ]; then
@@ -2685,13 +2695,13 @@ if [ ! -r ${INIT_TOOL} ]; then  # TODO: This is a hack, improve it
 fi
 
 if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
-  echoit "Making a copy of the mysqld used to ${RUNDIR} for in-run coredump analysis..."
+  echoit "Making a copy of the mysqld/mariadbd used to ${RUNDIR} for in-run coredump analysis..."
   cp ${BIN} ${RUNDIR}
   echoit "${BIN} ${RUNDIR}"
-  echoit "Making a copy of the mysqld used to ${WORKDIR}/mysqld (handy for coredump analysis and manual bundle creation)..."
+  echoit "Making a copy of the mysqld/mariadbd used to ${WORKDIR}/mysqld (handy for coredump analysis and manual bundle creation)..."
   mkdir -p ${WORKDIR}/mysqld
   cp ${BIN} ${WORKDIR}/mysqld
-  echoit "Making a copy of the ldd files required for mysqld core analysis to ${WORKDIR}/mysqld..."
+  echoit "Making a copy of the ldd files required for mysqld/mariadbd core analysis to ${WORKDIR}/mysqld..."
   PWDTMPSAVE="${PWD}"
   cd ${WORKDIR}/mysqld || exit 1
   ${SCRIPT_PWD}/ldd_files.sh
@@ -2701,7 +2711,7 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
   # Sysbench dataload
   diskspace
   if [ ${SYSBENCH_DATALOAD} -eq 1 ]; then
-    echoit "Starting mysqld for sysbench data load. Error log is stored at ${WORKDIR}/data.template/master.err"
+    echoit "Starting mysqld/mariadbd for sysbench data load. Error log is stored at ${WORKDIR}/data.template/master.err"
     CMD="${BIN} --basedir=${BASEDIR} --datadir=${WORKDIR}/data.template --tmpdir=${WORKDIR}/data.template \
      --core-file --port=$PORT --pid_file=${WORKDIR}/data.template/pid.pid --socket=${WORKDIR}/data.template/socket.sock \
      --log-output=none --log-error=${WORKDIR}/data.template/master.err"
@@ -2722,16 +2732,16 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
     # Sysbench run for data load
     /usr/bin/sysbench --test=${SCRIPT_PWD}/sysbench_scripts/parallel_prepare.lua --num-threads=1 --oltp-tables-count=1 --oltp-table-size=1000000 --mysql-db=test --mysql-user=root --db-driver=mysql --mysql-socket=${WORKDIR}/data.template/socket.sock run > ${WORKDIR}/data.template/sysbench_prepare.txt 2>&1
 
-    # Terminate mysqld
+    # Terminate mysqld/mariadbd
     timeout --signal=9 20s ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/data.template/socket.sock shutdown > /dev/null 2>&1
     (
       sleep 0.2
       kill -9 ${MPID} > /dev/null 2>&1
       timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
-    ) & # Terminate mysqld
+    ) & # Terminate mysqld/mariadbd
   fi
   echo "${MYEXTRA}${MYSAFE}" | if grep -qi "innodb[_-]log[_-]checksum[_-]algorithm"; then
-    # Ensure that if MID created log files with the standard checksum algo, whilst we start the server with another one, that log files are re-created by mysqld
+    # Ensure that if MID created log files with the standard checksum algo, whilst we start the server with another one, that log files are re-created by mysqld/mariadbd
     rm ${WORKDIR}/data.template/ib_log*
   fi
   if [ "$PMM" == "1" ]; then
@@ -2762,12 +2772,12 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
     fi
   fi
 elif [[ "${MDG}" -eq 1 || "${GRP_RPL}" -eq 1 ]]; then
-  echoit "Making a copy of the mysqld used to ${RUNDIR} for in-run coredump analysis..."
+  echoit "Making a copy of the mysqld/mariadbd used to ${RUNDIR} for in-run coredump analysis..."
   cp ${BIN} ${RUNDIR}
-  echoit "Making a copy of the mysqld used to ${WORKDIR}/mysqld (handy for coredump analysis and manual bundle creation)..."
+  echoit "Making a copy of the mysqld/mariadbd used to ${WORKDIR}/mysqld (handy for coredump analysis and manual bundle creation)..."
   mkdir -p ${WORKDIR}/mysqld
   cp ${BIN} ${WORKDIR}/mysqld
-  echoit "Making a copy of the ldd files required for mysqld core analysis to ${WORKDIR}/mysqld..."
+  echoit "Making a copy of the ldd files required for mysqld/mariadbd core analysis to ${WORKDIR}/mysqld..."
   PWDTMPSAVE=${PWD}
   cd ${WORKDIR}/mysqld || exit 1
   ${SCRIPT_PWD}/ldd_files.sh
