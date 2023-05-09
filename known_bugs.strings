@@ -149,6 +149,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|optimize_keyuse|JOIN::add_keyuses_for_splitting|st_join_table::add_keyuses_for_splitting|make_join_statistics                                                          ## MDEV-30711
 SIGSEGV|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc|table_value_constr::prepare|st_select_lex_unit::prepare                                                       ## MDEV-31178
 SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc|table_value_constr::prepare                                                        ## MDEV-31178
 SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|fix_fields_for_tvc                                                         ## MDEV-31178
