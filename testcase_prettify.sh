@@ -439,6 +439,7 @@ cat "${1}" | tr -d '`' | \
        s|sql_thread|SQL_THREAD|gi; \
        s|io_thread|IO_THREAD|gi; \
        s|convert *(|CONVERT(|gi; \
+       s|analyse *(|ANALYSE(|gi; \
        s|do *(|DO(|gi; \
        s|(VALUE|(value|g; \
        s|( (|((|g;s|) )|))|g; \
