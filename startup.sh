@@ -5,8 +5,6 @@
 
 # Random entropy init
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
-SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
-source $SCRIPT_PWD/init_empty_port.sh
 
 # Filter the following text (regex aware) from INIT_TOOL startup
 FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|To start mariadbd at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved|^[2-9][0-9][0-9][0-9][0-9][0-9] [0-2][0-9]:|^20[2-9][0-9]|See the manual|start the MySQL daemon|bin/mysqld_safe|test the MySQL daemon with|latest information about|http://|https://|by buying support/|Found existing config file|Because this file might be in use|but was used in bootstrap|when you later start the server|new default config file was created|compare it with your file|root.*new.*password|Alternatively you can run|will be used by default|You may edit this file to change|Filling help tables|TIMESTAMP with implicit DEFAULT value|You can find the latest source|the maria-discuss email list|Please check all of the above|Optimizer switch:|perl mariadb|^cd ./test|bin/mariadb-secure-installation|secure-file-priv value as server is running with|starting as process|Using unique option prefix core|Deprecated program name'
@@ -20,11 +18,14 @@ NR_OF_NODES=${1}
 if [ -z "${NR_OF_NODES}" ] ; then
   NR_OF_NODES=3
 fi
-init_empty_port
+
 PORT=$NEWPORT
 MTRT=$((${RANDOM} % 100 + 700))
 BUILD=$(pwd | sed 's|^.*/||')
 SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+source $SCRIPT_PWD/init_empty_port.sh
+cp $SCRIPT_PWD/init_empty_port.sh ${BUILD}/
+init_empty_port
 ADDR="127.0.0.1"
 USE_JE=0 # Use jemalloc (requires builds which were made with jemalloc enabled. Current build scripts explicitly disable jemalloc with -DWITH_JEMALLOC=no hardcoded, as TokuDB is deprecated in MariaDB 10.5)
 
@@ -450,7 +451,7 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>start
   echo $JE7 >>start
 fi
-echo "source $SCRIPT_PWD/init_empty_port.sh" >>start
+echo "source ${PWD}/init_empty_port.sh" >>start
 echo "init_empty_port" >>start
 echo "PORT=\$NEWPORT" >>start
 cp start start_valgrind # Idem setup for Valgrind

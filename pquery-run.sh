@@ -1903,7 +1903,7 @@ pquery_test() {
                   if [[ ${FILTER_SQL} -eq 0 ]]; then
                     grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
                   else
-                    grep --binary-files=text -hivE "${ADV_FILTER_LIST}|$(paste -s -d '|' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g')" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
+                    grep --binary-files=text -hivE "${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|')" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
                   fi
                   # grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
                   echoit "Obtaining the pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
@@ -2610,7 +2610,7 @@ fi
 # Filter SQL from the main input file
 if [[ ${FILTER_SQL} -eq 1 ]]; then
   if [ "${PRE_SHUFFLE_SQL}" == "0" -o "${PRE_SHUFFLE_SQL}" == "1" ]; then
-     paste -s -d '|' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | xargs -I{} grep --binary-files=text -ivE {} ${INFILE} > ${WORKDIR}/filtered_infile.sql
+     grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | xargs -I{} grep --binary-files=text -ivE {} ${INFILE} > ${WORKDIR}/filtered_infile.sql
      INFILE=${WORKDIR}/filtered_infile.sql
   fi
 fi
