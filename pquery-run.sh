@@ -319,7 +319,7 @@ else
       exit 1
     fi
   else
-    echo "Assert: there is no (script readable) mysqld binary at ${BASEDIR}/bin/mysqld ?"
+    echo "Assert: there is no (script readable) mysqld/mariadbd binary at ${BASEDIR}/bin ?"
     exit 1
   fi
 fi

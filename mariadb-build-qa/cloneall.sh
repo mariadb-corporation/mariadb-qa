@@ -32,4 +32,4 @@ sleep 0.1
 ./clone.sh 10.11 &
 ./clone.sh 11.0 &
 ./clone.sh 11.1 &
-./clone.sh 11.2 &
+#./clone.sh 11.2 &
