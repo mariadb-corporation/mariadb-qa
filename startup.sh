@@ -817,7 +817,8 @@ else
   cp sysbench_prepare gal_sysbench_prepare
   cp sysbench_run gal_sysbench_run
   for i in $(seq 1 "${NR_OF_NODES}"); do
-     echo "$(cat gal_sysbench_run) &" >> gal_sysbench_multi_master_run
+     echo -e "echo 'Starts sysbench oltp run on socket ${SOCKET} for 5 minutes.'\n$(cat gal_sysbench_run) &" >> gal_sysbench_multi_master_run
+     sed -i "s|-time=50|-time=300|g" gal_sysbench_multi_master_run
      sed -i "s|${SOCKET}|${PWD}/node${i}/node${i}_socket.sock|g" gal_sysbench_multi_master_run
   done
   sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_sysbench_prepare gal_sysbench_run
