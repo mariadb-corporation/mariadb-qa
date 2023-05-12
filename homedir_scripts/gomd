@@ -2,7 +2,8 @@
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
-BASEDIR=MD060523-mariadb-11.0.2-linux-x86_64-dbg
+BASEDIR=MD120523-mariadb-10.11.4-linux-x86_64-dbg
+#BASEDIR=MD060523-mariadb-11.0.2-linux-x86_64-dbg
 #MD070423-mariadb-10.11.3-linux-x86_64-dbg
 #MD070423-mariadb-10.7.8-linux-x86_64-dbg
 #/test/MD070423-mariadb-11.0.2-linux-x86_64-dbg
@@ -23,7 +24,6 @@ CONF=pquery-run-MD2.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-allb.conf
 #CONF=pquery-run-MD-SAN.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-VAL.conf  # Using PRE_SHUFFLE_SQL=2
-
 #CONF=pquery-run-MD-btrfs.conf
 #CONF=pquery-run-MDEV-24660.conf   # File name only, no spaces, no directories
 #CONF=pquery-run-MD-buf.conf
@@ -36,16 +36,17 @@ if [ -z "${CONF}" ]; then
   exit 1
 fi
 
-if [ ! -d "${BASEDIR}" ]; then
+if [[ "${BASEDIR}" != "/test"* ]]; then
   BASEDIRNEW="$(echo "/test/${BASEDIR}" | sed 's|/\./|/|g')"
   if [ -d "${BASEDIRNEW}" ]; then
     BASEDIR="${BASEDIRNEW}"
-    BASEDIRNEW=
     echo "Basedir updated to ${BASEDIR}"
-  else
-    echo "The basedir (${BASEDIR}) does not exist or is not readable by this script! Terminating."
-    exit 1
   fi
+fi
+
+if [ ! -d "${BASEDIR}" ]; then
+  echo "The basedir (${BASEDIR}) does not exist or is not readable by this script! Terminating."
+  exit 1
 fi
 
 echo "Basedir: ${BASEDIR}"

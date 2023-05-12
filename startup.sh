@@ -24,7 +24,7 @@ MTRT=$((${RANDOM} % 100 + 700))
 BUILD=$(pwd | sed 's|^.*/||')
 SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 source $SCRIPT_PWD/init_empty_port.sh
-cp $SCRIPT_PWD/init_empty_port.sh ${BUILD}/
+cp $SCRIPT_PWD/init_empty_port.sh ${PWD}/
 init_empty_port
 ADDR="127.0.0.1"
 USE_JE=0 # Use jemalloc (requires builds which were made with jemalloc enabled. Current build scripts explicitly disable jemalloc with -DWITH_JEMALLOC=no hardcoded, as TokuDB is deprecated in MariaDB 10.5)
@@ -816,7 +816,12 @@ if [[ $MDG -eq 0 ]]; then
 else
   cp sysbench_prepare gal_sysbench_prepare
   cp sysbench_run gal_sysbench_run
-  sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_sysbench*
+  for i in $(seq 1 "${NR_OF_NODES}"); do
+     echo -e "echo 'Starts sysbench oltp run on socket ${SOCKET} for 5 minutes.'\n$(cat gal_sysbench_run) &" >> gal_sysbench_multi_master_run
+     sed -i "s|-time=50|-time=300|g" gal_sysbench_multi_master_run
+     sed -i "s|${SOCKET}|${PWD}/node${i}/node${i}_socket.sock|g" gal_sysbench_multi_master_run
+  done
+  sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_sysbench_prepare gal_sysbench_run
   echo "./gal_stop 2>/dev/null;./gal_kill >/dev/null 2>&1;./gal_wipe;./gal_start;./gal_sysbench_prepare;./gal_sysbench_run;./gal_stop;./gal_kill >/dev/null 2>&1;" >gal_sysbench_measure
 fi
 
@@ -928,7 +933,7 @@ echo 'MYEXTRA_OPT="$*"' >gal_no_cl
 echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT}" >>gal_no_cl
 echo 'MYEXTRA_OPT="$*"' >gal_rr
 echo "./gal_kill >/dev/null 2>&1;./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start_rr \${MYEXTRA_OPT};./gal_cl" >>gal_rr
-chmod +x gal gal_cl gal_sqlmode gal_binlog gal_stbe gal_no_cl gal_rr gal_gdb gal_test gal_test_pquery gal_cl_noprompt_nobinary gal_cl_noprompt gal_multirun gal_multirun_pquery gal_sysbench_measure gal_sysbench_prepare gal_sysbench_run 2>/dev/null
+chmod +x gal gal_cl gal_sqlmode gal_binlog gal_stbe gal_no_cl gal_rr gal_gdb gal_test gal_test_pquery gal_cl_noprompt_nobinary gal_cl_noprompt gal_multirun gal_multirun_pquery gal_sysbench_measure gal_sysbench_prepare gal_sysbench_run gal_sysbench_multi_master_run 2>/dev/null
 echo "Setting up server with default directories"
 
 if [[ $MDG -eq 0 ]]; then
