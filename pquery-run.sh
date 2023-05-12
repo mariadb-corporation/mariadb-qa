@@ -2160,7 +2160,7 @@ EOF
       # Note that even if mysqladmin is killed with the 'timeout --signal=9', it will not affect the actual state of mysqld/mariadbd, all that was terminated was mysqladmin.
       # Thus, mysqld/mariadbd would (presumably) have received a shutdown signal (even if the timeout was 2 seconds it likely would have)
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
-      if [ $? -gt 124 ]; then
+      if [ $? -eq 137 ]; then
         echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
         # Note we are not checking for RR tracing here, as it is unlikely that Valgrind tracing + RR tracing is used at the same time
@@ -2197,7 +2197,7 @@ EOF
       if [ ${QUERY_CORRECTNESS_TESTING} -ne 1 ]; then
         # This shutdown in the main shutdown done for every standard/default options pquery trial
         timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
-        if [ $? -gt 124 ]; then
+        if [ $? -eq 137 ]; then
           if [ ${ISSTARTED} -eq 1 ]; then  # Only display a failed shutdown message if the server was correctly started to being with. We still try and do the shutdown above, "just in case" the server came up with a large delay
             echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
           fi
@@ -2226,7 +2226,7 @@ EOF
         fi
         if [[ ${REPL} -eq 1 ]]; then
           timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
-          if [ $? -gt 124 ]; then
+          if [ $? -eq 137 ]; then
             echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
             touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
             if [ "${RR_TRACING}" == "1" ]; then
@@ -2280,7 +2280,7 @@ EOF
       # Thus, mysqld/mariadbd would (presumably) have received a shutdown signal (even if the timeout was 2 seconds it likely would have)
       # Proper/clean shutdown attempt (up to 20 sec wait), necessary to get full Valgrind output in error log
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET3} shutdown > /dev/null 2>&1
-      if [ $? -gt 124 ]; then
+      if [ $? -eq 137 ]; then
         echoit "mysqld/mariadbd for node3 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
         #if [ "${RR_TRACING}" == "1" ]; then
@@ -2306,7 +2306,7 @@ EOF
         TRIAL_SAVED=1
       fi
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET2} shutdown > /dev/null 2>&1
-      if [ $? -gt 124 ]; then
+      if [ $? -eq 137 ]; then
         echoit "mysqld/mariadbd for node2 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         sleep 1
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
@@ -2314,7 +2314,7 @@ EOF
         TRIAL_SAVED=1
       fi
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET1} shutdown > /dev/null 2>&1
-      if [ $? -gt 124 ]; then
+      if [ $? -eq 137 ]; then
         echoit "mysqld/mariadbd for node1 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
         sleep 1
