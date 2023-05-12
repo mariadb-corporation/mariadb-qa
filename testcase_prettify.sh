@@ -359,8 +359,10 @@ cat "${1}" | tr -d '`' | \
        s|password *(|PASSWORD(|gi; \
        s|old_password *(|OLD_PASSWORD(|gi; \
        s|make_set *(|MAKE_SET(|gi; \
+       s|makedate *(|MAKEDATE(|gi; \
        s|json_array_insert *(|JSON_ARRAY_INSERT(|gi; \
        s|substring_index *(|SUBSTRING_INDEX(|gi; \
+       s| mod | MOD |gi; \
        s|cast *(|CAST(|gi; \
        s|space *(|SPACE(|gi; \
        s|now *(|NOW(|gi; \
@@ -408,6 +410,8 @@ cat "${1}" | tr -d '`' | \
        s|)\([a-zA-Z]\+\)|) \1|gi; \
        s|) *\([\^\*+%/-]\+\) *(|)\1(|gi; \
        s| *\([\^\*+%/-]\+\) *|\1|gi; \
+       s|\([a-zA-Z]\)\([\^\*+%/-]\+\)\([0-9]\)|\1 \2\3|gi; \
+       s|\([a-zA-Z]\)\([\^\*+%/-]\+\)\([a-zA-Z]\)|\1 \2 \3|gi; \
        s| ()|()|gi; \
        s|), (|),(|gi; \
        s|BY''|BY ''|gi; \
@@ -434,6 +438,8 @@ cat "${1}" | tr -d '`' | \
        s|des_decrypt|DES_DECRYPT|gi; \
        s|sql_thread|SQL_THREAD|gi; \
        s|io_thread|IO_THREAD|gi; \
+       s|convert *(|CONVERT(|gi; \
+       s|analyse *(|ANALYSE(|gi; \
        s|do *(|DO(|gi; \
        s|(VALUE|(value|g; \
        s|( (|((|g;s|) )|))|g; \
