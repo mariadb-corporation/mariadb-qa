@@ -291,12 +291,12 @@ add_handy_scripts(){
   if [[ "${MDG}" -eq 1 ]]; then
     CORE_TO_ANALYZE="${GALERA_CORE_LOC}"
   fi
-  if [ -r ../mysqld/mysqld ]; then
+  if [ -r ../mysqld ]; then
     echo "gdb ../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
-  elif [ -r ../mysqld/mariadbd ]; then
+  elif [ -r ../mariadbd ]; then
     echo "gdb ../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
   else
-    echo "Assert: neither ../mysqld/mysqld nor ../mysqld/mariadbd was found (PWD: ${PWD})"
+    echo "Assert: neither ../mysqld nor ../mariadbd was found (PWD: ${PWD})"
     exit 1
   fi
   chmod +x ${SAVE_STACK_LOC}/gdb
