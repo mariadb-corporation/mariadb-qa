@@ -25,8 +25,8 @@ sleep 0.1
 ./clone.sh 10.4 & 
 ./clone.sh 10.5 &
 ./clone.sh 10.6 &
-./clone.sh 10.7 &
-./clone.sh 10.8 &
+#./clone.sh 10.7 &
+#./clone.sh 10.8 &
 ./clone.sh 10.9 &
 ./clone.sh 10.10 &
 ./clone.sh 10.11 &

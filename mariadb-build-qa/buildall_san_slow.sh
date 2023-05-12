@@ -9,14 +9,14 @@ BUILD_10_3=0
 BUILD_10_4=1
 BUILD_10_5=1
 BUILD_10_6=1
-BUILD_10_7=1
-BUILD_10_8=1
+BUILD_10_7=0
+BUILD_10_8=0
 BUILD_10_9=1
 BUILD_10_10=1
 BUILD_10_11=1
 BUILD_11_0=1
 BUILD_11_1=1
-BUILD_11_2=1
+BUILD_11_2=0
 
 #if [ ! -r ./terminate_ds_memory.sh ]; then
 #  echo './terminate_ds_memory.sh missing!'
