@@ -7,4 +7,4 @@
 
 SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 
-ls */log/master.err | xargs -I{} -i sh -c 'echo -n "{}:"; ${0}/valgrind_string.sh ./{}' ${SCRIPT_PWD} | grep -v "NO VALGRIND STRING FOUND"
+ls */log/master.err | xargs -I{} -i bash -c 'echo -n "{}:"; ${0}/valgrind_string.sh ./{}' ${SCRIPT_PWD} | grep -v "NO VALGRIND STRING FOUND"

@@ -13,8 +13,8 @@ fi
 ./kill_all 2>&1 | grep -v 'kill did not exist'
 sync
 # Next line only does EMD* MD* MS* (which is a handy alternative/hack if you have an ogoing *SAN run etc.)
-#./gendirs.sh | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} sh -c "{}"
-./gendirs.sh ALLALL | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} sh -c "{}" 2>&1 | grep --binary-files=text -vEi '^Adding scripts:|^Note: .*not found'
+#./gendirs.sh | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} bash -c "{}"
+./gendirs.sh ALLALL | xargs -I{} echo "cd {}; ~/mariadb-qa/startup.sh; cd .." | xargs -P50 -I{} bash -c "{}" 2>&1 | grep --binary-files=text -vEi '^Adding scripts:|^Note: .*not found'
 
 sync
 

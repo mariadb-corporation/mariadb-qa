@@ -71,46 +71,46 @@ echo "These settings are for a 128GB Memory server (google cloud instance of tha
 # Do not add a fixed path to the kernel.core_pattern setting, it does not work correctly
 # RV [12 Oct 2020] also found that specifying a long core pattern like 'kernel.core_pattern=core.%p.%u.%s.%e.%t', works less well - cores are generated few times then when just using 'kernel.core_pattern=core', at least no Ubuntu 20.04 LTS. More root cause analysis needed, issue is very illusive. Reverted to just using '=core' for the moment, which is sufficient for the framework. By disaling apport.service it would even seem that this setting is not strictly needed. The 'Unsafe core_pattern used with fs.suid_dumpable=2. Pipe handler or fully qualified core dump path required. Set kernel.core_pattern before fs.suid_dumpable.' can be considered expected and does not affect core file generation.
 #if [ "$(grep -m1 '^kernel.core_pattern=core.%p.%u.%s.%e.%t' /etc/sysctl.conf)" != 'kernel.core_pattern=core.%p.%u.%s.%e.%t' ]; then
-#  sudo sh -c 'echo "kernel.core_pattern=core.%p.%u.%s.%e.%t" >> /etc/sysctl.conf'  # Do NOT a core fixed path!
+#  sudo bash -c 'echo "kernel.core_pattern=core.%p.%u.%s.%e.%t" >> /etc/sysctl.conf'  # Do NOT a core fixed path!
 #fi
 if [ "$(grep -m1 '^kernel.core_pattern=core' /etc/sysctl.conf)" != 'kernel.core_pattern=core' ]; then
-  sudo sh -c 'echo "kernel.core_pattern=core" >> /etc/sysctl.conf'  # Do NOT a core fixed path!
+  sudo bash -c 'echo "kernel.core_pattern=core" >> /etc/sysctl.conf'  # Do NOT a core fixed path!
 fi
 if [ "$(grep -m1 '^fs.suid_dumpable=2' /etc/sysctl.conf)" != 'fs.suid_dumpable=2' ]; then
-  sudo sh -c 'echo "fs.suid_dumpable=2" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "fs.suid_dumpable=2" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^fs.aio-max-nr=99999999' /etc/sysctl.conf)" != 'fs.aio-max-nr=99999999' ]; then
-  sudo sh -c 'echo "fs.aio-max-nr=99999999" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "fs.aio-max-nr=99999999" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^fs.file-max=99999999' /etc/sysctl.conf)" != 'fs.file-max=99999999' ]; then
-  sudo sh -c 'echo "fs.file-max=99999999" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "fs.file-max=99999999" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^kernel.pid_max=4194304' /etc/sysctl.conf)" != 'kernel.pid_max=4194304' ]; then
-  sudo sh -c 'echo "kernel.pid_max=4194304" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "kernel.pid_max=4194304" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^kernel.threads-max=99999999' /etc/sysctl.conf)" != 'kernel.threads-max=99999999' ]; then
-  sudo sh -c 'echo "kernel.threads-max=99999999" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "kernel.threads-max=99999999" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^kernel.sem = 32768 1073741824 2000 32768' /etc/sysctl.conf)" != 'kernel.sem = 32768 1073741824 2000 32768' ]; then
-  sudo sh -c 'echo "kernel.sem = 32768 1073741824 2000 32768" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "kernel.sem = 32768 1073741824 2000 32768" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^kernel.shmmni=32768' /etc/sysctl.conf)" != 'kernel.shmmni=32768' ]; then
-  sudo sh -c 'echo "kernel.shmmni=32768" >> /etc/sysctl.conf'  # 32768 is the effective max value
+  sudo bash -c 'echo "kernel.shmmni=32768" >> /etc/sysctl.conf'  # 32768 is the effective max value
 fi
 if [ "$(grep -m1 '^kernel.msgmax=65536' /etc/sysctl.conf)" != 'kernel.msgmax=65536' ]; then
-  sudo sh -c 'echo "kernel.msgmax=65536" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "kernel.msgmax=65536" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^kernel.msgmni=32768' /etc/sysctl.conf)" != 'kernel.msgmni=32768' ]; then
-  sudo sh -c 'echo "kernel.msgmni=32768" >> /etc/sysctl.conf'  # 32768 is the effective max value
+  sudo bash -c 'echo "kernel.msgmni=32768" >> /etc/sysctl.conf'  # 32768 is the effective max value
 fi
 if [ "$(grep -m1 '^kernel.msgmnb=65536' /etc/sysctl.conf)" != 'kernel.msgmnb=65536' ]; then
-  sudo sh -c 'echo "kernel.msgmnb=65536" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "kernel.msgmnb=65536" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^m.max_map_count=1048576' /etc/sysctl.conf)" != 'vm.max_map_count=1048576' ]; then
-  sudo sh -c 'echo "vm.max_map_count=1048576" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "vm.max_map_count=1048576" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^vm.swappiness=5' /etc/sysctl.conf)" != 'vm.swappiness=5' ]; then
-  sudo sh -c 'echo "vm.swappiness=5" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "vm.swappiness=5" >> /etc/sysctl.conf'
 fi
 # Attempt to improve memory management for testing servers, with thanks:
 # https://superuser.com/a/1150229/457699
@@ -118,13 +118,13 @@ fi
 # https://sysctl-explorer.net/vm/oom_dump_tasks/
 # https://www.kernel.org/doc/Documentation/sysctl/vm.txt
 if [ "$(grep -m1 '^vm.overcommit_memory=1' /etc/sysctl.conf)" != 'vm.overcommit_memory=1' ]; then
-  sudo sh -c 'echo "vm.overcommit_memory=1" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "vm.overcommit_memory=1" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^vm.oom_dump_tasks=0' /etc/sysctl.conf)" != 'vm.oom_dump_tasks=0' ]; then
-  sudo sh -c 'echo "vm.oom_dump_tasks=0" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "vm.oom_dump_tasks=0" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '^vm.panic_on_oom=0' /etc/sysctl.conf)" != 'vm.panic_on_oom=0' ]; then
-  sudo sh -c 'echo "vm.panic_on_oom=0" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "vm.panic_on_oom=0" >> /etc/sysctl.conf'
 fi
 
 # Note that a high number (>20480) for soft+hard nproc may cause system instability/hang on Centos7
@@ -162,7 +162,7 @@ sudo bash -c "cat << EOF > /etc/security/limits.conf
 EOF"
 
 if [ "$(grep -m1 '^UserTasksMax=infinity' /etc/systemd/logind.conf)" != 'UserTasksMax=infinity' ]; then
-  sudo sh -c 'echo "UserTasksMax=infinity" >> /etc/systemd/logind.conf'
+  sudo bash -c 'echo "UserTasksMax=infinity" >> /etc/systemd/logind.conf'
 fi
 
 # Ensuring nproc limiter is gone or not present
@@ -239,9 +239,9 @@ if [ "${1}" == "rr" ]; then
   sudo sed -i 's|vm.swappiness=5|vm.swappiness=1|'  /etc/sysctl.conf
   # Performance mode not necessary ftm it seems on 20.04, may be required on 18.04 for rr to work properly
   # In any case, still good to set on any test machine to achieve max QPS for testing? TODO
-  #sudo sh -c 'echo "GOVERNOR=\"performance\"" >> /etc/default/cpufrequtils' && sudo systemctl restart cpufrequtils
+  #sudo bash -c 'echo "GOVERNOR=\"performance\"" >> /etc/default/cpufrequtils' && sudo systemctl restart cpufrequtils
   if [ "$(grep -m1 '^kernel.perf_event_paranoid=1' /etc/sysctl.conf)" != 'kernel.perf_event_paranoid=1' ]; then
-    sudo sh -c 'echo "kernel.perf_event_paranoid=1" >> /etc/sysctl.conf' && sudo sysctl -p
+    sudo bash -c 'echo "kernel.perf_event_paranoid=1" >> /etc/sysctl.conf' && sudo sysctl -p
   fi
 fi
 

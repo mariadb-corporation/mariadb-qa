@@ -26,4 +26,4 @@ sleep 1
 echo "$(date +'%F %T') Coying testcases to basedirs..."
 ./copy_in.sql_all >/dev/null 2>&1
 echo "$(date +'%F %T') Testing..."
-./gendirs.sh | xargs -I{} echo "cd {}; ${TEST_SCRIPT};\$(timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop >/dev/null 2>&1) >/dev/null 2>&1; cd .." | xargs -P50 -I{} sh -c "{}"
+./gendirs.sh | xargs -I{} echo "cd {}; ${TEST_SCRIPT};\$(timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop >/dev/null 2>&1) >/dev/null 2>&1; cd .." | xargs -P50 -I{} bash -c "{}"

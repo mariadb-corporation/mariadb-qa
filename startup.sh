@@ -730,13 +730,25 @@ if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" ]; then
 fi
 touch cl
 add_san_options cl
-echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mysqld --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
+if [ -r ${PWD}/bin/mariadb ]; then
+  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mariadbd --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
+else
+  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mysqld --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
+fi
 touch cl_noprompt
 add_san_options cl_noprompt
-echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprompt
+if [ -r ${PWD}/bin/mariadb ]; then
+  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprompt
+else
+  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprompt
+fi
 touch cl_noprompt_nobinary
 add_san_options cl_noprompt_nobinary
-echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
+if [ -r ${PWD}/bin/mariadb ]; then
+  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
+else
+  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
+fi
 echo "#!/bin/bash" > test
 add_san_options test
 cp test test_pquery

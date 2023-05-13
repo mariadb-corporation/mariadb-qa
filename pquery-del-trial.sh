@@ -109,7 +109,7 @@ if [ -r ${ERROR_LOG} ]; then
     delete_trial
   else
     if [ "${2}" != "1" ]; then
-      echo "Not deleting trial ${TRIAL} as one or more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script!"
+      echo "Not deleting trial ${TRIAL} (Dir: ${PWD}) as one or more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script!"
     else
       delete_trial
     fi

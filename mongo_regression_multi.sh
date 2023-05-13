@@ -33,7 +33,7 @@ for i in "${s[@]}"; do
   mkdir -p ${WORKDIR}
   PORT=$[50000 + ( $RANDOM % ( 9999 ) ) ]
   echoit "* Running test suite ${i} on port ${PORT}..."
-  screen -dmS ${i} sh -c "./buildscripts/smoke.py --mode=suite --port=$PORT --with-cleanbb --report-file=${WORKDIR}/smoke.py.log --smoke-db-prefix ${WORKDIR} --storageEngine=tokuft ${i}; exec bash"
+  screen -dmS ${i} bash -c "./buildscripts/smoke.py --mode=suite --port=$PORT --with-cleanbb --report-file=${WORKDIR}/smoke.py.log --smoke-db-prefix ${WORKDIR} --storageEngine=tokuft ${i}; exec bash"
   #PIDS=$!
   #WAIT_PIDS="${WAIT_PIDS} $PIDS"
 done

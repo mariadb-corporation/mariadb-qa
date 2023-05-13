@@ -5,11 +5,11 @@ MYEXTRA_OPT_PRE="$*"
 MYEXTRA_OPT="$(echo "${MYEXTRA_OPT_PRE}" | sed 's|GAL||;s|SAN||;s|[ \t]\+| |g')"
 
 if [ "${1}" == "GAL" ]; then
-  ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_start ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
+  ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "SAN" ]; then
-  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
+  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
 else
-  ./gendirs.sh | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} sh -c "{}"
+  ./gendirs.sh | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
 fi
 
 sync

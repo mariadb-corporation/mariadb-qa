@@ -16,7 +16,7 @@ fi
 
 if [ ! -r ~/sr ]; then echo "~/sr required! Please copy it from ~/mariadb-qa/homedir_scripts. Terminating."; exit 1; fi
 echo 'Starting up...'
-sudo sh -c "$(which echo) 4 > /proc/sys/vm/drop_caches"  # Disable bulk dmesg messages
+sudo bash -c "$(which echo) 4 > /proc/sys/vm/drop_caches"  # Disable bulk dmesg messages
 COUNT1=0
 COUNT2=0
 COUNT3=0
@@ -61,7 +61,7 @@ while :; do
     # Cleanup any processes which have dead files > 300MB open. This command too assist greatly in overall server memory management
     sudo lsof -s +L1 | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | grep -E "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]|^[3-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | awk '{print $2}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi 'grep|fireworks|cc|clang'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null
     # Cleanup cache, may help avoid OOM
-    sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches" &
+    sudo bash -c "$(which echo) 3 > /proc/sys/vm/drop_caches" &
     # Terminate subreducers which have been active for 1h+. It is unlikely that any subreducer will take that long to run
     #ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vE 'grep|cc|clang'" | xargs -I{} bash -c "{}" | awk '{print $2}' | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time.
     ps -ef | grep 'subreducer' | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command,pid | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] |[0-9]-[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' | awk '{print $4}' | xargs -I{} kill -9 {}  # Improved (works better + less resources used) command. Ref comment on remarked line above for more info
@@ -93,7 +93,7 @@ while :; do
   fi
   if [ ${COUNT2} -ge 60 ]; then
     TESTCASES="$(cd /data && ./my | grep -v '^[ ]*0 ' | wc -l)"  # Expensive
-    sudo sh -c "$(which echo) 3 > /proc/sys/vm/drop_caches"  # Cleanup cache, may help avoid OOM
+    sudo bash -c "$(which echo) 3 > /proc/sys/vm/drop_caches"  # Cleanup cache, may help avoid OOM
     if [ -d /data ]; then
       cd /data
       # The following seems handy, but it is not, and can use some improvements TODO. Reason: for ./clean_all, 

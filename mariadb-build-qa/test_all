@@ -77,11 +77,11 @@ if [ "${BPQUERY}" == "1" ]; then
   fi
 fi
 if [ ${SAN_MODE} -eq 1 ]; then
-  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ${TEST_SCRIPT}; timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; cd .." | xargs -P50 -I{} sh -c "{}"
+  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ${TEST_SCRIPT}; timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; cd .." | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "GAL" ]; then
-  ./gendirs.sh GAL | xargs -I{} echo "cd {}; ${TEST_SCRIPT}; timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./gal_stop; cd .." | xargs -P50 -I{} sh -c "{}"
+  ./gendirs.sh GAL | xargs -I{} echo "cd {}; ${TEST_SCRIPT}; timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./gal_stop; cd .." | xargs -P50 -I{} bash -c "{}"
 else
-  ./gendirs.sh | xargs -I{} echo "cd {}; ${TEST_SCRIPT}; timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; cd .." | xargs -P50 -I{} sh -c "{}"
+  ./gendirs.sh | xargs -I{} echo "cd {}; ${TEST_SCRIPT}; timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; cd .." | xargs -P50 -I{} bash -c "{}"
 fi
 sleep 13  # Give servers some time to properly shutdown. TODO: this can be improved
 

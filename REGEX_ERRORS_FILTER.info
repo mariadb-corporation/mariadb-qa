@@ -80,7 +80,7 @@ Warning: Memory not freed: 264                        https://jira.mariadb.org/b
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-30784 log_bin_trust_function_creators
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' WHILE
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' BEGIN
-Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-30680 IF(NOT (scalar... mangled
+Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-30680 IF(SCALAR(... mangled
 Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-27627 FOR..IN..DO
 Warning: Memory not freed: 312                        https://jira.mariadb.org/browse/MDEV-27627 FOR..IN..DO + track_sysvar
 Warning: Memory not freed: 512                        https://jira.mariadb.org/browse/MDEV-26335 log_bin_trust_function_creators

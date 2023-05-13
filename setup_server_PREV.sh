@@ -158,51 +158,51 @@ sudo pip install launchpadlib
 #https://www.mail-archive.com/linux-390@vm.marist.edu/msg60338.html
 #https://access.redhat.com/site/solutions/61536
 if [ "$(grep -m1 'kernel.core_pattern=core.%p.%u.%g.%s.%t.%e' /etc/sysctl.conf)" != 'kernel.core_pattern=core.%p.%u.%g.%s.%t.%e' ]; then
-  sudo sh -c 'echo "kernel.core_pattern=core.%p.%u.%g.%s.%t.%e" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "kernel.core_pattern=core.%p.%u.%g.%s.%t.%e" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 'suid_dumpable=1' /etc/sysctl.conf)" != 'fs.suid_dumpable=1' ]; then
-  sudo sh -c 'echo "fs.suid_dumpable=1" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "fs.suid_dumpable=1" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 'fs.aio-max-nr=300000' /etc/sysctl.conf)" != 'fs.aio-max-nr=1048576' ]; then
-  sudo sh -c 'echo "fs.aio-max-nr=300000" >> /etc/sysctl.conf'
+  sudo bash -c 'echo "fs.aio-max-nr=300000" >> /etc/sysctl.conf'
 fi
 if [ "$(grep -m1 '* soft core unlimited' /etc/security/limits.conf)" != '* soft core unlimited' ]; then
-  sudo sh -c 'echo "* soft core unlimited" >> /etc/security/limits.conf'
+  sudo bash -c 'echo "* soft core unlimited" >> /etc/security/limits.conf'
 fi
 if [ "$(grep -m1 '* hard core unlimited' /etc/security/limits.conf)" != '* hard core unlimited' ]; then
-  sudo sh -c 'echo "* hard core unlimited" >> /etc/security/limits.conf'
+  sudo bash -c 'echo "* hard core unlimited" >> /etc/security/limits.conf'
 fi
 # With all disabled settings below, it is likely that only one of them caused the original system hangs
 #if [ "$(grep -m1 'fs.file-max=6815744' /etc/sysctl.conf)" != 'fs.file-max=6815744' ]; then  # May cause system hangs on Centos7?
-#  sudo sh -c 'echo "fs.file-max=6815744" >> /etc/sysctl.conf'
+#  sudo bash -c 'echo "fs.file-max=6815744" >> /etc/sysctl.conf'
 #fi
 # Do not increase nofile soft/hard limit beyond 1048576, unless you want serious Linux authentication/login issues.
 #if [ "$(grep -m1 '* soft nofile 1048576' /etc/security/limits.conf)" != '* soft nofile 1048576' ]; then
-#  sudo sh -c 'echo "* soft nofile 1048576" >> /etc/security/limits.conf'
+#  sudo bash -c 'echo "* soft nofile 1048576" >> /etc/security/limits.conf'
 #fi
 if [ "$(grep -m1 '* hard nofile 1048576' /etc/security/limits.conf)" != '* hard nofile 1048576' ]; then
-  sudo sh -c 'echo "* hard nofile 1048576" >> /etc/security/limits.conf'
+  sudo bash -c 'echo "* hard nofile 1048576" >> /etc/security/limits.conf'
 fi
 if [ "$(grep -m1 '* soft stack 20480' /etc/security/limits.conf)" != '* soft stack 20480' ]; then
-  sudo sh -c 'echo "* soft stack 20480" >> /etc/security/limits.conf'
+  sudo bash -c 'echo "* soft stack 20480" >> /etc/security/limits.conf'
 fi
 if [ "$(grep -m1 '* hard stack 20480' /etc/security/limits.conf)" != '* hard stack 20480' ]; then
-  sudo sh -c 'echo "* hard stack 20480" >> /etc/security/limits.conf'
+  sudo bash -c 'echo "* hard stack 20480" >> /etc/security/limits.conf'
 fi
 if [ "$(grep -m1 '* soft nproc 300000' /etc/security/limits.conf)" != '* soft nproc 300000' ]; then  # Previously; 1048576. May cause system hangs on Centos7? Was then reduced to 20480. Readjusted to 300000 as it seems that (in Bionic) the number of processes allowed accross various opened shells is cumulative.
-  sudo sh -c 'echo "* soft nproc 300000" >> /etc/security/limits.conf'
+  sudo bash -c 'echo "* soft nproc 300000" >> /etc/security/limits.conf'
 fi
 if [ "$(grep -m1 '* hard nproc 300000' /etc/security/limits.conf)" != '* hard nproc 300000' ]; then  # Previously; 1048576. May cause system hangs on Centos7? Was then reduced to 20480. Readjusted to 300000 as it seems that (in Bionic) the number of processes allowed accross various opened shells is cumulative.
-  sudo sh -c 'echo "* hard nproc 300000" >> /etc/security/limits.conf'
+  sudo bash -c 'echo "* hard nproc 300000" >> /etc/security/limits.conf'
 fi
 #if [ "$(grep -m1 '* soft memlock 128' /etc/security/limits.conf)" != '* soft memlock 128' ]; then  # May cause system hangs on Centos7?
-#  sudo sh -c 'echo "* soft memlock 128" >> /etc/security/limits.conf'
+#  sudo bash -c 'echo "* soft memlock 128" >> /etc/security/limits.conf'
 #fi
 #if [ "$(grep -m1 '* hard memlock 128' /etc/security/limits.conf)" != '* hard memlock 128' ]; then  # May cause system hangs on Centos7?
-#  sudo sh -c 'echo "* hard memlock 128" >> /etc/security/limits.conf'
+#  sudo bash -c 'echo "* hard memlock 128" >> /etc/security/limits.conf'
 #fi
 if [ "$(grep -m1 'DAEMON_COREFILE_LIMIT' /etc/sysconfig/init)" != "DAEMON_COREFILE_LIMIT='unlimited'" ]; then
-  sudo sh -c 'echo "DAEMON_COREFILE_LIMIT='"'unlimited'"'" >> /etc/sysconfig/init'
+  sudo bash -c 'echo "DAEMON_COREFILE_LIMIT='"'unlimited'"'" >> /etc/sysconfig/init'
 fi
 
 # Ensuring nproc limiter is gone or not present
@@ -225,30 +225,30 @@ THP2_STR1="echo never > ${THP2}/enabled"; THP2_STR2="echo never > ${THP2}/defrag
 if [ -r ${THP1} ] ; then  # THP present
   if (uname -a | grep -q "el7"); then  # RHEL7/Centos7
     if [ "$(grep -m1 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' /etc/rc.d/rc.local)" != "${THP1_STR1}" ]; then
-      sudo sh -c "echo '${THP1_STR1}' >> /etc/rc.d/rc.local"
-      sudo sh -c "echo '${THP1_STR2}' >> /etc/rc.d/rc.local"
+      sudo bash -c "echo '${THP1_STR1}' >> /etc/rc.d/rc.local"
+      sudo bash -c "echo '${THP1_STR2}' >> /etc/rc.d/rc.local"
       sudo chmod 744 /etc/rc.d/rc.local
       sudo systemctl restart rc-local.service
     fi
   else
     if [ "$(grep -m1 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' /etc/rc.local)" != "${THP1_STR1}" ]; then
-      sudo sh -c "echo '${THP1_STR1}' >> /etc/rc.local"
-      sudo sh -c "echo '${THP1_STR2}' >> /etc/rc.local"
+      sudo bash -c "echo '${THP1_STR1}' >> /etc/rc.local"
+      sudo bash -c "echo '${THP1_STR2}' >> /etc/rc.local"
     fi
   fi
 else  # THP not present
   if [ -r ${THP2} ]; then  # redhat_THP present
     if (uname -a | grep -q "el7"); then  # RHEL7/Centos7
       if [ "$(grep -m1 'echo never > /sys/kernel/mm/redhat_transparent_hugepage' /etc/rc.d/rc.local)" != "${THP2_STR1}" ]; then
-        sudo sh -c "echo '${THP2_STR1}' >> /etc/rc.d/rc.local"
-        sudo sh -c "echo '${THP2_STR2}' >> /etc/rc.d/rc.local"
+        sudo bash -c "echo '${THP2_STR1}' >> /etc/rc.d/rc.local"
+        sudo bash -c "echo '${THP2_STR2}' >> /etc/rc.d/rc.local"
         sudo chmod 744 /etc/rc.d/rc.local
         sudo systemctl restart rc-local.service
       fi
     else
       if [ "$(grep -m1 'echo never > /sys/kernel/mm/redhat_transparent_hugepage' /etc/rc.local)" != "${THP2_STR1}" ]; then
-        sudo sh -c "echo '${THP2_STR1}' >> /etc/rc.local"
-        sudo sh -c "echo '${THP2_STR2}' >> /etc/rc.local"
+        sudo bash -c "echo '${THP2_STR1}' >> /etc/rc.local"
+        sudo bash -c "echo '${THP2_STR2}' >> /etc/rc.local"
       fi
     fi
   else  # THP nor redhat_THP present
