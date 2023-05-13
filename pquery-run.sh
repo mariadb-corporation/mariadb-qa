@@ -176,8 +176,8 @@ fi
 # Try and raise ulimit for user processes (see setup_server.sh for how to set correct soft/hard nproc settings in limits.conf)
 #ulimit -u 7000
 
-# Input file compressed? preflight check (when generator is not in use)
-if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -ne 1 ]; then
+# Input file compressed? preflight check (when generator and PRE_SHUFFLE_SQL=2 (mix all sql files) are not in use)
+if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 -a "${PRE_SHUFFLE_SQL}" != "2" ]; then
   if [ ! -r ${INFILE} ]; then
     echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
     exit 1
@@ -194,6 +194,16 @@ if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -ne 1 ]; then
       exit 1
     fi
     ORIGINAL_INFILE=
+  fi
+fi
+
+# Even when PRE_SHUFFLE_SQL=2 (all sql files) input is used, it still makes sense to extract any tar file specified as "original" (but not used) input as this expands the grammar available
+if [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
+  if [[ "${INFILE}" == *".tar."* ]]; then
+    STORECURPWD=${PWD}
+    cd $(echo ${INFILE} | sed 's|/[^/]\+\.tar\..*|/|') || exit 1 # Change to the directory containing the input file
+    tar -xf ${INFILE}
+    cd ${STORECURPWD} || exit 1
   fi
 fi
 
@@ -291,14 +301,14 @@ add_handy_scripts(){
   if [[ "${MDG}" -eq 1 ]]; then
     CORE_TO_ANALYZE="${GALERA_CORE_LOC}"
   fi
-  if [ -r ../mysqld ]; then
-    echo "gdb ../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
-  elif [ -r ../mariadbd ]; then
-    echo "gdb ../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
-  else
-    echo "Assert: neither ../mysqld nor ../mariadbd was found (PWD: ${PWD})"
-    exit 1
-  fi
+  echo 'if [ -r ../mysqld/mysqld ]; then' >> ${SAVE_STACK_LOC}/gdb
+  echo "  gdb ../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
+  echo 'elif [ -r ../mariadbd ]; then' >> ${SAVE_STACK_LOC}/gdb
+  echo "  gdb ../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
+  echo 'else' >> ${SAVE_STACK_LOC}/gdb
+  echo '  echo "Assert: neither ../mysqld/mysqld nor ../mysqld/mariadbd was found (PWD: ${PWD})"' >> ${SAVE_STACK_LOC}/gdb 
+  echo '  exit 1'  >> ${SAVE_STACK_LOC}/gdb
+  echo 'fi' >> ${SAVE_STACK_LOC}/gdb
   chmod +x ${SAVE_STACK_LOC}/gdb
   CORE_TO_ANALYZE=
   SAVE_STACK_LOC=
@@ -1892,7 +1902,7 @@ pquery_test() {
                 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
                 if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
                   shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
-                  echoit "Obtaining the pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+                  echoit "Obtaining the PRE_SHUFFLE_SQL=1 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
                 elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
                   SHUFFLE_FILELIST="$(ls ${SCRIPT_PWD}/*.sql ${SCRIPT_PWD}/*.sql ${HOME}/mariadb-qa/*.sql ${HOME}/mariadb-qa/*/*.sql /data/SQL/*.sql /data/SQL/*/*.sql /test/TESTCASES/*.sql /test/TESTCASES/*/*.sql 2>/dev/null | sort -u | shuf --random-source=/dev/urandom | tr '\n' ' ' | tr -d '\n')"
                   if [ "$(echo "${SHUFFLE_FILELIST}" grep -v '^$' | wc -l)" -le 0 ]; then
@@ -1906,7 +1916,7 @@ pquery_test() {
                     grep --binary-files=text -hivE "${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|')" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
                   fi
                   # grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
-                  echoit "Obtaining the pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+                  echoit "Obtaining the PRE_SHUFFLE_SQL=2 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
                 else
                   echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
                   exit 1
