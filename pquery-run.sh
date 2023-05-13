@@ -151,9 +151,9 @@ if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
     echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_DIR ('${PRE_SHUFFLE_DIR}') is not an actual directory or could not be created. Double check correctness of directory and that this script can write to the location provided (mkdir -p was attempted, any failure of the same would show above this message)"
     exit 1
   fi
-  PRE_SHUFFLE_SQL_LINES="$(echo "${PRE_SHUFFLE_SQL_LINES}" | tr -d '\n')"
-  if [ -z "${PRE_SHUFFLE_SQL_LINES}" ]; then
-    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_SQL_LINES is not configured"
+  PRE_SHUFFLE_MIN_SQL_LINES="$(echo "${PRE_SHUFFLE_MIN_SQL_LINES}" | tr -d '\n')"
+  if [ -z "${PRE_SHUFFLE_MIN_SQL_LINES}" ]; then
+    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_MIN_SQL_LINES is not configured"
     exit 1
   fi
   PRE_SHUFFLE_TRIALS_PER_SHUFFLE="$(echo "${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}" | tr -d '\n')"
@@ -162,8 +162,8 @@ if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
     exit 1
   fi
   # TODO: this seems to cause errors: ./pquery-run.sh: line 126: 324998: No such file or directory
-  #if [ ${PRE_SHUFFLE_SQL_LINES} < $[ $[ $[ ${PQUERY_RUN_TIMEOUT} / 15 ] * 25000 * ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ] -2 ] ]; then
-  #  echoit "Warning: PRE_SHUFFLE_SQL_LINES (${PRE_SHUFFLE_SQL_LINES}) is set to less than the minimum recommended 25k queries per 15 seconds times the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE (${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}) trials. You may want to increase this. See the formula here or in pquery-run.conf"
+  #if [ ${PRE_SHUFFLE_MIN_SQL_LINES} < $[ $[ $[ ${PQUERY_RUN_TIMEOUT} / 15 ] * 25000 * ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ] -2 ] ]; then
+  #  echoit "Warning: PRE_SHUFFLE_MIN_SQL_LINES (${PRE_SHUFFLE_MIN_SQL_LINES}) is set to less than the minimum recommended 25k queries per 15 seconds times the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE (${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}) trials. You may want to increase this. See the formula here or in pquery-run.conf"
   #  sleep 10
   #fi
 fi
@@ -1897,34 +1897,33 @@ pquery_test() {
                 local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
                 INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
                 WORKNRDIR=
-                echoit "Randomly pre-shuffling ${PRE_SHUFFLE_SQL_LINES} lines of SQL into ${INFILE_SHUFFLED} | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+                echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL into ${INFILE_SHUFFLED} | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
                 PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
                 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
                 if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-                  shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+                  shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
                   echoit "Obtaining the PRE_SHUFFLE_SQL=1 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
                 elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
-                  SHUFFLE_FILELIST="$(ls ${SCRIPT_PWD}/*.sql ${SCRIPT_PWD}/*.sql ${HOME}/mariadb-qa/*.sql ${HOME}/mariadb-qa/*/*.sql /data/SQL/*.sql /data/SQL/*/*.sql /test/TESTCASES/*.sql /test/TESTCASES/*/*.sql 2>/dev/null | sort -u | shuf --random-source=/dev/urandom | tr '\n' ' ' | tr -d '\n')"
-                  if [ "$(echo "${SHUFFLE_FILELIST}" grep -v '^$' | wc -l)" -le 0 ]; then
-                    echoit "Assert: could not locate at least one SQL file (odd for normal testing server setups), and this is a prerequisite for using PRE_SHUFFLE_SQL=2. The easiest solution is likely to either set PRE_SHUFFLE_SQL to 1 or perhaps better 0 (and configure a correct INFILE), or to: cd ~; git clone --depth=1 https://github.com/mariadb-corporation/mariadb-qa.git"
-                    exit 1
-                  fi
                   ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables"
+                  touch ${INFILE_SHUFFLED}
+                  rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
                   if [[ ${FILTER_SQL} -eq 0 ]]; then
-                    grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
+                    find ${HOME} /data/SQL /test/TESTCASES -maxdepth 3 -name '*.sql' -type f | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
                   else
-                    grep --binary-files=text -hivE "${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|')" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
-                  fi
-                  # grep --binary-files=text -hivE "${ADV_FILTER_LIST}" ${SHUFFLE_FILELIST} | shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_SQL_LINES} > ${INFILE_SHUFFLED}
-                  echoit "Obtaining the PRE_SHUFFLE_SQL=2 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+                    find ${HOME} /data/SQL /test/TESTCASES -maxdepth 3 -name '*.sql' -type f | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                  fi 
+                  chmod +x ${INFILE_SHUFFLED}.sh
+                  ${INFILE_SHUFFLED}.sh
+                  rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
+                  echoit "Obtaining the PRE_SHUFFLE_SQL=2 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds, and the final file (${INFILE_SHUFFLED}) contains $(wc -l ${INFILE_SHUFFLED} | awk '{print $1}') lines"
                 else
                   echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
                   exit 1
                 fi
-                SHUFFLE_FILELIST=
+                #SHUFFLE_FILELIST=
                 PRE_SHUFFLE_DUR_START=
               else
-                echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_SQL_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+                echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_MIN_SQL_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
               fi
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
                 PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
@@ -2626,7 +2625,7 @@ if [[ ${FILTER_SQL} -eq 1 ]]; then
 fi
 
 if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-  echoit "PRE_SHUFFLE_SQL=1: This script will randomly pre-shuffle ${PRE_SHUFFLE_SQL_LINES} lines of SQL into a temporary file in ${PRE_SHUFFLE_DIR} and reuse this file for ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trial(s)"
+  echoit "PRE_SHUFFLE_SQL=1: This script will randomly pre-shuffle ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL into a temporary file in ${PRE_SHUFFLE_DIR} and reuse this file for ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trial(s)"
 fi
 
  
