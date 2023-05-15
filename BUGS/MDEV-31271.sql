@@ -1,0 +1,7 @@
+SET sql_mode='';
+CREATE TABLE t (c CHAR(1),FULLTEXT (c)) ENGINE=InnoDB;
+XA START 'a';
+INSERT INTO t VALUES (0);
+XA END 'a';
+XA PREPARE 'a';
+SHUTDOWN;

@@ -582,7 +582,11 @@ echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/d
 echo "rm -f log/master.err.PREV" >>wipe
 echo "if [ -r log/master.err ]; then mv log/master.err log/master.err.PREV; fi" >>wipe
 # Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
-echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CREATE DATABASE IF NOT EXISTS test' ; ./stop" >>wipe
+if [ -r ${PWD}/bin/mariadbd ]; then
+  echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test'; ./stop" >>wipe
+else
+  echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mysql -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test'; ./stop" >>wipe
+fi
 # Creating init script
 echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
 echo "rm -Rf ${PWD}/data" >> init
@@ -907,7 +911,11 @@ echo "elif [ \$(ls data/*core* 2>/dev/null | wc -l) -gt 1 ]; then" >>gdb
 echo "  echo \"More then one core file found in data/*core* - exiting\"" >>gdb
 echo "  exit 1" >>gdb
 echo "else" >>gdb
-echo "  gdb bin/mysqld \$(ls data/*core*)" >>gdb
+echo "  if [ -r bin/mariadbd ]; then" >>gdb
+echo "    gdb bin/mariadbd \$(ls data/*core*)" >>gdb
+echo "  else" >>gdb
+echo "    gdb bin/mysqld \$(ls data/*core*)" >>gdb
+echo "  fi" >>gdb
 echo "fi" >>gdb
 
 if [[ $MDG -eq 1 ]]; then
@@ -919,16 +927,16 @@ if [ ! -r ./in.sql ]; then touch ./in.sql; fi  # Make new empty file if does not
 echo './all --sql_mode=' >sqlmode
 echo './all --log_bin' >binlog
 echo 'MYEXTRA_OPT="$*"' >all
-echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT};./cl" >>all
+echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT};./cl" >>all
 ln -s ./all ./a 2>/dev/null
 echo 'MYEXTRA_OPT="$*"' >all_stbe
 echo "./all --early-plugin-load=keyring_file.so --keyring_file_data=keyring --innodb_sys_tablespace_encrypt=ON \${MYEXTRA_OPT}" >>all_stbe # './all_stbe' is './all' with system tablespace encryption
 echo 'MYEXTRA_OPT="$*"' >all_no_cl
-echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT}" >>all_no_cl
+echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT}" >>all_no_cl
 echo 'MYEXTRA_OPT="$*"' >all_no_cl_rr
-echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10" >>all_no_cl_rr
+echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10" >>all_no_cl_rr
 echo 'MYEXTRA_OPT="$*"' >all_rr
-echo "./kill >/dev/null 2>&1;./stop >/dev/null 2>&1;./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10;./cl" >>all_rr
+echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10;./cl" >>all_rr
 echo "echo '1/4th sec memory snapshots, for the mysqld in this directory, logged to memory.txt'; rm -f memory.txt; echo '    PID %MEM   RSS    VSZ COMMAND'; while :; do if [ \"\$(ps -ef | grep 'port=${PORT}' | grep -v grep)\" ]; then ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep \"\$(ps -ef | grep 'port=${PORT}' | grep -v grep | head -n1 | awk '{print \$2}')\" | tee -a memory.txt ; sleep 0.25; else sleep 0.05; fi; done" >memory_use_trace
 if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
 chmod +x insert_start_marker insert_stop_marker start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test test_pquery test_timed test_pquery_timed kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr all_no_cl_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init repl_setup *multirun* reducer_* clean_failing_queries memory_use_trace 2>/dev/null
@@ -937,14 +945,14 @@ chmod +x insert_start_marker insert_stop_marker start start_valgrind start_gypsy
 echo './gal --sql_mode=' >gal_sqlmode
 echo './gal --log_bin' >gal_binlog
 echo 'MYEXTRA_OPT="$*"' >gal
-echo "./gal_kill >/dev/null 2>&1;./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT};./gal_cl" >>gal
+echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;sync;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT};./gal_cl" >>gal
 ln -s ./gal ./g 2>/dev/null
 echo 'MYEXTRA_OPT="$*"' >gal_stbe
 echo "./gal --early-plugin-load=keyring_file.so --keyring_file_data=keyring --innodb_sys_tablespace_encrypt=ON \${MYEXTRA_OPT}" >>gal_stbe # './gal_stbe' is './gal' with system tablespace encryption
 echo 'MYEXTRA_OPT="$*"' >gal_no_cl
-echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT}" >>gal_no_cl
+echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;sync;./gal_wipe \${MYEXTRA_OPT};./gal_start \${MYEXTRA_OPT}" >>gal_no_cl
 echo 'MYEXTRA_OPT="$*"' >gal_rr
-echo "./gal_kill >/dev/null 2>&1;./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;./gal_wipe \${MYEXTRA_OPT};./gal_start_rr \${MYEXTRA_OPT};./gal_cl" >>gal_rr
+echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;sync;./gal_wipe \${MYEXTRA_OPT};./gal_start_rr \${MYEXTRA_OPT};./gal_cl" >>gal_rr
 chmod +x gal gal_cl gal_sqlmode gal_binlog gal_stbe gal_no_cl gal_rr gal_gdb gal_test gal_test_pquery gal_cl_noprompt_nobinary gal_cl_noprompt gal_multirun gal_multirun_pquery gal_sysbench_measure gal_sysbench_prepare gal_sysbench_run gal_sysbench_multi_master_run 2>/dev/null
 echo "Setting up server with default directories"
 

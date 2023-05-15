@@ -5,6 +5,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+LSAN|memory leak|storage/innobase/mem/mem0mem.cc|__interceptor_malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                           ## MDEV-31271
+LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                                         ## MDEV-31271
+ASAN|use-after-poison|sql/item_func.cc|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool              ## MDEV-31269
+ASAN|use-after-poison|sql/item_func.cc|Item_func::print_op|Item_bool_rowready_func2::print|Item::print_parenthesised|Item_cond::print                                          ## MDEV-31269
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                            ## MDEV-30680
 UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::make_empty_rec_store_default_value|make_empty_rec_store_default|make_empty_rec ## MDEV-15703
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-24814
@@ -27,6 +31,7 @@ ASAN|use-after-poison|storage/maria/ha_maria.cc|ha_maria::info|ha_maria::open|ha
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/item_timefunc.cc|Item_func_monthname::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-31019
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/item_timefunc.cc|Item_func_monthname::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-31019
 LSAN|memory leak|storage/innobase/rem/rem0rec.cc|__interceptor_malloc|rec_copy_prefix_to_buf_old|rec_copy_prefix_to_buf|btr_pcur_store_position                                ## MDEV-28613
+LSAN|memory leak|storage/innobase/rem/rem0rec.cc|malloc|rec_copy_prefix_to_buf_old|rec_copy_prefix_to_buf|btr_pcur_store_position                                              ## MDEV-28613
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_lt::val_int ## MDEV-30982
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|sortcmp ## MDEV-30982
 LSAN|memory leak|storage/innobase/trx/trx0roll.cc|__interceptor_malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                 ## MDEV-23073

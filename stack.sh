@@ -5,9 +5,11 @@ RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
 
 BIN=
-if [ -r ./bin/mysqld ]; then BIN='./bin/mysqld'; fi
-if [ -z "${BIN}" -a -r ../mysqld/mysqld ]; then BIN='../mysqld/mysqld'; fi
-if [ -z "${BIN}" ]; then echo "Assert: bin/mysqld not found!" exit 1; fi
+if [ -r ./bin/mariadbd ]; then BIN='./bin/mariadbd'; 
+elif [ -r ./bin/mysqld ]; then BIN='./bin/mysqld';
+elif [ -r ../mysqld/mariadbd ]; then BIN='../mysqld/mariadbd'; 
+elif [ -r ../mysqld/mysqld ]; then BIN='../mysqld/mysqld'; 
+else echo "Assert: mariadbd nor mysqld found!" exit 1; fi
 
 if [ -r "${SCRIPT_PWD}/source_code_rev.sh" ]; then
   SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
