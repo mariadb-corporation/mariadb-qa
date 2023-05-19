@@ -1959,6 +1959,17 @@ pquery_test() {
               mkdir -p ${RUNDIR}/${TRIAL}/preload
               ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1 &
             fi
+            ## Check pre-shuffle directory
+            if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+              if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+                echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
+                mkdir -p "${PRE_SHUFFLE_SQL}"
+                if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+                  echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is going wrong"
+                  PRE_SHUFFLE_SQL=0
+                fi
+              fi
+            fi
             if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
               for i in $(seq 1 ${NR_OF_NODES}); do
                 cat << EOF >> ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
@@ -1994,9 +2005,59 @@ EOF
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
-            else 
-              ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-              PQPID="$!" 
+            else
+              ## Pre-shuffle (if activated)
+              if [ "${PRE_SHUFFLE_SQL}" == "1" -o "${PRE_SHUFFLE_SQL}" == "2" ]; then
+                PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
+                if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+                  mkdir -p "${PRE_SHUFFLE_DIR}"
+                  echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
+                fi
+                if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
+                  local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
+                  INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
+                  WORKNRDIR=
+                  echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL into ${INFILE_SHUFFLED} | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+                  PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
+                  RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
+                  if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+                    shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+                    echoit "Obtaining the PRE_SHUFFLE_SQL=1 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+                  elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
+                    ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables|^#|^\-\-|^let"
+                    touch ${INFILE_SHUFFLED}
+                    rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
+                    if [[ ${FILTER_SQL} -eq 0 ]]; then
+                      find ${HOME} /data/SQL /test/TESTCASES -maxdepth 3 -name '*.sql' -type f | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                    else
+                      find ${HOME} /data/SQL /test/TESTCASES -maxdepth 3 -name '*.sql' -type f | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                    fi
+                    chmod +x ${INFILE_SHUFFLED}.sh
+                    ${INFILE_SHUFFLED}.sh
+                    rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
+                    PRE_SHUFFLE_RES_SQL_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
+                    echoit "Obtaining the PRE_SHUFFLE_SQL=2 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds, and the final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_SQL_LINES} lines"
+                  else
+                    echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
+                    exit 1
+                  fi
+                  #SHUFFLE_FILELIST=
+                  PRE_SHUFFLE_DUR_START=
+                else
+                  echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_SQL_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+                fi
+                if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
+                  PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
+                fi
+                # Pre-shuffled trial
+                ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+                PQPID="$!"
+              else  # Standard non-shuffled trial
+                ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+                PQPID="$!"
+              fi
+              #${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+              #PQPID="$!"
               #echoit "Assert: GRP_RPL_CLUSTER_RUN=${GRP_RPL_CLUSTER_RUN} and MDG_CLUSTER_RUN=${MDG_CLUSTER_RUN}"
               #exit 1
             fi
