@@ -130,14 +130,20 @@ if [ "${PRELOAD}" == "1" ]; then
     echo "Assert: PRELOAD is enabled (1), yet the file configured with PRELOAD_SQL (${PRELOAD_SQL}) is empty. Please check."
     exit 1
   else
-    echo "PRELOAD SQL Active: (${PRELOAD_SQL} will be preloaded for all trials, and prepended to trial SQL traces"
+    echoit "PRELOAD SQL Active: (${PRELOAD_SQL} will be preloaded for all trials, and prepended to trial SQL traces"
   fi 
 else
   echo "PRELOAD SQL enabled: NO"
 fi
 if [ "${RR_TRACING}" == "1" ]; then
   if [ ! -r /usr/bin/rr ]; then
-    echo "Assert: /usr/bin/rr not found!"  # TODO: set to be automatic using whereis
+    echo "Assert: /usr/bin/rr not found"  # TODO: set to be automatic using whereis
+    exit 1
+  fi
+fi
+if [[ ${FILTER_SQL} -eq 0 ]]; then
+  if [ ! -r ${SCRIPT_PWD}/filter.sql ]; then
+    echo "Assert: FILTER_SQL is enabled, yet filter.sql (${SCRIPT_PWD}/filter.sql) cannot be found"
     exit 1
   fi
 fi
@@ -1897,14 +1903,18 @@ pquery_test() {
                 local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
                 INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
                 WORKNRDIR=
-                echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL into ${INFILE_SHUFFLED} | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+                echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES}+ lines of SQL into ${INFILE_SHUFFLED} Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
                 PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
                 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
                 if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-                  shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+                  if [[ ${FILTER_SQL} -eq 0 ]]; then
+                    shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+                  else  # SQL_FILTER=1
+                    shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')" > ${INFILE_SHUFFLED}
+                  fi
                   echoit "Obtaining the PRE_SHUFFLE_SQL=1 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
                 elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
-                  ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables|^#|^\-\-|^let"
+                  ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables|^#|^\-\-|^let|^ |^)|^c[0-9]\+ |^[0-9]|^[a-z] |^[0-9])|^\([0-9]|^\('|^'"
                   touch ${INFILE_SHUFFLED}
                   rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
                   if [[ ${FILTER_SQL} -eq 0 ]]; then
@@ -1921,10 +1931,16 @@ pquery_test() {
                   echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
                   exit 1
                 fi
-                #SHUFFLE_FILELIST=
                 PRE_SHUFFLE_DUR_START=
+                if [ ! -z "${PRE_SHUFFLE_ENGINE_SWAP}" ]; then
+                  PRE_SHUFFLE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
+                  echoit "PRE_SHUFFLE_ENGINE_SWAP=1 Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
+                  sed -i "s|InnoDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Aria|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|BLACKHOLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDBcluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|SEQUENCE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDBCluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CSV|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|TokuDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORY|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|ARCHIVE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CASSANDRA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CONNECT|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|EXAMPLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FALCON|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|HEAP|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|${PRE_SHUFFLE_ENGINE_SWAP}cluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MARIA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MERGE|${PRE_SHUFFLE_ENGINE_SWAP}|gi" ${INFILE_SHUFFLED}
+                  echoit "PRE_SHUFFLE_ENGINE_SWAP=1: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_ENGINE_SWAP_DUR_START} ] seconds"
+                  PRE_SHUFFLE_ENGINE_SWAP_DUR_START=
+                fi
               else
-                echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_SQL_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+                echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_SQL_LINES} lines) Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
               fi
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
                 PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
@@ -2359,13 +2375,17 @@ EOF
     sleep 2
     sync
   fi
-  if [ ${ISSTARTED} -eq 1 -a ${TRIAL_SAVED} -ne 1 ]; then # Do not try and print pquery log for a failed mysqld/mariadbd start
-    if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-      echoit "Pri engine pquery run details:$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log | sed 's|.*:||')"
-      echoit "Sec engine pquery run details:$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log | sed 's|.*:||')"
-    else
-      echoit "pquery run details:$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log | sed 's|.*:||')"
+  if [ ${ISSTARTED} -eq 1 ]; then  # Do not try and print pquery stats when mysqld/mariadbd failed to start
+    FAILED_QUERIES_OUTPUT="$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log | sed 's|.*:||')"
+    if [ ! -z "${FAILED_QUERIES_OUTPUT}" ]; then
+      if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
+        echoit "Pri engine pquery run details: ${FAILED_QUERIES_OUTPUT}"
+        # echoit "Sec engine pquery run details:"  # TODO: add sec engine result
+      else
+        echoit "pquery run details: ${FAILED_QUERIES_OUTPUT}"
+      fi
     fi
+    FAILED_QUERIES_OUTPUT=
   fi
   if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 -a $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2> /dev/null | wc -l) -eq 0 -a "$(${SCRIPT_PWD}/OLD/text_string.sh ${RUNDIR}/${TRIAL}/log/master.err 2> /dev/null)" == "" ]; then # If a core is found (or text_string.sh sees a crash) when query correctness testing is in progress, it will process it as a normal crash (without considering query correctness)
     if [ "${FAILEDSTARTABORT}" != "1" ]; then

@@ -716,4 +716,5 @@ else
   echo "NOTE: you may like to do:  \$ sed -i \"s|some_engine|InnoDB|gi\" ${FINAL_OUTFILE}.sql  # Or, edit engines.txt and run generator.sh again"
 fi
 
-# Handy ref for large merged files swap all to given SE: sed  "s|Aria|InnoDB|gi;s|MyISAM|InnoDB|gi;s|BLACKHOLE|InnoDB|gi;s|RocksDB|InnoDB|gi;s|MRG_MyISAM|InnoDB|gi;s|SEQUENCE|InnoDB|gi;s|NDB|InnoDB|gi;s|CSV|InnoDB|gi;s|MEMORY|InnoDB|gi;s|ARCHIVE|InnoDB|gi;s|PERFORMANCE_SCHEMA|test|gi;s|INFORMATION_SCHEMA|test|gi;" input.sql | sort -r > output.sql  # sort -r is reverse, sort -R is random
+# Handy ref for large merged files swap all to given SE: sed "s|Aria|InnoDB|gi;s|MyISAM|InnoDB|gi;s|BLACKHOLE|InnoDB|gi;s|RocksDB|InnoDB|gi;s|RocksDBcluster|InnoDB|gi;s|MRG_MyISAM|InnoDB|gi;s|SEQUENCE|InnoDB|gi;s|NDB|InnoDB|gi;s|NDBCluster|InnoDB|gi;s|CSV|InnoDB|gi;s|TokuDB|InnoDB|gi;s|MEMORY|InnoDB|gi;s|ARCHIVE|InnoDB|gi;s|CASSANDRA|InnoDB|gi;s|CONNECT|InnoDB|gi;s|EXAMPLE|InnoDB|gi;s|FALCON|InnoDB|gi;s|HEAP|InnoDB|gi;s|INNODBcluster|InnoDB|gi;s|MARIA|InnoDB|gi;s|MEMORYCLUSTER|InnoDB|gi;s|MERGE|InnoDB|gi;s|Spider|InnoDB|gi;s|InnoDB|InnoDB|gi" input.sql | sort -r > output.sql
+# And maybe: sed "s|PERFORMANCE_SCHEMA|test|gi;s|INFORMATION_SCHEMA|test|gi;"
