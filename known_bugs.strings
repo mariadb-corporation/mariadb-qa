@@ -1461,7 +1461,6 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::r
 # SIGSEGV|Item_func_nextval::update_table|Item_func_setval::val_int|Type_handler::Item_send_longlong|Type_handler_longlong::Item_send                                 ## Fixed ## MDEV-24018
 # SIGSEGV|Item_func_nextval::update_table|Item_func_setval::val_int|Type_handler::Item_send_longlong|Protocol::send_result_set_row                                    ## Fixed ## MDEV-24018
 # SIGSEGV|strnmov|name_hash_search|table_hash_search|check_grant_all_columns                                                                                          ## Fixed ## MDEV-24019
-# open_tables == __null|SIGABRT|THD::cleanup|THD::free_connection|THD::~THD|THD::~THD                    i                                                            ## Fixed ## MDEV-24019
 # SIGSEGV|__memcmp_avx2_movbe|insert_at|queue_insert|Bounded_queue<unsigned char, unsigned char>::push                                                                ## Fixed ## MDEV-24033
 # SIGSEGV|__memcmp_avx2_movbe|native_compare|insert_at|queue_insert                                                                                                   ## Fixed ## MDEV-24033
 # ib_table.n_v_cols|SIGABRT|instant_alter_column_possible|ha_innobase::check_if_supported_inplace_alter|mysql_alter_table|Sql_cmd_alter_table::execute                ## Fixed ## MDEV-24072

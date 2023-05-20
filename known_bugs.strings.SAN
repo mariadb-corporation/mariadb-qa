@@ -5,6 +5,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/spd_group_by_handler.cc|spider_fields::free_conn_holder|spider_fields::~spider_fields|spider_fields::~spider_fields|spider_group_by_handler::~spider_group_by_handler ## MDEV-28998
+ASAN|heap-use-after-free|storage/spider/spd_group_by_handler.cc|spider_create_group_by_handler|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner          ## MDEV-28998
+UBSAN|member access within null pointer of type 'struct st_plugin_int'|sql/sql_plugin.cc|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                              ## MDEV-27575
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|__interceptor_malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                           ## MDEV-31271
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                                         ## MDEV-31271
 ASAN|use-after-poison|sql/item_func.cc|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool              ## MDEV-31269
@@ -39,6 +42,7 @@ LSAN|memory leak|storage/innobase/trx/trx0roll.cc|malloc|trx_savepoint_for_mysql
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::create|handler::ha_create|ha_create_table ## MDEV-30981
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::update_create_info|mysql_prepare_alter_table|mysql_alter_table ## MDEV-30981
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::update_create_info|ha_partition::update_create_info|mysql_prepare_alter_table ## MDEV-30981
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::create|handler::ha_create|ha_partition::create ## MDEV-30981
 SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ReportIncompatibleRT|__asan::AsanCheckIncompatibleRT                                                                       ## MDEV-30950
 LSAN|memory leak|include/trx0trx.h|operator|trx_mod_table_time_t::start_bulk_insert|trx_undo_report_row_operation|row_ins_clust_index_entry_low                                ## MDEV-30943
 ASAN|heap-use-after-free|include/c++/current_version/bits/atomic_base.h|std::__atomic_base<long>::store|Atomic_relaxed<long>::store|Atomic_relaxed<long>::operator=|trx_t::commit_tables ## MDEV-30941
