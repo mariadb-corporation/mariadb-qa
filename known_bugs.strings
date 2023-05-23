@@ -510,6 +510,7 @@ SIGSEGV|Stat_table::common_init_stat_table|Stat_table::Stat_table|Column_stat::C
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_int|JOIN::exec_inner ## MDEV-22375
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_int|Item::val_int_result ## MDEV-22375
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_int|Type_handler_int_result::Item_val_bool ## MDEV-22375
+wsrep_thd_is_applying(thd) && !wsrep_thd_is_local_toi(thd)|SIGABRT|wsrep_ignored_error_code|Rows_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event ## MDEV-28198
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## MDEV-28198
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::update_row                                       ## MDEV-28198
 table->in_use && tdc->flushed|SIGABRT|TABLE_SHARE::visit_subgraph|Wait_for_flush::accept_visitor|MDL_context::visit_subgraph|MDL_context::find_deadlock                        ## MDEV-28774
