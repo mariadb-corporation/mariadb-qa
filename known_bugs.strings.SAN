@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::rnd_init ## MDEV-29018
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::index_init ## MDEV-29018
 ASAN|heap-use-after-free|storage/spider/spd_group_by_handler.cc|spider_fields::free_conn_holder|spider_fields::~spider_fields|spider_fields::~spider_fields|spider_group_by_handler::~spider_group_by_handler ## MDEV-28998
 ASAN|heap-use-after-free|storage/spider/spd_group_by_handler.cc|spider_create_group_by_handler|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner          ## MDEV-28998
 UBSAN|member access within null pointer of type 'struct st_plugin_int'|sql/sql_plugin.cc|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                              ## MDEV-27575
