@@ -149,6 +149,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!thd->is_current_stmt_binlog_format_row()|SIGABRT|sp_revoke_privileges|mysql_execute_command|mysql_parse|wsrep_mysql_parse                                                     ## MDEV-31352
 SIGABRT|__libc_message|malloc_printerr|_int_free|JOIN_CACHE::free                                                                                                              ## MDEV-31348
 last_key_entry >= end_pos|SIGABRT|JOIN_CACHE_HASHED::put_record|sub_select_cache|evaluate_join_record|sub_select                                                               ## MDEV-31348
 mon > 0 && mon < 13|SIGABRT|sec_since_epoch|Time_zone_offset::TIME_to_gmt_sec|TIME_to_timestamp|Timestamp::Timestamp                                                           ## MDEV-31302
@@ -1222,6 +1223,7 @@ length > 0|SIGABRT|create_ref_for_key|JOIN::get_best_combination|JOIN::optimize_
 0|SIGABRT|Field_blob_compressed::new_key_field|store_key::store_key|store_key_field::store_key_field|get_store_key                                                             ## MDEV-16808
 SIGSEGV|store_key_field::copy_inner|store_key::copy|cp_buffer_from_ref|JOIN_CACHE_HASHED::put_record                                                                           ## MDEV-16808
 SIGSEGV|store_key::copy|cp_buffer_from_ref|JOIN_CACHE_HASHED::put_record|sub_select_cache                                                                                      ## MDEV-16808
+strcmp(share->unique_file_name,filename) || share->last_version|SIGABRT|test_if_reopen|mi_create|ha_myisam::create|handler::ha_create                                          ## MDEV-16985
 strcmp(share->unique_file_name,filename) || share->last_version|SIGABRT|test_if_reopen|mi_open|ha_myisam::open|handler::ha_open                                                ## MDEV-16985
 expr == default_value->expr|SIGABRT|make_empty_rec_store_default|make_empty_rec|build_frm_image|mysql_create_frm_image                                                         ## MDEV-19336
 entry->pos_in_table_list->table == entry|SIGABRT|free_tmp_table|close_thread_tables|mysql_execute_command|mysql_parse                                                          ## MDEV-19336
