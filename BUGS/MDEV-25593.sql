@@ -1,0 +1,7 @@
+PREPARE stmt FROM 'SELECT ?';
+EXECUTE stmt USING current_timestamp;
+EXECUTE stmt USING @param1;
+
+PREPARE s FROM 'SELECT ? FROM DUAL';
+EXECUTE s USING current_time;
+EXECUTE s USING DEFAULT;

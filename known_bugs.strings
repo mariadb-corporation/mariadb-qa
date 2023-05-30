@@ -149,6 +149,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+thd->start_time|SIGABRT|LOGGER::slow_log_print|slow_log_print|log_slow_statement|dispatch_command                                                                              ## MDEV-31366
 !thd->is_current_stmt_binlog_format_row()|SIGABRT|sp_revoke_privileges|mysql_execute_command|mysql_parse|wsrep_mysql_parse                                                     ## MDEV-31352
 SIGABRT|__libc_message|malloc_printerr|_int_free|JOIN_CACHE::free                                                                                                              ## MDEV-31348
 last_key_entry >= end_pos|SIGABRT|JOIN_CACHE_HASHED::put_record|sub_select_cache|evaluate_join_record|sub_select                                                               ## MDEV-31348
@@ -853,6 +854,7 @@ table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_
 thd->is_error()|SIGABRT|convert_error_to_warning|Show::get_geometry_column_record|fill_schema_table_by_open|get_all_tables                                                     ## MDEV-25692
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command                 ## MDEV-25668
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|create_view_field|Field_iterator_view::create_item|find_field_in_view                                                     ## MDEV-25650
+0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Item::get_time                                                ## MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Item_param::get_date|Type_handler::Item_send_datetime|Type_handler_datetime_common::Item_send                            ## MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Type_handler::Item_send_datetime                              ## MDEV-25593
 !thd || thd->locked_tables_mode || !thd->mdl_context.has_locks() || thd->handler_tables_hash.records || thd->ull_hash.records || thd->global_read_lock.is_acquired()|SIGABRT|reload_acl_and_cache|mysql_execute_command|mysql_parse|dispatch_command ## MDEV-25589
