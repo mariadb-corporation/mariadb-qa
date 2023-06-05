@@ -1,0 +1,2 @@
+CREATE TABLE t (id CHAR AS (JSON_COMPACT (JSON_EXTRACT(doc,"$._id"))) UNIQUE KEY,doc JSON,CONSTRAINT notnu CHECK (id IS NOT NULL));
+INSERT INTO t (doc) VALUES ('{ "_id" : { "$oid" : "0ca0b0f0" },"a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" : [ { "a" :0} ] } ] } ] } ] } ] } ] } ] } ] } ] } ] } ] } ] } ] } ] } ] }');

@@ -149,6 +149,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|json_get_path_next|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item::val_json                                                                    ## MDEV-31402
+SIGSEGV|json_get_path_next|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item_func_json_format::val_str                                                    ## MDEV-31402
 thd->start_time|SIGABRT|LOGGER::slow_log_print|slow_log_print|log_slow_statement|dispatch_command                                                                              ## MDEV-31366
 !thd->is_current_stmt_binlog_format_row()|SIGABRT|sp_revoke_privileges|mysql_execute_command|mysql_parse|wsrep_mysql_parse                                                     ## MDEV-31352
 SIGABRT|__libc_message|malloc_printerr|_int_free|JOIN_CACHE::free                                                                                                              ## MDEV-31348
