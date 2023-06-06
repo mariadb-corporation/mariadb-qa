@@ -1,0 +1,13 @@
+diff --git a/sql/sql_table.cc b/sql/sql_table.cc
+index 6e8a4795f21..f8f3eefc114 100644
+--- a/sql/sql_table.cc
++++ b/sql/sql_table.cc
+@@ -2441,6 +2441,8 @@ static inline void make_long_hash_field_name(LEX_CSTRING *buf, uint num)
+ static Create_field * add_hash_field(THD * thd, List<Create_field> *create_list,
+                                       KEY *key_info)
+ {
++  my_error(ER_TOO_LONG_KEY, MYF(0), 1000);
++  return nullptr;
+   List_iterator<Create_field> it(*create_list);
+   Create_field *dup_field, *cf= new (thd->mem_root) Create_field();
+   cf->flags|= UNSIGNED_FLAG | LONG_UNIQUE_HASH_FIELD;

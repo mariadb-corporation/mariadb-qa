@@ -5,6 +5,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|my_hash_key|hashcmp|my_hash_first_from_hash_value                                                     ## MDEV-31357
+UBSAN|member access within null pointer of type 'struct SPIDER_FIELD_CHAIN'|storage/spider/spd_db_conn.cc                                                                      ## MDEV-31338
+UBSAN|member access within null pointer of type 'struct SPIDER_FIELD_CHAIN'|storage/spider/spd_db_conn.cc|spider_db_open_item_ident|spider_db_open_item_field|spider_db_print_item_type|spider_mbase_handler::append_order_by ## MDEV-31338
+UBSAN|member access within null pointer of type 'struct SPIDER_FIELD_CHAIN'|storage/spider/spd_db_conn.cc|spider_db_open_item_ident|spider_db_open_item_field|spider_mbase_handler::append_order_by|spider_mbase_handler::append_order_by ## MDEV-31338
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::rnd_init ## MDEV-29018
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::index_init ## MDEV-29018
 ASAN|heap-use-after-free|storage/spider/spd_group_by_handler.cc|spider_fields::free_conn_holder|spider_fields::~spider_fields|spider_fields::~spider_fields|spider_group_by_handler::~spider_group_by_handler ## MDEV-28998

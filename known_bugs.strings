@@ -46,11 +46,14 @@ GOT_ERROR|Got error 1032|when trying to execute action for entry 7 of type 'rena
 GOT_ERROR|Got error 1062|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-31111 (Spider)
 GOT_ERROR|Got error 1062|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-31111 (Spider)
 GOT_ERROR|Got error 1062|when trying to execute action for entry 3 of type 'rename table'  ## MDEV-31111 (Spider)
-GOT_ERROR|Got error 12524|when trying to execute action for entry 6 of type 'rename table'  ## MDEV-29800
+GOT_ERROR|Got error 1100|when reading table                    ## MDEV-31409 (Spider)
 GOT_ERROR|Got error 1146|when reading table                    ## MDEV-29663
+GOT_ERROR|Got error 1429|when reading table                    ## SPECIAL-6 (Spider)
+GOT_ERROR|Got error 12524|when trying to execute action for entry 6 of type 'rename table'  ## MDEV-29800
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-26543
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
+GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spider)
 
 ##### MDEV-29507 TESTING TEMPORARY #####
 SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute                                    ## MDEV-29544
@@ -149,6 +152,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|spider_db_open_item_ident|spider_db_open_item_field|spider_db_print_item_type|spider_mbase_handler::append_order_by                                                    ## MDEV-31338
+SIGSEGV|spider_db_open_item_ident|spider_mbase_handler::append_order_by|spider_mbase_handler::append_order_by|spider_group_by_handler::init_scan                               ## MDEV-31338
 mon > 0 && mon < 13|SIGABRT|sec_since_epoch|Time_zone_offset::TIME_to_gmt_sec|TIME_to_timestamp|Timestamp::Timestamp                                                           ## MDEV-31302
 !check_foreigns|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                                                          ## MDEV-31298
 SIGSEGV|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal|VDec::VDec|VDec2_lazy::VDec2_lazy                        ## MDEV-31284

@@ -144,6 +144,13 @@ if [ -z "${ERROR_LOG}" ]; then
     ERROR_LOG="../../mysqld.1.err"
   elif [ -r "./var/log/mysqld.1.err" ]; then  # For MTR, default ./mtr test runs (e.g. testcase in main/test.test)
     ERROR_LOG="./var/log/mysqld.1.err"
+  # TODO: add auto-discovery of correct log to use for below entries, or better: merge logs into one temporary file for overall scan 
+  elif [ -r "./var/log/mysqld.3.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
+    ERROR_LOG="./var/log/mysqld.3.1.err"
+  elif [ -r "./var/log/mysqld.2.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
+    ERROR_LOG="./var/log/mysqld.2.1.err"
+  elif [ -r "./var/log/mysqld.1.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
+    ERROR_LOG="./var/log/mysqld.1.1.err"
   else
     echo "Assert: no error log found - exiting"
     exit 1
