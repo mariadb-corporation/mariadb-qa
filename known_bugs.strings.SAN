@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/spd_conn.cc|spider_conn_queue_and_merge_loop_check|spider_conn_queue_loop_check|spider_get_conn|spider_get_share                       ## MDEV-29002
+ASAN|heap-use-after-free|storage/spider/spd_conn.cc|spider_conn_queue_and_merge_loop_check|spider_conn_queue_loop_check|spider_get_conn|spider_share_get_conns                 ## MDEV-29002
 ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|my_hash_key|hashcmp|my_hash_first_from_hash_value                                                     ## MDEV-31357
 UBSAN|member access within null pointer of type 'struct SPIDER_FIELD_CHAIN'|storage/spider/spd_db_conn.cc                                                                      ## MDEV-31338
 UBSAN|member access within null pointer of type 'struct SPIDER_FIELD_CHAIN'|storage/spider/spd_db_conn.cc|spider_db_open_item_ident|spider_db_open_item_field|spider_db_print_item_type|spider_mbase_handler::append_order_by ## MDEV-31338
@@ -167,6 +169,10 @@ ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|charset_info_st::st
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|Value_source::Converter_strntod::Converter_strntod                                                ## MDEV-28345
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_ulonglong::add|analyse::send_row|end_send|evaluate_join_record     ## MDEV-28345
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                                                                          ## MDEV-28345
+ASAN|heap-use-after-free|strings/dtoa.c|my_strtod_int|my_strtod|Value_source::Converter_strntod::Converter_strntod|Value_source::Converter_strntod_with_warn::Converter_strntod_with_warn ## MDEV-28345
+ASAN|heap-use-after-free|strings/dtoa.c|my_strtod_int|my_strtod|charset_info_st::strntod|Value_source::Converter_strntod::Converter_strntod                                    ## MDEV-28345
+ASAN|heap-use-after-free|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|Value_source::Converter_strntod::Converter_strntod                                             ## MDEV-28345
+ASAN|heap-use-after-free|strings/dtoa.c|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                                                                       ## MDEV-28345
 TSAN|data race|sql/mysqld.cc|__tsan_atomic64_fetch_add|update_global_memory_status|my_malloc_size_cb_func|my_free                                                              ## MDEV-27170
 TSAN|data race|sql/mysqld.cc|__tsan_atomic64_fetch_add|update_global_memory_status|my_malloc_size_cb_func|my_malloc                                                            ## MDEV-27170
 TSAN|data race|storage/innobase/os/os0file.cc|LinuxAIOHandler::collect|LinuxAIOHandler::poll|os_aio_linux_handler|os_aio_handler                                               ## MDEV-27133
