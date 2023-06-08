@@ -5,6 +5,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|sql/item.cc|Item_field::print|Item_equal::print|st_select_lex::print|subselect_single_select_engine::print                                            ## MDEV-31432
+ASAN|heap-use-after-free|sql/item.cc|Item_field::print|Item::print_parenthesised|Item_func::print_op|Item_bool_rowready_func2::print                                           ## MDEV-31432
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|handler::ha_external_unlock                     ## MDEV-30014
+UBSAN|member access within null pointer of type 'struct st_join_table'|sql/sql_select.cc|sort_and_filter_keyuse|make_join_statistics|JOIN::optimize_inner|JOIN::optimize       ## MDEV-24513
 ASAN|heap-use-after-free|storage/spider/spd_conn.cc|spider_conn_queue_and_merge_loop_check|spider_conn_queue_loop_check|spider_get_conn|spider_get_share                       ## MDEV-29002
 ASAN|heap-use-after-free|storage/spider/spd_conn.cc|spider_conn_queue_and_merge_loop_check|spider_conn_queue_loop_check|spider_get_conn|spider_share_get_conns                 ## MDEV-29002
 ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|my_hash_key|hashcmp|my_hash_first_from_hash_value                                                     ## MDEV-31357
@@ -21,6 +25,7 @@ LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_fu
 ASAN|use-after-poison|sql/item_func.cc|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool              ## MDEV-31269
 ASAN|use-after-poison|sql/item_func.cc|Item_func::print_op|Item_bool_rowready_func2::print|Item::print_parenthesised|Item_cond::print                                          ## MDEV-31269
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                            ## MDEV-30680
+LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                                          ## MDEV-30680
 UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::make_empty_rec_store_default_value|make_empty_rec_store_default|make_empty_rec ## MDEV-15703
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-24814
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command ## MDEV-24814

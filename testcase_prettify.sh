@@ -9,7 +9,7 @@
 if [ -z "${1}" ]; then echo "Assert: please specify testcase to prettify!"; exit 1; fi
 if [ ! -f "${1}" -o ! -r "${1}" ]; then echo "Assert: '${1}' is not readable by this script"; exit 1; fi
 
-OPTIONS="$(grep -i '^. mysqld options required for replay' "${1}" | head -n1 | sed "s|. mysqld options required for replay:[ \t]\+..sql_mode=[ \t]*$|SET sql_mode='';|")"
+OPTIONS="$(grep --binary-files=text -i '^. mysqld options required for replay' "${1}" | head -n1 | sed "s|. mysqld options required for replay:[ \t]\+..sql_mode=[ \t]*$|SET sql_mode='';|")"
 set +H
 # Note that there is one shortcoming in deleting '`' on the next line: if a certain keyword is used
 # as a name, for example CREATE TABLE (`primary` INT) then removing the '`' will make it an actual
@@ -448,6 +448,8 @@ cat "${1}" | tr -d '`' | \
        s|( (|((|g;s|) )|))|g; \
        s| \+(\([^)]\+\))VALUES(|(\1) VALUES (|gi; \
        s| \+| |g; \
+       s|srv \"srv\"|SERVER \"s\"|gi;s|SERVER \"srv\"|SERVER \"s\"|gi;s|SERVER srv |SERVER s |gi; \
+       s|srv 'srv'|SERVER 's'|gi;s|SERVER 'srv'|SERVER 's'|gi;s|SERVER srv |SERVER s |gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 
 # Templates for copy/paste

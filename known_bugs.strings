@@ -152,6 +152,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Item_field::print|Item_equal::print|st_select_lex::print|subselect_single_select_engine::print                                                                         ## MDEV-31432
+SIGSEGV|Item_field::print|Item::print_parenthesised|Item_func::print_op|Item_bool_rowready_func2::print                                                                        ## MDEV-31432
 SIGSEGV|spider_db_open_item_ident|spider_db_open_item_field|spider_db_print_item_type|spider_mbase_handler::append_order_by                                                    ## MDEV-31338
 SIGSEGV|spider_db_open_item_ident|spider_mbase_handler::append_order_by|spider_mbase_handler::append_order_by|spider_group_by_handler::init_scan                               ## MDEV-31338
 SIGSEGV|json_get_path_next|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item::val_json                                                                    ## MDEV-31402
