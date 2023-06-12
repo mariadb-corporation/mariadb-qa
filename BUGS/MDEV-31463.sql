@@ -1,0 +1,9 @@
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE'',USER'',PASSWORD'');
+SET GLOBAL wait_timeout=+1;
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE TABLE t (c INT KEY,c1 BLOB,c2 TEXT) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv"';
+XA START 'a';
+INSERT INTO t VALUES (0,0,0,0);
+SELECT SLEEP (4);
+INSERT INTO t VALUES (1,2,3),(4,5,6),(7,8,9);
+SELECT * FROM information_schema.key_column_usage;
