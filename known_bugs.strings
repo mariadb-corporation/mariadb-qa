@@ -152,6 +152,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|charset_info_st::charpos|Charset::charpos|String::charpos|Item_func_left::val_str                                                                                      ## MDEV-31433
 (thd && (WSREP_PROVIDER_EXISTS_ && thd->variables.wsrep_on))|SIGABRT|wsrep_restore_kill_after_commit|wsrep_after_statement|wsrep_commit_empty|ha_commit_trans                  ## MENT-1839
 SIGSEGV|Item_field::print|Item_equal::print|st_select_lex::print|subselect_single_select_engine::print                                                                         ## MDEV-31432
 SIGSEGV|Item_field::print|Item::print_parenthesised|Item_func::print_op|Item_bool_rowready_func2::print                                                                        ## MDEV-31432
