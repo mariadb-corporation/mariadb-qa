@@ -137,6 +137,9 @@ if [[ ${MDG} -eq 1 ]]; then
 else
   ERROR_LOG=$(ls ${LOC}/log/master.err 2>/dev/null | head -n1)
   LATEST_CORE=$(ls -t ${LOC}/*/*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
+  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location (this may have been an MTR run)
+    LATEST_CORE=$(ls -t ${LOC}/var/log/*/mysqld*/data/*core* 2>/dev/null | head -n1)
+  fi
 fi
 
 if [ -z "${ERROR_LOG}" ]; then
