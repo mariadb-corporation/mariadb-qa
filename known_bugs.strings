@@ -155,6 +155,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 field->table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|best_extension_by_limited_search                                                          ## MDEV-31243
 field->table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|get_costs_for_tables                                                                      ## MDEV-31243
 field->orig_table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|get_costs_for_tables                                                                 ## MDEV-31243
+SIGSEGV|server_mysql_send_query|server_mysql_real_query|spider_db_mbase::exec_query|spider_db_mbase::set_lock_wait_timeout                                                     ## MDEV-31463
+SIGSEGV|charset_info_st::charpos|Charset::charpos|String::charpos|Item_func_left::val_str                                                                                      ## MDEV-31433
+(thd && (WSREP_PROVIDER_EXISTS_ && thd->variables.wsrep_on))|SIGABRT|wsrep_restore_kill_after_commit|wsrep_after_statement|wsrep_commit_empty|ha_commit_trans                  ## MENT-1839
 SIGSEGV|Item_field::print|Item_equal::print|st_select_lex::print|subselect_single_select_engine::print                                                                         ## MDEV-31432
 SIGSEGV|Item_field::print|Item::print_parenthesised|Item_func::print_op|Item_bool_rowready_func2::print                                                                        ## MDEV-31432
 SIGSEGV|spider_db_open_item_ident|spider_db_open_item_field|spider_db_print_item_type|spider_mbase_handler::append_order_by                                                    ## MDEV-31338
@@ -204,6 +207,7 @@ SIGSEGV|__strlen_avx2|Item_func_monthname::val_str|Type_handler::Item_send_str|T
 ctx->new_table->space != fil_system.sys_space|SIGABRT|commit_cache_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table|mysql_inplace_alter_table ## MDEV-31000
 SIGSEGV|__strlen_avx2|make_date_time|Item_func_date_format::val_str|Type_handler::Item_send_str                                                                                ## MDEV-30997
 SIGSEGV|make_date_time|Item_func_date_format::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                        ## MDEV-30997
+SIGSEGV|l_find|lf_hash_iterate|tdc_iterate|list_open_tables                                                                                                                    ## MDEV-30926
 SIGSEGV|l_find|lf_hash_iterate|tdc_iterate|tc_purge                                                                                                                            ## MDEV-30926
 SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|tdc_acquire_share                                                                                                      ## MDEV-30926
 SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|lf_hash_search                                                                                                         ## MDEV-30926
