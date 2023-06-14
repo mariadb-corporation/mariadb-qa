@@ -58,6 +58,7 @@ Got error 12701                                       https://jira.mariadb.org/b
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-28676 (Spider)
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-29455 (Spider)
 Got error 12719 when reading table                    Presumed non-issue (Spider, ref SPECIAL-7.sql & MDEV-29583)
+Got error 12801                                       https://jira.mariadb.org/browse/MDEV-29502 (Spider, CLI only: not filtered ftm)
 max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)
 ^Stats:                                               Prevents incorrect last line 'alloc' captures in ASAN output
 Deleting the meta-data file                           Normal result of FLUSH TABLE WITH READ LOCK, also see MDEV-28110

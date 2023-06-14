@@ -587,6 +587,7 @@ SIGSEGV|find_field_in_tables|Item_field::fix_fields|create_view_field|find_field
 SIGSEGV|Item_field::fix_fields|create_view_field|find_field_in_view|find_field_in_table_ref                                                                                    ## MDEV-28506
 SIGSEGV|create_view_field|find_field_in_view|find_field_in_table_ref|find_field_in_tables                                                                                      ## MDEV-28506
 SIGSEGV|strcmp|my_strcasecmp_bin|find_field_in_table_ref|find_field_in_tables                                                                                                  ## MDEV-28506
+SIGSEGV|find_field_in_table_ref|find_field_in_tables|Item_field::fix_outer_field|Item_field::fix_fields                                                                        ## MDEV-28506
 SIGSEGV|_dl_lookup_symbol_x|do_sym|_dl_sym|dlsym_doit                                                                                                                          ## MDEV-28625
 SIGSEGV|do_lookup_x|_dl_lookup_symbol_x|do_sym|_dl_sym                                                                                                                         ## MDEV-28625
 SIGSEGV|sub_select|do_select|JOIN::exec_inner|JOIN::exec                                                                                                                       ## MDEV-28505

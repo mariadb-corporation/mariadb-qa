@@ -27,6 +27,7 @@ ASAN|use-after-poison|sql/item_func.cc|Item_func::fix_fields|Item::fix_fields_if
 ASAN|use-after-poison|sql/item_func.cc|Item_func::print_op|Item_bool_rowready_func2::print|Item::print_parenthesised|Item_cond::print                                          ## MDEV-31269
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                            ## MDEV-30680
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                                          ## MDEV-30680
+LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                    ## MDEV-30680
 UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::make_empty_rec_store_default_value|make_empty_rec_store_default|make_empty_rec ## MDEV-15703
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-24814
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command ## MDEV-24814
@@ -108,6 +109,7 @@ UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subsel
 UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::walk|Item_args::walk_args|Item_func_or_sum::walk ## MDEV-28502
 ASAN|stack-buffer-overflow|storage/spider/spd_db_mysql.cc|__interceptor_strlen.part.0|spider_db_mbase_util::open_item_func|spider_db_open_item_func|spider_db_print_item_type  ## MDEV-29502
 ASAN|stack-buffer-overflow|storage/spider/spd_db_mysql.cc|__interceptor_strlen.part.0|spider_db_mbase_util::open_item_func|spider_mbase_handler::append_list_item_select|spider_group_by_handler::init_scan ## MDEV-29502
+ASAN|heap-buffer-overflow|storage/spider/spd_db_mysql.cc|spider_db_mbase_row::val_decimal|spider_db_fetch_for_item_sum_func|spider_db_fetch_for_item_sum_funcs|spider_db_fetch_table ## MDEV-29502
 ASAN|heap-buffer-overflow|storage/spider/spd_db_mysql.cc|spider_db_mbase_row::append_to_str|spider_db_fetch_for_item_sum_func|spider_db_fetch_for_item_sum_funcs|spider_db_fetch_table ## MDEV-29502
 ASAN|use-after-poison|sql/table.cc|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table|close_thread_tables                                   ## MDEV-29932
 ASAN|use-after-poison|sql/field.h|Virtual_column_info::need_refix|Virtual_column_info::cleanup_session_expr|TABLE::vcol_cleanup_expr|close_thread_table                        ## MDEV-29932
@@ -162,6 +164,7 @@ UBSAN|null pointer passed as argument 1, which is declared to never be null|stri
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Field_blob::cmp|Field_blob::cmp ## MDEV-28384
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|Field_blob::cmp ## MDEV-28384
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|group_concat_key_cmp_with_distinct|tree_insert ## MDEV-28384
+UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Item_func_between::val_int_cmp_string|SQL_SELECT::skip_record ## MDEV-28384
 UBSAN|member call on null pointer of type 'struct Explain_node'|sql/sql_explain.cc|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain ## MDEV-18157
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
