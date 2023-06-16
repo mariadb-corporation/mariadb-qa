@@ -152,6 +152,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|PROF_MEASUREMENT::~PROF_MEASUREMENT|QUERY_PROFILE::~QUERY_PROFILE|PROFILING::restart|THD::free_connection                                                              ## MDEV-31485
 field->table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|best_extension_by_limited_search                                                          ## MDEV-31243
 field->table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|get_costs_for_tables                                                                      ## MDEV-31243
 field->orig_table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|get_costs_for_tables                                                                 ## MDEV-31243
