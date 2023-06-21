@@ -32,10 +32,10 @@ sleep 2
 cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 sleep 3
 cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 4
-cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 5
-cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+#sleep 4
+#cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+#sleep 5
+#cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 sleep 6
 cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 sleep 7
@@ -46,7 +46,7 @@ sleep 9
 cd ${DIR}/11.0 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 sleep 10
 cd ${DIR}/11.1 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 11
-cd ${DIR}/11.2 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+#sleep 11
+#cd ${DIR}/11.2 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 
 echo "All processes started as background threads... Output will commence soon."
