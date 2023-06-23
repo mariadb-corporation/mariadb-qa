@@ -47,3 +47,9 @@ SELECT * FROM performance_schema.hosts;
 INSERT INTO  t2  VALUES (-1340711133,14018,'abcdefghijklmnopqrstuvwxyz','abcdefghijklmnopqrstuvwxyz','abcdefghijklmnopqrstuvwxyz','abcdefghijklmnopqrstuvwxyz','abcdefghijklmnopqrstuvwxyz','abcdefghijklmnopqrstuvwxyz',4);
 select * from t1 A, t1 B where B.rowkey=A.a;
 show function code f1;
+
+CREATE FUNCTION f0() RETURNS INT RETURN (SELECT * FROM t);
+CREATE TABLE t (a INT);
+CREATE TABLE t2 SELECT f0();
+DROP TABLE IF EXISTS t;
+SHOW FUNCTION f0;
