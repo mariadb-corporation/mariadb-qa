@@ -152,6 +152,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+b < &block[srv_sort_buf_size]|SIGABRT|row_merge_buf_write|row_merge_bulk_t::write_to_tmp_file|row_merge_bulk_t::bulk_insert_buffered|trx_mod_table_time_t::bulk_insert_buffered ## MDEV-31537
+b < &block[srv_sort_buf_size]|SIGABRT|ut_dbg_assertion_failed|row_merge_buf_write|row_merge_bulk_t::write_to_tmp_file|row_merge_bulk_t::bulk_insert_buffered                   ## MDEV-31537
 SIGSEGV|PROF_MEASUREMENT::~PROF_MEASUREMENT|QUERY_PROFILE::~QUERY_PROFILE|PROFILING::restart|THD::free_connection                                                              ## MDEV-31485
 field->table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|best_extension_by_limited_search                                                          ## MDEV-31243
 field->table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|get_costs_for_tables                                                                      ## MDEV-31243
@@ -161,6 +163,7 @@ SIGSEGV|charset_info_st::charpos|Charset::charpos|String::charpos|Item_func_left
 (thd && (WSREP_PROVIDER_EXISTS_ && thd->variables.wsrep_on))|SIGABRT|wsrep_restore_kill_after_commit|wsrep_after_statement|wsrep_commit_empty|ha_commit_trans                  ## MENT-1839
 SIGSEGV|Item_field::print|Item_equal::print|st_select_lex::print|subselect_single_select_engine::print                                                                         ## MDEV-31432
 SIGSEGV|Item_field::print|Item::print_parenthesised|Item_func::print_op|Item_bool_rowready_func2::print                                                                        ## MDEV-31432
+SIGSEGV|Item_field::print|Item_func::print_op|Item_cond::print|st_select_lex::print                                                                                            ## MDEV-31432
 SIGSEGV|spider_db_open_item_ident|spider_db_open_item_field|spider_db_print_item_type|spider_mbase_handler::append_order_by                                                    ## MDEV-31338
 SIGSEGV|spider_db_open_item_ident|spider_mbase_handler::append_order_by|spider_mbase_handler::append_order_by|spider_group_by_handler::init_scan                               ## MDEV-31338
 SIGSEGV|json_get_path_next|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item::val_json                                                                    ## MDEV-31402
@@ -375,6 +378,8 @@ charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_d
 SIGSEGV|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                                                                                                               ## MDEV-27575
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int                                                                   ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool|Item_cond_or::val_int                                                                        ## MDEV-29733
+SIGSEGV|Item_equal::val_int|Item_equal::val_int|JOIN::exec_inner|JOIN::exec                                                                                                    ## MDEV-29733
+SIGSEGV|Item_equal::val_int|JOIN::exec_inner|JOIN::exec|subselect_single_select_engine::exec                                                                                   ## MDEV-29733
 field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_like::fix_fields                                                               ## MDEV-29731
 field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item_func_case::fix_fields                                                               ## MDEV-29731
 field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|st_select_lex::pushdown_from_having_into_where                                           ## MDEV-29731
