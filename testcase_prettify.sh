@@ -27,6 +27,7 @@ cat "${1}" | tr -d '`' | \
        s|execute|EXECUTE|gi; \
        s|index|INDEX|g; \
        s|immediate|IMMEDIATE|g; \
+       s|reverse|REVERSE|gi; \
        s|hex|HEX|gi; \
        s|scalar|SCALAR|gi; \
        s|declare|DECLARE|gi; \

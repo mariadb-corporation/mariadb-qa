@@ -1,5 +1,8 @@
 ## Known *SAN bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID etc.
 
+# DELME
+UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/opt_split.cc|st_join_table::choose_best_splitting|best_access_path|fix_semijoin_strategies_for_picked_join_order|JOIN::get_best_combination
+
 ##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
@@ -46,8 +49,9 @@ UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an u
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-ucs2.c|my_strtoll10_utf32|charset_info_st::strtoll10|Value_source::Converter_strtoll10::Converter_strtoll10|Value_source::Converter_strtoll10_with_warn::Converter_strtoll10_with_warn ## MDEV-31221
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/json_table.cc|Table_function_json_table::print|TABLE_LIST::print|print_table_array|print_join               ## MDEV-25784
 UBSAN|applying non-zero offset X to null pointer|storage/spider/spd_table.h|st_spider_param_string_parse::restore_delims|st_spider_param_string_parse::print_param_error|st_spider_param_string_parse::get_next_parameter_head|spider_parse_connect_info ## MDEV-31117
-#UBSAN|applying non-zero offset X to null pointer|storage/spider/spd_table.h                                                                                                    ## MDEV-31117, disabled (partial stack only)
-#UBSAN|applying non-zero offset X to null pointer|storage/spider/spd_table.h|handler::ha_create                                                                                 ## MDEV-31117, disabled (partial stack only)
+UBSAN|applying non-zero offset X to null pointer|storage/spider/spd_table.h                                                                                                    ## MDEV-31117, disabled (partial stack only!)
+UBSAN|applying non-zero offset X to null pointer|storage/spider/spd_table.h|handler::ha_create                                                                                 ## MDEV-31117, disabled (partial stack only!)
+UBSAN|applying non-zero offset X to null pointer|storage/spider/spd_table.h|st_spider_param_string_parse::restore_delims|st_spider_param_string_parse::print_param_error|spider_parse_connect_info|ha_spider::create ## MDEV-31117
 ASAN|use-after-poison|storage/maria/ha_maria.cc|ha_maria::info|ha_maria::open|handler::ha_open|open_tmp_table                                                                  ## MDEV-31022
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/item_timefunc.cc|Item_func_monthname::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-31019
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/item_timefunc.cc|Item_func_monthname::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-31019
