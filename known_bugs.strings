@@ -275,6 +275,7 @@ is_started()|SIGABRT|Ha_trx_info::is_trx_read_write|ha_count_rw_2pc|Gtid_log_eve
 !m_innodb|SIGABRT|ha_partition::cmp_ref|refpos_order_cmp|my_qsort2|Refpos_container_sorted_array::sort                                                                         ## MDEV-30672
 !m_innodb|SIGABRT|ha_partition::cmp_ref|refpos_order_cmp|tree_insert|Unique::unique_add                                                                                        ## MDEV-30442
 dbl_records <= s->records|SIGABRT|apply_selectivity_for_table|best_access_path|get_costs_for_tables|best_extension_by_limited_search                                           ## MDEV-30693
+strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|get_intersect_between_arrays|Item_func_json_array_intersect::val_str|Type_handler::Item_send_str                         ## MDEV-30691
 strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|json_nice|Item_func_json_format::val_str|Type_handler::Item_send_str                                              ## MDEV-30691
 state_ == s_idle || state_ == s_exec || state_ == s_result || state_ == s_quitting|SIGABRT|wsrep::client_state::before_rollback|Wsrep_storage_service::commit|wsrep::transaction::after_commit|wsrep::client_state::after_commit ## MENT-1740
 SIGSEGV|galera::ReplicatorSMM::stats_get|wsrep::wsrep_provider_v26::status|wsrep::server_state::status|export_wsrep_status_to_mysql                                            ## MENT-1739
