@@ -1,0 +1,10 @@
+SET sql_mode='';
+CREATE PROCEDURE proc_1() LOAD INDEX INTO CACHE t IGNORE leaves;
+SET SESSION enforce_storage_engine=Aria;
+SET GLOBAL aria_encrypt_tables=1;
+CREATE TEMPORARY TABLE t (i INT KEY,c INT) row_format=REDUNDANT;
+INSERT INTO t VALUES (0,1);
+CALL proc_1();
+CALL proc_1();
+DELETE FROM t;
+INSERT INTO t VALUES (1,1),(2,2);

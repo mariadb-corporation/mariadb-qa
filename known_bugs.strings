@@ -164,6 +164,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|get_all_tables|get_schema_tables_result|JOIN::exec_inner|JOIN::exec                                                                                                    ## MDEV-31523
+!hash_link->block || hash_link->block->pins == 0|SIGABRT|unlink_hash|free_block|flush_pagecache_blocks_int|flush_pagecache_blocks_with_filter                                  ## MDEV-23179
+SIGSEGV|reinit_stmt_before_use|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute                                                             ## MDEV-31567
+SIGSEGV|reinit_stmt_before_use|Prepared_statement::execute|Prepared_statement::execute_loop|Prepared_statement::execute_loop                                                   ## MDEV-31567
 b < &block[srv_sort_buf_size]|SIGABRT|row_merge_buf_write|row_merge_bulk_t::write_to_tmp_file|row_merge_bulk_t::bulk_insert_buffered|trx_mod_table_time_t::bulk_insert_buffered ## MDEV-31537
 b < &block[srv_sort_buf_size]|SIGABRT|ut_dbg_assertion_failed|row_merge_buf_write|row_merge_bulk_t::write_to_tmp_file|row_merge_bulk_t::bulk_insert_buffered                   ## MDEV-31537
 SIGSEGV|PROF_MEASUREMENT::~PROF_MEASUREMENT|QUERY_PROFILE::~QUERY_PROFILE|PROFILING::restart|THD::free_connection                                                              ## MDEV-31485
