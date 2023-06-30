@@ -18,3 +18,8 @@ CREATE TABLE t2(c2 INT) ENGINE=InnoDB;
 SELECT * FROM t1;
 SET join_cache_level=3,use_stat_tables='never',optimizer_switch="hash_join_cardinality=on";
 SELECT * FROM (SELECT * FROM t2 JOIN t1) AS ta NATURAL JOIN (SELECT * FROM t2 NATURAL JOIN t1) AS tb;
+
+CREATE TABLE t (a INT) ENGINE=InnoDB;
+SELECT * FROM t;
+SET JOIN_cache_level=4, use_stat_tables=NEVER;
+SELECT STRAIGHT_JOIN * FROM (t AS x JOIN t AS y) JOIN t AS z ON z.a=x.a;

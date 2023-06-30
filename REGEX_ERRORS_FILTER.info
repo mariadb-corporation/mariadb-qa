@@ -111,6 +111,7 @@ InnoDB: Operating system error.* 2 in a file op       https://jira.mariadb.org/b
 InnoDB: Table mysql.innodb.* not found                Presumed non-issue (table dropped)
 InnoDB: Column .* in table mysql.innodb.* is .* but   Presumed non-issue (column changed)
 mysqld: Table .slow_log. is marked as crashed         https://jira.mariadb.org/browse/MDEV-27076
+mysqld: Table .*#sql-temptable-.*is marked as crashed https://jira.mariadb.org/browse/MDEV-31588
 Warning. WSREP: handlerton rollback failed, thd       https://jira.mariadb.org/browse/MDEV-29583 (Spider)
 InnoDB: FTS_DOC_ID must be larger than [0-9]          Presumed non-issue (text insert into FTS_DOC_ID, or too low value)
 InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap

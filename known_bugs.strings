@@ -23,6 +23,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2003
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
+MARKED_AS_CRASHED|mysqld: Table sql-temptable-X is marked as crashed and should be repaired  ## MDEV-31588
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26258  ## Note: it is possible there are other
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ## 126's, so it may be worthwhile to once 
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
@@ -164,12 +165,16 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|spider_table_bg_sts_action                                    ## MDEV-31584
+thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|spider_table_bg_sts_action                                     ## MDEV-31584
 b < &block[srv_sort_buf_size]|SIGABRT|row_merge_buf_write|row_merge_bulk_t::write_to_tmp_file|row_merge_bulk_t::bulk_insert_buffered|trx_mod_table_time_t::bulk_insert_buffered ## MDEV-31537
 b < &block[srv_sort_buf_size]|SIGABRT|ut_dbg_assertion_failed|row_merge_buf_write|row_merge_bulk_t::write_to_tmp_file|row_merge_bulk_t::bulk_insert_buffered                   ## MDEV-31537
 SIGSEGV|PROF_MEASUREMENT::~PROF_MEASUREMENT|QUERY_PROFILE::~QUERY_PROFILE|PROFILING::restart|THD::free_connection                                                              ## MDEV-31485
 field->table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|best_extension_by_limited_search                                                          ## MDEV-31243
 field->table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|get_costs_for_tables                                                                      ## MDEV-31243
 field->orig_table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|get_costs_for_tables                                                                 ## MDEV-31243
+field->orig_table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|optimize_straight_join                                                               ## MDEV-31243
+field->table->stats_is_read|SIGABRT|is_eits_usable|hash_join_fanout|best_access_path|optimize_straight_join                                                                    ## MDEV-31243
 SIGSEGV|server_mysql_send_query|server_mysql_real_query|spider_db_mbase::exec_query|spider_db_mbase::set_lock_wait_timeout                                                     ## MDEV-31463
 SIGSEGV|charset_info_st::charpos|Charset::charpos|String::charpos|Item_func_left::val_str                                                                                      ## MDEV-31433
 (thd && (WSREP_PROVIDER_EXISTS_ && thd->variables.wsrep_on))|SIGABRT|wsrep_restore_kill_after_commit|wsrep_after_statement|wsrep_commit_empty|ha_commit_trans                  ## MENT-1839
@@ -542,6 +547,7 @@ bitmap_is_set(&m_part_info->read_partitions, m_part_spec.start_part)|SIGABRT|ha_
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|ha_partition::handle_opt_part ## MDEV-26035
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert ## MDEV-26035
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|mysql_admin_table ## MDEV-26035
+file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::repair|handler::ha_repair|ha_partition::handle_opt_part ## MDEV-26035
 table->in_use && tdc->flushed|SIGABRT|TABLE_SHARE::visit_subgraph|Wait_for_flush::accept_visitor|MDL_context::visit_subgraph|MDL_context::find_deadlock                        ## MDEV-28771
 SIGSEGV|__GI___pthread_mutex_lock|rw_pr_rdlock|inline_mysql_prlock_rdlock|MDL_context::visit_subgraph                                                                          ## MDEV-28771
 SIGSEGV|Stat_table::common_init_stat_table|Stat_table::Stat_table|Column_stat::Column_stat|delete_statistics_for_column                                                        ## MDEV-28780
