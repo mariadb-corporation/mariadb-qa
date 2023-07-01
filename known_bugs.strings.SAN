@@ -1,13 +1,13 @@
 ## Known *SAN bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID etc.
 
-# DELME
-UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/opt_split.cc|st_join_table::choose_best_splitting|best_access_path|fix_semijoin_strategies_for_picked_join_order|JOIN::get_best_combination
-
 ##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|__interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc|Item_func_json_schema_valid::fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar ## MDEV-31599
+ASAN|use-after-poison|storage/myisammrg/myrg_open.c|myrg_attach_children|ha_myisammrg::attach_children|ha_myisammrg::extra|open_tables                                         ## MDEV-31083
+UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/sql_binlog.cc|binlog_defragment|mysql_client_binlog_statement|mysql_execute_command|mysql_parse ## MDEV-31598
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|my_memdup|Sys_var_charptr_base::global_update_prepare                                                                      ## MDEV-25237 (temporary: patched versions affected only)
 ASAN|heap-buffer-overflow|sql/item_jsonfunc.cc|strncpy|filter_keys|Item_func_json_object_filter_keys::val_str|Type_handler::Item_send_str                                      ## MDEV-31543
 ASAN|heap-buffer-overflow|sql/item_jsonfunc.cc|__interceptor_strncpy|filter_keys|Item_func_json_object_filter_keys::val_str|Type_handler::Item_send_str                        ## MDEV-31543
@@ -38,6 +38,7 @@ LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_a
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                                          ## MDEV-30680
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                    ## MDEV-30680
 UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::make_empty_rec_store_default_value|make_empty_rec_store_default|make_empty_rec ## MDEV-15703
+UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable ## MDEV-15703
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-24814
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command ## MDEV-24814
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|mysql_execute_command|mysql_parse                            ## MDEV-24814
@@ -99,6 +100,12 @@ UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an u
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/item_timefunc.cc|get_interval_value|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-30931
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/item_timefunc.cc|get_interval_value|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-30931
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/item_timefunc.cc|get_interval_value|Item_date_add_interval::get_date|Item_temporal_hybrid_func::val_str_ascii|Item_func::val_str_from_val_str_ascii ## MDEV-30931
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-30931
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-30931
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Type_handler::Item_send_date|Protocol::send_result_set_row|select_send::send_data ## MDEV-30931
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Type_handler::Item_send_date|Type_handler_temporal_with_date::Item_send|Item::send ## MDEV-30931
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-30931
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-30931
 ASAN|heap-use-after-free|include/c++/current_version/bits/shared_ptr_base.h|std::__shared_ptr<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|myrocks::ha_rocksdb::index_first ## MDEV-23956
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache|Item_cache_wrapper::val_int ## MDEV-30842
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::get_cache_parameters|Item_in_optimizer::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache ## MDEV-30842
@@ -172,6 +179,8 @@ UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an u
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item::save_str_in_field|Item::save_in_field ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item::save_str_in_field ## MDEV-28386
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item_func_concat::val_str|Type_handler::Item_send_str ## MDEV-28386
+UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item_func_concat::val_str ## MDEV-28386
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_eq::val_int ## MDEV-28384
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|sortcmp ## MDEV-28384
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|sortcmp|Arg_comparator::compare_string ## MDEV-28384
@@ -224,6 +233,9 @@ ASAN|global-buffer-overflow|sql/sql_type.cc|skip_key|json_scan_next|Item_func_js
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|ha_maria::write_row|handler::ha_write_row          ## MDEV-26839
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|handler::ha_write_row|copy_data_between_tables     ## MDEV-26839
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|handler::ha_write_row|write_record                 ## MDEV-26839
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_update|ha_maria::update_row|handler::ha_update_row       ## MDEV-26839
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_update|handler::ha_update_row|Sql_cmd_update::update_single_table ## MDEV-26839
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_update|handler::ha_update_row|mysql_update               ## MDEV-26839
 UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-26840
 
 ###### FIXED BUGS ######
