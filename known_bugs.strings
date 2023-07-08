@@ -165,6 +165,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|Item_ref::walk|Item_args::walk_args                                                                                        ## MDEV-31647
+SIGSEGV|Item_func_or_sum::walk|Item_args::walk_args|Item_func_or_sum::walk|Item_ref::walk                                                                                      ## MDEV-31647
+SIGSEGV|Item_func_or_sum::walk|Item_ref::walk|Item_args::walk_args|Item_func_or_sum::walk                                                                                      ## MDEV-31647
+SIGSEGV|Item_ref::walk|Item_args::walk_args|Item_func_or_sum::walk|Item_args::walk_args                                                                                        ## MDEV-31647
 0|SIGABRT|Item_param::can_return_value|Item_param::val_str|Item::val_json|Item_func_json_schema_valid::fix_length_and_dec                                                      ## MDEV-31599
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|spider_table_bg_sts_action                                    ## MDEV-31584
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|spider_table_bg_sts_action                                     ## MDEV-31584
@@ -481,6 +485,9 @@ lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|ORAparse|parse_sql|m
 *ref && (*ref)->fixed()|SIGABRT|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar                            ## MDEV-29300
 *ref && (*ref)->is_fixed()|SIGABRT|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar                         ## MDEV-29300
 0|SIGABRT|Type_handler_string_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys                                                                               ## MDEV-29283
+item->maybe_null()|SIGABRT|Type_handler_temporal_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys                                                            ## MDEV-29283
+item->maybe_null|SIGABRT|Type_handler_temporal_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys                                                              ## MDEV-29283
+item->maybe_null|SIGABRT|Type_handler_temporal_result::make_sort_key|make_sortkey|find_all_keys|filesort                                                                       ## MDEV-29283
 SIGSEGV|JOIN::get_partial_cost_and_fanout|JOIN::choose_subquery_plan|make_join_statistics|JOIN::optimize_inner                                                                 ## MDEV-29263
 SIGSEGV|mark_select_range_as_dependent|find_field_in_tables|find_order_in_list|setup_group                                                                                     ## MDEV-29262
 SIGSEGV|mark_select_range_as_dependent|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                                  ## MDEV-29262
