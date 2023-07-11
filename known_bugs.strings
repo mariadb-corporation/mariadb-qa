@@ -165,6 +165,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+thd->lex == sp_instr_lex|SIGABRT|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core|sp_lex_keeper::cursor_reset_lex_and_exec_core|sp_instr_copen::execute      ## MDEV-31661
 SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|Item_ref::walk|Item_args::walk_args                                                                                        ## MDEV-31647
 SIGSEGV|Item_func_or_sum::walk|Item_args::walk_args|Item_func_or_sum::walk|Item_ref::walk                                                                                      ## MDEV-31647
 SIGSEGV|Item_func_or_sum::walk|Item_ref::walk|Item_args::walk_args|Item_func_or_sum::walk                                                                                      ## MDEV-31647
