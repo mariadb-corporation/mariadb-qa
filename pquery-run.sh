@@ -386,11 +386,11 @@ if [[ "${GRP_RPL_CLUSTER_RUN}" -eq 1 && "${GRP_RPL}" -eq 0 ]]; then
 fi
 if [ "${MDG_CLUSTER_RUN}" == "1" ]; then
   if [ "${QUERIES_PER_THREAD}" -lt 2147483647 ]; then # Starting up a cluster takes more time, so don't rotate too quickly
-    echoit "Note: As this is a MDG_CLUSTER_RUN=1 run, and QUERIES_PER_THREAD was set to only ${QUERIES_PER_THREAD}, this script is setting the queries per thread to the required minimum of 2147483647 for this run."
+    echoit "Note: As this is a MDG_CLUSTER_RUN=1 run, and QUERIES_PER_THREAD was set to only ${QUERIES_PER_THREAD}, this script is setting the queries per thread to the required minimum of 2147483647 for this run"
     QUERIES_PER_THREAD=2147483647 # Max int
   fi
   if [ ${PQUERY_RUN_TIMEOUT} -lt 60 ]; then # Starting up a cluster takes more time, so don't rotate too quickly
-    echoit "Note: As this is a MDG=1 run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 120 for this run."
+    echoit "Note: As this is a MDG=1 run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 120 for this run"
     PQUERY_RUN_TIMEOUT=60
   fi
   ADD_RANDOM_OPTIONS=0
@@ -402,11 +402,11 @@ fi
 
 if [ "${GRP_RPL}" == "1" ]; then
   if [ ${QUERIES_PER_THREAD} -lt 2147483647 ]; then # Starting up a cluster takes more time, so don't rotate too quickly
-    echoit "Note: As this is a GRP_RPL=1 run, and QUERIES_PER_THREAD was set to only ${QUERIES_PER_THREAD}, this script is setting the queries per thread to the required minimum of 2147483647 for this run."
+    echoit "Note: As this is a GRP_RPL=1 run, and QUERIES_PER_THREAD was set to only ${QUERIES_PER_THREAD}, this script is setting the queries per thread to the required minimum of 2147483647 for this run"
     QUERIES_PER_THREAD=2147483647 # Max int
   fi
   if [ ${PQUERY_RUN_TIMEOUT} -lt 120 ]; then # Starting up a cluster takes more time, so don't rotate too quickly
-    echoit "Note: As this is a GRP_RPL=1 run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 120 for this run."
+    echoit "Note: As this is a GRP_RPL=1 run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 120 for this run"
     PQUERY_RUN_TIMEOUT=120
   fi
   ADD_RANDOM_TOKUDB_OPTIONS=0
@@ -416,10 +416,18 @@ if [ "${GRP_RPL}" == "1" ]; then
 fi
 
 if [[ ${REPL} -eq 1 ]]; then
-  echoit "Note: As this is a Replication testing run, setting the THREADS to 100 and PQUERY_RUN_TIMEOUT to 300 for this run."
-  THREADS=100
-  PQUERY_RUN_TIMEOUT=300
-  CRASH_RECOVERY_TESTING=1
+  if [ "${CRASH_RECOVERY_TESTING}" -eq 1 ]; then
+    echoit "Note: As this is a Replication crash recovery testing run, setting the THREADS to 100 and PQUERY_RUN_TIMEOUT to at least 240 (or as configured larger) for this run"
+    THREADS=100
+  else
+    echoit "Note: As this is a Replication testing run, setting PQUERY_RUN_TIMEOUT to at least 240 (or as configured larger) for this run"
+  fi
+  if [ -z "${PQUERY_RUN_TIMEOUT}" ]; then
+    PQUERY_RUN_TIMEOUT=240
+  fi
+  if [ "${PQUERY_RUN_TIMEOUT}" -lt 240 ]; then
+    PQUERY_RUN_TIMEOUT=240
+  fi
 fi
 
 if [ ${QUERY_DURATION_TESTING} -eq 1 ]; then echoit "MODE: Query Duration Testing"; fi
@@ -440,11 +448,11 @@ if [ ${QUERY_DURATION_TESTING} -ne 1 -a ${QUERY_CORRECTNESS_TESTING} -ne 1 -a ${
 fi
 if [ ${THREADS} -gt 1 ]; then # We may want to drop this to 20 seconds required?
   if [ ${PQUERY_RUN_TIMEOUT} -lt 30 ]; then
-    echoit "Note: As this is a multi-threaded run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 30 for this run."
+    echoit "Note: As this is a multi-threaded run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 30 for this run"
     PQUERY_RUN_TIMEOUT=30
   fi
   if [ ${QUERY_DURATION_TESTING} -eq 1 ]; then
-    echoit "Note: As this is a QUERY_DURATION_TESTING=1 run, and THREADS was set to ${THREADS}, this script is setting the number of threads to the required setting of 1 thread for this run."
+    echoit "Note: As this is a QUERY_DURATION_TESTING=1 run, and THREADS was set to ${THREADS}, this script is setting the number of threads to the required setting of 1 thread for this run"
     THREADS=1
   fi
 fi
@@ -464,11 +472,11 @@ if [ ${CRASH_RECOVERY_TESTING} -eq 1 ]; then
     exit 1
   fi
   #if [ ${THREADS} -lt 50 ]; then
-  #  echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and THREADS was set to only ${THREADS}, this script is setting the number of threads to the required minimum of 50 for this run."
+  #  echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and THREADS was set to only ${THREADS}, this script is setting the number of threads to the required minimum of 50 for this run"
   #  THREADS=50
   #fi
   #if [ ${PQUERY_RUN_TIMEOUT} -lt 30 ]; then
-  #  echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 30 for this run."
+  #  echoit "Note: As this is a CRASH_RECOVERY_TESTING=1 run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 30 for this run"
   #  PQUERY_RUN_TIMEOUT=30
   #fi
   if [ -z "${CRASH_RECOVERY_KILL_BEFORE_END_SEC}" ]; then
@@ -486,7 +494,7 @@ if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
     exit 1
   fi
   if [ ${THREADS} -ne 1 ]; then
-    echoit "Note: As this is a QUERY_CORRECTNESS_TESTING=1 run, and THREADS was set to ${THREADS}, this script is setting the number of threads to the required setting of 1 thread for this run."
+    echoit "Note: As this is a QUERY_CORRECTNESS_TESTING=1 run, and THREADS was set to ${THREADS}, this script is setting the number of threads to the required setting of 1 thread for this run"
     THREADS=1
   fi
 fi
@@ -495,10 +503,10 @@ if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 -a ${STORE_COPY_OF_INFILE} -eq 1 ]
   STORE_COPY_OF_INFILE=0
 fi
 if [ "${VALGRIND_RUN}" == "1" ]; then
-  echoit "Note: As this is a VALGRIND_RUN=1 run, this script is increasing MYSQLD_START_TIMEOUT (${MYSQLD_START_TIMEOUT}) by 240 seconds because Valgrind is very slow in starting up mysqld/mariadbd."
+  echoit "Note: As this is a VALGRIND_RUN=1 run, this script is increasing MYSQLD_START_TIMEOUT (${MYSQLD_START_TIMEOUT}) by 240 seconds because Valgrind is very slow in starting up mysqld/mariadbd"
   MYSQLD_START_TIMEOUT=$((${MYSQLD_START_TIMEOUT} + 240))
   if [ ${MYSQLD_START_TIMEOUT} -lt 300 ]; then
-    echoit "Note: As this is a VALGRIND_RUN=1 run, and MYSQLD_START_TIMEOUT was set to only ${MYSQLD_START_TIMEOUT}), this script is setting the timeout to the required minimum of 300 for this run."
+    echoit "Note: As this is a VALGRIND_RUN=1 run, and MYSQLD_START_TIMEOUT was set to only ${MYSQLD_START_TIMEOUT}), this script is setting the timeout to the required minimum of 300 for this run"
     MYSQLD_START_TIMEOUT=300
   fi
   echoit "Note: As this is a VALGRIND_RUN=1 run, this script is increasing PQUERY_RUN_TIMEOUT (${PQUERY_RUN_TIMEOUT}) by 180 seconds because Valgrind is very slow in processing SQL."
@@ -1244,18 +1252,18 @@ pquery_test() {
     fi
     if [ "${RR_TRACING}" == "0" ]; then
       if [ "${VALGRIND_RUN}" == "0" ]; then  ## Standard run
-        CMD="${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp \
+        CMD="${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp \
          --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} \
          --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
       else  ## Valgrind run
-        CMD="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp \
+        CMD="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp \
          --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} \
          --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
       fi
     else  ## rr tracing run
       export _RR_TRACE_DIR="${RUNDIR}/${TRIAL}/rr"
       mkdir -p "${_RR_TRACE_DIR}"
-      CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp \
+      CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp \
        --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} \
        --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
     fi
@@ -1267,11 +1275,11 @@ pquery_test() {
       REPL_PORT=${NEWPORT}
       NEWPORT=
       if [ "${VALGRIND_RUN}" == "0" ]; then  ## Standard run
-        SLAVE_STARTUP="${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data_slave --tmpdir=${RUNDIR}/${TRIAL}/tmp_slave \
+        SLAVE_STARTUP="${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${SLAVE_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data_slave --tmpdir=${RUNDIR}/${TRIAL}/tmp_slave \
          --core-file --port=$REPL_PORT --pid_file=${RUNDIR}/${TRIAL}/slave_pid.pid --server_id=101 --socket=${SLAVE_SOCKET} \
          --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/slave.err"
       else  ## Valgrind run
-        SLAVE_STARTUP="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data_slave --tmpdir=${RUNDIR}/${TRIAL}/tmp_slave \
+        SLAVE_STARTUP="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${SLAVE_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data_slave --tmpdir=${RUNDIR}/${TRIAL}/tmp_slave \
          --core-file --port=$REPL_PORT --pid_file=${RUNDIR}/${TRIAL}/slave_pid.pid --server_id=101 --socket=${SLAVE_SOCKET} \
          --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/slave.err"
       fi
@@ -1388,7 +1396,17 @@ pquery_test() {
       echo "${MYSAFE} ${MYEXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA.left # When changing this, also search for/edit other '\.left' and '\.right' occurences in this file
       echo "${MYSAFE} ${MYEXTRA2}" > ${RUNDIR}/${TRIAL}/MYEXTRA.right
     else
-      echo "${MYSAFE} ${MYEXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA
+      if [ "${REPL}" -ne 1 ]; then
+        echo "${MYSAFE} ${MYEXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA
+      else
+        echo "${MYSAFE} ${MYEXTRA} ${REPL_EXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA
+        if [ ! -z "${MASTER_EXTRA}" ]; then
+          echo "${MASTER_EXTRA}" > ${RUNDIR}/${TRIAL}/MASTER_EXTRA
+        fi
+        if [ ! -z "${SLAVE_EXTRA}" ]; then
+          echo "${SLAVE_EXTRA}" > ${RUNDIR}/${TRIAL}/SLAVE_EXTRA
+        fi
+      fi
     fi
     echo "${MYINIT}" > ${RUNDIR}/${TRIAL}/MYINIT
     if [ "${VALGRIND_RUN}" == "1" ]; then
@@ -1918,9 +1936,9 @@ pquery_test() {
                   touch ${INFILE_SHUFFLED}
                   rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
                   if [[ ${FILTER_SQL} -eq 0 ]]; then
-                    find ${HOME} /data/SQL /test/TESTCASES -maxdepth 3 -name '*.sql' -type f | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
                   else
-                    find ${HOME} /data/SQL /test/TESTCASES -maxdepth 3 -name '*.sql' -type f | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
                   fi 
                   chmod +x ${INFILE_SHUFFLED}.sh
                   ${INFILE_SHUFFLED}.sh
@@ -2028,9 +2046,9 @@ EOF
                     touch ${INFILE_SHUFFLED}
                     rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
                     if [[ ${FILTER_SQL} -eq 0 ]]; then
-                      find ${HOME} /data/SQL /test/TESTCASES -maxdepth 3 -name '*.sql' -type f | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                      find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
                     else
-                      find ${HOME} /data/SQL /test/TESTCASES -maxdepth 3 -name '*.sql' -type f | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                      find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
                     fi
                     chmod +x ${INFILE_SHUFFLED}.sh
                     ${INFILE_SHUFFLED}.sh
@@ -2690,12 +2708,22 @@ else
   else echo 'FALSE'; fi)"
 fi
 
-if [[ ${REPL} -eq 1 ]]; then
-  if [[ $REPLICATION_SHUTDOWN_OR_KILL -eq 1 ]]; then
-    echoit "Replication testing: YES | Mode: Normal shutdown"
+if [ ${REPL} -eq 1 ]; then
+  if [ "${CRASH_RECOVERY_TESTING}" -eq 1 ]; then
+    if [ "${REPLICATION_SHUTDOWN_OR_KILL}" -eq 0 ]; then
+      echoit "Replication testing: YES | Crash Recovery Testing: YES | Mode: Normal shutdown"
+    else
+      echoit "Replication testing: YES | Crash Recovery Testing: YES | Mode: Forceful shutdown using kill -9 command"
+    fi
   else
-    echoit "Replication testing: YES | Mode: Forceful shutdown using kill -9 command"
+    echoit "Replication testing: YES"
   fi
+  echoit "REPL_EXTRA: '${REPL_EXTRA}' | MASTER_EXTRA: '${MASTER_EXTRA}' | SLAVE_EXTRA: '${SLAVE_EXTRA}'"  # Report extra options (replication general (master+slave), master, slave)
+else
+  echoit "Replication testing: NO: Disabling all REPL_EXTRA, MASTER_EXTRA, SLAVE_EXTRA settings"
+  REPL_EXTRA=
+  MASTER_EXTRA=
+  SLAVE_EXTRA=
 fi
 
 # Filter SQL from the main input file
