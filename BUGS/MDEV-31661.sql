@@ -1,0 +1,14 @@
+DELIMITER $$
+CREATE OR REPLACE PROCEDURE p1()
+  BEGIN
+    DECLARE c CURSOR FOR SELECT * FROM foo;
+    OPEN c;
+    CLOSE c;
+  END;
+$$
+
+DELIMITER ;
+CALL p1;
+create table foo (id int);
+CALL p1;
+CALL p1;
