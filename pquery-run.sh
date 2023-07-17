@@ -130,8 +130,6 @@ if [ "${PRELOAD}" == "1" ]; then
     echo "Assert: PRELOAD is enabled (1), yet the file configured with PRELOAD_SQL (${PRELOAD_SQL}) is empty. Please check."
     exit 1
   fi 
-else
-  echo "PRELOAD SQL enabled: NO"
 fi
 if [ "${RR_TRACING}" == "1" ]; then
   if [ ! -r /usr/bin/rr ]; then
@@ -365,43 +363,48 @@ fi
 
 # Main startup
 if [ ${QUERY_DURATION_TESTING} -eq 1 ]; then
-  echoit "MODE: Query Duration Testing"; fi
+  echoit "MODE: Query Duration Testing"
   if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
     echoit "QUERY_CORRECTNESS_TESTING and QUERY_DURATION_TESTING cannot be both active at the same time due to parsing limitations. This is the case. Please disable one of them."
     exit 1
   fi
-elif [[ ${PXB_CRASH_RUN} -eq 1 ]]; then
+elif [[ "${PXB_CRASH_RUN}" -eq 1 ]]; then
   echoit "MODE: Percona Xtrabackup crash test run"
   if [[ ! -d ${PXB_BASEDIR} ]]; then
     echo "Assert: $PXB_BASEDIR does not exist. Terminating!"
     exit 1
   fi
-elif [ ${CRASH_RECOVERY_TESTING} -eq 1 ]; then
+elif [ "${CRASH_RECOVERY_TESTING}" -eq 1 ]; then
   echoit "MODE: Crash Recovery Testing"
   if [[ ${REPLICATION} -eq 0 ]]; then
     echoit "MODE: Crash Recovery Testing"
   else
     echoit "MODE: Crash Recovery Testing as part of replication testing"
   fi
-elif [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
+elif [ "${QUERY_CORRECTNESS_TESTING}" -eq 1 ]; then
   echoit "MODE: Query Correctness Testing"
-elif [ ${QUERY_CORRECTNESS_TESTING} -ne 1 ]; then
+elif [ "${QUERY_CORRECTNESS_TESTING}" -ne 1 ]; then
+  if [ "${REPLICATION}" != "1" ]; then
+    MODEPREFIX='MODE: Replication testing | SUB'
+  fi
   if [ "${VALGRIND_RUN}" == "1" ]; then
-    if [ ${THREADS} -eq 1 ]; then
-      echoit "MODE: Single threaded Valgrind pquery testing"
+    if [ "${THREADS}" -eq 1 ]; then
+      echoit "${MODEPREFIX}MODE: Single threaded Valgrind pquery testing"
     else
-      echoit "MODE: Multi threaded Valgrind pquery testing"
+      echoit "${MODEPREFIX}MODE: Multi threaded Valgrind pquery testing"
     fi
   else
-    if [ ${THREADS} -eq 1 ]; then
-      echoit "MODE: Single threaded pquery testing"
+    if [ "${THREADS}" -eq 1 ]; then
+      echoit "${MODEPREFIX}MODE: Single threaded pquery testing"
     else
-      echoit "MODE: Multi threaded pquery testing"
+      echoit "${MODEPREFIX}MODE: Multi threaded pquery testing"
     fi
   fi
 fi
 if [ "${PRELOAD}" == "1" ]; then
   echoit "PRELOAD SQL Active: (${PRELOAD_SQL} will be preloaded for all trials, and prepended to trial SQL traces"
+else
+  echoit "PRELOAD SQL Active: NO"
 fi
 if [ "$(whoami)" == "root" ]; then 
   MYEXTRA="--user=root ${MYEXTRA}"
@@ -447,16 +450,16 @@ fi
 
 if [[ ${REPLICATION} -eq 1 ]]; then
   if [ "${CRASH_RECOVERY_TESTING}" -eq 1 ]; then
-    echoit "Note: As this is a Replication crash recovery testing run, setting the THREADS to 100 and PQUERY_RUN_TIMEOUT to at least 240 (or as configured larger) for this run"
+    echoit "Note: As this is a Replication crash recovery testing run, setting the THREADS to 100 and PQUERY_RUN_TIMEOUT to at least 60 (or as configured larger) for this run"
     THREADS=100
   else
-    echoit "Note: As this is a Replication testing run, setting PQUERY_RUN_TIMEOUT to at least 240 (or as configured larger) for this run"
+    echoit "Note: As this is a Replication testing run, setting PQUERY_RUN_TIMEOUT to a minimum 60 (or as configured larger) for this run"
   fi
   if [ -z "${PQUERY_RUN_TIMEOUT}" ]; then
-    PQUERY_RUN_TIMEOUT=240
+    PQUERY_RUN_TIMEOUT=60
   fi
-  if [ "${PQUERY_RUN_TIMEOUT}" -lt 240 ]; then
-    PQUERY_RUN_TIMEOUT=240
+  if [ "${PQUERY_RUN_TIMEOUT}" -lt 60 ]; then
+    PQUERY_RUN_TIMEOUT=60
   fi
 fi
 if [ ${THREADS} -gt 1 ]; then # We may want to drop this to 20 seconds required?
@@ -2517,6 +2520,7 @@ EOF
       # The /*/ in the /*/*core* core search pattern is for to the /node1/ dir setup for cluster runs
       # TODO: verify if this means that /data/ is completely replaced by /node1/ at the same level
       if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -ge 1 -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/master.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/slave.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node1/node1.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node2/node2.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node3/node3.err 2>/dev/null)" != "" ]; then
+        TRIAL_TO_SAVE=1  # A bug was definitely discovered (core presence or fallback_text_string.sh produced output) so we always need to save the trial. The reason this is set is for all cases where handle_bugs (which sets TRIAL_TO_SAVE=1) is not called, yet there is a bug present (i.e. fallback_text_string.sh produced output)
         if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -ge 1 ]; then
           if [[ "${MDG}" -eq 1 ]]; then
             for j in $(seq 1 ${NR_OF_NODES}); do

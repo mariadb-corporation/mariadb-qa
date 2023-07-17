@@ -17,7 +17,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
 # USA
 
-# In active development: 2012-2022
+# In active development: 2012-2023
 
 # This program has been used to reduce tens of thousands of SQL based testcases,
 # from tens (or hundreds) of thousands of SQL lines to less then 10 lines, each.
@@ -64,9 +64,11 @@ REDUCE_STARTUP_ISSUES=0         # Default/normal use: 0. Set to 1 to reduce mysq
 REDUCE_GLIBC_OR_SS_CRASHES=0    # Default/normal use: 0. Set to 1 to reduce testcase based on a GLIBC crash or stack smash being detected. MODE=3 (TEXT) and MODE=4 (all) supported
 SCRIPT_LOC=/usr/bin/script      # The script binary (sudo yum install util-linux) is required for reducing GLIBC crashes
 
-# === Reduce replication issues
+# === Reduce replication issues # Note that any REPL_EXTRA set in pquery conf files are auto-merged by pquery-run.sh into MYEXTRA (and this do not need to be covered here)
 REPLICATION=0                   # Default: 0 (no replication enabled), 1: enable a master/slave replication setup. Replay will be against the master
-MONITOR_MASTER_OR_SLAVE=0       # 0: Monitor both for issue occurence, 1: Monitor master only, 2: Monitor slave only
+#TODO# MONITOR_MASTER_OR_SLAVE=0       # 0: Monitor both for issue occurence, 1: Monitor master only, 2: Monitor slave only
+MASTER_EXTRA=""                 # Extra mysqld/mariadbd options to pass to the master server only
+SLAVE_EXTRA=""                  # Extra mysqld/mariadbd options to pass to the slave server only
 
 # === Hang issues               # For catching hang issues (both in normal runtime as well as during shutdown). Must set MODE=0 for this option to become active
 TIMEOUT_CHECK=600               # When MODE=0 is used, this specifies the nr of seconds to be used as a timeout. Do not set too small (eg. >600 sec is likely best). See examples in help below. Set to approx FULL testcase duration + 20 seconds, keeping in mind load on the server. Minimum: 31 seconds. 'FULL': Because the chuncking algorithm could eliminate the hanging query, but if the TIMEOUT_CHECK is set too small then a timeout will still occur due to overall testcase duration! Likely best to take overall testcase lenght (without the hanging query) + 30 seconds on otherwise unused server, or simply set it to a large number like 600 as this is less error-prone. A good approach is to pre-trim the file past the hanging query first manually, then remove last statement, check duration client. Then add 30 seconds.
@@ -2536,8 +2538,8 @@ start_mysqld_main(){
   else
     if [ "${REPLICATION}" -eq 1 ]; then
       # ---- Master
-      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_START_TIME=$(date +'%s')
       $CMD > $WORKD/log/mysqld.out 2>&1 &
       PIDV="$!"
@@ -2545,8 +2547,8 @@ start_mysqld_main(){
       mkdir $WORKD/tmp_slave
       init_empty_port
       MYPORT_SLAVE=$NEWPORT
-      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_SLAVE_START_TIME=$(date +'%s')
       $CMD > $WORKD/log/mysqld_slave.out 2>&1 &
       PIDV_SLAVE="$!"

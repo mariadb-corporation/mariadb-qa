@@ -22,12 +22,13 @@ if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" 
 fi
 WORKD_PWD=$PWD
 REDUCER="${SCRIPT_PWD}/reducer.sh"
-SAN_BUG=0
+SAN_BUG=0  # Do not remove
 
 # Disable history substitution and avoid  -bash: !: event not found  like errors
 set +H
 
 check_if_asan_or_ubsan_or_tsan(){
+  SAN_BUG=0
   if [[ "${TEXT}" == *"Assert: no core file found in"* ]]; then
     if [ $(grep -m1 --binary-files=text "=ERROR:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* ASAN bug found!"
@@ -300,7 +301,7 @@ generate_reducer_script(){
     PQUERY_EXTRA_OPTIONS="0,/#VARMOD#/s|#VARMOD#|PQUERY_EXTRA_OPTIONS=\"--log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --log-client-output --log-query-number\"\n#VARMOD#|"
     PQUERYOPT_CLEANUP="0,/^[ \t]*PQUERY_EXTRA_OPTIONS[ \t]*=.*$/s|^[ \t]*PQUERY_EXTRA_OPTIONS[ \t]*=.*$|#PQUERY_EXTRA_OPTIONS=<set_below_in_machine_variables_section>|"
   fi
-  if [ "$TEXT" == "" -o "$TEXT" == "my_print_stacktrace" -o "$TEXT" == "0" -o "$TEXT" == "NULL" -o "$TEXT" == "Assert: no core file found in */*core*" -a ${SAN_BUG} -ne 1 ]; then  # Too general strings, or no TEXT found, use MODE=4 (any crash)
+  if [ "$TEXT" == "" -o "$TEXT" == "my_print_stacktrace" -o "$TEXT" == "0" -o "$TEXT" == "NULL" -o "$TEXT" == "Assert: no core file found in */*core*" -a "${SAN_BUG}" -ne 1 ]; then  # Too general strings, or no TEXT found, use MODE=4 (any crash)
     MODE=4
     USE_NEW_TEXT_STRING=0  # As MODE=4 (any crash) is used, new_text_string.sh is not relevant
     SCAN_FOR_NEW_BUGS=0  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
@@ -308,11 +309,11 @@ generate_reducer_script(){
     TEXT_STRING1="s|ZERO0|ZERO0|"
     TEXT_STRING2="s|ZERO0|ZERO0|"
   else  # Bug-specific TEXT string found, use relevant MODE in reducer.sh to let it reduce for that specific string
-    if [ ${SAN_BUG} -eq 1 ]; then  # ASAN, UBSAN or TSAN bug
+    if [ "${SAN_BUG}" -eq 1 ]; then  # ASAN, UBSAN or TSAN bug
       MODE=3
       USE_NEW_TEXT_STRING=1  # As the string is already set based on the SAN issue observed in the errorlog
       SCAN_FOR_NEW_BUGS=1
-    elif [ ${VALGRIND_CHECK} -eq 1 ]; then  # Valgrind bug
+    elif [ "${VALGRIND_CHECK}" -eq 1 ]; then  # Valgrind bug
       MODE=1
       USE_NEW_TEXT_STRING=0  # As here new_text_string.sh will not be used, but valgrind_string.sh
       SCAN_FOR_NEW_BUGS=0  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
@@ -491,7 +492,49 @@ generate_reducer_script(){
       MYEXTRA_STRING1="0,/#VARMOD#/s:#VARMOD#:MYEXTRA=\"${MYEXTRA}\"\n#VARMOD#:"
     fi
   fi
-  if [ "$MYINIT" == "" ]; then  # Empty MYINIT string
+  REPLICATION_EXTRA_CLEANUP="s|ZERO0|ZERO0|"
+  REPLICATION_EXTRA_STRING1="s|ZERO0|ZERO0|"  # Idem as above
+  MASTER_EXTRA_CLEANUP="s|ZERO0|ZERO0|"
+  MASTER_EXTRA_STRING1="s|ZERO0|ZERO0|"  # Idem as above
+  SLAVE_EXTRA_CLEANUP="s|ZERO0|ZERO0|"
+  SLAVE_EXTRA_STRING1="s|ZERO0|ZERO0|"  # Idem as above
+  if [ -r ./REPLICATION_ACTIVE ]; then  # This was a replication based run
+    REPLICATION_CLEANUP="0,/^[ \t]*REPLICATION[ \t]*=.*$/s|^[ \t]*REPLICATION[ \t]*=.*$|#REPLICATION=<set_below_in_machine_variables_section>|"
+    REPLICATION_STRING1="0,/#VARMOD#/s!#VARMOD#!REPLICATION=1\n#VARMOD#!"
+    if [ ! -z "$MASTER_EXTRA" ]; then  # MASTER_EXTRA set
+      MASTER_EXTRA_CLEANUP="0,/^[ \t]*MASTER_EXTRA[ \t]*=.*$/s|^[ \t]*MASTER_EXTRA[ \t]*=.*$|#MASTER_EXTRA=<set_below_in_machine_variables_section>|"
+      if [[ "${MASTER_EXTRA}" = *":"* ]]; then
+        if [[ "${MASTER_EXTRA}" = *"|"* ]]; then
+          if [[ "${MASTER_EXTRA}" = *"!"* ]]; then
+            echo "Assert! No suitable sed seperator found. MASTER_EXTRA (${MASTER_EXTRA}) contains all of the possibilities, add more!"
+          else
+            MASTER_EXTRA_STRING1="0,/#VARMOD#/s!#VARMOD#!MASTER_EXTRA=\"${MASTER_EXTRA}\"\n#VARMOD#!"
+          fi
+        else
+          MASTER_EXTRA_STRING1="0,/#VARMOD#/s|#VARMOD#|MASTER_EXTRA=\"${MASTER_EXTRA}\"\n#VARMOD#|"
+        fi
+      else
+        MASTER_EXTRA_STRING1="0,/#VARMOD#/s:#VARMOD#:MASTER_EXTRA=\"${MASTER_EXTRA}\"\n#VARMOD#:"
+      fi
+    fi
+    if [ ! -z "$SLAVE_EXTRA" ]; then  # SLAVE_EXTRA set
+      SLAVE_EXTRA_CLEANUP="0,/^[ \t]*SLAVE_EXTRA[ \t]*=.*$/s|^[ \t]*SLAVE_EXTRA[ \t]*=.*$|#SLAVE_EXTRA=<set_below_in_machine_variables_section>|"
+      if [[ "${SLAVE_EXTRA}" = *":"* ]]; then
+        if [[ "${SLAVE_EXTRA}" = *"|"* ]]; then
+          if [[ "${SLAVE_EXTRA}" = *"!"* ]]; then
+            echo "Assert! No suitable sed seperator found. SLAVE_EXTRA (${SLAVE_EXTRA}) contains all of the possibilities, add more!"
+          else
+            SLAVE_EXTRA_STRING1="0,/#VARMOD#/s!#VARMOD#!SLAVE_EXTRA=\"${SLAVE_EXTRA}\"\n#VARMOD#!"
+          fi
+        else
+          SLAVE_EXTRA_STRING1="0,/#VARMOD#/s|#VARMOD#|SLAVE_EXTRA=\"${SLAVE_EXTRA}\"\n#VARMOD#|"
+        fi
+      else
+        SLAVE_EXTRA_STRING1="0,/#VARMOD#/s:#VARMOD#:SLAVE_EXTRA=\"${SLAVE_EXTRA}\"\n#VARMOD#:"
+      fi
+    fi
+  fi
+  if [ -z "$MYINIT" ]; then  # Empty MYINIT string
     MYINIT_CLEANUP="s|ZERO0|ZERO0|"
     MYINIT_STRING1="s|ZERO0|ZERO0|"  # Idem as above
   else  # MYINIT specifically set
@@ -597,6 +640,9 @@ generate_reducer_script(){
    | sed "${PQUERYOPT_CLEANUP}" \
    | sed "${MYEXTRA_CLEANUP}" \
    | sed "${MYINIT_CLEANUP}" \
+   | sed "${REPLICATION_CLEANUP}" \
+   | sed "${MASTER_EXTRA_CLEANUP}" \
+   | sed "${SLAVE_EXTRA_CLEANUP}" \
    | sed "${WSREP_OPT_CLEANUP}" \
    | sed "${TEXT_CLEANUP}" \
    | sed "${MULTI_CLEANUP1}" \
@@ -624,6 +670,9 @@ generate_reducer_script(){
    | sed "0,/#VARMOD#/s:#VARMOD#:DISABLE_TOKUDB_AUTOLOAD=${DISABLE_TOKUDB_AUTOLOAD}\n#VARMOD#:" \
    | sed "${MYEXTRA_STRING1}" \
    | sed "${MYINIT_STRING1}" \
+   | sed "${REPLICATION_STRING1}" \
+   | sed "${MASTER_EXTRA_STRING1}" \
+   | sed "${SLAVE_EXTRA_STRING1}" \
    | sed "${WSREP_OPT_STRING}" \
    | sed "${MULTI_STRING1}" \
    | sed "${MULTI_STRING2}" \
@@ -705,7 +754,6 @@ generate_reducer_script(){
 }
 
 # Main pquery results processing
-SAN_BUG=0
 if [ ${QC} -eq 0 ]; then
   if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
     for TRIAL in $(ls ./*/node*/*core* 2>/dev/null | sed 's|./||;s|/.*||' | sort | sort -u); do
@@ -720,12 +768,26 @@ if [ ${QC} -eq 0 ]; then
           echo "* Reducer for this trial (./reducer${TRIAL}_${SUBDIR}.sh) already exists. Skipping to next trial/node."
           continue
         fi
-        if [ `ls ./${TRIAL}/MYEXTRA 2>/dev/null | wc -l` -gt 0 ]; then
-          MYEXTRA=$(cat ./${TRIAL}/MYEXTRA 2>/dev/null)
+        MASTER_EXTRA=
+        SLAVE_EXTRA=
+        if [ -r ./REPLICATION_ACTIVE ]; then  # This was a replication based run
+          if [ -r ./${TRIAL}/MASTER_EXTRA ]; then
+            MASTER_EXTRA="$(cat ./${TRIAL}/MASTER_EXTRA 2>/dev/null)"
+          fi
+          if [ -r ./${TRIAL}/SLAVE_EXTRA ]; then
+            SLAVE_EXTRA="$(cat ./${TRIAL}/SLAVE_EXTRA 2>/dev/null)"
+          fi
+        fi
+        MYEXTRA=
+        if [ -r ./${TRIAL}/MYEXTRA ]; then
+          MYEXTRA="$(cat ./${TRIAL}/MYEXTRA 2>/dev/null)"
         else
           echo "Warning: no MYEXTRA file found for trial ${TRIAL} (./${TRIAL}/MYEXTRA). This should not be the case, unless this run ran out of diskspace"
         fi
-        MYINIT=$(cat ./${TRIAL}/MYINIT 2>/dev/null)
+        MYINIT=
+        if [ -r ./${TRIAL}/MYINIT ]; then
+          MYINIT="$(cat ./${TRIAL}/MYINIT 2>/dev/null)"
+        fi
         if [ ${WSREP_OPTION_CHECK} -eq 1 ]; then
           WSREP_PROVIDER_OPTIONS=$(cat ./${TRIAL}/WSREP_PROVIDER_OPT 2>/dev/null)
         fi
@@ -813,12 +875,26 @@ if [ ${QC} -eq 0 ]; then
   else
     for SQLLOG in $(ls ./*/*thread-0.sql 2>/dev/null); do
       TRIAL=`echo ${SQLLOG} | sed 's|./||;s|/.*||'`
-      if [ `ls ./${TRIAL}/MYEXTRA 2>/dev/null | wc -l` -gt 0 ]; then
+      MASTER_EXTRA=
+      SLAVE_EXTRA=
+      if [ -r ./REPLICATION_ACTIVE ]; then  # This was a replication based run
+        if [ -r ./${TRIAL}/MASTER_EXTRA ]; then
+          MASTER_EXTRA="$(cat ./${TRIAL}/MASTER_EXTRA 2>/dev/null)"
+        fi
+        if [ -r ./${TRIAL}/SLAVE_EXTRA ]; then
+          SLAVE_EXTRA="$(cat ./${TRIAL}/SLAVE_EXTRA 2>/dev/null)"
+        fi
+      fi
+      MYEXTRA=
+      if [ -r ./${TRIAL}/MYEXTRA ]; then
         MYEXTRA=$(cat ./${TRIAL}/MYEXTRA 2>/dev/null)
       else
         echo "Warning: no MYEXTRA file found for trial ${TRIAL} (./${TRIAL}/MYEXTRA). This should not be the case, unless this run ran out of diskspace"
       fi
-      MYINIT=$(cat ./${TRIAL}/MYINIT 2>/dev/null)
+      MYINIT=
+      if [ -r ./${TRIAL}/MYINIT ]; then
+        MYINIT=$(cat ./${TRIAL}/MYINIT 2>/dev/null)
+      fi
       if [ ${MDG} -eq 0 ]; then
         OUTFILE=$TRIAL
         rm -Rf ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
@@ -967,22 +1043,36 @@ else
     # Pre-processing all possible sql files to make it suitable for reducer.sh and manual replay - this can be handled in pquery core < TODO
     sed -i "s/;|NOERROR/;#NOERROR/" ${WORKD_PWD}/${TRIAL}/*_thread-0.*.sql
     sed -i "s/;|ERROR/;#ERROR/" ${WORKD_PWD}/${TRIAL}/*_thread-0.*.sql
+    MASTER_EXTRA=
+    SLAVE_EXTRA=
+    if [ -r ./REPLICATION_ACTIVE ]; then  # This was a replication based run
+      if [ -r ./${TRIAL}/MASTER_EXTRA ]; then
+        MASTER_EXTRA="$(cat ./${TRIAL}/MASTER_EXTRA 2>/dev/null)"
+      fi
+      if [ -r ./${TRIAL}/SLAVE_EXTRA ]; then
+        SLAVE_EXTRA="$(cat ./${TRIAL}/SLAVE_EXTRA 2>/dev/null)"
+      fi
+    fi
+    MYINIT=
+    if [ -r ./${TRIAL}/MYINIT ]; then
+      MYINIT=$(cat ./${TRIAL}/MYINIT 2>/dev/null)
+    fi
     if [ "${LEFTRIGHT}" == "<" ]; then
       ENGINE=$(cat ./${TRIAL}/diff.left)
-      if [ `ls ./${TRIAL}/MYEXTRA.left 2>/dev/null | wc -l` -gt 0 ]; then
+      MYEXTRA=
+      if [ -r ./${TRIAL}/MYEXTRA.left ]; then
         MYEXTRA=$(cat ./${TRIAL}/MYEXTRA.left 2>/dev/null)
       else
         echo "Warning: no MYEXTRA.left file found for trial ${TRIAL} (./${TRIAL}/MYEXTRA.left). This should not be the case, unless this run ran out of diskspace"
       fi
-      MYINIT=$(cat ./${TRIAL}/MYINIT 2>/dev/null)
     elif [ "${LEFTRIGHT}" == ">" ]; then
       ENGINE=$(cat ./${TRIAL}/diff.right)
-      if [ `ls ./${TRIAL}/MYEXTRA.right 2>/dev/null | wc -l` -gt 0 ]; then
+      MYEXTRA=
+      if [ -r ./${TRIAL}/MYEXTRA.right ]; then
         MYEXTRA=$(cat ./${TRIAL}/MYEXTRA.right 2>/dev/null)
       else
         echo "Warning: no MYEXTRA.right file found for trial ${TRIAL} (./${TRIAL}/MYEXTRA.right). This should not be the case, unless this run ran out of diskspace"
       fi
-      MYINIT=$(cat ./${TRIAL}/MYINIT 2>/dev/null)
     else
       # Possible reasons for this can be: interrupted or crashed trial, ... ???
       echo "Warning! \$LEFTRIGHT != '<' or '>' but '${LEFTRIGHT}' for trial ${TRIAL}! NOTE: qcreducer${TRIAL}.sh will not be complete: renaming to qcreducer${TRIAL}_notcomplete.sh!"
@@ -1017,7 +1107,7 @@ fi
 echo '========== Processing SHUTDOWN_TIMEOUT_ISSUE trials (if any)'
 for MATCHING_TRIAL in `grep -H "^MODE=[0-9]$" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un` ; do
   if [ -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]; then  # Only deal with shutdown timeout issues!
-    if [ $(grep -m1 --binary-files=text "=ERROR:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 -o ${SAN} -eq 1 ]; then  # SAN issue: do not set MODE=0
+    if [ $(grep -m1 --binary-files=text "=ERROR:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 -o "${SAN_BUG}" -eq 1 ]; then  # SAN issue: do not set MODE=0
       echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however a SAN issue was [also] present"
       echo "  > Removing ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE marker so normal reduction & result presentation can happen"
       rm -f ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
