@@ -64,6 +64,10 @@ REDUCE_STARTUP_ISSUES=0         # Default/normal use: 0. Set to 1 to reduce mysq
 REDUCE_GLIBC_OR_SS_CRASHES=0    # Default/normal use: 0. Set to 1 to reduce testcase based on a GLIBC crash or stack smash being detected. MODE=3 (TEXT) and MODE=4 (all) supported
 SCRIPT_LOC=/usr/bin/script      # The script binary (sudo yum install util-linux) is required for reducing GLIBC crashes
 
+# === Reduce replication issues
+REPLICATION=0                   # Default: 0 (no replication enabled), 1: enable a master/slave replication setup. Replay will be against the master
+MONITOR_MASTER_OR_SLAVE=0       # 0: Monitor both for issue occurence, 1: Monitor master only, 2: Monitor slave only
+
 # === Hang issues               # For catching hang issues (both in normal runtime as well as during shutdown). Must set MODE=0 for this option to become active
 TIMEOUT_CHECK=600               # When MODE=0 is used, this specifies the nr of seconds to be used as a timeout. Do not set too small (eg. >600 sec is likely best). See examples in help below. Set to approx FULL testcase duration + 20 seconds, keeping in mind load on the server. Minimum: 31 seconds. 'FULL': Because the chuncking algorithm could eliminate the hanging query, but if the TIMEOUT_CHECK is set too small then a timeout will still occur due to overall testcase duration! Likely best to take overall testcase lenght (without the hanging query) + 30 seconds on otherwise unused server, or simply set it to a large number like 600 as this is less error-prone. A good approach is to pre-trim the file past the hanging query first manually, then remove last statement, check duration client. Then add 30 seconds.
 
@@ -1377,7 +1381,7 @@ multi_reducer(){
               if grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log 2>/dev/null; then
                 echo_out "Assert: Access denied for user detected in at least one of the subreducers. Check:  grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log  # This issue may be hard to recover from"
               else
-                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err\n3) mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
+                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err\n3) mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/*.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
               fi
               echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] Issue detected. Debug info: cat /dev/shm/$EPOCH/debug.aid"
               # TODO: Reason 1 does happen. Observed:
@@ -1710,6 +1714,11 @@ init_workdir_and_files(){
     echo_out "[Init] Group Replication Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
     echo_out "[Init] Group Replication Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
     echo_out "[Init] Group Replication Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
+  elif [ $REPLICATION -eq 1 ]; then
+    echo_out "[Init] Replication Master Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
+    echo_out "[Init] Replication Slave  Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/slave_socket.sock"
+    echo_out "[Init] Replication Master Client example for subreducers (MULTI): $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
+    echo_out "[Init] Replication Slave  Client example for subreducers (MULTI): $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/slave_socket.sock"
   else
     echo_out "[Init] Server: ${BIN} (as $MYUSER)"
     if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
@@ -2515,17 +2524,60 @@ start_mysqld_main(){
   fi
   # Change --port=$MYPORT to --skip-networking instead once BUG#13917335 is fixed and remove all MYPORT + MULTI_MYPORT coding
   if [ $MODE -ge 6 -a $TS_DEBUG_SYNC_REQUIRED_FLAG -eq 1 ]; then
+    if [ "${REPLICATION}" -eq 1 ]; then
+      echoit "MODE=6, TS_DEBUG_SYNC_REQUIRED_FLAG=1. This combination does not support replication mode yet (REPLICATION=1). Please disable either MODE 6, TS_DEBUG_SYNC_REQUIRED_FLAG, or REPLICATION or extend the code"
+      exit 1
+    fi
     echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
     CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
     MYSQLD_START_TIME=$(date +'%s')
     $CMD > $WORKD/log/mysqld.out 2>&1 &
     PIDV="$!"
   else
-    echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-    CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
-    MYSQLD_START_TIME=$(date +'%s')
-    $CMD > $WORKD/log/mysqld.out 2>&1 &
-    PIDV="$!"
+    if [ "${REPLICATION}" -eq 1 ]; then
+      # ---- Master
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      MYSQLD_START_TIME=$(date +'%s')
+      $CMD > $WORKD/log/mysqld.out 2>&1 &
+      PIDV="$!"
+      # ---- Slave
+      mkdir $WORKD/tmp_slave
+      init_empty_port
+      MYPORT_SLAVE=$NEWPORT
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      MYSQLD_SLAVE_START_TIME=$(date +'%s')
+      $CMD > $WORKD/log/mysqld_slave.out 2>&1 &
+      PIDV_SLAVE="$!"
+      # ---- Init replication
+      # Ensure both servers are live
+      MASTER_STARTUP_OK=0; SLAVE_STARTUP_OK=0
+      for((delay=0;delay<45;delay++)); do  # 45 Second max master+slave startup (normally, only ~2 seconds are required)
+        sleep 1
+        if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then MASTER_STARTUP_OK=1; fi
+        if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock ping > /dev/null 2>&1; then SLAVE_STARTUP_OK=1; fi
+        if [ "${MASTER_STARTUP_OK}" -eq 1 -a "${SLAVE_STARTUP_OK}" -eq 1 ]; then break; fi
+      done
+      if [ "${MASTER_STARTUP_OK}" -ne 1 -o "${SLAVE_STARTUP_OK}" -ne 1 ]; then
+        echoit "Assert: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Debug workdir: $WORKD"
+        exit 1
+      fi
+      MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
+      # Setup replication, master side
+      ${BASEDIR}/bin/mysql -uroot -S$WORKD/socket.sock -e "DELETE FROM mysql.user WHERE user='';" 2>/dev/null
+      ${BASEDIR}/bin/mysql -uroot -S$WORKD/socket.sock -e "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" 2>/dev/null
+      # Setup replication, slave side
+      ${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=${MYPORT}, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ; START SLAVE;" 2>/dev/null
+      sleep 2  # Replication setup delay
+      echoit "Replication enabled between master and slave (in $WORKD) using port ${MYPORT}"
+    else
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      MYSQLD_START_TIME=$(date +'%s')
+      $CMD > $WORKD/log/mysqld.out 2>&1 &
+      PIDV="$!"
+    fi
   fi
   sed -i "s|$WORKD|/dev/shm/${EPOCH}|g" $WORK_START
   # TODO: the next line used to contain only --core-file, but this led to MariaDB not always properly dumping a core file. Added --core to fix, but this may not be fully backward compatible, nor backward compatible forever. Also research why the --core is needed to start with (using 10.5.5 for this)
@@ -2562,7 +2614,6 @@ start_valgrind_mysqld_main(){
   CMD="${TIMEOUT_COMMAND} valgrind --suppressions=$BASEDIR/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes ${BIN} --basedir=${BASEDIR} --datadir=$WORKD/data --port=$MYPORT --tmpdir=$WORKD/tmp --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT}" # Workaround for BUG#12939557 (when old Valgrind version is used): --innodb_checksum_algorithm=none
   MYSQLD_START_TIME=$(date +'%s')
   $CMD > $WORKD/valgrind.out 2>&1 &
-
   PIDV="$!"; STARTUPCOUNT=$[$STARTUPCOUNT+1]
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START_VALGRIND
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START_VALGRIND
@@ -3539,12 +3590,17 @@ stop_mysqld_or_mdg(){
   else
     if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 -a ${FIRST_MYSQLD_START_FLAG} -ne 1 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld. For the first init startup of mysqld, kill should also not be used.
       while :; do
-        if kill -0 $PIDV >/dev/null 2>&1; then
+        KPIDS="${PIDV}"
+        if [ "${REPLICATION}" -eq 1 ]; then
+          KPIDS="${PIDV} ${PIDV_SLAVE}"
+        fi
+        if kill -0 ${KPIDS} >/dev/null 2>&1; then
           sleep 1
-          ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
+          ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
         else
           break
         fi
+        KPIDS=
       done
     else
       # RV-15/09/14 Added timeout due to bug http://bugs.mysql.com/bug.php?id=73914
@@ -3552,28 +3608,38 @@ stop_mysqld_or_mdg(){
       # RV-22/03/17 To check for shutdown hangs, need to make sure that timeout of mysqladmin is longer then TIMEOUT_CHECK seconds + 10 seconds safety margin
       if [ $MODE -eq 0 ]; then
         timeout -k${MODE0_MIN_SHUTDOWN_TIME} -s9 ${MODE0_MIN_SHUTDOWN_TIME}s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
-        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld.out; then
-          echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
+        if [ "${REPLICATION}" -eq 1 ]; then
+          timeout -k${MODE0_MIN_SHUTDOWN_TIME} -s9 ${MODE0_MIN_SHUTDOWN_TIME}s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1
+        fi
+        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld*.out; then
+          echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld*.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
           # exit 1  # RV-11/01/2022 We should not unconditionally exit here, and potentially not exit at all; if this is a subreducer thread, the mysqld kill below is a much more sensible next step. For example, if the sql has had a chunck removed which caused this 'Access denied' than the next trial it may be perfectly possible reduce the testcase further in anohter way (for example, the sql that causes the 'Access denied' issue in the first place may be filtered out, etc. Even if an exit would be preferred here (unlikely), then it should be made conditional.
         fi
       else
         # RV 02/01/2021: increased timeout to 60 up from 40 as even high end servers which are busy may take bit longer to write a core
         timeout -k60 -s9 60s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1  # Note it is myqladmin being terminated with -9, not mysqld !
-        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld.out; then
-          echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
+        if [ "${REPLICATION}" -eq 1 ]; then
+          timeout -k60 -s9 60s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1  # Note it is myqladmin being terminated with -9, not mysqld !
+        fi
+        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld*.out; then
+          echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld*.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
           # exit 1  # Ref RV-11/01/2022 note above
         fi
       fi
       if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 1; fi
 
+      KPIDS="${PIDV}"
+      if [ "${REPLICATION}" -eq 1 ]; then
+        KPIDS="${PIDV} ${PIDV_SLAVE}"
+      fi
       if [ "${FIREWORKS}" == "1" ]; then  # Terminate mysqld directly in fireworks mode
-        ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
+        ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
         sleep 0.02
         while :; do
-          if kill -0 $PIDV >/dev/null 2>&1; then
-            ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
+          if kill -0 ${KPIDS} >/dev/null 2>&1; then
+            ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
             sleep 1
-            if kill -0 $PIDV >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed at least twice. Is this server very busy?"; else break; fi
+            if kill -0 ${KPIDS} >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server(s) with PID(s) ${KPIDS} failed at least twice. Is this server very busy?"; else break; fi
           else
             break
           fi
@@ -3582,19 +3648,22 @@ stop_mysqld_or_mdg(){
         # Try various things now to bring server down, upto kill -9
         while :; do
           sleep 1
-          if kill -0 $PIDV >/dev/null 2>&1; then
+          if kill -0 ${KPIDS} >/dev/null 2>&1; then
             if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 2; fi
-            if kill -0 $PIDV >/dev/null 2>&1; then  # Retry shutdown one more time
+            if kill -0 ${KPIDS} >/dev/null 2>&1; then  # Retry shutdown one more time
               ${BASEDIR}/bin/mysqladmin -uroot -S${WORKD}/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
-              if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld.out; then
-                echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
+              if [ "${REPLICATION}" -eq 1 ]; then
+                ${BASEDIR}/bin/mysqladmin -uroot -S${WORKD}/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1
+              fi
+              if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld*.out; then
+                echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld*.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
                 # exit 1  # Ref RV-11/01/2022 note above
               fi
             else
               break
             fi
             if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 2; fi
-            if kill -0 $PIDV >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed at least twice. Is this server very busy?"; else break; fi
+            if kill -0 ${KPIDS} >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server(s) with PID(s) ${KPIDS} failed at least twice. Is this server very busy?"; else break; fi
             sleep 5
             if [ $MODE -ne 1 -a $MODE -ne 6 ]; then
               if [ $MODE -eq 0 ]; then
@@ -3602,11 +3671,11 @@ stop_mysqld_or_mdg(){
                   continue  # Do not proceed to kill -9 if server is hanging and reducer is checking for the same (i.e. MODE=0) untill we've passed $TIMEOUT_CHECK + 10 second safety margin
                 fi
               fi
-              if kill -0 $PIDV >/dev/null 2>&1; then
+              if kill -0 ${KPIDS} >/dev/null 2>&1; then
                 if [ $MODE -ne 0 ]; then  # For MODE=0, the following is not a WARNING but fairly normal
-                  echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed. Now forcing kill of mysqld"
+                  echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server(s) with PID(s) ${KPIDS} failed. Now forcing kill of mysqld"
                 fi
-                ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
+                ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
               else
                 break
               fi
@@ -3617,6 +3686,7 @@ stop_mysqld_or_mdg(){
         done
       fi
     fi
+    KPIDS=
     PIDV=
   fi
   RUN_TIME=$[ ${RUN_TIME} + $(date +'%s') - ${SHUTDOWN_TIME_START} ]  # Add shutdown runtime to overall runtime which is later checked against TIMEOUT_CHECK

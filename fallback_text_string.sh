@@ -16,13 +16,13 @@ if [ "$ERROR_LOG" == "" ]; then
   if [ -f ./log/master.err -a -r ./log/master.err ]; then
     ERROR_LOG=./log/master.err
   else
-    echo "Assert: no error log file name was passed to fallback_text_string.sh"
+    echo "Assert: no error log file name was passed to fallback_text_string.sh" >&2
     exit 1
   fi
 fi
 
 if [ ! -f ${ERROR_LOG} -o ! -a "${ERROR_LOG}" ]; then
-  echo "Assert: ${ERROR_LOG} does not exist or could not be read by fallback_text_string.sh"
+  echo "Assert: ${ERROR_LOG} does not exist or could not be read by fallback_text_string.sh" >&2
   exit 1
 fi
 
