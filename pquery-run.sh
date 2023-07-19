@@ -289,7 +289,8 @@ add_handy_scripts(){
   else
     SAVE_STACK_LOC=${RUNDIR}/${TRIAL}
   fi
-  cat "${SCRIPT_PWD}/stack.sh" > ${SAVE_STACK_LOC}/stack && chmod +x ${SAVE_STACK_LOC}/stack
+  #cat "${SCRIPT_PWD}/stack.sh" > ${SAVE_STACK_LOC}/stack && chmod +x ${SAVE_STACK_LOC}/stack
+  ln -s "${SCRIPT_PWD}/stack.sh" ${SAVE_STACK_LOC}/stack
   # Add handy gdb script
   echo "echo 'Handy copy and paste script:'" > ${SAVE_STACK_LOC}/gdb
   echo "echo '  set pagination off'" >> ${SAVE_STACK_LOC}/gdb
@@ -646,11 +647,7 @@ handle_bugs() {
   add_handy_scripts
   TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"  # Note this will auto-call fallback_text_string.sh if required.
   if [[ "${MDG}" -eq 1 ]]; then
-    if [ "${TEXT}" == "#TODO" ]; then
-      echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node1/MYBUG  # Only write the #TODO assert failure to Node 1
-    else
-      echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node${j}/MYBUG
-    fi
+    echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node${j}/MYBUG
   else
     echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/MYBUG
   fi

@@ -47,13 +47,13 @@ if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
 if [ "${MDG}" -eq 1 ]; then
   CORE_COUNT=$(ls --color=never node*/*core* 2>/dev/null | wc -l)
 else
-  CORE_COUNT=$(ls --color=never data/*core* 2>/dev/null | wc -l)
+  CORE_COUNT=$(ls --color=never data*/*core* 2>/dev/null | wc -l)
 fi
 if [ ${CORE_COUNT} -eq 0 ]; then
-  echo "INFO: no cores found at data/*core* nor at node*/*core*"
+  echo "INFO: no cores found at data*/*core* nor at node*/*core*"
   exit 1
 elif [ ${CORE_COUNT} -gt 1 ]; then
-  echo "Assert: too many (${CORE_COUNT}) cores found at data/*core* and/or node*/*core*, this should not happen (as ./all_no_cl was used which should have created a clean data directory, or the same for the matching Galera scripts)"
+  echo "Assert: too many (${CORE_COUNT}) cores found at data*/*core* and/or node*/*core*, this should not happen (as ./all_no_cl was used which should have created a clean data directory, or the same for the matching Galera scripts)"
   exit 1
 fi
 
@@ -76,7 +76,7 @@ LATEST_CORE=
 if [ "${MDG}" -eq 1 ]; then
   LATEST_CORE="$(ls -t --color=never node*/*core* 2>/dev/null)"
 else
-  LATEST_CORE="$(ls -t --color=never data/*core* 2>/dev/null)"
+  LATEST_CORE="$(ls -t --color=never data*/*core* 2>/dev/null)"
 fi
 
 gdb -q ${BIN} ${LATEST_CORE} >/tmp/${RANDF}.gdba 2>&1 << EOF
