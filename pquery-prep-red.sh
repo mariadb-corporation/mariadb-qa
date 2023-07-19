@@ -492,13 +492,13 @@ generate_reducer_script(){
       MYEXTRA_STRING1="0,/#VARMOD#/s:#VARMOD#:MYEXTRA=\"${MYEXTRA}\"\n#VARMOD#:"
     fi
   fi
-  REPLICATION_EXTRA_CLEANUP="s|ZERO0|ZERO0|"
-  REPLICATION_EXTRA_STRING1="s|ZERO0|ZERO0|"  # Idem as above
+  REPLICATION_CLEANUP="s|ZERO0|ZERO0|"
+  REPLICATION_STRING1="s|ZERO0|ZERO0|"  # Idem as above
   MASTER_EXTRA_CLEANUP="s|ZERO0|ZERO0|"
   MASTER_EXTRA_STRING1="s|ZERO0|ZERO0|"  # Idem as above
   SLAVE_EXTRA_CLEANUP="s|ZERO0|ZERO0|"
   SLAVE_EXTRA_STRING1="s|ZERO0|ZERO0|"  # Idem as above
-  if [ -r ./REPLICATION_ACTIVE ]; then  # This was a replication based run
+  if [ -r ./${TRIAL}/REPLICATION_ACTIVE ]; then  # This was a replication based run
     REPLICATION_CLEANUP="0,/^[ \t]*REPLICATION[ \t]*=.*$/s|^[ \t]*REPLICATION[ \t]*=.*$|#REPLICATION=<set_below_in_machine_variables_section>|"
     REPLICATION_STRING1="0,/#VARMOD#/s!#VARMOD#!REPLICATION=1\n#VARMOD#!"
     if [ ! -z "$MASTER_EXTRA" ]; then  # MASTER_EXTRA set
@@ -770,7 +770,7 @@ if [ ${QC} -eq 0 ]; then
         fi
         MASTER_EXTRA=
         SLAVE_EXTRA=
-        if [ -r ./REPLICATION_ACTIVE ]; then  # This was a replication based run
+        if [ -r ./${TRIAL}/REPLICATION_ACTIVE ]; then  # This was a replication based run
           if [ -r ./${TRIAL}/MASTER_EXTRA ]; then
             MASTER_EXTRA="$(cat ./${TRIAL}/MASTER_EXTRA 2>/dev/null)"
           fi
@@ -877,7 +877,7 @@ if [ ${QC} -eq 0 ]; then
       TRIAL=`echo ${SQLLOG} | sed 's|./||;s|/.*||'`
       MASTER_EXTRA=
       SLAVE_EXTRA=
-      if [ -r ./REPLICATION_ACTIVE ]; then  # This was a replication based run
+      if [ -r ./${TRIAL}/REPLICATION_ACTIVE ]; then  # This was a replication based run
         if [ -r ./${TRIAL}/MASTER_EXTRA ]; then
           MASTER_EXTRA="$(cat ./${TRIAL}/MASTER_EXTRA 2>/dev/null)"
         fi
@@ -1045,7 +1045,7 @@ else
     sed -i "s/;|ERROR/;#ERROR/" ${WORKD_PWD}/${TRIAL}/*_thread-0.*.sql
     MASTER_EXTRA=
     SLAVE_EXTRA=
-    if [ -r ./REPLICATION_ACTIVE ]; then  # This was a replication based run
+    if [ -r ./${TRIAL}/REPLICATION_ACTIVE ]; then  # This was a replication based run
       if [ -r ./${TRIAL}/MASTER_EXTRA ]; then
         MASTER_EXTRA="$(cat ./${TRIAL}/MASTER_EXTRA 2>/dev/null)"
       fi

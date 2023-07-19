@@ -30,7 +30,7 @@ init_slave query, Internal MariaDB error code: 1237   Presumed non-issue (Slave 
 Internal MariaDB error code: 1399                     Presumed non-issue (global transaction is in IDLE state)
 Internal MariaDB error code: 1593                     Presumed non-issue (empty or invalid MASTER connection user or host)
 Internal MariaDB error code: 1610                     https://jira.mariadb.org/browse/MDEV-22936 (lc_messages=ru testcase)
-Internal MariaDB error code: 1677                     Presumed non-issue (table referenced in binlog does not exist, or unconvertible column type difference)
+Internal MariaDB error code: 1677                     Presumed non-issue (table referenced in binlog does not exist, or unconvertible column type difference), ref SPECIAL-9
 Internal MariaDB error code: 1792                     Presumed non-issue (tx_read_only=1 yet attempted BINLOG statement)
 Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
 Internal MariaDB error code: 1969                     Presumed non-issue (max_statement_time exceeded, normal when it is set)
