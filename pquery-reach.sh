@@ -116,7 +116,7 @@ pquery_run(){
    sed "s|^[ \t]*DOCKER=.*|DOCKER=0|" | \
    sed "s|^[ \t]*TRIALS=.*|TRIALS=1|" | \
    sed "s|^[ \t]*VALGRIND_RUN=.*|VALGRIND_RUN=0|" | \
-   sed "s|^[ \t]*SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=.*|SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=1|" | \
+   sed "s|^[ \t]*SAVE_TRIALS_WITH_BUGS_ONLY=.*|SAVE_TRIALS_WITH_BUGS_ONLY=1|" | \
    sed "s|^[ \t]*SAVE_SQL=.*|SAVE_SQL=0|" | \
    sed "s|^[ \t]*MYSQLD_START_TIMEOUT.*|MYSQLD_START_TIMEOUT=60|" | \
    sed "s|^[ \t]*MULTI_THREADED_RUN=.*|MULTI_THREADED_RUN=$(if [ ${THREADS} -gt 1 ]; then echo '1'; else echo '0'; fi)|" | \

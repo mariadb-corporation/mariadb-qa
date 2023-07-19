@@ -53,9 +53,11 @@ fi
 
 # Loop dirs from results.list
 while :; do
+  DATADIR_LIST="rm -Rf "
   for ((i=1;i<=100;i++)); do
     if [ ! -z "${MON[i]}" ]; then
       if [ -d "${DATADIR}/${MON[${i}]}" ]; then
+        DATADIR_LIST="${DATADIR_LIST} ${DATADIR}/${MON[${i}]}"
         cd "${DATADIR}/${MON[${i}]}"
         ~/pr | grep -vEi '^=========$|SHUTDOWN|no reducer scripts were found in this directory' | sed '/Coredumps found in trials/,+1d' | sed '/Significant.Major errors/,+9999d'
         TO_SCAN='*/*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err'
@@ -78,5 +80,7 @@ while :; do
     fi
   done
   echo " ---------------------------------------------------------------------------------------------------------------"
+  echo "Handy delete command if you want to remove all active datadirs in results.list:"
+  echo "${DATADIR_LIST}"
   sleep 60
 done

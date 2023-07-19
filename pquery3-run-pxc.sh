@@ -8,7 +8,7 @@ CONFIGURATION_FILE=pquery3-run-single.cnf  # Do not use any path specifiers, the
 #CONFIGURATION_FILE=pquery-run-RocksDB.conf  # RocksDB testing
 
 # ========================================= Improvement ideas ====================================================================
-# * SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
+# * SAVE_TRIALS_WITH_BUGS_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
 # * SQL hashing s/t2/t1/, hex values "0x"
 # * Full MTR grammar on one-liners
 # * Interleave all statements with another that is likely to cause issues, for example "USE mysql"
@@ -1162,8 +1162,8 @@ pquery_test(){
         echoit "ASAN issue detected in the mysqld error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
-      elif [ ${SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY} -eq 0 ]; then
-        echoit "Saving full trial outcome (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=0 and so trials are saved irrespective of whether an issue was detected or not)"
+      elif [ ${SAVE_TRIALS_WITH_BUGS_ONLY} -eq 0 ]; then
+        echoit "Saving full trial outcome (as SAVE_TRIALS_WITH_BUGS_ONLY=0 and so trials are saved irrespective of whether an issue was detected or not)"
         savetrial
         TRIAL_SAVED=1
       elif [[ ${PXB_CHECK} -eq 1 ]]; then
@@ -1180,19 +1180,19 @@ pquery_test(){
         if [ ${SAVE_SQL} -eq 1 ]; then
           if [ ${VALGRIND_RUN} -eq 1 ]; then
             if [ ${VALGRIND_ERRORS_FOUND} -ne 1 ]; then
-              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
+              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
             fi
           else
-            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
+            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
           fi
           savesql
         else
           if [ ${VALGRIND_RUN} -eq 1 ]; then
             if [ ${VALGRIND_ERRORS_FOUND} -ne 1 ]; then
-              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
+              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
             fi
           else
-            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
+            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
           fi
         fi
       fi
@@ -1266,7 +1266,7 @@ fi
 if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
   echoit "mysqld Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Trials: ${TRIALS} | Statements per trial: ${QC_NR_OF_STATEMENTS_PER_TRIAL} | Primary Engine: ${QC_PRI_ENGINE} | Secondary Engine: ${QC_SEC_ENGINE}"
 else
-  echoit "mysqld Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Queries/Thread: ${QUERIES_PER_THREAD} | Trials: ${TRIALS} | Save coredump/valgrind issue trials only: `if [ ${SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY} -eq 1 ]; then echo -n 'TRUE'; if [ ${SAVE_SQL} -eq 1 ]; then echo ' + save all SQL traces'; else echo ''; fi; else echo 'FALSE'; fi`"
+  echoit "mysqld Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Queries/Thread: ${QUERIES_PER_THREAD} | Trials: ${TRIALS} | Save coredump/valgrind issue trials only: `if [ ${SAVE_TRIALS_WITH_BUGS_ONLY} -eq 1 ]; then echo -n 'TRUE'; if [ ${SAVE_SQL} -eq 1 ]; then echo ' + save all SQL traces'; else echo ''; fi; else echo 'FALSE'; fi`"
 fi
 SQL_INPUT_TEXT="SQL file used: ${INFILE}"
 if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then

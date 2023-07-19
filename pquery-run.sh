@@ -10,7 +10,7 @@
 CONFIGURATION_FILE=pquery-run.conf # Do not use any path specifiers, the .conf file should be in the same path as pquery-run.sh
 
 # ========================================= Improvement ideas
-# * SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
+# * SAVE_TRIALS_WITH_BUGS_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
 # * SQL hashing s/t2/t1/, hex values "0x"
 # * Full MTR grammar on one-liners
 # * Interleave all statements with another that is likely to cause issues, for example "USE mysql". This is already done regularly with feature testing through SQL interleaving, but it could be done per statement. For example, every second line a SELECT, next SQL file every second line an UPDATE, next SQL file every second line an ALTER etc. then use all (do not combine; too large input) files either randomly or sequentially. And instead of just SELECT, or UPDATE, or ALTER etc. use sql-interleaving to make a variety of 9 per statement.
@@ -644,9 +644,13 @@ check_cmd() {
 handle_bugs() {
   cd ${RUNDIR}/${TRIAL} || exit 1
   add_handy_scripts
-  TEXT=$(${SCRIPT_PWD}/new_text_string.sh)
+  TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"  # Note this will auto-call fallback_text_string.sh if required.
   if [[ "${MDG}" -eq 1 ]]; then
-    echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node${j}/MYBUG
+    if [ "${TEXT}" == "#TODO" ]; then
+      echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node1/MYBUG  # Only write the #TODO assert failure to Node 1
+    else
+      echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node${j}/MYBUG
+    fi
   else
     echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/MYBUG
   fi
@@ -2462,7 +2466,7 @@ EOF
     fi
     FAILED_QUERIES_OUTPUT=
   fi
-  if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 -a $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -eq 0 -a "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/master.err 2>/dev/null)" == "" ]; then # If a core is found (or text_string.sh sees a crash) when query correctness testing is in progress, it will process it as a normal crash (without considering query correctness)
+  if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 -a $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -eq 0 ]; then # If a core is found when query correctness testing is in progress, it will process it as a normal crash (without considering query correctness)
     if [ "${FAILEDSTARTABORT}" != "1" ]; then
       if [ ${QUERY_CORRECTNESS_MODE} -ne 2 ]; then
         QC_RESULT1=$(diff ${RUNDIR}/${TRIAL}/${QC_PRI_ENGINE}.result ${RUNDIR}/${TRIAL}/${QC_SEC_ENGINE}.result)
@@ -2518,8 +2522,9 @@ EOF
       TRIAL_TO_SAVE=0
       # Checking for a core has to always come before all other checks; If there is a core, there is the possibility of gaining a unique bug identifier using new_text.string.sh.
       # The /*/ in the /*/*core* core search pattern is for to the /node1/ dir setup for cluster runs
-      # TODO: verify if this means that /data/ is completely replaced by /node1/ at the same level
-      if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -ge 1 -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/master.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/slave.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node1/node1.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node2/node2.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node3/node3.err 2>/dev/null)" != "" ]; then
+      # TODO: verify if this means that /data/ is completely replaced by /node1/ at the same levela
+      # It is important in the below calls of fallback_text_string.sh that stderr is null redirected to avoid errors (for example Galera node3 error log not found) from presenting as non-empty outcomes
+      if [ "$(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l)" -ge 1 -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/master.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/slave.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node1/node1.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node2/node2.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node3/node3.err 2>/dev/null)" != "" ]; then
         TRIAL_TO_SAVE=1  # A bug was definitely discovered (core presence or fallback_text_string.sh produced output) so we always need to save the trial. The reason this is set is for all cases where handle_bugs (which sets TRIAL_TO_SAVE=1) is not called, yet there is a bug present (i.e. fallback_text_string.sh produced output)
         if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -ge 1 ]; then
           if [[ "${MDG}" -eq 1 ]]; then
@@ -2537,9 +2542,10 @@ EOF
             handle_bugs
           fi
         else
-          echoit "mysqld/mariadbd crash detected in the error log via fallback_text_string.sh scan #TODO" #TODO marker is placed here because the new_text_string.sh may not be able to handle all cases correctly yet (like where there is an error log with a crash, but no coredump - though that may be OOS caused also). Also adding a #TODO marker into ${RUNDIR}/${TRIAL}/MYBUG to make it easy to scan for these trials.
-          echo "#TODO" > ${RUNDIR}/${TRIAL}/MYBUG
+          echoit "No core present, but another issue was found in the error log by fallback_text_string.sh"
+          handle_bugs
         fi
+        # -- Output only (no actual functionality except output)
         if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 && -r ${WORKDIR}/${TRIAL}/log/slave.err && "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/slave.err 2>/dev/null)" != "" ]]; then
           echoit "Bug found (as per slave error log)(as per fallback_text_string.sh): $(${SCRIPT_PWD}/fallback_text_string.sh ${WORKDIR}/${TRIAL}/log/slave.err)"
         elif [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 && -r ${WORKDIR}/${TRIAL}/log/master.err ]]; then
@@ -2548,6 +2554,7 @@ EOF
           if [ "$(${SCRIPT_PWD}/fallback_text_string.sh ${WORKDIR}/${TRIAL}/node1/node1.err 2>/dev/null)" != "" ]; then echoit "Bug found in MDG/GR node #1 (as per error log)(as per fallback_text_string.sh): $(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node1/node1.err)"; fi
           if [ "$(${SCRIPT_PWD}/fallback_text_string.sh ${WORKDIR}/${TRIAL}/node2/node2.err 2>/dev/null)" != "" ]; then echoit "Bug found in MDG/GR node #2 (as per error log)(as per fallback_text_string.sh): $(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node2/node2.err)"; fi
           if [ "$(${SCRIPT_PWD}/fallback_text_string.sh ${WORKDIR}/${TRIAL}/node3/node3.err 2>/dev/null)" != "" ]; then echoit "Bug found in MDG/GR node #3 (as per error log)(as per fallback_text_string.sh): $(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node3/node3.err)"; fi
+        # -- /Output only
         fi
         if [ ${TRIAL_TO_SAVE} -eq 1 ]; then
           savetrial
@@ -2578,8 +2585,8 @@ EOF
         echoit "UBSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
-      elif [ ${SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY} -eq 0 ]; then
-        echoit "Saving full trial outcome (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=0 and so trials are saved irrespective of whether an issue was detected or not)"
+      elif [ ${SAVE_TRIALS_WITH_BUGS_ONLY} -eq 0 ]; then
+        echoit "Saving full trial outcome (as SAVE_TRIALS_WITH_BUGS_ONLY=0 and so trials are saved irrespective of whether an issue was detected or not)"
         savetrial
         TRIAL_SAVED=1
       elif [[ ${PQUERY3} -eq 1 ]]; then
@@ -2599,19 +2606,19 @@ EOF
         if [ ${SAVE_SQL} -eq 1 ]; then
           if [ "${VALGRIND_RUN}" == "1" ]; then
             if [ ${VALGRIND_ERRORS_FOUND} -ne 1 ]; then
-              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
+              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
             fi
           else
-            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
+            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
           fi
           savesql
         else
           if [ "${VALGRIND_RUN}" == "1" ]; then
             if [ ${VALGRIND_ERRORS_FOUND} -ne 1 ]; then
-              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
+              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
             fi
           else
-            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
+            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
           fi
         fi
       fi
@@ -2702,7 +2709,7 @@ fi
 if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
   echoit "mysqld/mariadbd Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Trials: ${TRIALS} | Statements per trial: ${QC_NR_OF_STATEMENTS_PER_TRIAL} | Primary Engine: ${QC_PRI_ENGINE} | Secondary Engine: ${QC_SEC_ENGINE} | Eliminate Known Bugs: ${ELIMINATE_KNOWN_BUGS}"
 else
-  echoit "mysqld/mariadbd Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Queries/Thread: ${QUERIES_PER_THREAD} | Trials: ${TRIALS} | Save coredump/valgrind issue trials only: $(if [ ${SAVE_TRIALS_WITH_CORE_OR_VALGRIND_ONLY} -eq 1 ]; then
+  echoit "mysqld/mariadbd Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Queries/Thread: ${QUERIES_PER_THREAD} | Trials: ${TRIALS} | Save coredump/valgrind issue trials only: $(if [ ${SAVE_TRIALS_WITH_BUGS_ONLY} -eq 1 ]; then
     echo -n 'TRUE'
     if [ ${SAVE_SQL} -eq 1 ]; then echo ' + save all SQL traces'; else echo ''; fi
   else echo 'FALSE'; fi)"

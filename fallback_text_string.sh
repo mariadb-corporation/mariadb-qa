@@ -83,7 +83,7 @@ if [ ${POOR_STRING} -eq 1 ]; then
 fi
 
 if [ $(echo ${STRING} | wc -l) -gt 1 ]; then
-  echo "ASSERT! TEXT STRING WAS MORE THEN ONE LINE. PLEASE FIX ME (text_string.sh). NOTE; AND, AS PER INSTRUCTIONS IN THE SCRIPT, PLEASE AVOID EDITING THE ORIGINAL CODE BLOCK!"
+  echo "Assert: TEXT STRING WAS MORE THEN ONE LINE. PLEASE FIX ME (text_string.sh). NOTE; AND, AS PER INSTRUCTIONS IN THE SCRIPT, PLEASE AVOID EDITING THE ORIGINAL CODE BLOCK!" >&2
   exit 1
 fi
 
@@ -141,9 +141,11 @@ STRING=$(echo ${STRING} | sed "s| thread [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9
 STRING=$(echo "${STRING}" | sed "s|/sda/[PM]S[0-9]\+[^ ]\+/bin/mysqld||g")
 
 if [ -z "${STRING}" ]; then
-  STRING="No relevant strings were found in ${ERROR_LOG} by fallback_text_string.sh"
+  # The >&2 direction is important as pquery-run.sh redirects stderr output of fallback_text_string.sh to null to avoid any output by fallback_text_string.sh being interpreted as an actual relevant string. All echo's/asserts (and the 'No relevant strings were found' below), except any actual 'FALLBACK|<some bug string>' output should be >&2 redirected, i.e. to stderr
+  echo "No relevant strings were found in ${ERROR_LOG} by fallback_text_string.sh" >&2
+  exit 1
+else 
+  # Ensure that fallback_text_string.sh string output is clearly indicated by a 'FALLBACK|' marker
+  echo "FALLBACK|${STRING}"
+  exit 0
 fi
-
-# Ensure that fallback_text_string.sh string use is clearly indicated by a 'FALLBACK|' marker
-# TODO: this marker can be used further in automation (turn off new_text_string.sh use)
-echo "FALLBACK|${STRING}"
