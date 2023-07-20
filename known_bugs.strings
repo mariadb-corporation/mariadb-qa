@@ -166,6 +166,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+got_name == named_item_expected()|SIGABRT|Json_writer::on_start_object|Json_writer::start_object|Json_writer_object::Json_writer_object|Json_writer_object::Json_writer_object ## MDEV-31752
 field->col->is_dropped() || !field->col->mbmaxlen || len >= field->col->mbminlen * fixed_len / field->col->mbmaxlen|SIGABRT|rec_get_converted_size_comp_prefix_low<>dict0mem.h|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_insert ## MDEV-31740
 field->col->is_dropped() || !field->col->mbmaxlen || len >= field->col->mbminlen * fixed_len / field->col->mbmaxlen|SIGABRT|rec_get_converted_size_comp_prefix_low<>dict0mem.h|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_update ## MDEV-31740
 table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_exec_sql|dict_stats_delete_from_table_stats     ## MDEV-31740
