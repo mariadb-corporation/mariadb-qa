@@ -166,6 +166,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|intern_plugin_unlock|plugin_unlock|free_engine_list|Sys_var_pluginlist::do_update                                                                                      ## MDEV-31771
+SIGSEGV|plugin_unlock|free_engine_list|free_engine_list|Sys_var_pluginlist::do_update                                                                                          ## MDEV-31771
 SIGSEGV|maria_rtree_add_key|maria_rtree_insert_level|maria_rtree_insert|maria_update                                                                                           ## MDEV-31766
 SIGSEGV|maria_rtree_add_key|maria_rtree_insert_req                                                                                                                             ## MDEV-31766
 SIGSEGV|maria_rtree_d_mbr|maria_rtree_split_page|maria_rtree_add_key|maria_rtree_insert_req                                                                                    ## MDEV-31766
