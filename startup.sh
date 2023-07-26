@@ -471,7 +471,7 @@ echo "    rm -Rf \"\${_RR_TRACE_DIR}\"" >>start_rr
 echo "  fi" >>start_rr
 echo "fi" >>start_rr
 echo "mkdir -p \"\${_RR_TRACE_DIR}\"" >>start_rr
-echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} ${START_OPT} --loose-innodb-flush-method=fsync --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
+echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} \${MYEXTRA_OPT} ${START_OPT} --loose-innodb-flush-method=fsync --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
 echo "echo 'Server socket: ${SOCKET} with datadir: ${PWD}/data'" >>start
 tail -n1 start >>start_valgrind
 tail -n1 start >>start_gypsy
