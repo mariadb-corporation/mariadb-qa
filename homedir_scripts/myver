@@ -60,6 +60,13 @@ else
     if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, ${SAN})"; fi
     if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug, ${SAN})"; fi
   fi
+  if [ -z "${BUILD_TYPE}" -a -r ./BUILD_CMD_CMAKE ]; then
+    if ! grep -qi '=Debug' ./BUILD_CMD_CMAKE 2>/dev/null; then
+      if [ -z "${SAN}" ]; then BUILD_TYPE=" (Optimized)"; else BUILD_TYPE=" (Optimized, ${SAN})"; fi
+    else
+      if [ -z "${SAN}" ]; then BUILD_TYPE=" (Debug)"; else BUILD_TYPE=" (Debug, ${SAN})"; fi
+    fi
+  fi
   echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
   echo ""
   echo "{noformat}"
