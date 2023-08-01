@@ -1085,6 +1085,7 @@ SIGSEGV|my_scan_weight_utf8mb3_general_ci|my_scan_weight_utf8mb3_general_ci|my_s
 marked_for_read()|SIGABRT|Field_long::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                          ## MDEV-24658
 marked_for_read()|SIGABRT|Field_varstring::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                     ## MDEV-24658
 marked_for_read()|SIGABRT|Field_string::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                        ## MDEV-24658
+marked_for_read()|SIGABRT|Field_bit::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                           ## MDEV-24658
 SIGSEGV|maria_scan_init|ha_maria::rnd_init|handler::ha_rnd_init|handler::read_first_row                                                                                        ## MDEV-24651
 SIGSEGV|maria_scan_init|handler::ha_rnd_init|handler::read_first_row|handler::ha_read_first_row                                                                                ## MDEV-24651
 SIGSEGV|maria_status|ha_maria::info|TABLE_LIST::fetch_number_of_rows|make_join_statistics                                                                                      ## MDEV-24651
@@ -1255,6 +1256,7 @@ SIGSEGV|Field_iterator_table::create_item|Field_iterator_table_ref::create_item|
 SIGSEGV|Item::operator new|Type_handler_json_common::make_json_valid_expr|JOIN::transform_in_predicates_into_in_subq|JOIN::optimize_inner                                      ## MDEV-22444
 SIGABRT|__cxa_pure_virtual|Item::real_type|Value_source::Context::Context|Item_func_in::propagate_equal_fields                                                                 ## MDEV-22444
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22444
+SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|JOIN::transform_in_predicates_into_in_subq      ## MDEV-22444
 templ->mbmaxlen > templ->mbminlen || templ->mysql_col_len == len || (field_no == templ->icp_rec_field_no && field->prefix_len > 0)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc ## MDEV-22395
 0|SIGABRT|stored_field_cmp_to_item|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator                                    ## MDEV-22385
 SIGSEGV|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command|mysql_parse                                                                                       ## MDEV-22381
