@@ -166,6 +166,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|i_s_sys_tablespaces_fill|get_schema_tables_result|JOIN::exec_inner|JOIN::exec                                                                                          ## MDEV-31814
+SIGSEGV|fil_space_t::full_crc32|i_s_sys_tablespaces_fill|i_s_sys_tablespaces_fill_table|get_schema_tables_result                                                               ## MDEV-31814
+!srv_read_only_mode|SIGABRT|srv_wake_purge_thread_if_not_active|innodb_undo_log_truncate_update|sys_var_pluginvar::global_update|sys_var::update                               ## MDEV-31813
 r->empty()|SIGABRT|sux_lock<ssux_lock_impl<true> >::free|buf_pool_t::close|innodb_shutdown|innobase_end                                                                        ## MDEV-31782
 SIGSEGV|intern_plugin_unlock|plugin_unlock|free_engine_list|Sys_var_pluginlist::do_update                                                                                      ## MDEV-31771
 SIGSEGV|plugin_unlock|free_engine_list|free_engine_list|Sys_var_pluginlist::do_update                                                                                          ## MDEV-31771
