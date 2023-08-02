@@ -166,6 +166,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|my_hash_first|my_hash_search|find_acl_role|get_current_user                                                                                                            ## MDEV-31825
+SIGSEGV|my_hash_first|my_hash_search|get_current_user|get_current_user                                                                                                         ## MDEV-31825
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|get_current_user|get_show_user                                                                                                 ## MDEV-31825
+SIGSEGV|__strlen_avx2|__vfprintf_internal|buffered_vfprintf|__vfprintf_internal                                                                                                ## MDEV-31825
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|fil_crypt_set_rotate_key_age|innodb_encryption_rotate_key_age_update                                                           ## MDEV-31819
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|fil_crypt_set_rotation_iops|innodb_encryption_rotation_iops_update                                                             ## MDEV-31819
 SIGSEGV|OSMutex::enter|os_event::set|os_event_set|fil_crypt_set_rotate_key_age                                                                                                 ## MDEV-31819
