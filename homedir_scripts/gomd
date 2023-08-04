@@ -4,7 +4,8 @@
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
 #BASEDIR=MDEV-30619_postfix_MD190723-mariadb-10.4.31-linux-x86_64-opt
 #BASEDIR=MDEV-30619_prefix_MD190723-mariadb-10.4.31-linux-x86_64-opt
-BASEDIR=bb-10.6-primary-corruption_MD260723-mariadb-10.6.15-linux-x86_64-dbg
+BASEDIR=UBASAN_MD030823-mariadb-11.2.0-linux-x86_64-dbg
+#bb-10.6-primary-corruption_MD260723-mariadb-10.6.15-linux-x86_64-dbg
 #MDEV-30619_postfix2_MD220723-mariadb-10.4.31-linux-x86_64-opt
 #MD220623-mariadb-11.1.2-linux-x86_64-dbg
 #UBASAN_MD120523-mariadb-10.11.4-linux-x86_64-dbg
@@ -27,8 +28,8 @@ RUNSDBG=3
 #CONF=pquery-run-MD-crt.conf
 #CONF=pquery-run-MD-allb.conf
 ##CONF=pquery-run-MD-replication.conf
-CONF=pquery-run-MD2.conf  # Using PRE_SHUFFLE_SQL=2
-#CONF=pquery-run-MD-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
+#CONF=pquery-run-MD2.conf  # Using PRE_SHUFFLE_SQL=2
+CONF=pquery-run-MD-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-VAL.conf  # Using PRE_SHUFFLE_SQL=2, VAL
 #CONF=pquery-run-MD-spider-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-innodb-MDEV-30531-SAN.conf  # PRE_SHUFFLE_SQL=2, SAN, PRELOAD_SQL

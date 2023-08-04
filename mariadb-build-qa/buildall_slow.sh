@@ -15,7 +15,7 @@ BUILD_10_10=1
 BUILD_10_11=1
 BUILD_11_0=1
 BUILD_11_1=1
-BUILD_11_2=0
+BUILD_11_2=1
 #export ADD_EXTRA_AUTO_OPTIONS=''  # Add additional cmake options, granular per-version settings below
 ADD_EXTRA_AUTO_OPTIONS='-DWITH_PMEM=1'
 USE_EXTRA_A_OPT_10_1=0

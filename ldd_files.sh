@@ -22,9 +22,9 @@ if [ "${SERVER}" -eq 1 ]; then
   CORE=`ls -1 *core* 2>&1 | head -n1 | grep -v "No such file"`
   if [ -f "$CORE" -a "" != "${CORE}" ]; then
     mkdir -p lib64
-    gdb ./${BIN} $CORE -ex "info sharedlibrary" -ex "quit" 2>&1 | grep "0x0" | grep -v "lib.mysql.plugin" | grep -vE '/lib/' | sed 's|.*/lib64|/lib64|' | xargs -I_ cp _ ./lib64/  # Both /lib/ and /lib/x86_64-linux-gnu/ are excluded here
-    gdb ./${BIN} $CORE -ex "info sharedlibrary" -ex "quit" 2>&1 | grep "0x0" | grep -v "lib.mysql.plugin" | grep '/lib/x86_64-linux-gnu/' | sed 's|.*/lib/x86_64-linux-gnu/|/lib/x86_64-linux-gnu/|' | xargs -I_ cp -n _ .
-    gdb ./${BIN} $CORE -ex "info sharedlibrary" -ex "quit" 2>&1 | grep "0x0" | grep -v "lib.mysql.plugin" | grep '/lib/' | grep -v 'x86_64-linux-gnu/' | sed 's|.*/lib/|/lib/|' | xargs -I_ cp -n _ .
+    gdb ./${BIN} $CORE -ex "info sharedlibrary" -ex "quit" 2>&1 | grep "0x0" | grep -vE "lib.mysql.plugin|^#0 " | grep -vE '/lib/' | sed 's|.*/lib64|/lib64|' | xargs -I_ cp _ ./lib64/  # Both /lib/ and /lib/x86_64-linux-gnu/ are excluded here
+    gdb ./${BIN} $CORE -ex "info sharedlibrary" -ex "quit" 2>&1 | grep "0x0" | grep -vE "lib.mysql.plugin|^#0 " | grep '/lib/x86_64-linux-gnu/' | sed 's|.*/lib/x86_64-linux-gnu/|/lib/x86_64-linux-gnu/|' | xargs -I_ cp -n _ .
+    gdb ./${BIN} $CORE -ex "info sharedlibrary" -ex "quit" 2>&1 | grep "0x0" | grep -vE "lib.mysql.plugin|^#0 " | grep '/lib/' | grep -v 'x86_64-linux-gnu/' | sed 's|.*/lib/|/lib/|' | xargs -I_ cp -n _ .
   fi
 fi
 SERVER=

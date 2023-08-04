@@ -166,6 +166,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## MDEV-31842
+slot_rec|SIGABRT|ib::fatal::~fatal|row_mysql_handle_errors|row_insert_for_mysql|ha_innobase::write_row                                                                         ## MDEV-31817 (patch1)
+SIGSEGV|rec_offs_n_fields|rec_offs_data_size|btr_node_ptr_set_child_page_no|btr_attach_half_pages                                                                              ## MDEV-31817
+SIGABRT|btr_attach_half_pages|btr_page_split_and_insert|btr_cur_pessimistic_insert|btr_insert_on_non_leaf_level                                                                ## MDEV-31815
 r->empty()|SIGABRT|sux_lock<ssux_lock_impl<true> >::free|buf_pool_t::close|innodb_shutdown|innobase_end                                                                        ## MDEV-31782
 SIGSEGV|intern_plugin_unlock|plugin_unlock|free_engine_list|Sys_var_pluginlist::do_update                                                                                      ## MDEV-31771
 SIGSEGV|plugin_unlock|free_engine_list|free_engine_list|Sys_var_pluginlist::do_update                                                                                          ## MDEV-31771

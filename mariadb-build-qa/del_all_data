@@ -1,4 +1,12 @@
 #!/bin/bash
+if [ "${PWD}" == "/data" ]; then
+  echo 'Assert, PWD is /data, you likely want to use ./cleanup_all_trial_data.sh (leaves cores) instead'
+  exit 1
+elif [ "${PWD}" != "/test" ]; then
+  echo "Not in /test? (${PWD})"
+  exit 1
+fi
+
 echo "WARNING: This script will delete: */data */data.PREV"
 read -p "Press enter to continue, or CTRL+C to abort."
 sleep 2

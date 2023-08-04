@@ -81,6 +81,6 @@ while :; do
   done
   echo " ---------------------------------------------------------------------------------------------------------------"
   echo "Handy delete command if you want to remove all active datadirs in results.list:"
-  echo "${DATADIR_LIST}"
+  echo "#${DATADIR_LIST}"
   sleep 60
 done
