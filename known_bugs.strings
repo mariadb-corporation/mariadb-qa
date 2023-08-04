@@ -166,6 +166,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|Item::print_parenthesised|Item_cond::print|st_select_lex::print|subselect_single_select_engine::print                                                                  ## MDEV-31850
+SIGSEGV|Field::set_default|Field::save_in_field_default_value|Item_param::save_in_field|store_key_item::copy_inner                                                             ## MDEV-31849
 SIGSEGV|Reprepare_observer::report_error|Prepared_statement::check_charset_collation_map_version|Prepared_statement::execute|Prepared_statement::execute_loop                  ## MDEV-31844
 SIGSEGV|my_hash_first|my_hash_search|find_acl_role|get_current_user                                                                                                            ## MDEV-31825
 SIGSEGV|my_hash_first|my_hash_search|get_current_user|get_current_user                                                                                                         ## MDEV-31825
