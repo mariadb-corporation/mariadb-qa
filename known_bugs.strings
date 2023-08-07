@@ -166,6 +166,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!maria_assert_if_crashed_table|SIGABRT|_ma_read_block_record|maria_rrnd|ha_maria::rnd_pos|handler::ha_rnd_pos                                                                  ## MDEV-31863
+SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                           ## MDEV-31861
+SIGABRT|ib::fatal::~fatal|os_file_sync_posix|os_file_flush_func|log_file_t::flush                                                                                              ## MDEV-31861
+!srv_read_only_mode|SIGABRT|log_buffer_flush_to_disk|ha_innobase::extra|select_insert::prepare_eof|select_insert::send_eof                                                     ## MDEV-31861
 SIGSEGV|Binary_string::free_buffer|Binary_string::free|Binary_string::~Binary_string|String::~String                                                                           ## MDEV-31860
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## MDEV-31842
 slot_rec|SIGABRT|ib::fatal::~fatal|row_mysql_handle_errors|row_insert_for_mysql|ha_innobase::write_row                                                                         ## MDEV-31817 (patch1)
