@@ -5,6 +5,12 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|sql/sql_class.h|TMP_TABLE_PARAM::cleanup|spider_rm_sys_tmp_table_for_result|spider_db_free_result|ha_spider::reset                                       ## MDEV-31860
+UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/sql_select.cc|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields|update_ref_and_keys        ## MDEV-28509
+UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_lt::val_int ## MDEV-31845
+UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_gt::val_int ## MDEV-31845
+UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_eq::val_int ## MDEV-31845
+UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|sortcmp ## MDEV-31845
 UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc|Item_func_json_schema_valid::fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar ## MDEV-31599
 ASAN|use-after-poison|storage/myisammrg/myrg_open.c|myrg_attach_children|ha_myisammrg::attach_children|ha_myisammrg::extra|open_tables                                         ## MDEV-31083
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/sql_binlog.cc|binlog_defragment|mysql_client_binlog_statement|mysql_execute_command|mysql_parse ## MDEV-31598
@@ -14,6 +20,7 @@ ASAN|heap-buffer-overflow|sql/item_jsonfunc.cc|__interceptor_strncpy|filter_keys
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_show.cc|get_all_tables|get_schema_tables_result|JOIN::exec_inner|JOIN::exec                             ## MDEV-31523
 UBSAN|applying non-zero offset X to null pointer|storage/spider/spd_malloc.cc|spider_free_mem|ha_spider::~ha_spider|ha_spider::~ha_spider|ha_partition::~ha_partition          ## MDEV-31475
 UBSAN|member access within null pointer of type 'struct MYSQL'|sql-common/client.c|server_mysql_send_query|server_mysql_real_query|spider_db_mbase::exec_query|spider_db_mbase::set_lock_wait_timeout ## MDEV-31463
+ASAN|heap-use-after-free|sql/item.cc|Item_field::print|Item_func::print_op|Item_cond::print|st_select_lex::print                                                               ## MDEV-31432
 ASAN|heap-use-after-free|sql/item.cc|Item_field::print|Item_equal::print|st_select_lex::print|subselect_single_select_engine::print                                            ## MDEV-31432
 ASAN|heap-use-after-free|sql/item.cc|Item_field::print|Item::print_parenthesised|Item_func::print_op|Item_bool_rowready_func2::print                                           ## MDEV-31432
 ASAN|heap-use-after-free|sql/item.cc|Item_field::print|Item_equal::print|st_select_lex::print|Item_subselect::print                                                            ## MDEV-31432
@@ -61,8 +68,6 @@ UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/item_timefunc.cc|Item_func_monthname::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-31019
 LSAN|memory leak|storage/innobase/rem/rem0rec.cc|__interceptor_malloc|rec_copy_prefix_to_buf_old|rec_copy_prefix_to_buf|btr_pcur_store_position                                ## MDEV-28613
 LSAN|memory leak|storage/innobase/rem/rem0rec.cc|malloc|rec_copy_prefix_to_buf_old|rec_copy_prefix_to_buf|btr_pcur_store_position                                              ## MDEV-28613
-UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_lt::val_int ## MDEV-30982
-UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|sortcmp ## MDEV-30982
 LSAN|memory leak|storage/innobase/trx/trx0roll.cc|__interceptor_malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                 ## MDEV-23073
 LSAN|memory leak|storage/innobase/trx/trx0roll.cc|malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                               ## MDEV-23073
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::create|handler::ha_create|ha_create_table ## MDEV-30981
@@ -155,6 +160,8 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 UBSAN|member call on null pointer of type 'struct Item'|sql/sql_select.cc|handle_select|execute_sqlcom_select|mysql_execute_command|mysql_parse                                ## MDEV-22447
 ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                            ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                          ## MDEV-26822
+ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|Item_copy_string::copy                                                       ## MDEV-26822
+ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|Item_copy_string::copy                                                                     ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str_generic                                          ## MDEV-29462
 ASAN|heap-use-after-free|sql/sql_string.cc|__interceptor_memmove|String::copy|Item_char_typecast::val_str|Item::val_str_ascii                                                  ## MDEV-29462
 ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str                                                                ## MDEV-29462
@@ -197,6 +204,8 @@ UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long in
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|do_select            ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select           ## MDEV-28374
 UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record    ## MDEV-28374
+UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'long long int'|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|do_select          ## MDEV-28374
+UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'long long int'|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select         ## MDEV-28374
 ASAN|unknown-crash|strings/dtoa.c|my_strtod_int|my_strtod|my_atof|test_if_number                                                                                               ## MDEV-28345
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|my_atof|test_if_number                                                                                            ## MDEV-28345
 ASAN|use-after-poison|strings/dtoa.c|my_strtod_int|my_strtod|Value_source::Converter_strntod::Converter_strntod|Value_source::Converter_strntod_with_warn::Converter_strntod_with_warn ## MDEV-28345
@@ -275,3 +284,5 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next_fast|List_iterator_fast<Item>::operator++|JOIN::eval_select_list_used_tables|JOIN::optimize_inner               ## Fixed ## MDEV-30052
 # ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next|List_iterator<Item>::operator++|subquery_types_allow_materialization|is_materialization_applicable              ## Fixed ## MDEV-30052
 # ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_print_item_type|spider_mbase_handler::append_condition|spider_mbase_handler::append_condition_part|ha_spider::append_condition_sql_part ## Fixed ## MDEV-30191
+# UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_lt::val_int ## Fixed ## MDEV-30982
+# UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|sortcmp ## Fixed ## MDEV-30982

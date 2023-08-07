@@ -30,3 +30,7 @@ if [ -r /test/TESTCASES/mvknown ]; then
   ~/mariadb-qa/move_known.sh
 fi
 
+if [ -r /data/TESTCASES/mvknown ]; then
+  cd /data/TESTCASES
+  ~/mariadb-qa/move_known.sh
+fi

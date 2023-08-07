@@ -1252,7 +1252,11 @@ pquery_test() {
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       echoit "Starting Primary mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
     else
-      echoit "Starting mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
+      if [[ ${REPLICATION} -eq 1 ]]; then
+        echoit "Starting master mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
+      else
+        echoit "Starting mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
+      fi
     fi
     if [ "${RR_TRACING}" == "0" ]; then
       if [ "${VALGRIND_RUN}" == "0" ]; then  ## Standard run
@@ -1269,6 +1273,7 @@ pquery_test() {
     $CMD >> ${RUNDIR}/${TRIAL}/log/master.err 2>&1 &
     MPID="$!"
     if [[ ${REPLICATION} -eq 1 ]]; then
+      echoit "Starting slave mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/slave.err"
       init_empty_port
       touch ${RUNDIR}/${TRIAL}/REPLICATION_ACTIVE
       REPL_PORT=${NEWPORT}

@@ -5516,7 +5516,8 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 256 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
     elif [ $TRIAL -eq 257 ]; then sed "s/t0/t/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 258 ]; then sed "s/c0/c/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 259 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 259 ]; then sed "s/FROM DUAL//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 260 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`

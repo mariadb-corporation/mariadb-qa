@@ -3,3 +3,7 @@ PREPARE s FROM "SELECT SUBSTR(1,1,IFNULL(1,'a'))";
 
 SET SESSION collation_connection=ucs2_icelandic_ci;
 SELECT(TRUNCATE(1,TIME_FORMAT(1,1)));
+
+SET collation_connection=ucs2_czech_ci;
+SELECT (COT (-1)%(1/1)+(MAKETIME(0,TIME_FORMAT(0,0),0)%ABS(-1)/1/CEILING (1)))*(DATEDIFF (0,0)/DAYOFYEAR (1))*(CON
+V(0,0,0)*1);
