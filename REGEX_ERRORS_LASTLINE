@@ -1,1 +1,1 @@
-invalid|alloc|free|corruption|corrupted
+invalid|alloc|not freed|double free|free():|innobase.*Assertion|corruption|corrupted

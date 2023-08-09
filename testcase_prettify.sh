@@ -20,7 +20,6 @@ cat "${1}" | tr -d '`' | \
        s|;#.*$|;|;s| ;$|;|g;s|;;$|;|g; \
        s|^ \+||;s|; \+$|;|; \
        s|do |DO |gi; \
-       s| as | AS |gi; \
        s|open|OPEN|gi; \
        s|div|DIV|gi; \
        s|rollup|ROLLUP|gi; \
@@ -178,10 +177,6 @@ cat "${1}" | tr -d '`' | \
        s|DELIMITER|DELIMITER|gi; \
        s|group by|GROUP BY|gi; \
        s|count|COUNT|gi; \
-       s| as | AS |gi; \
-       s| to | TO |gi; \
-       s| do | DO |gi; \
-       s| on | ON |gi; \
        s|unsigned|UNSIGNED|gi; \
        s|versioning|VERSIONING|gi;s|system versioning|SYSTEM VERSIONING|gi; \
        s|trigger|TRIGGER|gi; \
@@ -244,7 +239,9 @@ cat "${1}" | tr -d '`' | \
        s|session|SESSION|gi; \
        s|global|GLOBAL|gi; \
        s|primary|PRIMARY|gi; \
+       s|disable|DISABLE|gi; \
        s|key|KEY|gi; \
+       s|keys|KEYS|gi; \
        s|null|NULL|gi; \
        s|not |NOT |gi; \
        s|linestring|LINESTRING|gi; \
@@ -328,6 +325,7 @@ cat "${1}" | tr -d '`' | \
        s|row_start|ROW_START|gi; \
        s|row_end|ROW_END|gi; \
        s|use_frm|USE_FRM|gi; \
+       s|from_base64[ ]*(|FROM_BASE64(|gi; \
        s|date_add|DATE_ADD|gi; \
        s|day_second|DAY_SECOND|gi; \
        s|day_minute|DAY_MINUTE|gi; \
@@ -364,7 +362,6 @@ cat "${1}" | tr -d '`' | \
        s|makedate *(|MAKEDATE(|gi; \
        s|json_array_insert *(|JSON_ARRAY_INSERT(|gi; \
        s|substring_index *(|SUBSTRING_INDEX(|gi; \
-       s| mod | MOD |gi; \
        s|cast *(|CAST(|gi; \
        s|space *(|SPACE(|gi; \
        s|now *(|NOW(|gi; \
@@ -449,6 +446,14 @@ cat "${1}" | tr -d '`' | \
        s|( (|((|g;s|) )|))|g; \
        s| \+(\([^)]\+\))VALUES(|(\1) VALUES (|gi; \
        s| \+| |g; \
+       s| as | AS |gi; \
+       s| to | TO |gi; \
+       s| do | DO |gi; \
+       s| on | ON |gi; \
+       s| mod | MOD |gi; \
+       s|cast[ ]*(|CAST(|gi; \
+       s|mid[ ]*(|MID(|gi; \
+       s|row[ ]*(|ROW(|gi; \
        s|srv \"srv\"|SERVER \"s\"|gi;s|SERVER \"srv\"|SERVER \"s\"|gi;s|SERVER srv |SERVER s |gi; \
        s|srv 'srv'|SERVER 's'|gi;s|SERVER 'srv'|SERVER 's'|gi;s|SERVER srv |SERVER s |gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line

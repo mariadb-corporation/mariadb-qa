@@ -5,6 +5,12 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|unknown-crash|sql/sql_analyse.cc|check_ulonglong|get_ev_num_info|field_str::add|analyse::send_row                                                                         ## MDEV-31881
+ASAN|unknown-crash|sql/sql_analyse.cc|check_ulonglong|get_ev_num_info|get_ev_num_info|field_str::add                                                                           ## MDEV-31881
+ASAN|heap-use-after-free|storage/heap/ha_heap.cc|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check|select_result_sink::send_data_with_check ## MDEV-25158
+ASAN|heap-use-after-free|storage/heap/ha_heap.cc|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check|end_send                         ## MDEV-25158
+LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_string|mariadb_dyncol_json                                                                      ## MDEV-31274
+LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_string|mariadb_dyncol_json                                                                                    ## MDEV-31274
 ASAN|use-after-poison|sql/sql_class.h|TMP_TABLE_PARAM::cleanup|spider_rm_sys_tmp_table_for_result|spider_db_free_result|ha_spider::reset                                       ## MDEV-31860
 UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/sql_select.cc|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields|update_ref_and_keys        ## MDEV-28509
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_lt::val_int ## MDEV-31845
@@ -227,6 +233,7 @@ UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|ha
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                       ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_rename_user|mysql_execute_command                     ## MDEV-24193
 ASAN|use-after-poison|sql/spatial.cc|wkb_get_double|Gis_point::init_from_wkb|Gis_geometry_collection::init_from_wkb|Geometry::create_from_wkb                                  ## MDEV-26813
+UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc                                                                                                          ## MDEV-26814
 UBSAN|pointer index expression with base X overflowed to Y|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-26814
 UBSAN|pointer index expression with base X overflowed to Y|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-26814
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Item::send|Protocol::send_result_set_row|select_send::send_data     ## MDEV-26814

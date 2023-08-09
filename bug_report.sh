@@ -338,7 +338,7 @@ fi
 if [ ${SAN_MODE} -eq 1 ]; then
   echo -e '{noformat}\n\nSetup:\n'
   echo '{noformat}'
-  echo 'Compiled with GCC >=7.5.0 (I use GCC 11.3.0) and:'
+  echo 'Compiled with GCC >=7.5.0 (I use GCC 11.4.0) and:'
   if grep -Eiqm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
     # A note on exitcode=0: whereas we do not use this in our runs, it is required to let MTR bootstrap succeed.
     # TODO: Once code becomes more stable add: halt_on_error=1
