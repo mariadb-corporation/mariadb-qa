@@ -286,7 +286,6 @@ SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|lf_hash_search          
 SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|MDL_map::find_or_insert                                                                                                ## MDEV-30926
 SIGSEGV|lf_hash_destroy|MDL_map::destroy|mdl_destroy|clean_up                                                                                                                  ## MDEV-30926
 SIGSEGV|lf_hash_destroy|clean_up|clean_up|mysqld_main                                                                                                                          ## MDEV-30926
-ASAN|heap-use-after-free|sql/field.h|Field::set_notnull|save_int_value_in_field|Item_int::save_in_field|TABLE::update_virtual_fields  # ASAN builds
 SIGSEGV|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_last_intern ## MDEV-23956
 SIGSEGV|myrocks::ha_rocksdb::index_first|myrocks::ha_rocksdb::inplace_populate_sk|myrocks::ha_rocksdb::inplace_alter_table|handler::ha_inplace_alter_table                     ## MDEV-23956
 SIGSEGV|rocksdb::DBImpl::NewIterator|rocksdb::TransactionBaseImpl::GetIterator|myrocks::Rdb_transaction::get_iterator|myrocks::ha_rocksdb::setup_scan_iterator                 ## MDEV-23956
@@ -667,9 +666,8 @@ SIGSEGV|find_field_in_tables|Item_field::fix_fields|create_view_field|find_field
 SIGSEGV|Item_field::fix_fields|create_view_field|find_field_in_view|find_field_in_table_ref                                                                                    ## MDEV-28506
 SIGSEGV|create_view_field|find_field_in_view|find_field_in_table_ref|find_field_in_tables                                                                                      ## MDEV-28506
 SIGSEGV|strcmp|my_strcasecmp_bin|find_field_in_table_ref|find_field_in_tables                                                                                                  ## MDEV-28506
+SIGSEGV|my_strcasecmp_bin|find_field_in_table_ref|find_field_in_tables|Item_field::fix_outer_field                                                                             ## MDEV-28506
 SIGSEGV|find_field_in_table_ref|find_field_in_tables|Item_field::fix_outer_field|Item_field::fix_fields                                                                        ## MDEV-28506
-SIGSEGV|__interceptor_strcmp.part.0|my_strcasecmp_bin|find_field_in_table_ref|find_field_in_tables                                                                             ## MDEV-28506 (UBASAN dbg build)
-SIGSEGV|__interceptor_strcmp.part.0|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                                        ## MDEV-28506 (UBASAN opt build)
 SIGSEGV|_dl_lookup_symbol_x|do_sym|_dl_sym|dlsym_doit                                                                                                                          ## MDEV-28625
 SIGSEGV|do_lookup_x|_dl_lookup_symbol_x|do_sym|_dl_sym                                                                                                                         ## MDEV-28625
 SIGSEGV|sub_select|do_select|JOIN::exec_inner|JOIN::exec                                                                                                                       ## MDEV-28505
@@ -1235,6 +1233,7 @@ SIGSEGV|set_field_to_null_with_conversions|Item::save_in_field|Item_result_field
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_delete|mysql_execute_command                                         ## MDEV-22783
 SIGSEGV|fil_system_t::keyrotate_next|fil_crypt_find_space_to_rotate|fil_crypt_thread|start_thread                                                                              ## MDEV-20399
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22716
+SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                            ## MDEV-22716
 (*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                       ## MDEV-22713
 (*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                          ## MDEV-22713
 (*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                            ## MDEV-22713

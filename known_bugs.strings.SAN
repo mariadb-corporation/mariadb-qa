@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|sql/field.h|Field::set_notnull|save_int_value_in_field|Item_int::save_in_field|TABLE::update_virtual_fields                                           ## MDEV-30926
 ASAN|unknown-crash|sql/sql_analyse.cc|check_ulonglong|get_ev_num_info|field_str::add|analyse::send_row                                                                         ## MDEV-31881
 ASAN|unknown-crash|sql/sql_analyse.cc|check_ulonglong|get_ev_num_info|get_ev_num_info|field_str::add                                                                           ## MDEV-31881
 ASAN|heap-use-after-free|storage/heap/ha_heap.cc|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check|select_result_sink::send_data_with_check ## MDEV-25158
@@ -45,6 +46,8 @@ ASAN|heap-use-after-free|storage/spider/spd_group_by_handler.cc|spider_create_gr
 UBSAN|member access within null pointer of type 'struct st_plugin_int'|sql/sql_plugin.cc|intern_plugin_lock|plugin_thdvar_init|THD::init|THD::THD                              ## MDEV-27575
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|__interceptor_malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                           ## MDEV-31271
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                                         ## MDEV-31271
+LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|__interceptor_malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                           ## MDEV-31271
+LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                                         ## MDEV-31271
 ASAN|use-after-poison|sql/item_func.cc|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool              ## MDEV-31269
 ASAN|use-after-poison|sql/item_func.cc|Item_func::print_op|Item_bool_rowready_func2::print|Item::print_parenthesised|Item_cond::print                                          ## MDEV-31269
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                            ## MDEV-30680
