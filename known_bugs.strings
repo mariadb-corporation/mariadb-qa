@@ -166,6 +166,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|TABLE_LIST::get_tablenr|st_select_lex::save_leaf_tables|JOIN::optimize_inner|JOIN::optimize                                                                            ## MDEV-31930
+xid->gtrid_length + xid->bqual_length < 128|SIGABRT|trx_undo_write_xid|trx_undo_set_state_at_prepare|trx_prepare_low|trx_prepare                                               ## MDEV-31928
+srv_sys_space.space_id() == TRX_SYS_SPACE|SIGABRT|is_predefined_tablespace|mtr_t::do_write|mtr_t::commit|row_purge_reset_trx_id                                                ## MDEV-31899
+m_files.empty()|SIGABRT|CreateTracker::~CreateTracker|__run_exit_handlers|__GI_exit|start_signal_handler                                                                       ## MDEV-31886
 !maria_assert_if_crashed_table|SIGABRT|_ma_read_block_record|maria_rrnd|ha_maria::rnd_pos|handler::ha_rnd_pos                                                                  ## MDEV-31863
 SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                           ## MDEV-31861
 SIGABRT|ib::fatal::~fatal|os_file_sync_posix|os_file_flush_func|log_file_t::flush                                                                                              ## MDEV-31861
