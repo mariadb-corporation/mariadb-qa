@@ -166,6 +166,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!join->select_lex->master_unit()->derived || join->select_lex->master_unit()->derived->is_materialized_derived() || join->select_lex->master_unit()->derived->is_with_table()|SIGABRT|JOIN::save_explain_data_intern|JOIN::save_explain_data|JOIN::build_explain|JOIN::optimize ## MDEV-31947
 SIGSEGV|TABLE_LIST::get_tablenr|st_select_lex::save_leaf_tables|JOIN::optimize_inner|JOIN::optimize                                                                            ## MDEV-31930
 xid->gtrid_length + xid->bqual_length < 128|SIGABRT|trx_undo_write_xid|trx_undo_set_state_at_prepare|trx_prepare_low|trx_prepare                                               ## MDEV-31928
 srv_sys_space.space_id() == TRX_SYS_SPACE|SIGABRT|is_predefined_tablespace|mtr_t::do_write|mtr_t::commit|row_purge_reset_trx_id                                                ## MDEV-31899
