@@ -759,6 +759,8 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table
 thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_detach|trans_xa_detach|THD::cleanup|unlink_thd                                                     ## MENT-1426
 ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## MENT-1424
 SIGSEGV|Item_change_list::rollback_item_tree_changes|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                               ## MDEV-27920
+mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                                      ## MDEV-27902
+SIGSEGV|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan|ha_partition::rnd_next                                                              ## MDEV-27902
 SIGSEGV|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first|mysql_ha_read                                                                           ## MDEV-27902
 SIGSEGV|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_first_internal|ha_spider::index_first                                                            ## MDEV-27902
 SIGSEGV|spider_db_query|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_handler_init                                                                     ## MDEV-27902
