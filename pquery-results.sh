@@ -306,29 +306,33 @@ REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering ev
 if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
   REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
   if [ -z "${REGEX_ERRORS_SCAN}" ]; then
-    echo "** Significant/Major errors (if any)"
+    echo '** Significant/Major errors (if any)'
     echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
     exit 1
   fi
 else
-  echo "** Significant/Major errors (if any)"
+  echo '** Significant/Major errors (if any)'
   echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
   exit 1
 fi
 if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
   REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
   if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
-    echo "** Significant/Major errors (if any)"
+    echo '** Significant/Major errors (if any)'
     echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
     exit 1
   fi
 else
-  echo "** Significant/Major errors (if any)"
+  echo '** Significant/Major errors (if any)'
   echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
   exit 1
 fi
 if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
   REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
+fi
+if grep -qm1 'innodb.checksum.algorithm' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null; then
+  echo '** Trials which modify innodb_checksum_algorithm (likely cause of any corruption on versions <10.6, ref MDEV-23667)'
+  grep -m1 'innodb_checksum_algorithm' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
 fi
 rm -f ./errorlogs.tmp
 find . -type f -name "master.err" | grep '\./[0-9]\+/log/master.err' > ./errorlogs.tmp

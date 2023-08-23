@@ -1172,7 +1172,6 @@ log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffe
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|maria_delete_table|ha_maria::delete_table                                    ## MDEV-23701
 length < 249|SIGABRT|Transaction_state_tracker::store|Session_tracker::store|Protocol::net_send_ok|Protocol::send_ok                                                           ## MDEV-23173
 share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                         ## MDEV-23699
-SIGABRT|ib::fatal::~fatal|buf_page_io_complete|buf_read_page_low|buf_read_page                                                                                                 ## MDEV-23667
 length <= 64|SIGABRT|PFS_variable_name_row::make_row|User_variables::materialize|table_uvar_by_thread::materialize|table_uvar_by_thread::rnd_next                              ## MDEV-23665
 length <= NAME_CHAR_LEN|SIGABRT|PFS_variable_name_row::make_row|User_variables::materialize|table_uvar_by_thread::materialize|table_uvar_by_thread::rnd_next                   ## MDEV-23665
 fd != -1|SIGABRT|my_seek|azrewind|ha_archive::read_data_header|ha_archive::rnd_init                                                                                            ## MDEV-23448
@@ -2028,3 +2027,5 @@ SIGSEGV|LEX_USER::has_auth|has_auth|get_current_user|get_current_user           
 # !m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::delete_table|hton_drop_table                                                              ## Fixed ## MDEV-30527
 # thd->mdl_context.is_lock_owner(MDL_key::TABLE, db.str, table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse ## Fixed ## MDEV-23205
 # thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->db.str, table->table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse ## Fixed ## MDEV-23205
+# SIGABRT|ib::fatal::~fatal|buf_page_io_complete|buf_read_page_low|buf_read_page                                                                                      ## Not a bug on <10.6 ref ## MDEV-23667
+# SIGSEGV|page_cur_get_rec|btr_cur_get_rec|btr_pcur_get_rec|row_sel_try_search_shortcut                                                                               ## Not a bug on <10.6 ref ## MDEV-23667 for a similar scenario

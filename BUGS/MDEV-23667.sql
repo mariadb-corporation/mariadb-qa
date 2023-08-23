@@ -6,3 +6,4 @@ XA BEGIN 'x1';
 SET GLOBAL innodb_lru_scan_depth=10000;
 SET GLOBAL innodb_checksum_algorithm=3;
 INSERT INTO t2 VALUES (1),(1),(1);
+# Observe corruption in error log. However, this is not a bug on <10.6 ref MDEV-23667
