@@ -166,6 +166,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!join->select_lex->master_unit()->derived || join->select_lex->master_unit()->derived->is_materialized_derived() || join->select_lex->master_unit()->derived->is_with_table()|SIGABRT|JOIN::save_explain_data_intern|JOIN::save_explain_data|JOIN::build_explain|JOIN::optimize ## MDEV-31947
+SIGSEGV|TABLE_LIST::get_tablenr|st_select_lex::save_leaf_tables|JOIN::optimize_inner|JOIN::optimize                                                                            ## MDEV-31930
+xid->gtrid_length + xid->bqual_length < 128|SIGABRT|trx_undo_write_xid|trx_undo_set_state_at_prepare|trx_prepare_low|trx_prepare                                               ## MDEV-31928
+srv_sys_space.space_id() == TRX_SYS_SPACE|SIGABRT|is_predefined_tablespace|mtr_t::do_write|mtr_t::commit|row_purge_reset_trx_id                                                ## MDEV-31899
+m_files.empty()|SIGABRT|CreateTracker::~CreateTracker|__run_exit_handlers|__GI_exit|start_signal_handler                                                                       ## MDEV-31886
 !maria_assert_if_crashed_table|SIGABRT|_ma_read_block_record|maria_rrnd|ha_maria::rnd_pos|handler::ha_rnd_pos                                                                  ## MDEV-31863
 SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                           ## MDEV-31861
 SIGABRT|ib::fatal::~fatal|os_file_sync_posix|os_file_flush_func|log_file_t::flush                                                                                              ## MDEV-31861
@@ -754,6 +759,8 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table
 thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_detach|trans_xa_detach|THD::cleanup|unlink_thd                                                     ## MENT-1426
 ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## MENT-1424
 SIGSEGV|Item_change_list::rollback_item_tree_changes|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                               ## MDEV-27920
+mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                                      ## MDEV-27902
+SIGSEGV|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan|ha_partition::rnd_next                                                              ## MDEV-27902
 SIGSEGV|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first|mysql_ha_read                                                                           ## MDEV-27902
 SIGSEGV|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_first_internal|ha_spider::index_first                                                            ## MDEV-27902
 SIGSEGV|spider_db_query|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_handler_init                                                                     ## MDEV-27902
