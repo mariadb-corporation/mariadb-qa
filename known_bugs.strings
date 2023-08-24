@@ -166,6 +166,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+rbt_validate(tree)|SIGABRT|ut_dbg_assertion_failed|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                                            ## MDEV-31960
 !join->select_lex->master_unit()->derived || join->select_lex->master_unit()->derived->is_materialized_derived() || join->select_lex->master_unit()->derived->is_with_table()|SIGABRT|JOIN::save_explain_data_intern|JOIN::save_explain_data|JOIN::build_explain|JOIN::optimize ## MDEV-31947
 SIGSEGV|TABLE_LIST::get_tablenr|st_select_lex::save_leaf_tables|JOIN::optimize_inner|JOIN::optimize                                                                            ## MDEV-31930
 xid->gtrid_length + xid->bqual_length < 128|SIGABRT|trx_undo_write_xid|trx_undo_set_state_at_prepare|trx_prepare_low|trx_prepare                                               ## MDEV-31928
@@ -194,6 +195,7 @@ SIGSEGV|OSMutex::enter|os_event::set|os_event_set|fil_crypt_set_rotation_iops   
 SIGSEGV|__GI___pthread_mutex_lock|OSMutex::enter|os_event::set|os_event_set                                                                                                    ## MDEV-31819
 SIGSEGV|i_s_sys_tablespaces_fill|get_schema_tables_result|JOIN::exec_inner|JOIN::exec                                                                                          ## MDEV-31814
 SIGSEGV|fil_space_t::full_crc32|i_s_sys_tablespaces_fill|i_s_sys_tablespaces_fill_table|get_schema_tables_result                                                               ## MDEV-31814
+!srv_read_only_mode|SIGABRT|srv_wake_purge_thread_if_not_active|innodb_max_purge_lag_wait_update|sys_var_pluginvar::global_update|sys_var::update                              ## MDEV-31813
 !srv_read_only_mode|SIGABRT|srv_wake_purge_thread_if_not_active|innodb_undo_log_truncate_update|sys_var_pluginvar::global_update|sys_var::update                               ## MDEV-31813
 r->empty()|SIGABRT|sux_lock<ssux_lock_impl<true> >::free|buf_pool_t::close|innodb_shutdown|innobase_end                                                                        ## MDEV-31782
 SIGSEGV|intern_plugin_unlock|plugin_unlock|free_engine_list|Sys_var_pluginlist::do_update                                                                                      ## MDEV-31771
