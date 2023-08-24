@@ -166,6 +166,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+s.ok()|SIGABRT|myrocks::Rdb_transaction_impl::set_name|myrocks::rocksdb_register_tx|myrocks::ha_rocksdb::external_lock|handler::ha_external_lock                               ## MDEV-31997
+SIGABRT|myrocks::rdb_handle_io_error|myrocks::Rdb_transaction_impl::set_name|myrocks::rocksdb_register_tx|myrocks::ha_rocksdb::external_lock                                   ## MDEV-31997
 rbt_validate(tree)|SIGABRT|ut_dbg_assertion_failed|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                                            ## MDEV-31960
 !join->select_lex->master_unit()->derived || join->select_lex->master_unit()->derived->is_materialized_derived() || join->select_lex->master_unit()->derived->is_with_table()|SIGABRT|JOIN::save_explain_data_intern|JOIN::save_explain_data|JOIN::build_explain|JOIN::optimize ## MDEV-31947
 SIGSEGV|TABLE_LIST::get_tablenr|st_select_lex::save_leaf_tables|JOIN::optimize_inner|JOIN::optimize                                                                            ## MDEV-31930
