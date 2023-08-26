@@ -1,4 +1,5 @@
 #!/bin/bash
-screen -d -r  | grep '\.ge[0-9]' | sed 's|\..*||' | xargs kill -9
+screen -d -r  | grep '\.ge[0-9]' | sed 's|\..*||' | xargs kill -9 2>/dev/null
+sync
 screen -wipe
 screen -list

@@ -3,7 +3,7 @@
 screen -d -r  | grep '\.pr[0-9]' | sed 's|\..*||' | xargs kill -9
 sync
 # Stop corresponding mysqld's
-ps -ef | grep "/dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9]/" | grep -v grep | awk '{print $2}' | xargs -I{} kill -9 {}
+ps -ef | grep "/dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9]/" | grep -v grep | awk '{print $2}' | xargs -I{} kill -9 {} 2>/dev/null
 sync
 screen -wipe
 screen -ls

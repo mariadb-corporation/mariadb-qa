@@ -134,6 +134,7 @@ fi
 MDG=0
 GALERA_LIB=
 SOCKET=${PWD}/socket.sock
+SLAVE_SOCKET=${PWD}/socket_slave.sock
 if [ -r lib/libgalera_smm.so ]; then
   echo "CS Galera plugin found. Adding CS Galera startup"
   MDG=1
@@ -147,8 +148,8 @@ else
 fi
 
 # Setup scritps
-rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery test*timed wipe* clean_failing_queries memory_use_trace afl* ml mlp 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | repl_setup | stop | kill | setup | cl | test | test_pquery | init | wipe | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init | afl | aflnew"
+rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery test*timed wipe* clean_failing_queries memory_use_trace afl* ml mlp master_setup.sql slave_setup.sql mysql.out mysql_slave.out 2>/dev/null
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | init | wipe | wipe_slave | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init | afl | aflnew"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -477,82 +478,6 @@ tail -n1 start >>start_valgrind
 tail -n1 start >>start_gypsy
 tail -n1 start >>start_rr
 
-# -- Replication setup
-echo '#!/usr/bin/env bash' >repl_setup
-echo "REPL_TYPE=\$1" >>repl_setup
-echo "if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-echo "  NODES=2" >>repl_setup
-echo "else" >>repl_setup
-echo "  NODES=1" >>repl_setup
-echo "fi" >>repl_setup
-echo 'MYEXTRA=" --no-defaults --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>repl_setup
-echo "RPORT=$(($RANDOM % 10000 + 10000))" >>repl_setup
-echo "echo \"\" > stop_repl" >>repl_setup
-echo "if ${PWD}/bin/mysqladmin -uroot -S$PWD/socket.sock ping > /dev/null 2>&1; then" >>repl_setup
-echo "  ${PWD}/bin/mysql -A -uroot -S${SOCKET}  -Bse\"create user repl@'%' identified by 'repl';\"" >>repl_setup
-echo "  ${PWD}/bin/mysql -A -uroot -S${SOCKET}  -Bse\"grant all on *.* to repl@'%'; flush privileges;\"" >>repl_setup
-echo "  MASTER_PORT=\$(\${PWD}/bin/mysql -A -uroot -S\${SOCKET}  -Bse\"select @@port\")" >>repl_setup
-echo "else" >>repl_setup
-echo "  echo \"ERROR! Master server is not started. Make sure to start master with GTID enabled. Terminating!\"" >>repl_setup
-echo "  exit 1" >>repl_setup
-echo "fi" >>repl_setup
-echo "for i in \`seq 1 \$NODES\`;do" >>repl_setup
-echo "  RBASE=\"\$(( RPORT + \$i ))\"" >>repl_setup
-echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-echo "    if [ \$i -eq 1 ]; then" >>repl_setup
-echo "      node=\"${PWD}/masternode2\"" >>repl_setup
-echo "    else" >>repl_setup
-echo "      node=\"${PWD}/slavenode\"" >>repl_setup
-echo "    fi" >>repl_setup
-echo "  else" >>repl_setup
-echo "    node=\"${PWD}/slavenode\"" >>repl_setup
-echo "  fi" >>repl_setup
-echo "  if [ ! -d \$node ]; then" >>repl_setup
-echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>repl_setup
-echo '    if [ "${?}" -eq 1 ]; then exit 1; fi' >>repl_setup
-echo '  fi' >>repl_setup
-echo "  $BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=\${node} --datadir=\${node} ${TOKUDB} ${ROCKSDB} --socket=\$node/socket.sock --port=\$RBASE --report-host=$ADDR --report-port=\$RBASE  --server-id=10\$i --log-error=\$node/mysql.err 2>&1 &" >>repl_setup
-echo "  for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S\$node/socket.sock > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>repl_setup
-echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-echo "    if [ \$i -eq 1 ]; then" >>repl_setup
-echo "      ${PWD}/bin/mysql -A -uroot --socket=\$node/socket.sock  -Bse\"create user repl@'%' identified by 'repl';\"" >>repl_setup
-echo "      ${PWD}/bin/mysql -A -uroot --socket=\$node/socket.sock  -Bse\"grant all on *.* to repl@'%';flush privileges;\"" >>repl_setup
-echo "      echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"masternode2> \\\"\" > ${PWD}/masternode2_cl " >>repl_setup
-echo "    else" >>repl_setup
-echo "      echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"slavenode> \\\"\" > ${PWD}/\slavenode_cl " >>repl_setup
-echo "    fi" >>repl_setup
-echo "  else" >>repl_setup
-echo "    echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"slavenode> \\\"\" > ${PWD}/\slavenode_cl " >>repl_setup
-echo "  fi" >>repl_setup
-
-echo "  echo \"${PWD}/bin/mysqladmin -uroot -S\$node/socket.sock shutdown\" >> stop_repl" >>repl_setup
-echo "  echo \"echo 'Server on socket \$node/socket.sock with datadir \$node halted'\" >> stop_repl" >>repl_setup
-echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-echo "    if [ \$i -eq 2 ]; then" >>repl_setup
-echo "      MASTER_PORT2=\$(${PWD}/bin/mysql -A -uroot -S${PWD}/masternode2/socket.sock  -Bse\"SELECT @@port\")" >>repl_setup
-if [ "${VERSION_INFO}" == "8.0" ]; then
-  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1 FOR CHANNEL 'master1';\"" >>repl_setup
-  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT2, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1 FOR CHANNEL 'master2';\"" >>repl_setup
-else
-  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1 FOR CHANNEL 'master1';\"" >>repl_setup
-  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT2, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1 FOR CHANNEL 'master2';\"" >>repl_setup
-fi
-echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"START SLAVE;\"" >>repl_setup
-echo "    fi" >>repl_setup
-echo "  else" >>repl_setup
-if [ "${VERSION_INFO}" == "8.0" ]; then
-  echo "    ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1;START SLAVE;\"" >>repl_setup
-else
-  echo "    ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1;START SLAVE;\"" >>repl_setup
-fi
-echo "  fi" >>repl_setup
-echo "done" >>repl_setup
-echo "if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
-echo "  chmod +x  masternode2_cl slavenode_cl stop_repl" >>repl_setup
-echo "else" >>repl_setup
-echo "  chmod +x  slavenode_cl stop_repl" >>repl_setup
-echo "fi" >>repl_setup
-
 # TODO: fix the line below somehow, and add binary-files=text for all greps. Also revert redirect to >> for second line
 #echo "set +H" > kill  # Fails with odd './kill: 1: set: Illegal option -H' when kill_all is used?
 echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
@@ -592,8 +517,6 @@ echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
 echo "rm -Rf ${PWD}/data" >> init
 echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>init
 echo "rm -f log/master.*" >>init
-
-
 
 echo "#!/bin/bash" >loopin
 echo 'if [ -z "${1}" ]; then echo "Assert: please specify how many copies to make as the first option to this script"; exit 1; fi' >>loopin
@@ -923,6 +846,126 @@ if [[ $MDG -eq 1 ]]; then
   sed -i "s|ls data/\*core\*|ls node1/\*core\*|g" gal_gdb
 fi
 
+# -- Replication setup (MD)
+# The master, except for start_master (created to be able to add startup options and master port handling via master_setup.sql port replacement), does not get any special script as the regular ./stop, ./cl, ./kill etc script are used for the master
+cp start start_master
+cp start start_slave
+cp stop stop_slave
+cp kill kill_slave
+cp wipe wipe_slave 
+cp cl cl_slave
+sed -i 's|\-\-server-id=[0-9]\+||g' start_master
+sed -i 's|\-\-server-id=[0-9]\+||g' start_slave
+sed -i 's|master.err|slave.err|g' start_slave cl_slave
+sed -i 's|master.err|slave.err|g' kill_slave
+sed -i 's|master.err|slave.err|g' wipe_slave
+sed -i 's|/start|/start_slave|g' wipe_slave
+sed -i 's|/stop|/stop_slave|g' wipe_slave
+sed -i 's|/data|/data_slave|g' start_slave
+sed -i 's|/data|/data_slave|g' stop_slave
+sed -i 's|/data|/data_slave|g' wipe_slave
+sed -i 's|socket.sock|socket_slave.sock|g' start_slave
+sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
+sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
+sed -i 's|socket.sock|socket_slave.sock|g' cl_slave
+sed -i 's|^MYEXTRA="[ ]*--no-defaults|MYEXTRA=" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --server_id=1|' start_master
+sed -i 's|^MYEXTRA="[ ]*--no-defaults|MYEXTRA=" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=65 --slave-parallel-mode=aggressive --slave-parallel-max-queued=1073741827 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --server_id=2|' start_slave
+sed -i 's%^PORT=$.*%PORT=$NEWPORT; sed -i "s|MASTER_PORT=[0-9]\\+|MASTER_PORT=${NEWPORT}|" slave_setup.sql%' start_master
+echo "DELETE FROM mysql.user WHERE user='';" >master_setup.sql
+echo "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" >>master_setup.sql
+echo "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=00000, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ;" >slave_setup.sql  # The 00000 is a dummy entry, and any number will be replaced by start_master to the actual port in slave_setup.sql at master startup time
+echo "START SLAVE;" >>slave_setup.sql
+echo 'MYEXTRA_OPT="$*"' >start_replication
+echo './kill >/dev/null 2>&1' >>start_replication
+echo './kill_slave >/dev/null 2>&1' >>start_replication
+echo 'rm -f socket.sock socket.sock.lock socket_slave.sock socket_slave.sock.lock; sync' >>start_replication
+echo './wipe ${MYEXTRA_OPT}' >>start_replication
+echo './wipe_slave ${MYEXTRA_OPT}' >>start_replication  # TODO: MYEXTRA_OPT handling may need work
+echo './start_master ${MYEXTRA_OPT}' >>start_replication
+echo 'rm -f mysql.out mysql_slave.out' >>start_replication
+echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/master_setup.sql > ${PWD}/mysql.out 2>&1" >>start_replication
+echo './start_slave ${MYEXTRA_OPT}' >>start_replication  # idem 
+echo "${PWD}/bin/mysql -A -uroot -S${SLAVE_SOCKET} --force ${BINMODE}test < ${PWD}/slave_setup.sql > ${PWD}/mysql_slave.out" >>start_replication
+echo 'sleep 2' >>start_replication
+echo './cl' >>start_replication
+echo './stop; ./stop_slave' >>stop_replication
+echo './kill; ./kill_slave' >>kill_replication
+
+# -- Replication setup (old PS/MS)
+#echo '#!/usr/bin/env bash' >repl_setup
+#echo "REPL_TYPE=\$1" >>repl_setup
+#echo "if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+#echo "  NODES=2" >>repl_setup
+#echo "else" >>repl_setup
+#echo "  NODES=1" >>repl_setup
+#echo "fi" >>repl_setup
+#echo 'MYEXTRA=" --no-defaults --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>repl_setup
+#echo "RPORT=$(($RANDOM % 10000 + 10000))" >>repl_setup
+#echo "echo \"\" > stop_repl" >>repl_setup
+#echo "if ${PWD}/bin/mysqladmin -uroot -S$PWD/socket.sock ping > /dev/null 2>&1; then" >>repl_setup
+#echo "  ${PWD}/bin/mysql -A -uroot -S${SOCKET}  -Bse\"create user repl@'%' identified by 'repl';\"" >>repl_setup
+#echo "  ${PWD}/bin/mysql -A -uroot -S${SOCKET}  -Bse\"grant all on *.* to repl@'%'; flush privileges;\"" >>repl_setup
+#echo "  MASTER_PORT=\$(\${PWD}/bin/mysql -A -uroot -S\${SOCKET}  -Bse\"select @@port\")" >>repl_setup
+#echo "else" >>repl_setup
+#echo "  echo \"ERROR! Master server is not started. Make sure to start master with GTID enabled. Terminating!\"" >>repl_setup
+#echo "  exit 1" >>repl_setup
+#echo "fi" >>repl_setup
+#echo "for i in \`seq 1 \$NODES\`;do" >>repl_setup
+#echo "  RBASE=\"\$(( RPORT + \$i ))\"" >>repl_setup
+#echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+#echo "    if [ \$i -eq 1 ]; then" >>repl_setup
+#echo "      node=\"${PWD}/masternode2\"" >>repl_setup
+#echo "    else" >>repl_setup
+#echo "      node=\"${PWD}/slavenode\"" >>repl_setup
+#echo "    fi" >>repl_setup
+#echo "  else" >>repl_setup
+#echo "    node=\"${PWD}/slavenode\"" >>repl_setup
+#echo "  fi" >>repl_setup
+#echo "  if [ ! -d \$node ]; then" >>repl_setup
+#echo "    $INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=\${node} > ${PWD}/startup_node\$i.err 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>repl_setup
+#echo '    if [ "${?}" -eq 1 ]; then exit 1; fi' >>repl_setup
+#echo '  fi' >>repl_setup
+#echo "  $BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=\${node} --datadir=\${node} ${TOKUDB} ${ROCKSDB} --socket=\$node/socket.sock --port=\$RBASE --report-host=$ADDR --report-port=\$RBASE  --server-id=10\$i --log-error=\$node/mysql.err 2>&1 &" >>repl_setup
+#echo "  for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S\$node/socket.sock > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>repl_setup
+#echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+#echo "    if [ \$i -eq 1 ]; then" >>repl_setup
+#echo "      ${PWD}/bin/mysql -A -uroot --socket=\$node/socket.sock  -Bse\"create user repl@'%' identified by 'repl';\"" >>repl_setup
+#echo "      ${PWD}/bin/mysql -A -uroot --socket=\$node/socket.sock  -Bse\"grant all on *.* to repl@'%';flush privileges;\"" >>repl_setup
+#echo "      echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"masternode2> \\\"\" > ${PWD}/masternode2_cl " >>repl_setup
+#echo "    else" >>repl_setup
+#echo "      echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"slavenode> \\\"\" > ${PWD}/\slavenode_cl " >>repl_setup
+#echo "    fi" >>repl_setup
+#echo "  else" >>repl_setup
+#echo "    echo -e \"${PWD}/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"slavenode> \\\"\" > ${PWD}/\slavenode_cl " >>repl_setup
+#echo "  fi" >>repl_setup
+#echo "  echo \"${PWD}/bin/mysqladmin -uroot -S\$node/socket.sock shutdown\" >> stop_repl" >>repl_setup
+#echo "  echo \"echo 'Server on socket \$node/socket.sock with datadir \$node halted'\" >> stop_repl" >>repl_setup
+#echo "  if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+#echo "    if [ \$i -eq 2 ]; then" >>repl_setup
+#echo "      MASTER_PORT2=\$(${PWD}/bin/mysql -A -uroot -S${PWD}/masternode2/socket.sock  -Bse\"SELECT @@port\")" >>repl_setup
+#if [ "${VERSION_INFO}" == "8.0" ]; then
+#  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1 FOR CHANNEL 'master1';\"" >>repl_setup
+#  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT2, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1 FOR CHANNEL 'master2';\"" >>repl_setup
+#else
+#  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1 FOR CHANNEL 'master1';\"" >>repl_setup
+#  echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT2, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1 FOR CHANNEL 'master2';\"" >>repl_setup
+#fi
+#echo "      ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"START SLAVE;\"" >>repl_setup
+#echo "    fi" >>repl_setup
+#echo "  else" >>repl_setup
+#if [ "${VERSION_INFO}" == "8.0" ]; then
+#  echo "    ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1,GET_MASTER_PUBLIC_KEY=1;START SLAVE;\"" >>repl_setup
+#else
+#  echo "    ${PWD}/bin/mysql -A -uroot -S\$node/socket.sock  -Bse\"CHANGE MASTER TO MASTER_HOST='127.0.0.1',MASTER_PORT=\$MASTER_PORT, MASTER_USER='repl',MASTER_PASSWORD='repl',MASTER_AUTO_POSITION=1;START SLAVE;\"" >>repl_setup
+#fi
+#echo "  fi" >>repl_setup
+#echo "done" >>repl_setup
+#echo "if [[ \"\$REPL_TYPE\" = \"MSR\" ]]; then" >>repl_setup
+#echo "  chmod +x  masternode2_cl slavenode_cl stop_repl" >>repl_setup
+#echo "else" >>repl_setup
+#echo "  chmod +x  slavenode_cl stop_repl" >>repl_setup
+#echo "fi" >>repl_setup
+
 if [ ! -r ./in.sql ]; then touch ./in.sql; fi  # Make new empty file if does not exist yet
 echo './all --sql_mode=' >sqlmode
 echo './all --log_bin' >binlog
@@ -939,7 +982,7 @@ echo 'MYEXTRA_OPT="$*"' >all_rr
 echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10;./cl" >>all_rr
 echo "echo '1/4th sec memory snapshots, for the mysqld in this directory, logged to memory.txt'; rm -f memory.txt; echo '    PID %MEM   RSS    VSZ COMMAND'; while :; do if [ \"\$(ps -ef | grep 'port=${PORT}' | grep -v grep)\" ]; then ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep \"\$(ps -ef | grep 'port=${PORT}' | grep -v grep | head -n1 | awk '{print \$2}')\" | tee -a memory.txt ; sleep 0.25; else sleep 0.05; fi; done" >memory_use_trace
 if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
-chmod +x insert_start_marker insert_stop_marker start start_valgrind start_gypsy start_rr stop setup cl cl_noprompt cl_noprompt_nobinary test test_pquery test_timed test_pquery_timed kill init wipe sqlmode binlog all all_stbe all_no_cl all_rr all_no_cl_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init repl_setup *multirun* reducer_* clean_failing_queries memory_use_trace 2>/dev/null
+chmod +x insert_start_marker insert_stop_marker start* stop* setup cl* test test_pquery test_timed test_pquery_timed kill* init wipe* sqlmode binlog all all_stbe all_no_cl all_rr all_no_cl_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init repl_setup *multirun* reducer_* clean_failing_queries memory_use_trace 2>/dev/null
 
 # Adding galera all script
 echo './gal --sql_mode=' >gal_sqlmode

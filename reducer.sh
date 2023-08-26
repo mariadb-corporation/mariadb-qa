@@ -3237,7 +3237,7 @@ process_outcome(){
           export GALERA_ERROR_LOG=$WORKD/node1/error.log
           export GALERA_CORE_LOC=$WORKD/node1/*core*
         fi
-        MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}")"
+        MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
         NTSEXITCODE=${?}
         echo "${MYBUGFOUND}" >> ${WORKD}/MYBUG.FOUND
         echo ${NTSEXITCODE} > ${WORKD}/MYBUG.FOUND.EXITCODE

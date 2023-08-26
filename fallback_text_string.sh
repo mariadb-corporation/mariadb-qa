@@ -141,7 +141,7 @@ STRING=$(echo ${STRING} | sed "s| thread [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9
 STRING=$(echo "${STRING}" | sed "s|/sda/[PM]S[0-9]\+[^ ]\+/bin/mysqld||g")
 
 if [ -z "${STRING}" ]; then
-  # The >&2 direction is important as pquery-run.sh redirects stderr output of fallback_text_string.sh to null to avoid any output by fallback_text_string.sh being interpreted as an actual relevant string. All echo's/asserts (and the 'No relevant strings were found' below), except any actual 'FALLBACK|<some bug string>' output should be >&2 redirected, i.e. to stderr
+  # The >&2 direction is important as pquery-run.sh redirects stderr output of fallback_text_string.sh to null to avoid any output by fallback_text_string.sh being interpreted as an actual relevant string. All echo's/asserts (and the 'No relevant strings were found' below), except any actual 'FALLBACK|<some bug string>' output should be >&2 redirected, i.e. to stderr. Finally, reducer.sh also redirects stderr output so no output is shown while reducing
   echo "No relevant strings were found in ${ERROR_LOG} by fallback_text_string.sh" >&2
   exit 1
 else 

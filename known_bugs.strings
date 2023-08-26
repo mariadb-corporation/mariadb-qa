@@ -166,6 +166,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|__strlen_avx2|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_delete_all_rows                                                                                        ## MDEV-31996
 !join->select_lex->master_unit()->derived || join->select_lex->master_unit()->derived->is_materialized_derived() || join->select_lex->master_unit()->derived->is_with_table()|SIGABRT|JOIN::save_explain_data_intern|JOIN::save_explain_data|JOIN::build_explain|JOIN::optimize ## MDEV-31947
 SIGSEGV|TABLE_LIST::get_tablenr|st_select_lex::save_leaf_tables|JOIN::optimize_inner|JOIN::optimize                                                                            ## MDEV-31930
 xid->gtrid_length + xid->bqual_length < 128|SIGABRT|trx_undo_write_xid|trx_undo_set_state_at_prepare|trx_prepare_low|trx_prepare                                               ## MDEV-31928
@@ -186,7 +187,6 @@ SIGSEGV|Reprepare_observer::report_error|Prepared_statement::check_charset_colla
 SIGSEGV|my_hash_first|my_hash_search|find_acl_role|get_current_user                                                                                                            ## MDEV-31825
 SIGSEGV|my_hash_first|my_hash_search|get_current_user|get_current_user                                                                                                         ## MDEV-31825
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|get_current_user|get_show_user                                                                                                 ## MDEV-31825
-SIGSEGV|__strlen_avx2|__vfprintf_internal|buffered_vfprintf|__vfprintf_internal                                                                                                ## MDEV-31825
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|fil_crypt_set_rotate_key_age|innodb_encryption_rotate_key_age_update                                                           ## MDEV-31819
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|fil_crypt_set_rotation_iops|innodb_encryption_rotation_iops_update                                                             ## MDEV-31819
 SIGSEGV|OSMutex::enter|os_event::set|os_event_set|fil_crypt_set_rotate_key_age                                                                                                 ## MDEV-31819
@@ -775,7 +775,6 @@ SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_open_handler|ha_spider
 SIGABRT|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|spider_db_open_handler                                                                                          ## MDEV-27902
 SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal                                                            ## MDEV-27902
 SIGSEGV|ha_spider::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables                                                                                     ## MDEV-27902
-SIGSEGV|__strlen_avx2|__vfprintf_internal|buffered_vfprintf|__vfprintf_internal                                                                                                ## MDEV-27902
 SIGSEGV|ha_spider::rnd_next_internal|ha_spider::rnd_next|handler::ha_rnd_next|mysql_ha_read                                                                                    ## MDEV-27902
 SIGSEGV|ha_spider::rnd_next_internal|handler::ha_rnd_next|mysql_ha_read|mysql_execute_command                                                                                  ## MDEV-27902
 new_prio == -1 || (new_prio >= fifo_min_prio && new_prio <= fifo_max_prio)|SIGABRT|__pthread_tpp_change_priority|__pthread_mutex_lock_full|__GI___pthread_mutex_lock|safe_mutex_lock ## MDEV-27902

@@ -13,6 +13,8 @@ if [ "${BPQUERY}" == "1" ]; then
   echo "Using pquery client for testcase replay"
 fi
 
+if [ ! -r ../gendirs.sh ]; then echo "Assert: ../gendirs.sh not available, are you executing this from within a BASEDIR?"; exit 1; fi
+
 if [[ "${1}" == "--"* ]]; then
   echo "Assert: it looks like you are trying to specify a -- mysqld option to this script. This is incorrect."
   echo "Instead, add the following to the testcase (in.sql):"
@@ -38,8 +40,6 @@ elif [[ "${PWD}" != *"SAN"* && "${1}" == "SAN" ]]; then
   echo ''
   sleep 3
 fi
-
-if [ ! -r ../gendirs.sh ]; then echo "Assert: ../gendirs.sh not available, are you executing this from within a BASEDIR?"; exit 1; fi
 
 if [ "${1}" == "GAL" ]; then
   if [ -z "$(echo "$(cd ..;./gendirs.sh GAL)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi

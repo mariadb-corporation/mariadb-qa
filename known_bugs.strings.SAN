@@ -5,6 +5,20 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/spd_conn.cc|spider_conn_queue_and_merge_loop_check|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan|ha_partition::rnd_next                 ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::rnd_next_internal|ha_spider::rnd_next|handler::ha_rnd_next|mysql_ha_read                                       ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::rnd_next_internal|handler::ha_rnd_next|mysql_ha_read|mysql_execute_command                                     ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::rnd_next                    ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|handler::ha_rnd_next                    ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables                                        ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first|mysql_ha_read                              ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::index_first_internal|handler::ha_index_first|mysql_ha_read|mysql_execute_command                               ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|lock_external                                   ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_first_internal|ha_spider::index_first             ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_first_internal|handler::ha_index_first            ## MDEV-27902
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::delete_all_rows|handler::ha_delete_all_rows|Sql_cmd_delete::delete_from_single_table ## MDEV-31996
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::delete_all_rows|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner ## MDEV-31996
 ASAN|heap-use-after-free|sql/field.h|Field::set_notnull|save_int_value_in_field|Item_int::save_in_field|TABLE::update_virtual_fields                                           ## MDEV-30926
 ASAN|unknown-crash|sql/sql_analyse.cc|check_ulonglong|get_ev_num_info|field_str::add|analyse::send_row                                                                         ## MDEV-31881
 ASAN|unknown-crash|sql/sql_analyse.cc|check_ulonglong|get_ev_num_info|get_ev_num_info|field_str::add                                                                           ## MDEV-31881
