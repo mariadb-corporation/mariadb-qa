@@ -153,6 +153,7 @@ alias sc='${HOME}/sc'      # Check if the current bash session is running inside
 alias sg='screen -list | grep '  # List screens that match a search pattern (pass quoted search pattern)
 alias sb='source ${HOME}/.bashrc' # Re-source ${HOME}/.bashrc, handy to use when this alias list was updated
 alias st='${HOME}/start'   # Prepare a BASEDIR with all runtime scripts for it
+alias str='./start_replication' # Startup replication in a given BASEDIR (after st/start was ran at least once)
 alias d='cd /test;. ./d1'  # cd to the latest debug 11.2 in /test
 alias o='cd /test;. ./o1'  # cd to the latest optimized 11.2 in /test
 alias ds='cd /test;. ./u1'   # cd to the latest UBASAN debug 11.2 in /test

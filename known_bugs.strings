@@ -166,6 +166,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGABRT|THD::~THD|THD::~THD|handle_rpl_parallel_thread|start_thread                                                                                                            ## MDEV-26887
+SIGABRT|my_malloc_size_cb_func|my_free|root_free|free_root                                                                                                                     ## MDEV-26887
 SIGSEGV|__strlen_avx2|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_delete_all_rows                                                                                        ## MDEV-31996
 s.ok()|SIGABRT|myrocks::Rdb_transaction_impl::set_name|myrocks::rocksdb_register_tx|myrocks::ha_rocksdb::external_lock|handler::ha_external_lock                               ## MDEV-31997
 SIGABRT|myrocks::rdb_handle_io_error|myrocks::Rdb_transaction_impl::set_name|myrocks::rocksdb_register_tx|myrocks::ha_rocksdb::external_lock                                   ## MDEV-31997

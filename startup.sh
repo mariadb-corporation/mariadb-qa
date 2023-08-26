@@ -875,21 +875,20 @@ echo "DELETE FROM mysql.user WHERE user='';" >master_setup.sql
 echo "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" >>master_setup.sql
 echo "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=00000, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ;" >slave_setup.sql  # The 00000 is a dummy entry, and any number will be replaced by start_master to the actual port in slave_setup.sql at master startup time
 echo "START SLAVE;" >>slave_setup.sql
+echo './stop; ./stop_slave' >stop_replication
+echo './kill; ./kill_slave' >kill_replication
 echo 'MYEXTRA_OPT="$*"' >start_replication
-echo './kill >/dev/null 2>&1' >>start_replication
-echo './kill_slave >/dev/null 2>&1' >>start_replication
+echo './kill_replication >/dev/null 2>&1' >>start_replication
 echo 'rm -f socket.sock socket.sock.lock socket_slave.sock socket_slave.sock.lock; sync' >>start_replication
 echo './wipe ${MYEXTRA_OPT}' >>start_replication
 echo './wipe_slave ${MYEXTRA_OPT}' >>start_replication  # TODO: MYEXTRA_OPT handling may need work
 echo './start_master ${MYEXTRA_OPT}' >>start_replication
-echo 'rm -f mysql.out mysql_slave.out' >>start_replication
+echo 'rm -f mysql.out mysql_slave.out data*/core*' >>start_replication
 echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/master_setup.sql > ${PWD}/mysql.out 2>&1" >>start_replication
 echo './start_slave ${MYEXTRA_OPT}' >>start_replication  # idem 
 echo "${PWD}/bin/mysql -A -uroot -S${SLAVE_SOCKET} --force ${BINMODE}test < ${PWD}/slave_setup.sql > ${PWD}/mysql_slave.out" >>start_replication
 echo 'sleep 2' >>start_replication
 echo './cl' >>start_replication
-echo './stop; ./stop_slave' >>stop_replication
-echo './kill; ./kill_slave' >>kill_replication
 
 # -- Replication setup (old PS/MS)
 #echo '#!/usr/bin/env bash' >repl_setup
