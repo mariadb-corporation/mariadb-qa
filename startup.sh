@@ -868,11 +868,12 @@ sed -i 's|socket.sock|socket_slave.sock|g' start_slave
 sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
 sed -i 's|socket.sock|socket_slave.sock|g' cl_slave
-sed -i 's|^MYEXTRA="[ ]*--no-defaults|MYEXTRA=" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --server_id=1|' start_master
-sed -i 's|^MYEXTRA="[ ]*--no-defaults|MYEXTRA=" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=65 --slave-parallel-mode=aggressive --slave-parallel-max-queued=1073741827 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --server_id=2|' start_slave
+sed -i 's|^MYEXTRA="[ ]*--no-defaults|MYEXTRA=" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1|' start_master
+sed -i 's|^MYEXTRA="[ ]*--no-defaults|MYEXTRA=" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=65 --slave-parallel-mode=aggressive --slave-parallel-max-queued=1073741827 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2|' start_slave
 sed -i 's%^PORT=$.*%PORT=$NEWPORT; sed -i "s|MASTER_PORT=[0-9]\\+|MASTER_PORT=${NEWPORT}|" slave_setup.sql%' start_master
 echo "DELETE FROM mysql.user WHERE user='';" >master_setup.sql
 echo "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" >>master_setup.sql
+echo "#ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;  # MENT-1905 Testing" >>master_setup.sql
 echo "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=00000, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ;" >slave_setup.sql  # The 00000 is a dummy entry, and any number will be replaced by start_master to the actual port in slave_setup.sql at master startup time
 echo "START SLAVE;" >>slave_setup.sql
 echo './stop; ./stop_slave' >stop_replication
@@ -888,7 +889,22 @@ echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/mas
 echo './start_slave ${MYEXTRA_OPT}' >>start_replication  # idem 
 echo "${PWD}/bin/mysql -A -uroot -S${SLAVE_SOCKET} --force ${BINMODE}test < ${PWD}/slave_setup.sql > ${PWD}/mysql_slave.out" >>start_replication
 echo 'sleep 2' >>start_replication
-echo './cl' >>start_replication
+echo 'if [ -z "${SRNOCL}" ]; then ./cl; fi' >>start_replication
+
+# -- MENT-1905 Replication testing, also handy for other sysbench tests
+rm -f MENT-1905
+if [ -r "${SCRIPT_PWD}/replication_MENT-1905_1.lua" ]; then cp ${SCRIPT_PWD}/replication_MENT-1905_1.lua .; fi
+if [ -r "${SCRIPT_PWD}/replication_MENT-1905_2.lua" ]; then cp ${SCRIPT_PWD}/replication_MENT-1905_2.lua .; fi
+echo 'sed -i "s|#ALTER TABLE mysql.gtid_slave_pos|ALTER TABLE mysql.gtid_slave_pos|" master_setup.sql' >MENT-1905
+echo 'sed -i "s|slave-parallel-threads=[0-9]\+|slave-parallel-threads=5100 --binlog_xa_two_phase=0|" start_slave' >>MENT-1905
+echo 'export SRNOCL=1' >>MENT-1905
+echo './start_replication' >>MENT-1905
+echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=5000 --time=0 ./replication_MENT-1905_1.lua prepare' >>MENT-1905
+echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=5000 --time=0 ./replication_MENT-1905_1.lua run &' >>MENT-1905
+echo '#sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=5000 --time=0 ./replication_MENT-1905_2.lua prepare' >>MENT-1905
+echo '#sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=5000 --time=0 ./replication_MENT-1905_2.lua run &' >>MENT-1905
+echo 'sleep 1; ./cl' >>MENT-1905
+chmod +x MENT-1905
 
 # -- Replication setup (old PS/MS)
 #echo '#!/usr/bin/env bash' >repl_setup
@@ -1000,6 +1016,7 @@ echo "Setting up server with default directories"
 
 if [[ $MDG -eq 0 ]]; then
   ./stop >/dev/null 2>&1
+  ./kill_replication >/dev/null 2>&1  # Will also kill master in case ./stop failed
   ./init
   if [[ -r ${PWD}/lib/mysql/plugin/ha_tokudb.so ]] || [[ -r ${PWD}/lib/mysql/plugin/ha_rocksdb.so ]]; then
     echo "Enabling additional TokuDB/ROCKSDB engine plugin items if exists"
@@ -1014,4 +1031,3 @@ else
   echo "      To get a fresh instance now, execute: ./gal_start then wait 3 seconds and execute ./1_node_cli"
 fi
 exit 0
-

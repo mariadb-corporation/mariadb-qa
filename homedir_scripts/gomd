@@ -8,7 +8,8 @@
 #BASEDIR=MD010823-mariadb-11.2.0-linux-x86_64-dbg
 #BASEDIR=/test/EMD230823-TODO-4178-mariadb-10.6.14-9-linux-x86_64-dbg
 #BASEDIR=/test/EMD240823-TODO-4178-mariadb-10.6.14-9-linux-x86_64-dbg
-BASEDIR=/test/EMD250823-10.6.14-9-enterprise-MDEV-30165-MENT-1905-mariadb-10.6.14-9-linux-x86_64-dbg
+BASEDIR=/test/MD260823-mariadb-11.3.0-linux-x86_64-dbg
+#EMD250823-10.6.14-9-enterprise-MDEV-30165-MENT-1905-mariadb-10.6.14-9-linux-x86_64-dbg
 #bb-10.6-primary-corruption_MD260723-mariadb-10.6.15-linux-x86_64-dbg
 #MDEV-30619_postfix2_MD220723-mariadb-10.4.31-linux-x86_64-opt
 #MD220623-mariadb-11.1.2-linux-x86_64-dbg

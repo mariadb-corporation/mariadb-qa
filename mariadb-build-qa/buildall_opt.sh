@@ -20,7 +20,7 @@ if [ "${STY}" == "" ]; then
 fi
 
 DIR=${PWD}
-rm -Rf 10.4_opt 10.5_opt 10.6_opt 10.7_opt 10.8_opt 10.9_opt 10.10_opt 11.0_opt 11.1_opt 11.2_opt
+rm -Rf 10.4_opt 10.5_opt 10.6_opt 10.7_opt 10.8_opt 10.9_opt 10.10_opt 11.0_opt 11.1_opt 11.2_opt 11.3_opt
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_opt.sh &
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_opt.sh &
 #cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_opt.sh &
@@ -34,6 +34,7 @@ cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/10.11 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/11.0 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/11.1 && ~/mariadb-qa/build_mdpsms_opt.sh &
-#cd ${DIR}/11.2 && ~/mariadb-qa/build_mdpsms_opt.sh &
+cd ${DIR}/11.2 && ~/mariadb-qa/build_mdpsms_opt.sh &
+cd ${DIR}/11.3 && ~/mariadb-qa/build_mdpsms_opt.sh &
 
 echo "All processes started as background threads... Output will commence soon."
