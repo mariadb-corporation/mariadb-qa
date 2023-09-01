@@ -1,0 +1,6 @@
+INSTALL PLUGIN RocksDB SONAME 'ha_rocksdb';
+SET default_storage_engine=RocksDB;
+CREATE TABLE t (c INT);
+LOCK TABLE t READ;
+SELECT * FROM t ORDER BY c2;
+SELECT * FROM t ORDER BY c2;
