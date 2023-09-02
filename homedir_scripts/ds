@@ -46,7 +46,10 @@ while :; do
   echo -n "Testcases: ${TESTCASES}"
   sleep 3
   if [ ${COUNT1} -ge 10 ]; then
+    # Cleanup any processes which have deleted files open. This command assists greatly in server memory management
+    sudo lsof -s +L1 | grep '(deleted)' | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | awk '{print $2}' | sort -u | grep -vE '^[0-9][0-9][0-9]$|^[0-9][0-9]$|^[0-9]$' | tr '\n' '|' | sed 's/^/ps -ef | grep -E "/;s/|$/" | grep -vEi "grep|fireworks|cc|clang"/;s/$/\0/' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -P20 -I{} kill -9 {} 2>/dev/null
     # Check if there are any early-terminated or finished reducers which still have /dev/shm directories in use
+    # TODO: Possible race condition. If this command runs at exactly the time where the initial reducer just ended (before auto-pge runs are done for the same trial), it is possible that such directory will be deleted before the pge's can run. Once the pge is started, due to the append to reducer.log and the tail -n1, that pge should be fine till completition, at which time the same issue may occur
     cd /dev/shm
     tail -n1 [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]/reducer.log | grep -Eib1 'DONE. Final testcase|Abort. The source for this reducer was likely deleted. Terminating' | grep '==' | grep -o '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | xargs -I{} echo 'if [ ! -z "{}" ]; then if [ -d ./{} ]; then rm -Rf /dev/shm/{}; fi; fi' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
     cd - >/dev/null
@@ -62,14 +65,12 @@ while :; do
       fi
       cd "${CURPWD}"
     fi
-    # Cleanup any processes which have dead files > 300MB open. This command too assist greatly in overall server memory management
-    sudo lsof -s +L1 | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | grep -E "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]|^[3-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | awk '{print $2}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi 'grep|fireworks|cc|clang'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null
     # Cleanup cache, may help avoid OOM
     sudo bash -c "$(which echo) 3 > /proc/sys/vm/drop_caches" &
     # Terminate subreducers which have been active for 1h+. It is unlikely that any subreducer will take that long to run
-    #ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vE 'grep|cc|clang'" | xargs -I{} bash -c "{}" | awk '{print $2}' | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time.
+    #ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vE 'grep|cc|clang'" | xargs -I{} bash -c "{}" | awk '{print $2}' | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time
     ps -ef | grep 'subreducer' | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command,pid | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] |[0-9]-[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' | awk '{print $4}' | xargs -I{} kill -9 {}  # Improved (works better + less resources used) command. Ref comment on remarked line above for more info
-    # RV-05/02/22 increased frequency of ~/mariadb-qa/tmpfs_clean.sh from 60 rounds to 10 rounds, and starting process as background process. Improved ~/mariadb-qa/tmpfs_clean.sh to self-terminate if running already.
+    # RV-05/02/22 increased frequency of ~/mariadb-qa/tmpfs_clean.sh from 60 rounds to 10 rounds, and starting process as background process. Improved ~/mariadb-qa/tmpfs_clean.sh to self-terminate if it is running already
     ~/mariadb-qa/tmpfs_clean.sh 1 SILENT &
     NEWBUGCOUNT="$(cat /data/NEWBUGS/*.string 2>/dev/null | sort -u | wc -l)"
     cd /dev/shm

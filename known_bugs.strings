@@ -14,7 +14,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1223  ## https://jira.mariadb.org/browse/
 MARIADB_ERROR_CODE|MariaDB error code: 1231
 MARIADB_ERROR_CODE|MariaDB error code: 1237
 MARIADB_ERROR_CODE|MariaDB error code: 1399
-MARIADB_ERROR_CODE|MariaDB error code: 1593  ## Empty or invalid replication username
+MARIADB_ERROR_CODE|MariaDB error code: 1593  ## Empty or invalid CHANGE MASTER username
 MARIADB_ERROR_CODE|MariaDB error code: 1610  ## https://jira.mariadb.org/browse/MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 (may mask other issues, but never seen otherwise)
 MARIADB_ERROR_CODE|MariaDB error code: 1792
@@ -714,6 +714,7 @@ SIGSEGV|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general_ci|charset_in
 SIGSEGV|parse_option_list|mysql_prepare_create_table|mysql_create_frm_image|create_table_impl                                                                                  ## MDEV-28497
 SIGSEGV|GRANT_TABLE::GRANT_TABLE|grant_load|grant_reload|reload_acl_and_cache                                                                                                  ## MDEV-28482
 SIGSEGV|get_access_value_from_val_int|GRANT_TABLE::GRANT_TABLE|grant_load|grant_reload                                                                                         ## MDEV-28482
+SIGSEGV|get_access_value_from_val_int|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table                                                           ## MDEV-28482
 elem->cmp_type() != TIME_RESULT|SIGABRT|cmp_item_row::store_value|cmp_item_row::store_value|Predicant_to_list_comparator::cmp_arg|Predicant_to_list_comparator::cmp            ## MDEV-28477
 item->element_index(i)->cmp_type() != TIME_RESULT|SIGABRT|cmp_item_row::store_value|cmp_item_row::store_value|Item_func_in::val_int|Item::save_in_field                        ## MDEV-28477
 null_value|SIGABRT|Item::send|Protocol::send_result_set_row|select_send::send_data|JOIN::exec_inner                                                                            ## MDEV-26394

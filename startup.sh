@@ -149,7 +149,7 @@ fi
 
 # Setup scritps
 rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test test_pquery test*timed wipe* clean_failing_queries memory_use_trace afl* ml mlp master_setup.sql slave_setup.sql mysql.out mysql_slave.out 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | init | wipe | wipe_slave | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init | afl | aflnew"
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | init | wipe | wipe_slave | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init | afl | aflnew | multitest | stress.sh"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -461,7 +461,11 @@ cp start start_rr       # Idem setup for rr
 echo "$BIN  \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
 echo "for X in \$(seq 0 70); do if ${PWD}/bin/mysqladmin ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
 if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO}" != "5.6" ]; then
-  echo "${PWD}/bin/mysql -uroot --socket=${SOCKET}  -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
+  if [ -r "${PWD}/bin/mariadb" ]; then
+    echo "${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
+  else
+    echo "${PWD}/bin/mysql -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
+  fi
 fi
 echo " valgrind --suppressions=${PWD}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
 echo "$BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_gypsy
@@ -507,7 +511,7 @@ echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/d
 echo "rm -f log/master.err.PREV" >>wipe
 echo "if [ -r log/master.err ]; then mv log/master.err log/master.err.PREV; fi" >>wipe
 # Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
-if [ -r ${PWD}/bin/mariadbd ]; then
+if [ -r "${PWD}/bin/mariadb" ]; then
   echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test'; ./stop" >>wipe
 else
   echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mysql -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test'; ./stop" >>wipe
@@ -610,8 +614,13 @@ echo "echo ''" >>multirun
 ln -s ./multirun ./m 2>/dev/null
 cp ./multirun ./multirun_pquery
 
-echo "#~/mariadb-qa/multirun_cli.sh 200 100000 in.sql ${PWD}/bin/mysql ${SOCKET}" >>multirun
-echo "~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/mysql ${SOCKET}" >>multirun
+if [ -r "${PWD}/bin/mariadb" ]; then
+  echo "#~/mariadb-qa/multirun_cli.sh 200 100000 in.sql ${PWD}/bin/mariadb ${SOCKET}" >>multirun
+  echo "~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/mariadb ${SOCKET}" >>multirun
+else
+  echo "#~/mariadb-qa/multirun_cli.sh 200 100000 in.sql ${PWD}/bin/mysql ${SOCKET}" >>multirun
+  echo "~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/mysql ${SOCKET}" >>multirun
+fi
 echo "# Note that there are two levels of threading: the number of pquery clients started (as set by $1), and the number of pquery threads initiated/used by each of those pquery clients (as set by $7)." >>multirun_pquery
 echo "" >>multirun_pquery
 echo "## 10 pquery clients, 20 threads each (almost never used)" >>multirun_pquery
@@ -657,21 +666,21 @@ if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" ]; then
 fi
 touch cl
 add_san_options cl
-if [ -r ${PWD}/bin/mariadb ]; then
+if [ -r "${PWD}/bin/mariadb" ]; then
   echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mariadbd --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
 else
   echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mysqld --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
 fi
 touch cl_noprompt
 add_san_options cl_noprompt
-if [ -r ${PWD}/bin/mariadb ]; then
+if [ -r "${PWD}/bin/mariadb" ]; then
   echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprompt
 else
   echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprompt
 fi
 touch cl_noprompt_nobinary
 add_san_options cl_noprompt_nobinary
-if [ -r ${PWD}/bin/mariadb ]; then
+if [ -r "${PWD}/bin/mariadb" ]; then
   echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
 else
   echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
@@ -681,13 +690,21 @@ add_san_options test
 cp test test_pquery
 cp test test_timed
 echo "sed -i \"s|MYPORT|\$(grep -o 'port=[0-9]\+' start 2>/dev/null | sed 's|port=||')|\" in.sql" >>test
-echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
+if [ -r "${PWD}/bin/mariadb" ]; then
+  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
+else
+  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
+fi
 echo "if [ -t 1 ]; then echo \"Exit status of client: \${?}\"; fi  # With thanks, https://serverfault.com/a/753459" >> test
 echo "${HOME}/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery
 echo "# Timing code, with thanks, https://stackoverflow.com/a/42359046/1208218 (dormi330)" >>test_timed
 echo "start_at=\$(date +%s,%N)" >>test_timed
 cp test_timed test_pquery_timed
-echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test_timed
+if [ -r "${PWD}/bin/mariadb" ]; then
+  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test_timed
+else
+  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test_timed
+fi
 echo "${HOME}/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --log-query-duration --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery_timed
 echo "end_at=\$(date +%s,%N)" >t_tmp1  # Temporary file to avoid duplicating commands here
 echo "_s1=\$(echo \${start_at} | cut -d',' -f1)   # sec" >>t_tmp1
@@ -733,7 +750,11 @@ fi
 
 if [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "0.5" ]; then
   if [ "${VERSION_INFO}" == "8.0" ]; then
-    echo "${PWD}/bin/mysql -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
+    if [ -r "${PWD}/bin/mariadb" ]; then
+      echo "${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
+    else
+      echo "${PWD}/bin/mysql -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
+    fi
     echo "sysbench --test=/usr/share/doc/sysbench/tests/db/parallel_prepare.lua --mysql-engine-trx=yes --mysql-table-engine=innodb --oltp_table_size=10000 --oltp_tables_count=10 --mysql-db=test --mysql-user=sysbench_user --mysql-password=test  --db-driver=mysql --mysql-socket=${SOCKET} prepare" >>sysbench_prepare
     echo "sysbench --report-interval=10 --max-time=50 --max-requests=0 --mysql-engine-trx=yes --test=/usr/share/doc/sysbench/tests/db/oltp.lua --init-rng=on --oltp_index_updates=10 --oltp_non_index_updates=10 --oltp_distinct_ranges=15 --oltp_order_ranges=15 --oltp_tables_count=1 --num-threads=4 --oltp_table_size=1000000 --mysql-db=test --mysql-user=sysbench_user --mysql-password=test  --db-driver=mysql --mysql-socket=${SOCKET} run" >sysbench_run
   else
@@ -742,7 +763,11 @@ if [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "0.5"
   fi
 elif [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "1.0" ]; then
   if [ "${VERSION_INFO}" == "8.0" ]; then
-    echo "${PWD}/bin/mysql -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
+    if [ -r "${PWD}/bin/mariadb" ]; then
+      echo "${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
+    else
+      echo "${PWD}/bin/mysql -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
+    fi
     echo "sysbench /usr/share/sysbench/oltp_insert.lua  --mysql-storage-engine=innodb --table-size=10000 --tables=10 --threads=10 --mysql-db=test --mysql-user=sysbench_user --mysql-password=test  --db-driver=mysql --mysql-socket=${SOCKET} prepare" >>sysbench_prepare
     echo "sysbench /usr/share/sysbench/oltp_read_write.lua --report-interval=10 --time=50 --events=0 --index_updates=10 --non_index_updates=10 --distinct_ranges=15 --order_ranges=15 --tables=10 --threads=10  --table-size=1000000 --mysql-db=test --mysql-user=sysbench_user --mysql-password=test  --db-driver=mysql --mysql-socket=${SOCKET} run" >sysbench_run
   else
@@ -885,9 +910,17 @@ echo './wipe ${MYEXTRA_OPT}' >>start_replication
 echo './wipe_slave ${MYEXTRA_OPT}' >>start_replication  # TODO: MYEXTRA_OPT handling may need work
 echo './start_master ${MYEXTRA_OPT}' >>start_replication
 echo 'rm -f mysql.out mysql_slave.out data*/core*' >>start_replication
-echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/master_setup.sql > ${PWD}/mysql.out 2>&1" >>start_replication
+if [ -r "${PWD}/bin/mariadb" ]; then
+  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/master_setup.sql > ${PWD}/mysql.out 2>&1" >>start_replication
+else
+  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/master_setup.sql > ${PWD}/mysql.out 2>&1" >>start_replication
+fi
 echo './start_slave ${MYEXTRA_OPT}' >>start_replication  # idem 
-echo "${PWD}/bin/mysql -A -uroot -S${SLAVE_SOCKET} --force ${BINMODE}test < ${PWD}/slave_setup.sql > ${PWD}/mysql_slave.out" >>start_replication
+if [ -r "${PWD}/bin/mariadb" ]; then
+  echo "${PWD}/bin/mariadb -A -uroot -S${SLAVE_SOCKET} --force ${BINMODE}test < ${PWD}/slave_setup.sql > ${PWD}/mysql_slave.out" >>start_replication
+else
+  echo "${PWD}/bin/mysql -A -uroot -S${SLAVE_SOCKET} --force ${BINMODE}test < ${PWD}/slave_setup.sql > ${PWD}/mysql_slave.out" >>start_replication
+fi
 echo 'sleep 2' >>start_replication
 echo 'if [ -z "${SRNOCL}" ]; then ./cl; fi' >>start_replication
 
@@ -997,6 +1030,7 @@ echo 'MYEXTRA_OPT="$*"' >all_rr
 echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10;./cl" >>all_rr
 echo "echo '1/4th sec memory snapshots, for the mysqld in this directory, logged to memory.txt'; rm -f memory.txt; echo '    PID %MEM   RSS    VSZ COMMAND'; while :; do if [ \"\$(ps -ef | grep 'port=${PORT}' | grep -v grep)\" ]; then ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep \"\$(ps -ef | grep 'port=${PORT}' | grep -v grep | head -n1 | awk '{print \$2}')\" | tee -a memory.txt ; sleep 0.25; else sleep 0.05; fi; done" >memory_use_trace
 if [ -r ${SCRIPT_PWD}/startup_scripts/multitest ]; then cp ${SCRIPT_PWD}/startup_scripts/multitest .; fi
+if [ -r ${SCRIPT_PWD}/stress.sh ]; then cp ${SCRIPT_PWD}/stress.sh .; fi
 chmod +x insert_start_marker insert_stop_marker start* stop* setup cl* test test_pquery test_timed test_pquery_timed kill* init wipe* sqlmode binlog all all_stbe all_no_cl all_rr all_no_cl_rr sysbench_prepare sysbench_run sysbench_measure gdb stack fixin loopin myrocks_tokudb_init repl_setup *multirun* reducer_* clean_failing_queries memory_use_trace 2>/dev/null
 
 # Adding galera all script

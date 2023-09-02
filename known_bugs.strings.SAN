@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member call on null pointer of type 'struct Field'|sql/sql_acl.cc|get_access_value_from_val_int|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table ## MDEV-28482
 ASAN|heap-use-after-free|storage/spider/spd_conn.cc|spider_conn_queue_and_merge_loop_check|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect ## MDEV-27902
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan|ha_partition::rnd_next                 ## MDEV-27902
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::rnd_next_internal|ha_spider::rnd_next|handler::ha_rnd_next|mysql_ha_read                                       ## MDEV-27902
