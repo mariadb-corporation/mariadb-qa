@@ -2114,7 +2114,6 @@ EOF
         $CMD >> ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
         PQPID="$!"
       else
--------------
         ## Pre-shuffle (if activated)
         if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
           ## Check pre-shuffle directory
