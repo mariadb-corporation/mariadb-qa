@@ -166,6 +166,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###a
+!strcmp(&path[strlen(path) - strlen(dot_ext[IBD])], dot_ext[IBD])|SIGABRT|mtr_t::log_file_op|fil_name_write|fil_names_clear|log_checkpoint_low                                 ## MDEV-32089
+!keyread_enabled()|SIGABRT|handler::ha_start_keyread|find_key_for_maxmin|opt_sum_query|JOIN::optimize_inner                                                                    ## MDEV-32087
 name == rdb_xid_to_string(xid)|SIGABRT|myrocks::Rdb_transaction_impl::set_name|myrocks::rocksdb_register_tx|myrocks::ha_rocksdb::start_stmt|check_lock_and_start_stmt          ## MDEV-32062
 # SIGABRT|my_malloc_size_cb_func|my_free|free_root|THD::~THD                                                                                                                     ## MDEV-26887 # Disabled (need testcase)
 SIGABRT|THD::~THD|THD::~THD|handle_rpl_parallel_thread|start_thread                                                                                                            ## MDEV-26887
