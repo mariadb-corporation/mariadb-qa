@@ -224,6 +224,7 @@ SIGSEGV|Item_func_or_sum::walk|Item_args::walk_args|Item_func_or_sum::walk|Item_
 SIGSEGV|Item_func_or_sum::walk|Item_ref::walk|Item_args::walk_args|Item_func_or_sum::walk                                                                                      ## MDEV-31647
 SIGSEGV|Item_ref::walk|Item_args::walk_args|Item_func_or_sum::walk|Item_args::walk_args                                                                                        ## MDEV-31647
 0|SIGABRT|Item_param::can_return_value|Item_param::val_str|Item::val_json|Item_func_json_schema_valid::fix_length_and_dec                                                      ## MDEV-31599
+SIGSEGV|Binary_string::ptr|Item_func_json_schema_valid::fix_length_and_dec|Item_func::fix_fields|Item_func::fix_fields                                                         ## MDEV-31599 (Was 32074)
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|spider_table_bg_sts_action                                    ## MDEV-31584
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|spider_table_bg_sts_action                                     ## MDEV-31584
 SIGSEGV|get_all_tables|get_schema_tables_result|JOIN::exec_inner|JOIN::exec                                                                                                    ## MDEV-31523

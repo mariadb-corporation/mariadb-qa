@@ -178,8 +178,9 @@ fi
 # Try and raise ulimit for user processes (see setup_server.sh for how to set correct soft/hard nproc settings in limits.conf)
 #ulimit -u 7000
 
-# Input file compressed? preflight check (when generator and PRE_SHUFFLE_SQL=2 (mix all sql files) are not in use)
-if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 -a "${PRE_SHUFFLE_SQL}" != "2" ]; then
+# Input file compressed? preflight check (when generator is not in use)
+# Do not filter PRE_SHUFFLE_SQL=2 (mix all sql files) from extracting the tar here, as the main tar may still need extracting for example when mariadb-qa was just cloned, and it will also need extracting for multi-threaded runs
+if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 ]; then
   if [ ! -r ${INFILE} ]; then
     echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
     exit 1
@@ -197,15 +198,10 @@ if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 -a "${PRE_SHUFFLE_SQL}" != "2" ]
     fi
     ORIGINAL_INFILE=
   fi
-fi
-
-# Even when PRE_SHUFFLE_SQL=2 (all sql files) input is used, it still makes sense to extract any tar file specified as "original" (but not used) input as this expands the grammar available
-if [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
-  if [[ "${INFILE}" == *".tar."* ]]; then
-    STORECURPWD=${PWD}
-    cd $(echo ${INFILE} | sed 's|/[^/]\+\.tar\..*|/|') || exit 1 # Change to the directory containing the input file
-    tar -xf ${INFILE}
-    cd ${STORECURPWD} || exit 1
+else
+  if [ "${PRE_SHUFFLE_SQL}" -eq 2 ]; then
+    echo "Assert: PRE_SHUFFLE_SQL is set to 2 and USE_GENERATOR_INSTEAD_OF_INFILE is set to 1, this configuration is not supported yet"
+    exit 1
   fi
 fi
 
@@ -385,7 +381,7 @@ elif [ "${CRASH_RECOVERY_TESTING}" -eq 1 ]; then
 elif [ "${QUERY_CORRECTNESS_TESTING}" -eq 1 ]; then
   echoit "MODE: Query Correctness Testing"
 elif [ "${QUERY_CORRECTNESS_TESTING}" -ne 1 ]; then
-  if [ "${REPLICATION}" != "1" ]; then
+  if [ "${REPLICATION}" == "1" ]; then
     MODEPREFIX='MODE: Replication testing | SUB'
   fi
   if [ "${VALGRIND_RUN}" == "1" ]; then
@@ -401,6 +397,15 @@ elif [ "${QUERY_CORRECTNESS_TESTING}" -ne 1 ]; then
       echoit "${MODEPREFIX}MODE: Multi threaded pquery testing"
     fi
   fi
+fi
+if [ "${PRE_SHUFFLE_SQL}" -eq 0 ]; then
+  echoit "PRE_SHUFFLE_SQL Active: NO"
+elif [ "${PRE_SHUFFLE_SQL}" -eq 1 ]; then
+  echoit "PRE_SHUFFLE_SQL Active: YES, MODE 1 (Pre-shuffle the INFILE SQL per trial)"
+elif [ "${PRE_SHUFFLE_SQL}" -eq 2 ]; then
+  echoit "PRE_SHUFFLE_SQL Active: YES, MODE 2 (Pre-shuffle all SQL wherever found)"
+else
+  echoit "PRE_SHUFFLE_SQL Active: YES, MODE ${PRE_SHUFFLE_SQL}"
 fi
 if [ "${PRELOAD}" == "1" ]; then
   echoit "PRELOAD SQL Active: (${PRELOAD_SQL} will be preloaded for all trials, and prepended to trial SQL traces"
@@ -463,7 +468,8 @@ if [[ ${REPLICATION} -eq 1 ]]; then
     PQUERY_RUN_TIMEOUT=60
   fi
 fi
-if [ ${THREADS} -gt 1 ]; then # We may want to drop this to 20 seconds required?
+if [ ${THREADS} -gt 1 ]; then
+  # We may want to drop this to 20 seconds required?
   if [ ${PQUERY_RUN_TIMEOUT} -lt 30 ]; then
     echoit "Note: As this is a multi-threaded run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 30 for this run"
     PQUERY_RUN_TIMEOUT=30
@@ -471,6 +477,14 @@ if [ ${THREADS} -gt 1 ]; then # We may want to drop this to 20 seconds required?
   if [ ${QUERY_DURATION_TESTING} -eq 1 ]; then
     echoit "Note: As this is a QUERY_DURATION_TESTING=1 run, and THREADS was set to ${THREADS}, this script is setting the number of threads to the required setting of 1 thread for this run"
     THREADS=1
+  fi
+  if [ -z "${MULTI_THREADED_TESTC_LINES}" ]; then
+    echoit "Assert: MULTI_THREADED_TESTC_LINES is not set, yet the number of threads is greater than 1. Please setMULTI_THREADED_TESTC_LINES (recommended to be at least 100-200K)"
+    exit 1
+  fi
+  if [ ${PRE_SHUFFLE_MIN_SQL_LINES} -lt ${MULTI_THREADED_TESTC_LINES} ]; then
+    echoit "Assert: PRE_SHUFFLE_MIN_SQL_LINES < MULTI_THREADED_TESTC_LINES (${PRE_SHUFFLE_MIN_SQL_LINES}<${MULTI_THREADED_TESTC_LINES}). Set the number of PRE_SHUFFLE_MIN_SQL_LINES to a number equal to or larger than MULTI_THREADED_TESTC_LINES. Adding a reasonable margin (i.e. 'larger than') is recommended."
+    exit 1
   fi
 fi
 if [ ${CRASH_RECOVERY_TESTING} -eq 1 ]; then
@@ -1816,31 +1830,31 @@ pquery_test() {
         sed -i "s|ndb|${QC_SEC_ENGINE}|gi" ${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_SEC_ENGINE}
         sed -i "s|ndbcluster|${QC_PRI_ENGINE}|gi" ${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_PRI_ENGINE}
         sed -i "s|ndbcluster|${QC_SEC_ENGINE}|gi" ${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_SEC_ENGINE}
-        SQL_FILE_1="--infile=${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_PRI_ENGINE}"
-        SQL_FILE_2="--infile=${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_SEC_ENGINE}"
+        SQL_FILE_1="${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_PRI_ENGINE}"
+        SQL_FILE_2="${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_SEC_ENGINE}"
         if [[ "${MDG}" -eq 0 && ${GRP_RPL} -eq 0 ]]; then
           echoit "Starting Primary pquery run for engine ${QC_PRI_ENGINE} (log stored in ${RUNDIR}/${TRIAL}/pquery1.log)..."
           if [ ${QUERY_CORRECTNESS_MODE} -ne 2 ]; then
-            ${PQUERY_BIN} ${SQL_FILE_1} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery1.log 2>&1
+            ${PQUERY_BIN} --infile=${SQL_FILE_1} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery1.log 2>&1
             PQPID="$!"
             mv ${RUNDIR}/${TRIAL}/pquery_thread-0.sql ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_PRI_ENGINE}.sql 2>&1 | tee -a /${WORKDIR}/pquery-run.log
             mv ${RUNDIR}/${TRIAL}/pquery_thread-0.out ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_PRI_ENGINE}.out 2>&1 | tee -a /${WORKDIR}/pquery-run.log
           else
-            ${PQUERY_BIN} ${SQL_FILE_1} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --log-client-output --user=root --log-query-number --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery1.log 2>&1
+            ${PQUERY_BIN} --infile=${SQL_FILE_1} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --log-client-output --user=root --log-query-number --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery1.log 2>&1
             PQPID="$!"
             mv ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_PRI_ENGINE}.sql 2>&1 | tee -a /${WORKDIR}/pquery-run.log
             mv ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.out ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_PRI_ENGINE}.out 2>&1 | tee -a /${WORKDIR}/pquery-run.log
           fi
           echoit "Starting Secondary pquery run for engine ${QC_SEC_ENGINE} (log stored in ${RUNDIR}/${TRIAL}/pquery2.log)..."
           if [ ${QUERY_CORRECTNESS_MODE} -ne 2 ]; then
-            ${PQUERY_BIN} ${SQL_FILE_2} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --user=root --socket=${RUNDIR}/${TRIAL}/socket2.sock > ${RUNDIR}/${TRIAL}/pquery2.log 2>&1
+            ${PQUERY_BIN} --infile=${SQL_FILE_2} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --user=root --socket=${RUNDIR}/${TRIAL}/socket2.sock > ${RUNDIR}/${TRIAL}/pquery2.log 2>&1
             PQPID2="$!"
             mv ${RUNDIR}/${TRIAL}/pquery_thread-0.sql ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_SEC_ENGINE}.sql 2>&1 | tee -a /${WORKDIR}/pquery-run.log
             mv ${RUNDIR}/${TRIAL}/pquery_thread-0.out ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_SEC_ENGINE}.out 2>&1 | tee -a /${WORKDIR}/pquery-run.log
             grep -o "CHANGED: [0-9]\+" ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_PRI_ENGINE}.sql > ${RUNDIR}/${TRIAL}/${QC_PRI_ENGINE}.result
             grep -o "CHANGED: [0-9]\+" ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_SEC_ENGINE}.sql > ${RUNDIR}/${TRIAL}/${QC_SEC_ENGINE}.result
           else
-            ${PQUERY_BIN} ${SQL_FILE_2} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --log-client-output --user=root --log-query-number --socket=${RUNDIR}/${TRIAL}/socket2.sock > ${RUNDIR}/${TRIAL}/pquery2.log 2>&1
+            ${PQUERY_BIN} --infile=${SQL_FILE_2} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --log-client-output --user=root --log-query-number --socket=${RUNDIR}/${TRIAL}/socket2.sock > ${RUNDIR}/${TRIAL}/pquery2.log 2>&1
             PQPID2="$!"
             mv ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_SEC_ENGINE}.sql 2>&1 | tee -a /${WORKDIR}/pquery-run.log
             mv ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.out ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_SEC_ENGINE}.out 2>&1 | tee -a /${WORKDIR}/pquery-run.log
@@ -1851,12 +1865,12 @@ pquery_test() {
         else
           ## TODO: Add QUERY_CORRECTNESS_MODE checks (as seen above) to the code below also. FTM, the code below only does "changed rows" comparison
           echoit "Starting Primary pquery run for engine ${QC_PRI_ENGINE} (log stored in ${RUNDIR}/${TRIAL}/pquery1.log)..."
-          ${PQUERY_BIN} ${SQL_FILE_1} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery1.log 2>&1
+          ${PQUERY_BIN} --infile=${SQL_FILE_1} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery1.log 2>&1
           PQPID="$!"
           mv ${RUNDIR}/${TRIAL}/pquery_thread-0.sql ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_PRI_ENGINE}.sql 2>&1 | tee -a /${WORKDIR}/pquery-run.log
           grep -o "CHANGED: [0-9]\+" ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_PRI_ENGINE}.sql > ${RUNDIR}/${TRIAL}/${QC_PRI_ENGINE}.result
           echoit "Starting Secondary pquery run for engine ${QC_SEC_ENGINE} (log stored in ${RUNDIR}/${TRIAL}/pquery2.log)..."
-          ${PQUERY_BIN} ${SQL_FILE_2} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --user=root --socket=${SOCKET2} > ${RUNDIR}/${TRIAL}/pquery2.log 2>&1
+          ${PQUERY_BIN} --infile=${SQL_FILE_2} --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --user=root --socket=${SOCKET2} > ${RUNDIR}/${TRIAL}/pquery2.log 2>&1
           PQPID2="$!"
           mv ${RUNDIR}/${TRIAL}/pquery_thread-0.sql ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_SEC_ENGINE}.sql 2>&1 | tee -a /${WORKDIR}/pquery-run.log
           grep -o "CHANGED: [0-9]\+" ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_SEC_ENGINE}.sql > ${RUNDIR}/${TRIAL}/${QC_SEC_ENGINE}.result
@@ -1896,8 +1910,9 @@ pquery_test() {
               ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1 &
             fi
             # Standard/default (non-GRP-RPL non-Galera non-Query-duration-testing) pquery run
-            ## Check pre-shuffle directory
-            if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+            ## Pre-shuffle (if activated)
+            if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
+              ## Check pre-shuffle directory
               if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
                 echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
                 mkdir -p "${PRE_SHUFFLE_SQL}"
@@ -1906,9 +1921,6 @@ pquery_test() {
                   PRE_SHUFFLE_SQL=0
                 fi
               fi
-            fi 
-            ## Pre-shuffle (if activated)
-            if [ "${PRE_SHUFFLE_SQL}" == "1" -o "${PRE_SHUFFLE_SQL}" == "2" ]; then
               PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
               if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
                 mkdir -p "${PRE_SHUFFLE_DIR}"
@@ -1927,7 +1939,7 @@ pquery_test() {
                   else  # SQL_FILTER=1
                     shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')" > ${INFILE_SHUFFLED}
                   fi
-                  echoit "Obtaining the PRE_SHUFFLE_SQL=1 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+                  echoit "Obtaining the PRE_SHUFFLE_SQL=1 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
                 elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
                   ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables|^#|^\-\-|^let|^ |^)|^c[0-9]\+ |^[0-9]|^[a-z] |^[0-9])|^\([0-9]|^\('|^'"
                   touch ${INFILE_SHUFFLED}
@@ -1941,7 +1953,7 @@ pquery_test() {
                   ${INFILE_SHUFFLED}.sh
                   rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
                   PRE_SHUFFLE_RES_SQL_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-                  echoit "Obtaining the PRE_SHUFFLE_SQL=2 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds, and the final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_SQL_LINES} lines"
+                  echoit "Obtaining the PRE_SHUFFLE_SQL=2 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_SQL_LINES} lines"
                 else
                   echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
                   exit 1
@@ -2081,7 +2093,6 @@ EOF
       fi
     else
       # Multi-threaded run using a chunk from INFILE (${THREADS} clients)
-      # TODO: expand this code to enable PRE_SHUFFLE_SQL=1 and PRE_SHUFFLE_SQL=2 functionality for multi-thread runs also
       if [ ${PQUERY3} -eq 1 ]; then
         if [ "${TRIAL}" == "1" ]; then
           echoit "Creating metadata randomly using random seed ${SEED} ..."
@@ -2103,11 +2114,78 @@ EOF
         $CMD >> ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
         PQPID="$!"
       else
-        echoit "Taking ${MULTI_THREADED_TESTC_LINES} lines randomly from ${INFILE} as testcase for this multi-threaded trial..."
-        shuf --random-source=/dev/urandom ${INFILE} | head -n${MULTI_THREADED_TESTC_LINES} > ${RUNDIR}/${TRIAL}/${TRIAL}.sql
-        SQL_FILE="--infile=${RUNDIR}/${TRIAL}/${TRIAL}.sql"
+-------------
+        ## Pre-shuffle (if activated)
+        if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
+          ## Check pre-shuffle directory
+          if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+            echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
+            mkdir -p "${PRE_SHUFFLE_SQL}"
+            if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+              echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is going wrong"
+              PRE_SHUFFLE_SQL=0
+            fi
+          fi
+          PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
+          if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+            mkdir -p "${PRE_SHUFFLE_DIR}"
+            echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
+          fi
+          if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
+            local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
+            INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
+            WORKNRDIR=
+            echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES}+ lines of SQL into ${INFILE_SHUFFLED} Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+            PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
+            RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
+            if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+              if [[ ${FILTER_SQL} -eq 0 ]]; then
+                shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
+              else  # SQL_FILTER=1
+                shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')" > ${INFILE_SHUFFLED}
+              fi
+              echoit "Obtaining the PRE_SHUFFLE_SQL=1 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
+            elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
+              ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|dbg_|_dbg|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|for |=-1|oracle|track_system_variables|^#|^\-\-|^let|^ |^)|^c[0-9]\+ |^[0-9]|^[a-z] |^[0-9])|^\([0-9]|^\('|^'"
+              touch ${INFILE_SHUFFLED}
+              rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
+              if [[ ${FILTER_SQL} -eq 0 ]]; then
+                find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+              else
+                find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+              fi
+              chmod +x ${INFILE_SHUFFLED}.sh
+              ${INFILE_SHUFFLED}.sh
+              rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
+              PRE_SHUFFLE_RES_SQL_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
+              echoit "Obtaining the PRE_SHUFFLE_SQL=2 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds, and the final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_SQL_LINES} lines"
+            else
+              echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
+              exit 1
+            fi
+            PRE_SHUFFLE_DUR_START=
+            if [ ! -z "${PRE_SHUFFLE_ENGINE_SWAP}" ]; then
+              PRE_SHUFFLE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
+              echoit "PRE_SHUFFLE_ENGINE_SWAP=1 Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
+              sed -i "s|InnoDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Aria|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|BLACKHOLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDBcluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|SEQUENCE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDBCluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CSV|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|TokuDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORY|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|ARCHIVE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CASSANDRA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CONNECT|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|EXAMPLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FALCON|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|HEAP|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|${PRE_SHUFFLE_ENGINE_SWAP}cluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MARIA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MERGE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Spider|${PRE_SHUFFLE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
+              echoit "PRE_SHUFFLE_ENGINE_SWAP=1: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_ENGINE_SWAP_DUR_START} ] seconds"
+              PRE_SHUFFLE_ENGINE_SWAP_DUR_START=
+            fi
+          else
+            echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_SQL_LINES} lines) Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+          fi
+          if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
+            PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
+          fi
+          echoit "Taking ${MULTI_THREADED_TESTC_LINES} lines randomly from the pre-shuffled SQL as testcase for this multi-threaded trial"
+          shuf --random-source=/dev/urandom ${INFILE_SHUFFLED} | head -n${MULTI_THREADED_TESTC_LINES} > ${RUNDIR}/${TRIAL}/${TRIAL}.sql
+        else
+          echoit "Taking ${MULTI_THREADED_TESTC_LINES} lines randomly from ${INFILE} as testcase for this multi-threaded trial"
+          shuf --random-source=/dev/urandom ${INFILE} | head -n${MULTI_THREADED_TESTC_LINES} > ${RUNDIR}/${TRIAL}/${TRIAL}.sql
+        fi
+        SQL_FILE="${RUNDIR}/${TRIAL}/${TRIAL}.sql"  # In contrast with single threaded runs, we want to save the input SQL file as it may be easier to reproduce from the original multi-threaded input SQL (which can be reduced and/or replayed in various ways including the multi* scripts as generated by startup.sh in BASEDIR's) than from the queries logged by pquery (per thread), though neither is a given. Reducer.sh will handle various scenario's as well depending on how it is setup per-reduction.
         if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
-          ${PQUERY_BIN} ${SQL_FILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+          ${PQUERY_BIN} --infile=${SQL_FILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
           PQPID="$!"
         else
           if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
@@ -2118,7 +2196,7 @@ EOF
             ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
             PQPID="$!"
           else
-            ${PQUERY_BIN} ${SQL_FILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+            ${PQUERY_BIN} --infile=${SQL_FILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
             PQPID="$!"
           fi
         fi
