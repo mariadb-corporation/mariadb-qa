@@ -9,6 +9,8 @@ if [ -r ./bin/mariadbd ]; then BIN='./bin/mariadbd';
 elif [ -r ./bin/mysqld ]; then BIN='./bin/mysqld';
 elif [ -r ../mysqld/mariadbd ]; then BIN='../mysqld/mariadbd'; 
 elif [ -r ../mysqld/mysqld ]; then BIN='../mysqld/mysqld'; 
+elif [ -r ../bin/mariadbd ]; then BIN='../bin/mariadbd';  # For MTR
+elif [ -r ../bin/mysqld ]; then BIN='../bin/mysqld';  # For MTR
 else echo "Assert: mariadbd nor mysqld found!" exit 1; fi
 
 if [ -r "${SCRIPT_PWD}/source_code_rev.sh" ]; then
@@ -50,6 +52,9 @@ else
   CORE_COUNT=$(ls --color=never data*/*core* 2>/dev/null | wc -l)
 fi
 if [ ${CORE_COUNT} -eq 0 ]; then
+  CORE_COUNT=$(ls --color=never var/[0-9]*/log/main.test-innodb/mysqld.*/data/*core* 2>/dev/null | wc -l)
+fi
+if [ ${CORE_COUNT} -eq 0 ]; then
   echo "INFO: no cores found at data*/*core* nor at node*/*core*"
   exit 1
 elif [ ${CORE_COUNT} -gt 1 ]; then
@@ -72,11 +77,15 @@ if [ ! -z "${ERROR_LOG}" ]; then
   fi
 fi
 
+# Note that no 'head -n1' or similar is needed here, as the script will terminate if >1 core is found (ref code above)
 LATEST_CORE=
 if [ "${MDG}" -eq 1 ]; then
   LATEST_CORE="$(ls -t --color=never node*/*core* 2>/dev/null)"
 else
   LATEST_CORE="$(ls -t --color=never data*/*core* 2>/dev/null)"
+fi
+if [ -z "${LATEST_CORE}" ]; then
+  LATEST_CORE="$(ls -t --color=never var/[0-9]*/log/main.test-innodb/mysqld.*/data/*core* 2>/dev/null)"
 fi
 
 gdb -q ${BIN} ${LATEST_CORE} >/tmp/${RANDF}.gdba 2>&1 << EOF

@@ -55,6 +55,9 @@ while :; do
     cd - >/dev/null
     # Check process list for any datadir=/dev/shm/16... and if found check if such directory is present. If not, terminate any processes associated with the non-existing directory. This command assist greatly in overall server memory management
     ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi 'grep|fireworks|cc|clang'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null  # Improved version, fireworks protection
+    # Cleanup any processes which are still live yet the /dev/shm workdir was already deleted (these two commands are additional/complimentary to the one above. The final one uses nsenter as an improved method of killing processes associated with the kernel's init process (pid 1) which cannot be terminated with kill -9
+    ps -ef | grep -o '/dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | sort -u | xargs -I{} echo "if [ ! -d '{}' ]; then ps -ef | grep '{}' | grep -vEi 'grep|fireworks|cc|clang' | awk '{print \$2}' | xargs -I_ kill -9 _; fi;" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+    ps -ef | grep -o '/dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | sort -u | xargs -I{} echo "if [ ! -d '{}' ]; then ps -ef | grep '{}' | grep -vEi 'grep|fireworks|cc|clang' | awk '{print \$2}' | xargs -I_ sudo nsenter -t _ -m -u -i -n kill -9 _; fi;" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
     # Cleanup known bugs from fuzzing
     if [ -r /home/$(whoami)/fuzzing/del_known_bugs ]; then
       CURPWD="${PWD}"
