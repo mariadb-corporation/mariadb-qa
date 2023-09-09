@@ -41,6 +41,7 @@ elif [[ "${PWD}" != *"SAN"* && "${1}" == "SAN" ]]; then
   sleep 3
 elif [[ "${PWD}" == *"SAN"* && "${1}" == "REPL" ]]; then
   echo "Warning: you are starting '~/b repl' from a SAN basedir. Do you maybe want to use '~/bs' instead?"
+  echo "Additionally, this mode has not been tested and likely does not function correctly yet"  #TODO
   echo "Pausing 3 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
   echo ''
   sleep 3
@@ -93,6 +94,7 @@ else
   export TEXT="BBB"  # A dummy string to let findbug+ know we want to scan for a set of strings to establish crashes
   rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   if [ "${1}" == "REPL" ]; then
+    MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|REPL||')"
     ~/mariadb-qa/bug_report.sh REPL ${MYEXTRA_OPT} | tee report.log
   else
     ~/mariadb-qa/bug_report.sh ${MYEXTRA_OPT} | tee report.log

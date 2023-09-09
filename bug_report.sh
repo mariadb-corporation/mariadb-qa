@@ -221,7 +221,7 @@ if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then
   elif [ "${1}" == "GAL" ]; then
     CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh GAL | xargs -I{} echo "ls {}/node1/*core* 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
   else
-    CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh | xargs -I{} echo "ls {}/data/*core* 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh | xargs -I{} echo "ls {}/data*/*core* 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
   fi
 else
   if [ "${1}" == "SAN" ]; then
@@ -255,13 +255,16 @@ if [ "${1}" == "GAL" ]; then
   CORE_COUNT=$(ls node1/*core* 2>/dev/null | wc -l)
   CORE_FILE=$(ls node1/*core* 2>/dev/null | head -1)
 else
-  CORE_COUNT=$(ls data/*core* 2>/dev/null | wc -l)
-  CORE_FILE=$(ls data/*core* 2>/dev/null | head -1)
+  CORE_COUNT=$(ls data*/*core* 2>/dev/null | wc -l)
+  CORE_FILE=$(ls data*/*core* 2>/dev/null | head -1)
 fi
 if [ ${CORE_COUNT} -eq 0 ]; then
-  echo "INFO: no cores found at data/*core*"
-elif [ ${CORE_COUNT} -gt 1 ]; then
-  echo "Assert: too many (${CORE_COUNT}) cores found at data/*core*, this should not happen (as ./all_no_cl was used which should have created a clean data directory)"
+  echo "INFO: no cores found at data*/*core*"
+elif [ ${CORE_COUNT} -gt 1 -a "${REPL_MODE}" -eq 0 ]; then
+  echo "Assert: too many (${CORE_COUNT}) cores found at data*/*core*, this should not happen (as ./all_no_cl was used which should have created a clean data directory). A maximum of 1 core should be present."
+  exit 1
+elif [ ${CORE_COUNT} -gt 2 -a "${REPL_MODE}" -eq 1 ]; then
+  echo "Assert: too many (${CORE_COUNT}) cores found at data*/*core*, this should not happen (as ./start_replication was used which should have created a clean data directory). A maximum of 2 cores (master+slave) should be present."
   exit 1
 else
   # set print array on
