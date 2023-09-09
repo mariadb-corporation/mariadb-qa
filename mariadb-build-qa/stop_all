@@ -10,7 +10,6 @@ elif [ "${1}" == "SAN" ]; then
 elif [ "${1}" == "REPL" ]; then
   ./gendirs.sh | xargs -I{} echo "cd {}; ./stop_replication >/dev/null 2>&1; ./kill_replication >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
 else
-else
   ./gendirs.sh | xargs -I{} echo "cd {}; ./stop >/dev/null 2>&1; ./kill >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
 fi
 
