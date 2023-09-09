@@ -168,6 +168,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### CURRENT BUGS ##### Search key: Mac ###
 role == *(ACL_ROLE**)pop|SIGABRT|undo_add_role_user_mapping|mysql_grant_role|mysql_execute_command|mysql_parse                                                                 ## MDEV-32095
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|Item_str_func::fix_fields|Virtual_column_info::fix_expr|Virtual_column_info::fix_session_expr                             ## MDEV-32094
+used_tables_cache == 0|SIGABRT|Item_func::fix_fields|Item_str_func::fix_fields|Item_json_str_multipath::fix_fields|Item::fix_fields_if_needed                                  ## MDEV-32094
 !strcmp(&path[strlen(path) - strlen(dot_ext[IBD])], dot_ext[IBD])|SIGABRT|mtr_t::log_file_op|fil_name_write|fil_names_clear|log_checkpoint_low                                 ## MDEV-32089
 !keyread_enabled()|SIGABRT|handler::ha_start_keyread|find_key_for_maxmin|opt_sum_query|JOIN::optimize_inner                                                                    ## MDEV-32087
 name == rdb_xid_to_string(xid)|SIGABRT|myrocks::Rdb_transaction_impl::set_name|myrocks::rocksdb_register_tx|myrocks::ha_rocksdb::start_stmt|check_lock_and_start_stmt          ## MDEV-32062

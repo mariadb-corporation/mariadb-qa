@@ -86,7 +86,7 @@ NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (ot
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
 RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
 RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces rather than only the final one
-PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause reducer after each successful issue occurence
+PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause reducer after each successful issue occurence (other search keywords: stop, halt, kill)
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -1241,6 +1241,7 @@ multi_reducer(){
       | sed "0,/#VARMOD#/s:#VARMOD#:PQUERY_MULTI_QUERIES=$PQUERY_MULTI_QUERIES\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:TS_TRXS_SETS=$TS_TRXS_SETS\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:TS_DBG_CLI_OUTPUT=$TS_DBG_CLI_OUTPUT\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:PAUSE_AFTER_EACH_OCCURENCE=\"$PAUSE_AFTER_EACH_OCCURENCE\"\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:BASEDIR=\"$BASEDIR\"\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:MYPORT=\"$MULTI_MYPORT\"\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:MYUSER=\"$MYUSER\"\n#VARMOD#:" > $MULTI_WORKD/subreducer

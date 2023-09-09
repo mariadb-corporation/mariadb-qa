@@ -44,15 +44,34 @@ SHORTER_STOP_TIME=23   # TODO: this can be improved. Likely setting this smaller
 
 MYEXTRA_OPT="$*"
 NOCORE=0
-if [ "${1}" == "SAN" ]; then
+SAN_MODE=0
+GAL_MODE=0
+REPL_MODE=0
+if [ "${1}" == "GAL" ]; then
+  # TODO: this section seems to need more (ref sections below)
+  GAL_MODE=1
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
+elif [ "${1}" == "SAN" ]; then
   if [ -z "${TEXT}" ]; then   # Passed normally by ~/b preloader/wrapper sript
     echo "Assert: TEXT is empty, use export TEXT= to set it!"
     exit 1
   else
     echo "NOTE: SAN Mode: Looking for '${TEXT}' in the error log to validate issue occurence."
   fi
-  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
   SAN_MODE=1
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
+elif [ "${1}" == "REPL" ]; then
+  if [ -z "${TEXT}" ]; then   # Passed normally by ~/br preloader/wrapper sript
+    echo "Assert: TEXT is empty, but BBB was expected. TODO: add 'export TEXT=...' support for replication"
+    exit 1
+  elif [ "${TEXT}" != "BBB" ]; then
+    echo "Assert: TEXT is set to '${TEXT}', but BBB was expected. TODO: add 'export TEXT=...' support for replication"
+    exit 1
+  else  # BBB
+    echo "NOTE: Looking for crashes/asserts in the master+slave error logs as well as core files to validate issue occurence."
+  fi
+  REPL_MODE=1
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|REPL||')"
 else
   if [ -z "${TEXT}" ]; then
     echo "NOTE: TEXT is empty; looking for corefiles, and not specific strings in the error log!"
@@ -74,16 +93,23 @@ if [ ! -r bin/mysqld ]; then
   exit 1
 fi
 
-if [ "${1}" == "GAL" ]; then
+if [ "${GAL_MODE}" -eq 1 ]; then
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
   if [ ! -r ./gal_no_cl ]; then  # Local
       echo "Assert: ./gal_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
       exit 1
   fi
 else
-  if [ ! -r ./all_no_cl ]; then  # Local
-    echo "Assert: ./all_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
-    exit 1
+  if [ "${REPL_MODE}" -eq 1 ]; then
+    if [ ! -r ./start_replication ]; then  # Local
+      echo "Assert: ./start_replication not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
+      exit 1
+    fi
+  else
+    if [ ! -r ./all_no_cl ]; then  # Local
+      echo "Assert: ./all_no_cl not available, please run this from a basedir which was prepared with ${SCRIPT_PWD}/startup.sh"
+      exit 1
+    fi
   fi
 fi
 
@@ -138,7 +164,11 @@ test_san_build(){
   if [ ! -r ./start ]; then
     ~/start >/dev/null 2>&1
   fi
-  ./all_no_cl ${MYEXTRA_OPT_CLEANED} >/dev/null 2>&1
+  if [ "${REPL_MODE}" -eq 1 ]; then
+    ./start_replication ${MYEXTRA_OPT_CLEANED} >/dev/null 2>&1
+  else
+    ./all_no_cl ${MYEXTRA_OPT_CLEANED} >/dev/null 2>&1
+  fi
   ./test_pquery >/dev/null 2>&1
   ./stop >/dev/null 2>&1
   sleep 1
@@ -162,19 +192,23 @@ REDIRECT=">/dev/null 2>&1"
 if [ "${DEBUG_OUTPUT}" -eq 1 ]; then
   REDIRECT=
 fi
-if [ "${1}" == "SAN" ]; then
+if [ "${SAN_MODE}" -eq 1 ]; then
   ./test_all SAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
-elif [ "${1}" == "GAL" ]; then
+elif [ "${GAL_MODE}" -eq 1 ]; then
   ./test_all GAL ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
+elif [ "${REPL_MODE}" -eq 1 ]; then
+  ./test_all REPL ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 else
   ./test_all ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 fi
 echo "Ensuring all servers are gone..."
 sync
-if [ "${1}" == "SAN" ]; then
+if [ "${SAN_MODE}" -eq 1 ]; then
   ./kill_all SAN ${REDIRECT}
-elif [ "${1}" == "GAL" ]; then
+elif [ "${GAL_MODE}" -eq 1 ]; then
   ./kill_all GAL ${REDIRECT}
+elif [ "${REPL_MODE}" -eq 1 ]; then
+  ./kill_all REPL ${REDIRECT}
 else
   ./kill_all ${REDIRECT}  # NOTE: Can not be executed as ../kill_all as it requires ./gendirs.sh
 fi
@@ -392,7 +426,11 @@ if [ "${1}" == "SAN" ]; then
 elif [ "${1}" == "GAL" ]; then
   echo "TOTAL GALERA CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 else
-  echo "TOTAL CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
+  if [ "${BR_REPLICATION_START}" -eq 1 ]; then
+    echo "TOTAL CORES SEEN ACCROSS ALL VERSIONS (MASTERS+SLAVES): ${CORE_OR_TEXT_COUNT_ALL}"
+  else
+    echo "TOTAL CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
+  fi
 fi
 if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then
   if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then

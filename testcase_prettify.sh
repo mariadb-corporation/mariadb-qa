@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
 # TCP = Test Case Prettify
@@ -34,6 +34,9 @@ cat "${1}" | tr -d '`' | \
        s|lead|LEAD|gi; \
        s|analyse|ANALYSE|gi; \
        s|do |DO |gi; \
+       s|sqlexception |SQLEXCEPTION |gi; \
+       s|continue |CONTINUE |gi; \
+       s|until |UNTIL |gi; \
        s|public|PUBLIC|gi; \
        s|round|ROUND|gi; \
        s|convert|CONVERT|gi; \
@@ -99,6 +102,7 @@ cat "${1}" | tr -d '`' | \
        s|dayname|DAYNAME|gi; \
        s|begin|BEGIN|gi; \
        s|end|END|gi; \
+       s|end if|END IF|gi; \
        s|ends|ENDS|gi; \
        s|work|WORK|gi; \
        s|rollback|ROLLBACK|gi; \
@@ -264,7 +268,6 @@ cat "${1}" | tr -d '`' | \
        s|archive|ARCHIVE|gi; \
        s|values|VALUES|gi; \
        s|against|AGAINST|gi; \
-       s|row_format|ROW_FORMAT|gi; \
        s|key_block_size|KEY_BLOCK_SIZE|gi; \
        s|compressed|COMPRESSED|gi; \
        s|InnoDB_|innodb_|g; \
@@ -393,6 +396,7 @@ cat "${1}" | tr -d '`' | \
        s| \+| |g; \
        s|'IN |' IN |gi; \
        s|AND(|AND (|gi; \
+       s|floor|FLOOR|gi; \
        s|LEFT *(|LEFT(|gi; \
        s|RIGHT *(|RIGHT(|gi; \
        s|CONV *(|CONV(|gi; \
@@ -455,8 +459,10 @@ cat "${1}" | tr -d '`' | \
        s|cast[ ]*(|CAST(|gi; \
        s|mid[ ]*(|MID(|gi; \
        s|row[ ]*(|ROW(|gi; \
+       s|row_format|ROW_FORMAT|gi; \
        s|srv \"srv\"|SERVER \"s\"|gi;s|SERVER \"srv\"|SERVER \"s\"|gi;s|SERVER srv |SERVER s |gi; \
        s|srv 'srv'|SERVER 's'|gi;s|SERVER 'srv'|SERVER 's'|gi;s|SERVER srv |SERVER s |gi; \
+       s|DELIMITER;|DELIMITER ;|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 
 # Templates for copy/paste
