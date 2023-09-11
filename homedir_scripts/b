@@ -82,7 +82,7 @@ elif [ "${1}" == "GAL" ]; then
   #export TEXT=""  # Look for corefiles (does not work perfectly, ref next line)
   # New test as of 3/11/20: ensure we're looking for 'signal' (of 'got signal'), as cores do not always seem to be generated in MD (long standing issue, source unclear)
   # Note 1/05/21: the reason this still works correctly for Galera is that the Galera build scripts do not have the build code patches for core dumps yet. Thus, "mysqld got signal" or "signal" would likely work fine at all times. Ref below in non-Galera section for more on this. Ideally this would be changed to look for all issues by using "BBB". < TODO
-  export TEXT="mysqld got signal"  
+  export TEXT="BBB"  
   #rm -Rf ../*/data.PREV  # Avoid data.PREV cores from being picked up and save disk space
   ~/mariadb-qa/bug_report.sh GAL ${MYEXTRA_OPT} | tee report.log
   if [ "${PIPESTATUS[0]}" -eq 1 ]; then
