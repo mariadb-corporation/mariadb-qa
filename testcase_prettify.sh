@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
 # TCP = Test Case Prettify
@@ -25,6 +25,7 @@ cat "${1}" | tr -d '`' | \
        s|rollup|ROLLUP|gi; \
        s|execute|EXECUTE|gi; \
        s|index|INDEX|g; \
+       s|leaves|LEAVES|g; \
        s|immediate|IMMEDIATE|g; \
        s|reverse|REVERSE|gi; \
        s|hex|HEX|gi; \
