@@ -48,7 +48,15 @@ SAN_MODE=0
 GAL_MODE=0
 REPL_MODE=0
 if [ "${1}" == "GAL" ]; then
-  # TODO: this section seems to need more (ref sections below)
+  if [ -z "${TEXT}" ]; then   # Passed normally by ~/br preloader/wrapper sript
+    echo "Assert: TEXT is empty, but BBB was expected. TODO: add 'export TEXT=...' support for Galera Cluster"
+    exit 1
+  elif [ "${TEXT}" != "BBB" ]; then
+    echo "Assert: TEXT is set to '${TEXT}', but BBB was expected. TODO: add 'export TEXT=...' support for Galera Cluster"
+    exit 1
+  else  # BBB
+    echo "NOTE: Looking for crashes/asserts in the galera node error logs as well as core files to validate issue occurence."
+  fi
   GAL_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
 elif [ "${1}" == "SAN" ]; then
