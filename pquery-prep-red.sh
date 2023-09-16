@@ -807,9 +807,9 @@ if [ ${QC} -eq 0 ]; then
             INPUTFILE=${WORKD_PWD}/${TRIAL}/${TRIAL}-${SUBDIR}.sql
           fi
         fi
-        BIN=`ls -1 ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/mysqld 2>&1 | head -n1 | grep -v "No such file"`
+        BIN="$(ls -1 ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/mariadbd ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/mysqld 2>&1 | head -n1 | grep -v 'No such file')"
         if [ ! -r $BIN ]; then
-          echo "Assert! mysqld binary '$BIN' could not be read"
+          echo "Assert! mariadbd/mysqld binary '$BIN' could not be read"
           exit 1
         fi
         if [ `ls ./pquery-run.log 2>/dev/null | wc -l` -eq 0 ]; then
@@ -920,16 +920,19 @@ if [ ${QC} -eq 0 ]; then
         else
           INPUTFILE=`echo ${SQLLOG} | sed "s|^[./]\+|/|;s|^|${WORKD_PWD}|"`
         fi
-        BIN=$(grep "\/mysqld" ./${TRIAL}/start | head -n1 | sed 's|mysqld .*|mysqld|;s|.* \(.*bin/mysqld\)|\1|')
-        if [ "${BIN}" == "" ]; then
-          echo "Assert \$BIN is empty for trial $TRIAL, please fix this trial manually"
-          continue
+        BIN=$(grep "\/mariadbd" ./${TRIAL}/start | head -n1 | sed 's|mariadbd .*|mariadbd|;s|.* \(.*bin/mariadbd\)|\1|')
+        if [ -z "${BIN}" ]; then
+          BIN=$(grep "\/mysqld" ./${TRIAL}/start | head -n1 | sed 's|mysqld .*|mysqld|;s|.* \(.*bin/mysqld\)|\1|')
+          if [ -z "${BIN}" ]; then
+            echo "Assert \$BIN is empty for trial $TRIAL, please fix this trial manually"
+            continue
+          fi
         fi
         if [ ! -r "${BIN}" ]; then
-          echo "Assert! mysqld binary '${BIN}' could not be read"
+          echo "Assert! mariadbd/mysqld binary '${BIN}' could not be read"
           exit 1
         fi
-        BASE=`echo ${BIN} | sed 's|/bin/mysqld||'`
+        BASE=`echo ${BIN} | sed 's|/bin/mariadbd||;s|/bin/mysqld||'`
         if [ ! -d "${BASE}" ]; then
           echo "Assert! Basedir '${BASE}' does not look to be a directory"
           exit 1
@@ -1021,16 +1024,19 @@ if [ ${QC} -eq 0 ]; then
   fi
 else
   for TRIAL in $(ls ./*/diff.result 2>/dev/null | sed 's|./||;s|/.*||'); do
-    BIN=$(grep "\/mysqld" ./${TRIAL}/start | head -n1 | sed 's|mysqld .*|mysqld|;s|.* \(.*bin/mysqld\)|\1|')
-    if [ "${BIN}" == "" ]; then
-      echo "Assert \$BIN is empty"
-      exit 1
+    BIN=$(grep "\/mariadbd" ./${TRIAL}/start | head -n1 | sed 's|mariadbd .*|mariadbd|;s|.* \(.*bin/mariadbd\)|\1|')
+    if [ -z "${BIN}" ]; then
+      BIN=$(grep "\/mysqld" ./${TRIAL}/start | head -n1 | sed 's|mysqld .*|mysqld|;s|.* \(.*bin/mysqld\)|\1|')
+      if [ -z "${BIN}" ]; then
+        echo "Assert \$BIN is empty"
+        continue
+      fi
     fi
     if [ ! -r "${BIN}" ]; then
-      echo "Assert! mysqld binary '${BIN}' could not be read"
+      echo "Assert! mariadbd/mysqld binary '${BIN}' could not be read"
       exit 1
     fi
-    BASE=`echo ${BIN} | sed 's|/bin/mysqld||'`
+    BASE=`echo ${BIN} | sed 's|/bin/mariadbd||;s|/bin/mysqld||'`
     if [ ! -d "${BASE}" ]; then
       echo "Assert! Basedir '${BASE}' does not look to be a directory"
       exit 1

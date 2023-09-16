@@ -2168,9 +2168,9 @@ EOF
             PRE_SHUFFLE_DUR_START=
             if [ ! -z "${PRE_SHUFFLE_ENGINE_SWAP}" ]; then
               PRE_SHUFFLE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
-              echoit "PRE_SHUFFLE_ENGINE_SWAP=1 Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
+              echoit "PRE_SHUFFLE_ENGINE_SWAP Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
               sed -i "s|InnoDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Aria|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|BLACKHOLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDBcluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|SEQUENCE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDBCluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CSV|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|TokuDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORY|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|ARCHIVE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CASSANDRA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CONNECT|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|EXAMPLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FALCON|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|HEAP|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|${PRE_SHUFFLE_ENGINE_SWAP}cluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MARIA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MERGE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FEDERATED|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|\$engine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NonExistentEngine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Spider|${PRE_SHUFFLE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
-              echoit "PRE_SHUFFLE_ENGINE_SWAP=1: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_ENGINE_SWAP_DUR_START} ] seconds"
+              echoit "PRE_SHUFFLE_ENGINE_SWAP Active: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_ENGINE_SWAP_DUR_START} ] seconds"
               PRE_SHUFFLE_ENGINE_SWAP_DUR_START=
             fi
           else

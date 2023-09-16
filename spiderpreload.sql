@@ -1,8 +1,8 @@
 INSTALL PLUGIN spider SONAME 'ha_spider.so';
-CREATE USER spider@localhost IDENTIFIED BY 'PWD123';
+CREATE USER spider@localhost IDENTIFIED BY '';
 GRANT ALL ON test.* TO spider@localhost;
 FLUSH PRIVILEGES;
-CREATE server srv FOREIGN DATA wrapper mysql options (socket '../socket.sock', DATABASE 'test', USER 'spider', PASSWORD 'PWD123');
+CREATE server srv FOREIGN DATA wrapper mysql options (socket '../socket.sock', DATABASE 'test', USER 'spider', PASSWORD '');
 CREATE TABLE t (c INT PRIMARY KEY,c1 BLOB, c2 TEXT) ENGINE=InnoDB;
 CREATE TABLE tm (c INT KEY,c1 BLOB, c2 TEXT) ENGINE=MyISAM;
 INSERT INTO t VALUES (0,NULL,'a'),(1,'B','b'),(2,0,'c');
