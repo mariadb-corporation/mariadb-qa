@@ -314,10 +314,10 @@ add_handy_scripts(){
 }
 
 # Find mysqld binary
-if [ -r ${BASEDIR}/bin/mysqld ]; then
-  BIN=${BASEDIR}/bin/mysqld
-elif [ -r ${BASEDIR}/bin/mariadbd ]; then
+if [ -r ${BASEDIR}/bin/mariadbd ]; then
   BIN=${BASEDIR}/bin/mariadbd
+elif [ -r ${BASEDIR}/bin/mysqld ]; then
+  BIN=${BASEDIR}/bin/mysqld
 else
   # Check if this is a debug build by checking if debug string is present in dirname
   if [[ ${BASEDIR} = *debug* ]]; then
@@ -406,6 +406,9 @@ elif [ "${PRE_SHUFFLE_SQL}" -eq 2 ]; then
   echoit "PRE_SHUFFLE_SQL Active: YES, MODE 2 (Pre-shuffle all SQL wherever found)"
 else
   echoit "PRE_SHUFFLE_SQL Active: YES, MODE ${PRE_SHUFFLE_SQL}"
+fi
+if [ ! -z "${PRE_SHUFFLE_ENGINE_SWAP}" ]; then
+  echoit "PRE_SHUFFLE_ENGINE_SWAP Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
 fi
 if [ "${PRELOAD}" == "1" ]; then
   echoit "PRELOAD SQL Active: (${PRELOAD_SQL} will be preloaded for all trials, and prepended to trial SQL traces"
@@ -1945,9 +1948,9 @@ pquery_test() {
                   touch ${INFILE_SHUFFLED}
                   rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
                   if [[ ${FILTER_SQL} -eq 0 ]]; then
-                    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
                   else
-                    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
                   fi 
                   chmod +x ${INFILE_SHUFFLED}.sh
                   ${INFILE_SHUFFLED}.sh
@@ -1961,9 +1964,9 @@ pquery_test() {
                 PRE_SHUFFLE_DUR_START=
                 if [ ! -z "${PRE_SHUFFLE_ENGINE_SWAP}" ]; then
                   PRE_SHUFFLE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
-                  echoit "PRE_SHUFFLE_ENGINE_SWAP=1 Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
-                  sed -i "s|InnoDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Aria|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|BLACKHOLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDBcluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|SEQUENCE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDBCluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CSV|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|TokuDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORY|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|ARCHIVE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CASSANDRA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CONNECT|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|EXAMPLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FALCON|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|HEAP|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|${PRE_SHUFFLE_ENGINE_SWAP}cluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MARIA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MERGE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Spider|${PRE_SHUFFLE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
-                  echoit "PRE_SHUFFLE_ENGINE_SWAP=1: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_ENGINE_SWAP_DUR_START} ] seconds"
+                  echoit "PRE_SHUFFLE_ENGINE_SWAP Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
+                  sed -i "s|InnoDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Aria|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|BLACKHOLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDBcluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|SEQUENCE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDBCluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CSV|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|TokuDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORY|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|ARCHIVE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CASSANDRA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CONNECT|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|EXAMPLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FALCON|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|HEAP|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|${PRE_SHUFFLE_ENGINE_SWAP}cluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MARIA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MERGE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FEDERATED|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|\$engine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NonExistentEngine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Spider|${PRE_SHUFFLE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
+                  echoit "PRE_SHUFFLE_ENGINE_SWAP: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_ENGINE_SWAP_DUR_START} ] seconds"
                   PRE_SHUFFLE_ENGINE_SWAP_DUR_START=
                 fi
               else
@@ -2055,9 +2058,9 @@ EOF
                     touch ${INFILE_SHUFFLED}
                     rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
                     if [[ ${FILTER_SQL} -eq 0 ]]; then
-                      find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                      find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
                     else
-                      find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                      find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
                     fi
                     chmod +x ${INFILE_SHUFFLED}.sh
                     ${INFILE_SHUFFLED}.sh
@@ -2149,9 +2152,9 @@ EOF
               touch ${INFILE_SHUFFLED}
               rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
               if [[ ${FILTER_SQL} -eq 0 ]]; then
-                find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
               else
-                find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+                find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}|$(grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | sed 's/[| \t]*$//g')\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
               fi
               chmod +x ${INFILE_SHUFFLED}.sh
               ${INFILE_SHUFFLED}.sh
@@ -2166,7 +2169,7 @@ EOF
             if [ ! -z "${PRE_SHUFFLE_ENGINE_SWAP}" ]; then
               PRE_SHUFFLE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
               echoit "PRE_SHUFFLE_ENGINE_SWAP=1 Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
-              sed -i "s|InnoDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Aria|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|BLACKHOLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDBcluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|SEQUENCE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDBCluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CSV|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|TokuDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORY|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|ARCHIVE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CASSANDRA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CONNECT|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|EXAMPLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FALCON|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|HEAP|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|${PRE_SHUFFLE_ENGINE_SWAP}cluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MARIA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MERGE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Spider|${PRE_SHUFFLE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
+              sed -i "s|InnoDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Aria|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|BLACKHOLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDBcluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|SEQUENCE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDBCluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CSV|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|TokuDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORY|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|ARCHIVE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CASSANDRA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CONNECT|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|EXAMPLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FALCON|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|HEAP|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|${PRE_SHUFFLE_ENGINE_SWAP}cluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MARIA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MERGE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FEDERATED|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|\$engine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NonExistentEngine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Spider|${PRE_SHUFFLE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
               echoit "PRE_SHUFFLE_ENGINE_SWAP=1: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_ENGINE_SWAP_DUR_START} ] seconds"
               PRE_SHUFFLE_ENGINE_SWAP_DUR_START=
             fi
@@ -2853,6 +2856,7 @@ fi
 
 # Get version specific options
 MID=
+if [ -r ${BASEDIR}/scripts/mariadb-install-db ]; then MID="${BASEDIR}/scripts/mariadb-install-db"; fi
 if [ -r ${BASEDIR}/scripts/mysql_install_db ]; then MID="${BASEDIR}/scripts/mysql_install_db"; fi
 if [ -r ${BASEDIR}/bin/mysql_install_db ]; then MID="${BASEDIR}/bin/mysql_install_db"; fi
 START_OPT="--core-file"                                  # Compatible with 5.6,5.7,8.0

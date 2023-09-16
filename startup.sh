@@ -81,6 +81,7 @@ if [ -z "${BIN}" ]; then
   exit 1
 fi
 MID=
+if [ -r ${BASEDIR}/scripts/mariadb-install-db ]; then MID="${BASEDIR}/scripts/mariadb-install-db"; fi
 if [ -r ${PWD}/scripts/mysql_install_db ]; then MID="${PWD}/scripts/mysql_install_db"; fi
 if [ -r ${PWD}/bin/mysql_install_db ]; then MID="${PWD}/bin/mysql_install_db"; fi
 START_OPT="--core-file"                        # Compatible with 5.6,5.7,8.0
