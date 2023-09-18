@@ -102,7 +102,7 @@ else
                       if [ -z "${SUBDIR}" ]; then  # No subdir, if directory exists, then it is empty
                         if [ -d ${DIR} ]; then
                           rm -f ${DIR}/mysqld  # TODO: research why this hack was needed. Is mysqld mistakingly being copied to /dev/shm instead of the workdir on /data ? yet, the mysqld is present in /data/same_nr/mysqld/mysqld. Check pquery-run.sh script for any copying of mysqld
-                          rmdir ${DIR}
+                          rmdir ${DIR}  # TODO: even with the above, sometimes rmdir cannot remove ${DIR} as it is not empty. Need to check what is still present whenever such message is seen in ~/ds output
                         else
                           echo "Assert: script saw directory ${DIR} yet was unable to find any subdir in it, please check the contents of ls -la ${DIR} and improve script in this area."
                           exit 1

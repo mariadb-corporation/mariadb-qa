@@ -224,6 +224,7 @@ cat "${1}" | tr -d '`' | \
        s|explain|EXPLAIN|gi; \
        s|extended|EXTENDED|gi; \
        s|date|DATE|gi; \
+       s|curdate|CURDATE|gi; \
        s|period|PERIOD|gi; \
        s|datetime|DATETIME|gi; \
        s|time|TIME|gi; \
