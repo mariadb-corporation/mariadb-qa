@@ -166,6 +166,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## MDEV-32194 
+SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
+MDEV-24912
 role == *(ACL_ROLE**)pop|SIGABRT|undo_add_role_user_mapping|mysql_grant_role|mysql_execute_command|mysql_parse                                                                 ## MDEV-32095
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|Item_str_func::fix_fields|Virtual_column_info::fix_expr|Virtual_column_info::fix_session_expr                             ## MDEV-32094
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|Item_str_func::fix_fields|Item_json_str_multipath::fix_fields|Item::fix_fields_if_needed                                  ## MDEV-32094
@@ -219,6 +222,7 @@ SIGSEGV|maria_rtree_insert|maria_update|handler::ha_update_row|mysql_update     
 SIGSEGV|maria_rtree_insert|maria_update|handler::ha_update_row|Sql_cmd_update::update_single_table                                                                             ## MDEV-31766
 SIGSEGV|maria_rtree_split_page|maria_rtree_add_key|maria_rtree_insert_req|maria_rtree_insert_level                                                                             ## MDEV-31766
 got_name == named_item_expected()|SIGABRT|Json_writer::on_start_object|Json_writer::start_object|Json_writer_object::Json_writer_object|Json_writer_object::Json_writer_object ## MDEV-31752
+size == rec_offs_size(*offsets)|SIGABRT|page_cur_tuple_insert|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                ## MDEV-31740
 field->col->is_dropped() || !field->col->mbmaxlen || len >= field->col->mbminlen * fixed_len / field->col->mbmaxlen|SIGABRT|rec_get_converted_size_comp_prefix_low<>dict0mem.h|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_insert ## MDEV-31740
 field->col->is_dropped() || !field->col->mbmaxlen || len >= field->col->mbminlen * fixed_len / field->col->mbmaxlen|SIGABRT|rec_get_converted_size_comp_prefix_low<>dict0mem.h|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_update ## MDEV-31740
 table->cols[j].len < req_schema->columns[i].len|SIGABRT|dict_table_schema_check|dict_stats_persistent_storage_check|dict_stats_exec_sql|dict_stats_delete_from_table_stats     ## MDEV-31740
@@ -1098,7 +1102,8 @@ m_thd == _current_thd()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_
 active()|SIGABRT|wsrep::transaction::assign_xid|wsrep::client_state::assign_xid|wsrep_assign_xid|trans_xa_start                                                                ## MENT-1111
 is_streaming() == false|SIGABRT|wsrep::transaction::cleanup|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement                     ## MENT-1110
 !thd->mdl_context.has_locks() || thd->transaction->xid_state.is_explicit_XA()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|pfs_spawn_thread               ## MENT-1109
-state() == s_executing || state() == s_prepared || state() == s_committing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans ## MDEV-24912
+SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
+state() == s_executing || state() == s_prepared || state() == s_committing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans ## MDEV-24912 NOW MDEV-32193
 0|SIGABRT|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const                                ## MDEV-24902
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command                                                                   ## MDEV-24814
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute                                                            ## MDEV-24814

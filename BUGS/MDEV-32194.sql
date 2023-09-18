@@ -1,0 +1,11 @@
+SET character_set_connection=ucs2;
+SET default_master_connection='MASTER1';
+CHANGE MASTER TO master_host='a';
+FLUSH RELAY LOGS;
+SET NAMES utf8,character_set_connection=utf32;
+SET default_master_connection='MASTER 2';
+CHANGE MASTER TO master_delay=0;
+SET SESSION default_master_connection='MASTER1';
+FLUSH logs;
+START ALL SLAVES;
+CHANGE MASTER TO master_use_gtid=no;
