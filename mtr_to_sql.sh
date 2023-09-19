@@ -13,7 +13,7 @@ fi
 # - This script no longer creates any RQG grammars; RQG use was deprecated in favor of pquery. For a historical still-working no-longer-maintained version, see mtr_to_sql_RQG.sh
 # - Current Filter list
 #   - Not scanning for "^REVOKE " commands as these drop access and this hinders CLI/pquery testing. However, REVOKE may work for RQG/yy (TBD)
-#   - egrep -vi Inline filters
+#   - grep -viE Inline filters
 #     - 'strict': this causes corruption bugs - see http://dev.mysql.com/doc/refman/5.6/en/innodb-parameters.html#sysvar_innodb_checksum_algorithm
 #     - 'innodb_track_redo_log_now'  - https://bugs.launchpad.net/percona-server/+bug/1368530
 #     - 'innodb_log_checkpoint_now'  - https://bugs.launchpad.net/percona-server/+bug/1369357 (dup of 1368530)
@@ -57,8 +57,8 @@ echoit "Output file: ${FINAL_SQL}"
 
 # Stage 1: Approach #1
 echoit "> Stage 1: Generating SQL with approach #1..."
-egrep --binary-files=text -ih "^SELECT |^INSERT |^UPDATE |^DROP |^CREATE |^RENAME |^TRUNCATE |^REPLACE |^START |^SAVEPOINT |^ROLLBACK |^RELEASE |^LOCK |^UNLOCK|^XA |^PURGE |^RESET |^SHOW |^CHANGE |^START |^STOP |^PREPARE |^EXECUTE |^DEALLOCATE |^BEGIN |^DECLARE |^FETCH |^CASE |^IF |^ITERATE |^LEAVE |^LOOP |^REPEAT |^RETURN |^WHILE |^CLOSE |^GET |^RESIGNAL |^SIGNAL |^EXPLAIN |^DESCRIBE |^HELP |^USE |^GRANT |^ANALYZE |^CHECK |^CHECKSUM |^OPTIMIZE |^REPAIR |^INSTALL |^UNINSTALL |^BINLOG |^CACHE |^FLUSH |^KILL |^LOAD |^CALL |^DELETE |^DO |^HANDLER |^LOAD DATA |^LOAD XML |^ALTER |^SET " ${TESTS_PATH}/*/*.test ${TESTS_PATH}/*/*/*.test ${TESTS_PATH}/*/*/*/*.test ${TESTS_PATH}/*/*/*/*/*.test ${DIRECTORY}/*/*/*.inc ${DIRECTORY}/*/*/*/*.inc ${DIRECTORY}*/*/*/*/*.inc ${DIRECTORY}/*/*/*/*/*/*.inc ${DIRECTORY}/plugin/*/*/*/*.test | \
- egrep --binary-files=text -vi "Is a directory" | \
+grep --binary-files=text -ihE "^SELECT |^INSERT |^UPDATE |^DROP |^CREATE |^RENAME |^TRUNCATE |^REPLACE |^START |^SAVEPOINT |^ROLLBACK |^RELEASE |^LOCK |^UNLOCK|^XA |^PURGE |^RESET |^SHOW |^CHANGE |^START |^STOP |^PREPARE |^EXECUTE |^DEALLOCATE |^BEGIN |^DECLARE |^FETCH |^CASE |^IF |^ITERATE |^LEAVE |^LOOP |^REPEAT |^RETURN |^WHILE |^CLOSE |^GET |^RESIGNAL |^SIGNAL |^EXPLAIN |^DESCRIBE |^HELP |^USE |^GRANT |^ANALYZE |^CHECK |^CHECKSUM |^OPTIMIZE |^REPAIR |^INSTALL |^UNINSTALL |^BINLOG |^CACHE |^FLUSH |^KILL |^LOAD |^CALL |^DELETE |^DO |^HANDLER |^LOAD DATA |^LOAD XML |^ALTER |^SET " ${TESTS_PATH}/*/*.test ${TESTS_PATH}/*/*/*.test ${TESTS_PATH}/*/*/*/*.test ${TESTS_PATH}/*/*/*/*/*.test ${DIRECTORY}/*/*/*.inc ${DIRECTORY}/*/*/*/*.inc ${DIRECTORY}*/*/*/*/*.inc ${DIRECTORY}/*/*/*/*/*/*.inc ${DIRECTORY}/plugin/*/*/*/*.test | \
+ grep --binary-files=text -viE "Is a directory" | \
  sort -u | \
   grep --binary-files=text -vi "innodb_fil_make_page_dirty_debug" | \
   grep --binary-files=text -vi "innodb_trx_rseg_n_slots_debug" | \
@@ -190,7 +190,8 @@ cat ${TESTS_PATH}/*/*.test ${TESTS_PATH}/*/*/*.test ${TESTS_PATH}/*/*/*/*.test $
   grep --binary-files=text -vi "set[ @globalsession\.\t]*innodb[-_]track_changed[-_]pages[ \.\t]*=" | \
   grep --binary-files=text -vi "yfos" | \
   grep --binary-files=text -vi "set[ @globalsession\.\t]*debug[ \.\t]*=" | \
-  grep --binary-files=text -v "^[# \t]$" | grep --binary-files=text -v "^#" | \
+  grep --binary-files=text -v "^[# \t]$" | \
+  grep --binary-files=text -v "^#" | \
  sed 's/$/ ;;;/' | sed 's/[ \t;]\+$/;/' | sed 's|^[ \t]\+||;s|[ \t]\+| |g' | \
  sed 's/^[|]\+ //' | sed 's///g' | \
  sed 's|end//;|end //;|gi' | \

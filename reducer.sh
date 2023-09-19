@@ -13,7 +13,7 @@
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
+
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
 # USA
 
@@ -103,6 +103,7 @@ SAVE_RESULTS=0                  # On/Off (1/0) (Default=1: save a copy of reduce
 # === pquery options            # Note: only relevant if pquery is used for testcase replay, ref USE_PQUERY and PQUERY_MULTI
 USE_PQUERY=0                    # On/Off (1/0) Enable to use pquery instead of the mysql CLI. pquery binary (as set in PQUERY_LOC) must be available
 PQUERY_LOC="${SCRIPT_PWD}/pquery/pquery2-md"  # The pquery binary in mariadb-qa. To get this binary use:  cd ~; git clone https://github.com/Percona-QA/mariadb-qa.git
+PQUERY_CONS_Q_FAIL=0            # On/Off (1/0) (Default=0) Checks the pquery log for 'Last [0-9]\+ consecutive queries all failed' while ignoring all other issue occurences (auto-sets USE_PQUERY=1, MODE=3, TEXT='Last [0-9]\+ consecutive queries all failed', and USE_NEW_TEXT_STRING=0). This is a MODE=3 hack to use the pquery log irrespective of any crashes/TEXT/error log contents or similar to debug the 'x consecutive queries all failed' scenario (which may indicate valid bugs). Do not turn on unless specifically needed
 
 # === Other options             # The options are not often changed
 CLI_MODE=2                      # When using the CLI; 0: sent SQL using a pipe, 1: sent SQL using --execute="SOURCE ..." command, 2: sent SQL using redirection (mysql < input.sql)
@@ -734,6 +735,17 @@ options_check(){
   elif [ ${NR_OF_TRIAL_REPEATS} -lt 1 ]; then
     echo "Error: NR_OF_TRIAL_REPEATS (${NR_OF_TRIAL_REPEATS}) is less than 1 which is an impossible setting."
     exit 1
+  fi
+  if [ "${PQUERY_CONS_Q_FAIL}" -eq 1 ]; then
+    if [ "${REDUCE_GLIBC_OR_SS_CRASHES}" -eq 1 ]; then
+      echo "Error: PQUERY_CONS_Q_FAIL=1 and REDUCE_GLIBC_OR_SS_CRASHES=1: these modes are incompatible, please turn off at least one"
+      exit 1 
+    fi
+    echoit "[Setup] PQUERY_CONS_Q_FAIL is enabled, setting USE_PQUERY=1, TEXT='Last [0-9]\+ consecutive queries all failed', MODE=3, USE_NEW_TEXT_STRING=0"
+    USE_PQUERY=1
+    TEXT='Last [0-9]\+ consecutive queries all failed'
+    MODE=3
+    USE_NEW_TEXT_STRING=0
   fi
   if [ $MODE -ge 6 ]; then
     if [ ! -d "$1" ]; then
@@ -3200,6 +3212,7 @@ process_outcome(){
     fi
 
   # MODE3: mysqld error output log testing (set TEXT)
+  # When PQUERY_CONS_Q_FAIL=1 then the pquery log will be checked for 'Last [0-9]\+ consecutive queries all failed' instead
   elif [ $MODE -eq 3 ]; then
     M3_ISSUE_FOUND=0
     SKIP_NEWBUG=0
@@ -3225,7 +3238,13 @@ process_outcome(){
         fi
       fi
     else
-      if [ $USE_NEW_TEXT_STRING -eq 1 ]; then
+      if [ $PQUERY_CONS_Q_FAIL -eq 1 ]; then
+        # Note that if PQUERY_CONS_Q_FAIL=1 then TEXT is always 'Last [0-9]\+ consecutive queries all failed'
+        M3_OUTPUT_TEXT="LastConsecutiveQueriesAllFailed"
+        if grep -E --binary-files=text -iq "${TEXT}" $WORKD/pquery.out then
+          M3_ISSUE_FOUND=1
+        fi
+      elif [ $USE_NEW_TEXT_STRING -eq 1 ]; then
         M3_OUTPUT_TEXT="NewTextString"
         rm -f ${WORKD}/MYBUG.FOUND
         touch ${WORKD}/MYBUG.FOUND
@@ -4290,7 +4309,11 @@ fireworks_setup(){
                            echoit "[Init] Run mode: MODE=4: Crash"
                            echoit "[Init] Looking for any mysqld crash"; fi; fi
   if [ $MODE -eq 3 ]; then
-    if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
+    if [ "$PQUERY_CONS_Q_FAIL" -eq 1 ]; then
+      echoit "[Init] PQUERY_CONS_Q_FAIL active: MODE set to 3, USE_PQUERY set to 1, USE_NEW_TEXT_STRING set to 0"
+      echoit "[Note] PQUERY_CONS_Q_FAIL active: All other issues (crashes/asserts, any TEXT, error log contents etc.) will be ignored"
+      echoit "[Init] Run mode: MODE=3 with PQUERY_CONS_Q_FAIL=1: Scanning for '${TEXT}' in the pquery log"
+    elif [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
                            echoit "[Init] Run mode: MODE=3 with REDUCE_GLIBC_OR_SS_CRASHES=1: console typscript log"
                            echoit "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then

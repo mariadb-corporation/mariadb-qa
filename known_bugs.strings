@@ -1136,6 +1136,7 @@ marked_for_read()|SIGABRT|Field_varstring::val_str|Item_field::val_str|Item::pri
 marked_for_read()|SIGABRT|Field_string::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                        ## MDEV-24658
 marked_for_read()|SIGABRT|Field_bit::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                           ## MDEV-24658
 marked_for_read()|SIGABRT|Field_newdate::val_str|Item_field::val_str|Item::print_value|Item_field::print                                                                       ## MDEV-24658
+SIGSEGV|Item_field::print|Item_equal::print|st_select_lex::print|st_select_lex_unit::print                                                                                     ## MDEV-24658
 SIGSEGV|maria_scan_init|ha_maria::rnd_init|handler::ha_rnd_init|handler::read_first_row                                                                                        ## MDEV-24651
 SIGSEGV|maria_scan_init|handler::ha_rnd_init|handler::read_first_row|handler::ha_read_first_row                                                                                ## MDEV-24651
 SIGSEGV|maria_status|ha_maria::info|TABLE_LIST::fetch_number_of_rows|make_join_statistics                                                                                      ## MDEV-24651
