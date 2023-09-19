@@ -103,7 +103,7 @@ SAVE_RESULTS=0                  # On/Off (1/0) (Default=1: save a copy of reduce
 # === pquery options            # Note: only relevant if pquery is used for testcase replay, ref USE_PQUERY and PQUERY_MULTI
 USE_PQUERY=0                    # On/Off (1/0) Enable to use pquery instead of the mysql CLI. pquery binary (as set in PQUERY_LOC) must be available
 PQUERY_LOC="${SCRIPT_PWD}/pquery/pquery2-md"  # The pquery binary in mariadb-qa. To get this binary use:  cd ~; git clone https://github.com/Percona-QA/mariadb-qa.git
-PQUERY_CONS_Q_FAIL=0            # On/Off (1/0) (Default=0) Checks the pquery log for 'Last [0-9]\+ consecutive queries all failed' while ignoring all other issue occurences (auto-sets USE_PQUERY=1, MODE=3, TEXT='Last [0-9]\+ consecutive queries all failed', and USE_NEW_TEXT_STRING=0). This is a MODE=3 hack to use the pquery log irrespective of any crashes/TEXT/error log contents or similar to debug the 'x consecutive queries all failed' scenario (which may indicate valid bugs). Do not turn on unless specifically needed. When using this, note that testcases can never become much shorter then let's say 251-265 queries, and that only the top 1 to 10 orso queries will matter (i.e. until it starts failing queries, which will should be visible in the pquery output i.e. ;#ERROR... or likely similar in the CLI) as the last 250 queries in the testcase are needed to produce the reducible outcome of having that message in the pquery log
+PQUERY_CONS_Q_FAIL=0            # On/Off (1/0) (Default=0) Checks the pquery log for 'Last [0-9]+ consecutive queries all failed' while ignoring all other issue occurences (auto-sets USE_PQUERY=1, MODE=3, TEXT='Last [0-9]+ consecutive queries all failed', and USE_NEW_TEXT_STRING=0). This is a MODE=3 hack to use the pquery log irrespective of any crashes/TEXT/error log contents or similar to debug the 'x consecutive queries all failed' scenario (which may indicate valid bugs). Do not turn on unless specifically needed. When using this, note that testcases can never become much shorter then let's say 251-265 queries, and that only the top 1 to 10 orso queries will matter (i.e. until it starts failing queries, which will should be visible in the pquery output i.e. ;#ERROR... or likely similar in the CLI) as the last 250 queries in the testcase are needed to produce the reducible outcome of having that message in the pquery log
 
 # === Other options             # The options are not often changed
 CLI_MODE=2                      # When using the CLI; 0: sent SQL using a pipe, 1: sent SQL using --execute="SOURCE ..." command, 2: sent SQL using redirection (mysql < input.sql)
@@ -355,7 +355,7 @@ export UBSAN_OPTIONS=print_stacktrace=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
 
 # Flags
-FIRST_MYSQLD_START_FLAG=1  # Avoids FORCE_KILL=1 from being used at '[Init] Attempting first mysqld startup with all MYEXTRA options passed to mysqld' stage.
+FIRST_MYSQLD_START_FLAG=1  # Avoids FORCE_KILL=1 from being used at '[Init] Attempting first mariadbd/mysqld startup with all MYEXTRA options passed' stage.
 
 # ===== [SPECIAL MYEXTRA SECTION START] Preparation for STAGES 8 and 9: special MYEXTRA startup option sets handling
 # Important: If you add a section below for additional startup option sets, be sure to add the final outcome to SPECIAL_MYEXTRA_OPTIONS at the end of this section (marked by "[SPECIAL MYEXTRA SECTION END]")
@@ -741,9 +741,9 @@ options_check(){
       echo "Error: PQUERY_CONS_Q_FAIL=1 and REDUCE_GLIBC_OR_SS_CRASHES=1: these modes are incompatible, please turn off at least one"
       exit 1 
     fi
-    echoit "[Setup] PQUERY_CONS_Q_FAIL is enabled, setting USE_PQUERY=1, TEXT='Last [0-9]\+ consecutive queries all failed', MODE=3, USE_NEW_TEXT_STRING=0"
+    echoit "[Setup] PQUERY_CONS_Q_FAIL is enabled, setting USE_PQUERY=1, TEXT='Last [0-9]+ consecutive queries all failed', MODE=3, USE_NEW_TEXT_STRING=0"
     USE_PQUERY=1
-    TEXT='Last [0-9]\+ consecutive queries all failed'
+    TEXT='Last [0-9]+ consecutive queries all failed'
     MODE=3
     USE_NEW_TEXT_STRING=0
   fi
@@ -1988,9 +1988,9 @@ init_workdir_and_files(){
         exit 1
       fi
       if [ "${REPLICATION}" -ne 1 ]; then
-        echoit "[Init] Attempting first mysqld startup with all MYEXTRA options passed to mysqld"
+        echoit "[Init] Attempting first mariadbd/mysqld startup with all MYEXTRA options passed"
       else
-        echoit "[Init] Attempting first mysqld startups (master & slave) with all MYEXTRA options passed to mysqld"
+        echoit "[Init] Attempting first mariadbd/mysqld startups (master & slave) with all MYEXTRA options passed"
       fi
       FIRST_MYSQLD_START_FLAG=1
       if [ $MODE -ne 1 -a $MODE -ne 6 ]; then start_mysqld_main; else start_valgrind_mysqld_main; fi
@@ -2003,6 +2003,8 @@ init_workdir_and_files(){
           echo "Terminating now."
           exit 1
         fi
+      else
+        echoit "[Init] First mariadbd/mysqld startup with all MYEXTRA options passed to mysqld successful"
       fi
       if [ $LOAD_TIMEZONE_DATA -gt 0 ]; then
         echoit "[Init] Loading timezone data into mysql database"
@@ -3212,7 +3214,7 @@ process_outcome(){
     fi
 
   # MODE3: mysqld error output log testing (set TEXT)
-  # When PQUERY_CONS_Q_FAIL=1 then the pquery log will be checked for 'Last [0-9]\+ consecutive queries all failed' instead
+  # When PQUERY_CONS_Q_FAIL=1 then the pquery log will be checked for 'Last [0-9]+ consecutive queries all failed' instead
   elif [ $MODE -eq 3 ]; then
     M3_ISSUE_FOUND=0
     SKIP_NEWBUG=0
@@ -3239,7 +3241,7 @@ process_outcome(){
       fi
     else
       if [ $PQUERY_CONS_Q_FAIL -eq 1 ]; then
-        # Note that if PQUERY_CONS_Q_FAIL=1 then TEXT is always 'Last [0-9]\+ consecutive queries all failed'
+        # Note that if PQUERY_CONS_Q_FAIL=1 then TEXT is always 'Last [0-9]+ consecutive queries all failed'
         M3_OUTPUT_TEXT="LastConsecutiveQueriesAllFailed"
         if grep -E --binary-files=text -iq "${TEXT}" $WORKD/pquery.out; then
           M3_ISSUE_FOUND=1
@@ -4311,7 +4313,7 @@ fireworks_setup(){
   if [ $MODE -eq 3 ]; then
     if [ "$PQUERY_CONS_Q_FAIL" -eq 1 ]; then
       echoit "[Init] PQUERY_CONS_Q_FAIL active: MODE set to 3, USE_PQUERY set to 1, USE_NEW_TEXT_STRING set to 0"
-      echoit "[Note] PQUERY_CONS_Q_FAIL active: All other issues (crashes/asserts, any TEXT, error log contents etc.) will be ignored"
+      echoit "[Init] PQUERY_CONS_Q_FAIL active: All other issues (crashes/asserts, any TEXT, error log contents etc.) will be ignored"
       echoit "[Init] Run mode: MODE=3 with PQUERY_CONS_Q_FAIL=1: Scanning for '${TEXT}' in the pquery log"
     elif [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
                            echoit "[Init] Run mode: MODE=3 with REDUCE_GLIBC_OR_SS_CRASHES=1: console typscript log"
