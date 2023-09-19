@@ -103,7 +103,7 @@ SAVE_RESULTS=0                  # On/Off (1/0) (Default=1: save a copy of reduce
 # === pquery options            # Note: only relevant if pquery is used for testcase replay, ref USE_PQUERY and PQUERY_MULTI
 USE_PQUERY=0                    # On/Off (1/0) Enable to use pquery instead of the mysql CLI. pquery binary (as set in PQUERY_LOC) must be available
 PQUERY_LOC="${SCRIPT_PWD}/pquery/pquery2-md"  # The pquery binary in mariadb-qa. To get this binary use:  cd ~; git clone https://github.com/Percona-QA/mariadb-qa.git
-PQUERY_CONS_Q_FAIL=0            # On/Off (1/0) (Default=0) Checks the pquery log for 'Last [0-9]\+ consecutive queries all failed' while ignoring all other issue occurences (auto-sets USE_PQUERY=1, MODE=3, TEXT='Last [0-9]\+ consecutive queries all failed', and USE_NEW_TEXT_STRING=0). This is a MODE=3 hack to use the pquery log irrespective of any crashes/TEXT/error log contents or similar to debug the 'x consecutive queries all failed' scenario (which may indicate valid bugs). Do not turn on unless specifically needed
+PQUERY_CONS_Q_FAIL=0            # On/Off (1/0) (Default=0) Checks the pquery log for 'Last [0-9]\+ consecutive queries all failed' while ignoring all other issue occurences (auto-sets USE_PQUERY=1, MODE=3, TEXT='Last [0-9]\+ consecutive queries all failed', and USE_NEW_TEXT_STRING=0). This is a MODE=3 hack to use the pquery log irrespective of any crashes/TEXT/error log contents or similar to debug the 'x consecutive queries all failed' scenario (which may indicate valid bugs). Do not turn on unless specifically needed. When using this, note that testcases can never become much shorter then let's say 251-265 queries, and that only the top 1 to 10 orso queries will matter (i.e. until it starts failing queries, which will should be visible in the pquery output i.e. ;#ERROR... or likely similar in the CLI) as the last 250 queries in the testcase are needed to produce the reducible outcome of having that message in the pquery log
 
 # === Other options             # The options are not often changed
 CLI_MODE=2                      # When using the CLI; 0: sent SQL using a pipe, 1: sent SQL using --execute="SOURCE ..." command, 2: sent SQL using redirection (mysql < input.sql)
@@ -1076,7 +1076,7 @@ options_check(){
       fi
     fi
     if [ "${USE_NEW_TEXT_STRING}" != "1" ]; then
-      echo "SCAN_FOR_NEW_BUGS was set to 1, yet USE_NEW_TEXT_STRING is not set to 1 (set to '${USE_NEW_TEXT_STRING}'). This setup is not covered by this script yet. Ref inside reducer for more info. Automatically turning SCAN_FOR_NEW_BUGS off."
+      echoit "[Setup] SCAN_FOR_NEW_BUGS was set to 1, yet USE_NEW_TEXT_STRING is not set to 1 (set to '${USE_NEW_TEXT_STRING}'). This setup is not covered by this script yet. Ref inside reducer for more info. Automatically turning SCAN_FOR_NEW_BUGS off."
       # Reason is that the new text string script is used in conjunction with the new bugs string list. This could be expanded to include the older bugs string list also, but this would seem to be wasted effort as that list is no longer maintained inside MariaDB (the new unique bug id's are used instead and are much better/of much higher quality). Rather, and this is also provides additional ROI in other areas; update the new text string script to call the old script for any case where a new unique bug ID can not be obtained (quite limited limited amount of cases; usually only when incorrect core dumps (stack smashing, OOS, mysqld failed to create a coredump) are used.
       SCAN_FOR_NEW_BUGS=0
     fi
@@ -3241,7 +3241,7 @@ process_outcome(){
       if [ $PQUERY_CONS_Q_FAIL -eq 1 ]; then
         # Note that if PQUERY_CONS_Q_FAIL=1 then TEXT is always 'Last [0-9]\+ consecutive queries all failed'
         M3_OUTPUT_TEXT="LastConsecutiveQueriesAllFailed"
-        if grep -E --binary-files=text -iq "${TEXT}" $WORKD/pquery.out then
+        if grep -E --binary-files=text -iq "${TEXT}" $WORKD/pquery.out; then
           M3_ISSUE_FOUND=1
         fi
       elif [ $USE_NEW_TEXT_STRING -eq 1 ]; then
