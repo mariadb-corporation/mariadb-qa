@@ -166,6 +166,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|calc_row_difference|ha_innobase::update_row|handler::ha_update_row|Event_db_repository::update_timing_fields_for_event                                                 ## MDEV-32221
+SIGSEGV|ha_innobase::update_row|handler::ha_update_row|Event_db_repository::update_timing_fields_for_event|Event_queue::get_top_for_execution_if_time                          ## MDEV-32221
+thd->transaction.stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|Event_db_repository::create_event|Events::create_event|mysql_execute_command ## MDEV-32221 
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## MDEV-32194 
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
 MDEV-24912

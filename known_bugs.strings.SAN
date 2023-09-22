@@ -5,6 +5,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|shift exponent X is too large for 64-bit type 'long long int'|sql/field.cc|Field_set::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record         ## MDEV-32226
+UBSAN|member call on null pointer of type 'struct Reprepare_observer'|sql/sql_prepare.cc|Prepared_statement::check_charset_collation_map_version|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute ## MDEV-31844
+ASAN|heap-use-after-free|sql-common/client.c|server_mysql_real_connect|Repl_semi_sync_slave::kill_connection|Repl_semi_sync_slave::slave_stop|handle_slave_io                  ## MDEV-27845
 ASAN|heap-use-after-free|sql/item.cc|Item_field::print|Item_equal::print|st_select_lex::print|st_select_lex_unit::print                                                        ## MDEV-24658
 UBSAN|member call on null pointer of type 'struct Field'|sql/sql_acl.cc|get_access_value_from_val_int|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table ## MDEV-28482
 ASAN|heap-use-after-free|storage/spider/spd_conn.cc|spider_conn_queue_and_merge_loop_check|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect ## MDEV-27902
