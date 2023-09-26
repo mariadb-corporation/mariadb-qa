@@ -166,6 +166,13 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                                     ## MDEV-32248
+SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_commit|mysql_execute_command                                                       ## MDEV-32248
+SIGABRT|acquire_xid|binlog_rollback_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                     ## MDEV-32248
+SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                       ## MDEV-32248
+thd->is_error()|SIGABRT|Sql_cmd_dml::prepare|Sql_cmd_dml::execute|mysql_execute_command|mysql_parse                                                                            ## MDEV-24640
+SIGSEGV|trace_engine_stats|Explain_table_access::print_explain_json|Explain_basic_join::print_explain_json_interns|Explain_select::print_explain_json                          ## MDEV-31764
+SIGSEGV|get_schema_key_period_usage_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                   ## MDEV-32204
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## MDEV-32194 
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
 MDEV-24912
@@ -485,6 +492,7 @@ SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_ne
 SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed|find_field_in_natural_join                                                                ## MDEV-29731 (25292 tree only)
 SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed|Item_row::fix_fields                                                                      ## MDEV-29731
 SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item_row::fix_fields|Item::fix_fields_if_needed                                                                      ## MDEV-29731
+SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed                                                                     ## MDEV-29731
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|Query_cache::lock|Query_cache::invalidate_table                                                                                ## MDEV-29708
 !n_mysql_tables_in_use|SIGABRT|trx_t::free|innobase_close_connection|ha_close_connection|THD::free_connection                                                                  ## MDEV-29664
 inited == NONE|SIGABRT|handler::ha_reset|ha_partition::reset|handler::ha_reset|mark_used_tables_as_free_for_reuse                                                              ## MDEV-29658

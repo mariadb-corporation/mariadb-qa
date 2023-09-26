@@ -121,7 +121,20 @@ else
                       fi
                     fi
                   else
-                    echo "> Warning: Unrecognized directory structure: ${DIR} (Assert: >=1 sub directories found, not covered yet, please fixme)"
+                    # multirun_mysqld.sh-like dir check
+                    MMDC=$(ls --color=never ${DIR}/* 2>/dev/null | grep --binary-files=text -E 'socket|pid' | wc -l)  # Number of files relevant to multirun_mysqld.sh
+                    if [ "${MMDC}" -ge 2 ]; then  # If >=2 it is reasonable to assume this is a multirun_mysqld.sh directory
+                      MAINMDDIRAGE=$[ $(date +%s) - $(stat -c %Z ${DIR}) ]  # Directory age in seconds
+                      if [ ${MAINMDDIRAGE} -gt 90 ]; then  # Safety: don't delete any directory touched in last 90 seconds
+                        echo "Deleting multirun_mysqld.sh-like directory ${DIR}"
+                        COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
+                        if [ ${ARMED} -eq 1 ]; then rm -Rf ${DIR}; fi
+                      fi
+                      MAINMDDIRAGE=
+                    else 
+                      echo "> Warning: Unrecognized directory structure: ${DIR} (Assert: >=1 sub directories found, not fully covered yet, please fixme)"
+                    fi
+                    MMDC=
                   fi
                 else
                   if [[ "${DIR}" != "/dev/shm/sql_shuffled" && "${DIR}" != "/dev/shm/afl"* ]]; then  # As above

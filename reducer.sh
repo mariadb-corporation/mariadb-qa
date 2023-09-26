@@ -2606,7 +2606,7 @@ start_mysqld_main(){
       # ---- Init replication
       # Ensure both servers are live
       MASTER_STARTUP_OK=0; SLAVE_STARTUP_OK=0
-      for((delay=0;delay<45;delay++)); do  # 45 Second max master+slave startup (normally, only ~2 seconds are required)
+      for((delay=0;delay<60;delay++)); do  # 60 Second max master+slave startup (normally, only ~2 seconds are required)
         sleep 1
         if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then MASTER_STARTUP_OK=1; fi
         if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock ping > /dev/null 2>&1; then SLAVE_STARTUP_OK=1; fi
@@ -2614,6 +2614,8 @@ start_mysqld_main(){
       done
       if [ "${MASTER_STARTUP_OK}" -ne 1 -o "${SLAVE_STARTUP_OK}" -ne 1 ]; then
         echoit "Assert: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Debug workdir: $WORKD"
+        echoit "Reducer is sleeping/not terminating to ensure work directory is not deleted. Press CTRL+c to exit"
+        while true; do sleep 10; touch $WORKD; done
         exit 1
       fi
       MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
@@ -2766,8 +2768,8 @@ determine_chunk(){
       fi
     fi
   fi
-  # Protection against 0 CHUNK size
-  if [ $CHUNK -lt 1 ]; then CHUNK=1; fi
+  # Protection against negative CHUNK size
+  if [ $CHUNK -lt 0 ]; then CHUNK=0; fi  # CHUNK=0 is one line at the time
 }
 
 control_backtrack_flow(){
@@ -2781,11 +2783,48 @@ control_backtrack_flow(){
 }
 
 cut_random_chunk(){
-  RANDLINE=$[ ( $RANDOM % ( $[ $LINECOUNTF - $CHUNK - 1 ] + 1 ) ) + 1 ]
-  if [ $CHUNK -eq 1 -a $TRIAL -gt 5 ]; then STUCKTRIAL=$[ $STUCKTRIAL + 1 ]; fi
-  if [ $CHUNK -eq 1 -a $STUCKTRIAL -gt 5 ]; then
+  RANDLINE=-1  # Dummy start
+  RLLOOPCOUNT=0
+  if [ "${PQUERY_CONS_Q_FAIL}" -eq 0 ]; then  # Regular runs 
+    #RANDLINE=$[ ( $RANDOM % ( $[ $LINECOUNTF - $CHUNK - 1 ] + 1 ) ) + 1 ]  # Old
+    while [ "${RANDLINE}" -le 0 ]; do
+      RANDLINE=$[ $RANDOM % ($[ $LINECOUNTF - $CHUNK ] + 1 ) ]  # New
+      # Inf loop protection (can be removed in time if this assert never triggers)
+      RLLOOPCOUNT=$[ ${RLLOOPCOUNT} + 1 ]
+      if [ "${RLLOOPCOUNT}" -ge 1000 ]; then
+        echo "Assert: RLLOOPCOUNT -ge 1000! Fix this"
+        echo "Debug: RANDLINE: ${RANDLINE} | LINECOUNTF: ${LINECOUNTF} | CHUNK: ${CHUNK}"
+        exit 1
+      fi
+    done
+  else  # Special PQUERY_CONS_Q_FAIL chuncking algo which avoids using the last n (250 ftm) lines as those are required to trigger the 'Last [0-9]+ consecutive queries all failed' output in the pquery log (pquery.out).
+    if [ $LINECOUNTF -eq 251 ]; then  # TODO: This code does not belong here, instead other areas of reducer need to become smarter about PQUERY_CONS_Q_FAIL handling with/given the required 250 lines at the end of the testcase
+      echo "Assert: optimal testcase for PQUERY_CONS_Q_FAIL (251 queries) already achieved: nothing left todo"
+      echo "Testcase: $WORKF"
+      exit 1
+    fi
+    RANDLINEMIN250=$[ $LINECOUNTF - $CHUNK - 250 ]  # Ref explanation below
+    while [ "${RANDLINEMIN250}" -lt 1 ]; do  # When getting close/closer to 250 lines, it is possible that the CHUNK is too large, vary CHUNK size  # TODO: this could be part of determine_chunk, i.e. if PQUERY_CONS_Q_FAIL=1 then reduce CHUNK by 250? etc
+#251 lines left   251
+      CHUNK=$[ $RANDOM % $[ $LINECOUNTF - 250 ] ]  # For example, 251 lines left: 251-250=1 and RANDOM%1 is 0 max, and CHUNK=0 means one line removal. Similarly 252 left: 252-250=2, RANDOM%2 is 1 max and CHUNK=1 (+1 in sed) is two lines removed
+      RANDLINEMIN250=$[ $LINECOUNTF - $CHUNK - 250 ]  # For example, 251 lines left: 251-0-250=1 and line=1 is the only possible starting line in that case. Similarly 252 left: 252-1(max)-250=1 or 252-0(min)-250=2 and lines 1 and 2 are two viable options as the startline (RANDLINE, calculated below)
+    done
+    while [ "${RANDLINE}" -le 0 ]; do
+      RANDLINE=$[ $RANDOM % ( ${RANDLINEMIN250} + 1 ) ]  # +1: RANDOM%nr requires nr to be nr+1 to be able to reach (max) nr, and we want to have line 1 or higher for the sed
+      # Inf loop protection (can be removed in time if this assert never triggers)
+      RLLOOPCOUNT=$[ ${RLLOOPCOUNT} + 1 ]
+      if [ "${RLLOOPCOUNT}" -ge 1000 ]; then
+        echo "Assert: RLLOOPCOUNT -ge 1000! Fix this"
+        echo "Debug: RANDLINE: ${RANDLINE} | LINECOUNTF: ${LINECOUNTF} | CHUNK: ${CHUNK}"
+        exit 1
+      fi
+    done
+    RANDLINEMIN250=
+  fi
+  if [ $CHUNK -eq 0 -a $TRIAL -gt 5 ]; then STUCKTRIAL=$[ $STUCKTRIAL + 1 ]; fi
+  if [ $CHUNK -eq 0 -a $STUCKTRIAL -gt 5 ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line $RANDLINE (Current chunk size: stuck at 1)"
-    sed -n "$RANDLINE ! p" $WORKF > $WORKT
+    sed -n "$RANDLINE ! p" $WORKF > $WORKT  # Note that ,+$CHUNK i.e. ,+0 would have the same outcome
   else
     ENDLINE=$[$RANDLINE+$CHUNK]
     REALCHUNK=$[$CHUNK+1]
@@ -2794,7 +2833,7 @@ cut_random_chunk(){
     else
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line(s) $RANDLINE to $ENDLINE (Current chunk size: $REALCHUNK)"
     fi
-    sed -n "$RANDLINE,+$CHUNK ! p" $WORKF > $WORKT
+    sed -n "$RANDLINE,+$CHUNK ! p" $WORKF > $WORKT  # RANDLINE: starting line (line 1=1), CHUNK: number of lines (1 line=+0)
   fi
 }
 

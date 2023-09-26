@@ -35,6 +35,7 @@ cat "${1}" | tr -d '`' | \
        s|lead|LEAD|gi; \
        s|analyse|ANALYSE|gi; \
        s|do |DO |gi; \
+       s|json|JSON|gi; \
        s|sqlexception |SQLEXCEPTION |gi; \
        s|continue |CONTINUE |gi; \
        s|until |UNTIL |gi; \
@@ -88,6 +89,7 @@ cat "${1}" | tr -d '`' | \
        s|cascaded|CASCADED|gi; \
        s|check option|CHECK OPTION|gi; \
        s|comment|COMMENT|gi; \
+       s|format|FORMAT|gi; \
        s|sformat|SFORMAT|gi; \
        s|next|NEXT|gi; \
        s|md5|MD5|gi; \

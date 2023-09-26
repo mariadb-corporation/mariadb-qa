@@ -4,17 +4,18 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=10.6                                                        # Use the earliest major version affected by the bug
+VERSION=11.3                                                        # Use the earliest major version affected by the bug
+FEATURETREE='preview-11.3-preview'                                  # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
-UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
+UPDATETREE=0                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-LAST_KNOWN_GOOD_COMMIT='6d40274f65b8d145fbf496e9b1b1d46f258de227'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='12a85c6caf595c685336455e416099b6a8020534'   # Revision of first known bad commit
-TESTCASE='/test/in9.sql'                                            # The testcase to be tested
-UNIQUEID='m_tickets[MDL_STATEMENT].is_empty()|SIGABRT|MDL_context::set_transaction_duration_for_all_locks|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlock_locked_table' # The UniqueID to scan for [Exclusive]
+LAST_KNOWN_GOOD_COMMIT='8ad1e26b1bafa4ed9928306efc10c047f2274108'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='fd14f7c33f150aa93bb3eef15b672074548192d8'   # Revision of first known bad commit
+TESTCASE='/test/in10.sql'                                           # The testcase to be tested
+UNIQUEID='SIGSEGV|get_schema_key_period_usage_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result'  # The UniqueID to scan for [Exclusive]
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: UNIQUEID and TEXT are mutually exclusive: do not set both
@@ -34,7 +35,7 @@ die(){
 if [ "${DBG_OR_OPT}" != 'dbg' -a "${DBG_OR_OPT}" != 'opt' ]; then
   echo "DBG_OR_OPT variable is incorrectly set: use 'dbg' or 'opt' only"
   exit 1
-elif [[ "${VERSION}" != "10."* && "${VERSION}" != "11."* ]]; then
+elif [[ "${VERSION}" != "10."* && "${VERSION}" != "11."* && "${FEATURETREE}" == "" ]]; then
   echo "Version (${VERSION}) does not look correct"
   exit 1
 elif [ ! -z "${UNIQUEID}" -a ! -z "${TEXT}" ]; then
@@ -68,6 +69,9 @@ cd /test || die 1 '/test does not exist'
 mkdir -p git-bisect || die 1 '/test/git-bisect could not be created'
 echo 'Changing directory to /test/git-bisect' | tee -a "${MAINLOG}"
 cd git-bisect || die 1 'could not change directory to git-bisect'
+if [ ! -z "${FEATURETREE}" ]; then
+  VERSION="${FEATURETREE}"
+fi
 if [ "${RECLONE}" -eq 1 ]; then
   rm -Rf "${VERSION}"
   git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
@@ -125,7 +129,7 @@ git reset --hard | tee -a "${MAINLOG}"  # Revert tree to mainline
 git clean -xfd | tee -a "${MAINLOG}"    # Cleanup tree
 git checkout "${VERSION}" | tee -a "${MAINLOG}"   # Ensure we have the right version
 if [ "${UPDATETREE}" -eq 1 ]; then
-  git pull | tee -a "${MAINLOG}"        # Ensure we have the latest version
+  git pull --recurse-submodules | tee -a "${MAINLOG}"        # Ensure we have the latest version
 fi
 git bisect start | tee -a "${MAINLOG}"  # Start bisect run
 if [ "${BISECT_REPLAY}" -eq 1 ]; then

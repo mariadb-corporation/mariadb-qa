@@ -1,0 +1,5 @@
+CREATE VIEW v1 AS SELECT 1;
+CREATE VIEW v2 AS SELECT * FROM v1;
+DROP VIEW v1;
+SELECT * FROM information_schema.key_period_usage;
+SELECT SLEEP(3);
