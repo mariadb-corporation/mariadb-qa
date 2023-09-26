@@ -68,13 +68,13 @@ if [ ! -r ${REDUCER} -o ! -f ${REDUCER} ]; then
 fi
 
 # Patch reducer
-if [ "${2}" != "depge" ]; then  # Normal, i.e. ~/pge
-  sed -i "s|^FORCE_SKIPV=1|FORCE_SKIPV=0|" ${REDUCER}
-  sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=1000|" ${REDUCER}
-else  # Reverse (de-) pge changes, i.e. ~/depge, and increase threads to reduce more easily
+if [[ "${0}" == *"depge"* || "${2}" == "depge" ]]; then  # Reverse (de-) pge changes, i.e. ~/depge, and increase threads to reduce more easily
   sed -i "s|^FORCE_SKIPV=0|FORCE_SKIPV=1|" ${REDUCER}
   sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=3|" ${REDUCER}
   sed -i "s|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=11|" ${REDUCER}
+else  # Normal, i.e. ~/pge
+  sed -i "s|^FORCE_SKIPV=1|FORCE_SKIPV=0|" ${REDUCER}
+  sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=1000|" ${REDUCER}
 fi
 
 # Start reducer

@@ -1,9 +1,33 @@
 #!/bin/bash
-if [ -z "${1}" ]; then echo "Please pass a MDEV bug number!"; exit 1; fi
+if [ -z "${1}" ]; then echo "Please pass a MDEV or MENT bug number!"; exit 1; fi
 BUG="$(echo "${1}" | grep -o '[0-9]\+')"
-vi ~/mariadb-qa/BUGS/MDEV-${BUG}.sql
+MDEV=0
+MENT=0
 if [ -r ~/mariadb-qa/BUGS/MDEV-${BUG}.sql ]; then
+  vi ~/mariadb-qa/BUGS/MDEV-${BUG}.sql
+  MDEV=1
+elif [ -r ~/mariadb-qa/BUGS/MENT-${BUG}.sql ]; then
+  vi ~/mariadb-qa/BUGS/MENT-${BUG}.sql
+  MENT=1
+else  # New bug
+  if [[ "${1}" == *"MDEV"* || "${1}" == *"mdev"* ]]; then
+    vi ~/mariadb-qa/BUGS/MDEV-${BUG}.sql
+    MDEV=1
+  elif [[ "${1}" == *"MENT"* || "${1}" == *"ment"* ]]; then
+    vi ~/mariadb-qa/BUGS/MENT-${BUG}.sql
+    MENT=1
+  else  # Guess it's MDEV as it was not passed
+    vi ~/mariadb-qa/BUGS/MDEV-${BUG}.sql
+    MDEV=1
+  fi
+fi
+if [ "${MDEV}" -eq 1 -a -r ~/mariadb-qa/BUGS/MDEV-${BUG}.sql ]; then
   cd ~/mariadb-qa/BUGS/
   git add MDEV-${BUG}.sql
+  cd - >/dev/null 2>&1
+fi
+if [ "${MENT}" -eq 1 -a -r ~/mariadb-qa/BUGS/MENT-${BUG}.sql ]; then
+  cd ~/mariadb-qa/BUGS/
+  git add MENT-${BUG}.sql
   cd - >/dev/null 2>&1
 fi
