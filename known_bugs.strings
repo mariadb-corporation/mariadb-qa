@@ -173,9 +173,11 @@ SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_c
 thd->is_error()|SIGABRT|Sql_cmd_dml::prepare|Sql_cmd_dml::execute|mysql_execute_command|mysql_parse                                                                            ## MDEV-24640
 SIGSEGV|trace_engine_stats|Explain_table_access::print_explain_json|Explain_basic_join::print_explain_json_interns|Explain_select::print_explain_json                          ## MDEV-31764
 SIGSEGV|get_schema_key_period_usage_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                   ## MDEV-32204
+SIGSEGV|calc_row_difference|ha_innobase::update_row|handler::ha_update_row|Event_db_repository::update_timing_fields_for_event                                                 ## MDEV-32221
+SIGSEGV|ha_innobase::update_row|handler::ha_update_row|Event_db_repository::update_timing_fields_for_event|Event_queue::get_top_for_execution_if_time                          ## MDEV-32221
+thd->transaction.stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|Event_db_repository::create_event|Events::create_event|mysql_execute_command ## MDEV-32221 
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## MDEV-32194 
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
-MDEV-24912
 role == *(ACL_ROLE**)pop|SIGABRT|undo_add_role_user_mapping|mysql_grant_role|mysql_execute_command|mysql_parse                                                                 ## MDEV-32095
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|Item_str_func::fix_fields|Virtual_column_info::fix_expr|Virtual_column_info::fix_session_expr                             ## MDEV-32094
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|Item_str_func::fix_fields|Item_json_str_multipath::fix_fields|Item::fix_fields_if_needed                                  ## MDEV-32094
