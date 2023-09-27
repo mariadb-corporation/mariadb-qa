@@ -167,10 +167,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS ##### Search key: Mac ###
 SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with                                                                          ## MDEV-32249
-SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                                     ## MENT-1957
-SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_commit|mysql_execute_command                                                       ## MENT-1957
-SIGABRT|acquire_xid|binlog_rollback_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                     ## MENT-1957
-SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                       ## MENT-1957
+SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                                     ## MDEV-32257
+SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_commit|mysql_execute_command                                                       ## MDEV-32257
+SIGABRT|acquire_xid|binlog_rollback_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                     ## MDEV-32257
+SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                       ## MDEV-32257
 thd->is_error()|SIGABRT|Sql_cmd_dml::prepare|Sql_cmd_dml::execute|mysql_execute_command|mysql_parse                                                                            ## MDEV-24640
 SIGSEGV|trace_engine_stats|Explain_table_access::print_explain_json|Explain_basic_join::print_explain_json_interns|Explain_select::print_explain_json                          ## MDEV-31764
 SIGSEGV|get_schema_key_period_usage_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                   ## MDEV-32204

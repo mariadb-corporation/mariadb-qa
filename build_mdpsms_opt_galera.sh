@@ -98,12 +98,8 @@ if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-1]$ ]]; then
   MD=1
   if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then
     PREFIX="GAL_EMD${DATE}"
-    # Apply disable-MDEV-371 patch
-    git apply ${HOME}/mariadb-qa/disable_mdev371.patch
   else
     PREFIX="GAL_MD${DATE}"
-    # Apply disable-MDEV-371 patch
-    git apply ${HOME}/mariadb-qa/disable_mdev371.patch
   fi
   ZLIB="-DWITH_ZLIB=bundled"  # 10.1 will fail with requirement for WITH_ZLIB=bundled. Building 10.1-10.5 with bundled ftm.
 elif [ ! -d rocksdb ]; then  # MS, PS

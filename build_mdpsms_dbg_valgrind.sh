@@ -95,8 +95,6 @@ if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-1]$ ]]; then
   MD=1
   PREFIX="MD${DATE}"
   ZLIB="-DWITH_ZLIB=bundled"  # 10.1 will fail with requirement for WITH_ZLIB=bundled. Building 10.1-10.5 with bundled ftm.
-  # Apply disable-MDEV-371 patch
-  git apply ${HOME}/mariadb-qa/disable_mdev371.patch
 elif [ ! -d rocksdb ]; then  # MS, PS
   VERSION_EXTRA="$(grep "MYSQL_VERSION_EXTRA=" VERSION | sed 's|MYSQL_VERSION_EXTRA=||;s|[ \t]||g')"
   if [ "${VERSION_EXTRA}" == "" -o "${VERSION_EXTRA}" == "-dmr" -o "${VERSION_EXTRA}" == "-rc" ]; then  # MS has no extra version number, or shows '-dmr' or '-rc' (both exactly and only) in this place

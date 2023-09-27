@@ -142,7 +142,7 @@ if [[ ${MDG} -eq 1 ]]; then
   fi
 else
   ERROR_LOG=$(ls ${LOC}/log/master.err 2>/dev/null | head -n1)
-  LATEST_CORE=$(ls -t ${LOC}/*/*core* 2>/dev/null | grep -v 'PREV' | head -n1)  # Exclude data.PREV
+  LATEST_CORE=$(ls -t ${LOC}/*/*core* 2>/dev/null | grep -v 'data.PREV' | head -n1)  # Exclude data.PREV
   if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location (this may have been an MTR run)
     LATEST_CORE=$(ls -t ${LOC}/var/log/*/mysqld*/data/*core* 2>/dev/null | head -n1)
   fi
@@ -231,7 +231,6 @@ if [ "${SAN_BUG}" -eq 1 ]; then
   exit 0
 fi
 
-# Note: all asserts below exclude any 'PREV' directories, like data.PREV
 if [ -z "${LATEST_CORE}" ]; then
   if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
     1>&2 echo "${SHOWTEXT}"

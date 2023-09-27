@@ -4,22 +4,24 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=11.3                                                        # Use the earliest major version affected by the bug
-FEATURETREE='preview-11.3-preview'                                  # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
+VERSION=10.6                                                        # Use the earliest major version affected by the bug
+FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
-RECLONE=0                                                           # Set to 1 to reclone a tree before starting
-UPDATETREE=0                                                        # Set to 1 to update the tree (git pull) before starting
+RECLONE=1                                                           # Set to 1 to reclone a tree before starting
+UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-LAST_KNOWN_GOOD_COMMIT='8ad1e26b1bafa4ed9928306efc10c047f2274108'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='fd14f7c33f150aa93bb3eef15b672074548192d8'   # Revision of first known bad commit
-TESTCASE='/test/in10.sql'                                           # The testcase to be tested
-UNIQUEID='SIGSEGV|get_schema_key_period_usage_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result'  # The UniqueID to scan for [Exclusive]
+LAST_KNOWN_GOOD_COMMIT='961b96a5e0dd40512b8fff77dcec273187ccc9fd'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='d13a57ae8181f2a8fbee86838d5476740e050d50'   # Revision of first known bad commit
+TESTCASE='/test/in11.sql'                                           # The testcase to be tested
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+REPLICATION=1                                                       # Set to 1 to use replication (./start_replication)
+UNIQUEID='SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with'  # The UniqueID to scan for [Exclusive]
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
-# [Exclusive]: UNIQUEID and TEXT are mutually exclusive: do not set both
-# Leave both UNIQUEID and TEXT empty to scan for core files instead
+# [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
+# And, leave both UNIQUEID and TEXT empty to scan for core files instead
+# i.e. 3 different modes in total: UNIQUEID, TEXT or core files scan
 
 # Script variables, do not change
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
@@ -126,12 +128,32 @@ bisect_bad(){
 # Git setup
 git bisect reset 2>&1 | grep -v 'We are not bisecting' | tee -a "${MAINLOG}"  # Remove any previous bisect run data
 git reset --hard | tee -a "${MAINLOG}"  # Revert tree to mainline
+if [ "${?}" -ne 0 ]; then
+  echo "Assert: git reset --hard failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
+  exit 1
+fi
 git clean -xfd | tee -a "${MAINLOG}"    # Cleanup tree
-git checkout "${VERSION}" | tee -a "${MAINLOG}"   # Ensure we have the right version
+if [ "${?}" -ne 0 ]; then
+  echo "Assert: git clean -xfd failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
+  exit 1
+fi
+git checkout "${VERSION}" | tee -a "${MAINLOG}"  # Ensure we have the right version
+if [ "${?}" -ne 0 ]; then
+  echo "Assert: git checkout '${VERSION}' failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
+  exit 1
+fi
 if [ "${UPDATETREE}" -eq 1 ]; then
-  git pull --recurse-submodules | tee -a "${MAINLOG}"        # Ensure we have the latest version
+  git pull --recurse-submodules | tee -a "${MAINLOG}"  # Ensure we have the latest version
+  if [ "${?}" -ne 0 ]; then
+    echo "Assert: git pull --recurse-submodules failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
+    exit 1
+  fi
 fi
 git bisect start | tee -a "${MAINLOG}"  # Start bisect run
+if [ "${?}" -ne 0 ]; then
+  echo "Assert: git bisect start failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
+  exit 1
+fi
 if [ "${BISECT_REPLAY}" -eq 1 ]; then
   git bisect replay "${BISECT_REPLAY_LOG}" | tee -a "${MAINLOG}"
   if [ "${?}" -ne 0 ]; then 
@@ -157,23 +179,31 @@ fi
 # which was done via a merge in the tree where the current branch is the second parent and not the first one, with
 # the result that the tree version (as seen in the VERSION file) is different from the $VERSION needing to be tested.
 # For this, the script (ref below) will use 'git bisect skip' until it has located a commit with the correct $VERSION
+LAST_TESTED_COMMIT=
 while :; do
   CUR_VERSION=;CUR_COMMIT=
   while :; do
     source ./VERSION
     CUR_VERSION="${MYSQL_VERSION_MAJOR}.${MYSQL_VERSION_MINOR}"
     CUR_COMMIT="$(git log | head -n1 | tr -d '\n')"
-    CUR_DATE="$(git log | head -n3 | tail -n1 | sed 's|Date:[ \t]*||;s|[ \t]*+.*||' | tr -d '\n')"
+    CUR_DATE="$(git log | head -n4 | tail -n1 | sed 's|Date:[ \t]*||;s|[ \t]*+.*||' | tr -d '\n')"
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
       echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, skipping..." | tee -a "${MAINLOG}"
       git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"
       continue
+    elif [ "${CUR_COMMIT}" == "${LAST_TESTED_COMMIT}" ]; then
+      # This seems to happen when for example a patch was attempted to be applied but did not apply correctly or source files were changed - i.e. the tree state is not clean anymore. TODO: this is a provisional patch; it may not work. Setting RECLONE=1 is another way to work around such issues (full reclone)
+      echo "|> ${CUR_COMMIT} is the same as the last tested commit ${LAST_TESTED_COMMIT}, skipping..." | tee -a "${MAINLOG}"
+      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"
     else
       echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, proceeding..." | tee -a "${MAINLOG}"
+      LAST_TESTED_COMMIT="${CUR_COMMIT}"
       break
     fi
   done
   CONTINUE_MAIN_LOOP=0
+  OUTCOME_BUILD=
+  SCREEN_NAME=
   while :; do
     echo "|> Cleaning up any previous version ${VERSION} builds in /test/git-bisect" | tee -a "${MAINLOG}"
     rm -Rf /test/git-bisect/MD*${VERSION}*
@@ -217,8 +247,18 @@ while :; do
   cd "${TEST_DIR}" || die 1 "Could not change directory to TEST_DIR (${TEST_DIR})"
   ${HOME}/start  # Init BASEDIR with runtime scripts
   cp ${TESTCASE} ./in.sql
-  ./all_no_cl >/dev/null 2>&1 || die 1 "Could not execute ./all_no_cl in ${PWD}"  # wipe, start
-  ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+  if [ "${REPLICATION}" -eq 0 ]; then
+    ./all_no_cl >/dev/null 2>&1 || die 1 "Could not execute ./all_no_cl in ${PWD}"  # wipe, start
+    ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+    ./stop  2>&1 >/dev/null  # Output is removed as otherwise it may contain, for example, 'bin/mariadb-admin: connect to server at 'localhost' failed' if the server already crashed
+    ./kill 2>&1 >/dev/null
+  else
+    export SRNOCL=1  # No CLI when using ./start_replication
+    ./start_replication
+    ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+    ./stop_replication 2>&1 >/dev/null  # Output is removed, ref above
+    ./kill_replication 2>&1 >/dev/null
+  fi
   if [ ! -z "${UNIQUEID}" ]; then
     if [ "$(${HOME}/t)" == "${UNIQUEID}" ]; then
       echo 'UniqueID Bug found; bad commit' | tee -a "${MAINLOG}"
