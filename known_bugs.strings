@@ -166,6 +166,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|ha_innobase::rnd_init|handler::ha_rnd_init                          ## MDEV-32262
 SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with                                                                          ## MDEV-32249
 SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                                     ## MDEV-32257
 SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_commit|mysql_execute_command                                                       ## MDEV-32257
@@ -207,6 +208,7 @@ slot_rec|SIGABRT|ib::fatal::~fatal|row_mysql_handle_errors|row_insert_for_mysql|
 SIGSEGV|rec_offs_n_fields|rec_offs_data_size|btr_node_ptr_set_child_page_no|btr_attach_half_pages                                                                              ## MDEV-31817
 SIGABRT|btr_attach_half_pages|btr_page_split_and_insert|btr_cur_pessimistic_insert|btr_insert_on_non_leaf_level                                                                ## MDEV-31815
 SIGSEGV|Item::print_parenthesised|Item_cond::print|st_select_lex::print|subselect_single_select_engine::print                                                                  ## MDEV-31850
+SIGSEGV|Field::set_default|Field::set_default|Field::save_in_field_default_value|Item_param::save_in_field                                                                     ## MDEV-31849
 SIGSEGV|Field::set_default|Field::save_in_field_default_value|Item_param::save_in_field|store_key_item::copy_inner                                                             ## MDEV-31849
 SIGSEGV|Reprepare_observer::report_error|Prepared_statement::check_charset_collation_map_version|Prepared_statement::execute|Prepared_statement::execute_loop                  ## MDEV-31844
 SIGSEGV|my_hash_first|my_hash_search|find_acl_role|get_current_user                                                                                                            ## MDEV-31825
