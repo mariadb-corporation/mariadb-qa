@@ -129,7 +129,7 @@ ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussio
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5)
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      https://jira.mariadb.org/browse/MDEV-22936
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    https://jira.mariadb.org/browse/MDEV-22936
-Assertion .!m_freed_pages. failed                     https://jira.mariadb.org/browse/MDEV-30527
+Assertion .!prebuilt->index->is_primary(). failed     https://jira.mariadb.org/browse/MDEV-27366
 InnoDB: Cannot reset all values.*while it is on.*off  Presumed non-issue (resetting buffer_LRU_get_free_* while on etc.)
 ERROR. InnoDB: Cannot delete.*Is a directory          https://jira.mariadb.org/browse/MDEV-30453
 Flagged corruption of.*in table.*in CHECK TABLE; Wrong count https://jira.mariadb.org/browse/MDEV-29954

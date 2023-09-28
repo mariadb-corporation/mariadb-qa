@@ -166,6 +166,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|trans_xa_commit                                                                                          ## MDEV-32257
+SIGABRT|finish_event_group|handle_rpl_parallel_thread|pfs_spawn_thread|start_thread                                                                                            ## MDEV-21107
+table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::delete_table                                                             ## MDEV-32272
 SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with                                                                          ## MDEV-32249
 SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                                     ## MDEV-32257
 SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_commit|mysql_execute_command                                                       ## MDEV-32257
@@ -1006,6 +1009,7 @@ table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_
 !((system_charset_info)->coll->strcasecmp((system_charset_info), (dict_table_get_col_name( ib_table, j)), (field->field_name.str)))|SIGABRT|innobase_build_v_templ|ha_innobase::inplace_alter_table|handler::ha_inplace_alter_table|mysql_inplace_alter_table ## MDEV-25533
 part_id == m_last_part|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                  ## MDEV-25532
 SIGSEGV|handler_index_cond_check|row_search_idx_cond_check|row_search_mvcc|ha_innobase::index_read                                                                             ## MDEV-27366
+!prebuilt->index->is_primary()|SIGABRT|row_search_idx_cond_check|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                              ## MDEV-27366
 inited==INDEX|SIGABRT|handler::ha_index_end|opt_sum_query|JOIN::optimize_inner|JOIN::optimize                                                                                  ## MDEV-20460
 SIGSEGV|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update|sql_set_variables                                                                       ## MDEV-25499
 SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update                                                                           ## MDEV-25499

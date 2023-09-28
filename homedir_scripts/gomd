@@ -11,7 +11,9 @@
 #BASEDIR=/test/MD260823-mariadb-11.3.0-linux-x86_64-dbg
 #BASEDIR=/test/MD110923-mariadb-11.3.0-linux-x86_64-dbg
 #BASEDIR=/test/preview-11.3-preview_MD120923-mariadb-11.3.0-linux-x86_64-opt
-BASEDIR=/test/PATCH_EMD260923-mariadb-10.6.14-9-linux-x86_64-dbg
+#BASEDIR=/test/PATCH_EMD260923-mariadb-10.6.14-9-linux-x86_64-dbg
+#BASEDIR=/test/PATCH_MD270923-mariadb-10.6.16-linux-x86_64-dbg
+BASEDIR=/test/PATCH2_MD280923-mariadb-10.6.16-linux-x86_64-dbg
 # # BASE_MD260923-mariadb-10.6.16-linux-x86_64-opt
 #preview-11.3-preview_MDEV-28856_MD160923-mariadb-11.3.0-linux-x86_64-dbg
 #MD020923-mariadb-11.3.0-linux-x86_64-dbg
