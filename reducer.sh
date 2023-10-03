@@ -341,6 +341,10 @@ ABORT_ACTIVE=0
 # Random entropy init
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 
+# Ensure MYPORT is not set
+export -n MYPORT
+MYPORT=
+
 # Set SAN options
 # https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
 # https://github.com/google/sanitizers/wiki/AddressSanitizerFlags
@@ -1229,9 +1233,6 @@ multi_reducer(){
     exit 1
   fi
   mkdir $WORKD/subreducer/
-  init_empty_port
-  MULTI_MYPORT=$NEWPORT
-  NEWPORT=
 
   TXT_OUT="$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Forking subreducer threads [PIDs]:"
   for t in $(eval echo {1..$MULTI_THREADS}); do
@@ -1255,7 +1256,6 @@ multi_reducer(){
       | sed "0,/#VARMOD#/s:#VARMOD#:TS_DBG_CLI_OUTPUT=$TS_DBG_CLI_OUTPUT\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:PAUSE_AFTER_EACH_OCCURENCE=\"$PAUSE_AFTER_EACH_OCCURENCE\"\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:BASEDIR=\"$BASEDIR\"\n#VARMOD#:" \
-      | sed "0,/#VARMOD#/s:#VARMOD#:MYPORT=\"$MULTI_MYPORT\"\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:MYUSER=\"$MYUSER\"\n#VARMOD#:" > $MULTI_WORKD/subreducer
 
     chmod +x $MULTI_WORKD/subreducer
@@ -1264,9 +1264,6 @@ multi_reducer(){
     PID=$!
     export MULTI_PID$t=$PID
     TXT_OUT="$TXT_OUT #$t [$PID]"
-    init_empty_port
-    MULTI_MYPORT=$NEWPORT
-    NEWPORT=
   done
   echoit "$TXT_OUT"
 
@@ -2343,9 +2340,6 @@ start_mdg_main(){
   }
 
   ADDR="127.0.0.1"
-  #init_empty_port
-  #MYPORT=$NEWPORT
-  #NEWPORT=
   rm -rf $WORKD/tmp*
   unset MDG_PORTS
   unset MDG_LADDRS
@@ -2576,12 +2570,13 @@ start_mysqld_main(){
     export _RR_TRACE_DIR="${WORKD}/rr"
     mkdir -p "${_RR_TRACE_DIR}"
   fi
-  # Change --port=$MYPORT to --skip-networking instead once BUG#13917335 is fixed and remove all MYPORT + MULTI_MYPORT coding
+  # Change --port=$MYPORT to --skip-networking instead once BUG#13917335 is fixed and remove all MYPORT coding. Update: this can no longer be done even if that bug is fixed, as replication uses MYPORT. TODO: remove this comment once it was pushed once for history
   if [ $MODE -ge 6 -a $TS_DEBUG_SYNC_REQUIRED_FLAG -eq 1 ]; then
     if [ "${REPLICATION}" -eq 1 ]; then
       echoit "MODE=6, TS_DEBUG_SYNC_REQUIRED_FLAG=1. This combination does not support replication mode yet (REPLICATION=1). Please disable either MODE 6, TS_DEBUG_SYNC_REQUIRED_FLAG, or REPLICATION or extend the code"
       exit 1
     fi
+    init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
     echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
     CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
     MYSQLD_START_TIME=$(date +'%s')
@@ -2590,14 +2585,14 @@ start_mysqld_main(){
   else
     if [ "${REPLICATION}" -eq 1 ]; then
       # ---- Master
+      init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
       echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_START_TIME=$(date +'%s')
       $CMD > $WORKD/log/mysqld.out 2>&1 &
       PIDV="$!"
       # ---- Slave
-      init_empty_port
-      MYPORT_SLAVE=$NEWPORT
+      init_empty_port; MYPORT_SLAVE=$NEWPORT; NEWPORT=  # Obtain new empty port
       echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_SLAVE_START_TIME=$(date +'%s')
@@ -2627,6 +2622,7 @@ start_mysqld_main(){
       sleep 2  # Replication setup delay
       echoit "[Info] Replication enabled between master and slave in ${WORKD} using port ${MYPORT}"
     else
+      init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
       echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_START_TIME=$(date +'%s')
@@ -2655,7 +2651,6 @@ start_mysqld_main(){
   done
 }
 
-#                             --binlog-format=MIXED \
 start_valgrind_mysqld_main(){
   if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
@@ -2665,6 +2660,7 @@ start_valgrind_mysqld_main(){
   if [ -f $WORKD/valgrind.out ]; then mv -f $WORKD/valgrind.out $WORKD/valgrind.prev; fi
   SCHEDULER_OR_NOT=
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then SCHEDULER_OR_NOT="--event-scheduler=ON "; fi
+  init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port 
   CMD="${TIMEOUT_COMMAND} valgrind --suppressions=$BASEDIR/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes ${BIN} --basedir=${BASEDIR} --datadir=$WORKD/data --port=$MYPORT --tmpdir=$WORKD/tmp --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT}" # Workaround for BUG#12939557 (when old Valgrind version is used): --innodb_checksum_algorithm=none
   MYSQLD_START_TIME=$(date +'%s')
   $CMD > $WORKD/valgrind.out 2>&1 &
@@ -4324,11 +4320,6 @@ fireworks_setup(){
   fi
   set_internal_options  # Should come before options_check
   options_check $1
-  if [ "$MULTI_REDUCER" != "1" ]; then  # This is a parent/main reducer
-    init_empty_port
-    MYPORT=$NEWPORT
-    NEWPORT=
-  fi
   init_workdir_and_files
   if [ $MODE -eq 9 ]; then echoit "[Init] Run mode: MODE=9: ThreadSync Crash [ALPHA]"
                            echoit "[Init] Looking for any mysqld crash"; fi

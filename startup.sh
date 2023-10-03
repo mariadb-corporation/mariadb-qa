@@ -854,6 +854,15 @@ echo 'echo "USE test;" >> ./in.sql' >>fixin
 echo 'if [ -r ./in.tmp ]; then cat in.tmp >> in.sql; rm -f in.tmp; fi' >>fixin
 
 echo "${SCRIPT_PWD}/stack.sh" >stack
+if [ -d ./mysql-test ]; then
+  echo "${SCRIPT_PWD}/stack.sh" >mysql-test/stack  # Stack for MTR observed issues
+  chmod +x mysql-test/stack
+fi
+if [ -d ./mariadb-test ]; then
+  echo "${SCRIPT_PWD}/stack.sh" >mariadb-test/stack  # Idem
+  chmod +x mariadb-test/stack
+fi
+
 echo "if [ \$(ls data/*core* 2>/dev/null | wc -l) -eq 0 ]; then" >gdb
 echo "  echo \"No core file found in data/*core* - exiting\"" >>gdb
 echo "  exit 1" >>gdb

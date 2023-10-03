@@ -62,13 +62,13 @@ while :; do
         ~/pr | grep -vEi '^=========$|SHUTDOWN|no reducer scripts were found in this directory' | sed '/Trials which modify innodb_checksum_algorithm/,+1d' | sed '/Coredumps found in trials/,+1d' | sed '/Significant.Major errors/,+9999d' | sed "s|^========== |========== [${i}] |"
         TO_SCAN='*/*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err'
         ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
-        if [ "$(echo "${ERRORS}" | wc -l)" -eq 2 ]; then # 2 Lines: first is filename, second is issue found. If an issue was filtered (grep -vE "${REGEX_ERRORS_FILTER}"), only a single line (the first one with the filename) will be present
+        if [ "$(echo "${ERRORS}" | wc -l)" -gt 1 ]; then
           echo "** Issues found in error logs"
           echo "${ERRORS}"
         fi
         ERRORS=
-        ERRORS_LAST_LINE="$(tail -n1 */*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"  # malloc(): , double free or corruption, free(): , Warning: Memory not freed, etc.
-        if [ "$(echo "${ERRORS_LAST_LINE}" | wc -l)" -eq 2 ]; then  # 2 Lines: first is filename, second is issue found. If an issue was filtered (grep -vE "${REGEX_ERRORS_FILTER}"), only a single line (the first one with the filename) will be present
+        ERRORS_LAST_LINE="$(tail -n1 ${TO_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"  # malloc(): , double free or corruption, free(): , Warning: Memory not freed, etc.
+        if [ "$(echo "${ERRORS_LAST_LINE}" | wc -l)" -gt 1 ]; then
           echo "** Other issues found in last line of error logs"
           echo "${ERRORS_LAST_LINE}" | tr -d '\n' | sed 's|==> |\n|g;s| <==|: |g' | sed '1d' | sed 's|$|\n|'
         fi

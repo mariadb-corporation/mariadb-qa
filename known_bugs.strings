@@ -166,15 +166,17 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+#SIGABRT|MDL_context::acquire_lock|MDL_context::acquire_locks|lock_table_names|lock_table_names                                                                                ## MENT-1958 (secondary case: to move when found again)
+SIGABRT|get_schema_tables_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                             ## MDEV-22916
 SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|trans_xa_commit                                                                                          ## MDEV-32257
 SIGABRT|finish_event_group|handle_rpl_parallel_thread|pfs_spawn_thread|start_thread                                                                                            ## MDEV-21107
 table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::delete_table                                                             ## MDEV-32272
 m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|ha_innobase::rnd_init|handler::ha_rnd_init                          ## MDEV-32262
 SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with                                                                          ## MDEV-32249
-SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                                     ## MDEV-32257
-SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_commit|mysql_execute_command                                                       ## MDEV-32257
-SIGABRT|acquire_xid|binlog_rollback_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                     ## MDEV-32257
-SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                       ## MDEV-32257
+#SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                                     ## MDEV-32257
+#SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_commit|mysql_execute_command                                                       ## MDEV-32257
+#SIGABRT|acquire_xid|binlog_rollback_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                     ## MDEV-32257
+#SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                       ## MDEV-32257
 thd->is_error()|SIGABRT|Sql_cmd_dml::prepare|Sql_cmd_dml::execute|mysql_execute_command|mysql_parse                                                                            ## MDEV-24640
 SIGSEGV|trace_engine_stats|Explain_table_access::print_explain_json|Explain_basic_join::print_explain_json_interns|Explain_select::print_explain_json                          ## MDEV-31764
 SIGSEGV|get_schema_key_period_usage_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                   ## MDEV-32204

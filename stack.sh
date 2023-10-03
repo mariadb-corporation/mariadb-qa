@@ -49,10 +49,7 @@ if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
 if [ "${MDG}" -eq 1 ]; then
   CORE_COUNT=$(ls --color=never node*/*core* 2>/dev/null | wc -l)
 else
-  CORE_COUNT=$(ls --color=never data*/*core* 2>/dev/null | wc -l)
-fi
-if [ ${CORE_COUNT} -eq 0 ]; then
-  CORE_COUNT=$(ls --color=never var/[0-9]*/log/main.test-innodb/mysqld.*/data/*core* 2>/dev/null | wc -l)
+  CORE_COUNT=$(ls --color=never data*/*core* var/log/*/*/data/*core* var/*/log/*/*/data/*core* 2>/dev/null | wc -l)
 fi
 if [ ${CORE_COUNT} -eq 0 ]; then
   echo "INFO: no cores found at data*/*core* nor at node*/*core*"
@@ -63,9 +60,9 @@ elif [ ${CORE_COUNT} -gt 1 ]; then
 fi
 
 if [ "${MDG}" -eq 1 ]; then
-  ERROR_LOG=$(ls --color=never ./node*/node*.err 2>/dev/null | head -n1)  # This is not perfect in case node2 or node3 crashes TODO
+  ERROR_LOG=$(ls --color=never node*/node*.err 2>/dev/null | head -n1)  # This is not perfect in case node2 or node3 crashes TODO
 else
-  ERROR_LOG=$(ls --color=never ./log/master.err 2>/dev/null | head -n1)
+  ERROR_LOG=$(ls --color=never log/master.err var/log/mysqld.2.err var/log/mysqld.1.err 2>/dev/null | sort -R | head -n1)  # sort -R: Slave log first, if present (as often the slave asserts). TODO: this is not perfect either, like MDG
 fi
 if [ ! -z "${ERROR_LOG}" ]; then
   ASSERT="$(grep --binary-files=text -m1 'Assertion.*failed.$' ${ERROR_LOG} | head -n1)"
@@ -82,10 +79,7 @@ LATEST_CORE=
 if [ "${MDG}" -eq 1 ]; then
   LATEST_CORE="$(ls -t --color=never node*/*core* 2>/dev/null)"
 else
-  LATEST_CORE="$(ls -t --color=never data*/*core* 2>/dev/null)"
-fi
-if [ -z "${LATEST_CORE}" ]; then
-  LATEST_CORE="$(ls -t --color=never var/[0-9]*/log/main.test-innodb/mysqld.*/data/*core* 2>/dev/null)"
+  LATEST_CORE="$(ls -t --color=never data*/*core* var/log/*/*/data/*core* var/*/log/*/*/data/*core* 2>/dev/null)"
 fi
 
 gdb -q ${BIN} ${LATEST_CORE} >/tmp/${RANDF}.gdba 2>&1 << EOF
