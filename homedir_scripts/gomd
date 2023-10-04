@@ -16,7 +16,7 @@
 #BASEDIR=/test/PATCH2_MD280923-mariadb-10.6.16-linux-x86_64-dbg
 ##BASEDIR=/test/PATCH3_MD031023-mariadb-10.6.16-linux-x86_64-dbg
 ##BASEDIR=/test/PATCH3_UBASAN_MD031023-mariadb-10.6.16-linux-x86_64-dbg
-BASEIR=/test/PATCH3_UBMSAN_MD041023-mariadb-10.6.16-linux-x86_64-opt
+BASEDIR=/test/PATCH3_UBMSAN_MD041023-mariadb-10.6.16-linux-x86_64-dbg
 ##BASEDIR=/test/BASE_MD260923-mariadb-10.6.16-linux-x86_64-dbg
 #preview-11.3-preview_MDEV-28856_MD160923-mariadb-11.3.0-linux-x86_64-dbg
 #MD020923-mariadb-11.3.0-linux-x86_64-dbg
@@ -70,6 +70,11 @@ elif [ ! -r "${HOME}/mariadb-qa" ]; then
   exit 1
 elif [ ! -r ${HOME}/mariadb-qa/${CONF} ]; then
   echo "Assert: ${HOME}/mariadb-qa/${CONF} not available"
+  exit 1
+fi
+
+if [ -z "${BASEDIR}" ]; then
+  echo "The basedir variable BASEDIR was not set. Typo?"
   exit 1
 fi
 

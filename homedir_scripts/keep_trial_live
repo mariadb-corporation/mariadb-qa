@@ -10,7 +10,7 @@ elif [ ! -r ${HOME}/sr ]; then
   exit 1
 elif [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
-  screen -admS "keep_trial_alive_s${1}" bash -c "$0;bash"
+  screen -admS "keep_trial_alive_s${1}" bash -c "${0} ${1};bash"
   sleep 1
   screen -d -r "keep_trial_alive_s${1}"
   return 2> /dev/null; exit 0
