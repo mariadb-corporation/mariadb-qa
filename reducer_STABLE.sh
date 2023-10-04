@@ -13,11 +13,11 @@
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
+
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
 # USA
 
-# In active development: 2012-2022
+# In active development: 2012-2023
 
 # This program has been used to reduce tens of thousands of SQL based testcases,
 # from tens (or hundreds) of thousands of SQL lines to less then 10 lines, each.
@@ -47,12 +47,12 @@ MYINIT=""                       # Extra options to pass to mysqld AND at data di
 BASEDIR="${PWD}"                # Path to the MySQL BASE directory to be used
 DISABLE_TOKUDB_AUTOLOAD=0       # On/Off (1/0) Prevents mysqld startup issues when using standard MySQL server (i.e. no TokuDB available) with a testcase containing TokuDB SQL
 DISABLE_TOKUDB_AND_JEMALLOC=1   # For MariaDB, TokuDB is deprecated, so we always disable both in full
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 # === Sporadic testcases        # Used when testcases prove to be sporadic *and* fail to reduce using basic methods
 FORCE_SKIPV=0                   # On/Off (1/0) Forces verify stage to be skipped (auto-enables FORCE_SPORADIC)
 FORCE_SPORADIC=0                # On/Off (1/0) Forces issue to be treated as sporadic
-NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat/try/attempt each trial 1 time. Increase to re-attempt trials when reduction was not succesful for that trial; ideal for sporadic issues which need x attempts per trial. Will work irrespective of detected sporadicity. Ref https://jira.mariadb.org/browse/TODO-3017
+NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat/try/attempt each trial 1 time. Increase to re-attempt trials when reduction was not succesful for that trial; ideal for sporadic issues which need x attempts per trial. Will work irrespective of detected sporadicity. Ref TODO-3017
 
 # === True Multi-Threaded       # True multi-threaded testcase reduction (only program in the world that does this) based on random replay (auto-covers sporadic testcases)
 PQUERY_MULTI=0                  # On/off (1/0) Enables true multi-threaded testcase reduction based on random replay (auto-enables USE_PQUERY)
@@ -63,6 +63,11 @@ REDUCE_STARTUP_ISSUES=0         # Default/normal use: 0. Set to 1 to reduce mysq
 # === Reduce GLIBC/SS crashes   # Remember that if you use REDUCE_GLIBC_OR_SS_CRASHES=1 with MODE=3, then the console/typescript log is searched for TEXT, not the mysqld error log. Note: reducing 'buffer overflow' has previously been difficult (unknown reason, not enough samples to establish cause), try an ASAN dbg+opt build first, often they report on the memory issues more easily.
 REDUCE_GLIBC_OR_SS_CRASHES=0    # Default/normal use: 0. Set to 1 to reduce testcase based on a GLIBC crash or stack smash being detected. MODE=3 (TEXT) and MODE=4 (all) supported
 SCRIPT_LOC=/usr/bin/script      # The script binary (sudo yum install util-linux) is required for reducing GLIBC crashes
+
+# === Reduce replication issues # Note that any REPL_EXTRA set in pquery conf files are auto-merged by pquery-run.sh into MYEXTRA (and this do not need to be covered here)
+REPLICATION=0                   # Default: 0: disabled, 1: enable standard master/slave replication. Replay will be against the master
+MASTER_EXTRA=""                 # Extra mysqld/mariadbd options to pass to the master server only
+SLAVE_EXTRA=""                  # Extra mysqld/mariadbd options to pass to the slave server only
 
 # === Hang issues               # For catching hang issues (both in normal runtime as well as during shutdown). Must set MODE=0 for this option to become active
 TIMEOUT_CHECK=600               # When MODE=0 is used, this specifies the nr of seconds to be used as a timeout. Do not set too small (eg. >600 sec is likely best). See examples in help below. Set to approx FULL testcase duration + 20 seconds, keeping in mind load on the server. Minimum: 31 seconds. 'FULL': Because the chuncking algorithm could eliminate the hanging query, but if the TIMEOUT_CHECK is set too small then a timeout will still occur due to overall testcase duration! Likely best to take overall testcase lenght (without the hanging query) + 30 seconds on otherwise unused server, or simply set it to a large number like 600 as this is less error-prone. A good approach is to pre-trim the file past the hanging query first manually, then remove last statement, check duration client. Then add 30 seconds.
@@ -81,7 +86,7 @@ NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (ot
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
 RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
 RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces rather than only the final one
-PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause reducer after each successful issue occurence
+PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause reducer after each successful issue occurence (other search keywords: stop, halt, kill)
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -98,6 +103,7 @@ SAVE_RESULTS=0                  # On/Off (1/0) (Default=1: save a copy of reduce
 # === pquery options            # Note: only relevant if pquery is used for testcase replay, ref USE_PQUERY and PQUERY_MULTI
 USE_PQUERY=0                    # On/Off (1/0) Enable to use pquery instead of the mysql CLI. pquery binary (as set in PQUERY_LOC) must be available
 PQUERY_LOC="${SCRIPT_PWD}/pquery/pquery2-md"  # The pquery binary in mariadb-qa. To get this binary use:  cd ~; git clone https://github.com/Percona-QA/mariadb-qa.git
+PQUERY_CONS_Q_FAIL=0            # On/Off (1/0) (Default=0) Checks the pquery log for 'Last [0-9]+ consecutive queries all failed' while ignoring all other issue occurences (auto-sets USE_PQUERY=1, MODE=3, TEXT='Last [0-9]+ consecutive queries all failed', and USE_NEW_TEXT_STRING=0). This is a MODE=3 hack to use the pquery log irrespective of any crashes/TEXT/error log contents or similar to debug the 'x consecutive queries all failed' scenario (which may indicate valid bugs). Do not turn on unless specifically needed. When using this, note that testcases can never become much shorter then let's say 251-265 queries, and that only the top 1 to 10 orso queries will matter (i.e. until it starts failing queries, which will should be visible in the pquery output i.e. ;#ERROR... or likely similar in the CLI) as the last 250 queries in the testcase are needed to produce the reducible outcome of having that message in the pquery log
 
 # === Other options             # The options are not often changed
 CLI_MODE=2                      # When using the CLI; 0: sent SQL using a pipe, 1: sent SQL using --execute="SOURCE ..." command, 2: sent SQL using redirection (mysql < input.sql)
@@ -235,7 +241,7 @@ TS_VARIABILITY_SLEEP=1
 # - Subreducer(s): these are multi-threaded runs of reducer.sh started from within reducer.sh. They have a specific role, similar to the main reducer.
 #   At the moment there are only two such specific roles: verfication (reproducible yes/no + sporadic yes/no) and simplification (terminate a subreducer batch
 #   (all of it) once a simpler testcase is found by one of the subthreads (subreducers), and use that testcase to again start new simplification subreducers.)
-# - The files that are initially seen in the root working directory (i.e. $WORKD) are those generated by the step "[Init] Setting up standard working template", they are not an actual replay of any SQL file, at least not intitially; once the processing continues past this initial template creation, then the results
+# - The files that are initially seen in the root working directory (i.e. $WORKD) are those generated by the step "[Init] Setting up data directory standard working template", they are not an actual replay of any SQL file, at least not intitially; once the processing continues past this initial template creation, then the results
 #   (i.e. the results of actual replays of SQL) will be in either;
 #   - The subreducer directories $WORKD/subreducer/<nr>/ (ref above), provided reducer.sh is working in MULTI mode (even the standard VERIFY stage is MULTI)
 #   - Or, they will be in the same aforementioned directory $WORKD (and the output files from the initial template creation will now have been overwritten, though not the actual template), provided reducer.sh is working in single-threaded reduction mode (i.e. MULTI mode is not active).
@@ -335,6 +341,10 @@ ABORT_ACTIVE=0
 # Random entropy init
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 
+# Ensure MYPORT is not set
+export -n MYPORT
+MYPORT=
+
 # Set SAN options
 # https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
 # https://github.com/google/sanitizers/wiki/AddressSanitizerFlags
@@ -347,9 +357,10 @@ export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs
 #export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 export UBSAN_OPTIONS=print_stacktrace=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
+export MSAN_OPTIONS=poison_in_dtor=0
 
 # Flags
-FIRST_MYSQLD_START_FLAG=1  # Avoids FORCE_KILL=1 from being used at '[Init] Attempting first mysqld startup with all MYEXTRA options passed to mysqld' stage.
+FIRST_MYSQLD_START_FLAG=1  # Avoids FORCE_KILL=1 from being used at '[Init] Attempting first mariadbd/mysqld startup with all MYEXTRA options passed' stage.
 
 # ===== [SPECIAL MYEXTRA SECTION START] Preparation for STAGES 8 and 9: special MYEXTRA startup option sets handling
 # Important: If you add a section below for additional startup option sets, be sure to add the final outcome to SPECIAL_MYEXTRA_OPTIONS at the end of this section (marked by "[SPECIAL MYEXTRA SECTION END]")
@@ -360,37 +371,30 @@ SPECIAL_MYEXTRA_OPTIONS=
 #                      2) Any reference to the engine is removed from MYEXTRA and stored in two variables TOKUDB/ROCKSDB to allow more control/testcase reducability
 #                      3) Testcase reduction removal of engines (one-by-one) is tested in STAGE9
 
-MYSQL_VERSION=$(${BASEDIR}/bin/mysqld --no-defaults --version 2>&1 | grep -oe '[0-9]\.[0-9][\.0-9]*' | head -n1)
-#Format version string (thanks to wsrep_sst_xtrabackup-v2)
-normalize_version(){
-  local major=0
-  local minor=0
-  local patch=0
-
-  # Only parses purely numeric version numbers, 1.2.3
-  # Everything after the first three values are ignored
-  if [[ $1 =~ ^([0-9]+)\.([0-9]+)\.?([0-9]*)([\.0-9])*$ ]]; then
-    major=${BASH_REMATCH[1]}
-    minor=${BASH_REMATCH[2]}
-    patch=${BASH_REMATCH[3]}
-  fi
-  printf %02d%02d%02d $major $minor $patch
-}
-
-#Version comparison script (thanks to wsrep_sst_xtrabackup-v2)
-check_for_version()
-{
-  local local_version_str="$( normalize_version $1 )"
-  local required_version_str="$( normalize_version $2 )"
-
-  if [[ "$local_version_str" < "$required_version_str" ]]; then
-    return 1
-  else
-    return 0
-  fi
-}
 TOKUDB=
 ROCKSDB=
+#Check BASEDIR and auto-update to a build in /data/VARIOUS_BUILDS/ if BASEDIR directory does not exist
+BASEDIR_ALT="$(echo "${BASEDIR}" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"  # Check /data/VARIOUS_BUILDS (and use any dir found there if BASEDIR does not exist), as it often contains older BASEDIR directories. This aids in just starting reducer.sh without having to update the BASEDIR path/directory
+if [ ! -d "${PWD}" -a ! -d "${BASEDIR_ALT}" ]; then
+  echo "Assert: Neither '${PWD}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
+  exit 1
+elif [ -d "${BASEDIR_ALT}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/VARIOUS_BUILDS/ archive) found
+  echo "Note: Updating BASEDIR from '${BASEDIR}' to '${BASEDIR_ALT}' as set BASEDIR did not exist, but the same/required server build was found in /data/VARIOUS_BUILDS/"
+  sleep 2
+  BASEDIR="${BASEDIR_ALT}"
+fi
+BASEDIR_ALT=
+#Check replication option
+if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want MASTER_EXTRA nor SLAVE_EXTRA options to take effect
+  if [ ! -z "${MASTER_EXTRA}" ]; then
+    echo "Warning: MASTER_EXTRA is set to '${MASTER_EXTRA}', yet REPLICATION=0, this looks like a configuration mistake. MASTER_EXTRA will not take effect during this reducer.sh run"
+  fi
+  if [ ! -z "${SLAVE_EXTRA}" ]; then
+    echo "Warning: SLAVE_EXTRA is set to '${SLAVE_EXTRA}', yet REPLICATION=0, this looks like a configuration mistake. SLAVE_EXTRA will not take effect during this reducer.sh run"
+  fi
+  MASTER_EXTRA=
+  SLAVE_EXTRA=
+fi
 #Check rr binary location and set startup option
 export RR_OPTIONS=
 if [[ ${RR_TRACING} -eq 1 ]]; then
@@ -506,39 +510,41 @@ else
 fi
 # === Check Binary logging options, split it into a BINLOG variable, and cleanup MYEXTRA to remove the related options
 BINLOG=
-if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
-  if [[ ! "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
-      echo "Error: --server-id is present in MYEXTRA whereas --log-bin is not. Please fix this."
-      echo "Terminating now."
-      exit 1
-    else
-      echo "Warning: --server-id is present in MYEXTRA whereas --log-bin is not. This is a valid setup for 8.0 in which binary logging is enabled by default already. Still, reduction may fail in STAGE9 as reducer has not been updated yet to handle this situation. As a workaround, add --log-bin to MYEXTRA, or simply stop at STAGE8 reduction, or add this functionality to STAGE9 and please push it back to the repository"
-      # To add this functionality, it is likely required to just handle the --server-id option removal using the BINLOG variable whilst setting --log-bin=0 at the same time or something - and this would be a good improvement for 8.0 (and beyond) testcase reduction in any case, as it would show/prove whetter it is necesary to have binlog on or not for a given testcase
-    fi
-  fi
-fi
-if [[ "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-  if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
-    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
-      if [[ ! "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
-        echo "Error: The version of mysqld is 5.7 or 8.0 and a --bin-log option was passed in MYEXTRA, yet no --server-id option was found whereas this is required for 5.7 and 8.0."
+if [[ ${MDG} -ne 1 ]]; then
+  if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
+    if [[ ! "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
+      if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
+        echo "Error: --server-id is present in MYEXTRA whereas --log-bin is not. Please fix this."
         echo "Terminating now."
         exit 1
+      else
+        echo "Warning: --server-id is present in MYEXTRA whereas --log-bin is not. This is a valid setup for 8.0 in which binary logging is enabled by default already. Still, reduction may fail in STAGE9 as reducer has not been updated yet to handle this situation. As a workaround, add --log-bin to MYEXTRA, or simply stop at STAGE8 reduction, or add this functionality to STAGE9 and please push it back to the repository"
+        # To add this functionality, it is likely required to just handle the --server-id option removal using the BINLOG variable whilst setting --log-bin=0 at the same time or something - and this would be a good improvement for 8.0 (and beyond) testcase reduction in any case, as it would show/prove whetter it is necesary to have binlog on or not for a given testcase
       fi
     fi
   fi
-  BINLOG="$(echo "${MYEXTRA}" | grep -o "\-\-log[-_]bin[^ ]*" | head -n1)"  # Grep all text including and after '--log[-_]bin' upto a space
-  MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${BINLOG}||g")"
-  if [[ "${MYEXTRA}" == *"--server"[-_]"id"* ]]; then
-    BINLOGSI="$(echo "${MYEXTRA}" | grep -o "\-\-server[-_]id[^ ]*" | head -n1)"  # Grep all text including and after '--server[-_]id' upto the first space
-    MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${BINLOGSI}||g")"
-    BINLOG="$(echo "${BINLOG} ${BINLOGSI}")"
-  fi
-  if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
-    echo "Error: --server-id seems to be present twice in MYEXTRA. Please remove at least one instance."
-    echo "Terminating now."
-    exit 1
+  if [[ "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
+    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
+      if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
+        if [[ ! "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
+          echo "Error: The version of mysqld is 5.7 or 8.0 and a --bin-log option was passed in MYEXTRA, yet no --server-id option was found whereas this is required for 5.7 and 8.0."
+          echo "Terminating now."
+          exit 1
+        fi
+      fi
+    fi
+    BINLOG="$(echo "${MYEXTRA}" | grep -o "\-\-log[-_]bin[^ ]*" | head -n1)"  # Grep all text including and after '--log[-_]bin' upto a space
+    MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${BINLOG}||g")"
+    if [[ "${MYEXTRA}" == *"--server"[-_]"id"* ]]; then
+      BINLOGSI="$(echo "${MYEXTRA}" | grep -o "\-\-server[-_]id[^ ]*" | head -n1)"  # Grep all text including and after '--server[-_]id' upto the first space
+      MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${BINLOGSI}||g")"
+      BINLOG="$(echo "${BINLOG} ${BINLOGSI}")"
+    fi
+    if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
+      echo "Error: --server-id seems to be present twice in MYEXTRA. Please remove at least one instance."
+      echo "Terminating now."
+      exit 1
+    fi
   fi
 fi
 # === Check for ONLY_FULL_GROUP_BY sql mode, split it into a ONLYFULLGROUPBY variable, and cleanup MYEXTRA to remove the option
@@ -580,7 +586,7 @@ if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
   fi
 fi
 
-echo_out(){
+echoit(){
   echo "$(date +'%F %T') $1"
   if [ -r $WORKD/reducer.log ]; then echo "$(date +'%F %T') $1" >> $WORKD/reducer.log; fi
   if [ "${ABORT_ACTIVE}" != "1" ]; then
@@ -588,7 +594,7 @@ echo_out(){
   fi
 }
 
-echo_out_overwrite(){
+echoit_overwrite(){
   # Used for frequent on-screen updating when using threads etc.
   echo -ne "$(date +'%F %T') $1\r"
 }
@@ -603,44 +609,44 @@ save_rr_trace(){
   chmod -R +rX ${RR_SAVE_LOCATION}/
 }
 
-abort(){  # Additionally/also used for when echo_out cannot locate $INPUTFILE anymore
+abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anymore
   ABORT_ACTIVE=1
   if [ -r $INPUTFILE ]; then
-    echo_out "[Abort] CTRL+C Was pressed. Dumping variable stack"
+    echoit "[Abort] CTRL+C Was pressed. Dumping variable stack"
   else
-    echo_out "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
-    echo_out "[Abort] The source for this reducer was likely deleted. Terminating."
+    echoit "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
+    echoit "[Abort] The source for this reducer was likely deleted. Terminating."
     kill -9 $$  # Effectively self-terminate
   fi
-  echo_out "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
+  echoit "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
   if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
-    echo_out "[Abort] Best testcase thus far: $WORKO"
+    echoit "[Abort] Best testcase thus far: $WORKO"
   else
-    echo_out "[Abort] Best testcase thus far: $INPUTFILE (= input file; no optimizations were successful)"
+    echoit "[Abort] Best testcase thus far: $INPUTFILE (= input file; no optimizations were successful)"
   fi
-  echo_out "[Abort] End of dump stack"
+  echoit "[Abort] End of dump stack"
   if [ $MDG -eq 1 ]; then
-    echo_out "[Abort] Ensuring any remaining MDG nodes are terminated and removed"
+    echoit "[Abort] Ensuring any remaining MDG nodes are terminated and removed"
     ( ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null  2>&1
     sleep 2; sync
   fi
   if [ $GRP_RPL -eq 1 ]; then
-    echo_out "[Abort] Ensuring any remaining Group Replication nodes are terminated and removed"
+    echoit "[Abort] Ensuring any remaining Group Replication nodes are terminated and removed"
     ( ps -def | grep -E  'node1_socket|node2_socket|node3_socket' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
     sleep 2; sync
   fi
-  echo_out "[Abort] Ensuring any remaining processes are terminated"
+  echoit "[Abort] Ensuring any remaining processes are terminated"
   if [ "$EPOCH" != "" ]; then
     PIDS_TO_TERMINATE=$(ps -def | grep -E --binary-files=text $WHOAMI | grep -E --binary-files=text $EPOCH | grep -E --binary-files=text -v "grep" | awk '{print $2}' | tr '\n' ' ')
   else
-    echo_out "Assert: \$EPOCH is empty! in abort()!"
+    echoit "Assert: \$EPOCH is empty! in abort()!"
   fi
-  echo_out "[Abort] Terminating these PID's: $PIDS_TO_TERMINATE"
+  echoit "[Abort] Terminating these PID's: $PIDS_TO_TERMINATE"
   ( kill -9 $PIDS_TO_TERMINATE >/dev/null 2>&1; ) >/dev/null 2>&1
   if [ -r $INPUTFILE ]; then
-    echo_out "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the interruption"
+    echoit "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the interruption"
   else
-    echo_out "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
+    echoit "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
   fi
   finish 'abort'
   trap SIGINT
@@ -734,6 +740,17 @@ options_check(){
   elif [ ${NR_OF_TRIAL_REPEATS} -lt 1 ]; then
     echo "Error: NR_OF_TRIAL_REPEATS (${NR_OF_TRIAL_REPEATS}) is less than 1 which is an impossible setting."
     exit 1
+  fi
+  if [ "${PQUERY_CONS_Q_FAIL}" -eq 1 ]; then
+    if [ "${REDUCE_GLIBC_OR_SS_CRASHES}" -eq 1 ]; then
+      echo "Error: PQUERY_CONS_Q_FAIL=1 and REDUCE_GLIBC_OR_SS_CRASHES=1: these modes are incompatible, please turn off at least one"
+      exit 1 
+    fi
+    echoit "[Setup] PQUERY_CONS_Q_FAIL is enabled, setting USE_PQUERY=1, TEXT='Last [0-9]+ consecutive queries all failed', MODE=3, USE_NEW_TEXT_STRING=0"
+    USE_PQUERY=1
+    TEXT='Last [0-9]+ consecutive queries all failed'
+    MODE=3
+    USE_NEW_TEXT_STRING=0
   fi
   if [ $MODE -ge 6 ]; then
     if [ ! -d "$1" ]; then
@@ -906,23 +923,15 @@ options_check(){
       fi
     fi
   fi
-  BIN="${BASEDIR}/bin/mysqld"
+  BIN="${BASEDIR}/bin/mariadbd"
   if [ ! -s "${BIN}" ]; then
-    BIN="${BASEDIR}/bin/mysqld-debug"
-    if [ ! -s "${BIN}" ]; then  # Auto-attempt /data/VARIOUS_BUILDS at it often contains older BASEDIR directories
-      BIN_DV="$(echo "${BASEDIR}/bin/mysqld" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"
-      if [ -s "${BIN_DV}" ]; then
-        BASEDIR_OLD="${BASEDIR}"
-        BASEDIR="$(echo "${BASEDIR_OLD}" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"
-        echo "BASEDIR automatically updated from ${BASEDIR_OLD} to ${BASEDIR}"
-        BASEDIR_OLD=
-        BIN="${BIN_DV}"
-        BIN_DV=
-      else
-        BIN_DV=
-        echo "Assert: No mysqld or mysqld-debug binary was found in ${BASEDIR}/bin"
-        echo 'Please check script contents/options and set the $BASEDIR variable correctly'
-        echo "The $BASEDIR variable is currently set to ${BASEDIR}"
+    BIN="${BASEDIR}/bin/mysqld"
+    if [ ! -s "${BIN}" ]; then
+      BIN="${BASEDIR}/bin/mysqld-debug"
+      if [ ! -s "${BIN}" ]; then
+        echo "Assert: No mariadbd, mysqld or mysqld-debug binary was found in ${BASEDIR}/bin"
+        echo 'Please check script options and please set the $BASEDIR variable correctly'
+        echo "The BASEDIR variable is currently set to ${BASEDIR}"
         echo "Terminating now."
         exit 1
       fi
@@ -947,7 +956,7 @@ options_check(){
     # ========= These are currently limitations of MDG/Group Replication mode. Feel free to extend reducer.sh to handle these ========
     #export -n MYEXTRA=""  # Serious shortcoming. Work to be done. PQUERY MYEXTRA variables will be added docker-compose.yml
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
-      echo_out "[Setup] MDG or GRP_RPL is enabled, setting FORCE_SPORADIC=0, SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MULTI_THREADS=0"
+      echoit "[Setup] MDG or GRP_RPL is enabled, setting FORCE_SPORADIC=0, SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MULTI_THREADS=0"
     fi
     # /==========
     if [ $MODE -eq 0 ]; then
@@ -985,23 +994,23 @@ options_check(){
   fi
   if [ $PQUERY_MULTI -gt 0 ]; then
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
-      echo_out "[Setup] PQUERY_MULTI is set, setting FORCE_SKIPV=1"
+      echoit "[Setup] PQUERY_MULTI is set, setting FORCE_SKIPV=1"
     fi
     export -n FORCE_SKIPV=1
     MULTI_THREADS=$PQUERY_MULTI_THREADS
     if [ $PQUERY_MULTI_CLIENT_THREADS -lt 1 ]; then
-      echo_out "Error: PQUERY_MULTI_CLIENT_THREADS is set to less then 1 ($PQUERY_MULTI_CLIENT_THREADS), while PQUERY_MULTI active, this does not work; reducer needs threads to be able to replay the issue"
+      echoit "Error: PQUERY_MULTI_CLIENT_THREADS is set to less then 1 ($PQUERY_MULTI_CLIENT_THREADS), while PQUERY_MULTI active, this does not work; reducer needs threads to be able to replay the issue"
       echo "Terminating now."
       exit 1
     elif [ $PQUERY_MULTI_CLIENT_THREADS -eq 1 ]; then
-      echo_out "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to 1; 1 thread for a multi-threaded issue does not seem logical. Proceeding, but this is highly likely incorrect. Please check. NOTE: There is at least one possible use case for this: proving that a sporadic mysqld startup can be reproduced (with a near-empty SQL file; i.e. the run is concerned with reproducing the startup issue, not reducing the SQL file)"
+      echoit "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to 1; 1 thread for a multi-threaded issue does not seem logical. Proceeding, but this is highly likely incorrect. Please check. NOTE: There is at least one possible use case for this: proving that a sporadic mysqld startup can be reproduced (with a near-empty SQL file; i.e. the run is concerned with reproducing the startup issue, not reducing the SQL file)"
     elif [ $PQUERY_MULTI_CLIENT_THREADS -lt 5 ]; then
-      echo_out "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to $PQUERY_MULTI_CLIENT_THREADS, $PQUERY_MULTI_CLIENT_THREADS threads for reproducing a multi-threaded issue via random replay seems insufficient. You may want to increase PQUERY_MULTI_CLIENT_THREADS. Proceeding, but this is likely incorrect. Please check"
+      echoit "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to $PQUERY_MULTI_CLIENT_THREADS, $PQUERY_MULTI_CLIENT_THREADS threads for reproducing a multi-threaded issue via random replay seems insufficient. You may want to increase PQUERY_MULTI_CLIENT_THREADS. Proceeding, but this is likely incorrect. Please check"
     fi
   fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
-      echo_out "[Setup] REDUCE_GLIBC_OR_SS_CRASHES is set, setting MULTI_THREADS=1, MULTI_THREADS_INCREASE=0, SLOW_DOWN_CHUNK_SCALING=1, SKIPV=1"
+      echoit "[Setup] REDUCE_GLIBC_OR_SS_CRASHES is set, setting MULTI_THREADS=1, MULTI_THREADS_INCREASE=0, SLOW_DOWN_CHUNK_SCALING=1, SKIPV=1"
     fi
     export -n MULTI_THREADS=1            # Likely not needed, because MULTI mode should never become active for REDUCE_GLIBC_OR_SS_CRASHES=1 (and there is a matching assert),
     export -n MULTI_THREADS_INCREASE=0   # so it is here as a safety measure only FTM.
@@ -1027,7 +1036,7 @@ options_check(){
   fi
   if [ $FORCE_SKIPV -gt 0 ]; then
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
-      echo_out "[Setup] FORCE_SKIPV was set to 0, setting FORCE_SPORADIC=1 and SKIPV=1"
+      echoit "[Setup] FORCE_SKIPV was set to 0, setting FORCE_SPORADIC=1 and SKIPV=1"
     fi
     export -n FORCE_SPORADIC=1
     export -n SKIPV=1
@@ -1035,19 +1044,19 @@ options_check(){
   if [ $FORCE_SPORADIC -gt 0 ]; then
     if [ $STAGE1_LINES -eq 90 ]; then  # Do not change any customized/non-default (i.e. !=90) setting as this may be handy for automation. For example, pquery-reach.sh will set STAGE1_LINES to 13 while activating FORCE_SKIPV=1 which means that reducer will reduce in MULTI (multi-threaded subreducer) mode until 13 lines are reached, then it will swap to single threaded. This is great to manage a combination of both sporadic (they will be reduced to at max 13 lines) and static (they will be full reduced) issues.
       if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
-        echo_out "[Setup] FORCE_SPORADIC is set and STAGE1_LINES!=90, settting STAGE1_LINES=3"
+        echoit "[Setup] FORCE_SPORADIC is set and STAGE1_LINES!=90, settting STAGE1_LINES=3"
       fi
       export -n STAGE1_LINES=3
     fi
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
-      echo_out "[Setup] FORCE_SPORADIC is set, setting SPORADIC=1 and SLOW_DOWN_CHUNK_SCALING=1"
+      echoit "[Setup] FORCE_SPORADIC is set, setting SPORADIC=1 and SLOW_DOWN_CHUNK_SCALING=1"
     fi
     export -n SPORADIC=1
     export -n SLOW_DOWN_CHUNK_SCALING=1
   fi
   if [ $MODE -eq 0 -a $FORCE_KILL=1 ]; then
     if [ ${SHOW_SETUP_DEBUGGING} -gt 0 ]; then
-      echo_out "[Setup] FORCE_KILL was set to 1, however as this is a MODE=0 run, setting FORCE_KILL=0"
+      echoit "[Setup] FORCE_KILL was set to 1, however as this is a MODE=0 run, setting FORCE_KILL=0"
     fi
     FORCE_KILL=0
   fi
@@ -1072,7 +1081,7 @@ options_check(){
       fi
     fi
     if [ "${USE_NEW_TEXT_STRING}" != "1" ]; then
-      echo "SCAN_FOR_NEW_BUGS was set to 1, yet USE_NEW_TEXT_STRING is not set to 1 (set to '${USE_NEW_TEXT_STRING}'). This setup is not covered by this script yet. Ref inside reducer for more info. Automatically turning SCAN_FOR_NEW_BUGS off."
+      echoit "[Setup] SCAN_FOR_NEW_BUGS was set to 1, yet USE_NEW_TEXT_STRING is not set to 1 (set to '${USE_NEW_TEXT_STRING}'). This setup is not covered by this script yet. Ref inside reducer for more info. Automatically turning SCAN_FOR_NEW_BUGS off."
       # Reason is that the new text string script is used in conjunction with the new bugs string list. This could be expanded to include the older bugs string list also, but this would seem to be wasted effort as that list is no longer maintained inside MariaDB (the new unique bug id's are used instead and are much better/of much higher quality). Rather, and this is also provides additional ROI in other areas; update the new text string script to call the old script for any case where a new unique bug ID can not be obtained (quite limited limited amount of cases; usually only when incorrect core dumps (stack smashing, OOS, mysqld failed to create a coredump) are used.
       SCAN_FOR_NEW_BUGS=0
     fi
@@ -1082,7 +1091,7 @@ options_check(){
 
 remove_dropc(){
   if [ "$1" == "" ]; then
-    echo_out "Assert: no parameter was passed to the remove_dropc() function. This should not happen."
+    echoit "Assert: no parameter was passed to the remove_dropc() function. This should not happen."
     exit 1
   fi
   # Loop through the top of the passed file (usually WORKT or WORKF) and remove all seen individual DROPC lines
@@ -1171,7 +1180,7 @@ kill_multi_reducer(){
   PS_CMD="ps -def | grep --binary-files=text 'subreducer' | grep --binary-files=text ${WHOAMI} | grep --binary-files=text ${EPOCH} | grep --binary-files=text 'grep' | awk '{print \$2}'"
   if [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; then
     PIDS_TO_TERMINATE=$(eval ${PS_CMD} | sort -u | tr '\n' ' ')
-    echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating these PID's: $PIDS_TO_TERMINATE"
+    echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating these PID's: $PIDS_TO_TERMINATE"
     while [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; do
       for t in $(eval ${PS_CMD} | sort -u); do
         ( sleep 0.01; kill -9 $t >/dev/null 2>&1; timeout -k4 -s9 4s wait $t >/dev/null 2>&1; ) >/dev/null 2>&1
@@ -1181,7 +1190,7 @@ kill_multi_reducer(){
       if [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; then
         sync; sleep 20  # Extended wait for processes to terminate
         if [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: $(eval ${PS_CMD} | wc -l) subreducer processes still exists after they were killed, re-attempting kill"
+          echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: $(eval ${PS_CMD} | wc -l) subreducer processes still exists after they were killed, re-attempting kill"
         fi
       fi
     done
@@ -1197,21 +1206,21 @@ multi_reducer(){
   # This function does not need to know if reducer is reducing a single or multi-threaded testcase and what MODE is used as all these options are passed
   # verbatim to the child (all settings are copied into the child process below)
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
-    echo_out "ASSERT: REDUCE_GLIBC_OR_SS_CRASHES is active, and we ended up in multi_reducer() function. This should not be possible as REDUCE_GLIBC_OR_SS_CRASHES uses a single thread only."
+    echoit "ASSERT: REDUCE_GLIBC_OR_SS_CRASHES is active, and we ended up in multi_reducer() function. This should not be possible as REDUCE_GLIBC_OR_SS_CRASHES uses a single thread only."
   fi
 
-  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating any dangling subreducer processes"  # Cleanup, necessary, do not remove
+  echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating any dangling subreducer processes"  # Cleanup, necessary, do not remove
   kill_multi_reducer  # Cleanup, necessary, do not remove
 
   if [ "$STAGE" = "V" ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Starting $MULTI_THREADS verification subreducer threads to verify if the issue is sporadic ($WORKD/subreducer/)"
+    echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Starting $MULTI_THREADS verification subreducer threads to verify if the issue is sporadic ($WORKD/subreducer/)"
     SKIPV=0
     SPORADIC=0 # This will quickly be overwritten by the line "SPORADIC=1  # Sporadic unless proven otherwise" below. So, need to check if this is needed here (may be needed for ifthen statements using this variable. Needs research and/or testing.
   else
     if [ "${FIREWORKS}" != "1" ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Starting $MULTI_THREADS simplification subreducer threads to reduce the issue ($WORKD/subreducer/)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Starting $MULTI_THREADS simplification subreducer threads to reduce the issue ($WORKD/subreducer/)"
     else
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Starting $MULTI_THREADS subreducer threads to find new bugs ($WORKD/subreducer/)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Starting $MULTI_THREADS subreducer threads to find new bugs ($WORKD/subreducer/)"
     fi
     SKIPV=1 # For subreducers started for simplification (STAGE1+), verify/initial simplification should be skipped as this was done already by the parent/main reducer (i.e. just above)
   fi
@@ -1220,14 +1229,11 @@ multi_reducer(){
   rm -Rf $WORKD/subreducer/
   sync; sleep 0.5
   if [ -d "$WORKD/subreducer/" ]; then
-    echo_out "ASSERT: $WORKD/subreducer/ still exists after it has been deleted"
+    echoit "ASSERT: $WORKD/subreducer/ still exists after it has been deleted"
     echo "Terminating now."
     exit 1
   fi
   mkdir $WORKD/subreducer/
-  init_empty_port
-  MULTI_MYPORT=$NEWPORT
-  NEWPORT=
 
   TXT_OUT="$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Forking subreducer threads [PIDs]:"
   for t in $(eval echo {1..$MULTI_THREADS}); do
@@ -1249,8 +1255,8 @@ multi_reducer(){
       | sed "0,/#VARMOD#/s:#VARMOD#:PQUERY_MULTI_QUERIES=$PQUERY_MULTI_QUERIES\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:TS_TRXS_SETS=$TS_TRXS_SETS\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:TS_DBG_CLI_OUTPUT=$TS_DBG_CLI_OUTPUT\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:PAUSE_AFTER_EACH_OCCURENCE=\"$PAUSE_AFTER_EACH_OCCURENCE\"\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:BASEDIR=\"$BASEDIR\"\n#VARMOD#:" \
-      | sed "0,/#VARMOD#/s:#VARMOD#:MYPORT=\"$MULTI_MYPORT\"\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:MYUSER=\"$MYUSER\"\n#VARMOD#:" > $MULTI_WORKD/subreducer
 
     chmod +x $MULTI_WORKD/subreducer
@@ -1259,37 +1265,34 @@ multi_reducer(){
     PID=$!
     export MULTI_PID$t=$PID
     TXT_OUT="$TXT_OUT #$t [$PID]"
-    init_empty_port
-    MULTI_MYPORT=$NEWPORT
-    NEWPORT=
   done
-  echo_out "$TXT_OUT"
+  echoit "$TXT_OUT"
 
   if [ "$STAGE" = "V" ]; then
     # Wait for forked processes to terminate
-    echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for all forked verification subreducer threads to finish/terminate"
+    echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for all forked verification subreducer threads to finish/terminate"
     TXT_OUT="$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Finished/Terminated verification subreducer threads:"
     for t in $(eval echo {1..$MULTI_THREADS}); do
       # TODO: An ideal situation would be to have a check here for 'Failed to start mysqld server' in the subreducer logs. However, this would require a change to how this section works; the "wait" for PID would have to be changed to some sort of loop. However, as a stopped verify thread (1 in 10 for starters) is quickly surpassed by a new set of threads - i.e. after 10 threads, 20 are started (a new run with +10 threads) - it is not deemed very necessary to change this atm. This error also would only show on very busy servers. However, this check SHOULD be done for non-verify MULTI stages, as for simplification, all threads keep running (if they remain live) untill a simplified testcase is found. Thus, if 8 out of 10 threads sooner or later end up with 'Failed to start mysqld server', then only 2 threads would remain that try and reproduce the issue (till ifinity). The 'Failed to start mysqld server' is seen on very busy servers (presumably some timeout hit). This second part (starting with 'However,...' is implemented already below. RV update 12/8/20: When a different crash is seen then the one specified using TEXT, the thread will also get restarted, with the message being displayed being the 'busy server' one which is not correct. Some update to that output already made below.
       wait $(eval echo $(echo '$MULTI_PID'"$t"))
       TXT_OUT="$TXT_OUT #$t"
-      echo_out_overwrite "$TXT_OUT"
+      echoit_overwrite "$TXT_OUT"
       if [ $t -eq 20 -a $MULTI_THREADS -gt 20 ]; then
-        echo_out "$TXT_OUT"
+        echoit "$TXT_OUT"
         TXT_OUT="$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Finished/Terminated verification subreducer threads:"
       fi
     done
-    echo_out "$TXT_OUT"
-    echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] All verification subreducer threads have finished/terminated"
+    echoit "$TXT_OUT"
+    echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] All verification subreducer threads have finished/terminated"
   else
     # Wait for one of the forked processes to succeed to:
     # Without FIREWORKS: find a better reduction file
     # With FIREWORKS: to find a new bug
     # Note that the term/file '/VERIFIED' is used for both instances/occurences
     if [ "${FIREWORKS}" != "1" ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed or assumed to be sporadic: this may take time)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed or assumed to be sporadic: this may take time)"
     else
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked subreducer threads to find a new bug"
+      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked subreducer threads to find a new bug"
     fi
     FOUND_VERIFIED=0
     while [ $FOUND_VERIFIED -eq 0 ]; do
@@ -1299,9 +1302,9 @@ multi_reducer(){
         if [ -s $MULTI_WORKD/VERIFIED ]; then
           sleep 1.5  # Give subreducer script time to write out the file fully
           if [ "${FIREWORKS}" != "1" ]; then
-            echo_out_overwrite "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating simplification subreducer threads..."
+            echoit_overwrite "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating simplification subreducer threads..."
           else
-            echo_out_overwrite "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads..."
+            echoit_overwrite "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads..."
           fi
           # Kill subreducers explicitly
           ps -ef | grep 'subreducer' | grep -v grep | grep $EPOCH | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
@@ -1309,9 +1312,9 @@ multi_reducer(){
           ps -ef | grep 'subreducer' | grep -v grep | grep $EPOCH | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
           sleep 2
           if [ "${FIREWORKS}" != "1" ]; then
-            echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating simplification subreducer threads... done"
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating simplification subreducer threads... done"
           else
-            echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads... done"
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads... done"
           fi
           # The subshell in the following line simply retrieves the WORKO output file from the subreducer Then, the grep -v removes any mysqld option line before copying the file to the new/next WORKF for the next trial If this step was not done, the new/next WORKF testcase would always be +1 line longer. The way this would show for example in SKIPV mode is that the main reducer would indicate that it had found a shorter testcase (-1 line for example) whereas the next trial would start with the same line number (as +1 line was re-added). This is not so clear when large chunks are removed at the time, but it becomes very clear when only ~5-15 lines are left. This was fixed and the line below does not suffer from said problem
           grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') > $WORKF
@@ -1320,26 +1323,26 @@ multi_reducer(){
               if [[ ${RR_TRACING} -eq 1 ]]; then
                 if [[ ${RR_SAVE_ALL_TRACES} -eq 1 ]]; then
                   save_rr_trace "${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
-                  echo_out "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+                  echoit "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
                 fi
               fi
               cp -f $WORKO ${WORKO}.prev
               # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
-              echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Previous good testcase backed up as $WORKO.prev"
+              echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Previous good testcase backed up as $WORKO.prev"
             fi
           fi
           cp -f $WORKF $WORKO
           cp -f $WORKO $WORK_OUT
           ATLEASTONCE="[*]"  # The issue was seen at least once, or FIREWORKS detected at least one newbug
           if [ "${FIREWORKS}" != "1" ]; then
-            echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t reproduced the issue: testcase saved in $WORKO"
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t reproduced the issue: testcase saved in $WORKO"
           else
             NR_OF_NEWBUGS=$[ ${NR_OF_NEWBUGS} + 1 ]
-            echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [${NR_OF_NEWBUGS} New Bugs Found] Thread #$t found a new unseen bug: $(cat $MULTI_WORKD/MYBUG.FOUND | head -n1)"
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [${NR_OF_NEWBUGS} New Bugs Found] Thread #$t found a new unseen bug: $(cat $MULTI_WORKD/MYBUG.FOUND | head -n1)"
           fi
           FOUND_VERIFIED=1  # Outer loop terminate setup
           if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
-            echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURENCE is active: reducer is pausing as the issue occured. Press 'Enter' to continue..."
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURENCE is active: reducer is pausing as the issue occured. Press 'Enter' to continue..."
             read -p ''
           fi
           break  # Inner loop terminate
@@ -1354,18 +1357,21 @@ multi_reducer(){
             SUBR_SVR_START_FAILURE=1
             TMP_RND_FILENAME="err_$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/').txt"  # Subshell creates random number with 6 digits
             cp $RESTART_WORKD/log/master.err /tmp/${TMP_RND_FILENAME}  # Copy the mysqld error log from the subreducer run which had a failed startup to /tmp for research
+            if [ -r $RESTART_WORKD/log/slave.err ]; then
+              cp $RESTART_WORKD/log/slave.err /tmp/${TMP_RND_FILENAME}.slave
+            fi
           fi
           if [ "${FIREWORKS}" != "1" ]; then  # We do not want to spam FireWorks mode output
-            if grep -E --binary-files=text "Do you already have another mysqld server running on port|Address already in use|Got error: 98" $RESTART_WORKD/log/master.err 2>/dev/null; then  # A server likely crashed on a different bug
-              echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] this script tried to restart the thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")), but failed due to a TCP/IP port address already in use error, which can be seen in $RESTART_WORKD/log/master.err - The most likely reason for this is that this thread previously crashed on another crash then the one specified in TEXT. It is highly unlikely that this script ran into an actual duplicate port issue due to the advanced checking for the same in multi_reducer(). If this message is looping, you want to:  tail -n5 $(echo "${RESTART_WORKD}" | sed 's|/$||;s|/[^/]\+$|/*/log/master.err|')  repeatadely untill you see a crash, followed by actually checking (i.e. vi) the error log quickly (to avoid overwrite) once you see a crash, to see which crash is being generated, and then stop reducer and modify the search TEXT text or make other required changes (like updating MYEXTRA) to find the original bug being looked for. It may work out better to first reduce for the new issue seen; it is likely the same bug. Alternatively, set this reducer to MODE=4 to look for any crash (provided you are reducing for a crash), with the caveat that if the SQL is capable of introducing two different crashes (and it looks like it is), you may end up with the wrong crash reduced. In that case, try again, or research the crash seen as described using the tail command. This script will now attempt to terminate and restart the thread."
+            if grep -E --binary-files=text "Do you already have another mysqld server running on port|Address already in use|Got error: 98" $RESTART_WORKD/log/*.err 2>/dev/null; then  # A server likely crashed on a different bug
+              echoit "$ATLEASTONCE [Stage $STAGE] [WARNING] this script tried to restart the thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")), but failed due to a TCP/IP port address already in use error, which can be seen in $RESTART_WORKD/log/*.err - The most likely reason for this is that this thread previously crashed on another crash then the one specified in TEXT. It is highly unlikely that this script ran into an actual duplicate port issue due to the advanced checking for the same in multi_reducer(). If this message is looping, you want to:  tail -n5 $(echo "${RESTART_WORKD}" | sed 's|/$||;s|/[^/]\+$|/*/log/*.err|')  repeatadely untill you see a crash, followed by actually checking (i.e. vi) the error log quickly (to avoid overwrite) once you see a crash, to see which crash is being generated, and then stop reducer and modify the search TEXT text or make other required changes (like updating MYEXTRA) to find the original bug being looked for. It may work out better to first reduce for the new issue seen; it is likely the same bug. Alternatively, set this reducer to MODE=4 to look for any crash (provided you are reducing for a crash), with the caveat that if the SQL is capable of introducing two different crashes (and it looks like it is), you may end up with the wrong crash reduced. In that case, try again, or research the crash seen as described using the tail command. This script will now attempt to terminate and restart the thread."
             fi
           fi
           # Ensure RESTART_WORKD is actually set
           if [ -z "${RESTART_WORKD}" ]; then echo "Assert: RESTART_WORKD is empty."; exit 1; fi
           # Ensure previous server is gone (new code 24-08-2020 to better deal with assert above)
-          if [ ! -z "$(ps -def | grep "$RESTART_WORKD/log/master.err")" ]; then
+          if [ ! -z "$(ps -def | grep -E "$RESTART_WORKD/log/master.err|$RESTART_WORKD/log/slave.err")" ]; then
             for i in $(seq 1 3); do
-              ( kill -9 $(ps -def | grep "$RESTART_WORKD/log/master.err" | grep -v grep | awk '{print $2}') >/dev/null 2>&1; ) >/dev/null 2>&1
+              ( kill -9 $(ps -def | grep "$RESTART_WORKD/log/master.err|$RESTART_WORKD/log/slave.err" | grep -v grep | awk '{print $2}' | tr '\n' ' ') >/dev/null 2>&1; ) >/dev/null 2>&1
             done
           fi
           # Remove all files, except for subreducer script
@@ -1379,31 +1385,31 @@ multi_reducer(){
           if [ ${SUBR_SVR_START_FAILURE} -eq 1 ]; then
             # Check if we ran out of disk space
             if [ ! -r /tmp/$TMP_RND_FILENAME ]; then
-              echo_out "Assert: /tmp/$TMP_RND_FILENAME not found or not readable! Did the volume hosting /tmp run out of space?"
-              echo_out "Will try and continue assuming this is a recoverable situation, though it may not be"
+              echoit "Assert: /tmp/$TMP_RND_FILENAME not found or not readable! Did the volume hosting /tmp run out of space?"
+              echoit "Will try and continue assuming this is a recoverable situation, though it may not be"
             fi
-            if egrep --binary-files=text -qi "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" /tmp/$TMP_RND_FILENAME; then
-              echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Thread #$t disappeared (mysqld start failed) due to running out of diskspace. Restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))."
-              #echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review. Otherwise, please ignore the \"check...\" message just above; the files are no longer there given the restart above)"
+            if egrep --binary-files=text -qi "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" /tmp/$TMP_RND_FILENAME*; then
+              echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Thread #$t disappeared (mysqld start failed) due to running out of diskspace. Restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))."
+              #echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Copied the last mysqld error log to /tmp/$TMP_RND_FILENAME (and /tmp/$TMP_RND_FILENAME.slave if a slave was present) for review. Otherwise, please ignore the \"check...\" message just above; the files are no longer there given the restart above)"
             else
               if [ "${FIREWORKS}" != "1" ]; then  # Only show the full output in non-fireworks mode
-                echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happens irregularly on busy servers OR when there is not sufficient diskspace). If the message is repeating continuously, please investigate. reducer has also copied the last mysqld error log to /tmp/$TMP_RND_FILENAME for review, though an out of diskpace may not show in there.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
+                echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happens irregularly on busy servers OR when there is not sufficient diskspace). If the message is repeating continuously, please investigate. reducer has also copied the last mysqld error log to /tmp/$TMP_RND_FILENAME (and /tmp/$TMP_RND_FILENAME.slave if a slave was present) for review, though an out of diskpace may not show in there.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
               else
-                echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared. Thread restarted (PID #$(eval echo $(echo '$MULTI_PID'"$t")))"
+                echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared. Thread restarted (PID #$(eval echo $(echo '$MULTI_PID'"$t")))"
               fi
             fi
           else
             if [ "${FIREWORKS}" == "1" ]; then
-              echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t ended. Thread restarted (PID #$(eval echo $(echo '$MULTI_PID'"$t")))"
+              echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t ended. Thread restarted (PID #$(eval echo $(echo '$MULTI_PID'"$t")))"
             else
               # Only show this in non-fireworks mode. In fireworks mode, this outcome is expected.
-              # TODO: The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in or "user specified as.*does not exist" (i.e. [ERROR] Event Scheduler: [..@..][test.t1] The user specified as a definer ('..'@'..') does not exist) in log/master.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
+              # TODO: The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in or "user specified as.*does not exist" (i.e. [ERROR] Event Scheduler: [..@..][test.t1] The user specified as a definer ('..'@'..') does not exist) in log/master.err or log/slave.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
               if grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log 2>/dev/null; then
-                echo_out "Assert: Access denied for user detected in at least one of the subreducers. Check:  grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log  # This issue may be hard to recover from"
+                echoit "Assert: Access denied for user detected in at least one of the subreducers. Check:  grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log  # This issue may be hard to recover from"
               else
-                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/master.err\n3) mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/master.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/master.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
+                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/*.err\n3) mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/*.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/*.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
               fi
-              echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] Issue detected. Debug info: cat /dev/shm/$EPOCH/debug.aid"
+              echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] Issue detected. Debug info: cat /dev/shm/$EPOCH/debug.aid"
               # TODO: Reason 1 does happen. Observed:
               # 2020-08-24  9:55:45 0 [ERROR] Can't start server: Bind on TCP/IP port. Got error: 98: Address already in use
               # 2020-08-24  9:55:45 0 [ERROR] Do you already have another mysqld server running on port: 49504 ?
@@ -1411,7 +1417,7 @@ multi_reducer(){
               # But it should not (and reducer does check for duplicate port use). One (unlikely) reason may be that the server crashed on a bug not-being-looked for and then restarted or something. Not sure what is causing this, needs work. Only very minor incovience in runs as happens infrequently and reducer does handle the restart correctly.
               # Also search for 'A server likely crashed on a different bug' for additional related code. Also odd is that that other code is before this one; why did that code not pickup the 'already in use' before being caught here?
               ### Disabled the sleep here as at times reducer is still able to continue/resume once this is seen (confirmed 12/12/21). An additional reason to disable the sleep is that, to debug, it's often best to repeatedly run things like tail -n5 /dev/shm/$EPOCH/subreducer/*/..., rather than pause and check given that that may not be the correct point-in-time capture (not confirmed).
-              ### echo_out "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."
+              ### echoit "Pausing 10 seconds, you may want to press CTRL+Z to pause for longer, and allow you to debug this further. You can always restart the process with 'fg' if it makes sense to to so after analysis."
               ### sleep 10
             fi
           fi
@@ -1419,7 +1425,7 @@ multi_reducer(){
         sleep 1  # Hasten slowly, server already busy with subreducers
       done
     done
-    echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] All subreducer threads have finished/terminated"
+    echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] All subreducer threads have finished/terminated"
   fi
 
   if [ "$STAGE" = "V" ]; then
@@ -1436,24 +1442,24 @@ multi_reducer(){
     # Report on outcomes
     SPORADIC=1  # Sporadic unless proven otherwise (set below)
     if [ $MULTI_FOUND -eq 0 ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Threads which reproduced the issue: <none>"
+      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Threads which reproduced the issue: <none>"
     elif [ $MULTI_FOUND -eq $MULTI_THREADS ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Threads which reproduced the issue:$TXT_OUT"
+      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Threads which reproduced the issue:$TXT_OUT"
       if [ $FORCE_SPORADIC -gt 0 ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] All threads reproduced the issue: this issue is not considered sporadic"
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] However, as the FORCE_SPORADIC is on, sporadic testcase reduction will commence"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] All threads reproduced the issue: this issue is not considered sporadic"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] However, as the FORCE_SPORADIC is on, sporadic testcase reduction will commence"
       else
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] All threads reproduced the issue: this issue is not sporadic"
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Note: if this issue proves sporadic in actual reduction (slow/stalling reduction), use the FORCE_SPORADIC=1 setting"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] All threads reproduced the issue: this issue is not sporadic"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Note: if this issue proves sporadic in actual reduction (slow/stalling reduction), use the FORCE_SPORADIC=1 setting"
         SPORADIC=0
       fi
       if [ $MODE -lt 6 ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any rogue subreducer processes are terminated"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Ensuring any rogue subreducer processes are terminated"
         kill_multi_reducer
       fi
     elif [ $MULTI_FOUND -lt $MULTI_THREADS ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Threads which reproduced the issue:$TXT_OUT"
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Only $MULTI_FOUND out of $MULTI_THREADS threads reproduced the issue: this issue is sporadic"
+      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Threads which reproduced the issue:$TXT_OUT"
+      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Only $MULTI_FOUND out of $MULTI_THREADS threads reproduced the issue: this issue is sporadic"
       # Do not enable SLOW_DOWN_CHUNK_SCALING=1 here! It is not suited for MULTI mode, as subreducers will then have a fully-static chunck size because of the main reducer.sh keeping the same chunk size, and the subreducers initially take a copy, and instead of scaling their chunks, they keep the chunks from the main one... or something. The visual effect of enabling this here is that x in "Remaining number of lines in input file: x" remains static, acrross many "Thread #y reproduced the issue" trials.
     fi
     return $MULTI_FOUND
@@ -1461,7 +1467,7 @@ multi_reducer(){
 }
 
 multi_reducer_decide_input(){
-  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Deciding which verified output file to keep out of $MULTI_FOUND threads"
+  echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Deciding which verified output file to keep out of $MULTI_FOUND threads"
   # This function, based on checking the outcome of the various threads started in multi_reducer() decides which verified input file (from the various
   # subreducer threads) will be kept. It would be best to keep a file with TRIAL=1 (obviously from a succesful verification thread) since such a file
   # would have had maximum simplification applied. As soon such a file is found, reducer can use that one and stop searching.
@@ -1473,7 +1479,7 @@ multi_reducer_decide_input(){
       if [ $TRIAL_LEVEL -eq 1 ]; then
         # Highest optimization possible, use file and exit
         cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, maximum initial simplification file, at thread #$t: Using it as new input file"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, maximum initial simplification file, at thread #$t: Using it as new input file"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
           MYEXTRA=$(cat $MULTI_WORKD/MYEXTRA)
         fi
@@ -1481,14 +1487,14 @@ multi_reducer_decide_input(){
       elif [ $TRIAL_LEVEL -lt $LOWEST_TRIAL_LEVEL_SEEN ]; then
         LOWEST_TRIAL_LEVEL_SEEN=$TRIAL_LEVEL
         cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, level $TRIAL_LEVEL simplification file, at thread #$t: Using it as new input file, unless better is found"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, level $TRIAL_LEVEL simplification file, at thread #$t: Using it as new input file, unless better is found"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
           MYEXTRA=$(cat $MULTI_WORKD/MYEXTRA)
         fi
       fi
     fi
   done
-  echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Removing verify stage subreducer directory"
+  echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Removing verify stage subreducer directory"
   rm -Rf $WORKD/subreducer/  # It should be fine to remove this verify stage subreducer directory here, and save space, but this needs over-time confirmation. Added RV 25-10-2016
 }
 
@@ -1519,14 +1525,14 @@ TS_init_all_sql_files(){
     TS_ORIG_THREADS=$TS_THREADS
     TS_ORIG_VARS_FLAG=1
   fi
-  echo_out "[Init] Input directory: $TS_INPUTDIR/"
-  echo_out "[Init] Input files: Data: $TS_DATAINPUTFILE"
+  echoit "[Init] Input directory: $TS_INPUTDIR/"
+  echoit "[Init] Input files: Data: $TS_DATAINPUTFILE"
   for t in $(eval echo {1..$TS_THREADS}); do
     export WORKF$t="$WORKD/in$t.sql"
     export WORKT$t="$WORKD/in$t.tmp"
     export WORKO$t=$(eval echo $(echo '$TS_SQLINPUTFILE'"$t") | sed 's/$/_out/' | sed "s/^.*\//$(echo $WORKD | sed 's/\//\\\//g')\/out\//")
     TS_FILE_NAME=$(eval echo $(echo '$TS_SQLINPUTFILE'"$t"))
-    echo_out "[Init] Input files: Thread $t: $TS_FILE_NAME"
+    echoit "[Init] Input files: Thread $t: $TS_FILE_NAME"
   done
   # Copy of INPUTFILE to WORKF files
   # DDL data thread load is done in run_sql_code. Here reducer handles the SQL threads
@@ -1640,13 +1646,17 @@ init_workdir_and_files(){
     mkdir $WORKD
   fi
   if [ $MDG -eq 0 ]; then
-    mkdir $WORKD/data $WORKD/log $WORKD/tmp
+    if [ $REPLICATION -eq 1 ]; then
+      mkdir $WORKD/data $WORKD/data_slave $WORKD/tmp $WORKD/tmp_slave $WORKD/log  # $WORKD/log contains both master.err and slave.err
+    else
+      mkdir $WORKD/data $WORKD/tmp $WORKD/log
+    fi
   fi
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
-  echo_out "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0")"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
+  echoit "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0")"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
   export TMP=$WORKD/tmp
-  if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then echo_out "[Init] Console typescript log for REDUCE_GLIBC_OR_SS_CRASHES: /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log"; fi
+  if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then echoit "[Init] Console typescript log for REDUCE_GLIBC_OR_SS_CRASHES: /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log"; fi
   # jemalloc configuration for TokuDB plugin
   JE1="if [ \"\${JEMALLOC}\" != \"\" -a -r \"\${JEMALLOC}\" ]; then export LD_PRELOAD=\${JEMALLOC}"
   #JE2=" elif [ -r /usr/lib64/libjemalloc.so.1 ]; then export LD_PRELOAD=/usr/lib64/libjemalloc.so.1"
@@ -1686,14 +1696,14 @@ init_workdir_and_files(){
     else
       WORKO="$(echo $INPUTFILE | sed 's/$/_out/' | sed "s/^.*\//$(echo $WORKD | sed 's/\//\\\//g')\//")"  # Save output file in individual workdirs
     fi
-    echo_out "[Init] Input file: $INPUTFILE"
+    echoit "[Init] Input file: $INPUTFILE"
     if [ "${FIREWORKS}" == "1" ]; then
-      echo_out "[Init] Output dir (FIREWORKS mode): ${NEW_BUGS_SAVE_DIR}"
+      echoit "[Init] Output dir (FIREWORKS mode): ${NEW_BUGS_SAVE_DIR}"
     else
       if [ "${WORK_BUG_DIR}" == "${INPUTFULE}" ]; then
-        echo_out "[Init] Output dir: $PWD"
+        echoit "[Init] Output dir: $PWD"
       else
-        echo_out "[Init] Output dir: $WORK_BUG_DIR"
+        echoit "[Init] Output dir: $WORK_BUG_DIR"
       fi
     fi
     # Initial INPUTFILE to WORKF copy
@@ -1724,215 +1734,222 @@ init_workdir_and_files(){
       fi
     fi
   fi
-  echo_out "[Init] Work dir: $WORKD"
-  echo_out "[Init] EPOCH ID: $EPOCH (used for various file and directory names)"
+  echoit "[Init] Work dir: $WORKD"
+  echoit "[Init] EPOCH ID: $EPOCH (used for various file and directory names)"
   if [ $MDG -eq 1 ]; then
     for i in $(seq 1 "${NR_OF_NODES}"); do
-      echo_out "[Init] MDG Node #${i} Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node${i}/node${i}_socket.sock"
+      echoit "[Init] MDG Node #${i} Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node${i}/node${i}_socket.sock"
     done
   elif [ $GRP_RPL -eq 1 ]; then
-    echo_out "[Init] Group Replication Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
-    echo_out "[Init] Group Replication Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
-    echo_out "[Init] Group Replication Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
+    echoit "[Init] Group Replication Node #1 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node1/node1_socket.sock"
+    echoit "[Init] Group Replication Node #2 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node2/node2_socket.sock"
+    echoit "[Init] Group Replication Node #3 Client: $BASEDIR/bin/mysql -uroot -S$WORKD/node3/node3_socket.sock"
+  elif [ $REPLICATION -eq 1 ]; then
+    echoit "[Init] Standard Master/Slave replication is active"
+    echoit "[Init] Replication Master Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
+    echoit "[Init] Replication Slave Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/slave_socket.sock"
+    echoit "[Init] Replication Master Client example for subreducers (MULTI): $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
+    echoit "[Init] Replication Slave Client example for subreducers (MULTI): $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/slave_socket.sock"
   else
-    echo_out "[Init] Server: ${BIN} (as $MYUSER)"
+    echoit "[Init] Server: ${BIN} (as $MYUSER)"
     if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
-      echo_out "[Init] Client: $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
+      echoit "[Init] Client: $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
     else
       if [ "${FIREWORKS}" != "1" ]; then
-        echo_out "[Init] Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
-        echo_out "[Init] Client example for subreducers (MULTI): $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
+        echoit "[Init] Client (When MULTI mode is not active): $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock"
+        echoit "[Init] Client example for subreducers (MULTI): $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
       else
-        echo_out "[Init] Client example: $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
+        echoit "[Init] Client example: $BASEDIR/bin/mysql -uroot -S$WORKD/subreducer/1/socket.sock"
       fi
     fi
   fi
   if [ $MDG -eq 1 ]; then
-    echo_out "[Init] Galera Cluster Temporary directories (TMP Variable) set to $WORKD/tmp[1-$NR_OF_NODES]"
+    echoit "[Init] Galera Cluster Temporary directories (TMP Variable) set to $WORKD/tmp[1-$NR_OF_NODES]"
   else
-    echo_out "[Init] Temporary directory (TMP Variable) set to $TMP"
+    echoit "[Init] Temporary directory (TMP Variable) set to $TMP"
   fi
-  if [ $SKIPSTAGEBELOW -gt 0 ]; then echo_out "[Init] SKIPSTAGEBELOW active. Stages up to and including $SKIPSTAGEBELOW are skipped"; fi
-  if [ $SKIPSTAGEABOVE -lt 9 ]; then echo_out "[Init] SKIPSTAGEABOVE active. Stages above and including $SKIPSTAGEABOVE are skipped"; fi
+  if [ $SKIPSTAGEBELOW -gt 0 ]; then echoit "[Init] SKIPSTAGEBELOW active. Stages up to and including $SKIPSTAGEBELOW are skipped"; fi
+  if [ $SKIPSTAGEABOVE -lt 9 ]; then echoit "[Init] SKIPSTAGEABOVE active. Stages above and including $SKIPSTAGEABOVE are skipped"; fi
   if [ $PQUERY_MULTI -gt 0 ]; then
-    echo_out "[Init] PQUERY_MULTI mode active, so automatically set USE_PQUERY=1: testcase reduction will be done using pquery"
+    echoit "[Init] PQUERY_MULTI mode active, so automatically set USE_PQUERY=1: testcase reduction will be done using pquery"
     if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -gt 0 ]; then
-      echo_out "[Init] PQUERY_MULTI mode active, PQUERY_REVERSE_NOSHUFFLE_OPT on: Semi-true multi-threaded testcase reduction using pquery sequential replay commencing";
+      echoit "[Init] PQUERY_MULTI mode active, PQUERY_REVERSE_NOSHUFFLE_OPT on: Semi-true multi-threaded testcase reduction using pquery sequential replay commencing";
     else
-      echo_out "[Init] PQUERY_MULTI mode active, PQUERY_REVERSE_NOSHUFFLE_OPT off: True multi-threaded testcase reduction using pquery random replay commencing";
+      echoit "[Init] PQUERY_MULTI mode active, PQUERY_REVERSE_NOSHUFFLE_OPT off: True multi-threaded testcase reduction using pquery random replay commencing";
     fi
   else
     if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -gt 0 ]; then
       if [ $FORCE_SKIPV -gt 0 -a $FORCE_SPORADIC -gt 0 ]; then
-        echo_out "[Init] PQUERY_REVERSE_NOSHUFFLE_OPT turned on. Replay will be random instead of sequential (whilst still using a single thread client per mysqld)"
+        echoit "[Init] PQUERY_REVERSE_NOSHUFFLE_OPT turned on. Replay will be random instead of sequential (whilst still using a single thread client per mysqld)"
       else
-        echo_out "[Init] PQUERY_REVERSE_NOSHUFFLE_OPT turned on. Replay will be random instead of sequential (whilst still using a single thread client per mysqld). This setting is best combined with FORCE_SKIPV=1 and FORCE_SPORADIC=1 ! Please edit the settings, unless you know what you're doing"
+        echoit "[Init] PQUERY_REVERSE_NOSHUFFLE_OPT turned on. Replay will be random instead of sequential (whilst still using a single thread client per mysqld). This setting is best combined with FORCE_SKIPV=1 and FORCE_SPORADIC=1 ! Please edit the settings, unless you know what you're doing"
       fi
     fi
   fi
   if [ $FORCE_SKIPV -gt 0 -a "${FIREWORKS}" != "1" ]; then
     if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer
-      echo_out "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing multi threaded simplification"
+      echoit "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing multi threaded simplification"
     else  # This is a subreducer (i.e. not multi-threaded)
-      echo_out "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing simplification"
+      echoit "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing simplification"
     fi
   fi
-  if [ $FORCE_SKIPV -gt 0 -a $FORCE_SPORADIC -gt 0 -a "${FIREWORKS}" != "1" ]; then echo_out "[Init] FORCE_SKIPV active, so FORCE_SPORADIC is automatically set active also" ; fi
+  if [ $FORCE_SKIPV -gt 0 -a $FORCE_SPORADIC -gt 0 -a "${FIREWORKS}" != "1" ]; then echoit "[Init] FORCE_SKIPV active, so FORCE_SPORADIC is automatically set active also" ; fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ $FORCE_SKIPV -gt 0 ]; then
-      echo_out "[Init] REDUCE_GLIBC_OR_SS_CRASHES active, so automatically skipping VERIFY mode as GLIBC crashes may be sporadic more often (this happens irrespective of FORCE_SKIPV=1)"
+      echoit "[Init] REDUCE_GLIBC_OR_SS_CRASHES active, so automatically skipping VERIFY mode as GLIBC crashes may be sporadic more often (this happens irrespective of FORCE_SKIPV=1)"
     else
-      echo_out "[Init] REDUCE_GLIBC_OR_SS_CRASHES active, so automatically skipping VERIFY mode as GLIBC crashes may be sporadic more often"
+      echoit "[Init] REDUCE_GLIBC_OR_SS_CRASHES active, so automatically skipping VERIFY mode as GLIBC crashes may be sporadic more often"
     fi
-    echo_out "[Init] REDUCE_GLIBC_OR_SS_CRASHES active, so automatically set SLOW_DOWN_CHUNK_SCALING=1 to slow down chunk size scaling (both for chunk reductions and increases)"
+    echoit "[Init] REDUCE_GLIBC_OR_SS_CRASHES active, so automatically set SLOW_DOWN_CHUNK_SCALING=1 to slow down chunk size scaling (both for chunk reductions and increases)"
     if [ $FORCE_SPORADIC -gt 0 ]; then
-      echo_out "[Info] FORCE_SPORADIC active, issue is assumed to be sporadic"
-      echo_out "[Init] FORCE_SPORADIC active: STAGE1_LINES variable was overwritten and set to $STAGE1_LINES to match"
+      echoit "[Info] FORCE_SPORADIC active, issue is assumed to be sporadic"
+      echoit "[Init] FORCE_SPORADIC active: STAGE1_LINES variable was overwritten and set to $STAGE1_LINES to match"
     fi
     if [ $MODE -eq 3 ]; then
-      echo_out "[WARNING] ---------------------"
-      echo_out "[WARNING] REDUCE_GLIBC_OR_SS_CRASHES active and MODE=3. Have you updated the TEXT=\"...\" to a search string matching the console (on-screen) output of a GLIBC crash instead of using some text from the error log (which is not scanned now)? The output of a GLIBC crash is on the main console stdout, so a copy/paste of a suitable search string may be made directly from the console. A GLIBC crash looks similar to this: *** Error in \`/sda/PS180516-percona-server-5.6.30-76.3-linux-x86_64-debug/bin/mysqld': corrupted double-linked list: 0x00007feb2c0011e0 ***. For the TEXT search string, do not use the hex address but instead, for example, 'corrupted double-linked list', or a specfic frame from the stack trace which is normally shown below this intro line. Note that the message can also look like this (on Ubuntu); *** stack smashing detected ***: /your_basedir/bin/mysqld terminated. The best way to find out what the message is on your system is to run reducer first normally (without REDUCE_GLIBC_OR_SS_CRASHES set, and check what the output is. Alternatively, set MODE=4 to look for any GLIBC crash. If this reducer.sh was generated by pquery-prep-red.sh, then note that TEXT would have been automatically set to content from the error log, or to a more generic MODE=4, but neither of these will reduce for GLIBC crashes (is MODE=3 this is because the error log is not scanned, and in MODE=4 this is because the GLIBC crash (or stack smash) may be offset/different from any crash in the error log). Instead, set the TEXT string to a GLIBC specific string as described."
-      echo_out "[WARNING] ---------------------"
+      echoit "[WARNING] ---------------------"
+      echoit "[WARNING] REDUCE_GLIBC_OR_SS_CRASHES active and MODE=3. Have you updated the TEXT=\"...\" to a search string matching the console (on-screen) output of a GLIBC crash instead of using some text from the error log (which is not scanned now)? The output of a GLIBC crash is on the main console stdout, so a copy/paste of a suitable search string may be made directly from the console. A GLIBC crash looks similar to this: *** Error in \`/sda/PS180516-percona-server-5.6.30-76.3-linux-x86_64-debug/bin/mysqld': corrupted double-linked list: 0x00007feb2c0011e0 ***. For the TEXT search string, do not use the hex address but instead, for example, 'corrupted double-linked list', or a specfic frame from the stack trace which is normally shown below this intro line. Note that the message can also look like this (on Ubuntu); *** stack smashing detected ***: /your_basedir/bin/mysqld terminated. The best way to find out what the message is on your system is to run reducer first normally (without REDUCE_GLIBC_OR_SS_CRASHES set, and check what the output is. Alternatively, set MODE=4 to look for any GLIBC crash. If this reducer.sh was generated by pquery-prep-red.sh, then note that TEXT would have been automatically set to content from the error log, or to a more generic MODE=4, but neither of these will reduce for GLIBC crashes (is MODE=3 this is because the error log is not scanned, and in MODE=4 this is because the GLIBC crash (or stack smash) may be offset/different from any crash in the error log). Instead, set the TEXT string to a GLIBC specific string as described."
+      echoit "[WARNING] ---------------------"
     fi
   else
     if [ $FORCE_SPORADIC -gt 0 -a "${FIREWORKS}" != "1" ]; then
       if [ $FORCE_SKIPV -gt 0 ]; then
-        echo_out "[Init] FORCE_SPORADIC active. Issue is assumed to be sporadic"
+        echoit "[Init] FORCE_SPORADIC active. Issue is assumed to be sporadic"
       else
-        echo_out "[Init] FORCE_SPORADIC active. Issue is assumed to be sporadic, even if verify stage shows otherwise"
+        echoit "[Init] FORCE_SPORADIC active. Issue is assumed to be sporadic, even if verify stage shows otherwise"
       fi
       # TODO: this is shown, but no actual change is made and the output shown matches the original setting. Thus the output is invalid. Removed ftm. RV 19/06/2020
-      # echo_out "[Init] FORCE_SPORADIC, FORCE_SKIPV and/or PQUERY_MULTI active: STAGE1_LINES variable was overwritten and set to $STAGE1_LINES to match"
+      # echoit "[Init] FORCE_SPORADIC, FORCE_SKIPV and/or PQUERY_MULTI active: STAGE1_LINES variable was overwritten and set to $STAGE1_LINES to match"
     fi
   fi
   if [ $FORCE_SPORADIC -gt 0 ]; then
     if [ "${FIREWORKS}" != "1" ]; then  # Does not make much/any sense to show this when FIREWORKS mode is enabled
-      echo_out "[Init] FORCE_SPORADIC active, so automatically enabled SLOW_DOWN_CHUNK_SCALING to speed up testcase reduction (SLOW_DOWN_CHUNK_SCALING_NR is set to $SLOW_DOWN_CHUNK_SCALING_NR)"
+      echoit "[Init] FORCE_SPORADIC active, so automatically enabled SLOW_DOWN_CHUNK_SCALING to speed up testcase reduction (SLOW_DOWN_CHUNK_SCALING_NR is set to $SLOW_DOWN_CHUNK_SCALING_NR)"
     fi
   fi
   if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
-    echo_out "[Init] PAUSE_AFTER_EACH_OCCURENCE active, so reducer will pause after each occurence of the issue"
+    echoit "[Init] PAUSE_AFTER_EACH_OCCURENCE active, so reducer will pause after each occurence of the issue"
   fi
   if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
-    echo_out "[Init] REDUCE_STARTUP_ISSUES active. Issue is assumed to be a startup issue"
-    echo_out "[Info] Note: REDUCE_STARTUP_ISSUES is normally used for debugging mysqld startup issues only; for example caused by a misbehaving --option to mysqld. You may want to make the SQL input file really small (for example 'SELECT 1;' only) to ensure that when the particular issue being debugged is not seen, reducer will not spent a long time on executing SQL unrelated to the real issue, i.e. failing mysqld startup"
+    echoit "[Init] REDUCE_STARTUP_ISSUES active. Issue is assumed to be a startup issue"
+    echoit "[Info] Note: REDUCE_STARTUP_ISSUES is normally used for debugging mysqld startup issues only; for example caused by a misbehaving --option to mysqld. You may want to make the SQL input file really small (for example 'SELECT 1;' only) to ensure that when the particular issue being debugged is not seen, reducer will not spent a long time on executing SQL unrelated to the real issue, i.e. failing mysqld startup"
   fi
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then
-    echo_out "[Init] Querytimeout: ${QUERYTIMEOUT}s (For RQG-originating testcase reductions, ensure this is at least 1.5x what was set in RQG using the --querytimeout option)"
+    echoit "[Init] Querytimeout: ${QUERYTIMEOUT}s (For RQG-originating testcase reductions, ensure this is at least 1.5x what was set in RQG using the --querytimeout option)"
   fi
   if [ "${FIREWORKS}" == "1" ]; then
-    echo_out "[Init] FIREWORKS Mode active. Newly discovered bugs will be saved to ${NEW_BUGS_SAVE_DIR}"
+    echoit "[Init] FIREWORKS Mode active. Newly discovered bugs will be saved to ${NEW_BUGS_SAVE_DIR}"
   elif [ "${SCAN_FOR_NEW_BUGS}" == "1" ]; then
-    echo_out "[Init] SCAN_FOR_NEW_BUGS active. Newly discovered bugs will be saved to ${NEW_BUGS_SAVE_DIR}"
+    echoit "[Init] SCAN_FOR_NEW_BUGS active. Newly discovered bugs will be saved to ${NEW_BUGS_SAVE_DIR}"
   fi
   if [ $USE_PQUERY -eq 0 ]; then
-    if   [ ${CLI_MODE} -eq 0 ]; then echo_out "[Init] Using the mysql client for SQL replay. CLI_MODE: 0 (cat input.sql | mysql)";
-    elif [ ${CLI_MODE} -eq 1 ]; then echo_out "[Init] Using the mysql client for SQL replay. CLI_MODE: 1 (mysql --execute='SOURCE input.sql')";  # input.sql is not the actual name, it is just use here for brevity/clarification purposes
+    if   [ ${CLI_MODE} -eq 0 ]; then echoit "[Init] Using the mysql client for SQL replay. CLI_MODE: 0 (cat input.sql | mysql)";
+    elif [ ${CLI_MODE} -eq 1 ]; then echoit "[Init] Using the mysql client for SQL replay. CLI_MODE: 1 (mysql --execute='SOURCE input.sql')";  # input.sql is not the actual name, it is just use here for brevity/clarification purposes
       # TODO: Remove this additional output once #81782 is fixed and --binary-mode is added elsewhere in this script (both in the actual replay module as well as in the WORK_RUN file creation)
-      echo_out "[Warning] Please note CLI_MODE=1 is currently not recommended for use, due to MySQL Bug #81782"
-      echo_out "[Warning] If your issue fails to reproduce, is is recommended to parse the input file as follows:"
-      echo_out "[Warning]   cat yourinputfile.sql | tr -d '\\0' > newinputfile.sql  # Then use newinputfile.sql instead"
-      echo_out "[Warning] before using this CLI mode - to avoid the SOURCE replay terminating early on a NULL character"
-      echo_out "[Warning] Once bug #81782 is fixed, --binary-mode can be used instead as CLI_MODE 0 and 2 currently use"
-      echo_out "[Warning] Note however that removing NULL characters from the input may reduce reproducibility"
-      echo_out "[Warning] In summary, please consider using CLI_MODE=0 or CLI_MODE=2 instead of CLI_MODE=1"
-    elif [ ${CLI_MODE} -eq 2 ]; then echo_out "[Init] Using the mysql client for SQL replay. CLI_MODE: 2 (mysql < input.sql)";
+      echoit "[Warning] Please note CLI_MODE=1 is currently not recommended for use, due to MySQL Bug #81782"
+      echoit "[Warning] If your issue fails to reproduce, is is recommended to parse the input file as follows:"
+      echoit "[Warning]   cat yourinputfile.sql | tr -d '\\0' > newinputfile.sql  # Then use newinputfile.sql instead"
+      echoit "[Warning] before using this CLI mode - to avoid the SOURCE replay terminating early on a NULL character"
+      echoit "[Warning] Once bug #81782 is fixed, --binary-mode can be used instead as CLI_MODE 0 and 2 currently use"
+      echoit "[Warning] Note however that removing NULL characters from the input may reduce reproducibility"
+      echoit "[Warning] In summary, please consider using CLI_MODE=0 or CLI_MODE=2 instead of CLI_MODE=1"
+    elif [ ${CLI_MODE} -eq 2 ]; then echoit "[Init] Using the mysql client for SQL replay. CLI_MODE: 2 (mysql < input.sql)";
     else echo "Error: CLI_MODE!=0,1,2: CLI_MODE=${CLI_MODE}"; exit 1; fi
   else
-    echo_out "[Init] Using the pquery client for SQL replay"
+    echoit "[Init] Using the pquery client for SQL replay"
     if [ ${PQUERY_MULTI} -eq 0 ]; then
       if [ ${PQUERY_REVERSE_NOSHUFFLE_OPT} -eq 0 ]; then
-        echo_out "[Init] Using sequential (non-shuffled) single-thread replay"
+        echoit "[Init] Using sequential (non-shuffled) single-thread replay"
       else
-        echo_out "[Init] Using shuffled (random/non-sequential) single-thread replay"
+        echoit "[Init] Using shuffled (random/non-sequential) single-thread replay"
       fi
     else
       if [ ${PQUERY_REVERSE_NOSHUFFLE_OPT} -eq 1 ]; then
-        echo_out "[Init] Using sequential (non-shuffled) multi-threaded replay"
+        echoit "[Init] Using sequential (non-shuffled) multi-threaded replay"
       else
-        echo_out "[Init] Using shuffled (random/non-sequential) multi-threaded replay"
+        echoit "[Init] Using shuffled (random/non-sequential) multi-threaded replay"
       fi
     fi
   fi
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-    echo_out "[Init] Number of times each individual trial will be attempted: ${NR_OF_TRIAL_REPEATS}x"
+    echoit "[Init] Number of times each individual trial will be attempted: ${NR_OF_TRIAL_REPEATS}x"
   fi
   if [ ${NR_OF_TRIAL_REPEATS} -gt 50 ]; then
-    echo_out "[Init] Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
+    echoit "[Init] Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
   fi
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${FORCE_SKIPV} -ne 0 ]; then
-    echo_out "[Init] NR_OF_TRIAL_REPEATS>1: setting FORCE_SKIPV=0, skipping the verify stage (issue is deemed to be sporadic)"
+    echoit "[Init] NR_OF_TRIAL_REPEATS>1: setting FORCE_SKIPV=0, skipping the verify stage (issue is deemed to be sporadic)"
     export -n FORCE_SKIPV=0
   fi
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${SKIPSTAGEBELOW} -eq 0 ]; then
     # As NR_OF_TRIAL_REPEATS is set >1, reducer sets SKIPSTAGEBELOW to 1 to avoid stage 1 single-threaded reduction attempts (with block chuncks, and without trial repeats) in the case where STAGE1_LINES was set to a number less than the (restructured) testcase. This is the most straightforward and best approach to negate this possibility.
-    echo_out "[Init] NR_OF_TRIAL_REPEATS>1: setting SKIPSTAGEBELOW=1, ensuring repeated line-by-line reduction trials"
+    echoit "[Init] NR_OF_TRIAL_REPEATS>1: setting SKIPSTAGEBELOW=1, ensuring repeated line-by-line reduction trials"
     export -n SKIPSTAGEBELOW=1
   fi
-  if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echo_out "[Init] Passing the following additional options to mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
-  if [ "$MYINIT" != "" ]; then echo_out "[Init] Passing the following additional options to mysqld initialization: $MYINIT"; fi
+  if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echoit "[Init] Passing the following additional options to mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
+  if [ "$MYINIT" != "" ]; then echoit "[Init] Passing the following additional options to mysqld initialization: $MYINIT"; fi
   if [ $MODE -ge 6 ]; then
-    if [ $TS_TRXS_SETS -eq 1 ]; then echo_out "[Init] ThreadSync: using last transaction set (accross threads) only"; fi
-    if [ $TS_TRXS_SETS -gt 1 ]; then echo_out "[Init] ThreadSync: using last $TS_TRXS_SETS transaction sets (accross threads) only"; fi
-    if [ $TS_TRXS_SETS -eq 0 ]; then echo_out "[Init] ThreadSync: using complete input files (you may want to set TS_DS_TIMEOUT=10 [seconds] or less)"; fi
-    if [ $TS_VARIABILITY_SLEEP -gt 0 ]; then echo_out "[Init] ThreadSync: will wait $TS_VARIABILITY_SLEEP seconds before each new transaction set is processed"; fi
-    echo_out "[Init] ThreadSync: default DEBUG_SYNC timeout (TS_DS_TIMEOUT): $TS_DS_TIMEOUT seconds"
+    if [ $TS_TRXS_SETS -eq 1 ]; then echoit "[Init] ThreadSync: using last transaction set (accross threads) only"; fi
+    if [ $TS_TRXS_SETS -gt 1 ]; then echoit "[Init] ThreadSync: using last $TS_TRXS_SETS transaction sets (accross threads) only"; fi
+    if [ $TS_TRXS_SETS -eq 0 ]; then echoit "[Init] ThreadSync: using complete input files (you may want to set TS_DS_TIMEOUT=10 [seconds] or less)"; fi
+    if [ $TS_VARIABILITY_SLEEP -gt 0 ]; then echoit "[Init] ThreadSync: will wait $TS_VARIABILITY_SLEEP seconds before each new transaction set is processed"; fi
+    echoit "[Init] ThreadSync: default DEBUG_SYNC timeout (TS_DS_TIMEOUT): $TS_DS_TIMEOUT seconds"
     if [ $TS_DBG_CLI_OUTPUT -eq 1 ]; then
-      echo_out "[Init] ThreadSync: using debug (-vvv) mysql CLI output logging"
-      echo_out "[Warning] ThreadSync: ONLY use -vvv logging for debugging, as this *will* cause issue non-reproducilbity due to excessive disk logging!"
+      echoit "[Init] ThreadSync: using debug (-vvv) mysql CLI output logging"
+      echoit "[Warning] ThreadSync: ONLY use -vvv logging for debugging, as this *will* cause issue non-reproducilbity due to excessive disk logging!"
     fi
   fi
   if [ $MDG -gt 0 ]; then
-    echo_out "[Init] MDG active, so automatically set USE_PQUERY=1: MariaDB Galera Cluster testcase reduction is currently supported with pquery only"
+    echoit "[Init] MDG active, so automatically set USE_PQUERY=1: MariaDB Galera Cluster testcase reduction is currently supported with pquery only"
     if [ $MODE -eq 5 -o $MODE -eq 3 ]; then
-      echo_out "[Warning] MODE=$MODE is set, as well as MDG mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
+      echoit "[Warning] MODE=$MODE is set, as well as MDG mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
     fi
     if [ $MODE -eq 4 ]; then
       if [ $MDG_ISSUE_NODE -eq 0 ]; then
-        echo_out "[Info] All MDG nodes will be checked for the issue. As long as one node reproduces, testcase reduction will continue (MDG_ISSUE_NODE=0)"
+        echoit "[Info] All MDG nodes will be checked for the issue. As long as one node reproduces, testcase reduction will continue (MDG_ISSUE_NODE=0)"
       fi
       for i in $(seq 1 ${NR_OF_NODES}); do
-       echo_out "[Info] Important: MDG_ISSUE_NODE is set to ${i}, so only MDG node ${i} will be checked for the presence of the issue"
+       echoit "[Info] Important: MDG_ISSUE_NODE is set to ${i}, so only MDG node ${i} will be checked for the presence of the issue"
       done
     fi
   fi
   if [ $GRP_RPL -gt 0 ]; then
-    echo_out "[Init] GRP_RPL active, so automatically set USE_PQUERY=1: Group Replication Cluster testcase reduction is currently supported only with pquery"
+    echoit "[Init] GRP_RPL active, so automatically set USE_PQUERY=1: Group Replication Cluster testcase reduction is currently supported only with pquery"
     if [ $MODE -eq 5 -o $MODE -eq 3 ]; then
-      echo_out "[Warning] MODE=$MODE is set, as well as Group Replication mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
+      echoit "[Warning] MODE=$MODE is set, as well as Group Replication mode active. This combination will likely work, but has not been tested yet. Please remove this warning (for MODE=$MODE only please) when it was tested succesfully"
     fi
     if [ $MODE -eq 4 ]; then
       if [ $GRP_RPL_ISSUE_NODE -eq 0 ]; then
-        echo_out "[Info] All Group Replication nodes will be checked for the issue. As long as one node reproduces, testcase reduction will continue (GRP_RPL_ISSUE_NODE=0)"
+        echoit "[Info] All Group Replication nodes will be checked for the issue. As long as one node reproduces, testcase reduction will continue (GRP_RPL_ISSUE_NODE=0)"
       elif [ $GRP_RPL_ISSUE_NODE -eq 1 ]; then
-        echo_out "[Info] Important: GRP_RPL_ISSUE_NODE is set to 1, so only MDG node 1 will be checked for the presence of the issue"
+        echoit "[Info] Important: GRP_RPL_ISSUE_NODE is set to 1, so only MDG node 1 will be checked for the presence of the issue"
       elif [ $GRP_RPL_ISSUE_NODE -eq 2 ]; then
-        echo_out "[Info] Important: GRP_RPL_ISSUE_NODE is set to 2, so only MDG node 2 will be checked for the presence of the issue"
+        echoit "[Info] Important: GRP_RPL_ISSUE_NODE is set to 2, so only MDG node 2 will be checked for the presence of the issue"
       elif [ $GRP_RPL_ISSUE_NODE -eq 3 ]; then
-        echo_out "[Info] Important: GRP_RPL_ISSUE_NODE is set to 3, so only MDG node 3 will be checked for the presence of the issue"
+        echoit "[Info] Important: GRP_RPL_ISSUE_NODE is set to 3, so only MDG node 3 will be checked for the presence of the issue"
       fi
     fi
   fi
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is a parent/main reducer
     # Get version specific options
     MID=
+    if [ -r ${BASEDIR}/scripts/mariadb-install-db ]; then MID="${BASEDIR}/scripts/mariadb-install-db"; fi
     if [ -r ${BASEDIR}/scripts/mysql_install_db ]; then MID="${BASEDIR}/scripts/mysql_install_db"; fi
     if [ -r ${BASEDIR}/bin/mysql_install_db ]; then MID="${BASEDIR}/bin/mysql_install_db"; fi
     START_OPT="--core-file"           # Compatible with 5.6,5.7,8.0
     INIT_OPT="--no-defaults --initialize-insecure ${MYINIT}"  # Compatible with     5.7,8.0 (mysqld init)
     INIT_TOOL="${BIN}"                # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
     VERSION_INFO=$(${BIN} --version | grep -E --binary-files=text -oe '[58]\.[01567]' | head -n1)
-    VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9][0-9]*' | head -n1)
-    if [ "${VERSION_INFO_2}" == "10.4" -o "${VERSION_INFO_2}" == "10.5" -o "${VERSION_INFO_2}" == "10.6" -o "${VERSION_INFO_2}" == "10.7" -o "${VERSION_INFO_2}" == "10.8" -o "${VERSION_INFO_2}" == "10.9" -o "${VERSION_INFO_2}" == "10.10" -o "${VERSION_INFO_2}" == "10.11" -o "${VERSION_INFO_2}" == "10.12" -o "${VERSION_INFO_2}" == "10.13" ]; then
-      VERSION_INFO="5.6"
-      INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
-      INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
-      START_OPT="--core-file --core"
-    elif [ "${VERSION_INFO_2}" == "10.1" -o "${VERSION_INFO_2}" == "10.2" -o "${VERSION_INFO_2}" == "10.3" ]; then
+    VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-1]\.[0-9][0-9]*' | head -n1)
+    if [[ "${VERSION_INFO_2}" =~ ^10.[1-3]$ ]]; then
       VERSION_INFO="5.1"
       INIT_TOOL="${BASEDIR}/scripts/mysql_install_db"
       INIT_OPT="--no-defaults --force"
       START_OPT="--core"
+    elif [[ "${VERSION_INFO_2}" =~ ^1[0-1].[0-9][0-9]* ]]; then
+      VERSION_INFO="5.6"
+      INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
+      INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
+      START_OPT="--core-file --core"
     elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
       if [ "${MID}" == "" ]; then
         echo "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"
@@ -1945,51 +1962,63 @@ init_workdir_and_files(){
       echo "WARNING: mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may fail."
     fi
     if [[ $MDG -ne 1 && $GRP_RPL -ne 1 ]]; then
-      echo_out "[Init] Setting up standard working template (without using MYEXTRA options)"
+      echoit "[Init] Setting up standard data directory working template (without using MYEXTRA options)"
       generate_run_scripts
       ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR --datadir=$WORKD/data ${MID_OPTIONS} --user=$MYUSER > $WORKD/init.log 2>&1
       if [ ! -d "$WORKD/data" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data does not exist... check $WORKD/log/mysqld.out, $WORKD/log/master.err and $WORKD/init.log"
+        echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data does not exist... check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log"
         echo "Terminating now."
         exit 1
       else
-        # Note that 'mv data data.init' needs to come BEFORE first mysqld startup attempt, to not pollute the template with an actual mysqld startup (think --init-file and tokudb)
+        # Note that 'mv data data.init' needs to come BEFORE first mysqld startup attempt, to not pollute the template with an actual mysqld startup (think --init-file, tokudb, and the reduction of startup options in STAGE8)
         mv ${WORKD}/data ${WORKD}/data.init
-        cp -a ${WORKD}/data.init ${WORKD}/data  # We need this for the first mysqld startup attempt just below
+        mkdir -p ${WORKD}/data
+        cp -a ${WORKD}/data.init/* ${WORKD}/data/  # We need this for the first mysqld startup attempt just below
+        if [ "${REPLICATION}" -eq 1 ]; then
+          mkdir -p ${WORKD}/data_slave
+          cp -a ${WORKD}/data.init/* ${WORKD}/data_slave/
+        fi
+        chmod -R 777 ${WORKD}
       fi
       if [ "$(du -sc $WORKD/data.init | grep -v 'total' | awk '{print $1}')" == "0" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data.init is 0 bytes. The volume likely ran out of space"
+        echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data.init is 0 bytes. The volume likely ran out of space"
         echo "Terminating now."
         exit 1
       fi
-      echo_out "[Init] Attempting first mysqld startup with all MYEXTRA options passed to mysqld"
+      if [ "${REPLICATION}" -ne 1 ]; then
+        echoit "[Init] Attempting first mariadbd/mysqld startup with all MYEXTRA options passed"
+      else
+        echoit "[Init] Attempting first mariadbd/mysqld startups (master & slave) with all MYEXTRA options passed"
+      fi
       FIRST_MYSQLD_START_FLAG=1
       if [ $MODE -ne 1 -a $MODE -ne 6 ]; then start_mysqld_main; else start_valgrind_mysqld_main; fi
       if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
         if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
-          echo_out "[Init] [NOTE] Failed to cleanly start mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mysqld). Normally this would cause reducer.sh to halt here (and advice you to check $WORKD/log/mysqld.out, $WORKD/log/master.err, $WORKD/init.log and maybe $WORKD/data/error.log + check that there is plenty of space on the device being used). However, because REDUCE_STARTUP_ISSUES is set to 1, we continue this reducer run. See above for more info on the REDUCE_STARTUP_ISSUES setting"
+          echoit "[Init] [NOTE] Failed to cleanly start mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mysqld). Normally this would cause reducer.sh to halt here (and advice you to check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log + check that there is plenty of space on the device being used). However, because REDUCE_STARTUP_ISSUES is set to 1, we continue this reducer run. See above for more info on the REDUCE_STARTUP_ISSUES setting"
         else
-          echo_out "[Init] [ERROR] Failed to start mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mysqld), check $WORKD/log/mysqld.out, $WORKD/log/master.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
-          echo_out "[Init] [INFO] If however you want to debug a mysqld startup issue, for example caused by a misbehaving --option to mysqld, set REDUCE_STARTUP_ISSUES=1 and restart reducer.sh"
+          echoit "[Init] [ERROR] Failed to start mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mysqld), check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
+          echoit "[Init] [INFO] If however you want to debug a mysqld startup issue, for example caused by a misbehaving --option to mysqld, set REDUCE_STARTUP_ISSUES=1 and restart reducer.sh"
           echo "Terminating now."
           exit 1
         fi
+      else
+        echoit "[Init] First mariadbd/mysqld startup with all MYEXTRA options passed to mysqld successful"
       fi
       if [ $LOAD_TIMEZONE_DATA -gt 0 ]; then
-        echo_out "[Init] Loading timezone data into mysql database"
-        # echo_out "[Info] You may safely ignore any 'Warning: Unable to load...' messages, unless there are very many (Ref. BUG#13563952)"
+        echoit "[Init] Loading timezone data into mysql database"
+        # echoit "[Info] You may safely ignore any 'Warning: Unable to load...' messages, unless there are very many (Ref. BUG#13563952)"
         # The ones listed in BUG#13563952 are now filterered out to make output nicer
         $BASEDIR/bin/mysql_tzinfo_to_sql /usr/share/zoneinfo > $WORKD/timezone.init 2> $WORKD/timezone.err
         grep -E --binary-files=text -v "Riyadh8[789]'|zoneinfo/iso3166.tab|zoneinfo/zone.tab" $WORKD/timezone.err > $WORKD/timezone.err.tmp
         for A in $(cat $WORKD/timezone.err.tmp|sed 's/ /=DUMMY=/g'); do
-          echo_out "$(echo "[Warning from mysql_tzinfo_to_sql] $A" | sed 's/=DUMMY=/ /g')"
+          echoit "$(echo "[Warning from mysql_tzinfo_to_sql] $A" | sed 's/=DUMMY=/ /g')"
         done
-        echo_out "[Info] If you see a [GLIBC] crash above, change reducer to use a non-Valgrind-instrumented build of mysql_tzinfo_to_sql (Ref. BUG#13498842)"
+        echoit "[Info] If you see a [GLIBC] crash above, change reducer to use a non-Valgrind-instrumented build of mysql_tzinfo_to_sql (Ref. BUG#13498842)"
         $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock --force mysql < $WORKD/timezone.init
       fi
       stop_mysqld_or_mdg
     elif [[ $MDG -eq 1 ]]; then
-      echo_out "[Init] Setting up standard MDG working template (without using MYEXTRA options)"
+      echoit "[Init] Setting up standard MDG data directory working template (without using MYEXTRA options)"
       for i in $(seq 1 ${NR_OF_NODES}); do
         node="${WORKD}/node${i}"
         ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node  > ${WORKD}/startup_node${i}_error.log 2>&1
@@ -1997,7 +2026,7 @@ init_workdir_and_files(){
         cp -a $WORKD/node${i}/* $WORKD/node${i}.init/
       done
     elif [[ $GRP_RPL -eq 1 ]]; then
-      echo_out "[Init] Setting up standard Group Replication working template (without using MYEXTRA options)"
+      echoit "[Init] Setting up standard Group Replication data directory working template (without using MYEXTRA options)"
       MID="${BASEDIR}/bin/mysqld --no-defaults --initialize-insecure ${MYINIT} --basedir=${BASEDIR}"
       node1="${WORKD}/node1"
       node2="${WORKD}/node2"
@@ -2013,9 +2042,9 @@ init_workdir_and_files(){
     FIRST_MYSQLD_START_FLAG=0  # From here onwards, FORCE_KILL can be used if used if it set enabled (set to 1)
   else
     if [[ $MDG -eq 1 ]]; then
-      echo_out "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../node*.init)"
+      echoit "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../node*.init)"
     else
-      echo_out "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../data.init)"
+      echoit "[Init] This is a subreducer process; using initialization data template from the main process ($WORKD/../../data.init)"
     fi
   fi
 }
@@ -2059,6 +2088,7 @@ generate_run_scripts(){
   if [[ ${MDG} -eq 1 ]]; then
     for i in $(seq 1 ${NR_OF_NODES}); do
       mkdir -p /dev/shm/${EPOCH}/tmp${i}
+      echo "mkdir -p /dev/shm/${EPOCH}/tmp${i}" >> $WORK_INIT
       echo "\$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/node${i}" >> $WORK_INIT
     done
   else
@@ -2066,7 +2096,7 @@ generate_run_scripts(){
   fi
   if [ $MODE -ge 6 ]; then
     # This still needs implementation for MODE6 or higher ("else line" below simply assumes a single $WORKO atm, while MODE6 and higher has more then 1)
-    echo_out "[Not implemented yet] MODE6 or higher does not auto-generate a $WORK_RUN file yet"
+    echoit "[Not implemented yet] MODE6 or higher does not auto-generate a $WORK_RUN file yet"
     echo "Not implemented yet: MODE6 or higher does not auto-generate a $WORK_RUN file yet" > $WORK_RUN
     echo "#${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} < INPUT_FILE_GOES_HERE (like $WORKO)" >> $WORK_RUN
     chmod +x $WORK_RUN
@@ -2079,7 +2109,7 @@ generate_run_scripts(){
       0) echo "cat ./${EPOCH}.sql | \${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --binary-mode --force test" >> $WORK_RUN ;;
       1) echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --execute=\"SOURCE ./${EPOCH}.sql;\" --force test" >> $WORK_RUN ;;  # TODO When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.
       2) echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --binary-mode --force test < ./${EPOCH}.sql" >> $WORK_RUN ;;
-      *) echo_out "Assert: default clause in CLI_MODE switchcase hit (in generate_run_scripts). This should not happen. CLI_MODE=${CLI_MODE}"; exit 1 ;;
+      *) echoit "Assert: default clause in CLI_MODE switchcase hit (in generate_run_scripts). This should not happen. CLI_MODE=${CLI_MODE}"; exit 1 ;;
     esac
     chmod +x $WORK_RUN
     if [ $USE_PQUERY -eq 1 ]; then
@@ -2188,12 +2218,18 @@ init_mysql_dir(){
     cp -a ${node2}.init ${node2}
     cp -a ${node3}.init ${node3}
   else
-    rm -Rf $WORKD/data/*  $WORKD/tmp/*
-    rm -Rf $WORKD/data/.rocksdb 2> /dev/null
+    rm -Rf $WORKD/data/* $WORKD/data_slave/* $WORKD/tmp/* $WORKD/tmp_slave/*
+    rm -Rf $WORKD/data/.rocksdb
     if [ "$MULTI_REDUCER" != "1" ]; then  # This is a parent/main reducer
       cp -a $WORKD/data.init/* $WORKD/data/
+      if [ "${REPLICATION}" -eq 1 ]; then
+        cp -a ${WORKD}/data.init/* ${WORKD}/data_slave/
+      fi
     else
       cp -a $WORKD/../../data.init/* $WORKD/data/
+      if [ "${REPLICATION}" -eq 1 ]; then
+        cp -a ${WORKD}/../../data.init/* ${WORKD}/data_slave/
+      fi
     fi
   fi
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
@@ -2209,9 +2245,11 @@ start_mysqld_or_valgrind_or_mdg(){
     gr_start_main
   else
     # Pre-start cleanup
-    if [ -f $WORKD/log/master.err ]; then mv -f $WORKD/log/master.err $WORKD/log/master.err.prev; fi                    # mysqld error log
-    if [ -f $WORKD/log/mysqld.out ]; then mv -f $WORKD/log/mysqld.out $WORKD/mysqld.prev; fi                             # mysqld stdout & stderr output, as well as some mysqladmin output
-    if [ -f $WORKD/log/mysql.out ]; then mv -f $WORKD/log/mysql.out $WORKD/mysql.prev; fi                                # mysql client output
+    if [ -f $WORKD/log/master.err ]; then mv -f $WORKD/log/master.err $WORKD/log/master.err.prev; fi  # mysqld error log (single server or master)
+    if [ -f $WORKD/log/slave.err ]; then mv -f $WORKD/log/slave.err $WORKD/log/slave.err.prev; fi  # mysqld error log (slave)
+    if [ -f $WORKD/log/mysqld.out ]; then mv -f $WORKD/log/mysqld.out $WORKD/mysqld.prev; fi  # mysqld stdout & stderr output, as well as some mysqladmin output (single server or master)
+    if [ -f $WORKD/log/mysqld_slave.out ]; then mv -f $WORKD/log/mysqld_slave.out $WORKD/mysqld.prev; fi  # mysqld stdout & stderr output, as well as some mysqladmin output (slave)
+    if [ -f $WORKD/log/mysql.out ]; then mv -f $WORKD/log/mysql.out $WORKD/mysql.prev; fi  # mysql client output (only applicable to single server or master)
     if [ -f $WORKD/log/default.node.tld_thread-0.out ]; then mv -f $WORKD/log/default.node.tld_thread-0.out $WORKD/log/default.node.tld_thread-0.prev; fi  # pquery client output
     if [ -f $WORKD/default.node.tld_thread-0.sql ]; then mv -f $WORKD/default.node.tld_thread-0.sql $WORKD/log/default.node.tld_thread-0.prevsql; fi
     # Start
@@ -2225,9 +2263,9 @@ start_mysqld_or_valgrind_or_mdg(){
         if [ ${STAGE} -eq 8 -o ${STAGE} -eq 9 ]; then
           if [ ${STAGE} -eq 8 ]; then STAGE8_NOT_STARTED_CORRECTLY=1; fi
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
-          echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, assuming this option set is required"
+          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, assuming this option set is required"
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/master.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
+          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
           echo "Terminating now."
           exit 1
         fi
@@ -2255,7 +2293,7 @@ start_mdg_main(){
   echo "innodb_file_per_table" >> ${WORKD}/my.cnf
   echo "innodb_autoinc_lock_mode=2" >> ${WORKD}/my.cnf
   echo "wsrep-provider=${BASEDIR}/lib/libgalera_smm.so" >> ${WORKD}/my.cnf
-  echo "wsrep_sst_method=mariabackup" >> ${WORKD}/my.cnf
+  echo "wsrep_sst_method=rsync" >> ${WORKD}/my.cnf
   echo "wsrep_sst_auth=$SUSER:$SPASS" >> ${WORKD}/my.cnf
   echo "binlog_format=ROW" >> ${WORKD}/my.cnf
   echo "core-file" >> ${WORKD}/my.cnf
@@ -2303,9 +2341,6 @@ start_mdg_main(){
   }
 
   ADDR="127.0.0.1"
-  #init_empty_port
-  #MYPORT=$NEWPORT
-  #NEWPORT=
   rm -rf $WORKD/tmp*
   unset MDG_PORTS
   unset MDG_LADDRS
@@ -2518,7 +2553,7 @@ gr_start_main(){
 
 start_mysqld_main(){
   if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
+    echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
     echo "Terminating now."
     exit 1
   fi
@@ -2536,19 +2571,65 @@ start_mysqld_main(){
     export _RR_TRACE_DIR="${WORKD}/rr"
     mkdir -p "${_RR_TRACE_DIR}"
   fi
-  # Change --port=$MYPORT to --skip-networking instead once BUG#13917335 is fixed and remove all MYPORT + MULTI_MYPORT coding
+  # Change --port=$MYPORT to --skip-networking instead once BUG#13917335 is fixed and remove all MYPORT coding. Update: this can no longer be done even if that bug is fixed, as replication uses MYPORT. TODO: remove this comment once it was pushed once for history
   if [ $MODE -ge 6 -a $TS_DEBUG_SYNC_REQUIRED_FLAG -eq 1 ]; then
+    if [ "${REPLICATION}" -eq 1 ]; then
+      echoit "MODE=6, TS_DEBUG_SYNC_REQUIRED_FLAG=1. This combination does not support replication mode yet (REPLICATION=1). Please disable either MODE 6, TS_DEBUG_SYNC_REQUIRED_FLAG, or REPLICATION or extend the code"
+      exit 1
+    fi
+    init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
     echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
     CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --loose-debug-sync-timeout=$TS_DS_TIMEOUT --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
     MYSQLD_START_TIME=$(date +'%s')
     $CMD > $WORKD/log/mysqld.out 2>&1 &
     PIDV="$!"
   else
-    echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-    CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
-    MYSQLD_START_TIME=$(date +'%s')
-    $CMD > $WORKD/log/mysqld.out 2>&1 &
-    PIDV="$!"
+    if [ "${REPLICATION}" -eq 1 ]; then
+      # ---- Master
+      init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      MYSQLD_START_TIME=$(date +'%s')
+      $CMD > $WORKD/log/mysqld.out 2>&1 &
+      PIDV="$!"
+      # ---- Slave
+      init_empty_port; MYPORT_SLAVE=$NEWPORT; NEWPORT=  # Obtain new empty port
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      MYSQLD_SLAVE_START_TIME=$(date +'%s')
+      $CMD > $WORKD/log/mysqld_slave.out 2>&1 &
+      PIDV_SLAVE="$!"
+      # ---- Init replication
+      # Ensure both servers are live
+      MASTER_STARTUP_OK=0; SLAVE_STARTUP_OK=0
+      for((delay=0;delay<60;delay++)); do  # 60 Second max master+slave startup (normally, only ~2 seconds are required)
+        sleep 1
+        if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then MASTER_STARTUP_OK=1; fi
+        if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock ping > /dev/null 2>&1; then SLAVE_STARTUP_OK=1; fi
+        if [ "${MASTER_STARTUP_OK}" -eq 1 -a "${SLAVE_STARTUP_OK}" -eq 1 ]; then break; fi
+      done
+      if [ "${MASTER_STARTUP_OK}" -ne 1 -o "${SLAVE_STARTUP_OK}" -ne 1 ]; then
+        echoit "Assert: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Debug workdir: $WORKD"
+        echoit "Reducer is sleeping/not terminating to ensure work directory is not deleted. Press CTRL+c to exit"
+        while true; do sleep 10; touch $WORKD; done
+        exit 1
+      fi
+      MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
+      # Setup replication, master side
+      ${BASEDIR}/bin/mysql -uroot -S$WORKD/socket.sock -e "DELETE FROM mysql.user WHERE user='';" 2>/dev/null
+      ${BASEDIR}/bin/mysql -uroot -S$WORKD/socket.sock -e "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" 2>/dev/null
+      # Setup replication, slave side
+      ${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=${MYPORT}, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ; START SLAVE;" 2>/dev/null
+      sleep 2  # Replication setup delay
+      echoit "[Info] Replication enabled between master and slave in ${WORKD} using port ${MYPORT}"
+    else
+      init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      MYSQLD_START_TIME=$(date +'%s')
+      $CMD > $WORKD/log/mysqld.out 2>&1 &
+      PIDV="$!"
+    fi
   fi
   sed -i "s|$WORKD|/dev/shm/${EPOCH}|g" $WORK_START
   # TODO: the next line used to contain only --core-file, but this led to MariaDB not always properly dumping a core file. Added --core to fix, but this may not be fully backward compatible, nor backward compatible forever. Also research why the --core is needed to start with (using 10.5.5 for this)
@@ -2562,30 +2643,28 @@ start_mysqld_main(){
   for X in $(seq 1 120); do
     sleep 1; if $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then break; fi
     # Check if the server crashed or shutdown, then there is no need to wait any longer (new beta feature as of 1 July 16)
-    # RV fix made 10 Jan 17; if no log/master.err is created (for whatever reason) then 120x4 'not found' messages scroll on the screen: added '2>/dev/null'. The Reason for the
-    #   missing log/master.err files in some circumstances needs to be found (seems to be related to bad startup options (usually in stage 8), but why is there no output at all?)
-    if grep -E --binary-files=text -qi "identify the cause of the crash" $WORKD/log/master.err 2>/dev/null; then break; fi
-    if grep -E --binary-files=text -qi "Writing a core file" $WORKD/log/master.err 2>/dev/null; then break; fi
-    if grep -E --binary-files=text -qi "Core pattern" $WORKD/log/master.err 2>/dev/null; then break; fi
-    if grep -E --binary-files=text -qi "terribly wrong" $WORKD/log/master.err 2>/dev/null; then break; fi
-    if grep -E --binary-files=text -qi "Shutdown complete" $WORKD/log/master.err 2>/dev/null; then break; fi
+    # RV fix made 10 Jan 17; if no log/master.err is created (for whatever reason) then 120x4 'not found' messages scroll on the screen: added '2>/dev/null'. The Reason for the missing log/master.err files in some circumstances needs to be found (seems to be related to bad startup options (usually in stage 8), but why is there no output at all?)
+    if grep -E --binary-files=text -qi "identify the cause of the crash" $WORKD/log/*.err 2>/dev/null; then break; fi
+    if grep -E --binary-files=text -qi "Writing a core file" $WORKD/log/*.err 2>/dev/null; then break; fi
+    if grep -E --binary-files=text -qi "Core pattern" $WORKD/log/*.err 2>/dev/null; then break; fi
+    if grep -E --binary-files=text -qi "terribly wrong" $WORKD/log/*.err 2>/dev/null; then break; fi
+    if grep -E --binary-files=text -qi "Shutdown complete" $WORKD/log/*.err 2>/dev/null; then break; fi
   done
 }
 
-#                             --binlog-format=MIXED \
 start_valgrind_mysqld_main(){
   if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
+    echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
     echo "Terminating now."
     exit 1
   fi
   if [ -f $WORKD/valgrind.out ]; then mv -f $WORKD/valgrind.out $WORKD/valgrind.prev; fi
   SCHEDULER_OR_NOT=
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then SCHEDULER_OR_NOT="--event-scheduler=ON "; fi
+  init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port 
   CMD="${TIMEOUT_COMMAND} valgrind --suppressions=$BASEDIR/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes ${BIN} --basedir=${BASEDIR} --datadir=$WORKD/data --port=$MYPORT --tmpdir=$WORKD/tmp --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT}" # Workaround for BUG#12939557 (when old Valgrind version is used): --innodb_checksum_algorithm=none
   MYSQLD_START_TIME=$(date +'%s')
   $CMD > $WORKD/valgrind.out 2>&1 &
-
   PIDV="$!"; STARTUPCOUNT=$[$STARTUPCOUNT+1]
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START_VALGRIND
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START_VALGRIND
@@ -2607,7 +2686,7 @@ start_valgrind_mysqld_main(){
   done
   if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
     if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer. No point in displaying this for subreducers, as the said files will already have been replaced
-      echo_out "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server under Valgrind, check $WORKD/log/mysqld.out, $WORKD/log/master.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
+      echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server under Valgrind, check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
     fi
     echo "Terminating now."
     exit 1
@@ -2686,8 +2765,8 @@ determine_chunk(){
       fi
     fi
   fi
-  # Protection against 0 CHUNK size
-  if [ $CHUNK -lt 1 ]; then CHUNK=1; fi
+  # Protection against negative CHUNK size
+  if [ $CHUNK -lt 0 ]; then CHUNK=0; fi  # CHUNK=0 is one line at the time
 }
 
 control_backtrack_flow(){
@@ -2701,32 +2780,69 @@ control_backtrack_flow(){
 }
 
 cut_random_chunk(){
-  RANDLINE=$[ ( $RANDOM % ( $[ $LINECOUNTF - $CHUNK - 1 ] + 1 ) ) + 1 ]
-  if [ $CHUNK -eq 1 -a $TRIAL -gt 5 ]; then STUCKTRIAL=$[ $STUCKTRIAL + 1 ]; fi
-  if [ $CHUNK -eq 1 -a $STUCKTRIAL -gt 5 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line $RANDLINE (Current chunk size: stuck at 1)"
-    sed -n "$RANDLINE ! p" $WORKF > $WORKT
+  RANDLINE=-1  # Dummy start
+  RLLOOPCOUNT=0
+  if [ "${PQUERY_CONS_Q_FAIL}" -eq 0 ]; then  # Regular runs 
+    #RANDLINE=$[ ( $RANDOM % ( $[ $LINECOUNTF - $CHUNK - 1 ] + 1 ) ) + 1 ]  # Old
+    while [ "${RANDLINE}" -le 0 ]; do
+      RANDLINE=$[ $RANDOM % ($[ $LINECOUNTF - $CHUNK ] + 1 ) ]  # New
+      # Inf loop protection (can be removed in time if this assert never triggers)
+      RLLOOPCOUNT=$[ ${RLLOOPCOUNT} + 1 ]
+      if [ "${RLLOOPCOUNT}" -ge 1000 ]; then
+        echo "Assert: RLLOOPCOUNT -ge 1000! Fix this"
+        echo "Debug: RANDLINE: ${RANDLINE} | LINECOUNTF: ${LINECOUNTF} | CHUNK: ${CHUNK}"
+        exit 1
+      fi
+    done
+  else  # Special PQUERY_CONS_Q_FAIL chuncking algo which avoids using the last n (250 ftm) lines as those are required to trigger the 'Last [0-9]+ consecutive queries all failed' output in the pquery log (pquery.out).
+    if [ $LINECOUNTF -eq 251 ]; then  # TODO: This code does not belong here, instead other areas of reducer need to become smarter about PQUERY_CONS_Q_FAIL handling with/given the required 250 lines at the end of the testcase
+      echo "Assert: optimal testcase for PQUERY_CONS_Q_FAIL (251 queries) already achieved: nothing left todo"
+      echo "Testcase: $WORKF"
+      exit 1
+    fi
+    RANDLINEMIN250=$[ $LINECOUNTF - $CHUNK - 250 ]  # Ref explanation below
+    while [ "${RANDLINEMIN250}" -lt 1 ]; do  # When getting close/closer to 250 lines, it is possible that the CHUNK is too large, vary CHUNK size  # TODO: this could be part of determine_chunk, i.e. if PQUERY_CONS_Q_FAIL=1 then reduce CHUNK by 250? etc
+#251 lines left   251
+      CHUNK=$[ $RANDOM % $[ $LINECOUNTF - 250 ] ]  # For example, 251 lines left: 251-250=1 and RANDOM%1 is 0 max, and CHUNK=0 means one line removal. Similarly 252 left: 252-250=2, RANDOM%2 is 1 max and CHUNK=1 (+1 in sed) is two lines removed
+      RANDLINEMIN250=$[ $LINECOUNTF - $CHUNK - 250 ]  # For example, 251 lines left: 251-0-250=1 and line=1 is the only possible starting line in that case. Similarly 252 left: 252-1(max)-250=1 or 252-0(min)-250=2 and lines 1 and 2 are two viable options as the startline (RANDLINE, calculated below)
+    done
+    while [ "${RANDLINE}" -le 0 ]; do
+      RANDLINE=$[ $RANDOM % ( ${RANDLINEMIN250} + 1 ) ]  # +1: RANDOM%nr requires nr to be nr+1 to be able to reach (max) nr, and we want to have line 1 or higher for the sed
+      # Inf loop protection (can be removed in time if this assert never triggers)
+      RLLOOPCOUNT=$[ ${RLLOOPCOUNT} + 1 ]
+      if [ "${RLLOOPCOUNT}" -ge 1000 ]; then
+        echo "Assert: RLLOOPCOUNT -ge 1000! Fix this"
+        echo "Debug: RANDLINE: ${RANDLINE} | LINECOUNTF: ${LINECOUNTF} | CHUNK: ${CHUNK}"
+        exit 1
+      fi
+    done
+    RANDLINEMIN250=
+  fi
+  if [ $CHUNK -eq 0 -a $TRIAL -gt 5 ]; then STUCKTRIAL=$[ $STUCKTRIAL + 1 ]; fi
+  if [ $CHUNK -eq 0 -a $STUCKTRIAL -gt 5 ]; then
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line $RANDLINE (Current chunk size: stuck at 1)"
+    sed -n "$RANDLINE ! p" $WORKF > $WORKT  # Note that ,+$CHUNK i.e. ,+0 would have the same outcome
   else
     ENDLINE=$[$RANDLINE+$CHUNK]
     REALCHUNK=$[$CHUNK+1]
     if [ $SPORADIC -eq 1 -a $LINECOUNTF -lt 100 ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line(s) $RANDLINE to $ENDLINE (Current chunk size: $REALCHUNK: Sporadic issue; using a fixed % based chunk)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line(s) $RANDLINE to $ENDLINE (Current chunk size: $REALCHUNK: Sporadic issue; using a fixed % based chunk)"
     else
-      echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line(s) $RANDLINE to $ENDLINE (Current chunk size: $REALCHUNK)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line(s) $RANDLINE to $ENDLINE (Current chunk size: $REALCHUNK)"
     fi
-    sed -n "$RANDLINE,+$CHUNK ! p" $WORKF > $WORKT
+    sed -n "$RANDLINE,+$CHUNK ! p" $WORKF > $WORKT  # RANDLINE: starting line (line 1=1), CHUNK: number of lines (1 line=+0)
   fi
 }
 
 cut_fireworks_chunk_and_shuffle(){
-  echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [FIREWORKS] Chunking, shuffling and executing ${FIREWORKS_LINES} lines"  # The 'executing' is a bit premature (as it happens a bit later outside of this procedure), but the text makes sense here
+  echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [FIREWORKS] Chunking, shuffling and executing ${FIREWORKS_LINES} lines"  # The 'executing' is a bit premature (as it happens a bit later outside of this procedure), but the text makes sense here
   RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Resetting random entropy to ensure highest quality entropy
   shuf -n${FIREWORKS_LINES} --random-source=/dev/urandom ${INPUTFILE} > ${WORKT}
 }
 
 cut_threadsync_chunk(){
   if [ $TS_TRXS_SETS -gt 0 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering out last $TS_TRXS_SETS command sets"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering out last $TS_TRXS_SETS command sets"
   fi
   for t in $(eval echo {1..$TS_THREADS}); do
     export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
@@ -2788,6 +2904,10 @@ run_and_check(){
   else
     cat $WORKD/log/master.err >> $WORKD/error.log
     rm -f $WORKD/log/master.err
+    if [ -r $WORKD/log/slave.err ]; then
+      cat $WORKD/log/slave.err >> $WORKD/error_slave.log
+      rm -f $WORKD/log/slave.err
+    fi
   fi
   return $OUTCOME
 }
@@ -2815,7 +2935,7 @@ run_sql_code(){
   #DEBUG
   #read -p "Go! (run_sql_code break)"
   if   [ $MODE -ge 6 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [DATA] Loading datafile before SQL threads replay"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [DATA] Loading datafile before SQL threads replay"
     # Note that the two following grep -v solutions still work fine for DROPC removal as this is using the mysql cli which can handle multiple statements on one line and DROPC is NOT being changed into a multi-line statement. Search for 'DROPC' to learn more.
     if [ $TS_DBG_CLI_OUTPUT -eq 0 ]; then
       echo "$(echo "$DROPC";cat $TS_DATAINPUTFILE | grep -E --binary-files=text -v "$DROPC")" | $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock --force test > /dev/null 2>/dev/null
@@ -2835,21 +2955,21 @@ run_sql_code(){
       export TS_THREAD_PID$t=$PID
       TXT_OUT="$TXT_OUT #$t [$!]"
     done
-    echo_out "$TXT_OUT"
+    echoit "$TXT_OUT"
     # Wait for forked processes to terminate
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [SQL] Waiting for all forked SQL threads to finish/terminate"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [SQL] Waiting for all forked SQL threads to finish/terminate"
     TXT_OUT="$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [SQL] Finished/Terminated SQL threads:"
     for t in $(eval echo {$TS_THREADS..1}); do  # Reverse: later threads are likely to finish earlier
       wait $(eval echo $(echo '$TS_THREAD_PID'"$t"))
       TXT_OUT="$TXT_OUT #$t"
-      echo_out_overwrite "$TXT_OUT"
+      echoit_overwrite "$TXT_OUT"
       if [ $t -eq 20 -a $TS_THREADS -gt 20 ]; then
-        echo_out "$TXT_OUT"
+        echoit "$TXT_OUT"
         TXT_OUT="$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Finished/Terminated subreducer threads:"
       fi
     done
-    echo_out "$TXT_OUT"
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [SQL] All SQL threads have finished/terminated"
+    echoit "$TXT_OUT"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [SQL] All SQL threads have finished/terminated"
   elif [ $MODE -eq 5 ]; then
     if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
       cat $WORKT | $BASEDIR/bin/mysql -uroot -S${node1}/node1_socket.sock -vvv --force test > $WORKD/log/mysql.out 2>&1
@@ -2924,7 +3044,7 @@ run_sql_code(){
         0) cat $WORKT | $BASEDIR/bin/mysql -uroot -S${CLIENT_SOCKET} --binary-mode --force test > $WORKD/log/mysql.out 2>&1 ;;
         1) $BASEDIR/bin/mysql -uroot -S${CLIENT_SOCKET} --execute="SOURCE ${WORKT};" --force test > $WORKD/log/mysql.out 2>&1 ;;  # When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.
         2) $BASEDIR/bin/mysql -uroot -S${CLIENT_SOCKET} --binary-mode --force test < ${WORKT} > $WORKD/log/mysql.out 2>&1 ;;
-        *) echo_out "Assert: default clause in CLI_MODE switchcase hit (in run_sql_code). This should not happen. CLI_MODE=${CLI_MODE}"; exit 1 ;;
+        *) echoit "Assert: default clause in CLI_MODE switchcase hit (in run_sql_code). This should not happen. CLI_MODE=${CLI_MODE}"; exit 1 ;;
       esac
     fi
   fi
@@ -2952,9 +3072,9 @@ cleanup_and_save(){
     if [ "$STAGE" = "T" ]; then
       # Move workdir
       if [ $TS_TE_DIR_SWAP_DONE -eq 1 ]; then
-        echo_out "[Info] ThreadSync input directory now set to $WORKD/log after a thread was eliminated (Directory was re-initialized)"
+        echoit "[Info] ThreadSync input directory now set to $WORKD/log after a thread was eliminated (Directory was re-initialized)"
       else
-        echo_out "[Info] ThreadSync input directory now set to $WORKD/log after a thread was eliminated"
+        echoit "[Info] ThreadSync input directory now set to $WORKD/log after a thread was eliminated"
         TS_TE_DIR_SWAP_DONE=1
       fi
       cp -f $TS_ORIG_DATAINPUTFILE $WORKD/log
@@ -2977,15 +3097,15 @@ cleanup_and_save(){
       if [[ ${RR_TRACING} -eq 1 ]]; then
         if [[ ${RR_SAVE_ALL_TRACES} -eq 1 ]]; then
           save_rr_trace "${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
         fi
       fi
       cp -f $WORKO ${WORKO}.prev
       # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
-      echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
     fi
     grep -E --binary-files=text -v "^# mysqld options required for replay:" $WORKT > $WORKO
-    MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|--sql_mode=|--sql_mode= |g;s|[ \t]\+| |g")
+    MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|sql_mode=\([^ ]\)|sql_mode= \1|g;s|[ \t]\+| |g")
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
       if [ -s $WORKO ]; then
         if [ "${MYINIT}" == "" ]; then
@@ -3022,7 +3142,7 @@ cleanup_and_save(){
   echo "WORKO:$WORKO" >> $WORKD/VERIFIED
   if [ "$MULTI_REDUCER" == "1" ]; then  # This is a subreducer
     echo "# $ATLEASTONCE Issue was reproduced during this simplification subreducer." >> $WORKD/VERIFIED
-    echo_out "$ATLEASTONCE [Stage $STAGE] Issue was reproduced during this simplification subreducer. Terminating now."
+    echoit "$ATLEASTONCE [Stage $STAGE] Issue was reproduced during this simplification subreducer. Terminating now."
     # This is a simplification subreducer started by a parent/main reducer, to simplify an issue. We terminate now after discovering the issue here.
     # We rely on the parent/main reducer to kill off mysqld processes (on the next multi_reducer() call - at the top of the function).
     finish $INPUTFILE
@@ -3044,14 +3164,14 @@ process_outcome(){
     RUN_TIME=$[ $(date +'%s') - ${MYSQLD_START_TIME} ]
     if [ ${RUN_TIME} -ge ${TIMEOUT_CHECK_REAL} ]; then
       if [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TimeoutBug*] [$NOISSUEFLOW] Swapping files & saving last known good timeout issue in $WORKO"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TimeoutBug*] [$NOISSUEFLOW] Swapping files & saving last known good timeout issue in $WORKO"
         control_backtrack_flow
       fi
       cleanup_and_save
       return 1
     else
       if [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTimeoutBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTimeoutBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
       return 0
@@ -3059,21 +3179,21 @@ process_outcome(){
 
   # MODE1: Valgrind output testing (set TEXT)
   elif [ $MODE -eq 1 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Waiting for Valgrind to terminate analysis"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Waiting for Valgrind to terminate analysis"
     while :; do
       sleep 1; sync
       if grep -E --binary-files=text -q "ERROR SUMMARY" $WORKD/valgrind.out; then break; fi
     done
-    if grep -E --binary-files=text -iq "$TEXT" $WORKD/valgrind.out $WORKD/log/master.err; then
+    if grep -E --binary-files=text -iq "$TEXT" $WORKD/valgrind.out $WORKD/log/*.err; then
       if [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*ValgrindBug*] [$NOISSUEFLOW] Swapping files & saving last known good Valgrind issue in $WORKO"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*ValgrindBug*] [$NOISSUEFLOW] Swapping files & saving last known good Valgrind issue in $WORKO"
         control_backtrack_flow
       fi
       cleanup_and_save
       return 1
     else
       if [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoValgrindBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoValgrindBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
       return 0
@@ -3114,7 +3234,7 @@ process_outcome(){
     fi
     if [ $MODE2_OCCURENCE -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*ClientOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good client output issue in $WORKO"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*ClientOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good client output issue in $WORKO"
         control_backtrack_flow
       fi
       cleanup_and_save
@@ -3122,7 +3242,7 @@ process_outcome(){
       return 1
     else
       if [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoClientOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoClientOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
       MODE2_OCCURENCE=
@@ -3130,6 +3250,7 @@ process_outcome(){
     fi
 
   # MODE3: mysqld error output log testing (set TEXT)
+  # When PQUERY_CONS_Q_FAIL=1 then the pquery log will be checked for 'Last [0-9]+ consecutive queries all failed' instead
   elif [ $MODE -eq 3 ]; then
     M3_ISSUE_FOUND=0
     SKIP_NEWBUG=0
@@ -3138,7 +3259,7 @@ process_outcome(){
       ERRORLOG=$WORKD/*/error.log
       sudo chmod 777 $ERRORLOG
     else
-      ERRORLOG=$WORKD/log/master.err
+      ERRORLOG=$WORKD/log/*.err
     fi
     if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
       M3_OUTPUT_TEXT="ConsoleTypescript"
@@ -3155,21 +3276,27 @@ process_outcome(){
         fi
       fi
     else
-      if [ $USE_NEW_TEXT_STRING -eq 1 ]; then
+      if [ $PQUERY_CONS_Q_FAIL -eq 1 ]; then
+        # Note that if PQUERY_CONS_Q_FAIL=1 then TEXT is always 'Last [0-9]+ consecutive queries all failed'
+        M3_OUTPUT_TEXT="LastConsecutiveQueriesAllFailed"
+        if grep -E --binary-files=text -iq "${TEXT}" $WORKD/pquery.out; then
+          M3_ISSUE_FOUND=1
+        fi
+      elif [ $USE_NEW_TEXT_STRING -eq 1 ]; then
         M3_OUTPUT_TEXT="NewTextString"
         rm -f ${WORKD}/MYBUG.FOUND
         touch ${WORKD}/MYBUG.FOUND
         SAVEPATH="${PWD}"
         cd $WORKD
         if [ "${WORKD}" != "${PWD}" ]; then
-          echo_out "Assert: cd ${WORKD} before USE_NEW_TEXT_STRING parsing failed. Terminating."
+          echoit "Assert: cd ${WORKD} before USE_NEW_TEXT_STRING parsing failed. Terminating."
           exit 1
         fi
         if [ $MDG -eq 1 ]; then
           export GALERA_ERROR_LOG=$WORKD/node1/error.log
           export GALERA_CORE_LOC=$WORKD/node1/*core*
         fi
-        MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}")"
+        MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
         NTSEXITCODE=${?}
         echo "${MYBUGFOUND}" >> ${WORKD}/MYBUG.FOUND
         echo ${NTSEXITCODE} > ${WORKD}/MYBUG.FOUND.EXITCODE
@@ -3183,20 +3310,20 @@ process_outcome(){
             #SKIP_NEWBUG=1
             sleep 0.00001  # dummy sleep to allow leaving the IF active
           else
-            echo_out "Assert: exit code for $TEXT_STRING_LOC was not 0; this should not happen. Exitcode was ${NTSEXITCODE} and message was; '$(cat ${WORKD}/MYBUG.FOUND)'. Please check files in ${WORKD}. Terminating."
+            echoit "Assert: exit code for $TEXT_STRING_LOC was not 0; this should not happen. Exitcode was ${NTSEXITCODE} and message was; '$(cat ${WORKD}/MYBUG.FOUND)'. Please check files in ${WORKD}. Terminating."
             SKIP_NEWBUG=1
             exit 1
           fi
         fi
         cd - >/dev/null
         if [ "${SAVEPATH}" != "${PWD}" ]; then
-          echo_out "Assert: cd - after USE_NEW_TEXT_STRING parsing failed. Retrying..."
+          echoit "Assert: cd - after USE_NEW_TEXT_STRING parsing failed. Retrying..."
           cd ${SAVEPATH}  # Second attempt
           if [ "${SAVEPATH}" != "${PWD}" ]; then
-            echo_out "Assert: cd ${SAVEPATH} after USE_NEW_TEXT_STRING parsing failed. Terminating."
+            echoit "Assert: cd ${SAVEPATH} after USE_NEW_TEXT_STRING parsing failed. Terminating."
             exit 1
           else
-            echo_out "> Second attempt using cd ${SAVEPATH} worked. Reducer can continue, but this is not normal, please check cause, especially if message is seen regularly during reducer runs or is looping."
+            echoit "> Second attempt using cd ${SAVEPATH} worked. Reducer can continue, but this is not normal, please check cause, especially if message is seen regularly during reducer runs or is looping."
           fi
         fi
         SAVEPATH=
@@ -3212,7 +3339,7 @@ process_outcome(){
               FINDBUG="$(grep -Fi --binary-files=text "${MYBUGFOUND}" ${KNOWN_BUGS_LOC} | head -n1)"
               if [[ "${FINDBUG}" == "#"* ]]; then FINDBUG=''; fi  # Bugs marked as fixed need to be excluded. This cannot be done by using "^${TEXT}" as the grep is not regex aware, nor can it be, due to the many special (regex-like) characters in the unique bug strings
               if [ -z "${FINDBUG}" ]; then  # Reducer found a new bug (nothing found in known bugs)
-                echo_out "[NewBug] Reducer located a new bug whilst reducing this issue: $(cat ${WORKD}/MYBUG.FOUND 2>/dev/null | head -n1)"
+                echoit "[NewBug] Reducer located a new bug whilst reducing this issue: $(cat ${WORKD}/MYBUG.FOUND 2>/dev/null | head -n1)"
                 EPOCH_RAN="$(date +%H%M%S%N)${RANDOM}"
                 if [ ! -z "${NEW_BUGS_SAVE_DIR}" ]; then  # If set, we need to copy this new bug to the NEW_BUGS_SAVE_DIR
                   if [ ! -d "${NEW_BUGS_SAVE_DIR}" ]; then  # Leave this check, it re-checks if the [previously created, at the start of the script] NEW_BUGS_SAVE_DIR still exists
@@ -3232,12 +3359,12 @@ process_outcome(){
                 fi
                 if [[ ${RR_TRACING} -eq 1 ]]; then
                   save_rr_trace "${NEW_BUGS_SAVE_DIR}/${EPOCH_RAN}_rr_trace"
-                  echo_out "[NewBug] Saved RR trace in ${NEW_BUGS_SAVE_DIR}/${EPOCH_RAN}_rr_trace"
+                  echoit "[NewBug] Saved RR trace in ${NEW_BUGS_SAVE_DIR}/${EPOCH_RAN}_rr_trace"
                 fi
                 cp "${WORKT}" "${NEWBUGSO}"
-                echo_out "[NewBug] Saved the new testcase to: ${NEWBUGSO}"
+                echoit "[NewBug] Saved the new testcase to: ${NEWBUGSO}"
                 cp "${WORKD}/MYBUG.FOUND" "${NEWBUGTO}"
-                echo_out "[NewBug] Saved the Unique bug ID to: ${NEWBUGTO}"
+                echoit "[NewBug] Saved the Unique bug ID to: ${NEWBUGTO}"
                 # The next line takes this file (i.e. the current running reducer) and removes the #VARMOD# section
                 # if present (it will be present if the NEWBUG was found by a subreducer), thereby making it a main
                 # reducer itself rather than a subreducer. None of the variables saved in the #VARMOD# section by the
@@ -3340,7 +3467,7 @@ process_outcome(){
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
                 #sed -i "s|^MYEXTRA=.*|MYEXTRA=\"${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO Needs more work. Whilst the original is for example "--no-defaults --log-output=none --sql_mode=ONLY_FULL_GROUP_BY" this will end up with "--log-output=none" only which is not so good as "--no-defaults" is missing and more importantly, it's incorrect.
                 chmod +x "${NEWBUGRE}"
-                echo_out "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"
+                echoit "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"
                 NEWBUGSO=
                 NEWBUGTO=
                 NEWBUGRE=
@@ -3361,7 +3488,7 @@ process_outcome(){
     fi
     if [ $M3_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" -a "${FIREWORKS}" != "1" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*${M3_OUTPUT_TEXT}OutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good testcase in $WORKO"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*${M3_OUTPUT_TEXT}OutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good testcase in $WORKO"
         control_backtrack_flow
       fi
       sleep 2; sync
@@ -3371,7 +3498,7 @@ process_outcome(){
       fi
     else
       if [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [No${M3_OUTPUT_TEXT}OutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [No${M3_OUTPUT_TEXT}OutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
       return 0
@@ -3418,9 +3545,9 @@ process_outcome(){
     if [ $M4_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then
         if [ $STAGE -eq 6 ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] [*$M4_OUTPUT_TEXT*] Swapping files & saving last known good crash in $WORKO"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] [*$M4_OUTPUT_TEXT*] Swapping files & saving last known good crash in $WORKO"
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*$M4_OUTPUT_TEXT*] [$NOISSUEFLOW] Swapping files & saving last known good crash in $WORKO"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*$M4_OUTPUT_TEXT*] [$NOISSUEFLOW] Swapping files & saving last known good crash in $WORKO"
         fi
         control_backtrack_flow
       fi
@@ -3429,9 +3556,9 @@ process_outcome(){
     else
       if [ ! "$STAGE" = "V" ]; then
         if [ $STAGE -eq 6 ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] [No$M4_OUTPUT_TEXT] Kill server $NEXTACTION"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] [No$M4_OUTPUT_TEXT] Kill server $NEXTACTION"
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [No$M4_OUTPUT_TEXT] [$NOISSUEFLOW] Kill server $NEXTACTION"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [No$M4_OUTPUT_TEXT] [$NOISSUEFLOW] Kill server $NEXTACTION"
         fi
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
@@ -3445,21 +3572,21 @@ process_outcome(){
       COUNT_TEXT_OCCURENCES=$(grep -E --binary-files=text -ic "$MODE5_ADDITIONAL_TEXT" $WORKD/log/mysql.out)
       if [ $COUNT_TEXT_OCCURENCES -ge $MODE5_ADDITIONAL_COUNTTEXT ]; then
         if [ ! "$STAGE" = "V" ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*MTRCaseOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good MTR testcase output issue in $WORKO"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*MTRCaseOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good MTR testcase output issue in $WORKO"
           control_backtrack_flow
         fi
         cleanup_and_save
         return 1
       else
         if [ ! "$STAGE" = "V" ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoMTRCaseOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoMTRCaseOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
           NOISSUEFLOW=$[$NOISSUEFLOW+1]
         fi
         return 0
       fi
     else
       if [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoMTRCaseOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoMTRCaseOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
       return 0
@@ -3467,23 +3594,23 @@ process_outcome(){
 
   # MODE6: ThreadSync Valgrind output testing (set TEXT)
   elif [ $MODE -eq 6 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Waiting for Valgrind to terminate analysis"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Waiting for Valgrind to terminate analysis"
     while :; do
       sleep 1; sync
       if grep -E --binary-files=text -q "ERROR SUMMARY" $WORKD/valgrind.out; then break; fi
     done
     if grep -E --binary-files=text -iq "$TEXT" $WORKD/valgrind.out; then
       if [ "$STAGE" = "T" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSValgrindBug*] [$NOISSUEFLOW] Swapping files & saving last known good Valgrind issue thread file(s) in $WORKD/log/"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSValgrindBug*] [$NOISSUEFLOW] Swapping files & saving last known good Valgrind issue thread file(s) in $WORKD/log/"
       elif [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSValgrindBug*] [$NOISSUEFLOW] Swapping files & saving last known good Valgrind issue thread file(s) in $WORKD/out/"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSValgrindBug*] [$NOISSUEFLOW] Swapping files & saving last known good Valgrind issue thread file(s) in $WORKD/out/"
         control_backtrack_flow
       fi
       cleanup_and_save
       return 1
     else
       if [ ! "$STAGE" = "V" -a ! "$STAGE" = "T" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSValgrindBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSValgrindBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
       return 0
@@ -3493,16 +3620,16 @@ process_outcome(){
   elif [ $MODE -eq 7 ]; then
     if grep -E --binary-files=text -iq "$TEXT" $WORKD/log/mysql.out; then
       if [ "$STAGE" = "T" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCLIOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good CLI output issue thread file(s) in $WORKD/log/"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCLIOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good CLI output issue thread file(s) in $WORKD/log/"
       elif [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCLIOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good CLI output issue thread file(s) in $WORKD/out/"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCLIOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good CLI output issue thread file(s) in $WORKD/out/"
         control_backtrack_flow
       fi
       cleanup_and_save
       return 1
     else
       if [ ! "$STAGE" = "V" -a ! "$STAGE" = "T" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSCLIOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSCLIOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
       return 0
@@ -3510,18 +3637,18 @@ process_outcome(){
 
   # MODE8: ThreadSync mysqld error output log testing (set TEXT)
   elif [ $MODE -eq 8 ]; then
-    if grep -E --binary-files=text -iq "$TEXT" $WORKD/log/master.err; then
+    if grep -E --binary-files=text -iq "$TEXT" $WORKD/log/*.err; then
       if [ "$STAGE" = "T" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSErrorLogOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good error log output issue thread file(s) in $WORKD/log/"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSErrorLogOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good error log output issue thread file(s) in $WORKD/log/"
       elif [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSErrorLogOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good error log output issue thread file(s) in $WORKD/out/"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSErrorLogOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good error log output issue thread file(s) in $WORKD/out/"
         control_backtrack_flow
       fi
       cleanup_and_save
       return 1
     else
       if [ ! "$STAGE" = "V" -a ! "$STAGE" = "T" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSErrorLogOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSErrorLogOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
       return 0
@@ -3531,16 +3658,16 @@ process_outcome(){
   elif [ $MODE -eq 9 ]; then
     if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
       if [ "$STAGE" = "T" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCrash*] [$NOISSUEFLOW] Swapping files & saving last known good crash thread file(s) in $WORKD/log/"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCrash*] [$NOISSUEFLOW] Swapping files & saving last known good crash thread file(s) in $WORKD/log/"
       elif [ ! "$STAGE" = "V" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCrash*] [$NOISSUEFLOW] Swapping files & saving last known good crash thread file(s) in $WORKD/out/"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCrash*] [$NOISSUEFLOW] Swapping files & saving last known good crash thread file(s) in $WORKD/out/"
         control_backtrack_flow
       fi
       cleanup_and_save
       return 1
     else
       if [ ! "$STAGE" = "V" -a ! "$STAGE" = "T" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSCrash] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSCrash] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
       return 0
@@ -3548,7 +3675,7 @@ process_outcome(){
 
   # Invalid mode
   else
-    echo_out "Assert: invalid MODE (MODE=${MODE}) discovered. Terminating."
+    echoit "Assert: invalid MODE (MODE=${MODE}) discovered. Terminating."
     exit 1
   fi
 }
@@ -3562,12 +3689,17 @@ stop_mysqld_or_mdg(){
   else
     if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 -a ${FIRST_MYSQLD_START_FLAG} -ne 1 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld. For the first init startup of mysqld, kill should also not be used.
       while :; do
-        if kill -0 $PIDV >/dev/null 2>&1; then
+        KPIDS="${PIDV}"
+        if [ "${REPLICATION}" -eq 1 ]; then
+          KPIDS="${PIDV} ${PIDV_SLAVE}"
+        fi
+        if kill -0 ${KPIDS} >/dev/null 2>&1; then
           sleep 1
-          ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
+          ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
         else
           break
         fi
+        KPIDS=
       done
     else
       # RV-15/09/14 Added timeout due to bug http://bugs.mysql.com/bug.php?id=73914
@@ -3575,28 +3707,38 @@ stop_mysqld_or_mdg(){
       # RV-22/03/17 To check for shutdown hangs, need to make sure that timeout of mysqladmin is longer then TIMEOUT_CHECK seconds + 10 seconds safety margin
       if [ $MODE -eq 0 ]; then
         timeout -k${MODE0_MIN_SHUTDOWN_TIME} -s9 ${MODE0_MIN_SHUTDOWN_TIME}s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
-        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld.out; then
-          echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
+        if [ "${REPLICATION}" -eq 1 ]; then
+          timeout -k${MODE0_MIN_SHUTDOWN_TIME} -s9 ${MODE0_MIN_SHUTDOWN_TIME}s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1
+        fi
+        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld*.out; then
+          echoit "Assert: Access denied for user detected (ref $WORKD/log/mysqld*.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
           # exit 1  # RV-11/01/2022 We should not unconditionally exit here, and potentially not exit at all; if this is a subreducer thread, the mysqld kill below is a much more sensible next step. For example, if the sql has had a chunck removed which caused this 'Access denied' than the next trial it may be perfectly possible reduce the testcase further in anohter way (for example, the sql that causes the 'Access denied' issue in the first place may be filtered out, etc. Even if an exit would be preferred here (unlikely), then it should be made conditional.
         fi
       else
         # RV 02/01/2021: increased timeout to 60 up from 40 as even high end servers which are busy may take bit longer to write a core
         timeout -k60 -s9 60s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1  # Note it is myqladmin being terminated with -9, not mysqld !
-        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld.out; then
-          echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
+        if [ "${REPLICATION}" -eq 1 ]; then
+          timeout -k60 -s9 60s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1  # Note it is myqladmin being terminated with -9, not mysqld !
+        fi
+        if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld*.out; then
+          echoit "Assert: Access denied for user detected (ref $WORKD/log/mysqld*.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
           # exit 1  # Ref RV-11/01/2022 note above
         fi
       fi
       if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 1; fi
 
+      KPIDS="${PIDV}"
+      if [ "${REPLICATION}" -eq 1 ]; then
+        KPIDS="${PIDV} ${PIDV_SLAVE}"
+      fi
       if [ "${FIREWORKS}" == "1" ]; then  # Terminate mysqld directly in fireworks mode
-        ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
+        ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
         sleep 0.02
         while :; do
-          if kill -0 $PIDV >/dev/null 2>&1; then
-            ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
+          if kill -0 ${KPIDS} >/dev/null 2>&1; then
+            ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
             sleep 1
-            if kill -0 $PIDV >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed at least twice. Is this server very busy?"; else break; fi
+            if kill -0 ${KPIDS} >/dev/null 2>&1; then echoit "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server(s) with PID(s) ${KPIDS} failed at least twice. Is this server very busy?"; else break; fi
           else
             break
           fi
@@ -3605,19 +3747,22 @@ stop_mysqld_or_mdg(){
         # Try various things now to bring server down, upto kill -9
         while :; do
           sleep 1
-          if kill -0 $PIDV >/dev/null 2>&1; then
+          if kill -0 ${KPIDS} >/dev/null 2>&1; then
             if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 2; fi
-            if kill -0 $PIDV >/dev/null 2>&1; then  # Retry shutdown one more time
+            if kill -0 ${KPIDS} >/dev/null 2>&1; then  # Retry shutdown one more time
               ${BASEDIR}/bin/mysqladmin -uroot -S${WORKD}/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
-              if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld.out; then
-                echo_out "Assert: Access denied for user detected (ref $WORKD/log/mysqld.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
+              if [ "${REPLICATION}" -eq 1 ]; then
+                ${BASEDIR}/bin/mysqladmin -uroot -S${WORKD}/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1
+              fi
+              if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld*.out; then
+                echoit "Assert: Access denied for user detected (ref $WORKD/log/mysqld*.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
                 # exit 1  # Ref RV-11/01/2022 note above
               fi
             else
               break
             fi
             if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 2; fi
-            if kill -0 $PIDV >/dev/null 2>&1; then echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed at least twice. Is this server very busy?"; else break; fi
+            if kill -0 ${KPIDS} >/dev/null 2>&1; then echoit "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server(s) with PID(s) ${KPIDS} failed at least twice. Is this server very busy?"; else break; fi
             sleep 5
             if [ $MODE -ne 1 -a $MODE -ne 6 ]; then
               if [ $MODE -eq 0 ]; then
@@ -3625,11 +3770,11 @@ stop_mysqld_or_mdg(){
                   continue  # Do not proceed to kill -9 if server is hanging and reducer is checking for the same (i.e. MODE=0) untill we've passed $TIMEOUT_CHECK + 10 second safety margin
                 fi
               fi
-              if kill -0 $PIDV >/dev/null 2>&1; then
+              if kill -0 ${KPIDS} >/dev/null 2>&1; then
                 if [ $MODE -ne 0 ]; then  # For MODE=0, the following is not a WARNING but fairly normal
-                  echo_out "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server with PID ${PIDV} failed. Now forcing kill of mysqld"
+                  echoit "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server(s) with PID(s) ${KPIDS} failed. Now forcing kill of mysqld"
                 fi
-                ( kill -9 $PIDV >/dev/null 2>&1; ) >/dev/null 2>&1
+                ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
               else
                 break
               fi
@@ -3640,6 +3785,7 @@ stop_mysqld_or_mdg(){
         done
       fi
     fi
+    KPIDS=
     PIDV=
   fi
   RUN_TIME=$[ ${RUN_TIME} + $(date +'%s') - ${SHUTDOWN_TIME_START} ]  # Add shutdown runtime to overall runtime which is later checked against TIMEOUT_CHECK
@@ -3649,65 +3795,65 @@ finish(){
   if [[ ${RR_TRACING} -eq 1 ]]; then
     if [[ ${RR_SAVE_ALL_TRACES} -eq 0 ]]; then
       save_rr_trace "${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
-      echo_out "[Finish] Saved the final RR trace in ${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
+      echoit "[Finish] Saved the final RR trace in ${WORK_BUG_DIR}/rr/${EPOCH}_rr_trace"
     else
-      echo_out "[Finish] RR traces saved in                : ${WORK_BUG_DIR}/rr"
+      echoit "[Finish] RR traces saved in                : ${WORK_BUG_DIR}/rr"
     fi
   fi
-  echo_out "[Finish] Finalized reducing SQL input file ($INPUTFILE)"
-  echo_out "[Finish] Number of server startups         : $STARTUPCOUNT (not counting subreducers)"
-  echo_out "[Finish] Reducer log                       : $WORKD/reducer.log"
+  echoit "[Finish] Finalized reducing SQL input file ($INPUTFILE)"
+  echoit "[Finish] Number of server startups         : $STARTUPCOUNT (not counting subreducers)"
+  echoit "[Finish] Reducer log                       : $WORKD/reducer.log"
   if [ ! -r $WORKO ]; then  # If there was no reduction (i.e. issue was not found), $WORKO was never written
     cp $INPUTFILE $WORK_OUT
-    echo_out "[Finish] Final testcase                    : $INPUTFILE (= input file; no optimizations were successful. $(wc -l $INPUTFILE | awk '{print $1}') lines)"
+    echoit "[Finish] Final testcase                    : $INPUTFILE (= input file; no optimizations were successful. $(wc -l $INPUTFILE | awk '{print $1}') lines)"
   else  # Reduction
     cp -f $WORKO $WORK_OUT
-    echo_out "[Finish] Final testcase                    : $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
+    echoit "[Finish] Final testcase                    : $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
   fi
   rm -f $WORK_BUG_DIR/${EPOCH}_bug_bundle.tar.gz
   $(cd $WORK_BUG_DIR; tar -zhcf ${EPOCH}_bug_bundle.tar.gz ${EPOCH}*)
-  echo_out "[Finish] Final testcase bundle + scripts in: $WORK_BUG_DIR"
-  echo_out "[Finish] Final testcase for script use     : $WORK_OUT (handy to use in combination with the scripts below)"
-  echo_out "[Finish] File containing datadir           : $WORK_BASEDIR (All scripts below use this. Update this when basedir changes)"
-  echo_out "[Finish] Matching data dir init script     : $WORK_INIT (This script will use /dev/shm/${EPOCH} as working directory)"
-  echo_out "[Finish] Matching startup script           : $WORK_START (Starts mysqld with same options as used in reducer)"
+  echoit "[Finish] Final testcase bundle + scripts in: $WORK_BUG_DIR"
+  echoit "[Finish] Final testcase for script use     : $WORK_OUT (handy to use in combination with the scripts below)"
+  echoit "[Finish] File containing datadir           : $WORK_BASEDIR (All scripts below use this. Update this when basedir changes)"
+  echoit "[Finish] Matching data dir init script     : $WORK_INIT (This script will use /dev/shm/${EPOCH} as working directory)"
+  echoit "[Finish] Matching startup script           : $WORK_START (Starts mysqld with same options as used in reducer)"
   if [ $MODE -ge 6 ]; then
     # See init_workdir_and_files() and search for WORK_RUN for more info. Also more info in improvements section at top
-    echo_out "[Finish] Matching run script               : $WORK_RUN (though you can look at this file for an example, implementation for MODE6+ is not finished yet)"
+    echoit "[Finish] Matching run script               : $WORK_RUN (though you can look at this file for an example, implementation for MODE6+ is not finished yet)"
   else
-    echo_out "[Finish] Matching run script (CLI)         : $WORK_RUN (executes the testcase via the mysql CLI)"
-    echo_out "[Finish] Matching startup script (pquery)  : $WORK_RUN_PQUERY (executes the testcase via the pquery binary)"
+    echoit "[Finish] Matching run script (CLI)         : $WORK_RUN (executes the testcase via the mysql CLI)"
+    echoit "[Finish] Matching startup script (pquery)  : $WORK_RUN_PQUERY (executes the testcase via the pquery binary)"
   fi
-  echo_out "[Finish] Remember; ASAN testcases may need : export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
-  echo_out "[Finish] Remember; UBSAN testcases may need: export UBSAN_OPTIONS=print_stacktrace=1"
-  echo_out "[Finish] Final testcase bundle tar ball    : ${EPOCH}_bug_bundle.tar.gz (handy for upload to bug reports)"
-  echo_out "[Finish] Working directory was             : $WORKD"
+  echoit "[Finish] Remember; ASAN testcases may need : export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
+  echoit "[Finish] Remember; UBSAN testcases may need: export UBSAN_OPTIONS=print_stacktrace=1"
+  echoit "[Finish] Final testcase bundle tar ball    : ${EPOCH}_bug_bundle.tar.gz (handy for upload to bug reports)"
+  echoit "[Finish] Working directory was             : $WORKD"
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is the parent/main reducer
     MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|--sql_mode=|--sql_mode= |g;s|[ \t]\+| |g")
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
-      echo_out "[Finish] mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED (the testcase will not reproduce the issue without these options passed to mysqld)"
+      echoit "[Finish] mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED (the testcase will not reproduce the issue without these options passed to mysqld)"
     fi
     if [ "${MYINIT}" == "" ]; then
-      echo_out "[Finish] mysqld initialization options reqd: $MYINIT (the testcase will not reproduce the issue without these options passed to mysqld initialization)"
+      echoit "[Finish] mysqld initialization options reqd: $MYINIT (the testcase will not reproduce the issue without these options passed to mysqld initialization)"
     fi
     MYSQLD_OPTIONS_REQUIRED=
     if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
-      echo_out "[Finish] Final testcase size               : $(stat -c %s $WORKO) bytes ($(wc -l $WORKO | awk '{print $1}') lines)"
+      echoit "[Finish] Final testcase size               : $(stat -c %s $WORKO) bytes ($(wc -l $WORKO | awk '{print $1}') lines)"
     fi
     if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
-      echo_out "[Info] It is often beneficial to re-run reducer on the output file ($0 $WORKO) to make it smaller still (Reason for this is that certain lines may have been chopped up (think about missing end quotes or semicolons) resulting in non-reproducibility)"
+      echoit "[Info] It is often beneficial to re-run reducer on the output file ($0 $WORKO) to make it smaller still (Reason for this is that certain lines may have been chopped up (think about missing end quotes or semicolons) resulting in non-reproducibility)"
     fi
     copy_workdir_to_tmp
   fi
   if [ "${FIREWORKS}" != "1" ]; then
     if [ ! -r $WORKO ]; then  # If there was no reduction (i.e. issue was not found), $WORKO was never written
-      echo_out "[DONE] Final testcase: $INPUTFILE (= input file; no optimizations were successful. $(wc -l $INPUTFILE | awk '{print $1}') lines)"
+      echoit "[DONE] Final testcase: $INPUTFILE (= input file; no optimizations were successful. $(wc -l $INPUTFILE | awk '{print $1}') lines)"
     else  # Reduction
-      echo_out "[DONE] Final testcase: $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
+      echoit "[DONE] Final testcase: $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
     fi
   fi
   if [ "${1}" == 'abort' ]; then
-    echo_out "[Abort] Done. Terminating reducer"
+    echoit "[Abort] Done. Terminating reducer"
     trap SIGINT
     exit 2
   fi
@@ -3719,8 +3865,8 @@ copy_workdir_to_tmp(){
   if [ "${SAVE_RESULTS}" == "1" ]; then
     if [ "$MULTI_REDUCER" != "1" ]; then  # This is the parent/main reducer
       if [ $WORKDIR_LOCATION -eq 1 -o $WORKDIR_LOCATION -eq 2 ]; then
-        echo_out "[Cleanup] Since tmpfs or ramfs (volatile memory) was used, reducer is now saving a copy of the work directory in /tmp/$EPOCH"
-        echo_out "[Cleanup] Storing a copy of reducer ($0) and it's original input file ($INPUTFILE) in /tmp/$EPOCH also"
+        echoit "[Cleanup] Since tmpfs or ramfs (volatile memory) was used, reducer is now saving a copy of the work directory in /tmp/$EPOCH"
+        echoit "[Cleanup] Storing a copy of reducer ($0) and it's original input file ($INPUTFILE) in /tmp/$EPOCH also"
         if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
           sudo cp -a $WORKD /tmp/$EPOCH
           sudo chown -R `whoami`:`whoami` /tmp/$EPOCH
@@ -3739,13 +3885,13 @@ copy_workdir_to_tmp(){
         fi
         if [ "$DIFF_WORKDIR_COPY" == "" ]; then
           WORKDIR_COPY_SUCCESS=1
-          echo_out "[Cleanup] Saved copy of work directory (+ the input file, this reducer script, and reducer.log) in /tmp/$EPOCH"
-          echo_out "[Cleanup] Now deleting temporary work directory $WORKD"
+          echoit "[Cleanup] Saved copy of work directory (+ the input file, this reducer script, and reducer.log) in /tmp/$EPOCH"
+          echoit "[Cleanup] Now deleting temporary work directory $WORKD"
           rm -Rf $WORKD
         else
-          echo_out "[Non-fatal Error] Reducer tried saving a copy of the working directory ($WORKD), the input file ($INPUTFILE), this reducer ($0) and the reducer log in /tmp/$EPOCH, but on checkup after the copy, differences were found. The diff output was:"
-          echo_out "$DIFF_WORKDIR_COPY"
-          echo_out "Please check the diff output, and if necessary that the filesystem on which /tmp is stored is not full and that this script has write rights to /tmp. Note this error is non-fatal; the original work directory ($WORKD) was left, and the inputfile ($INPUTFILE) and this reducer ($0), if necessary, can still be accessed from their original location."
+          echoit "[Non-fatal Error] Reducer tried saving a copy of the working directory ($WORKD), the input file ($INPUTFILE), this reducer ($0) and the reducer log in /tmp/$EPOCH, but on checkup after the copy, differences were found. The diff output was:"
+          echoit "$DIFF_WORKDIR_COPY"
+          echoit "Please check the diff output, and if necessary that the filesystem on which /tmp is stored is not full and that this script has write rights to /tmp. Note this error is non-fatal; the original work directory ($WORKD) was left, and the inputfile ($INPUTFILE) and this reducer ($0), if necessary, can still be accessed from their original location."
         fi
       fi
     fi
@@ -3767,7 +3913,7 @@ report_linecounts(){
       TXT_OUT="$TXT_OUT #$t: $TS_WORKF_LINECOUNT"
       if [ $TS_WORKF_LINECOUNT -gt $TS_LARGEST_WORKF_LINECOUNT ]; then TS_LARGEST_WORKF_LINECOUNT=$TS_WORKF_LINECOUNT; fi
     done
-    echo_out "$TXT_OUT"
+    echoit "$TXT_OUT"
   else
     if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
       LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
@@ -3775,16 +3921,16 @@ report_linecounts(){
       LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
     fi
     if [ "$STAGE" = "V" ]; then
-      echo_out "[Init] Initial number of lines in restructured input file: $LINECOUNTF (${INPUTFILE})"
+      echoit "[Init] Initial number of lines in restructured input file: $LINECOUNTF (${INPUTFILE})"
     else
-      echo_out "[Init] Number of lines in input file: $LINECOUNTF (${INPUTFILE})"
+      echoit "[Init] Number of lines in input file: $LINECOUNTF (${INPUTFILE})"
       if [ ${LINECOUNTF} -eq 0 ]; then
-        echo_out "Assert: Input file empty (0 lines)! Terminating"
+        echoit "Assert: Input file empty (0 lines)! Terminating"
         exit 1
       fi
     fi
   fi
-  if [ "$STAGE" = "V" ]; then echo_out "[Info] Restructured files linecounts are usually higher as INSERT lines are broken up, init SQL is expanded etc."; fi
+  if [ "$STAGE" = "V" ]; then echoit "[Info] Restructured files linecounts are usually higher as INSERT lines are broken up, init SQL is expanded etc."; fi
 }
 
 verify_not_found(){
@@ -3793,8 +3939,8 @@ verify_not_found(){
   else
     EXTRA_PATH=
   fi
-  echo_out "$ATLEASTONCE [Stage $STAGE] Initial verify of the issue: fail. Bug/issue is not present under given conditions, or is very sporadic. Terminating."
-  echo_out "[Finish] Verification failed. It may help to check the following files to get an idea as to why this run did not reproduce the issue (if these files do not give any further hints, please check variable/initialization differences, enviroment differences etc. and also reference 'reproducing_and_simplification.txt' in mariadb-qa for many additional reproduction/simplification ideas):"
+  echoit "$ATLEASTONCE [Stage $STAGE] Initial verify of the issue: fail. Bug/issue is not present under given conditions, or is very sporadic. Terminating."
+  echoit "[Finish] Verification failed. It may help to check the following files to get an idea as to why this run did not reproduce the issue (if these files do not give any further hints, please check variable/initialization differences, enviroment differences etc. and also reference 'reproducing_and_simplification.txt' in mariadb-qa for many additional reproduction/simplification ideas):"
   WORKDIR_COPY_SUCCESS=0  # Defensive programming, not required (as copy_workdir_to_tmp sets it)
   copy_workdir_to_tmp
   if [ $WORKDIR_COPY_SUCCESS -eq 0 ]; then
@@ -3804,36 +3950,36 @@ verify_not_found(){
   fi
   if [ $MODE -ge 6 ]; then
     if [ $TS_DBG_CLI_OUTPUT -eq 1 ]; then
-      echo_out "[Finish] mysql CLI client output : ${PRINTWORKD}/${EXTRA_PATH}mysql<threadid>.out   (Look for clear signs of non-replay or a terminated connection)"
+      echoit "[Finish] mysql CLI client output : ${PRINTWORKD}/${EXTRA_PATH}mysql<threadid>.out   (Look for clear signs of non-replay or a terminated connection)"
     else
-      echo_out "[Finish] mysql CLI client output : not recorded                 (You may want to *TEMPORARY* turn on TS_DBG_CLI_OUTPUT to debug. Ensure to turn it back off before re-testing if the issue exists as it will likely not show with debug on if this is a multi-threaded issue)"
+      echoit "[Finish] mysql CLI client output : not recorded                 (You may want to *TEMPORARY* turn on TS_DBG_CLI_OUTPUT to debug. Ensure to turn it back off before re-testing if the issue exists as it will likely not show with debug on if this is a multi-threaded issue)"
      fi
   else
     if [ $USE_PQUERY -eq 1 ]; then
-      echo_out "[Finish] pquery client output    : ${PRINTWORKD}/{EXTRA_PATH}default.node.tld_thread-0.sql  (Look for clear signs of non-replay or a terminated connection)"
+      echoit "[Finish] pquery client output    : ${PRINTWORKD}/{EXTRA_PATH}default.node.tld_thread-0.sql  (Look for clear signs of non-replay or a terminated connection)"
     else
-      echo_out "[Finish] mysql CLI client output : ${PRINTWORKD}/${EXTRA_PATH}log/mysql.out             (Look for clear signs of non-replay or a terminated connection)"
+      echoit "[Finish] mysql CLI client output : ${PRINTWORKD}/${EXTRA_PATH}log/mysql.out             (Look for clear signs of non-replay or a terminated connection)"
     fi
   fi
   if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
-    echo_out "[Finish] Valgrind output         : ${PRINTWORKD}/${EXTRA_PATH}valgrind.out          (Check if there are really 0 errors)"
+    echoit "[Finish] Valgrind output         : ${PRINTWORKD}/${EXTRA_PATH}valgrind.out          (Check if there are really 0 errors)"
   fi
-  echo_out "[Finish] mysqld error log output : ${PRINTWORKD}/${EXTRA_PATH}error.log(.out)       (Check if the mysqld server output looks normal. '.out' = last startup)"
-  echo_out "[Finish] initialization output   : ${PRINTWORKD}/${EXTRA_PATH}init.log              (Check if the inital server initalization happened correctly)"
-  echo_out "[Finish] time init output        : ${PRINTWORKD}/${EXTRA_PATH}timezone.init         (Check if the timezone information was installed correctly)"
+  echoit "[Finish] mysqld error log output : ${PRINTWORKD}/${EXTRA_PATH}error.log(.out)       (Check if the mysqld server output looks normal. '.out' = last startup)"
+  echoit "[Finish] initialization output   : ${PRINTWORKD}/${EXTRA_PATH}init.log              (Check if the inital server initalization happened correctly)"
+  echoit "[Finish] time init output        : ${PRINTWORKD}/${EXTRA_PATH}timezone.init         (Check if the timezone information was installed correctly)"
   exit 1
 }
 
 #STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
 verify(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed to be sporadic)"  # "issue deemed to be sporadic": it is good to display this here. as FORCE_SKIPV is always 0 when NR_OF_TRIAL_REPEATS > 1 (configured during setup), and because FORCE_SKIPV is 0, such message is not displayed in the log otherwise
+    echoit "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed to be sporadic)"  # "issue deemed to be sporadic": it is good to display this here. as FORCE_SKIPV is always 0 when NR_OF_TRIAL_REPEATS > 1 (configured during setup), and because FORCE_SKIPV is 0, such message is not displayed in the log otherwise
     return
   fi
   STAGE='V'
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
-  echo_out "$ATLEASTONCE [Stage $STAGE] Verifying the bug/issue exists and is reproducible by reducer (duration depends on initial input file size)"
+  echoit "$ATLEASTONCE [Stage $STAGE] Verifying the bug/issue exists and is reproducible by reducer (duration depends on initial input file size)"
   # --init-file: Instead of using an init file, add the init file contents to the top of the testcase, if that still reproduces the issue, below
   ORIGINALMYEXTRA=$MYEXTRA
   INITFILE=
@@ -3857,14 +4003,14 @@ verify(){
         report_linecounts
         break
       fi
-      echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, now increasing number of threads to $[$MULTI_THREADS+MULTI_THREADS_INCREASE] (maximum is $MULTI_THREADS_MAX)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, now increasing number of threads to $[$MULTI_THREADS+MULTI_THREADS_INCREASE] (maximum is $MULTI_THREADS_MAX)"
       MULTI_THREADS=$[$MULTI_THREADS+MULTI_THREADS_INCREASE]
       if [ $MULTI_THREADS -gt $MULTI_THREADS_MAX ]; then  # Verify failed. Terminate.
         verify_not_found
       elif [ $MULTI_THREADS -ge 35 ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: High load active. You may start seeing messages releated to server overload like:"
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: 'command not found', 'No such file or directory' or 'fork: retry: Resource temporarily unavailable'"
-        echo_out "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: These can safely be ignored, reducer is trying to see if the issue can be reproduced at all"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: High load active. You may start seeing messages releated to server overload like:"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: 'command not found', 'No such file or directory' or 'fork: retry: Resource temporarily unavailable'"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: These can safely be ignored, reducer is trying to see if the issue can be reproduced at all"
       fi
     done
   else  # This is a subreducer: go through normal verification stages
@@ -3876,7 +4022,7 @@ verify(){
       fi
       if   [ $TRIAL -eq 1 ]; then
         if [ $MODE -ge 6 ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & DEBUG_SYNC disabled and removed (DEBUG_SYNC may not be necessary)"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & DEBUG_SYNC disabled and removed (DEBUG_SYNC may not be necessary)"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -3889,7 +4035,7 @@ verify(){
                     -e "s/', '/','/g" > $TS_WORKT
           done
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & cleanup"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & cleanup"
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-| \[Note\] |====|  WARNING: |^Hope that|^Logging: |\++++| exit with exit status |Lost connection to | valgrind |Using [MSI]|Using dynamic|MySQL Version|\------|TIME \(ms\)$|Skipping ndb|Setting mysqld |Binaries are debug |Killing Possible Leftover|Removing Stale Files|Creating Directories|Installing Master Database|Servers started, |Try: yum|Missing separate debug|SOURCE|CURRENT_TEST|\[ERROR\]|with SSL|_root_|connect to MySQL|No such file|is deprecated at|just omit the defined" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed 's/[\t ]\+/ /g' \
@@ -3900,7 +4046,7 @@ verify(){
             | sed 's/ VALUES[ ]*(/ VALUES \n(/g' \
                   -e "s/', '/','/g" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
-            echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -3921,7 +4067,7 @@ verify(){
         fi
       elif [ $TRIAL -eq 2 ]; then
         if [ $MODE -ge 6 ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: Medium initial simplification (CREATE+INSERT lines split) & DEBUG_SYNC disabled and removed"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: Medium initial simplification (CREATE+INSERT lines split) & DEBUG_SYNC disabled and removed"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -3930,7 +4076,7 @@ verify(){
               | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
           done
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: High initial simplification & cleanup (no RQG log text removal)"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: High initial simplification & cleanup (no RQG log text removal)"
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed 's/[\t ]\+/ /g' \
@@ -3940,7 +4086,7 @@ verify(){
             | sed 's/ VALUES[ ]*(/ VALUES \n(/g' \
                   -e "s/', '/','/g" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
-            echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -3962,7 +4108,7 @@ verify(){
       elif [ $TRIAL -eq 3 ]; then
         if [ $MODE -ge 6 ]; then
         TS_DEBUG_SYNC_REQUIRED_FLAG=1
-        echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: Maximum initial simplification & DEBUG_SYNC enabled"
+        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: Maximum initial simplification & DEBUG_SYNC enabled"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -3975,7 +4121,7 @@ verify(){
                     -e "s/', '/','/g" > $TS_WORKT
           done
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: High initial simplification (no RQG text removal & less cleanup)"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: High initial simplification (no RQG text removal & less cleanup)"
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" \
@@ -3983,7 +4129,7 @@ verify(){
             | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
             | sed 's/ VALUES[ ]*(/ VALUES \n(/g' > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
-            echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -4004,7 +4150,7 @@ verify(){
         fi
       elif [ $TRIAL -eq 4 ]; then
         if [ $MODE -ge 6 ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split) & DEBUG_SYNC enabled"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split) & DEBUG_SYNC enabled"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -4013,13 +4159,13 @@ verify(){
               | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
           done
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split & remove # comments)"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split & remove # comments)"
           sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
             | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
-            echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -4040,7 +4186,7 @@ verify(){
         fi
       elif [ $TRIAL -eq 5 ]; then
         if [ $MODE -ge 6 ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split) & DEBUG_SYNC enabled"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split) & DEBUG_SYNC enabled"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -4049,11 +4195,11 @@ verify(){
         else
           # The benefit of splitting INSERT lines: example: INSERT (a),(b),(c); becomes INSERT (a),\n(b)\n(c); and thus the seperate line with "b" could be eliminated/simplified.
           # If the testcase then works fine withouth the 'b' elemeneted inserted, it has become simpler. Consider large inserts (100's of rows) and how complexity can be reduced.
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split & remove # comments)"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split & remove # comments)"
           sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
             | sed "$REMOVESUFFIX" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
-            echo_out "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -4074,15 +4220,15 @@ verify(){
         fi
       elif [ $TRIAL -eq 6 ]; then
         if [ $MODE -ge 6 ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #6: No initial simplification & DEBUG_SYNC enabled"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #6: No initial simplification & DEBUG_SYNC enabled"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
             cp -f $TS_WORKF $TS_WORKT
           done
         else
-          echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #6: No initial simplification"
-          echo_out "$ATLEASTONCE [Stage $STAGE] Restoring original MYEXTRA and using --init-file exactly as given there originally"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #6: No initial simplification"
+          echoit "$ATLEASTONCE [Stage $STAGE] Restoring original MYEXTRA and using --init-file exactly as given there originally"
           MYEXTRA=$ORIGINALMYEXTRA
           echo $MYEXTRA > $WORKD/MYEXTRA
           cp -f $WORKF $WORKT
@@ -4092,15 +4238,15 @@ verify(){
       fi
       run_and_check
       if [ "$?" -eq "1" ]; then  # Verify success, exit loop
-        echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Success. Issue detected. Saved files."
+        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Success. Issue detected. Saved files."
         report_linecounts
         TRIAL_REPEAT_COUNT=0
         break
       else  # Verify fail, 'while' loop continues (and possibly with repeated trials if NR_OF_TRIAL_REPEATS>1)
-        echo_out "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Failed. Issue not detected."
+        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Failed. Issue not detected."
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
         else
           TRIAL=$[$TRIAL+1]
           TRIAL_REPEAT_COUNT=0
@@ -4111,10 +4257,10 @@ verify(){
 }
 
 fireworks_setup(){
-  echo_out "[Init] FIREWORKS mode active, so automatically set:"
-  echo_out "[Init] > USE_PQUERY=1: fireworks mode will use pquery"  # This is not strictly necessary. The CLI could be used also, but pquery is likely faster? Test later. TODO
+  echoit "[Init] FIREWORKS mode active, so automatically set:"
+  echoit "[Init] > USE_PQUERY=1: fireworks mode will use pquery"  # This is not strictly necessary. The CLI could be used also, but pquery is likely faster? Test later. TODO
   USE_PQUERY=1
-  echo_out "[Init] > USE_NEW_TEXT_STRING=1: fireworks mode will use the new text string script"
+  echoit "[Init] > USE_NEW_TEXT_STRING=1: fireworks mode will use the new text string script"
   USE_NEW_TEXT_STRING=1
   if [ -z "${FIREWORKS_LINES}" ]; then
     echo "Assert: FIREWORKS mode is active, yet FIREWORKS_LINES is empty. Terminating."
@@ -4125,47 +4271,47 @@ fireworks_setup(){
     FIREWORKS_LINES=10000
   fi
   PQUERY_MULTI_QUERIES=$[ ${FIREWORKS_LINES} + 1000 ]  # 1000: Arbritary safety buffer addition, likely only about 5 is required (for CREATE DABATASE test; etc.)
-  echo_out "[Init] > PQUERY_MULTI_QUERIES=${PQUERY_MULTI_QUERIES}: ensures FIREWORKS_LINES (${FIREWORKS_LINES}) queries can be executed"
+  echoit "[Init] > PQUERY_MULTI_QUERIES=${PQUERY_MULTI_QUERIES}: ensures FIREWORKS_LINES (${FIREWORKS_LINES}) queries can be executed"
   if [ "${SCAN_FOR_NEW_BUGS}" != "1" ]; then
-    echo_out "[Init] > SCAN_FOR_NEW_BUGS=1: enabled new bug scanning (required)"
+    echoit "[Init] > SCAN_FOR_NEW_BUGS=1: enabled new bug scanning (required)"
     SCAN_FOR_NEW_BUGS=1
   fi
   if [ ! -r "${KNOWN_BUGS_LOC}" ]; then
-    echo_out "[Init] > Failed to read KNOWN_BUGS_LOC file at '${KNOWN_BUGS_LOC}'. Please check. Terminating."
+    echoit "[Init] > Failed to read KNOWN_BUGS_LOC file at '${KNOWN_BUGS_LOC}'. Please check. Terminating."
     exit 1
   fi
   if [ -z "${FIREWORKS_TIMEOUT}" ]; then
-    echo_out "[Init] > FIREWORKS_TIMEOUT is empty (required). Default: 450 (seconds)"
+    echoit "[Init] > FIREWORKS_TIMEOUT is empty (required). Default: 450 (seconds)"
     exit 1
   fi
   if [ "$(echo "${FIREWORKS_TIMEOUT}" | grep -o '[0-9]\+')" != "${FIREWORKS_TIMEOUT}" ]; then
-    echo_out "[Init] > FIREWORKS_TIMEOUT is non-numeric. Set it to the desired number of seconds. Default: 450"
+    echoit "[Init] > FIREWORKS_TIMEOUT is non-numeric. Set it to the desired number of seconds. Default: 450"
     exit 1
   fi
-  echo_out "[Init] > TIMEOUT_COMMAND=\"timeout -k${FIREWORKS_TIMEOUT} -s9 ${FIREWORKS_TIMEOUT}s\": runaway/hanging instances protection"
+  echoit "[Init] > TIMEOUT_COMMAND=\"timeout -k${FIREWORKS_TIMEOUT} -s9 ${FIREWORKS_TIMEOUT}s\": runaway/hanging instances protection"
   TIMEOUT_COMMAND="timeout -k${FIREWORKS_TIMEOUT} -s9 ${FIREWORKS_TIMEOUT}s"
-  echo_out "[Init] > STAGE1_LINES=-1: Avoid STAGE1 from ever terminating (required)"
+  echoit "[Init] > STAGE1_LINES=-1: Avoid STAGE1 from ever terminating (required)"
   STAGE1_LINES=-1
-  echo_out "[Init] > MULTI_THREADS=25: If system overload is seen, decrease this in-code (preference)"
+  echoit "[Init] > MULTI_THREADS=25: If system overload is seen, decrease this in-code (preference)"
   MULTI_THREADS=25  # Setting this to a low number (1-5) will likely not yield great results. If the server supports it you can raise this. For 32 threads, 128GB and /dev/shm resized to 90GB, a good setting is MULTI_THREADS=25 with two reducer.sh scripts running both in fireworks mode, with /dev/shm cleaned out prior to starting them, and provided nothing else is running on the server. Watch out for OOS issues on /dev/shm tmpfs and/or OOM. Note that this setting basically means: x mysqld servers (with one client thread running against it) per reducer started in fireworks mode.
   # Note that MULTI_THREADS_INCREASE and MULTI_THREADS_MAX are of no significance as long as a reasonably lenght input SQL file is used; reducer will never reach this.
   if [ "${PQUERY_REVERSE_NOSHUFFLE_OPT}" != "0" ]; then
     # Requires --no-shuffle option to pquery as reducer (in fireworks mode) will pre-shuffle the in.tmp (i.e. WORKT) file before execution. Using pquery shuffling for this (i.e. without --no-shuffle,  is not the best solution for this, as it requires grabbing the SQL by pquery, whereas if it is pre-shuffled by reducer, issue reproducibility will, presumably, be much more perfect as there is zero post or re-parsing (i.e. the same SQL file can be used again in exactly the same way)
     if [ ${PQUERY_MULTI} -eq 1 ]; then  # If this is 1, then --shuffle is already active and so it needs to be reversed
-      echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=1: As PQUERY_MULTI was set to 1, we need to ensure pquery shuffling is disabled in favor of in-reducer shuffling (required)"
+      echoit "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=1: As PQUERY_MULTI was set to 1, we need to ensure pquery shuffling is disabled in favor of in-reducer shuffling (required)"
       PQUERY_REVERSE_NOSHUFFLE_OPT=1
     else  # PQUERY_MULTI is 0, so --no-shuffle is effective if PQUERY_REVERSE_NOSHUFFLE_OPT=0
-      echo_out "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=0: As PQUERY_MULTI was set to 1, we need to ensure pquery shuffling is disabled in favor of in-reducer shuffling (required)"
+      echoit "[Init] > PQUERY_REVERSE_NOSHUFFLE_OPT=0: As PQUERY_MULTI was set to 1, we need to ensure pquery shuffling is disabled in favor of in-reducer shuffling (required)"
       PQUERY_REVERSE_NOSHUFFLE_OPT=0
     fi
   fi
   if [ "${FORCE_SKIPV}" != "1" ]; then
-    echo_out "[Init] > FORCE_SKIPV=1: enabled skipping verify stage (ensures 'free' runs)"
+    echoit "[Init] > FORCE_SKIPV=1: enabled skipping verify stage (ensures 'free' runs)"
     FORCE_SKIPV=1
   fi
-  echo_out "[Init] > MODE=3: enabling endless-loop MODE=3 with a dummy unfindable TEXT string"
+  echoit "[Init] > MODE=3: enabling endless-loop MODE=3 with a dummy unfindable TEXT string"
   MODE=3
-  echo_out "[Init] > TEXT='fireworksmodeenabled': dummy unfindable TEXT string"
+  echoit "[Init] > TEXT='fireworksmodeenabled': dummy unfindable TEXT string"
   TEXT='fireworksmodeenabled'
 }
 
@@ -4175,60 +4321,59 @@ fireworks_setup(){
   fi
   set_internal_options  # Should come before options_check
   options_check $1
-  if [ "$MULTI_REDUCER" != "1" ]; then  # This is a parent/main reducer
-    init_empty_port
-    MYPORT=$NEWPORT
-    NEWPORT=
-  fi
   init_workdir_and_files
-  if [ $MODE -eq 9 ]; then echo_out "[Init] Run mode: MODE=9: ThreadSync Crash [ALPHA]"
-                           echo_out "[Init] Looking for any mysqld crash"; fi
-  if [ $MODE -eq 8 ]; then echo_out "[Init] Run mode: MODE=8: ThreadSync mysqld error log [ALPHA]"
-                           echo_out "[Init] Looking for this string: '$TEXT' in mysqld error log output (@ $WORKD/log/master.err when MULTI mode is not active)"; fi
-  if [ $MODE -eq 7 ]; then echo_out "[Init] Run mode: MODE=7: ThreadSync mysql CLI output [ALPHA]"
-                           echo_out "[Init] Looking for this string: '$TEXT' in mysql CLI output (@ $WORKD/log/mysql.out when MULTI mode is not active)"; fi
-  if [ $MODE -eq 6 ]; then echo_out "[Init] Run mode: MODE=6: ThreadSync Valgrind output [ALPHA]"
-                           echo_out "[Init] Looking for this string: '$TEXT' in Valgrind output (@ $WORKD/valgrind.out when MULTI mode is not active)"; fi
-  if [ $MODE -eq 5 ]; then echo_out "[Init] Run mode: MODE=5: MTR testcase output"
-                           echo_out "[Init] Looking for "$MODE5_COUNTTEXT"x this string: '$TEXT' in mysql CLI verbose output (@ $WORKD/log/mysql.out when MULTI mode is not active)"
+  if [ $MODE -eq 9 ]; then echoit "[Init] Run mode: MODE=9: ThreadSync Crash [ALPHA]"
+                           echoit "[Init] Looking for any mysqld crash"; fi
+  if [ $MODE -eq 8 ]; then echoit "[Init] Run mode: MODE=8: ThreadSync mysqld error log [ALPHA]"
+                           echoit "[Init] Looking for this string: '$TEXT' in mysqld error log output (@ $WORKD/log/*.err when MULTI mode is not active)"; fi
+  if [ $MODE -eq 7 ]; then echoit "[Init] Run mode: MODE=7: ThreadSync mysql CLI output [ALPHA]"
+                           echoit "[Init] Looking for this string: '$TEXT' in mysql CLI output (@ $WORKD/log/mysql.out when MULTI mode is not active)"; fi
+  if [ $MODE -eq 6 ]; then echoit "[Init] Run mode: MODE=6: ThreadSync Valgrind output [ALPHA]"
+                           echoit "[Init] Looking for this string: '$TEXT' in Valgrind output (@ $WORKD/valgrind.out when MULTI mode is not active)"; fi
+  if [ $MODE -eq 5 ]; then echoit "[Init] Run mode: MODE=5: MTR testcase output"
+                           echoit "[Init] Looking for "$MODE5_COUNTTEXT"x this string: '$TEXT' in mysql CLI verbose output (@ $WORKD/log/mysql.out when MULTI mode is not active)"
     if [ "$MODE5_ADDITIONAL_TEXT" != "" -a $MODE5_ADDITIONAL_COUNTTEXT -ge 1 ]; then
-                           echo_out "[Init] Looking additionally for "$MODE5_ADDITIONAL_COUNTTEXT"x this string: '$MODE5_ADDITIONAL_TEXT' in mysql CLI verbose output (@ $WORKD/log/mysql.out when MULTI mode is not active)"; fi; fi
+                           echoit "[Init] Looking additionally for "$MODE5_ADDITIONAL_COUNTTEXT"x this string: '$MODE5_ADDITIONAL_TEXT' in mysql CLI verbose output (@ $WORKD/log/mysql.out when MULTI mode is not active)"; fi; fi
   if [ $MODE -eq 4 ]; then
     if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
-                           echo_out "[Init] Run mode: MODE=4: GLIBC crash"
-                           echo_out "[Init] Looking for any GLIBC crash";
+                           echoit "[Init] Run mode: MODE=4: GLIBC crash"
+                           echoit "[Init] Looking for any GLIBC crash";
     else
-                           echo_out "[Init] Run mode: MODE=4: Crash"
-                           echo_out "[Init] Looking for any mysqld crash"; fi; fi
+                           echoit "[Init] Run mode: MODE=4: Crash"
+                           echoit "[Init] Looking for any mysqld crash"; fi; fi
   if [ $MODE -eq 3 ]; then
-    if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
-                           echo_out "[Init] Run mode: MODE=3 with REDUCE_GLIBC_OR_SS_CRASHES=1: console typscript log"
-                           echo_out "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
+    if [ "$PQUERY_CONS_Q_FAIL" -eq 1 ]; then
+      echoit "[Init] PQUERY_CONS_Q_FAIL active: MODE set to 3, USE_PQUERY set to 1, USE_NEW_TEXT_STRING set to 0"
+      echoit "[Init] PQUERY_CONS_Q_FAIL active: All other issues (crashes/asserts, any TEXT, error log contents etc.) will be ignored"
+      echoit "[Init] Run mode: MODE=3 with PQUERY_CONS_Q_FAIL=1: Scanning for '${TEXT}' in the pquery log"
+    elif [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
+                           echoit "[Init] Run mode: MODE=3 with REDUCE_GLIBC_OR_SS_CRASHES=1: console typscript log"
+                           echoit "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then
       if [ "${FIREWORKS}" != "1" ]; then
-                           echo_out "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump matching with new_text_string.sh"
-                           echo_out "[Init] Looking for this string: '$TEXT' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
+                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump matching with new_text_string.sh"
+                           echoit "[Init] Looking for this string: '$TEXT' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
       else
-                           echo_out "[Init] Run mode: FireWorks with MODE=3, using new_text_string.sh for UniqueID generation"
+                           echoit "[Init] Run mode: FireWorks with MODE=3, using new_text_string.sh for UniqueID generation"
       fi
     else
-                           echo_out "[Init] Run mode: MODE=3: mysqld error log"
-                           echo_out "[Init] Looking for this string: '$TEXT' in mysqld error log output (@ $WORKD/log/master.err when MULTI mode is not active)"; fi; fi
+                           echoit "[Init] Run mode: MODE=3: mysqld error log"
+                           echoit "[Init] Looking for this string: '$TEXT' in mysqld error log output (@ $WORKD/log/*.err when MULTI mode is not active)"; fi; fi
   if [ $MODE -eq 2 ]; then
     if [ $USE_PQUERY -eq 1 ]; then
-                           echo_out "[Init] Run mode: MODE=2: pquery client output"
-                           echo_out "[Init] Looking for this string: '$TEXT' in pquery client output (@ $WORKD/default.node.tld_thread-0.sql when MULTI mode is not active)";
+                           echoit "[Init] Run mode: MODE=2: pquery client output"
+                           echoit "[Init] Looking for this string: '$TEXT' in pquery client output (@ $WORKD/default.node.tld_thread-0.sql when MULTI mode is not active)";
     else
-                           echo_out "[Init] Run mode: MODE=2: mysql CLI output"
-                           echo_out "[Init] Looking for this string: '$TEXT' in mysql CLI output (@ $WORKD/log/mysql.out when MULTI mode is not active)"; fi; fi
-  if [ $MODE -eq 1 ]; then echo_out "[Init] Run mode: MODE=1: Valgrind output"
-                           echo_out "[Init] Looking for this string: '$TEXT' in Valgrind output (@ $WORKD/valgrind.out when MULTI mode is not active)"; fi
-  if [ $MODE -eq 0 ]; then echo_out "[Init] Run mode: MODE=0: Timeout/hang/shutdown"
-                           echo_out "[Init] Looking for trial durations longer then ${TIMEOUT_CHECK_REAL} seconds (with timeout trigger @ ${TIMEOUT_CHECK} seconds)"; fi
+                           echoit "[Init] Run mode: MODE=2: mysql CLI output"
+                           echoit "[Init] Looking for this string: '$TEXT' in mysql CLI output (@ $WORKD/log/mysql.out when MULTI mode is not active)"; fi; fi
+  if [ $MODE -eq 1 ]; then echoit "[Init] Run mode: MODE=1: Valgrind output"
+                           echoit "[Init] Looking for this string: '$TEXT' in Valgrind output (@ $WORKD/valgrind.out when MULTI mode is not active)"; fi
+  if [ $MODE -eq 0 ]; then echoit "[Init] Run mode: MODE=0: Timeout/hang/shutdown"
+                           echoit "[Init] Looking for trial durations longer then ${TIMEOUT_CHECK_REAL} seconds (with timeout trigger @ ${TIMEOUT_CHECK} seconds)"; fi
   if [ "${FIREWORKS}" != "1" ]; then
-    echo_out "[Info] Leading [] = No bug/issue found yet, leading [*] = bug/issue at least seen once"
+    echoit "[Info] Leading [] = No bug/issue found yet, leading [*] = bug/issue at least seen once"
   else
-    echo_out "[Info] Leading [] = No bug found yet, leading [*] = at least one new previously unknown bug discovered"
+    echoit "[Info] Leading [] = No bug found yet, leading [*] = at least one new previously unknown bug discovered"
   fi
   report_linecounts
   if [ "$SKIPV" != "1" ]; then
@@ -4246,7 +4391,7 @@ if [ $MODE -ge 6 ]; then
   STAGE=T
   TRIAL=1
   if [ $TS_THREADS -ne 1 ]; then  # If $TS_THREADS = 1 there is only one thread, and thread elimination is not necessary
-    echo_out "$ATLEASTONCE [Stage $STAGE] ThreadSync thread elimination: removing unncessary threads"
+    echoit "$ATLEASTONCE [Stage $STAGE] ThreadSync thread elimination: removing unncessary threads"
     while :; do
       for t in $(eval echo {1..$TS_THREADS}); do
         export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
@@ -4272,7 +4417,7 @@ if [ $MODE -ge 6 ]; then
         fi
       fi
       for a in $(eval echo {1..$TS_TE_ATTEMPTS}); do
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Attempt $a] Trying to eliminate thread $TS_ELIMINATION_THREAD_ID"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Attempt $a] Trying to eliminate thread $TS_ELIMINATION_THREAD_ID"
 
         # Single thread elimination (based on reverse order of TRIAL - control thread is normally first)
         export TS_WORKF=$(eval echo $(echo '$WORKF'"$TS_ELIMINATION_THREAD_ID"))
@@ -4293,13 +4438,13 @@ if [ $MODE -ge 6 ]; then
         fi
         run_and_check
         if [ "$?" -eq "1" ]; then  # Thread elimination success
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Attempt $a] Thread $TS_ELIMINATION_THREAD_ID elimination: Success. Thread $TS_ELIMINATION_THREAD_ID was eliminated and input file(s) were swapped"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Attempt $a] Thread $TS_ELIMINATION_THREAD_ID elimination: Success. Thread $TS_ELIMINATION_THREAD_ID was eliminated and input file(s) were swapped"
           break
         else
           if [ $a -eq $TS_TE_ATTEMPTS ]; then
-            echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Attempt $a] Thread $TS_ELIMINATION_THREAD_ID elimination: Failed. Thread $TS_ELIMINATION_THREAD_ID will be left as-is ftm (will be reduced later)."
+            echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Attempt $a] Thread $TS_ELIMINATION_THREAD_ID elimination: Failed. Thread $TS_ELIMINATION_THREAD_ID will be left as-is ftm (will be reduced later)."
           else
-            echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Attempt $a] Thread $TS_ELIMINATION_THREAD_ID elimination: Failed. Re-attempting."
+            echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Attempt $a] Thread $TS_ELIMINATION_THREAD_ID elimination: Failed. Re-attempting."
           fi
           # Re-instate TS_WORKT with original contents
           cp -f $TS_WORKF $TS_WORKT
@@ -4307,39 +4452,39 @@ if [ $MODE -ge 6 ]; then
       done
       TRIAL=$[$TRIAL+1]
       if [ $TRIAL -eq $[$TS_THREADS+1+$TS_ELIMINATED_THREAD_COUNT] ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Last thread processed. ThreadSync thread elimination complete"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Last thread processed. ThreadSync thread elimination complete"
         break
       fi
     done
   fi
   if [ $TS_THREADS -eq 1 ]; then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Only one SQL thread remaining. Merging DATA and SQL thread and swapping to single threaded simplification"
+    echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Only one SQL thread remaining. Merging DATA and SQL thread and swapping to single threaded simplification"
     WORKO="$WORKD/single_out.sql"
     cp -f $TS_DATAINPUTFILE $WORKF
     # We can immediately use thread #1 as TS_init_all_sql_files (from the last run above, or from the original run if there was ever only one thread)
     # has set thread #1 to be the correct remaining thread
     export TS_WORKF=$(eval echo $(echo '$WORKF1')); cat $TS_WORKF >> $WORKF
     cp -f $WORKF $WORKO
-    echo_out "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Merging complete. Single threaded DATA+SQL file saved as $WORKO"
+    echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Merging complete. Single threaded DATA+SQL file saved as $WORKO"
     if [ $MODE -eq 6 ]; then
       export -n MODE=1
-      echo_out "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded valgrind output testing (MODE1)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded valgrind output testing (MODE1)"
     elif [ $MODE -eq 7 ]; then
       export -n MODE=2
-      echo_out "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded mysql CLI output testing (MODE2)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded mysql CLI output testing (MODE2)"
     elif [ $MODE -eq 8 ]; then
       export -n MODE=3
-      echo_out "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded mysqld output simplification (MODE3)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded mysqld output simplification (MODE3)"
     elif [ $MODE -eq 9 ]; then
       export -n MODE=4
-      echo_out "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded crash simplification (MODE4)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded crash simplification (MODE4)"
     fi
     VERIFY=1
-    echo_out "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Now starting re-verification in $MODE (this enables INSERT splitting in initial simplification etc.)"
+    echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Now starting re-verification in $MODE (this enables INSERT splitting in initial simplification etc.)"
     verify $WORKO
   else
-    echo_out "$ATLEASTONCE [Stage $STAGE] [TSE Finish] More than one thread remaining. Implement multi-threaded simplification here"
-    echo_out "Terminating now."
+    echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] More than one thread remaining. Implement multi-threaded simplification here"
+    echoit "Terminating now."
     exit 1
   fi
 fi
@@ -4361,11 +4506,11 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
   TRIAL=1
   if [ $LINECOUNTF -ge $STAGE1_LINES -o $PQUERY_MULTI -gt 0 -o $FORCE_SKIPV -gt 0 -o $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
     if [ "${FIREWORKS}" != "1" ]; then  # FIREWORKS mode will always stay in stage 1, and msg is nonsensical for FW
-      echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE (trial duration depends on initial input file size)"
+      echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE (trial duration depends on initial input file size)"
     fi
     while [ $LINECOUNTF -ge $STAGE1_LINES ]; do
       if [ $LINECOUNTF -eq $STAGE1_LINES  ]; then NEXTACTION="& Progress to the next stage"; fi
-      if [ $TRIAL -gt 1 -a "${FIREWORKS}" != "1" ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
+      if [ $TRIAL -gt 1 -a "${FIREWORKS}" != "1" ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
       if [ "$MULTI_REDUCER" != "1" -a $SPORADIC -eq 1 -a $REDUCE_GLIBC_OR_SS_CRASHES -le 0 ]; then
         # This is the parent/main reducer AND the issue is sporadic (so; need to use multiple threads). Disabled for REDUCE_GLIBC_OR_SS_CRASHES as it is always single-threaded
         if [ "${FIREWORKS}" == "1" ]; then  # FireWorks mode does not use WORKF but INPUTFILE
@@ -4390,7 +4535,7 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
       fi
     done
   else
-    echo_out "$ATLEASTONCE [Stage $STAGE] Skipping stage $STAGE as remaining number of lines in input file <= $STAGE1_LINES (STAGE1_LINES)"
+    echoit "$ATLEASTONCE [Stage $STAGE] Skipping stage $STAGE as remaining number of lines in input file <= $STAGE1_LINES (STAGE1_LINES)"
   fi
 fi
 
@@ -4402,22 +4547,22 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
   TRIAL_REPEAT_COUNT=0
   NOISSUEFLOW=0
   CURRENTLINE=1
-  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
+  echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
-    if [ ${TRIAL} -gt 1 -a "${FIREWORKS}" != "1" ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
+    if [ ${TRIAL} -gt 1 -a "${FIREWORKS}" != "1" ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
     if [ ${CURRENTLINE} -gt ${LINECOUNTF} ]; then
       break  # EOF reached
     elif [ ${CURRENTLINE} -eq ${LINECOUNTF} ]; then
       NEXTACTION="& progress to the next stage"  # Last line
     fi
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line ${CURRENTLINE} (Current chunk size: fixed to 1)"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line ${CURRENTLINE} (Current chunk size: fixed to 1)"
     sed -n "$CURRENTLINE ! p" $WORKF > $WORKT
     while :; do
       run_and_check
       if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
           NEXTACTION="& reattempt removing the same SQL line"
           continue;
         else  # Maximum repeats reached and issue failed to reproduce in any of them
@@ -4452,7 +4597,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
   SIZEF=`stat -c %s $WORKF`
-  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
+  echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
     NOSKIP=0
 
@@ -4521,16 +4666,16 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     fi
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
       TRIAL=$[$TRIAL+1]
       TRIAL_REPEAT_COUNT=0
     else
-      if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
+      if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
       run_and_check
       if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
           NEXTACTION="& reattempt the same testcase complexity reducing sed"
         else  # Maximum repeats reached and issue failed to reproduce in any of them
           TRIAL=$[$TRIAL+1]
@@ -4560,7 +4705,7 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
   SIZEF=`stat -c %s $WORKF`
-  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
+  echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
     NOSKIP=0
 
@@ -4851,16 +4996,16 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     fi
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
       TRIAL=$[$TRIAL+1]
       TRIAL_REPEAT_COUNT=0
     else
-      if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
+      if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
       run_and_check
       if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
           NEXTACTION="& reattempt the same testcase complexity reducing sed"
         else  # Maximum repeats reached and issue failed to reproduce in any of them
           TRIAL=$[$TRIAL+1]
@@ -4888,7 +5033,7 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
   NEXTACTION="& try next testcase complexity reducing sed"
   STAGE=5
   TRIAL=1
-  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
+  echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
   # Change tablenames to tx
   COUNTTABLES=$(grep -E --binary-files=text "CREATE[\t ]*TABLE" $WORKF | wc -l)
@@ -4899,9 +5044,9 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
         | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
       sed "s/\([(. ]\)$TABLENAME\([ )]\)/\1 $TABLENAME \2/gi;s/ $TABLENAME / t$i /gi" $WORKF > $WORKT
       if [ "$TABLENAME" = "t$i" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as table $i is already named 't$i' in the file"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as table $i is already named 't$i' in the file"
       else
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Trying to rename table '$TABLENAME' to 't$i'"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Trying to rename table '$TABLENAME' to 't$i'"
         run_and_check
       fi
       TRIAL=$[$TRIAL+1]
@@ -4917,9 +5062,9 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
         | head -n1 | sed -e 's/CREATE[\t ]*VIEW[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
       sed "s/\([(. ]\)$VIEWNAME\([ )]\)/\1 $VIEWNAME \2/gi;s/ $VIEWNAME / v$i /gi" $WORKF > $WORKT
       if [ "$VIEWNAME" = "v$i" ]; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as view $i is already named 'v$i' in the file"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as view $i is already named 'v$i' in the file"
       else
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Trying to rename view '$VIEWNAME' to 'v$i'"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Trying to rename view '$VIEWNAME' to 'v$i'"
         run_and_check
       fi
       TRIAL=$[$TRIAL+1]
@@ -4933,7 +5078,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
   STAGE=6
   TRIAL=1
   SIZEF=`stat -c %s $WORKF`
-  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
+  echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
   # CREATE TABLE name (...); statements on one line are split to obtain one column per line by the initial verification (STAGE V).
   # And, another situation, CREATE TABLE statements with each column on a new line is the usual RQG output. Both these cases are handled.
@@ -4958,15 +5103,15 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
       # Example: CREATE TABLE t1 (id INT); INSERT INTO t1 VALUES (1); CREATE TABLE t2 (id2 INT): INSERT INTO t2 SELECT * FROM t1;
       # One cannot remove t1.id because t2 has the same number of columns and does a select from t1
       if grep -E --binary-files=text -qi "INSERT.*INTO.*SELECT.*FROM.*$TABLENAME" $WORKF; then
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping column reduction for table '$TABLENAME' as it is present in a INSERT..SELECT..$TABLENAME. This will be/has been reduced elsewhere"
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Will now try and simplify the column names of this table ('$TABLENAME') to more uniform names"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping column reduction for table '$TABLENAME' as it is present in a INSERT..SELECT..$TABLENAME. This will be/has been reduced elsewhere"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Will now try and simplify the column names of this table ('$TABLENAME') to more uniform names"
         COLUMN=1
         COLS=$(cat $WORKF | awk "/CREATE.*TABLE.*$TABLENAME/,/;/" | sed 's/^ \+//' | grep -E --binary-files=text -vi "CREATE|ENGINE|^KEY|^PRIMARY|;" | sed 's/ .*$//' | grep -E --binary-files=text -v "\(|\)")
         COUNTCOLS=$(printf "%b\n" "$COLS" | wc -l)
         for COL in $COLS; do
           if [ "$COL" != "c$C_COL_COUNTER" ]; then
             # Try and rename column now to cx to make testcase cleaner
-            if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Now attempting to rename column '$COL' to a more uniform 'c$C_COL_COUNTER'"; fi
+            if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Now attempting to rename column '$COL' to a more uniform 'c$C_COL_COUNTER'"; fi
             sed "s/$COL/c$C_COL_COUNTER/g" $WORKF > $WORKT
             C_COL_COUNTER=$[$C_COL_COUNTER+1]
             run_and_check
@@ -4983,7 +5128,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
               LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
             fi
           else
-            if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Not renaming column '$COL' as it's name is already optimal"; fi
+            if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Not renaming column '$COL' as it's name is already optimal"; fi
           fi
         done
       else
@@ -5004,7 +5149,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
         # The inner loop below is called for each table (= each trial) and processes all columns for the table in question
         # So the hierarchy is: reducer > STAGE6 > TRIAL x (various tables) > Column y of table x
         for COL in $COLS; do
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Trying to eliminate column '$COL' in table '$TABLENAME'"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Trying to eliminate column '$COL' in table '$TABLENAME'"
 
           # Eliminate the column from the correct CREATE TABLE table (this will match the first occurence of that column name in the correct CREATE TABLE)
           # This sed presumes that each column is on one line, by itself, terminated by a comma (can be improved upon as per the above remark note)
@@ -5038,7 +5183,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
               # reducer will try and eliminate "(1)" from table t1 (after "id2" was removed from the table defintion above already)
               # An extra part (see * few lines lower) will ensure that "id" is also removed from t1
               TABLENAME=$(eval echo $(echo '$TABLENAME'"$c"))   # Replace TABLENAME with TABLENAMEx thereby eliminating all "chained" columns
-              echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] INSERT..SELECT into this table from another one detected: removing corresponding column $COLUMN in table '$TABLENAME'"
+              echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] INSERT..SELECT into this table from another one detected: removing corresponding column $COLUMN in table '$TABLENAME'"
               WORKT3=`echo $WORKT | sed 's/$/.3/'`
               COL_LINE=$[$(cat $WORKT2 | grep -E --binary-files=text -m1 -n "CREATE.*TABLE.*$TABLENAME" | awk -F":" '{print $1}') + $COLUMN]
               cat $WORKT2 | sed "${COL_LINE}d" > $WORKT3  # (*) Remove the column from the connected table defintion
@@ -5064,9 +5209,9 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
               # simple sed to replace the old "between ( and )" with the new "between ( and )" which contains one less column (the correct one which removed from
               # the CREATE TABLE statement above also. Then re-test if the issue remains and swap files if this is the case, as usual.
               if [ $c -ge 2 ]; then
-                echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Also removing $COUNTINSERTS INSERT..VALUES for column $COLUMN in table '$TABLENAME' to match column removal in said table"
+                echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Also removing $COUNTINSERTS INSERT..VALUES for column $COLUMN in table '$TABLENAME' to match column removal in said table"
               else
-                echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Removing $COUNTINSERTS INSERT..VALUES for column '$COL' in table '$TABLENAME'"
+                echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Removing $COUNTINSERTS INSERT..VALUES for column '$COL' in table '$TABLENAME'"
               fi
               for i in $(eval echo {1..$COUNTINSERTS}); do
                 FROM=$(for INSERT in $(cat $WORKT2 | awk "/INSERT.*INTO.*$TABLENAME.*VALUES/,/;/" | \
@@ -5093,18 +5238,18 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
                 cp -f $WORKT $WORKT2
 
                 #DEBUG
-                #echo_out "i: |$i|";echo_out "from: |$FROM|";echo_out "_to_: |$TO|";
+                #echoit "i: |$i|";echoit "from: |$FROM|";echoit "_to_: |$TO|";
               done
             fi
             # DEBUG
-            #echo_out "c: |$c|";echo_out "COUNTINSERTS: |$COUNTINSERTS|";echo_out "COLUMN: |$COLUMN|";echo_out "diff: $(diff $WORKF $WORKT2)"
+            #echoit "c: |$c|";echoit "COUNTINSERTS: |$COUNTINSERTS|";echoit "COLUMN: |$COLUMN|";echoit "diff: $(diff $WORKF $WORKT2)"
             #read -p "pause"
 
           done
           rm $WORKT2
           TABLENAME=$TABLENAME_OLD
 
-          if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
+          if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
           run_and_check
           if [ $? -eq 0 ]; then
             if [ "$COL" != "c$C_COL_COUNTER" ]; then
@@ -5117,12 +5262,12 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
               fi
 
               # This column was not removed. Try and rename column now to cx to make testcase cleaner
-              if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Now attempting to rename this column ('$COL') to a more uniform 'c$C_COL_COUNTER'"; fi
+              if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Now attempting to rename this column ('$COL') to a more uniform 'c$C_COL_COUNTER'"; fi
               sed "s/$COL/c$C_COL_COUNTER/g" $WORKF > $WORKT
               C_COL_COUNTER=$[$C_COL_COUNTER+1]
               run_and_check
             else
-              if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Not renaming column '$COL' as it's name is already optimal"; fi
+              if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Not renaming column '$COL' as it's name is already optimal"; fi
             fi
 
             # Only advance the column number if there was no issue showing, otherwise stay on the same column (If the issue does show,
@@ -5154,7 +5299,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
   SIZEF=`stat -c %s $WORKF`
-  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
+  echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
     NOSKIP=0
 
@@ -5427,21 +5572,24 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     # RV 09/05/22 It seems to help. Reinstated trial by temporary dummy swap instead
     elif [ $TRIAL -eq 255 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
     elif [ $TRIAL -eq 256 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
-    elif [ $TRIAL -eq 257 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 257 ]; then sed "s/t0/t/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 258 ]; then sed "s/c0/c/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 259 ]; then sed "s/FROM DUAL//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 260 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
-      echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
       TRIAL=$[$TRIAL+1]
       TRIAL_REPEAT_COUNT=0
     else
-      if [ -f $WORKD/log/mysql.out ]; then echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
+      if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining size of input file: $SIZEF bytes ($LINECOUNTF lines)"; fi
       run_and_check
       if [ "$?" -ne "1" ]; then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
-          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
           NEXTACTION="& reattempt the same testcase complexity reducing sed"
         else  # Maximum repeats reached and issue failed to reproduce in any of them
           TRIAL=$[$TRIAL+1]
@@ -5473,7 +5621,7 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
   cp $WORKF $WORKT  # Setup STAGE8 to begin with the last known good testcase. WORKT is used as input in run_and_check
   FILE1="$WORKD/file1"
   FILE2="$WORKD/file2"
-  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
+  echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
   myextra_split(){
     echo $MYEXTRA | sed 's|[ \t]\+| |g' | tr -s " " "\n" | grep -v "^[ \t]*$" > $WORKD/mysqld_opt.out
@@ -5486,14 +5634,14 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
     while read line; do
       STAGE8_CHK=0
       STAGE8_NOT_STARTED_CORRECTLY=0
-      echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Filtering mysqld option $line from MYEXTRA";
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Filtering mysqld option $line from MYEXTRA";
       MYEXTRA=$(echo $MYEXTRA | sed "s|$line||")
       while :; do
         run_and_check
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
           if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
-            echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+            echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
             NEXTACTION="& reattempt removing the same mysqld option"
             continue
           else  # Maximum repeats reached and issue failed to reproduce in any of them
@@ -5521,12 +5669,12 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
     myextra_split
     if [ $MYSQLD_OPTION_COUNT -eq 0 ]; then  # 0 options
       if [ -n "$(echo ${MYEXTRA} | sed "s|[ \t]*||")" ]; then
-        echo_out "Assert: counted number of mysqld options was zero, yet \$MYEXTRA is not empty;"
-        echo_out "MYEXTRA: $MYEXTRA"
-        echo_out "Please check. Terminating."
+        echoit "Assert: counted number of mysqld options was zero, yet \$MYEXTRA is not empty;"
+        echoit "MYEXTRA: $MYEXTRA"
+        echoit "Please check. Terminating."
         exit 1
       fi
-      echo_out "$ATLEASTONCE [Stage $STAGE] Skipping this stage as the testcase does not contain extraneous mysqld options"
+      echoit "$ATLEASTONCE [Stage $STAGE] Skipping this stage as the testcase does not contain extraneous mysqld options"
     elif [ $MYSQLD_OPTION_COUNT -ge 1 -a $MYSQLD_OPTION_COUNT -le 4 ]; then  # 1-4 options
       myextra_reduction
     else  # 4+ options
@@ -5535,14 +5683,14 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
         MYEXTRA=$(cat $FILE1 | tr -s "\n" " " | sed 's|[ \t]\+| |g;s| $||g;s|^ ||g')
         STAGE8_CHK=0
         STAGE8_NOT_STARTED_CORRECTLY=0
-        echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using first set of mysqld option(s) from MYEXTRA: $MYEXTRA";
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using first set of mysqld option(s) from MYEXTRA: $MYEXTRA";
         run_and_check
         TRIAL=$[$TRIAL+1]
         if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, try second set
           MYEXTRA=$(cat $FILE2 | tr -s "\n" " " | sed 's|[ \t]\+| |g;s| $||g;s|^ ||g')
           STAGE8_CHK=0
           STAGE8_NOT_STARTED_CORRECTLY=0
-          echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using second set of mysqld option(s) from MYEXTRA: $MYEXTRA";
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using second set of mysqld option(s) from MYEXTRA: $MYEXTRA";
           run_and_check
           TRIAL=$[$TRIAL+1]
           if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, try reducing 1-by-1
@@ -5580,7 +5728,7 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
   NEXTACTION=
   STAGE=9
   TRIAL=1
-  echo_out "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
+  echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   cp $WORKF $WORKT  # Setup STAGE9 to begin with the last known good testcase. WORKT is used as input in run_and_check
 
   stage9_run(){
@@ -5599,7 +5747,7 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
       TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
       if [ $STAGE9_CHK -eq 0 -o $STAGE9_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
         if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then  # Retry if NR_OF_TRIAL_REPEATS>1
-          echo_out "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
+          echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
           continue
         else  # Maximum repeats reached and issue failed to reproduce in any of them
           SPECIAL_MYEXTRA_OPTIONS=$SAVE_SPECIAL_MYEXTRA_OPTIONS
@@ -5621,48 +5769,48 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
   }
 
   if [[ ! -z "$TOKUDB" ]] ;then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing TokuDB storage engine from startup options"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing TokuDB storage engine from startup options"
     STAGE9_FILTER=$TOKUDB
     stage9_run
   fi
   if [[ ! -z "$ROCKSDB" ]];then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing RocksDB storage engine from startup options"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing RocksDB storage engine from startup options"
     STAGE9_FILTER=$ROCKSDB
     stage9_run
   fi
   if [[ ! -z "$BL_ENCRYPTION" ]];then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing Binary Logs encryption from startup options"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing Binary Logs encryption from startup options"
     STAGE9_FILTER=$BL_ENCRYPTION
     stage9_run
   fi
   if [[ ! -z "$KF_ENCRYPTION" ]];then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing Keyring File encryption from startup options"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing Keyring File encryption from startup options"
     STAGE9_FILTER=$KF_ENCRYPTION
     stage9_run
   fi
   if [[ ! -z "$BINLOG" ]];then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing Binary logging from startup options"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing Binary logging from startup options"
     STAGE9_FILTER=$BINLOG
     stage9_run
   fi
   if [[ ! -z "$ONLYFULLGROUPBY" ]];then
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing ONLY_FULL_GROUP_BY SQL Mode from startup options"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing ONLY_FULL_GROUP_BY SQL Mode from startup options"
     STAGE9_FILTER="ONLY_FULL_GROUP_BY"  # In many cases, this can be successfully removed whereas --sql_mode= cannot (i.e. is required)
     stage9_run
     if [ $STAGE9_CHK -ne 0 -a $STAGE9_NOT_STARTED_CORRECTLY -ne 1 ];then  # Issue reproduced, now try and remove --sql_mode=
-      echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing SQL Mode (--sql_mode=) from startup options"
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing SQL Mode (--sql_mode=) from startup options"
       STAGE9_FILTER="--sql_mode="
       stage9_run
     fi
   fi
   if [ "${MYINIT}" != "" ]; then  # Try and drop both MYINIT and any matching options from MYEXTRA as well
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing MYINIT options from startup options & from mysqld initialization"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing MYINIT options from startup options & from mysqld initialization"
     STAGE9_FILTER=$(echo ${MYINIT} | sed 's|^[ \t]\+||;s|[ \t]\+$||')
     MYINIT_DROP=1
     stage9_run
   fi
   if [ "${MYINIT}" != "" ]; then  # Previous one failed, so try MYINIT removal only
-    echo_out "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing MYINIT options from mysqld initialization"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing MYINIT options from mysqld initialization"
     MYINIT_DROP=1
     stage9_run
   fi

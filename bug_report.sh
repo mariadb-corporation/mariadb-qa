@@ -391,7 +391,7 @@ if [ ${SAN_MODE} -eq 1 ]; then
     echo 'Set before execution:'
     echo '    export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1:exitcode=0'
   elif grep -Eiqm1 --binary-files=text 'runtime error:|=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # UBSAN/ASAN/LSAN(ASAN) (best not to split ASAN vs UBSAN build here, and to just leave both enabled, as these features, when both are enabled, may affect the server differently then only one is enabled: we thus maximize bug reproducibility through leaving the same options enabled as where there during testing)  # elif; avoids double printing
-    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON'
+    echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON'
     if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # ASAN
       # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
       echo 'Set before execution:'
@@ -402,9 +402,11 @@ if [ ${SAN_MODE} -eq 1 ]; then
     elif grep -Eiqm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
       echo 'Set before execution:'
       echo '    export UBSAN_OPTIONS=print_stacktrace=1'
-    elif grep -Eiqm1 --binary-files=text 'MemorySanitizer:' ../*SAN*/log/master.err; then  # MSAN
-      sleep 0.1  # Dummy statement: there is no MSAN specific export yet
     fi
+  elif grep -Eiqm1 --binary-files=text 'MemorySanitizer:' ../*SAN*/log/master.err; then  # MSAN
+    echo '    -DWITH_MSAN=ON -DWITH_UBSAN=ON'
+    echo 'Set before execution:'
+    echo '    export MSAN_OPTIONS=poison_in_dtor=0'
   fi
 fi
 echo -e '{noformat}\n'
