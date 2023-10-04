@@ -2,7 +2,7 @@
 # Created by Roel Van de Paar, MariaDB
 
 # This script generates a UniqueID for the first ASAN, UBSAN, TSAN or MSAN error seen in a given mysqld/mariadbd error log
-# after the 'ready for connections' string is seen/.
+# after the 'ready for connections' string is seen. If the string is not present, the scan starts from line #1
 # Usage: ~/mariadb-qa/san_text_string.sh ${1}
 # ${1}: First input, only option, point to mysqld error log directly, or to a basedir which contains ./log/master.err
 #       If the option is not specified, the script will attempt to look in ${PWD}/log/master.err and ${PWD}/master.err
@@ -22,6 +22,7 @@
 # handling, as otherwise tools like './allstrings SAN' (and therefore '~/b SAN' (bug report) output also) may list
 # UniqueID's seen during startup etc., which are otherwise completely unrelated to the issue being scanned for, which
 # may lead in turn (in error) to UniqueID's unrelated to a particular issue ending up in the known bugs UniqueID's list.
+# However, if 'ready for connections' is not seen in the log, the scanning starts at line #1 which may or may not # lead to unexpected results.
 
 set +H
 PROFILING=0  # Set to 1 to profile Bash to /tmp/bashstart.$$.log (slows down script by a factor of 10x)
@@ -93,8 +94,8 @@ fi
 if [ "${ERROR_LOG_LINES}" -eq 0 ]; then
   echo "Assert: the error log at ${ERROR_LOG} contains 0 lines."
   exit 1
-elif [ "${ERROR_LOG_LINES}" -lt 10 ]; then
-  echo "Assert: the error log at ${ERROR_LOG} contains less then 10 lines."
+elif [ "${ERROR_LOG_LINES}" -lt 3 ]; then
+  echo "Assert: the error log at ${ERROR_LOG} contains less then 3 lines."
   exit 1
 fi
 
@@ -179,7 +180,7 @@ tsan_file_preparse(){
 }
 msan_file_preparse(){
   if [ -z "${MSAN_FILE_PREPARSE}" ]; then
-    MSAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|:[^:]*$||;s|:[0-9]\+:[0-9]\+:[ ]*$||;s|:[0-9]\+$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;s|.*/msan/|msan/|;s|/c++/[0-9]\+/|/c++/current_version/|g;')"  # Drop path prefix (build directories), leaving only relevant part for MD/MS
+    MSAN_FILE_PREPARSE="$(echo "${LINE}" | sed 's|:[^:]*$||;s|:[0-9]\+:[0-9]\+:[ ]*$||;s|:[0-9]\+$||;s|.*/client/|client/|;s|.*/cmake/|cmake/|;s|.*/dbug/|dbug/|;s|.*/debian/|debian/|;s|.*/extra/|extra/|;s|.*/include/|include/|;s|.*/libmariadb/|libmariadb/|;s|.*/libmysqld/|libmysqld/|;s|.*/libservices/|libservices/|;s|.*/mysql-test/|mysql-test/|;s|.*/mysys/|mysys/|;s|.*/mysys_ssl/|mysys_ssl/|;s|.*/plugin/|plugin/|;s|.*/scripts/|scripts/|;s|.*/sql/|sql/|;s|.*/sql-bench/|sql-bench/|;s|.*/sql-common/|sql-common/|;s|.*/storage/|storage/|;s|.*/strings/|strings/|;s|.*/support-files/|support-files/|;s|.*/tests/|tests/|;s|.*/tpool/|tpool/|;s|.*/unittest/|unittest/|;s|.*/vio/|vio/|;s|.*/win/|win/|;s|.*/wsrep-lib/|wsrep-lib/|;s|.*/zlib/|zlib/|;s|.*/components/|components/|;s|.*/libbinlogevents/|libbinlogevents/|;s|.*/libbinlogstandalone/|libbinlogstandalone/|;s|.*/libmysql/|libmysql/|;s|.*/router/|router/|;s|.*/share/|share/|;s|.*/testclients/|testclients/|;s|.*/utilities/|utilities/|;s|.*/regex/|regex/|;s|.*/msan/|msan/|;s|/c++/[0-9]\+/|/c++/current_version/|g;s|#[0-9]\+[ ]\+0x[a-f0-9]\+||;s|[ ]\+in[ ]\+||;s|[^ ]\+[ ]\+\([^ ]\+\.[c]\+\)|\1|;')"  # Drop path prefix (build directories), leaving only relevant part for MD/MS
     if [[ "${MSAN_FILE_PREPARSE}" == *"+0x"*")" ]]; then
       # The location is a non-resolved maridbd/mysqld location (i.e. /bin/mariadbd+0x7196fe), and not helpful - get it from the next frame
       MSAN_FILE_PREPARSE=''
@@ -192,6 +193,10 @@ msan_file_preparse(){
 }
 
 STARTED=0
+if ! grep -qi 'ready for connections' "${ERROR_LOG}" 2>/dev/null; then
+  # If 'ready for connections' is not present in the input file, start from line #1 as explained above
+  STARTED=1
+fi
 while IFS=$'\n' read LINE; do
   LINE_COUNTER=$[ ${LINE_COUNTER} + 1 ]
   if [ ${STARTED} -eq 0 ]; then
@@ -298,19 +303,19 @@ while IFS=$'\n' read LINE; do
     if [ "${FLAG_MSAN_IN_PROGRESS}" -eq 1 ]; then
       # Parse first 4 stack frames if discovered in current line
       if [[ "${LINE}" == *" #0 "* ]]; then
-        MSAN_FRAME1="$(echo "${LINE}" | sed 's|(.*)||g;s|0x[a-f0-9]\+ ||;s|,*#[0-9]\+ ||;s| ||g;s|[\.]\+/.*||;s|/.*||;s|<.*||;')"
+        MSAN_FRAME1="$(echo "${LINE}" | grep -o '[ ]\+in[ ]\+[^ \(\)]\+' | sed 's|[ ]\+in[ ]\+||')"
         msan_file_preparse
       fi
       if [[ "${LINE}" == *" #1 "* ]]; then
-        MSAN_FRAME2="$(echo "${LINE}" | sed 's|(.*)||g;s|0x[a-f0-9]\+ ||;s|,*#[0-9]\+ ||;s| ||g;s|[\.]\+/.*||;s|/.*||;s|<.*||;')"
+        MSAN_FRAME2="$(echo "${LINE}" | grep -o '[ ]\+in[ ]\+[^ \(\)]\+' | sed 's|[ ]\+in[ ]\+||')"
         msan_file_preparse
       fi
       if [[ "${LINE}" == *" #2 "* ]]; then
-        MSAN_FRAME3="$(echo "${LINE}" | sed 's|(.*)||g;s|0x[a-f0-9]\+ ||;s|,*#[0-9]\+ ||;s| ||g;s|[\.]\+/.*||;s|/.*||;s|<.*||;')"
+        MSAN_FRAME3="$(echo "${LINE}" | grep -o '[ ]\+in[ ]\+[^ \(\)]\+' | sed 's|[ ]\+in[ ]\+||')"
         msan_file_preparse
       fi
       if [[ "${LINE}" == *" #3 "* ]]; then
-        MSAN_FRAME4="$(echo "${LINE}" | sed 's|(.*)||g;s|0x[a-f0-9]\+ ||;s|,*#[0-9]\+ ||;s| ||g;s|[\.]\+/.*||;s|/.*||;s|<.*||;')"
+        MSAN_FRAME4="$(echo "${LINE}" | grep -o '[ ]\+in[ ]\+[^ \(\)]\+' | sed 's|[ ]\+in[ ]\+||')"
         msan_file_preparse
         FLAG_MSAN_READY=1
       fi
