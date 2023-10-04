@@ -1,15 +1,15 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-# This script generates a UniqueID for the first ASAN, UBSAN or TSAN error seen in a given mysqld or mariadbd error log
-# after the 'ready for connections' string is seen.
+# This script generates a UniqueID for the first ASAN, UBSAN, TSAN or MSAN error seen in a given mysqld/mariadbd error log
+# after the 'ready for connections' string is seen/.
 # Usage: ~/mariadb-qa/san_text_string.sh ${1}
 # ${1}: First input, only option, point to mysqld error log directly, or to a basedir which contains ./log/master.err
 #       If the option is not specified, the script will attempt to look in ${PWD}/log/master.err and ${PWD}/master.err
 
 # To 1) aid automation, and as 2) subsequent errors may be the result of former ones, and as 3) subsequent errors may
 # be standalone errors which can (and likely will, provided the random spread is wide enough) show in other test trials,
-# the script will output only the first FULL issue detected (whetter it be ASAN, UBSAN or TSAN).
+# the script will output only the first FULL issue detected (whetter it be ASAN, UBSAN, TSAN or MSAN).
 
 # "FULL": the first issue the script can parse into a full UniqueID. Thus, if there is a partial UBSAN failure observed
 # followed by a fully readable ASAN failure, the ASAN's failure UniqueID will be output. This solution is better than

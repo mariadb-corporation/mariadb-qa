@@ -11,7 +11,7 @@
 # ./new_text_string.sh "${mysqld_loc}" # Where mysqld
 
 # Quick check to see if sleep can be skipped for *SAN issues (much faster output and automation)
-if [ $(grep -m1 --binary-files=text -E "=ERROR:|ThreadSanitizer:|runtime error:|LeakSanitizer:" ./log/master.err 2>/dev/null | wc -l) -eq 0 ]; then  # If no such issue found (count is 0), sleep x seconds to allow core, if any, to finish writing
+if [ $(grep -m1 --binary-files=text -E "=ERROR:|ThreadSanitizer:|runtime error:|LeakSanitizer:|MemorySanitizer:" ./log/master.err 2>/dev/null | wc -l) -eq 0 ]; then  # If no such issue found (count is 0), sleep x seconds to allow core, if any, to finish writing
   # Whilst 2 seconds is almost surely not sufficient for all cores to finish writing on heavily loaded machines,
   # There is a tradeoff here - this script is very often called during automation and all sorts of other processing,
   # thus many things are affected even by a single second more. On the flip side, more failures may be observed
@@ -220,6 +220,8 @@ elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${ERROR_LOG} 2>/dev/nu
 elif [ $(grep -im1 --binary-files=text "runtime error:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
   SAN_BUG=1
 elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+  SAN_BUG=1
+elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
   SAN_BUG=1
 fi
 if [ "${SAN_BUG}" -eq 1 ]; then

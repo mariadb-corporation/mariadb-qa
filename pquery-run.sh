@@ -2664,8 +2664,16 @@ EOF
         echoit "TSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
+      elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+        echoit "LSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        savetrial
+        TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "runtime error:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "UBSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        savetrial
+        TRIAL_SAVED=1
+      elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+        echoit "MSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ ${SAVE_TRIALS_WITH_BUGS_ONLY} -eq 0 ]; then

@@ -83,14 +83,20 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
     fi
     SAN=0
     if [ ${COUNT} -gt 0 ]; then
-      if [[ "${STRING}" == "=ERROR"* ]]; then  # ASAN bugs
+      if [[ "${STRING}" == "=ERROR"* ]]; then  # ASAN bug
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sASAN  ",$1}')"
         SAN=1
-      elif [[ "${STRING}" == "ThreadSanitizer:"* ]]; then  # TSAN bugs
+      elif [[ "${STRING}" == "ThreadSanitizer:"* ]]; then  # TSAN bug
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sTSAN  ",$1}')"
         SAN=1
-      elif [[ "${STRING}" == "runtime error:"* ]]; then  # UBSAN bugs
+      elif [[ "${STRING}" == "runtime error:"* ]]; then  # UBSAN bug
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sUBSAN ",$1}')"
+        SAN=1
+      elif [[ "${STRING}" == "LeakSanitizer:"* ]]; then  # LSAN bug
+        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sASAN ",$1}')"  # LSAN shows as ASAN, ref san_text_string.sh
+        SAN=1
+      elif [[ "${STRING}" == "MemorySanitizer:"* ]]; then  # MSAN bugs
+        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sMSAN ",$1}')"
         SAN=1
       else
         STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-170s",$1}' | sed 's|\\"|"|g')"  # The s|\\"|"|g sed reverts the insertion of \ before " (i.e. \") as done by pquery-prep-reducer.sh and as used by reducer. It is not helpful here, and it is not part of the offial bug uniqueID string. Thus, pquery-results.sh and in-reducer TEXT slightly differ: " (pquery-results.sh, MYBUG, known_bug_string.sh) vs \" (reducer.sh, and as set by pquery-prep-reducer.sh, and pquery-clean-known.sh also uses this to be able to find failing reducers)

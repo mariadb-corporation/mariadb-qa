@@ -233,9 +233,9 @@ if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then
   fi
 else
   if [ "${1}" == "SAN" ]; then
-    #echo "Searching error logs for the '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:' (SAN mode enabled)"
+    #echo "Searching error logs for the '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:' (SAN mode enabled)"
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
-    #CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
+    #CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "GAL" ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
@@ -402,6 +402,8 @@ if [ ${SAN_MODE} -eq 1 ]; then
     elif grep -Eiqm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
       echo 'Set before execution:'
       echo '    export UBSAN_OPTIONS=print_stacktrace=1'
+    elif grep -Eiqm1 --binary-files=text 'MemorySanitizer:' ../*SAN*/log/master.err; then  # MSAN
+      sleep 0.1  # Dummy statement: there is no MSAN specific export yet
     fi
   fi
 fi

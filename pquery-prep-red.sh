@@ -42,6 +42,9 @@ check_if_asan_or_ubsan_or_tsan(){
     elif [ $(grep -m1 --binary-files=text "LeakSanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* LSAN bug found!"
       SAN_BUG=1
+    elif [ $(grep -m1 --binary-files=text "MemorySanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
+      echo "* MSAN bug found!"
+      SAN_BUG=1
     fi
   fi
   if [ "${SAN_BUG}" -eq 1 ]; then
