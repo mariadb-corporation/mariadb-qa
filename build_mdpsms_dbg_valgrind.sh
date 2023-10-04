@@ -271,14 +271,14 @@ if [ $FB -eq 0 ]; then
   CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS} -DWITH_VALGRIND=ON"
   echo "Build command used:"
   echo $CMD
-  $CMD | tee /tmp/psms_dbg_build_${RANDOMD}
+  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 else
   # FB build
   CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} ${FLAGS} -DWITH_VALGRIND=ON"
   echo "Build command used:"
   echo $CMD
-  $CMD | tee /tmp/psms_dbg_build_${RANDOMD}
+  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 fi
 

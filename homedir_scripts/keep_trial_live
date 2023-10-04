@@ -1,0 +1,18 @@
+#!/bin/bash
+if [ -z "${1}" ]; then 
+  echo "Assert: please pass a trial number from the current directory/workdir to keep alive even if the screen session crashes (which can happen due to memory alloc issues for example)"
+  exit 1
+elif [ ! -d ./${1} ]; then
+  echo "Assert: directory ./${1} not found: please pass a trial number from the current directory/workdir to keep alive even if the screen session crashes (which can happen due to memory alloc issues for example)"
+  exit 1
+elif [ ! -r ${HOME}/sr ]; then
+  echo "Assert: ~/sr not available. Try running ~/mariadb-qa/linkit"
+  exit 1
+elif [ "${STY}" == "" ]; then
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "keep_trial_alive_s${1}" bash -c "$0;bash"
+  sleep 1
+  screen -d -r "keep_trial_alive_s${1}"
+  return 2> /dev/null; exit 0
+fi
+while true; do screen -wipe s${1} >/dev/null; if [ -z "$(screen -ls | grep s${1})" ]; then ${HOME}/sr ${1}; else sleep 1; continue; fi; done;

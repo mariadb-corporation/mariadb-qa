@@ -13,8 +13,11 @@
 #BASEDIR=/test/preview-11.3-preview_MD120923-mariadb-11.3.0-linux-x86_64-opt
 #BASEDIR=/test/PATCH_EMD260923-mariadb-10.6.14-9-linux-x86_64-dbg
 #BASEDIR=/test/PATCH_MD270923-mariadb-10.6.16-linux-x86_64-dbg
-BASEDIR=/test/PATCH2_MD280923-mariadb-10.6.16-linux-x86_64-dbg
-# # BASE_MD260923-mariadb-10.6.16-linux-x86_64-opt
+#BASEDIR=/test/PATCH2_MD280923-mariadb-10.6.16-linux-x86_64-dbg
+##BASEDIR=/test/PATCH3_MD031023-mariadb-10.6.16-linux-x86_64-dbg
+##BASEDIR=/test/PATCH3_UBASAN_MD031023-mariadb-10.6.16-linux-x86_64-dbg
+BASEIR=/test/PATCH3_UBMSAN_MD041023-mariadb-10.6.16-linux-x86_64-opt
+##BASEDIR=/test/BASE_MD260923-mariadb-10.6.16-linux-x86_64-dbg
 #preview-11.3-preview_MDEV-28856_MD160923-mariadb-11.3.0-linux-x86_64-dbg
 #MD020923-mariadb-11.3.0-linux-x86_64-dbg
 #EMD250823-10.6.14-9-enterprise-MDEV-30165-MENT-1905-mariadb-10.6.14-9-linux-x86_64-dbg
@@ -57,7 +60,16 @@ CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql
 #CONF=pquery-run-MD105-MT.conf
 
 if [ -z "${CONF}" ]; then
-  echo "\$CONF was not set. Please point it to a pquery-run.conf file like pquery-run-MD.conf (path is not required)"
+  echo "Error: \$CONF was not set. Please point it to a pquery-run.conf file like pquery-run-MD.conf (path is not required)"
+  exit 1
+elif [[ "${CONF}" == *"/"* ]]; then 
+  echo "Assert: no paths/directories allowed in CONF (${CONF}) setting!"
+  exit 1
+elif [ ! -r "${HOME}/mariadb-qa" ]; then
+  echo "Assert: ${HOME}/mariadb-qa not available"
+  exit 1
+elif [ ! -r ${HOME}/mariadb-qa/${CONF} ]; then
+  echo "Assert: ${HOME}/mariadb-qa/${CONF} not available"
   exit 1
 fi
 
@@ -76,6 +88,7 @@ if [ ! -d "${BASEDIR}" ]; then
 fi
 
 echo "Basedir: ${BASEDIR}"
+echo "Configuration in use: ${HOME}/mariadb-qa/${CONF}"
 echo "This script should show further output in 10-20 seconds. If it does not, see:"
 echo "screen -d -r pr1  # for the cause"
 echo ""
@@ -86,8 +99,7 @@ TOTALRUNS=$[ ${RUNSOPT} + ${RUNSDBG} ]
 MON=
 for RUN in $(seq 1 ${TOTALRUNS}); do
   rm -f /tmp/gomd_helper
-  cd ~/mariadb-qa
-  if [[ "${CONF}" == *"/"* ]]; then echo "Assert: no paths/directories allowed in CONF (${CONF}) setting!"; exit 1; fi
+  cd ${HOME}/mariadb-qa
   if [ ! -r ${CONF} ]; then echo "Assert: ${CONF} not found!"; exit 1; fi
   sed -i "s|^BASEDIR=\([^#]\+\)|BASEDIR=${BASEDIR}   |" ${CONF}
   if [ ${RUN} -le ${RUNSOPT} ]; then  # Opt runs
@@ -95,7 +107,7 @@ for RUN in $(seq 1 ${TOTALRUNS}); do
   else  # Dbg runs
     sed -i 's|^BASEDIR=\([^#]\+\)-opt|BASEDIR=\1-dbg|' ${CONF}
   fi
-  screen -admS pr${RUN} bash -c "cd ~/mariadb-qa; ./pquery-run.sh ${CONF}; bash"
+  screen -admS pr${RUN} bash -c "cd ${HOME}/mariadb-qa; ./pquery-run.sh ${CONF}; bash"
   while :; do
     sleep 1
     if [ -r /tmp/gomd_helper ]; then

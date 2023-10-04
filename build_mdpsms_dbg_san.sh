@@ -11,7 +11,7 @@ CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
 USE_CLANG=0             # 0 or 1 # Use the clang compiler instead of gcc
 USE_SAN=1               # 0 or 1 # Use [ASAN or MSAN], UBSAN
 USE_TSAN=0              # 0 or 1 # 1 Enables TSAN, disables ASAN+UBSAN. 0 Enables ASAN+UBSAN, disables TSAN
-ASAN_OR_MSAN=0          # 0 or 1 # 0: ASAN, 1: MSAN
+ASAN_OR_MSAN=1          # 0 or 1 # 0: ASAN, 1: MSAN
 PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
 #CLANG_LOCATION="${HOME}/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
@@ -300,14 +300,14 @@ if [ $FB -eq 0 ]; then
   CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
-  $CMD | tee /tmp/psms_dbg_san_build_${RANDOMD}
+  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_san_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 else
   # FB build
   CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
-  $CMD | tee /tmp/psms_dbg_san_build_${RANDOMD}
+  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_san_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 fi
 
