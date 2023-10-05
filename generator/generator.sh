@@ -183,6 +183,9 @@ partse()     { if [ $[$RANDOM % 20 + 1] -le 3  ]; then echo "`storage` ENGINE`eq
 partcomment(){ if [ $[$RANDOM % 20 + 1] -le 2  ]; then echo "COMMENT`equals``data`"; fi }        # 10% COMMENT (for partitioning)
 partmax()    { if [ $[$RANDOM % 20 + 1] -le 2  ]; then echo "MAX_ROWS`equals``n1000`"; fi }      # 10% MAX_ROWS (for partitioning)
 partmin()    { if [ $[$RANDOM % 20 + 1] -le 2  ]; then echo "MIN_ROWS`equals``n1000`"; fi }      # 10% MIN_ROWS (for partitioning)
+pc()         { if [ $[$RANDOM % 20 + 1] -le 2  ]; then echo "AS(c1) PERSISTENT"; fi }            # 10% PERSISTENT column
+vc()         { if [ $[$RANDOM % 20 + 1] -le 2  ]; then echo "AS(c1) VIRTUAL"; fi }               # 10% VIRTUAL column
+sv()         { if [ $[$RANDOM % 20 + 1] -le 2  ]; then echo "WITH SYSTEM VERSIONING"; fi }       # 10% WITH SYSTEM VERSIONING table
 full()       { if [ $[$RANDOM % 20 + 1] -le 4  ]; then echo "FULL"; fi }                         # 20% FULL
 not()        { if [ $[$RANDOM % 20 + 1] -le 5  ]; then echo "NOT"; fi }                          # 25% NOT
 no()         { if [ $[$RANDOM % 20 + 1] -le 8  ]; then echo "NO"; fi }                           # 40% NO (for transactions)
@@ -355,13 +358,13 @@ query(){
     # - Subpartioning support was added, but it can be reviewed and be extended, see https://dev.mysql.com/doc/refman/5.7/en/partitioning-subpartitions.html
     #   - Subpartion defenition (subpartition_definition in https://dev.mysql.com/doc/refman/5.7/en/create-table.html) needs to be added. Clauses (COMMENT= etc.) already added
     [1-3]) case $[$RANDOM % 6 + 1] in  # CREATE (needs further work)
-        1) echo "CREATE `temp` TABLE `ifnotexist` `table` (c1 `pk`,c2 `ctype`,c3 `ctype`) ENGINE=`engine` `partitionby`";;
-        2) echo "CREATE `temp` TABLE `ifnotexist` `table` (c1 `ctype`,c2 `ctype`,c3 `ctype`) ENGINE=`engine` `partitionby`";;
+        1) echo "CREATE `temp` TABLE `ifnotexist` `table` (c1 `pk`,c2 `ctype` `pc` ,c3 `ctype` `vc` ) `sv` ENGINE=`engine` `partitionby`";;
+        2) echo "CREATE `temp` TABLE `ifnotexist` `table` (c1 `ctype`,c2 `ctype` `pc` ,c3 `ctype` `vc`) `sv` ENGINE=`engine` `partitionby`";;
         3) C1TYPE=`ctype`
            if [ "`echo ${C1TYPE} | grep -o 'CHAR'`" == "CHAR" -o "`echo ${C1TYPE} | grep -o 'BLOB'`" == "BLOB" -o "`echo ${C1TYPE} | grep -o 'TEXT'`" == "TEXT" ]; then
-             echo "CREATE `temp` TABLE `ifnotexist` `table` (c1 ${C1TYPE},c2 `ctype`,c3 `ctype`, PRIMARY KEY(c1(`n10`))) ENGINE=`engine` `partitionby`"
+             echo "CREATE `temp` TABLE `ifnotexist` `table` (c1 ${C1TYPE},c2 `ctype` `vc`,c3 `ctype` `pc`, PRIMARY KEY(c1(`n10`))) `sv` ENGINE=`engine` `partitionby`"
            else
-             echo "CREATE `temp` TABLE `ifnotexist` `table` (c1 ${C1TYPE},c2 `ctype`,c3 `ctype`, PRIMARY KEY(c1)) ENGINE=`engine` `partitionby`"
+             echo "CREATE `temp` TABLE `ifnotexist` `table` (c1 ${C1TYPE},c2 `ctype` `pc`,c3 `ctype` `vc`, PRIMARY KEY(c1)) `sv` ENGINE=`engine` `partitionby`"
            fi;;
         4) if [ $SHEDULING_ENABLED -eq 1 ]; then  # Events (complete)
              echo "CREATE `definer` EVENT `ifnotexist` `event` ON SCHEDULE `schedule` `completion` `sdisenable` `comment` DO `query`"
