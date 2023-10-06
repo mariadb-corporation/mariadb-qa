@@ -1202,7 +1202,7 @@ len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key
 len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_constraints_record|fill_schema_table_by_open                                  ## MDEV-24356
 len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_constraints_record|get_schema_constraints_record                              ## MDEV-24356
 len < sizeof(tmp_buff)|SIGABRT|ut_dbg_assertion_failed|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_constraints_record                                    ## MDEV-24356
-SIGSEGV|__memset_avx2_erms|memset|log_t::create|srv_start                                                                                                                      ## MDEV-24269
+SIGSEGV|__memset_avx2_erms|memset|log_t::create|srv_start                                                                                                                      ## MDEV-24269 NOW MDEV-32364
 SIGSEGV|mach_write_to_4|log_block_set_hdr_no|log_block_init|log_t::create                                                                                                      ## MDEV-24269
 ptr != NULL|SIGABRT|ut_dbg_assertion_failed|ut_allocate_trace_dontdump|ut_malloc_dontdump|log_t::create                                                                        ## MDEV-24269
 SIGSEGV|SQL_SELECT::cleanup|SQL_SELECT::~SQL_SELECT|JOIN::make_range_rowid_filters|JOIN::make_range_rowid_filters                                                              ## MDEV-24256
