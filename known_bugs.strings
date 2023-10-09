@@ -166,6 +166,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|show_create_db                                                                                                     ## MDEV-32376
 is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit     ## MDEV-31949
 SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                                ## MDEV-31949
 SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|pars_retrieve_table_def                                                                                               ## MDEV-32346
