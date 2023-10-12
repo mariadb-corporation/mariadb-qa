@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|store to null pointer of type 'roll_ptr_t'|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-32453
 ASAN|use-after-poison|sql/handler.h|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache|binlog_rollback                                                                        ## MDEV-32347
 ASAN|use-after-poison|sql/log_event.h|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache|binlog_rollback                                                ## MDEV-32347
 UBSAN|shift exponent X is too large for 64-bit type 'long long int'|sql/field.cc|Field_set::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record         ## MDEV-32226
