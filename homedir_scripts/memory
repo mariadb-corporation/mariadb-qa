@@ -5,6 +5,7 @@
 KILL_LARGE=1         # Will kill any process consuming equal to or more then KILL_PERCENT.0 percent of memory
 KILL_PERCENT=7       # For example: 4: All processes using >=4% of memory will be killed
 KILL_LONG_RUNNING=1  # Terminate all relevant too-long-running processes, ref terminate_long_running.sh
+FILTER="grep|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr"  # Filter this list of processes from termination
 
 if [ "${STY}" == "" ]; then
   THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
@@ -28,7 +29,7 @@ while :; do
   fi
   clear
   # Do not include pquery in the next filter statement; it is fine to terminate a memory-hogging pquery instance (never actually seen, but in principle)
-  CMD="ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep --binary-files=text -vE 'fireworks|mtr_to_sql|generator.sh|cc|clang|reducer|build'"
+  CMD="ps --sort -rss -eo pid,pmem,rss,vsz,comm | grep --binary-files=text -vE '${FILTER}|reducer'"
   eval "${CMD}" | head -n7
   HEADLINE=;PERCENT=;PID=
   if [ "${KILL_LARGE}" -eq 1 ]; then

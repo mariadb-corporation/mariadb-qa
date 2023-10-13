@@ -211,7 +211,7 @@ find_other_possible_issue_strings(){
   # RV-27/08/22 If none of these issues was found present, then the script will continue and such continuations will always result in exit 1 as find_other_possible_issue_strings is a final attempt at returning a useful string if all other checks have already failed. It provides for several of the exit_code!=0 by mariadbd/mysyqld, previously reported as 'no core found' and similar, yet now covered.
 }
 
-# Check first if this is an ASAN/UBSAN/TSAN issue
+# Check first if this is an ASAN/UBSAN/TSAN/MSAN issue. If so, this was a *SAN run and thus all bugs should first be handled/classified by san_text_string.sh rather than this script. Note that any normal crashing/asserting bug, which does not also generate a *SAN issue/bug, will also crash the *SAN build but the strings below will not be present and thus it will still be handled by this script. Therefore, *SAN runs may be better in general, however a number of crashes/asserts will be masked as a fair number of general crashing/asserting bugs are preceded by *SAN findings. In summary, best to run both normal runs as well as *SAN runs. UB+ASAN can be combined. UB+MSAN can be comined. TSAN cannot be combined.
 SAN_BUG=0
 if [ $(grep -m1 --binary-files=text "=ERROR:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
   SAN_BUG=1

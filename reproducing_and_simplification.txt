@@ -110,4 +110,9 @@ However, for issues that fail to reproduce, try these things (in this order):
 * Open the sql file in vi and execute   :%s/^#.*\n//g   in vi. This will drop all comment lines.
   This will only help for CLI-replayed issue (i.e. when not using pquery mode in reducer, which is default for all pquery runs handled by percona-qa scripts)
 
+* When you see 'MYBUG             : SIGSEGV|some_frame|Backtrace stopped: Cannot access memory at address|' (happens occassionaly)
+  It is possible that gdb ran OOM during the NTS (new_text_string) production. Re-run ~/tt (obtained by running linkit) in the trial dir to see if you get the full UniqueID
+  If that doesn't do it, check the error log for any usuable text to reduce upon (by setting the TEXT variable) like a filename or part of an assert message and remember to set USE_NEW_TEXT_STRING to 0
+  If that still doesn't do it, copy the trial's SQL trace (for example default.node.tld_thread-0.sql) to a BASEDIR, run anc (obtained by running ~/start) with any necessary mysqld options, then run ./pquery_test and tt to check for cores. It will likely now show the full UniqueID instead of the malformed ones.
+
 Summary: if you dilegently tried all of the above, reproducibility for all issues is near 100%.

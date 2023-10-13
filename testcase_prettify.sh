@@ -35,6 +35,8 @@ cat "${1}" | tr -d '`' | \
        s|lead|LEAD|gi; \
        s|analyse|ANALYSE|gi; \
        s|do |DO |gi; \
+       s|pointfromtext|POINTFROMTEXT|gi; \
+       s|multipointfromtext|MULTIPOINTFROMTEXT|gi; \
        s|json|JSON|gi; \
        s|sqlexception |SQLEXCEPTION |gi; \
        s|continue |CONTINUE |gi; \

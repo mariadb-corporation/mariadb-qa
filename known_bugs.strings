@@ -30,6 +30,7 @@ GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ##
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
 GOT_ERROR|Got error 126|when reading table                     ## MDEV-26492  ## entries to check
 GOT_ERROR|Got error '126 "Index is corrupted"' for './test/t.MAI' ## MDEV-31029
+GOT_ERROR|Got error 170|"It is not possible to log this statement" from storage engine InnoDB ## MDEV-32354
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine MEMORY, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (looks duplicate to previous line but it is a different SE)
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine Spider, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030
@@ -166,8 +167,13 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
-is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit     ## MDEV-31949
-SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                                ## MDEV-31949
+# is_preparing_xa(thd)|SIGABRT|MYSQL_BIN_LOG::unlog_xa_prepare|ha_prepare|trans_xa_prepare|mysql_execute_command                                                                 ## MDEV-24804
+SIGABRT|close_thread_tables|close_thread_tables_for_query|mysql_execute_command|mysql_parse                                                                                    ## MDEV-32372
+SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event                                                                                  ## MDEV-32372
+other_lock->is_waiting()|SIGABRT|lock_rec_queue_validate|lock_clust_rec_read_check_and_lock|row_ins_set_shared_rec_lock|row_ins_duplicate_error_in_clust                       ## MDEV-32353
+is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|Backtrace stopped: Cannot access memory at address|                                           ## MDEV-32347
+is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit     ## MDEV-32347
+SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                                ## MDEV-32347
 SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|pars_retrieve_table_def                                                                                               ## MDEV-32346
 sym_node->table != NULL|SIGABRT|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement|yyparse                                                            ## MDEV-32346
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_def|pars_retrieve_table_list_defs                                          ## MDEV-32346
@@ -177,6 +183,7 @@ sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|
 SIGABRT|get_schema_tables_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                             ## MDEV-22916
 SIGABRT|finish_event_group|handle_rpl_parallel_thread|pfs_spawn_thread|start_thread                                                                                            ## MDEV-21107
 table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::delete_table                                                             ## MDEV-32272
+table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::commit_inplace_alter_table                                               ## MDEV-32272
 m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|ha_innobase::rnd_init|handler::ha_rnd_init                          ## MDEV-32262
 SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with                                                                          ## MDEV-32249
 #SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                                     ## MDEV-32257
@@ -1000,7 +1007,6 @@ SIGABRT|galera::FSM<galera::TrxHandle::State,galera::TrxHandle::Transition,galer
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                                            ## MDEV-25738
 ! is_set()|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_help_internal|mysqld_help                                                                                    ## MDEV-25735
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_help_internal|mysqld_help                                        ## MDEV-25735
-page_rec_is_leaf(rec)|SIGABRT|lock_rec_queue_validate|lock_rec_validate_page|lock_rec_block_validate|lock_validate                                                             ## MDEV-25711
 mode_ == m_local|SIGABRT|wsrep::client_state::streaming_params|Wsrep_load_data_split::~Wsrep_load_data_split|mysql_load|mysql_execute_command                                  ## MDEV-25731
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_dup_key|handler::print_error|open_table_from_share|open_table                                  ## MDEV-25696
 thd->is_error()|SIGABRT|convert_error_to_warning|Show::get_geometry_column_record|fill_schema_table_by_open|get_all_tables                                                     ## MDEV-25692
@@ -1450,6 +1456,9 @@ i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::p
 i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucket|Histogram_binary::range_selectivity|get_column_range_cardinality                             ## MDEV-23151
 i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::range_selectivity|get_column_range_cardinality                                                  ## MDEV-23151
 i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucket|Histogram_binary::point_selectivity|get_column_range_cardinality                             ## MDEV-23151
+
+###### FALLBACK REFERENCE (remarked, but eases lookups) ######
+# FALLBACK|is_open                                  ## MDEV-23045
 
 ###### PARTIALLY FIXED BUGS ######
 # 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                            ## 10.6+ Fixed ## MDEV-22663
@@ -2061,9 +2070,9 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute|mysql_execute_command                                                           ## Fixed ## MDEV-29706
 # SIGSEGV|wsrep_TOI_begin|wsrep_to_isolation_begin|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute                                                        ## Fixed ## MDEV-29706
 # 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-29761
-SIGSEGV|__strcmp_avx2|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                 ## Fixed ## MDEV-29852  # Fixed, but still present in 10.11 (not merged yet), remark later
-SIGSEGV|is_acl_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                   ## Fixed ## MDEV-29852  # Fixed, but still present in 10.11 (not merged yet), remark later
-SIGSEGV|LEX_USER::has_auth|has_auth|get_current_user|get_current_user                                                                                               ## Fixed ## MDEV-29852  # Fixed, but still present in 10.11 (not merged yet), remark later
+# SIGSEGV|__strcmp_avx2|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                 ## Fixed ## MDEV-29852
+# SIGSEGV|is_acl_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                                                   ## Fixed ## MDEV-29852
+# SIGSEGV|LEX_USER::has_auth|has_auth|get_current_user|get_current_user                                                                                               ## Fixed ## MDEV-29852
 # !strstr(table->name.m_name, "/FTS_") || purge_sys.must_wait_FTS()|SIGABRT|trx_t::commit|ha_innobase::delete_table|hton_drop_table|ha_delete_table                   ## Fixed ## MDEV-29853
 # (((nr) % (1LL << 24)) % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_time_packed_to_binary|Time::to_native|Item_cache_time::val_native|select_max_min_finder_subselect::cmp_native ## Fixed ## MDEV-29924
 # SIGSEGV|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|JOIN::save_explain_data_intern|JOIN::save_explain_data                            ## Fixed ## MDEV-30007
@@ -2088,3 +2097,4 @@ SIGSEGV|LEX_USER::has_auth|has_auth|get_current_user|get_current_user           
 # thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->db.str, table->table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse ## Fixed ## MDEV-23205
 # SIGABRT|ib::fatal::~fatal|buf_page_io_complete|buf_read_page_low|buf_read_page                                                                                      ## Not a bug on <10.6 ref ## MDEV-23667
 # SIGSEGV|page_cur_get_rec|btr_cur_get_rec|btr_pcur_get_rec|row_sel_try_search_shortcut                                                                               ## Not a bug on <10.6 ref ## MDEV-23667 for a similar scenario
+# page_rec_is_leaf(rec)|SIGABRT|lock_rec_queue_validate|lock_rec_validate_page|lock_rec_block_validate|lock_validate                                                  ## Fixed ## MDEV-25711

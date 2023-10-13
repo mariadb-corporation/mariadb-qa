@@ -34,8 +34,8 @@ if [ -z "${MPATH}" ]; then
 fi
 
 TEST="$(echo "${1}" | sed 's|\.test$||;s|\.mtr$||;s|^\./||')"
-if [ ! -r "${PWD}/${TEST}" ]; then
-  echo "Assert: ${PWD}/${TEST} not found. Please copy the source MTR testcase into the local directory"
+if [ ! -r "${PWD}/${TEST}.test" ]; then
+  echo "Assert: ${PWD}/${TEST}.test not found. Please copy the source MTR testcase into the local directory and make sure the file suffix is .test"
   exit 1
 fi
 

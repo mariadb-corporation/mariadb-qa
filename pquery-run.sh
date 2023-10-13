@@ -303,7 +303,7 @@ add_handy_scripts(){
   fi
   echo 'if [ -r ../mysqld/mysqld ]; then' >> ${SAVE_STACK_LOC}/gdb
   echo "  gdb ../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
-  echo 'elif [ -r ../mariadbd ]; then' >> ${SAVE_STACK_LOC}/gdb
+  echo 'elif [ -r ../mysqld/mariadbd ]; then' >> ${SAVE_STACK_LOC}/gdb
   echo "  gdb ../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
   echo 'else' >> ${SAVE_STACK_LOC}/gdb
   echo '  echo "Assert: neither ../mysqld/mysqld nor ../mysqld/mariadbd was found (PWD: ${PWD})"' >> ${SAVE_STACK_LOC}/gdb 

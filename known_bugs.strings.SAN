@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|sql/log_event.h|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                  ## MDEV-32347
+ASAN|use-after-poison|sql/handler.h|xid_t::is_null|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache                                                                         ## MDEV-32347
 ASAN|use-after-poison|sql/handler.h|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache|binlog_rollback                                                                        ## MDEV-32347
 ASAN|use-after-poison|sql/log_event.h|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache|binlog_rollback                                                ## MDEV-32347
 UBSAN|shift exponent X is too large for 64-bit type 'long long int'|sql/field.cc|Field_set::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record         ## MDEV-32226
@@ -230,6 +232,7 @@ UBSAN|null pointer passed as argument 2, which is declared to never be null|stri
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|group_concat_key_cmp_with_distinct|tree_insert ## MDEV-28384
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Item_func_between::val_int_cmp_string|SQL_SELECT::skip_record ## MDEV-28384
 UBSAN|member call on null pointer of type 'struct Explain_node'|sql/sql_explain.cc|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain ## MDEV-18157
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc                                                                          ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|do_select            ## MDEV-28374
