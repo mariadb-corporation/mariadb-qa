@@ -174,6 +174,10 @@ other_lock->is_waiting()|SIGABRT|lock_rec_queue_validate|lock_clust_rec_read_che
 is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|Backtrace stopped: Cannot access memory at address|                                           ## MDEV-32347
 is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit     ## MDEV-32347
 SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                                ## MDEV-32347
+SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-32453
+SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|show_create_db                                                                                                     ## MDEV-32376
+is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit     ## MDEV-31949
+SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                                ## MDEV-31949
 SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|pars_retrieve_table_def                                                                                               ## MDEV-32346
 sym_node->table != NULL|SIGABRT|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement|yyparse                                                            ## MDEV-32346
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_def|pars_retrieve_table_list_defs                                          ## MDEV-32346
@@ -1208,7 +1212,7 @@ len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key
 len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_constraints_record|fill_schema_table_by_open                                  ## MDEV-24356
 len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_constraints_record|get_schema_constraints_record                              ## MDEV-24356
 len < sizeof(tmp_buff)|SIGABRT|ut_dbg_assertion_failed|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_constraints_record                                    ## MDEV-24356
-SIGSEGV|__memset_avx2_erms|memset|log_t::create|srv_start                                                                                                                      ## MDEV-24269
+SIGSEGV|__memset_avx2_erms|memset|log_t::create|srv_start                                                                                                                      ## MDEV-24269 NOW MDEV-32364
 SIGSEGV|mach_write_to_4|log_block_set_hdr_no|log_block_init|log_t::create                                                                                                      ## MDEV-24269
 ptr != NULL|SIGABRT|ut_dbg_assertion_failed|ut_allocate_trace_dontdump|ut_malloc_dontdump|log_t::create                                                                        ## MDEV-24269
 SIGSEGV|SQL_SELECT::cleanup|SQL_SELECT::~SQL_SELECT|JOIN::make_range_rowid_filters|JOIN::make_range_rowid_filters                                                              ## MDEV-24256
