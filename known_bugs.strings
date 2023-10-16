@@ -182,7 +182,7 @@ SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|pars_retrieve_table_def
 sym_node->table != NULL|SIGABRT|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement|yyparse                                                            ## MDEV-32346
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_def|pars_retrieve_table_list_defs                                          ## MDEV-32346
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement                                            ## MDEV-32346
-#SIGABRT|rows_event_stmt_cleanup|Rows_log_event::do_apply_event|Log_event::apply_event|apply_event_and_update_pos_apply                                                        ## MDEV-27512 (checking for secondary testcases)
+SIGABRT|rows_event_stmt_cleanup|Rows_log_event::do_apply_event|Log_event::apply_event|apply_event_and_update_pos_apply                                                         ## MDEV-27512
 #SIGABRT|MDL_context::acquire_lock|MDL_context::acquire_locks|lock_table_names|lock_table_names                                                                                ## MENT-1958 (secondary case: to move when found again)
 SIGABRT|get_schema_tables_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                             ## MDEV-22916
 SIGABRT|finish_event_group|handle_rpl_parallel_thread|pfs_spawn_thread|start_thread                                                                                            ## MDEV-21107

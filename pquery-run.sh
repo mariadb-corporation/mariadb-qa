@@ -70,6 +70,12 @@ if [ ! -r ${SCRIPT_PWD}/${CONFIGURATION_FILE} ]; then
   echo "Assert: the confiruation file ${SCRIPT_PWD}/${CONFIGURATION_FILE} cannot be read!"
   exit 1
 fi
+if grep -qi '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*2' ${SCRIPT_PWD}/${CONFIGURATION_FILE}; then
+  echo "*************************************************************************************************************************"
+  echo "*** IMPORTANT NOTE: PRE_SHUFFLE_SQL=2 is set. No custom-set SQL input file will be used! Make sure this was intended! ***"
+  echo "*************************************************************************************************************************"
+  sleep 2
+fi
 source ${SCRIPT_PWD}/$CONFIGURATION_FILE
 echo ${WORKDIR} > /tmp/gomd_helper # gomd helper
 PQUERY_TOOL_NAME=$(basename ${PQUERY_BIN})

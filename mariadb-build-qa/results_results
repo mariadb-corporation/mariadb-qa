@@ -1,0 +1,11 @@
+#!/bin/bash
+# Run this script to see testcase reduction progress for directories currently listed in results.list
+# If you add anything as an option to this script, the script will also show results for remarked (#) workdirs
+
+if [ -z "${1}" ]; then
+  SEARCH_REGEX='^[ \t]*MON'
+else
+  SEARCH_REGEX='^[# \t]*MON'
+fi
+
+grep -E "${SEARCH_REGEX}" results.list | sed 's|.*=[ \t]*||' | xargs -I{} echo "cd {}; my | sed 's| \./| ./{}/|'; cd - >/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -ic "{}"

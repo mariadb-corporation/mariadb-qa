@@ -49,7 +49,7 @@ if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
 if [ "${MDG}" -eq 1 ]; then
   CORE_COUNT=$(ls --color=never node*/*core* 2>/dev/null | wc -l)
 else
-  CORE_COUNT=$(ls --color=never data*/*core* var/log/*/*/data/*core* var/*/log/*/*/data/*core* 2>/dev/null | wc -l)
+  CORE_COUNT=$(ls --color=never data*/*core* var/log/*/*/data/*core* var/*/log/*/*/data/*core* var/mysqld*/data/*core* 2>/dev/null | wc -l)
 fi
 if [ ${CORE_COUNT} -eq 0 ]; then
   echo "INFO: no cores found at data*/*core* nor at node*/*core*"
@@ -79,7 +79,7 @@ LATEST_CORE=
 if [ "${MDG}" -eq 1 ]; then
   LATEST_CORE="$(ls -t --color=never node*/*core* 2>/dev/null)"
 else
-  LATEST_CORE="$(ls -t --color=never data*/*core* var/log/*/*/data/*core* var/*/log/*/*/data/*core* 2>/dev/null)"
+  LATEST_CORE="$(ls -t --color=never data*/*core* var/log/*/*/data/*core* var/*/log/*/*/data/*core* var/mysqld*/data/*core* 2>/dev/null)"
 fi
 
 gdb -q ${BIN} ${LATEST_CORE} >/tmp/${RANDF}.gdba 2>&1 << EOF

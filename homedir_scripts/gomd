@@ -16,7 +16,11 @@
 #BASEDIR=/test/PATCH2_MD280923-mariadb-10.6.16-linux-x86_64-dbg
 ##BASEDIR=/test/PATCH3_MD031023-mariadb-10.6.16-linux-x86_64-dbg
 ##BASEDIR=/test/PATCH3_UBASAN_MD031023-mariadb-10.6.16-linux-x86_64-dbg
-BASEDIR=/test/BASE_UBASAN_MD071023-mariadb-10.6.16-linux-x86_64-dbg
+#BASEDIR=/test/MDEV28856_MD141023-mariadb-11.3.0-linux-x86_64-dbg
+#BASEDIR=/test/MDEV28856_UBASAN_MD141023-mariadb-11.3.0-linux-x86_64-dbg
+BASEDIR=/test/BASE_MDEV28856_UBASAN_MD161023-mariadb-11.3.0-linux-x86_64-dbg
+#BASEDIR=/test/BASE_MDEV28856_MD161023-mariadb-11.3.0-linux-x86_64-opt
+#BASEDIR=/test/BASE_UBASAN_MD071023-mariadb-10.6.16-linux-x86_64-dbg
 #PATCH3_UBMSAN_MD041023-mariadb-10.6.16-linux-x86_64-dbg
 ##BASEDIR=/test/BASE_MD260923-mariadb-10.6.16-linux-x86_64-dbg
 #preview-11.3-preview_MDEV-28856_MD160923-mariadb-11.3.0-linux-x86_64-dbg
@@ -37,16 +41,16 @@ BASEDIR=/test/BASE_UBASAN_MD071023-mariadb-10.6.16-linux-x86_64-dbg
 #bb-10.6-MDEV-26055-MDEV-26827_MD130323-mariadb-10.6.13-linux-x86_64-dbg
 #BASEDIR=/test/MD110223-mariadb-10.11.2-linux-x86_64-dbg
 #BASEDIR=/test/MDEV-16329_bb-11.0-oalter_MD210223-mariadb-11.0.1-linux-x86_64-opt
-RUNSOPT=2
+RUNSOPT=0
 RUNSDBG=3
-#CONF=pquery-run-MD-spider.conf
+CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-federated.conf
 #CONF=pquery-run-mdev-31152.conf
 #CONF=pquery-run-MD-crt.conf
 #CONF=pquery-run-MD-allb.conf
 #CONF=pquery-run-MD.conf  
-CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql
+#CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql
 #CONF=pquery-run-MD2.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-multi.conf  # Using PRE_SHUFFLE_SQL=2, multithreaded
 #CONF=pquery-run-MD-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
@@ -77,6 +81,15 @@ fi
 if [ -z "${BASEDIR}" ]; then
   echo "The basedir variable BASEDIR was not set. Typo?"
   exit 1
+fi
+
+if grep -qi '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*2' ${HOME}/mariadb-qa/${CONF}; then
+  echo "*************************************************************************************************************************"
+  echo "*** IMPORTANT NOTE: PRE_SHUFFLE_SQL=2 is set. No custom-set SQL input file will be used! Make sure this was intended! ***"
+  echo "*************************************************************************************************************************"
+  sleep 2
+else
+  echo "PRE_SHUFFLE_SQL setting: $(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+')"
 fi
 
 if [[ "${BASEDIR}" != "/test"* ]]; then

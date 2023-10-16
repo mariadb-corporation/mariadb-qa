@@ -143,8 +143,11 @@ if [[ ${MDG} -eq 1 ]]; then
 else
   ERROR_LOG=$(ls ${LOC}/log/master.err 2>/dev/null | head -n1)
   LATEST_CORE=$(ls -t ${LOC}/*/*core* 2>/dev/null | grep -v 'data.PREV' | head -n1)  # Exclude data.PREV
-  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location (this may have been an MTR run)
+  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 1/2 (this may have been an MTR run)
     LATEST_CORE=$(ls -t ${LOC}/var/log/*/mysqld*/data/*core* 2>/dev/null | head -n1)
+  fi
+  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 2/2 (this may have been an MTR run)  # Replication MTR testcaes seems to use ./var/mysqld.nr/data/core.* instead, or may be due to older version?
+    LATEST_CORE=$(ls -t ${LOC}/var/mysqld*/data/*core* 2>/dev/null | head -n1)
   fi
 fi
 
