@@ -1288,10 +1288,11 @@ pquery_test() {
       else  ## Valgrind run
         CMD="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
       fi
-    else  ## rr tracing run
+    else  ## rr tracing run  # TODO: add slave startup in something like rr_slave if replication is used (below)
       export _RR_TRACE_DIR="${RUNDIR}/${TRIAL}/rr"
       mkdir -p "${_RR_TRACE_DIR}"
-      CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
+      sudo chmod -R 777 "${_RR_TRACE_DIR}"
+      CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --loose-innodb-flush-method=fsync --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
     fi
     diskspace
     $CMD >> ${RUNDIR}/${TRIAL}/log/master.err 2>&1 &
