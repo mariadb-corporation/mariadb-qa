@@ -3,6 +3,7 @@ Note: bugs listed here should be checked regularly if they have been fixed, and 
 Filter Text                                           Info at
 -----------------------------------------------------------------------------------------------------------------------
 Event invalid                                         https://jira.mariadb.org/browse/MDEV-26270
+Assertion ..trx->alloc_line_no.id. .. trx->alloc_line_no.id. == line_no  https://jira.mariadb.org/browse/MDEV-32486
 Assertion .block_size                                 https://jira.mariadb.org/browse/MDEV-26459
 Assertion .other_lock->is_waiting... failed           https://jira.mariadb.org/browse/MDEV-32353
 test_ps_create_on_corrupted                           Not real corruption, just a table name

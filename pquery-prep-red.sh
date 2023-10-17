@@ -247,7 +247,7 @@ add_shutdown_to_trace(){
 }
 
 remove_non_sql_from_trace(){
-  if [ -z "${1}" ]; then echo "Assert: add_select_ones_to_trace called without option!"; exit 1; fi
+  if [ -z "${1}" ]; then echo "Assert: remove_non_sql_from_trace called without option!"; exit 1; fi
   if [[ "${1}" != *"quick"* ]]; then
     echo "* Removing any non-SQL lines (diagnostic output from pquery) to improve issue reproducibility"
   fi
@@ -804,7 +804,7 @@ if [ ${QC} -eq 0 ]; then
         else
           if [ $(ls -1 ./${TRIAL}/*thread-0.sql 2>/dev/null|wc -l) -gt 1 ]; then
             INPUTFILE=$(ls ./${TRIAL}/node${SUBDIR}*thread-0.sql)
-          elif [ -f ./${TRIAL}/*thread-0.sql ] ; then
+          elif [ -f ./${TRIAL}/*thread-0.sql ]; then
             INPUTFILE=`ls ./${TRIAL}/*thread-0.sql | sed "s|^[./]\+|/|;s|^|${WORKD_PWD}|"`
           else
             INPUTFILE=${WORKD_PWD}/${TRIAL}/${TRIAL}-${SUBDIR}.sql

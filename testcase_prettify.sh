@@ -19,6 +19,7 @@ cat "${1}" | tr -d '`' | \
   sed "s|[ \t]\+| |g; \
        s|;#.*$|;|;s| ;$|;|g;s|;;$|;|g; \
        s|^ \+||;s|; \+$|;|; \
+       s|srv \"srv\"|SRV \"srv\"|gi; \
        s|do |DO |gi; \
        s|open|OPEN|gi; \
        s|div|DIV|gi; \
@@ -427,6 +428,7 @@ cat "${1}" | tr -d '`' | \
        s|), (|),(|gi; \
        s|BY''|BY ''|gi; \
        s|port|PORT|gi; \
+       s|remote_port|REMOTE_PORT|gi; \
        s| *= *|=|gi;s|sql_mode=\([^ ']\)|sql_mode= \1|; \
        s|=on;$|=ON;|g; \
        s|=off;$|=OFF;|g; \
@@ -466,10 +468,13 @@ cat "${1}" | tr -d '`' | \
        s|mid[ ]*(|MID(|gi; \
        s|row[ ]*(|ROW(|gi; \
        s|row_format|ROW_FORMAT|gi; \
-       s|srv \"srv\"|SERVER \"s\"|gi;s|SERVER \"srv\"|SERVER \"s\"|gi;s|SERVER srv |SERVER s |gi; \
-       s|srv 'srv'|SERVER 's'|gi;s|SERVER 'srv'|SERVER 's'|gi;s|SERVER srv |SERVER s |gi; \
+       s|monitoring_kind|MONITORING_KIND|gi; \
        s|DELIMITER;|DELIMITER ;|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
+
+# These seem to be incorrect as they change the server name
+#       s|srv \"srv\"|SERVER \"s\"|gi;s|SERVER \"srv\"|SERVER \"s\"|gi;s|SERVER srv |SERVER s |gi; \
+#       s|srv 'srv'|SERVER 's'|gi;s|SERVER 'srv'|SERVER 's'|gi;s|SERVER srv |SERVER s |gi; \
 
 # Templates for copy/paste
 #       s|||gi; \

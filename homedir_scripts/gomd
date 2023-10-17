@@ -18,7 +18,8 @@
 ##BASEDIR=/test/PATCH3_UBASAN_MD031023-mariadb-10.6.16-linux-x86_64-dbg
 #BASEDIR=/test/MDEV28856_MD141023-mariadb-11.3.0-linux-x86_64-dbg
 #BASEDIR=/test/MDEV28856_UBASAN_MD141023-mariadb-11.3.0-linux-x86_64-dbg
-BASEDIR=/test/BASE_MDEV28856_UBASAN_MD161023-mariadb-11.3.0-linux-x86_64-dbg
+#BASEDIR=/test/BASE_MDEV28856_UBASAN_MD161023-mariadb-11.3.0-linux-x86_64-dbg
+BASEDIR=/test/HEAD_preview_11.3_preview_MD171023-mariadb-11.3.0-linux-x86_64-dbg
 #BASEDIR=/test/BASE_MDEV28856_MD161023-mariadb-11.3.0-linux-x86_64-opt
 #BASEDIR=/test/BASE_UBASAN_MD071023-mariadb-10.6.16-linux-x86_64-dbg
 #PATCH3_UBMSAN_MD041023-mariadb-10.6.16-linux-x86_64-dbg
