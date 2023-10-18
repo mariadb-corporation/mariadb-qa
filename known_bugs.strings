@@ -167,6 +167,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::info|Sql_cmd_delete::delete_from_single_table                                                      ## MDEV-32492
 !trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_bounded_nat_list|spider_parse_connect_info      ## MDEV-32486 (Remember REGEX filter)
 !trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_long_list|spider_parse_connect_info             ## MDEV-32486 (IDEM)
 SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-31996 (fixed, filtering )
@@ -174,9 +175,6 @@ SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock    
 SIGABRT|close_thread_tables|close_thread_tables_for_query|mysql_execute_command|mysql_parse                                                                                    ## MDEV-32372
 SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event                                                                                  ## MDEV-32372
 other_lock->is_waiting()|SIGABRT|lock_rec_queue_validate|lock_clust_rec_read_check_and_lock|row_ins_set_shared_rec_lock|row_ins_duplicate_error_in_clust                       ## MDEV-32353
-is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|Backtrace stopped: Cannot access memory at address|                                           ## MDEV-32347
-is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit     ## MDEV-32347
-SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                                ## MDEV-32347
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-32453
 SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|show_create_db                                                                                                     ## MDEV-32376
 is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit     ## MDEV-31949
@@ -193,11 +191,6 @@ table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t
 table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::commit_inplace_alter_table                                               ## MDEV-32272
 m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|ha_innobase::rnd_init|handler::ha_rnd_init                          ## MDEV-32262
 SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with                                                                          ## MDEV-32249
-#SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                                     ## MDEV-32257
-#SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_commit|mysql_execute_command                                                       ## MDEV-32257
-#SIGABRT|acquire_xid|binlog_rollback_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                     ## MDEV-32257
-#SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                                       ## MDEV-32257
-#SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|trans_xa_commit                                                                                          ## MDEV-32257
 thd->is_error()|SIGABRT|Sql_cmd_dml::prepare|Sql_cmd_dml::execute|mysql_execute_command|mysql_parse                                                                            ## MDEV-24640
 SIGSEGV|trace_engine_stats|Explain_table_access::print_explain_json|Explain_basic_join::print_explain_json_interns|Explain_select::print_explain_json                          ## MDEV-31764
 SIGSEGV|get_schema_key_period_usage_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                   ## MDEV-32204
@@ -2105,3 +2098,11 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGABRT|ib::fatal::~fatal|buf_page_io_complete|buf_read_page_low|buf_read_page                                                                                      ## Not a bug on <10.6 ref ## MDEV-23667
 # SIGSEGV|page_cur_get_rec|btr_cur_get_rec|btr_pcur_get_rec|row_sel_try_search_shortcut                                                                               ## Not a bug on <10.6 ref ## MDEV-23667 for a similar scenario
 # page_rec_is_leaf(rec)|SIGABRT|lock_rec_queue_validate|lock_rec_validate_page|lock_rec_block_validate|lock_validate                                                  ## Fixed ## MDEV-25711
+# SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_rollback|mysql_execute_command                                          ## Fixed ## MDEV-32257
+# SIGSEGV|std::__atomic_base<int>::fetch_or|XID_cache_element::acquired_to_recovered|trans_xa_commit|mysql_execute_command                                            ## Fixed ## MDEV-32257
+# SIGABRT|acquire_xid|binlog_rollback_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                          ## Fixed ## MDEV-32257
+# SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                            ## Fixed ## MDEV-32257
+# SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|trans_xa_commit                                                                               ## Fixed ## MDEV-32257
+# is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|Backtrace stopped: Cannot access memory at address|                                ## Fixed ## MDEV-32347
+# is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit ## Fixed ## MDEV-32347
+# SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                     ## Fixed ## MDEV-32347

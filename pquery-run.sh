@@ -37,6 +37,7 @@ PQUERY3=0
 NEWBUGS=0
 INFILE_SHUFFLED=
 PRE_SHUFFLE_TRIAL_ROUND=0  # Resets to 0 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
+TRIAL_SAVED=0
 
 # Set SAN options
 # https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
@@ -583,6 +584,10 @@ ctrl-c() {
 }
 
 savetrial() { # Only call this if you definitely want to save a trial
+  if [ "${TRIAL_SAVED}" == "1" ]; then
+    echoit "Warning: savetrial() was called but TRIAL_SAVED was already 1. Ensure this trial has been actually saved as we don't attempt to save it again now"
+    return 1
+  fi
   if [ "${PRELOAD}" == "1" -a ${ISSTARTED} -eq 1 ]; then  # It only makes sense to save the preload in case the server was ever started (and besides, the preload trace won't exist unless the server was started correctly), otherwise we will get incorrect messages here saying 'preload did not exist in savetrial()' which is correct, but not applicable
     PQUERY_DEFAULT_FILE=
     if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
@@ -617,9 +622,14 @@ savetrial() { # Only call this if you definitely want to save a trial
     sudo pmm-admin remove mysql pq${RANDOMD}-${TRIAL} > /dev/null
   fi
   SAVED=$(($SAVED + 1))
+  return 0
 }
 
 removetrial() {
+  if [ "${TRIAL_SAVED}" == "1" ]; then
+    echoit "Warning: removetrial() was called but TRIAL_SAVED was already 1. This should not happen"
+    return 1
+  fi
   echoit "Removing trial rundir ${RUNDIR}/${TRIAL}"
   if [ "${RUNDIR}" != "" -a "${TRIAL}" != "" -a -d ${RUNDIR}/${TRIAL}/ ]; then # Protection against dangerous rm's
     rm -Rf ${RUNDIR:?}/${TRIAL:?}/
@@ -628,6 +638,7 @@ removetrial() {
     echoit "Removing mysql instance (pq${RANDOMD}-${TRIAL}) from pmm-admin"
     sudo pmm-admin remove mysql pq${RANDOMD}-${TRIAL} > /dev/null
   fi
+  return 0
 }
 
 removelasttrial() {
@@ -2346,6 +2357,56 @@ EOF
     fi
   fi
   # NOTE**: Do not kill PQPID here/before shutdown. The reason is that pquery may still be writing queries it's executing to the log. The only way to halt pquery correctly is by actually shutting down the server which will auto-terminate pquery due to 250 consecutive queries failing. If 250 queries failed and ${PQUERY_RUN_TIMEOUT}s timeout was reached, and if there is no core/Valgrind issue and there is no output of mariadb-qa/text_string.sh either (in case core dumps are not configured correctly, and thus no core file is generated, text_string.sh will still produce output in case the server crashed based on the information in the error log), then we do not need to save this trial (as it is a standard occurence for this to happen). If however we saw 250 queries failed before the timeout was complete, then there may be another problem and the trial should be saved.
+  # First check if we have a significant/major error
+  # Significant/major error scanning. This code is partially duplicated in pquery-results.sh as well as in pquery-del-trial.sh. Update all three when making changes. TODO: integrate this code into a new script to de-duplicate the code
+  ERRORS=
+  ERROR_LOG_SCAN=
+  ERRORS_LAST_LINE=
+  REGEX_ERRORS_SCAN=
+  REGEX_ERRORS_LASTLINE=
+  REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
+  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
+    REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
+  fi
+  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
+    REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
+  fi
+  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
+    REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
+  fi
+  if [[ "${MDG}" -eq 1 ]]; then
+    if [ -z "${MDG_NODE}" ]; then
+      ERROR_LOG_SCAN="${RUNDIR}/${TRIAL}/node*.err"
+    else
+      ERROR_LOG_SCAN="${RUNDIR}/${TRIAL}/node${MDG_NODE}.err"
+    fi
+  else
+    if [ -r ${RUNDIR}/${TRIAL}/log/master.err ]; then
+      ERROR_LOG_SCAN="${RUNDIR}/${TRIAL}/log/master.err"
+    fi
+    if [ -r ${RUNDIR}/${TRIAL}/log/slave.err ]; then
+      ERROR_LOG_SCAN="${ERROR_LOG_SCAN} ${RUNDIR}/${TRIAL}/log/slave.err"
+    fi
+  fi
+  if [ ! -z "${ERROR_LOG_SCAN}" -a ! -z "${REGEX_ERRORS_SCAN}" -a ! -z "${REGEX_ERRORS_FILTER}" ]; then  # Do not use -r as it will not work if both master.err and slave.err are present, for example
+    # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
+    ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$")"
+  fi
+  if [ ! -z "${ERROR_LOG_SCAN}" -a ! -z "${REGEX_ERRORS_LASTLINE}" -a ! -z "${REGEX_ERRORS_FILTER}" ]; then
+    ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$")"
+  fi
+  if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then  # We have a significant/major error
+    touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # This is only an indicator. i.e. new_text_string.sh may see a crash and thus provide a UniqueID pertaining to the crash for the reducer. Still, all error log issues will be saved and this marker will be set. It is not used for the time being other than as an indicator flag.
+    savetrial
+    TRIAL_SAVED=1
+  fi
+  ERRORS=
+  ERROR_LOG_SCAN=
+  ERRORS_LAST_LINE=
+  REGEX_ERRORS_SCAN=
+  REGEX_ERRORS_LASTLINE=
+  REGEX_ERRORS_FILTER=
+  # Now continue with main processing
   if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
     if [ "${VALGRIND_RUN}" == "1" ]; then # For Valgrind, we want the full Valgrind output in the error log, hence we need a proper/clean (and slow...) shutdown
       # Note that even if mysqladmin is killed with the 'timeout --signal=9', it will not affect the actual state of mysqld/mariadbd, all that was terminated was mysqladmin.

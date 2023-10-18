@@ -7,8 +7,6 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ##### CURRENT BUGS (Search key: Mac) #####
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_case_bin|Item_str_conv::val_str|Arg_comparator::compare_string|Arg_comparator::compare ## MDEV-32479
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_case_bin|Item_str_conv::val_str|Item_str_func::val_decimal|VDec::VDec       ## MDEV-32479
-ASAN|use-after-poison|sql/log_event.h|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                  ## MDEV-32347
-ASAN|use-after-poison|sql/handler.h|xid_t::is_null|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache                                                                         ## MDEV-32347
 UBSAN|store to null pointer of type 'roll_ptr_t'|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-32453
 ASAN|use-after-poison|sql/handler.h|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache|binlog_rollback                                                                        ## MDEV-32347
 ASAN|use-after-poison|sql/log_event.h|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache|binlog_rollback                                                ## MDEV-32347
@@ -319,8 +317,11 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # ASAN|use-after-poison|sql/sql_acl.cc|get_current_user|sp_process_definer|mysql_create_routine|mysql_execute_command                                                          ## Fixed ## MDEV-29852
 # UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_lex.cc|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|st_select_lex_unit::explainable|JOIN::save_explain_data_intern ## Fixed ## MDEV-30007
 # UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_lex.cc|st_select_lex_unit::is_derived_eliminated|st_select_lex_unit::explainable|JOIN::save_explain_data_intern|JOIN::save_explain_data ## Fixed ## MDEV-30007
-# ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next_fast|List_iterator_fast<Item>::operator++|JOIN::eval_select_list_used_tables|JOIN::optimize_inner               ## Fixed ## MDEV-30052
-# ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next|List_iterator<Item>::operator++|subquery_types_allow_materialization|is_materialization_applicable              ## Fixed ## MDEV-30052
+# ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next_fast|List_iterator_fast<Item>::operator++|JOIN::eval_select_list_used_tables|JOIN::optimize_inner              ## Fixed ## MDEV-30052
+# ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next|List_iterator<Item>::operator++|subquery_types_allow_materialization|is_materialization_applicable             ## Fixed ## MDEV-30052
 # ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_print_item_type|spider_mbase_handler::append_condition|spider_mbase_handler::append_condition_part|ha_spider::append_condition_sql_part ## Fixed ## MDEV-30191
 # UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_lt::val_int ## Fixed ## MDEV-30982
 # UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|sortcmp ## Fixed ## MDEV-30982
+# ASAN|use-after-poison|sql/log_event.h|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                ## Fixed ## MDEV-32347
+# ASAN|use-after-poison|sql/handler.h|xid_t::is_null|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache                                                                       ## Fixed ## MDEV-32347
+# ASAN|use-after-poison|sql/handler.h|xid_t::key_length|xid_t::length|xid_t::set|Gtid_log_event::Gtid_log_event                                                                ## Fixed ## MDEV-32407

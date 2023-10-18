@@ -18,6 +18,7 @@ DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Def
 CLANG_LOCATION="/usr/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 USE_AFL=0               # 0 or 1 # Use the American Fuzzy Lop gcc/g++ wrapper instead of gcc/g++
 AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"
+IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_MODE=OFF. When ignoring warnings, regularly check that existing bugs are fixed. This option additionally sets -DWARNING_AS_ERROR empty so warnings will never be treated as errors. #TODO: consider implementing -DMYSQL_MAINTAINER_MODE=WARN (also disables -Werror, just like, presumably, =OFF, though it will likely not work to avoid for example the lib https://jira.mariadb.org/browse/MDEV-32483 compile error wheras -DWARNING_AS_ERROR='' does) 
 
 # To install the latest clang from Chromium devs (and this automatically updates previous version installed with this method too);
 # sudo yum remove clang    # Or sudo apt-get remove clang    # Only required if this procedure has never been followed yet
@@ -256,6 +257,14 @@ fi
 # Also note that -k can be use for make to ignore any errors; if the build fails somewhere in the tests/unit tests then it matters
 # little. Note that -k is not a compiler flag as -w is. It is a make option.
 
+# Ignore warnings and make errors warnings
+if [ ${IGNORE_WARNINGS} -eq 1 ]; then
+  FLAGS="${FLAGS} -DMYSQL_MAINTAINER_MODE=OFF -DWARNING_AS_ERROR=''"  # If WARNING_AS_ERROR is set to blank, warnings will never be treated as errors
+fi
+
+# As this is an optimized build, set -DCMAKE_BUILD_TYPE=RelWithDebInfo
+FLAGS="${FLAGS} -DCMAKE_BUILD_TYPE=RelWithDebInfo"
+￼
 CURPATH=$(echo $PWD | sed 's|.*/||')
 
 cd ..
@@ -289,7 +298,7 @@ if [ $FB -eq 0 ]; then
     sleep 0.1
     #XPAND='-DWITH_XPAND=1'  # Disabled ftm due to cnf limitation (https://mariadb.com/kb/en/mariadb-maxscale-25-maxscale-and-xpand-tutorial/)
   fi
-  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS} -DMYSQL_MAINTAINER_MODE=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo"
+  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
   eval "$CMD" 2>&1 | tee /tmp/psms_opt_san_build_${RANDOMD}

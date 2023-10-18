@@ -62,7 +62,7 @@ elif [ ! -d ./${TRIAL} ]; then
 fi
 
 # Delete trial directory, provided it does not contain a significant/major error of interest. Scan first
-# Significant/major error scanning. This code is partially duplicated in pquery-results.sh. Update both when making changes.
+# Significant/major error scanning. This code is partially duplicated in pquery-results.sh as well as in pquery-run.sh. Update all three when making changes. TODO: integrate this code into a new script to de-duplicate the code
 ERRORS=
 ERROR_LOG=
 ERRORS_LAST_LINE=
@@ -70,9 +70,9 @@ REGEX_ERRORS_SCAN=
 REGEX_ERRORS_LASTLINE=
 REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
 if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
-REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
-if [ -z "${REGEX_ERRORS_SCAN}" ]; then
-  echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
+  REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
+  if [ -z "${REGEX_ERRORS_SCAN}" ]; then
+    echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
     exit 1
   fi
 else
@@ -99,12 +99,17 @@ if [[ "${MDG}" -eq 1 ]]; then
     ERROR_LOG="./${TRIAL_DIR}/node${MDG_NODE}.err"
   fi
 else
-  ERROR_LOG="./${TRIAL}/log/master.err"
+  if [ -r ./${TRIAL}/log/master.err ]; then
+    ERROR_LOG="./${TRIAL}/log/master.err"
+  fi
+  if [ -r ./${TRIAL}/log/slave.err ]; then
+    ERROR_LOG="${ERROR_LOG} ./${TRIAL}/log/slave.err"
+  fi
 fi
-if [ -r ${ERROR_LOG} ]; then
+if [ ! -z "${ERROR_LOG}" ]; then  # Do not use -r as it will not work if both master.err and slave.err are present, for example
   # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
-  ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
-  ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"
+  ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$")"
+  ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$")"
   if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
     delete_trial
   else

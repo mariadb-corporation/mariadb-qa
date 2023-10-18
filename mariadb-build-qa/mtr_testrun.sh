@@ -59,4 +59,4 @@ rm -f ${TEMP}
 
 echo '-------------- mtr_testrun.sh Results --------------'
 echo 'Searching core files...'
-find . | grep -E '/mysql-test/|/mariadb-test/' | grep '/var/log/.*/data/' | grep "${TEST}" | grep 'core' | sort -u
+find . | grep -vE 'MDEV' | grep -E '/mysql-test/|/mariadb-test/' | grep '/var/log/.*/data/' | grep "${TEST}" | grep 'core' | sort -u
