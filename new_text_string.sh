@@ -11,7 +11,7 @@
 # ./new_text_string.sh "${mysqld_loc}" # Where mysqld
 
 # Quick check to see if sleep can be skipped for *SAN issues (much faster output and automation)
-if [ $(grep -m1 --binary-files=text -E "=ERROR:|ThreadSanitizer:|runtime error:|LeakSanitizer:|MemorySanitizer:" ./log/master.err 2>/dev/null | wc -l) -eq 0 ]; then  # If no such issue found (count is 0), sleep x seconds to allow core, if any, to finish writing
+if [ $(grep -m1 --binary-files=text -E "=ERROR:|ThreadSanitizer:|runtime error:|LeakSanitizer:|MemorySanitizer:" ./log/master.err ./log/slave.err 2>/dev/null | wc -l) -eq 0 ]; then  # If no such issue found (count is 0), sleep x seconds to allow core, if any, to finish writing
   # Whilst 2 seconds is almost surely not sufficient for all cores to finish writing on heavily loaded machines,
   # There is a tradeoff here - this script is very often called during automation and all sorts of other processing,
   # thus many things are affected even by a single second more. On the flip side, more failures may be observed
@@ -26,7 +26,7 @@ if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" 
 fi
 FRAMESONLY=0
 SHOWINFO=0
-ERROR_LOG=
+ERROR_LOGS=
 MYSQLD=
 TRIAL=
 LOC=${PWD}
@@ -123,16 +123,19 @@ if [ "${MDG}" != "1" ]; then
 fi
 
 if [[ ${MDG} -eq 1 ]]; then
-  ERROR_LOG=${GALERA_ERROR_LOG}
+  ERROR_LOGS=${GALERA_ERROR_LOGS}
   LATEST_CORE=${GALERA_CORE_LOC}
-  if [ -z "${ERROR_LOG}" ]; then  # Interactive call from basedir
+  if [ -z "${ERROR_LOGS}" ]; then  # Interactive call from basedir
     if [ -r ${LOC}/node1/node1.err ]; then
-      ERROR_LOG="${LOC}/node1/node1.err"
-    elif [ -r ${LOC}/node2/node2.err ]; then
-      ERROR_LOG="${LOC}/node2/node2.err"
-    elif [ -r ${LOC}/node3/node3.err ]; then
-      ERROR_LOG="${LOC}/node3/node3.err"
-    else
+      ERROR_LOGS="${LOC}/node1/node1.err"
+    fi
+    if [ -r ${LOC}/node2/node2.err ]; then
+      ERROR_LOGS="${ERROR_LOGS} ${LOC}/node2/node2.err"
+    fi
+    if [ -r ${LOC}/node3/node3.err ]; then
+      ERROR_LOGS="${ERROR_LOGS} ${LOC}/node3/node3.err"
+    fi
+    if [ -z "${ERROR_LOGS}" ]; then
       echo "Assert: no error log found for Galera run!"
       exit 1
     fi
@@ -141,7 +144,10 @@ if [[ ${MDG} -eq 1 ]]; then
     LATEST_CORE="$(ls -t --color=never ${LOC}/node*/*core* 2>/dev/null)"
   fi
 else
-  ERROR_LOG=$(ls ${LOC}/log/master.err 2>/dev/null | head -n1)
+  ERROR_LOGS=$(ls ${LOC}/log/master.err 2>/dev/null)
+  if [ -r ${LOC}/log/slave.err ]; then
+    ERROR_LOGS="${ERROR_LOGS} $(ls ${LOC}/log/slave.err 2>/dev/null)"  # Include slave log in scanning
+  fi
   LATEST_CORE=$(ls -t ${LOC}/*/*core* 2>/dev/null | grep -v 'data.PREV' | head -n1)  # Exclude data.PREV
   if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 1/2 (this may have been an MTR run)
     LATEST_CORE=$(ls -t ${LOC}/var/log/*/mysqld*/data/*core* 2>/dev/null | head -n1)
@@ -151,60 +157,72 @@ else
   fi
 fi
 
-if [ -z "${ERROR_LOG}" ]; then
+if [ -z "${ERROR_LOGS}" ]; then  # TODO: slave error logs not verified yet (mysqld.2.err likely)
   if [ -r "../../mysqld.1.err" ]; then
-    ERROR_LOG="../../mysqld.1.err"
-  elif [ -r "./var/log/mysqld.1.err" ]; then  # For MTR, default ./mtr test runs (e.g. testcase in main/test.test)
-    ERROR_LOG="./var/log/mysqld.1.err"
-  # TODO: add auto-discovery of correct log to use for below entries, or better: merge logs into one temporary file for overall scan 
-  elif [ -r "./var/log/mysqld.3.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
-    ERROR_LOG="./var/log/mysqld.3.1.err"
-  elif [ -r "./var/log/mysqld.2.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
-    ERROR_LOG="./var/log/mysqld.2.1.err"
-  elif [ -r "./var/log/mysqld.1.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
-    ERROR_LOG="./var/log/mysqld.1.1.err"
-  else
-    echo "Assert: no error log found - exiting"
-    exit 1
+    ERROR_LOGS="../../mysqld.1.err"
+  fi
+  if [ -r "../../mysqld.2.err" ]; then
+    ERROR_LOGS="${ERROR_LOGS} ../../mysqld.2.err"
+  fi
+  if [ -r "./var/log/mysqld.1.err" ]; then  # For MTR, default ./mtr test runs (e.g. testcase in main/test.test)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.1.err"
+  fi
+  if [ -r "./var/log/mysqld.2.err" ]; then  # For MTR, default ./mtr test runs (e.g. testcase in main/test.test)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.err"
+  fi
+  if [ -r "./var/log/mysqld.3.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.3.1.err"
+  fi
+  if [ -r "./var/log/mysqld.2.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.1.err"
+  fi
+  if [ -r "./var/log/mysqld.1.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.1.1.err"
   fi
 fi
 
-if [ ! -r "${ERROR_LOG}" ]; then
-  echo "Assert: ${ERROR_LOG} set but not readable (this should not happen!)"
+if [ -z "${ERROR_LOGS}" ]; then
+  echo "Assert: no error log(s) found - exiting"
   exit 1
 fi
+
+# Disabled when ERROR_LOG was changed to ERROR_LOGS (multi-scanning for issues in all applicable error logs)
+#if [ ! -r "${ERROR_LOG}" ]; then
+#  echo "Assert: ${ERROR_LOG} set but not readable (this should not happen!)"
+#  exit 1
+#fi
 
 find_other_possible_issue_strings(){
   # If all else failed, check if there are other interesting issues
   # TODO, over time, it may make sense to rotate the issues below in to a different order. The benefit of this is increased
   # coverage of issues which may appear together in a single trial, thereby maskign the other etc.
   # sed 's|: [0-9]\+||': Remove the number of of bytes, as often this significantly increases reproducibility of the SQL
-  MEMNOTFREED="$(grep -i 'Warning: Memory not freed' "${ERROR_LOG}" | head -n1 | sed 's|: [0-9]\+||' | tr -d '\n')"
+  MEMNOTFREED="$(grep -i 'Warning: Memory not freed' "${ERROR_LOGS}" 2>/dev/null | head -n1 | sed 's|: [0-9]\+||' | tr -d '\n')"
   if [ ! -z "${MEMNOTFREED}" ]; then
     TEXT="MEMORY_NOT_FREED|${MEMNOTFREED}"
     echo "${TEXT}"
     exit 0
   fi
-  GOTERROR="$(grep -io 'mysqld: Got error[^"]\+"[^"]\+"' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
+  GOTERROR="$(grep -io 'mysqld: Got error[^"]\+"[^"]\+"' "${ERROR_LOGS}" 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
   if [ ! -z "${GOTERROR}" ]; then
     TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
   else
-    GOTERROR="$(grep -io 'Got error.*' "${ERROR_LOG}" | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
+    GOTERROR="$(grep -io 'Got error.*' "${ERROR_LOGS}" 2>/dev/null | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
     if [ ! -z "${GOTERROR}" ]; then
       TEXT="GOT_ERROR|${GOTERROR}"
       echo "${TEXT}"
       exit 0
     fi
   fi
-  MARKEDASCRASHED="$(grep -io 'mysqld: Table.*is marked as crashed and should be repaired' "${ERROR_LOG}" | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|Table /[^#]\+#sql-temptable[^ ]\+ |Table sql-temptable-X |')"
+  MARKEDASCRASHED="$(grep -io 'mysqld: Table.*is marked as crashed and should be repaired' "${ERROR_LOGS}" 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|Table /[^#]\+#sql-temptable[^ ]\+ |Table sql-temptable-X |')"
   if [ ! -z "${MARKEDASCRASHED}" ]; then
     TEXT="MARKED_AS_CRASHED|${MARKEDASCRASHED}"
     echo "${TEXT}"
     exit 0
   fi
-  MDERRORCODE="$(grep -io 'MariaDB error code: [0-9]\+' "${ERROR_LOG}" | head -n1 | tr -d '\n')"
+  MDERRORCODE="$(grep -io 'MariaDB error code: [0-9]\+' "${ERROR_LOGS}" 2>/dev/null | head -n1 | tr -d '\n')"
   if [ ! -z "${MDERRORCODE}" ]; then
     TEXT="MARIADB_ERROR_CODE|${MDERRORCODE}"
     echo "${TEXT}"
@@ -216,19 +234,23 @@ find_other_possible_issue_strings(){
 
 # Check first if this is an ASAN/UBSAN/TSAN/MSAN issue. If so, this was a *SAN run and thus all bugs should first be handled/classified by san_text_string.sh rather than this script. Note that any normal crashing/asserting bug, which does not also generate a *SAN issue/bug, will also crash the *SAN build but the strings below will not be present and thus it will still be handled by this script. Therefore, *SAN runs may be better in general, however a number of crashes/asserts will be masked as a fair number of general crashing/asserting bugs are preceded by *SAN findings. In summary, best to run both normal runs as well as *SAN runs. UB+ASAN can be combined. UB+MSAN can be comined. TSAN cannot be combined.
 SAN_BUG=0
-if [ $(grep -m1 --binary-files=text "=ERROR:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+if [ $(grep -m1 --binary-files=text "=ERROR:" ${ERROR_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
   SAN_BUG=1
-elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${ERROR_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
   SAN_BUG=1
-elif [ $(grep -im1 --binary-files=text "runtime error:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+elif [ $(grep -im1 --binary-files=text "runtime error:" ${ERROR_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
   SAN_BUG=1
-elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${ERROR_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
   SAN_BUG=1
-elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${ERROR_LOG} 2>/dev/null | wc -l) -ge 1 ]; then
+elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${ERROR_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
   SAN_BUG=1
 fi
 if [ "${SAN_BUG}" -eq 1 ]; then
-  TEXT="$(~/mariadb-qa/san_text_string.sh ${ERROR_LOG})"
+  if [ ! -r ${HOME}/mariadb-qa/san_text_string.sh ]; then
+    echo "Assert: ${HOME}/mariadb-qa/san_text_string.sh not available, you may want to clone mariadb-qa. Terminating"
+    exit 1
+  fi
+  TEXT="$(${HOME}/mariadb-qa/san_text_string.sh "${ERROR_LOGS}")"  # Ensure quotes in "${ERROR_LOGS}" are present so ${1} is all logs, rather than ${1} being the first log only
   if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
     1>&2 echo "${SHOWTEXT}"
   fi
@@ -244,14 +266,16 @@ if [ -z "${LATEST_CORE}" ]; then
     if [[ "${PWD}" != *"SAN"* ]]; then  # [*] When SAN is used, no cores are generated. As such, we don't want to produce a fallback_text_string.sh string here (from the error log) as they will be almost always dud's and there will be many of them (all the same issues which already have UniqueID's and are already logged etc.)
       find_other_possible_issue_strings
       # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed to find a string of interest
-      TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "${ERROR_LOG}")"  # Try FTS
-      if [ -z "${TEXT}" ]; then
-        echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
-        exit 1
-      else
-        echo "${TEXT}"
-        exit 0
-      fi
+      COUNT_NR_OF_ERROR_LOGS="$(echo "${ERROR_LOGS}" | tr ' ' '\n' | wc -l)"
+      for((i=0;i<${COUNT_NR_OF_ERROR_LOGS};i++)){
+        TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "$(echo "${ERROR_LOGS}" | tr ' ' '\n' | head -n${i} | tail -n1)" 2>&1 | grep -v 'No relevant strings were found in')"  # Try FTS, one log at the time. Note: spaces in the path may break this, but with a standard server setup (i.e. ~/mariadb-qa, /test, /data and /dev/shm, this should never happen as every path used is without spaces). FTS was never made multi-error-log aware, the ROI is too low
+        if [ ! -z "${TEXT}" ]; then
+          echo "${TEXT}"
+          exit 0
+        fi
+      }
+      echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
+      exit 1
     else  # This is a SAN build, so do not run a FALLBACK string generation attempt, but do try find_other_possible_issue_strings
       find_other_possible_issue_strings
       # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
@@ -302,9 +326,9 @@ TEXT=
 
 # Assertion catch
 # Assumes (which is valid for the pquery framework) that 1st assertion is also the last in the log
-ASSERT="$(grep --binary-files=text -om1 'Assertion.*failed.$' ${ERROR_LOG} | sed "s|\.$||;s|^Assertion [\`]||;s|['] failed$||" | head -n1)"
+ASSERT="$(grep --binary-files=text -om1 'Assertion.*failed.$' ${ERROR_LOGS} 2>/dev/null | sed "s|\.$||;s|^Assertion [\`]||;s|['] failed$||" | head -n1)"
 if [ -z "${ASSERT}" ]; then
-  ASSERT="$(grep --binary-files=text -m1 'Failing assertion:' ${ERROR_LOG} | sed "s|.*Failing assertion:[ \t]*||" | head -n1)"
+  ASSERT="$(grep --binary-files=text -m1 'Failing assertion:' ${ERROR_LOGS} 2>/dev/null | sed "s|.*Failing assertion:[ \t]*||" | head -n1)"
 fi
 if [ ! -z "${ASSERT}" ]; then
   TEXT="${ASSERT}"

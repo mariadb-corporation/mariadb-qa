@@ -2397,6 +2397,7 @@ EOF
   fi
   if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then  # We have a significant/major error
     touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # This is only an indicator. i.e. new_text_string.sh may see a crash and thus provide a UniqueID pertaining to the crash for the reducer. Still, all error log issues will be saved and this marker will be set. It is not used for the time being other than as an indicator flag.
+    echoit "Error log bug found: $(echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')"
     savetrial
     TRIAL_SAVED=1
   fi

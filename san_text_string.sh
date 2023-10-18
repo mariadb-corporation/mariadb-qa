@@ -48,54 +48,65 @@ if [ "${PROFILING}" -eq 1 ]; then
 fi
 
 # Variable and error log dir/file checking
-ERROR_LOG=
+ERROR_LOGS=
 if [ -z "${1}" ]; then
-  ERROR_LOG="$(echo "${PWD}/log/master.err")"
-  if [ ! -r "${ERROR_LOG}" ]; then
-    ERROR_LOG2="$(echo "${PWD}/master.err")"
-    if [ ! -r "${ERROR_LOG2}" ]; then
-      echo "Assert: no option passed, and ${ERROR_LOG} and ${ERROR_LOG2} do not exist."
+  ERROR_LOGS="$(echo "${PWD}/log/master.err")"
+  if [ ! -r "${ERROR_LOGS}" ]; then
+    ERROR_LOGS2="$(echo "${PWD}/master.err")"
+    if [ ! -r "${ERROR_LOGS2}" ]; then
+      echo "Assert: no option passed, and ${ERROR_LOGS} and ${ERROR_LOGS2} do not exist."
       help_info
       exit 1
     else
-      ERROR_LOG="${ERROR_LOG2}"
-      ERROR_LOG2=
+      ERROR_LOGS="${ERROR_LOGS2}"
+      ERROR_LOGS2=
     fi
   fi
+  if [ -r "${PWD}/log/slave.err" ]; then
+    ERROR_LOGS="${ERROR_LOGS} ${PWD}/log/slave.err"
+  elif [ -r "${PWD}/slave.err" ]; then
+    ERROR_LOGS="${ERROR_LOGS} ${PWD}/slave.err"
+  fi 
 fi
-if [ -z "${ERROR_LOG}" ]; then
-  if [ -d "${1}" ]; then  # Directory passed, check normal error log location
-    ERROR_LOG="$(echo "${1}/log/master.err" | sed 's|//|/|g')"
-    if [ ! -r "${ERROR_LOG}" ]; then
-      echo "Assert: a directory was passed to this script, and ${ERROR_LOG} does not exist within it."
+if [ -z "${ERROR_LOGS}" ]; then
+  if [[ "${1}" == *" "* ]]; then  # Multiple error logs passed, do not check for presence as -r will only work for one error log
+    ERROR_LOGS="${1}"
+  elif [ -d "${1}" ]; then  # Directory passed, check normal error log location  # TODO: add support for no /log/
+    ERROR_LOGS="$(echo "${1}/log/master.err" | sed 's|//|/|g')"
+    if [ ! -r "${ERROR_LOGS}" ]; then
+      echo "Assert: a directory was passed to this script, and ${ERROR_LOGS} does not exist within it."
       help_info
       exit 1
+    else
+      ERROR_LOGS="${1}"
     fi
-  fi
-  if [ -r "${1}" ]; then
-    ERROR_LOG="${1}"
+    if [ -r "${1}/log/slave.err" ]; then
+      ERROR_LOGS="${ERROR_LOGS} ${1}/log/slave.err"
+    fi
+  elif [ -r "${1}" ]; then
+    ERROR_LOGS="${1}"
   else
     echo "Assert: ${1} does not exist."
     help_info
     exit 1
   fi
 fi
-if [ -z "${ERROR_LOG}" -o ! -r "${ERROR_LOG}" ]; then
-  echo "Assert: this should not happen. '${ERROR_LOG}' empty or not readable. Please debug script and/or option passed."
+if [ -z "${ERROR_LOGS}" ]; then  # -o ! -r "${ERROR_LOGS}" removed when ERROR_LOG was changed to ERROR_LOGS, i.e. multi-error log capability
+  echo "Assert: this should not happen. '${ERROR_LOGS}' empty. Please debug script and/or option passed."
   exit 1
 fi
 
 # Error log verification
-ERROR_LOG_LINES="$(cat "${ERROR_LOG}" 2>/dev/null | wc -l)"  # cat provides streamlined 0-line reporting
-if [ -z "${ERROR_LOG_LINES}" ]; then
-  echo "Assert: an attempt to count the number of lines in ${ERROR_LOG} has yielded and empty result."
+ERROR_LOGS_LINES="$(cat "${ERROR_LOGS}" 2>/dev/null | wc -l)"  # cat provides streamlined 0-line reporting
+if [ -z "${ERROR_LOGS_LINES}" ]; then
+  echo "Assert: an attempt to count the number of lines in ${ERROR_LOGS} has yielded and empty result."
   exit 1
 fi
-if [ "${ERROR_LOG_LINES}" -eq 0 ]; then
-  echo "Assert: the error log at ${ERROR_LOG} contains 0 lines."
+if [ "${ERROR_LOGS_LINES}" -eq 0 ]; then
+  echo "Assert: the error log at ${ERROR_LOGS} contains 0 lines."
   exit 1
-elif [ "${ERROR_LOG_LINES}" -lt 3 ]; then
-  echo "Assert: the error log at ${ERROR_LOG} contains less then 3 lines."
+elif [ "${ERROR_LOGS_LINES}" -lt 3 ]; then
+  echo "Assert: the error log at ${ERROR_LOGS} contains less then 3 lines."
   exit 1
 fi
 
@@ -133,16 +144,16 @@ flag_ready_check(){
 
 # Preflight check
 FLAG_ASAN_PRESENT=0; FLAG_TSAN_PRESENT=0; FLAG_UBSAN_PRESENT=0; FLAG_MSAN_PRESENT=0
-if grep -iqE --binary-files=text "=ERROR:|LeakSanitizer:" "${ERROR_LOG}"; then  # Note that '=ERROR:' is likely enough as this includes LeakSanitizer. The common error is: ERROR: LeakSanitizer: detected memory leaks
+if grep -iqE --binary-files=text "=ERROR:|LeakSanitizer:" "${ERROR_LOGS}" 2>/dev/null; then  # Note that '=ERROR:' is likely enough as this includes LeakSanitizer. The common error is: ERROR: LeakSanitizer: detected memory leaks
   FLAG_ASAN_PRESENT=1  # Includes LSAN handling
 fi
-if grep -iq --binary-files=text "ThreadSanitizer:" "${ERROR_LOG}"; then
+if grep -iq --binary-files=text "ThreadSanitizer:" "${ERROR_LOGS}" 2>/dev/null; then
   FLAG_TSAN_PRESENT=1
 fi
-if grep -iq --binary-files=text "runtime error:" "${ERROR_LOG}"; then
+if grep -iq --binary-files=text "runtime error:" "${ERROR_LOGS}" 2>/dev/null; then
   FLAG_UBSAN_PRESENT=1
 fi
-if grep -iq --binary-files=text "MemorySanitizer:" "${ERROR_LOG}"; then
+if grep -iq --binary-files=text "MemorySanitizer:" "${ERROR_LOGS}" 2>/dev/null; then
   FLAG_MSAN_PRESENT=1
 fi
 
@@ -193,7 +204,7 @@ msan_file_preparse(){
 }
 
 STARTED=0
-if ! grep -qi 'ready for connections' "${ERROR_LOG}" 2>/dev/null; then
+if ! grep -qi 'ready for connections' "${ERROR_LOGS}" 2>/dev/null; then
   # If 'ready for connections' is not present in the input file, start from line #1 as explained above
   STARTED=1
 fi
@@ -322,10 +333,10 @@ while IFS=$'\n' read LINE; do
     fi
   fi
   # ------------- Error log sanity check + EOF handling for in-progress issues -------------
-  if [ ${LINE_COUNTER} -eq ${ERROR_LOG_LINES} ]; then  # End of file reached, check for any final in-progress issues
+  if [ ${LINE_COUNTER} -eq ${ERROR_LOGS_LINES} ]; then  # End of file reached, check for any final in-progress issues
     flag_ready_check
-  elif [ ${LINE_COUNTER} -gt ${ERROR_LOG_LINES} ]; then
-    echo "Assert: LINE_COUNTER > ERROR_LOG_LINES (${LINE_COUNTER} > ${ERROR_LOG_LINES})"
+  elif [ ${LINE_COUNTER} -gt ${ERROR_LOGS_LINES} ]; then
+    echo "Assert: LINE_COUNTER > ERROR_LOGS_LINES (${LINE_COUNTER} > ${ERROR_LOGS_LINES})"
     exit 1
   fi
   # ------------- ASAN/LSAN Issue roundup (if present) -------------
@@ -377,7 +388,7 @@ while IFS=$'\n' read LINE; do
     echo "${UNIQUE_ID}"
     exit 0
   fi
-done < "${ERROR_LOG}"
+done < "${ERROR_LOGS}"
 
 # Profiling
 if [ "${PROFILING}" -eq 1 ]; then
