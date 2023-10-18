@@ -680,7 +680,7 @@ check_cmd() {
 handle_bugs() {
   cd ${RUNDIR}/${TRIAL} || exit 1
   add_handy_scripts
-  TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"  # Note this will auto-call fallback_text_string.sh if required.
+  TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"  # Note this will auto-call san_text_string.sh or fallback_text_string.sh if required
   if [[ "${MDG}" -eq 1 ]]; then
     echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node${j}/MYBUG
   else

@@ -195,40 +195,65 @@ fi
 find_other_possible_issue_strings(){
   # If all else failed, check if there are other interesting issues
   # TODO, over time, it may make sense to rotate the issues below in to a different order. The benefit of this is increased
-  # coverage of issues which may appear together in a single trial, thereby maskign the other etc.
+  # coverage of issues which may appear together in a single trial, thereby maskign the other etc. Then again, may it not
+  # "mess us" UniqueID coverage in known bugs strings? Likely not, but needs some additional consideration
   # sed 's|: [0-9]\+||': Remove the number of of bytes, as often this significantly increases reproducibility of the SQL
-  MEMNOTFREED="$(grep -i 'Warning: Memory not freed' "${ERROR_LOGS}" 2>/dev/null | head -n1 | sed 's|: [0-9]\+||' | tr -d '\n')"
+  MEMNOTFREED="$(grep -hi 'Warning: Memory not freed' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed 's|: [0-9]\+||' | tr -d '\n')"
   if [ ! -z "${MEMNOTFREED}" ]; then
     TEXT="MEMORY_NOT_FREED|${MEMNOTFREED}"
     echo "${TEXT}"
     exit 0
   fi
-  GOTERROR="$(grep -io 'mysqld: Got error[^"]\+"[^"]\+"' "${ERROR_LOGS}" 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
+  MEMNOTFREED=
+  GOTERROR="$(grep -hio 'mysqld: Got error[^"]\+"[^"]\+"' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
   if [ ! -z "${GOTERROR}" ]; then
     TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
   else
-    GOTERROR="$(grep -io 'Got error.*' "${ERROR_LOGS}" 2>/dev/null | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
+    GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
     if [ ! -z "${GOTERROR}" ]; then
       TEXT="GOT_ERROR|${GOTERROR}"
       echo "${TEXT}"
       exit 0
     fi
   fi
-  MARKEDASCRASHED="$(grep -io 'mysqld: Table.*is marked as crashed and should be repaired' "${ERROR_LOGS}" 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|Table /[^#]\+#sql-temptable[^ ]\+ |Table sql-temptable-X |')"
+  GOTERROR=
+  MARKEDASCRASHED="$(grep -hio 'mysqld: Table.*is marked as crashed and should be repaired' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|Table /[^#]\+#sql-temptable[^ ]\+ |Table sql-temptable-X |')"
   if [ ! -z "${MARKEDASCRASHED}" ]; then
     TEXT="MARKED_AS_CRASHED|${MARKEDASCRASHED}"
     echo "${TEXT}"
     exit 0
   fi
-  MDERRORCODE="$(grep -io 'MariaDB error code: [0-9]\+' "${ERROR_LOGS}" 2>/dev/null | head -n1 | tr -d '\n')"
+  MARKEDASCRASHED=
+  SLAVE_ERROR="$(grep -hio 'ERROR.*Slave[^:]*:[^0-9]*error [0-9]\+' ${ERROR_LOGS} 2>/dev/null | sed 's|ERROR[] ]*||' | head -n1 | tr -d '\n')"
+  if [ ! -z "${SLAVE_ERROR}" ]; then
+    TEXT="SLAVE_ERROR|${SLAVE_ERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  SLAVE_ERROR=
+  MDERRORCODE="$(grep -hio 'MariaDB error code: [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
   if [ ! -z "${MDERRORCODE}" ]; then
     TEXT="MARIADB_ERROR_CODE|${MDERRORCODE}"
     echo "${TEXT}"
     exit 0
   fi
-  MEMNOTFREED=;GOTERROR=;MARKEDASCRASHED=;MDERRORCODE=;
+  MDERRORCODE=
+  SERVER_ERRNO="$(grep -hio 'server_errno: [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
+  if [ ! -z "${SERVER_ERRNO}" ]; then
+    TEXT="SERVER_ERRNO|${SERVER_ERRNO}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  SERVER_ERRNO=
+  GOT_FATAL_ERROR="$(grep -hio 'Got fatal error [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
+  if [ ! -z "${GOT_FATAL_ERROR}" ]; then
+    TEXT="GOT_FATAL_ERROR|${GOT_FATAL_ERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  GOT_FATAL_ERROR=
   # RV-27/08/22 If none of these issues was found present, then the script will continue and such continuations will always result in exit 1 as find_other_possible_issue_strings is a final attempt at returning a useful string if all other checks have already failed. It provides for several of the exit_code!=0 by mariadbd/mysyqld, previously reported as 'no core found' and similar, yet now covered.
 }
 
@@ -250,7 +275,7 @@ if [ "${SAN_BUG}" -eq 1 ]; then
     echo "Assert: ${HOME}/mariadb-qa/san_text_string.sh not available, you may want to clone mariadb-qa. Terminating"
     exit 1
   fi
-  TEXT="$(${HOME}/mariadb-qa/san_text_string.sh "${ERROR_LOGS}")"  # Ensure quotes in "${ERROR_LOGS}" are present so ${1} is all logs, rather than ${1} being the first log only
+  TEXT="$(${HOME}/mariadb-qa/san_text_string.sh "${ERROR_LOGS}")"  # Ensure the double quotes in "${ERROR_LOGS}" are present so ${1} is all logs, rather than ${1} being the first log only
   if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
     1>&2 echo "${SHOWTEXT}"
   fi
@@ -262,10 +287,10 @@ if [ -z "${LATEST_CORE}" ]; then
   if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
     1>&2 echo "${SHOWTEXT}"
   fi
+  find_other_possible_issue_strings
+  # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed to find a string of interest
   if [ -f ${SCRIPT_PWD}/fallback_text_string.sh -a -r ${SCRIPT_PWD}/fallback_text_string.sh ]; then
     if [[ "${PWD}" != *"SAN"* ]]; then  # [*] When SAN is used, no cores are generated. As such, we don't want to produce a fallback_text_string.sh string here (from the error log) as they will be almost always dud's and there will be many of them (all the same issues which already have UniqueID's and are already logged etc.)
-      find_other_possible_issue_strings
-      # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed to find a string of interest
       COUNT_NR_OF_ERROR_LOGS="$(echo "${ERROR_LOGS}" | tr ' ' '\n' | wc -l)"
       for((i=0;i<${COUNT_NR_OF_ERROR_LOGS};i++)){
         TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "$(echo "${ERROR_LOGS}" | tr ' ' '\n' | head -n${i} | tail -n1)" 2>&1 | grep -v 'No relevant strings were found in')"  # Try FTS, one log at the time. Note: spaces in the path may break this, but with a standard server setup (i.e. ~/mariadb-qa, /test, /data and /dev/shm, this should never happen as every path used is without spaces). FTS was never made multi-error-log aware, the ROI is too low
@@ -277,8 +302,6 @@ if [ -z "${LATEST_CORE}" ]; then
       echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
       exit 1
     else  # This is a SAN build, so do not run a FALLBACK string generation attempt, but do try find_other_possible_issue_strings
-      find_other_possible_issue_strings
-      # If find_other_possible_issue_strings did not terminate the script with exit 0, it failed
       echo "Assert: no core file found in */*core*, and this is a SAN build, so fallback_text_string.sh was not attempted"  # See above for the reason [*]
       exit 1
     fi
