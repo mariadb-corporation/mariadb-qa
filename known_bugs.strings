@@ -168,6 +168,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS ##### Search key: Mac ###
 SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::info|Sql_cmd_delete::delete_from_single_table                                                      ## MDEV-32492
+SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::check_access_kind_for_connection|ha_spider::dml_init                                               ## MDEV-32492
 !trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_bounded_nat_list|spider_parse_connect_info      ## MDEV-32486 (Remember REGEX filter)
 !trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_long_list|spider_parse_connect_info             ## MDEV-32486 (IDEM)
 SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-31996 (fixed, filtering )

@@ -2265,9 +2265,13 @@ start_mysqld_or_valgrind_or_mdg(){
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
           echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, assuming this option set is required"
         else
-          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
-          echo "Terminating now."
-          exit 1
+          if [ "${REPLICATION}" -eq 1 ]; then  # With replication, we continue reducing as at times there are m/s startup issues #TODO: research further as to reason, seems to be timing related (timeout was increased from 60 to 90 now)
+            return 1  # We return a 1 status which, in combination with REPLICATION=1 will indicate that a m/s startup issue happened. run_and_check() will then just return a '0' based on this indicating that this trial did not reproduce the issue
+          else
+            echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
+            echo "Terminating now."
+            exit 1
+          fi
         fi
       else
         # Ref discussion RV/RS 27 Nov 19 via 1:1 (RV;should be covered in SQL,RS;issue seen)
@@ -2328,6 +2332,7 @@ start_mdg_main(){
     ERROR_LOG=$1
     for X in $(seq 0 120); do
       sleep 1
+      touch ${WORKD}  # Ensure that watchdog scripts like ~/ds do not think this directory no-longer-in-use
       if grep -E --binary-files=text -qi "Synchronized with group, ready for connections" $ERROR_LOG ; then
         break
       fi
@@ -2602,17 +2607,17 @@ start_mysqld_main(){
       # ---- Init replication
       # Ensure both servers are live
       MASTER_STARTUP_OK=0; SLAVE_STARTUP_OK=0
-      for((delay=0;delay<60;delay++)); do  # 60 Second max master+slave startup (normally, only ~2 seconds are required)
+      for((delay=0;delay<90;delay++)); do  # 90 Second max master+slave startup (normally, only ~2 seconds are required, though on very busy servers it can take >60 seconds)
         sleep 1
+        touch ${WORKD}  # Ensure that watchdog scripts like ~/ds do not think this directory no-longer-in-use
         if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then MASTER_STARTUP_OK=1; fi
         if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock ping > /dev/null 2>&1; then SLAVE_STARTUP_OK=1; fi
         if [ "${MASTER_STARTUP_OK}" -eq 1 -a "${SLAVE_STARTUP_OK}" -eq 1 ]; then break; fi
       done
       if [ "${MASTER_STARTUP_OK}" -ne 1 -o "${SLAVE_STARTUP_OK}" -ne 1 ]; then
-        echoit "Assert: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Debug workdir: $WORKD"
-        echoit "Reducer is sleeping/not terminating to ensure work directory is not deleted. Press CTRL+c to exit"
-        while true; do sleep 10; touch $WORKD; done
-        exit 1
+        echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Assert: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Restarting"
+        PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;
+        return 1  # The '1' error value is not used, but we need to return here
       fi
       MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
       # Setup replication, master side
@@ -2887,6 +2892,7 @@ cut_threadsync_chunk(){
 
 run_and_check(){
   start_mysqld_or_valgrind_or_mdg
+  if [ ${?} -eq 1 -a "${REPLICATION}" -eq 1 ]; then stop_mysqld_or_mdg; return 0; fi  # Special provision for replication startup failures (REPLICATION=1). The hack is to return 0 here, indicating that no reduction was succesful, see start_mysqld_or_valgrind_or_mdg for more info
   run_sql_code
   if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then stop_mysqld_or_mdg; fi
   process_outcome

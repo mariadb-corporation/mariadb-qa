@@ -501,6 +501,7 @@ echo 'MYEXTRA_OPT="$*"' >wipe
 echo "./stop >/dev/null 2>&1" >>wipe
 #echo "rm -Rf ${PWD}/data.PREV; mv ${PWD}/data ${PWD}/data.PREV 2>/dev/null" >> wipe  # Removed to save disk space, changed to next line
 echo "rm -Rf ${PWD}/data ${PWD}/rr" >>wipe
+echo "rm -Rf ${PWD}/data_slave  # Avoid old slave data interference" >>wipe
 if [ "${USE_JE}" -eq 1 ]; then
   echo $JE1 >>wipe
   echo $JE2 >>wipe
