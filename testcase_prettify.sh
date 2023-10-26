@@ -468,10 +468,12 @@ cat "${1}" | tr -d '`' | \
        s|row[ ]*(|ROW(|gi; \
        s|row_format|ROW_FORMAT|gi; \
        s|remote_port|REMOTE_PORT|gi; \
+       s|pk_name|PK_NAME|gi; \
        s|remote_server|REMOTE_SERVER|gi; \
        s|remote_table|REMOTE_TABLE|gi; \
        s|monitoring_kind|MONITORING_KIND|gi; \
        s|spider_ignore_comments|SPIDER_IGNORE_COMMENTS|gi; \
+       s|sql_no_cache|SQL_NO_CACHE|gi; \
        s|DELIMITER;|DELIMITER ;|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 

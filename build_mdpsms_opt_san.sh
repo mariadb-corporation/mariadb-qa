@@ -264,8 +264,8 @@ fi
 
 # As this is an optimized build, set -DCMAKE_BUILD_TYPE=RelWithDebInfo
 FLAGS="${FLAGS} -DCMAKE_BUILD_TYPE=RelWithDebInfo"
-￼
-CURPATH=$(echo $PWD | sed 's|.*/||')
+
+CURPATH="$(echo $PWD | sed 's|.*/||')"
 
 cd ..
 rm -Rf ${CURPATH}_opt_san

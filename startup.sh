@@ -437,6 +437,7 @@ echo "echo '---------- STOP  ----------' >> ./log/master.err" >insert_stop_marke
 touch in.sql
 echo 'MYEXTRA_OPT="$*"' >start
 echo 'MYEXTRA=" --no-defaults "' >>start
+echo '#MYEXTRA=" --no-defaults --ssl=0 "' >>start
 echo '#MYEXTRA=" --no-defaults --sql_mode="' >>start
 #echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load=TokuDB=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
 #echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
@@ -673,6 +674,7 @@ touch cl
 add_san_options cl
 if [ -r "${PWD}/bin/mariadb" ]; then
   echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mariadbd --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
+  echo "#${PWD}/bin/mariadb -A -uroot -S${SOCKET} --skip-ssl-verify-server-cert --skip-ssl --force --prompt=\"\$(${PWD}/bin/mariadbd --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
 else
   echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mysqld --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
 fi

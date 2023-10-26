@@ -5,6 +5,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|stack-buffer-overflow|mysys/my_default.c|get_defaults_options|my_load_defaults|mysql_read_default_options|server_mysql_real_connect                                       ## MDEV-32585
+LSAN|memory leak|extra/wolfssl/wolfssl/wolfcrypt/src/memory.c|malloc|wolfSSL_Malloc|wolfSSL_X509_new|vio_gencert                                                               ## MDEV-32543
+LSAN|memory leak|extra/wolfssl/wolfssl/src/x509.c|malloc|wolfSSL_X509_new|vio_gencert|vio_set_cert_stuff                                                                       ## MDEV-32543
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_case_bin|Item_str_conv::val_str|Arg_comparator::compare_string|Arg_comparator::compare ## MDEV-32479
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_case_bin|Item_str_conv::val_str|Item_str_func::val_decimal|VDec::VDec       ## MDEV-32479
 UBSAN|store to null pointer of type 'roll_ptr_t'|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-32453
@@ -103,7 +106,9 @@ LSAN|memory leak|storage/innobase/rem/rem0rec.cc|__interceptor_malloc|rec_copy_p
 LSAN|memory leak|storage/innobase/rem/rem0rec.cc|malloc|rec_copy_prefix_to_buf_old|rec_copy_prefix_to_buf|btr_pcur_store_position                                              ## MDEV-28613
 LSAN|memory leak|storage/innobase/trx/trx0roll.cc|__interceptor_malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                 ## MDEV-23073
 LSAN|memory leak|storage/innobase/trx/trx0roll.cc|malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                               ## MDEV-23073
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::update_create_info|ha_partition::update_create_info|mysql_prepare_alter_table ## MDEV-30981
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::create|handler::ha_create|ha_create_table ## MDEV-30981
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc                                                                          ## MDEV-30981
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::update_create_info|mysql_prepare_alter_table|mysql_alter_table ## MDEV-30981
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::update_create_info|ha_partition::update_create_info|mysql_prepare_alter_table ## MDEV-30981
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_trx.cc|spider_create_trx_alter_table|ha_spider::create|handler::ha_create|ha_partition::create ## MDEV-30981

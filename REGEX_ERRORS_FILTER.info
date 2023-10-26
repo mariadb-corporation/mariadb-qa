@@ -3,7 +3,6 @@ Note: bugs listed here should be checked regularly if they have been fixed, and 
 Filter Text                                           Info at
 -----------------------------------------------------------------------------------------------------------------------
 Event invalid                                         https://jira.mariadb.org/browse/MDEV-26270
-Assertion ..trx->alloc_line_no.id. .. trx->alloc_line_no.id. == line_no  https://jira.mariadb.org/browse/MDEV-32486
 Assertion .block_size                                 https://jira.mariadb.org/browse/MDEV-26459
 Assertion .other_lock->is_waiting... failed           https://jira.mariadb.org/browse/MDEV-32353
 test_ps_create_on_corrupted                           Not real corruption, just a table name
@@ -145,6 +144,7 @@ Warning. InnoDB: Page compression errors: [0-9]       https://jira.mariadb.org/b
 InnoDB: Cannot rename file                            Presumed non-issue (rename of table to a non-existing db...)
 InnoDB: The error means the system cannot find the path specified  (...for which the path does not exist)
 InnoDB: about forcing recovery                        Seen after an InnoDB crash on the last line of error log (LASTLINE scan) - crash handled already by other tools, no need to report on this
+sql.sql_alloc.h.*Sql_alloc::operator delete.*0x       Part of stack trace caught by 'alloc' in REGEX_ERRORS_LASTLINE, can be deleted
 
 # Fixed/disabled
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
