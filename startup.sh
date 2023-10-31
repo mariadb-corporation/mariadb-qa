@@ -678,6 +678,11 @@ if [ -r "${PWD}/bin/mariadb" ]; then
 else
   echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mysqld --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
 fi
+if [ -r ${PWD}/mariadb-test/mtr ]; then
+  echo './mtr --start-and-exit --mysqld=--log-bin && ../bin/mariadb -uroot -S./var/tmp/mysqld.1.sock test' > ${PWD}/mariadb-test/mc && chmod +x ${PWD}/mariadb-test/mc
+elif [ -r ${PWD}/mysql-test/mtr ]; then
+  echo './mtr --start-and-exit --mysqld=--log-bin && ../bin/mariadb -uroot -S./var/tmp/mysqld.1.sock test' > ${PWD}/mysql-test/mc && chmod +x ${PWD}/mysql-test/mc
+fi
 touch cl_noprompt
 add_san_options cl_noprompt
 if [ -r "${PWD}/bin/mariadb" ]; then
