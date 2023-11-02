@@ -267,7 +267,6 @@ if [[ $GRP_RPL -eq 1 ]]; then
 
   echo -e "    echo -e \"echo 'Server on socket \$node/socket.sock with datadir \$node halted'\" | cat - ./stop_group_replication > ./temp && mv ./temp ./stop_group_replication" >>./start_group_replication
   echo -e "    echo -e \"\${BUILD}/bin/mysqladmin -uroot -S\$node/socket.sock shutdown\" | cat - ./stop_group_replication > ./temp && mv ./temp ./stop_group_replication" >>./start_group_replication
-  #echo -e "    echo -e \"rm -Rf \$node.PREV; mv \$node \$node.PREV 2>dev/null\" >> ./wipe_group_replication" >> ./start_group_replication  # Removed to save disk space, changed to next line
   echo -e "    echo -e \"rm -Rf \$node\" >> ./wipe_group_replication" >>./start_group_replication
   echo -e "    echo -e \"\$BUILD/bin/mysql -A -uroot -S\$node/socket.sock --prompt \\\"node\$i> \\\"\" > \${BUILD}/\${i}cl " >>./start_group_replication
   echo -e "  done\n" >>./start_group_replication
@@ -394,7 +393,7 @@ if [[ $MDG -eq 1 ]]; then
 
     echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock test --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
     echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>gal_wipe
-    echo "if [ -r node1/node${i}.err ]; then mv node${i}/node${i}.err node${i}/node${i}.err.PREV; fi" >>gal_wipe
+    echo "if [ -r node1/node${i}.err ]; then rm node${i}/node${i}.err*; fi" >>gal_wipe
   done
   for i in $(seq "${NR_OF_NODES}" -1 1); do
     echo "${PWD}/bin/mysqladmin -uroot -S${PWD}/node${i}/node${i}_socket.sock shutdown" >> ./gal_stop
@@ -500,7 +499,6 @@ echo "./init;./start;./cl;./stop;./kill >/dev/null 2>&1;tail log/master.err" >se
 
 echo 'MYEXTRA_OPT="$*"' >wipe
 echo "./stop >/dev/null 2>&1" >>wipe
-#echo "rm -Rf ${PWD}/data.PREV; mv ${PWD}/data ${PWD}/data.PREV 2>/dev/null" >> wipe  # Removed to save disk space, changed to next line
 echo "rm -Rf ${PWD}/data ${PWD}/rr" >>wipe
 echo "rm -Rf ${PWD}/data_slave  # Avoid old slave data interference" >>wipe
 if [ "${USE_JE}" -eq 1 ]; then
@@ -513,8 +511,7 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE7 >>wipe
 fi
 echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >> wipe
-echo "rm -f log/master.err.PREV" >>wipe
-echo "if [ -r log/master.err ]; then mv log/master.err log/master.err.PREV; fi" >>wipe
+echo "rm -f log/*err*" >>wipe
 # Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
 if [ -r "${PWD}/bin/mariadb" ]; then
   echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test'; ./stop" >>wipe
@@ -529,7 +526,7 @@ echo "rm -f log/master.*" >>init
 
 echo "#!/bin/bash" >loopin
 echo 'if [ -z "${1}" ]; then echo "Assert: please specify how many copies to make as the first option to this script"; exit 1; fi' >>loopin
-echo 'if [ -r out.sql ]; then mv out.sql out.PREV; fi' >>loopin
+echo 'rm -f out.sql' >>loopin
 echo 'if [ "$(grep -o "DROP DATABASE test" ./in.sql)" == "" -o "$(grep -o "CREATE DATABASE test" ./in.sql)" == "" -o "$(grep -o "USE test" ./in.sql)" == "" ]; then' >>loopin
 echo '  if [ ! -r ./fixin ]; then echo "Assert: ./fixin not found? Please execute ~/start or ~/mariadb-qa/startup.sh"; exit 1; fi' >>loopin
 echo '  ./fixin' >>loopin
@@ -565,7 +562,7 @@ echo "  while [ \"\${BUGSEEN}\" != \"\${BUG}\" ]; do BUGSEEN=; loop; BUGSEEN=\"\
 echo "elif [ ! -z \"\${ELBUG}\" ]; then" >>multirun_loop
 echo "  echo -e \"Looking for this string in the error log (As per the ELBUG environment variable):\n   \${ELBUG}\"" >>multirun_loop
 echo "  BUGSEEN=" >>multirun_loop
-echo "  while [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; do loop; if [ -r ./data/core* ]; then if [ -z \"\$(grep --binary-files=text -i \"\${ELBUG}\" ./log/master.err)\" ]; then BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-' )\"; echo \"While the searched for string was not found in the error log, a crash was observed with UniqueID: \${BUGSEEN}\"; fi; fi; done" >>multirun_loop
+echo "  while [ -z \"\$(grep --binary-files=text -iE \"\${ELBUG}\" ./log/master.err)\" ]; do loop; if [ -r ./data/core* ]; then if [ -z \"\$(grep --binary-files=text -iE \"\${ELBUG}\" ./log/master.err)\" ]; then BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-' )\"; echo \"While the searched for string was not found in the error log, a crash was observed with UniqueID: \${BUGSEEN}\"; fi; fi; done" >>multirun_loop
 echo "else" >>multirun_loop
 echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till a core* file is found\"" >>multirun_loop
 echo "  while [ ! -r ./data/core* ]; do loop; done;" >>multirun_loop
@@ -679,9 +676,9 @@ else
   echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mysqld --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
 fi
 if [ -r ${PWD}/mariadb-test/mtr ]; then
-  echo './mtr --start-and-exit --mysqld=--log-bin && ../bin/mariadb -uroot -S./var/tmp/mysqld.1.sock test' > ${PWD}/mariadb-test/mc && chmod +x ${PWD}/mariadb-test/mc
+  echo './mtr 1st --start-and-exit --mysqld=--log-bin && ../bin/mariadb -uroot -S./var/tmp/mysqld.1.sock test' > ${PWD}/mariadb-test/mc && echo 'cd mariadb-test; ./mc' > ${PWD}/mc && chmod +x ${PWD}/mariadb-test/mc ${PWD}/mc
 elif [ -r ${PWD}/mysql-test/mtr ]; then
-  echo './mtr --start-and-exit --mysqld=--log-bin && ../bin/mariadb -uroot -S./var/tmp/mysqld.1.sock test' > ${PWD}/mysql-test/mc && chmod +x ${PWD}/mysql-test/mc
+  echo './mtr 1st --start-and-exit --mysqld=--log-bin && ../bin/mariadb -uroot -S./var/tmp/mysqld.1.sock test' > ${PWD}/mysql-test/mc && echo 'cd mysql-test; ./mc' > ${PWD}/mc && chmod +x ${PWD}/mysql-test/mc ${PWD}/mc
 fi
 touch cl_noprompt
 add_san_options cl_noprompt
@@ -904,7 +901,6 @@ sed -i 's|\-\-server-id=[0-9]\+||g' start_master
 sed -i 's|\-\-server-id=[0-9]\+||g' start_slave
 sed -i 's|master.err|slave.err|g' start_slave cl_slave
 sed -i 's|master.err|slave.err|g' kill_slave
-sed -i 's|master.err|slave.err|g' wipe_slave
 sed -i 's|/start|/start_slave|g' wipe_slave
 sed -i 's|/stop|/stop_slave|g' wipe_slave
 sed -i 's|/data|/data_slave|g' start_slave

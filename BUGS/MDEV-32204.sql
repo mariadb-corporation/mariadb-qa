@@ -3,3 +3,8 @@ CREATE VIEW v2 AS SELECT * FROM v1;
 DROP VIEW v1;
 SELECT * FROM information_schema.key_period_usage;
 SELECT SLEEP(3);
+
+CREATE VIEW v1 AS SELECT 3 & (20010101+INTERVAL 2 DAY) AS x;
+CREATE ALGORITHM=TEMPTABLE VIEW v2 AS SELECT * FROM v1;
+DROP VIEW v1;
+SELECT * FROM information_schema.key_period_usage;

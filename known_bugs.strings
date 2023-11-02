@@ -189,7 +189,9 @@ SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::info
 SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::check_access_kind_for_connection|ha_spider::dml_init                                               ## MDEV-32492
 #!trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_bounded_nat_list|spider_parse_connect_info      ## MDEV-32486 (Remember REGEX filter)
 #!trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_long_list|spider_parse_connect_info             ## MDEV-32486 (IDEM)
-SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-31996 (fixed, filtering )
+SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-31996 (fixed, filtering, waiting for upmerge )
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_delete_all_rows|ha_spider::delete_all_rows                                                                           ## MDEV-31996 (idem)
+mutex->__data.__owner == 0|SIGABRT|___pthread_mutex_lock|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                ## MDEV-31996 (idem)
 # is_preparing_xa(thd)|SIGABRT|MYSQL_BIN_LOG::unlog_xa_prepare|ha_prepare|trans_xa_prepare|mysql_execute_command                                                                 ## MDEV-24804
 SIGABRT|close_thread_tables|close_thread_tables_for_query|mysql_execute_command|mysql_parse                                                                                    ## MDEV-32372
 SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event                                                                                  ## MDEV-32372
