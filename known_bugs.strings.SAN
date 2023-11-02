@@ -5,6 +5,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|unknown-crash|mysys/ma_dyncol.c|__interceptor_memcpy.part.0|mariadb_dyncol_list_named|Item_func_dyncol_list::val_str|Type_handler::Item_send_str                          ## MDEV-32647
+ASAN|unknown-crash|mysys/ma_dyncol.c|__interceptor_memcmp.part.0|find_entry_named|find_column|dynamic_column_get_internal                                                      ## MDEV-32647
+ASAN|use-after-poison|mysys/ma_dyncol.c|dynamic_column_var_uint_get|dynamic_column_string_read|dynamic_column_get_value|dynamic_column_get_internal                            ## MDEV-32647
+ASAN|heap-use-after-free|strings/ctype-utf8.h|my_mb_wc_utf8mb3_quick|my_utf8mb3_uni|my_casedn_utf8mb3|CharBuffer<192ul>::copy_casedn                                           ## MDEV-32640
 ASAN|stack-buffer-overflow|mysys/my_default.c|get_defaults_options|my_load_defaults|mysql_read_default_options|server_mysql_real_connect                                       ## MDEV-32585
 LSAN|memory leak|extra/wolfssl/wolfssl/wolfcrypt/src/memory.c|malloc|wolfSSL_Malloc|wolfSSL_X509_new|vio_gencert                                                               ## MDEV-32543
 LSAN|memory leak|extra/wolfssl/wolfssl/src/x509.c|malloc|wolfSSL_X509_new|vio_gencert|vio_set_cert_stuff                                                                       ## MDEV-32543
