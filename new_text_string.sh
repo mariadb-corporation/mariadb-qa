@@ -198,6 +198,34 @@ find_other_possible_issue_strings(){
   # coverage of issues which may appear together in a single trial, thereby maskign the other etc. Then again, may it not
   # "mess us" UniqueID coverage in known bugs strings? Likely not, but needs some additional consideration
   # sed 's|: [0-9]\+||': Remove the number of of bytes, as often this significantly increases reproducibility of the SQL
+  WRONGMUTEXUSAGE="$(grep -hio "safe_mutex: Found wrong usage of mutex .* and .*" ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g")"
+  if [ ! -z "${WRONGMUTEXUSAGE}" ]; then
+    TEXT="MUTEX_ERROR|${WRONGMUTEXUSAGE}"
+    echo "${TEXT}"
+    exit 0
+  else
+    WRONGMUTEXUSAGE="$(grep -hio 'safe_mutex: .*' ${ERROR_LOGS} 2>/dev/null | head -n1)"
+    if [ ! -z "${WRONGMUTEXUSAGE}" ]; then
+      TEXT="MUTEX_ERROR|${WRONGMUTEXUSAGE}"
+      echo "${TEXT}"
+      exit 0
+    fi
+  fi
+  WRONGMUTEXUSAGE=
+  GOT_FATAL_ERROR="$(grep -hio 'Got fatal error [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
+  if [ ! -z "${GOT_FATAL_ERROR}" ]; then
+    TEXT="GOT_FATAL_ERROR|${GOT_FATAL_ERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  GOT_FATAL_ERROR=
+  SLAVE_ERROR="$(grep -hio 'ERROR.*Slave[^:]*:[^0-9]*error [0-9]\+' ${ERROR_LOGS} 2>/dev/null | sed 's|ERROR[] ]*||' | head -n1 | tr -d '\n')"
+  if [ ! -z "${SLAVE_ERROR}" ]; then
+    TEXT="SLAVE_ERROR|${SLAVE_ERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  SLAVE_ERROR=
   MEMNOTFREED="$(grep -hi 'Warning: Memory not freed' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed 's|: [0-9]\+||' | tr -d '\n')"
   if [ ! -z "${MEMNOTFREED}" ]; then
     TEXT="MEMORY_NOT_FREED|${MEMNOTFREED}"
@@ -226,13 +254,6 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MARKEDASCRASHED=
-  SLAVE_ERROR="$(grep -hio 'ERROR.*Slave[^:]*:[^0-9]*error [0-9]\+' ${ERROR_LOGS} 2>/dev/null | sed 's|ERROR[] ]*||' | head -n1 | tr -d '\n')"
-  if [ ! -z "${SLAVE_ERROR}" ]; then
-    TEXT="SLAVE_ERROR|${SLAVE_ERROR}"
-    echo "${TEXT}"
-    exit 0
-  fi
-  SLAVE_ERROR=
   MDERRORCODE="$(grep -hio 'MariaDB error code: [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
   if [ ! -z "${MDERRORCODE}" ]; then
     TEXT="MARIADB_ERROR_CODE|${MDERRORCODE}"
@@ -247,13 +268,6 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   SERVER_ERRNO=
-  GOT_FATAL_ERROR="$(grep -hio 'Got fatal error [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
-  if [ ! -z "${GOT_FATAL_ERROR}" ]; then
-    TEXT="GOT_FATAL_ERROR|${GOT_FATAL_ERROR}"
-    echo "${TEXT}"
-    exit 0
-  fi
-  GOT_FATAL_ERROR=
   # RV-27/08/22 If none of these issues was found present, then the script will continue and such continuations will always result in exit 1 as find_other_possible_issue_strings is a final attempt at returning a useful string if all other checks have already failed. It provides for several of the exit_code!=0 by mariadbd/mysyqld, previously reported as 'no core found' and similar, yet now covered.
 }
 
