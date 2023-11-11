@@ -1,0 +1,5 @@
+CREATE TABLE t (a INT) ENGINE=InnoDB;
+INSERT INTO t (a) VALUES (0);
+XA BEGIN 'a';
+SELECT * FROM mysql.innodb_index_stats LOCK IN SHARE MODE;
+INSERT INTO t (a) VALUES (0);
