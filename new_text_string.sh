@@ -363,9 +363,9 @@ TEXT=
 
 # Assertion catch
 # Assumes (which is valid for the pquery framework) that 1st assertion is also the last in the log
-ASSERT="$(grep --binary-files=text -om1 'Assertion.*failed.$' ${ERROR_LOGS} 2>/dev/null | sed "s|\.$||;s|^Assertion [\`]||;s|['] failed$||" | head -n1)"
+ASSERT="$(grep --binary-files=text -ohm1 'Assertion.*failed.$' ${ERROR_LOGS} 2>/dev/null | sed "s|\.$||;s|^Assertion [\`]||;s|['] failed$||" | head -n1)"
 if [ -z "${ASSERT}" ]; then
-  ASSERT="$(grep --binary-files=text -m1 'Failing assertion:' ${ERROR_LOGS} 2>/dev/null | sed "s|.*Failing assertion:[ \t]*||" | head -n1)"
+  ASSERT="$(grep --binary-files=text -hm1 'Failing assertion:' ${ERROR_LOGS} 2>/dev/null | sed "s|.*Failing assertion:[ \t]*||" | head -n1)"
 fi
 if [ ! -z "${ASSERT}" ]; then
   TEXT="${ASSERT}"
