@@ -173,6 +173,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|wsrep::client_state::before_rollback|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set ## MDEV-32731
 SIGSEGV|spider_create_conn|spider_get_conn|spider_check_trx_and_get_conn|ha_spider::check_access_kind_for_connection                                                           ## MDEV-32558
 SIGSEGV|spider_create_conn|spider_get_conn|spider_check_trx_and_get_conn|ha_spider::info                                                                                       ## MDEV-32558
 (conn_link_idx[link_idx] - link_idx) % link_count == 0|SIGABRT|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::check_access_kind_for_connection|ha_spider::dml_init  ## MDEV-32492 (UBASAN builds)
@@ -1289,6 +1290,7 @@ is_open()|SIGABRT|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_tr
 SIGSEGV|row_create_prebuilt|ha_innobase::open|handler::ha_open|open_table_from_share                                                                                           ## MDEV-23011
 marked_for_read()|SIGABRT|Field_varstring::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                             ## MDEV-22943
 marked_for_read()|SIGABRT|Field_blob::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                                  ## MDEV-22943
+m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event                   ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Rows_log_event::write_row|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event                 ## MDEV-22936
 binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update                                               ## MDEV-22921
 binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update|sys_var::set_default                                          ## MDEV-22921
