@@ -1,11 +1,5 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Otherwise, just follow the existing formatting.
 
-### Temp 28856 filtering
-SIGSEGV|ha_resolve_storage_engine_name|check_engine|create_table_impl|mysql_create_table_no_lock
-SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::info|ha_spider::update_create_info
-
-
-
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## https://jira.mariadb.org/browse/MDEV-22936
@@ -75,6 +69,7 @@ GOT_ERROR|Got error 12701|when reading table                   ## MDEV-26543
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
 GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spider)
+#GOT_FATAL_ERROR|Got fatal error 1236                           ## Presumed non-issue (mysql.gtid_slave_pos renamed/deleted)
 
 ##### MDEV-29507 TESTING TEMPORARY #####
 SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute                                    ## MDEV-29544

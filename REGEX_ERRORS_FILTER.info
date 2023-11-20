@@ -18,6 +18,7 @@ virtual THD...!debug_assert_on_not_freed_memory       https://jira.mariadb.org/b
 next_free_value                                       Not related to freeing memory, just a variable name
 innodb-force-load-corrupted                           Not real corruption, just a variable name
 dict_index_t::is_corrupted                            Not real corruption, just a function name
+Failed to update GTID state in mysql.gtid_slave_pos   Presumed non-issue (mysql.gtid_slave_pos renamed/deleted)
 Internal MariaDB error code: 1017                     Presumed non-issue (mysql db was dropped causing slave issues)
 Internal MariaDB error code: 1030                     https://jira.mariadb.org/browse/MDEV-22936
 Internal MariaDB error code: 1046                     Presumed non-issue (init_slave query cannot be executed) See MDEV-29499

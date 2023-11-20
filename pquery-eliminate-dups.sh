@@ -26,16 +26,9 @@ elif [ "${TRIALS_TO_KEEP}" -lt 2 ]; then
   exit 1
 fi
 
-generate_string(){
-  STRING='[0-9]\+'
-  for cnt in $(seq 2 ${TRIALS_TO_KEEP}); do
-    STRING="${STRING},[0-9]\+"
-  done
-}
-
 # Keep x trials
 SED_STRING='[-0-9]\+,'
-for cnt in $(seq 2 ${TRIALS_TO_KEEP}); do
+for cnt in $(seq 2 ${TRIALS_TO_KEEP}); do  # 2: we already have one element in SED_STRING
   SED_STRING="${SED_STRING}"'[-0-9]\+,'  # Prepare a replace string which equals TRIALS_TO_KEEP trials
 done
 SEARCH_STRING="${SED_STRING}"'.*'  # Find reducers with at least TRIALS_TO_KEEP+1 trials. The '+1', whilst likely not strictly necessary, is an extra safety measure and is guaranteed by the ',' added at the end of SED_STRING as created above. After SEARCH_STRING is created, we remove the comma as the SED_STRING should only match the exact number of trials as set by TRIALS_TO_KEEP
