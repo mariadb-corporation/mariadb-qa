@@ -1,0 +1,7 @@
+# mysqld options required for replay: --log-bin
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+XA START 'a';
+INSERT INTO t VALUES (1);
+CREATE TEMPORARY TABLE t (d INT) ENGINE=InnoDB;
+XA END 'a';
+LOAD INDEX INTO CACHE t INDEX (PRIMARY) IGNORE LEAVES;
