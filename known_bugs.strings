@@ -169,7 +169,6 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS ##### Search key: Mac ###
 err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|handler::ha_rename_table                                            ## MDEV-30883
-thd->lex->sql_command == SQLCOM_XA_COMMIT || thd->lex->sql_command == SQLCOM_XA_ROLLBACK|SIGABRT|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog  ## MDEV-32857
 owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|wsrep::client_state::before_rollback|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set ## MDEV-32731
 SIGSEGV|spider_create_conn|spider_get_conn|spider_check_trx_and_get_conn|ha_spider::check_access_kind_for_connection                                                           ## MDEV-32558
 SIGSEGV|spider_create_conn|spider_get_conn|spider_check_trx_and_get_conn|ha_spider::info                                                                                       ## MDEV-32558
@@ -206,8 +205,6 @@ SIGABRT|rows_event_stmt_cleanup|Rows_log_event::do_apply_event|Log_event::apply_
 #SIGABRT|MDL_context::acquire_lock|MDL_context::acquire_locks|lock_table_names|lock_table_names                                                                                ## MENT-1958 (secondary case: to move when found again)
 SIGABRT|get_schema_tables_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                             ## MDEV-22916
 SIGABRT|finish_event_group|handle_rpl_parallel_thread|pfs_spawn_thread|start_thread                                                                                            ## MDEV-21107
-table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::delete_table                                                             ## MDEV-32272
-table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::commit_inplace_alter_table                                               ## MDEV-32272
 m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|ha_innobase::rnd_init|handler::ha_rnd_init                          ## MDEV-32262
 SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with                                                                          ## MDEV-32249
 thd->is_error()|SIGABRT|Sql_cmd_dml::prepare|Sql_cmd_dml::execute|mysql_execute_command|mysql_parse                                                                            ## MDEV-24640
@@ -2125,5 +2122,8 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|trans_xa_commit                                                                               ## Fixed ## MDEV-32257
 # is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|Backtrace stopped: Cannot access memory at address|                                ## Fixed ## MDEV-32347
 # is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit ## Fixed ## MDEV-32347
-# SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                     ## Fixed ## MDEV-32347
+# SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                     ## Fixed ## MDEV-Fixed ## 32347
 # is_prepared_xa(thd) || ((thd->lex->sql_command == SQLCOM_XA_ROLLBACK && thd->transaction->xid_state.get_state_code() == XA_IDLE) || thd->lex->xa_opt == XA_ONE_PHASE)|SIGABRT|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog ## Fixed ## MDEV-32852
+# thd->lex->sql_command == SQLCOM_XA_COMMIT || thd->lex->sql_command == SQLCOM_XA_ROLLBACK|SIGABRT|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog  ## Fixed ## MDEV-32857
+# table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::delete_table                                                  ## Fixed ## MDEV-32272
+# table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::commit_inplace_alter_table                                    ## Fixed ## MDEV-32272

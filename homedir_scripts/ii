@@ -1,6 +1,6 @@
 #!/bin/bash
 
-grep '^BASEDIR' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+grep -io 'Basedir:.*' pquery-run.log | sed 's|basedir:[ \t]\+|BASEDIR                   |i'  # Use pquery-run.log instead of pquery*.conf as that one may have incorrect basedir depending on what it was set to
 if grep -q 'PRE_SHUFFLE_SQL=[01]' pquery*.conf; then
   grep '^INFILE' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|;s|\${SCRIPT_PWD}|~/mariadb-qa|'
 fi
