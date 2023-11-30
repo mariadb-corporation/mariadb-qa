@@ -6,6 +6,7 @@ set +H
 # User variables
 ENABLE_OUTPUT=1    # 0 For silence, 1 For output
 KNOWN_BUGS="${HOME}/mariadb-qa/known_bugs.strings"
+KEEP_OCCURENCES=2  # 1, 2, or 3. Keep this number of occurences
 
 # System variable(s) and options check
 NEWBUG_COUNT="$(ps -ef | grep clean_newbug | grep -v grep | wc -l)"  # +1 occurence due to subshell
@@ -93,7 +94,7 @@ delete_newbug(){
 } 
 
 if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-  echo ".. De-duplicating (3 occurences max), and removing known bugs"
+  echo ".. De-duplicating ({$KEEP_OCCURENCES} occurences max), and removing known bugs"
 fi
 IDX=0
 rm -f newbugs.dedup
@@ -110,30 +111,19 @@ while IFS=$'\n' read STRING_FILE; do
     fi
     delete_newbug
   else
-    # Count nr of occurences in ./newbugs.dedup, a file used to count/add up to 3x the same bug: the rest is discarded
+    # Count nr of occurences in ./newbugs.dedup, a file used to count/add up to KEEP_OCCURENCES times the same bug: the rest is discarded
     DUPS="$(grep -Fic --binary-files=text "${STRING}" ./newbugs.dedup)"
-    if [ -z "${DUPS}" -o "${DUPS}" -eq 0 -o "${DUPS}" -eq 1 -o "${DUPS}" -eq 2 ]; then  # Keep 3 occurences
-    #if [ -z "${DUPS}" -o "${DUPS}" -eq 0 ]; then  # Keep only 1 occurence
+    if [ -z "${DUPS}" ]; then DUPS=0; fi
+    if [ "${DUPS}" -gt $[ ${KEEP_OCCURENCES} - 1 ] ]; then
       if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence $[ ${DUPS} + 1 ]/3, adding to ./newbugs.dedup"
+        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence >=$[ ${DUPS} + 1 ]: filtering"
+      fi
+      delete_newbug
+    else
+      if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence $[ ${DUPS} + 1 ]/${KEEP_OCCURENCES}, adding to ./newbugs.dedup"
       fi
       echo "${STRING}" >> ./newbugs.dedup
-    elif [ "${DUPS}" -ge 3 ]; then  # Keep 3 occurences # It should never be greater then 3: defensive coding
-      # Check first if this is not a really small testcase (less than or equal to 5 lines)
-      SQL_FILE="$(echo "${STRING_FILE}" | sed 's|\.string|.sql|')"
-      SQL_LINES="$(wc -l ${SQL_FILE} | sed 's| .*||')"
-      SQL_FILE=
-#      if [ "${SQL_LINES}" -le 5 ]; then 
-#        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-#          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+, though not filtering as testcase is only ${SQL_LINES} lines"
-#        fi
-#      else
-        if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-          echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence 4+: filtering"
-        fi
-        delete_newbug
-#      fi
-      SQL_LINES=
     fi 
   fi 
 done < ./newbugs.list

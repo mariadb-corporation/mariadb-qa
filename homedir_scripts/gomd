@@ -2,7 +2,9 @@
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
-BASEDIR=/test/PATCH3_MD271123-mariadb-10.6.17-linux-x86_64-dbg
+#BASEDIR=/test/PATCH3_MD271123-mariadb-10.6.17-linux-x86_64-dbg
+BASEDIR=/test/PATCH4_MD281123-mariadb-10.6.17-linux-x86_64-dbg
+#MD311023-mariadb-11.3.0-linux-x86_64-dbg BASE
 RUNSOPT=2
 RUNSDBG=3
 #CONF=pquery-run-MD-spider.conf
@@ -85,7 +87,6 @@ for RUN in $(seq 1 ${TOTALRUNS}); do
   sed -i "s|^BASEDIR=\([^#]\+\)|BASEDIR=${BASEDIR}   |" ${CONF}
   if [ ${RUN} -le ${RUNSOPT} ]; then  # Opt runs
     sed -i 's|^BASEDIR=\([^#]\+\)-dbg|BASEDIR=\1-opt|' ${CONF}
-    exit 1
   else  # Dbg runs
     sed -i 's|^BASEDIR=\([^#]\+\)-opt|BASEDIR=\1-dbg|' ${CONF}
   fi

@@ -36,10 +36,10 @@ cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #sleep 5
 #cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 6
-cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 7
-cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+#sleep 6
+#cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+#sleep 7
+#cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 sleep 8
 cd ${DIR}/10.11 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 sleep 9
