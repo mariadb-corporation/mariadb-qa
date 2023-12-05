@@ -14,6 +14,8 @@ if [ -z "${1}" ]; then echo
   echo "For spider testcases, use the following path value: plugin/spider/spider/bugfix/t, for example:"
   echo "  ./mtr_testrun.sh ./MDEV-12345.test plugin/spider/spider/bugfix/t"
   echo "* Note: if the texts 'source ../../t/test_init.inc' and 'Spider' are found in the testcase, the path above will automatically be used (and does not need to be passed)"
+  echo "* Note: if you place a file which matches the test name (without .test) and has the .result extension, it will be copied along with the test"
+  echo "* Note: if you place a file which matches the test name (without .test) and has the .cnf extension, it will be copied along with the test"
   exit 1
 elif [ ! -r "${1}" ]; then echo
   echo "Assert: ${1} could not be read by this script"
@@ -50,6 +52,28 @@ while read LINE; do
   if [ ! -r "${MTR}/mtr" ]; then echo "Error: ${MTR}/mtr not found for BASEDIR ${LINE}, skipping!"; continue; fi
   if [ ! -d "${MTR}/${MPATH}" ]; then echo "Warning: path ${MTR}/${MPATH} not found, skipping!"; continue; fi
   cp "${1}" "${MTR}/${MPATH}/"
+  POSSIBLE_RESULT="$(echo "${1}" | sed 's|\.test$|.result|')"
+  if [ -r "${POSSIBLE_RESULT}" ]; then
+    echo "Also copying ${POSSIBLE_RESULT}. Note: auto-directory selection is alpha quality, this may fail"
+    if [ -d "${MTR}/${MPATH}/../r" ]; then
+      cp "${POSSIBLE_RESULT}" "${MTR}/${MPATH}/../r"
+    elif [ -d "${MTR}/${MPATH}/r" ]; then
+      cp "${POSSIBLE_RESULT}" "${MTR}/${MPATH}/r"
+    else
+      cp "${POSSIBLE_RESULT}" "${MTR}/${MPATH}/"
+    fi
+  fi
+  POSSIBLE_CNF="$(echo "${1}" | sed 's|\.test$|.cnf|')"
+  if [ -r "${POSSIBLE_CNF}" ]; then
+    echo "Also copying ${POSSIBLE_CNF}. Note: auto-directory selection is alpha quality, this may fail"
+    if [ -d "${MTR}/${MPATH}/../r" ]; then
+      cp "${POSSIBLE_CNF}" "${MTR}/${MPATH}/../r"
+    elif [ -d "${MTR}/${MPATH}/r" ]; then
+      cp "${POSSIBLE_CNF}" "${MTR}/${MPATH}/r"
+    else
+      cp "${POSSIBLE_CNF}" "${MTR}/${MPATH}/"
+    fi
+  fi
   cd ${MTR}
   if [ -d "${MTR}/var" ]; then rm -Rf "${MTR}/var"; fi
   ./mtr ${TEST}

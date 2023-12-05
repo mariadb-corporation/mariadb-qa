@@ -485,7 +485,11 @@ echo "echo 'Server socket: ${SOCKET} with datadir: ${PWD}/data'" >>start
 tail -n1 start >>start_valgrind
 tail -n1 start >>start_gypsy
 tail -n1 start >>start_rr
-
+echo 'dd if=/dev/zero of=./tmpdir bs=1G count=1' >smalltmp
+echo 'mkfs.ext4 ./tmpdir && mkdir -p ./tmp' >>smalltmp
+echo 'sudo mount -o loop -t ext4 tmpdir ./tmp && sudo chown -R $(whoami):$(whoami) ./tmp' >> smalltmp
+chmod +x smalltmp
+# /path/to/image_file /path/to/directory ext4 loop 0 0 
 # TODO: fix the line below somehow, and add binary-files=text for all greps. Also revert redirect to >> for second line
 #echo "set +H" > kill  # Fails with odd './kill: 1: set: Illegal option -H' when kill_all is used?
 echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill

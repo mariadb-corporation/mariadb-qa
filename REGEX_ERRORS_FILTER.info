@@ -22,6 +22,7 @@ innodb-force-load-corrupted                           Not real corruption, just 
 dict_index_t::is_corrupted                            Not real corruption, just a function name
 Failed to update GTID state in mysql.gtid_slave_pos   Presumed non-issue (mysql.gtid_slave_pos renamed/deleted)
 Slave SQL thread is stopped because UNTIL condition is bad  Presumed non-issue (incorrect UNTIL condition)
+Error reading packet from server: could not find next log  RESET MASTER terminated a working replication setup in all cases
 Internal MariaDB error code: 1017                     Presumed non-issue (mysql db was dropped causing slave issues)
 Internal MariaDB error code: 1030                     https://jira.mariadb.org/browse/MDEV-22936
 Internal MariaDB error code: 1046                     Presumed non-issue (init_slave query cannot be executed) See MDEV-29499

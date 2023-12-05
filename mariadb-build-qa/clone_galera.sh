@@ -11,7 +11,7 @@ clone_es_mdg_repo(){
   read -p 'Github username (not email): ' GIT_USERNAME
   read -sp 'Github authentication token: ' GIT_ASKPASS
   echo ''
-  git clone --depth=1 -j8 --branch=$1-enterprise https://$GIT_USERNAME@github.com/mariadb-corporation/MariaDBEnterprise  $1
+  git clone --depth=1 --recurse-submodules -j8 --branch=${1}-enterprise https://$GIT_USERNAME@github.com/mariadb-corporation/MariaDBEnterprise.git ${1}
   #clone galera repo
   if [[ ${1} =~ 10.[2-3] ]]; then
     rm -Rf galera_3x
@@ -33,9 +33,9 @@ clone_es_mdg_repo(){
 }
 
 if [[ "${2}" == "ES" ]]; then
-  clone_es_mdg_repo $1
+  clone_es_mdg_repo ${1}
 else
-  git clone --depth=1 --recurse-submodules -j8 --branch=$1 https://github.com/MariaDB/server.git $1 &
+  git clone --depth=1 --recurse-submodules -j8 --branch=${1} https://github.com/MariaDB/server.git ${1} &
   #clone galera repo
   if [[ ${1} =~ 10.[2-3] ]]; then
     rm -Rf galera_3x
