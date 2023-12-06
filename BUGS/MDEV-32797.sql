@@ -1,0 +1,4 @@
+CREATE OR REPLACE TABLE mysql.table_stats (a INT);
+CREATE TABLE t (id int);
+LOCK TABLES t WRITE;
+DROP TABLE IF EXISTS t;

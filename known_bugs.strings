@@ -168,6 +168,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_sp_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-32956
+thd->transaction.stmt.is_empty()|SIGABRT|Locked_tables_list::unlock_locked_tables|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command                                 ## MDEV-32797
 err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|handler::ha_rename_table                                            ## MDEV-30883
 owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|wsrep::client_state::before_rollback|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set ## MDEV-32731
 SIGSEGV|spider_create_conn|spider_get_conn|spider_check_trx_and_get_conn|ha_spider::check_access_kind_for_connection                                                           ## MDEV-32558
