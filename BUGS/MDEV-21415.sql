@@ -14,10 +14,19 @@ INSERT INTO t VALUES (101,NULL),(102,NULL),(103,NULL),(104,NULL),(105,NULL),(106
 CHECKSUM TABLE t, INFORMATION_SCHEMA.tables;
 SELECT SLEEP(3);
 
-# Keep repeating the following testcase in quick succession till mysqld crashes. Sporadic (~1/10).
+# Keep repeating the following testcase in quick succession till mysqld crashes. Sporadic (~1/10)
 CREATE TABLE t(c INT) ENGINE=InnoDB;
 SELECT REVERSE(t) FROM t;
 SET max_statement_time=0.000001;
 EXPLAIN SELECT * FROM t;
 PREPARE p FROM 'CHECKSUM TABLE t';
 EXECUTE p;
+
+# Keep pasting into client in quick succession till mariadbd crashes. Sporadic (~1/10)
+SET sql_mode='', @@max_statement_time=0.0001;
+CREATE TEMPORARY TABLE t3 (c VARCHAR PRIMARY KEY,c2 INT,c3 TIME) ENGINE=Aria;
+CREATE TABLE t1(a int) ENGINE=FEDERATED COMMENT='';
+SET @@GLOBAL.OPTIMIZER_SWITCH="join_cache_bka=ON";
+RENAME TABLE InnoDB.procs_priv TO procs_priv_backup;
+INSERT INTO t1 VALUES;
+CHECKSUM TABLE t1,t2,t3;

@@ -73,30 +73,30 @@ elif [ ${SCAN_FOR_NEW_BUGS} -eq 1 -a ! -r ${SCRIPT_PWD}/known_bugs.strings ]; th
 fi
 
 # Check if Data at rest encryption was enabled for the run
-if [ "$(grep 'MDG Encryption run:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Encryption run[: \t]*||' )" == "YES" ]; then
+if [ "$(grep --binary-files=text 'MDG Encryption run:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Encryption run[: \t]*||' )" == "YES" ]; then
   export ENCRYPTION_RUN=1
 else
   export ENCRYPTION_RUN=0
 fi
 
 # Check if RR Tracing was enabled for the run
-if [ "$(grep 'RR Tracing enabled:' ./pquery-run.log 2> /dev/null | sed 's|^.*RR Tracing enabled[: \t]*||' )" == "YES" ]; then
+if [ "$(grep --binary-files=text 'RR Tracing enabled:' ./pquery-run.log 2> /dev/null | sed 's|^.*RR Tracing enabled[: \t]*||' )" == "YES" ]; then
   export RR_TRACING=1
 else
   export RR_TRACING=0
 fi
 
 # Check if this is a MDG run
-if [ "$(grep 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
+if [ "$(grep --binary-files=text 'MDG Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
   export MDG=1
-  NR_OF_NODES=$(grep 'Number of Galera Cluster nodes:' ./pquery-run.log 2> /dev/null | sed 's|^.*Number of Galera Cluster nodes[: \t]*||')
+  NR_OF_NODES=$(grep --binary-files=text 'Number of Galera Cluster nodes:' ./pquery-run.log 2> /dev/null | sed 's|^.*Number of Galera Cluster nodes[: \t]*||')
 else
   export MDG=0
   NR_OF_NODES=0
 fi
 
 # Check if this is a group replication run
-if [ "$(grep 'Group Replication Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*Group Replication Mode[: \t]*||')" == "TRUE" ]; then
+if [ "$(grep --binary-files=text 'Group Replication Mode:' ./pquery-run.log 2> /dev/null | sed 's|^.*Group Replication Mode[: \t]*||')" == "TRUE" ]; then
   GRP_RPL=1
 else
   GRP_RPL=0
@@ -146,13 +146,13 @@ if [ `ls ./*/MYEXTRA* 2>/dev/null | wc -l` -eq 0 ]; then
 fi
 
 #Check MS/PS pquery binary
-#PQUERY_BIN="`grep 'pquery Binary' ./pquery-run.log | sed 's|^.*pquery Binary[: \t]*||' | head -n1`"    # < swap back to this one once old runs are gone (upd: maybe not. Issues.)
+#PQUERY_BIN="`grep --binary-files=text 'pquery Binary' ./pquery-run.log | sed 's|^.*pquery Binary[: \t]*||' | head -n1`"    # < swap back to this one once old runs are gone (upd: maybe not. Issues.)
 if [ -r *pquery*.conf* ]; then
   SEARCH_STR_BIN="*pquery*.conf*"
 else
   SEARCH_STR_BIN="*pquery*.sh"  # For backward compatibility. Remove October 2017 or later.
 fi
-PQUERY_BIN=$(echo "$(grep -ihm1 "^[ \t]*PQUERY_BIN=" ${SEARCH_STR_BIN} | sed 's|[ \t]*#.*$||;s|PQUERY_BIN=||')" | sed "s|\${SCRIPT_PWD}|${SCRIPT_PWD}|" | head -n1)
+PQUERY_BIN=$(echo "$(grep --binary-files=text -ihm1 "^[ \t]*PQUERY_BIN=" ${SEARCH_STR_BIN} | sed 's|[ \t]*#.*$||;s|PQUERY_BIN=||')" | sed "s|\${SCRIPT_PWD}|${SCRIPT_PWD}|" | head -n1)
 echo "pquery binary used: ${PQUERY_BIN}"
 
 if [ "${PQUERY_BIN}" == "" ]; then
@@ -183,7 +183,7 @@ extract_queries_core(){
       cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${INPUTFILE}
       AFTERSIZE=`cat ${INPUTFILE} | wc -l`
     done
-    echo "  > $[ $AFTERSIZE - $BEFORESIZE ] quer(y)(ies) added 3x to the SQL trace"
+    echo "  > $[ $AFTERSIZE - $BEFORESIZE ] core file obtained quer(y)(ies) added 3x to the SQL trace"
   fi
 }
 
@@ -201,7 +201,22 @@ extract_queries_error_log(){
       cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${INPUTFILE}
       AFTERSIZE=`cat ${INPUTFILE} | wc -l`
     done
-    echo "  > $[ $AFTERSIZE - $BEFORESIZE ] quer(y)(ies) added 3x to the SQL trace"
+    echo "  > $[ $AFTERSIZE - $BEFORESIZE ] error log obtained quer(y)(ies) added 3x to the SQL trace"
+  fi
+}
+
+extract_queries_pquery_trace(){
+  if [ "${MULTI}" == "1" ]; then
+    echo "Assert: extract_queries_pquery_trace() called with MULTI=1, which cannot be correct as MULTI=1 requires specific handling for extracting queries from the pquery trace, and is thus not handled by this function"
+    exit 1
+  fi
+  if [ -r ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql ]; then
+    for((i=0;i<3;i++)){
+      BEFORESIZE=`cat ${INPUTFILE} | wc -l`
+      grep --binary-files=text -i 'lost connection to server during query' ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql >> ${INPUTFILE}
+      AFTERSIZE=`cat ${INPUTFILE} | wc -l`
+     }
+    echo "  > $[ $AFTERSIZE - $BEFORESIZE ] pquery trace obtained quer(y)(ies) added 3x to the SQL trace"
   fi
 }
 
@@ -716,9 +731,17 @@ generate_reducer_script(){
         # Then do the same standard processing: add failing queries thrice, add SELECT 1's, add SELECT SLEEP's, ...
         # Note that if there is one failing query and one in the error log, then result is it will be added 6x
         # This is fine and >=3 occurences is desired in any case (may help with sporadic issues)
-        cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
-        cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
-        cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
+        if [ -r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing ]; then
+          for((i=0;i<3;i++)){
+            cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
+          }
+        fi
+        # And, attempt to extract the failing query from the pquery sql trace and repeat it thrice
+        if [ -r ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql ]; then
+          for((i=0;i<3;i++)){
+            grep --binary-files=text -i 'lost connection to server during query' ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
+          }
+        fi
         add_select_ones_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         add_select_sleep_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
         add_shutdown_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
@@ -760,8 +783,8 @@ generate_reducer_script(){
 if [ ${QC} -eq 0 ]; then
   if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
     for TRIAL in $(ls ./*/node*/*core* 2>/dev/null | sed 's|./||;s|/.*||' | sort | sort -u); do
-      for SUBDIR in `ls -lt ${TRIAL} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep -v tmp | tr -dc '0-9\n' | sort`; do
-        export GALERA_CORE_LOC=`ls -1 ./${TRIAL}/node${SUBDIR}/*core* 2>&1 | head -n1 | grep -v "No such file"`
+      for SUBDIR in `ls -lt ${TRIAL} --time-style="long-iso"  | egrep --binary-files=text '^d' | awk '{print $8}' | grep --binary-files=text -v tmp | tr -dc '0-9\n' | sort`; do
+        export GALERA_CORE_LOC=`ls -1 ./${TRIAL}/node${SUBDIR}/*core* 2>&1 | head -n1 | grep --binary-files=text -v "No such file"`
         export GALERA_ERROR_LOG=./${TRIAL}/node${SUBDIR}/node${SUBDIR}.err
         OUTFILE="${TRIAL}-${SUBDIR}"
         rm -Rf ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
@@ -810,7 +833,7 @@ if [ ${QC} -eq 0 ]; then
             INPUTFILE=${WORKD_PWD}/${TRIAL}/${TRIAL}-${SUBDIR}.sql
           fi
         fi
-        BIN="$(ls -1 ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/mariadbd ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/mysqld 2>&1 | head -n1 | grep -v 'No such file')"
+        BIN="$(ls -1 ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/mariadbd ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/mysqld 2>&1 | head -n1 | grep --binary-files=text -v 'No such file')"
         if [ ! -r $BIN ]; then
           echo "Assert! mariadbd/mysqld binary '$BIN' could not be read"
           exit 1
@@ -818,7 +841,7 @@ if [ ${QC} -eq 0 ]; then
         if [ `ls ./pquery-run.log 2>/dev/null | wc -l` -eq 0 ]; then
           BASE="/sda/Percona-Server-5.6.21-rel70.0-696.Linux.x86_64-debug"  # Should never really happen, but just in case, so that something "is there"? Needs review.
         else
-          BASE="`grep 'Basedir:' ./pquery-run.log | sed 's|^.*Basedir[: \t]*||;;s/|.*$//' | tr -d '[[:space:]]'`"
+          BASE="`grep --binary-files=text 'Basedir:' ./pquery-run.log | sed 's|^.*Basedir[: \t]*||;;s/|.*$//' | tr -d '[[:space:]]'`"
         fi
         # OLD_WAY: TEXT="$(${SCRIPT_PWD}/OLD/text_string.sh ./${TRIAL}/node${SUBDIR}/node${SUBDIR}.err)"
         if [ ! -r ./${TRIAL}/node${SUBDIR}/MYBUG ]; then  # Sometimes (approx 1/50-1/100 trials) MYBUG is missing, so [re-]generate it. TODO: find reason (in pquery-run.sh likely)
@@ -854,6 +877,7 @@ if [ ${QC} -eq 0 ]; then
               exit 1
             fi
           fi
+          extract_queries_pquery_trace ${INPUTFILE}
           add_select_ones_to_trace ${INPUTFILE}
           add_select_sleep_to_trace ${INPUTFILE}
           add_shutdown_to_trace ${INPUTFILE}
@@ -923,9 +947,9 @@ if [ ${QC} -eq 0 ]; then
         else
           INPUTFILE=`echo ${SQLLOG} | sed "s|^[./]\+|/|;s|^|${WORKD_PWD}|"`
         fi
-        BIN=$(grep "\/mariadbd" ./${TRIAL}/start | head -n1 | sed 's|mariadbd .*|mariadbd|;s|.* \(.*bin/mariadbd\)|\1|')
+        BIN=$(grep --binary-files=text "\/mariadbd" ./${TRIAL}/start | head -n1 | sed 's|mariadbd .*|mariadbd|;s|.* \(.*bin/mariadbd\)|\1|')
         if [ -z "${BIN}" ]; then
-          BIN=$(grep "\/mysqld" ./${TRIAL}/start | head -n1 | sed 's|mysqld .*|mysqld|;s|.* \(.*bin/mysqld\)|\1|')
+          BIN=$(grep --binary-files=text "\/mysqld" ./${TRIAL}/start | head -n1 | sed 's|mysqld .*|mysqld|;s|.* \(.*bin/mysqld\)|\1|')
           if [ -z "${BIN}" ]; then
             echo "Assert \$BIN is empty for trial $TRIAL, please fix this trial manually"
             continue
@@ -940,7 +964,7 @@ if [ ${QC} -eq 0 ]; then
           echo "Assert! Basedir '${BASE}' does not look to be a directory"
           exit 1
         fi
-        CORE=`ls -1 ./${TRIAL}/data/*core* 2>&1 | head -n1 | grep -v "No such file"`
+        CORE=`ls -1 ./${TRIAL}/data/*core* 2>&1 | head -n1 | grep --binary-files=text -v "No such file"`
         if [ "$CORE" != "" ]; then
           extract_queries_core
         fi
@@ -951,6 +975,7 @@ if [ ${QC} -eq 0 ]; then
           echo "Assert! Error log at ./${TRIAL}/log/master.err could not be read?"
           exit 1
         fi
+        extract_queries_pquery_trace ${INPUTFILE}
         add_select_ones_to_trace ${INPUTFILE}
         add_select_sleep_to_trace ${INPUTFILE}
         add_shutdown_to_trace ${INPUTFILE}
@@ -1027,9 +1052,9 @@ if [ ${QC} -eq 0 ]; then
   fi
 else
   for TRIAL in $(ls ./*/diff.result 2>/dev/null | sed 's|./||;s|/.*||'); do
-    BIN=$(grep "\/mariadbd" ./${TRIAL}/start | head -n1 | sed 's|mariadbd .*|mariadbd|;s|.* \(.*bin/mariadbd\)|\1|')
+    BIN=$(grep --binary-files=text "\/mariadbd" ./${TRIAL}/start | head -n1 | sed 's|mariadbd .*|mariadbd|;s|.* \(.*bin/mariadbd\)|\1|')
     if [ -z "${BIN}" ]; then
-      BIN=$(grep "\/mysqld" ./${TRIAL}/start | head -n1 | sed 's|mysqld .*|mysqld|;s|.* \(.*bin/mysqld\)|\1|')
+      BIN=$(grep --binary-files=text "\/mysqld" ./${TRIAL}/start | head -n1 | sed 's|mysqld .*|mysqld|;s|.* \(.*bin/mysqld\)|\1|')
       if [ -z "${BIN}" ]; then
         echo "Assert \$BIN is empty"
         continue
@@ -1114,7 +1139,7 @@ fi
 # * Also check that this is not a MEMORY_NOT_FREED issue
 # If these 3 all apply, it is safe to change the MODE to =0 and assume that this is a shutdown issue only
 echo '========== Processing SHUTDOWN_TIMEOUT_ISSUE trials (if any)'
-for MATCHING_TRIAL in `grep -H "^MODE=[0-9]$" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un` ; do
+for MATCHING_TRIAL in `grep --binary-files=text -H "^MODE=[0-9]$" reducer* 2>/dev/null | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un` ; do
   if [ -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]; then  # Only deal with shutdown timeout issues!
     if [ $(grep -m1 --binary-files=text "=ERROR:" ${MATCHING_TRIAL}/log/master.err ${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -gt 0 -o "${SAN_BUG}" -eq 1 ]; then  # SAN issue: do not set MODE=0
       echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial, however a SAN issue was [also] present"
@@ -1128,7 +1153,7 @@ for MATCHING_TRIAL in `grep -H "^MODE=[0-9]$" reducer* 2>/dev/null | awk '{print
       rm -f ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
       echo "  > Creating ${MATCHING_TRIAL}/AVOID_FORCE_KILL flag to ensure pquery-go-expert does not set FORCE_KILL=1 for this trial"
       touch ${MATCHING_TRIAL}/AVOID_FORCE_KILL
-    elif [ $(ls -1 ./${MATCHING_TRIAL}/data/*core* 2>&1 | grep -v "No such file" | wc -l) -eq 0 ]; then
+    elif [ $(ls -1 ./${MATCHING_TRIAL}/data/*core* 2>&1 | grep --binary-files=text -v "No such file" | wc -l) -eq 0 ]; then
       echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial with no core dump nor memory free issue present"
       echo "  > Setting MODE=0, TEXT='', and turning off USE_NEW_TEXT_STRING use"
       sed -i "s|^MODE=[1-9]|MODE=0|" reducer${MATCHING_TRIAL}.sh

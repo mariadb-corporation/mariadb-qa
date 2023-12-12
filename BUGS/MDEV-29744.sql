@@ -7,3 +7,9 @@ START TRANSACTION WITH CONSISTENT SNAPSHOT;
 START TRANSACTION WITH CONSISTENT SNAPSHOT;
 SET GLOBAL max_binlog_size=98304;  # A valid and arbritary setting
 # Then check error log for: safe_mutex: Found wrong usage of mutex 'LOCK_global_system_variables' and 'LOCK_log'
+
+# mysqld options required for replay: --log-bin
+SET GLOBAL binlog_checksum= CRC32;
+START TRANSACTION WITH CONSISTENT SNAPSHOT;
+
+
