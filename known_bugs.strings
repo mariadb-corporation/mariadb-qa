@@ -169,6 +169,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS ##### Search key: Mac ###
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables and LOCK_log                                                                                   ## MDEV-29744
+thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_sp_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-32956
+thd->transaction.stmt.is_empty()|SIGABRT|Locked_tables_list::unlock_locked_tables|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command                                 ## MDEV-32797
 err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|handler::ha_rename_table                                            ## MDEV-30883
 owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|wsrep::client_state::before_rollback|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set ## MDEV-32731
 SIGSEGV|spider_create_conn|spider_get_conn|spider_check_trx_and_get_conn|ha_spider::check_access_kind_for_connection                                                           ## MDEV-32558
@@ -1047,6 +1049,7 @@ SIGSEGV|handler_index_cond_check|row_search_idx_cond_check|row_search_mvcc|ha_in
 inited==INDEX|SIGABRT|handler::ha_index_end|opt_sum_query|JOIN::optimize_inner|JOIN::optimize                                                                                  ## MDEV-20460
 SIGSEGV|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update|sql_set_variables                                                                       ## MDEV-25499
 SIGSEGV|__strlen_avx2|Sys_var_sesvartrack::session_save_default|sys_var::set_default|set_var::update                                                                           ## MDEV-25499
+!(entry->using_stmt_cache && !mngr->stmt_cache.empty() && mngr->get_binlog_cache_log((0))->error)|SIGABRT|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog ## MDEV-25488
 !writer.checksum_len || writer.remains == 0|SIGABRT|MYSQL_BIN_LOG::write_cache|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events ## MDEV-25488
 transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command                                 ## MENT-1180
 transaction_.active() == false|SIGABRT|wsrep::client_state::before_command|wsrep_before_command|do_command|do_handle_one_connection                                            ## MENT-1180

@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'int'|strings/json_lib.c|json_find_path|Item_func_json_insert::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row ## MDEV-32963
 UBSAN|load of value X, which is not a valid value for type 'bool'|storage/innobase/dict/dict0stats.cc|dict_stats_save_index_stat|dict_stats_save|dict_stats_update|dict_stats_process_entry_from_recalc_pool ## MDEV-32667
 ASAN|unknown-crash|mysys/ma_dyncol.c|__interceptor_memcpy.part.0|mariadb_dyncol_list_named|Item_func_dyncol_list::val_str|Type_handler::Item_send_str                          ## MDEV-32647
 ASAN|unknown-crash|mysys/ma_dyncol.c|__interceptor_memcmp.part.0|find_entry_named|find_column|dynamic_column_get_internal                                                      ## MDEV-32647
