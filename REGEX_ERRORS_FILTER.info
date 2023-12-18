@@ -1,19 +1,10 @@
-Note: bugs listed here should be checked regularly if they have been fixed, and if so removed from REGEX_ERRORS_FILTER
+Note: Bugs listed here should be checked regularly if they have been fixed, and if so removed from REGEX_ERRORS_FILTER
 Note: Important: Avoid ', ", ( and ) in the filter texts!
+Note: Do not add any 'Assertion ... failed' to this listr; pquery-del-trial auto-scans known bugs for know assertions!
 -----------------------------------------------------------------------------------------------------------------------
 Filter Text                                           Info at
 -----------------------------------------------------------------------------------------------------------------------
 Event invalid                                         https://jira.mariadb.org/browse/MDEV-26270
-Assertion .block_size                                 https://jira.mariadb.org/browse/MDEV-26459
-Assertion .other_lock->is_waiting... failed           https://jira.mariadb.org/browse/MDEV-32353
-Assertion .trx_is_registered_for_2pc.trx.. failed     https://jira.mariadb.org/browse/MDEV-22848
-Assertion ..check_foreigns. failed                    https://jira.mariadb.org/browse/MDEV-31298
-Assertion ..trx->read_only. failed                    https://jira.mariadb.org/browse/MDEV-26373
-Assertion .error == DB_DUPLICATE_KEY .. error == DB_LOCK_WAIT_TIMEOUT. failed  MDEV-24608
-Assertion .err != DB_DUPLICATE_KEY' failed            https://jira.mariadb.org/browse/MDEV-30883
-Assertion ....col->prtype . prtype. . ..16384U.32768U... failed  https://jira.mariadb.org/browse/MDEV-18780
-Assertion ..field->prefix_len .. field->fixed_len == field->prefix_len  failed  https://jira.mariadb.org/browse/MDEV-22856
-# TODO ^ For all Assertions, rather than listing them here, we should have some smarts in pquery-del-trial.sh/pquery-cleanup.sh (last error log line check) to auto-scan KB for assertions. A grep -o 'Assertion .* failed' would do it
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name
 _corrupted_to_rename                                  Not real corruption, just a partial table name
@@ -100,7 +91,6 @@ Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/b
 InnoDB: Operating system error number 13 in a file operation  Non-issue (CREATE TABLE...DATA DIRECTORY='/foo/bar/')
 InnoDB: The error means mariadbd does not have the access rights to the directory  Idem as 'error number 13' description
 Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/browse/MDEV-26258
-Assertion .level < 50. failed                         https://jira.mariadb.org/browse/MDEV-23165
 Warning: Memory not freed: 32                         https://jira.mariadb.org/browse/MDEV-25876 session_track_system_variables
 Warning: Memory not freed: 80/104/16400/16320/16424   https://jira.mariadb.org/browse/MDEV-29404 PREPARE (not filtered)
 Warning: Memory not freed: 264                        https://jira.mariadb.org/browse/MDEV-30784 log_bin_trust_function_creators
@@ -149,7 +139,6 @@ ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussio
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5)
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      https://jira.mariadb.org/browse/MDEV-22936
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    https://jira.mariadb.org/browse/MDEV-22936
-Assertion .!prebuilt->index->is_primary... failed     https://jira.mariadb.org/browse/MDEV-27366
 InnoDB: Cannot reset all values.*while it is on.*off  Presumed non-issue (resetting buffer_LRU_get_free_* while on etc.)
 ERROR. InnoDB: Cannot delete.*Is a directory          https://jira.mariadb.org/browse/MDEV-30453
 Flagged corruption of.*in table.*in CHECK TABLE; Wrong count https://jira.mariadb.org/browse/MDEV-29954
@@ -168,4 +157,3 @@ sql.sql_alloc.h.*Sql_alloc::operator delete.*0x       Part of stack trace caught
 #InnoDB: Resetting invalid page                       https://jira.mariadb.org/browse/MDEV-26121, Fixed
 #lock mutex.*sys_vars_shared.h, line 56               https://jira.mariadb.org/browse/MDEV-27039, Fixed
 #thus rolled back too. Internal MariaDB error code: 0 https://jira.mariadb.org/browse/MDEV-27536, Fixed
-#Assertion ..trx_free .. .trx->locked_connections. failed  https://jira.mariadb.org/browse/MDEV-29484, Fixed

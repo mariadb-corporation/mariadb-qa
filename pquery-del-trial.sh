@@ -114,7 +114,11 @@ if [ ! -z "${ERROR_LOG}" ]; then  # Do not use -r as it will not work if both ma
     delete_trial
   else
     if [ "${2}" != "1" ]; then
-      echo "Not deleting trial ${TRIAL} (Dir: ${PWD}) as one or more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script (pquery-del-trial.sh)!"
+      if [ ! -z "$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --binary-files=text -o 'Assertion .* failed' 2>/dev/null | sed "s|'|.|g" | sed 's|"|.|g' | sed "s|^Assertion .||;s|. failed$||" | xargs -I{} grep --binary-files=text -Fi "{}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null)" ]; then  # There is an assertion on the last line of the error log which exactly matches an already known assertion: ok to proceed
+        delete_trial
+      else
+        echo "Not deleting trial ${TRIAL} (Dir: ${PWD}) as one or more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script (pquery-del-trial.sh)!"
+      fi
     else
       delete_trial
     fi

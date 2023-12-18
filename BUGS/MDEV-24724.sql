@@ -1,0 +1,22 @@
+CREATE TABLE t1 (pk INT, i INT, a CHAR(8), va CHAR(8) AS (a) VIRTUAL, PRIMARY KEY(pk), KEY(va(4),i)) ENGINE=InnoDB CHARACTER SET macce;
+INSERT INTO t1 (pk,a) VALUES (1,'foo'),(2,'bar');
+SELECT i FROM t1;
+
+CREATE TABLE t1 (id INT, a CHAR(194), b INT, c CHAR(194) AS (a) VIRTUAL, KEY(id,c(64))) CHARACTER SET utf8 ENGINE=InnoDB;
+INSERT INTO t1 (a,b,id) VALUES ('ixs',3,5);
+UPDATE t1 SET b = 1 WHERE id = 5;
+
+SET sql_mode='', collation_server=armscii8_bin;
+CREATE TABLE t1 (c INT) ENGINE=InnoDB;
+SELECT 1 FROM t1 INTO OUTFILE 'a';
+DROP DATABASE test;
+SELECT 1 FROM mysql.user;
+CREATE TABLE t2 (b CHAR(128) AS (c),c INT,UNIQUE (c,b (64))) ENGINE=InnoDB;
+INSERT INTO t2 VALUES (0,1);
+SELECT 1 FROM t2;
+
+SET sql_mode='';
+ALTER DATABASE DEFAULT CHARACTER SET latin7;
+CREATE TABLE t (a CHAR(1),b CHAR(128) AS (a),c DATE,UNIQUE (c,b (64)));
+INSERT INTO t VALUES (1,0,0);
+UPDATE t AS ta1,t AS ta2 SET ta1.a=0;

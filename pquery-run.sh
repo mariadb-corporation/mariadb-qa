@@ -18,6 +18,9 @@ CONFIGURATION_FILE=pquery-run.conf # Do not use any path specifiers, the .conf f
 
 # ========================================= MAIN CODE
 
+# Discourage OOM killer on this process
+sudo echo -1000 > /proc/$$/oom_score_adj
+
 # MariaDB specific variables
 DISABLE_TOKUDB_AND_JEMALLOC=1
 

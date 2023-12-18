@@ -430,6 +430,7 @@ fi
 
 # Minor adjustments
 TEXT="$(echo "${TEXT}" | sed 's|__cxa_pure_virtual () from|__cxa_pure_virtual|g')"
+TEXT="$(echo "${TEXT}" | sed 's|"/test/[^/"]\+\([/"]\)|"|')"  # To cleanup, for example: inline_mysql_file_tell("/test/bb-11.4-MDEV-7850_dbg/mysys/mf_iocache2.c"
 
 # Report bug identifier string
 if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
