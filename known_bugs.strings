@@ -169,6 +169,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+marked_for_write_or_computed()|SIGABRT|Field_new_decimal::store_value|Field_new_decimal::store_value|Field_new_decimal::reset|unpack_field                                     ## MDEV-33049
 SIGSEGV|my_decimal::operator=|my_decimal2decimal|my_decimal::to_binary|Type_handler_decimal_result::make_sort_key_part                                                         ## MDEV-32992
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables and LOCK_log                                                                                   ## MDEV-29744
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_commit_ordered and LOCK_global_system_variables                                                                        ## MDEV-29744
