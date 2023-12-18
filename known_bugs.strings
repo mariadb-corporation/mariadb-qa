@@ -171,6 +171,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### CURRENT BUGS ##### Search key: Mac ###
 templ->mbmaxlen > templ->mbminlen || templ->mysql_col_len == len || (field_no == templ->icp_rec_field_no && field->prefix_len > 0)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_rec|row_search_mvcc|ha_innobase::index_read  ## MDEV-24724
 info->end_of_file - (info->append_read_pos-info->write_buffer) == (res= inline_mysql_file_tell("mysys/mf_iocache2.c", 151, info->file, (myf) (0)))|SIGABRT|my_b_append_tell|my_b_safe_tell|Log_event_writer::pos|Log_event::write_header  ## MDEV-33048
+marked_for_write_or_computed()|SIGABRT|Field_new_decimal::store_value|Field_new_decimal::store_value|Field_new_decimal::reset|unpack_field                                     ## MDEV-33049
 SIGSEGV|my_decimal::operator=|my_decimal2decimal|my_decimal::to_binary|Type_handler_decimal_result::make_sort_key_part                                                         ## MDEV-32992
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables and LOCK_log                                                                                   ## MDEV-29744
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_commit_ordered and LOCK_global_system_variables                                                                        ## MDEV-29744
