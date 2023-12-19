@@ -169,6 +169,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+thd->transaction->stmt.is_empty()|SIGABRT|trans_check|trans_commit_implicit|sequence_insert|mysql_create_table_no_lock                                                         ## MDEV-33063
 templ->mbmaxlen > templ->mbminlen || templ->mysql_col_len == len || (field_no == templ->icp_rec_field_no && field->prefix_len > 0)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_rec|row_search_mvcc|ha_innobase::index_read  ## MDEV-24724
 info->end_of_file - (info->append_read_pos-info->write_buffer) == (res= inline_mysql_file_tell("mysys/mf_iocache2.c", 151, info->file, (myf) (0)))|SIGABRT|my_b_append_tell|my_b_safe_tell|Log_event_writer::pos|Log_event::write_header  ## MDEV-33048
 marked_for_write_or_computed()|SIGABRT|Field_new_decimal::store_value|Field_new_decimal::store_value|Field_new_decimal::reset|unpack_field                                     ## MDEV-33049
