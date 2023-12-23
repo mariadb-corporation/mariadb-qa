@@ -261,6 +261,7 @@ cat "${1}" | tr -d '`' | \
        s|geometry|GEOMETRY|gi; \
        s|geometrycollection|GEOMETRYCOLLECTION|gi; \
        s|cache|CACHE|gi; \
+       s|cycle|CYCLE|gi; \
        s|if |IF |gi; \
        s| in | IN |gi; \
        s| on | ON |gi; \
