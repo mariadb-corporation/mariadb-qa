@@ -7,13 +7,17 @@ MARIADB_ERROR_CODE|MariaDB error code: 1046
 MARIADB_ERROR_CODE|MariaDB error code: 1054
 MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 (may mask other issues, but never seen otherwise)
 MARIADB_ERROR_CODE|MariaDB error code: 1064
+MARIADB_ERROR_CODE|MariaDB error code: 1100  ## SPECIAL-11 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1114  ## https://jira.mariadb.org/browse/MDEV-23212
 MARIADB_ERROR_CODE|MariaDB error code: 1146  ## SPECIAL-10
+MARIADB_ERROR_CODE|MariaDB error code: 1168  ## SPECIAL-12 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1193
 MARIADB_ERROR_CODE|MariaDB error code: 1223  ## https://jira.mariadb.org/browse/MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1231
 MARIADB_ERROR_CODE|MariaDB error code: 1237
 MARIADB_ERROR_CODE|MariaDB error code: 1399
+MARIADB_ERROR_CODE|MariaDB error code: 1429  ## SPECIAL-13 (ref REGEX_ERRORS_FILTER.info)
+MARIADB_ERROR_CODE|MariaDB error code: 1472  ## SPECIAL-14 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1593  ## Empty or invalid CHANGE MASTER username
 MARIADB_ERROR_CODE|MariaDB error code: 1610  ## https://jira.mariadb.org/browse/MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 (may mask other issues, but never seen otherwise)
