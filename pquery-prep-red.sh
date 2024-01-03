@@ -206,17 +206,23 @@ extract_queries_error_log(){
 }
 
 extract_queries_pquery_trace(){
+  echo "* Obtaining/duplicating quer(y)(ies) from the pquery trace (if any)"  # Repeating mid-sql crashing statements can aid reproducibility
   if [ "${MULTI}" == "1" ]; then
     echo "Assert: extract_queries_pquery_trace() called with MULTI=1, which cannot be correct as MULTI=1 requires specific handling for extracting queries from the pquery trace, and is thus not handled by this function"
     exit 1
   fi
+  tmpstore="$(mktemp)"
   if [ -r ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql ]; then
     for((i=0;i<3;i++)){
       BEFORESIZE=`cat ${INPUTFILE} | wc -l`
-      grep --binary-files=text -i 'lost connection to server during query' ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql >> ${INPUTFILE}
+      grep --binary-files=text -i 'lost connection to server during query' ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql > ${tmpstore}
+      cat ${tmpstore} >> ${INPUTFILE}
       AFTERSIZE=`cat ${INPUTFILE} | wc -l`
      }
     echo "  > $[ $AFTERSIZE - $BEFORESIZE ] pquery trace obtained quer(y)(ies) added 3x to the SQL trace"
+  fi
+  if [ -r "${tmpstore}" -a -f "${tmpstore}" ]; then
+    rm "${tmpstore}"
   fi
 }
 

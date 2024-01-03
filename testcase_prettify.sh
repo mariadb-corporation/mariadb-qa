@@ -70,6 +70,8 @@ cat "${1}" | tr -d '`' | \
        s|consistent|CONSISTENT|gi; \
        s|snapshot|SNAPSHOT|gi; \
        s|commit|COMMIT|gi; \
+       s|committed|COMMITTED|gi; \
+       s|isolation|ISOLATION|gi; \
        s|create|CREATE|gi; \
        s|data|DATA|gi; \
        s|over|OVER|gi; \
@@ -184,6 +186,7 @@ cat "${1}" | tr -d '`' | \
        s|change|CHANGE|gi; \
        s|master|MASTER|gi; \
        s|asc|ASC|gi; \
+       s|ascii|ASCII|gi; \
        s|limit|LIMIT|gi; \
        s|DELIMITER|DELIMITER|gi; \
        s|group by|GROUP BY|gi; \
@@ -261,6 +264,7 @@ cat "${1}" | tr -d '`' | \
        s|geometry|GEOMETRY|gi; \
        s|geometrycollection|GEOMETRYCOLLECTION|gi; \
        s|cache|CACHE|gi; \
+       s|cycle|CYCLE|gi; \
        s|if |IF |gi; \
        s| in | IN |gi; \
        s| on | ON |gi; \
