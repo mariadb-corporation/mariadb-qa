@@ -436,9 +436,9 @@ echo "echo '---------- START ----------' >> ./log/master.err" >insert_start_mark
 echo "echo '---------- STOP  ----------' >> ./log/master.err" >insert_stop_marker
 touch in.sql
 echo 'MYEXTRA_OPT="$*"' >start
-echo 'MYEXTRA=" --no-defaults "' >>start
+echo 'MYEXTRA=" --no-defaults --max_connections=10000 "' >>start
 echo '#MYEXTRA=" --no-defaults --ssl=0 "' >>start
-echo '#MYEXTRA=" --no-defaults --sql_mode="' >>start
+echo '#MYEXTRA=" --no-defaults --sql_mode= "' >>start
 #echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load=TokuDB=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
 #echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
 echo '#MYEXTRA=" --no-defaults --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>start

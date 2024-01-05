@@ -448,6 +448,8 @@ cat "${1}" | tr -d '`' | \
        s|history|HISTORY|gi;s|_history|_history|gi; \
        s|sql_mode= |sql_mode=|gi; \
        s|semijoin|semijoin|gi; \
+       s|transport|transport|gi; \
+       s|master_port|master_port|gi; \
        s|performance_schema|performance_schema|gi; \
        s|performance_schema\.\([a-zA-Z]\+\)|performance_schema.\L\1|gi; \
        s|des_encrypt|DES_ENCRYPT|gi; \

@@ -49,7 +49,7 @@ else
     SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
   fi
   # mysql-testi, bin etc. can always be filtered
-  DIRFILTER='s|/mysql-test$||;s|/bin$||'
+  DIRFILTER='s|/mysql-test$||;s|/mariadb-test$||;s|/bin$||'
   LAST_THREE="$(echo "${PWD}" | sed "${DIRFILTER}" | sed 's|.*\(...\)$|\1|')"
   BUILD_TYPE=
   SAN="$(echo "${PWD}" | sed "${DIRFILTER}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"

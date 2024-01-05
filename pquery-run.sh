@@ -1935,7 +1935,7 @@ pquery_test() {
             if [ "${PRELOAD}" == "1" -a ! -z "${PRELOAD_SQL}" ]; then
               echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL}"
               mkdir -p ${RUNDIR}/${TRIAL}/preload
-              ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1 &
+              ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1  # Do not start in background like other PQUERY_BIN calls in this script. Here we just want the preload to finish before executing other statements. Also, when started in the background without waiting for it results in 0 byte default.node.tld_thread-0.sql on some reason (unimportant as no background should be used, or when background is used, the process should be waited upon)
             fi
             # Standard/default (non-GRP-RPL non-Galera non-Query-duration-testing) pquery run
             ## Pre-shuffle (if activated)
@@ -2013,7 +2013,7 @@ pquery_test() {
             if [ "${PRELOAD}" == "1" -a ! -z "${PRELOAD_SQL}" ]; then
               echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL}"
               mkdir -p ${RUNDIR}/${TRIAL}/preload
-              ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1 &
+              ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1  # Do not start in background... (ref similar comment elsewhere in this script)
             fi
             ## Check pre-shuffle directory
             if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
@@ -2802,7 +2802,7 @@ diskspace
 mkdir -p ${WORKDIR} ${WORKDIR}/log ${RUNDIR}
 chmod -R +rX ${WORKDIR}
 echo "grep -E '^BASEDIR=|^INFILE=|^THREADS=|^MYEXTRA=|^MYINIT=|^ADD_RANDOM_OPTIONS=' pquery*run*conf | sed 's|   #.*||;s|ADD_RANDOM|RND|;s|=|: \\t|'" > ${WORKDIR}/i
-echo "find . | grep '_out$' | xargs -I{} wc -l {} | sort -n | sort -h" > ${WORKDIR}/my
+echo "find . | grep '_out$' | xargs -I{} wc -l {} | sort -h" > ${WORKDIR}/my
 chmod +x ${WORKDIR}/i ${WORKDIR}/my
 WORKDIRACTIVE=1
 ONGOING=
