@@ -14,7 +14,7 @@ if [ ! -r /test/gendirs.sh ]; then
 fi
 
 # Script variables: do not change
-SAN_BUILD_FOR_NON_SAN_REPORTS_OPT="/test/$(cd /test; ./gendirs.sh san | grep 'MD' | grep '1[0-3].[0-9]' | grep 'opt' | sort -h | tail -n1)"
+SAN_BUILD_FOR_NON_SAN_REPORTS_OPT="/test/$(cd /test; ./gendirs.sh san | grep 'MD.*\-11.[0-9]' | grep 'opt' | sort -h | tail -n1)"
 SAN_BUILD_FOR_NON_SAN_REPORTS_DBG="$(echo "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" | sed 's|\-opt|-dbg|')"
 
 if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
@@ -447,7 +447,7 @@ else
 fi
 if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then
   if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
-    echo '----- SAN Execution of the testcase -----'
+    echo "----- SAN Execution of the testcase ----- (Builds used: ${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT} and _dbg)"
     test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" opt
     test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}" dbg
     echo '-----------------------------------------'

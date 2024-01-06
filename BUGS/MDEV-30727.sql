@@ -15,3 +15,8 @@ SELECT spider_copy_tables ('a','','');
 INSTALL PLUGIN Spider SONAME 'ha_spider.so';
 UNINSTALL SONAME IF EXISTS "ha_spider";
 SELECT spider_bg_direct_sql ('SET SESSION _offset=3','','SRV "s"');
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+UNINSTALL SONAME IF EXISTS "ha_spider";
+CREATE TABLE t (a INT DEFAULT 1,b CHAR DEFAULT'',c DATE DEFAULT'') DEFAULT CHARSET=utf8;
+SELECT spider_bg_direct_sql ('SET SESSION _offset=1','','SRV "s"');

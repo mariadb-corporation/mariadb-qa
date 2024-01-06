@@ -76,17 +76,6 @@ GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
 GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spider)
 GOT_FATAL_ERROR|Got fatal error 1236                           ## Presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
 
-##### MDEV-29507 TESTING TEMPORARY #####
-SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute                                    ## MDEV-29544
-SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute|mysql_execute_command                                                     ## MDEV-29544
-
-##### MDEV-16329 TESTING TEMPORARY #####
-thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|handle_delayed_insert|start_thread|clone ## INSERT DELAYED not supported on Spider (fixed already in trunk)
-part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row                         ## MDEV-26544 fixed in trunk but not in preview-10.10-ddl yet
-!table->pos_in_locked_tables|SIGABRT|tc_release_table|close_thread_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                          ## MDEV-16329
-
-##### TEMPORARY QA FILTERS: BUGS KNOWN TO BE FIXED, BUT PRESENT IN OLDER FEATURE BRANCHES #####
-cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                                   ## MDEV-28871
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (DISABLED GENERIC FILTERS TO AVOID MISSING OTHER BUGS) #####
 ### status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql ## MDEV-25927
@@ -170,10 +159,15 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 #
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
  
-##### Current MDEV-28883 bugs (temporary) #####
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-28883
-
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|spider_db_delete_all_rows|ha_spider::truncate|ha_spider::truncate|Sql_cmd_truncate_table::handler_truncate                                                             ## MDEV-33191
+SIGSEGV|spider_db_delete_all_rows|ha_spider::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate                                                            ## MDEV-33191
+SIGSEGV|inline_mysql_rwlock_wrlock|Query_cache_query::lock_writing|Query_cache::insert|query_cache_insert                                                                      ## MDEV-10826
+SIGSEGV|inline_mysql_rwlock_unlock|Query_cache_query::unlock_writing|Query_cache::store_query|execute_sqlcom_select                                                            ## MDEV-10826
+SIGSEGV|my_hash_sort_bin|my_ci_hash_sort|my_hash_sort|rec_hashnr                                                                                                               ## MDEV-10826
+SIGSEGV|Query_cache::free_query_internal|Query_cache::free_query|Query_cache::insert|query_cache_insert                                                                        ## MDEV-10826
+!query_cache.is_disable_in_progress()|SIGABRT|fix_query_cache_type|sys_var::update|set_var::update|sql_set_variables                                                           ## MDEV-10826
+thd->get_stmt_da()->is_eof()|SIGABRT|Query_cache::end_of_result|dispatch_command|do_command|do_handle_one_connection                                                           ## MDEV-10826
 SIGSEGV|ha_resolve_storage_engine_name|check_engine|create_table_impl|mysql_create_table_no_lock                                                                               ## MDEV-32487
 !thd->transaction->xid_state.is_explicit_XA() || thd->lex->xa_opt == XA_ONE_PHASE|SIGABRT|ha_commit_trans|rpl_slave_state::truncate_state_table|rpl_slave_state::load|change_master ## MDEV-33155
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_sp_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-33162
@@ -183,7 +177,6 @@ MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables 
 SIGSEGV|Binary_string::ptr|Item_func_json_array_intersect::prepare_json_and_create_hash|Item_func_json_array_intersect::fix_length_and_dec|Item_func::fix_fields               ## MDEV-33149
 SIGSEGV|srw_lock_impl<false>::wr_lock|fil_space_t::x_lock|mtr_t::x_lock_space|mtr_t::x_lock_space                                                                              ## MDEV-33101
 SIGSEGV|mtr_t::x_lock_space|fsp_shrink_temp_space|innodb_trunc_temp_space_update|sys_var_pluginvar::global_update                                                              ## MDEV-33101
-thd->mdl_context.is_lock_owner(MDL_key::TABLE, db, table_name, MDL_EXCLUSIVE)|SIGABRT|tdc_remove_table|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_like_table ## MDEV-20471
 !writer.checksum_len || writer.remains == 0|SIGABRT|Event_log::write_cache|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events  ## MDEV-33107
 thd->transaction->stmt.is_empty()|SIGABRT|trans_check|trans_commit_implicit|sequence_insert|mysql_create_table_no_lock                                                         ## MDEV-33063
 templ->mbmaxlen > templ->mbminlen || templ->mysql_col_len == len || (field_no == templ->icp_rec_field_no && field->prefix_len > 0)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_rec|row_search_mvcc|ha_innobase::index_read  ## MDEV-24724
@@ -363,8 +356,6 @@ m_tickets[MDL_STATEMENT].is_empty()|SIGABRT|MDL_context::set_transaction_duratio
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|Prepared_statement::execut                           ## MDEV-31027
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-31026
 o->ind == vers_start|SIGABRT|dict_table_t::instant_column|ha_innobase_inplace_ctx::instant_column|innobase_instant_try|commit_try_norebuild                                    ## MDEV-29034
-!"wrong page type"|SIGABRT|innobase_instant_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                            ## MDEV-18322
-"wrong page type" == 0|SIGABRT|innobase_instant_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                        ## MDEV-18322
 SIGFPE|cost_group_min_max|get_best_group_min_max|SQL_SELECT::test_quick_select|get_quick_record_count                                                                          ## MDEV-30786
 err != DB_SUCCESS || btr_validate_index(m_index, __null) == DB_SUCCESS|SIGABRT|BtrBulk::finish|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table|trx_mod_table_time_t::write_bulk ## MDEV-31025
 SIGSEGV|maria_create|create_internal_tmp_table|mysql_handle_single_derived|Backtrace stopped: frame did not save the                                                           ## MDEV-31022
@@ -409,6 +400,7 @@ transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_stat
 marked_for_read()|SIGABRT|Field_bit::val_int|Field_bit::update_min|Column_statistics_collected::add|collect_statistics_for_table                                               ## MDEV-31063
 marked_for_read()|SIGABRT|Field_newdate::get_TIME|Field_newdate::get_date|Item_field::get_date|Item_func_date_format::val_str                                                  ## MDEV-30730
 !default_table_charset || thd->stmt_arena->is_stmt_execute()|SIGABRT|HA_CREATE_INFO::resolve_to_charset_collation_context|Table_specification_st::resolve_to_charset_collation_context|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-30003
+SIGSEGV|thd_get_ha_data|spider_direct_sql_init_body|udf_handler::fix_fields|udf_handler::fix_fields                                                                            ## MDEV-30727
 SIGSEGV|my_hash_insert|spider_get_trx|spider_direct_sql_body|udf_handler::val_int                                                                                              ## MDEV-30727
 SIGSEGV|spider_direct_sql_init_body|spider_bg_direct_sql_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                ## MDEV-30727
 SIGSEGV|spider_direct_sql_init_body|udf_handler::fix_fields|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                  ## MDEV-30727
@@ -985,8 +977,6 @@ inited==RND|SIGABRT|handler::ha_rnd_end|ha_partition::direct_delete_rows|handler
 maybe_null || !null_value|SIGABRT|Item_func_ceiling::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-26536
 maybe_null() || !null_value|SIGABRT|Item_func_ceiling::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-26536
 m_status == DA_ERROR || m_status == DA_OK || m_status == DA_OK_BULK || m_status == DA_EOF_BULK|SIGABRT|Diagnostics_area::message|get_schema_tables_record|fill_schema_table_by_open|get_all_tables ## MDEV-26496
-!strcmp(index->table->name.m_name, "SYS_FOREIGN") || !strcmp(index->table->name.m_name, "SYS_FOREIGN_COLS")|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## MDEV-19216
-!strcmp(index->table->name.m_name, "SYS_FOREIGN") || !strcmp(index->table->name.m_name, "SYS_FOREIGN_COLS")|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## MDEV-19216
 !srv_read_only_mode|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                        ## MDEV-26490
 !srv_read_only_mode|SIGABRT|trx_start_low|trx_start_internal_low|dict_stats_fetch_from_ps|dict_stats_update                                                                    ## MDEV-26490
 block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                               ## MDEV-26459
@@ -1014,8 +1004,8 @@ SIGSEGV|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc         
 state_ == s_idle && mode_ == m_local && transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::sync_rollback_complete|wsrep_rollback_local|wsrep_rollback_process|start_wsrep_THD ## MDEV-26304
 thd->wsrep_trx().is_streaming()|SIGABRT|Wsrep_replayer_service::apply_write_set|apply_write_set|wsrep::server_state::on_apply|wsrep::high_priority_service::apply              ## MDEV-26303
 SIGSEGV|wsrep_get_apply_format|wsrep_dump_rbr_buf_with_header|apply_events|Wsrep_applier_service::apply_write_set                                                              ## MDEV-30862
-SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## MENT-1287 NOW MDEV-30862
-SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>::load|wait_for_commit::unregister_wait_for_prior_commit|wsrep_unregister_from_group_commit    ## MENT-1287 NOW MDEV-30862
+SIGABRT|wsrep::client_state::after_applying|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set                                                    ## MENT-1287/MDEV-30862
+SIGSEGV|std::__atomic_base<wait_for_commit*>::load|std::atomic<wait_for_commit*>::load|wait_for_commit::unregister_wait_for_prior_commit|wsrep_unregister_from_group_commit    ## MENT-1287/MDEV-30862
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::write_row                                        ## MENT-1286
 state_ == s_exec|SIGABRT|wsrep::client_state::append_key|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys                                                  ## MENT-1286
 state() == s_preparing || (is_xa() && state() == s_replaying) || (ret && (state() == s_must_abort || state() == s_must_replay || state() == s_cert_failed || state() == s_aborted))|SIGABRT|wsrep::transaction::before_prepare|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-26266
@@ -1032,7 +1022,6 @@ pagecache->block_root[i].status == 0|SIGABRT|check_pagecache_is_cleaned_up|end_p
 fixed || state == NO_VALUE|SIGABRT|Item_param::basic_const_item|Item_param::eq|find_item_in_list|find_order_in_list                                                            ## MDEV-15704
 fixed || state == NO_VALUE|SIGABRT|Item_param::basic_const_item|find_order_in_list|setup_order|setup_without_group                                                             ## MDEV-15704
 SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_lock::has_pending_conflicting_lock|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush                             ## MDEV-26216
-(&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(),(&(&thd->LOCK_thd_data)->m_mutex)->thread)|SIGABRT|wsrep_thd_is_aborting|srv_conc_enter_innodb_with_atomics|srv_conc_enter_innodb|innobase_srv_conc_enter_innodb ## MDEV-22105/25079
 ! thd->in_sub_stmt|SIGABRT|trans_rollback_stmt|binlog_log_row|handler::ha_write_row|write_record                                                                               ## MDEV-26175
 ! thd->in_sub_stmt|SIGABRT|trans_rollback_stmt|wsrep_after_row|handler::ha_write_row|write_record                                                                              ## MDEV-26175
 size >= 4U|SIGABRT|fil_space_extend_must_retry|fil_space_t::prepare|fil_space_t::get|buf_read_page                                                                             ## MDEV-26068
@@ -1143,7 +1132,6 @@ recovery || index->table->is_temporary() || !page_is_leaf(temp_page) || !!(index
 recovery || index->table->is_temporary() || !page_is_leaf(temp_page) || !dict_index_is_sec_or_ibuf(index) || page_get_max_trx_id(page) != 0|SIGABRT|btr_page_reorganize_low|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## MDEV-25283
 (index)->is_clust() || !page_is_leaf(temp_page) || page_get_max_trx_id(page) != 0|SIGABRT|page_zip_reorganize|btr_page_reorganize|btr_cur_optimistic_insert|row_ins_sec_index_entry_low ## MDEV-25283
 index->table->is_temporary() || !page_is_leaf(block->page.frame) || !!(index)->is_primary()|SIGABRT|btr_page_reorganize_low|btr_page_reorganize|btr_cur_optimistic_insert|ibuf_insert_low ## MDEV-25283
-is_last_prefix <= 0|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record                                                       ## MDEV-15656
 is_last_prefix <= 0|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record                                                       ## MDEV-27601
 ds_control|SIGABRT|debug_sync_get_action|debug_sync_eval_action|debug_sync_set_action|mysql_alter_table                                                                        ## MDEV-25218
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                  ## MDEV-25219
@@ -1186,7 +1174,7 @@ SIGABRT|__cxa_rethrow () from|galera::WriteSetOut::gather|galera::TrxHandleMaste
 m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                         ## MDEV-24960
 ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit                                  ## MENT-1119
 ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare                               ## MENT-1119
-server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare ## MENT-1117 NOW MENT-1282
+server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare ## MENT-1117/MENT-1282
 m_thd == _current_thd()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service|Wsrep_prepared_applier_service::~Wsrep_prepared_applier_service ## MDEV-25516
 m_thd == _current_thd()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_state::close|wsrep_close|Wsrep_storage_service::~Wsrep_storage_service                         ## MDEV-25516
 !WSREP_EMULATE_BINLOG(thd) || total_length + thd->wsrep_sr().log_position() == saved_pos|SIGABRT|wsrep_write_cache_inc|wsrep_write_cache|Wsrep_client_service::prepare_data_for_replication|wsrep::transaction::certify_commit ## MENT-1112
@@ -1266,7 +1254,7 @@ len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key
 len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_constraints_record|fill_schema_table_by_open                                  ## MDEV-24356
 len < sizeof(tmp_buff)|SIGABRT|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_constraints_record|get_schema_constraints_record                              ## MDEV-24356
 len < sizeof(tmp_buff)|SIGABRT|ut_dbg_assertion_failed|get_foreign_key_info|ha_innobase::get_foreign_key_list|get_schema_constraints_record                                    ## MDEV-24356
-SIGSEGV|__memset_avx2_erms|memset|log_t::create|srv_start                                                                                                                      ## MDEV-24269 NOW MDEV-32364
+SIGSEGV|__memset_avx2_erms|memset|log_t::create|srv_start                                                                                                                      ## MDEV-24269/MDEV-32364
 SIGSEGV|mach_write_to_4|log_block_set_hdr_no|log_block_init|log_t::create                                                                                                      ## MDEV-24269
 ptr != NULL|SIGABRT|ut_dbg_assertion_failed|ut_allocate_trace_dontdump|ut_malloc_dontdump|log_t::create                                                                        ## MDEV-24269
 SIGSEGV|SQL_SELECT::cleanup|SQL_SELECT::~SQL_SELECT|JOIN::make_range_rowid_filters|JOIN::make_range_rowid_filters                                                              ## MDEV-24256
@@ -1356,7 +1344,6 @@ trx_is_registered_for_2pc(trx)|SIGABRT|innobase_savepoint|ha_savepoint|trans_sav
 SIGSEGV|set_field_to_null_with_conversions|Item::save_in_field|Item_result_field::save_in_result_field|copy_sum_funcs                                                          ## MDEV-22814
 0|SIGABRT|Item_sum_hybrid_simple::create_tmp_field|Item_sum::create_tmp_field_ex|create_tmp_field|Create_tmp_table::add_fields                                                 ## MDEV-22814
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_delete|mysql_execute_command                                         ## MDEV-22783
-SIGSEGV|fil_system_t::keyrotate_next|fil_crypt_find_space_to_rotate|fil_crypt_thread|start_thread                                                                              ## MDEV-20399
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22716
 SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                            ## MDEV-22716
 (*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                       ## MDEV-22713
@@ -1371,30 +1358,17 @@ fixed == 0|SIGABRT|Item_func::fix_fields|fix_fields_for_tvc|table_value_constr::
 time_type == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Datetime::is_valid_datetime_slow|Datetime::is_valid_value_slow|Datetime::Datetime|Item::val_datetime_packed                      ## MDEV-22661
 time_type == MYSQL_TIMESTAMP_DATETIME|SIGABRT|Datetime::is_valid_datetime_slow|Datetime::Datetime|TR_table::query|Item_func_trt_id::get_by_commit_ts                           ## MDEV-22661
 SIGSEGV|in_vector::find|Item_func_in::val_int|TABLE::verify_constraints|TABLE_LIST::view_check_option                                                                          ## MDEV-22652
-(uint) (table_check_constraints - share->check_constraints) == (uint) (share->table_check_constraints - share->field_check_constraints)|SIGABRT|TABLE_SHARE::init_from_binary_frm_image|ha_create_table|create_table_impl|mysql_create_table_no_lock ## MDEV-22499
-SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_lock, &MDL_ticket::prev_in_lock>, I_P_List_null_counter, I_P_List_fast_push_back<MDL_ticket> >::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket|MDL_context::release_lock ## MDEV-22448 NOW 20945
-SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> >::remove|MDL_context::set_explicit_duration_for_all_locks|THD::enter_locked_tables_mode|Locked_tables_list::init_locked_tables ## MDEV-22448 NOW 20945
-SIGSEGV|mysql_unlock_tables|mysql_unlock_tables|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                                   ## MDEV-22448 NOW 20945
-SIGSEGV|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                           ## MDEV-22448 NOW 20945
-SIGSEGV|free_tmp_table|close_thread_tables|mysql_execute_command|mysql_parse                                                                                                   ## MDEV-22448 NOW 20945
-SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl                         ## MDEV-22448 NOW 20945
-SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-22448 NOW 20945/MDEV-25037
+SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_lock, &MDL_ticket::prev_in_lock>, I_P_List_null_counter, I_P_List_fast_push_back<MDL_ticket> >::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket|MDL_context::release_lock ## MDEV-22448/20945
+SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> >::remove|MDL_context::set_explicit_duration_for_all_locks|THD::enter_locked_tables_mode|Locked_tables_list::init_locked_tables ## MDEV-22448/20945
+SIGSEGV|mysql_unlock_tables|mysql_unlock_tables|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                                   ## MDEV-22448/20945
+SIGSEGV|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                           ## MDEV-22448/20945
+SIGSEGV|free_tmp_table|close_thread_tables|mysql_execute_command|mysql_parse                                                                                                   ## MDEV-22448/20945
+SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl                         ## MDEV-22448/20945
+SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-22448/20945/25037
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|Item_func_release_all_locks::val_int|Type_handler::Item_send_long|Type_handler_long::Item_send            ## MDEV-25037
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|Item_func_release_all_locks::val_int|Arg_comparator::compare_int_unsigned_signed|Arg_comparator::compare  ## MDEV-25037
-SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                                ## MDEV-22448 NOW 20945
-SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::is_lock_owner|is_locked_view                                                                                   ## MDEV-22448 NOW 20945
-SIGSEGV|thr_multi_unlock|mysql_unlock_tables|mysql_unlock_tables|close_thread_tables                                                                                           ## MDEV-22448 NOW 20945
-SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::cleanup                                                            ## MDEV-22448 NOW 20945
-SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|mysql_execute_command                                                   ## MDEV-22448 NOW 20945
-SIGSEGV|backup_unlock|THD::cleanup|unlink_thd|do_handle_one_connection                                                                                                         ## MDEV-22448 NOW 20945
-SIGSEGV|inline_mysql_prlock_wrlock|MDL_context::clone_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock ## MDEV-22448 NOW 20945
-ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|mysql_execute_command|mysql_parse                                                           ## MDEV-22448 NOW 20945
-SIGSEGV|inline_mysql_prlock_wrlock|MDL_lock::remove_ticket|MDL_context::release_lock|MDL_context::release_lock                                                                 ## MDEV-22448 NOW 20945
-SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> >::remove|MDL_context::release_lock|MDL_context::release_lock|backup_unlock ## MDEV-22448 NOW 20945
-ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|THD::cleanup|unlink_thd                                                                     ## MDEV-22448 NOW 20945
-ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|backup_lock|mysql_execute_command                                                           ## MDEV-22448 NOW 20945
-SIGSEGV|MDL_lock::hog_lock_types_bitmap|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_context::release_lock                                                         ## MDEV-22448 NOW 20945/MDEV-25037
-SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::rollback_to_savepoint|THD::restore_backup_open_tables_state                                         ## MDEV-22448 NOW 20945
+SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                                ## MDEV-22448/20945
+SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::rollback_to_savepoint|THD::restore_backup_open_tables_state                                         ## MDEV-22448/20945
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-22447
 SIGSEGV|Item::val_uint|handle_select|execute_sqlcom_select|mysql_execute_command                                                                                               ## MDEV-22447
 h == h->type_handler_for_comparison()|SIGABRT|Value_source::Context::Context|Item_func_in::propagate_equal_fields|Item_func::build_equal_items|build_equal_items               ## MDEV-22444
@@ -1409,28 +1383,14 @@ SIGSEGV|Item::operator new|Type_handler_json_common::make_json_valid_expr|JOIN::
 SIGABRT|__cxa_pure_virtual|Item::real_type|Value_source::Context::Context|Item_func_in::propagate_equal_fields                                                                 ## MDEV-22444
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22444
 SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|JOIN::transform_in_predicates_into_in_subq      ## MDEV-22444
-templ->mbmaxlen > templ->mbminlen || templ->mysql_col_len == len || (field_no == templ->icp_rec_field_no && field->prefix_len > 0)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc ## MDEV-22395
 0|SIGABRT|stored_field_cmp_to_item|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator                                    ## MDEV-22385
-SIGSEGV|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command|mysql_parse                                                                                       ## MDEV-22381
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                     ## MYSQL-99377
 field_max_length <= m_return_field_def.length || m_return_field_def.type_handler()->cmp_type() == INT_RESULT || (_current_thd()->stmt_arena->is_stmt_execute() && m_return_field_def.length == 8 && (m_return_field_def.pack_flag & (1024U|2048U)))|SIGABRT|sp_head::create_result_field|Item_sp::init_result_field|Item_func_sp::fix_fields|Item::fix_fields_if_needed ## MDEV-22368
 len <= fixed_len|SIGABRT|rec_get_converted_size_comp_prefix_low<>rem0rec.cc|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_insert                       ## MDEV-22333
-trx_id > 0 || (flags & BTR_KEEP_SYS_FLAG)|SIGABRT|btr_cur_optimistic_update|row_upd_clust_rec|row_upd_clust_step|row_upd                                                       ## MDEV-22257
-id|SIGABRT|trx_write_trx_id|row_upd_clust_rec_by_insert|row_upd_clust_step|row_upd                                                                                             ## MDEV-22257/5?
 SIGABRT|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                                                           ## MDEV-22133
 SIGSEGV|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                                                             ## MDEV-22133
 SIGSEGV|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                                                           ## MDEV-22133
 SIGSEGV|handle_grant_table|handle_grant_data|mysql_rename_user|mysql_execute_command                                                                                           ## MDEV-22133
-nr != 0|SIGABRT|handler::update_auto_increment|ha_myisam::write_row|handler::ha_write_row|Log_to_csv_event_handler::log_general                                                ## MDEV-22118
-nr != 0|SIGABRT|handler::update_auto_increment|ha_myisam::write_row|handler::ha_write_row|copy_data_between_tables                                                             ## MDEV-22118
-nr != 0|SIGABRT|handler::update_auto_increment|ha_heap::write_row|handler::ha_write_row|copy_data_between_tables                                                               ## MDEV-22118
-nr != 0|SIGABRT|handler::update_auto_increment|ha_maria::write_row|handler::ha_write_row|copy_data_between_tables                                                              ## MDEV-22118
-nr != 0|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|copy_data_between_tables                                                           ## MDEV-22118
-nr != 0|SIGABRT|handler::update_auto_increment|ha_myisam::write_row|handler::ha_write_row|write_record                                                                         ## MDEV-22118
-nr != 0|SIGABRT|handler::update_auto_increment|ha_heap::write_row|handler::ha_write_row|write_record                                                                           ## MDEV-22118
-nr != 0|SIGABRT|handler::update_auto_increment|ha_maria::write_row|handler::ha_write_row|write_record                                                                          ## MDEV-22118
-nr != 0|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                                                                       ## MDEV-22118
-nr != 0|SIGABRT|handler::update_auto_increment|ha_archive::write_row|handler::ha_write_row|write_record                                                                        ## MDEV-22118
 table->file->stats.records > 0 || error|SIGABRT|join_read_const_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                 ## MDEV-22117
 strlen(name_arg) <= (64*3)|SIGABRT|MDL_key::mdl_key_init|MDL_request::init_with_source|lock_object_name|Sp_handler::sp_drop_routine                                            ## MDEV-22044
 strlen(name_arg) <= (64U*3)|SIGABRT|MDL_key::mdl_key_init|MDL_request::init|lock_object_name|Sp_handler::sp_drop_routine                                                       ## MDEV-22044
@@ -1440,7 +1400,6 @@ checksum_start + checksum_length == f->ptr|SIGABRT|handler::calculate_checksum|m
 SIGSEGV|sortlength|filesort|create_sort_index|Window_funcs_sort::exec                                                                                                          ## MDEV-11783
 checksum_start + checksum_length == f->ptr|SIGABRT|handler::calculate_checksum|ha_partition::calculate_checksum|mysql_checksum_table|mysql_execute_command                     ## MDEV-11783
 table->s->db_create_options == part_table->s->db_create_options|SIGABRT|compare_table_with_partition|Sql_cmd_alter_table_exchange_partition::exchange_partition|Sql_cmd_alter_table_exchange_partition::execute|mysql_execute_command ## MDEV-228116
-SIGSEGV|sortlength|filesort|create_sort_index|st_join_table::sort_table                                                                                                        ## MDEV-15178
 SIGABRT|ut_dbg_assertion_failed|trx_rollback_last_sql_stat_for_mysql|innobase_rollback|ha_rollback_trans                                                                       ## MDEV-15494
 SIGSEGV|TABLE_LIST::top_table|Item_param::save_in_field|Field::make_empty_rec_store_default_value|make_empty_rec_store_default                                                 ## MDEV-15703
 SIGSEGV|TABLE_LIST::top_table|Item_param::save_in_field|Field::sp_prepare_and_store_item|THD::sp_eval_expr                                                                     ## MDEV-15703
@@ -1464,10 +1423,6 @@ SIGSEGV|Query_arena::set_query_arena|THD::set_n_backup_active_arena|Field::set_d
 (templ->is_virtual && !field) || (field && field->prefix_len ? field->prefix_len == len : templ->mysql_col_len == len)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_search_idx_cond_check|row_search_mvcc ## MDEV-18911
 !((col->prtype ^ prtype) & ~(16384U|32768U))|SIGABRT|innobase_rename_or_enlarge_column_try|innobase_rename_or_enlarge_columns_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table ## MDEV-18780
 SIGSEGV|fk_prepare_copy_alter_table|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command                                                                       ## MDEV-19194
-SIGSEGV|row_upd_del_mark_clust_rec|row_upd_clust_step|row_upd|row_upd_step                                                                                                     ## MDEV-20563
-SIGSEGV|wsrep_row_upd_index_is_foreign|row_upd_clust_step|row_upd|row_upd_step                                                                                                 ## MDEV-20563
-update->n_fields < ulint(table->n_cols + table->n_v_cols)|SIGABRT|upd_node_t::make_versioned_helper|upd_node_t::make_versioned_update|row_update_for_mysql|ha_innobase::delete_row ## MDEV-20563
-SIGABRT|ut_dbg_assertion_failed|que_graph_free_recursive|row_prebuilt_free|ha_innobase::close                                                                                  ## MDEV-20563
 maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Item_func_hybrid_field_type::date_op_with_null_check|Item_func_hybrid_field_type::val_real_from_date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_val_real ## MDEV-20501
 maybe_null() || !null_value|SIGABRT|Item_func_round::date_op|Item_func_hybrid_field_type::date_op_with_null_check|Item_func_hybrid_field_type::val_real_from_date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_val_real ## MDEV-20501
 maybe_null || !null_value|SIGABRT|Item_func_round::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-20501
@@ -1483,7 +1438,6 @@ share->in_trans == 0|SIGABRT|maria_close|ha_maria::close|handler::ha_close|ha_pa
 SIGSEGV|myrocks::Rdb_drop_index_thread::run|myrocks::Rdb_thread::thread_func|start_thread|clone                                                                                ## MDEV-21927
 m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_internal_tmp_table_from_heap|select_unit::write_record|select_unit::send_data                         ## MDEV-22104
 marked_for_read()|SIGABRT|Field_blob::val_str|Item_field::val_str|Item::val_str|Item_func_hash::val_int                                                                        ## ~MDEV-22551
-SIGSEGV|check_vcol_forward_refs|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table                                                                              ## MDEV-22525
 false|SIGABRT|set_field_lock_type|table_table_handles::read_row_values|PFS_engine_table::read_row|ha_perfschema::rnd_next                                                      ## MDEV-22576
 false|SIGABRT|set_field_lock_type|table_table_handles::read_row_values|table_table_handles::read_row_values|ha_perfschema::rnd_next                                            ## MDEV-22576
 offset < table->s->reclength|SIGABRT|dump_leaf_key|Item_func_group_concat::add|Item_func_group_concat::add|Aggregator_simple::add                                              ## MDEV-22675
@@ -2172,3 +2126,50 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # thd->lex->sql_command == SQLCOM_XA_COMMIT || thd->lex->sql_command == SQLCOM_XA_ROLLBACK|SIGABRT|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog  ## Fixed ## MDEV-32857
 # table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::delete_table                                                  ## Fixed ## MDEV-32272
 # table->n_rec_locks == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::commit_inplace_alter_table                                    ## Fixed ## MDEV-32272
+# SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute                         ## Fixed ## MDEV-29544
+# SIGSEGV|HA_CREATE_INFO::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute|mysql_execute_command                                          ## Fixed ## MDEV-29544
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner ## Fixed ## MDEV-28883
+# SIGSEGV|sortlength|filesort|create_sort_index|st_join_table::sort_table                                                                                             ## Fixed ## MDEV-15178
+# is_last_prefix <= 0|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record                                            ## Fixed ## MDEV-15656
+# !table->pos_in_locked_tables|SIGABRT|tc_release_table|close_thread_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                               ## Fixed ## MDEV-16329
+# part_share->auto_inc_initialized|SIGABRT|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row|handler::ha_write_row              ## Fixed ## MDEV-26544
+# cur_sj_inner_tables == 0|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|greedy_search|choose_plan                                                        ## Fixed ## MDEV-28871
+# !"wrong page type"|SIGABRT|innobase_instant_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                 ## Fixed ## MDEV-18322
+# "wrong page type" == 0|SIGABRT|innobase_instant_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table             ## Fixed ## MDEV-18322
+# !strcmp(index->table->name.m_name, "SYS_FOREIGN") || !strcmp(index->table->name.m_name, "SYS_FOREIGN_COLS")|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level_func|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## Fixed ## MDEV-19216
+# !strcmp(index->table->name.m_name, "SYS_FOREIGN") || !strcmp(index->table->name.m_name, "SYS_FOREIGN_COLS")|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## Fixed ## MDEV-19216
+# SIGSEGV|fil_system_t::keyrotate_next|fil_crypt_find_space_to_rotate|fil_crypt_thread|start_thread                                                                   ## Fixed ## MDEV-20399
+# thd->mdl_context.is_lock_owner(MDL_key::TABLE, db, table_name, MDL_EXCLUSIVE)|SIGABRT|tdc_remove_table|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_like_table ## Fixed ## MDEV-20471
+# SIGSEGV|row_upd_del_mark_clust_rec|row_upd_clust_step|row_upd|row_upd_step                                                                                          ## Fixed ## MDEV-20563
+# SIGSEGV|wsrep_row_upd_index_is_foreign|row_upd_clust_step|row_upd|row_upd_step                                                                                      ## Fixed ## MDEV-20563
+# update->n_fields < ulint(table->n_cols + table->n_v_cols)|SIGABRT|upd_node_t::make_versioned_helper|upd_node_t::make_versioned_update|row_update_for_mysql|ha_innobase::delete_row ## Fixed ## MDEV-20563
+# SIGABRT|ut_dbg_assertion_failed|que_graph_free_recursive|row_prebuilt_free|ha_innobase::close                                                                       ## Fixed ## MDEV-20563
+# (&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(),(&(&thd->LOCK_thd_data)->m_mutex)->thread)|SIGABRT|wsrep_thd_is_aborting|srv_conc_enter_innodb_with_atomics|srv_conc_enter_innodb|innobase_srv_conc_enter_innodb ## Fixed ## MDEV-22105/25079
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_myisam::write_row|handler::ha_write_row|Log_to_csv_event_handler::log_general                                     ## Fixed ## MDEV-22118
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_myisam::write_row|handler::ha_write_row|copy_data_between_tables                                                  ## Fixed ## MDEV-22118
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_heap::write_row|handler::ha_write_row|copy_data_between_tables                                                    ## Fixed ## MDEV-22118
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_maria::write_row|handler::ha_write_row|copy_data_between_tables                                                   ## Fixed ## MDEV-22118
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|copy_data_between_tables                                                ## Fixed ## MDEV-22118
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_myisam::write_row|handler::ha_write_row|write_record                                                              ## Fixed ## MDEV-22118
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_heap::write_row|handler::ha_write_row|write_record                                                                ## Fixed ## MDEV-22118
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_maria::write_row|handler::ha_write_row|write_record                                                               ## Fixed ## MDEV-22118
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                                                            ## Fixed ## MDEV-22118
+# nr != 0|SIGABRT|handler::update_auto_increment|ha_archive::write_row|handler::ha_write_row|write_record                                                             ## Fixed ## MDEV-22118
+# trx_id > 0 || (flags & BTR_KEEP_SYS_FLAG)|SIGABRT|btr_cur_optimistic_update|row_upd_clust_rec|row_upd_clust_step|row_upd                                            ## Fixed ## MDEV-22257
+# id|SIGABRT|trx_write_trx_id|row_upd_clust_rec_by_insert|row_upd_clust_step|row_upd                                                                                  ## Fixed ## MDEV-22257/22255
+# SIGSEGV|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command|mysql_parse                                                                            ## Fixed ## MDEV-22381
+# templ->mbmaxlen > templ->mbminlen || templ->mysql_col_len == len || (field_no == templ->icp_rec_field_no && field->prefix_len > 0)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc ## Fixed ## MDEV-22395
+# SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::is_lock_owner|is_locked_view                                                                        ## Fixed ## MDEV-22448/20945
+# SIGSEGV|thr_multi_unlock|mysql_unlock_tables|mysql_unlock_tables|close_thread_tables                                                                                ## Fixed ## MDEV-22448/20945
+# SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::cleanup                                                 ## Fixed ## MDEV-22448/20945
+# SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|mysql_execute_command                                        ## Fixed ## MDEV-22448/20945
+# SIGSEGV|backup_unlock|THD::cleanup|unlink_thd|do_handle_one_connection                                                                                              ## Fixed ## MDEV-22448/20945
+# SIGSEGV|inline_mysql_prlock_wrlock|MDL_context::clone_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                           ## Fixed ## MDEV-22448/20945
+# ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|mysql_execute_command|mysql_parse                                                ## Fixed ## MDEV-22448/20945
+# SIGSEGV|inline_mysql_prlock_wrlock|MDL_lock::remove_ticket|MDL_context::release_lock|MDL_context::release_lock                                                      ## Fixed ## MDEV-22448/20945
+# SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> >::remove|MDL_context::release_lock|MDL_context::release_lock|backup_unlock ## Fixed ## MDEV-22448/20945
+# ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|THD::cleanup|unlink_thd                                                          ## Fixed ## MDEV-22448/20945
+# ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|backup_lock|mysql_execute_command                                                ## Fixed ## MDEV-22448/20945
+# SIGSEGV|MDL_lock::hog_lock_types_bitmap|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_context::release_lock                                              ## Fixed ## MDEV-22448/20945/MDEV-25037
+# (uint) (table_check_constraints - share->check_constraints) == (uint) (share->table_check_constraints - share->field_check_constraints)|SIGABRT|TABLE_SHARE::init_from_binary_frm_image|ha_create_table|create_table_impl|mysql_create_table_no_lock ## Fixed ## MDEV-22499
+# SIGSEGV|check_vcol_forward_refs|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table                                                                   ## Fixed  ## MDEV-22525

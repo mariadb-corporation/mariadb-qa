@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate ## MDEV-33191
+UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::truncate|Sql_cmd_truncate_table::handler_truncate|Sql_cmd_truncate_table::truncate_table ## MDEV-33191
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoll_8bit|Value_source::Converter_strntoll::Converter_strntoll|Value_source::Converter_strntoll_with_warn::Converter_strntoll_with_warn|Field_string::val_int ## MDEV-33007
 UBSAN|member call on null pointer of type 'struct my_decimal'|sql/filesort.cc|Type_handler_decimal_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys          ## MDEV-32992
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'int'|strings/json_lib.c|json_find_path|Item_func_json_insert::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row ## MDEV-32963
@@ -245,7 +247,6 @@ UBSAN|null pointer passed as argument 2, which is declared to never be null|stri
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|charset_info_st::strnncollsp|Field_blob::cmp ## MDEV-28384
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|group_concat_key_cmp_with_distinct|tree_insert ## MDEV-28384
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Item_func_between::val_int_cmp_string|SQL_SELECT::skip_record ## MDEV-28384
-UBSAN|member call on null pointer of type 'struct Explain_node'|sql/sql_explain.cc|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain ## MDEV-18157
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc                                                                          ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
@@ -338,3 +339,4 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # ASAN|use-after-poison|sql/log_event.h|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                ## Fixed ## MDEV-32347
 # ASAN|use-after-poison|sql/handler.h|xid_t::is_null|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache                                                                       ## Fixed ## MDEV-32347
 # ASAN|use-after-poison|sql/handler.h|xid_t::key_length|xid_t::length|xid_t::set|Gtid_log_event::Gtid_log_event                                                                ## Fixed ## MDEV-32407
+# UBSAN|member call on null pointer of type 'struct Explain_node'|sql/sql_explain.cc|Explain_node::print_explain_for_children|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain ## Fixed ## MDEV-18157
