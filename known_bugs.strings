@@ -160,6 +160,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
  
 ##### CURRENT BUGS ##### Search key: Mac ###
+dst_size > 4|SIGABRT|Identifier_chain2::make_sep_name_opt_casedn|dict_get_referenced_table|create_table_info_t::create_foreign_keys|create_table_info_t::create_table          ## MDEV-33223
 SIGSEGV|spider_db_delete_all_rows|ha_spider::truncate|ha_spider::truncate|Sql_cmd_truncate_table::handler_truncate                                                             ## MDEV-33191
 SIGSEGV|spider_db_delete_all_rows|ha_spider::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate                                                            ## MDEV-33191
 SIGSEGV|inline_mysql_rwlock_wrlock|Query_cache_query::lock_writing|Query_cache::insert|query_cache_insert                                                                      ## MDEV-10826
