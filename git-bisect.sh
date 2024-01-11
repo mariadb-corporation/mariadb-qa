@@ -4,20 +4,20 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=10.6                                                        # Use the earliest major version affected by the bug
+VERSION=10.4                                                        # Use the earliest major version affected by the bug
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
-DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
-RECLONE=1                                                           # Set to 1 to reclone a tree before starting
+DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
+RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-LAST_KNOWN_GOOD_COMMIT='961b96a5e0dd40512b8fff77dcec273187ccc9fd'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='d13a57ae8181f2a8fbee86838d5476740e050d50'   # Revision of first known bad commit
-TESTCASE='/test/in11.sql'                                           # The testcase to be tested
+LAST_KNOWN_GOOD_COMMIT='5c4c1844bf8b60dcee9fdeacd4a39705d40a4515'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='613d0194979849fb5b3dd752f13b14672a2409e3'   # Revision of first known bad commit
+TESTCASE='/test/in12.sql'                                           # The testcase to be tested
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
-REPLICATION=1                                                       # Set to 1 to use replication (./start_replication)
-UNIQUEID='SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with'  # The UniqueID to scan for [Exclusive]
+REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
+UNIQUEID='GOT_ERROR|Got error 12524|when reading table'             # The UniqueID to scan for [Exclusive]
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead
@@ -137,9 +137,9 @@ if [ "${?}" -ne 0 ]; then
   echo "Assert: git clean -xfd failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   exit 1
 fi
-git checkout "${VERSION}" | tee -a "${MAINLOG}"  # Ensure we have the right version
+git checkout --force --recurse-submodules "${VERSION}" | tee -a "${MAINLOG}"  # Ensure we have the right version
 if [ "${?}" -ne 0 ]; then
-  echo "Assert: git checkout '${VERSION}' failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
+  echo "Assert: git checkout --force --recurse-submodules '${VERSION}' failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   exit 1
 fi
 if [ "${UPDATETREE}" -eq 1 ]; then
@@ -245,7 +245,7 @@ while :; do
     exit 1
   fi
   cd "${TEST_DIR}" || die 1 "Could not change directory to TEST_DIR (${TEST_DIR})"
-  ${HOME}/start  # Init BASEDIR with runtime scripts
+  ${HOME}/start 2>&1 | grep -vE 'To get a |^Note: |Adding scripts: '  # Init BASEDIR with runtime scripts
   cp ${TESTCASE} ./in.sql
   if [ "${REPLICATION}" -eq 0 ]; then
     ./all_no_cl >/dev/null 2>&1 || die 1 "Could not execute ./all_no_cl in ${PWD}"  # wipe, start
@@ -254,7 +254,7 @@ while :; do
     ./kill 2>&1 >/dev/null
   else
     export SRNOCL=1  # No CLI when using ./start_replication
-    ./start_replication
+    ./start_replication 2>&1 | grep -vE 'To get a |^Note: |Adding scripts: '
     ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
     ./stop_replication 2>&1 >/dev/null  # Output is removed, ref above
     ./kill_replication 2>&1 >/dev/null

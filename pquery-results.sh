@@ -341,7 +341,7 @@ if grep -qm1 'innodb.checksum.algorithm' [0-9]*/default.node.tld_thread-0.sql 2>
   grep -lm1 'innodb_checksum_algorithm' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
 fi
 if grep -qm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null; then
-  echo '** Trials with WITHOUT VALIDATION: if this clause remains post-reduction, ref: server-testing @ 19-12-23 Elenst'
+  echo '** Trials with WITHOUT VALIDATION: if this clause remains post-reduction, ref: server-testing @ 19-12-23 Elenst and MDEV-22164'
   grep -lm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
 fi
 rm -f ./errorlogs.tmp

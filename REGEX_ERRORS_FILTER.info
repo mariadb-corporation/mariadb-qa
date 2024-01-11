@@ -67,6 +67,7 @@ Got error 1430 .Unknown error 1430                    https://jira.mariadb.org/b
 Got error 1440 when reading table                     https://jira.mariadb.org/browse/MDEV-29454 (XAER_DUPID Spider)
 Got error 1032.*entry [1-7] of type.*rename           https://jira.mariadb.org/browse/MDEV-29800 (CoR bug)
 Got error 12524.*entry 6 of type.*rename              https://jira.mariadb.org/browse/MDEV-29800 (CoR bug)
+Got error 12524 when reading table                    https://jira.mariadb.org/browse/MDEV-33196 (Spider)
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543 (Spider)
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-28676 (Spider)
 Got error 12701                                       https://jira.mariadb.org/browse/MDEV-29455 (Spider)
