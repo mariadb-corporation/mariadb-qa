@@ -165,6 +165,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 SIGSEGV|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|spider_db_seek_next                                                                     ## MDEV-33197
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|THD::my_ok_with_recreate_info|mysql_alter_table                            ## MDEV-33195
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner          ## MDEV-33195
+dst_size > 4|SIGABRT|Identifier_chain2::make_sep_name_opt_casedn|dict_get_referenced_table|create_table_info_t::create_foreign_keys|create_table_info_t::create_table          ## MDEV-33223
 SIGSEGV|spider_db_delete_all_rows|ha_spider::truncate|ha_spider::truncate|Sql_cmd_truncate_table::handler_truncate                                                             ## MDEV-33191
 SIGSEGV|spider_db_delete_all_rows|ha_spider::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate                                                            ## MDEV-33191
 SIGSEGV|inline_mysql_rwlock_wrlock|Query_cache_query::lock_writing|Query_cache::insert|query_cache_insert                                                                      ## MDEV-10826
