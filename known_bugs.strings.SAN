@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions|ha_partition::change_partitions_to_open ## MDEV-33240
 UBSAN|member access within null pointer of type 'struct TABLE'|storage/spider/spd_db_conn.cc|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|ha_spider::rnd_next_internal ## MDEV-33197
 UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate ## MDEV-33191
 UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::truncate|Sql_cmd_truncate_table::handler_truncate|Sql_cmd_truncate_table::truncate_table ## MDEV-33191

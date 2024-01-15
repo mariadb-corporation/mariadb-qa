@@ -160,11 +160,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions|ha_partition::change_partitions_to_open                                                            ## MDEV-33240
 ((&(&conn->mta_conn_mutex)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&conn->mta_conn_mutex)->m_mutex)->thread))|SIGABRT|spider_db_errorno|spider_db_store_result|spider_bg_conn_action|pfs_spawn_thread ## MDEV-33197
 ((&(&conn->mta_conn_mutex)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&conn->mta_conn_mutex)->m_mutex)->thread))|SIGABRT|spider_db_errorno|spider_db_store_result|spider_bg_conn_action|start_thread ## MDEV-33197
 SIGSEGV|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|spider_db_seek_next                                                                     ## MDEV-33197
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|THD::my_ok_with_recreate_info|mysql_alter_table                            ## MDEV-33195
-!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner          ## MDEV-33195
 dst_size > 4|SIGABRT|Identifier_chain2::make_sep_name_opt_casedn|dict_get_referenced_table|create_table_info_t::create_foreign_keys|create_table_info_t::create_table          ## MDEV-33223
 SIGSEGV|spider_db_delete_all_rows|ha_spider::truncate|ha_spider::truncate|Sql_cmd_truncate_table::handler_truncate                                                             ## MDEV-33191
 SIGSEGV|spider_db_delete_all_rows|ha_spider::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate                                                            ## MDEV-33191
@@ -175,6 +174,9 @@ SIGSEGV|Query_cache::free_query_internal|Query_cache::free_query|Query_cache::in
 !query_cache.is_disable_in_progress()|SIGABRT|fix_query_cache_type|sys_var::update|set_var::update|sql_set_variables                                                           ## MDEV-10826
 thd->get_stmt_da()->is_eof()|SIGABRT|Query_cache::end_of_result|dispatch_command|do_command|do_handle_one_connection                                                           ## MDEV-10826
 SIGSEGV|ha_resolve_storage_engine_name|check_engine|create_table_impl|mysql_create_table_no_lock                                                                               ## MDEV-32487
+#NEEDS_TESTCASE# SIGSEGV|ha_resolve_storage_engine_name|add_server_part_options|generate_partition_syntax|generate_partition_syntax_for_frm                                    ## Likely MDEV-32487
+#NEEDS_TESTCASE# SIGSEGV|ha_resolve_storage_engine_name|check_engine|mysql_alter_table|Sql_cmd_alter_table::execute                                                            ## Likely MDEV-32487
+#NEEDS_TESTCASE# SIGSEGV|check_engine|create_table_impl|mysql_create_table_no_lock|mysql_create_table                                                                          ## Unsure, may be related to MDEV-32487 (seems to be on init)
 !thd->transaction->xid_state.is_explicit_XA() || thd->lex->xa_opt == XA_ONE_PHASE|SIGABRT|ha_commit_trans|rpl_slave_state::truncate_state_table|rpl_slave_state::load|change_master ## MDEV-33155
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_sp_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-33162
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_stmt_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-33162
@@ -2178,4 +2180,6 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|backup_unlock|backup_lock|mysql_execute_command                                                ## Fixed ## MDEV-22448/20945
 # SIGSEGV|MDL_lock::hog_lock_types_bitmap|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_context::release_lock                                              ## Fixed ## MDEV-22448/20945/MDEV-25037
 # (uint) (table_check_constraints - share->check_constraints) == (uint) (share->table_check_constraints - share->field_check_constraints)|SIGABRT|TABLE_SHARE::init_from_binary_frm_image|ha_create_table|create_table_impl|mysql_create_table_no_lock ## Fixed ## MDEV-22499
-# SIGSEGV|check_vcol_forward_refs|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table                                                                   ## Fixed  ## MDEV-22525
+# SIGSEGV|check_vcol_forward_refs|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table                                                                   ## Fixed ## MDEV-22525
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|THD::my_ok_with_recreate_info|mysql_alter_table                 ## Fixed ## MDEV-33195
+# !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner ## Fixed ## MDEV-33195

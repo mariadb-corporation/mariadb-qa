@@ -155,6 +155,8 @@ cat "${1}" | tr -d '`' | \
        s|when|WHEN|gi; \
        s|and|AND|gi; \
        s|or|OR|gi; \
+       s|priority|PRIORITY|gi; \
+       s|tbl |TBL |gi; \
        s|else|ELSE|gi; \
        s|substr|SUBSTR|gi; \
        s|substring_index|SUBSTRING_INDEX|gi; \
