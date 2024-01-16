@@ -160,6 +160,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+state_ == s_exec|SIGABRT|wsrep::client_state::after_row|wsrep_after_row_internal|wsrep_after_row|handler::ha_write_row                                                         ## MDEV-33253
+0|SIGABRT|wsrep::transaction::state|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::after_row                                      ## MDEV-33250
 (0)|SIGABRT|wsrep_to_isolation_begin|drop_routine|mysql_execute_command|mysql_parse                                                                                            ## MDEV-33249
 (0)|SIGABRT|wsrep_to_isolation_begin|mysql_create_view|mysql_execute_command|mysql_parse                                                                                       ## MDEV-33249
 (0)|SIGABRT|wsrep_to_isolation_begin|mysql_execute_command|mysql_parse|wsrep_mysql_parse                                                                                       ## MDEV-33249
