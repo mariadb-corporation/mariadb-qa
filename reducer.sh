@@ -1651,6 +1651,8 @@ init_workdir_and_files(){
     else
       mkdir $WORKD/data $WORKD/tmp $WORKD/log
     fi
+  else
+    ERROR_NODE=$(echo  $0 | cut -d'-' -f2 | cut -d'.' -f1)
   fi
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
@@ -2056,8 +2058,8 @@ generate_run_scripts(){
   # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a mysql cli), _stop (stop mysqld). _start (starts mysqld)
   # (start_mysqld_main and start_valgrind_mysqld_main). Togheter these scripts can be used for executing the final testcase ($WORKO_start > $WORKO_run)
   if [[ ${MDG} -eq 1 ]]; then
-    local EPOCH_SOCKET="/dev/shm/${EPOCH}/node1/node1_socket.sock"
-    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/node1/error.log"
+    local EPOCH_SOCKET="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}_socket.sock"
+    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}.err"
   else
     local EPOCH_SOCKET="/dev/shm/${EPOCH}/socket.sock"
     local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/log/master.err"
@@ -2373,7 +2375,7 @@ start_mdg_main(){
     sed -i "2i wsrep_node_incoming_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_node_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_sst_receive_address=$SST_PORT" ${WORKD}/n${i}.cnf
-    sed -i "2i log-error=$node/error.log" ${WORKD}/n${i}.cnf
+    sed -i "2i log-error=$node/$node.err" ${WORKD}/n${i}.cnf
     sed -i "2i port=$RBASE" ${WORKD}/n${i}.cnf
     sed -i "2i datadir=$node" ${WORKD}/n${i}.cnf
     sed -i "2i socket=$node/node${i}_socket.sock" ${WORKD}/n${i}.cnf
@@ -2414,13 +2416,13 @@ start_mdg_main(){
       echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START
       echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       echo "sleep 10" >> $WORK_START
-      ${RR_OPTIONS} ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/error.log 2>&1 &
-      mdg_node_startup_status ${WORKD}/node${j}/error.log
+      ${RR_OPTIONS} ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/node${j}.err 2>&1 &
+      mdg_node_startup_status ${WORKD}/node${j}/node${j}.err
     else
       echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       echo "sleep 60" >> $WORK_START
-      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA > ${WORKD}/node${j}/error.log 2>&1 &
-      mdg_node_startup_status ${WORKD}/node${j}/error.log
+      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA > ${WORKD}/node${j}/node${j}.err 2>&1 &
+      mdg_node_startup_status ${WORKD}/node${j}/node${j}.err
     fi
   done
 
@@ -2901,7 +2903,7 @@ run_and_check(){
   # Add error log from this trial to the overall run error log
   if [[ $MDG -eq 1 ]] ; then
     for i in $(seq 1 "${NR_OF_NODES}"); do
-      cat $WORKD/node${i}/error.log >> $WORKD/node${i}_error.log
+      cat $WORKD/node${i}/node${i}.err >> $WORKD/node${i}_error.log
     done
   elif [[ $GRP_RPL -eq 1 ]]; then
     sudo cat $WORKD/node1/error.log >> $WORKD/node1_error.log
@@ -3262,7 +3264,7 @@ process_outcome(){
     SKIP_NEWBUG=0
     ERRORLOG=
     if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-      ERRORLOG=$WORKD/*/error.log
+      ERRORLOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
       sudo chmod 777 $ERRORLOG
     else
       ERRORLOG=$WORKD/log/*.err
@@ -3299,7 +3301,7 @@ process_outcome(){
           exit 1
         fi
         if [ $MDG -eq 1 ]; then
-          export GALERA_ERROR_LOG=$WORKD/node1/error.log
+          export GALERA_ERROR_LOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
           export GALERA_CORE_LOC=$WORKD/node1/*core*
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
