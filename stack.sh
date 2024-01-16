@@ -62,10 +62,12 @@ fi
 if [ "${MDG}" -eq 1 ]; then
   ERROR_LOG=$(ls --color=never node*/node*.err 2>/dev/null | head -n1)  # This is not perfect in case node2 or node3 crashes TODO
 else
-  ERROR_LOG=$(ls --color=never log/master.err var/log/mysqld.2.err var/log/mysqld.1.err 2>/dev/null | sort -R | head -n1)  # sort -R: Slave log first, if present (as often the slave asserts). TODO: this is not perfect either, like MDG
+  ERROR_LOG=$(ls --color=never log/master.err log/slave.err var/log/mysqld.2.err var/log/mysqld.1.err 2>/dev/null | sort -R | head -n1)  # sort -R: Slave log first, if present (as often the slave asserts). TODO: this is not perfect either, like MDG
 fi
 if [ ! -z "${ERROR_LOG}" ]; then
+  echo "----${ERROR_LOG} "
   ASSERT="$(grep --binary-files=text -m1 'Assertion.*failed.$' ${ERROR_LOG} | head -n1)"
+  echo "----${ASSERT}"
   if [ -z "${ASSERT}" ]; then
     ASSERT="$(grep --binary-files=text -m1 'Failing assertion:' ${ERROR_LOG} | head -n1)"
   fi

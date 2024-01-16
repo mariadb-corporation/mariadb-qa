@@ -160,6 +160,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+marked_for_write_or_computed()|SIGABRT|Field_long::store|Field_num::save_in_field|Field::store_field|field_conv_incompatible                                                   ## MDEV-33244
 SIGSEGV|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions|ha_partition::change_partitions_to_open                                                            ## MDEV-33240
 ((&(&conn->mta_conn_mutex)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&conn->mta_conn_mutex)->m_mutex)->thread))|SIGABRT|spider_db_errorno|spider_db_store_result|spider_bg_conn_action|pfs_spawn_thread ## MDEV-33197
 ((&(&conn->mta_conn_mutex)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&conn->mta_conn_mutex)->m_mutex)->thread))|SIGABRT|spider_db_errorno|spider_db_store_result|spider_bg_conn_action|start_thread ## MDEV-33197
@@ -230,6 +231,7 @@ sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement                                            ## MDEV-32346
 SIGABRT|rows_event_stmt_cleanup|Rows_log_event::do_apply_event|Log_event::apply_event|apply_event_and_update_pos_apply                                                         ## MDEV-27512
 #SIGABRT|MDL_context::acquire_lock|MDL_context::acquire_locks|lock_table_names|lock_table_names                                                                                ## MENT-1958 (secondary case: to move when found again)
+share->tmp_table == NO_TMP_TABLE|SIGABRT|get_schema_tables_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                            ## MDEV-22916
 SIGABRT|get_schema_tables_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                             ## MDEV-22916
 SIGABRT|finish_event_group|handle_rpl_parallel_thread|pfs_spawn_thread|start_thread                                                                                            ## MDEV-21107
 m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|ha_innobase::rnd_init|handler::ha_rnd_init                          ## MDEV-32262
