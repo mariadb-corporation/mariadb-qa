@@ -160,6 +160,16 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+(0)|SIGABRT|wsrep_to_isolation_begin|drop_routine|mysql_execute_command|mysql_parse                                                                                            ## MDEV-33249
+(0)|SIGABRT|wsrep_to_isolation_begin|mysql_create_view|mysql_execute_command|mysql_parse                                                                                       ## MDEV-33249
+(0)|SIGABRT|wsrep_to_isolation_begin|mysql_execute_command|mysql_parse|wsrep_mysql_parse                                                                                       ## MDEV-33249
+(0)|SIGABRT|wsrep_to_isolation_begin|Sql_cmd_alter_table::execute|mysql_execute_command|mysql_parse                                                                            ## MDEV-33249
+(0)|SIGABRT|wsrep_to_isolation_begin|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute|mysql_execute_command                                               ## MDEV-33249
+(0)|SIGABRT|wsrep_to_isolation_begin|Sql_cmd_repair_table::execute|mysql_execute_command|mysql_parse                                                                           ## MDEV-33249
+(0)|SIGABRT|wsrep_to_isolation_begin|wsrep_check_mode_after_open_table|open_tables|open_and_lock_tables                                                                        ## MDEV-33249
+(0)|SIGABRT|wsrep_to_isolation_begin|wsrep_check_mode_after_open_table|open_tables|open_tables                                                                                 ## MDEV-33249
+(0)|SIGABRT|wsrep_to_isolation_begin|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                                      ## MDEV-33249
+(0)|SIGABRT|wsrep_to_isolation_begin|Sql_cmd_analyze_table::execute|mysql_execute_command|mysql_parse                                                                          ## MDEV-33249
 is_current_stmt_binlog_format_row()|SIGABRT|THD::binlog_write_table_maps|binlog_log_row_to_binlog|handler::binlog_log_row|handler::ha_write_row                                ## MDEV-33246
 SIGSEGV|wsrep_check_sequence|Sql_cmd_alter_sequence::execute|mysql_execute_command|mysql_parse                                                                                 ## MDEV-33245
 !check_foreigns|SIGABRT|trx_t::bulk_insert_apply_low|trx_t::bulk_insert_apply|ha_innobase::start_stmt|check_lock_and_start_stmt                                                ## MDEV-33243
