@@ -26,6 +26,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1944
 MARIADB_ERROR_CODE|MariaDB error code: 1969
 MARIADB_ERROR_CODE|MariaDB error code: 2003
 MARIADB_ERROR_CODE|MariaDB error code: 2005
+MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
 MARKED_AS_CRASHED|mysqld: Table sql-temptable-X is marked as crashed and should be repaired  ## MDEV-31588
@@ -190,9 +191,11 @@ SIGSEGV|Query_cache::free_query_internal|Query_cache::free_query|Query_cache::in
 !query_cache.is_disable_in_progress()|SIGABRT|fix_query_cache_type|sys_var::update|set_var::update|sql_set_variables                                                           ## MDEV-10826
 thd->get_stmt_da()->is_eof()|SIGABRT|Query_cache::end_of_result|dispatch_command|do_command|do_handle_one_connection                                                           ## MDEV-10826
 SIGSEGV|ha_resolve_storage_engine_name|check_engine|create_table_impl|mysql_create_table_no_lock                                                                               ## MDEV-32487
-#NEEDS_TESTCASE# SIGSEGV|ha_resolve_storage_engine_name|add_server_part_options|generate_partition_syntax|generate_partition_syntax_for_frm                                    ## Likely MDEV-32487
-#NEEDS_TESTCASE# SIGSEGV|ha_resolve_storage_engine_name|check_engine|mysql_alter_table|Sql_cmd_alter_table::execute                                                            ## Likely MDEV-32487
-#NEEDS_TESTCASE# SIGSEGV|check_engine|create_table_impl|mysql_create_table_no_lock|mysql_create_table                                                                          ## Unsure, may be related to MDEV-32487 (seems to be on init)
+SIGSEGV|check_engine|create_table_impl|mysql_create_table_no_lock|mysql_create_table                                                                                           ## MDEV-32487
+SIGSEGV|ha_resolve_storage_engine_name|add_server_part_options|generate_partition_syntax|generate_partition_syntax_for_frm                                                     ## MDEV-32487
+SIGSEGV|ha_resolve_storage_engine_name|check_engine|mysql_alter_table|Sql_cmd_alter_table::execute                                                                             ## MDEV-32487
+SIGSEGV|build_frm_image|mysql_create_frm_image|create_table_impl|mysql_alter_table                                                                                             ## MDEV-32487
+SIGSEGV|ha_resolve_storage_engine_name|add_partition_options|generate_partition_syntax|generate_partition_syntax_for_frm                                                       ## MDEV-32487
 !thd->transaction->xid_state.is_explicit_XA() || thd->lex->xa_opt == XA_ONE_PHASE|SIGABRT|ha_commit_trans|rpl_slave_state::truncate_state_table|rpl_slave_state::load|change_master ## MDEV-33155
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_sp_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-33162
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_stmt_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-33162
@@ -426,6 +429,8 @@ marked_for_read()|SIGABRT|Field_bit::val_int|Field_bit::update_min|Column_statis
 marked_for_read()|SIGABRT|Field_newdate::get_TIME|Field_newdate::get_date|Item_field::get_date|Item_func_date_format::val_str                                                  ## MDEV-30730
 !default_table_charset || thd->stmt_arena->is_stmt_execute()|SIGABRT|HA_CREATE_INFO::resolve_to_charset_collation_context|Table_specification_st::resolve_to_charset_collation_context|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-30003
 SIGSEGV|thd_get_ha_data|spider_direct_sql_init_body|udf_handler::fix_fields|udf_handler::fix_fields                                                                            ## MDEV-30727
+SIGSEGV|thd_get_ha_data|spider_get_trx|spider_direct_sql_body|spider_direct_sql                                                                                                ## MDEV-30727
+SIGSEGV|thd_get_ha_data|spider_get_trx|spider_copy_tables_body|udf_handler::val_int                                                                                            ## MDEV-30727
 SIGSEGV|my_hash_insert|spider_get_trx|spider_direct_sql_body|udf_handler::val_int                                                                                              ## MDEV-30727
 SIGSEGV|spider_direct_sql_init_body|spider_bg_direct_sql_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                ## MDEV-30727
 SIGSEGV|spider_direct_sql_init_body|udf_handler::fix_fields|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                  ## MDEV-30727
