@@ -3,6 +3,7 @@
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## https://jira.mariadb.org/browse/MDEV-22936
+MARIADB_ERROR_CODE|MariaDB error code: 1032  ## https://jira.mariadb.org/browse/MDEV-33291 (may mask other bugs)
 MARIADB_ERROR_CODE|MariaDB error code: 1046
 MARIADB_ERROR_CODE|MariaDB error code: 1054
 MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 (may mask other issues, but never seen otherwise)
