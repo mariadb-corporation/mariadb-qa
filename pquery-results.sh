@@ -69,7 +69,7 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
         MATCHING_TRIAL=$(echo ${MATCHING_TRIAL} | sed 's|.*TEXT=.||;s|\.[ \t]*$||')
         MATCHING_TRIALS+=($MATCHING_TRIAL)
       done
-      COUNT=$(grep -Fi --binary-files=text "${STRING}" reducer* 2>/dev/null | wc -l)
+      COUNT=$(grep -Fi -m1 --binary-files=text "${STRING}" reducer* 2>/dev/null | wc -l)
     else  # Backwards compatible (and manually modified reducers scanning without using new text string)
       CHAR_REGEX='[^0-9]'
       if [ "$(echo ${PWD} | sed 's|.*/||')" == "ERR_REDUCERS" ]; then
@@ -183,7 +183,7 @@ IFS=$ORIG_IFS
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then
   COUNT=0
   MATCHING_TRIALS=()
-  for MATCHING_TRIAL in $(grep -H --binary-files=text "^MODE=4$" reducer* 2>/dev/null | sort -u | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
+  for MATCHING_TRIAL in $(grep -H --binary-files=text -m1 "^MODE=4$" reducer* 2>/dev/null | sort -u | awk '{print $1}' | sed 's|:.*||;s|[^0-9]||g' | sort -un) ; do
     if [ ! -r ${MATCHING_TRIAL}/SHUTDOWN_TIMEOUT_ISSUE ]; then
       MATCHING_TRIALS+=($MATCHING_TRIAL)
       COUNT=$[ COUNT + 1 ]

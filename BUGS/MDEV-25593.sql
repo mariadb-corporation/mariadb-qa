@@ -5,3 +5,7 @@ EXECUTE stmt USING @param1;
 PREPARE s FROM 'SELECT ? FROM DUAL';
 EXECUTE s USING current_time;
 EXECUTE s USING DEFAULT;
+
+PREPARE s FROM "SELECT DATE ('') between''AND ?";
+EXECUTE s USING current_time;
+EXECUTE s USING @v;
