@@ -29,6 +29,7 @@ BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is 
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
 BINLOG_BASE64_EVENT: Could not execute Write_rows_v1  Ref SPECIAL-10
 Failed to open log .file .647.. errno 2               https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
+Error reading packet from server. File .647. not found  https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
 Replication event checksum verification failed while reading from a log file  https://jira.mariadb.org/browse/MDEV-32628
 Internal MariaDB error code: 1064                     Presumed non-issue (init_slave query error), though see MDEV-26247 (1064)
 Internal MariaDB error code: 1100                     Presumed non-issue (BINLOG_BASE64_EVENT, row event exec error, unlock tables when using manual BINLOG commands)  Ref SPECIAL-11
