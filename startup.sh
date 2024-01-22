@@ -911,6 +911,7 @@ sed -i 's|/stop|/stop_slave|g' wipe_slave
 sed -i 's|/data|/data_slave|g' start_slave
 sed -i 's|/data|/data_slave|g' stop_slave
 sed -i 's|/data|/data_slave|g' wipe_slave
+sed -i 's|/kill|/kill_slave|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' start_slave
 sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
@@ -923,8 +924,8 @@ echo "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass
 echo "#ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;  # MENT-1905 Testing" >>master_setup.sql
 echo "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=00000, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ;" >slave_setup.sql  # The 00000 is a dummy entry, and any number will be replaced by start_master to the actual port in slave_setup.sql at master startup time
 echo "START SLAVE;" >>slave_setup.sql
-echo './stop; ./stop_slave' >stop_replication
-echo './kill; ./kill_slave' >kill_replication
+echo './stop_slave; ./stop' >stop_replication
+echo './kill_slave; ./kill' >kill_replication
 echo 'MYEXTRA_OPT="$*"' >start_replication
 echo './kill_replication >/dev/null 2>&1' >>start_replication
 echo 'rm -f socket.sock socket.sock.lock socket_slave.sock socket_slave.sock.lock; sync' >>start_replication
