@@ -165,6 +165,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+(tm->tv_usec % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_timestamp_to_binary|Timestamp::to_native|Timestamp_or_zero_datetime::to_native|Item_timestamp_literal::val_native    ## MDEV-33299
+(tm->tv_usec % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_timestamp_to_binary|Timestamp::to_native|Timestamp_or_zero_datetime::to_native|Timestamp_or_zero_datetime_native::Timestamp_or_zero_datetime_native ## MDEV-33299
 m_table|SIGABRT|ha_perfschema::rnd_end|ha_perfschema::rnd_end|handler::ha_rnd_end|mysql_checksum_table                                                                         ## MDEV-33285
 # m_table|SIGABRT|__pthread_mutex_lock_full|                                                                                                                                   ## MDEV-33285 (filtered ftm: partial stack)
 marked_for_write_or_computed()|SIGABRT|Field_long::store|Field_num::save_in_field|Field::store_field|field_conv_incompatible                                                   ## MDEV-33244
@@ -207,6 +209,7 @@ thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_sp_execute() || thd->
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_stmt_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-33162
 !srv_read_only_mode|SIGABRT|buf_dblwr_t::flush_buffered_writes|buf_flush_list_space|buf_flush_list_now_set|sys_var_pluginvar::global_update                                    ## MDEV-33156
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables and LOCK_thd_kill                                                                              ## MDEV-33150
+SIGSEGV|Item_func_json_array_intersect::prepare_json_and_create_hash|Item_func_json_array_intersect::fix_length_and_dec|Item_func::fix_fields|Item_func::fix_fields            ## MDEV-33149
 SIGSEGV|Binary_string::ptr|Item_func_json_array_intersect::prepare_json_and_create_hash|Item_func_json_array_intersect::fix_length_and_dec|Item_func::fix_fields               ## MDEV-33149
 SIGSEGV|srw_lock_impl<false>::wr_lock|fil_space_t::x_lock|mtr_t::x_lock_space|mtr_t::x_lock_space                                                                              ## MDEV-33101
 SIGSEGV|mtr_t::x_lock_space|fsp_shrink_temp_space|innodb_trunc_temp_space_update|sys_var_pluginvar::global_update                                                              ## MDEV-33101
