@@ -99,17 +99,12 @@ if [[ "${MDG}" -eq 1 ]]; then
     ERROR_LOG="./${TRIAL_DIR}/node${MDG_NODE}.err"
   fi
 else
-  if [ -r ./${TRIAL}/log/master.err ]; then
-    ERROR_LOG="./${TRIAL}/log/master.err"
-  fi
-  if [ -r ./${TRIAL}/log/slave.err ]; then
-    ERROR_LOG="${ERROR_LOG} ./${TRIAL}/log/slave.err"
-  fi
+  ERROR_LOG="./${TRIAL}/log/*.err"
 fi
 if [ ! -z "${ERROR_LOG}" ]; then  # Do not use -r as it will not work if both master.err and slave.err are present, for example
   # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
-  ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$")"
-  ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$")"
+  ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$|^==>")"
+  ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$|^==>")"
   if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
     delete_trial
   elif [ -z "${ERRORS}" -a ! -z "${ERRORS_LAST_LINE}" -a ! -z "$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --binary-files=text -o 'Assertion .* failed' 2>/dev/null | sed "s|'|.|g" | sed 's|"|.|g' | sed "s|^Assertion .||;s|. failed$||" | xargs -I{} grep --binary-files=text -Fi "{}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null)" ]; then  # There are no other errors, and there is an assertion on the last line of the error log which exactly matches an already known assertion in the known bugs file: ok to proceed with deletion

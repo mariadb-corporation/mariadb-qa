@@ -22,7 +22,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1347  ## SPECIAL-16 (VIEW is not a BASE T
 MARIADB_ERROR_CODE|MariaDB error code: 1399
 MARIADB_ERROR_CODE|MariaDB error code: 1429  ## SPECIAL-13 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1472  ## SPECIAL-14 (ref REGEX_ERRORS_FILTER.info)
-MARIADB_ERROR_CODE|MariaDB error code: 1593  ## Empty or invalid CHANGE MASTER username
+MARIADB_ERROR_CODE|MariaDB error code: 1593  ## Invalid or empty CHANGE MASTER username
 MARIADB_ERROR_CODE|MariaDB error code: 1610  ## https://jira.mariadb.org/browse/MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 (may mask other issues, but never seen otherwise)
 MARIADB_ERROR_CODE|MariaDB error code: 1792
