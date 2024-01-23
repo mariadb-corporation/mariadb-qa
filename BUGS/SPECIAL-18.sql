@@ -1,0 +1,5 @@
+BINLOG 'AMqaOw8BAAAAdAAAAHgAAAAAAAQANS42LjM0LTc5LjEtZGVidWctbG9nAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAEzgNAAgAEgAEBAQEEgAAXAAEGggAAAAICAgCAAAACgoKGRkAAYVx w2w=';
+CREATE TABLE t1(c INT UNSIGNED KEY)collate ujis_nopad_bin;
+SET max_session_mem_used=+ 1;
+BINLOG 'wlZOTxMBAAAAKgAAADwCAAAAACkAAAAAAAEABHRlc3QAAnQxAAIDAwAC wlZOTxcBAAAAJgAAAGICAAAAACkAAAAAAAEAAv/8AgAAAAgAAAA=';
+# [ERROR]  BINLOG_BASE64_EVENT: Error executing row event: 'The MariaDB server is running with the --max-session-mem-used=8192 option so it cannot execute this statement', Internal MariaDB error code: 1290

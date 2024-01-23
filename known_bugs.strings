@@ -3,6 +3,7 @@
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## https://jira.mariadb.org/browse/MDEV-22936
+MARIADB_ERROR_CODE|MariaDB error code: 1032  ## https://jira.mariadb.org/browse/MDEV-33291 (may mask other bugs)
 MARIADB_ERROR_CODE|MariaDB error code: 1046
 MARIADB_ERROR_CODE|MariaDB error code: 1054
 MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 (may mask other issues, but never seen otherwise)
@@ -16,6 +17,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1205  ## SPECIAL-17 (ref REGEX_ERRORS_FIL
 MARIADB_ERROR_CODE|MariaDB error code: 1223  ## https://jira.mariadb.org/browse/MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1231
 MARIADB_ERROR_CODE|MariaDB error code: 1237
+MARIADB_ERROR_CODE|MariaDB error code: 1290  ## SPECIAL-18 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1347  ## SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 MARIADB_ERROR_CODE|MariaDB error code: 1399
 MARIADB_ERROR_CODE|MariaDB error code: 1429  ## SPECIAL-13 (ref REGEX_ERRORS_FILTER.info)
@@ -163,6 +165,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+m_table|SIGABRT|ha_perfschema::rnd_end|ha_perfschema::rnd_end|handler::ha_rnd_end|mysql_checksum_table                                                                         ## MDEV-33285
+# m_table|SIGABRT|__pthread_mutex_lock_full|                                                                                                                                   ## MDEV-33285 (filtered ftm: partial stack)
 marked_for_write_or_computed()|SIGABRT|Field_long::store|Field_num::save_in_field|Field::store_field|field_conv_incompatible                                                   ## MDEV-33244
 state_ == s_exec|SIGABRT|wsrep::client_state::after_row|wsrep_after_row_internal|wsrep_after_row|handler::ha_write_row                                                         ## MDEV-33253
 0|SIGABRT|wsrep::transaction::state|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::after_row                                      ## MDEV-33250
@@ -1094,6 +1098,7 @@ used_tables_cache == 0|SIGABRT|Item_func::fix_fields|create_view_field|Field_ite
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Item::get_time                                                ## MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Item_param::get_date|Type_handler::Item_send_datetime|Type_handler_datetime_common::Item_send                            ## MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Type_handler::Item_send_datetime                              ## MDEV-25593
+0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Item::get_date_result                                         ## MDEV-25593
 !thd || thd->locked_tables_mode || !thd->mdl_context.has_locks() || thd->handler_tables_hash.records || thd->ull_hash.records || thd->global_read_lock.is_acquired()|SIGABRT|reload_acl_and_cache|mysql_execute_command|mysql_parse|dispatch_command ## MDEV-25589
 !thd->wsrep_cs().current_error()|SIGABRT|wsrep_after_command_ignore_result|Event_job_data::execute|Event_worker_thread::run|event_worker_thread                                ## MDEV-25566
 readbytes != (size_t)-1 || (*__errno_location ()) != 9|SIGABRT|my_pread|azflush|ha_archive::info|ha_archive::update_create_info                                                ## MDEV-24420
