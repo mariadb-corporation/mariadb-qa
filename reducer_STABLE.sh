@@ -895,8 +895,8 @@ options_check(){
   if [ $MODE -eq 3 -a $USE_NEW_TEXT_STRING -eq 1 ]; then
     if [ $(echo "${TEXT}" | sed 's/[^|]//g' | tr -d '\n' | wc -m) -lt 3 ]; then  # Actual normal is 4. 3 Used for small safety buffer yet avoiding most '||' (OR) error-log-search based TEXT's. Still, the new text string could in principle have less then 4 also if not enough stacks were available in the core dump, or if we ever decide to use the old unique strings as a fallback for the case where new strings are not available (unlikely).
       if [ "${FIREWORKS}" != "1" ]; then
-        if [[ "${TEXT}" != "MEMORY_NOT_FREED"* && "${TEXT}" != "GOT_ERROR"* && "$TEXT" != "MARKED_AS_CRASHED"* && "$TEXT" != "MARIADB_ERROR_CODE"* && "${TEXT}" != "FALLBACK"* ]]; then  # Avoid situations where it is expected to see this
-          echo "Likely misconfiguration: MODE=3 and USE_NEW_TEXT_STRING=1, yet the TEXT string ('${TEXT}') does not contain at least 3 '|' symbols, which are normally used in new text string unique bug ID's! It is highly likely reducer will not locate any bugs this way. Are you perhaps attempting to look for a specific TEXT string in the standard server error log? If so, please set USE_NEW_TEXT_STRING=0 and SCAN_FOR_NEW_BUGS=0 ! Another possibility is that you incorrectly set the TEXT varialble to something that is not a/the unique bug ID. Please check your setup. Pausing 13 seconds for consideration. Press CTRL+c if you want to stop at this point. If not, reducer will look for '${TEXT}' in the new text string script unique bug ID output. Again, this is unlikely to work, unless in the specific use case of looking for a partial match of a limited TEXT string against the new text string script unique bug ID output."
+        if [[ "${TEXT}" != "MEMORY_NOT_FREED"* && "${TEXT}" != "GOT_FATAL_ERROR"* && "${TEXT}" != "GOT_ERROR"* && "$TEXT" != "MARKED_AS_CRASHED"* && "$TEXT" != "MARIADB_ERROR_CODE"* && "${TEXT}" != "FALLBACK"* ]]; then  # Avoid situations where it is expected to see this
+          echo "Likely misconfiguration: MODE=3 and USE_NEW_TEXT_STRING=1, yet the TEXT string ('${TEXT}') does not contain at least 3 '|' symbols, which are normally used in new text string unique bug ID's! It is highly likely reducer will not locate any bugs this way. Are you perhaps attempting to look for a specific TEXT string in the standard server error log? If so, please set USE_NEW_TEXT_STRING=0 and SCAN_FOR_NEW_BUGS=0 ! Another possibility is that you incorrectly set the TEXT variable to something that is not a/the unique bug ID. Please check your setup. Pausing 13 seconds for consideration. Press CTRL+c if you want to stop at this point. If not, reducer will look for '${TEXT}' in the new text string script unique bug ID output. Again, this is unlikely to work, unless in the specific use case of looking for a partial match of a limited TEXT string against the new text string script unique bug ID output."
           sleep 13
         fi
       fi
@@ -1393,7 +1393,7 @@ multi_reducer(){
               #echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Copied the last mysqld error log to /tmp/$TMP_RND_FILENAME (and /tmp/$TMP_RND_FILENAME.slave if a slave was present) for review. Otherwise, please ignore the \"check...\" message just above; the files are no longer there given the restart above)"
             else
               if [ "${FIREWORKS}" != "1" ]; then  # Only show the full output in non-fireworks mode
-                echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happens irregularly on busy servers OR when there is not sufficient diskspace). If the message is repeating continuously, please investigate. reducer has also copied the last mysqld error log to /tmp/$TMP_RND_FILENAME (and /tmp/$TMP_RND_FILENAME.slave if a slave was present) for review, though an out of diskpace may not show in there.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
+                echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happen irregularly on busy servers OR when there is not sufficient diskspace). If the message is repeating continuously, please investigate. reducer has also copied the last mysqld error log to /tmp/$TMP_RND_FILENAME (and /tmp/$TMP_RND_FILENAME.slave if a slave was present) for review, though an out of diskpace may not show in there.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
               else
                 echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared. Thread restarted (PID #$(eval echo $(echo '$MULTI_PID'"$t")))"
               fi
@@ -1651,6 +1651,8 @@ init_workdir_and_files(){
     else
       mkdir $WORKD/data $WORKD/tmp $WORKD/log
     fi
+  else
+    ERROR_NODE=$(echo  $0 | cut -d'-' -f2 | cut -d'.' -f1)
   fi
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
@@ -2056,8 +2058,8 @@ generate_run_scripts(){
   # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a mysql cli), _stop (stop mysqld). _start (starts mysqld)
   # (start_mysqld_main and start_valgrind_mysqld_main). Togheter these scripts can be used for executing the final testcase ($WORKO_start > $WORKO_run)
   if [[ ${MDG} -eq 1 ]]; then
-    local EPOCH_SOCKET="/dev/shm/${EPOCH}/node1/node1_socket.sock"
-    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/node1/error.log"
+    local EPOCH_SOCKET="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}_socket.sock"
+    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}.err"
   else
     local EPOCH_SOCKET="/dev/shm/${EPOCH}/socket.sock"
     local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/log/master.err"
@@ -2073,7 +2075,7 @@ generate_run_scripts(){
   if [[ ${MDG} -eq 0 ]]; then
     echo "mkdir -p /dev/shm/${EPOCH}/tmp /dev/shm/${EPOCH}/log" >> $WORK_INIT
   fi
-  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`" >> $WORK_INIT
+  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`" >> $WORK_INIT
   echo "if [ -n \"\$BIN\"  ]; then" >> $WORK_INIT
   echo "  if [ \"\$BIN\" != \"\${BASEDIR}/bin/mysqld\" -a \"\$BIN\" != \"\${BASEDIR}/bin/mysqld-debug\" ];then" >> $WORK_INIT
   echo "    if [ ! -h \${BASEDIR}/bin/mysqld -o ! -f \${BASEDIR}/bin/mysqld ]; then mkdir -p \${BASEDIR}/bin; ln -s \$BIN \${BASEDIR}/bin/mysqld; fi" >> $WORK_INIT
@@ -2160,7 +2162,7 @@ generate_run_scripts(){
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_STOP
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_STOP
   echo "echo \"Attempting to shutdown mysqld with socket ${EPOCH_SOCKET}...\"" >> $WORK_STOP
-  echo "MYADMIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqladmin -type f -o -name mysqladmin -type l \`" >> $WORK_STOP
+  echo "MYADMIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadb-admin -type f -o -name mysqladmin -type f -o -name mysqladmin -type l \`" >> $WORK_STOP
   echo "\$MYADMIN -uroot -S${EPOCH_SOCKET} shutdown" >> $WORK_STOP
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_CL
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_CL
@@ -2265,9 +2267,13 @@ start_mysqld_or_valgrind_or_mdg(){
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
           echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, assuming this option set is required"
         else
-          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
-          echo "Terminating now."
-          exit 1
+          if [ "${REPLICATION}" -eq 1 ]; then  # With replication, we continue reducing as at times there are m/s startup issues #TODO: research further as to reason, seems to be timing related (timeout was increased from 60 to 90 now)
+            return 1  # We return a 1 status which, in combination with REPLICATION=1 will indicate that a m/s startup issue happened. run_and_check() will then just return a '0' based on this indicating that this trial did not reproduce the issue
+          else
+            echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
+            echo "Terminating now."
+            exit 1
+          fi
         fi
       else
         # Ref discussion RV/RS 27 Nov 19 via 1:1 (RV;should be covered in SQL,RS;issue seen)
@@ -2328,6 +2334,7 @@ start_mdg_main(){
     ERROR_LOG=$1
     for X in $(seq 0 120); do
       sleep 1
+      touch ${WORKD}  # Ensure that watchdog scripts like ~/ds do not think this directory no-longer-in-use
       if grep -E --binary-files=text -qi "Synchronized with group, ready for connections" $ERROR_LOG ; then
         break
       fi
@@ -2368,7 +2375,7 @@ start_mdg_main(){
     sed -i "2i wsrep_node_incoming_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_node_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_sst_receive_address=$SST_PORT" ${WORKD}/n${i}.cnf
-    sed -i "2i log-error=$node/error.log" ${WORKD}/n${i}.cnf
+    sed -i "2i log-error=$node/$node.err" ${WORKD}/n${i}.cnf
     sed -i "2i port=$RBASE" ${WORKD}/n${i}.cnf
     sed -i "2i datadir=$node" ${WORKD}/n${i}.cnf
     sed -i "2i socket=$node/node${i}_socket.sock" ${WORKD}/n${i}.cnf
@@ -2396,7 +2403,7 @@ start_mdg_main(){
 
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
-  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
+  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
   WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
   if [[ ${RR_TRACING} -eq 1 ]]; then
     export _RR_TRACE_DIR="${WORKD}/rr"
@@ -2409,13 +2416,13 @@ start_mdg_main(){
       echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START
       echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       echo "sleep 10" >> $WORK_START
-      ${RR_OPTIONS} ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/error.log 2>&1 &
-      mdg_node_startup_status ${WORKD}/node${j}/error.log
+      ${RR_OPTIONS} ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/node${j}.err 2>&1 &
+      mdg_node_startup_status ${WORKD}/node${j}/node${j}.err
     else
       echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       echo "sleep 60" >> $WORK_START
-      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA > ${WORKD}/node${j}/error.log 2>&1 &
-      mdg_node_startup_status ${WORKD}/node${j}/error.log
+      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA > ${WORKD}/node${j}/node${j}.err 2>&1 &
+      mdg_node_startup_status ${WORKD}/node${j}/node${j}.err
     fi
   done
 
@@ -2562,7 +2569,7 @@ start_mysqld_main(){
   echo "echo \"Attempting to start mysqld (socket /dev/shm/${EPOCH}/socket.sock)...\"" >> $WORK_START
   #echo $JE1 >> $WORK_START; echo $JE2 >> $WORK_START; echo $JE3 >> $WORK_START; echo $JE4 >> $WORK_START;echo $JE5 >> $WORK_START
   echo $JE1 >> $WORK_START; echo $JE2 >> $WORK_START; echo $JE3 >> $WORK_START; echo $JE4 >> $WORK_START
-  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
+  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mariadbd/mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
   SCHEDULER_OR_NOT=
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then SCHEDULER_OR_NOT="--event-scheduler=ON "; fi
   CORE_FOR_NEW_TEXT_STRING=
@@ -2602,17 +2609,17 @@ start_mysqld_main(){
       # ---- Init replication
       # Ensure both servers are live
       MASTER_STARTUP_OK=0; SLAVE_STARTUP_OK=0
-      for((delay=0;delay<60;delay++)); do  # 60 Second max master+slave startup (normally, only ~2 seconds are required)
+      for((delay=0;delay<90;delay++)); do  # 90 Second max master+slave startup (normally, only ~2 seconds are required, though on very busy servers it can take >60 seconds)
         sleep 1
+        touch ${WORKD}  # Ensure that watchdog scripts like ~/ds do not think this directory no-longer-in-use
         if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then MASTER_STARTUP_OK=1; fi
         if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock ping > /dev/null 2>&1; then SLAVE_STARTUP_OK=1; fi
         if [ "${MASTER_STARTUP_OK}" -eq 1 -a "${SLAVE_STARTUP_OK}" -eq 1 ]; then break; fi
       done
       if [ "${MASTER_STARTUP_OK}" -ne 1 -o "${SLAVE_STARTUP_OK}" -ne 1 ]; then
-        echoit "Assert: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Debug workdir: $WORKD"
-        echoit "Reducer is sleeping/not terminating to ensure work directory is not deleted. Press CTRL+c to exit"
-        while true; do sleep 10; touch $WORKD; done
-        exit 1
+        echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Assert: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Restarting"
+        PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;
+        return 1  # The '1' error value is not used, but we need to return here
       fi
       MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
       # Setup replication, master side
@@ -2672,7 +2679,7 @@ start_valgrind_mysqld_main(){
   echo $JE1 >> $WORK_START_VALGRIND; echo $JE2 >> $WORK_START_VALGRIND; echo $JE3 >> $WORK_START_VALGRIND
   #echo $JE4 >> $WORK_START_VALGRIND; echo $JE5 >> $WORK_START_VALGRIND
   echo $JE4 >> $WORK_START_VALGRIND
-  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START_VALGRIND
+  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mariadbd/mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START_VALGRIND
   echo "valgrind --suppressions=\${BASEDIR}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --port=$MYPORT --tmpdir=$WORKD/tmp --pid-file=$WORKD/pid.pid --log-error=$WORKD/log/master.err --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA ${SCHEDULER_OR_NOT}>>$WORKD/log/master.err 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START_VALGRIND
   sed -i "s|$WORKD|/dev/shm/${EPOCH}|g" $WORK_START_VALGRIND
   sed -i "s|pid.pid|pid.pid --core-file --core|" $WORK_START_VALGRIND
@@ -2887,6 +2894,7 @@ cut_threadsync_chunk(){
 
 run_and_check(){
   start_mysqld_or_valgrind_or_mdg
+  if [ ${?} -eq 1 -a "${REPLICATION}" -eq 1 ]; then stop_mysqld_or_mdg; return 0; fi  # Special provision for replication startup failures (REPLICATION=1). The hack is to return 0 here, indicating that no reduction was succesful, see start_mysqld_or_valgrind_or_mdg for more info
   run_sql_code
   if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then stop_mysqld_or_mdg; fi
   process_outcome
@@ -2895,7 +2903,7 @@ run_and_check(){
   # Add error log from this trial to the overall run error log
   if [[ $MDG -eq 1 ]] ; then
     for i in $(seq 1 "${NR_OF_NODES}"); do
-      cat $WORKD/node${i}/error.log >> $WORKD/node${i}_error.log
+      cat $WORKD/node${i}/node${i}.err >> $WORKD/node${i}_error.log
     done
   elif [[ $GRP_RPL -eq 1 ]]; then
     sudo cat $WORKD/node1/error.log >> $WORKD/node1_error.log
@@ -3256,7 +3264,7 @@ process_outcome(){
     SKIP_NEWBUG=0
     ERRORLOG=
     if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-      ERRORLOG=$WORKD/*/error.log
+      ERRORLOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
       sudo chmod 777 $ERRORLOG
     else
       ERRORLOG=$WORKD/log/*.err
@@ -3293,7 +3301,7 @@ process_outcome(){
           exit 1
         fi
         if [ $MDG -eq 1 ]; then
-          export GALERA_ERROR_LOG=$WORKD/node1/error.log
+          export GALERA_ERROR_LOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
           export GALERA_CORE_LOC=$WORKD/node1/*core*
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
@@ -5575,7 +5583,8 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 257 ]; then sed "s/t0/t/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 258 ]; then sed "s/c0/c/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 259 ]; then sed "s/FROM DUAL//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 260 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 260 ]; then sed "s/WITHOUT VALIDATION//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 261 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     SIZET=`stat -c %s $WORKT`

@@ -27,8 +27,9 @@ BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wai
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
-mysql.innodb_table_stats.*HA_ERR_KEY_NOT_FOUND.*Internal MariaDB error code: 1032  https://jira.mariadb.org/browse/MDEV-33291
-Could not execute Delete_rows_v1 event on table mysql.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
+Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
+Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
+Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  https://jira.mariadb.org/browse/MDEV-33291
 Failed to open log .file .647.. errno 2               https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
 Error reading packet from server. File .647. not found  https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
 Replication event checksum verification failed while reading from a log file  https://jira.mariadb.org/browse/MDEV-32628
