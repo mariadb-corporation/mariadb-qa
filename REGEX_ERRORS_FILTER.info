@@ -22,11 +22,14 @@ Internal MariaDB error code: 1017                     Presumed non-issue (mysql 
 Internal MariaDB error code: 1030                     https://jira.mariadb.org/browse/MDEV-22936
 Internal MariaDB error code: 1046                     Presumed non-issue (init_slave query cannot be executed) See MDEV-29499
 init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave thread cannot execute init_slave query)
-BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1062  Ref SPECIAL-8
+BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1062  Ref SPECIAL-8 and search this file for 1062
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wait timeout exceeded)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
+ERROR. Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-33359
+ERROR. Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  https://jira.mariadb.org/browse/MDEV-33359
+ERROR. Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  https://jira.mariadb.org/browse/MDEV-33359
 Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
 Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
 Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  https://jira.mariadb.org/browse/MDEV-33291
@@ -85,7 +88,7 @@ Got error 12701                                       https://jira.mariadb.org/b
 Got error 12719 when reading table                    Presumed non-issue (Spider, ref SPECIAL-7.sql & MDEV-29583)
 Got error 12801                                       https://jira.mariadb.org/browse/MDEV-29502 (Spider, CLI only: not filtered ftm)
 Lost connection to server during query.*server_errno=2013  Presumed non-issue (Happens on slave when master has crashed)
-connecting slave requested.*GTID.*not in the master.s binlog .server_errno=1236  Presumed non-issue (RESET MASTER was executed, breaking the replication chain)
+connecting slave requested.*GTID.*not in the master.s binlog.*server_errno=1236  Presumed non-issue (RESET MASTER was executed, removing the master's binary logs) Ref SPECIAL-20.sql example
 read_log_event..: .Event too big                      https://jira.mariadb.org/browse/MDEV-32628
 read_log_event..: .Event truncated                    https://jira.mariadb.org/browse/MDEV-32628
 max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)
@@ -102,7 +105,6 @@ Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/b
 Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-27661 (Charset issue)
 Please run mariadb-upgrade                            Often seen when a mysql db table has been modified by a testcase
 Got error .126 .Index is corrupted.*test.*MAI         https://jira.mariadb.org/browse/MDEV-30488 and MDEV-31029
-#Got error .126 .Index is corrupted.*t.*.MAI             # WIP
 Got error .126 .Index is corrupted.*sql-alter.*MAI    https://jira.mariadb.org/browse/MDEV-26258
 Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26258
 Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26492
@@ -155,7 +157,8 @@ ERROR.*InnoDB.*RENAME.*is ref.*foreign.*not compatible.*new table def  https://j
 ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussion (ref email thread 'Discuss')
 Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
 ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussion (ref email thread 'Discuss')
-ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5)
+ERROR.*Slave SQL: Could not.*Write_rows_v1 event on table.*Error_code: 1062.*HA_ERR.*DUPP_KEY  https://jira.mariadb.org/browse/MDEV-33350
+ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5), or MDEV-33350
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      https://jira.mariadb.org/browse/MDEV-22936
 ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    https://jira.mariadb.org/browse/MDEV-22936
 InnoDB: Cannot reset all values.*while it is on.*off  Presumed non-issue (resetting buffer_LRU_get_free_* while on etc.)

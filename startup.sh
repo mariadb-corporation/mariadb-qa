@@ -916,8 +916,8 @@ sed -i 's|socket.sock|socket_slave.sock|g' start_slave
 sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
 sed -i 's|socket.sock|socket_slave.sock|g' cl_slave
-sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\n#MYEXTRA=\" --no-defaults --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
-sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=65 --slave-parallel-mode=aggressive --slave-parallel-max-queued=1073741827 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\n#MYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave
+sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\nMYEXTRA=\" --no-defaults --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
+sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=65 --slave-parallel-mode=aggressive --slave-parallel-max-queued=1073741827 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\nMYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave
 sed -i 's%^PORT=$.*%PORT=$NEWPORT; sed -i "s|MASTER_PORT=[0-9]\\+|MASTER_PORT=${NEWPORT}|" slave_setup.sql%' start_master
 echo "DELETE FROM mysql.user WHERE user='';" >master_setup.sql
 echo "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" >>master_setup.sql

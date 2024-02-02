@@ -1,12 +1,14 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Otherwise, just follow the existing formatting.
 
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
+MARIADB_ERROR_CODE|MariaDB error code: 0     ## https://jira.mariadb.org/browse/MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## https://jira.mariadb.org/browse/MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1032  ## https://jira.mariadb.org/browse/MDEV-33291 (may mask other bugs)
+MARIADB_ERROR_CODE|MariaDB error code: 1045  ## https://jira.mariadb.org/browse/MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1046
 MARIADB_ERROR_CODE|MariaDB error code: 1054
-MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 (may mask other issues, but never seen otherwise)
+MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 or MDEV-33350
 MARIADB_ERROR_CODE|MariaDB error code: 1064
 MARIADB_ERROR_CODE|MariaDB error code: 1100  ## SPECIAL-11 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1114  ## https://jira.mariadb.org/browse/MDEV-23212
@@ -29,7 +31,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1698  ## SPECIAL-19 (ref REGEX_ERRORS_FIL
 MARIADB_ERROR_CODE|MariaDB error code: 1792
 MARIADB_ERROR_CODE|MariaDB error code: 1944
 MARIADB_ERROR_CODE|MariaDB error code: 1969
-MARIADB_ERROR_CODE|MariaDB error code: 2003
+MARIADB_ERROR_CODE|MariaDB error code: 2003  ## Often seen, for example https://jira.mariadb.org/browse/MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
