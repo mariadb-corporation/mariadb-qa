@@ -1,9 +1,10 @@
 Note: Bugs listed here should be checked regularly if they have been fixed, and if so removed from REGEX_ERRORS_FILTER
 Note: Important: Avoid ', ", ( and ) in the filter texts!
 Note: Do not add any 'Assertion ... failed' to this listr; pquery-del-trial auto-scans known bugs for know assertions!
------------------------------------------------------------------------------------------------------------------------
+Note: You will want to remove 'ERROR' from slave errors, as --slave_skip_errors=ALL can turn these into Warnings instead
+------------------------------------------------------------------------------------------------------------------------
 Filter Text                                           Info at
------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 Event invalid                                         https://jira.mariadb.org/browse/MDEV-26270
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
 test_ps_create_on_corrupted                           Not real corruption, just a table name
@@ -27,11 +28,12 @@ BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wai
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
-ERROR. Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-33359
-ERROR. Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  https://jira.mariadb.org/browse/MDEV-33359
-ERROR. Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  https://jira.mariadb.org/browse/MDEV-33359
+Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-33359
+Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  https://jira.mariadb.org/browse/MDEV-33359
+Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  https://jira.mariadb.org/browse/MDEV-33359
 Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
 Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
+Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  https://jira.mariadb.org/browse/MDEV-33291
 Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  https://jira.mariadb.org/browse/MDEV-33291
 Failed to open log .file .647.. errno 2               https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
 Error reading packet from server. File .647. not found  https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
@@ -40,7 +42,7 @@ Internal MariaDB error code: 1064                     Presumed non-issue (init_s
 Internal MariaDB error code: 1100                     Presumed non-issue (BINLOG_BASE64_EVENT, row event exec error, unlock tables when using manual BINLOG commands)  Ref SPECIAL-11
 Internal MariaDB error code: 1114                     https://jira.mariadb.org/browse/MDEV-23212
 mysqld: The table ..temporary.. is full               https://jira.mariadb.org/browse/MDEV-23212
-Internal MariaDB error code: 1146                     Presumed non-issue (table does not exist, normal in tests, SPECIAL-10)
+Internal MariaDB error code: 1146                     https://jira.mariadb.org/browse/MDEV-33376 or SPECIAL-10
 Internal MariaDB error code: 1168                     Presumed non-issue (for example attempting an action on a MERGE table, SPECIAL-12)
 Internal MariaDB error code: 1193                     Presumed non-issue (init_slave query cannot be executed)
 Internal MariaDB error code: 1223                     https://jira.mariadb.org/browse/MDEV-22936 (May mask other bugs?)
@@ -50,9 +52,9 @@ init_slave query, Internal MariaDB error code: 1237   Presumed non-issue (Slave 
 Internal MariaDB error code: 1399                     Presumed non-issue (global transaction is in IDLE state)
 Internal MariaDB error code: 1429                     Presumed non-issue (accessing an unavailable remote Spider table using BINLOG stmts, ref SPECIAL-13)
 Internal MariaDB error code: 1472                     Presumed non-issue (SPECIAL-14: similar to SPECIAL-12, with MRG_MyISAM)
-Internal MariaDB error code: 1593                     Presumed non-issue (empty or invalid MASTER connection user or host)
+Internal MariaDB error code: 1593                     Presumed non-issue (empty or invalid MASTER connection user or host, or same server-id set after startup)
 Internal MariaDB error code: 1610                     https://jira.mariadb.org/browse/MDEV-22936 (lc_messages=ru testcase)
-Internal MariaDB error code: 1677                     Presumed non-issue (table referenced in binlog does not exist, or unconvertible column type difference), ref SPECIAL-9
+Internal MariaDB error code: 1677                     https://jira.mariadb.org/browse/MDEV-33377 or SPECIAL-9
 Internal MariaDB error code: 1698                     Presumed non-issue (SPECIAL-19: Replica started using non-existent username)
 Internal MariaDB error code: 1792                     Presumed non-issue (tx_read_only=1 yet attempted BINLOG statement)
 Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
@@ -157,10 +159,12 @@ ERROR.*InnoDB.*RENAME.*is ref.*foreign.*not compatible.*new table def  https://j
 ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussion (ref email thread 'Discuss')
 Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
 ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussion (ref email thread 'Discuss')
-ERROR.*Slave SQL: Could not.*Write_rows_v1 event on table.*Error_code: 1062.*HA_ERR.*DUPP_KEY  https://jira.mariadb.org/browse/MDEV-33350
-ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5), or MDEV-33350
-ERROR.*BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      https://jira.mariadb.org/browse/MDEV-22936
-ERROR.*BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    https://jira.mariadb.org/browse/MDEV-22936
+Slave SQL: Could not.*Write_rows_v1 event on table.*Cannot add or update a child row: a foreign key constraint fails.*Error_code: 1452.*HA_ERR_NO_REFERENCED_ROW  https://jira.mariadb.org/browse/MDEV-33378
+Slave SQL: Error .Cannot add or update a child row: a foreign key constraint fails.*Internal MariaDB error code: 1452  https://jira.mariadb.org/browse/MDEV-33378
+Slave SQL: Could not.*Write_rows_v1 event on table.*Error_code: 1062.*HA_ERR.*DUPP_KEY  https://jira.mariadb.org/browse/MDEV-33350
+BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5), or MDEV-33350
+BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      https://jira.mariadb.org/browse/MDEV-22936
+BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    https://jira.mariadb.org/browse/MDEV-22936
 InnoDB: Cannot reset all values.*while it is on.*off  Presumed non-issue (resetting buffer_LRU_get_free_* while on etc.)
 ERROR. InnoDB: Cannot delete.*Is a directory          https://jira.mariadb.org/browse/MDEV-30453
 Flagged corruption of.*in table.*in CHECK TABLE; Wrong count https://jira.mariadb.org/browse/MDEV-29954

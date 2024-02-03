@@ -352,6 +352,7 @@ if [ -r ./errorlogs.tmp ]; then
   while read ERROR_LOG; do
     if [ -r ${ERROR_LOG} ]; then
       # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
+      # Filtering 'MariaDB error code' is a bit wide, but the pquery-results output is simply too large when including this
       DEDUP_FILTERING='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code' # 'Warning: Memory not freed' etc. are now handled by new_text_string.sh and will show up in the UniqueID list already, not much point including them here again (except here it shows for example the actual memory lost in bytes size, but it also really clogs the output/screen)
       ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep --binary-files=text -vE "${DEDUP_FILTERING}" | grep -vE "^[ \t]*$")"
       ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "${DEDUP_FILTERING}" | grep -vE "^[ \t]*$")"

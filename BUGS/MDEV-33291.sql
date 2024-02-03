@@ -20,3 +20,11 @@ RESET MASTER;
 INSERT INTO t2 VALUES (+1, (-1+PI()) DIV(ASIN (1)* CONV(-1,0,-1)%'w!N5Va?>wF9Gi}w0jXmz8O - g="9f2+,!>ht!)&gCH;,JZk[^fd$* Q3h!h{phYTBHsh3IN7RX3,_3cCEptYkB3oN0$K'),'D$2/m6I1?r6@x<RcP}M{7VTMi6M9"Qd1G9NZ3C"qRPCK$r * y.di~h"$Hx[ (h# (rt@6{t@ysui#b@Ia#tvCQWHxF[2ssqMe=AFjOwiPxNajl4_tiko');
 SET GLOBAL binlog_checksum=NONE;
 UPDATE t2 SET c2=+1;
+
+# Requires standard master/slave setup and binlog_format=ROW on master. Execute SQL on the master.
+SET sql_mode='';
+CREATE TABLE t1 (col VARCHAR(10)) ENGINE=InnoDB;
+RESET MASTER;
+INSERT INTO t1 VALUES (1);
+SET GLOBAL binlog_checksum=NONE;
+DELETE FROM t1;

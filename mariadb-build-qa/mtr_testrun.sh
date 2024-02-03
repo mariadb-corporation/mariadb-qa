@@ -81,6 +81,7 @@ while read LINE; do
 done < ${TEMP}
 rm -f ${TEMP}
 
-echo '-------------- mtr_testrun.sh Results --------------'
-echo 'Searching core files...'
+echo '-------------- mtr_testrun.sh Results (core files, if any) --------------'
 find . | grep -vE 'MDEV' | grep -E '/mysql-test/|/mariadb-test/' | grep '/var/log/.*/data/' | grep "${TEST}" | grep 'core' | sort -u
+echo '-------------- mtr_testrun.sh Results (error log: add your search string and run query) --------------'
+echo "SEARCH_STRING='1677'; ./gendirs.sh | xargs -I{} echo \"grep --binary-files=text '\${SEARCH_STRING}' /test/{}/m*test/var/log/*err 2>/dev/null\" | tr '\\n' '\\0' | xargs -0 -I{} bash -c \"{}\""

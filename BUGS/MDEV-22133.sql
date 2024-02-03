@@ -24,3 +24,6 @@ create user 'test_user'@'localhost';
 
 RENAME TABLE mysql.procs_priv TO mysql.procs_gone;
 RENAME USER''@''to''@'',''@''to''@'';
+
+RENAME TABLE mysql.procs_priv TO mysql.procs_gone;
+CREATE USER'';

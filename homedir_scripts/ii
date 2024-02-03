@@ -31,6 +31,6 @@ fi
 if grep -q '^REPLICATION=1' pquery*.conf; then
   grep '^REPLICATION=' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
   grep '^REPL_EXTRA' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
-  grep '^SLAVE_EXTRA' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
   grep '^MASTER_EXTRA' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+  grep '^SLAVE_EXTRA' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
 fi
