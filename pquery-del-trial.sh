@@ -103,22 +103,30 @@ else
 fi
 if [ ! -z "${ERROR_LOG}" ]; then  # Do not use -r as it will not work if both master.err and slave.err are present, for example
   # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
-  ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$|^==>")"
+  ERRORS="$(grep --binary-files=text -h -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$|^==>")"
   ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$|^==>")"
   if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
-    delete_trial
+    if [ "${2}" != "CHECK" ]; then
+      delete_trial
+    fi
   elif [ -z "${ERRORS}" -a ! -z "${ERRORS_LAST_LINE}" -a ! -z "$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --binary-files=text -o 'Assertion .* failed' 2>/dev/null | sed "s|'|.|g" | sed 's|"|.|g' | sed "s|^Assertion .||;s|. failed$||" | xargs -I{} grep --binary-files=text -Fi "{}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null)" ]; then  # There are no other errors, and there is an assertion on the last line of the error log which exactly matches an already known assertion in the known bugs file: ok to proceed with deletion
     delete_trial
   else  # There are uknown issues remaining: do not delete unless an overwrite "1" is passed as an option to the script
     if [ "${2}" != "1" ]; then
-      echo "Not deleting trial ${TRIAL} (Dir: ${PWD}) as one or more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script (pquery-del-trial.sh)!"
+      if [ "${2}" != "CHECK" ]; then
+        echo "Not deleting trial ${TRIAL} (Dir: ${PWD}) as one or more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script (pquery-del-trial.sh)!"
+      else # $2=CHECK (check if dt would normally *not* delete this trial and report on what error was observed so pquery-prep-red.sh can set the right TEXT=... string
+        echo "$(if [ ! -z "${ERRORS}" ]; then echo "${ERRORS}"; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "${ERRORS_LAST_LINE}"; fi;)" |  sed "s|^[-0-9: ]*||;s|[]['@/}{#\!$%\^\&\*)(]|.|g" | tr '-' '.' | sed 's|:[0-9][0-9]\+\.|.*|'  # Last sed removes port number
+      fi
     else
       delete_trial
     fi
   fi
 else
   if [ "${2}" != "NO_WARNINGS" ]; then
-    echo "Warning: ${ERROR_LOG} not found, proceeding to delete all other trial files"
+    if [ "${2}" != "CHECK" ]; then
+      echo "Warning: ${ERROR_LOG} not found, proceeding to delete all other trial files"
+    fi
   fi
   delete_trial
 fi
