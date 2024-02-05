@@ -752,6 +752,7 @@ file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABR
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::repair|handler::ha_repair|ha_partition::handle_opt_part ## MDEV-26035
 table->in_use && tdc->flushed|SIGABRT|TABLE_SHARE::visit_subgraph|Wait_for_flush::accept_visitor|MDL_context::visit_subgraph|MDL_context::find_deadlock                        ## MDEV-28771
 SIGSEGV|__GI___pthread_mutex_lock|rw_pr_rdlock|inline_mysql_prlock_rdlock|MDL_context::visit_subgraph                                                                          ## MDEV-28771
+SIGSEGV|Field::store|Column_stat::set_key_fields|delete_statistics_for_column|Alter_info::apply_statistics_deletes_renames                                                     ## MDEV-28780
 SIGSEGV|Stat_table::common_init_stat_table|Stat_table::Stat_table|Column_stat::Column_stat|delete_statistics_for_column                                                        ## MDEV-28780
 SIGSEGV|Column_stat::set_full_table_name|Column_stat::set_key_fields|delete_statistics_for_column|mysql_prepare_alter_table                                                    ## MDEV-28780
 SIGSEGV|Column_stat::set_key_fields|delete_statistics_for_column|mysql_prepare_alter_table|mysql_alter_table                                                                   ## MDEV-28780

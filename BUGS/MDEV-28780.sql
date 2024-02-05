@@ -22,3 +22,8 @@ ALTER TABLE mysql.column_stats RENAME TO mysql.column_stats1;
 CREATE TABLE t2 (a CHAR(20) BINARY);
 ALTER TABLE t RENAME mysql.column_stats;
 ALTER TABLE t2 CHANGE COLUMN a a CHAR(43);
+
+DROP TABLE IF EXISTS mysql.column_stats;
+CREATE TABLE t (a INT,b INT,KEY(a));
+ALTER TABLE t RENAME mysql.column_stats;
+ALTER TABLE mysql.slow_log DROP COLUMN thread_id;
