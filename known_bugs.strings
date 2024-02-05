@@ -25,6 +25,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1399
 MARIADB_ERROR_CODE|MariaDB error code: 1429  ## SPECIAL-13 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1452  ## https://jira.mariadb.org/browse/MDEV-33378
 MARIADB_ERROR_CODE|MariaDB error code: 1472  ## SPECIAL-14 (ref REGEX_ERRORS_FILTER.info)
+MARIADB_ERROR_CODE|MariaDB error code: 1526  ## https://jira.mariadb.org/browse/MDEV-33291 or https://jira.mariadb.org/browse/MDEV-5798
 MARIADB_ERROR_CODE|MariaDB error code: 1593  ## Invalid or empty CHANGE MASTER username, or same server-id set after startup
 MARIADB_ERROR_CODE|MariaDB error code: 1610  ## https://jira.mariadb.org/browse/MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 or https://jira.mariadb.org/browse/MDEV-33377

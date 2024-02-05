@@ -3,6 +3,7 @@ if [ -z "${1}" ]; then echo "Please pass a MDEV or MENT bug number!"; exit 1; fi
 BUG="$(echo "${1}" | grep -o '[0-9]\+')"
 MDEV=0
 MENT=0
+SPECIAL=0
 if [ -r ~/mariadb-qa/BUGS/MDEV-${BUG}.sql ]; then
   vi ~/mariadb-qa/BUGS/MDEV-${BUG}.sql
   MDEV=1

@@ -37,6 +37,8 @@ Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NO
 Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
 Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  https://jira.mariadb.org/browse/MDEV-33291
 Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  https://jira.mariadb.org/browse/MDEV-33291
+Could not execute Write_rows_v1 event on table.*Error_code: 1526.*HA_ERR_NO_PARTITION_FOUND  https://jira.mariadb.org/browse/MDEV-33291
+Slave SQL: Error 'Table has no partition for value.*Internal MariaDB error code: 1526  https://jira.mariadb.org/browse/MDEV-33291
 Failed to open log .file .647.. errno 2               https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
 Error reading packet from server. File .647. not found  https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
 Replication event checksum verification failed while reading from a log file  https://jira.mariadb.org/browse/MDEV-32628
@@ -153,6 +155,7 @@ Warning. WSREP: handlerton rollback failed, thd       https://jira.mariadb.org/b
 InnoDB: FTS_DOC_ID must be larger than [0-9]          Presumed non-issue (text insert into FTS_DOC_ID, or too low value)
 InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap
 InnoDB: preallocating.*bytes for file.*failed with error 28  Non-issue: out of disk space
+errno: 28 .No space left on device                    Non-issue: out of disk space
 Operating system error number 36 in a file operation  https://jira.mariadb.org/browse/MDEV-19849 (file name too long)
 Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
 Error on rename.*errno: 150.*Foreign key.*incorrectly formed           https://jira.mariadb.org/browse/MDEV-29092
