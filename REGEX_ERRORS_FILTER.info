@@ -2,6 +2,7 @@ Note: Bugs listed here should be checked regularly if they have been fixed, and 
 Note: Important: Avoid ', ", ( and ) in the filter texts!
 Note: Do not add any 'Assertion ... failed' to this listr; pquery-del-trial auto-scans known bugs for know assertions!
 Note: You will want to remove 'ERROR' from slave errors, as --slave_skip_errors=ALL can turn these into Warnings instead
+Note: [Warning] Slave: Unknown storage engine 'foo' Error_code: 1286 and [Warning] Slave: Using storage engine MyISAM for table 't' Error_code: 1266 can be seen on the master+slave (ref SPECIAL-21.sql) are not included here as they are warnings, seen on both master+slave, and will not stop replication
 ------------------------------------------------------------------------------------------------------------------------
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
@@ -28,6 +29,7 @@ BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wai
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
+Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Connections using insecure transport are prohibited while ..require_secure_transport=ON. Internal MariaDB error code: 3159  Ref SPECIAL-22  (require_secure_transport)
 Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-33359
 Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  https://jira.mariadb.org/browse/MDEV-33359
 Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  https://jira.mariadb.org/browse/MDEV-33359

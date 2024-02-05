@@ -16,6 +16,9 @@ else  # New bug
   elif [[ "${1}" == *"MENT"* || "${1}" == *"ment"* ]]; then
     vi ~/mariadb-qa/BUGS/MENT-${BUG}.sql
     MENT=1
+  elif [[ "${1}" == *"SPECIAL"* || "${1}" == *"SPECIAL"* ]]; then
+    vi ~/mariadb-qa/BUGS/SPECIAL-${BUG}.sql
+    SPECIAL=1
   else  # Guess it's MDEV as it was not passed
     vi ~/mariadb-qa/BUGS/MDEV-${BUG}.sql
     MDEV=1
@@ -29,5 +32,10 @@ fi
 if [ "${MENT}" -eq 1 -a -r ~/mariadb-qa/BUGS/MENT-${BUG}.sql ]; then
   cd ~/mariadb-qa/BUGS/
   git add MENT-${BUG}.sql
+  cd - >/dev/null 2>&1
+fi
+if [ "${SPECIAL}" -eq 1 -a -r ~/mariadb-qa/BUGS/SPECIAL-${BUG}.sql ]; then
+  cd ~/mariadb-qa/BUGS/
+  git add SPECIAL-${BUG}.sql
   cd - >/dev/null 2>&1
 fi

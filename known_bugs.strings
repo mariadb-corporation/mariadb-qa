@@ -23,6 +23,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1290  ## SPECIAL-18 (ref REGEX_ERRORS_FIL
 MARIADB_ERROR_CODE|MariaDB error code: 1347  ## SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 MARIADB_ERROR_CODE|MariaDB error code: 1399
 MARIADB_ERROR_CODE|MariaDB error code: 1429  ## SPECIAL-13 (ref REGEX_ERRORS_FILTER.info)
+MARIADB_ERROR_CODE|MariaDB error code: 1452  ## https://jira.mariadb.org/browse/MDEV-33378
 MARIADB_ERROR_CODE|MariaDB error code: 1472  ## SPECIAL-14 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1593  ## Invalid or empty CHANGE MASTER username, or same server-id set after startup
 MARIADB_ERROR_CODE|MariaDB error code: 1610  ## https://jira.mariadb.org/browse/MDEV-22936
@@ -33,6 +34,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1944
 MARIADB_ERROR_CODE|MariaDB error code: 1969
 MARIADB_ERROR_CODE|MariaDB error code: 2003  ## Often seen, for example https://jira.mariadb.org/browse/MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 2005
+MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
