@@ -716,6 +716,19 @@ generate_reducer_script(){
    | sed "${QC_STRING4}" \
    | sed "${PQUERY_EXTRA_OPTIONS}" \
    > ${REDUCER_FILENAME}
+
+  FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings)"
+  if [ "$(echo "${FINDBUG}" | sed 's|[ \t]*\(.\).*|\1|')" == "#" ]; then FINDBUG=""; fi  # See pquery-run.sh for more info on how this works
+  if [ ! -z "${FINDBUG}" ]; then  # Already known and logged, non-fixed bug, use an error log e
+    ERROR_LOG_STRING="$(${SCRIPT_PWD}/pquery-del-trial.sh ${TRIAL} CHECK)"
+    if [ ! -z "${ERROR_LOG_STRING}" ]; then
+      sed -i "s|^USE_NEW_TEXT_STRING=.*|USE_NEW_TEXT_STRING=0  # (Using error log provided string as main issue found (ref '#TEXT=' below) was already known). Note: may require editing before starting this reducer|" ${REDUCER_FILENAME}
+      sed -i "s|^   \(TEXT=.*\)|   TEXT=\"$ERROR_LOG_STRING\"\n#\1|" ${REDUCER_FILENAME}
+    fi
+    ERROR_LOG_STRING=
+    FINDBUG=
+  fi
+
   chmod +x ${REDUCER_FILENAME}
   # If this is a multi-threaded run, create additional quick reducers with only the executed SQL (may/may not work)
   # The quick_ reducer script is a copy of the normal already generated reducer with a changed inputfile, others below
