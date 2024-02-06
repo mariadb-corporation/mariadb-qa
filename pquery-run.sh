@@ -307,7 +307,7 @@ add_handy_scripts(){
   echo "echo 'OR simple one-thread backtrace instead of all threads (i.e. instead of last line):'" >> ${SAVE_STACK_LOC}/gdb
   echo "echo '  bt'" >> ${SAVE_STACK_LOC}/gdb
   echo "sleep 5" >> ${SAVE_STACK_LOC}/gdb
-  CORE_TO_ANALYZE="./data/*core*"
+  CORE_TO_ANALYZE="./data*/*core*"
   if [[ "${MDG}" -eq 1 ]]; then
     CORE_TO_ANALYZE="${GALERA_CORE_LOC}"
   fi

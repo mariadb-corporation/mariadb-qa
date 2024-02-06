@@ -63,7 +63,7 @@ Internal MariaDB error code: 1698                     Presumed non-issue (SPECIA
 Internal MariaDB error code: 1792                     Presumed non-issue (tx_read_only=1 yet attempted BINLOG statement)
 Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
 Internal MariaDB error code: 1969                     Presumed non-issue (max_statement_time exceeded, normal when it is set)
-Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master, or invalid IP address or invalid MASTER user or invalid host)
+Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master, or invalid IP address or invalid MASTER user or invalid host: Can't connect)
 Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
 Internal MariaDB error code: 4145                     Presumed non-issue (binlog event cannot execute as BACKUP STAGE is active)
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'

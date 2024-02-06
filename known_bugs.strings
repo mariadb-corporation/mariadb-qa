@@ -33,7 +33,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1698  ## SPECIAL-19 (ref REGEX_ERRORS_FIL
 MARIADB_ERROR_CODE|MariaDB error code: 1792
 MARIADB_ERROR_CODE|MariaDB error code: 1944
 MARIADB_ERROR_CODE|MariaDB error code: 1969
-MARIADB_ERROR_CODE|MariaDB error code: 2003  ## Often seen, for example https://jira.mariadb.org/browse/MDEV-33359
+MARIADB_ERROR_CODE|MariaDB error code: 2003  ## Often seen (Can't connect), for example https://jira.mariadb.org/browse/MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
