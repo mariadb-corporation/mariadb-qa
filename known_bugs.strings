@@ -171,6 +171,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|fut_get_ptr|fseg_inode_try_get|fseg_inode_get|fseg_n_reserved_pages                                                                                                    ## MDEV-33398
+SIGSEGV|mach_read_from_4|mach_read_from_8|fseg_inode_try_get|fseg_inode_get                                                                                                    ## MDEV-33398
 (tm->tv_usec % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_timestamp_to_binary|Timestamp::to_native|Timestamp_or_zero_datetime::to_native|Item_timestamp_literal::val_native    ## MDEV-33299
 (tm->tv_usec % (int) log_10_int[6 - dec]) == 0|SIGABRT|my_timestamp_to_binary|Timestamp::to_native|Timestamp_or_zero_datetime::to_native|Timestamp_or_zero_datetime_native::Timestamp_or_zero_datetime_native ## MDEV-33299
 m_table|SIGABRT|ha_perfschema::rnd_end|ha_perfschema::rnd_end|handler::ha_rnd_end|mysql_checksum_table                                                                         ## MDEV-33285
