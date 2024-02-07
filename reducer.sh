@@ -1736,6 +1736,7 @@ init_workdir_and_files(){
       fi
     fi
   fi
+  echoit "[Init] Base dir: $BASEDIR"
   echoit "[Init] Work dir: $WORKD"
   echoit "[Init] EPOCH ID: $EPOCH (used for various file and directory names)"
   if [ $MDG -eq 1 ]; then

@@ -969,9 +969,22 @@ if [ ${QC} -eq 0 ]; then
         BIN=$(grep --binary-files=text "\/mariadbd" ./${TRIAL}/start | head -n1 | sed 's|mariadbd .*|mariadbd|;s|.* \(.*bin/mariadbd\)|\1|')
         if [ -z "${BIN}" ]; then
           BIN=$(grep --binary-files=text "\/mysqld" ./${TRIAL}/start | head -n1 | sed 's|mysqld .*|mysqld|;s|.* \(.*bin/mysqld\)|\1|')
-          if [ -z "${BIN}" ]; then
-            echo "Assert \$BIN is empty for trial $TRIAL, please fix this trial manually"
-            continue
+          if [ -z "${BIN}" -o ! -r "${BIN}" ]; then  # Check if we can obtain bin from the pquery-run.sh log in case BIN is still empty, or is not empty/set but cannot be read at this point (TBD: check if this works correctly given that normally there is an 'exit 1' (ref below) when BIN cannot be read. It should work as in this codeblock we add a '-r' as well, and the BIN var is only changed if it can be -r read)  # 8-Feb-24 RV
+            if [ -r ./pquery-run.log ]; then
+              TEST_BASE="$(grep -io --binary-files=text 'Basedir:.*' pquery-run.log 2>/dev/null | sed 's|^.*[ \t]*:[ \t]*||')"
+              if [ ! -z "${TEST_BASE}" ]; then
+                if [ -r "${TEST_BASE}/bin/mariadbd" ]; then
+                  BIN="${TEST_BASE}/bin/mariadbd"
+                elif [ -r "${TEST_BASE}/bin/mysqld" ]; then
+                  BIN="${TEST_BASE}/bin/mysqld"
+                fi
+              fi
+              TEST_BASE=
+            fi
+            if [ -z "${BIN}" ]; then
+              echo "Assert \$BIN is empty for trial $TRIAL, please fix this trial manually"
+              continue
+            fi
           fi
         fi
         if [ ! -r "${BIN}" ]; then

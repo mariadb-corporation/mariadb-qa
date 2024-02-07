@@ -31,6 +31,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1610  ## https://jira.mariadb.org/browse/
 MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 or https://jira.mariadb.org/browse/MDEV-33377
 MARIADB_ERROR_CODE|MariaDB error code: 1698  ## SPECIAL-19 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1792
+MARIADB_ERROR_CODE|MariaDB error code: 1942  ## SPECIAL-23 (mysql.old_gtid_slave_pos removed)
 MARIADB_ERROR_CODE|MariaDB error code: 1944
 MARIADB_ERROR_CODE|MariaDB error code: 1969
 MARIADB_ERROR_CODE|MariaDB error code: 2003  ## Often seen (Can't connect), for example https://jira.mariadb.org/browse/MDEV-33359
@@ -245,8 +246,6 @@ SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::info
 SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::info|make_join_statistics                                                                          ## MDEV-32492
 SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::info|Sql_cmd_delete::delete_from_single_table                                                      ## MDEV-32492
 SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::check_access_kind_for_connection|ha_spider::dml_init                                               ## MDEV-32492
-#!trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_bounded_nat_list|spider_parse_connect_info      ## MDEV-32486 (Remember REGEX filter)
-#!trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_long_list|spider_parse_connect_info             ## MDEV-32486 (IDEM)
 SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-31996 (fixed, filtering, waiting for upmerge )
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_delete_all_rows|ha_spider::delete_all_rows                                                                           ## MDEV-31996 (idem)
 mutex->__data.__owner == 0|SIGABRT|___pthread_mutex_lock|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                ## MDEV-31996 (idem)
@@ -459,6 +458,7 @@ SIGSEGV|my_hash_insert|spider_get_trx|spider_copy_tables_body|udf_handler::val_i
 SIGSEGV|thd_get_ha_data|spider_direct_sql_init_body|spider_bg_direct_sql_init|udf_handler::fix_fields                                                                          ## MDEV-30727
 SIGSEGV|thd_get_ha_data|spider_direct_sql_body|udf_handler::val_int|udf_handler::val_int                                                                                       ## MDEV-30727
 SIGSEGV|my_hash_insert|spider_get_trx|spider_direct_sql_body|udf_handler::add                                                                                                  ## MDEV-30727
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_alloc_mem_calc|spider_bulk_alloc_mem                                                                                    ## MDEV-30727
 SIGSEGV|mysql_derived_prepare|mysql_derived_merge_for_insert|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end                                                  ## MDEV-21630
 SIGSEGV|Binary_string::free|Binary_string::~Binary_string|String::~String|Copy_field::~Copy_field                                                                              ## MDEV-21630
 SIGSEGV|mysql_derived_prepare|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end|Multiupdate_prelocking_strategy::handle_end                                     ## MDEV-21630
@@ -2222,3 +2222,5 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|check_vcol_forward_refs|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table                                                                   ## Fixed ## MDEV-22525
 # !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|THD::my_ok_with_recreate_info|mysql_alter_table                 ## Fixed ## MDEV-33195
 # !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner ## Fixed ## MDEV-33195
+# !trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_bounded_nat_list|spider_parse_connect_info ## Fixed ## MDEV-32486
+# !trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_long_list|spider_parse_connect_info  ## Fixed ## MDEV-32486

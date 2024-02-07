@@ -20,3 +20,15 @@ INSTALL PLUGIN Spider SONAME 'ha_spider.so';
 UNINSTALL SONAME IF EXISTS "ha_spider";
 CREATE TABLE t (a INT DEFAULT 1,b CHAR DEFAULT'',c DATE DEFAULT'') DEFAULT CHARSET=utf8;
 SELECT spider_bg_direct_sql ('SET SESSION _offset=1','','SRV "s"');
+
+CREATE TABLE t (a INT) ENGINE=InnoDB;
+INSTALL SONAME 'ha_spider';
+UNINSTALL SONAME 'ha_spider';
+SELECT * FROM t GROUP BY a;
+SELECT spider_copy_tables ('foota_l','','');
+
+CREATE TABLE t (a INT) ENGINE=InnoDB;
+INSTALL SONAME 'ha_spider';
+UNINSTALL SONAME 'ha_spider';
+SELECT * FROM t;
+SELECT spider_copy_tables ('foota_l','','');

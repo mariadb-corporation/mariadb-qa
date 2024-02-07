@@ -61,6 +61,7 @@ Internal MariaDB error code: 1610                     https://jira.mariadb.org/b
 Internal MariaDB error code: 1677                     https://jira.mariadb.org/browse/MDEV-33377 or SPECIAL-9
 Internal MariaDB error code: 1698                     Presumed non-issue (SPECIAL-19: Replica started using non-existent username)
 Internal MariaDB error code: 1792                     Presumed non-issue (tx_read_only=1 yet attempted BINLOG statement)
+Internal MariaDB error code: 1942                     Ref SPECIAL-23 (mysql.old_gtid_slave_pos removed)
 Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
 Internal MariaDB error code: 1969                     Presumed non-issue (max_statement_time exceeded, normal when it is set)
 Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master, or invalid IP address or invalid MASTER user or invalid host: Can't connect)
@@ -137,6 +138,7 @@ invalid value in column mysql.proc.db_collation       Testcase artifact caused b
 Cannot load from mysql.proc. The table is probably corrupted  Testcase artifact caused by ALTER TABLE mysql.proc
 WSREP .galera. provider is not loaded                 Presumed non-issue (Galera provider not loaded)
 Trying to lock uninitialized mutex.*sql_cache.*72     https://jira.mariadb.org/browse/MDEV-29708
+Trying to lock uninitialized mutex.*spider/spd_malloc.cc.*line 15  https://jira.mariadb.org/browse/MDEV-30727
 wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  https://jira.mariadb.org/browse/MDEV-29744
 wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  https://jira.mariadb.org/browse/MDEV-29744
 InnoDB: Invalid column name for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
