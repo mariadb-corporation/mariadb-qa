@@ -55,7 +55,7 @@ if [ ${CORE_COUNT} -eq 0 ]; then
   echo "INFO: no cores found at data*/*core* nor at node*/*core*"
   exit 1
 elif [ ${CORE_COUNT} -gt 1 ]; then
-  echo "Assert: too many (${CORE_COUNT}) cores found at data*/*core* and/or node*/*core*, this should not happen (as ./all_no_cl was used which should have created a clean data directory, or the same for the matching Galera scripts)"
+  echo "Assert: too many (${CORE_COUNT}) cores found at data*/*core* and/or node*/*core*"
   exit 1
 fi
 

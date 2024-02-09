@@ -1,0 +1,12 @@
+#!/bin/bash
+set +H
+if [ -z "${1}" ]; then echo 'Assert: please pass the string you want to search for (in MYBUG or in the error log) as the first option to this script. If you want to search error logs rather than MYBUG files, add anything as a second option'; exit 1; fi
+if [ -d /data -a -r /data/find_reduced_bugs -a "${PWD}" != "/data" ]; then
+  echo "Changing directory to /data"
+  cd /data
+fi
+if [ -z "${2}" ]; then
+  grep --binary-files=text -Fi "${1}" [0-9]*/*/MYBUG* 2>/dev/null
+else
+  grep --binary-files=text -Fi "${1}" [0-9]*/*/log/master.err 2>/dev/null
+fi
