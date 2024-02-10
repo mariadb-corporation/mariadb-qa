@@ -66,8 +66,8 @@ SCRIPT_LOC=/usr/bin/script      # The script binary (sudo yum install util-linux
 
 # === Reduce replication issues # Note that any REPL_EXTRA set in pquery conf files are auto-merged by pquery-run.sh into MYEXTRA (and this do not need to be covered here)
 REPLICATION=0                   # Default: 0: disabled, 1: enable standard master/slave replication. Replay will be against the master
-MASTER_EXTRA=""                 # Extra mysqld/mariadbd options to pass to the master server only
-SLAVE_EXTRA=""                  # Extra mysqld/mariadbd options to pass to the slave server only
+MASTER_EXTRA="--log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --server_id=1"  # Extra mysqld/mariadbd options to pass to the master server only
+SLAVE_EXTRA="--slave_skip_errors=ALL --server_id=2"  # Extra mysqld/mariadbd options to pass to the slave server only
 
 # === Hang issues               # For catching hang issues (both in normal runtime as well as during shutdown). Must set MODE=0 for this option to become active
 TIMEOUT_CHECK=600               # When MODE=0 is used, this specifies the nr of seconds to be used as a timeout. Do not set too small (eg. >600 sec is likely best). See examples in help below. Set to approx FULL testcase duration + 20 seconds, keeping in mind load on the server. Minimum: 31 seconds. 'FULL': Because the chuncking algorithm could eliminate the hanging query, but if the TIMEOUT_CHECK is set too small then a timeout will still occur due to overall testcase duration! Likely best to take overall testcase lenght (without the hanging query) + 30 seconds on otherwise unused server, or simply set it to a large number like 600 as this is less error-prone. A good approach is to pre-trim the file past the hanging query first manually, then remove last statement, check duration client. Then add 30 seconds.
@@ -386,12 +386,6 @@ fi
 BASEDIR_ALT=
 #Check replication option
 if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want MASTER_EXTRA nor SLAVE_EXTRA options to take effect
-  if [ ! -z "${MASTER_EXTRA}" ]; then
-    echo "Warning: MASTER_EXTRA is set to '${MASTER_EXTRA}', yet REPLICATION=0, this looks like a configuration mistake. MASTER_EXTRA will not take effect during this reducer.sh run"
-  fi
-  if [ ! -z "${SLAVE_EXTRA}" ]; then
-    echo "Warning: SLAVE_EXTRA is set to '${SLAVE_EXTRA}', yet REPLICATION=0, this looks like a configuration mistake. SLAVE_EXTRA will not take effect during this reducer.sh run"
-  fi
   MASTER_EXTRA=
   SLAVE_EXTRA=
 fi

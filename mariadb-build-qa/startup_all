@@ -1,14 +1,22 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-echo "ONLY RUN THIS SCRIPT ON A NON-PRODUCTION SERVER, IT MOVES /etc/mysql to /etc/mysql.old"
-echo "Press CTRL+C to interrupt"
-sleep 3
-
 if [ ! -r ~/mariadb-qa/startup.sh ]; then
   echo "Assert: incorrect infrastructure setup! Please make ~/mariadb-qa/startup.sh to be available"
   exit 1
 fi
+
+if [ -z "$(./gendirs.sh ALLALL)" ]; then
+  echo "The output of './gendirs.sh ALLALL' is empty, which likely means you are in the wrong directory, or you have not build any MD*, EMD* or MS* instances yet."
+  if [ "${PWD}" == "/data" ]; then
+    echo "You are in /data, did you mean to be in /test (the common directory for builds)?"
+    exit 1
+  fi
+fi
+
+echo "ONLY RUN THIS SCRIPT ON A TESTING (i.e. NON-PRODUCTION) SERVER, AS IT MOVES /etc/mysql to /etc/mysql.old"
+echo "Press CTRL+C to interrupt"
+sleep 3
 
 ./kill_all 2>&1 | grep -v 'kill did not exist'
 sync

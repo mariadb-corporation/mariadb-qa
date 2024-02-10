@@ -28,6 +28,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1472  ## SPECIAL-14 (ref REGEX_ERRORS_FIL
 MARIADB_ERROR_CODE|MariaDB error code: 1526  ## https://jira.mariadb.org/browse/MDEV-33291 or https://jira.mariadb.org/browse/MDEV-5798
 MARIADB_ERROR_CODE|MariaDB error code: 1593  ## Invalid or empty CHANGE MASTER username, or same server-id set after startup
 MARIADB_ERROR_CODE|MariaDB error code: 1610  ## https://jira.mariadb.org/browse/MDEV-22936
+# MARIADB_ERROR_CODE|MariaDB error code: 1623  ## May be seen with OOS (ER_SLAVE_HEARTBEAT_FAILURE: Unexpected master's heartbeat data)
 MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 or https://jira.mariadb.org/browse/MDEV-33377
 MARIADB_ERROR_CODE|MariaDB error code: 1698  ## SPECIAL-19 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1792
@@ -174,6 +175,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS ##### Search key: Mac ###
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_slave_sql|pfs_spawn_thread                                           ## MDEV-33426
+(longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|maria_close|ha_maria::close                      ## MDEV-33426
+!is_thread_specific || (mysqld_server_initialized && thd)|SIGABRT|my_malloc_size_cb_func|my_free|maria_close|ha_maria::close                                                   ## MDEV-33426 (additional t/c needed for this UniqueID if possible)
+precision > 0|SIGABRT|my_malloc_size_cb_func|my_free|maria_close|ha_maria::close                                                                                               ## MDEV-33426 (additional t/c needed for this UniqueID if possible)
+inited==RND|SIGABRT|my_malloc_size_cb_func|my_free|maria_close|ha_maria::close                                                                                                 ## MDEV-33426 (additional t/c needed for this UniqueID if possible)
 index->is_instant()|SIGABRT|rec_init_offsets|rec_get_offsets_func|btr_search_hash_table_validate|btr_search_validate                                                           ## MDEV-33400
 SIGSEGV|fut_get_ptr|fseg_inode_try_get|fseg_inode_get|fseg_n_reserved_pages                                                                                                    ## MDEV-33398
 SIGSEGV|mach_read_from_4|mach_read_from_8|fseg_inode_try_get|fseg_inode_get                                                                                                    ## MDEV-33398
