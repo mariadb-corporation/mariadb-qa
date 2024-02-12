@@ -1,44 +1,44 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Otherwise, just follow the existing formatting.
 
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
-MARIADB_ERROR_CODE|MariaDB error code: 0     ## https://jira.mariadb.org/browse/MDEV-33359
+MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
-MARIADB_ERROR_CODE|MariaDB error code: 1030  ## https://jira.mariadb.org/browse/MDEV-22936
-MARIADB_ERROR_CODE|MariaDB error code: 1032  ## https://jira.mariadb.org/browse/MDEV-33291 (may mask other bugs)
-MARIADB_ERROR_CODE|MariaDB error code: 1045  ## https://jira.mariadb.org/browse/MDEV-33359
+MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
+MARIADB_ERROR_CODE|MariaDB error code: 1032  ## MDEV-33291 (may mask other bugs)
+MARIADB_ERROR_CODE|MariaDB error code: 1045  ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1046
 MARIADB_ERROR_CODE|MariaDB error code: 1054
 MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 or MDEV-33350
 MARIADB_ERROR_CODE|MariaDB error code: 1064
 MARIADB_ERROR_CODE|MariaDB error code: 1100  ## SPECIAL-11 (ref REGEX_ERRORS_FILTER.info)
-MARIADB_ERROR_CODE|MariaDB error code: 1114  ## https://jira.mariadb.org/browse/MDEV-23212
-MARIADB_ERROR_CODE|MariaDB error code: 1146  ## SPECIAL-10 or https://jira.mariadb.org/browse/MDEV-33376
+MARIADB_ERROR_CODE|MariaDB error code: 1114  ## MDEV-23212
+MARIADB_ERROR_CODE|MariaDB error code: 1146  ## SPECIAL-10 or MDEV-33376
 MARIADB_ERROR_CODE|MariaDB error code: 1168  ## SPECIAL-12 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1193
 MARIADB_ERROR_CODE|MariaDB error code: 1205  ## SPECIAL-17 (ref REGEX_ERRORS_FILTER.info)
-MARIADB_ERROR_CODE|MariaDB error code: 1223  ## https://jira.mariadb.org/browse/MDEV-22936
+MARIADB_ERROR_CODE|MariaDB error code: 1223  ## MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1231
 MARIADB_ERROR_CODE|MariaDB error code: 1237
 MARIADB_ERROR_CODE|MariaDB error code: 1290  ## SPECIAL-18 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1347  ## SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 MARIADB_ERROR_CODE|MariaDB error code: 1399
 MARIADB_ERROR_CODE|MariaDB error code: 1429  ## SPECIAL-13 (ref REGEX_ERRORS_FILTER.info)
-MARIADB_ERROR_CODE|MariaDB error code: 1452  ## https://jira.mariadb.org/browse/MDEV-33378
+MARIADB_ERROR_CODE|MariaDB error code: 1452  ## MDEV-33378
 MARIADB_ERROR_CODE|MariaDB error code: 1472  ## SPECIAL-14 (ref REGEX_ERRORS_FILTER.info)
-MARIADB_ERROR_CODE|MariaDB error code: 1526  ## https://jira.mariadb.org/browse/MDEV-33291 or https://jira.mariadb.org/browse/MDEV-5798
+MARIADB_ERROR_CODE|MariaDB error code: 1526  ## MDEV-33291 or MDEV-5798
 MARIADB_ERROR_CODE|MariaDB error code: 1593  ## Invalid or empty CHANGE MASTER username, or same server-id set after startup
-MARIADB_ERROR_CODE|MariaDB error code: 1610  ## https://jira.mariadb.org/browse/MDEV-22936
+MARIADB_ERROR_CODE|MariaDB error code: 1610  ## MDEV-22936
 # MARIADB_ERROR_CODE|MariaDB error code: 1623  ## May be seen with OOS (ER_SLAVE_HEARTBEAT_FAILURE: Unexpected master's heartbeat data)
-MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 or https://jira.mariadb.org/browse/MDEV-33377
+MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 or MDEV-33377
 MARIADB_ERROR_CODE|MariaDB error code: 1698  ## SPECIAL-19 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1792
 MARIADB_ERROR_CODE|MariaDB error code: 1942  ## SPECIAL-23 (mysql.old_gtid_slave_pos removed)
 MARIADB_ERROR_CODE|MariaDB error code: 1944
 MARIADB_ERROR_CODE|MariaDB error code: 1969
-MARIADB_ERROR_CODE|MariaDB error code: 2003  ## Often seen (Can't connect), for example https://jira.mariadb.org/browse/MDEV-33359
+MARIADB_ERROR_CODE|MariaDB error code: 2003  ## Often seen (Can't connect), for example MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 2013  ## Ref REGEX_ERRORS_FILTER.info (search for '2013', two references)
-MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22
+MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22 (require_secure_transport)
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
@@ -89,7 +89,7 @@ GOT_ERROR|Got error 12701|when reading table                   ## MDEV-26543
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
 GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spider)
-GOT_FATAL_ERROR|Got fatal error 1236                           ## SPECIAL-24 / MDEV-33291, or presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
+GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or SPECIAL-24 / MDEV-33291, or presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (DISABLED GENERIC FILTERS TO AVOID MISSING OTHER BUGS) #####
 ### status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql ## MDEV-25927
@@ -105,7 +105,7 @@ GOT_FATAL_ERROR|Got fatal error 1236                           ## SPECIAL-24 / M
 ##### CURRENT BUGS WHICH REQUIRE ADDITIONAL TESTCASES (MOSTLY DISABLED FILTERS) #####
 ### SIGABRT|ib::fatal::~fatal|srv_monitor_task|tpool::thread_pool_generic::timer_generic::run|tpool::thread_pool_generic::timer_generic::execute                               ## MDEV-24911
 
-##### Diagnostics_area::set_error_status|THD... issues, caused by: https://jira.mariadb.org/browse/MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874 and also discussed in Slack st 7 Oct 22 8am. Use lower level stack frames to differentiate
+##### Diagnostics_area::set_error_status|THD... issues, caused by: MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874 and also discussed in Slack st 7 Oct 22 8am. Use lower level stack frames to differentiate
 marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-24658
 open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                       ## MDEV-25927
 SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                                             ## MDEV-24686
@@ -174,6 +174,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                                                                                               ## MDEV-32477
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_slave_sql|pfs_spawn_thread                                           ## MDEV-33426
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_rpl_parallel_thread|pfs_spawn_thread                                 ## MDEV-33426
 (longlong) thd->status_var.local_memory_used >= 0 || !debug_assert_on_not_freed_memory|SIGABRT|my_malloc_size_cb_func|my_free|maria_close|ha_maria::close                      ## MDEV-33426

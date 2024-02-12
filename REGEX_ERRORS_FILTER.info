@@ -3,17 +3,18 @@ Note: Important: Avoid ', ", ( and ) in the filter texts!
 Note: Do not add any 'Assertion ... failed' to this listr; pquery-del-trial auto-scans known bugs for know assertions!
 Note: You will want to remove 'ERROR' from slave errors, as --slave_skip_errors=ALL can turn these into Warnings instead
 Note: [Warning] Slave: Unknown storage engine 'foo' Error_code: 1286 and [Warning] Slave: Using storage engine MyISAM for table 't' Error_code: 1266 can be seen on the master+slave (ref SPECIAL-21.sql) are not included here as they are warnings, seen on both master+slave, and will not stop replication
+Note: You will want to change 'mariadbd:' and 'mysqld:' strings to 'd:' to make them universal given the daemon name change
 ------------------------------------------------------------------------------------------------------------------------
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
-Event invalid                                         https://jira.mariadb.org/browse/MDEV-26270
+Event invalid                                         MDEV-26270
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name
 _corrupted_to_rename                                  Not real corruption, just a partial table name
 t[0-9]*_corrupted                                     Not real corruption, just a regex table name
 t[0-9]*_inc_corrupted                                 Not real corruption, just a regex table name
-virtual THD...!debug_assert_on_not_freed_memory       https://jira.mariadb.org/browse/MDEV-25927
+virtual THD...!debug_assert_on_not_freed_memory       MDEV-25927
 next_free_value                                       Not related to freeing memory, just a variable name
 innodb-force-load-corrupted                           Not real corruption, just a variable name
 dict_index_t::is_corrupted                            Not real corruption, just a function name
@@ -21,7 +22,7 @@ Failed to update GTID state in mysql.gtid_slave_pos   Presumed non-issue (mysql.
 Slave SQL thread is stopped because UNTIL condition is bad  Presumed non-issue (incorrect UNTIL condition)
 Error reading packet from server: could not find next log  RESET MASTER was executed, breaking the replication chain
 Internal MariaDB error code: 1017                     Presumed non-issue (mysql db was dropped causing slave issues)
-Internal MariaDB error code: 1030                     https://jira.mariadb.org/browse/MDEV-22936
+Internal MariaDB error code: 1030                     MDEV-22936
 Internal MariaDB error code: 1046                     Presumed non-issue (init_slave query cannot be executed) See MDEV-29499
 init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave thread cannot execute init_slave query)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1062  Ref SPECIAL-8 and search this file for 1062
@@ -29,36 +30,38 @@ BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wai
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
+Error reading packet from server: The binlog on the master is missing the GTID.*requested by the slave .even though both a prior and a subsequent sequence number does exist.. and GTID strict mode is enabled .server_errno=1236  MDEV-33445
 Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Connections using insecure transport are prohibited while ..require_secure_transport=ON. Internal MariaDB error code: 3159  Ref SPECIAL-22  (require_secure_transport)
-Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  https://jira.mariadb.org/browse/MDEV-33359
-Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  https://jira.mariadb.org/browse/MDEV-33359
-Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  https://jira.mariadb.org/browse/MDEV-33359
-Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
-Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  https://jira.mariadb.org/browse/MDEV-33291
-Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  https://jira.mariadb.org/browse/MDEV-33291
-Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  https://jira.mariadb.org/browse/MDEV-33291
-Could not execute Write_rows_v1 event on table.*Error_code: 1526.*HA_ERR_NO_PARTITION_FOUND  https://jira.mariadb.org/browse/MDEV-33291
-Slave SQL: Error 'Table has no partition for value.*Internal MariaDB error code: 1526  https://jira.mariadb.org/browse/MDEV-33291
-Failed to open log .file .647.. errno 2               https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
-Error reading packet from server. File .647. not found  https://jira.mariadb.org/browse/MDEV-22921 (ref comment)
-Replication event checksum verification failed while reading from a log file  https://jira.mariadb.org/browse/MDEV-32628
+Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  MDEV-33359
+Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  MDEV-33359
+Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  MDEV-33359
+Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  MDEV-33291
+Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  MDEV-33291
+Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  MDEV-33291
+Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  MDEV-33291
+Could not execute Write_rows_v1 event on table.*Error_code: 1526.*HA_ERR_NO_PARTITION_FOUND  MDEV-33291
+Slave SQL: Error 'Table has no partition for value.*Internal MariaDB error code: 1526  MDEV-33291
+safe_mutex: Found wrong usage of mutex .LOCK_plugin. and .LOCK_thd_kill  MDEV-32477
+Failed to open log .file .647.. errno 2               MDEV-22921 (ref comment)
+Error reading packet from server. File .647. not found  MDEV-22921 (ref comment)
+Replication event checksum verification failed while reading from a log file  MDEV-32628
 Internal MariaDB error code: 1064                     Presumed non-issue (init_slave query error), though see MDEV-26247 (1064)
 Internal MariaDB error code: 1100                     Presumed non-issue (BINLOG_BASE64_EVENT, row event exec error, unlock tables when using manual BINLOG commands)  Ref SPECIAL-11
-Internal MariaDB error code: 1114                     https://jira.mariadb.org/browse/MDEV-23212
-mysqld: The table ..temporary.. is full               https://jira.mariadb.org/browse/MDEV-23212
-Internal MariaDB error code: 1146                     https://jira.mariadb.org/browse/MDEV-33376 or SPECIAL-10
+Internal MariaDB error code: 1114                     MDEV-23212
+d: The table ..temporary.. is full                    MDEV-23212
+Internal MariaDB error code: 1146                     MDEV-33376 or SPECIAL-10
 Internal MariaDB error code: 1168                     Presumed non-issue (for example attempting an action on a MERGE table, SPECIAL-12)
 Internal MariaDB error code: 1193                     Presumed non-issue (init_slave query cannot be executed)
-Internal MariaDB error code: 1223                     https://jira.mariadb.org/browse/MDEV-22936 (May mask other bugs?)
-Internal MariaDB error code: 1227                     https://jira.mariadb.org/browse/MDEV-29659 (spider_internal_sql_log_off)
+Internal MariaDB error code: 1223                     MDEV-22936 (May mask other bugs?)
+Internal MariaDB error code: 1227                     MDEV-29659 (spider_internal_sql_log_off)
 Internal MariaDB error code: 1231                     Presumed non-issue (init_slave query cannot be executed)
 init_slave query, Internal MariaDB error code: 1237   Presumed non-issue (Slave thread cannot execute init_slave query)
 Internal MariaDB error code: 1399                     Presumed non-issue (global transaction is in IDLE state)
 Internal MariaDB error code: 1429                     Presumed non-issue (accessing an unavailable remote Spider table using BINLOG stmts, ref SPECIAL-13)
 Internal MariaDB error code: 1472                     Presumed non-issue (SPECIAL-14: similar to SPECIAL-12, with MRG_MyISAM)
 Internal MariaDB error code: 1593                     Presumed non-issue (empty or invalid MASTER connection user or host, or same server-id set after startup)
-Internal MariaDB error code: 1610                     https://jira.mariadb.org/browse/MDEV-22936 (lc_messages=ru testcase)
-Internal MariaDB error code: 1677                     https://jira.mariadb.org/browse/MDEV-33377 or SPECIAL-9
+Internal MariaDB error code: 1610                     MDEV-22936 (lc_messages=ru testcase)
+Internal MariaDB error code: 1677                     MDEV-33377 or SPECIAL-9
 Internal MariaDB error code: 1698                     Presumed non-issue (SPECIAL-19: Replica started using non-existent username)
 Internal MariaDB error code: 1792                     Presumed non-issue (tx_read_only=1 yet attempted BINLOG statement)
 Internal MariaDB error code: 1942                     Ref SPECIAL-23 (mysql.old_gtid_slave_pos removed)
@@ -68,82 +71,83 @@ Internal MariaDB error code: 2003                     Presumed non-issue (unreac
 Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
 Internal MariaDB error code: 4145                     Presumed non-issue (binlog event cannot execute as BACKUP STAGE is active)
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
-Got error 9 when reading table                        https://jira.mariadb.org/browse/MDEV-23297
-Got error 170                                         https://jira.mariadb.org/browse/MDEV-26261
-Got error 171 .The event was corrupt                  https://jira.mariadb.org/browse/MDEV-22936 (May mask other bugs?)
-Got error 127 when reading table                      https://jira.mariadb.org/browse/MDEV-27903
+Got error 9 when reading table                        MDEV-23297
+Got error 170                                         MDEV-26261
+Got error 171 .The event was corrupt                  MDEV-22936 (May mask other bugs?)
+Got error 127 when reading table                      MDEV-27903
 Got error 188 when reading table                      Presumed non-issue (Operation was interrupted, max_statement_time)
-Got error 192                                         https://jira.mariadb.org/browse/MDEV-26258 (various error 192 msgs)
-Got error 194 when reading table                      https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
-Got error 194 .Tablespace is missing .* engine InnoDB https://jira.mariadb.org/browse/MDEV-27952 (tablespace discarded)
-Got error 1054 when reading table                     https://jira.mariadb.org/browse/MDEV-29430 (Spider)
-Got error 1054 when reading table                     https://jira.mariadb.org/browse/MDEV-29663 (Spider, 29430 duplicate)
-Got error 1100 when reading table                     https://jira.mariadb.org/browse/MDEV-31409 (Spider)
+Got error 192                                         MDEV-26258 (various error 192 msgs)
+Got error 194 when reading table                      MDEV-27952 (tablespace discarded)
+Got error 194 .Tablespace is missing .* engine InnoDB MDEV-27952 (tablespace discarded)
+Got error 1054 when reading table                     MDEV-29430 (Spider)
+Got error 1054 when reading table                     MDEV-29663 (Spider, 29430 duplicate)
+Got error 1100 when reading table                     MDEV-31409 (Spider)
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
-Got error 1184 when reading table                     https://jira.mariadb.org/browse/MDEV-29583 (init_connect failed, Spider)
-Got error 1400 when reading table                     https://jira.mariadb.org/browse/MDEV-31318 (Spider XA)
+Got error 1184 when reading table                     MDEV-29583 (init_connect failed, Spider)
+Got error 1400 when reading table                     MDEV-31318 (Spider XA)
 Got error 1429 when reading table                     Presumed non-issue (ref SPECIAL-6.sql: Spider undef. reference ALTER)
 Got error 1430 when reading table                     Presumed non-issue (federatedx base table removed)
-Got error 1430 .Unknown error 1430                    https://jira.mariadb.org/browse/MDEV-29923
-Got error 1440 when reading table                     https://jira.mariadb.org/browse/MDEV-29454 (XAER_DUPID Spider)
-Got error 1032.*entry [1-7] of type.*rename           https://jira.mariadb.org/browse/MDEV-29800 (CoR bug)
-Got error 12524.*entry 6 of type.*rename              https://jira.mariadb.org/browse/MDEV-29800 (CoR bug)
-Got error 12524 when reading table                    https://jira.mariadb.org/browse/MDEV-33196 (Spider)
-Got error 12701                                       https://jira.mariadb.org/browse/MDEV-26543 (Spider)
-Got error 12701                                       https://jira.mariadb.org/browse/MDEV-28676 (Spider)
-Got error 12701                                       https://jira.mariadb.org/browse/MDEV-29455 (Spider)
+Got error 1430 .Unknown error 1430                    MDEV-29923
+Got error 1440 when reading table                     MDEV-29454 (XAER_DUPID Spider)
+Got error 1032.*entry [1-7] of type.*rename           MDEV-29800 (CoR bug)
+Got error 12524.*entry 6 of type.*rename              MDEV-29800 (CoR bug)
+Got error 12524 when reading table                    MDEV-33196 (Spider)
+Got error 12701                                       MDEV-26543 (Spider)
+Got error 12701                                       MDEV-28676 (Spider)
+Got error 12701                                       MDEV-29455 (Spider)
 Got error 12719 when reading table                    Presumed non-issue (Spider, ref SPECIAL-7.sql & MDEV-29583)
-Got error 12801                                       https://jira.mariadb.org/browse/MDEV-29502 (Spider, CLI only: not filtered ftm)
+Got error 12801                                       MDEV-29502 (Spider, CLI only: not filtered ftm)
 Lost connection to server during query.*server_errno=2013  Presumed non-issue (Happens on slave when master has crashed)
 Lost connection to server at.*Internal MariaDB error code: 2013  Presumed non-issue (Appears as another error after 'Lost connection to server during query.*server_errno=2013' at times)
 connecting slave requested.*GTID.*not in the master.s binlog.*server_errno=1236  Presumed non-issue (RESET MASTER was executed, removing the master's binary logs) Ref SPECIAL-20.sql example
-Error reading packet from server: The binlog on the master is missing the GTID.*requested by the slave.*even though both a prior and a subsequent sequence number does exist.*GTID strict mode is enabled.*server_errno=1236  Ref SPECIAL-24 and https://jira.mariadb.org/browse/MDEV-33291
-Slave I.O: Got fatal.*1236 from master when reading data from binary log.*binlog on the master is missing the GTID.*even though both a prior and a subsequent sequence number does exist.*GTID strict mode is enabled.*Internal MariaDB error code: 1236  Ref SPECIAL-24 and https://jira.mariadb.org/browse/MDEV-33291
-read_log_event..: .Event too big                      https://jira.mariadb.org/browse/MDEV-32628
-read_log_event..: .Event truncated                    https://jira.mariadb.org/browse/MDEV-32628
+Error reading packet from server: The binlog on the master is missing the GTID.*requested by the slave.*even though both a prior and a subsequent sequence number does exist.*GTID strict mode is enabled.*server_errno=1236  Ref SPECIAL-24 and MDEV-33291
+Slave I.O: Got fatal.*1236 from master when reading data from binary log.*Error: connecting slave requested to start from GTID.*, which is not in the master.*binlog.*Internal MariaDB error code: 1236  Presumed non-issue, similar to MDEV-33291 / SPECIAL-24
+Slave I.O: Got fatal.*1236 from master when reading data from binary log.*binlog on the master is missing the GTID.*even though both a prior and a subsequent sequence number does exist.*GTID strict mode is enabled.*Internal MariaDB error code: 1236  Ref SPECIAL-24 and MDEV-33291
+read_log_event..: .Event too big                      MDEV-32628
+read_log_event..: .Event truncated                    MDEV-32628
 max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)
 ^Stats:                                               Prevents incorrect last line 'alloc' captures in ASAN output
 Deleting the meta-data file                           Normal result of FLUSH TABLE WITH READ LOCK, also see MDEV-28110
-lock_rec_fr.*all.*discard.*ge_low.*set_bit.*ulint.*1  https://jira.mariadb.org/browse/MDEV-21516
-#errno: 168 .Unknown .generic. error from engine.     (Not filtered) https://jira.mariadb.org/browse/MDEV-28831
-Invalid .old.. table or database name                 https://jira.mariadb.org/browse/MDEV-29051
+lock_rec_fr.*all.*discard.*ge_low.*set_bit.*ulint.*1  MDEV-21516
+#errno: 168 .Unknown .generic. error from engine.     (Not filtered) MDEV-28831
+Invalid .old.. table or database name                 MDEV-29051
 Incorrect information in file: ...sys                 Usually not due to bugs but due to /sys/ modifications
-Incorrect information in file: ...sys                 https://jira.mariadb.org/browse/MDEV-26297 (tmp-disk-table-size issue)
-Incorrect information in file:.*.frm                  https://jira.mariadb.org/browse/MDEV-28498 (CREATE TABLE/Charset issue)
-Incorrect information in file:.*.frm                  https://jira.mariadb.org/browse/MDEV-27771 (Cuarset issue)
-Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-29203 (UNIQUE HASH INDEX issue)
-Incorrect.*file.*#sql-alter-.*.frm                    https://jira.mariadb.org/browse/MDEV-27661 (Charset issue)
+Incorrect information in file: ...sys                 MDEV-26297 (tmp-disk-table-size issue)
+Incorrect information in file:.*.frm                  MDEV-28498 (CREATE TABLE/Charset issue)
+Incorrect information in file:.*.frm                  MDEV-27771 (Cuarset issue)
+Incorrect.*file.*#sql-alter-.*.frm                    MDEV-29203 (UNIQUE HASH INDEX issue)
+Incorrect.*file.*#sql-alter-.*.frm                    MDEV-27661 (Charset issue)
 Please run mariadb-upgrade                            Often seen when a mysql db table has been modified by a testcase
-Got error .126 .Index is corrupted.*test.*MAI         https://jira.mariadb.org/browse/MDEV-30488 and MDEV-31029
-Got error .126 .Index is corrupted.*sql-alter.*MAI    https://jira.mariadb.org/browse/MDEV-26258
-Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26258
-Got error 126 when reading table.*#sql-temptable      https://jira.mariadb.org/browse/MDEV-26492
+Got error .126 .Index is corrupted.*test.*MAI         MDEV-30488 and MDEV-31029
+Got error .126 .Index is corrupted.*sql-alter.*MAI    MDEV-26258
+Got error 126 when reading table.*#sql-temptable      MDEV-26258
+Got error 126 when reading table.*#sql-temptable      MDEV-26492
 Unsafe statement written to the binary log using statement format since BINLOG_FORMAT = STATEMENT  # Assumed non-issue (STMT based replication)
 InnoDB: Operating system error number 13 in a file operation  Non-issue (CREATE TABLE...DATA DIRECTORY='/foo/bar/')
 InnoDB: The error means mariadbd does not have the access rights to the directory  Idem as 'error number 13' description
-Unknown key id 1 for.*sql-alter.*continue             https://jira.mariadb.org/browse/MDEV-26258
-Warning: Memory not freed: 32                         https://jira.mariadb.org/browse/MDEV-25876 session_track_system_variables
-Warning: Memory not freed: 80/104/16400/16320/16424   https://jira.mariadb.org/browse/MDEV-29404 PREPARE (not filtered)
-Warning: Memory not freed: 264                        https://jira.mariadb.org/browse/MDEV-30784 log_bin_trust_function_creators
-Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-30784 log_bin_trust_function_creators
-Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' WHILE
-Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-26186 SET sql_mode='oracle' BEGIN
-Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-30680 IF(SCALAR(... mangled
-Warning: Memory not freed: 280                        https://jira.mariadb.org/browse/MDEV-27627 FOR..IN..DO
-Warning: Memory not freed: 312                        https://jira.mariadb.org/browse/MDEV-27627 FOR..IN..DO + track_sysvar
-Warning: Memory not freed: 512                        https://jira.mariadb.org/browse/MDEV-26335 log_bin_trust_function_creators
-Warning: Memory not freed: 560                        https://jira.mariadb.org/browse/MDEV-26335 DROP USER CURRENT_USER()
-Warning: Memory not freed: 16448                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE
-Warning: Memory not freed: 16496                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE
-Warning: Memory not freed: 16808                      https://jira.mariadb.org/browse/MDEV-25927 PREPARE s...WITH RECURSIVE
-spider/spd_table.cc.*mutex.*spider/spd_table.cc       https://jira.mariadb.org/browse/MDEV-29421
+Unknown key id 1 for.*sql-alter.*continue             MDEV-26258
+Warning: Memory not freed: 32                         MDEV-25876 session_track_system_variables
+Warning: Memory not freed: 80/104/16400/16320/16424   MDEV-29404 PREPARE (not filtered)
+Warning: Memory not freed: 264                        MDEV-30784 log_bin_trust_function_creators
+Warning: Memory not freed: 280                        MDEV-30784 log_bin_trust_function_creators
+Warning: Memory not freed: 280                        MDEV-26186 SET sql_mode='oracle' WHILE
+Warning: Memory not freed: 280                        MDEV-26186 SET sql_mode='oracle' BEGIN
+Warning: Memory not freed: 280                        MDEV-30680 IF(SCALAR(... mangled
+Warning: Memory not freed: 280                        MDEV-27627 FOR..IN..DO
+Warning: Memory not freed: 312                        MDEV-27627 FOR..IN..DO + track_sysvar
+Warning: Memory not freed: 512                        MDEV-26335 log_bin_trust_function_creators
+Warning: Memory not freed: 560                        MDEV-26335 DROP USER CURRENT_USER()
+Warning: Memory not freed: 16448                      MDEV-25927 PREPARE s...WITH RECURSIVE
+Warning: Memory not freed: 16496                      MDEV-25927 PREPARE s...WITH RECURSIVE
+Warning: Memory not freed: 16808                      MDEV-25927 PREPARE s...WITH RECURSIVE
+spider/spd_table.cc.*mutex.*spider/spd_table.cc       MDEV-29421
 invalid value in column mysql.proc.db_collation       Testcase artifact caused by direct mysql.proc INSERT
 Cannot load from mysql.proc. The table is probably corrupted  Testcase artifact caused by ALTER TABLE mysql.proc
 WSREP .galera. provider is not loaded                 Presumed non-issue (Galera provider not loaded)
-Trying to lock uninitialized mutex.*sql_cache.*72     https://jira.mariadb.org/browse/MDEV-29708
-Trying to lock uninitialized mutex.*spider/spd_malloc.cc.*line 15  https://jira.mariadb.org/browse/MDEV-30727
-wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  https://jira.mariadb.org/browse/MDEV-29744
-wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  https://jira.mariadb.org/browse/MDEV-29744
+Trying to lock uninitialized mutex.*sql_cache.*72     MDEV-29708
+Trying to lock uninitialized mutex.*spider/spd_malloc.cc.*line 15  MDEV-30727
+wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  MDEV-29744
+wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  MDEV-29744
 InnoDB: Invalid column name for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
 InnoDB: Invalid column type for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
 ERROR.*InnoDB: User stopword table                    Presumed non-issue (missing stopword table). Note: the suffix ' .* does not exist' cannot be used as special characters will make the regex fail #TODO research further: 'table test/stop_it�002dIT does not exist'
@@ -151,37 +155,38 @@ InnoDB: Cannot add field.*which is greater than max   Presumed non-issue (max ro
 InnoDB: The.*doesn.t have.*tablespace.*was discarded  Presumed non-issue (tablespace removed from under table)
 InnoDB: Unable to import tablespace.*already exists   Presumed non-issue (import of a tablespace which already exists)
 InnoDB: Operating system error.* 17 in a file op      Presumed non-issue (attempt to create a tablespace when already there)
-InnoDB: Operating system error.* 2 in a file op       https://jira.mariadb.org/browse/MDEV-19849
+InnoDB: Operating system error.* 2 in a file op       MDEV-19849
 InnoDB: Table mysql.innodb.* not found                Presumed non-issue (table dropped)
 InnoDB: Column .* in table mysql.innodb.* is .* but   Presumed non-issue (column changed)
-mysqld: Table .slow_log. is marked as crashed         https://jira.mariadb.org/browse/MDEV-27076
-mysqld: Table .*#sql-temptable-.*is marked as crashed https://jira.mariadb.org/browse/MDEV-31588
-Warning. WSREP: handlerton rollback failed, thd       https://jira.mariadb.org/browse/MDEV-29583 (Spider)
+d: Table .slow_log. is marked as crashed              MDEV-27076
+d: Table .*#sql-temptable-.*is marked as crashed      MDEV-31588
+d: Table.*test.ti. is marked as crashed and should be repaired  MDEV-33444 (may mask other issues)
+Warning. WSREP: handlerton rollback failed, thd       MDEV-29583 (Spider)
 InnoDB: FTS_DOC_ID must be larger than [0-9]          Presumed non-issue (text insert into FTS_DOC_ID, or too low value)
 InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap
 InnoDB: preallocating.*bytes for file.*failed with error 28  Non-issue: out of disk space
 errno: 28 .No space left on device                    Non-issue: out of disk space
-Operating system error number 36 in a file operation  https://jira.mariadb.org/browse/MDEV-19849 (file name too long)
+Operating system error number 36 in a file operation  MDEV-19849 (file name too long)
 Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
-Error on rename.*errno: 150.*Foreign key.*incorrectly formed           https://jira.mariadb.org/browse/MDEV-29092
-ERROR.*InnoDB.*or.*ref.*foreign k.*constr.*not compat.*new table def   https://jira.mariadb.org/browse/MDEV-29092
-ERROR.*InnoDB.*RENAME.*is ref.*foreign.*not compatible.*new table def  https://jira.mariadb.org/browse/MDEV-33284
+Error on rename.*errno: 150.*Foreign key.*incorrectly formed           MDEV-29092
+ERROR.*InnoDB.*or.*ref.*foreign k.*constr.*not compat.*new table def   MDEV-29092
+ERROR.*InnoDB.*RENAME.*is ref.*foreign.*not compatible.*new table def  MDEV-33284
 ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussion (ref email thread 'Discuss')
 Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
 ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussion (ref email thread 'Discuss')
-Slave SQL: Could not.*Write_rows_v1 event on table.*Cannot add or update a child row: a foreign key constraint fails.*Error_code: 1452.*HA_ERR_NO_REFERENCED_ROW  https://jira.mariadb.org/browse/MDEV-33378
-Slave SQL: Error .Cannot add or update a child row: a foreign key constraint fails.*Internal MariaDB error code: 1452  https://jira.mariadb.org/browse/MDEV-33378
-Slave SQL: Could not.*Write_rows_v1 event on table.*Error_code: 1062.*HA_ERR.*DUPP_KEY  https://jira.mariadb.org/browse/MDEV-33350
+Slave SQL: Could not.*Write_rows_v1 event on table.*Cannot add or update a child row: a foreign key constraint fails.*Error_code: 1452.*HA_ERR_NO_REFERENCED_ROW  MDEV-33378
+Slave SQL: Error .Cannot add or update a child row: a foreign key constraint fails.*Internal MariaDB error code: 1452  MDEV-33378
+Slave SQL: Could not.*Write_rows_v1 event on table.*Error_code: 1062.*HA_ERR.*DUPP_KEY  MDEV-33350
 BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed non-issue (SPECIAL-5), or MDEV-33350
-BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      https://jira.mariadb.org/browse/MDEV-22936
-BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    https://jira.mariadb.org/browse/MDEV-22936
+BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      MDEV-22936
+BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    MDEV-22936
 InnoDB: Cannot reset all values.*while it is on.*off  Presumed non-issue (resetting buffer_LRU_get_free_* while on etc.)
-ERROR. InnoDB: Cannot delete.*Is a directory          https://jira.mariadb.org/browse/MDEV-30453
-Flagged corruption of.*in table.*in CHECK TABLE; Wrong count https://jira.mariadb.org/browse/MDEV-29954
-Got an error from thread_id.*myisam/ha_myisam.cc:1120 https://jira.mariadb.org/browse/MDEV-29954
+ERROR. InnoDB: Cannot delete.*Is a directory          MDEV-30453
+Flagged corruption of.*in table.*in CHECK TABLE; Wrong count MDEV-29954
+Got an error from thread_id.*myisam/ha_myisam.cc:1120 MDEV-29954
 unable to load buffer pool                            Presumed non-issue (setting innodb_buffer_pool_filename='' then load)
 Fetch.*stat.*_table_stats.*_index_stats.*not present  Presumed non-issue (mysql tables changed by testcase)
-Warning. InnoDB: Page compression errors: [0-9]       https://jira.mariadb.org/browse/MDEV-30825
+Warning. InnoDB: Page compression errors: [0-9]       MDEV-30825
  0: len 8; hex [0-9a-f]*; asc infimum ;;              Likely non-issue (Foreign key constraint fails, INNODB MONITOR OUTPUT)
 InnoDB: Cannot rename file                            Presumed non-issue (rename of table to a non-existing db...)
 InnoDB: The error means the system cannot find the path specified  (...for which the path does not exist)
@@ -190,6 +195,6 @@ sql.sql_alloc.h.*Sql_alloc::operator delete.*0x       Part of stack trace caught
 
 # Fixed/disabled
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
-#InnoDB: Resetting invalid page                       https://jira.mariadb.org/browse/MDEV-26121, Fixed
-#lock mutex.*sys_vars_shared.h, line 56               https://jira.mariadb.org/browse/MDEV-27039, Fixed
-#thus rolled back too. Internal MariaDB error code: 0 https://jira.mariadb.org/browse/MDEV-27536, Fixed
+#InnoDB: Resetting invalid page                       MDEV-26121, Fixed
+#lock mutex.*sys_vars_shared.h, line 56               MDEV-27039, Fixed
+#thus rolled back too. Internal MariaDB error code: 0 MDEV-27536, Fixed

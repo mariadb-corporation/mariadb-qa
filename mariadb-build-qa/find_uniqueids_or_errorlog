@@ -6,7 +6,9 @@ if [ -d /data -a -r /data/find_uniqueids -a "${PWD}" != "/data" ]; then
   cd /data
 fi
 if [ -z "${2}" ]; then
+  # -F: Interpret PATTERNS as fixed strings, not regular expressions (UniqueID's have many regex-like symbols)
   grep --binary-files=text -Fi "${1}" [0-9]*/*/MYBUG* 2>/dev/null
 else
-  grep --binary-files=text -Fi "${1}" [0-9]*/*/log/*.err 2>/dev/null
+  # Without -F as we want regex-enabled search for error logs, and we are not searching for UniqueID's but plain strings
+  grep --binary-files=text -i "${1}" [0-9]*/*/log/*.err 2>/dev/null
 fi

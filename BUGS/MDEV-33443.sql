@@ -1,0 +1,7 @@
+SET max_session_mem_used=50000;
+SET SESSION max_statement_time=1;
+SELECT SLEEP (3);
+INSTALL PLUGIN RocksDB SONAME 'ha_rocksdb.so';
+CREATE TABLE t1 (i INT) ENGINE=RocksDB max_rows=100000000000;
+DELETE FROM t1 WHERE c1='-838:59:59' AND c2='-838:59:59';
+UNINSTALL PLUGIN RocksDB;
