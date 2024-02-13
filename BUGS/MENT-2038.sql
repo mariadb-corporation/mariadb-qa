@@ -1,0 +1,3 @@
+SET SESSION wsrep_on=0;
+BEGIN;
+BEGIN;
