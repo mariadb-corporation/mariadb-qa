@@ -4,14 +4,15 @@
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
 #BASEDIR=/test/MDEV-7850_MD161223-mariadb-11.4.0-linux-x86_64-dbg
 #BASEDIR=/test/MDEV-4991_MD301223-mariadb-11.4.0-linux-x86_64-opt
-BASEDIR=/test/MD271223-mariadb-11.4.0-linux-x86_64-dbg
+#BASEDIR=/test/MD271223-mariadb-11.4.0-linux-x86_64-dbg
+BASEDIR=/test/MD060224-mariadb-11.4.0-linux-x86_64-dbg
 #MD271223-mariadb-11.4.0-linux-x86_64-opt  # base for MDEV-7850
 #PATCH4_MD281123-mariadb-10.6.17-linux-x86_64-dbg
 #MD311023-mariadb-11.3.0-linux-x86_64-dbg BASE
-RUNSOPT=3
-RUNSDBG=4
-CONF=pquery-run-MD-spider.conf
-#CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2
+RUNSOPT=1
+RUNSDBG=2
+#CONF=pquery-run-MD-spider.conf
+CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-federated.conf
 #CONF=pquery-run-mdev-31152.conf
 #CONF=pquery-run-MD-crt.conf
@@ -57,7 +58,7 @@ if grep -qi '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*2' ${HOME}/mariadb-qa/${CONF}; t
   echo "*************************************************************************************************************************"
   sleep 2
 else
-  echo "PRE_SHUFFLE_SQL setting: $(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+')"
+  echo "PRE_SHUFFLE_SQL setting: $(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+') ($(grep '^INFILE=' ~/mariadb-qa/pquery-run-MD.conf | sed 's|=|: |' | tr -d '\n'))"
 fi
 
 if [[ "${BASEDIR}" != "/test"* ]]; then

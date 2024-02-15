@@ -38,3 +38,22 @@ CREATE TABLE t2 (c1 INT);
 CREATE TABLE t3 (c1 INT);
 CREATE TABLE t4 (c1 INT);
 INSERT INTO t1 VALUES (1+75);
+
+# Requires standard master/slave setup. Execute SQL on the master. Requires RBR
+# Likely another symptom of 'RESET MASTER' before improvement patch; slave becomes inconsistent; not added to bug. Retest after patch
+CREATE TABLE t2 (c INT PRIMARY KEY) ENGINE=MyISAM;
+RESET MASTER;
+CREATE TABLE t (c INT) ENGINE=MyISAM;
+DROP TABLE t2;
+ALTER TABLE t RENAME TO t2;
+CREATE TEMPORARY TABLE t (c INT) ENGINE=MyISAM;
+CREATE TABLE t (c INT) INSERT_METHOD=LAST UNION=(t) ENGINE=MyISAM;
+CREATE TABLE t4 (c INT) ENGINE=MyISAM;
+INSERT INTO t VALUES(NULL);
+INSERT INTO t VALUES();
+INSERT INTO t2 SELECT * FROM t;
+# [ERROR] Slave SQL: Could not execute Write_rows_v1 event on table test.t2; Column 'c' cannot be null, Error_code: 1048; Column 'c' cannot be null, Error_code: 1048; Duplicate entry '0' for key 'PRIMARY', Error_code: 1062; handler error HA_ERR_FOUND_DUPP_KEY; the event's master log binlog.000001, end_log_pos 1295, Gtid 0-1-6, Internal MariaDB error code: 1062
+# [Warning] Slave: Column 'c' cannot be null Error_code: 1048
+# [Warning] Slave: Column 'c' cannot be null Error_code: 1048
+# [Warning] Slave: Duplicate entry '0' for key 'PRIMARY' Error_code: 1062
+# [ERROR] Error running query, slave SQL thread aborted. Fix the problem, and restart the slave SQL thread with "SLAVE START". We stopped at log 'binlog.000001' position 1120; GTID position '0-1-5'

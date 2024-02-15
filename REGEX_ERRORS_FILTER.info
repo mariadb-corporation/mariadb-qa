@@ -8,6 +8,9 @@ Note: You will want to change 'mariadbd:' and 'mysqld:' strings to 'd:' to make 
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
 Event invalid                                         MDEV-26270
+ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurences
+ERROR. InnoDB: Operating sys.*error.*13 in a file op  MDEV-19849 or similar occurences
+ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurences
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name
@@ -40,6 +43,7 @@ Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NO
 Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  MDEV-33291
 Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  MDEV-33291
 Could not execute Write_rows_v1 event on table.*Error_code: 1526.*HA_ERR_NO_PARTITION_FOUND  MDEV-33291
+Could not execute Write_rows_v1 event on table.*Error_code: 1048.*HA_ERR_FOUND_DUPP_KEY  MDEV-33291
 Slave SQL: Error 'Table has no partition for value.*Internal MariaDB error code: 1526  MDEV-33291
 safe_mutex: Found wrong usage of mutex .LOCK_plugin. and .LOCK_thd_kill  MDEV-32477
 Failed to open log .file .647.. errno 2               MDEV-22921 (ref comment)
@@ -161,6 +165,7 @@ InnoDB: Column .* in table mysql.innodb.* is .* but   Presumed non-issue (column
 d: Table .slow_log. is marked as crashed              MDEV-27076
 d: Table .*#sql-temptable-.*is marked as crashed      MDEV-31588
 d: Table.*test.ti. is marked as crashed and should be repaired  MDEV-33444 (may mask other issues)
+d: Index for table .ti. is corrupt; try to repair it  MDEV-33444 (may mask other issues)
 Warning. WSREP: handlerton rollback failed, thd       MDEV-29583 (Spider)
 InnoDB: FTS_DOC_ID must be larger than [0-9]          Presumed non-issue (text insert into FTS_DOC_ID, or too low value)
 InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever InnoDB generates a memory trap
