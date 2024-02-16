@@ -174,6 +174,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+active_arena->is_stmt_prepare_or_first_stmt_execute() || active_arena->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|st_select_lex::fix_prepare_information|JOIN::prepare|st_select_lex_unit::prepare_join|st_select_lex_unit::prepare ## MDEV-33218
 0|SIGABRT|Item_row::illegal_method_call|Item_row::get_date|Event_parse_data::init_execute_at|Event_parse_data::check_parse_data                                                ## MDEV-33472
 0|SIGABRT|Item_row::illegal_method_call|Item_row::val_int|Item::get_date|Event_parse_data::init_ends                                                                           ## MDEV-33472
 0|SIGABRT|Item_row::illegal_method_call|Item_row::get_date|Event_parse_data::init_ends|Event_parse_data::check_parse_data                                                      ## MDEV-33472

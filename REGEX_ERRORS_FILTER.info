@@ -11,6 +11,11 @@ Event invalid                                         MDEV-26270
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurences
 ERROR. InnoDB: Operating sys.*error.*13 in a file op  MDEV-19849 or similar occurences
 ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurences
+ERROR. InnoDB: Operating sys.*error.* 2 in a file op  MDEV-19849 or similar occurences
+ERROR. InnoDB: Error number 2 means.*file.*or dir     MDEV-19849 or similar occurences
+ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occurences
+ERROR. InnoDB: Operating sys.*error.* 3 in a file op  MDEV-19849 or similar occurences
+ERROR. InnoDB: .*error means.*system.*not find.*path  MDEV-19849 or similar occurences
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name

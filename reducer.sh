@@ -1790,9 +1790,9 @@ init_workdir_and_files(){
     fi
   fi
   if [ $FORCE_SKIPV -gt 0 -a "${FIREWORKS}" != "1" ]; then
-    if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer
+    if [ "$MULTI_REDUCER" != "1" -a "$SKIPSTAGEBELOW" -lt 2 ]; then  # This is the main reducer and we're in stage < 2
       echoit "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing multi threaded simplification"
-    else  # This is a subreducer (i.e. not multi-threaded)
+    else  # This is a subreducer (i.e. not multi-threaded), or a main reducer in stage >= 2 (later stages are not multi-threaded)
       echoit "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing simplification"
     fi
   fi

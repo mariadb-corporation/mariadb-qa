@@ -14,3 +14,9 @@ CREATE TABLE t (c INT) ENGINE=INNODB PARTITION BY RANGE (c) (PARTITION p1 VALUES
 CREATE TABLE t (c INT) ENGINE=INNODB PARTITION BY RANGE (c) (PARTITION p1 VALUES LESS THAN (4) DATA DIRECTORY = '/dev/shm/foo' ENGINE = INNODB, PARTITION p2 VALUES LESS THAN (8) DATA DIRECTORY = '/dev/shm/foo' ENGINE = INNODB); 
 # Observe in client: ERROR 1005 (HY000): Can't create table `test`.`t` (errno: 168 "Unknown (generic) error from engine")
 # Observe in error log: [ERROR] InnoDB: File /dev/shm/foo/test was not found
+
+CREATE TABLE t (a INT KEY);
+RENAME TABLE t TO doesnotexist.t;
+
+CREATE TABLE t1(c1 INT KEY,old1 DOUBLE,new1 DOUBLE,old2 DOUBLE,new2 DOUBLE);
+RENAME TABLE t1 TO doesnotexist.t1;
