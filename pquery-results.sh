@@ -258,7 +258,7 @@ if [ $COUNT -gt 0 ]; then
 fi
 
 # Likely out of disk space trials
-OOS1="$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|InnoDB: preallocating.*bytes for file.*failed with error 28|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28|Disk is full writing|Errcode: 28|No space left on device|Waiting for someone to free space|up to 60 secs delay for server to continue after freeing disk space" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')"
+OOS1="$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|disk full|waiting for someone to free some space|out of disk space|InnoDB: preallocating.*bytes for file.*failed with error 28|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28|Disk is full writing|Errcode: 28|No space left on device|Waiting for someone to free space|up to 60 secs delay for server to continue after freeing disk space" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')"
 OOS2="$(ls -s */data/*core* 2>/dev/null | grep --binary-files=text -o "^ *0 [^/]\+" 2>/dev/null | awk '{print $2}' | tr '\n' ' ')"  # Cores with a file size of 0: good indication of OOS
 OOS3="$(ls --color=never -l */pquery.log 2>/dev/null | grep --binary-files=text '   0' | grep -o '[0-9]\+/pquery.log' | grep -o '[0-9]\+' | tr '\n' ' ')"  # pquery.log has a file size of 0: good indication of OOS
 OOS4="$(grep 'Assert: /tmp does not have enough free space' */MYBUG 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')"

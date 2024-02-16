@@ -46,6 +46,8 @@ cat "${1}" | tr -d '`' | \
        s|round|ROUND|gi; \
        s|convert|CONVERT|gi; \
        s|persistent|PERSISTENT|gi; \
+       s|kill|KILL|gi; \
+       s|release|RELEASE|gi; \
        s|int|INT|gi;s|integer|INT|gi; \
        s|float|FLOAT|gi; \
        s|real|REAL|gi; \

@@ -6,3 +6,6 @@ CREATE TABLE t (c INT, c2 BIGINT) ENGINE=InnoDB;
 SELECT * FROM t where c2=ST_GeomFromText('POINT(1 1)');
 SELECT * FROM t where c2=ST_GeomFromText('POINT(1 1)');
 SELECT * FROM t where c2=ST_GeomFromText('POINT(1 1)');  # Repeat as needed
+
+CREATE TABLE t (a SERIAL);
+EXPLAIN SELECT 1 FROM t WHERE a=GEOMFROMTEXT ('LINESTRING (-1 1,1 1,-1 1,-1 1,1 1)');

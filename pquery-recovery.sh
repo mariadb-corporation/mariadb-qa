@@ -31,7 +31,7 @@ elif egrep --binary-files=text -qi "corrupt|crashed" $PQUERY_PWD/$TRIAL/log/mast
   echo "Recovery error : Log message '$_' indicates database corruption:"
   egrep --binary-files=text -i "corrupt|crashed" $PQUERY_PWD/$TRIAL/log/master.err
   exit 1
-elif egrep --binary-files=text -qi "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" $PQUERY_PWD/$TRIAL/log/master.err
+elif egrep --binary-files=text -qi "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" $PQUERY_PWD/$TRIAL/log/master.err
   echo "Recovery error : Check disk space:"
   egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" $PQUERY_PWD/$TRIAL/log/master.err
   exit 1

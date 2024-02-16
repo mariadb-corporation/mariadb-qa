@@ -174,6 +174,14 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+0|SIGABRT|Item_row::illegal_method_call|Item_row::get_date|Event_parse_data::init_execute_at|Event_parse_data::check_parse_data                                                ## MDEV-33472
+0|SIGABRT|Item_row::illegal_method_call|Item_row::val_int|Item::get_date|Event_parse_data::init_ends                                                                           ## MDEV-33472
+0|SIGABRT|Item_row::illegal_method_call|Item_row::get_date|Event_parse_data::init_ends|Event_parse_data::check_parse_data                                                      ## MDEV-33472
+0|SIGABRT|Item_row::illegal_method_call|Item_row::get_date|Event_parse_data::init_starts|Event_parse_data::check_parse_data                                                    ## MDEV-33472
+0|SIGABRT|Item_row::illegal_method_call|Item_row::val_int|get_interval_value|Event_parse_data::init_interval                                                                   ## MDEV-33472
+m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::start_psi_batch_mode|sub_select|do_select|JOIN::exec_inner                                                            ## MDEV-32697
+inited == RND|SIGABRT|handler::ha_rnd_next|rr_sequential|READ_RECORD::read_record|sub_select                                                                                   ## MDEV-32697
+0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-33470
 bf_aborted()|SIGABRT|wsrep::transaction::xa_replay_common|wsrep::transaction::xa_replay_commit|wsrep::transaction::after_statement|wsrep::client_state::after_statement        ## MENT-2042
 m_thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|Wsrep_prepared_applier_service::rollback|wsrep::server_state::close_transactions_at_disconnect|wsrep::server_state::go_final|wsrep::server_state::on_non_primary_view ## MENT-2041
 thd->wsrep_trx().is_xa()|SIGABRT|Wsrep_applier_service::apply_write_set|Wsrep_schema::recover_sr_transactions|wsrep_recover_sr_from_storage|Wsrep_server_service::recover_streaming_appliers ## MENT-2040
@@ -1446,6 +1454,7 @@ SIGABRT|__cxa_pure_virtual|Item::real_type|Value_source::Context::Context|Item_f
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22444
 SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|JOIN::transform_in_predicates_into_in_subq      ## MDEV-22444
 0|SIGABRT|stored_field_cmp_to_item|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator                                    ## MDEV-22385
+0|SIGABRT|stored_field_cmp_to_item|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_bool_rowready_func2::fix_length_and_dec                            ## MDEV-22385
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                     ## MYSQL-99377
 field_max_length <= m_return_field_def.length || m_return_field_def.type_handler()->cmp_type() == INT_RESULT || (_current_thd()->stmt_arena->is_stmt_execute() && m_return_field_def.length == 8 && (m_return_field_def.pack_flag & (1024U|2048U)))|SIGABRT|sp_head::create_result_field|Item_sp::init_result_field|Item_func_sp::fix_fields|Item::fix_fields_if_needed ## MDEV-22368
 len <= fixed_len|SIGABRT|rec_get_converted_size_comp_prefix_low<>rem0rec.cc|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_insert                       ## MDEV-22333
