@@ -5,7 +5,7 @@
 #BASEDIR=/test/MDEV-7850_MD161223-mariadb-11.4.0-linux-x86_64-dbg
 #BASEDIR=/test/MDEV-4991_MD301223-mariadb-11.4.0-linux-x86_64-opt
 #BASEDIR=/test/MD271223-mariadb-11.4.0-linux-x86_64-dbg
-BASEDIR=/test/MD060224-mariadb-11.4.0-linux-x86_64-dbg
+BASEDIR=/test/MDEV33426_MD160224-mariadb-11.4.0-linux-x86_64-dbg
 #MD271223-mariadb-11.4.0-linux-x86_64-opt  # base for MDEV-7850
 #PATCH4_MD281123-mariadb-10.6.17-linux-x86_64-dbg
 #MD311023-mariadb-11.3.0-linux-x86_64-dbg BASE

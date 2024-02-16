@@ -722,7 +722,7 @@ generate_reducer_script(){
   if [ ! -z "${FINDBUG}" ]; then  # Already known and logged, non-fixed bug, use an error log e
     ERROR_LOG_STRING="$(${SCRIPT_PWD}/pquery-del-trial.sh ${TRIAL} CHECK)"
     if [ ! -z "${ERROR_LOG_STRING}" ]; then
-      sed -i "s|^USE_NEW_TEXT_STRING=.*|USE_NEW_TEXT_STRING=0  # (Using error log provided string as main issue found (ref '#TEXT=' below) was already known). Note: may require editing before starting this reducer|" ${REDUCER_FILENAME}
+      sed -i "s|^USE_NEW_TEXT_STRING=.*|USE_NEW_TEXT_STRING=0  # We set the TEXT to the first UNfiltered error log bug as the main issue seen during this trial (as reflected '#TEXT=' below) is already a known and filtered bug. Note: you may (or may not) need to edit the TEXT=... string (by making it more universal if required) before starting this reducer, for example by removing a port number, replication GTID number sequence or similar|" ${REDUCER_FILENAME}
       sed -i "s|^   \(TEXT=.*\)|   TEXT=\"$ERROR_LOG_STRING\"\n#\1|" ${REDUCER_FILENAME}
     fi
     ERROR_LOG_STRING=

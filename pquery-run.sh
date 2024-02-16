@@ -1301,6 +1301,12 @@ pquery_test() {
     fi
     if [ "${RR_TRACING}" == "0" ]; then
       if [ "${VALGRIND_RUN}" == "0" ]; then  ## Standard run
+        if [ "${ROTATE_BINLOG_FORMAT}" == "1" ]; then  # Rotate binlog format if set to do so
+          MASTER_EXTRA=$(echo "${MASTER_EXTRA}" | sed -e '/format=ROW/{s|format=ROW|format=STATEMENT|;t end}' \
+                                                      -e '/format=STATEMENT/{s|format=STATEMENT|format=MIXED|;t end}' \
+                                                      -e '/format=MIXED/{s|format=MIXED|format=ROW|}' \
+                                                      -e ':end')
+        fi
         CMD="${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
       else  ## Valgrind run
         CMD="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"

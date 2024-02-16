@@ -894,7 +894,6 @@ key_col_info.comparator|SIGABRT|Item_func_in::get_func_row_mm_tree|Item_func_in:
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|myrocks::Rdb_manual_compaction_thread::request_manual_compaction|myrocks::rocksdb_compact_column_family                        ## MDEV-28261
 SIGSEGV|Field_string::is_var_string|Field_string::type_handler|Column_definition::Column_definition|Spvar_definition::Spvar_definition                                         ## MENT-1449
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|Diagnostics_area::set_error_status|Reprepare_observer::report_error|check_and_update_table_version ## MDEV-28241
-0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-28190
 SIGSEGV|replace_column_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute                                                           ## MDEV-28128
 SIGSEGV|replace_column_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command                                                                  ## MDEV-28128
 SIGSEGV|replace_column_table|mysql_table_grant|mysql_execute_command|mysql_parse                                                                                               ## MDEV-28128
@@ -986,7 +985,6 @@ SIGSEGV|replace_routine_table|mysql_routine_grant|mysql_execute_command|mysql_pa
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_whole_field|cmp_data|cmp_dtuple_rec_with_match_low                                                   ## MDEV-27768
 next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                     ## MDEV-27770
 l_offset >= 0 && table->s->rec_buff_length - l_offset > 0|SIGABRT|Field::ptr_in_record|Column_definition::Column_definition|Create_field::Create_field|mysql_prepare_alter_table ## MDEV-27769
-0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-27744
 !cursor->index->is_committed()|SIGABRT|ut_dbg_assertion_failed|row_ins_sec_index_entry_by_modify|row_ins_sec_index_entry_low|row_ins_sec_index_entry                           ## MDEV-27744
 !cursor->index()->is_committed()|SIGABRT|ut_dbg_assertion_failed|row_ins_sec_index_entry_by_modify|row_ins_sec_index_entry_low|row_ins_sec_index_entry                         ## MDEV-27744
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-27688
@@ -2241,3 +2239,5 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner ## Fixed ## MDEV-33195
 # !trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_bounded_nat_list|spider_parse_connect_info ## Fixed ## MDEV-32486
 # !trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_long_list|spider_parse_connect_info  ## Fixed ## MDEV-32486
+# 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-28190
+# 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-27744
