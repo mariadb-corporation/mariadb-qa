@@ -2291,7 +2291,7 @@ start_mysqld_or_valgrind_or_mdg(){
         # Ref discussion RV/RS 27 Nov 19 via 1:1 (RV;should be covered in SQL,RS;issue seen)
         # RV update 24-08-2020: Added back in to provision for using test db always in CLI/pquery startup
         CLIENT_BIN_TO_USE="${BASEDIR}/bin/mariadb"
-        if [ ! -r "${CLIENT_BIN_TO_USE}" ]; then CLIENT_BIN_TO_USE="${BASEDIR}/bin/mysql"; f
+        if [ ! -r "${CLIENT_BIN_TO_USE}" ]; then CLIENT_BIN_TO_USE="${BASEDIR}/bin/mysql"; fi
         ${CLIENT_BIN_TO_USE} -uroot -S$WORKD/socket.sock -e "create database if not exists test" > /dev/null 2>&1
         CLIENT_BIN_TO_USE=
       fi
