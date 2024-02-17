@@ -4,6 +4,7 @@ Note: Do not add any 'Assertion ... failed' to this listr; pquery-del-trial auto
 Note: You will want to remove 'ERROR' from slave errors, as --slave_skip_errors=ALL can turn these into Warnings instead
 Note: [Warning] Slave: Unknown storage engine 'foo' Error_code: 1286 and [Warning] Slave: Using storage engine MyISAM for table 't' Error_code: 1266 can be seen on the master+slave (ref SPECIAL-21.sql) are not included here as they are warnings, seen on both master+slave, and will not stop replication
 Note: You will want to change 'mariadbd:' and 'mysqld:' strings to 'd:' to make them universal given the daemon name change
+Note: While unlikely to ever happen, REGEX_ERRORS_FILTER should never be fully empty (or much provision code needs adding)
 ------------------------------------------------------------------------------------------------------------------------
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------

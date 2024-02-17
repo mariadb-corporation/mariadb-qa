@@ -894,7 +894,7 @@ if [ ${QC} -eq 0 ]; then
            fi
         fi
         if [ ! -z "$(echo "${TEXT}" | grep -i "No .* found")" -a ! -z "$(ls ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE ${RUNDIR}/${TRIAL}/node*/ERROR_LOG_SCAN_ISSUE 2>/dev/null)" ]; then
-          echo "* TEXT variable will be set to the error log issue discovered for/in this trial (ref below)"
+          echo "* TEXT variable will be set to the error log issue discovered for/in this trial (ref next line)"
         else
           echo "* TEXT variable set to: '${TEXT}'"
         fi
@@ -1078,7 +1078,7 @@ if [ ${QC} -eq 0 ]; then
             TEXT_MULTI=
           fi
           if [ ! -z "$(echo "${TEXT}" | grep -i "No .* found")" -a ! -z "$(ls ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE ${RUNDIR}/${TRIAL}/node*/ERROR_LOG_SCAN_ISSUE 2>/dev/null)" ]; then
-            echo "* TEXT variable will be set to the error log issue discovered for/in this trial (ref below)"
+            echo "* TEXT variable will be set to the error log issue discovered for/in this trial (ref next line)"
           else
             echo "* TEXT variable set to: '${TEXT}'"
           fi
