@@ -1,6 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 # Updated by Roel Van de Paar, MariaDB
+# Updated by Ramesh Sivaraman, MariaDB
 
 # The name of this script (pquery-prep-red.sh) was kept short so as to not clog directory listings - it's full name would be ./pquery-prepare-reducer.sh
 
@@ -20,7 +21,7 @@ SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" ]; then  # Provision for symlinks (if needed) 
   SCRIPT_PWD="${HOME}/mariadb-qa"
 fi
-WORKD_PWD=$PWD
+RUNDIR=$PWD
 REDUCER="${SCRIPT_PWD}/reducer.sh"
 SAN_BUG=0  # Do not remove
 
@@ -175,12 +176,12 @@ extract_queries_core(){
   echo "* Obtaining quer(y)(ies) from the trial's coredump (core: ${CORE})"
   . ${SCRIPT_PWD}/pquery-failing-sql.sh ${TRIAL} 1  # The leading dot and space (and note it should not read ./) is signficant - it means "source" this script, ref bash manual for more information
   if [ "${MULTI}" == "1" ]; then
-    CORE_FAILURE_COUNT=`cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing | wc -l`
+    CORE_FAILURE_COUNT=`cat ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing | wc -l`
     echo "  > $[ $CORE_FAILURE_COUNT ] quer(y)(ies) added with interleave sql function to the SQL trace"
   else
     for i in {1..3}; do
       BEFORESIZE=`cat ${INPUTFILE} | wc -l`
-      cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${INPUTFILE}
+      cat ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing >> ${INPUTFILE}
       AFTERSIZE=`cat ${INPUTFILE} | wc -l`
     done
     echo "  > $[ $AFTERSIZE - $BEFORESIZE ] core file obtained quer(y)(ies) added 3x to the SQL trace"
@@ -192,13 +193,13 @@ extract_queries_error_log(){
   echo "* Obtaining quer(y)(ies) from the trial's mysqld error log (if any)"
   . ${SCRIPT_PWD}/pquery-failing-sql.sh ${TRIAL} 2
   if [ "${MULTI}" == "1" ]; then
-    FAILING_SQL_COUNT=`cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing | wc -l`
+    FAILING_SQL_COUNT=`cat ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing | wc -l`
     if [ "${CORE_FAILURE_COUNT}" == "" ]; then CORE_FAILURE_COUNT=0; fi
     echo "  > $[ ${FAILING_SQL_COUNT} - ${CORE_FAILURE_COUNT} ] quer(y)(ies) will be added with interleave sql function to the SQL trace"
   else
     for i in {1..3}; do
       BEFORESIZE=`cat ${INPUTFILE} | wc -l`
-      cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${INPUTFILE}
+      cat ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing >> ${INPUTFILE}
       AFTERSIZE=`cat ${INPUTFILE} | wc -l`
     done
     echo "  > $[ $AFTERSIZE - $BEFORESIZE ] error log obtained quer(y)(ies) added 3x to the SQL trace"
@@ -212,10 +213,10 @@ extract_queries_pquery_trace(){
     exit 1
   fi
   tmpstore="$(mktemp)"
-  if [ -r ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql ]; then
+  if [ -r ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql ]; then
     for((i=0;i<3;i++)){
       BEFORESIZE=`cat ${INPUTFILE} | wc -l`
-      grep --binary-files=text -i 'lost connection to server during query' ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql > ${tmpstore}
+      grep --binary-files=text -i 'lost connection to server during query' ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql > ${tmpstore}
       cat ${tmpstore} >> ${INPUTFILE}
       AFTERSIZE=`cat ${INPUTFILE} | wc -l`
      }
@@ -281,28 +282,28 @@ auto_interleave_failing_sql(){
   if [ -z "${1}" ]; then echo "Assert: auto_interleave_failing_sql called without option!"; exit 1; fi
   # sql interleave function based on actual input file size
   INPUTLINECOUNT=$(cat ${1} 2>/dev/null | wc -l)
-  FAILING_SQL_COUNT=$(cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing 2>/dev/null | wc -l)
+  FAILING_SQL_COUNT=$(cat ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing 2>/dev/null | wc -l)
   if [ -z "${FAILING_SQL_COUNT}" -o ${FAILING_SQL_COUNT} -eq 0 ]; then
     return
   elif [ ${FAILING_SQL_COUNT} -lt 10 ]; then
     if [ ${INPUTLINECOUNT} -le 100 ]; then
-      sed -i "0~3 r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing" ${1}
+      sed -i "0~3 r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing" ${1}
     elif [ ${INPUTLINECOUNT} -le 500 ];then
-      sed -i "0~15 r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing" ${1}
+      sed -i "0~15 r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing" ${1}
     elif [ ${INPUTLINECOUNT} -le 1000 ];then
-      sed -i "0~35 r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing" ${1}
+      sed -i "0~35 r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing" ${1}
     else
-      sed -i "0~50 r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing" ${1}
+      sed -i "0~50 r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing" ${1}
     fi
   else
     if [ ${INPUTLINECOUNT} -le 100 ]; then
-      sed -i "0~5 r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing" ${1}
+      sed -i "0~5 r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing" ${1}
     elif [ ${INPUTLINECOUNT} -le 500 ];then
-      sed -i "0~25 r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing" ${1}
+      sed -i "0~25 r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing" ${1}
     elif [ ${INPUTLINECOUNT} -le 1000 ];then
-      sed -i "0~50 r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing" ${1}
+      sed -i "0~50 r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing" ${1}
     else
-      sed -i "0~75 r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing" ${1}
+      sed -i "0~75 r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing" ${1}
     fi
   fi
 }
@@ -719,15 +720,30 @@ generate_reducer_script(){
 
   FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings)"
   if [ "$(echo "${FINDBUG}" | sed 's|[ \t]*\(.\).*|\1|')" == "#" ]; then FINDBUG=""; fi  # See pquery-run.sh for more info on how this works
-  if [ ! -z "${FINDBUG}" ]; then  # Already known and logged, non-fixed bug, use an error log e
+  if [ -z "${FINDBUG}" ]; then 
+    # Provided that the ERROR_LOG_SCAN_ISSUE flag is present...
+    if [ ! -z "$(ls ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE ${RUNDIR}/${TRIAL}/node*/ERROR_LOG_SCAN_ISSUE 2>/dev/null)" ]; then
+      ALT_ACTIVATIONS=0  # ...check if there are any other alternative situations in which we can use the error log string:
+      # 'No .* found' scans for 'Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output'
+      if [ ! -z "$(echo "${TEXT}" | grep -i "No .* found")" ]; then ALT_ACTIVATIONS=1; fi
+      if grep -qi "No .* found" ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/node*/MYBUG; then ALT_ACTIVATIONS=1; fi
+      if [ -z "$(ls ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/node*/MYBUG 2>/dev/null)" ]; then ALT_ACTIVATIONS=1; fi
+      if [ "${ALT_ACTIVATIONS}" -eq 1 ]; then
+        FINDBUG="YES"  # We had a 'Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output' trial or similar situation, where there was an error log issue present (i.e. ERROR_LOG_SCAN_ISSUE flag present), so we can update the TEXT to the error log issue. 'YES' Is just a dummy string to trigger the if below to proceed
+      fi
+      ALT_ACTIVATIONS=
+    fi
+  fi
+  if [ ! -z "${FINDBUG}" ]; then  # Already known and logged, non-fixed bug, use an error log entry instead, using pquery-trial-del.sh (in 'CHECK' non-delete mode only) to tell us what string to use (and additionally pquery-trial-del.sh automatically provides some TEXT regex cleanup in this mode)
     ERROR_LOG_STRING="$(${SCRIPT_PWD}/pquery-del-trial.sh ${TRIAL} CHECK)"
     if [ ! -z "${ERROR_LOG_STRING}" ]; then
       sed -i "s|^USE_NEW_TEXT_STRING=.*|USE_NEW_TEXT_STRING=0  # We set the TEXT to the first UNfiltered error log bug as the main issue seen during this trial (as reflected '#TEXT=' below) is already a known and filtered bug. Note: you may (or may not) need to edit the TEXT=... string (by making it more universal if required) before starting this reducer, for example by removing a port number, replication GTID number sequence or similar|" ${REDUCER_FILENAME}
       sed -i "s|^   \(TEXT=.*\)|   TEXT=\"$ERROR_LOG_STRING\"\n#\1|" ${REDUCER_FILENAME}
     fi
+    echo "* TEXT variable set to: '${ERROR_LOG_STRING}'" 
     ERROR_LOG_STRING=
-    FINDBUG=
   fi
+  FINDBUG=
 
   chmod +x ${REDUCER_FILENAME}
   # If this is a multi-threaded run, create additional quick reducers with only the executed SQL (may/may not work)
@@ -738,7 +754,7 @@ generate_reducer_script(){
       if [ -r "${QUICK_REDUCER_FILENAME}" -a ! -d "${QUICK_REDUCER_FILENAME}" ]; then
         rm -f "${QUICK_REDUCER_FILENAME}"
       fi
-      if [ "$(ls --color=never ${WORKD_PWD}/${TRIAL}/*thread-[0-9]*.sql 2>/dev/null | wc -l)" -gt 0 ]; then
+      if [ "$(ls --color=never ${RUNDIR}/${TRIAL}/*thread-[0-9]*.sql 2>/dev/null | wc -l)" -gt 0 ]; then
         # ------------------------------------------------------------------------------------------------------------
         # TODO: test if adding "DROP DATABASE test;", "CREATE DATABASE test;" (next line) and "USE test;" (idem) here
         # would or would not increase reproducibility. 1st impression is NO unless the needed SQL to produce is simple
@@ -746,29 +762,29 @@ generate_reducer_script(){
         # exixsting potential buildup towards the issue. Partly negated by quick_onethd_rnd_ reducer creation below.
         # ------------------------------------------------------------------------------------------------------------
         # Build quick_{trial}.sql file by taking all executed SQL from all threads, ...
-        cat ${WORKD_PWD}/${TRIAL}/*thread-[0-9]*.sql > ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
+        cat ${RUNDIR}/${TRIAL}/*thread-[0-9]*.sql > ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
         # Then do the same standard processing: add failing queries thrice, add SELECT 1's, add SELECT SLEEP's, ...
         # Note that if there is one failing query and one in the error log, then result is it will be added 6x
         # This is fine and >=3 occurences is desired in any case (may help with sporadic issues)
-        if [ -r ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing ]; then
+        if [ -r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing ]; then
           for((i=0;i<3;i++)){
-            cat ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
+            cat ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing >> ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
           }
         fi
         # And, attempt to extract the failing query from the pquery sql trace and repeat it thrice
-        if [ -r ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql ]; then
+        if [ -r ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql ]; then
           for((i=0;i<3;i++)){
-            grep --binary-files=text -i 'lost connection to server during query' ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-0.sql >> ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
+            grep --binary-files=text -i 'lost connection to server during query' ${RUNDIR}/${TRIAL}/default.node.tld_thread-0.sql >> ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql
           }
         fi
-        add_select_ones_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
-        add_select_sleep_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
-        add_shutdown_to_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
-        remove_non_sql_from_trace ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
+        add_select_ones_to_trace ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql
+        add_select_sleep_to_trace ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql
+        add_shutdown_to_trace ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql
+        remove_non_sql_from_trace ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql
         # Then interleave in extra failing queries all along the sql file (scaled/chuncked). This may increase
         # reproducibility, and is done for multi-threaded issues (who tend to be reduced by random-order replay!) only
         # Multi-threaded issues are auto-set to random order replay accross many threads, ensuring
-        auto_interleave_failing_sql ${WORKD_PWD}/${TRIAL}/quick_${TRIAL}.sql
+        auto_interleave_failing_sql ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql
         sed "s|${TRIAL}/${TRIAL}.sql|${TRIAL}/quick_${TRIAL}.sql|" "${REDUCER_FILENAME}" > "${QUICK_REDUCER_FILENAME}"  # Generates quick_reducer{trial}.sh with new quick_ input file.
         sed -i "s|^MULTI_THREADS=3|MULTI_THREADS=10|" "${QUICK_REDUCER_FILENAME}"  # Speed things up
         sed -i "s|^PQUERY_MULTI_CLIENT_THREADS=30|PQUERY_MULTI_CLIENT_THREADS=20|" "${QUICK_REDUCER_FILENAME}"  # Don't overdo, scale better
@@ -806,8 +822,8 @@ if [ ${QC} -eq 0 ]; then
         export GALERA_CORE_LOC=`ls -1 ./${TRIAL}/node${SUBDIR}/*core* 2>&1 | head -n1 | grep --binary-files=text -v "No such file"`
         export GALERA_ERROR_LOG=./${TRIAL}/node${SUBDIR}/node${SUBDIR}.err
         OUTFILE="${TRIAL}-${SUBDIR}"
-        rm -Rf ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
-        touch ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
+        rm -Rf ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing
+        touch ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing
         echo "========== Processing pquery trial ${TRIAL}-${SUBDIR}"
         if [ -r ./reducer${TRIAL}-${SUBDIR}.sh ]; then
           echo "* Reducer for this trial (./reducer${TRIAL}_${SUBDIR}.sh) already exists. Skipping to next trial/node."
@@ -837,7 +853,7 @@ if [ ${QC} -eq 0 ]; then
           WSREP_PROVIDER_OPTIONS=$(cat ./${TRIAL}/WSREP_PROVIDER_OPT 2>/dev/null)
         fi
         if [ "${MULTI}" == "1" ]; then
-          INPUTFILE=${WORKD_PWD}/${TRIAL}/${TRIAL}.sql
+          INPUTFILE=${RUNDIR}/${TRIAL}/${TRIAL}.sql
           if [ ! -r ${INPUTFILE}.backup ]; then
             cp ${INPUTFILE} ${INPUTFILE}.backup
           else
@@ -847,23 +863,19 @@ if [ ${QC} -eq 0 ]; then
           if [ $(ls -1 ./${TRIAL}/*thread-0.sql 2>/dev/null|wc -l) -gt 1 ]; then
             INPUTFILE=$(ls ./${TRIAL}/node${SUBDIR}*thread-0.sql)
           elif [ -f ./${TRIAL}/*thread-0.sql ]; then
-            INPUTFILE=`ls ./${TRIAL}/*thread-0.sql | sed "s|^[./]\+|/|;s|^|${WORKD_PWD}|"`
+            INPUTFILE=`ls ./${TRIAL}/*thread-0.sql | sed "s|^[./]\+|/|;s|^|${RUNDIR}|"`
           else
-            INPUTFILE=${WORKD_PWD}/${TRIAL}/${TRIAL}-${SUBDIR}.sql
+            INPUTFILE=${RUNDIR}/${TRIAL}/${TRIAL}-${SUBDIR}.sql
           fi
         fi
-        BIN="$(ls -1 ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/mariadbd ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/mysqld 2>&1 | head -n1 | grep --binary-files=text -v 'No such file')"
+        BIN="$(ls -1 ${RUNDIR}/${TRIAL}/node${SUBDIR}/mariadbd ${RUNDIR}/${TRIAL}/node${SUBDIR}/mysqld 2>&1 | head -n1 | grep --binary-files=text -v 'No such file')"
         if [ ! -r $BIN ]; then
           echo "Assert! mariadbd/mysqld binary '$BIN' could not be read"
           exit 1
         fi
-        if [ `ls ./pquery-run.log 2>/dev/null | wc -l` -eq 0 ]; then
-          BASE="/sda/Percona-Server-5.6.21-rel70.0-696.Linux.x86_64-debug"  # Should never really happen, but just in case, so that something "is there"? Needs review.
-        else
-          BASE="`grep --binary-files=text 'Basedir:' ./pquery-run.log | sed 's|^.*Basedir[: \t]*||;;s/|.*$//' | tr -d '[[:space:]]'`"
-        fi
-        # OLD_WAY: TEXT="$(${SCRIPT_PWD}/OLD/text_string.sh ./${TRIAL}/node${SUBDIR}/node${SUBDIR}.err)"
-        if [ ! -r ./${TRIAL}/node${SUBDIR}/MYBUG ]; then  # Sometimes (approx 1/50-1/100 trials) MYBUG is missing, so [re-]generate it. TODO: find reason (in pquery-run.sh likely)
+        BASE="$(grep --binary-files=text 'Basedir:' ./pquery-run.log 2>/dev/null | sed 's|^.*Basedir[: \t]*||;;s/|.*$//' | tr -d '[[:space:]]')"
+        if [ -z "${BASE}" ]; then BASE="/test/SOMEBASEDIR"; fi
+        if [ ! -r ./${TRIAL}/node${SUBDIR}/MYBUG ]; then  # [re-]generate it if not present  TODO: find reason (in pquery-run.sh likely) why it not always generated by pquery-run.sh (or later deleted?)
           cd ./${TRIAL}/node${SUBDIR} || exit 1
           ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
           cd - >/dev/null || exit 1
@@ -877,45 +889,44 @@ if [ ${QC} -eq 0 ]; then
         TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # Ref TODO above
         check_if_asan_or_ubsan_or_tsan ${SUBDIR}
         if [ "${MULTI}" == "1" ]; then
-           if [ -s ${WORKD_PWD}/${TRIAL}/node${SUBDIR}/${TRIAL}.sql.failing ];then
+           if [ -s ${RUNDIR}/${TRIAL}/node${SUBDIR}/${TRIAL}.sql.failing ];then
              auto_interleave_failing_sql ${INPUTFILE}
            fi
         fi
-        if [[ "${TEXT}" != "Assert: no core file found"* ]]; then  ## TODO: Check if this always works correctly (i.e. are cores present whereas it says there are no core files found)
-          echo "* TEXT variable set to: '${TEXT}'"
-          if [ `cat ${INPUTFILE} | wc -l` -ne 0 ]; then
-            if [ "$GALERA_CORE_LOC" != "" ]; then
-              CORE=${GALERA_CORE_LOC}
-              extract_queries_core
-            fi
-            if [ "$GALERA_ERROR_LOG" != "" ]; then
-              ERRLOG=${GALERA_ERROR_LOG}
-              extract_queries_error_log
-            else
-              echo "Assert! Error log at ./${TRIAL}/node${SUBDIR}/error.log could not be read?"
-              exit 1
-            fi
-          fi
-          extract_queries_pquery_trace ${INPUTFILE}
-          add_select_ones_to_trace ${INPUTFILE}
-          add_select_sleep_to_trace ${INPUTFILE}
-          add_shutdown_to_trace ${INPUTFILE}
-          remove_non_sql_from_trace ${INPUTFILE}
-          generate_reducer_script
-          if [ "${MYEXTRA}" != "" ]; then
-            echo "* MYEXTRA variable set to: ${MYEXTRA}"
-          fi
-          if [ "${WSREP_PROVIDER_OPTIONS}" != "" ]; then
-            echo "* WSREP_PROVIDER_OPTIONS variable set to: ${WSREP_PROVIDER_OPTIONS}"
-          fi
-          if [[ ${VALGRIND_CHECK} -eq 1 ]]; then
-            echo "* Valgrind was used for this trial"
-          fi
-          echo "Trial analysis complete. Reducer created: ${PWD}/reducer${TRIAL}-${SUBDIR}.sh"
+        if [ ! -z "$(echo "${TEXT}" | grep -i "No .* found")" -a ! -z "$(ls ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE ${RUNDIR}/${TRIAL}/node*/ERROR_LOG_SCAN_ISSUE 2>/dev/null)" ]; then
+          echo "* TEXT variable will be set to the error log issue discovered for/in this trial (ref below)"
         else
-          echo "Assert: no core file found. Skipping to next trial/node."
-          continue
+          echo "* TEXT variable set to: '${TEXT}'"
         fi
+        if [ `cat ${INPUTFILE} | wc -l` -ne 0 ]; then
+          if [ "$GALERA_CORE_LOC" != "" ]; then
+            CORE=${GALERA_CORE_LOC}
+            extract_queries_core
+          fi
+          if [ "$GALERA_ERROR_LOG" != "" ]; then
+            ERRLOG=${GALERA_ERROR_LOG}
+            extract_queries_error_log
+          else
+            echo "Assert! Error log at ./${TRIAL}/node${SUBDIR}/error.log could not be read?"
+            exit 1
+          fi
+        fi
+        extract_queries_pquery_trace ${INPUTFILE}
+        add_select_ones_to_trace ${INPUTFILE}
+        add_select_sleep_to_trace ${INPUTFILE}
+        add_shutdown_to_trace ${INPUTFILE}
+        remove_non_sql_from_trace ${INPUTFILE}
+        generate_reducer_script
+        if [ "${MYEXTRA}" != "" ]; then
+          echo "* MYEXTRA variable set to: ${MYEXTRA}"
+        fi
+        if [ "${WSREP_PROVIDER_OPTIONS}" != "" ]; then
+          echo "* WSREP_PROVIDER_OPTIONS variable set to: ${WSREP_PROVIDER_OPTIONS}"
+        fi
+        if [[ ${VALGRIND_CHECK} -eq 1 ]]; then
+          echo "* Valgrind was used for this trial"
+        fi
+        echo "Trial analysis complete. Reducer created: ${PWD}/reducer${TRIAL}-${SUBDIR}.sh"
       done
     done
   else
@@ -943,8 +954,8 @@ if [ ${QC} -eq 0 ]; then
       fi
       if [ ${MDG} -eq 0 ]; then
         OUTFILE=$TRIAL
-        rm -Rf ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
-        touch ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
+        rm -Rf ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing
+        touch ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing
         if [ ${REACH} -eq 0 ]; then # Avoid normal output if this is an automated run (REACH=1)
           echo "========== Processing pquery trial $TRIAL"
         fi
@@ -957,14 +968,14 @@ if [ ${QC} -eq 0 ]; then
           continue
         fi
         if [ "${MULTI}" == "1" ]; then
-          INPUTFILE=${WORKD_PWD}/${TRIAL}/${TRIAL}.sql
+          INPUTFILE=${RUNDIR}/${TRIAL}/${TRIAL}.sql
           if [ ! -r ${INPUTFILE}.backup ]; then
             cp ${INPUTFILE} ${INPUTFILE}.backup
           else
             cp ${INPUTFILE}.backup ${INPUTFILE}  # Reset ${INPUTFILE} file contents (avoids the file getting larger every time this script is executed due to auto_interleave_failing_sql() being called again.
           fi
         else
-          INPUTFILE=`echo ${SQLLOG} | sed "s|^[./]\+|/|;s|^|${WORKD_PWD}|"`
+          INPUTFILE=`echo ${SQLLOG} | sed "s|^[./]\+|/|;s|^|${RUNDIR}|"`
         fi
         BIN=$(grep --binary-files=text "\/mariadbd" ./${TRIAL}/start | head -n1 | sed 's|mariadbd .*|mariadbd|;s|.* \(.*bin/mariadbd\)|\1|')
         if [ -z "${BIN}" ]; then
@@ -1047,7 +1058,6 @@ if [ ${QC} -eq 0 ]; then
         fi
         # if not a valgrind run process everything, if it is valgrind run only if there's a core
         if [ ! -r ./${TRIAL}/VALGRIND ] || [ -r ./${TRIAL}/VALGRIND -a "$CORE" != "" ]; then
-          # OLD_WAY: TEXT="$(${SCRIPT_PWD}/OLD/text_string.sh ./${TRIAL}/log/master.err)"
           if [ ! -r ./${TRIAL}/MYBUG ]; then  # Sometimes (approx 1/50-1/100 trials) MYBUG is missing, so [re-]generate it. TODO: find reason (in pquery-run.sh likely)
             cd ./${TRIAL} || exit 1
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
@@ -1067,8 +1077,12 @@ if [ ${QC} -eq 0 ]; then
             TEXT="Assert: multi-line TEXT found! Check and fix scripts please. TEXT seen (with newlines removed): '$(echo "${TEXT_MULTI}" | tr '\n' ' ')'"
             TEXT_MULTI=
           fi
-          echo "* TEXT variable set to: '${TEXT}'"
-          if [ "${MULTI}" == "1" -a -s ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing ];then
+          if [ ! -z "$(echo "${TEXT}" | grep -i "No .* found")" -a ! -z "$(ls ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE ${RUNDIR}/${TRIAL}/node*/ERROR_LOG_SCAN_ISSUE 2>/dev/null)" ]; then
+            echo "* TEXT variable will be set to the error log issue discovered for/in this trial (ref below)"
+          else
+            echo "* TEXT variable set to: '${TEXT}'"
+          fi
+          if [ "${MULTI}" == "1" -a -s ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing ];then
             auto_interleave_failing_sql ${INPUTFILE}
           fi
           generate_reducer_script
@@ -1096,7 +1110,7 @@ else
       echo "Assert! mariadbd/mysqld binary '${BIN}' could not be read"
       exit 1
     fi
-    BASE=`echo ${BIN} | sed 's|/bin/mariadbd||;s|/bin/mysqld||'`
+    BASE="$(echo ${BIN} | sed 's|/bin/mariadbd||;s|/bin/mysqld||')"
     if [ ! -d "${BASE}" ]; then
       echo "Assert! Basedir '${BASE}' does not look to be a directory"
       exit 1
@@ -1107,8 +1121,8 @@ else
     ENGINE=
     FAULT=0
     # Pre-processing all possible sql files to make it suitable for reducer.sh and manual replay - this can be handled in pquery core < TODO
-    sed -i "s/;|NOERROR/;#NOERROR/" ${WORKD_PWD}/${TRIAL}/*_thread-0.*.sql
-    sed -i "s/;|ERROR/;#ERROR/" ${WORKD_PWD}/${TRIAL}/*_thread-0.*.sql
+    sed -i "s/;|NOERROR/;#NOERROR/" ${RUNDIR}/${TRIAL}/*_thread-0.*.sql
+    sed -i "s/;|ERROR/;#ERROR/" ${RUNDIR}/${TRIAL}/*_thread-0.*.sql
     MASTER_EXTRA=
     SLAVE_EXTRA=
     if [ -r ./${TRIAL}/REPLICATION_ACTIVE ]; then  # This was a replication based run
@@ -1147,13 +1161,13 @@ else
     if [ ${FAULT} -ne 1 ]; then
       QCTEXTLN=$(echo "${TEXT}" | grep --binary-files=text -o "[0-9]*$")
       TEXT="$(echo ${TEXT} | sed "s/#[0-9]*$//")"
-      QCTEXT="$(sed -n "${QCTEXTLN},${QCTEXTLN}p" ${WORKD_PWD}/${TRIAL}/*_thread-0.${ENGINE}.sql | grep --binary-files=text -o "#@[0-9]*#")"
+      QCTEXT="$(sed -n "${QCTEXTLN},${QCTEXTLN}p" ${RUNDIR}/${TRIAL}/*_thread-0.${ENGINE}.sql | grep --binary-files=text -o "#@[0-9]*#")"
     fi
     # Output of the following is too verbose
     #if [ "${MYEXTRA}" != "" ]; then
     #  echo "* MYEXTRA variable set to: ${MYEXTRA}"
     #fi
-    INPUTFILE=$(echo ${TRIAL} | sed "s|^|${WORKD_PWD}/|" | sed "s|$|/*_thread-0.${ENGINE}.sql|")
+    INPUTFILE=$(echo ${TRIAL} | sed "s|^|${RUNDIR}/|" | sed "s|$|/*_thread-0.${ENGINE}.sql|")
     echo "* Query Correctness: Data Correctness (QC DC) TEXT variable for trial ${TRIAL} set to: \"${TEXT}\""
     # TODO: TEMPORARILY DISABLED THIS; re-review QCTEXT variable functionality later. Also see change at [*]
     #echo "* Query Correctness: Line Identifier (QC LI) QCTEXT variable for trial ${TRIAL} set to: \"${QCTEXT}\""

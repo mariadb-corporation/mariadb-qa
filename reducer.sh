@@ -2,25 +2,20 @@
 
 # Copyright (c) 2012,2013 Oracle and/or its affiliates. All rights reserved.
 # Use is subject to license terms.
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; version 2 of the License.
-#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
-#
 # You should have received a copy of the GNU General Public License
-
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
-# USA
-
-# In active development: 2012-2023
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 
 # This program has been used to reduce tens of thousands of SQL based testcases,
 # from tens (or hundreds) of thousands of SQL lines to less then 10 lines, each.
+
+# In active development: 2012-2024
 
 # Learn more at:
 # https://www.percona.com/blog/2014/09/03/reducer-sh-a-powerful-mysql-test-case-simplificationreducer-tool/
@@ -895,7 +890,7 @@ options_check(){
   if [ $MODE -eq 3 -a $USE_NEW_TEXT_STRING -eq 1 ]; then
     if [ $(echo "${TEXT}" | sed 's/[^|]//g' | tr -d '\n' | wc -m) -lt 3 ]; then  # Actual normal is 4. 3 Used for small safety buffer yet avoiding most '||' (OR) error-log-search based TEXT's. Still, the new text string could in principle have less then 4 also if not enough stacks were available in the core dump, or if we ever decide to use the old unique strings as a fallback for the case where new strings are not available (unlikely).
       if [ "${FIREWORKS}" != "1" ]; then
-        if [[ "${TEXT}" != "MEMORY_NOT_FREED"* && "${TEXT}" != "GOT_FATAL_ERROR"* && "${TEXT}" != "GOT_ERROR"* && "$TEXT" != "MARKED_AS_CRASHED"* && "$TEXT" != "MARIADB_ERROR_CODE"* && "${TEXT}" != "FALLBACK"* ]]; then  # Avoid situations where it is expected to see this
+        if [[ "${TEXT}" != "MUTEX"* && "${TEXT}" != "MEMORY_NOT_FREED"* && "${TEXT}" != "GOT_FATAL_ERROR"* && "${TEXT}" != "GOT_ERROR"* && "$TEXT" != "MARKED_AS_CRASHED"* && "$TEXT" != "MARIADB_ERROR_CODE"* && "${TEXT}" != "FALLBACK"* ]]; then  # Avoid situations where it is expected to see this
           echo "Likely misconfiguration: MODE=3 and USE_NEW_TEXT_STRING=1, yet the TEXT string ('${TEXT}') does not contain at least 3 '|' symbols, which are normally used in new text string unique bug ID's! It is highly likely reducer will not locate any bugs this way. Are you perhaps attempting to look for a specific TEXT string in the standard server error log? If so, please set USE_NEW_TEXT_STRING=0 and SCAN_FOR_NEW_BUGS=0 ! Another possibility is that you incorrectly set the TEXT variable to something that is not a/the unique bug ID. Please check your setup. Pausing 13 seconds for consideration. Press CTRL+c if you want to stop at this point. If not, reducer will look for '${TEXT}' in the new text string script unique bug ID output. Again, this is unlikely to work, unless in the specific use case of looking for a partial match of a limited TEXT string against the new text string script unique bug ID output."
           sleep 13
         fi
@@ -1273,7 +1268,7 @@ multi_reducer(){
     echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for all forked verification subreducer threads to finish/terminate"
     TXT_OUT="$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Finished/Terminated verification subreducer threads:"
     for t in $(eval echo {1..$MULTI_THREADS}); do
-      # TODO: An ideal situation would be to have a check here for 'Failed to start mariadbd/mysqld server' in the subreducer logs. However, this would require a change to how this section works; the "wait" for PID would have to be changed to some sort of loop. However, as a stopped verify thread (1 in 10 for starters) is quickly surpassed by a new set of threads - i.e. after 10 threads, 20 are started (a new run with +10 threads) - it is not deemed very necessary to change this atm. This error also would only show on very busy servers. However, this check SHOULD be done for non-verify MULTI stages, as for simplification, all threads keep running (if they remain live) untill a simplified testcase is found. Thus, if 8 out of 10 threads sooner or later end up with 'Failed to start mariadbd/mysqld server', then only 2 threads would remain that try and reproduce the issue (till ifinity). The 'Failed to start mariadbd/mysqld server' is seen on very busy servers (presumably some timeout hit). This second part (starting with 'However,...' is implemented already below. RV update 12/8/20: When a different crash is seen then the one specified using TEXT, the thread will also get restarted, with the message being displayed being the 'busy server' one which is not correct. Some update to that output already made below.
+      # TODO: An ideal situation would be to have a check here for 'Failed to start the mariadbd/mysqld server' in the subreducer logs. However, this would require a change to how this section works; the "wait" for PID would have to be changed to some sort of loop. However, as a stopped verify thread (1 in 10 for starters) is quickly surpassed by a new set of threads - i.e. after 10 threads, 20 are started (a new run with +10 threads) - it is not deemed very necessary to change this atm. This error also would only show on very busy servers. However, this check SHOULD be done for non-verify MULTI stages, as for simplification, all threads keep running (if they remain live) untill a simplified testcase is found. Thus, if 8 out of 10 threads sooner or later end up with 'Failed to start the mariadbd/mysqld server', then only 2 threads would remain that try and reproduce the issue (till ifinity). The 'Failed to start the mariadbd/mysqld server' is seen on very busy servers (presumably some timeout hit). This second part (starting with 'However,...' is implemented already below. RV update 12/8/20: When a different crash is seen then the one specified using TEXT, the thread will also get restarted, with the message being displayed being the 'busy server' one which is not correct. Some update to that output already made below.
       wait $(eval echo $(echo '$MULTI_PID'"$t"))
       TXT_OUT="$TXT_OUT #$t"
       echoit_overwrite "$TXT_OUT"
@@ -2001,7 +1996,7 @@ init_workdir_and_files(){
         if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
           echoit "[Init] [NOTE] Failed to cleanly start mariadbd/mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mariadbd/mysqld). Normally this would cause reducer.sh to halt here (and advice you to check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log + check that there is plenty of space on the device being used). However, because REDUCE_STARTUP_ISSUES is set to 1, we continue this reducer run. See above for more info on the REDUCE_STARTUP_ISSUES setting"
         else
-          echoit "[Init] [ERROR] Failed to start mariadbd/mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mariadbd/mysqld), check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mariadbd/mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
+          echoit "[Init] [ERROR] Failed to start the mariadbd/mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mariadbd/mysqld), check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start the mariadbd/mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
           echoit "[Init] [INFO] If however you want to debug a mariadbd/mysqld startup issue, for example caused by a misbehaving --option to mariadbd/mysqld, set REDUCE_STARTUP_ISSUES=1 and restart reducer.sh"
           echo "Terminating now."
           exit 1
@@ -2277,15 +2272,19 @@ start_mysqld_or_valgrind_or_mdg(){
         if [ ${STAGE} -eq 8 -o ${STAGE} -eq 9 ]; then
           if [ ${STAGE} -eq 8 ]; then STAGE8_NOT_STARTED_CORRECTLY=1; fi
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
-          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mariadbd/mysqld server, assuming this option set is required"
+          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start the mariadbd/mysqld server, assuming this option set is required"
         else
-          if [ "${REPLICATION}" -eq 1 ]; then  # With replication, we continue reducing as at times there are m/s startup issues #TODO: research further as to reason, seems to be timing related (timeout was increased from 60 to 90 now)
-            return 1  # We return a 1 status which, in combination with REPLICATION=1 will indicate that a m/s startup issue happened. run_and_check() will then just return a '0' based on this indicating that this trial did not reproduce the issue
-          else
-            echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mariadbd/mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
-            echo "Terminating now."
-            exit 1
-          fi
+          # RV 17/2/24: This section got a major change in how it works/rewrite: check for correct operation and remove by mid-year if all fine. Also remove the update made to run_and_check(). The main motivation is that we are seeing too many of the 'Terminating now.'/exit 1 occurences on loaded servers
+          #if [ "${REPLICATION}" -eq 1 ]; then  # With replication, we continue reducing as at times there are m/s startup issues #TODO: research further as to reason, seems to be timing related (timeout was increased from 60 to 90 now)
+          #  return 1  # We return a 1 status which, in combination with REPLICATION=1 will indicate that a m/s startup issue happened. run_and_check() will then just return a '0' based on this indicating that this trial did not reproduce the issue
+          #else
+          #  echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start the mariadbd/mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
+          #  echo "Terminating now."
+          #  exit 1
+          #fi
+          # RV 17/2/24: Rewrite starts here. Instead of 'return 1' for replication, and terminating for non-replication, we now do always 'return 1'
+          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start the mariadbd/mysqld server, retrying. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is looping, it indicates a persistant problem that will likely require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Lst good known testcase: $WORKO (provided the disk being used did not run out of space)"
+          return 1  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 1' will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution to avoid skipping one possible simplification in stages >=2. Should not affect stage 1) TODO
         fi
       else
         # Ref discussion RV/RS 27 Nov 19 via 1:1 (RV;should be covered in SQL,RS;issue seen)
@@ -2751,7 +2750,7 @@ start_valgrind_mysqld_main(){
   done
   if ! ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
     if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer. No point in displaying this for subreducers, as the said files will already have been replaced
-      echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mariadbd/mysqld server under Valgrind, check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mariadbd/mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
+      echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start the mariadbd/mysqld server under Valgrind, check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start the mariadbd/mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
     fi
     echo "Terminating now."
     exit 1
@@ -2953,7 +2952,9 @@ cut_threadsync_chunk(){
 
 run_and_check(){
   start_mysqld_or_valgrind_or_mdg
-  if [ ${?} -eq 1 -a "${REPLICATION}" -eq 1 ]; then stop_mysqld_or_mdg; return 0; fi  # Special provision for replication startup failures (REPLICATION=1). The hack is to return 0 here, indicating that no reduction was succesful, see start_mysqld_or_valgrind_or_mdg for more info
+  # RV 17/2/24: updated: see start_mysqld_or_valgrind_or_mdg() for more info and when this old code can be removed
+  #if [ ${?} -eq 1 -a "${REPLICATION}" -eq 1 ]; then stop_mysqld_or_mdg; return 0; fi  # Special provision for replication startup failures (REPLICATION=1). The hack is to return 0 here, indicating that no reduction was succesful, see start_mysqld_or_valgrind_or_mdg for more info
+  if [ ${?} -eq 1 ]; then stop_mysqld_or_mdg; return 0; fi  # Provision for various startup failures. The hack is to return 0 here, indicating that no reduction was succesful. TODO: This can be improved. see start_mysqld_or_valgrind_or_mdg for more info
   run_sql_code
   if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then stop_mysqld_or_mdg; fi
   process_outcome

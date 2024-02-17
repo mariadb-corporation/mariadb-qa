@@ -694,14 +694,18 @@ handle_bugs() {
   fi
   cd - >/dev/null || exit 1
   if [[ "${MDG}" -eq 1 ]]; then
-    if grep -qi "No .* found [ia][nt]" ${RUNDIR}/${TRIAL}/node${j}/MYBUG; then
-      echoit "Assert: we found a coredump at $(ls ${RUNDIR}/${TRIAL}/node${j}/*core* 2>/dev/null), yet ${SCRIPT_PWD}/new_text_string.sh produced this output: ${TEXT}"
-      exit 1
+    if grep -qi "No .* found" ${RUNDIR}/${TRIAL}/node${j}/MYBUG; then
+      if [ ! -z "$(ls ${RUNDIR}/${TRIAL}/node${j}/*core* 2>/dev/null)" ]; then
+        echoit "Assert: we found a coredump at $(ls ${RUNDIR}/${TRIAL}/node${j}/*core* 2>/dev/null), yet ${SCRIPT_PWD}/new_text_string.sh produced this output: ${TEXT}"
+        exit 1
+      fi
     fi
   else
-    if grep -qi "No .* found [ia][nt]" ${RUNDIR}/${TRIAL}/MYBUG; then
-      echoit "Assert: we found a coredump at $(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null), yet ${SCRIPT_PWD}/new_text_string.sh produced this output: ${TEXT}"
-      exit 1
+    if grep -qi "No .* found" ${RUNDIR}/${TRIAL}/MYBUG; then
+      if [ ! -z "$(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null)" ]; then
+        echoit "Assert: we found a coredump at $(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null), yet ${SCRIPT_PWD}/new_text_string.sh produced this output: ${TEXT}"
+        exit 1
+      fi
     fi
   fi
   echoit "Bug found (as per new_text_string.sh): ${TEXT}"
@@ -2408,7 +2412,7 @@ EOF
     ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$")"
   fi
   if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then  # We have a significant/major error
-    touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # This is only an indicator. i.e. new_text_string.sh may see a crash and thus provide a UniqueID pertaining to the crash for the reducer. Still, all error log issues will be saved and this marker will be set. It is not used for the time being other than as an indicator flag.
+    touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # Mark trial as containing a error log issue. TODO: pquery-prep-red.sh will use this as an indicator for possibly taking the error log issue as TEXT for reducer. However, for doing so, it will use pquery-del-trial.sh (in CHECK mode) which may (or may not) slightly differ from how the error log issue grab works above (to be checked, or perhaps these several areas of error log issue processing can be moved/unified/de-duplicated into a new standalone script)
     echoit "Error log bug found: $(echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')"
     savetrial
     TRIAL_SAVED=1

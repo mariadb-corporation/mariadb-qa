@@ -174,6 +174,18 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+SIGSEGV|mrn::DatabaseManager::open|mroonga_query_expand_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                 ## MDEV-21166
+SIGSEGV|mrn::DatabaseManager::open|mroonga_query_expand_init|udf_handler::fix_fields|udf_handler::fix_fields                                                                   ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_normalize_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                        ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_normalize_init|udf_handler::fix_fields|udf_handler::fix_fields                                                                          ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_command_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                          ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_command_init|udf_handler::fix_fields|udf_handler::fix_fields                                                                            ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_escape_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                           ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_escape_init|udf_handler::fix_fields|udf_handler::fix_fields                                                                             ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_highlight_html_init|udf_handler::fix_fields|udf_handler::fix_fields                                                                     ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_highlight_html_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                   ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_snippet_html_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                     ## MDEV-21166
+SIGSEGV|mrn::ContextPool::pull|mroonga_snippet_html_init|udf_handler::fix_fields|udf_handler::fix_fields                                                                       ## MDEV-21166
 active_arena->is_stmt_prepare_or_first_stmt_execute() || active_arena->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|st_select_lex::fix_prepare_information|JOIN::prepare|st_select_lex_unit::prepare_join|st_select_lex_unit::prepare ## MDEV-33218
 0|SIGABRT|Item_row::illegal_method_call|Item_row::get_date|Event_parse_data::init_execute_at|Event_parse_data::check_parse_data                                                ## MDEV-33472
 0|SIGABRT|Item_row::illegal_method_call|Item_row::val_int|Item::get_date|Event_parse_data::init_ends                                                                           ## MDEV-33472
@@ -913,10 +925,8 @@ table->s->db_options_in_use == part_table->s->db_options_in_use|SIGABRT|compare_
 SIGABRT|__cxa_pure_virtual|Item::check_type_scalar|Item_func::check_argument_types_scalar|Item_func::fix_fields                                                                ## MDEV-28034
 SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|fix_session_vcol_expr|TABLE::fix_vcol_exprs                                                                                ## MDEV-28034
 SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_column_deps|TABLE::mark_column_with_deps                                                               ## MDEV-28034
-SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_col|TABLE::mark_virtual_col                            
-                                                ## MDEV-28034
-SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_col|update_field_dependencies                          
-                                                ## MDEV-28034
+SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_col|TABLE::mark_virtual_col                                                                            ## MDEV-28034
+SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_col|update_field_dependencies                                                                          ## MDEV-28034
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_rollback_trans|ha_start_consistent_snapshot|trans_begin|mysql_execute_command          ## MDEV-28024
 thd->transaction.stmt.ha_list == __null || trans == &thd->transaction.stmt|SIGABRT|ha_rollback_trans|ha_start_consistent_snapshot|trans_begin|mysql_execute_command            ## MDEV-28024
 inited == NONE|SIGABRT|handler::ha_reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables                                      ## MDEV-28023
