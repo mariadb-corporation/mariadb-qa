@@ -1,9 +1,5 @@
 #!/bin/bash
 
-if [ "${PWD}" == "/data" ]; then
-  echo "Current PWD is /data; this is unlikely to be correct: cd into a workdir first"
-  exit 1
-fi
 ~/mariadb-qa/pquery-results.sh
 #~/mariadb-qa/pquery-results.sh scan  # Disabled; ref TODO inside the file
 #~/mariadb-qa/pquery-results.sh $1  # Alternative implementation if you want to have non-scan output by default, but still be able to use 'scan' as option to ~/pr i.e. ~/pr scan

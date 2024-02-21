@@ -20,6 +20,13 @@ if [ "$1" == "scan" ]; then
   SCANBUGS=1
 fi
 
+if [ "${PWD}" == "/test" -o "${PWD}" == "/data" -o "${PWD}" == "${HOME}" ]; then
+  if [ "$(ls pquery*log 2>/dev/null | wc -l)" -eq 0 ]; then
+    echo "Assert: you seem to be running this from an incorrect directory ("${PWD}"), we expected pquery*log to exist and be in a WORKDIR, e.g. for example '/data/123456'. Terminating."
+    exit 1
+  fi
+fi
+
 # Check if this is a MDG run
 if [ "$(grep --binary-files=text 'MDG Mode:' ./pquery-run.log 2>/dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
   MDG=1

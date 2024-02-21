@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc|Item_func_json_array_intersect::prepare_json_and_create_hash|Item_func_json_array_intersect::fix_length_and_dec|Item_func::fix_fields|Item_str_func::fix_fields ## MDEV-33149
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_direct_sql.cc|spider_udf_direct_sql_create_conn|spider_udf_direct_sql_get_conn|spider_direct_sql_body|spider_direct_sql ## MDEV-33434
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_direct_sql.cc|spider_udf_direct_sql_create_conn|spider_udf_direct_sql_get_conn|spider_direct_sql_body|udf_handler::val_int ## MDEV-33434
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions|ha_partition::change_partitions_to_open ## MDEV-33240

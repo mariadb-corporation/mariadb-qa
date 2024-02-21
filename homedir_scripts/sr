@@ -1,5 +1,5 @@
 #!/bin/bash
-PGE_LOOPS=3  # Immediately improves testcase quality after first reducer round. Ideal to maxout machine time. Set to 0 to disable. At least 1 recommended as it can greatly improve testcase quality
+PGE_LOOPS=2  # Immediately improves testcase quality after first reducer round. Ideal to maxout machine time. Set to 0 to disable. At least 1 recommended as it can greatly improve testcase quality
 
 if [ -z "${1}" ]; then
   echo "Assert: please pass reducer/trial nr to start"

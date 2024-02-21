@@ -3,7 +3,21 @@
 # tmpfs diskspace and process monitor
 
 WIPE_TMP_ENABLED=0  # /tmp cleaning, generally should NOT be enabled
-FILTER="grep|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr"  # Filter this list of processes from termination
+FILTER_LARGE_NEWBUG_RUNS=1  # For large-scale newbug verification/reduction runs
+
+PR_PID_FILTER=;GE_PID_FILTER=;S_PID_FILTER=;NEWBUG_PID_FILTER=
+PR_PID_FILTER="$(screen -ls | grep -o '[0-9][0-9]\+\.pr[0-9]\+' | sed 's|\..*||' | grep -o '[0-9]\+' | tr '\n' '|')"
+GE_PID_FILTER="$(screen -ls | grep -o '[0-9][0-9]\+\.ge[0-9]\+' | sed 's|\..*||' | grep -o '[0-9]\+' | tr '\n' '|')"
+S_PID_FILTER="$(screen -ls | grep -o '[0-9][0-9]\+\.s[0-9]\+' | sed 's|\..*||' | grep -o '[0-9]\+' | tr '\n' '|')"
+if [ "${FILTER_LARGE_NEWBUG_RUNS}" -eq 1 ]; then
+  NEWBUG_PID_FILTER="$(ps -ef | grep 'newbug.*reducer.sh' | awk '{print $2}' | sort -u | sed 's|\..*||' | grep -o '[0-9]\+' | tr '\n' '|')"
+fi
+COMBINED_PID_FILTER="$(echo "${PR_PID_FILTER}${GE_PID_FILTER}${S_PID_FILTER}${NEWBUG_PID_FILTER}" | sed 's/||/|/g;s/|$//;s/^|//')"
+PR_PID_FILTER=;GE_PID_FILTER=;S_PID_FILTER=;NEWBUG_PID_FILTER=
+
+FILTER="uniq_newbugs|large_newbug_run|xargs|grep|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr"  # Filter this list of processes from termination
+
+# TODO: Check over time if 'xargs' is a correct addition here
 
 if [ "${STY}" == "" ]; then
   THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
@@ -48,17 +62,17 @@ while :; do
   sleep 3
   if [ ${COUNT1} -ge 10 ]; then
     # Cleanup any processes which have deleted files open. This command assists greatly in server memory management
-    sudo lsof -s +L1 | grep '(deleted)' | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | awk '{print $2}' | sort -u | grep -vE '^[0-9][0-9][0-9]$|^[0-9][0-9]$|^[0-9]$' | tr '\n' '|' | sed "s/^/ps -ef | grep -E '/;s/|$/' | grep -vEi '${FILTER}'/;s/$/\0/" | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -P20 -I{} kill -9 {} 2>/dev/null
+    sudo lsof -s +L1 | grep '(deleted)' | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | awk '{print $2}' | sort -u | grep -vE '^[0-9][0-9][0-9]$|^[0-9][0-9]$|^[0-9]$' | tr '\n' '|' | sed "s/^/ps -ef | grep -E '/;s/|$/' | grep -vEi '${FILTER}'/;s/$/\0/" | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | sort -u | xargs -P20 -I{} kill -9 {} 2>/dev/null
     # Check if there are any early-terminated or finished reducers which still have /dev/shm directories in use
     # TODO: Possible race condition. If this command runs at exactly the time where the initial reducer just ended (before auto-pge runs are done for the same trial), it is possible that such directory will be deleted before the pge's can run. Once the pge is started, due to the append to reducer.log and the tail -n1, that pge should be fine till completition, at which time the same issue may occur
     cd /dev/shm
-    tail -n1 [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]/reducer.log | grep -Eib1 'DONE. Final testcase|Abort. The source for this reducer was likely deleted. Terminating' | grep '==' | grep -o '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | xargs -I{} echo 'if [ ! -z "{}" ]; then if [ -d ./{} ]; then rm -Rf /dev/shm/{}; fi; fi' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+    tail -n1 [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]/reducer.log 2>/dev/null | grep -Eib1 'DONE. Final testcase|Abort. The source for this reducer was likely deleted. Terminating' | grep '==' | grep -o '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | xargs -I{} echo 'if [ ! -z "{}" ]; then if [ -d ./{} ]; then rm -Rf /dev/shm/{}; fi; fi' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
     cd - >/dev/null
-    # Check process list for any datadir=/dev/shm/16... and if found check if such directory is present. If not, terminate any processes associated with the non-existing directory. This command assist greatly in overall server memory management
-    ps -ef | grep -o 'datadir=/dev/shm/16[0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi '${FILTER}'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | sort -u | xargs -I{} kill -9 {} 2>/dev/null  # Improved version, fireworks protection
+    # Check process list for any datadir=/dev/shm/1[7-9]... and if found check if such directory is present. If not, terminate any processes associated with the non-existing directory. This command assist greatly in overall server memory management
+    ps -ef | grep -o 'datadir=/dev/shm/1[7-9][0-9]\+' | sed 's|.*=||' | sort -u | xargs -I{} echo "if [ ! -d {} ]; then echo "{}"; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi '${FILTER}'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | sort -u | xargs -I{} kill -9 {} 2>/dev/null  # Improved version, fireworks protection
     # Cleanup any processes which are still live yet the /dev/shm workdir was already deleted (these two commands are additional/complimentary to the one above. The final one uses nsenter as an improved method of killing processes associated with the kernel's init process (pid 1) which cannot be terminated with kill -9
-    ps -ef | grep -o '/dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | sort -u | xargs -I{} echo "if [ ! -d '{}' ]; then ps -ef | grep '{}' | grep -vEi '${FILTER}' | awk '{print \$2}' | xargs -I_ kill -9 _; fi;" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
-    ps -ef | grep -o '/dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | sort -u | xargs -I{} echo "if [ ! -d '{}' ]; then ps -ef | grep '{}' | grep -vEi '${FILTER}' | awk '{print \$2}' | xargs -I_ sudo nsenter -t _ -m -u -i -n kill -9 _; fi;" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+    ps -ef | grep -o '/dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | sort -u | xargs -I{} echo "if [ ! -d '{}' ]; then ps -ef | grep '{}' | grep -vEi '${FILTER}' | awk '{print \$2}' | grep -vE '${COMBINED_PID_FILTER}' | xargs -I_ kill -9 _; fi;" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+    ps -ef | grep -o '/dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | sort -u | xargs -I{} echo "if [ ! -d '{}' ]; then ps -ef | grep '{}' | grep -vEi '${FILTER}' | awk '{print \$2}' | grep -vE '${COMBINED_PID_FILTER}' | xargs -I_ sudo nsenter -t _ -m -u -i -n kill -9 _; fi;" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
     # Cleanup known bugs from fuzzing
     if [ -d /home/$(whoami)/fuzzing ]; then
       CURPWD="${PWD}"
@@ -71,14 +85,17 @@ while :; do
     # Cleanup cache, may help avoid OOM
     sudo bash -c "$(which echo) 3 > /proc/sys/vm/drop_caches" &
     # Terminate subreducers which have been active for 1h+. It is unlikely that any subreducer will take that long to run
-    #ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vE 'grep|cc|clang'" | xargs -I{} bash -c "{}" | awk '{print $2}' | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time
-    ps -ef | grep 'subreducer' | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command,pid | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] |[0-9]-[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' | awk '{print $4}' | xargs -I{} kill -9 {}  # Improved (works better + less resources used) command. Ref comment on remarked line above for more info
+    #ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vE 'grep|cc|clang'" | xargs -I{} bash -c "{}" | awk '{print $2}' | grep -vE '${COMBINED_PID_FILTER}' | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time
+    ps -ef | grep 'subreducer' | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command,pid | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] |[0-9]-[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' | awk '{print $4}' | xargs -I{} kill -9 {}  # Improved (works better + less resources used) command. Ref comment on remarked line above for more info  # RV 21/02/24 this is the only command that did not receive the COMBINED_PID_FILTER filtering, though it may be necessary if we still observe killed sessions; monitor over time
     # RV-05/02/22 increased frequency of ~/mariadb-qa/tmpfs_clean.sh from 60 rounds to 10 rounds, and starting process as background process. Improved ~/mariadb-qa/tmpfs_clean.sh to self-terminate if it is running already
     ~/mariadb-qa/tmpfs_clean.sh 1 SILENT &
+    if [ -r /data/NEWBUGS/mv_index_corrupted ]; then  # Move similar index corruptions into their own subdirectory
+      /data/NEWBUGS/mv_index_corrupted
+    fi
     NEWBUGCOUNT="$(cat /data/NEWBUGS/*.string 2>/dev/null | sed 's|#sql-.*MAI|#sql-.MAI|' | sort -u | wc -l)"
     cd /dev/shm
     # Check reducer.log in all /dev/shm/[0-9]* directories for the name of the reducer script. Then check ps -ef output to see if that reducer is still actually running. If not, delete the directory as it is no loger of any use. This script greatly helps with keeping especially swap space more empty, for an as yet unknown reason
-    head -n1 [0-9]*/reducer.log 2>/dev/null | grep 'Reducer: ' | sed 's|.*./||' | sort -u | xargs -I{} echo "if [ -z \"\$(ps -ef | grep '{}' | grep -v grep)\" ]; then echo '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} grep '{}' /dev/shm/1*/reducer.log | sed 's|/reducer.log.*||' | sort -u | xargs -I{} echo "if [ \"\$(echo '{}' | grep -o '^/dev/shm/16')\" == '/dev/shm/16' -a -d '{}' ]; then rm -Rf '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+    head -n1 [0-9]*/reducer.log 2>/dev/null | grep 'Reducer: ' | sed 's|.*./||' | sort -u | xargs -I{} echo "if [ -z \"\$(ps -ef | grep '{}' | grep -v grep)\" ]; then echo '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} grep '{}' /dev/shm/1*/reducer.log | sed 's|/reducer.log.*||' | sort -u | xargs -I{} echo "if [ \"\$(echo '{}' | grep -o '^/dev/shm/1')\" == '/dev/shm/1' -a -d '{}' ]; then rm -Rf '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"  # RV 21/02/24: updated /dev/shm/16 to /dev/shm/1 to cater for new 17.. and later epochs
     # Check if we have reducer directories > 10GB on /dev/shm and drop them, saving the reducer file
     # Only one directory "per COUNT1 round" is done at the time
     # Updated line below to be safer, but not sure it will fix https://jira.mariadb.org/browse/TODO-3015
@@ -89,7 +106,7 @@ while :; do
           # Copy log
           cp ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log ~/terminated_${ANY_SINGLE_LARGE_REDUCER_DIR}_reducer.log
           # Terminate instance
-          grep 'Init.*Reducer' ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log | sed 's|.*reducer|reducer|' | xargs -I{} echo "ps -ef | grep {}" | xargs -I{} bash -c "{}" | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs -I{} kill -9 {}
+          grep 'Init.*Reducer' ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log | sed 's|.*reducer|reducer|' | xargs -I{} echo "ps -ef | grep {}" | xargs -I{} bash -c "{}" | grep -vE 'grep|cc|clang' | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs -I{} kill -9 {}
           # Check for continued dir presence and cleanup
           if [ -d ${ANY_SINGLE_LARGE_REDUCER_DIR} ]; then rm -Rf ${ANY_SINGLE_LARGE_REDUCER_DIR}; fi
         fi
@@ -138,7 +155,7 @@ while :; do
     # Find the reducer connected with the particular epoch /dev/shm subdir
     REDUCER="$(grep -om1 ".Init. Reducer:.*" /dev/shm/${EPOCH}/reducer.log | sed 's|.*: ||')"
     # Kill all processes related to the epoch /dev/shm subdir (excluding reducer itself)
-    ps -ef | grep ${EPOCH} | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs kill -9
+    ps -ef | grep ${EPOCH} | grep -vE 'grep|cc|clang' | awk '{print $2}' | xargs kill -9  # RV 21/02/24: not filtering COMBINED_PID_FILTER here, though it may be necessary; ref similar note above; monitor over time. However, thus far it does not seem this code was triggered (~/reducers does not exist)
     # Change workdir to disk instead of tmpfs
     sed -i "s|^WORKDIR_LOCATION=1|WORKDIR_LOCATION=3|" ${REDUCER}
     sed -i "s|^WORKDIR_M3_DIRECTORY=.*|WORKDIR_M3_DIRECTORY=~/reducers|" ${REDUCER}
@@ -148,7 +165,7 @@ while :; do
       exit 1
     fi
     # Terminate reducer by reducing the corresponding screen (will also ensure all processes are gone)
-    ps -ef | grep "$(basename "${REDUCER}")" | grep -vE 'grep|cc|clang' | grep -i screen | awk '{print $2}' | xargs kill -9
+    ps -ef | grep "$(basename "${REDUCER}")" | grep -vE 'grep|cc|clang' | grep -i screen | awk '{print $2}' | xargs kill -9  # Idem on COMBINED_PID_FILTER, ref note just above
     # Restart reducer with new setting
     # TODO: expand this script to check for presence of _out file to shorten time to reduced testcase. However, there is not real way to check if such an _out file was saved correctly. Use .prev perhaps if present
     eval $(cd $(echo ${REDUCER} | sed 's|$(basename "${REDUCER}")||'); ~/sr $(echo "$(basename "${REDUCER}")" | sed 's|[^0-9]||g'))

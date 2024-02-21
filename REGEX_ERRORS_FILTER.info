@@ -30,6 +30,7 @@ dict_index_t::is_corrupted                            Not real corruption, just 
 Failed to update GTID state in mysql.gtid_slave_pos   Presumed non-issue (mysql.gtid_slave_pos renamed/deleted)
 Slave SQL thread is stopped because UNTIL condition is bad  Presumed non-issue (incorrect UNTIL condition)
 Error reading packet from server: could not find next log  RESET MASTER was executed, breaking the replication chain
+Error reading packet from server.*the last event read from.*the last byte read from.*  SPECIAL-26
 Internal MariaDB error code: 1017                     Presumed non-issue (mysql db was dropped causing slave issues)
 Internal MariaDB error code: 1030                     MDEV-22936
 Internal MariaDB error code: 1046                     Presumed non-issue (init_slave query cannot be executed) See MDEV-29499
@@ -52,7 +53,7 @@ Could not execute Write_rows_v1 event on table.*Error_code: 1526.*HA_ERR_NO_PART
 Could not execute Write_rows_v1 event on table.*Error_code: 1048.*HA_ERR_FOUND_DUPP_KEY  MDEV-33291
 Slave SQL: Error 'Table has no partition for value.*Internal MariaDB error code: 1526  MDEV-33291
 safe_mutex: Found wrong usage of mutex .LOCK_plugin. and .LOCK_thd_kill  MDEV-32477
-Failed to open log .file .647.. errno 2               MDEV-22921 (ref comment)
+Failed to open log .file .647.. errno 2               MDEV-22921 (ref comment) (can also show 'server_errno=29' at the end of the line, on a slave with RESET MASTER TO 0x7FFFFFFF; CREATE TABLE ... executed on master)
 Error reading packet from server. File .647. not found  MDEV-22921 (ref comment)
 Replication event checksum verification failed while reading from a log file  MDEV-32628
 Internal MariaDB error code: 1064                     Presumed non-issue (init_slave query error), though see MDEV-26247 (1064)

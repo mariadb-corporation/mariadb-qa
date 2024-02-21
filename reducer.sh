@@ -370,8 +370,10 @@ TOKUDB=
 ROCKSDB=
 #Check BASEDIR and auto-update to a build in /data/VARIOUS_BUILDS/ if BASEDIR directory does not exist
 BASEDIR_ALT="$(echo "${BASEDIR}" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"  # Check /data/VARIOUS_BUILDS (and use any dir found there if BASEDIR does not exist), as it often contains older BASEDIR directories. This aids in just starting reducer.sh without having to update the BASEDIR path/directory
-if [ ! -d "${PWD}" -a ! -d "${BASEDIR_ALT}" ]; then
-  echo "Assert: Neither '${PWD}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
+#if [ ! -d "${PWD}" -a ! -d "${BASEDIR_ALT}" ]; then
+if [ ! -d "${BASEDIR}" -a ! -d "${BASEDIR_ALT}" ]; then  # RV 19/2/24: Changed PWD to BASEDIR as PWD does not make sense?
+  #echo "Assert: Neither '${PWD}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
+  echo "Assert: Neither '${BASEDIR}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
   exit 1
 elif [ -d "${BASEDIR_ALT}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/VARIOUS_BUILDS/ archive) found
   echo "Note: Updating BASEDIR from '${BASEDIR}' to '${BASEDIR_ALT}' as set BASEDIR did not exist, but the same/required server build was found in /data/VARIOUS_BUILDS/"
@@ -1357,7 +1359,7 @@ multi_reducer(){
             fi
           fi
           if [ "${FIREWORKS}" != "1" ]; then  # We do not want to spam FireWorks mode output
-            if grep -E --binary-files=text "Do you already have another mariadbd/mysqld server running on port|Address already in use|Got error: 98" $RESTART_WORKD/log/*.err 2>/dev/null; then  # A server likely crashed on a different bug
+            if grep -E --binary-files=text "Do you already have another.*running|Got error: 98" $RESTART_WORKD/log/*.err 2>/dev/null; then  # A server likely crashed on a different bug
               echoit "$ATLEASTONCE [Stage $STAGE] [WARNING] this script tried to restart the thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")), but failed due to a TCP/IP port address already in use error, which can be seen in $RESTART_WORKD/log/*.err - The most likely reason for this is that this thread previously crashed on another crash then the one specified in TEXT. It is highly unlikely that this script ran into an actual duplicate port issue due to the advanced checking for the same in multi_reducer(). If this message is looping, you want to:  tail -n5 $(echo "${RESTART_WORKD}" | sed 's|/$||;s|/[^/]\+$|/*/log/*.err|')  repeatadely untill you see a crash, followed by actually checking (i.e. vi) the error log quickly (to avoid overwrite) once you see a crash, to see which crash is being generated, and then stop reducer and modify the search TEXT text or make other required changes (like updating MYEXTRA) to find the original bug being looked for. It may work out better to first reduce for the new issue seen; it is likely the same bug. Alternatively, set this reducer to MODE=4 to look for any crash (provided you are reducing for a crash), with the caveat that if the SQL is capable of introducing two different crashes (and it looks like it is), you may end up with the wrong crash reduced. In that case, try again, or research the crash seen as described using the tail command. This script will now attempt to terminate and restart the thread."
             fi
           fi
@@ -2057,7 +2059,7 @@ generate_run_scripts(){
   if [ "${FIREWORKS}" == "1" ]; then  # No need to generate run sripts in FIREWORKS mode
     return 0
   fi
-  # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a mysql cli), _stop (stop mysqld). _start (starts mysqld)
+  # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a client/CLI), _stop (stop mariadbd/mysqld). _start (starts mariadbd/mysqld)
   # (start_mysqld_main and start_valgrind_mysqld_main). Togheter these scripts can be used for executing the final testcase ($WORKO_start > $WORKO_run)
   if [[ ${MDG} -eq 1 ]]; then
     local EPOCH_SOCKET="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}_socket.sock"
@@ -3528,12 +3530,16 @@ process_outcome(){
                 fi
                 NEWBUGTEXT_FINAL=
                 NEWBUGTEXT=
+                sed -i "s|^FORCE_SKIPV=.*|FORCE_SKIPV=0|" "${NEWBUGRE}"  # Do not skip verification (more handy when using large_newbug_run.sh)
                 sed -i "s|^THREADS=.*|THREADS=3|" "${NEWBUGRE}"
                 sed -i "s|^MULTI_THREADS_INCREASE=.*|MULTI_THREADS_INCREASE=1|" "${NEWBUGRE}"
                 sed -i "s|^MULTI_THREADS_MAX=.*|MULTI_THREADS_MAX=5|" "${NEWBUGRE}"
-                sed -i "s|^STAGE1_LINES=.*|STAGE1_LINES=5|" "${NEWBUGRE}"
+                sed -i "s|^STAGE1_LINES=.*|STAGE1_LINES=7|" "${NEWBUGRE}"
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
-                #sed -i "s|^MYEXTRA=.*|MYEXTRA=\"${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO Needs more work. Whilst the original is for example "--no-defaults --log-output=none --sql_mode=ONLY_FULL_GROUP_BY" this will end up with "--log-output=none" only which is not so good as "--no-defaults" is missing and more importantly, it's incorrect.
+                sed -i "s|^MYEXTRA=.*|MYEXTRA=\"--no-defaults ${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO check this works correctly now
+                sed -i "s|^REPLICATION=.*|REPLICATION=${REPLICATION}|" "${NEWBUGRE}"
+                sed -i "s|^MASTER_EXTRA=.*|MASTER_EXTRA=\"${MASTER_EXTRA}\"|" "${NEWBUGRE}"
+                sed -i "s|^SLAVE_EXTRA=.*|SLAVE_EXTRA=\"${MASTER_EXTRA}\"|" "${NEWBUGRE}"
                 chmod +x "${NEWBUGRE}"
                 echoit "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"
                 NEWBUGSO=

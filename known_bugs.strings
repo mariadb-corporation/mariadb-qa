@@ -8,7 +8,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1032  ## MDEV-33291 (may mask other bugs)
 MARIADB_ERROR_CODE|MariaDB error code: 1045  ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1046
 MARIADB_ERROR_CODE|MariaDB error code: 1054
-MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 or MDEV-33350
+MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 or MDEV-33350 or SPECIAL-25
 MARIADB_ERROR_CODE|MariaDB error code: 1064
 MARIADB_ERROR_CODE|MariaDB error code: 1100  ## SPECIAL-11 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1114  ## MDEV-23212
@@ -174,6 +174,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|sp_head::show_create_routine|Sp_handler::sp_show_create_routine         ## MDEV-33483
+SIGSEGV|thd_get_ha_data|mrn_get_slot_data|last_insert_grn_id|udf_handler::val_int                                                                                              ## MDEV-21166
 SIGSEGV|mrn::DatabaseManager::open|mroonga_query_expand_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                 ## MDEV-21166
 SIGSEGV|mrn::DatabaseManager::open|mroonga_query_expand_init|udf_handler::fix_fields|udf_handler::fix_fields                                                                   ## MDEV-21166
 SIGSEGV|mrn::ContextPool::pull|mroonga_normalize_init|udf_handler::fix_fields|Item_udf_func::fix_fields                                                                        ## MDEV-21166
@@ -1138,6 +1140,7 @@ table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::get_
 thd->is_error()|SIGABRT|convert_error_to_warning|Show::get_geometry_column_record|fill_schema_table_by_open|get_all_tables                                                     ## MDEV-25692
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command                 ## MDEV-25668
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|create_view_field|Field_iterator_view::create_item|find_field_in_view                                                     ## MDEV-25650
+0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Temporal_with_date::make_from_item                            ## MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Item::get_time                                                ## MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Item_param::get_date|Type_handler::Item_send_datetime|Type_handler_datetime_common::Item_send                            ## MDEV-25593
 0|SIGABRT|Type_handler_temporal_result::Item_get_date|Type_handler::Item_get_date_with_warn|Item_param::get_date|Type_handler::Item_send_datetime                              ## MDEV-25593

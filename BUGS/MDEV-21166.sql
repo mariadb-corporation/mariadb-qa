@@ -15,3 +15,6 @@ SELECT mroonga_highlight_html('a' AS query);
 
 CREATE FUNCTION mroonga_snippet_html RETURNS STRING SONAME 'ha_mroonga.so';
 SELECT mroonga_snippet_html('a','','');
+
+CREATE FUNCTION last_insert_grn_id RETURNS INTEGER SONAME 'ha_mroonga.so';
+SELECT last_insert_grn_id();

@@ -1914,9 +1914,9 @@ pquery_test() {
           grep -o "CHANGED: [0-9]\+" ${RUNDIR}/${TRIAL}/pquery_thread-0.${QC_SEC_ENGINE}.sql > ${RUNDIR}/${TRIAL}/${QC_SEC_ENGINE}.result
         fi
       else # Not a query correctness testing run
-        echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
         if [ ${QUERY_DURATION_TESTING} -eq 1 ]; then # Query duration testing run
           if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
+            echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
             ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
             PQPID="$!"
           else
@@ -1925,6 +1925,7 @@ pquery_test() {
                 sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
                 sed "s|\/home\/$(whoami)\/mariadb-qa|${SCRIPT_PWD}|" \
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
+              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             elif [[ ${GRP_RPL_CLUSTER_RUN} -eq 1 ]]; then
@@ -1932,9 +1933,11 @@ pquery_test() {
                 sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
                 sed "s|\/home\/$(whoami)\/mariadb-qa|${SCRIPT_PWD}|" \
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
+              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             else  # Query duration testing run
+              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
               ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             fi
@@ -1943,7 +1946,7 @@ pquery_test() {
           if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
             # Preload SQL if the PRELOAD feature is enabled (this SQL will be prepended to the trial's SQL later)
             if [ "${PRELOAD}" == "1" -a ! -z "${PRELOAD_SQL}" ]; then
-              echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL}"
+              echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL} using pquery"
               mkdir -p ${RUNDIR}/${TRIAL}/preload
               ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1  # Do not start in background like other PQUERY_BIN calls in this script. Here we just want the preload to finish before executing other statements. Also, when started in the background without waiting for it results in 0 byte default.node.tld_thread-0.sql on some reason (unimportant as no background should be used, or when background is used, the process should be waited upon)
             fi
@@ -2012,16 +2015,18 @@ pquery_test() {
                 PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
               fi
               # Pre-shuffled trial
+              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
               ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             else  # Standard non-shuffled trial
+              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
               ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             fi
           else
             # Preload SQL if the PRELOAD feature is enabled (this SQL will be prepended to the trial's SQL later)
             if [ "${PRELOAD}" == "1" -a ! -z "${PRELOAD_SQL}" ]; then
-              echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL}"
+              echoit "PRELOAD=1: Pre-loading SQL in ${PRELOAD_SQL} using pquery"
               mkdir -p ${RUNDIR}/${TRIAL}/preload
               ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1  # Do not start in background... (ref similar comment elsewhere in this script)
             fi
@@ -2061,6 +2066,7 @@ run= Yes
 
 EOF
               done
+              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
               echoit "${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg"
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
@@ -2069,6 +2075,7 @@ EOF
                 sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
                 sed "s|\/home\/$(whoami)\/mariadb-qa|${SCRIPT_PWD}|" \
                   > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
+              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             else
@@ -2116,9 +2123,11 @@ EOF
                   PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
                 fi
                 # Pre-shuffled trial
+                echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
                 ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
                 PQPID="$!"
               else  # Standard non-shuffled trial
+                echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
                 ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
                 PQPID="$!"
               fi
@@ -2150,6 +2159,7 @@ EOF
         fi
         echoit "$CMD"
         diskspace
+        echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
         $CMD >> ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
         PQPID="$!"
       else
@@ -2223,6 +2233,7 @@ EOF
         fi
         SQL_FILE="${RUNDIR}/${TRIAL}/${TRIAL}.sql"  # In contrast with single threaded runs, we want to save the input SQL file as it may be easier to reproduce from the original multi-threaded input SQL (which can be reduced and/or replayed in various ways including the multi* scripts as generated by startup.sh in BASEDIR's) than from the queries logged by pquery (per thread), though neither is a given. Reducer.sh will handle various scenario's as well depending on how it is setup per-reduction.
         if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
+          echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
           ${PQUERY_BIN} --infile=${SQL_FILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
           PQPID="$!"
         else
@@ -2231,9 +2242,11 @@ EOF
                sed "s|\/tmp|${RUNDIR}\/${TRIAL}|" |
                sed "s|\/home\/$(whoami)\/mariadb-qa|${SCRIPT_PWD}|" \
                  > ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
+            echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
             ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
             PQPID="$!"
           else
+            echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
             ${PQUERY_BIN} --infile=${SQL_FILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
             PQPID="$!"
           fi

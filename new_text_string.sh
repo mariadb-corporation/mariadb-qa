@@ -95,6 +95,11 @@ if [ -z "${MYSQLD}" ]; then
     if [ -r ${POTENTIAL_MYSQLD} ]; then
       MYSQLD="${POTENTIAL_MYSQLD}"
     fi
+  elif [ -r ./log/slave.err ]; then
+    POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/slave.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+    if [ -r ${POTENTIAL_MYSQLD} ]; then
+      MYSQLD="${POTENTIAL_MYSQLD}"
+    fi
   elif [ -r ./node1/node1.err ]; then
     POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
     if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
@@ -111,7 +116,7 @@ if [ -z "${MYSQLD}" ]; then
       MYSQLD="${POTENTIAL_MYSQLD}"
     fi
   else
-    echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld nor other potential mysqld's extracted from any logs at ./log/master.err or ./node[1-3]/node[1-3].err"
+    echo "Assert: mariadbd/mysqld not found in ./bin/, nor ../, nor ../mysqld/ nor any other potential locations extracted from any logs at ./log/*.err or ./node[1-3]/node[1-3].err"
     exit 1
   fi
 fi
@@ -430,7 +435,7 @@ fi
 
 # Minor adjustments
 TEXT="$(echo "${TEXT}" | sed 's|__cxa_pure_virtual () from|__cxa_pure_virtual|g')"
-TEXT="$(echo "${TEXT}" | sed 's|"/test/[^/"]\+\([/"]\)|"|')"  # To cleanup, for example: inline_mysql_file_tell("/test/bb-11.4-MDEV-7850_dbg/mysys/mf_iocache2.c"
+TEXT="$(echo "${TEXT}" | sed 's|"/test/[^/"]\+[/"]|"|')"  # To cleanup, for example: inline_mysql_file_tell("/test/bb-11.4-MDEV-7850_dbg/mysys/mf_iocache2.c"
 
 # Report bug identifier string
 if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
