@@ -32,3 +32,8 @@ INSTALL SONAME 'ha_spider';
 UNINSTALL SONAME 'ha_spider';
 SELECT * FROM t;
 SELECT spider_copy_tables ('foota_l','','');
+
+INSTALL SONAME 'ha_spider';
+UNINSTALL SONAME IF EXISTS "ha_spider";
+SELECT spider_direct_sql('SELECT 1','a','SRV "s",DATABASE "test"');
+~                                                                   
