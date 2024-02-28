@@ -392,6 +392,7 @@ cat "${1}" | tr -d '`' | \
        s|pow *(|POW(|gi; \
        s|div *(|DIV(|gi; \
        s|exp *(|EXP(|gi; \
+       s|bin *(|BIN(|gi; \
        s|lead *(|LEAD(|gi; \
        s|extract *(|EXTRACT(|gi; \
        s|date_add *(|DATE_ADD(|gi; \
@@ -476,6 +477,7 @@ cat "${1}" | tr -d '`' | \
        s|cast[ ]*(|CAST(|gi; \
        s|mid[ ]*(|MID(|gi; \
        s|row[ ]*(|ROW(|gi; \
+       s|uuid[ ]*(|UUID(|gi; \
        s|row_format|ROW_FORMAT|gi; \
        s|remote_port|REMOTE_PORT|gi; \
        s|pk_name|PK_NAME|gi; \
