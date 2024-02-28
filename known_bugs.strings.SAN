@@ -7,6 +7,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ##### CURRENT BUGS (Search key: Mac) #####
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2                                                                                                        ## MDEV-33494
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                            ## MDEV-33494
+UBSAN|signed integer overflow: -X - Y cannot be represented in type 'int'|sql/item_xmlfunc.cc|Item_nodeset_func_elementbyindex::val_native|Item_nodeset_func::val_str|Item_func_xml_extractvalue::val_str|Item::val_str_from_item ## MDEV-33552
+UBSAN|signed integer overflow: -X - Y cannot be represented in type 'int'|sql/item_xmlfunc.cc|Item_nodeset_func_elementbyindex::val_raw|Item_nodeset_func::val_str|Item_func_xml_extractvalue::val_str|Item::val_str_from_item ## MDEV-33552
 UBSAN|downcast of address X which does not point to an object of type 'Field_num'|sql/sql_analyse.cc|field_longlong::get_opt_type|analyse::end_of_records|end_send|do_select   ## MDEV-32240
 UBSAN|downcast of address X which does not point to an object of type 'Field_num'|sql/sql_analyse.cc|field_longlong::get_opt_type|analyse::end_of_records|end_send|sub_select  ## MDEV-32240
 UBSAN|member call on null pointer of type 'struct TABLE'|sql/sql_acl.cc|replace_roles_mapping_table|mysql_create_user|mysql_execute_command|mysql_parse                        ## MDEV-28773
