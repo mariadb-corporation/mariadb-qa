@@ -107,7 +107,6 @@ GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or 
 
 ##### Diagnostics_area::set_error_status|THD... issues, caused by: MDEV-22768?focusedCommentId=195197#comment-195197 also discussed in MDEV-25874 and also discussed in Slack st 7 Oct 22 8am. Use lower level stack frames to differentiate
 marked_for_read()|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                                          ## MDEV-24658
-open_tables == __null|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                       ## MDEV-25927
 SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_rm_table|mysql_execute_command                                                                                             ## MDEV-24686
 
 ##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
@@ -174,6 +173,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+(old_flags & 1) == ((my_flags & 0x10000U) ? 1 : 0)|SIGABRT|my_realloc|_ma_alloc_buffer|sort_get_next_record|sort_key_read                                                      ## MDEV-33562
 marked_for_read()|SIGABRT|Field_newdate::val_str|Item_field::val_str|Item_func_conv_charset::Item_func_conv_charset|Item::safe_charset_converter                               ## MDEV-33524
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|sp_head::show_create_routine|Sp_handler::sp_show_create_routine         ## MDEV-33483
 SIGSEGV|thd_get_ha_data|mrn_get_slot_data|last_insert_grn_id|udf_handler::val_int                                                                                              ## MDEV-21166

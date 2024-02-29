@@ -1129,7 +1129,9 @@ set_internal_options(){  # Internal options: do not modify!
   #ulimit -u 4000  2>/dev/null
   # ^ This was removed, because it was causing the system to run out of available file descriptors. i.e. while ulimit -n may be set to a maximum of 1048576, and whilst that limit may never be reached, a system would still run into "fork: retry: Resource temporarily unavailable" issues. Ref https://askubuntu.com/questions/1236454
   # Unless core files are specifically requested (--core-file or --core option passed to mariadbd/mysqld via MYEXTRA), disable all core file generation (OS+mariadbd/mysqld)
-  if [ $USE_NEW_TEXT_STRING -eq 0 ]; then  # Do not disable core file generation if we need it for TEXT_STRING_LOC which uses core files to generate unique bug strings
+  if [ "${PAUSE_AFTER_EACH_OCCURENCE}" -eq 1 ]; then
+    MYEXTRA="${MYEXTRA} --core-file"  # Enable core file generation if PAUSE_AFTER_EACH_OCCURENCE is set, as this option is commonly used to debug cores directly after each issue occurence happens. Also, do not disable core file generation (ref elif)
+  elif [ "${USE_NEW_TEXT_STRING}" != "1" ]; then  # Also do not disable core file generation if we need it for the 'new text string' binary (as specified by TEXT_STRING_LOC), which uses core files to generate UniqueID bug strings
     # It would be good if we could disable OS core file generation without disabling mariadbd/mysqld core file generation, but for the moment it looks like
     # ulimit -c 0 disables ALL core file generation, both OS and mariadbd/mysqld, so instead, ftm, reducer checks for "CORE" in MYEXTRA (uppercase-ed via ^^)
     # and if present reducer does not disable core file generation (OS nor mariadbd/mysqld)
@@ -1432,6 +1434,25 @@ multi_reducer(){
       export MULTI_WORKD=$(eval echo $(echo '$WORKD'"$t"))
       if [ -s $MULTI_WORKD/VERIFIED ]; then
         ATLEASTONCE="[*]"  # The issue was seen at least once
+        if [ "${PAUSE_AFTER_EACH_OCCURENCE}" -eq 1 ]; then
+          echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread $t reproduced the issue. As PAUSE_AFTER_EACH_OCCURENCE is set, pausing for analysis. Directory: ${MULTI_WORKD}"
+          if [ -r "${TEXT_STRING_LOC}" ]; then  # Attempt to give more information
+            cd $MULTI_WORKD
+            if [ "${MULTI_WORKD}" != "${PWD}" ]; then
+              echoit "Assert: cd ${MULTI_WORKD} before NEW_TEXT_STRING parsing failed. Terminating."
+              exit 1
+            fi
+            if [ $MDG -eq 1 ]; then
+              export GALERA_ERROR_LOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
+              export GALERA_CORE_LOC=$WORKD/node1/*core*
+            fi
+            MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
+            cd - >/dev/null
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] NEW_TEXT_STRING Output: ${MYBUGFOUND}"
+            MYBUGFOUND=
+          fi
+          read -p "Press enter to continue."
+        fi
         MULTI_FOUND=$[$MULTI_FOUND+1]
         TXT_OUT="$TXT_OUT #$t"
       fi
