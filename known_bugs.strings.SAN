@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-buffer-overflow|sql/rpl_utility.cc|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row|Rows_log_event::find_row                                 ## MDEV-33563
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2                                                                                                        ## MDEV-33494
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                            ## MDEV-33494
 UBSAN|signed integer overflow: -X - Y cannot be represented in type 'int'|sql/item_xmlfunc.cc|Item_nodeset_func_elementbyindex::val_native|Item_nodeset_func::val_str|Item_func_xml_extractvalue::val_str|Item::val_str_from_item ## MDEV-33552
