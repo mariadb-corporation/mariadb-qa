@@ -608,12 +608,20 @@ save_rr_trace(){
 
 abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anymore
   ABORT_ACTIVE=1
-  if [ -r $INPUTFILE ]; then
+  if [ ! -d "${WORKD}" ]; then
+    echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Terminating."
+    # TODO: ~/ds (most likely) or ~/memory seem to be causing this more recently and more frequently: to fix
+    trap SIGINT  # Clear the SIGINT trap
+    kill -9 $$  # Effectively self-terminate
+    exit 1
+  elif [ -r $INPUTFILE ]; then
     echoit "[Abort] CTRL+C Was pressed. Dumping variable stack"
   else
     echoit "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
     echoit "[Abort] The source for this reducer was likely deleted. Terminating."
+    trap SIGINT  # Clear the SIGINT trap
     kill -9 $$  # Effectively self-terminate
+    exit 1
   fi
   echoit "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
   if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
@@ -646,7 +654,7 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
     echoit "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
   fi
   finish 'abort'
-  trap SIGINT
+  trap SIGINT  # Clear the SIGINT trap
   exit 2
 }
 
@@ -1198,6 +1206,7 @@ kill_multi_reducer(){
 }
 
 multi_reducer(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
   MULTI_FOUND=0
   # This function handles starting and checking subreducer threads used for verification AND simplification of sporadic issues (as such it is the parent
   # function watching over multiple [seperately started] subreducer threads, each child containing the written MULTI_REDUCER=1 setting set in #VARMOD# -
@@ -1992,6 +2001,7 @@ init_workdir_and_files(){
         exit 1
       else
         # Note that 'mv data data.init' needs to come BEFORE first mariadbd/mysqld startup attempt, to not pollute the template with an actual mariadbd/mysqld startup (think --init-file, tokudb, and the reduction of startup options in STAGE8)
+        if [ ! -d "${WORKD}" ]; then abort; fi
         mv ${WORKD}/data ${WORKD}/data.init
         mkdir -p ${WORKD}/data
         cp -a ${WORKD}/data.init/* ${WORKD}/data/  # We need this for the first mariadbd/mysqld startup attempt just below
@@ -2232,6 +2242,8 @@ generate_run_scripts(){
 }
 
 init_mysql_dir(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   if [[ $MDG -eq 1 ]] ; then
     for i in $(seq 1 ${NR_OF_NODES}); do
       sudo rm -Rf ${WORKD}/node${i}
@@ -2269,6 +2281,8 @@ init_mysql_dir(){
 
 start_mysqld_or_valgrind_or_mdg(){
   init_mysql_dir
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   if [ $MDG -eq 1 ]; then
     start_mdg_main
   elif [ $GRP_RPL -eq 1 ]; then
@@ -2324,6 +2338,8 @@ start_mysqld_or_valgrind_or_mdg(){
 }
 
 start_mdg_main(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   generate_run_scripts
   #clean existing processes
   (ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
@@ -2477,6 +2493,8 @@ start_mdg_main(){
 }
 
 gr_start_main(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   ADDR="127.0.0.1"
   init_empty_port
   RBASE1=$NEWPORT
@@ -2630,6 +2648,8 @@ gr_start_main(){
 }
 
 start_mysqld_main(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
     echo "Terminating now."
@@ -2691,7 +2711,8 @@ start_mysqld_main(){
       done
       ADMIN_BIN_TO_USE=
       if [ "${MASTER_STARTUP_OK}" -ne 1 -o "${SLAVE_STARTUP_OK}" -ne 1 ]; then
-        echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Assert: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Restarting"
+        if [ ! -d "${WORKD}" ]; then abort; fi
+        echoit "$ATLEASTONCE [Stage $STAGE] [Warning] Warning: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Restarting"
         PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;
         return 1  # The '1' error value is not used, but we need to return here
       fi
@@ -2738,6 +2759,8 @@ start_mysqld_main(){
 }
 
 start_valgrind_mysqld_main(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
     echo "Terminating now."
@@ -4690,9 +4713,11 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
     done
     TRIAL_REPEAT_COUNT=0
     if [ "${FIREWORKS}" -eq 1 ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+      if [ ! -r "${INPUTFILE}" ]; then abort; fi
       SIZEF=$(stat -c %s ${INPUTFILE})
       LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
     else
+      if [ ! -r "${WORKF}" ]; then abort; fi
       SIZEF=$(stat -c %s ${WORKF})
       LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
     fi
@@ -4706,6 +4731,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
   STAGE=3
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
+  if [ ! -r "${WORKF}" ]; then abort; fi
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
@@ -4774,6 +4800,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     elif [ $TRIAL -eq 60 ]; then sed 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
+    if [ ! -r "${WORKT}" ]; then abort; fi
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
@@ -4798,9 +4825,11 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
         NEXTACTION="& try next testcase complexity reducing sed"
       fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+        if [ ! -r "${WORKF}" ]; then abort; fi
         SIZEF=$(stat -c %s ${WORKF})
         LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
       else
+        if [ ! -r "${INPUTFILE}" ]; then abort; fi
         SIZEF=$(stat -c %s ${INPUTFILE})
         LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
       fi
@@ -4814,6 +4843,7 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
   STAGE=4
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
+  if [ ! -r "${WORKF}" ]; then abort; fi
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
@@ -5104,6 +5134,7 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 281 ]; then sed "s/CONCURRENT//i" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
+    if [ ! -r "${WORKT}" ]; then abort; fi
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
@@ -5128,9 +5159,11 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
         NEXTACTION="& try next query syntax complexity reducing sed"
       fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+        if [ ! -r "${WORKF}" ]; then abort; fi
         SIZEF=$(stat -c %s ${WORKF})
         LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
       else
+        if [ ! -r "${INPUTFILE}" ]; then abort; fi
         SIZEF=$(stat -c %s ${INPUTFILE})
         LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
       fi
@@ -5187,6 +5220,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
   NEXTACTION="& try and rename this column (if it failed removal) or remove the next column"
   STAGE=6
   TRIAL=1
+  if [ ! -r "${WORKF}" ]; then abort; fi
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
@@ -5231,9 +5265,11 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
             fi
             COLUMN=$[$COLUMN+1]
             if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+              if [ ! -r "${WORKF}" ]; then abort; fi
               SIZEF=$(stat -c %s ${WORKF})
               LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
             else
+              if [ ! -r "${INPUTFILE}" ]; then abort; fi
               SIZEF=$(stat -c %s ${INPUTFILE})
               LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
             fi
@@ -5364,9 +5400,11 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
           if [ $? -eq 0 ]; then
             if [ "$COL" != "c$C_COL_COUNTER" ]; then
               if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+                if [ ! -r "${WORKF}" ]; then abort; fi
                 SIZEF=$(stat -c %s ${WORKF})
                 LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
               else
+                if [ ! -r "${INPUTFILE}" ]; then abort; fi
                 SIZEF=$(stat -c %s ${INPUTFILE})
                 LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
               fi
@@ -5389,9 +5427,11 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
             COUNTCOLS=$[$COUNTCOLS-1]
           fi
           if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+            if [ ! -r "${WORKF}" ]; then abort; fi
             SIZEF=$(stat -c %s ${WORKF})
             LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
           else
+            if [ ! -r "${INPUTFILE}" ]; then abort; fi
             SIZEF=$(stat -c %s ${INPUTFILE})
             LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
           fi
@@ -5408,6 +5448,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
   STAGE=7
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
+  if [ ! -r "${WORKF}" ]; then abort; fi
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
@@ -5689,6 +5730,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 261 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
+    if [ ! -r "${WORKT}" ]; then abort; fi
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
@@ -5713,9 +5755,11 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
         NEXTACTION="& try next testcase complexity reducing sed"
       fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+        if [ ! -r "${WORKF}" ]; then abort; fi
         SIZEF=$(stat -c %s ${WORKF})
         LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
       else
+        if [ ! -r "${INPUTFILE}" ]; then abort; fi
         SIZEF=$(stat -c %s ${INPUTFILE})
         LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
       fi
@@ -5735,6 +5779,8 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
   myextra_split(){
+    if [ ! -d "${WORKD}" ]; then abort; fi
+    touch $WORKD
     echo $MYEXTRA | sed 's|[ \t]\+| |g' | tr -s " " "\n" | grep -v "^[ \t]*$" > $WORKD/mysqld_opt.out
     MYSQLD_OPTION_COUNT=$(cat $WORKD/mysqld_opt.out | wc -l)
     head -n $((MYSQLD_OPTION_COUNT/2)) $WORKD/mysqld_opt.out > $FILE1

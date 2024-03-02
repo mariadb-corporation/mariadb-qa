@@ -169,10 +169,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 #!my_b_inited(&index_file)|SIGABRT|MYSQL_BIN_LOG::open_index_file|purge_relay_logs|reset_slave|reload_acl_and_cache                                                             ## debug='d,simulate_find_log_pos_error'
 #SIGSEGV|ilist_node<void>::ilist_node|ilist<MDL_ticket, void>::ilist|MDL_lock::Ticket_list::Ticket_list|MDL_lock::MDL_lock                                                      ## debug='+d,simulate_out_of_memory'
 #SIGABRT|my_malloc|ilink::operator new|handle_accepted_socket|handle_connections_sockets                                                                                        ## debug='+d,simulate_out_of_memory'
-#
-## And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
+### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_slave_sql|pfs_spawn_thread                                           ## MDEV-33579
 (old_flags & 1) == ((my_flags & 0x10000U) ? 1 : 0)|SIGABRT|my_realloc|_ma_alloc_buffer|sort_get_next_record|sort_key_read                                                      ## MDEV-33562
 marked_for_read()|SIGABRT|Field_newdate::val_str|Item_field::val_str|Item_func_conv_charset::Item_func_conv_charset|Item::safe_charset_converter                               ## MDEV-33524
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|sp_head::show_create_routine|Sp_handler::sp_show_create_routine         ## MDEV-33483
@@ -1201,6 +1201,7 @@ table_ref->is_natural_join || table_ref->nested_join || (table_ref->join_columns
 table_ref->is_natural_join || table_ref->nested_join || (table_ref->join_columns && ((table_ref->field_translation && table_ref->join_columns->elements == (ulong)(table_ref->field_translation_end - table_ref->field_translation)) || (!table_ref->field_translation && table_ref->join_columns->elements == table_ref->table->s->fields)))|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|mark_common_columns|store_top_level_join_columns ## MDEV-24935
 state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## MENT-1175
 SIGSEGV|prepare_or_error|ha_commit_trans|trans_commit|mysql_execute_command                                                                                                    ## MENT-1175
+SIGSEGV|my_strnncollsp_simple|my_ci_strnncollsp|hp_rec_key_cmp|ha_heap::find_unique_row                                                                                        ## MDEV-25158
 SIGSEGV|__memcmp_avx2_movbe|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data                                                                                 ## MDEV-25158
 SIGSEGV|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data|select_result_sink::send_data_with_check                                                            ## MDEV-25158
 curr_op_type != INTERSECT_ALL|SIGABRT|select_unit_ext::send_eof|do_select|JOIN::exec_inner|JOIN::exec                                                                          ## MDEV-25158
@@ -2265,3 +2266,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # !trx->alloc_line_no[id] || trx->alloc_line_no[id] == line_no|SIGABRT|spider_alloc_mem_calc|spider_bulk_alloc_mem|spider_create_long_list|spider_parse_connect_info  ## Fixed ## MDEV-32486
 # 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-28190
 # 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-27744
+# MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_thd_data and LOCK_plugin                                                                                    ## Fixed ## MDEV-32477

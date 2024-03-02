@@ -13,3 +13,7 @@ SET max_session_mem_used=8192;
 SET @@session.query_alloc_block_size=655536;
 UNINSTALL PLUGIN IF EXISTS example;
 SHUTDOWN;
+
+SET max_session_mem_used=50000;
+UNINSTALL SONAME IF EXISTS "ha_spider";
+SHUTDOWN;
