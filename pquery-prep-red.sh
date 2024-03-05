@@ -2,6 +2,7 @@
 # Created by Roel Van de Paar, Percona LLC
 # Updated by Roel Van de Paar, MariaDB
 # Updated by Ramesh Sivaraman, MariaDB
+set +H
 
 # The name of this script (pquery-prep-red.sh) was kept short so as to not clog directory listings - it's full name would be ./pquery-prepare-reducer.sh
 
@@ -326,6 +327,7 @@ generate_reducer_script(){
     PQUERY_EXTRA_OPTIONS="0,/#VARMOD#/s|#VARMOD#|PQUERY_EXTRA_OPTIONS=\"--log-all-queries --log-failed-queries --no-shuffle --log-query-statistics --log-client-output --log-query-number\"\n#VARMOD#|"
     PQUERYOPT_CLEANUP="0,/^[ \t]*PQUERY_EXTRA_OPTIONS[ \t]*=.*$/s|^[ \t]*PQUERY_EXTRA_OPTIONS[ \t]*=.*$|#PQUERY_EXTRA_OPTIONS=<set_below_in_machine_variables_section>|"
   fi
+  ORIGINAL_TEXT="${TEXT}"
   if [ "$TEXT" == "" -o "$TEXT" == "my_print_stacktrace" -o "$TEXT" == "0" -o "$TEXT" == "NULL" -o "$TEXT" == "Assert: no core file found in */*core*" -a "${SAN_BUG}" -ne 1 ]; then  # Too general strings, or no TEXT found, use MODE=4 (any crash)
     MODE=4
     USE_NEW_TEXT_STRING=0  # As MODE=4 (any crash) is used, new_text_string.sh is not relevant
@@ -718,16 +720,18 @@ generate_reducer_script(){
    | sed "${PQUERY_EXTRA_OPTIONS}" \
    > ${REDUCER_FILENAME}
 
-  FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings)"
-  if [ "$(echo "${FINDBUG}" | sed 's|[ \t]*\(.\).*|\1|')" == "#" ]; then FINDBUG=""; fi  # See pquery-run.sh for more info on how this works
-  if [ -z "${FINDBUG}" ]; then 
+  # We want to use the originally detected TEXT string here (stored in ORIGINAL_TEXT) as the TEXT variable has been modified above for strings that contain '&' or '|'
+  FINDBUG="$(grep -hFi --binary-files=text "${ORIGINAL_TEXT}" ${SCRIPT_PWD}/known_bugs.strings ${SCRIPT_PWD}/known_bugs.strings.SAN)"
+  if [[ "${FINDBUG}" =~ ^[[:space:]]*# ]]; then FINDBUG=""; fi  # Bugs marked as fixed need to be excluded
+  # Note that if a known bug was found, FINDBUG is not empty and the next section is skipped, immediately proceeding with using the error log found issue, provided it is not empty
+  if [ -z "${FINDBUG}" ]; then  # In case we did not find the bug in the known bugs lists, there may still be scenario's in which we can use the error log string (for example: no core found etc.), if present;
     # Provided that the ERROR_LOG_SCAN_ISSUE flag is present...
     if [ ! -z "$(ls ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE ${RUNDIR}/${TRIAL}/node*/ERROR_LOG_SCAN_ISSUE 2>/dev/null)" ]; then
       ALT_ACTIVATIONS=0  # ...check if there are any other alternative situations in which we can use the error log string:
       # 'No .* found' scans for 'Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output'
-      if [ ! -z "$(echo "${TEXT}" | grep -i "No .* found")" ]; then ALT_ACTIVATIONS=1; fi
-      if grep -qi "No .* found" ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/node*/MYBUG; then ALT_ACTIVATIONS=1; fi
-      if [ -z "$(ls ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/node*/MYBUG 2>/dev/null)" ]; then ALT_ACTIVATIONS=1; fi
+      if [ ! -z "$(echo "${ORIGINAL_TEXT}" | grep -i "No .* found")" ]; then ALT_ACTIVATIONS=1; fi  # No core file found
+      if grep -qi "No .* found" ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/node*/MYBUG 2>/dev/null; then ALT_ACTIVATIONS=1; fi  # Idem, but as written to MYBUG
+      if [ -z "$(ls ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/node*/MYBUG 2>/dev/null)" ]; then ALT_ACTIVATIONS=1; fi  # If no MYBUG was written by pquery-run.sh we can use the error log issue message (as we are sure there is one present given the ERROR_LOG_SCAN_ISSUE check above), and this is true for the above 'no core file found' messages above as well. And, it is again checked below (whetter empty or not)
       if [ "${ALT_ACTIVATIONS}" -eq 1 ]; then
         FINDBUG="YES"  # We had a 'Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output' trial or similar situation, where there was an error log issue present (i.e. ERROR_LOG_SCAN_ISSUE flag present), so we can update the TEXT to the error log issue. 'YES' Is just a dummy string to trigger the if below to proceed
       fi
@@ -744,6 +748,7 @@ generate_reducer_script(){
     ERROR_LOG_STRING=
   fi
   FINDBUG=
+  ORIGINAL_TEXT=  # This variable was only used for the checks above
 
   chmod +x ${REDUCER_FILENAME}
   # If this is a multi-threaded run, create additional quick reducers with only the executed SQL (may/may not work)

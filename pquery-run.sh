@@ -713,7 +713,7 @@ handle_bugs() {
   if [ "${ELIMINATE_KNOWN_BUGS}" == "1" -a -r ${SCRIPT_PWD}/known_bugs.strings ]; then # "1": String check hack to ensure backwards compatibility with older pquery-run.conf files
     set +H                                                                          # Disables history substitution and avoids  -bash: !: event not found  like errors
     FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings)"
-    if [ "$(echo "${FINDBUG}" | sed 's|[ \t]*\(.\).*|\1|')" == "#" ]; then FINDBUG=""; fi  # Bugs marked as fixed need to be excluded. This cannot be done by using "^${TEXT}" as the grep is not regex aware, nor can it be, due to the many special (regex-like) characters in the unique bug strings
+    if [[ "${FINDBUG}" =~ ^[[:space:]]*# ]]; then FINDBUG=""; fi  # Bugs marked as fixed need to be excluded
     if [ ! -z "${FINDBUG}" ]; then  # do not call savetrial, known/filtered bug seen
       echoit "This is aleady known and logged, non-fixed bug: ${FINDBUG}"
       echoit "Deleting trial as ELIMINATE_KNOWN_BUGS=1, bug was already logged and is still open"

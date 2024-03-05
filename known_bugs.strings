@@ -869,6 +869,7 @@ SIGSEGV|With_element::get_name|With_element::get_name_str|With_clause::find_tabl
 SIGSEGV|get_addon_fields|Sort_param::init_for_filesort|filesort|create_sort_index                                                                                              ## MDEV-28503
 SIGSEGV|st_select_lex::next_select|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk                                                    ## MDEV-28502 (AFL ASAN tree only)
 SIGSEGV|Item_subselect::is_expensive|Item_args::walk_args|Item_func_or_sum::walk|Item_args::walk_args                                                                          ## MDEV-28502 (25292 tree only)
+SIGSEGV|Item_subselect::is_expensive|Item_in_optimizer::walk|Item_direct_view_ref::walk|Item_args::walk_args                                                                   ## MDEV-28502
 SIGSEGV|Item_subselect::is_expensive|Item_args::walk_args|Item_func_or_sum::walk|Item_direct_view_ref::walk                                                                    ## MDEV-28502
 SIGSEGV|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_args::walk_args                                                          ## MDEV-28502
 SIGSEGV|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_in_subselect::walk                                                       ## MDEV-28502
