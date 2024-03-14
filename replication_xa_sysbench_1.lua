@@ -19,9 +19,9 @@ function xa_wrap(thread_id, query_func, ...)
    local xid = thread_id
    local success, ret
    --local two_phase= (thread_id % 2)
-   local two_phase= math.random(0,1)
+   --local two_phase= math.random(0,1)
 
-   con:query(string.format("SET @@binlog_xa_two_phase=%u",two_phase));
+   --con:query(string.format("SET @@binlog_xa_two_phase=%u",two_phase));
    con:query(string.format("XA START 'xid_%u'", xid));
    success, ret = pcall(query_func, thread_id, ...)
 

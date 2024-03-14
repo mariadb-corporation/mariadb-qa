@@ -45,3 +45,6 @@ CREATE TABLE t2 (c INT) ENGINE=Spider;
 ALTER TABLE t1 ENGINE=Spider;
 DROP TABLE t1;
 RENAME TABLE t2 TO t1,t2 TO t1;
+
+SET GLOBAL sql_mode=(SELECT CONCAT (@@sql_mode,',no_zero_date'));
+INSTALL SONAME 'ha_spider';

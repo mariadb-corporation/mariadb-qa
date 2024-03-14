@@ -311,8 +311,6 @@ SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|Query_log_event::d
 other_lock->is_waiting()|SIGABRT|lock_rec_queue_validate|lock_clust_rec_read_check_and_lock|row_ins_set_shared_rec_lock|row_ins_duplicate_error_in_clust                       ## MDEV-32353
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-32453
 SIGABRT|__libc_message|__GI___fortify_fail|__stack_chk_fail|show_create_db                                                                                                     ## MDEV-32376
-is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit     ## MDEV-31949
-SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                                ## MDEV-31949
 SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|pars_retrieve_table_def                                                                                               ## MDEV-32346
 sym_node->table != NULL|SIGABRT|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement|yyparse                                                            ## MDEV-32346
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_def|pars_retrieve_table_list_defs                                          ## MDEV-32346
@@ -600,7 +598,6 @@ SIGSEGV|malloc_size_and_flag|my_free|Binary_string::free|Binary_string::real_all
 SIGSEGV|malloc_size_and_flag|my_free|String::free|String::real_alloc                                                                                                           ## MDEV-29932
 SIGSEGV|my_copy_8bit|charset_info_st::copy_fix|String_copier::well_formed_copy|Field_longstr::well_formed_copy_with_check                                                      ## MDEV-29932
 SIGSEGV|my_free|Binary_string::free|Binary_string::real_alloc|Binary_string::alloc                                                                                             ## MDEV-29932
-status == 0|SIGABRT|add_role_user_mapping_action|my_hash_iterate|rebuild_role_grants|mysql_rename_user                                                                         ## MDEV-30138
 SIGSEGV|federatedx_txn::sp_acquire|ha_federatedx::savepoint_set|ha_savepoint|trans_savepoint                                                                                   ## MDEV-30083
 SIGSEGV|federatedx_txn::acquire|ha_federatedx::open|handler::ha_open|open_table_from_share                                                                                     ## MDEV-30083
 SIGSEGV|federatedx_txn::txn_rollback|federatedx_txn::txn_rollback|ha_rollback_trans|xa_trans_force_rollback                                                                    ## MDEV-30083
@@ -637,6 +634,7 @@ SIGSEGV|lock_sys_t::hash_table::resize|lock_sys_t::resize|buf_pool_t::resize|buf
 thd->wsrep_exec_mode == LOCAL_STATE|SIGABRT|wsrep_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                   ## MDEV-29808
 thd->ha_data[wsrep_hton->slot].ha_info[all].is_trx_read_write()|SIGABRT|wsrep_prepare|prepare_or_error|ha_prepare|trans_xa_prepare                                             ## MDEV-29807
 thd == _current_thd() || ((&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&thd->LOCK_thd_data)->m_mutex)->thread))|SIGABRT|thd_get_ha_data|thd_to_trx|wsrep_abort_transaction|ha_abort_transaction ## MDEV-29786
+charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|LEX::sp_variable_declarations_finalize                ## MDEV-25135
 SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|sp_head::fill_spvar_definition                        ## MDEV-25135
 SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## MDEV-25135
@@ -2284,3 +2282,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-28190
 # 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                             ## Fixed ## MDEV-27744
 # MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_thd_data and LOCK_plugin                                                                                    ## Fixed ## MDEV-32477
+# status == 0|SIGABRT|add_role_user_mapping_action|my_hash_iterate|rebuild_role_grants|mysql_rename_user                                                              ## No longer asserts ## MDEV-30138

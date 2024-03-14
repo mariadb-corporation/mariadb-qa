@@ -918,11 +918,17 @@ sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
 sed -i 's|socket.sock|socket_slave.sock|g' cl_slave
 sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\nMYEXTRA=\" --no-defaults --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
-sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=aggressive --slave-parallel-max-queued=65536 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\nMYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave
+sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=aggressive --slave-parallel-max-queued=65536 --slave_transaction_retries=18446744073709547520 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\nMYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
+# [ERROR] Slave worker thread retried transaction 10 time(s) in vain, giving up. Consider raising the value of the slave_transaction_retries variable.
+# [ERROR] Slave SQL: Deadlock found when trying to get lock; try restarting transaction, Gtid 0-1-416, Internal MariaDB error code: 1213
+# [Warning] Slave: XAER_DUPID: The XID already exists Error_code: 1440
+# [Warning] Slave: Deadlock found when trying to get lock; try restarting transaction Error_code: 1213
+# [ERROR] Error running query, slave SQL thread aborted. Fix the problem, and restart the slave SQL thread with "SLAVE START". We stopped at log 'binlog.000001' position 8168482; GTID position '0-1-514'
+# --innodb_lock_wait_timeout is increased from 50 to 120 for the same reason
 sed -i 's%^PORT=$.*%PORT=$NEWPORT; sed -i "s|MASTER_PORT=[0-9]\\+|MASTER_PORT=${NEWPORT}|" slave_setup.sql%' start_master
 echo "DELETE FROM mysql.user WHERE user='';" >master_setup.sql
 echo "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" >>master_setup.sql
-echo "#ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;  # MENT-1905 Testing" >>master_setup.sql
+echo "#ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;  # sysbench_lua Testing" >>master_setup.sql
 if [[ "${PWD}" == *"MS"* ]]; then
   echo "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=00000, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass';" >slave_setup.sql  # The 00000 is a dummy entry, and any number will be replaced by start_master to the actual port in slave_setup.sql at master startup time
 else
@@ -952,20 +958,25 @@ fi
 echo 'sleep 2' >>start_replication
 echo 'if [ -z "${SRNOCL}" ]; then ./cl; fi' >>start_replication
 
-# -- MENT-1905 Replication testing, also handy for other sysbench tests
-rm -f MENT-1905
-if [ -r "${SCRIPT_PWD}/replication_MENT-1905_1.lua" ]; then cp ${SCRIPT_PWD}/replication_MENT-1905_1.lua .; fi
-if [ -r "${SCRIPT_PWD}/replication_MENT-1905_2.lua" ]; then cp ${SCRIPT_PWD}/replication_MENT-1905_2.lua .; fi
-echo 'sed -i "s|#ALTER TABLE mysql.gtid_slave_pos|ALTER TABLE mysql.gtid_slave_pos|" master_setup.sql' >MENT-1905
-echo 'sed -i "s|slave-parallel-threads=[0-9]\+|slave-parallel-threads=5100 --binlog_xa_two_phase=0|" start_slave' >>MENT-1905
-echo 'export SRNOCL=1' >>MENT-1905
-echo './start_replication' >>MENT-1905
-echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=5000 --time=0 ./replication_MENT-1905_1.lua prepare' >>MENT-1905
-echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=5000 --time=0 ./replication_MENT-1905_1.lua run &' >>MENT-1905
-echo '#sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=5000 --time=0 ./replication_MENT-1905_2.lua prepare' >>MENT-1905
-echo '#sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=5000 --time=0 ./replication_MENT-1905_2.lua run &' >>MENT-1905
-echo 'sleep 1; ./cl' >>MENT-1905
-chmod +x MENT-1905
+# -- MENT-1905/MDEV-31949 lua replication XA testing, also handy for other sysbench/XA/replication tests
+rm -f sysbench_lua* MENT-1905*
+if [ -r "${SCRIPT_PWD}/replication_xa_sysbench_1.lua" ]; then cp ${SCRIPT_PWD}/replication_xa_sysbench_1.lua .; fi
+if [ -r "${SCRIPT_PWD}/replication_xa_sysbench_2.lua" ]; then cp ${SCRIPT_PWD}/replication_xa_sysbench_2.lua .; fi
+echo '# MENT-1905/MDEV-31949 lua replication XA testing, also handy for other sysbench/XA/replication tests' >sysbench_lua_1
+echo 'sed -i "s|#ALTER TABLE mysql.gtid_slave_pos|ALTER TABLE mysql.gtid_slave_pos|" master_setup.sql' >>sysbench_lua_1
+echo 'sed -i "s|^MYEXTRA|#MYEXTRA|" start_slave  # Disable the common MYEXTRA' >>sysbench_lua_1
+echo 'sed -i "0,/MYEXTRA=.*slave-parallel-threads/{s|.*\(MYEXTRA=.*slave-parallel-threads.*\)|\1|}" start_slave  # Enable the first slave-parallel-threads MYEXTRA' >>sysbench_lua_1
+echo 'sed -i "s|slave-parallel-threads=[0-9]\+|slave-parallel-threads=3100|" start_slave' >>sysbench_lua_1
+echo 'export SRNOCL=1' >>sysbench_lua_1
+echo './start_replication' >>sysbench_lua_1
+cp sysbench_lua_1 sysbench_lua_2
+echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=3000 --time=0 ./replication_xa_sysbench_1.lua prepare' >>sysbench_lua_1
+echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=3000 --time=0 ./replication_xa_sysbench_1.lua run &' >>sysbench_lua_1
+echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=3000 --time=0 ./replication_xa_sysbench_2.lua prepare' >>sysbench_lua_2
+echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=3000 --time=0 ./replication_xa_sysbench_2.lua run &' >>sysbench_lua_2
+echo 'sleep 1; ./cl' >>sysbench_lua_1
+echo 'sleep 1; ./cl' >>sysbench_lua_2
+chmod +x sysbench_lua*
 
 # -- Replication setup (old PS/MS)
 #echo '#!/usr/bin/env bash' >repl_setup

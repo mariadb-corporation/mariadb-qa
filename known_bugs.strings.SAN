@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct trx_rseg_t'|storage/innobase/trx/trx0undo.cc|buf_block_t*|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert ## MDEV-33597 
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low ## MDEV-33597
 ASAN|heap-buffer-overflow|sql/rpl_utility.cc|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row|Rows_log_event::find_row                                 ## MDEV-33563
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2                                                                                                        ## MDEV-33494
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                            ## MDEV-33494
@@ -44,8 +46,6 @@ LSAN|memory leak|extra/wolfssl/wolfssl/src/x509.c|malloc|wolfSSL_X509_new|vio_ge
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_case_bin|Item_str_conv::val_str|Arg_comparator::compare_string|Arg_comparator::compare ## MDEV-32479
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_case_bin|Item_str_conv::val_str|Item_str_func::val_decimal|VDec::VDec       ## MDEV-32479
 UBSAN|store to null pointer of type 'roll_ptr_t'|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-32453
-ASAN|use-after-poison|sql/handler.h|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache|binlog_rollback                                                                        ## MDEV-32347
-ASAN|use-after-poison|sql/log_event.h|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache|binlog_rollback                                                ## MDEV-32347
 UBSAN|shift exponent X is too large for 64-bit type 'long long int'|sql/field.cc|Field_set::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record         ## MDEV-32226
 UBSAN|member call on null pointer of type 'struct Reprepare_observer'|sql/sql_prepare.cc|Prepared_statement::check_charset_collation_map_version|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute ## MDEV-31844
 ASAN|heap-use-after-free|sql-common/client.c|server_mysql_real_connect|Repl_semi_sync_slave::kill_connection|Repl_semi_sync_slave::slave_stop|handle_slave_io                  ## MDEV-27845
@@ -377,3 +377,5 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                          ## Fixed ## MDEV-30680
 # LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                                        ## Fixed ## MDEV-30680
 # LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                  ## Fixed ## MDEV-30680
+# ASAN|use-after-poison|sql/handler.h|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache|binlog_rollback                                                                      ## Fixed ## MDEV-32347
+# ASAN|use-after-poison|sql/log_event.h|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache|binlog_rollback                                              ## Fixed ## MDEV-32347
