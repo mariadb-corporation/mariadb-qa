@@ -172,6 +172,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS ##### Search key: Mac ###
+status == 0|SIGABRT|add_role_user_mapping_action|my_hash_iterate|rebuild_role_grants|replace_user_table                                                                        ## MDEV-33674
 SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                                        ## MDEV-33597
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::pfs_begin_lock|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_low|trx_undo_report_row_operation       ## MDEV-33597
 SIGSEGV|check_view_insertability|check_insert_fields|mysql_prepare_insert|mysql_insert                                                                                         ## MDEV-33633

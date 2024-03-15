@@ -17,3 +17,7 @@ SHUTDOWN;
 SET max_session_mem_used=50000;
 UNINSTALL SONAME IF EXISTS "ha_spider";
 SHUTDOWN;
+
+SET SESSION max_session_mem_used=1;
+UNINSTALL SONAME IF EXISTS'';
+SHUTDOWN;
