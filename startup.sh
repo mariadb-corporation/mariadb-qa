@@ -918,7 +918,7 @@ sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
 sed -i 's|socket.sock|socket_slave.sock|g' cl_slave
 sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\nMYEXTRA=\" --no-defaults --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
-sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=aggressive --slave-parallel-max-queued=65536 --slave_transaction_retries=18446744073709547520 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\nMYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
+sed -i "s|^MYEXTRA=\"[ ]*--no-defaults[\"\t ]*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=aggressive --slave-parallel-max-queued=65536 --slave_transaction_retries=4294967295 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\nMYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
 # [ERROR] Slave worker thread retried transaction 10 time(s) in vain, giving up. Consider raising the value of the slave_transaction_retries variable.
 # [ERROR] Slave SQL: Deadlock found when trying to get lock; try restarting transaction, Gtid 0-1-416, Internal MariaDB error code: 1213
 # [Warning] Slave: XAER_DUPID: The XID already exists Error_code: 1440
@@ -962,6 +962,7 @@ echo 'if [ -z "${SRNOCL}" ]; then ./cl; fi' >>start_replication
 rm -f sysbench_lua* MENT-1905*
 if [ -r "${SCRIPT_PWD}/replication_xa_sysbench_1.lua" ]; then cp ${SCRIPT_PWD}/replication_xa_sysbench_1.lua .; fi
 if [ -r "${SCRIPT_PWD}/replication_xa_sysbench_2.lua" ]; then cp ${SCRIPT_PWD}/replication_xa_sysbench_2.lua .; fi
+if [ -r "${SCRIPT_PWD}/replication_xa_sysbench_3.lua" ]; then cp ${SCRIPT_PWD}/replication_xa_sysbench_3.lua .; fi
 echo '# MENT-1905/MDEV-31949 lua replication XA testing, also handy for other sysbench/XA/replication tests' >sysbench_lua_1
 echo 'sed -i "s|#ALTER TABLE mysql.gtid_slave_pos|ALTER TABLE mysql.gtid_slave_pos|" master_setup.sql' >>sysbench_lua_1
 echo 'sed -i "s|^MYEXTRA|#MYEXTRA|" start_slave  # Disable the common MYEXTRA' >>sysbench_lua_1
@@ -970,12 +971,18 @@ echo 'sed -i "s|slave-parallel-threads=[0-9]\+|slave-parallel-threads=3100|" sta
 echo 'export SRNOCL=1' >>sysbench_lua_1
 echo './start_replication' >>sysbench_lua_1
 cp sysbench_lua_1 sysbench_lua_2
-echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=3000 --time=0 ./replication_xa_sysbench_1.lua prepare' >>sysbench_lua_1
-echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=3000 --time=0 ./replication_xa_sysbench_1.lua run &' >>sysbench_lua_1
-echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=3000 --time=0 ./replication_xa_sysbench_2.lua prepare' >>sysbench_lua_2
-echo 'sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=3000 --time=0 ./replication_xa_sysbench_2.lua run &' >>sysbench_lua_2
+cp sysbench_lua_1 sysbench_lua_3
+SYSB='sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" --tables=1 --table_size=10000 --mysql-db=test --mysql-ignore-errors=1062,1213,1614,1205 --threads=3000 --time=0 ./replication_xa_sysbench_'
+echo "${SYSB}1.lua prepare" >>sysbench_lua_1
+echo "${SYSB}1.lua run &" >>sysbench_lua_1
+echo "${SYSB}2.lua prepare" >>sysbench_lua_2
+echo "${SYSB}2.lua run &" >>sysbench_lua_2
+echo "${SYSB}3.lua prepare" >>sysbench_lua_3
+echo "${SYSB}3.lua run &" >>sysbench_lua_3
+SYSB=
 echo 'sleep 1; ./cl' >>sysbench_lua_1
 echo 'sleep 1; ./cl' >>sysbench_lua_2
+echo 'sleep 1; ./cl' >>sysbench_lua_3
 chmod +x sysbench_lua*
 
 # -- Replication setup (old PS/MS)

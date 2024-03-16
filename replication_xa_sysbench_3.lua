@@ -28,7 +28,7 @@ function xa_wrap(thread_id, query_func, ...)
 
    if not success then
      -- type(ret) is "table" only if --mysql-ignore-errors contains the error,
-     -- that's why start syvrvrvasbench with --mysql-ignore-errors=1213,1614,1205
+     -- that's why start sysbench with --mysql-ignore-errors=1213,1614,1205
      if type(ret) == "table" and
         ret.errcode == sysbench.error.RESTART_EVENT and
         -- deadlock or lock wait timeout or dup key error
