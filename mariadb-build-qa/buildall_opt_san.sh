@@ -22,13 +22,13 @@ if [ "${STY}" == "" ]; then
 fi
 
 DIR=${PWD}
-rm -Rf 10.4_opt 10.5_opt 10.6_opt 10.7_opt 10.8_opt 10.9_opt 10.10_opt 11.0_opt 11.1_opt 11.2_opt 11.3_opt
+rm -Rf 10.5_opt 10.6_opt 10.7_opt 10.8_opt 10.9_opt 10.10_opt 11.0_opt 11.1_opt 11.2_opt 11.3_opt 11.4_opt 11.5_opt
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 #cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 #sleep 1
-cd ${DIR}/10.4 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
-sleep 2
+#cd ${DIR}/10.4 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+#sleep 2
 cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 sleep 3
 cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
@@ -50,5 +50,9 @@ sleep 11
 cd ${DIR}/11.2 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 sleep 12
 cd ${DIR}/11.3 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 13
+cd ${DIR}/11.4 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 14
+cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 
 echo "All processes started as background threads... Output will commence soon."
