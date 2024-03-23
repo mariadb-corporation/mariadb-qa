@@ -413,8 +413,10 @@ elif [ "${QUERY_CORRECTNESS_TESTING}" -ne 1 ]; then
 fi
 if [ "${PRE_SHUFFLE_SQL}" -eq 0 ]; then
   echoit "PRE_SHUFFLE_SQL Active: NO"
+  echoit "INFILE: ${INFILE}"
 elif [ "${PRE_SHUFFLE_SQL}" -eq 1 ]; then
   echoit "PRE_SHUFFLE_SQL Active: YES, MODE 1 (Pre-shuffle the INFILE SQL per trial)"
+  echoit "INFILE: ${INFILE}"
 elif [ "${PRE_SHUFFLE_SQL}" -eq 2 ]; then
   echoit "PRE_SHUFFLE_SQL Active: YES, MODE 2 (Pre-shuffle all SQL wherever found)"
 else

@@ -6,7 +6,9 @@
 #BASEDIR=/test/MDEV-4991_MD301223-mariadb-11.4.0-linux-x86_64-opt
 #BASEDIR=/test/MD271223-mariadb-11.4.0-linux-x86_64-dbg
 ##BASEDIR=/test/bb-10.6-MDEV-31949_ver0_opt_MD080324-mariadb-10.6.18-linux-x86_64-dbg
-BASEDIR=/test/bb-10.6-MDEV-31949_ver0_opt_PRE_PATCH_MD080324-mariadb-10.6.18-linux-x86_64-dbg
+#BASEDIR=/test/bb-10.6-MDEV-31949_ver0_opt_PRE_PATCH_MD080324-mariadb-10.6.18-linux-x86_64-dbg
+#BASEDIR=/test/MDEV-31789_MD090324-mariadb-11.5.0-linux-x86_64-opt
+BASEDIR=/test/PATCH1_MDEV-33668_MD230324-mariadb-10.6.18-linux-x86_64-opt
 #MD060224-mariadb-11.4.0-linux-x86_64-dbg
 #UBASAN_MD190224-mariadb-11.4.2-linux-x86_64-dbg
 #to complete | TODO#    MDEV33426_MD160224-mariadb-11.4.0-linux-x86_64-dbg
@@ -16,7 +18,7 @@ BASEDIR=/test/bb-10.6-MDEV-31949_ver0_opt_PRE_PATCH_MD080324-mariadb-10.6.18-lin
 RUNSOPT=2
 RUNSDBG=3
 #CONF=pquery-run-MD-spider.conf
-CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2
+CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=1 (usually 2)
 #CONF=pquery-run-MD-federated.conf
 #CONF=pquery-run-mdev-31152.conf
 #CONF=pquery-run-MD-crt.conf
@@ -62,7 +64,7 @@ if grep -qi '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*2' ${HOME}/mariadb-qa/${CONF}; t
   echo "*************************************************************************************************************************"
   sleep 2
 else
-  echo "PRE_SHUFFLE_SQL setting: $(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+') ($(grep '^INFILE=' ~/mariadb-qa/pquery-run-MD.conf | sed 's|=|: |' | tr -d '\n'))"
+  echo "PRE_SHUFFLE_SQL setting: $(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+') ($(grep '^INFILE=' ${HOME}/mariadb-qa/${CONF} | sed 's|=|: |' | tr -d '\n'))"
 fi
 
 if [[ "${BASEDIR}" != "/test"* ]]; then
