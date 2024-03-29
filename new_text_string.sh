@@ -389,7 +389,7 @@ rm -f /tmp/${RANDF}.gdb1
 
 # Stack catch
 IMPROVE_FLAG=''
-FRAMES_FILTER='__interceptor_strcmp.part.0|std::terminate.*from|fprintf|__pthread_kill_.*|__GI___pthread_kill|__GI_raise |__GI_abort |__GI___assert_fail |__assert_fail_base |memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called|uw_update_context_1|uw_init_context_1|_Unwind_Resume|Warning: .set logging off|Use .set logging enabled'
+FRAMES_FILTER='__interceptor_strcmp.part.0|std::terminate.*from|fprintf|__pthread_kill_.*|__GI___pthread_kill|__GI_raise |__GI_abort |__assert_fail|memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called|uw_update_context_1|uw_init_context_1|_Unwind_Resume|Warning: .set logging off|Use .set logging enabled'
 grep --binary-files=text -A100 'signal handler called' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vEi "${FRAMES_FILTER}" | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
 if [ "$(wc -m /tmp/${RANDF}.gdb4 2>/dev/null | sed 's| .*||')" == "0" ]; then
   # 'signal handler called' was not found, try another method

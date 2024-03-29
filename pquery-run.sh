@@ -291,39 +291,38 @@ diskspace() {
   done
 }
 
-add_handy_scripts(){
-  # Add handy stack script
+add_handy_scripts(){  # Add handy stack and gdb scripts per trial
   if [[ "${MDG}" -eq 1 ]]; then
-    SAVE_STACK_LOC=${RUNDIR}/${TRIAL}/node${j}
-  else
-    SAVE_STACK_LOC=${RUNDIR}/${TRIAL}
-  fi
-  #cat "${SCRIPT_PWD}/stack.sh" > ${SAVE_STACK_LOC}/stack && chmod +x ${SAVE_STACK_LOC}/stack
-  ln -s "${SCRIPT_PWD}/stack.sh" ${SAVE_STACK_LOC}/stack
-  # Add handy gdb script
-  echo "echo 'Handy copy and paste script:'" > ${SAVE_STACK_LOC}/gdb
-  echo "echo '  set pagination off'" >> ${SAVE_STACK_LOC}/gdb
-  echo "echo '  set print pretty on'" >> ${SAVE_STACK_LOC}/gdb
-  echo "echo '  set print frame-arguments all'" >> ${SAVE_STACK_LOC}/gdb
-  echo "echo '  thread apply all backtrace full'" >> ${SAVE_STACK_LOC}/gdb
-  echo "echo 'OR simple one-thread backtrace instead of all threads (i.e. instead of last line):'" >> ${SAVE_STACK_LOC}/gdb
-  echo "echo '  bt'" >> ${SAVE_STACK_LOC}/gdb
-  echo "sleep 5" >> ${SAVE_STACK_LOC}/gdb
-  CORE_TO_ANALYZE="./data*/*core*"
-  if [[ "${MDG}" -eq 1 ]]; then
+    SAVE_HANDY_LOC=${RUNDIR}/${TRIAL}/node${j}
     CORE_TO_ANALYZE="${GALERA_CORE_LOC}"
+  else
+    SAVE_HANDY_LOC=${RUNDIR}/${TRIAL}
+    CORE_TO_ANALYZE="./data*/*core*"
   fi
-  echo 'if [ -r ../mysqld/mysqld ]; then' >> ${SAVE_STACK_LOC}/gdb
-  echo "  gdb ../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
-  echo 'elif [ -r ../mysqld/mariadbd ]; then' >> ${SAVE_STACK_LOC}/gdb
-  echo "  gdb ../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_STACK_LOC}/gdb
-  echo 'else' >> ${SAVE_STACK_LOC}/gdb
-  echo '  echo "Assert: neither ../mysqld/mysqld nor ../mysqld/mariadbd was found (PWD: ${PWD})"' >> ${SAVE_STACK_LOC}/gdb 
-  echo '  exit 1'  >> ${SAVE_STACK_LOC}/gdb
-  echo 'fi' >> ${SAVE_STACK_LOC}/gdb
-  chmod +x ${SAVE_STACK_LOC}/gdb
+  ln -s "${SCRIPT_PWD}/stack.sh" ${SAVE_HANDY_LOC}/stack
+  echo "echo 'Handy copy and paste script:'" > ${SAVE_HANDY_LOC}/gdb
+  echo "echo '  set pagination off'" >> ${SAVE_HANDY_LOC}/gdb
+  echo "echo '  set print pretty on'" >> ${SAVE_HANDY_LOC}/gdb
+  echo "echo '  set print frame-arguments all'" >> ${SAVE_HANDY_LOC}/gdb
+  echo "echo '  thread apply all backtrace full'" >> ${SAVE_HANDY_LOC}/gdb
+  echo "echo 'OR simple one-thread backtrace instead of all threads (i.e. instead of last line):'" >> ${SAVE_HANDY_LOC}/gdb
+  echo "echo '  bt'" >> ${SAVE_HANDY_LOC}/gdb
+  echo "sleep 5" >> ${SAVE_HANDY_LOC}/gdb
+  echo 'if [ -r ../mysqld/mariadbd ]; then' >> ${SAVE_HANDY_LOC}/gdb
+  echo "  gdb ../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
+  echo 'elif [ -r ../mysqld/mysqld ]; then' >> ${SAVE_HANDY_LOC}/gdb
+  echo "  gdb ../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
+  echo 'elif [ -r ../../mysqld/mariadbd ]; then' >> ${SAVE_HANDY_LOC}/gdb
+  echo "  gdb ../../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
+  echo 'elif [ -r ../../mysqld/mysqld ]; then' >> ${SAVE_HANDY_LOC}/gdb
+  echo "  gdb ../../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
+  echo 'else' >> ${SAVE_HANDY_LOC}/gdb
+  echo '  echo "Assert: neither mariadbd nor mysqld were found in any usual locations (PWD: ${PWD})"' >> ${SAVE_HANDY_LOC}/gdb 
+  echo '  exit 1'  >> ${SAVE_HANDY_LOC}/gdb
+  echo 'fi' >> ${SAVE_HANDY_LOC}/gdb
+  chmod +x ${SAVE_HANDY_LOC}/gdb
   CORE_TO_ANALYZE=
-  SAVE_STACK_LOC=
+  SAVE_HANDY_LOC=
 }
 
 # Find mysqld binary
@@ -1299,12 +1298,12 @@ pquery_test() {
     PORT=${NEWPORT}
     NEWPORT=
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-      echoit "Starting Primary mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
+      echoit "Starting Primary mysqld/mariadbd. Error log: ${RUNDIR}/${TRIAL}/log/master.err"
     else
       if [[ ${REPLICATION} -eq 1 ]]; then
-        echoit "Starting master mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
+        echoit "Starting master mysqld/mariadbd. Error log: ${RUNDIR}/${TRIAL}/log/master.err"
       else
-        echoit "Starting mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/master.err"
+        echoit "Starting mysqld/mariadbd. Error log: ${RUNDIR}/${TRIAL}/log/master.err"
       fi
     fi
     if [ "${RR_TRACING}" == "0" ]; then
@@ -1329,7 +1328,7 @@ pquery_test() {
     $CMD >> ${RUNDIR}/${TRIAL}/log/master.err 2>&1 &
     MPID="$!"
     if [[ ${REPLICATION} -eq 1 ]]; then
-      echoit "Starting slave mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log/slave.err"
+      echoit "Starting slave mysqld/mariadbd. Error log: ${RUNDIR}/${TRIAL}/log/slave.err"
       init_empty_port
       touch ${RUNDIR}/${TRIAL}/REPLICATION_ACTIVE
       REPL_PORT=${NEWPORT}
@@ -1344,7 +1343,7 @@ pquery_test() {
       AVE_STARTUP=
     fi
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-      echoit "Starting Secondary mysqld/mariadbd. Error log is stored at ${RUNDIR}/${TRIAL}/log2/master.err"
+      echoit "Starting Secondary mysqld/mariadbd. Error log: ${RUNDIR}/${TRIAL}/log2/master.err"
       diskspace
       if check_for_version $MYSQL_VERSION "8.0.0"; then
         mkdir -p ${RUNDIR}/${TRIAL}/data2 ${RUNDIR}/${TRIAL}/tmp2 ${RUNDIR}/${TRIAL}/log2 # Cannot create /data/test, /data/mysql in 8.0
@@ -2830,13 +2829,14 @@ mkdir -p ${WORKDIR} ${WORKDIR}/log ${RUNDIR}
 chmod -R +rX ${WORKDIR}
 echo "grep -E '^BASEDIR=|^INFILE=|^THREADS=|^MYEXTRA=|^MYINIT=|^ADD_RANDOM_OPTIONS=' pquery*run*conf | sed 's|   #.*||;s|ADD_RANDOM|RND|;s|=|: \\t|'" > ${WORKDIR}/i
 echo "find . | grep '_out$' | xargs -I{} wc -l {} | sort -h" > ${WORKDIR}/my
-echo '#!/bin/bash' > ${WORKDIR}/pr_without_base_prs
-echo 'set +H' >> ${WORKDIR}/pr_without_base_prs
-echo "if [ -z \"\${1}\" ]; then echo 'Please pass the file which contains all combined UniqueID's from base runs (use something like  pr | grep 'Seen' >> ~/base_mdev-00000_filter_list.txt  in every base workdir to get this list), pr will then be run with the filter applied'; exit 1; fi" >> ${WORKDIR}/pr_without_base_prs
-echo 'if [ ! -r "${HOME}/pr" ]; then echo "Assert: ${HOME}/pr is not available, run ~/mariadb-qa/linkit; exit 1; fi' >> ${WORKDIR}/pr_without_base_prs
-echo "echo \"pr results, without any UniqueID's seen in base runs (as per supplied filter file \${1}):\"" >> ${WORKDIR}/pr_without_base_prs
-echo "~/pr | grep 'Seen' | sed 's|[ ]*(Seen .*||' | grep -vEi '^#|no core file found|no parsable frames|SHUTDOWN' | grep -vFf <(cat \${1} | sed 's|[ ]*(Seen .*||;s|[ \\t]*$||;s|\\r$||')" >> ${WORKDIR}/pr_without_base_prs
-chmod +x ${WORKDIR}/i ${WORKDIR}/my ${WORKDIR}/pr_without_base_prs
+ln -s "${SCRIPT_PWD}/filter_from_base.sh" "${WORKDIR}/filter_from_base"  # This script replaces pr_without_base_prs previously used, now remarked, in lines below
+#echo '#!/bin/bash' > ${WORKDIR}/pr_without_base_prs
+#echo 'set +H' >> ${WORKDIR}/pr_without_base_prs
+#echo "if [ -z \"\${1}\" ]; then echo 'Please pass the file which contains all combined UniqueID's from base runs (use something like  pr | grep 'Seen' >> ~/base_mdev-00000_filter_list.txt  in every base workdir to get this list), pr will then be run with the filter applied'; exit 1; fi" >> ${WORKDIR}/pr_without_base_prs
+#echo 'if [ ! -r "${HOME}/pr" ]; then echo "Assert: ${HOME}/pr is not available, run ~/mariadb-qa/linkit; exit 1; fi' >> ${WORKDIR}/pr_without_base_prs
+#echo "echo \"pr results, without any UniqueID's seen in base runs (as per supplied filter file \${1}):\"" >> ${WORKDIR}/pr_without_base_prs
+#echo "~/pr | grep 'Seen' | sed 's|[ ]*(Seen .*||' | grep -vEi '^#|no core file found|no parsable frames|SHUTDOWN' | grep -vFf <(cat \${1} | sed 's|[ ]*(Seen .*||;s|[ \\t]*$||;s|\\r$||')" >> ${WORKDIR}/pr_without_base_prs
+#chmod +x ${WORKDIR}/i ${WORKDIR}/my ${WORKDIR}/pr_without_base_prs
 WORKDIRACTIVE=1
 ONGOING=
 # User for recovery testing
@@ -3038,7 +3038,7 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
   # Sysbench dataload
   diskspace
   if [ ${SYSBENCH_DATALOAD} -eq 1 ]; then
-    echoit "Starting mysqld/mariadbd for sysbench data load. Error log is stored at ${WORKDIR}/data.template/master.err"
+    echoit "Starting mysqld/mariadbd for sysbench data load. Error log: ${WORKDIR}/data.template/master.err"
     CMD="${BIN} --basedir=${BASEDIR} --datadir=${WORKDIR}/data.template --tmpdir=${WORKDIR}/data.template --core-file --port=$PORT --pid_file=${WORKDIR}/data.template/pid.pid --socket=${WORKDIR}/data.template/socket.sock --log-output=none --log-error=${WORKDIR}/data.template/master.err"
     diskspace
     $CMD >> ${WORKDIR}/data.template/master.err 2>&1 &
