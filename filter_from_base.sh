@@ -59,10 +59,5 @@ ${PR} > ${PR_OUTPUT}
 # Actual filter using fixed strings (-F) and filter based on all lines in the filter file (-f and -v)
 grep -F -v -f ${FILTER} ${PR_OUTPUT}
 rm -f ${PR_OUTPUT}
-if [ "${REFILTER}" -eq 0 ]; then
-  echo 'The generated filter file was also saved, so you can re-do this run (and others like it) quicker with this command:'
-  echo "./defilter_from_base ${FILTER}"
-else
-  echo 'The filter file was also preserved, so you can again re-do this run (and others like it) quickly with this command:'
-  echo "./defilter_from_base ${FILTER}"
-fi
+echo '** The bug filter file was preserved: you can re-do this report (and reports for other workdirs) quickly using:'
+echo "./defilter_from_base ${FILTER}"

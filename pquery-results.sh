@@ -343,15 +343,19 @@ fi
 if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
   REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
 fi
-if [ ! -z "$(grep -io 'Basedir.*' pquery-run.log | grep -o '10\.[2-6]\.')" ]; then
+if [ ! -z "$(grep -io 'Basedir.*' pquery-run.log | grep -o '10\.[2-5]\.')" ]; then
   if grep -qm1 'innodb.checksum.algorithm' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null; then
     echo '** Trials which modify innodb_checksum_algorithm (likely cause of corruption on versions <10.6, ref MDEV-23667)'
     grep -lm1 'innodb_checksum_algorithm' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
   fi
 fi
 if grep -qm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null; then
-  echo '** Trials with WITHOUT VALIDATION: if this clause remains post-reduction, ref: server-testing @ 19-12-23 Elenst and MDEV-22164'
+  echo '** WITHOUT VALIDATION trials: if this clause remains post-reduction, ref server-testing @ 19-12-23 & MDEV-22164'
   grep -lm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
+fi
+if grep -qm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null; then
+  echo '** Trials where the slave SQL thread aborted: manual verification may be needed'
+  grep -lm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
 fi
 rm -f ./errorlogs.tmp
 find . -type f -name "master.err" | grep '\./[0-9]\+/log/master.err' > ./errorlogs.tmp
@@ -361,16 +365,16 @@ if [ -r ./errorlogs.tmp ]; then
   while read ERROR_LOG; do
     if [ -r ${ERROR_LOG} ]; then
       # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
-      # Filtering 'MariaDB error code' is a bit wide, but the pquery-results output is simply too large when including this
-      DEDUP_FILTERING='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code' # 'Warning: Memory not freed' etc. are now handled by new_text_string.sh and will show up in the UniqueID list already, not much point including them here again (except here it shows for example the actual memory lost in bytes size, but it also really clogs the output/screen)
-      ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep --binary-files=text -vE "${DEDUP_FILTERING}" | grep -vE "^[ \t]*$")"
-      ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "${DEDUP_FILTERING}" | grep -vE "^[ \t]*$")"
+      # Filtering 'MariaDB error code' is a bit wide, but the pquery-results output is simply too large without including this
+      ERROR_MSG_FILTER='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code|slave SQL thread aborted' # 'Warning: Memory not freed' etc. are now handled by new_text_string.sh and will show up in the UniqueID list already, not much point including them here again (except here it shows for example the actual memory lost in bytes size, but it also really clogs the output/screen)  # 'slave SQL thread aborted' is now handled by it's own '** Trials where the slave SQL thread aborted' section, which provides much cleaner and shorter overall pr output
+      ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep --binary-files=text -vE "${ERROR_MSG_FILTER}" | grep -vE "^[ \t]*$")"
+      ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "${ERROR_MSG_FILTER}" | grep -vE "^[ \t]*$")"
       if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then
         if [ "${FIRST_OCCURENCE}" != "1" ]; then
           echo "** Significant/Major errors (if any)"
           FIRST_OCCURENCE=1
         fi
-        echo "${ERROR_LOG}: $(DOUBLE=0; echo "$(if [ ! -z "${ERRORS}" ]; then echo -n "${ERRORS}"; DOUBLE=1; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then if [ "${DOUBLE}" -eq 1 ]; then echo ", ${ERRORS_LAST_LINE}"; else echo ", ${ERRORS_LAST_LINE}"; fi; else echo ''; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')"
+        echo "${ERROR_LOG}: $(DOUBLE=0; echo "$(if [ ! -z "${ERRORS}" ]; then echo -n "${ERRORS}"; DOUBLE=1; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then if [ "${DOUBLE}" -eq 1 ]; then echo ", ${ERRORS_LAST_LINE}"; else echo ", ${ERRORS_LAST_LINE}"; fi; else echo ''; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')" | sed 's|:[ ,]\+mariadbd: /test.*_dbg/|: |;s|: Assertion |Assertion |'
       fi
     fi
   done < ./errorlogs.tmp

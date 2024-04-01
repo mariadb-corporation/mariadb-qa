@@ -2837,6 +2837,7 @@ ln -s "${SCRIPT_PWD}/filter_from_base.sh" "${WORKDIR}/filter_from_base"  # This 
 #echo "echo \"pr results, without any UniqueID's seen in base runs (as per supplied filter file \${1}):\"" >> ${WORKDIR}/pr_without_base_prs
 #echo "~/pr | grep 'Seen' | sed 's|[ ]*(Seen .*||' | grep -vEi '^#|no core file found|no parsable frames|SHUTDOWN' | grep -vFf <(cat \${1} | sed 's|[ ]*(Seen .*||;s|[ \\t]*$||;s|\\r$||')" >> ${WORKDIR}/pr_without_base_prs
 #chmod +x ${WORKDIR}/i ${WORKDIR}/my ${WORKDIR}/pr_without_base_prs
+chmod +x ${WORKDIR}/i ${WORKDIR}/my 
 WORKDIRACTIVE=1
 ONGOING=
 # User for recovery testing

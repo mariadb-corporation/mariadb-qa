@@ -174,6 +174,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|ha_storage_engine_is_enabled|ha_checktype|ha_check_if_updates_are_ignored|create_table_impl                                                                            ## MDEV-33804
 thd|SIGABRT|temp_file_size_cb_func|tmp_file_track|_my_b_cache_write|my_b_flush_io_cache                                                                                        ## MDEV-33751
 SIGSEGV|ha_spider::need_info_for_auto_inc|ha_partition::need_info_for_auto_inc|ha_partition::external_lock|handler::ha_external_lock                                           ## MDEV-33731
 status == 0|SIGABRT|add_role_user_mapping_action|my_hash_iterate|rebuild_role_grants|replace_user_table                                                                        ## MDEV-33674
