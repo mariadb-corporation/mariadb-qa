@@ -175,6 +175,38 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|ha_storage_engine_is_enabled|ha_checktype|ha_check_if_updates_are_ignored|create_table_impl                                                                            ## MDEV-33804
+SIGSEGV|ACL_PROXY_USER::store_pk|replace_proxies_priv_table|mysql_grant|Sql_cmd_grant_proxy::execute                                                                           ## MDEV-33783
+SIGSEGV|calculate_key_len|handler::index_read_map|handler::ha_index_read_map|tz_load_from_open_tables                                                                          ## MDEV-33783
+SIGSEGV|calculate_key_len|ha_partition::index_read_idx_map|handler::ha_index_read_idx_map|find_udf_in_table                                                                    ## MDEV-33783
+SIGSEGV|calculate_key_len|ha_partition::index_read_idx_map|handler::ha_index_read_idx_map|insert_server_record                                                                 ## MDEV-33783
+SIGSEGV|calculate_key_len|ha_partition::index_read_idx_map|ha_partition::index_read_idx_map|handler::ha_index_read_idx_map                                                     ## MDEV-33783
+SIGSEGV|Field::store|handle_grant_table|handle_grant_data|mysql_drop_user                                                                                                      ## MDEV-33783
+SIGSEGV|Field::store|handle_grant_table|handle_grant_data|mysql_rename_user                                                                                                    ## MDEV-33783
+SIGSEGV|Field::val_str|Field::val_lex_cstring|handle_grant_table|handle_grant_data                                                                                             ## MDEV-33783
+SIGSEGV|Field::val_str|Field::val_lex_cstring|handle_roles_mappings_table|handle_grant_table                                                                                   ## MDEV-33783
+SIGSEGV|finalize_install|mysql_install_plugin|mysql_execute_command|mysql_parse                                                                                                ## MDEV-33783
+SIGSEGV|ha_partition::check_parallel_search|ha_partition::rnd_next|handler::ha_rnd_next|handle_grant_table                                                                     ## MDEV-33783
+SIGSEGV|ha_partition::index_init|handler::ha_index_init|grant_load|grant_reload                                                                                                ## MDEV-33783
+SIGSEGV|ha_partition::index_init|handler::ha_index_init|tz_load_from_open_tables|my_tz_find                                                                                    ## MDEV-33783
+SIGSEGV|mysql_create_function|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core                                                            ## MDEV-33783
+SIGSEGV|replace_roles_mapping_table|mysql_create_user|mysql_execute_command|mysql_parse                                                                                        ## MDEV-33783
+SIGSEGV|replace_user_table|mysql_grant|Sql_cmd_grant_table::execute_table_mask|mysql_execute_command                                                                           ## MDEV-33783
+SIGSEGV|replace_user_table|mysql_grant|Sql_cmd_grant_table::execute_table_mask|Sql_cmd_grant_table::execute                                                                    ## MDEV-33783
+SIGSEGV|Stat_table::common_init_stat_table|Stat_table::Stat_table|Column_stat::Column_stat|rename_columns_in_stat_table                                                        ## MDEV-33783
+SIGSEGV|Stat_table::common_init_stat_table|Stat_table::Stat_table|Index_stat::Index_stat|delete_statistics_for_index                                                           ## MDEV-33783
+SIGSEGV|Stat_table::common_init_stat_table|Stat_table::Stat_table|Index_stat::Index_stat|rename_indexes_in_stat_table                                                          ## MDEV-33783
+SIGSEGV|TABLE::use_all_columns|replace_roles_mapping_table|mysql_grant_role|mysql_execute_command                                                                              ## MDEV-33783
+SIGSEGV|update_user_table_password|change_password|set_var_password::update|sql_set_variables                                                                                  ## MDEV-33783
+SIGSEGV|User_table::set_user|acl_set_default_role|set_var_default_role::update|sql_set_variables                                                                               ## MDEV-33783
+SIGSEGV|User_table::set_user|replace_user_table|mysql_alter_user|mysql_execute_command                                                                                         ## MDEV-33783
+SIGSEGV|User_table::set_user|replace_user_table|mysql_create_user|mysql_execute_command                                                                                        ## MDEV-33783
+SIGSEGV|User_table::set_user|replace_user_table|mysql_grant|Sql_cmd_grant_table::execute_table_mask                                                                            ## MDEV-33783
+SIGSEGV|User_table::set_user|replace_user_table|mysql_routine_grant|Sql_cmd_grant_sp::execute                                                                                  ## MDEV-33783
+SIGSEGV|User_table::set_user|replace_user_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table                                                                     ## MDEV-33783
+SIGSEGV|User_table::set_user|update_user_table_password|change_password|set_var_password::update                                                                               ## MDEV-33783
+SIGSEGV|Item_field::Item_field|TR_table::query|Item_func_trt_id::get_by_commit_ts|Item_func_trt_id::val_int                                                                    ## MDEV-33783
+SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server                                                                                                   ## MDEV-33783
+SIGSEGV|Sql_mode_save::Sql_mode_save|Sql_mode_instant_remove::Sql_mode_instant_remove|get_field|GRANT_NAME::GRANT_NAME                                                         ## MDEV-33783
 thd|SIGABRT|temp_file_size_cb_func|tmp_file_track|_my_b_cache_write|my_b_flush_io_cache                                                                                        ## MDEV-33751
 SIGSEGV|ha_spider::need_info_for_auto_inc|ha_partition::need_info_for_auto_inc|ha_partition::external_lock|handler::ha_external_lock                                           ## MDEV-33731
 status == 0|SIGABRT|add_role_user_mapping_action|my_hash_iterate|rebuild_role_grants|replace_user_table                                                                        ## MDEV-33674
