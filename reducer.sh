@@ -609,9 +609,14 @@ save_rr_trace(){
 abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anymore
   ABORT_ACTIVE=1
   if [ ! -d "${WORKD}" ]; then
-    echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Terminating."
+    if [ -r "${WORKO}" ]; then
+      echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Terminating."
+    else
+      echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Last good known testcase: $WORKO (provided the disk being used did not run out of space). Terminating."
+    fi
     # TODO: ~/ds (most likely) or ~/memory seem to be causing this more recently and more frequently: to fix
     trap SIGINT  # Clear the SIGINT trap
+    echo "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
     exit 1
   elif [ -r $INPUTFILE ]; then
@@ -620,6 +625,7 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
     echoit "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
     echoit "[Abort] The source for this reducer was likely deleted. Terminating."
     trap SIGINT  # Clear the SIGINT trap
+    echo "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
     exit 1
   fi
@@ -1697,7 +1703,8 @@ init_workdir_and_files(){
   fi
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
-  echoit "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0") [PID: $$]"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
+  echoit "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0")"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
+  echoit "[Init] Reducer PID: $$"
   export TMP=$WORKD/tmp
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then echoit "[Init] Console typescript log for REDUCE_GLIBC_OR_SS_CRASHES: /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log"; fi
   # jemalloc configuration for TokuDB plugin
@@ -2728,6 +2735,7 @@ start_mysqld_main(){
       for((delay=0;delay<90;delay++)); do  # 90 Second max master+slave startup (normally, only ~2 seconds are required, though on very busy servers it can take >60 seconds)
         sleep 1
         touch ${WORKD}  # Ensure that watchdog scripts like ~/ds do not think this directory no-longer-in-use
+        touch ${WORKD}/reducer.log
         if ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then MASTER_STARTUP_OK=1; fi
         if ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/slave_socket.sock ping > /dev/null 2>&1; then SLAVE_STARTUP_OK=1; fi
         if [ "${MASTER_STARTUP_OK}" -eq 1 -a "${SLAVE_STARTUP_OK}" -eq 1 ]; then break; fi
