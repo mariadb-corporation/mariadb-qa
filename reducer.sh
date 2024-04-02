@@ -1281,8 +1281,22 @@ multi_reducer(){
     echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for all forked verification subreducer threads to finish/terminate"
     TXT_OUT="$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Finished/Terminated verification subreducer threads:"
     for t in $(eval echo {1..$MULTI_THREADS}); do
-      # TODO: An ideal situation would be to have a check here for 'Failed to start the mariadbd/mysqld server' in the subreducer logs. However, this would require a change to how this section works; the "wait" for PID would have to be changed to some sort of loop. However, as a stopped verify thread (1 in 10 for starters) is quickly surpassed by a new set of threads - i.e. after 10 threads, 20 are started (a new run with +10 threads) - it is not deemed very necessary to change this atm. This error also would only show on very busy servers. However, this check SHOULD be done for non-verify MULTI stages, as for simplification, all threads keep running (if they remain live) untill a simplified testcase is found. Thus, if 8 out of 10 threads sooner or later end up with 'Failed to start the mariadbd/mysqld server', then only 2 threads would remain that try and reproduce the issue (till ifinity). The 'Failed to start the mariadbd/mysqld server' is seen on very busy servers (presumably some timeout hit). This second part (starting with 'However,...' is implemented already below. RV update 12/8/20: When a different crash is seen then the one specified using TEXT, the thread will also get restarted, with the message being displayed being the 'busy server' one which is not correct. Some update to that output already made below.
-      wait $(eval echo $(echo '$MULTI_PID'"$t"))
+      while true; do  # Wait for subreducer to naturally finish, or check if it has a failed server start issue
+        SUBREDUCER_CHECK_PID="$(eval echo $(echo '$MULTI_PID'"$t"))"
+        if ! kill -0 ${SUBREDUCER_CHECK_PID} 2>/dev/null; then
+          break
+        fi
+        SUBREDUCER_LOGFILE="$(ps -ef | grep --binary-files=text ${SUBREDUCER_CHECK_PID} | grep --binary-files=text -v 'grep' | grep --binary-files=text -o 'error=/.*subreducer/[0-9]/' | sed 's|^error=||;s|$|reducer.log|' | head -n1)"  # TODO: Perhaps there is a better way to get to the subreducer reducer log file without using the PID directly, though it is not clear how, as in this loop all we seem to have is the subreducer PID
+        if [ -f "${SUBREDUCER_LOGFILE}" -a -r "${SUBREDUCER_LOGFILE}" ]; then
+          if grep -Eqi --binary-files=text 'Failed to start the.*server' "${SUBREDUCER_LOGFILE}"; then
+            kill -9 ${SUBREDUCER_CHECK_PID}  # Ensure the subreducer is terminated immediately. Defensive as a later process cleanup will likely catch it as well
+            break
+          fi
+          sleep 0.25  # Do not query the disk too often
+        fi
+        sleep 0.25  # ps re-check delay
+      done
+      SUBREDUCER_CHECK_PID=;SUBREDUCER_LOGFILE=
       TXT_OUT="$TXT_OUT #$t"
       echoit_overwrite "$TXT_OUT"
       if [ $t -eq 20 -a $MULTI_THREADS -gt 20 ]; then
@@ -1361,7 +1375,7 @@ multi_reducer(){
         if [ "$(ps -p$PID_TO_CHECK | grep -E --binary-files=text -o $PID_TO_CHECK)" != "$PID_TO_CHECK" ]; then
           RESTART_WORKD=$(eval echo $(echo '$WORKD'"$t"))
           SUBR_SVR_START_FAILURE=0
-          if grep -Eqi --binary-files=text ".ERROR. Failed to start [mariadbysql]* server" $RESTART_WORKD/reducer.log 2>/dev/null; then  # Check if this was a subreducer who's mariadbd/mysqld failed to start
+          if grep -Eqi --binary-files=text "Failed to start the.*server" $RESTART_WORKD/reducer.log 2>/dev/null; then  # Check if this was a subreducer who's mariadbd/mysqld failed to start
             SUBR_SVR_START_FAILURE=1
             TMP_RND_FILENAME="err_$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/').txt"  # Subshell creates random number with 6 digits
             cp $RESTART_WORKD/log/master.err /tmp/${TMP_RND_FILENAME}  # Copy the mariadbd/mysqld error log from the subreducer run which had a failed startup to /tmp for research
@@ -1683,7 +1697,7 @@ init_workdir_and_files(){
   fi
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
-  echoit "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0")"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
+  echoit "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0") [PID: $$]"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
   export TMP=$WORKD/tmp
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then echoit "[Init] Console typescript log for REDUCE_GLIBC_OR_SS_CRASHES: /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log"; fi
   # jemalloc configuration for TokuDB plugin
@@ -2029,7 +2043,7 @@ init_workdir_and_files(){
         if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
           echoit "[Init] [NOTE] Failed to cleanly start mariadbd/mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mariadbd/mysqld). Normally this would cause reducer.sh to halt here (and advice you to check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log + check that there is plenty of space on the device being used). However, because REDUCE_STARTUP_ISSUES is set to 1, we continue this reducer run. See above for more info on the REDUCE_STARTUP_ISSUES setting"
         else
-          echoit "[Init] [ERROR] Failed to start the mariadbd/mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mariadbd/mysqld), check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start the mariadbd/mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
+          echoit "[Init] [ERROR] Failed to start the mariadbd/mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mariadbd/mysqld), check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text 'Failed to start the.*server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error!
           echoit "[Init] [INFO] If however you want to debug a mariadbd/mysqld startup issue, for example caused by a misbehaving --option to mariadbd/mysqld, set REDUCE_STARTUP_ISSUES=1 and restart reducer.sh"
           echo "Terminating now."
           exit 1
@@ -2309,7 +2323,7 @@ start_mysqld_or_valgrind_or_mdg(){
         if [ ${STAGE} -eq 8 -o ${STAGE} -eq 9 ]; then
           if [ ${STAGE} -eq 8 ]; then STAGE8_NOT_STARTED_CORRECTLY=1; fi
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
-          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start the mariadbd/mysqld server, assuming this option set is required"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Note] Assuming this option set is required as the server did not start"  # Do not use 'Failed to start the.*server' text here to avoid that being detected as a subreducer failure (for future use, as subreducers currently do not run STAGE8)
         else
           # RV 17/2/24: This section got a major change in how it works/rewrite: check for correct operation and remove by mid-year if all fine. Also remove the update made to run_and_check(). The main motivation is that we are seeing too many of the 'Terminating now.'/exit 1 occurences on loaded servers
           #if [ "${REPLICATION}" -eq 1 ]; then  # With replication, we continue reducing as at times there are m/s startup issues #TODO: research further as to reason, seems to be timing related (timeout was increased from 60 to 90 now)
@@ -2320,7 +2334,7 @@ start_mysqld_or_valgrind_or_mdg(){
           #  exit 1
           #fi
           # RV 17/2/24: Rewrite starts here. Instead of 'return 1' for replication, and terminating for non-replication, we now do always 'return 1'
-          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start the mariadbd/mysqld server, retrying. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is looping, it indicates a persistant problem that will likely require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Lst good known testcase: $WORKO (provided the disk being used did not run out of space)"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Warning] Failed to start the mariadbd/mysqld server, retrying. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is looping, it indicates a persistant problem that will likely require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Lst good known testcase: $WORKO (provided the disk being used did not run out of space)"
           return 1  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 1' will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution to avoid skipping one possible simplification in stages >=2. Should not affect stage 1) TODO
         fi
       else
@@ -2712,8 +2726,9 @@ start_mysqld_main(){
       ADMIN_BIN_TO_USE=
       if [ "${MASTER_STARTUP_OK}" -ne 1 -o "${SLAVE_STARTUP_OK}" -ne 1 ]; then
         if [ ! -d "${WORKD}" ]; then abort; fi
-        echoit "$ATLEASTONCE [Stage $STAGE] [Warning] Warning: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Restarting"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Warning] [Trial $TRIAL] Warning: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Restarting"
         PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;
+        TRIAL=$[ ${TRIAL - 1 ]  # Repeat the trial
         return 1  # The '1' error value is not used, but we need to return here
       fi
       MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
