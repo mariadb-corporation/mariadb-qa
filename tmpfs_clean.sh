@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
-# TODO: Idea: the current file check (only done for reducer.log) checks the file aga. Likely other directories could have a file age check by using ls -t | head -n1 and taking the age of that file. If any updates happen in the directory then this would show directory is still live/active
+# TODO: Idea: the current file check (only done for reducer.log) checks the file age. Likely other directories could have a file age check by using ls -t | head -n1 and taking the age of that file. If any updates happen in the directory then this would show directory is still live/active
 
 EXCLUDE_DIR_REGEX='multipath|var_|afl|sql_shuffled'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
 LOW_MEMORY=20  # A number, reflecting a minimum 'directly free available memory' before long-running reducers which have been successful thus far (i.e. at least 2 ~/pge started after the original reduction, and file is _out_out_out already), are terminated. If total memory is for example 128GB then 20 may be a good number to use here, or similar.
@@ -32,11 +32,12 @@ fi
 # two ~/pge's) runs if memory is running low. These reducers are highly likely quite far advanced in overall testcase 
 # reduction as we are at at least 3 runs (on the same testcase) far. Reducers will only create '_out..._out' file 
 # iterations if reduction was successful at least once
-AVAILABLE_MEM=$(free -g | grep 'Mem' | awk '{print $7}')
-if [ -z "${LOW_MEMORY}" ]; then LOW_MEMORY=20; fi
-if [ "${AVAILABLE_MEM}" -lt ${LOW_MEMORY} ]; then
-  cd /dev/shm; tail -n1 */reducer.log | grep -B1 'out_out_out' | grep -B1 'DONE' | grep --binary-files=text '==>.*/reducer.log <==' | grep -o '[0-9]\+' | sort -u | grep '^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | xargs -I{} echo "if [ -d \"{}\" ]; then rm -Rf \"/dev/shm/{}\"; fi" | xargs -I{} bash -c "{}" 
-fi
+# Update RV 2 Apr 24: this was terminating manually started important reducers that already had a 'out_out_out' testcase. Also, PGE_LOOPS was previously set to 2 in ~/sr as more pge loops caused too much system load overall (balance of all work). Thus, this is no longer needed and additionally causes issues as described: disabled
+#AVAILABLE_MEM=$(free -g | grep 'Mem' | awk '{print $7}')
+#if [ -z "${LOW_MEMORY}" ]; then LOW_MEMORY=20; fi
+#if [ "${AVAILABLE_MEM}" -lt ${LOW_MEMORY} ]; then
+#  cd /dev/shm; tail -n1 */reducer.log | grep -B1 'out_out_out' | grep -B1 'DONE' | grep --binary-files=text '==>.*/reducer.log <==' | grep -o '[0-9]\+' | sort -u | grep '^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | xargs -I{} echo "if [ -d \"{}\" ]; then rm -Rf \"/dev/shm/{}\"; fi" | xargs -I{} bash -c "{}" 
+#fi
 
 # General/Main cleanup
 COUNT_FOUND_AND_DEL=0

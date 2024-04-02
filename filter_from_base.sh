@@ -2,8 +2,8 @@
 
 if [ -z "${1}" ]; then
   echo 'Please specify what BASE workdirs the pquery results in this workdir should be filtered against, as follows:'
-  echo './defilter_from_base.sh "BASEDIR1|BASEDIR2|BASEDIR3|etc."'
-  echo 'For example, ./defilter_from_base.sh "123456|001122|998877"'
+  echo './filter_from_base.sh "BASEDIR1|BASEDIR2|BASEDIR3|etc."'
+  echo 'For example, ./filter_from_base.sh "123456|001122|998877"'
   echo "pquery-results will then show only UniqueID's which were seen in this workdir but not in any BASE workdirs"
   exit 1
 fi
@@ -60,4 +60,4 @@ ${PR} > ${PR_OUTPUT}
 grep -F -v -f ${FILTER} ${PR_OUTPUT}
 rm -f ${PR_OUTPUT}
 echo '** The bug filter file was preserved: you can re-do this report (and reports for other workdirs) quickly using:'
-echo "./defilter_from_base ${FILTER}"
+echo "./filter_from_base ${FILTER}"
