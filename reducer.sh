@@ -2335,7 +2335,12 @@ start_mysqld_or_valgrind_or_mdg(){
           #fi
           # RV 17/2/24: Rewrite starts here. Instead of 'return 1' for replication, and terminating for non-replication, we now do always 'return 1'
           if [ "${MASTER_SLAVE_RESTART_FLAG}" -ne 1 ]; then
-            echoit "$ATLEASTONCE [Stage $STAGE] [Warning] Failed to start the mariadbd/mysqld server, retrying by restarting the server. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
+            echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] Failed to start the mariadbd/mysqld server, retrying by restarting the server. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
+            if [ ! -z "${TRIAL}" ]; then
+              if [ "${TRIAL}" -gt 1 ]; then
+                TRIAL=$[ ${TRIAL} - 1 ]  # Repeat the trial
+              fi
+            fi
           fi 
           MASTER_SLAVE_RESTART_FLAG=
           return 1  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 1' will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution to avoid skipping one possible simplification in stages >=2. Should not affect stage 1) TODO
@@ -2733,7 +2738,11 @@ start_mysqld_main(){
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1, retrying by restarting both. Possible reasons: overloaded server, OOS. If this message appears a few times (with 2 min delays each time), it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
         MASTER_SLAVE_RESTART_FLAG=1
         PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;
-        TRIAL=$[ ${TRIAL} - 1 ]  # Repeat the trial
+        if [ ! -z "${TRIAL}" ]; then
+          if [ "${TRIAL}" -gt 1 ]; then
+            TRIAL=$[ ${TRIAL} - 1 ]  # Repeat the trial
+          fi
+        fi
         return 1  # The '1' error value is not used, but we need to return here
       fi
       MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
