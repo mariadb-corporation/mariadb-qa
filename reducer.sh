@@ -2341,7 +2341,7 @@ start_mysqld_or_valgrind_or_mdg(){
           #  exit 1
           #fi
           # RV 17/2/24: Rewrite starts here. Instead of 'return 1' for replication, and terminating for non-replication, we now do always 'return 1'
-          if [ "${MASTER_SLAVE_RESTART_FLAG}" -ne 1 ]; then
+          if [ "${MASTER_SLAVE_RESTART_FLAG}" != "1" ]; then
             echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] Failed to start the mariadbd/mysqld server, retrying by restarting the server. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
             if [ ! -z "${TRIAL}" ]; then
               if [ "${TRIAL}" -gt 1 ]; then
