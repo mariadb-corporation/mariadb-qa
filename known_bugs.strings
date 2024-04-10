@@ -174,6 +174,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+(ulonglong) next_free_value % real_increment == (ulonglong) offset|SIGABRT|sequence_definition::adjust_values|SEQUENCE::read_stored_values|SEQUENCE::read_initial_values|ha_sequence::open ## MDEV-33836
+buflen > 0|SIGABRT|pad_max_char|my_like_range_mb|charset_info_st::like_range|Item_func_like::get_mm_leaf                                                                       ## MDEV-33806
 SIGSEGV|ha_storage_engine_is_enabled|ha_checktype|ha_check_if_updates_are_ignored|create_table_impl                                                                            ## MDEV-33804
 SIGSEGV|ACL_PROXY_USER::store_pk|replace_proxies_priv_table|mysql_grant|Sql_cmd_grant_proxy::execute                                                                           ## MDEV-33783
 SIGSEGV|calculate_key_len|handler::index_read_map|handler::ha_index_read_map|tz_load_from_open_tables                                                                          ## MDEV-33783
@@ -1458,6 +1460,7 @@ SIGABRT|ut_dbg_assertion_failed|trx_mark_sql_stat_end|innobase_commit|commit_one
 SIGABRT|ut_dbg_assertion_failed|trx_mark_sql_stat_end|end_of_statement|innobase_commit                                                                                         ## MDEV-23046
 is_open()|SIGABRT|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog|binlog_flush_cache       ## MDEV-23045
 SIGSEGV|row_create_prebuilt|ha_innobase::open|handler::ha_open|open_table_from_share                                                                                           ## MDEV-23011
+marked_for_read()|SIGABRT|Field_varstring::val_real|Item_field::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op                            ## MDEV-22943
 marked_for_read()|SIGABRT|Field_varstring::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                             ## MDEV-22943
 marked_for_read()|SIGABRT|Field_blob::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                                  ## MDEV-22943
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event                   ## MDEV-22936
