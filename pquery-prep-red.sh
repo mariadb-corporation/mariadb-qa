@@ -521,6 +521,8 @@ generate_reducer_script(){
   fi
   REPLICATION_CLEANUP="s|ZERO0|ZERO0|"
   REPLICATION_STRING1="s|ZERO0|ZERO0|"  # Idem as above
+  REPL_EXTRA_CLEANUP="s|ZERO0|ZERO0|"
+  REPL_EXTRA_STRING1="s|ZERO0|ZERO0|"  # Idem as above
   MASTER_EXTRA_CLEANUP="s|ZERO0|ZERO0|"
   MASTER_EXTRA_STRING1="s|ZERO0|ZERO0|"  # Idem as above
   SLAVE_EXTRA_CLEANUP="s|ZERO0|ZERO0|"
@@ -528,6 +530,22 @@ generate_reducer_script(){
   if [ -r ./${TRIAL}/REPLICATION_ACTIVE ]; then  # This was a replication based run
     REPLICATION_CLEANUP="0,/^[ \t]*REPLICATION[ \t]*=.*$/s|^[ \t]*REPLICATION[ \t]*=.*$|#REPLICATION=<set_below_in_machine_variables_section>|"
     REPLICATION_STRING1="0,/#VARMOD#/s!#VARMOD#!REPLICATION=1\n#VARMOD#!"
+    if [ ! -z "$REPL_EXTRA" ]; then  # REPL_EXTRA set
+      REPL_EXTRA_CLEANUP="0,/^[ \t]*REPL_EXTRA[ \t]*=.*$/s|^[ \t]*REPL_EXTRA[ \t]*=.*$|#REPL_EXTRA=<set_below_in_machine_variables_section>|"
+      if [[ "${REPL_EXTRA}" = *":"* ]]; then
+        if [[ "${REPL_EXTRA}" = *"|"* ]]; then
+          if [[ "${REPL_EXTRA}" = *"!"* ]]; then
+            echo "Assert! No suitable sed seperator found. REPL_EXTRA (${REPL_EXTRA}) contains all of the possibilities, add more!"
+          else
+            REPL_EXTRA_STRING1="0,/#VARMOD#/s!#VARMOD#!REPL_EXTRA=\"${REPL_EXTRA}\"\n#VARMOD#!"
+          fi
+        else
+          REPL_EXTRA_STRING1="0,/#VARMOD#/s|#VARMOD#|REPL_EXTRA=\"${REPL_EXTRA}\"\n#VARMOD#|"
+        fi
+      else
+        REPL_EXTRA_STRING1="0,/#VARMOD#/s:#VARMOD#:REPL_EXTRA=\"${REPL_EXTRA}\"\n#VARMOD#:"
+      fi
+    fi
     if [ ! -z "$MASTER_EXTRA" ]; then  # MASTER_EXTRA set
       MASTER_EXTRA_CLEANUP="0,/^[ \t]*MASTER_EXTRA[ \t]*=.*$/s|^[ \t]*MASTER_EXTRA[ \t]*=.*$|#MASTER_EXTRA=<set_below_in_machine_variables_section>|"
       if [[ "${MASTER_EXTRA}" = *":"* ]]; then
@@ -668,6 +686,7 @@ generate_reducer_script(){
    | sed "${MYEXTRA_CLEANUP}" \
    | sed "${MYINIT_CLEANUP}" \
    | sed "${REPLICATION_CLEANUP}" \
+   | sed "${REPL_EXTRA_CLEANUP}" \
    | sed "${MASTER_EXTRA_CLEANUP}" \
    | sed "${SLAVE_EXTRA_CLEANUP}" \
    | sed "${WSREP_OPT_CLEANUP}" \
@@ -698,6 +717,7 @@ generate_reducer_script(){
    | sed "${MYEXTRA_STRING1}" \
    | sed "${MYINIT_STRING1}" \
    | sed "${REPLICATION_STRING1}" \
+   | sed "${REPL_EXTRA_STRING1}" \
    | sed "${MASTER_EXTRA_STRING1}" \
    | sed "${SLAVE_EXTRA_STRING1}" \
    | sed "${WSREP_OPT_STRING}" \
@@ -834,9 +854,13 @@ if [ ${QC} -eq 0 ]; then
           echo "* Reducer for this trial (./reducer${TRIAL}_${SUBDIR}.sh) already exists. Skipping to next trial/node."
           continue
         fi
+        REPL_EXTRA=
         MASTER_EXTRA=
         SLAVE_EXTRA=
         if [ -r ./${TRIAL}/REPLICATION_ACTIVE ]; then  # This was a replication based run
+          if [ -r ./${TRIAL}/REPL_EXTRA ]; then
+            REPL_EXTRA="$(cat ./${TRIAL}/REPL_EXTRA 2>/dev/null)"
+          fi
           if [ -r ./${TRIAL}/MASTER_EXTRA ]; then
             MASTER_EXTRA="$(cat ./${TRIAL}/MASTER_EXTRA 2>/dev/null)"
           fi
@@ -937,9 +961,13 @@ if [ ${QC} -eq 0 ]; then
   else
     for SQLLOG in $(ls ./*/*thread-0.sql 2>/dev/null); do
       TRIAL=`echo ${SQLLOG} | sed 's|./||;s|/.*||'`
+      REPL_EXTRA=
       MASTER_EXTRA=
       SLAVE_EXTRA=
       if [ -r ./${TRIAL}/REPLICATION_ACTIVE ]; then  # This was a replication based run
+        if [ -r ./${TRIAL}/REPL_EXTRA ]; then
+          REPL_EXTRA="$(cat ./${TRIAL}/REPL_EXTRA 2>/dev/null)"
+        fi
         if [ -r ./${TRIAL}/MASTER_EXTRA ]; then
           MASTER_EXTRA="$(cat ./${TRIAL}/MASTER_EXTRA 2>/dev/null)"
         fi
@@ -1128,9 +1156,13 @@ else
     # Pre-processing all possible sql files to make it suitable for reducer.sh and manual replay - this can be handled in pquery core < TODO
     sed -i "s/;|NOERROR/;#NOERROR/" ${RUNDIR}/${TRIAL}/*_thread-0.*.sql
     sed -i "s/;|ERROR/;#ERROR/" ${RUNDIR}/${TRIAL}/*_thread-0.*.sql
+    REPL_EXTRA=
     MASTER_EXTRA=
     SLAVE_EXTRA=
     if [ -r ./${TRIAL}/REPLICATION_ACTIVE ]; then  # This was a replication based run
+      if [ -r ./${TRIAL}/REPL_EXTRA ]; then
+        REPL_EXTRA="$(cat ./${TRIAL}/REPL_EXTRA 2>/dev/null)"
+      fi
       if [ -r ./${TRIAL}/MASTER_EXTRA ]; then
         MASTER_EXTRA="$(cat ./${TRIAL}/MASTER_EXTRA 2>/dev/null)"
       fi

@@ -59,8 +59,9 @@ REDUCE_STARTUP_ISSUES=0         # Default/normal use: 0. Set to 1 to reduce mari
 REDUCE_GLIBC_OR_SS_CRASHES=0    # Default/normal use: 0. Set to 1 to reduce testcase based on a GLIBC crash or stack smash being detected. MODE=3 (TEXT) and MODE=4 (all) supported
 SCRIPT_LOC=/usr/bin/script      # The script binary (sudo yum install util-linux) is required for reducing GLIBC crashes
 
-# === Reduce replication issues # Note that any REPL_EXTRA set in pquery conf files are auto-merged by pquery-run.sh into MYEXTRA (and this do not need to be covered here)
+# === Reduce replication issues 
 REPLICATION=0                   # Default: 0: disabled, 1: enable standard master/slave replication. Replay will be against the master
+REPL_EXTRA="--gtid_strict_mode=1 --relay-log=relaylog"  # Extra parameters to pass to the master and the slave, besides MYEXTRA (both are used)
 MASTER_EXTRA="--log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --server_id=1"  # Extra mariadbd/mysqld options to pass to the master server only
 SLAVE_EXTRA="--slave_skip_errors=ALL --server_id=2"  # Extra mariadbd/mysqld options to pass to the slave server only
 
@@ -382,7 +383,8 @@ elif [ -d "${BASEDIR_ALT}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/
 fi
 BASEDIR_ALT=
 #Check replication option
-if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want MASTER_EXTRA nor SLAVE_EXTRA options to take effect
+if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want any REPL_EXTRA, MASTER_EXTRA and SLAVE_EXTRA options to take effect
+  REPL_EXTRA=
   MASTER_EXTRA=
   SLAVE_EXTRA=
 fi
@@ -2710,15 +2712,15 @@ start_mysqld_main(){
     if [ "${REPLICATION}" -eq 1 ]; then
       # ---- Master
       init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
-      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_START_TIME=$(date +'%s')
       $CMD > $WORKD/log/mysqld.out 2>&1 &
       PIDV="$!"
       # ---- Slave
       init_empty_port; MYPORT_SLAVE=$NEWPORT; NEWPORT=  # Obtain new empty port
-      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_SLAVE_START_TIME=$(date +'%s')
       $CMD > $WORKD/log/mysqld_slave.out 2>&1 &
       PIDV_SLAVE="$!"
@@ -3631,8 +3633,9 @@ process_outcome(){
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
                 sed -i "s|^MYEXTRA=.*|MYEXTRA=\"--no-defaults ${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO check this works correctly now
                 sed -i "s|^REPLICATION=.*|REPLICATION=${REPLICATION}|" "${NEWBUGRE}"
+                sed -i "s|^REPL_EXTRA=.*|REPL_EXTRA=\"${REPL_EXTRA}\"|" "${NEWBUGRE}"
                 sed -i "s|^MASTER_EXTRA=.*|MASTER_EXTRA=\"${MASTER_EXTRA}\"|" "${NEWBUGRE}"
-                sed -i "s|^SLAVE_EXTRA=.*|SLAVE_EXTRA=\"${MASTER_EXTRA}\"|" "${NEWBUGRE}"
+                sed -i "s|^SLAVE_EXTRA=.*|SLAVE_EXTRA=\"${SLAVE_EXTRA}\"|" "${NEWBUGRE}"
                 chmod +x "${NEWBUGRE}"
                 echoit "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"
                 NEWBUGSO=

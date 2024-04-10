@@ -1448,10 +1448,11 @@ pquery_test() {
       echo "${MYSAFE} ${MYEXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA.left # When changing this, also search for/edit other '\.left' and '\.right' occurences in this file
       echo "${MYSAFE} ${MYEXTRA2}" > ${RUNDIR}/${TRIAL}/MYEXTRA.right
     else
-      if [ "${REPLICATION}" -ne 1 ]; then
-        echo "${MYSAFE} ${MYEXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA
-      else
-        echo "${MYSAFE} ${MYEXTRA} ${REPL_EXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA
+      echo "${MYSAFE} ${MYEXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA
+      if [ "${REPLICATION}" -eq 1 ]; then
+        if [ ! -z "${REPL_EXTRA}" ]; then
+          echo "${REPL_EXTRA}" > ${RUNDIR}/${TRIAL}/REPL_EXTRA
+        fi
         if [ ! -z "${MASTER_EXTRA}" ]; then
           echo "${MASTER_EXTRA}" > ${RUNDIR}/${TRIAL}/MASTER_EXTRA
         fi
