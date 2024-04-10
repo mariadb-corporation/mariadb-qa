@@ -128,35 +128,35 @@ bisect_bad(){
 # Git setup
 git bisect reset 2>&1 | grep -v 'We are not bisecting' | tee -a "${MAINLOG}"  # Remove any previous bisect run data
 git reset --hard | tee -a "${MAINLOG}"  # Revert tree to mainline
-if [ "${?}" -ne 0 ]; then
+if [ "${?}" != "0" ]; then
   echo "Assert: git reset --hard failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   exit 1
 fi
 git clean -xfd | tee -a "${MAINLOG}"    # Cleanup tree
-if [ "${?}" -ne 0 ]; then
+if [ "${?}" != "0" ]; then
   echo "Assert: git clean -xfd failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   exit 1
 fi
 git checkout --force --recurse-submodules "${VERSION}" | tee -a "${MAINLOG}"  # Ensure we have the right version
-if [ "${?}" -ne 0 ]; then
+if [ "${?}" != "0" ]; then
   echo "Assert: git checkout --force --recurse-submodules '${VERSION}' failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   exit 1
 fi
 if [ "${UPDATETREE}" -eq 1 ]; then
   git pull --recurse-submodules | tee -a "${MAINLOG}"  # Ensure we have the latest version
-  if [ "${?}" -ne 0 ]; then
+  if [ "${?}" != "0" ]; then
     echo "Assert: git pull --recurse-submodules failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
     exit 1
   fi
 fi
 git bisect start | tee -a "${MAINLOG}"  # Start bisect run
-if [ "${?}" -ne 0 ]; then
+if [ "${?}" != "0" ]; then
   echo "Assert: git bisect start failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   exit 1
 fi
 if [ "${BISECT_REPLAY}" -eq 1 ]; then
   git bisect replay "${BISECT_REPLAY_LOG}" | tee -a "${MAINLOG}"
-  if [ "${?}" -ne 0 ]; then 
+  if [ "${?}" != "0" ]; then
     echo "git bisect replay \"${BISECT_REPLAY_LOG}\" failed. Terminating for manual debugging." | tee -a "${MAINLOG}"
     exit 1
   else
@@ -164,12 +164,12 @@ if [ "${BISECT_REPLAY}" -eq 1 ]; then
   fi
 else
   git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, bad
-  if [ "${?}" -ne 0 ]; then 
+  if [ "${?}" != "0" ]; then
     echo "Bad revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
     exit 1
   fi
   git bisect good "${LAST_KNOWN_GOOD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, good
-  if [ "${?}" -ne 0 ]; then 
+  if [ "${?}" != "0" ]; then
     echo "Good revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
     exit 1
   fi

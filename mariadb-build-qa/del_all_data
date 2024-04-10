@@ -7,7 +7,7 @@ elif [ "${PWD}" != "/test" ]; then
   exit 1
 fi
 
-echo "WARNING: This script will delete: */data */data.PREV"
+echo "WARNING: This script will delete: */data */data.PREV (where * are the most common BASEDIR types)"
 read -p "Press enter to continue, or CTRL+C to abort."
 sleep 2
-rm -Rf MD*/data MD*/data.PREV EMD*/data EMD*/data.PREV MS*/data MS*/data.PREV
+rm -Rf MD*/data MD*/data.PREV EMD*/data EMD*/data.PREV MS*/data MS*/data.PREV BASE*/data BASE*/data.PREV PATCH*/data PATCH*/data.PREV bb*/data bb*/data.PREV UBASAN*/data UBASAN*/data.PREV TSAN*/data TSAN*/data.PREV TODO*/data TODO*/data.PREV MDEV*/data MDEV*/data.PREV

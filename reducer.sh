@@ -616,7 +616,7 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
     fi
     # TODO: ~/ds (most likely) or ~/memory seem to be causing this more recently and more frequently: to fix
     trap SIGINT  # Clear the SIGINT trap
-    echo "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
+    echoit "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
     exit 1
   elif [ -r $INPUTFILE ]; then
@@ -2318,10 +2318,17 @@ start_mysqld_or_valgrind_or_mdg(){
     if [ -f $WORKD/log/default.node.tld_thread-0.out ]; then mv -f $WORKD/log/default.node.tld_thread-0.out $WORKD/log/default.node.tld_thread-0.prev; fi  # pquery client output
     if [ -f $WORKD/default.node.tld_thread-0.sql ]; then mv -f $WORKD/default.node.tld_thread-0.sql $WORKD/log/default.node.tld_thread-0.prevsql; fi
     # Start
+    FAILURE_RETURN_CODE=
     if [ $MODE -ne 1 -a $MODE -ne 6 ]; then
       start_mysqld_main
+      if [ "${?}" == "3" ]; then
+        FAILURE_RETURN_CODE=3
+      fi
     else
       start_valgrind_mysqld_main
+      if [ "${?}" == "3" ]; then
+        FAILURE_RETURN_CODE=3
+      fi
     fi
     if [ ${REDUCE_STARTUP_ISSUES} -le 0 ]; then
       ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
@@ -2332,25 +2339,14 @@ start_mysqld_or_valgrind_or_mdg(){
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
           echoit "$ATLEASTONCE [Stage $STAGE] [Note] Assuming this option set is required as the server did not start"  # Do not use 'Failed to start the.*server' text here to avoid that being detected as a subreducer failure (for future use, as subreducers currently do not run STAGE8)
         else
-          # RV 17/2/24: This section got a major change in how it works/rewrite: check for correct operation and remove by mid-year if all fine. Also remove the update made to run_and_check(). The main motivation is that we are seeing too many of the 'Terminating now.'/exit 1 occurences on loaded servers
-          #if [ "${REPLICATION}" -eq 1 ]; then  # With replication, we continue reducing as at times there are m/s startup issues #TODO: research further as to reason, seems to be timing related (timeout was increased from 60 to 90 now)
-          #  return 1  # We return a 1 status which, in combination with REPLICATION=1 will indicate that a m/s startup issue happened. run_and_check() will then just return a '0' based on this indicating that this trial did not reproduce the issue
-          #else
-          #  echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start the mariadbd/mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
-          #  echo "Terminating now."
-          #  exit 1
-          #fi
-          # RV 17/2/24: Rewrite starts here. Instead of 'return 1' for replication, and terminating for non-replication, we now do always 'return 1'
-          if [ "${MASTER_SLAVE_RESTART_FLAG}" -ne 1 ]; then
+          if [ "${FAILURE_RETURN_CODE}" == "3" ]; then  # Replication startup failure
+            # There is no need to show the warning below here, as the code in start_mysqld_main already issues a similar warning when replication startup fail
+            FAILURE_RETURN_CODE=
+            return 3  # Return a replication-specific failure code (3)
+          else
             echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] Failed to start the mariadbd/mysqld server, retrying by restarting the server. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
-            if [ ! -z "${TRIAL}" ]; then
-              if [ "${TRIAL}" -gt 1 ]; then
-                TRIAL=$[ ${TRIAL} - 1 ]  # Repeat the trial
-              fi
-            fi
+            return 1  # Return a general startup failure
           fi 
-          MASTER_SLAVE_RESTART_FLAG=
-          return 1  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 1' will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution to avoid skipping one possible simplification in stages >=2. Should not affect stage 1) TODO
         fi
       else
         # Ref discussion RV/RS 27 Nov 19 via 1:1 (RV;should be covered in SQL,RS;issue seen)
@@ -2731,11 +2727,10 @@ start_mysqld_main(){
       MASTER_STARTUP_OK=0; SLAVE_STARTUP_OK=0
       ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
       if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
-      MASTER_SLAVE_RESTART_FLAG=
-      for((delay=0;delay<90;delay++)); do  # 90 Second max master+slave startup (normally, only ~2 seconds are required, though on very busy servers it can take >60 seconds)
+      for((delay=0;delay<75;delay++)); do  # 75 Second max master+slave startup (normally, only ~2 seconds are required, though on very busy servers it can take >60 seconds)
         sleep 1
-        touch ${WORKD}  # Ensure that watchdog scripts like ~/ds do not think this directory no-longer-in-use
-        touch ${WORKD}/reducer.log
+        touch ${WORKD}  # Ensure that watchdog scripts like ~/ds do not think this directory is no longer in use
+        touch ${WORKD}/reducer.log  # Idem
         if ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then MASTER_STARTUP_OK=1; fi
         if ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/slave_socket.sock ping > /dev/null 2>&1; then SLAVE_STARTUP_OK=1; fi
         if [ "${MASTER_STARTUP_OK}" -eq 1 -a "${SLAVE_STARTUP_OK}" -eq 1 ]; then break; fi
@@ -2743,15 +2738,14 @@ start_mysqld_main(){
       ADMIN_BIN_TO_USE=
       if [ "${MASTER_STARTUP_OK}" -ne 1 -o "${SLAVE_STARTUP_OK}" -ne 1 ]; then
         if [ ! -d "${WORKD}" ]; then abort; fi
-        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1, retrying by restarting both. Possible reasons: overloaded server, OOS. If this message appears a few times (with 2 min delays each time), it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
-        MASTER_SLAVE_RESTART_FLAG=1
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1, retrying by restarting both. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
         PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;
         if [ ! -z "${TRIAL}" ]; then
           if [ "${TRIAL}" -gt 1 ]; then
             TRIAL=$[ ${TRIAL} - 1 ]  # Repeat the trial
           fi
         fi
-        return 1  # The '1' error value is not used, but we need to return here
+        return 3  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 3' special return code will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution) TODO
       fi
       MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
       # Setup replication, master side
@@ -2759,7 +2753,26 @@ start_mysqld_main(){
       ${BASEDIR}/bin/mysql -uroot -S$WORKD/socket.sock -e "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" 2>/dev/null
       # Setup replication, slave side
       ${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=${MYPORT}, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ; START SLAVE;" 2>/dev/null
-      sleep 2  # Replication setup delay
+      IO_AND_SQL_THREADS_RUNNING_COUNT=0
+      for((delay=0;delay<25;delay++)); do  # Give replication up to 25 seconds to come up
+        IO_AND_SQL_THREADS_RUNNING_COUNT="$(${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e 'SHOW SLAVE STATUS\G' | grep -o 'Slave_[SQLIO]\+_Running:.*' | grep ': Yes' | wc -l)"
+        if [ "${IO_AND_SQL_THREADS_RUNNING_COUNT}" == "2" ]; then
+          break
+        fi
+        sleep 1
+      done
+      if [ "${IO_AND_SQL_THREADS_RUNNING_COUNT}" != "2" ]; then
+        EXTRA_SLAVE_DEBUG_OUTPUT="$(${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e 'SHOW SLAVE STATUS\G' | grep -o 'Slave_[SQLIO]\+_Running:.*' | grep ': Yes' | tr '\n' ' ' | sed 's| $||g')"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] The IO and/or SQL threads failed to both start on the slave: ${EXTRA_SLAVE_DEBUG_OUTPUT}, retrying by restarting both. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
+        PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;IO_AND_SQL_THREADS_RUNNING_COUNT=;
+        if [ ! -z "${TRIAL}" ]; then
+          if [ "${TRIAL}" -gt 1 ]; then
+            TRIAL=$[ ${TRIAL} - 1 ]  # Repeat the trial
+          fi
+        fi
+        return 3  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 3' special return code will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution) TODO
+      fi
+      IO_AND_SQL_THREADS_RUNNING_COUNT=
       echoit "[Info] Replication enabled between master and slave in ${WORKD} using port ${MYPORT}"
     else
       init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
@@ -3035,9 +3048,8 @@ cut_threadsync_chunk(){
 
 run_and_check(){
   start_mysqld_or_valgrind_or_mdg
-  # RV 17/2/24: updated: see start_mysqld_or_valgrind_or_mdg() for more info and when this old code can be removed
-  #if [ ${?} -eq 1 -a "${REPLICATION}" -eq 1 ]; then stop_mysqld_or_mdg; return 0; fi  # Special provision for replication startup failures (REPLICATION=1). The hack is to return 0 here, indicating that no reduction was succesful, see start_mysqld_or_valgrind_or_mdg for more info
-  if [ ${?} -eq 1 ]; then stop_mysqld_or_mdg; return 0; fi  # Provision for various startup failures. The hack is to return 0 here, indicating that no reduction was succesful. TODO: This can be improved. see start_mysqld_or_valgrind_or_mdg for more info
+  if [ ${?} -eq 3 ]; then stop_mysqld_or_mdg; return 0; fi  # Provision for various startup failures. The hack is to return 0 here, indicating that no reduction was succesful
+  if [ ${?} -eq 1 ]; then stop_mysqld_or_mdg; echo 'RETURN CODE WAS 1'; return 0; fi  # Is this correct?
   run_sql_code
   if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then stop_mysqld_or_mdg; fi
   process_outcome
@@ -3085,7 +3097,7 @@ run_sql_code(){
   fi
   #DEBUG
   #read -p "Go! (run_sql_code break)"
-  if   [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [DATA] Loading datafile before SQL threads replay"
     # Note that the two following grep -v solutions still work fine for DROPC removal as this is using the mysql cli which can handle multiple statements on one line and DROPC is NOT being changed into a multi-line statement. Search for 'DROPC' to learn more.
     if [ $TS_DBG_CLI_OUTPUT -eq 0 ]; then
@@ -4408,12 +4420,12 @@ verify(){
       fi
       run_and_check
       if [ "$?" -eq "1" ]; then  # Verify success, exit loop
-        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Success. Issue detected. Saved files."
+        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Success: Issue detected, saved files"
         report_linecounts
         TRIAL_REPEAT_COUNT=0
         break
       else  # Verify fail, 'while' loop continues (and possibly with repeated trials if NR_OF_TRIAL_REPEATS>1)
-        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Failed. Issue not detected."
+        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Failed: Issue not detected"
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"

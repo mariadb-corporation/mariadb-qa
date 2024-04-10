@@ -8,7 +8,7 @@ INPUT_FILE=""
 SUITE_NAME=""
 FAIL_MODE=0
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" != "2" ]; then
   echo "Usage:"
   echo "  bats2junit.sh <input-filename> <suite-name>"
 fi

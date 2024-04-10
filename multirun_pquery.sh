@@ -44,13 +44,15 @@ for (( thread=1; thread<=$1; thread++ )); do
 done
 echo "Done!"
 
+TEMPSQLFILE="$(mktemp | tr -d '\n')"
+
 echo -e "\n===== Verifying server is up & running"
-rm -f /tmp/sel1.sql
-echo 'SELECT 1;' > /tmp/sel1.sql
-CHK_CMD="$4 --database=test --infile=/tmp/sel1.sql --threads=1 --no-shuffle --user=root --socket=$5"
+rm -f ${TEMPSQLFILE}
+echo 'SELECT 1;' > ${TEMPSQLFILE}
+CHK_CMD="$4 --database=test --infile=${TEMPSQLFILE} --threads=1 --no-shuffle --user=root --socket=$5"
 CHK_OUT="$(eval ${CHK_CMD} 2>&1 | grep 'Exit status' | tail -n1)"
 ERR_CODE="$(echo "${CHK_OUT}" | sed 's|.*:[ \t]*||')"
-rm -f /tmp/sel1.sql
+rm -f ${TEMPSQLFILE}
 if [ "${ERR_CODE}" != "0" ]; then
   echo "Server not reachable! Check settings. Error: ${CHK_OUT}"
   echo "Terminating!"
@@ -64,7 +66,7 @@ if [ ${REPORT_THREADS} -eq 0 ]; then
   echo 'Running...'
 fi
 for (( ; ; )); do
-  if [ ! -r /tmp/sel1.sql ]; then echo 'SELECT 1;' > /tmp/sel1.sql; fi
+  if [ ! -r ${TEMPSQLFILE} ]; then echo 'SELECT 1;' > ${TEMPSQLFILE}; fi
   # Loop through threads
   for (( thread=1; thread<=$1; thread++ )); do
     # Check if thread is busy
@@ -91,7 +93,7 @@ for (( ; ; )); do
         fi
         RPT_LEFT[$thread]=$[ ${RPT_LEFT[$thread]} - 1 ]
         # Check to see if server is still alive - provided mysqladmin can be found in same location as mysql binary
-        CHK_CMD="$4 --database=test --infile=/tmp/sel1.sql --threads=1 --no-shuffle --user=root --socket=$5"
+        CHK_CMD="$4 --database=test --infile=${TEMPSQLFILE} --threads=1 --no-shuffle --user=root --socket=$5"
         CHK_OUT="eval ${CHK_CMD} 2>&1 | grep 'Exit status' | tail -n1 | sed 's|.*:[ \t]*||"
         if [ "${CHK_OUT}" == "256" ]; then
           echo "Server no longer reachable! Check for crash etc. (Tip: run: ~/tt and/or check ./log/master.err)"

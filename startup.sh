@@ -594,6 +594,10 @@ echo "~/mariadb-qa/multirun_mysqld.sh TEXT \"\${1}\" \"\$(echo \"\${*}\" | sed \
 echo "#!/bin/bash" >kill_multirun
 echo "ps -ef | grep \"\$(whoami)\" | grep -v grep | grep \"\$(echo \"\${PWD}\" | sed 's|[do][bp][g[t]||')\" | grep 'multirun' | awk '{print \$2}' | xargs kill -9 2>/dev/null" >>kill_multirun
 echo "#!/bin/bash" >multirun
+echo "REPLICATION=0       # Set to 1 for replication runs" >>multirun
+echo "RANDOM=0            # Set to 1 for random order SQL runs" >>multirun
+echo "MULTI_THREADED=0    # Set to 1 for using more than 1 thread" >>multirun
+echo "MULTI_THREADS=5000  # When MULTI_THREADED=1, this sets the number of threads used" >>multirun
 echo "if [ ! -r ./in.sql ]; then echo 'Missing ./in.sql - please create it!'; exit 1; fi" >>multirun
 echo "if [ ! -r ./all_no_cl ]; then echo 'Missing ./all_no_cl - perhaps run ~/start or ~/mariadb-qa/startup.sh again?'; exit 1; fi" >>multirun
 echo "if [ \"\$(grep -o 'DROP DATABASE test' ./in.sql)\" == \"\" -o \"\$(grep -o 'CREATE DATABASE test' ./in.sql)\" == \"\" -o \"\$(grep -o 'USE test' ./in.sql)\" == \"\" ]; then" >>multirun
@@ -607,9 +611,18 @@ echo "  echo 'To the top of in.sql to improve issue reproducibility when executi
 echo "  echo 'NOTE: This can be done easily by pressing CTRL+C now and running ./fixin which fix this'" >>multirun
 echo "  read -p 'Press enter to continue, or press CTRL+C to action this now...'" >>multirun
 echo "fi" >>multirun
-echo "./all_no_cl \"\$* --max_connections=10000\"" >>multirun
+echo "if [ \"\${REPLICATION}\" != \"1\" ]; then" >>multirun
+echo "  ./all_no_cl \"\$* --max_connections=10000\"" >>multirun
+echo "else" >>multirun
+echo "  export SRNOCL=1" >>multirun
+echo "  ./start_replication \"\$* --max_connections=10000\"" >>multirun
+echo "fi" >>multirun
 echo "if [ ! -r ~/mariadb-qa/multirun_cli.sh ]; then echo 'Missing ~/mariadb-qa/multirun_cli.sh - did you pull mariadb-qa from GitHub?'; exit 1; fi" >>multirun
-echo "sed -i 's|^RND_REPLAY_ORDER=[0-9]|RND_REPLAY_ORDER=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
+echo "if [ \"\${RANDOM}\" != \"1\" ]; then" >>multirun
+echo "  sed -i 's|^RND_REPLAY_ORDER=[0-9]|RND_REPLAY_ORDER=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
+echo "else" >>multirun
+echo "  sed -i 's|^RND_REPLAY_ORDER=[0-9]|RND_REPLAY_ORDER=1|' ~/mariadb-qa/multirun_cli.sh" >>multirun
+echo "fi" >>multirun
 echo "sed -i 's|^RND_DELAY_FUNCTION=[0-9]|RND_DELAY_FUNCTION=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
 echo "sed -i 's|^REPORT_END_THREAD=[0-9]|REPORT_END_THREAD=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
 echo "sed -i 's|^REPORT_THREADS=[0-9]|REPORT_THREADS=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
@@ -625,28 +638,27 @@ echo "echo ''" >>multirun
 ln -s ./multirun ./m 2>/dev/null
 cp ./multirun ./multirun_pquery
 
+echo "if [ \"\${MULTI_THREADED}\" != \"1\" ]; then" >>multirun
+CLIENT_TO_USE="mysql"
 if [ -r "${PWD}/bin/mariadb" ]; then
-  echo "#~/mariadb-qa/multirun_cli.sh 200 100000 in.sql ${PWD}/bin/mariadb ${SOCKET}" >>multirun
-  echo "~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/mariadb ${SOCKET}" >>multirun
-else
-  echo "#~/mariadb-qa/multirun_cli.sh 200 100000 in.sql ${PWD}/bin/mysql ${SOCKET}" >>multirun
-  echo "~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/mysql ${SOCKET}" >>multirun
+  CLIENT_TO_USE="mariadb"
 fi
-echo "# Note that there are two levels of threading: the number of pquery clients started (as set by $1), and the number of pquery threads initiated/used by each of those pquery clients (as set by $7)." >>multirun_pquery
-echo "" >>multirun_pquery
-echo "## 10 pquery clients, 20 threads each (almost never used)" >>multirun_pquery
-echo "#~/mariadb-qa/multirun_pquery.sh 10 100000 in.sql \${HOME}/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 20" >>multirun_pquery
-echo "" >>multirun_pquery
-echo "## Single pquery client, 220 threads (common)" >>multirun_pquery
-echo "#~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql \${HOME}/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 220" >>multirun_pquery
-echo "" >>multirun_pquery
-echo "## Single pquery client, single thread (most common)" >>multirun_pquery
-echo "~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql \${HOME}/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 1" >>multirun_pquery
+echo "  ~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/${CLIENT_TO_USE} ${SOCKET}" >>multirun
+echo "else" >>multirun
+echo "  ~/mariadb-qa/multirun_cli.sh \${MULTI_THREADS} 100000 in.sql ${PWD}/bin/${CLIENT_TO_USE} ${SOCKET}" >>multirun
+echo "fi" >>multirun
+echo "if [ \"\${MULTI_THREADED}\" != \"1\" ]; then" >>multirun_pquery
+echo "  ~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql \${HOME}/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 1" >>multirun_pquery
+echo "else" >>multirun_pquery
+echo "  ~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql \${HOME}/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} \${MULTI_THREADS}" >>multirun_pquery
+echo "fi" >>multirun_pquery
 
 cp ./multirun ./multirun_rr
 sed -i 's|all_no_cl|all_no_cl_rr|g' ./multirun_rr
+sed -i 's|start_replication|start_replication_rr|g' ./multirun_rr  # TODO: add start_replication_rr script
 cp ./multirun_pquery ./multirun_pquery_rr
 sed -i 's|all_no_cl|all_no_cl_rr|g' ./multirun_pquery_rr
+sed -i 's|start_replication|start_replication_rr|g' ./multirun_pquery_rr  # Idem ^
 
 if [[ $MDG -eq 1 ]]; then
   cp multirun gal_multirun
@@ -921,7 +933,8 @@ sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
 sed -i 's|socket.sock|socket_slave.sock|g' cl_slave
 sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\n#MYEXTRA=\" --no-defaults --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
-sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=aggressive --slave-parallel-max-queued=65536 --slave_transaction_retries=4294967295 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\n#MYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
+# Replaced --slave-parallel-mode=aggressive with --slave-parallel-mode=conservative, ref various discussions and MDEV's discussing [optimistic|aggressive]
+sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|# slave_transaction_retries: see #replication 12 Mar 24 discussion between AE/RV\nMYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=conservative --slave-parallel-max-queued=65536 --slave_transaction_retries=4294967295 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\n#MYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
 # [ERROR] Slave worker thread retried transaction 10 time(s) in vain, giving up. Consider raising the value of the slave_transaction_retries variable.
 # [ERROR] Slave SQL: Deadlock found when trying to get lock; try restarting transaction, Gtid 0-1-416, Internal MariaDB error code: 1213
 # [Warning] Slave: XAER_DUPID: The XID already exists Error_code: 1440
@@ -970,7 +983,7 @@ echo '# MENT-1905/MDEV-31949 lua replication XA testing, also handy for other sy
 echo 'sed -i "s|#ALTER TABLE mysql.gtid_slave_pos|ALTER TABLE mysql.gtid_slave_pos|" master_setup.sql' >>sysbench_lua_1
 echo 'sed -i "s|^MYEXTRA|#MYEXTRA|" start_slave  # Disable the common MYEXTRA' >>sysbench_lua_1
 echo 'sed -i "0,/MYEXTRA=.*slave-parallel-threads/{s|.*\(MYEXTRA=.*slave-parallel-threads.*\)|\1|}" start_slave  # Enable the first slave-parallel-threads MYEXTRA' >>sysbench_lua_1
-echo 'sed -i "s|slave-parallel-threads=[0-9]\+|slave-parallel-threads=3100|" start_slave' >>sysbench_lua_1
+echo 'sed -i "s|slave-parallel-threads=[0-9]\+|slave-parallel-threads=32|" start_slave' >>sysbench_lua_1
 echo 'export SRNOCL=1' >>sysbench_lua_1
 echo './start_replication' >>sysbench_lua_1
 cp sysbench_lua_1 sysbench_lua_2
