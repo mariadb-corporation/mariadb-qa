@@ -174,6 +174,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!check_unique_secondary|SIGABRT|trx_t::bulk_insert_apply_for_table|ha_innobase::external_lock|handler::ha_external_lock|lock_external                                          ## MDEV-33934
+!check_foreigns|SIGABRT|trx_t::bulk_insert_apply_for_table|ha_innobase::external_lock|handler::ha_external_lock|lock_external                                                  ## MDEV-33934
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_commit_trans|THD::commit_whole_transaction_and_close_tables|Event_db_repository::create_event|Events::create_event ## MDEV-33918
 !(thd->rgi_slave && !thd->rgi_slave->worker_error && thd->rgi_slave->did_mark_start_commit)|SIGABRT|ha_rollback_trans|rpl_slave_state::record_gtid|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-33879
 !(thd->rgi_slave && !thd->rgi_slave->worker_error && thd->rgi_slave->did_mark_start_commit) || (thd->transaction->xid_state.is_explicit_XA() || (thd->rgi_slave->gtid_ev_flags2 & Gtid_log_event::FL_PREPARED_XA))|SIGABRT|ha_rollback_trans|rpl_slave_state::record_gtid|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-33879
