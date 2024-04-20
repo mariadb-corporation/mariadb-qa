@@ -2165,6 +2165,7 @@ generate_run_scripts(){
     echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN
     echo "echo \"Executing testcase ./${EPOCH}.sql against mariadbd/mysqld with socket ${EPOCH_SOCKET} using the mysql CLI client...\"" >> $WORK_RUN
     if [ "$CLI_MODE" == "" ]; then CLI_MODE=99; fi  # Leads to assert below
+    if [ ! -d "${WORKD}" ]; then abort; fi
     case $CLI_MODE in
       0) echo "cat ./${EPOCH}.sql | \${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --binary-mode --force test" >> $WORK_RUN ;;
       1) echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --execute=\"SOURCE ./${EPOCH}.sql;\" --force test" >> $WORK_RUN ;;  # TODO When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.
@@ -3205,6 +3206,7 @@ run_sql_code(){
       else
         CLIENT_SOCKET=$WORKD/socket.sock
       fi
+      if [ ! -d "${WORKD}" ]; then abort; fi
       case $CLI_MODE in
         0) cat $WORKT | $BASEDIR/bin/mysql -uroot -S${CLIENT_SOCKET} --binary-mode --force test > $WORKD/log/mysql.out 2>&1 ;;
         1) $BASEDIR/bin/mysql -uroot -S${CLIENT_SOCKET} --execute="SOURCE ${WORKT};" --force test > $WORKD/log/mysql.out 2>&1 ;;  # When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.

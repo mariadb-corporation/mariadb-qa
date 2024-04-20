@@ -1435,6 +1435,7 @@ SIGSEGV|handler::ha_thd|ha_innobase::info_low|ha_partition::info|make_join_stati
 SIGSEGV|I_P_List<TABLE, I_P_List_adapter<TABLE, &TABLE::global_free_next, &TABLE::global_free_prev>, I_P_List_null_counter, I_P_List_fast_push_back<TABLE> >::remove|tc_acquire_table|tdc_acquire_share|open_table ## MDEV-23256
 SIGSEGV|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                                                              ## MDEV-23256
 table_block_data->m_cached_query_count >= 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                  ## MDEV-23256
+table_block_data->m_cached_query_count == 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                  ## MDEV-23256
 table->foreign_set.empty()|SIGABRT|ut_dbg_assertion_failed|dict_table_can_be_evicted|dict_sys_t::evict_table_LRU|srv_master_do_idle_tasks                                      ## MDEV-23256
 SIGSEGV|my_hash_delete|Query_cache::store_query|execute_sqlcom_select|mysql_execute_command                                                                                    ## MDEV-23256
 SIGSEGV|Query_cache::double_linked_list_exclude|Query_cache::unlink_table|Query_cache::free_query_internal|Query_cache::free_query                                             ## MDEV-23256

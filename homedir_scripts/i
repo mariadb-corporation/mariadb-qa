@@ -72,6 +72,15 @@ if [ "${CHARS_MY_INIT}" -gt 1 ]; then
   cat ${1}/MYINIT | sed 's|^|MYINIT            : |'
 fi
 cat ${1}/MYEXTRA | sed 's|\-\-no\-defaults ||;s|^|MYEXTRA           : |'
+if [ -r ${1}/MASTER_EXTRA ]; then
+  cat ${1}/MASTER_EXTRA | sed 's|\-\-no\-defaults ||;s|^|MASTER_EXTRA      : |'
+fi
+if [ -r ${1}/SLAVE_EXTRA ]; then
+  cat ${1}/SLAVE_EXTRA | sed 's|\-\-no\-defaults ||;s|^|SLAVE_EXTRA       : |'
+fi
+if [ -r ${1}/REPL_EXTRA ]; then
+  cat ${1}/REPL_EXTRA | sed 's|\-\-no\-defaults ||;s|^|REPL_EXTRA        : |'
+fi
 
 if [ "${DISPLAY_CORE}" -eq 1 ]; then
   if [[ ${MDG} -eq 1 ]]; then

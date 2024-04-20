@@ -1324,6 +1324,9 @@ pquery_test() {
       sudo chmod -R 777 "${_RR_TRACE_DIR}"
       CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --loose-innodb-flush-method=fsync --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
     fi
+    if [ -r "${HOME}/stack" ]; then
+      ln -s ${HOME}/stack ${RUNDIR}/${TRIAL}/stack  # Handy ./stack shorthand (automatically copied later to WORKDIR if trial is saved)
+    fi
     diskspace
     $CMD >> ${RUNDIR}/${TRIAL}/log/master.err 2>&1 &
     MPID="$!"
