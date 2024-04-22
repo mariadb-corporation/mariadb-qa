@@ -139,6 +139,7 @@ cat "${1}" | tr -d '`' | \
        s|subpartition|SUBPARTITION|gi; \
        s|subpartitions|SUBPARTITIONS|gi; \
        s|by |BY |gi; \
+       s|process|PROCESS|gi; \
        s|list|LIST|gi; \
        s|hash|HASH|gi; \
        s|algorithm|ALGORITHM|gi; \
@@ -477,6 +478,7 @@ cat "${1}" | tr -d '`' | \
        s|mid[ ]*(|MID(|gi; \
        s|row[ ]*(|ROW(|gi; \
        s|uuid[ ]*(|UUID(|gi; \
+       s|_JOIN_|_join_|gi; \
        s|row_format|ROW_FORMAT|gi; \
        s|remote_port|REMOTE_PORT|gi; \
        s|pk_name|PK_NAME|gi; \
@@ -485,6 +487,7 @@ cat "${1}" | tr -d '`' | \
        s|monitoring_kind|MONITORING_KIND|gi; \
        s|spider_ignore_comments|SPIDER_IGNORE_COMMENTS|gi; \
        s|sql_no_cache|SQL_NO_CACHE|gi; \
+       s|information_schema\.PROCESSLIST|information_schema.processlist|gi; \
        s|DELIMITER;|DELIMITER ;|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 

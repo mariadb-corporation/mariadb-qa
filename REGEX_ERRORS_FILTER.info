@@ -47,6 +47,8 @@ Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Connections using 
 Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  MDEV-33359
 Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  MDEV-33359
 Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  MDEV-33359
+Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*secure-auth mode.*password in the old format.*change the password to the new format, Internal MariaDB error code: 1275  MDEV-33956
+Slave I.O: The slave I.O thread stops because a fatal error is encountered.*Error: The SELECT would examine more than MAX_JOIN_SIZE rows.*Internal MariaDB error code: 1104  SPECIAL-27
 Could not execute Delete_rows_v1 event on table.*Error_code: 4094.*HA_ERR_GENERIC.*Internal MariaDB error code: 1442  MDEV-33793
 Could not execute Write_rows_v1 event on table.*Error_code: 1442.*HA_ERR_GENERIC.*Internal MariaDB error code: 1442  MDEV-33793
 Could not execute Write_rows_v1 event on table.*PROCEDURE.*Error_code: 1305.*Error_code: 4094.*HA_ERR_GENERIC.*Internal MariaDB error code: 1305  MDEV-33794

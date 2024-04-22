@@ -1,4 +1,4 @@
-## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Otherwise, just follow the existing formatting.
+## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Follow the existing formatting.
 
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
@@ -11,6 +11,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1054
 MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 or MDEV-33350 or SPECIAL-25
 MARIADB_ERROR_CODE|MariaDB error code: 1064
 MARIADB_ERROR_CODE|MariaDB error code: 1100  ## SPECIAL-11 (ref REGEX_ERRORS_FILTER.info)
+MARIADB_ERROR_CODE|MariaDB error code: 1104  ## SPECIAL-27 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1114  ## MDEV-23212
 MARIADB_ERROR_CODE|MariaDB error code: 1146  ## SPECIAL-10 or MDEV-33376
 MARIADB_ERROR_CODE|MariaDB error code: 1168  ## SPECIAL-12 (ref REGEX_ERRORS_FILTER.info)
@@ -19,6 +20,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1205  ## SPECIAL-17 (ref REGEX_ERRORS_FIL
 MARIADB_ERROR_CODE|MariaDB error code: 1223  ## MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1231
 MARIADB_ERROR_CODE|MariaDB error code: 1237
+MARIADB_ERROR_CODE|MariaDB error code: 1275  ## MDEV-33956
 MARIADB_ERROR_CODE|MariaDB error code: 1290  ## SPECIAL-18 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1305  ## MDEV-33794
 MARIADB_ERROR_CODE|MariaDB error code: 1347  ## SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
@@ -1492,6 +1494,8 @@ m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_interna
 SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|dict_index_node_ptr_max_size                                                                                          ## MDEV-22855
 !field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low|row_ins_sec_index_entry      ## MDEV-22855
 ! thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute                                        ## MDEV-22853
+! thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_instr::reset_lex_and_exec_core|sp_lex_instr::validate_lex_and_execute_core                    ## MDEV-22853
+! thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_lex_keeper::validate_lex_and_exec_core                     ## MDEV-22853
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_commit_trans|trans_commit_implicit                                                              ## MDEV-22848
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_savepoint|ha_savepoint|trans_savepoint|mysql_execute_command                                                                   ## MDEV-22848
 SIGSEGV|set_field_to_null_with_conversions|Item::save_in_field|Item_result_field::save_in_result_field|copy_sum_funcs                                                          ## MDEV-22814
