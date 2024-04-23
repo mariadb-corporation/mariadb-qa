@@ -437,6 +437,13 @@ fi
 echo "echo '---------- START ----------' >> ./log/master.err" >insert_start_marker
 echo "echo '---------- STOP  ----------' >> ./log/master.err" >insert_stop_marker
 touch in.sql
+if [ -d ./mysql-test ]; then
+  echo '#Loop MTR on main/test.test till it fails' >>mysql-test/loop_mtr
+  echo "while true; do ./mtr test 2>&1 | grep 'fail '; done" >>mysql-test/loop_mtr
+elif [ -d ./mariadb-test ]; then
+  echo '#Loop MTR on main/test.test till it fails' >>mariadb-test/loop_mtr
+  echo "while true; do ./mtr test 2>&1 | grep 'fail '; done" >>mariadb-test/loop_mtr
+fi
 echo 'MYEXTRA_OPT="$*"' >start
 echo 'MYEXTRA=" --no-defaults --max_connections=10000 "' >>start
 echo '#MYEXTRA=" --no-defaults --ssl=0 "' >>start
@@ -942,9 +949,9 @@ sed -i 's|socket.sock|socket_slave.sock|g' start_slave
 sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
 sed -i 's|socket.sock|socket_slave.sock|g' cl_slave
-sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\n#MYEXTRA=\" --no-defaults --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
+sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\nMYEXTRA=\" --no-defaults --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
 # Replaced --slave-parallel-mode=aggressive with --slave-parallel-mode=conservative, ref various discussions and MDEV's discussing [optimistic|aggressive]
-sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|# slave_transaction_retries: see #replication 12 Mar 24 discussion between AE/RV\nMYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=conservative --slave-parallel-max-queued=65536 --slave_transaction_retries=4294967295 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\n#MYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
+sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|# slave_transaction_retries: see #replication 12 Mar 24 discussion between AE/RV\n#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=conservative --slave-parallel-max-queued=65536 --slave_transaction_retries=4294967295 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\nMYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
 # [ERROR] Slave worker thread retried transaction 10 time(s) in vain, giving up. Consider raising the value of the slave_transaction_retries variable.
 # [ERROR] Slave SQL: Deadlock found when trying to get lock; try restarting transaction, Gtid 0-1-416, Internal MariaDB error code: 1213
 # [Warning] Slave: XAER_DUPID: The XID already exists Error_code: 1440

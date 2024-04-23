@@ -92,12 +92,13 @@ gdb -q ${BIN} ${LATEST_CORE} >/tmp/${RANDF}.gdba 2>&1 << EOF
  quit
 EOF
 
-# Update March/April 24: a system update now renders stacks as 
-#10 0x0000562e73a837b4 in mysql_admin_table (thd=thd@entry=0x152110000d58, 
-#    tables=tables@entry=0x152110016ac0, 
+# Update March/April 24: a system update now renders stacks as
+#10 0x0000562e73a837b4 in mysql_admin_table (thd=thd@entry=0x152110000d58,
+#    tables=tables@entry=0x152110016ac0,
 #    ...
 #    at /test/preview-11.5-preview_dbg/sql/sql_admin.cc:1116
 # The awk below fixes this by moving everything back into single lines
+# Also changed in bug_report.sh
 
 if [ -r /tmp/${RANDF}.gdba ]; then
   echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"

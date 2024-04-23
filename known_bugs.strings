@@ -53,6 +53,7 @@ GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ##
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
 GOT_ERROR|Got error 126|when reading table                     ## MDEV-26492  ## entries to check
 GOT_ERROR|Got error '126 "Index is corrupted"' for './test/t.MAI' ## MDEV-31029
+GOT_ERROR|Got error 140|"Wrong create options" from storage engine InnoDB Error_code: 1030  ## MDEV-33961
 GOT_ERROR|Got error 170|"It is not possible to log this statement" from storage engine InnoDB ## MDEV-32354
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine MEMORY, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (looks duplicate to previous line but it is a different SE)
@@ -176,6 +177,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+bit < map->n_bits|SIGABRT|bitmap_is_set|ha_partition::handle_ordered_index_scan|ha_partition::multi_range_read_next|QUICK_RANGE_SELECT::get_next                               ## MDEV-31878
 !check_unique_secondary|SIGABRT|trx_t::bulk_insert_apply_for_table|ha_innobase::external_lock|handler::ha_external_lock|lock_external                                          ## MDEV-33934
 !check_foreigns|SIGABRT|trx_t::bulk_insert_apply_for_table|ha_innobase::external_lock|handler::ha_external_lock|lock_external                                                  ## MDEV-33934
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_commit_trans|THD::commit_whole_transaction_and_close_tables|Event_db_repository::create_event|Events::create_event ## MDEV-33918

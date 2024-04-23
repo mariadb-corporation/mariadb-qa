@@ -4190,11 +4190,14 @@ verify(){
         report_linecounts
         break
       fi
-      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, now increasing number of threads to $[$MULTI_THREADS+MULTI_THREADS_INCREASE] (maximum is $MULTI_THREADS_MAX)"
       MULTI_THREADS=$[$MULTI_THREADS+MULTI_THREADS_INCREASE]
-      if [ $MULTI_THREADS -gt $MULTI_THREADS_MAX ]; then  # Verify failed. Terminate.
+      if [ ${MULTI_THREADS} -gt ${$MULTI_THREADS_MAX} ]; then  # Verify failed. Terminate.
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, and as the configured maximum number of threads ($MULTI_THREADS_MAX) has been reached, now terminating verification"
         verify_not_found
-      elif [ $MULTI_THREADS -ge 35 ]; then
+      else
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, now increasing number of threads to ${MULTI_THREADS} (maximum is $MULTI_THREADS_MAX)"
+      fi
+      if [ $MULTI_THREADS -ge 35 ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: High load active. You may start seeing messages releated to server overload like:"
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: 'command not found', 'No such file or directory' or 'fork: retry: Resource temporarily unavailable'"
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: These can safely be ignored, reducer is trying to see if the issue can be reproduced at all"
