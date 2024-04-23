@@ -439,10 +439,10 @@ echo "echo '---------- STOP  ----------' >> ./log/master.err" >insert_stop_marke
 touch in.sql
 if [ -d ./mysql-test ]; then
   echo '#Loop MTR on main/test.test till it fails' >>mysql-test/loop_mtr
-  echo "while true; do ./mtr test 2>&1 | grep 'fail '; done" >>mysql-test/loop_mtr
+  echo "LOG=\"\$(mktemp)\"; while true; do ./mtr test 2>&1 >\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>mysql-test/loop_mtr
 elif [ -d ./mariadb-test ]; then
   echo '#Loop MTR on main/test.test till it fails' >>mariadb-test/loop_mtr
-  echo "while true; do ./mtr test 2>&1 | grep 'fail '; done" >>mariadb-test/loop_mtr
+  echo "LOG=\"\$(mktemp)\"; while true; do ./mtr test 2>&1 >\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>mariadb-test/loop_mtr
 fi
 echo 'MYEXTRA_OPT="$*"' >start
 echo 'MYEXTRA=" --no-defaults --max_connections=10000 "' >>start
