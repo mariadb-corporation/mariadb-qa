@@ -177,6 +177,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain|Explain_query::print_explain                                       ## MDEV-33982
+SIGSEGV|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain|Explain_query::print_explain_str                                   ## MDEV-33982
+SIGSEGV|Explain_union::print_explain_regular|Explain_node::print_explain_for_children|Explain_select::print_explain|Explain_query::print_explain_str                           ## MDEV-33982
+SIGSEGV|Explain_union::print_explain_regular|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain                               ## MDEV-33982
+old_rec|SIGABRT|ut_dbg_assertion_failed|btr_pcur_t::restore_position|sel_restore_position_for_mysql|row_search_mvcc                                                            ## MDEV-32648
 !trx->is_bulk_insert()|SIGABRT|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::delete_row|handler::ha_delete_row                                                  ## MDEV-33979
 !m.first->second.is_bulk_insert()|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                           ## MDEV-33970
 bit < map->n_bits|SIGABRT|bitmap_is_set|ha_partition::handle_ordered_index_scan|ha_partition::multi_range_read_next|QUICK_RANGE_SELECT::get_next                               ## MDEV-31878

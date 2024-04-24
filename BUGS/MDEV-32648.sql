@@ -1,0 +1,11 @@
+SET unique_checks=0;
+SET foreign_key_checks=0;
+SET @@pseudo_slave_mode=1;
+CREATE TABLE t (a INT,b CHAR,KEY(a)) engine=InnoDB;
+XA START '1';
+INSERT INTO t VALUES();
+XA END '1';
+XA PREPARE '1';
+HANDLER t OPEN AS t;
+HANDLER t READ NEXT;
+HANDLER t READ NEXT;
