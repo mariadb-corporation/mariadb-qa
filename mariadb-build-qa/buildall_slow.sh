@@ -13,12 +13,12 @@ BUILD_10_8=0
 BUILD_10_9=0
 BUILD_10_10=0
 BUILD_10_11=1
-BUILD_11_0=1
+BUILD_11_0=0
 BUILD_11_1=1
 BUILD_11_2=1
 BUILD_11_3=1
 BUILD_11_4=1
-BUILD_11_5=0
+BUILD_11_5=1
 
 #export ADD_EXTRA_AUTO_OPTIONS=''  # Add additional cmake options, granular per-version settings below
 ADD_EXTRA_AUTO_OPTIONS='-DWITH_PMEM=1'

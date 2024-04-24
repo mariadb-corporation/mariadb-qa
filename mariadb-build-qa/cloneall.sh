@@ -22,7 +22,7 @@ rm -Rf 11.5
 #./clone.sh 10.1 &
 #./clone.sh 10.2 &
 #./clone.sh 10.3 &
-./clone.sh 10.4 & 
+#./clone.sh 10.4 & 
 ./clone.sh 10.5 &
 ./clone.sh 10.6 &
 #./clone.sh 10.7 &
@@ -30,9 +30,9 @@ rm -Rf 11.5
 #./clone.sh 10.9 &
 #./clone.sh 10.10 &
 ./clone.sh 10.11 &
-./clone.sh 11.0 &
+#./clone.sh 11.0 &
 ./clone.sh 11.1 &
 ./clone.sh 11.2 &
 ./clone.sh 11.3 &
 ./clone.sh 11.4 &
-#./clone.sh 11.5 &
+./clone.sh 11.5 &
