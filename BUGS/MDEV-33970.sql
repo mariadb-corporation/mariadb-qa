@@ -1,0 +1,6 @@
+SET autocommit=0;
+SET @@unique_checks=0;
+SET @@foreign_key_checks=0;
+CREATE TABLE t(c1 INT,c2 CHAR) ENGINE=INNODB PARTITION BY KEY(c1) PARTITIONS 2;
+INSERT INTO t VALUES(2,0);
+DELETE FROM t;
