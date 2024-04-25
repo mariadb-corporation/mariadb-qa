@@ -4190,7 +4190,7 @@ verify(){
         report_linecounts
         break
       fi
-      MULTI_THREADS=$[$MULTI_THREADS+MULTI_THREADS_INCREASE]
+      MULTI_THREADS=$[ ${MULTI_THREADS} + ${MULTI_THREADS_INCREASE} ]
       if [ ${MULTI_THREADS} -gt ${$MULTI_THREADS_MAX} ]; then  # Verify failed. Terminate.
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, and as the configured maximum number of threads ($MULTI_THREADS_MAX) has been reached, now terminating verification"
         verify_not_found
