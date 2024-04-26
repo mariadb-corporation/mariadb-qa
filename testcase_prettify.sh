@@ -483,6 +483,7 @@ cat "${1}" | tr -d '`' | \
        s|remote_port|REMOTE_PORT|gi; \
        s|pk_name|PK_NAME|gi; \
        s|remote_server|REMOTE_SERVER|gi; \
+       s|utc_timestamp|UTC_TIMESTAMP|gi; \
        s|remote_table|REMOTE_TABLE|gi; \
        s|monitoring_kind|MONITORING_KIND|gi; \
        s|spider_ignore_comments|SPIDER_IGNORE_COMMENTS|gi; \

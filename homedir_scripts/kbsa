@@ -3,14 +3,21 @@
 # This script is a copy of ~/kbs with $KB modified
 set +H
 
-if [ "$#" -ne 1 ]; then
-  echo "*** ASSERT ***"
-  echo "Remember to pass only a single argument surrounded by double quotes. Single quotes will not work when the searched-for string contains single quotes as well given that Bash will see this as multiple options to the script rather than the actual string to search for. Usage example:"
-  echo "kbsa \"some ' search ' string\""
-  exit 1
-fi
-
 KB=~/mariadb-qa/known_bugs.strings.SAN
+
+if [ "$#" -eq 0 ]; then
+  echo 'Please pass a string to search for in the known *SAN bugs list'
+  exit 1
+elif [ "$#" -ne 1 ]; then
+  if [ "${1}" == "REVERSE" -a "$#" -eq 2 ]; then
+    sleep 0.01  # If two options are provided and first is REVERSE then all input is correct
+  else
+    echo "*** ASSERT ***"
+    echo "Remember to pass only a single argument surrounded by double quotes. Single quotes will not work when the searched-for string contains single quotes as well given that Bash will see this as multiple options to the script rather than the actual string to search for. Usage example:"
+    echo "kbsa \"some'bug'searchstring\""
+    exit 1
+  fi
+fi
 
 if [ "${1}" != "REVERSE" ]; then  # Standard search (show the string if it exists)
   grep --binary-files=text -Fi "${1}" ${KB}

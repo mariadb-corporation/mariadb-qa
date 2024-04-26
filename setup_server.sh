@@ -209,6 +209,7 @@ sudo apt purge libasan4 libasan5 libasan6 gcc-7 gcc-8 gcc-9 gcc-10 gcc c-compile
 sudo apt autoremove
 sudo apt install libasan6 gcc-9 g++-9 gcc g++ build-essential  # logout login  - drop gcc
 sudo apt install libasio-dev check scons libboost-program-options-dev libboost-dev libssl-dev  # For Galera
+sudo apt install libubsan1  # Added here, mostly as a reminder it is required for UBSAN testing; should be installed already
 
 # Packages so far not available on 20.04:
 # yum-utils: removed ftm

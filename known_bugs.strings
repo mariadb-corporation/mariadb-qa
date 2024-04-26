@@ -177,6 +177,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!look_for_rollover || start_scan_slot != slot|SIGABRT|trx_assign_rseg_low|trx_start_low|trx_start_if_not_started_xa_low|create_table_info_t::create_foreign_keys               ## MDEV-33917
+!look_for_rollover || start_scan_slot != slot|SIGABRT|trx_assign_rseg_low|trx_start_low|trx_start_internal_low|dict_stats_fetch_from_ps                                        ## MDEV-33917
 SIGSEGV|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain|Explain_query::print_explain                                       ## MDEV-33982
 SIGSEGV|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain|Explain_query::print_explain_str                                   ## MDEV-33982
 SIGSEGV|Explain_union::print_explain_regular|Explain_node::print_explain_for_children|Explain_select::print_explain|Explain_query::print_explain_str                           ## MDEV-33982
@@ -916,6 +918,8 @@ SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_ne::add_
 SIGSEGV|Bitmap<64u>::merge|add_key_field|Item_equal::add_key_fields|update_ref_and_keys                                                                                        ## MDEV-28509
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## MDEV-28507
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                                                    ## MDEV-28507
+SIGSEGV|__interceptor_strlen.part.0|Lex_cstring_strlen::Lex_cstring_strlen|find_field_in_table_ref|find_field_in_tables                                                        ## MDEV-28506 (on UBASAN builds)
+SIGSEGV|Lex_cstring_strlen::Lex_cstring_strlen|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                             ## MDEV-28506 (on UBASAN builds)
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28506
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|find_order_in_list                                                               ## MDEV-28506
 (*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                           ## MDEV-28506

@@ -412,7 +412,7 @@ if [ ${SAN_MODE} -eq 1 ]; then
       echo '    export UBSAN_OPTIONS=print_stacktrace=1'
     fi
   elif grep -Eiqm1 --binary-files=text 'MemorySanitizer:' ../*SAN*/log/master.err; then  # MSAN
-    echo '    -DWITH_MSAN=ON -DWITH_UBSAN=ON'
+    echo '    -DWITH_MSAN=ON -DWITH_UBSAN=ON  # Note: WITH_MSAN=ON is auto-ignored when not using clang (MDEV-20377)'
     echo 'Set before execution:'
     echo '    export MSAN_OPTIONS=poison_in_dtor=0'
   fi

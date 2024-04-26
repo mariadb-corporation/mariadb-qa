@@ -100,6 +100,10 @@ if [ ${USE_SAN} -eq 1 ]; then
     if [ ${ASAN_OR_MSAN} -eq 0 ]; then
       PREFIX="UBASAN_"
     else
+      if [ "${USE_CLANG}" -eq 0 ]; then
+        echo "Assert: USE_SAN=1, ASAN_OR_MSAN!=1, USE_CLANG=0: MSAN requires clang: -DWITH_MSAN=ON will be silently ignored when the compiler is not clang or it's derivative, ref MDEV-20377 or comment by Marko in MDEV-34002"
+        exit 1
+      fi
       PREFIX="UBMSAN_"
     fi
   fi
