@@ -98,6 +98,7 @@ cat "${1}" | tr -d '`' | \
        s|comment|COMMENT|gi; \
        s|format|FORMAT|gi; \
        s|sformat|SFORMAT|gi; \
+       s|nextval|NEXTVAL|gi; \
        s|next|NEXT|gi; \
        s|md5|MD5|gi; \
        s|locate|LOCATE|gi; \
