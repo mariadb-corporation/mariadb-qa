@@ -36,7 +36,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1610  ## MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 or MDEV-33377
 MARIADB_ERROR_CODE|MariaDB error code: 1698  ## SPECIAL-19 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1792
-MARIADB_ERROR_CODE|MariaDB error code: 1942  ## SPECIAL-23 (mysql.old_gtid_slave_pos removed)
+MARIADB_ERROR_CODE|MariaDB error code: 1942  ## SPECIAL-23 (mysql.old_gtid_slave_pos removed or changed like PK removed)
 MARIADB_ERROR_CODE|MariaDB error code: 1944
 MARIADB_ERROR_CODE|MariaDB error code: 1969
 MARIADB_ERROR_CODE|MariaDB error code: 2003  ## Often seen (Can't connect), for example MDEV-33359
@@ -177,6 +177,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+# SIGSEGV|dict_table_t::is_active_ddl|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                                   ## MDEV-34051 (WIP)
+# table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                                       ## MDEV-34049 (Needs testcase)
 !look_for_rollover || start_scan_slot != slot|SIGABRT|trx_assign_rseg_low|trx_start_low|trx_start_if_not_started_xa_low|create_table_info_t::create_foreign_keys               ## MDEV-33917
 !look_for_rollover || start_scan_slot != slot|SIGABRT|trx_assign_rseg_low|trx_start_low|trx_start_internal_low|dict_stats_fetch_from_ps                                        ## MDEV-33917
 SIGSEGV|Explain_union::print_explain|Explain_node::print_explain_for_children|Explain_select::print_explain|Explain_query::print_explain                                       ## MDEV-33982
@@ -367,6 +369,10 @@ SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock    
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_delete_all_rows|ha_spider::delete_all_rows                                                                           ## MDEV-31996 (idem)
 mutex->__data.__owner == 0|SIGABRT|___pthread_mutex_lock|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                ## MDEV-31996 (idem)
 # is_preparing_xa(thd)|SIGABRT|MYSQL_BIN_LOG::unlog_xa_prepare|ha_prepare|trans_xa_prepare|mysql_execute_command                                                                 ## MDEV-24804
+thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|close_thread_tables_for_query|mysql_execute_command|mysql_parse ## MDEV-32372
+thd->transaction.stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event ## MDEV-32372
+thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event ## MDEV-32372
+thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|__vfwscanf_internal|Backtrace stopped: Cannot access memory at address| ## MDEV-32372
 SIGABRT|close_thread_tables|close_thread_tables_for_query|mysql_execute_command|mysql_parse                                                                                    ## MDEV-32372
 SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event                                                                                  ## MDEV-32372
 other_lock->is_waiting()|SIGABRT|lock_rec_queue_validate|lock_clust_rec_read_check_and_lock|row_ins_set_shared_rec_lock|row_ins_duplicate_error_in_clust                       ## MDEV-32353

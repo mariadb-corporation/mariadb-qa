@@ -1372,7 +1372,8 @@ multi_reducer(){
           fi
           FOUND_VERIFIED=1  # Outer loop terminate setup
           if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
-            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURENCE is active: reducer is pausing as the issue occured. Press 'Enter' to continue..."
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURENCE is active: reducer is pausing as the issue occured. Press 'Enter' twice to continue..."
+            read -p ''
             read -p ''
           fi
           break  # Inner loop terminate
@@ -1466,7 +1467,7 @@ multi_reducer(){
       if [ -s $MULTI_WORKD/VERIFIED ]; then
         ATLEASTONCE="[*]"  # The issue was seen at least once
         if [ "${PAUSE_AFTER_EACH_OCCURENCE}" -eq 1 ]; then
-          echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread $t reproduced the issue. As PAUSE_AFTER_EACH_OCCURENCE is set, pausing for analysis. Directory: ${MULTI_WORKD}"
+          echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread $t reproduced the issue. As PAUSE_AFTER_EACH_OCCURENCE is set, pausing for analysis. Press enter twice to continue. Directory: ${MULTI_WORKD}"
           if [ -r "${TEXT_STRING_LOC}" ]; then  # Attempt to give more information
             cd $MULTI_WORKD
             if [ "${MULTI_WORKD}" != "${PWD}" ]; then
@@ -1482,7 +1483,8 @@ multi_reducer(){
             echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] NEW_TEXT_STRING Output: ${MYBUGFOUND}"
             MYBUGFOUND=
           fi
-          read -p "Press enter to continue."
+          read -p ''
+          read -p ''
         fi
         MULTI_FOUND=$[$MULTI_FOUND+1]
         TXT_OUT="$TXT_OUT #$t"
@@ -4700,7 +4702,7 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
     fi
     while [ $LINECOUNTF -ge $STAGE1_LINES ]; do
       if [ $LINECOUNTF -eq $STAGE1_LINES  ]; then NEXTACTION="& Progress to the next stage"; fi
-      if [ $TRIAL -gt 1 -a "${FIREWORKS}" != "1" ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
+      if [ "${FIREWORKS}" != "1" ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
       if [ "$MULTI_REDUCER" != "1" -a $SPORADIC -eq 1 -a $REDUCE_GLIBC_OR_SS_CRASHES -le 0 ]; then
         # This is the parent/main reducer AND the issue is sporadic (so; need to use multiple threads). Disabled for REDUCE_GLIBC_OR_SS_CRASHES as it is always single-threaded
         if [ "${FIREWORKS}" == "1" ]; then  # FireWorks mode does not use WORKF but INPUTFILE

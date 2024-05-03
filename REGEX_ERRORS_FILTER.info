@@ -61,6 +61,9 @@ Could not execute Write_rows_v1 event on table.*Error_code: 1048.*HA_ERR_FOUND_D
 Could not execute Write_rows_v1 event on table.*Error_code: 1036.*HA_ERR_TABLE_READONLY  MDEV-33579
 BINLOG_BASE64_EVENT.*Could not execute Write_rows_v1 event on table.*HA_ERR_NO_REFERENCED_ROW.*Internal MariaDB error code: 1452  MDEV-33378
 Slave SQL: Error 'Table has no partition for value.*Internal MariaDB error code: 1526  MDEV-33291
+Slave SQL: Commit failed due to failure of an earlier commit on which this one depends, Gtid.*Internal MariaDB error code: 1964  MDEV-34010
+Slave SQL: Error executing row event: 'You can't combine write-locking of system tables with other tables or lock types', Gtid,*Internal MariaDB error code: 1428  MDEV-34011
+Slave: You can't combine write-locking of system tables with other tables or lock types Error_code: 1428  MDEV-34011
 safe_mutex: Found wrong usage of mutex .LOCK_plugin. and .LOCK_thd_kill  MDEV-32477
 safe_mutex: Found wrong usage of mutex .LOCK_thd_data. and .LOCK_plugin  MDEV-32477
 Failed to open log .file .647.. errno 2               MDEV-22921 (ref comment) (can also show 'server_errno=29' at the end of the line, on a slave with RESET MASTER TO 0x7FFFFFFF; CREATE TABLE ... executed on master)

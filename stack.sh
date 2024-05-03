@@ -11,6 +11,23 @@ elif [ -r ../mysqld/mariadbd ]; then BIN='../mysqld/mariadbd';
 elif [ -r ../mysqld/mysqld ]; then BIN='../mysqld/mysqld'; 
 elif [ -r ../bin/mariadbd ]; then BIN='../bin/mariadbd';  # For MTR
 elif [ -r ../bin/mysqld ]; then BIN='../bin/mysqld';  # For MTR
+elif [ -r ../../bin/mariadbd ]; then BIN='../../bin/mariadbd';
+elif [ -r ../../bin/mysqld ]; then BIN='../../bin/mysqld';
+elif [ -r ./log/master.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -r ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
+elif [ -r ./log/slave.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/slave.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -r ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
+elif [ -r ./node1/node1.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -r ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
+elif [ -r ./node2/node2.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node2/node2.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -r ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
+elif [ -r ./node3/node3.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node3/node3.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -r ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
 else echo "Assert: mariadbd nor mysqld found!" exit 1; fi
 
 if [ -r "${SCRIPT_PWD}/source_code_rev.sh" ]; then

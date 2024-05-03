@@ -437,13 +437,20 @@ fi
 echo "echo '---------- START ----------' >> ./log/master.err" >insert_start_marker
 echo "echo '---------- STOP  ----------' >> ./log/master.err" >insert_stop_marker
 touch in.sql
-if [ -d ./mysql-test ]; then
-  echo '#Loop MTR on main/test.test till it fails' >>mysql-test/loop_mtr
-  echo "LOG=\"\$(mktemp)\"; while true; do ./mtr test 2>&1 >\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>mysql-test/loop_mtr
-elif [ -d ./mariadb-test ]; then
-  echo '#Loop MTR on main/test.test till it fails' >>mariadb-test/loop_mtr
-  echo "LOG=\"\$(mktemp)\"; while true; do ./mtr test 2>&1 >\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>mariadb-test/loop_mtr
+MTR_DIR="./mysql-test"
+if [ -d "./mariadb-test" ]; then MTR_DIR="./mariadb-test"; fi
+if [ -d "${MTR_DIR}" ]; then
+  echo '#Loop MTR on main/test.test till it fails' >${MTR_DIR}/loop_mtr
+  echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; ./mtr test 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr
+  chmod +x ${MTR_DIR}/loop_mtr
+  cp ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_multi
+  sed -i 's^ ./mtr test^ MTR_MEM=/dev/shm ./mysql-test-run --parallel=100 --repeat 100 --mem --force --retry=0 --retry-failure=0 test{,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,} ^' ${MTR_DIR}/loop_mtr_multi
+  cp ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_skip_slave_err
+  cp ${MTR_DIR}/loop_mtr_multi ${MTR_DIR}/loop_mtr_multi_skip_slave_err
+  sed -i 's^ ./mtr^ ./mtr --mysqld=--slave_skip_errors=ALL^' ${MTR_DIR}/loop_mtr_skip_slave_err
+  sed -i 's^ ./mysql-test-run^ ./mysql-test-run --mysqld=--slave_skip_errors=ALL^' ${MTR_DIR}/loop_mtr_multi_skip_slave_err
 fi
+MTR_DIR=
 echo 'MYEXTRA_OPT="$*"' >start
 echo 'MYEXTRA=" --no-defaults --max_connections=10000 "' >>start
 echo '#MYEXTRA=" --no-defaults --ssl=0 "' >>start
