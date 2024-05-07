@@ -832,7 +832,7 @@ options_check(){
         if [ "$INPUTFILE" == "" -a "$1" == "" ]; then
           echo 'Error: No input file was given.'
         else
-          echo 'Error: The specified input file did not exist or could not be read.'
+          echo "Error: The specified input file ($INPUTFILE) did not exist or could not be read."
         fi
         echo 'Please specify a single SQL file to reduce.'
         echo 'Example: ./reducer ~/1.sql     --> to process ~/1.sql'

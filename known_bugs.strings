@@ -177,8 +177,27 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
-# SIGSEGV|dict_table_t::is_active_ddl|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                                   ## MDEV-34051 (WIP)
-# table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                                       ## MDEV-34049 (Needs testcase)
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command                   ## MDEV-34078
+heap == __null|SIGABRT|row_purge_reset_trx_id|row_purge_record_func|row_purge|row_purge_step                                                                                   ## MDEV-34078
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|change_master|mysql_execute_command                                        ## MDEV-34064
+SIGSEGV|dict_table_t::is_active_ddl|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                                   ## MDEV-34051
+# table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                                     ## MDEV-34049 (Needs testcase)
+# SIGSEGV|__strcmp_avx2|_ma_test_if_reopen|maria_open|ha_maria::open                                                                                                           ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|my_free|_ma_end_block_record|maria_close|closefrm                                                                                                                    ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|open_table|open_and_process_table|open_tables|open_and_lock_tables                                                                                                   ## MDEV-34075 Shadow stack (check for query_cache use) 
+# SIGSEGV|get_lock_data|mysql_lock_tables|lock_tables|open_and_lock_tables                                                                                                     ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|extra_cb|ha_partition::loop_partitions|ha_partition::extra|close_thread_tables                                                                                       ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGABRT|__libc_message|malloc_printerr|_int_free|__GI___libc_free                                                                                                            ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|strmake_root|Query_arena::strmake_lex_string|Query_arena::strmake_lex_cstring|Query_arena::strmake_lex_cstring                                                       ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|TABLE_SHARE::period_info_t::start_field|period_get_condition|st_select_lex::vers_setup_conds|JOIN::prepare                                                           ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|bitmap_fast_test_and_set|TABLE::mark_column_with_deps|insert_fields|setup_wild                                                                                       ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|ha_partition::register_query_cache_dependant_tables|Query_cache::register_tables_from_list|Query_cache::register_all_tables|Query_cache::store_query                 ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|handler::ha_external_lock|ha_partition::external_lock|handler::ha_external_lock|handler::ha_external_unlock                                                          ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|open_table|open_and_process_table|open_tables|open_and_lock_tables                                                                                                   ## MDEV-34075 Shadow stack (check for query_cache use)
+# SIGSEGV|strmake_root|Query_arena::strmake_lex_string|Query_arena::strmake_lex_cstring|Query_arena::strmake_lex_cstring                                                       ## MDEV-34075 Shadow stack (check for query_cache use)
+# table_block_data->m_cached_query_count == 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                ## MDEV-34075 Shadow stack (check for query_cache use)
+# table_block_data->m_cached_query_count >= 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                ## MDEV-34075 Shadow stack (check for query_cache use)
+# reinterpret_cast<size_t>(ptr) % Alignment == 0|SIGABRT|my_assume_aligned<8, LF_SLIST*>|my_assume_aligned<8, LF_SLIST*>|l_find|l_search                                       ## MDEV-34075 Shadow stack (check for query_cache use)
 ((WSREP_PROVIDER_EXISTS_ && this->variables.wsrep_on) && wsrep_emulate_bin_log) || mysql_bin_log.is_open()|SIGABRT|THD::binlog_write_row|Write_rows_log_event::binlog_row_logging_function|handler::binlog_log_row|handler::ha_write_row ## MDEV-33997
 pause_seqno_.is_undefined() == false|SIGABRT|wsrep::server_state::resume|Global_read_lock::unlock_global_read_lock|fix_read_only|sys_var::update                               ## MDEV-33994
 !look_for_rollover || start_scan_slot != slot|SIGABRT|trx_assign_rseg_low|trx_start_low|trx_start_if_not_started_xa_low|create_table_info_t::create_foreign_keys               ## MDEV-33917
@@ -622,6 +641,7 @@ SIGSEGV|thd_get_thread_id|lock_wait_wsrep|lock_wait|row_mysql_handle_errors     
 SIGSEGV|my_charlen_utf8mb3|my_ismbchar|my_charpos_mb|my_ci_charpos                                                                                                             ## MDEV-30575
 SIGSEGV|my_charlen_utf8|my_ismbchar|my_charpos_mb|hp_rec_hashnr                                                                                                                ## MDEV-30575
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-29289
+0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                                       ## MDEV-29289 (with threadpool load)
 SIGABRT|__cxa_throw|gu::ThrowError::~ThrowError|galera::WriteSetOut::check_size|galera::WriteSetOut::gather                                                                    ## MENT-1725
 state() == s_executing || state() == s_prepared || state() == s_committed || state() == s_aborted || state() == s_must_replay|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse ## MDEV-30550
 precision > 0|SIGABRT|Item_func_div::result_precision|Item_func_div::fix_length_and_dec|Item_func::fix_fields|setup_fields                                                     ## MDEV-23444

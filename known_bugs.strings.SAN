@@ -5,6 +5,18 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/sql_lex.cc|st_select_lex_unit::set_limit|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_real ## MDEV-29411
+ASAN|heap-use-after-free|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_db_open_item_field|spider_db_mbase_util::print_item_func           ## MDEV-34102
+ASAN|heap-use-after-free|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_db_open_item_field|spider_db_print_item_type                       ## MDEV-34102
+ASAN|dynamic-stack-buffer-overflow|strings/decimal.c|bin2decimal|my_decimal::my_decimal|Field_new_decimal::val_str|Field::val_str                                              ## MDEV-23444
+LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_add_block|mem_heap_alloc                                                           ## MDEV-34078
+ASAN|heap-use-after-free|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::store                                                               ## MDEV-34076
+ASAN|heap-use-after-free|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::store_string_aux                                                    ## MDEV-34076
+ASAN|heap-buffer-overflow|sql/sql_cache.cc|Query_cache_block::init|Query_cache::split_block|Query_cache::allocate_block|Query_cache::write_block_data                          ## MDEV-34075
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|sql/threadpool_generic.cc|timer_thread|start_thread|clone3                                            ## MDEV-34063
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_free_result|ha_spider::close|ha_partition::close|alter_close_table                                            ## MDEV-29027
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_free_result|ha_spider::close|handler::ha_close|ha_partition::close                                            ## MDEV-29027
+UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_snippet.cpp|mroonga_snippet_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed ## MDEV-34049
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|alloc_dynamic|insert_dynamic                                                                                 ## MDEV-34005
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|my_realloc|alloc_dynamic                                                                                     ## MDEV-34005
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_dynamic|insert_dynamic                                                                                               ## MDEV-34005
@@ -201,9 +213,9 @@ ASAN|heap-use-after-free|include/c++/current_version/bits/shared_ptr_base.h|std:
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache|Item_cache_wrapper::val_int ## MDEV-30842
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::get_cache_parameters|Item_in_optimizer::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache ## MDEV-30842
 UBSAN|member access within null pointer of type 'struct Field'|sql/item.cc|Item_field::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived|Item_equal::create_pushable_equalities ## MDEV-30841
-UBSAN|member access within null pointer of type 'const struct MY_CHARSET_HANDLER'|strings/ctype.c|my_convert|copy_and_convert|String::copy|Type_handler::partition_field_append_value ## MDEV-30805
 UBSAN|member access within null pointer of type 'struct THD'|sql/item_strfunc.cc|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Item::save_in_field ## MDEV-23294
 ASAN|use-after-poison|sql/sql_string.h|__interceptor_memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                               ## MDEV-30785
+ASAN|use-after-poison|sql/sql_string.h|memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                                             ## MDEV-30785
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-26373
 UBSAN|load of value X, which is not a valid value for type 'enum_yes_no_unknown'|sql/sql_parse.cc                                                                              ## MDEV-30747
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/handler/ha_innodb.cc                                                              ## MDEV-30732
@@ -394,3 +406,4 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                  ## Fixed ## MDEV-30680
 # ASAN|use-after-poison|sql/handler.h|xid_t::eq|xid_t::eq|binlog_rollback_flush_trx_cache|binlog_rollback                                                                      ## Fixed ## MDEV-32347
 # ASAN|use-after-poison|sql/log_event.h|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache|binlog_rollback                                              ## Fixed ## MDEV-32347
+# UBSAN|member access within null pointer of type 'const struct MY_CHARSET_HANDLER'|strings/ctype.c|my_convert|copy_and_convert|String::copy|Type_handler::partition_field_append_value ## Fixed ## MDEV-30805

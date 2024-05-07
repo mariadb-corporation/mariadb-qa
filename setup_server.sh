@@ -35,6 +35,20 @@ colo torte
 syntax on
 EOF
 
+# GDB Script
+touch ~/.gdbinit
+if [ -z "$(cat ~/.gdbinit|grep 'print elements')" ]; then cat << EOF > ~/.gdbinit
+add-auto-load-safe-path /usr/lib/x86_64-linux-gnu/libthread_db.so
+add-auto-load-safe-path /usr/lib/x86_64-linux-gnu/libthread_db.so.1
+set auto-load safe-path /
+set libthread-db-search-path /usr/lib/x86_64-linux-gnu/libthread_db.so
+set debuginfod enabled on
+#set pagination off
+#set print pretty on
+#set print frame-arguments all
+EOF
+fi
+
 # Screen Script
 touch ~/.screenrc
 if [ -z "$(cat ~/.screenrc|grep 'termcapinfo xterm')" ]; then cat << EOF > ~/.screenrc
