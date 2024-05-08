@@ -35,7 +35,7 @@ cd ${DIR}/10.11 && ~/mariadb-qa/build_mdpsms_opt.sh &
 #cd ${DIR}/11.0 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/11.1 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/11.2 && ~/mariadb-qa/build_mdpsms_opt.sh &
-cd ${DIR}/11.3 && ~/mariadb-qa/build_mdpsms_opt.sh &
+#cd ${DIR}/11.3 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/11.4 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt.sh &
 
