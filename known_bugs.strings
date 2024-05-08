@@ -177,6 +177,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!has_done_reservation || *err|SIGABRT|fseg_alloc_free_page_low|fseg_alloc_free_page_general|btr_page_alloc_low|btr_page_alloc                                                  ## MDEV-34118
+! thd->in_sub_stmt|SIGABRT|trans_rollback_stmt|Wsrep_client_service::bf_rollback|wsrep::transaction::after_statement|wsrep::client_state::after_statement                      ## MDEV-34117
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command                   ## MDEV-34078
 heap == __null|SIGABRT|row_purge_reset_trx_id|row_purge_record_func|row_purge|row_purge_step                                                                                   ## MDEV-34078
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|change_master|mysql_execute_command                                        ## MDEV-34064
