@@ -177,6 +177,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                                   ## MDEV-34119
 !has_done_reservation || *err|SIGABRT|fseg_alloc_free_page_low|fseg_alloc_free_page_general|btr_page_alloc_low|btr_page_alloc                                                  ## MDEV-34118
 ! thd->in_sub_stmt|SIGABRT|trans_rollback_stmt|Wsrep_client_service::bf_rollback|wsrep::transaction::after_statement|wsrep::client_state::after_statement                      ## MDEV-34117
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command                   ## MDEV-34078
@@ -358,6 +359,7 @@ SIGSEGV|ha_resolve_storage_engine_name|check_engine|mysql_alter_table|Sql_cmd_al
 SIGSEGV|build_frm_image|mysql_create_frm_image|create_table_impl|mysql_alter_table                                                                                             ## MDEV-32487
 SIGSEGV|ha_resolve_storage_engine_name|add_partition_options|generate_partition_syntax|generate_partition_syntax_for_frm                                                       ## MDEV-32487
 !thd->transaction->xid_state.is_explicit_XA() || thd->lex->xa_opt == XA_ONE_PHASE|SIGABRT|ha_commit_trans|rpl_slave_state::truncate_state_table|rpl_slave_state::load|change_master ## MDEV-33155
+thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_stmt_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|sp_update_stmt_used_routines|Table_triggers_list::add_tables_and_routines_for_triggers|DML_prelocking_strategy::handle_table|extend_table_list ## MDEV-33162
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_sp_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-33162
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_stmt_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-33162
 !srv_read_only_mode|SIGABRT|buf_dblwr_t::flush_buffered_writes|buf_flush_list_space|buf_flush_list_now_set|sys_var_pluginvar::global_update                                    ## MDEV-33156
