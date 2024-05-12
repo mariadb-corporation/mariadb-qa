@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/sql_select.cc|best_access_path|best_extension_by_limited_search|greedy_search|choose_plan               ## MDEV-34130
+UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/sql_select.cc|best_access_path|get_costs_for_tables|best_extension_by_limited_search|greedy_search      ## MDEV-34130
 ASAN|heap-use-after-free|strings/ctype-simple.c|my_strnncollsp_simple|ha_compare_char_varying|_ma_unique_comp|maria_update                                                     ## MDEV-23443
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/sql_lex.cc|st_select_lex_unit::set_limit|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_real ## MDEV-29411
 ASAN|heap-use-after-free|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_db_open_item_field|spider_db_mbase_util::print_item_func           ## MDEV-34102
