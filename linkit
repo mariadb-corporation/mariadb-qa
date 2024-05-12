@@ -147,6 +147,7 @@ alias tt='${HOME}/tt'      # UniqueID + known bugs scan + JIRA URL scan links
 alias sr='${HOME}/sr '     # Start reducer for a given trial (pass trial number)
 alias pg='${HOME}/pg'      # Start pquery-go-expert for current workdir
 alias pge='${HOME}/pge '   # Start pquery-goexp-patch for a given trial (pass trial number)
+alias depge='${HOME}/depge' # Reverse the effect of pquery-goexp-patch for a given trial (pass trial number)
 alias pga='${HOME}/pg_all' # Start new pquery-go-expert runs for all workdirs
 alias pgar='${HOME}/pg_all REGEN' # Not often used. Regenerate all reducer scripts for all workdirs (resource intensive)
 alias s='${HOME}/s '       # Reconnect to given screen (pass start of screen name, or 's{trialnr}'), list screens

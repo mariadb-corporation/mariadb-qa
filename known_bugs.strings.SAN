@@ -231,6 +231,7 @@ UBSAN|store to null pointer of type 'struct Item *'|sql/item_cmpfunc.cc|Item_fun
 UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/sql_select.cc|generate_derived_keys_for_table|generate_derived_keys|sort_and_filter_keyuse|make_join_statistics  ## MDEV-24931
 UBSAN|member access within null pointer of type 'struct Item_subselect'|sql/item.cc|mark_select_range_as_dependent|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed ## MDEV-29262
 UBSAN|member access within null pointer of type 'struct Item_subselect'|sql/item.cc|mark_select_range_as_dependent|find_field_in_tables|find_order_in_list|setup_group         ## MDEV-29262
+UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_in_optimizer::walk  ## MDEV-28502
 UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_args::walk_args ## MDEV-28502
 UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::is_expensive_processor|Item_subselect::walk|Item_in_subselect::walk ## MDEV-28502
 UBSAN|member call on null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::is_expensive|Item_subselect::walk|Item_args::walk_args|Item_func_or_sum::walk ## MDEV-28502
