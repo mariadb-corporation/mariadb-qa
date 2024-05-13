@@ -36,4 +36,8 @@ SELECT * FROM (SELECT * FROM (SELECT 1 AS x) AS x) AS x WHERE x IN (SELECT x IN 
 
 SELECT x IN (SELECT x IN (SELECT (SELECT 1 AS x FROM (SELECT * FROM (SELECT * FROM (SELECT 1 AS x) AS x WHERE x IN (1) GROUP BY x,x HAVING NOT x) AS x WHERE x IN (1)) AS x GROUP BY x IN (SELECT x IN (SELECT x IN (1) AS x)),x HAVING NOT x))) FROM (SELECT 1 AS x) AS x;
 
-SELECT * FROM(SELECT * FROM (SELECT 1 AS x)AS x) AS x WHERE x IN (SELECT x IN ((SELECT x)) GROUP BY 0 IN (1) HAVING NOT x) GROUP BY x,x HAVING NOT x;
+SELECT * FROM (SELECT * FROM (SELECT 1 AS x) AS x) AS x WHERE x IN (SELECT x IN ((SELECT x)) GROUP BY 0 IN (1) HAVING NOT x) GROUP BY x,x HAVING NOT x;
+
+# mysqld options:  --thread_handling=pool-of-threads  # test with and without
+SET @@optimizer_switch='semijoin=off,materialization=on';
+SELECT x FROM (SELECT * FROM (SELECT 1 AS x) AS x) AS x WHERE x IN (SELECT * FROM (SELECT 1) AS x WHERE x IN (SELECT x IN (SELECT 1) AS x)) GROUP BY x HAVING NOT x;
