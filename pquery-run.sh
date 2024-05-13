@@ -273,21 +273,27 @@ init_empty_port(){
 }
 
 # Diskspace OOS check function
-diskspace() {
+diskspace(){
+  DISKSPACE=0
   while :; do
-    if [ ! -d ${RUNDIR} ]; then mkdir -p ${RUNDIR}; fi
+    if [ -z "${RUNDIR}" ]; then DISKSPACE=1; break; fi  # RUNDIR not defined yet, assume disk space is available and test on next call of diskspace()
+    if [ ! -d "${RUNDIR}" ]; then mkdir -p ${RUNDIR}; fi
     echo "Diskspace Test" > ${RUNDIR}/diskspace 2>/dev/null
     if [ $? -eq 0 ]; then
       if [ -r ${RUNDIR}/diskspace ]; then
         if [ "$(grep -o 'Diskspace Test' ${RUNDIR}/diskspace 2>/dev/null | head -n1)" == "Diskspace Test" ]; then
           rm -f ${RUNDIR}/diskspace
-          break  # We have at least got some diskspace available!
+          DISKSPACE=1
+          break  # We have at least some diskspace available!
         fi
       fi
     fi
-    echoit "Likely out of diskspace on ${RUNDIR}... Pausing 10 minutes"
-    sleep 600
-    echoit "Slept 10 minutes, resuming pquery-run.sh run..."
+    if [ "${DISKSPACE}" -eq 0 ]; then
+      echoit "Likely out of diskspace on ${RUNDIR}... Pausing 10 minutes"
+      sleep 600
+      echoit "Slept 10 minutes, resuming pquery-run.sh run..."
+    fi
+    DISKSPACE=0
   done
 }
 
@@ -421,8 +427,8 @@ elif [ "${PRE_SHUFFLE_SQL}" -eq 2 ]; then
 else
   echoit "PRE_SHUFFLE_SQL Active: YES, MODE ${PRE_SHUFFLE_SQL}"
 fi
-if [ ! -z "${PRE_SHUFFLE_ENGINE_SWAP}" ]; then
-  echoit "PRE_SHUFFLE_ENGINE_SWAP Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
+if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
+  echoit "STORAGE_ENGINE_SWAP Active: changing all storage engine references to ${STORAGE_ENGINE_SWAP}"
 fi
 if [ "${PRELOAD}" == "1" ]; then
   echoit "PRELOAD SQL Active: (${PRELOAD_SQL} will be preloaded for all trials, and prepended to trial SQL traces"
@@ -1960,20 +1966,14 @@ pquery_test() {
             # Standard/default (non-GRP-RPL non-Galera non-Query-duration-testing) pquery run
             ## Pre-shuffle (if activated)
             if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
-              ## Check pre-shuffle directory
-              if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-                echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
-                mkdir -p "${PRE_SHUFFLE_SQL}"
-                if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-                  echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is going wrong"
-                  PRE_SHUFFLE_SQL=0
-                fi
-              fi
               PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
-              if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
+              ## Check pre-shuffle directory
+              while [ ! -d "${PRE_SHUFFLE_DIR}" ]; do
                 mkdir -p "${PRE_SHUFFLE_DIR}"
-                echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
-              fi
+                echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check (possible OOS?) the cause"
+                if [ -d "${PRE_SHUFFLE_DIR}" ]; then break; fi
+                sleep 10  # Perhaps OOS?
+              done
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
                 local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
                 INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
@@ -2008,12 +2008,12 @@ pquery_test() {
                   exit 1
                 fi
                 PRE_SHUFFLE_DUR_START=
-                if [ ! -z "${PRE_SHUFFLE_ENGINE_SWAP}" ]; then
-                  PRE_SHUFFLE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
-                  echoit "PRE_SHUFFLE_ENGINE_SWAP Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
-                  sed -i "s|InnoDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Aria|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|BLACKHOLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDBcluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|SEQUENCE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDBCluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CSV|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|TokuDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORY|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|ARCHIVE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CASSANDRA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CONNECT|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|EXAMPLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FALCON|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|HEAP|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|${PRE_SHUFFLE_ENGINE_SWAP}cluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MARIA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MERGE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FEDERATED|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|\$engine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NonExistentEngine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Spider|${PRE_SHUFFLE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
-                  echoit "PRE_SHUFFLE_ENGINE_SWAP: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_ENGINE_SWAP_DUR_START} ] seconds"
-                  PRE_SHUFFLE_ENGINE_SWAP_DUR_START=
+                if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
+                  STORAGE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
+                  echoit "STORAGE_ENGINE_SWAP Active: changing all storage engine references to ${STORAGE_ENGINE_SWAP}"
+                  sed -i "s|InnoDB|${STORAGE_ENGINE_SWAP}|gi;s|Aria|${STORAGE_ENGINE_SWAP}|gi;s|MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|BLACKHOLE|${STORAGE_ENGINE_SWAP}|gi;s|RocksDB|${STORAGE_ENGINE_SWAP}|gi;s|RocksDBcluster|${STORAGE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|SEQUENCE|${STORAGE_ENGINE_SWAP}|gi;s|NDB|${STORAGE_ENGINE_SWAP}|gi;s|NDBCluster|${STORAGE_ENGINE_SWAP}|gi;s|CSV|${STORAGE_ENGINE_SWAP}|gi;s|TokuDB|${STORAGE_ENGINE_SWAP}|gi;s|MEMORY|${STORAGE_ENGINE_SWAP}|gi;s|ARCHIVE|${STORAGE_ENGINE_SWAP}|gi;s|CASSANDRA|${STORAGE_ENGINE_SWAP}|gi;s|CONNECT|${STORAGE_ENGINE_SWAP}|gi;s|EXAMPLE|${STORAGE_ENGINE_SWAP}|gi;s|FALCON|${STORAGE_ENGINE_SWAP}|gi;s|HEAP|${STORAGE_ENGINE_SWAP}|gi;s|${STORAGE_ENGINE_SWAP}cluster|${STORAGE_ENGINE_SWAP}|gi;s|MARIA|${STORAGE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${STORAGE_ENGINE_SWAP}|gi;s|MERGE|${STORAGE_ENGINE_SWAP}|gi;s|FEDERATED|${STORAGE_ENGINE_SWAP}|gi;s|\$engine|${STORAGE_ENGINE_SWAP}|gi;s|NonExistentEngine|${STORAGE_ENGINE_SWAP}|gi;s|Spider|${STORAGE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
+                  echoit "STORAGE_ENGINE_SWAP: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${STORAGE_ENGINE_SWAP_DUR_START} ] seconds"
+                  STORAGE_ENGINE_SWAP_DUR_START=
                 fi
               else
                 echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_FIN_LINES} lines) Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
@@ -2219,12 +2219,12 @@ EOF
               exit 1
             fi
             PRE_SHUFFLE_DUR_START=
-            if [ ! -z "${PRE_SHUFFLE_ENGINE_SWAP}" ]; then
-              PRE_SHUFFLE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
-              echoit "PRE_SHUFFLE_ENGINE_SWAP Active: changing all storage engine references to ${PRE_SHUFFLE_ENGINE_SWAP}"
-              sed -i "s|InnoDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Aria|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|BLACKHOLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|RocksDBcluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|SEQUENCE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NDBCluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CSV|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|TokuDB|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORY|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|ARCHIVE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CASSANDRA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|CONNECT|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|EXAMPLE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FALCON|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|HEAP|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|${PRE_SHUFFLE_ENGINE_SWAP}cluster|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MARIA|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|MERGE|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|FEDERATED|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|\$engine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|NonExistentEngine|${PRE_SHUFFLE_ENGINE_SWAP}|gi;s|Spider|${PRE_SHUFFLE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
-              echoit "PRE_SHUFFLE_ENGINE_SWAP Active: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_ENGINE_SWAP_DUR_START} ] seconds"
-              PRE_SHUFFLE_ENGINE_SWAP_DUR_START=
+            if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
+              STORAGE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
+              echoit "STORAGE_ENGINE_SWAP Active: changing all storage engine references to ${STORAGE_ENGINE_SWAP}"
+              sed -i "s|InnoDB|${STORAGE_ENGINE_SWAP}|gi;s|Aria|${STORAGE_ENGINE_SWAP}|gi;s|MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|BLACKHOLE|${STORAGE_ENGINE_SWAP}|gi;s|RocksDB|${STORAGE_ENGINE_SWAP}|gi;s|RocksDBcluster|${STORAGE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|SEQUENCE|${STORAGE_ENGINE_SWAP}|gi;s|NDB|${STORAGE_ENGINE_SWAP}|gi;s|NDBCluster|${STORAGE_ENGINE_SWAP}|gi;s|CSV|${STORAGE_ENGINE_SWAP}|gi;s|TokuDB|${STORAGE_ENGINE_SWAP}|gi;s|MEMORY|${STORAGE_ENGINE_SWAP}|gi;s|ARCHIVE|${STORAGE_ENGINE_SWAP}|gi;s|CASSANDRA|${STORAGE_ENGINE_SWAP}|gi;s|CONNECT|${STORAGE_ENGINE_SWAP}|gi;s|EXAMPLE|${STORAGE_ENGINE_SWAP}|gi;s|FALCON|${STORAGE_ENGINE_SWAP}|gi;s|HEAP|${STORAGE_ENGINE_SWAP}|gi;s|${STORAGE_ENGINE_SWAP}cluster|${STORAGE_ENGINE_SWAP}|gi;s|MARIA|${STORAGE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${STORAGE_ENGINE_SWAP}|gi;s|MERGE|${STORAGE_ENGINE_SWAP}|gi;s|FEDERATED|${STORAGE_ENGINE_SWAP}|gi;s|\$engine|${STORAGE_ENGINE_SWAP}|gi;s|NonExistentEngine|${STORAGE_ENGINE_SWAP}|gi;s|Spider|${STORAGE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
+              echoit "STORAGE_ENGINE_SWAP Active: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${STORAGE_ENGINE_SWAP_DUR_START} ] seconds"
+              STORAGE_ENGINE_SWAP_DUR_START=
             fi
           else
             echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_FIN_LINES} lines) Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
@@ -2941,8 +2941,10 @@ fi
 # Filter SQL from the main input file
 if [[ ${FILTER_SQL} -eq 1 ]]; then
   if [ "${PRE_SHUFFLE_SQL}" == "0" -o "${PRE_SHUFFLE_SQL}" == "1" ]; then
-     grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | xargs -I{} grep --binary-files=text -ivE {} ${INFILE} > ${WORKDIR}/filtered_infile.sql
-     INFILE=${WORKDIR}/filtered_infile.sql
+    echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
+    grep --binary-files=text -v '^[ \t]*$' ${SCRIPT_PWD}/filter.sql | sed 's/[| \t]*$//g' | paste -s -d '|' | xargs -I{} grep --binary-files=text -ivE {} ${INFILE} > ${WORKDIR}/filtered_infile.sql
+    INFILE=${WORKDIR}/filtered_infile.sql
+    if [ ! -d "${RUNDIR}" ]; then mkdir -p ${RUNDIR}; fi  # In case the filtering took a long time and tmpfs_clean.sh cleaned up the RUNDIR directory already. Note this does not affect the filtered infile (filtered_infile.sql), which is the WORKDIR, not RUNDIR
   fi
 fi
 
@@ -3027,12 +3029,21 @@ if [ ! -r ${INIT_TOOL} ]; then  # TODO: This is a hack, improve it
 fi
 
 if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
-  echoit "Making a copy of the mysqld/mariadbd used to ${RUNDIR} for in-run coredump analysis..."
-  cp ${BIN} ${RUNDIR}
-  echoit "${BIN} ${RUNDIR}"
+  if [ ! -d "${RUNDIR}" ]; then mkdir -p ${RUNDIR}; fi  # In case the filtering took a long time and tmpfs_clean.sh cleaned up the RUNDIR directory already
   echoit "Making a copy of the mysqld/mariadbd used to ${WORKDIR}/mysqld (handy for coredump analysis and manual bundle creation)..."
   mkdir -p ${WORKDIR}/mysqld
-  cp ${BIN} ${WORKDIR}/mysqld
+  cp ${BIN} ${WORKDIR}/mysqld/
+  # Updated 13/5/24: The new BIN link in RUNDIR (rather than BIN copy) saves 300-400Mb per RUNDIR
+  if [[ "${BIN}" == *"mariadbd" ]]; then
+    echoit "Making a link to mariadbd in ${RUNDIR}/mariadbd for in-run coredump analysis..."
+    ln -s ${WORKDIR}/mysqld/mariadbd ${RUNDIR}/mariadbd
+  elif [[ "${BIN}" == *"mysqld" ]]; then
+    echoit "Making a link to mysqld in ${RUNDIR}/mysqld for in-run coredump analysis..."
+    ln -s ${WORKDIR}/mysqld/mysqld ${RUNDIR}/mysqld
+  else  # mysqld-debug etc.
+    echo "Making a copy of ${BIN} in ${RUNDIR} for in-run coredump analysis..."
+    cp ${BIN} ${RUNDIR}
+  fi
   echoit "Making a copy of the ldd files required for mysqld/mariadbd core analysis to ${WORKDIR}/mysqld..."
   PWDTMPSAVE="${PWD}"
   cd ${WORKDIR}/mysqld || exit 1

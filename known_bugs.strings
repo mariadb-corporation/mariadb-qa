@@ -177,6 +177,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+entry|SIGABRT|Active_tranx::assert_thd_is_waiter|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans                                    ## MDEV-34122
 page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                                   ## MDEV-34119
 !has_done_reservation || *err|SIGABRT|fseg_alloc_free_page_low|fseg_alloc_free_page_general|btr_page_alloc_low|btr_page_alloc                                                  ## MDEV-34118
 ! thd->in_sub_stmt|SIGABRT|trans_rollback_stmt|Wsrep_client_service::bf_rollback|wsrep::transaction::after_statement|wsrep::client_state::after_statement                      ## MDEV-34117

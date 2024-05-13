@@ -100,15 +100,7 @@ else
                           break
                         fi
                       done
-                      if [ -z "${SUBDIR}" ]; then  # No subdir, if directory exists, then it is empty
-                        if [ -d ${DIR} ]; then
-                          rm -f ${DIR}/mysqld  # TODO: research why this hack was needed. Is mysqld mistakingly being copied to /dev/shm instead of the workdir on /data ? yet, the mysqld is present in /data/same_nr/mysqld/mysqld. Check pquery-run.sh script for any copying of mysqld
-                          rmdir ${DIR}  # TODO: even with the above, sometimes rmdir cannot remove ${DIR} as it is not empty. Need to check what is still present whenever such message is seen in ~/ds output
-                        else
-                          echo "Assert: script saw directory ${DIR} yet was unable to find any subdir in it, please check the contents of ls -la ${DIR} and improve script in this area."
-                          exit 1
-                        fi
-                      else
+                      if [ ! -z "${SUBDIR}" ]; then  # No subdir, if directory exists, then it is empty
                         AGESUBDIR=$(( $(date +%s) - $(stat -c %Z "${SUBDIR}") ))  # Current trial directory age in seconds
                         if [ ${AGESUBDIR} -ge 10800 ]; then  # Don't delete pquery-run.sh directories if they have recent trials in them (i.e. they are likely still running): >=3hr
                           if [[ "${DIR}" != "/dev/shm/sql_shuffled" && "${DIR}" != "/dev/shm/afl"* ]]; then  # Do not delete the temporary SQL shuffle directory created and used by pquery-run.sh, and do not delete fuzzer directories

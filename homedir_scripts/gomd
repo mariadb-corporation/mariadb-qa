@@ -12,15 +12,15 @@
 #BASEDIR=/test/BASE_TODO-4632_EMD260324-mariadb-10.6.17-12-linux-x86_64-opt
 #BASEDIR=/test/TODO-4632_EMD260324-mariadb-10.6.17-12-linux-x86_64-opt
 #BASEDIR=/test/UBASAN_MD240424-mariadb-11.5.0-linux-x86_64-dbg
-BASEDIR=/test/MD070524-mariadb-10.11.8-linux-x86_64-dbg
+BASEDIR=/test/MD130524-mariadb-10.11.8-linux-x86_64-dbg
 #MD060224-mariadb-11.4.0-linux-x86_64-dbg
 #UBASAN_MD190224-mariadb-11.4.2-linux-x86_64-dbg
 #to complete | TODO#    MDEV33426_MD160224-mariadb-11.4.0-linux-x86_64-dbg
 #MD271223-mariadb-11.4.0-linux-x86_64-opt  # base for MDEV-7850
 #PATCH4_MD281123-mariadb-10.6.17-linux-x86_64-dbg
 #MD311023-mariadb-11.3.0-linux-x86_64-dbg BASE
-RUNSOPT=2
-RUNSDBG=3
+RUNSOPT=4
+RUNSDBG=5
 #CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=1 (usually 2). Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
 #CONF=pquery-run-MD-federated.conf
