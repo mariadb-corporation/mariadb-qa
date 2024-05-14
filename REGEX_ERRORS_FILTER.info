@@ -68,7 +68,6 @@ safe_mutex: Found wrong usage of mutex .LOCK_plugin. and .LOCK_thd_kill  MDEV-32
 safe_mutex: Found wrong usage of mutex .LOCK_thd_data. and .LOCK_plugin  MDEV-32477
 Failed to open log .file .647.. errno 2               MDEV-22921 (ref comment) (can also show 'server_errno=29' at the end of the line, on a slave with RESET MASTER TO 0x7FFFFFFF; CREATE TABLE ... executed on master)
 Error reading packet from server. File .647. not found  MDEV-22921 (ref comment)
-Replication event checksum verification failed while reading from a log file  MDEV-32628
 Internal MariaDB error code: 1064                     Presumed non-issue (init_slave query error), though see MDEV-26247 (1064)
 Internal MariaDB error code: 1100                     Presumed non-issue (BINLOG_BASE64_EVENT, row event exec error, unlock tables when using manual BINLOG commands)  Ref SPECIAL-11
 Internal MariaDB error code: 1114                     MDEV-23212
@@ -128,8 +127,6 @@ Error reading packet from server: The binlog on the master is missing the GTID.*
 Slave I.O: Got fatal.*1236 from master when reading data from binary log.*Error: connecting slave requested to start from GTID.*, which is not in the master.*binlog.*Internal MariaDB error code: 1236  Presumed non-issue, similar to MDEV-33291 / SPECIAL-24
 Slave I.O: Got fatal.*1236 from master when reading data from binary log.*binlog on the master is missing the GTID.*even though both a prior and a subsequent sequence number does exist.*GTID strict mode is enabled.*Internal MariaDB error code: 1236  Ref SPECIAL-24 and MDEV-33291
 .ERROR. Slave I.O: Got fatal error 1236 from master when reading data from binary log: .could not find next log; the first event.*Internal MariaDB error code: 1236  # Caused by RESET MASTER (at times in combination w/ FLUSH LOGS)
-read_log_event..: .Event too big                      MDEV-32628
-read_log_event..: .Event truncated                    MDEV-32628
 max-thread-mem-used=                                  Presumed non-issue (max-thread-mem-used set to low number)
 ^Stats:                                               Prevents incorrect last line 'alloc' captures in ASAN output
 Deleting the meta-data file                           Normal result of FLUSH TABLE WITH READ LOCK, also see MDEV-28110
@@ -155,8 +152,6 @@ Warning: Memory not freed: 32                         MDEV-25876 session_track_s
 Warning: Memory not freed: 80/104/16400/16320/16424   MDEV-29404 PREPARE (not filtered)
 Warning: Memory not freed: 264                        MDEV-30784 log_bin_trust_function_creators
 Warning: Memory not freed: 280                        MDEV-30784 log_bin_trust_function_creators
-Warning: Memory not freed: 280                        MDEV-26186 SET sql_mode='oracle' WHILE
-Warning: Memory not freed: 280                        MDEV-26186 SET sql_mode='oracle' BEGIN
 Warning: Memory not freed: 280                        MDEV-30680 IF(SCALAR(... mangled
 Warning: Memory not freed: 280                        MDEV-27627 FOR..IN..DO
 Warning: Memory not freed: 312                        MDEV-27627 FOR..IN..DO + track_sysvar
@@ -194,8 +189,6 @@ InnoDB: preallocating.*bytes for file.*failed with error 28  Non-issue: out of d
 errno: 28 .No space left on device                    Non-issue: out of disk space
 Operating system error number 36 in a file operation  MDEV-19849 (file name too long)
 Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
-Error on rename.*errno: 150.*Foreign key.*incorrectly formed           MDEV-29092
-ERROR.*InnoDB.*or.*ref.*foreign k.*constr.*not compat.*new table def   MDEV-29092
 ERROR.*InnoDB.*RENAME.*is ref.*foreign.*not compatible.*new table def  MDEV-33284
 ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussion (ref email thread 'Discuss')
 Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
@@ -207,12 +200,8 @@ BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*1062.*HA_ERR.*DUPP_KEY  Presumed 
 BINLOG_BASE64_EVENT.*Could not.*read field.*of table.*1610      MDEV-22936
 BINLOG_BASE64_EVENT.*Could not.*Write_rows_v1.*Got error 171    MDEV-22936
 InnoDB: Cannot reset all values.*while it is on.*off  Presumed non-issue (resetting buffer_LRU_get_free_* while on etc.)
-ERROR. InnoDB: Cannot delete.*Is a directory          MDEV-30453
-Flagged corruption of.*in table.*in CHECK TABLE; Wrong count MDEV-29954
-Got an error from thread_id.*myisam/ha_myisam.cc:1120 MDEV-29954
 unable to load buffer pool                            Presumed non-issue (setting innodb_buffer_pool_filename='' then load)
 Fetch.*stat.*_table_stats.*_index_stats.*not present  Presumed non-issue (mysql tables changed by testcase)
-Warning. InnoDB: Page compression errors: [0-9]       MDEV-30825
  0: len 8; hex [0-9a-f]*; asc infimum ;;              Likely non-issue (Foreign key constraint fails, INNODB MONITOR OUTPUT)
 InnoDB: Cannot rename file                            Presumed non-issue (rename of table to a non-existing db...)
 InnoDB: The error means the system cannot find the path specified  (...for which the path does not exist)
@@ -224,3 +213,14 @@ sql.sql_alloc.h.*Sql_alloc::operator delete.*0x       Part of stack trace caught
 #InnoDB: Resetting invalid page                       MDEV-26121, Fixed
 #lock mutex.*sys_vars_shared.h, line 56               MDEV-27039, Fixed
 #thus rolled back too. Internal MariaDB error code: 0 MDEV-27536, Fixed
+#Warning: Memory not freed: 280                       MDEV-26186 SET sql_mode='oracle' WHILE, Fixed
+#Warning: Memory not freed: 280                       MDEV-26186 SET sql_mode='oracle' BEGIN, Fixed
+#Error on rename.*errno: 150.*Foreign key.*incorrectly formed           MDEV-29092, Fixed
+#ERROR.*InnoDB.*or.*ref.*foreign k.*constr.*not compat.*new table def   MDEV-29092, Fixed
+#Flagged corruption of.*in table.*in CHECK TABLE; Wrong count           MDEV-29954, Fixed
+#Got an error from thread_id.*myisam/ha_myisam.cc:1120                  MDEV-29954, Fixed
+#ERROR. InnoDB: Cannot delete.*Is a directory         MDEV-30453, Fixed
+#Warning. InnoDB: Page compression errors: [0-9]      MDEV-30825, Fixed
+#Replication event checksum verification failed while reading from a log file  MDEV-32628, Fixed
+#read_log_event..: .Event too big                     MDEV-32628, Fixed
+#read_log_event..: .Event truncated                   MDEV-32628, Fixed
