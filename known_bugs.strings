@@ -178,6 +178,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS (Search key: Mac) #####
 entry|SIGABRT|Active_tranx::assert_thd_is_waiter|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans                                    ## MDEV-34122
+strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Type_handler::Item_send_str                            ## MDEV-34143
 strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item_func_conv_charset::Item_func_conv_charset  ## MDEV-34143
 strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Arg_comparator::compare_json_str_basic          ## MDEV-34143
 strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item_char_typecast::val_str_generic             ## MDEV-34143
