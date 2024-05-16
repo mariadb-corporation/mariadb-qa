@@ -238,13 +238,13 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MEMNOTFREED=
-  GOTERROR="$(grep -hio 'mysqld: Got error[^"]\+"[^"]\+"' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
+  GOTERROR="$(grep -hio 'mysqld: Got error[^"]\+"[^"]\+"' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/.*sql-temptable.*MAI|.*sql-temptable.*MAI|' | sed 's|/[dt][ae][ts][at]/.*sql-temptable.*MAI|.*sql-temptable.*MAI|')"
   if [ ! -z "${GOTERROR}" ]; then
     TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
   else
-    GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i')"
+    GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/.*sql-temptable.*MAI|.*sql-temptable.*MAI|' | sed 's|/[dt][ae][ts][at]/.*sql-temptable.*MAI|.*sql-temptable.*MAI|')"
     if [ ! -z "${GOTERROR}" ]; then
       TEXT="GOT_ERROR|${GOTERROR}"
       echo "${TEXT}"
