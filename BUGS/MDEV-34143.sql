@@ -10,3 +10,6 @@ SELECT JSON_EXTRACT(JSON_COMPACT ('{"abc": "foo"}'),'$.abc');
 SET character_set_database=ucs2;
 SET CHARACTER SET cp1251_koi8;
 SELECT JSON_EXTRACT('{ "\\"a\\"": 1}','$."\\"a\\""');
+
+SET NAMES utf8,character_set_connection=utf32;
+SELECT CAST(JSON_EXTRACT('{ "USERName" : "fred" }','$.USERName') AS CHAR)=0;

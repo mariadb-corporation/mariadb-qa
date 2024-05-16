@@ -171,10 +171,12 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|JOIN_CACHE::get_match_flag_by_pos|JOIN_CACHE::skip_if_not_needed_match|JOIN_CACHE_BNL::skip_next_candidate_for_match|JOIN_CACHE::join_matching_records               ## MDEV-23949 (11.3 only)
 (((core_null) + 7) >> 3) == oindex.n_core_null_bytes || !not_redundant()|SIGABRT|dict_table_t::prepare_instant|ha_innobase_inplace_ctx::prepare_instant|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table ## MDEV-34181
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|ha_maria::optimize|handler::ha_optimize|mysql_admin_table                                                     ## MDEV-34164 
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|mysql_alter_table|mysql_recreate_table|admin_recreate_table                                                   ## MDEV-34164
 entry|SIGABRT|Active_tranx::assert_thd_is_waiter|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans                                    ## MDEV-34122
+strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item_char_typecast::val_str_generic                    ## MDEV-34143
 strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Type_handler::Item_send_str                            ## MDEV-34143
 strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item_func_conv_charset::Item_func_conv_charset  ## MDEV-34143
 strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Arg_comparator::compare_json_str_basic          ## MDEV-34143

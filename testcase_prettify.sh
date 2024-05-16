@@ -112,6 +112,7 @@ cat "${1}" | tr -d '`' | \
        s|day|DAY|gi; \
        s|dayname|DAYNAME|gi; \
        s|begin|BEGIN|gi; \
+       s| in | IN |gi;s| in(| IN(|gi; \
        s|end|END|gi; \
        s|end if|END IF|gi; \
        s|ends|ENDS|gi; \
