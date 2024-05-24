@@ -1,6 +1,8 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
+echo 'Remember to run cloneall.sh first!' && sleep 3
+
 # User variables
 BUILD_10_1=0
 BUILD_10_2=0
