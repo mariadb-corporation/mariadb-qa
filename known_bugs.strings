@@ -52,6 +52,7 @@ GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ##
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
 GOT_ERROR|Got error 126|when reading table                     ## MDEV-26492  ## entries to check
 GOT_ERROR|Got error '126 "Index is corrupted"' for './test/t.MAI' ## MDEV-31029
+GOT_ERROR|Got error 134|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 140|"Wrong create options" from storage engine InnoDB Error_code: 1030  ## MDEV-33961
 GOT_ERROR|Got error 170|"It is not possible to log this statement" from storage engine InnoDB ## MDEV-32354
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (May mask other bugs?)
@@ -172,6 +173,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|my_hash_iterate|safe_mutex_free_deadlock_data|safe_mutex_destroy|inline_mysql_mutex_destroy                                                                            ## MDEV-25060
+dict_tf_is_valid(flags)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_sys_tables_type|innobase_page_compression_try|commit_try_norebuild                                          ## MDEV-34222
+!*detailed_error|SIGABRT|trx_t::assert_freed|trx_t::free|trx_free_at_shutdown|rw_trx_hash_t::rw_trx_hash_shutdown_destructor                                                   ## MDEV-34204
+SIGSEGV|ha_show_status|mysql_execute_command|Prepared_statement::execute|Prepared_statement::execute_loop                                                                      ## MDEV-34199
+SIGSEGV|myrocks::rocksdb_show_status|ha_show_status|mysql_execute_command|Prepared_statement::execute                                                                          ## MDEV-34199
 0|SIGABRT|JOIN_CACHE::get_match_flag_by_pos|JOIN_CACHE::skip_if_not_needed_match|JOIN_CACHE_BNL::skip_next_candidate_for_match|JOIN_CACHE::join_matching_records               ## MDEV-23949 (11.3 only)
 SIGSEGV|st_select_lex::update_used_tables|JOIN::optimize_inner|JOIN::optimize|mysql_select                                                                                     ## MDEV-34184
 (((core_null) + 7) >> 3) == oindex.n_core_null_bytes || !not_redundant()|SIGABRT|dict_table_t::prepare_instant|ha_innobase_inplace_ctx::prepare_instant|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table ## MDEV-34181
@@ -1069,6 +1074,8 @@ table_ref->is_natural_join || table_ref->nested_join || (table_ref->join_columns
 table_ref->is_natural_join || table_ref->nested_join || (table_ref->join_columns && ((table_ref->field_translation && table_ref->join_columns->elements == (ulong)(table_ref->field_translation_end - table_ref->field_translation)) || (!table_ref->field_translation && table_ref->join_columns->elements == table_ref->table->s->fields)))|SIGABRT|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|mark_common_columns|store_top_level_join_columns ## MDEV-24935
 state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## MENT-1175
 SIGSEGV|prepare_or_error|ha_commit_trans|trans_commit|mysql_execute_command                                                                                                    ## MENT-1175
+SIGSEGV|my_mb_wc_utf32_quick|my_uca_scanner_next_utf32|my_uca_scanner_next_utf32|my_uca_strnncollsp_onelevel_utf32                                                             ## MDEV-25158
+SIGSEGV|my_mb_wc_utf32_quick|my_uca_scanner_next_utf32|my_uca_strnncollsp_onelevel_utf32|my_uca_strnncollsp_utf32                                                              ## MDEV-25158
 SIGSEGV|my_charlen_utf8mb4|my_ismbchar|my_charpos_mb|my_ci_charpos                                                                                                             ## MDEV-25158
 SIGSEGV|my_strnncollsp_simple|my_ci_strnncollsp|hp_rec_key_cmp|ha_heap::find_unique_row                                                                                        ## MDEV-25158
 SIGSEGV|__memcmp_avx2_movbe|hp_rec_key_cmp|ha_heap::find_unique_row|select_unit_ext::send_data                                                                                 ## MDEV-25158

@@ -483,6 +483,7 @@ cat "${1}" | tr -d '`' | \
        s|uuid[ ]*(|UUID(|gi; \
        s|_JOIN_|_join_|gi; \
        s|row_format|ROW_FORMAT|gi; \
+       s|innodb_default_row_format|INNODB_DEFAULT_ROW_FORMAT|gi; \
        s|remote_port|REMOTE_PORT|gi; \
        s|pk_name|PK_NAME|gi; \
        s|remote_server|REMOTE_SERVER|gi; \

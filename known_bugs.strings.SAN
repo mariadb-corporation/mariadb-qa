@@ -7,6 +7,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ##### CURRENT BUGS (Search key: Mac) #####
 ASAN|heap-buffer-overflow|strings/ctype-simple.c|memset|my_fill_8bit|my_ci_fill|_mi_put_key_in_record                                                                          ## MDEV-25060
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|THD::copy_fix                           ## MDEV-34226
+ASAN|stack-buffer-overflow|strings/strxnmov.c|strxnmov|frm_file_exists|ha_innobase::delete_table|hton_drop_table                                                               ## MDEV-34205
 UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/sql_select.cc|best_access_path|best_extension_by_limited_search|greedy_search|choose_plan               ## MDEV-34130
 UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/sql_select.cc|best_access_path|get_costs_for_tables|best_extension_by_limited_search|greedy_search      ## MDEV-34130
 ASAN|heap-use-after-free|strings/ctype-simple.c|my_strnncollsp_simple|ha_compare_char_varying|_ma_unique_comp|maria_update                                                     ## MDEV-23443
