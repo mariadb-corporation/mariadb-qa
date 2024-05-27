@@ -445,7 +445,8 @@ if [ -d "${MTR_DIR}" ]; then
   echo '  ./mtr --start-and-exit' >>${MTR_DIR}/cl_mtr
   echo 'fi' >>${MTR_DIR}/cl_mtr
   echo '../bin/mariadb -P16000 -h127.0.0.1 -uroot' >>${MTR_DIR}/cl_mtr
-  chmod +x ${MTR_DIR}/cl_mtr
+  sed "3s/^\(.\{9\}\)/\1--mysqld=--innodb --mysqld=--default-storage-engine=Innodb /" ${MTR_DIR}/cl_mtr > ${MTR_DIR}/cl_mtr_innodb
+  chmod +x ${MTR_DIR}/cl_mtr ${MTR_DIR}/cl_mtr_innodb
   echo '#Loop MTR on main/test.test till it fails' >${MTR_DIR}/loop_mtr
   echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; ./mtr test 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr
   chmod +x ${MTR_DIR}/loop_mtr
