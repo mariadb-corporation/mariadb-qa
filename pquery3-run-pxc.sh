@@ -30,7 +30,7 @@ export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs
 #export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 export UBSAN_OPTIONS=print_stacktrace=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
-export MSAN_OPTIONS=poison_in_dtor=0
+export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0
 
 # Read configuration
 if [ "$1" != "" ]; then CONFIGURATION_FILE=$1; fi

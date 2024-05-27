@@ -56,8 +56,10 @@ if [ $USE_CLANG -eq 1 -a $USE_AFL -eq 1 ]; then
 fi
 
 #Check for gcc version, more than 4.9 required
-GCC_VER=$(gcc -dumpversion | cut -d. -f1-2)
-if (( $(echo "$GCC_VER < 4.9" |bc -l) )); then
+GCC_VER=$(gcc -dumpversion 2>/dev/null | cut -d. -f1-2)
+if [ -z "${GCC_VER}" ]; then
+  echo "Warning: the gcc version could not be automatically determined."
+elif (( $(echo "$GCC_VER < 4.9" |bc -l) )); then
   echo "ERR: The gcc version on the machine is $GCC_VER. Minimum gcc version required for build is 4.9. Please upgrade the gcc version."
   exit 1
 fi

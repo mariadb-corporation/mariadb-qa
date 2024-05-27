@@ -50,7 +50,7 @@ add_san_options() {
   #echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1' >> "${1}"
   echo 'export UBSAN_OPTIONS=print_stacktrace=1' >>"${1}"
   echo 'export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1' >>"${1}"
-  echo 'export MSAN_OPTIONS=poison_in_dtor=0' >>"${1}"
+  echo 'export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0' >>"${1}"
 }
 
 # Ubuntu mysqld runtime provisioning
@@ -171,7 +171,7 @@ if [ -r ${HOME}/mariadb-qa/fuzzer/afl ]; then
   ln -s ${HOME}/mariadb-qa/fuzzer/afl ./afl
 fi
 # NEW  (Note that we can clear __AFL_SHM_ID and AFL_MAP_SIZE ocne server is started as it maintains the same when already started)
-echo "export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1; export UBSAN_OPTIONS=print_stacktrace=1; export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1; export MSAN_OPTIONS=poison_in_dtor=0; ./kill >/dev/null 2>&1; rm -f ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
+echo "export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1; export UBSAN_OPTIONS=print_stacktrace=1; export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1; export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0; ./kill >/dev/null 2>&1; rm -f ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
 chmod +x aflnew
 
 #GR startup scripts
@@ -440,6 +440,12 @@ touch in.sql
 MTR_DIR="./mysql-test"
 if [ -d "./mariadb-test" ]; then MTR_DIR="./mariadb-test"; fi
 if [ -d "${MTR_DIR}" ]; then
+  echo 'export UBSAN_OPTIONS=print_stacktrace=1' >${MTR_DIR}/cl_mtr
+  echo 'if [ -z "$(netstat -tuln | grep ':16000')" ]; then' >>${MTR_DIR}/cl_mtr
+  echo '  ./mtr --start-and-exit' >>${MTR_DIR}/cl_mtr
+  echo 'fi' >>${MTR_DIR}/cl_mtr
+  echo '../bin/mariadb -P16000 -h127.0.0.1 -uroot' >>${MTR_DIR}/cl_mtr
+  chmod +x ${MTR_DIR}/cl_mtr
   echo '#Loop MTR on main/test.test till it fails' >${MTR_DIR}/loop_mtr
   echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; ./mtr test 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr
   chmod +x ${MTR_DIR}/loop_mtr
