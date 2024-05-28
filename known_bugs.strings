@@ -172,6 +172,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|st_join_table::save_explain_data|JOIN::save_explain_data_intern|JOIN::save_explain_data|JOIN::build_explain                                                            ## MDEV-30651
 SIGSEGV|my_hash_iterate|safe_mutex_free_deadlock_data|safe_mutex_destroy|inline_mysql_mutex_destroy                                                                            ## MDEV-25060
 dict_tf_is_valid(flags)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_sys_tables_type|innobase_page_compression_try|commit_try_norebuild                                          ## MDEV-34222
 !*detailed_error|SIGABRT|trx_t::assert_freed|trx_t::free|trx_free_at_shutdown|rw_trx_hash_t::rw_trx_hash_shutdown_destructor                                                   ## MDEV-34204

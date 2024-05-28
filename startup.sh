@@ -616,7 +616,7 @@ echo "#!/bin/bash" >kill_multirun
 echo "ps -ef | grep \"\$(whoami)\" | grep -v grep | grep \"\$(echo \"\${PWD}\" | sed 's|[do][bp][g[t]||')\" | grep 'multirun' | awk '{print \$2}' | xargs kill -9 2>/dev/null" >>kill_multirun
 echo "#!/bin/bash" >multirun
 echo "REPLICATION=0       # Set to 1 for replication runs" >>multirun
-echo "RANDOM=0            # Set to 1 for random order SQL runs" >>multirun
+echo "USERANDOM=0         # Set to 1 for random order SQL runs" >>multirun
 echo "MULTI_THREADED=0    # Set to 1 for using more than 1 thread" >>multirun
 echo "MULTI_THREADS=5000  # When MULTI_THREADED=1, this sets the number of threads used" >>multirun
 echo "if [ ! -r ./in.sql ]; then echo 'Missing ./in.sql - please create it!'; exit 1; fi" >>multirun
@@ -639,7 +639,7 @@ echo "  export SRNOCL=1" >>multirun
 echo "  ./start_replication \"\$* --max_connections=10000\"" >>multirun
 echo "fi" >>multirun
 echo "if [ ! -r ~/mariadb-qa/multirun_cli.sh ]; then echo 'Missing ~/mariadb-qa/multirun_cli.sh - did you pull mariadb-qa from GitHub?'; exit 1; fi" >>multirun
-echo "if [ \"\${RANDOM}\" != \"1\" ]; then" >>multirun
+echo "if [ \"\${USERANDOM}\" != \"1\" ]; then" >>multirun
 echo "  sed -i 's|^RND_REPLAY_ORDER=[0-9]|RND_REPLAY_ORDER=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
 echo "else" >>multirun
 echo "  sed -i 's|^RND_REPLAY_ORDER=[0-9]|RND_REPLAY_ORDER=1|' ~/mariadb-qa/multirun_cli.sh" >>multirun
@@ -648,10 +648,10 @@ echo "sed -i 's|^RND_DELAY_FUNCTION=[0-9]|RND_DELAY_FUNCTION=0|' ~/mariadb-qa/mu
 echo "sed -i 's|^REPORT_END_THREAD=[0-9]|REPORT_END_THREAD=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
 echo "sed -i 's|^REPORT_THREADS=[0-9]|REPORT_THREADS=0|' ~/mariadb-qa/multirun_cli.sh" >>multirun
 echo "echo '===== Replay mode/order:'" >>multirun
-echo "echo \"Order: \$(if grep -qi 'RND_REPLAY_ORDER=1' ~/mariadb-qa/multirun_cli.sh; then echo -n 'RANDOM ORDER!'; else echo 'SEQUENTIAL SQL (NON-RANDOM)'; fi)\"" >>multirun
+echo "if [ \"\${USERANDOM}\" != \"1\" ]; then echo 'Order: SEQUENTIAL SQL (NON-RANDOM)'; else echo 'Order: RANDOM ORDER!'; fi" >>multirun
 echo "echo ''" >>multirun
 echo "echo '===== Testcase size:'" >>multirun
-echo "wc -l in.sql | tr -d '\n'; echo \" ($(wc -c in.sql | sed 's| .*||') bytes)\"" >>multirun
+echo "wc -l in.sql | tr -d '\n'; echo \" (\$(wc -c in.sql | sed 's| .*||') bytes)\"" >>multirun
 echo "echo ''" >>multirun
 echo "echo '===== MYEXTRA options:'" >>multirun
 echo "echo \"\$* --max_connections=10000\"" >>multirun
