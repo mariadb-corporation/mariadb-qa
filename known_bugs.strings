@@ -66,6 +66,7 @@ GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being r
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine Spider, Error_code: 1030; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine Aria, Error_code: 1030; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine MyISAM, Error_code: 1030; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936
+GOT_ERROR|Got error 175|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 188|when reading table                     ## Presumed non-issue (Operation was interrupted, max_statement_time)
 GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
 GOT_ERROR|Got error 194|"Tablespace is missing for a table" from storage engine InnoDB ## MDEV-27952 (idem)
