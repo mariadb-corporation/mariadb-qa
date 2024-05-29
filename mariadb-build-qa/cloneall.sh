@@ -18,6 +18,7 @@ rm -Rf 11.2
 rm -Rf 11.3
 rm -Rf 11.4
 rm -Rf 11.5
+rm -Rf 11.6
 
 #./clone.sh 10.1 &
 #./clone.sh 10.2 &
@@ -36,3 +37,4 @@ rm -Rf 11.5
 #./clone.sh 11.3 &
 ./clone.sh 11.4 &
 ./clone.sh 11.5 &
+./clone.sh 11.6 &

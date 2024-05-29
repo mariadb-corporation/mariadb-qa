@@ -1017,7 +1017,8 @@ binlog_table_maps == 0 || locked_tables_mode == LTM_LOCK_TABLES|SIGABRT|THD::res
 thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_detach|slave_applier_reset_xa_trans|trans_xa_prepare|mysql_execute_command                         ## MENT-1234
 flags() == 0|SIGABRT|wsrep::transaction::start_transaction|wsrep::client_state::start_transaction|wsrep_start_transaction|wsrep_bf_abort                                       ## MDEV-25974
 SIGSEGV|__memcmp_avx2_movbe|rpl_sql_thread_info::cached_charset_compare|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                        ## MDEV-25970
-state_ == s_exec|SIGABRT|wsrep::client_state::start_transaction|wsrep_start_transaction|wsrep_bf_abort|wsrep_thd_bf_abort                                                      ## MDEV-25972
+status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|threadpool_remove_connection|tp_callback                                    ## MDEV-25972
+# state_ == s_exec|SIGABRT|wsrep::client_state::start_transaction|wsrep_start_transaction|wsrep_bf_abort|wsrep_thd_bf_abort                                                      ## MDEV-25972 - Temporary disabled: is this a correct ID for MDEV-25972? It is not listed in the bug report. Re-enable if found again for this bug
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|do_handle_one_connection|handle_one_connection                              ## MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|one_thread_per_connection_end|do_handle_one_connection                      ## MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Backtrace stopped: Cannot access memory at address                                              ## MDEV-25927
