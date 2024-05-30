@@ -1,0 +1,11 @@
+#!/bin/bash
+echo 'To check if a given bugfix made it into a given branch, do:'
+echo '  git clone --recurse-submodules -j10 --branch=11.5 https://github.com/MariaDB/server.git 11.5  # or any later branch'
+echo '  cd 11.5'
+echo '  git branch -r --contain commit_id  # where commit_id is the commit hash'
+echo 'The last comand will show the list of branches in which this commit was found, for example:'
+echo '  origin/10.11'
+echo '  origin/10.6'
+echo '  ...etc...'
+echo 'You can an additional grep if the list very long
+exit 0

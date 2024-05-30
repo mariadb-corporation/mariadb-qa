@@ -1,0 +1,3 @@
+#!/bin/bash
+clear
+screen -ls | grep --color=never -o 'ge[0-9]\+' | sed 's|ge||'

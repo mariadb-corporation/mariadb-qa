@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|sql/threadpool_generic.cc|timer_thread|start_thread|clone3                                            ## MDEV-34063 (Fixed, not upmerged yet)
 ASAN|heap-buffer-overflow|strings/ctype-simple.c|memset|my_fill_8bit|my_ci_fill|_mi_put_key_in_record                                                                          ## MDEV-25060
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|THD::copy_fix                           ## MDEV-34226
 ASAN|stack-buffer-overflow|strings/strxnmov.c|strxnmov|frm_file_exists|ha_innobase::delete_table|hton_drop_table                                                               ## MDEV-34205
@@ -415,4 +416,3 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # ASAN|heap-use-after-free|sql/protocol.cc|memcpy|Protocol::net_store_data|Protocol::store_string_aux|Protocol_text::store_str                                                   ## Fixed ## MDEV-34003
 # ASAN|heap-use-after-free|sql/protocol.cc|__interceptor_memcpy|Protocol::net_store_data|Protocol::store_string_aux|Protocol::store                                              ## Fixed ## MDEV-34003
 # ASAN|heap-use-after-free|sql/protocol.cc|__interceptor_memcpy|Protocol::net_store_data|Protocol::store_string_aux|Protocol_text::store_str                                     ## Fixed ## MDEV-34003
-# UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|sql/threadpool_generic.cc|timer_thread|start_thread|clone3                                            ## Fixed ## MDEV-34063
