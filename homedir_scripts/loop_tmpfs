@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ "${STY}" == "" ]; then
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "loop_tmpfs" bash -c "$0;bash"
+  sleep 1
+  screen -d -r "loop_tmpfs"
+  return 2> /dev/null; exit 0
+fi
+
+while true; do ~/mariadb-qa/tmpfs_clean.sh 1; sleep 60; done

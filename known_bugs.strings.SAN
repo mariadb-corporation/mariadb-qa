@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|sql/field_conv.cc|Copy_field::set|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                                    ## MDEV-32398
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|sql/threadpool_generic.cc|timer_thread|start_thread|clone3                                            ## MDEV-34063 (Fixed, not upmerged yet)
 ASAN|heap-buffer-overflow|strings/ctype-simple.c|memset|my_fill_8bit|my_ci_fill|_mi_put_key_in_record                                                                          ## MDEV-25060
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|THD::copy_fix                           ## MDEV-34226

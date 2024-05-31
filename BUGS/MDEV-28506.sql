@@ -41,3 +41,16 @@ SELECT * FROM (SELECT * FROM (SELECT 1 AS x) AS x) AS x WHERE x IN (SELECT x IN 
 # mysqld options:  --thread_handling=pool-of-threads  # test with and without
 SET @@optimizer_switch='semijoin=off,materialization=on';
 SELECT x FROM (SELECT * FROM (SELECT 1 AS x) AS x) AS x WHERE x IN (SELECT * FROM (SELECT 1) AS x WHERE x IN (SELECT x IN (SELECT 1) AS x)) GROUP BY x HAVING NOT x;
+
+# mysqld options required for replay: --log-bin --thread_handling=pool-of-threads --innodb_file_per_table=1 --default-storage-engine=InnoDB
+SELECT * FROM t1  WHERE c2 BETWEEN '1000-00-01 00:00:00' AND '9999-12-31 23:59:59' ORDER BY c2 DESC LIMIT 2;
+SELECT hex(c1),hex(c2) FROM t1  WHERE c1 < '16' ORDER BY c1 LIMIT 2;
+SET SESSION optimizer_switch = 'materialization=off,in_to_exists=on,semijoin=off';
+insert into t1 values (4741,4741,4741,4741);
+SELECT x FROM (SELECT * FROM (SELECT 1 AS x) AS x) AS x WHERE x IN (SELECT * FROM (SELECT 1) AS x WHERE x IN (SELECT x IN (SELECT 1) AS x)) GROUP BY x HAVING NOT x;
+SELECT SLEEP(7);   # Server has gone away, possible CLI LSAN on exit (recheck after bug fix)
+
+# mysqld options required for replay: --thread_handling=pool-of-threads
+SELECT * FROM (SELECT * FROM (SELECT 1 AS x) AS x) AS x WHERE x IN (SELECT x IN ((SELECT x)) GROUP BY 0 IN (1) HAVING NOT x) GROUP BY x,x HAVING NOT x;
+
+SELECT x IN (SELECT x IN (SELECT (SELECT 1 AS x FROM (SELECT * FROM (SELECT * FROM (SELECT 1 AS x) AS x WHERE x IN (1) GROUP BY x,x HAVING NOT x) AS x WHERE x IN (1)) AS x GROUP BY x IN (SELECT x IN (SELECT x IN (1) AS x)),x HAVING NOT x))) FROM (SELECT 1 AS x) AS x;

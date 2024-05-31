@@ -18,6 +18,8 @@ ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occu
 ERROR. InnoDB: Operating sys.*error.* 3 in a file op  MDEV-19849 or similar occurences
 ERROR. InnoDB: .*error means.*system.*not find.*path  MDEV-19849 or similar occurences
 ERROR. InnoDB: Cannot rename.*target schema directory doesn.t exist  CREATE TABLE t (c INT); RENAME TABLE t TO foo.t; (as of ~10.6.18)
+ERROR. InnoDB: Table .mysql...innodb_table_stats. not found  Discussed w/ Marko and debugged, only applicable to 10.5 and non-significant
+ERROR. InnoDB: Table .mysql...innodb_index_stats. not found  Discussed w/ Marko and debugged, only applicable to 10.5 and non-significant
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name

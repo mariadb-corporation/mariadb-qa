@@ -494,6 +494,7 @@ cat "${1}" | tr -d '`' | \
        s|sql_no_cache|SQL_NO_CACHE|gi; \
        s|information_schema\.PROCESSLIST|information_schema.processlist|gi; \
        s|DELIMITER;|DELIMITER ;|gi; \
+       s|test / |test/|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 
 # These seem to be incorrect as they change the server name

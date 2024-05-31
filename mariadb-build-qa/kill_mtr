@@ -1,0 +1,3 @@
+#!/bin/bash
+# Kill all existing MTR sessions (including --start-and-exit sessions)
+ps -ef | grep "$(whoami)" | grep -v grep | grep -E 'mariadbd|mysqld' | grep 'test/var' | awk '{print $2}' | xargs -P30 -I{} kill -9 {}
