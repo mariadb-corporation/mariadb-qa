@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|stack-buffer-overflow|sql/sql_parse.cc|__interceptor_strcpy.part.0|show_create_db|mysql_execute_command|mysql_parse                                                       ## MDEV-32376
+ASAN|stack-buffer-overflow|strings/strmov.c|strmov|show_create_db|mysql_execute_command|mysql_parse                                                                            ## MDEV-32376
 ASAN|use-after-poison|sql/item.h|Used_tables_and_const_cache::used_tables_and_const_cache_join|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed   ## MDEV-29351
 UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item.h|Used_tables_and_const_cache::used_tables_and_const_cache_join|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed ## MDEV-29351
 ASAN|use-after-poison|sql/field_conv.cc|Copy_field::set|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                                    ## MDEV-32398

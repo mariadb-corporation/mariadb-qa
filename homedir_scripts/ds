@@ -24,7 +24,7 @@ update_current_filter_pids(){  # Do not include reducers (reducer123.sh) themsel
   PR_PID_FILTER=;GE_PID_FILTER=;S_PID_FILTER=;NEWBUG_PID_FILTER=
 }
 
-if [ "${STY}" == "" ]; then
+if [ "${STY}" == "" -a -z "${1}" ]; then
   THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
   SCREEN_NAME='ds'
   echo "Not a screen, restarting myself inside a screen"

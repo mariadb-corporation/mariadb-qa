@@ -78,6 +78,7 @@ ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/count_testcases_out /home/${USE
 
 # Git bisect clone script
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
+ln -fs /home/${USER}/mariadb-qa/commit_check.sh /test/git-bisect/commit_check.sh 2>&1
 
 # Build scripts (mostly/mainly used from /test)
 ln -fs /home/${USER}/mariadb-qa/git-bisect.sh /test/git-bisect.sh 2>&1
@@ -88,11 +89,10 @@ rm -f /data/[odut][0-9]  # Remove changedir scripts (like '. ./d7' etc.) normall
 
 # Mass testcase scripts
 ln -fs /home/${USER}/mariadb-qa/testcase-scripts/* /test/TESTCASES/ 2>&1
-ln -fs /home/${USER}/mariadb-qa/newbugs/uniq_newbugs /test/TESTCASES/uniq_newbugs 2>&1
+ln -fs /home/${USER}/mariadb-qa/newbugs/uniq_newbugs_prev /test/TESTCASES/uniq_newbugs 2>&1  # Note small name icosistency
 
 # Newbugs (new bugs found by reducer while reducing) & Fireworks nwebugs & Fuzzing newbugs
 ln -fs /home/${USER}/mariadb-qa/newbugs/* /data/NEWBUGS/ 2>&1
-ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/uniq_newbugs /data/NEWBUGS/uniq_newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /data/NEWBUGS/clean_newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/newbugs/* /home/${USER}/fuzzing/newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /home/${USER}/fuzzing/newbugs/clean_newbugs 2>&1

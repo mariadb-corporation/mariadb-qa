@@ -20,8 +20,8 @@ BASEDIR=/test/UBASAN_MD250524-mariadb-10.5.26-linux-x86_64-opt
 #MD271223-mariadb-11.4.0-linux-x86_64-opt  # base for MDEV-7850
 #PATCH4_MD281123-mariadb-10.6.17-linux-x86_64-dbg
 #MD311023-mariadb-11.3.0-linux-x86_64-dbg BASE
-RUNSOPT=5
-RUNSDBG=5
+RUNSOPT=2
+RUNSDBG=3
 #CONF=pquery-run-MD-spider.conf
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=1 (usually 2). Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
 #CONF=pquery-run-MD-federated.conf

@@ -8,4 +8,18 @@ if [ "${STY}" == "" ]; then
   return 2> /dev/null; exit 0
 fi
 
-while true; do ~/mariadb-qa/tmpfs_clean.sh 1; sleep 60; done
+COUNT=0
+while true; do 
+  ~/mariadb-qa/tmpfs_clean.sh 1
+  if [ ${COUNT} -eq 0 ]; then
+    if [ -r "${HOME}/ds" ]; then
+      timeout --signal=9 90s ${HOME}/ds automated  # Run ds for 90 sec
+    fi
+    if [ -r "${HOME}/memory" ]; then
+      timeout --signal=9 90s ${HOME}/memory  # Run memory for 90 sec
+    fi
+    COUNT=11
+  fi
+  sleep 60
+  COUNT=$[ ${COUNT} -1 ]
+done

@@ -1,6 +1,9 @@
 #!/bin/bash
-# To move them somewhere:
-# mkdir new && ./uniq_newbugs | sed -e 's|:|\t|' | awk '{print $1}' | sed 's|\.string||' | xargs -I{} cp {}.sql {}.string new
-# Or (to place them for processing by ~/mariadb/mass_bug_report.sh):
-# ./uniq_newbugs | sed -e 's|:|\t|' | awk '{print $1}' | sed 's|\.string||' | xargs -I{} cp {}.sql {}.string /test/TESTCASES/
-grep '' *.string 2>/dev/null | sort -k2 -u -t: | sed 's|^|=== |;s|\.string:|.reducer.sh ===\n    |'
+# Shows all unique UniqueID's once, and the first associated reducer for the same. Final output format:
+# t/c length  reducer  UniqueID
+if [ "${1}" == "simple" ]; then  # Simplified output, without t/c length
+  grep '.*' *.string | sed 's|\.string:|\t|' | awk -F '\t' '{print $2"\t"$1}' | sort -k1,1 | awk '!seen[$1]++' | awk -F '\t' '{print $2".reducer.sh\t"$1}'
+else
+  grep '.*' *.string | sed 's|\.string:|\t|' | awk -F '\t' '{print $2"\t"$1}' | sort -k1,1 | awk '!seen[$1]++' | awk -F '\t' '{print $2".reducer.sh\t$(wc -l "$2".sql | sed \"s| .*||\")\t"$1}' | tr '\n' '\0' | xargs -0 -I{} echo "echo \"{}\"" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | awk -F '\t' '{print $2"\t"$1"\t"$3}' | sort -nr | tee uniq_newbugs.txt
+  echo 'Instead of re-generating the list, you can also consult:  vi ./uniq_newbugs.txt  which was [re-]created just now'
+fi
