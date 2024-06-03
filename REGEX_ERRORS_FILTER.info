@@ -18,8 +18,12 @@ ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occu
 ERROR. InnoDB: Operating sys.*error.* 3 in a file op  MDEV-19849 or similar occurences
 ERROR. InnoDB: .*error means.*system.*not find.*path  MDEV-19849 or similar occurences
 ERROR. InnoDB: Cannot rename.*target schema directory doesn.t exist  CREATE TABLE t (c INT); RENAME TABLE t TO foo.t; (as of ~10.6.18)
+ERROR. InnoDB: Column stat_description in table .mysql...innodb_table_stats. is.*but should be.*mismatch  Modified innodb_table_stats table
+ERROR. InnoDB: Column stat_description in table .mysql...innodb_index_stats. is.*but should be.*mismatch  Modified innodb_index_stats table
 ERROR. InnoDB: Table .mysql...innodb_table_stats. not found  Discussed w/ Marko and debugged, only applicable to 10.5 and non-significant
 ERROR. InnoDB: Table .mysql...innodb_index_stats. not found  Discussed w/ Marko and debugged, only applicable to 10.5 and non-significant
+Warning. InnoDB: Table mysql.innodb_index_stats has length mismatch in the column name.*run mysql_upgrade  Modified innodb_index_stats table
+Warning. InnoDB: Table mysql.innodb_table_stats has length mismatch in the column name.*run mysql_upgrade  Modified innodb_table_stats table
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name
@@ -45,11 +49,11 @@ BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-se
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
 Error reading packet from server: The binlog on the master is missing the GTID.*requested by the slave .even though both a prior and a subsequent sequence number does exist.. and GTID strict mode is enabled .server_errno=1236  MDEV-33445
-Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Connections using insecure transport are prohibited while ..require_secure_transport=ON. Internal MariaDB error code: 3159  Ref SPECIAL-22  (require_secure_transport)
-Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  MDEV-33359
-Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  MDEV-33359
-Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  MDEV-33359
-Slave I.O: error reconnecting to master .repl_user@127.0.0.1.*secure-auth mode.*password in the old format.*change the password to the new format, Internal MariaDB error code: 1275  MDEV-33956
+Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Connections using insecure transport are prohibited while ..require_secure_transport=ON. Internal MariaDB error code: 3159  Ref SPECIAL-22  (require_secure_transport)
+Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  MDEV-33359
+Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  MDEV-33359  # error.*connecting: covers error connecting and error reconnecting
+Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  MDEV-33359
+Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*secure-auth mode.*password in the old format.*change the password to the new format, Internal MariaDB error code: 1275  MDEV-33956
 Slave I.O: The slave I.O thread stops because a fatal error is encountered.*Error: The SELECT would examine more than MAX_JOIN_SIZE rows.*Internal MariaDB error code: 1104  SPECIAL-27
 Could not execute Delete_rows_v1 event on table.*Error_code: 4094.*HA_ERR_GENERIC.*Internal MariaDB error code: 1442  MDEV-33793
 Could not execute Write_rows_v1 event on table.*Error_code: 1442.*HA_ERR_GENERIC.*Internal MariaDB error code: 1442  MDEV-33793

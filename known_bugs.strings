@@ -510,6 +510,7 @@ SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|lf_hash_search          
 SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|MDL_map::find_or_insert                                                                                                ## MDEV-30926
 SIGSEGV|lf_hash_destroy|MDL_map::destroy|mdl_destroy|clean_up                                                                                                                  ## MDEV-30926
 SIGSEGV|lf_hash_destroy|clean_up|clean_up|mysqld_main                                                                                                                          ## MDEV-30926
+ASAN|heap-buffer-overflow|include/c++/current_version/bits/shared_ptr_base.h|std::__shared_ptr<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|myrocks::ha_rocksdb::index_first                                              ## MDEV-23956
 SIGSEGV|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_last_intern ## MDEV-23956
 SIGSEGV|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_last_intern|myrocks::ha_rocksdb::index_first       ## MDEV-23956
 SIGSEGV|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator ## MDEV-23956
@@ -658,6 +659,7 @@ SIGSEGV|myrocks::ha_rocksdb::check_keyread_allowed|myrocks::ha_rocksdb::index_fl
 pagecache->block_root[i].status == 0|SIGABRT|check_pagecache_is_cleaned_up|end_pagecache|maria_end|maria_panic                                                                 ## MDEV-29385
 fixed == 1|SIGABRT|Item_func_dayname::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                       ## MDEV-29357
 fixed()|SIGABRT|Item_func_dayname::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                          ## MDEV-29357
+SIGSEGV|__dynamic_cast|__ubsan::checkDynamicType|HandleDynamicTypeCacheMiss|__ubsan::__ubsan_handle_dynamic_type_cache_miss                                                    ## MDEV-29351
 (*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                   ## MDEV-29351
 (*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                     ## MDEV-29351
 (*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                ## MDEV-29351
@@ -2420,3 +2422,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|dict_index_node_ptr_max_size                                                                                ## Fixed ## MDEV-22855
 # !field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## Fixed ## MDEV-22855
 # SIGSEGV|row_create_prebuilt|ha_innobase::open|handler::ha_open|open_table_from_share                                                                                 ## Fixed ## MDEV-23011
+# w == MAYBE_NOP|SIGABRT|trx_undo_write_xid|trx_undo_set_state_at_prepare|trx_prepare_low|trx_prepare                                                                  ## Fixed ## MDEV-32144

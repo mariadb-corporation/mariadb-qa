@@ -92,6 +92,7 @@ ln -fs /home/${USER}/mariadb-qa/newbugs/uniq_newbugs /test/TESTCASES/uniq_newbug
 
 # Newbugs (new bugs found by reducer while reducing) & Fireworks nwebugs & Fuzzing newbugs
 ln -fs /home/${USER}/mariadb-qa/newbugs/* /data/NEWBUGS/ 2>&1
+ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/uniq_newbugs /data/NEWBUGS/uniq_newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /data/NEWBUGS/clean_newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/newbugs/* /home/${USER}/fuzzing/newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /home/${USER}/fuzzing/newbugs/clean_newbugs 2>&1

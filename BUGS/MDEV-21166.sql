@@ -18,3 +18,10 @@ SELECT mroonga_snippet_html('a','','');
 
 CREATE FUNCTION last_insert_grn_id RETURNS INTEGER SONAME 'ha_mroonga.so';
 SELECT last_insert_grn_id();
+
+CREATE FUNCTION mroonga_snippet RETURNS STRING SONAME 'ha_mroonga.so';
+SELECT mroonga_snippet ('',0,0,'',0,0,'','','','','');  # UBSAN, or
+SELECT mroonga_snippet ('',0,0, 0,0,0,'','','','','');  # UBSAN + SIGSEGV
+
+CREATE FUNCTION last_insert_grn_id RETURNS INT SONAME 'ha_mroonga.so';
+SELECT last_insert_grn_id();
