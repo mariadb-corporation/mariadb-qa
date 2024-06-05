@@ -1,6 +1,7 @@
 #!/bin/bash
 
-screen -d -r | grep "\.s[_0-9n]\+" | sed 's|\..*||' | sed 's|[^_0-9]||g' | sort -un > ~/screen_list
+# tac: ensures that the earliest started screens (which are most likely to be finished) are shown first
+screen -d -r | grep "\.s[_0-9n]\+" | sed 's|\..*||' | sed 's|[^_0-9]||g' | tac > ~/screen_list
 
 COUNT=$(wc -l ~/screen_list 2>/dev/null | sed 's| .*||')
 

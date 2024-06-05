@@ -13,7 +13,9 @@
 #BASEDIR=/test/TODO-4632_EMD260324-mariadb-10.6.17-12-linux-x86_64-opt
 #BASEDIR=/test/UBASAN_MD240424-mariadb-11.5.0-linux-x86_64-dbg
 #BASEDIR=/test/UBASAN_MD250524-mariadb-11.5.0-linux-x86_64-opt
-BASEDIR=/test/UBASAN_MD250524-mariadb-10.5.26-linux-x86_64-opt
+#BASEDIR=/test/UBASAN_MD250524-mariadb-10.5.26-linux-x86_64-opt
+#BASEDIR=/test/MDEV-21322_MD050624-mariadb-11.6.0-linux-x86_64-opt
+BASEDIR=/test/MDEV-21322_UBASAN_MD050624-mariadb-11.6.0-linux-x86_64-opt
 #MD060224-mariadb-11.4.0-linux-x86_64-dbg
 #UBASAN_MD190224-mariadb-11.4.2-linux-x86_64-dbg
 #to complete | TODO#    MDEV33426_MD160224-mariadb-11.4.0-linux-x86_64-dbg
