@@ -168,6 +168,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+(buff[7] & 7) == HEAD_PAGE || (buff[7] & 7) == UNALLOCATED_PAGE|SIGABRT|_ma_read_block_record|maria_rrnd|ha_maria::rnd_pos|handler::ha_rnd_pos                                 ## MDEV-34306
+is_valid_ident(*this)|SIGABRT|Lex_ident_fs::streq|get_table_category|wsrep_tables_accessible_when_detached|mysql_execute_command                                               ## MDEV-34281
+SIGABRT|fil_invalid_page_access_msg|fil_space_t::io|fil_space_t::flush_freed|buf_flush_space                                                                                   ## MDEV-34256
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-34344
 !cursor->index->is_committed()|SIGABRT|ut_dbg_assertion_failed|row_ins_sec_index_entry_by_modify|row_ins_sec_index_entry_low|row_ins_sec_index_entry                           ## MDEV-34344
 SIGSEGV|st_join_table::save_explain_data|JOIN::save_explain_data_intern|JOIN::save_explain_data|JOIN::build_explain                                                            ## MDEV-30651
