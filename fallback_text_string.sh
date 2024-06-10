@@ -15,6 +15,8 @@ ERROR_LOG=$1
 if [ "$ERROR_LOG" == "" ]; then
   if [ -f ./log/master.err -a -r ./log/master.err ]; then
     ERROR_LOG=./log/master.err
+  elif [ -f ./var/log/mysqld.1.err ]; then
+    ERROR_LOG=./var/log/mysqld.1.err
   else
     echo "Assert: no error log file name was passed to fallback_text_string.sh" >&2
     exit 1

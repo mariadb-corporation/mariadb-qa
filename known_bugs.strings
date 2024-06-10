@@ -5,6 +5,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1032  ## MDEV-33291 (may mask other bugs)
+MARIADB_ERROR_CODE|MariaDB error code: 1034  ## MDEV-34344 (may mask other bugs)
 MARIADB_ERROR_CODE|MariaDB error code: 1045  ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1046
 MARIADB_ERROR_CODE|MariaDB error code: 1054
@@ -36,8 +37,9 @@ MARIADB_ERROR_CODE|MariaDB error code: 1610  ## MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 or MDEV-33377
 MARIADB_ERROR_CODE|MariaDB error code: 1698  ## SPECIAL-19 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1792
-MARIADB_ERROR_CODE|MariaDB error code: 1942  ## SPECIAL-23 (mysql.old_gtid_slave_pos removed or changed like PK removed)
+MARIADB_ERROR_CODE|MariaDB error code: 1942  ## SPECIAL-23 (mysql.old_gtid_slave_pos removed or changed like PK removed) or MDEV-34346
 MARIADB_ERROR_CODE|MariaDB error code: 1944
+MARIADB_ERROR_CODE|MariaDB error code: 1964  ## MDEV-34346
 MARIADB_ERROR_CODE|MariaDB error code: 1969
 MARIADB_ERROR_CODE|MariaDB error code: 2003  ## Often seen (Can't connect), for example MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 2005
@@ -87,16 +89,9 @@ GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
 GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spider)
 GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or SPECIAL-24 / MDEV-33291, or presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
-# GOT_ERROR|Got error 126|Index is corrupted                     ## Fixed ## MDEV-26258  ## Note: it is possible there are other
-# GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## Fixed ## MDEV-26258
-# GOT_ERROR|Got error 1032|when trying to execute action for entry 1 of type 'rename table'  ## Fixed ## MDEV-29800
-# GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rename table'  ## Fixed ## MDEV-29800
-# GOT_ERROR|Got error 1032|when trying to execute action for entry 3 of type 'rename table'  ## Fixed ## MDEV-29800
-# GOT_ERROR|Got error 1032|when trying to execute action for entry 4 of type 'rename table'  ## Fixed ## MDEV-29800
-# GOT_ERROR|Got error 1032|when trying to execute action for entry 5 of type 'rename table'  ## Fixed ## MDEV-29800
-# GOT_ERROR|Got error 1032|when trying to execute action for entry 6 of type 'rename table'  ## Fixed ## MDEV-29800
-# GOT_ERROR|Got error 1032|when trying to execute action for entry 7 of type 'rename table'  ## Fixed ## MDEV-29800
-# GOT_ERROR|Got error 12524|when trying to execute action for entry 6 of type 'rename table'  ## Fixed ## MDEV-29800
+
+##### Slave errors
+SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (DISABLED GENERIC FILTERS TO AVOID MISSING OTHER BUGS) #####
 ### status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql ## MDEV-25927
@@ -173,6 +168,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-34344
+!cursor->index->is_committed()|SIGABRT|ut_dbg_assertion_failed|row_ins_sec_index_entry_by_modify|row_ins_sec_index_entry_low|row_ins_sec_index_entry                           ## MDEV-34344
 SIGSEGV|st_join_table::save_explain_data|JOIN::save_explain_data_intern|JOIN::save_explain_data|JOIN::build_explain                                                            ## MDEV-30651
 SIGSEGV|my_hash_iterate|safe_mutex_free_deadlock_data|safe_mutex_destroy|inline_mysql_mutex_destroy                                                                            ## MDEV-25060
 dict_tf_is_valid(flags)|SIGABRT|ut_dbg_assertion_failed|dict_tf_to_sys_tables_type|innobase_page_compression_try|commit_try_norebuild                                          ## MDEV-34222
@@ -185,6 +182,9 @@ SIGSEGV|st_select_lex::update_used_tables|JOIN::optimize_inner|JOIN::optimize|my
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|ha_maria::optimize|handler::ha_optimize|mysql_admin_table                                                     ## MDEV-34164 
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|mysql_alter_table|mysql_recreate_table|admin_recreate_table                                                   ## MDEV-34164
 entry|SIGABRT|Active_tranx::assert_thd_is_waiter|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans                                    ## MDEV-34122
+strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item::val_str_from_item                                ## MDEV-34143
+strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Arg_comparator::compare_json_str_basic                 ## MDEV-34143
+strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item::val_json                                         ## MDEV-34143
 strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item_char_typecast::val_str_generic                    ## MDEV-34143
 strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Type_handler::Item_send_str                            ## MDEV-34143
 strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Item_func_conv_charset::Item_func_conv_charset  ## MDEV-34143
@@ -2423,3 +2423,13 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # !field->prefix_len || field->fixed_len == field->prefix_len|SIGABRT|btr_node_ptr_max_size|btr_cur_search_to_nth_level|row_ins_sec_index_entry_low|row_ins_sec_index_entry ## Fixed ## MDEV-22855
 # SIGSEGV|row_create_prebuilt|ha_innobase::open|handler::ha_open|open_table_from_share                                                                                 ## Fixed ## MDEV-23011
 # w == MAYBE_NOP|SIGABRT|trx_undo_write_xid|trx_undo_set_state_at_prepare|trx_prepare_low|trx_prepare                                                                  ## Fixed ## MDEV-32144
+# GOT_ERROR|Got error 126|Index is corrupted                     ## Fixed ## MDEV-26258
+# GOT_ERROR|Got error 192|Table encrypted but decryption failed  ## Fixed ## MDEV-26258
+# GOT_ERROR|Got error 1032|when trying to execute action for entry 1 of type 'rename table'  ## Fixed ## MDEV-29800
+# GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rename table'  ## Fixed ## MDEV-29800
+# GOT_ERROR|Got error 1032|when trying to execute action for entry 3 of type 'rename table'  ## Fixed ## MDEV-29800
+# GOT_ERROR|Got error 1032|when trying to execute action for entry 4 of type 'rename table'  ## Fixed ## MDEV-29800
+# GOT_ERROR|Got error 1032|when trying to execute action for entry 5 of type 'rename table'  ## Fixed ## MDEV-29800
+# GOT_ERROR|Got error 1032|when trying to execute action for entry 6 of type 'rename table'  ## Fixed ## MDEV-29800
+# GOT_ERROR|Got error 1032|when trying to execute action for entry 7 of type 'rename table'  ## Fixed ## MDEV-29800
+# GOT_ERROR|Got error 12524|when trying to execute action for entry 6 of type 'rename table'  ## Fixed ## MDEV-29800

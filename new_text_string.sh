@@ -162,7 +162,12 @@ else
   fi
 fi
 
-if [ -z "${ERROR_LOGS}" ]; then  # TODO: slave error logs not verified yet (mysqld.2.err likely)
+  ERROR_LOGS=$(ls ${LOC}/log/master.err 2>/dev/null)
+  if [ -r ${LOC}/log/slave.err ]; then
+    ERROR_LOGS="${ERROR_LOGS} $(ls ${LOC}/log/slave.err 2>/dev/null)"  # Include slave log in scanning
+  fi
+
+if [ -z "${ERROR_LOGS}" ]; then
   if [ -r "../../mysqld.1.err" ]; then
     ERROR_LOGS="../../mysqld.1.err"
   fi
@@ -184,11 +189,34 @@ if [ -z "${ERROR_LOGS}" ]; then  # TODO: slave error logs not verified yet (mysq
   if [ -r "./var/log/mysqld.1.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
     ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.1.1.err"
   fi
+  if [ -r "../../mysqld.2.err" ]; then
+    ERROR_LOGS="${ERROR_LOGS} ../../mysqld.2.err"
+  fi
+  if [ -r "../../mysqld.2.err" ]; then
+    ERROR_LOGS="${ERROR_LOGS} ../../mysqld.2.err"
+  fi
+  if [ -r "./var/log/mysqld.2.err" ]; then  # For MTR, default ./mtr test runs (e.g. testcase in main/test.test)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.err"
+  fi
+  if [ -r "./var/log/mysqld.2.err" ]; then  # For MTR, default ./mtr test runs (e.g. testcase in main/test.test)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.err"
+  fi
+  if [ -r "./var/log/mysqld.3.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.3.1.err"
+  fi
+  if [ -r "./var/log/mysqld.2.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.1.err"
+  fi
+  if [ -r "./var/log/mysqld.2.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
+    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.1.err"
+  fi
 fi
 
 if [ -z "${ERROR_LOGS}" ]; then
   echo "Assert: no error log(s) found - exiting"
   exit 1
+else
+  ERROR_LOGS="$(echo "${ERROR_LOGS}" | tr ' ' '\n' | sort -u | tr '\n' ' ')"  # Avoid duplicates
 fi
 
 # Disabled when ERROR_LOG was changed to ERROR_LOGS (multi-scanning for issues in all applicable error logs)
@@ -224,13 +252,6 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   GOT_FATAL_ERROR=
-  SLAVE_ERROR="$(grep -hio 'ERROR.*Slave[^:]*:[^0-9]*error [0-9]\+' ${ERROR_LOGS} 2>/dev/null | sed 's|ERROR[] ]*||' | head -n1 | tr -d '\n')"
-  if [ ! -z "${SLAVE_ERROR}" ]; then
-    TEXT="SLAVE_ERROR|${SLAVE_ERROR}"
-    echo "${TEXT}"
-    exit 0
-  fi
-  SLAVE_ERROR=
   MEMNOTFREED="$(grep -hi 'Warning: Memory not freed' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed 's|: [0-9]\+||' | tr -d '\n')"
   if [ ! -z "${MEMNOTFREED}" ]; then
     TEXT="MEMORY_NOT_FREED|${MEMNOTFREED}"
@@ -273,6 +294,20 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   SERVER_ERRNO=
+  SLAVE_ERROR="$(grep -hio 'ERROR.*Slave[^:]*:[^0-9]*[Ee]rror[: 0-9]\+' ${ERROR_LOGS} 2>/dev/null | sed 's|ERROR[] ]*||' | head -n1 | tr -d '\n')"
+  if [ ! -z "${SLAVE_ERROR}" ]; then
+    TEXT="SLAVE_ERROR|${SLAVE_ERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  SLAVE_ERROR=
+  SLAVE_ERROR2="$(grep -hio 'ERROR.*Slave[^:]*:[^0-9]*[Ee]rror_code[: 0-9]\+' ${ERROR_LOGS} 2>/dev/null | sed 's|ERROR[] ]*||' | head -n1 | tr -d '\n')"
+  if [ ! -z "${SLAVE_ERROR2}" ]; then
+    TEXT="SLAVE_ERROR|${SLAVE_ERROR2}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  SLAVE_ERROR2=
   # RV-27/08/22 If none of these issues was found present, then the script will continue and such continuations will always result in exit 1 as find_other_possible_issue_strings is a final attempt at returning a useful string if all other checks have already failed. It provides for several of the exit_code!=0 by mariadbd/mysyqld, previously reported as 'no core found' and similar, yet now covered.
 }
 
@@ -312,13 +347,14 @@ if [ -z "${LATEST_CORE}" ]; then
     if [[ "${PWD}" != *"SAN"* ]]; then  # [*] When SAN is used, no cores are generated. As such, we don't want to produce a fallback_text_string.sh string here (from the error log) as they will be almost always dud's and there will be many of them (all the same issues which already have UniqueID's and are already logged etc.)
       COUNT_NR_OF_ERROR_LOGS="$(echo "${ERROR_LOGS}" | tr ' ' '\n' | wc -l)"
       for((i=0;i<${COUNT_NR_OF_ERROR_LOGS};i++)){
+        # echo "${ERROR_LOGS}" | tr ' ' '\n' | head -n${i} | tail -n1  # debug to see what logs are scanned
         TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "$(echo "${ERROR_LOGS}" | tr ' ' '\n' | head -n${i} | tail -n1)" 2>&1 | grep -v 'No relevant strings were found in')"  # Try FTS, one log at the time. Note: spaces in the path may break this, but with a standard server setup (i.e. ~/mariadb-qa, /test, /data and /dev/shm, this should never happen as every path used is without spaces). FTS was never made multi-error-log aware, the ROI is too low
         if [ ! -z "${TEXT}" ]; then
           echo "${TEXT}"
           exit 0
         fi
       }
-      echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output"
+      echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output for all logs"
       exit 1
     else  # This is a SAN build, so do not run a FALLBACK string generation attempt, but do try find_other_possible_issue_strings
       echo "Assert: no core file found in */*core*, and this is a SAN build, so fallback_text_string.sh was not attempted"  # See above for the reason [*]
