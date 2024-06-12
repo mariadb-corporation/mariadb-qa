@@ -659,6 +659,7 @@ SIGSEGV|myrocks::ha_rocksdb::check_keyread_allowed|myrocks::ha_rocksdb::index_fl
 pagecache->block_root[i].status == 0|SIGABRT|check_pagecache_is_cleaned_up|end_pagecache|maria_end|maria_panic                                                                 ## MDEV-29385
 fixed == 1|SIGABRT|Item_func_dayname::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                       ## MDEV-29357
 fixed()|SIGABRT|Item_func_dayname::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                          ## MDEV-29357
+SIGSEGV|end_of_list|Used_tables_and_const_cache::used_tables_and_const_cache_join|Item_field::fix_outer_field|Item_field::fix_fields                                           ## MDEV-29351
 SIGSEGV|__dynamic_cast|__ubsan::checkDynamicType|HandleDynamicTypeCacheMiss|__ubsan::__ubsan_handle_dynamic_type_cache_miss                                                    ## MDEV-29351
 (*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                   ## MDEV-29351
 (*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed                                     ## MDEV-29351
