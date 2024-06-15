@@ -84,6 +84,7 @@ cat "${1}" | tr -d '`' | \
        s|plugins|PLUGINS|gi; \
        s|local|LOCAL|gi; \
        s|infile|INFILE|gi; \
+       s|cascade|CASCADE|gi; \
        s|duplicate|DUPLICATE|gi; \
        s|terminated by|TERMINATED BY|gi; \
        s|table|TABLE|gi; \

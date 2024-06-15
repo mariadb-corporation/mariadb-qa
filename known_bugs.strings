@@ -168,6 +168,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|GetDefaultPrec|Serialize|MakeResult|json_array_add                                                                                                                     ## MDEV-34400
 (buff[7] & 7) == HEAD_PAGE || (buff[7] & 7) == UNALLOCATED_PAGE|SIGABRT|_ma_read_block_record|maria_rrnd|ha_maria::rnd_pos|handler::ha_rnd_pos                                 ## MDEV-34306
 is_valid_ident(*this)|SIGABRT|Lex_ident_fs::streq|get_table_category|wsrep_tables_accessible_when_detached|mysql_execute_command                                               ## MDEV-34281
 SIGABRT|fil_invalid_page_access_msg|fil_space_t::io|fil_space_t::flush_freed|buf_flush_space                                                                                   ## MDEV-34256
@@ -182,6 +183,7 @@ SIGSEGV|myrocks::rocksdb_show_status|ha_show_status|mysql_execute_command|Prepar
 0|SIGABRT|JOIN_CACHE::get_match_flag_by_pos|JOIN_CACHE::skip_if_not_needed_match|JOIN_CACHE_BNL::skip_next_candidate_for_match|JOIN_CACHE::join_matching_records               ## MDEV-23949 (11.3 only)
 SIGSEGV|st_select_lex::update_used_tables|JOIN::optimize_inner|JOIN::optimize|mysql_select                                                                                     ## MDEV-34184
 (((core_null) + 7) >> 3) == oindex.n_core_null_bytes || !not_redundant()|SIGABRT|dict_table_t::prepare_instant|ha_innobase_inplace_ctx::prepare_instant|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table ## MDEV-34181
+thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|ha_maria::repair|handler::ha_repair|mysql_admin_table                                                         ## MDEV-34164
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|ha_maria::optimize|handler::ha_optimize|mysql_admin_table                                                     ## MDEV-34164 
 thd->stmt_arena != thd->progress.arena|SIGABRT|thd_progress_init|mysql_alter_table|mysql_recreate_table|admin_recreate_table                                                   ## MDEV-34164
 entry|SIGABRT|Active_tranx::assert_thd_is_waiter|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans                                    ## MDEV-34122
@@ -240,6 +242,7 @@ thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIG
 !_current_thd()|SIGABRT|destroy_background_thd|dict_stats_recalc_pool_deinit|dict_stats_deinit|innodb_shutdown                                                                 ## MDEV-33873
 (ulonglong) next_free_value % real_increment == (ulonglong) offset|SIGABRT|sequence_definition::adjust_values|SEQUENCE::read_stored_values|SEQUENCE::read_initial_values|ha_sequence::open ## MDEV-33836
 SIGSEGV|ha_storage_engine_is_enabled|ha_checktype|ha_check_if_updates_are_ignored|create_table_impl                                                                            ## MDEV-33804
+SIGSEGV|TABLE::column_bitmaps_set|TABLE::use_all_columns|handle_roles_mappings_table|handle_grant_table                                                                        ## MDEV-33783
 SIGSEGV|ACL_PROXY_USER::store_pk|replace_proxies_priv_table|mysql_grant|Sql_cmd_grant_proxy::execute                                                                           ## MDEV-33783
 SIGSEGV|calculate_key_len|handler::index_read_map|handler::ha_index_read_map|tz_load_from_open_tables                                                                          ## MDEV-33783
 SIGSEGV|calculate_key_len|ha_partition::index_read_idx_map|handler::ha_index_read_idx_map|find_udf_in_table                                                                    ## MDEV-33783

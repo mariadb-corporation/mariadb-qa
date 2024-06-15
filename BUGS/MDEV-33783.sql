@@ -11,3 +11,6 @@ XA START 'a';
 INSERT INTO t() VALUES();
 SET SESSION system_versioning_asof='2000-09-08 00:00:000000';
 SELECT b FROM t;
+
+RENAME TABLE mysql.procs_priv TO mysql.procs_gone;
+CREATE USER'';

@@ -22,6 +22,7 @@ ERROR. InnoDB: Column stat_description in table .mysql...innodb_table_stats. is.
 ERROR. InnoDB: Column stat_description in table .mysql...innodb_index_stats. is.*but should be.*mismatch  Modified innodb_index_stats table
 ERROR. InnoDB: Table .mysql...innodb_table_stats. not found  Discussed w/ Marko and debugged, only applicable to 10.5 and non-significant
 ERROR. InnoDB: Table .mysql...innodb_index_stats. not found  Discussed w/ Marko and debugged, only applicable to 10.5 and non-significant
+ERROR. InnoDB: In ALTER TABLE.*has or is referenced in foreign key constraints which are not compatible with the new table definition  MDEV-34399
 Warning. InnoDB: Table mysql.innodb_index_stats has length mismatch in the column name.*run mysql_upgrade  Modified innodb_index_stats table
 Warning. InnoDB: Table mysql.innodb_table_stats has length mismatch in the column name.*run mysql_upgrade  Modified innodb_table_stats table
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
