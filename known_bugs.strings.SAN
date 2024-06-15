@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                    ## MDEV-34405
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_table.cc|spider_create_string|spider_udf_set_copy_tables_param_default|spider_udf_parse_copy_tables_param|spider_copy_tables_body ## MDEV-34404
 ASAN|stack-buffer-overflow|sql/sql_parse.cc|__interceptor_strcpy.part.0|show_create_db|mysql_execute_command|mysql_parse                                                       ## MDEV-32376
 ASAN|stack-buffer-overflow|strings/strmov.c|strmov|show_create_db|mysql_execute_command|mysql_parse                                                                            ## MDEV-32376
 ASAN|use-after-poison|sql/item.h|Used_tables_and_const_cache::used_tables_and_const_cache_join|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed   ## MDEV-29351
@@ -27,7 +29,8 @@ ASAN|heap-use-after-free|strings/ctype.c|my_convert|copy_and_convert|Protocol::n
 ASAN|heap-buffer-overflow|sql/sql_cache.cc|Query_cache_block::init|Query_cache::split_block|Query_cache::allocate_block|Query_cache::write_block_data                          ## MDEV-34075
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_free_result|ha_spider::close|ha_partition::close|alter_close_table                                            ## MDEV-29027
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_free_result|ha_spider::close|handler::ha_close|ha_partition::close                                            ## MDEV-29027
-UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_snippet.cpp|mroonga_snippet_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed ## MDEV-21166
+UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_command.cpp|mroonga_command_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed  ## MDEV-21166
+UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_snippet.cpp|mroonga_snippet_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed  ## MDEV-21166
 UBSAN|member access within null pointer of type 'const struct handlerton'|sql/sql_class.cc|thd_get_ha_data|mrn_get_slot_data|last_insert_grn_id|udf_handler::val_int           ## MDEV-21166
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|alloc_dynamic|insert_dynamic                                                                                 ## MDEV-34005
 LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|my_realloc|alloc_dynamic                                                                                     ## MDEV-34005
@@ -374,9 +377,9 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|deletefrm|create_table_impl|mysql_create_table_no_lock                                                                    ## Fixed ## MDEV-29461
 # ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|deletefrm|rea_create_table|create_table_impl                                                                              ## Fixed ## MDEV-29461
 # ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|handler::ha_external_unlock                     ## Fixed ## MDEV-30014
-# # LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                          ## Fixed ## Fixed ## Fixed ## MDEV-30680
-# # LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                                        ## Fixed ## Fixed ## Fixed ## MDEV-30680
-# # LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                  ## Fixed ## Fixed ## Fixed ## MDEV-30680
+# # LSAN|memory leak|mysys/my_malloc.c|__interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                          ## Fixed ## MDEV-30680
+# # LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                                        ## Fixed ## MDEV-30680
+# # LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                  ## Fixed ## MDEV-30680
 # UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_func.cc|Item_func_mod::int_op|Item_func_hybrid_field_type::val_int_from_int_op|Type_handler_int_result::Item_func_hybrid_field_type_val_int|Item_func_hybrid_field_type::val_int ## Fixed ## MDEV-30932
 # UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_func.cc|Item_func_mod::int_op|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## Fixed ## MDEV-30932
 # UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_func.cc|Item_func_mul::int_op|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## Fixed ## MDEV-30932

@@ -482,6 +482,7 @@ cat "${1}" | tr -d '`' | \
        s|mid[ ]*(|MID(|gi; \
        s|row[ ]*(|ROW(|gi; \
        s|uuid[ ]*(|UUID(|gi; \
+       s|JSON_ARRAYAGG[ ]*(|JSON_ARRAYAGG(|gi; \
        s|_JOIN_|_join_|gi; \
        s|row_format|ROW_FORMAT|gi; \
        s|innodb_default_row_format|INNODB_DEFAULT_ROW_FORMAT|gi; \
