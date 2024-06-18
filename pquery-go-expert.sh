@@ -117,6 +117,7 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
       fi
     done
     REDUCER=                                        # Clear reducer variable to avoid last reducer being deleted in ctrl_c() if it WAS complete (which at this point it would be)
+    rm ${MUTEX}                                     # Remove mutex (allowing this function to be terminated by the main code)
     sleep 4                                         # Sleep 4 seconds (allowing this function to be terminated by the main code)
   done
   PID=
