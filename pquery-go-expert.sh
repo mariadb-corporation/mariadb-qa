@@ -74,7 +74,6 @@ fi
 background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being created (a background process avoids the need to wait untill all reducers are created)
   while [ true ]; do
     touch ${MUTEX}                                  # Create mutex (indicating that background_sed_loop is live)
-    rm ${MUTEX}                                     # Remove mutex (allowing this function to be terminated by the main code)
     sleep 2                                         # Ensure that we have a clean mutex/lock which will not be terminated by the main code anymore (ref: do sleep 1)
     ls -d [0-9]* 2>/dev/null | xargs -I{} echo "if grep -qi 'Assert.*no core file found.*and fallback_text_string.sh returned an empty output' {}/MYBUG 2>/dev/null -a -r {}/ERROR_LOG_SCAN_ISSUE; then rm -f {}/MYBUG; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"  # Remove MYBUG when ERROR_LOG_SCAN_ISSUE is found and MYBUG contains the 'no core, no fallback string' text
     # For 'Last [0-9]+ consecutive queries all failed' (currently this is trials where the last 250 queries all failed), change 'Assert: no core file found in...' to 'Last [0-9]\+ consecutive queries all failed' as these may be issues (bugs) of intrest
