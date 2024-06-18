@@ -9,3 +9,6 @@ DROP USER a;
 
 RENAME TABLE mysql.procs_priv TO mysql.procs_gone;
 RENAME USER 'a'@'a' TO 'a'@'a';
+
+CREATE OR REPLACE TABLE mysql.procs_priv (id INT);
+DROP USER'';

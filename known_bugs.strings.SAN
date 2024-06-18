@@ -7,6 +7,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ##### CURRENT BUGS (Search key: Mac) #####
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                    ## MDEV-34405
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_table.cc|spider_create_string|spider_udf_set_copy_tables_param_default|spider_udf_parse_copy_tables_param|spider_copy_tables_body ## MDEV-34404
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_table.cc|spider_create_string|spider_udf_set_direct_sql_param_default|spider_udf_parse_direct_sql_param|spider_direct_sql_body ## MDEV-34404
 ASAN|stack-buffer-overflow|sql/sql_parse.cc|__interceptor_strcpy.part.0|show_create_db|mysql_execute_command|mysql_parse                                                       ## MDEV-32376
 ASAN|stack-buffer-overflow|strings/strmov.c|strmov|show_create_db|mysql_execute_command|mysql_parse                                                                            ## MDEV-32376
 ASAN|use-after-poison|sql/item.h|Used_tables_and_const_cache::used_tables_and_const_cache_join|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed   ## MDEV-29351
@@ -152,7 +153,6 @@ UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/item_timefunc.cc|Item_func_monthname::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-31019
 LSAN|memory leak|storage/innobase/trx/trx0roll.cc|__interceptor_malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                 ## MDEV-23073
 LSAN|memory leak|storage/innobase/trx/trx0roll.cc|malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                               ## MDEV-23073
-SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ReportIncompatibleRT|__asan::AsanCheckIncompatibleRT                                                                       ## MDEV-30950
 LSAN|memory leak|include/trx0trx.h|operator|trx_mod_table_time_t::start_bulk_insert|trx_undo_report_row_operation|row_ins_clust_index_entry_low                                ## MDEV-30943
 ASAN|heap-use-after-free|include/c++/current_version/bits/atomic_base.h|std::__atomic_base<long>::store|Atomic_relaxed<long>::store|Atomic_relaxed<long>::operator=|trx_t::commit_tables ## MDEV-30941
 ASAN|heap-use-after-free|sql/event_queue.cc|event_queue_element_compare_q|insert_at|queue_insert|queue_insert_safe                                                             ## MDEV-24686
@@ -261,6 +261,7 @@ UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an u
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item::save_str_in_field ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item_func_concat::val_str|Type_handler::Item_send_str ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item_func_concat::val_str ## MDEV-28386
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|JOIN_CACHE::generate_full_extensions ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc                                                                          ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
@@ -286,6 +287,7 @@ TSAN|data race|storage/innobase/os/os0file.cc|LinuxAIOHandler::collect|LinuxAIOH
 TSAN|data race|tpool/aio_linux.cc|tpool::aio_linux::getevent_thread_routine|voidstd::__invoke_impl|std::__invoke_result|voidstd::thread::_Invoker                              ## MDEV-27133
 UBSAN|pointer index expression with base X overflowed to Y|mysys/my_thr_init.c|my_thread_init|timer_handler|start_thread|__clone                                               ## MDEV-27077
 TSAN|data race|storage/innobase/os/os0file.cc|__tsan_atomic64_fetch_add|os_file_pread|os_file_read_page|os_file_read_func                                                      ## MDEV-24332
+ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                                ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                     ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                       ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_rename_user|mysql_execute_command                     ## MDEV-24193
