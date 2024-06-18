@@ -74,7 +74,9 @@ fi
 background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being created (a background process avoids the need to wait untill all reducers are created)
   while [ true ]; do
     touch ${MUTEX}                                  # Create mutex (indicating that background_sed_loop is live)
+    rm ${MUTEX}                                     # Remove mutex (allowing this function to be terminated by the main code)
     sleep 2                                         # Ensure that we have a clean mutex/lock which will not be terminated by the main code anymore (ref: do sleep 1)
+    ls -d [0-9]* 2>/dev/null | xargs -I{} echo "if grep -qi 'Assert.*no core file found.*and fallback_text_string.sh returned an empty output' {}/MYBUG 2>/dev/null -a -r {}/ERROR_LOG_SCAN_ISSUE; then rm -f {}/MYBUG; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"  # Remove MYBUG when ERROR_LOG_SCAN_ISSUE is found and MYBUG contains the 'no core, no fallback string' text
     # For 'Last [0-9]+ consecutive queries all failed' (currently this is trials where the last 250 queries all failed), change 'Assert: no core file found in...' to 'Last [0-9]\+ consecutive queries all failed' as these may be issues (bugs) of intrest
     # TODO: this needs work. While the logic seems correct (look for 'Assert: no core file found in' in reducer files, then set PQUERY_CONS_Q_FAIL=1) it seems to somehow incorrectly make some? or many? (one rundir had all) reducers use PQUERY_CONS_Q_FAIL=1 where it should not happen. Also, the functionality of PQUERY_CONS_Q_FAIL may be somewhat limited if ~250 queries remain, though it could be used to find failure queries which cause this 'Last [0-9]\+ consecutive queries all failed' (TBD if correct)
     #grep -lm1 --binary-files=text "Assert: no core file found in" reducer*.sh 2>/dev/null | grep -o '[0-9]\+' | xargs -I{} grep -lm1 --binary-files=text 'Last [0-9]\+ consecutive queries all failed' {}/pquery.log | grep -o '[0-9]\+' | xargs -I{} sed -i 's|^PQUERY_CONS_Q_FAIL=0|PQUERY_CONS_Q_FAIL=1|;s|TEXT="Assert: no core file found in.*"|TEXT="Last [0-9]\+ consecutive queries all failed"|;s|^USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|;s|^USE_PQUERY=0|USE_PQUERY=1|;s|^MODE=[04]|MODE=3|' reducer{}.sh
@@ -116,7 +118,6 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
       fi
     done
     REDUCER=                                        # Clear reducer variable to avoid last reducer being deleted in ctrl_c() if it WAS complete (which at this point it would be)
-    rm ${MUTEX}                                     # Remove mutex (allowing this function to be terminated by the main code)
     sleep 4                                         # Sleep 4 seconds (allowing this function to be terminated by the main code)
   done
   PID=
@@ -134,7 +135,7 @@ while(true); do                                     # Main loop
   done
   touch ${MUTEX}                                    # Create mutex (indicating that background_sed_loop is live)
   if [ $(ls --color=never */*.sql 2>/dev/null | wc -l) -gt 0 ]; then  # If trials are available
-    background_sed_loop &                           # Start background_sed_loop in a background thread, it will patch reducer<nr>.sh scripts
+    background_sed_loop &                           # Start background_sed_loop in a background thread, it will patch reducer<nr>.sh scripts and, before doing so, remove MYBUG when ERROR_LOG_SCAN_ISSUE is found and MYBUG contains the 'no core, no fallback string' text
     PID=$!                                          # Capture the PID of the background_sed_loop so we can kill -9 it once pquery-prep-red.sh is complete
     ${SCRIPT_PWD}/pquery-prep-red.sh                # Execute pquery-prep.red generating reducer<nr>.sh scripts, auto-updated by the background thread
     echo -e "\nCleaning up known issues..."

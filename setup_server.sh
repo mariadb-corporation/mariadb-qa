@@ -178,6 +178,13 @@ EOF"
 if [ "$(grep -m1 '^UserTasksMax=infinity' /etc/systemd/logind.conf)" != 'UserTasksMax=infinity' ]; then
   sudo bash -c 'echo "UserTasksMax=infinity" >> /etc/systemd/logind.conf'
 fi
+# ^ Support for option UserTasksMax= has been removed in recent versions, instead:
+USER_UID="$(id -u $(whoami))"
+if [ "$(grep -m1 '^UserTasksMax=infinity' /etc/systemd/system/user-${USER_UID}.slice.d/50-limits.conf 2>/dev/null)" != 'UserTasksMax=infinity' ]; then
+  sudo mkdir "/etc/systemd/system/user-${USER_UID}.slice.d"
+  sudo bash -c "echo '[Slice]' >> /etc/systemd/system/user-${USER_UID}.slice.d/50-limits.conf"
+  sudo bash -c "echo 'UserTasksMax=infinity' >> /etc/systemd/system/user-${USER_UID}.slice.d/50-limits.conf"
+fi
 
 # Ensuring nproc limiter is gone or not present
 if [ -r /etc/security/limits.d/90-nproc.conf ]; then

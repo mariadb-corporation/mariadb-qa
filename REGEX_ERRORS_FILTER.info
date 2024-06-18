@@ -8,6 +8,8 @@ Note: While unlikely to ever happen, REGEX_ERRORS_FILTER should never be fully e
 ------------------------------------------------------------------------------------------------------------------------
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
+Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
+Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, may be seen with option testing
 Event invalid                                         MDEV-26270
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurences
 ERROR. InnoDB: Operating sys.*error.*13 in a file op  MDEV-19849 or similar occurences

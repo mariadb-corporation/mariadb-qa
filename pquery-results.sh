@@ -65,9 +65,9 @@ fi
 # MODE 3 TRIALS
 ORIG_IFS=$IFS; IFS=$'\n'  # Use newline seperator instead of space seperator in the for loop
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
-  for STRING in $(grep --binary-files=text -m1 '^   TEXT=' reducer* 2>/dev/null | grep -v 'Last.*consecutive queries all failed' | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u); do
+  for STRING in $(grep --binary-files=text -m1 '^   TEXT=' reducer* 2>/dev/null | grep --binary-files=text -vE 'Last.*consecutive queries all failed|Assert: no core file found in.*and fallback_text_string.sh returned an empty output' 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u); do
     MATCHING_TRIALS=()
-    if grep -qi "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then  # New text string (i.e. no regex) mode
+    if grep --binary-files=text -qi "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then  # New text string (i.e. no regex) mode
       CHAR_REGEX='[^0-9]'
       if [ "$(echo ${PWD} | sed 's|.*/||')" == "ERR_REDUCERS" ]; then
         CHAR_REGEX='[^_0-9]'

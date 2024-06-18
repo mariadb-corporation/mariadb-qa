@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
-# TODO: Idea: the current file check (only done for reducer.log) checks the file age. Likely other directories could have a file age check by using ls -t | head -n1 and taking the age of that file. If any updates happen in the directory then this would show directory is still live/active
+# TODO: Idea: the current file check (only done for reducer.log) checks the file age. Likely other directories could have a file age check by using ls -t 2>/dev/null | head -n1 and taking the age of that file. If any updates happen in the directory then this would show directory is still live/active
 
 EXCLUDE_DIR_REGEX='multipath|var_|afl|sql_shuffled'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
 LOW_MEMORY=20  # A number, reflecting a minimum 'directly free available memory' before long-running reducers which have been successful thus far (i.e. at least 2 ~/pge started after the original reduction, and file is _out_out_out already), are terminated. If total memory is for example 128GB then 20 may be a good number to use here, or similar.
@@ -42,14 +42,14 @@ fi
 # General/Main cleanup
 COUNT_FOUND_AND_DEL=0
 COUNT_FOUND_AND_NOT_DEL=0
-if [ $(ls --color=never -ld /dev/shm/* | grep --binary-files=text -vE "${EXCLUDE_DIR_REGEX}" | wc -l) -eq 0 ]; then
+if [ $(ls --color=never -ld /dev/shm/* 2>/dev/null | grep --binary-files=text -vE "${EXCLUDE_DIR_REGEX}" | wc -l) -eq 0 ]; then
   if [ ${SILENT} -eq 0 ]; then
     echo "> No /dev/shm/* erasable directories found"
   fi
 else
   rm -f /tmp/tmpfs_clean_dirs
   # In the next line, 'var_' is excluded to avoid deleting MTR --mem directories
-  ls --color=never -ld /dev/shm/* | grep --binary-files=text -vE "${EXCLUDE_DIR_REGEX}" | sed 's|^.*/dev/shm|/dev/shm|' >/tmp/tmpfs_clean_dirs 2>/dev/null
+  ls --color=never -ld /dev/shm/* 2>/dev/null | grep --binary-files=text -vE "${EXCLUDE_DIR_REGEX}" | sed 's|^.*/dev/shm|/dev/shm|' >/tmp/tmpfs_clean_dirs 2>/dev/null
   COUNT=$(wc -l /tmp/tmpfs_clean_dirs 2>/dev/null | sed 's| .*||')
   for DIRCOUNTER in $(seq 1 ${COUNT}); do
     DIR="$(head -n ${DIRCOUNTER} /tmp/tmpfs_clean_dirs | tail -n1)"
@@ -154,7 +154,7 @@ else
     TEMP=$(mktemp)
     touch -d '5 hours ago' ${TEMP}
     FILELIST=$(mktemp)
-    ls --color=never | grep -vE "$(find . -type p,f,s,l -newer ${TEMP} 2>&1 | sed 's|^\./||;s/\n/|/g' )" > ${FILELIST}  # -v: older
+    ls --color=never 2>/dev/null | grep -vE "$(find . -type p,f,s,l -newer ${TEMP} 2>&1 | sed 's|^\./||;s/\n/|/g' )" > ${FILELIST}  # -v: older
     rm -f ${TEMP}
     NROFFILES=$(cat ${FILELIST} 2>/dev/null | wc -l)
     if [ "${NROFFILES}" -gt 0 ]; then
@@ -178,7 +178,7 @@ else
   if [ ${SILENT} -eq 0 ]; then
     if [ ${COUNT_FOUND_AND_NOT_DEL} -ge 1 -a ${COUNT_FOUND_AND_DEL} -eq 0 ]; then
       echo ""
-      echo "> Though $(ls -ld /dev/shm/* | wc -l) tmpfs directories/files were found on /dev/shm, they are all in use. Nothing was deleted."
+      echo "> Though $(ls -ld /dev/shm/* 2>/dev/null | wc -l) tmpfs directories/files were found on /dev/shm, they are all in use. Nothing was deleted."
     else
       if [ ${COUNT_FOUND_AND_DEL} -gt 0 ]; then
         echo "> Deleted ${COUNT_FOUND_AND_DEL} tmpfs directories/files & skipped ${COUNT_FOUND_AND_NOT_DEL} tmpfs directories/files as they were in use."
@@ -198,7 +198,7 @@ fi
 #  sleep 2
 #  # The following oneliner takes the leading 6 digits of the shuffled .sql file (which is the workdir), then checkes if a pquery-go-expert screen (running in a 'ge' screen session) with the same workdir is running. If not, it will delete the file as it is then safe to do so. 
 # # TODO: how to make this safer for runs not started inside screen sessions (almost never the case for professional setups). Perhaps it is possible to do a similar "age check" as is used elsewhere in this script
-#  ls --color=never /dev/shm/sql_shuffled | sed 's|_[0-9]\+\.sql||' | xargs -I{} echo "echo '{}' | grep -vE \$(screen -ls | grep -o '\.ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|\.ge||' | tr '\n' '|' | sed 's/|$//') 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "if [ ! -z '{}' ]; then echo 'rm -Rf /dev/shm/sql_shuffled/{}_*.sql'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+#  ls --color=never /dev/shm/sql_shuffled 2>/dev/null | sed 's|_[0-9]\+\.sql||' | xargs -I{} echo "echo '{}' | grep -vE \$(screen -ls | grep -o '\.ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|\.ge||' | tr '\n' '|' | sed 's/|$//') 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "if [ ! -z '{}' ]; then echo 'rm -Rf /dev/shm/sql_shuffled/{}_*.sql'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
 #fi
 
 if [ ! -z "$(ls -d --color=never /dev/shm/var_* 2>/dev/null)" ]; then
