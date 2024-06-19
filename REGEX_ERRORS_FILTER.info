@@ -9,7 +9,7 @@ Note: While unlikely to ever happen, REGEX_ERRORS_FILTER should never be fully e
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
 Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
-Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, may be seen with option testing
+Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested
 Event invalid                                         MDEV-26270
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurences
 ERROR. InnoDB: Operating sys.*error.*13 in a file op  MDEV-19849 or similar occurences
@@ -110,6 +110,7 @@ Got error 9 when reading table                        MDEV-23297
 Got error 170                                         MDEV-26261
 Got error 171 .The event was corrupt                  MDEV-22936 (May mask other bugs?)
 Got error 127 when reading table                      MDEV-27903
+Got error 134 when reading table                      MDEV-34230
 Got error 188 when reading table                      Presumed non-issue (Operation was interrupted, max_statement_time)
 Got error 192                                         MDEV-26258 (various error 192 msgs)
 Got error 194 when reading table                      MDEV-27952 (tablespace discarded)
