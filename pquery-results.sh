@@ -239,6 +239,10 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
     echo '** Trials with SET GLOBAL of wsrep_cluster_address & wsrep_slave_threads (kwown hang/timeout issue MDEV-30418):'
     echo "${TRIALS_MDEV_30418}"
   fi
+  COUNT=
+  STRING_OUT=
+  COUNT_OUT=
+  TRIALS_MDEV_30418=
 fi
 
 
