@@ -494,6 +494,7 @@ cat "${1}" | tr -d '`' | \
        s|monitoring_kind|MONITORING_KIND|gi; \
        s|spider_ignore_comments|SPIDER_IGNORE_COMMENTS|gi; \
        s|sql_no_cache|SQL_NO_CACHE|gi; \
+       s|after_sync|AFTER_SYNC|gi; \
        s|information_schema\.PROCESSLIST|information_schema.processlist|gi; \
        s|DELIMITER;|DELIMITER ;|gi; \
        s|test / |test/|gi; \

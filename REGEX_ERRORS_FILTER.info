@@ -19,6 +19,8 @@ ERROR. InnoDB: Error number 2 means.*file.*or dir     MDEV-19849 or similar occu
 ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occurences
 ERROR. InnoDB: Operating sys.*error.* 3 in a file op  MDEV-19849 or similar occurences
 ERROR. InnoDB: .*error means.*system.*not find.*path  MDEV-19849 or similar occurences
+ERROR. InnoDB: cannot enable encryption, encryption plugin is not available  --innodb-encrypt-temporary-tables=1 used without configuration, ref https://mariadb.com/kb/en/innodb-enabling-encryption/
+ERROR. InnoDB: innodb_page_size=.*requires innodb_buffer_pool_size >= 5MiB current  --innodb-buffer-pool-size set too small
 ERROR. InnoDB: Cannot rename.*target schema directory doesn.t exist  CREATE TABLE t (c INT); RENAME TABLE t TO foo.t; (as of ~10.6.18)
 ERROR. InnoDB: Column stat_description in table .mysql...innodb_table_stats. is.*but should be.*mismatch  Modified innodb_table_stats table
 ERROR. InnoDB: Column stat_description in table .mysql...innodb_index_stats. is.*but should be.*mismatch  Modified innodb_index_stats table
@@ -28,6 +30,7 @@ ERROR. InnoDB: In ALTER TABLE.*has or is referenced in foreign key constraints w
 ERROR. InnoDB: Cannot delete.update rows with cascading foreign key constraints that exceed max depth of 15. Please drop excessive foreign constraints and try again  MDEV-34404
 Warning. InnoDB: Table mysql.innodb_index_stats has length mismatch in the column name.*run mysql_upgrade  Modified innodb_index_stats table
 Warning. InnoDB: Table mysql.innodb_table_stats has length mismatch in the column name.*run mysql_upgrade  Modified innodb_table_stats table
+ERROR. WSREP: Failed to load provider                 wsrep misconfig for example --wsrep-provider=0 + SET GLOBAL wsrep_on=ON;
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name

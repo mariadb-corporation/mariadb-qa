@@ -168,6 +168,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|vio_get_normalized_ip|vio_get_normalized_ip_string|activate_tcp_port|network_init                                                                                      ## MDEV-34437
 SIGSEGV|parse_engine_part_options|open_table_from_share|open_table|open_and_process_table                                                                                      ## MDEV-34421
 SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ReportIncompatibleRT|__asan::AsanCheckIncompatibleRT                                                                       ## MDEV-30950
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_sql_stmt_prepare|mysql_execute_command                               ## MDEV-34402
@@ -884,6 +885,7 @@ thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_deta
 ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## MENT-1424
 SIGSEGV|Item_change_list::rollback_item_tree_changes|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                               ## MDEV-27920
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                                      ## MDEV-27902
+SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-27902
 SIGSEGV|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan|ha_partition::rnd_next                                                              ## MDEV-27902
 SIGSEGV|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first|mysql_ha_read                                                                           ## MDEV-27902
 SIGSEGV|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_first_internal|ha_spider::index_first                                                            ## MDEV-27902

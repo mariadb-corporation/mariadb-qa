@@ -910,6 +910,7 @@ echo 'echo "DROP DATABASE test;" > ./in.sql' >>fixin
 echo 'echo "CREATE DATABASE test;" >> ./in.sql' >>fixin
 echo 'echo "USE test;" >> ./in.sql' >>fixin
 echo 'if [ -r ./in.tmp ]; then cat in.tmp >> in.sql; rm -f in.tmp; fi' >>fixin
+echo 'echo "You may want to add  SET sql_mode='';  to the top of the in.sql file also, if the original run had it' >>fixin
 
 echo "${SCRIPT_PWD}/stack.sh" >stack
 if [ -d ./mysql-test ]; then
