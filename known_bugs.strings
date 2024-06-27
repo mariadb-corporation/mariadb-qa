@@ -169,6 +169,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+(m_ci->state & 32) || m_with_collate|SIGABRT|Lex_exact_charset_opt_extended_collate::Lex_exact_charset_opt_extended_collate|MYSQLparse|parse_sql|mysql_parse                   ## MDEV-34476
 stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|filesort|mysql_update                                                             ## MDEV-34474
 stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|filesort|Sql_cmd_update::update_single_table                                      ## MDEV-34474
 stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|ha_innobase::estimate_rows_upper_bound|filesort                                   ## MDEV-34474
