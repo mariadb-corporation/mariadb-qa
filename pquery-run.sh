@@ -125,10 +125,10 @@ if [ ! -r ${OPTIONS_INFILE} ]; then
   exit 1
 fi
 if [ "${PRELOAD}" == "1" ]; then
-  if [ ${THREADS} -ne 1 ]; then
-    echo "Assert: PRELOAD is enabled (1), and THREADS!=1 (${THREADS}). This setup is not supported (yet) as this script would not be able to prepend the preload SQL to any particular thread's SQL trace (which one to pick?). It may be possible to do a rather large framework patch where PRELOAD SQL is built into reducer.sh etc. (for single threaded runs, it is simply prepended to the SQL trace), so that it is preloaded in all tools, especially reduction. Feel free to implement this if you like."
-    exit 1
-  elif [ "${QUERY_CORRECTNESS_TESTING}" == "1" ]; then
+  #if [ ${THREADS} -ne 1 ]; then
+  #  echo "Assert: PRELOAD is enabled (1), and THREADS!=1 (${THREADS}). This setup is not supported (yet) as this script would not be able to prepend the preload SQL to any particular thread's SQL trace (which one to pick?). It may be possible to do a rather large framework patch where PRELOAD SQL is built into reducer.sh etc. (for single threaded runs, it is simply prepended to the SQL trace), so that it is preloaded in all tools, especially reduction. Feel free to implement this if you like."
+  #  exit 1
+  if [ "${QUERY_CORRECTNESS_TESTING}" == "1" ]; then
     echo "Assert: PRELOAD is enabled (1), and QUERY_CORRECTNESS_TESTING is enabled (1). Pre-loading (pre-pending) SQL is not supported yet for Query Correctness Testing, feel free to add it!"
     exit 1
   elif [ -z "${PRELOAD_SQL}" ]; then

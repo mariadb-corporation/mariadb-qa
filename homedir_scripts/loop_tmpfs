@@ -20,6 +20,13 @@ while true; do
     fi
     COUNT=20
   fi
+  # Cleanup filtered_infile.sql from finished data WORKDIRs
+  PSLIST="$(ps -ef | grep --color=never -o '\.ge[0-9][0-9][0-9][0-9][0-9][0-9][^0-9]' | grep -o '[0-9]\+' | tr '\n' '|' | sed 's/[|]\+$//')"
+  if [ -z "${PSLIST}" ]; then
+    PSLIST='EMPTY'
+  fi
+  ls --color=never /data/[0-9][0-9][0-9][0-9][0-9][0-9]/filtered_infile.sql 2>/dev/null | grep -vE "${PSLIST}" | xargs -I{} rm -f "{}"
+  PSLIST=
   sleep 60
   COUNT=$[ ${COUNT} -1 ]
 done
