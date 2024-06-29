@@ -54,6 +54,7 @@ GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ##
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
 GOT_ERROR|Got error 126|when reading table                     ## MDEV-26492  ## entries to check
 GOT_ERROR|Got error '126 "Index is corrupted"' for './test/t.MAI' ## MDEV-31029
+GOT_ERROR|Got error 127|when reading table                     ## MDEV-34472
 GOT_ERROR|Got error 134|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 140|"Wrong create options" from storage engine InnoDB Error_code: 1030  ## MDEV-33961
 GOT_ERROR|Got error 170|"It is not possible to log this statement" from storage engine InnoDB ## MDEV-32354
@@ -168,6 +169,14 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit          ## MDEV-34486
+SIGSEGV|my_b_gets|MYSQL_BIN_LOG::find_next_log|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit                                                                     ## MDEV-34486 
+slot_rec|SIGABRT|ut_dbg_assertion_failed|page_zip_dir_delete|page_cur_delete_rec|btr_cur_pessimistic_delete                                                                    ## MDEV-34357
+(m_ci->state & 32) || m_with_collate|SIGABRT|Lex_exact_charset_opt_extended_collate::Lex_exact_charset_opt_extended_collate|MYSQLparse|parse_sql|mysql_parse                   ## MDEV-34476
+stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|filesort|mysql_update                                                             ## MDEV-34474
+stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|filesort|Sql_cmd_update::update_single_table                                      ## MDEV-34474
+stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|ha_innobase::estimate_rows_upper_bound|filesort                                   ## MDEV-34474
+SIGABRT|ut_dbg_assertion_failed|trx_start_if_not_started_xa_low|row_insert_for_mysql|ha_innobase::write_row                                                                    ## MDEV-34362
 SIGSEGV|vio_get_normalized_ip|vio_get_normalized_ip_string|activate_tcp_port|network_init                                                                                      ## MDEV-34437
 #SIGSEGV|parse_engine_part_options|open_table_from_share|open_table|open_and_process_table                                                                                      ## MDEV-34421  # TESTING FIX
 SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ReportIncompatibleRT|__asan::AsanCheckIncompatibleRT                                                                       ## MDEV-30950
@@ -443,6 +452,7 @@ SIGSEGV|Item::print_parenthesised|Item_cond::print|st_select_lex::print|subselec
 SIGSEGV|Field::set_default|Field::set_default|Field::save_in_field_default_value|Item_param::save_in_field                                                                     ## MDEV-31849
 SIGSEGV|Field::set_default|Field::save_in_field_default_value|Item_param::save_in_field|store_key_item::copy_inner                                                             ## MDEV-31849
 SIGSEGV|Reprepare_observer::report_error|Prepared_statement::check_charset_collation_map_version|Prepared_statement::execute|Prepared_statement::execute_loop                  ## MDEV-31844
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|get_current_user|sp_process_definer                                                                                            ## MDEV-31825
 SIGSEGV|my_hash_first|my_hash_search|find_acl_role|get_current_user                                                                                                            ## MDEV-31825
 SIGSEGV|my_hash_first|my_hash_search|get_current_user|get_current_user                                                                                                         ## MDEV-31825
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|get_current_user|get_show_user                                                                                                 ## MDEV-31825

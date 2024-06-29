@@ -1,0 +1,5 @@
+CREATE TABLE t (c1 INT,c2 INT) ENGINE=INNODB;
+UPDATE mysql.innodb_index_stats SET stat_value=0;
+SELECT * FROM t;
+FLUSH TABLES;
+UPDATE t SET c1=+1 ORDER BY c2;

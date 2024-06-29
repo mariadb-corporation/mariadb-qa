@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|mysys/mf_iocache2.c|my_b_gets|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit                                 ## MDEV-34486
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_partition.cc|get_part_iter_for_interval_via_walking|find_used_partitions|prune_partitions|JOIN::optimize_inner ## MDEV-34349
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                    ## MDEV-34405
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_table.cc|spider_create_string|spider_udf_set_copy_tables_param_default|spider_udf_parse_copy_tables_param|spider_copy_tables_body ## MDEV-34404
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_table.cc|spider_create_string|spider_udf_set_direct_sql_param_default|spider_udf_parse_direct_sql_param|spider_direct_sql_body ## MDEV-34404

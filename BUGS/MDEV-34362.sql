@@ -1,0 +1,11 @@
+SET sql_mode='';
+SET @@enforce_storage_engine=InnoDB;
+ALTER TABLE mysql.slow_log ENGINE=MyISAM;
+XA START 'a';
+XA END 'a';
+SET GLOBAL slow_query_log=ON;
+SET slow_query_log=ON;
+SET GLOBAL long_query_time=0;
+XA PREPARE 'a';
+SET @@long_query_time=DEFAULT;
+SET GLOBAL log_output='TABLE';
