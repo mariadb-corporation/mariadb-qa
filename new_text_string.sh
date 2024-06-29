@@ -162,11 +162,6 @@ else
   fi
 fi
 
-  ERROR_LOGS=$(ls ${LOC}/log/master.err 2>/dev/null)
-  if [ -r ${LOC}/log/slave.err ]; then
-    ERROR_LOGS="${ERROR_LOGS} $(ls ${LOC}/log/slave.err 2>/dev/null)"  # Include slave log in scanning
-  fi
-
 if [ -z "${ERROR_LOGS}" ]; then
   if [ -r "../../mysqld.1.err" ]; then
     ERROR_LOGS="../../mysqld.1.err"
