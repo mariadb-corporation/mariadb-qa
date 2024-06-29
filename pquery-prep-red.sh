@@ -189,7 +189,7 @@ add_failing_and_trigger_queries_to_trace(){  # Improve issue reproducibility by 
     # Note that pquery-failing-sql.sh deletes ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing before [re-]creating it
     ${SCRIPT_PWD}/pquery-failing-sql.sh ${TRIAL} 1
   else  # NOREGEN is used when the failing/trigger queries were already obtained using pquery-failing-sql.sh, when generating the MULTI=1 quick_${TRIAL}.sql files
-    echo "* Re-using previously obtained failing and helpful trigger SQL queries for the MULTI=1 quick SQL trace"
+    echo "* Re-using previously obtained failing and helpful trigger SQL queries for the multi-threaded quick SQL trace"
   fi
   FAILING_AND_TRIGGER_SQL_COUNT="$(cat ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing | wc -l)"
   if [ "${FAILING_AND_TRIGGER_SQL_COUNT}" -gt 0 ]; then

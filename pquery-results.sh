@@ -234,15 +234,21 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
   STRING_OUT="$(echo "* SHUTDOWN TIMEOUT >90 SEC ISSUE *" | awk -F "\n" '{printf "%-55s",$1}')"
   COUNT_OUT=$(echo $COUNT | awk '{printf "  (Seen %3s times: reducers ",$1}')
   echo -e "${STRING_OUT}${COUNT_OUT}$(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||'))"
-  TRIALS_MDEV_30418="$(grep --binary-files=text -il 'set.*global.*wsrep_cluster_address' [0-9]*/default.node.tld_thread-0.sql | sed 's|/.*||' | sort -u | xargs -I{} grep --binary-files=text -il 'set.*global.*wsrep_slave_threads' {}/default.node.tld_thread-0.sql | sed 's|/.*||' | sort -u | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  TRIALS_MDEV_30418="$(grep --binary-files=text -il 'set.*global.*wsrep_cluster_address' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'set.*global.*wsrep_slave_threads' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
   if [ ! -z "${TRIALS_MDEV_30418}" ]; then
     echo '** Trials with SET GLOBAL of wsrep_cluster_address & wsrep_slave_threads (known hang/timeout issue MDEV-30418):'
     echo "${TRIALS_MDEV_30418}"
+  fi
+  TRIALS_MASTER_POS_WAIT="$(grep --binary-files=text -il 'start.*slave' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'master_pos_wait' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  if [ ! -z "${TRIALS_MASTER_POS_WAIT}" ]; then
+    echo '** Trials with START SLAVE & MASTER_POS_WAIT (known hang/timeout issue waiting for an invalid position):'
+    echo "${TRIALS_MASTER_POS_WAIT}"
   fi
   COUNT=
   STRING_OUT=
   COUNT_OUT=
   TRIALS_MDEV_30418=
+  TRIALS_MASTER_POS_WAIT=
 fi
 
 

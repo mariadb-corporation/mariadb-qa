@@ -609,6 +609,7 @@ save_rr_trace(){
 }
 
 abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anymore
+  trap SIGINT  # Clear the SIGINT trap
   ABORT_ACTIVE=1
   if [ ! -d "${WORKD}" ]; then
     if [ -r "${WORKO}" ]; then
@@ -617,7 +618,6 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
       echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Last good known testcase: $WORKO (provided the disk being used did not run out of space). Terminating."
     fi
     # TODO: ~/ds (most likely) or ~/memory seem to be causing this more recently and more frequently: to fix
-    trap SIGINT  # Clear the SIGINT trap
     echoit "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
     exit 1
@@ -626,7 +626,6 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
   else
     echoit "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
     echoit "[Abort] The source for this reducer was likely deleted. Terminating."
-    trap SIGINT  # Clear the SIGINT trap
     echo "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
     exit 1
@@ -662,7 +661,6 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
     echoit "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
   fi
   finish 'abort'
-  trap SIGINT  # Clear the SIGINT trap
   exit 2
 }
 
@@ -4043,7 +4041,7 @@ finish(){
   fi
   if [ "${1}" == 'abort' ]; then
     echoit "[Abort] Done. Terminating reducer"
-    trap SIGINT
+    trap SIGINT  # Clear the SIGINT trap
     exit 2
   fi
   exit 0

@@ -37,6 +37,8 @@ failing_queries_pquery_trace(){
   fi
 }
 
+# Ideally, we would have a failing_queries_cli_trace as well, to implement when used
+
 rm -Rf ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
 ERRLOG="${WORKD_PWD}/${TRIAL}/log/master.err"
 if [ -r ${WORKD_PWD}/mysqld/mysqld ]; then BIN="${WORKD_PWD}/mysqld/mysqld"
