@@ -2,25 +2,20 @@
 
 # Copyright (c) 2012,2013 Oracle and/or its affiliates. All rights reserved.
 # Use is subject to license terms.
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; version 2 of the License.
-#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
-#
 # You should have received a copy of the GNU General Public License
-
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
-# USA
-
-# In active development: 2012-2023
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 
 # This program has been used to reduce tens of thousands of SQL based testcases,
 # from tens (or hundreds) of thousands of SQL lines to less then 10 lines, each.
+
+# In active development: 2012-2024
 
 # Learn more at:
 # https://www.percona.com/blog/2014/09/03/reducer-sh-a-powerful-mysql-test-case-simplificationreducer-tool/
@@ -38,14 +33,14 @@
 # ======== User configurable variables section (see 'User configurable variable reference' below for more detail)
 # === Basic options
 INPUTFILE=                      # The SQL file to be reduced. This can also be given as the first option to reducer.sh. Do not use double quotes
-MODE=4                          # Required. Most often used modes: 4=Any crash (TEXT not required), 3=Search for a specific TEXT in mysqld error log, 2=Idem, but in client log
+MODE=4                          # Required. Most often used modes: 4=Any crash (TEXT not required), 3=Search for a specific TEXT in mariadbd/mysqld error log, 2=Idem, but in client log
 TEXT="somebug"                  # The text string you want reducer to search for, in specific locations depending on the MODE selected. Regex capable. Use with MODEs=1,2,3,5,6,7,8
 WORKDIR_LOCATION=1              # 0: use /tmp (disk bound) | 1: use tmpfs (default) | 2: use ramfs (needs setup) | 3: use storage at WORKDIR_M3_DIRECTORY
 WORKDIR_M3_DIRECTORY="/data"     # Only relevant if WORKDIR_LOCATION is set to 3, use a specific directory/mount point
-MYEXTRA="--no-defaults --log-output=none --sql_mode="  # mysqld options to be used (and reduced). Note: TokuDB plugin loading is checked/done automatically. # RV 14/05/22 ONLY_FULL_GROUP_BY removed 
-MYINIT=""                       # Extra options to pass to mysqld AND at data dir init time. See pquery-run-*.conf for more info
+MYEXTRA="--no-defaults --log-output=none --sql_mode="  # mariadbd/mysqld options to be used (and reduced). Note: TokuDB plugin loading is checked/done automatically. # RV 14/05/22 ONLY_FULL_GROUP_BY removed 
+MYINIT=""                       # Extra options to pass to mariadbd/mysqld AND at data dir init time. See pquery-run-*.conf for more info
 BASEDIR="${PWD}"                # Path to the MySQL BASE directory to be used
-DISABLE_TOKUDB_AUTOLOAD=0       # On/Off (1/0) Prevents mysqld startup issues when using standard MySQL server (i.e. no TokuDB available) with a testcase containing TokuDB SQL
+DISABLE_TOKUDB_AUTOLOAD=0       # On/Off (1/0) Prevents mariadbd/mysqld startup issues when using standard MySQL server (i.e. no TokuDB available) with a testcase containing TokuDB SQL
 DISABLE_TOKUDB_AND_JEMALLOC=1   # For MariaDB, TokuDB is deprecated, so we always disable both in full
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
@@ -57,23 +52,24 @@ NR_OF_TRIAL_REPEATS=1           # Set to 1 (default) to repeat/try/attempt each 
 # === True Multi-Threaded       # True multi-threaded testcase reduction (only program in the world that does this) based on random replay (auto-covers sporadic testcases)
 PQUERY_MULTI=0                  # On/off (1/0) Enables true multi-threaded testcase reduction based on random replay (auto-enables USE_PQUERY)
 
-# === Reduce startup issues     # Reduces startup issues. This will only work if a clean start (mysqld --no-defaults) works correctly; otherwise template creation will fail also
-REDUCE_STARTUP_ISSUES=0         # Default/normal use: 0. Set to 1 to reduce mysqld startup (ie. failing mysqld --option etc.) issues (with SQL replay but without SQL simplication)
+# === Reduce startup issues     # Reduces startup issues. This will only work if a clean start (mariadbd/mysqld --no-defaults) works correctly; otherwise template creation will fail also
+REDUCE_STARTUP_ISSUES=0         # Default/normal use: 0. Set to 1 to reduce mariadbd/mysqld startup (ie. failing mariadbd/mysqld --option etc.) issues (with SQL replay but without SQL simplication)
 
-# === Reduce GLIBC/SS crashes   # Remember that if you use REDUCE_GLIBC_OR_SS_CRASHES=1 with MODE=3, then the console/typescript log is searched for TEXT, not the mysqld error log. Note: reducing 'buffer overflow' has previously been difficult (unknown reason, not enough samples to establish cause), try an ASAN dbg+opt build first, often they report on the memory issues more easily.
+# === Reduce GLIBC/SS crashes   # Remember that if you use REDUCE_GLIBC_OR_SS_CRASHES=1 with MODE=3, then the console/typescript log is searched for TEXT, not the mariadbd/mysqld error log. Note: reducing 'buffer overflow' has previously been difficult (unknown reason, not enough samples to establish cause), try an ASAN dbg+opt build first, often they report on the memory issues more easily.
 REDUCE_GLIBC_OR_SS_CRASHES=0    # Default/normal use: 0. Set to 1 to reduce testcase based on a GLIBC crash or stack smash being detected. MODE=3 (TEXT) and MODE=4 (all) supported
 SCRIPT_LOC=/usr/bin/script      # The script binary (sudo yum install util-linux) is required for reducing GLIBC crashes
 
-# === Reduce replication issues # Note that any REPL_EXTRA set in pquery conf files are auto-merged by pquery-run.sh into MYEXTRA (and this do not need to be covered here)
+# === Reduce replication issues 
 REPLICATION=0                   # Default: 0: disabled, 1: enable standard master/slave replication. Replay will be against the master
-MASTER_EXTRA="--log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --server_id=1"  # Extra mysqld/mariadbd options to pass to the master server only
-SLAVE_EXTRA="--slave_skip_errors=ALL --server_id=2"  # Extra mysqld/mariadbd options to pass to the slave server only
+REPL_EXTRA="--gtid_strict_mode=1 --relay-log=relaylog"  # Extra parameters to pass to the master and the slave, besides MYEXTRA (both are used)
+MASTER_EXTRA="--log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --server_id=1"  # Extra mariadbd/mysqld options to pass to the master server only
+SLAVE_EXTRA="--slave_skip_errors=ALL --server_id=2"  # Extra mariadbd/mysqld options to pass to the slave server only
 
 # === Hang issues               # For catching hang issues (both in normal runtime as well as during shutdown). Must set MODE=0 for this option to become active
 TIMEOUT_CHECK=600               # When MODE=0 is used, this specifies the nr of seconds to be used as a timeout. Do not set too small (eg. >600 sec is likely best). See examples in help below. Set to approx FULL testcase duration + 20 seconds, keeping in mind load on the server. Minimum: 31 seconds. 'FULL': Because the chuncking algorithm could eliminate the hanging query, but if the TIMEOUT_CHECK is set too small then a timeout will still occur due to overall testcase duration! Likely best to take overall testcase lenght (without the hanging query) + 30 seconds on otherwise unused server, or simply set it to a large number like 600 as this is less error-prone. A good approach is to pre-trim the file past the hanging query first manually, then remove last statement, check duration client. Then add 30 seconds.
 
-# === Timeout mysqld            # Uncommonly used option. Used to terminate (timeout) mysqld after x seconds, while still checking for MODE=2/3 TEXT. See examples in help below.
-TIMEOUT_COMMAND=""              # A specific command, executed as a prefix to mysqld. For example, TIMEOUT_COMMAND="timeout --signal=SIGKILL 10m"
+# === Timeout mariadbd/mysqld   # Uncommonly used option. Used to terminate (timeout) mariadbd/mysqld after x seconds, while still checking for MODE=2/3 TEXT. See examples in help below.
+TIMEOUT_COMMAND=""              # A specific command, executed as a prefix to mariadbd/mysqld. For example, TIMEOUT_COMMAND="timeout --signal=SIGKILL 10m"
 
 # === Advanced options          # Note: SLOW_DOWN_CHUNK_SCALING is of beta quality. It works, but it may affect chunk scaling somewhat negatively in some cases
 SLOW_DOWN_CHUNK_SCALING=0       # On/off (1/0) If enabled, reducer will slow down it's internal chunk size scaling (also see SLOW_DOWN_CHUNK_SCALING_NR)
@@ -94,7 +90,7 @@ MULTI_THREADS_INCREASE=5        # Default=5  | Increase of MULTI_THREADS per bug
 MULTI_THREADS_MAX=50            # Default=50 | Max number of MULTI_THREADS threads, both for standard and PQUERY_MULTI=1 runs
 PQUERY_EXTRA_OPTIONS=""         # Default="" | Adds extra options to pquery replay, used for Query Correctness (QC) trials
 PQUERY_MULTI_THREADS=3          # Default=3  | The numberof subreducers when PQUERY_MULTI=1 (MULTI_THREADS will be set to this number at startup)
-PQUERY_MULTI_CLIENT_THREADS=30  # Default=30 | The number of pquery client threads per subreducer/mysqld
+PQUERY_MULTI_CLIENT_THREADS=30  # Default=30 | The number of pquery client threads per subreducer/mariadbd/mysqld
 PQUERY_MULTI_QUERIES=99999999   # Default=99999999 | The number of queries to be executed per client per trial
 PQUERY_REVERSE_NOSHUFFLE_OPT=0  # Default=0  | Reverses --no-shuffle into shuffle and vice versa
                                 # On/Off (1/0) (Default=0: --no-shuffle is used for standard pquery replay, shuffle is used for PQUERY_MULTI. =1 reverses this)
@@ -113,7 +109,7 @@ LOAD_TIMEZONE_DATA=0            # On/Off (1/0) Enable loading Timezone data into
 STAGE1_LINES=90                 # Proceed to stage 2 when the testcase is less then x lines (auto-reduced when FORCE_SPORADIC or FORCE_SKIPV are active)
 SKIPSTAGEBELOW=0                # Usually not changed (default=0), skips stages below and including this stage
 SKIPSTAGEABOVE=99               # Usually not changed (default=99), skips stages above and including this stage
-FORCE_KILL=0                    # On/Off (1/0) Enable to forcefully kill mysqld instead of using mysqladmin shutdown etc. Auto-disabled for MODE=0.
+FORCE_KILL=0                    # On/Off (1/0) Enable to forcefully kill mariadbd/mysqld instead of using mariadb-admin/mysqladmin shutdown etc. Auto-disabled for MODE=0.
 
 # === MariaDB Galera Cluster
 MDG=0                           # On/Off (1/0) Enable to reduce testcases using a MariaDB Galera Cluster. Auto-enables USE_PQUERY=1
@@ -154,12 +150,12 @@ TS_VARIABILITY_SLEEP=1
 #   - MODE=0: Timeout testing (server hangs, shutdown issues, excessive command duration etc.) (set TIMEOUT_CHECK)
 #   - MODE=1: Valgrind output testing (set TEXT)
 #   - MODE=2: mysql CLI (Command Line Interface, i.e. the mysql client)/pquery client output testing (set TEXT)
-#   - MODE=3: mysqld error output log or console/typescript log (when REDUCE_GLIBC_OR_SS_CRASHES=1) testing (set TEXT)
+#   - MODE=3: mariadbd/mysqld error output log or console/typescript log (when REDUCE_GLIBC_OR_SS_CRASHES=1) testing (set TEXT)
 #   - MODE=4: Crash or GLIBC crash (when REDUCE_GLIBC_OR_SS_CRASHES=1) testing
 #   - MODE=5 [BETA]: MTR testcase reduction (set TEXT) (Can also be used for multi-occurence CLI output testing - see MODE5_COUNTTEXT)
 #   - MODE=6 [ALPHA]: Multi threaded (ThreadSync) Valgrind output testing (set TEXT)
 #   - MODE=7 [ALPHA]: Multi threaded (ThreadSync) mysql CLI/pquery client output testing (set TEXT)
-#   - MODE=8 [ALPHA]: Multi threaded (ThreadSync) mysqld error output log testing (set TEXT)
+#   - MODE=8 [ALPHA]: Multi threaded (ThreadSync) mariadbd/mysqld error output log testing (set TEXT)
 #   - MODE=9 [ALPHA]: Multi threaded (ThreadSync) crash testing
 # - SKIPSTAGEBELOW: Stages up to and including this one are skipped (default=0).
 # - SKIPSTAGEABOVE: Stages above and including this one are skipped (default=9).
@@ -169,8 +165,8 @@ TS_VARIABILITY_SLEEP=1
 # - USE_PQUERY: 1: use pquery, 0: use mysql CLI. Causes reducer.sh to use pquery instead of the mysql client for replays (default=0). Supported for MODE=1,3,4
 # - PQUERY_LOC: Location of the pquery binary (ref ~/mariadb-qa/pquery/pquery[-ms])
 # - PQUERY_EXTRA_OPTIONS: Extra options to pquery which will be added to the pquery command line. This is used for query correctness trials
-# - MDG: 1: bring up 3 node MariaDB Galera Cluster instead of default server, 0: use default non-cluster server (mysqld)
-# - GRP_RPL: 1: bring up 3 node Group Replication instead of default server, 0: use default non-cluster server (mysqld)
+# - MDG: 1: bring up 3 node MariaDB Galera Cluster instead of default server, 0: use default non-cluster server (mariadbd/mysqld)
+# - GRP_RPL: 1: bring up 3 node Group Replication instead of default server, 0: use default non-cluster server (mariadbd/mysqld)
 #   see lp:/mariadb-qa/mdg-pquery/new/mdg-pquery_info.txt and lp:/mariadb-qa/docker_info.txt for more information on this. See above for some limitations etc.
 #   IMPORTANT NOTE: If this is set to 1, ftm, these settings (and limitations) are automatically set: INHERENT: USE_PQUERY=1, LIMTATIONS: FORCE_SPORADIC=0,
 #   SPORADIC=0, FORCE_SKIPV=0, SKIPV=1, MYEXTRA="", MULTI_THREADS=0
@@ -205,10 +201,10 @@ TS_VARIABILITY_SLEEP=1
 #   If the directory name starts with '/mysql/' then this may be ommited (example: BASEDIR="mysql-5.6-trunk")
 # - MULTI_THREADS: This option was an internal one only before. Set it to change the number of threads Reducer uses for the verify stage intially, and for reduction of sproradic issues if the verify stage found it is a sporadic issue. Recommended: 10, based on experience/testing/time-proven correctness.
 #   Do not change unless you need to. Where this may come in handy, for a single occassion, is when an issue is hard to reproduce and very sporadic. In this case you could activate FORCE_SKIPV (and thus automatically also FORCE_SPORADIC) which would skip the verify stage, and set this to a higher number for
-#   example 20 or 30. This would then immediately boot into 20 or 30 threads trying to reduce the issue with subreducers (note: thus 20 or 30x mysqld...)
+#   example 20 or 30. This would then immediately boot into 20 or 30 threads trying to reduce the issue with subreducers (note: thus 20 or 30x mariadbd/mysqld...)
 #   A setting less then 10 is really not recommended as a start since sporadic issues regularly only crash a few threads in 10 or 20 run threads.
 # - MULTI_THREADS_INCREASE: this option configures how many threads are added to MULTI_THREADS if the original MULTI_THREADS setting did not prove to be sufficient to trigger a (now declared highly-) sporadic issue. Recommended is setting 5 or 10. Note that reducer has a limit of MULTI_THREADS_MAX (50)
-#   threads (this literally means 50x mysqld + client thread(s)) as most systems (including high-end servers) start to seriously fail at this level (and earlier) Example; if you set MULTI_THREADS to 10 and MULTI_THREADS_INCREASE to 10, then the sequence (if no single reproduce can be established) will be:
+#   threads (this literally means 50x mariadbd/mysqld + client thread(s)) as most systems (including high-end servers) start to seriously fail at this level (and earlier) Example; if you set MULTI_THREADS to 10 and MULTI_THREADS_INCREASE to 10, then the sequence (if no single reproduce can be established) will be:
 #   10->20->30->40->50->Issue declared non-reproducible and program end. By this stage, the testcase has executed 6 verify levels *(10+20+30+40+50)=900 times.
 #   Still, even in this case there are methods that can be employed to let the testcase reproduce. For further ideas what to do in these cases, see; https://github.com/mariadb-corporation/mariadb-qa/blob/master/reproducing_and_simplification.txt
 # - FORCE_SPORADIC=0 or 1: If set to 1, STAGE1_LINES setting is ignored and set to 3, unless it was set to a non-default number (i.e. !=90 - to enable reduction of issues via MULTI until a given amount of lines is reached, which is handy for tools like pquery-reach.sh where a mix of sporadic and non-sporadic issues may be seen). MULTI reducer mode is used after verify, even if issue is found to seemingly not be sporadic (i.e. all verify threads reproduced the issue). This can be handy for issues which are very slow to reduce or which, on visual inspection of the testcase reduction
@@ -227,15 +223,15 @@ TS_VARIABILITY_SLEEP=1
 # - PQUERY_REVERSE_NOSHUFFLE_OPT=0 or 1: If set to 1, PQUERY_MULTI runs will use --no-shuffle (the reverse of normal operation), and standard pquery (not multi-threaded) will use shuffle (again the reverse of normal operation). This is a very handy option to increase testcase reproducibility. For example, when
 #   reducing a non-multithreaded testcase (i.e. normally --no-shuffle would be in use), and reducer.sh gets 'stuck' at around 60 lines, setting this to on will start replaying the testcase randomly (shuffled). This may increase reproducibility. The final run scripts will have matching --no-shuffle or
 #   shuffle (i.e. no --no-shuffle present) set. Note that this may mean that a testcase has to be executed a few or more times given that if shuffle is active (pquery's default, i.e. no --no-shuffle present), the testcase may replay differently then to what is needed. Powerful option, slightly confusing.
-# - TIMEOUT_COMMAND: this can be used to set a timeout command for mysqld. It is prefixed to the mysqld startup. This is handy when encountering a shutdown or server hang issue. When the timeout is reached, mysqld is terminated, but reduction otherwise happens as normal. Note that reducer will need some way to establish that an actual problem was triggered. For example, suppose that a shutdown issue shows itself in the error log by starting to output INNODB
-#   STATUS MONITOR output whenever the shutdown issue is occuring (i.e. server refuses to shutdown and INNODB STATUS MONITOR output keeps looping & end of the SQL input file is apparently never reached). In this case, after a timeout of x minutes, thanks to the TIMEOUT_COMMAND, mysqld is terminated. After the termination, reducer checks for "INNODB MONITOR OUTPUT" (MODE=3). It sees or not sees this output, and hereby it can continue to reduce the testcase further. This would have been using MODE=3 (check error log output). Another method may be to interleave the SQL with a SHOW PROCESSLIST; and then
+# - TIMEOUT_COMMAND: this can be used to set a timeout command for mariadbd/mysqld. It is prefixed to the mariadbd/mysqld startup. This is handy when encountering a shutdown or server hang issue. When the timeout is reached, mariadbd/mysqld is terminated, but reduction otherwise happens as normal. Note that reducer will need some way to establish that an actual problem was triggered. For example, suppose that a shutdown issue shows itself in the error log by starting to output INNODB
+#   STATUS MONITOR output whenever the shutdown issue is occuring (i.e. server refuses to shutdown and INNODB STATUS MONITOR output keeps looping & end of the SQL input file is apparently never reached). In this case, after a timeout of x minutes, thanks to the TIMEOUT_COMMAND, mariadbd/mysqld is terminated. After the termination, reducer checks for "INNODB MONITOR OUTPUT" (MODE=3). It sees or not sees this output, and hereby it can continue to reduce the testcase further. This would have been using MODE=3 (check error log output). Another method may be to interleave the SQL with a SHOW PROCESSLIST; and then
 #   check the client output (MODE=2) for (for example) a runaway query. Different are issues where there is a 1) complete hang or 2) an issue that does not or cannot!) represent itself in the error log/client log etc. In such cases, use TIMEOUT_CHECK and MODE=0.
-# - TIMEOUT_CHEK: used when MODE=0. Though there is no connection with TIMEOUT_COMMAND, the idea is similar; When MODE=0 is active, a timeout command prefix for mysqld is auto-generated by reducer.sh. Note that MODE=0 does NOT check for specific TEXT string issues. It just checks if a timeout was reached at the end of each trial run. Thus, if a server was hanging, or a statement ran for a very long time (if not terminated by the QUERYTIMEOUT setting), or a shutdon was initiated but never completed etc. then reducer.sh will notice that the timeout was reached, and thus assume the issue reproduced. Always set this setting at least to 2x the expected testcase run/duration lenght in seconds + 30 seconds extra. This longer duration is to prevent false positives. Reducer auto-sets this value as the timeout for mysqld, and checks if the termination of mysqld was within 30 seconds of this duration.
-# - FORCE_KILL=0 or 1: If set to 1, then reducer.sh will forcefully terminate mysqld instead of using mysqladmin. This can be used when for example authentication issues prevent mysqladmin from shutting down the server cleanly. Normally it is recommended to leave this =0 as certain issues only present themselves at the time of mysqld shutdown. However, in specific use cases it may be handy. Not often used. Auto-disabled for MODE=0.
+# - TIMEOUT_CHEK: used when MODE=0. Though there is no connection with TIMEOUT_COMMAND, the idea is similar; When MODE=0 is active, a timeout command prefix for mariadbd/mysqld is auto-generated by reducer.sh. Note that MODE=0 does NOT check for specific TEXT string issues. It just checks if a timeout was reached at the end of each trial run. Thus, if a server was hanging, or a statement ran for a very long time (if not terminated by the QUERYTIMEOUT setting), or a shutdon was initiated but never completed etc. then reducer.sh will notice that the timeout was reached, and thus assume the issue reproduced. Always set this setting at least to 2x the expected testcase run/duration lenght in seconds + 30 seconds extra. This longer duration is to prevent false positives. Reducer auto-sets this value as the timeout for mariadbd/mysqld, and checks if the termination of mariadbd/mysqld was within 30 seconds of this duration.
+# - FORCE_KILL=0 or 1: If set to 1, then reducer.sh will forcefully terminate mariadbd/mysqld instead of using mariadb-admin/mysqladmin. This can be used when for example authentication issues prevent mariadb-admin/mysqladmin from shutting down the server cleanly. Normally it is recommended to leave this =0 as certain issues only present themselves at the time of mariadbd/mysqld shutdown. However, in specific use cases it may be handy. Not often used. Auto-disabled for MODE=0.
 
 # ======== Gotcha's
 # - When any form of random replay is used (for example when using PQUERY_REVERSE_NOSHUFFLE_OPT=1 with PQUERY_MULTI=0 or when using PQUERY_MULTI=1 with PQUERY_REVERSE_NOSHUFFLE_OPT=0, or when using FIREWORKS=1), then there is a risk that DROP_C is not executed, i.e. reducer will try and run queries against no database. To avoid this in the future, on 24-08-20 RV updated all pquery and CLI call commands to auto-connect to the TEST database. While this has other implications (reduction will be able to remove the USE test; line eventually for example), this looks to be the best way forward to have maximum issue reproducibility.
-# - When reducing an SQL file using for example FORCE_SKIPV=1, FORCE_SPORADIC=1, PQUERY_MULTI=0, PQUERY_REVERSE_NOSHUFFLE_OPT=1, USE_PQUERY=1, then reducer will replay the SQL file, using pquery (USE_PQUERY=1), using a single client (i.e. pquery) thread against mysqld (PQUERY_MULTI=0), in a sql shuffled order (PQUERY_REVERSE_NOSHUFFLE_OPT=1) untill (FORCE_SKIPV=1 and FORCE_SPORADIC=1) it hits a bug. But notice that when the partially reduced file is written as _out, it is normally not valid to re-start reducer using this _out file (for further reduction) using PQUERY_REVERSE_NOSHUFFLE_OPT=0. The reason is that the sql replay order was random, but _out is generated based on the original testcase (sequential). Thus, the _out, when replayed sequentially, may not re-hit the same issue. Especially when things are really sporadic this can mean having to wait long and be confused about the results. Thus, if you start off with a random replay, finish with a random replay, and let the final bug testcase (auto-generated as {epoch}.*) be random replay too! See also the multirun scripts as generated inside basedirs (by startup.sh).
+# - When reducing an SQL file using for example FORCE_SKIPV=1, FORCE_SPORADIC=1, PQUERY_MULTI=0, PQUERY_REVERSE_NOSHUFFLE_OPT=1, USE_PQUERY=1, then reducer will replay the SQL file, using pquery (USE_PQUERY=1), using a single client (i.e. pquery) thread against mariadbd/mysqld (PQUERY_MULTI=0), in a sql shuffled order (PQUERY_REVERSE_NOSHUFFLE_OPT=1) untill (FORCE_SKIPV=1 and FORCE_SPORADIC=1) it hits a bug. But notice that when the partially reduced file is written as _out, it is normally not valid to re-start reducer using this _out file (for further reduction) using PQUERY_REVERSE_NOSHUFFLE_OPT=0. The reason is that the sql replay order was random, but _out is generated based on the original testcase (sequential). Thus, the _out, when replayed sequentially, may not re-hit the same issue. Especially when things are really sporadic this can mean having to wait long and be confused about the results. Thus, if you start off with a random replay, finish with a random replay, and let the final bug testcase (auto-generated as {epoch}.*) be random replay too! See also the multirun scripts as generated inside basedirs (by startup.sh).
 
 # ======== General develoment information
 # - Subreducer(s): these are multi-threaded runs of reducer.sh started from within reducer.sh. They have a specific role, similar to the main reducer.
@@ -259,7 +255,7 @@ TS_VARIABILITY_SLEEP=1
 #   - An expansion of this could be where the initial stage (as it goes through it's iterations) replays each next iteration with a different replay method.
 #     This is not 100% covering however, as the last stage (with the least amount of changes to the SQL input file) would replay with replay method/option x, while x may not be the replay option which triggers the bug at hand. As such, a few more verify stage rounds (there's 6 atm - each with 10 replay threads) may be needed to replay (partly "again", but this time with the least changed SQL file) the same SQL with each replay option. This would thus result in reducer needing a bit more time to do the VERIFY stage, but likely with good improved bug reproducibility. Untill this functionality is implemented, see the following file/page for reproducing & simplification ideas, which (if all followed diligently) usually result in bugs becoming reproducible; https://github.com/mariadb-corporation/mariadb-qa/blob/master/reproducing_and_simplification.txt
 # - MDG Node work: rm -Rf's in other places (non-supported subreducers for example) will need sudo. Also test for sudo working correctly upfront
-# - Add a MYEXTRA simplificator at end (extra stage) so that mysqld options are minimal
+# - Add a MYEXTRA simplificator at end (extra stage) so that mariadbd/mysqld options are minimal
 # - Improve ";" work in STAGE4 (";" sometimes missing from results - does not affect reproducibility)
 # - Improve VALGRIND/ERRORLOG run work (complete?)
 # - Improve clause elimination when sub queries are used: "ORDER BY f1);" is not filtered due to the ending ")"
@@ -270,7 +266,7 @@ TS_VARIABILITY_SLEEP=1
 # - Keep counters over time of which sed's have been successfull or not. If after many different runs, a sed remains 0 success, remove it
 # - Proceduralize stages and re-run STAGE2 after the last stage as this is often beneficial for # of lines (and remove last [Info] line in [Finish])
 # - Have to find some solution for the crash in tzinfo where reducer needs to use a non-Valgrind-instrumented build for tzinfo
-# - (process) script could pass all RQG-set extra mysqld options into MYEXTRA or another variable to get non-reproducible issues to work
+# - (process) script could pass all RQG-set extra mariadbd/mysqld options into MYEXTRA or another variable to get non-reproducible issues to work
 # - STAGE6: can be improved slightly furhter. See function for ideas.
 #   Also, the removal of a column fails when a CREATE TABLE statement includes KEY(col), so maybe these keys can be pre-dropped or at the same time
 #   Also, try and swap any use of the column to be removed to the name of column-1 (just store it in a variable) to avoid column missing error
@@ -375,8 +371,10 @@ TOKUDB=
 ROCKSDB=
 #Check BASEDIR and auto-update to a build in /data/VARIOUS_BUILDS/ if BASEDIR directory does not exist
 BASEDIR_ALT="$(echo "${BASEDIR}" | sed 's|/test/|/data/VARIOUS_BUILDS/|')"  # Check /data/VARIOUS_BUILDS (and use any dir found there if BASEDIR does not exist), as it often contains older BASEDIR directories. This aids in just starting reducer.sh without having to update the BASEDIR path/directory
-if [ ! -d "${PWD}" -a ! -d "${BASEDIR_ALT}" ]; then
-  echo "Assert: Neither '${PWD}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
+#if [ ! -d "${PWD}" -a ! -d "${BASEDIR_ALT}" ]; then
+if [ ! -d "${BASEDIR}" -a ! -d "${BASEDIR_ALT}" ]; then  # RV 19/2/24: Changed PWD to BASEDIR as PWD does not make sense?
+  #echo "Assert: Neither '${PWD}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
+  echo "Assert: Neither '${BASEDIR}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
   exit 1
 elif [ -d "${BASEDIR_ALT}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/VARIOUS_BUILDS/ archive) found
   echo "Note: Updating BASEDIR from '${BASEDIR}' to '${BASEDIR_ALT}' as set BASEDIR did not exist, but the same/required server build was found in /data/VARIOUS_BUILDS/"
@@ -385,7 +383,8 @@ elif [ -d "${BASEDIR_ALT}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/
 fi
 BASEDIR_ALT=
 #Check replication option
-if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want MASTER_EXTRA nor SLAVE_EXTRA options to take effect
+if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want any REPL_EXTRA, MASTER_EXTRA and SLAVE_EXTRA options to take effect
+  REPL_EXTRA=
   MASTER_EXTRA=
   SLAVE_EXTRA=
 fi
@@ -507,7 +506,9 @@ BINLOG=
 if [[ ${MDG} -ne 1 ]]; then
   if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
     if [[ ! "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-      if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
+      BIN_TO_USE="${BASEDIR}/bin/mariadbd"
+      if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
+      if [[ ! "$(${BIN_TO_USE} --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
         echo "Error: --server-id is present in MYEXTRA whereas --log-bin is not. Please fix this."
         echo "Terminating now."
         exit 1
@@ -515,11 +516,14 @@ if [[ ${MDG} -ne 1 ]]; then
         echo "Warning: --server-id is present in MYEXTRA whereas --log-bin is not. This is a valid setup for 8.0 in which binary logging is enabled by default already. Still, reduction may fail in STAGE9 as reducer has not been updated yet to handle this situation. As a workaround, add --log-bin to MYEXTRA, or simply stop at STAGE8 reduction, or add this functionality to STAGE9 and please push it back to the repository"
         # To add this functionality, it is likely required to just handle the --server-id option removal using the BINLOG variable whilst setting --log-bin=0 at the same time or something - and this would be a good improvement for 8.0 (and beyond) testcase reduction in any case, as it would show/prove whetter it is necesary to have binlog on or not for a given testcase
       fi
+      BIN_TO_USE=
     fi
   fi
   if [[ "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-    if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
-      if [[ ! "$(${BASEDIR}/bin/mysqld --no-defaults --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
+    BIN_TO_USE="${BASEDIR}/bin/mariadbd"
+    if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
+    if [[ ! "$(${BIN_TO_USE} --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
+      if [[ ! "$(${BIN_TO_USE} --no-defaults --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
         if [[ ! "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
           echo "Error: The version of mysqld is 5.7 or 8.0 and a --bin-log option was passed in MYEXTRA, yet no --server-id option was found whereas this is required for 5.7 and 8.0."
           echo "Terminating now."
@@ -527,6 +531,7 @@ if [[ ${MDG} -ne 1 ]]; then
         fi
       fi
     fi
+    BIN_TO_USE=
     BINLOG="$(echo "${MYEXTRA}" | grep -o "\-\-log[-_]bin[^ ]*" | head -n1)"  # Grep all text including and after '--log[-_]bin' upto a space
     MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${BINLOG}||g")"
     if [[ "${MYEXTRA}" == *"--server"[-_]"id"* ]]; then
@@ -556,7 +561,7 @@ SPECIAL_MYEXTRA_OPTIONS=$(echo $SPECIAL_MYEXTRA_OPTIONS | sed 's|^[ \t]\+||;s|[ 
 # For GLIBC crash reduction, we need to capture the output of the console from which reducer.sh is started. Currently only a SINGLE threaded solution using the 'scrip'
 # binary from the util-linux package was found. The script binary is able to capture the GLIC output from the main console. It may be interesting to review the source C
 # code for script, if available, to see how this is done. The following URL's may help with other possible solutions. However, LIBC_FATAL_STDERR_=1 has been found not to
-# work at all. Perhaps this is due to mysqld being a setuid program (which is not confirmed). exec 2> and exec 1> redirections as well as process substitution i.e. >() have
+# work at all. Perhaps this is due to mariadbd/mysqld being a setuid program (which is not confirmed). exec 2> and exec 1> redirections as well as process substitution i.e. >() have
 # also been found not to work at all. Either the GLIBC trace will still be sent to the main console (and this may be the problem to start with), or it does not display at
 # all when testing various interactions. To further complicate things, subshells $() and & may have interesting redirection dynamics. Many combinations were tried. Complex.
 # * http://stackoverflow.com/questions/2821577/is-there-a-way-to-make-linux-cli-io-redirection-persistent
@@ -604,13 +609,26 @@ save_rr_trace(){
 }
 
 abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anymore
+  trap SIGINT  # Clear the SIGINT trap
   ABORT_ACTIVE=1
-  if [ -r $INPUTFILE ]; then
+  if [ ! -d "${WORKD}" ]; then
+    if [ -r "${WORKO}" ]; then
+      echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Terminating."
+    else
+      echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Last good known testcase: $WORKO (provided the disk being used did not run out of space). Terminating."
+    fi
+    # TODO: ~/ds (most likely) or ~/memory seem to be causing this more recently and more frequently: to fix
+    echoit "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
+    kill -9 $$  # Effectively self-terminate
+    exit 1
+  elif [ -r $INPUTFILE ]; then
     echoit "[Abort] CTRL+C Was pressed. Dumping variable stack"
   else
     echoit "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
     echoit "[Abort] The source for this reducer was likely deleted. Terminating."
+    echo "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
+    exit 1
   fi
   echoit "[Abort] WORKD: $WORKD (reducer log @ $WORKD/reducer.log) | EPOCH ID: $EPOCH"
   if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
@@ -643,7 +661,6 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
     echoit "[Abort] What follows below is a call of finish(), the results are likely correct, but may be mangled due to the abort"
   fi
   finish 'abort'
-  trap SIGINT
   exit 2
 }
 
@@ -718,10 +735,10 @@ options_check(){
   if $(echo $MYEXTRA | grep -E --binary-files=text -qi "MYEXTRA=.*innodb_log_arch_dir"); then DIR_ISSUE='innodb_log_arch_dir'; fi
   if [ "$DIR_ISSUE" != "0" ]; then
     echo "Error: the $DIR_ISSUE option is being used in the MYEXTRA option string. This can lead to all sorts of problems;"
-    echo 'Remember that reducer 1) is multi-threaded - i.e. it would access that particularly named directory for each started mysqld, which'
+    echo 'Remember that reducer 1) is multi-threaded - i.e. it would access that particularly named directory for each started mariadbd/mysqld, which'
     echo 'clearly would result in issues, and 2) whilst reducer creates new directories for every trial (and for each thread), it would not do'
     echo 'anything for this hardcoded directory, so this directory would get used every time, again clearly resulting in issues, especially'
-    echo 'when one considers that 3) running mysqld instances get killed once the achieved result (for example, issue discovered) is obtained.'
+    echo 'when one considers that 3) running mariadbd/mysqld instances get killed once the achieved result (for example, issue discovered) is obtained.'
     echo 'Suggested course of action: remove this/these sort of options from the MYEXTRA string and see if the issue reproduces. This/these sort'
     echo 'of options often have little effect on reproducibility. Howerver, if found significant, reducer.sh can be expanded to cater for this/'
     echo 'these sort of options being in MYEXTRA by re-directing them to a per-trial (and per-thread) subdirectory of the trial`s rundir used.'
@@ -813,7 +830,7 @@ options_check(){
         if [ "$INPUTFILE" == "" -a "$1" == "" ]; then
           echo 'Error: No input file was given.'
         else
-          echo 'Error: The specified input file did not exist or could not be read.'
+          echo "Error: The specified input file ($INPUTFILE) did not exist or could not be read."
         fi
         echo 'Please specify a single SQL file to reduce.'
         echo 'Example: ./reducer ~/1.sql     --> to process ~/1.sql'
@@ -889,7 +906,7 @@ options_check(){
   if [ $MODE -eq 3 -a $USE_NEW_TEXT_STRING -eq 1 ]; then
     if [ $(echo "${TEXT}" | sed 's/[^|]//g' | tr -d '\n' | wc -m) -lt 3 ]; then  # Actual normal is 4. 3 Used for small safety buffer yet avoiding most '||' (OR) error-log-search based TEXT's. Still, the new text string could in principle have less then 4 also if not enough stacks were available in the core dump, or if we ever decide to use the old unique strings as a fallback for the case where new strings are not available (unlikely).
       if [ "${FIREWORKS}" != "1" ]; then
-        if [[ "${TEXT}" != "MEMORY_NOT_FREED"* && "${TEXT}" != "GOT_FATAL_ERROR"* && "${TEXT}" != "GOT_ERROR"* && "$TEXT" != "MARKED_AS_CRASHED"* && "$TEXT" != "MARIADB_ERROR_CODE"* && "${TEXT}" != "FALLBACK"* ]]; then  # Avoid situations where it is expected to see this
+        if [[ "${TEXT}" != "MUTEX"* && "${TEXT}" != "MEMORY_NOT_FREED"* && "${TEXT}" != "GOT_FATAL_ERROR"* && "${TEXT}" != "GOT_ERROR"* && "$TEXT" != "MARKED_AS_CRASHED"* && "$TEXT" != "MARIADB_ERROR_CODE"* && "${TEXT}" != "FALLBACK"* ]]; then  # Avoid situations where it is expected to see this
           echo "Likely misconfiguration: MODE=3 and USE_NEW_TEXT_STRING=1, yet the TEXT string ('${TEXT}') does not contain at least 3 '|' symbols, which are normally used in new text string unique bug ID's! It is highly likely reducer will not locate any bugs this way. Are you perhaps attempting to look for a specific TEXT string in the standard server error log? If so, please set USE_NEW_TEXT_STRING=0 and SCAN_FOR_NEW_BUGS=0 ! Another possibility is that you incorrectly set the TEXT variable to something that is not a/the unique bug ID. Please check your setup. Pausing 13 seconds for consideration. Press CTRL+c if you want to stop at this point. If not, reducer will look for '${TEXT}' in the new text string script unique bug ID output. Again, this is unlikely to work, unless in the specific use case of looking for a partial match of a limited TEXT string against the new text string script unique bug ID output."
           sleep 13
         fi
@@ -918,11 +935,11 @@ options_check(){
     fi
   fi
   BIN="${BASEDIR}/bin/mariadbd"
-  if [ ! -s "${BIN}" ]; then
+  if [ ! -r "${BIN}" ]; then
     BIN="${BASEDIR}/bin/mysqld"
-    if [ ! -s "${BIN}" ]; then
+    if [ ! -r "${BIN}" ]; then
       BIN="${BASEDIR}/bin/mysqld-debug"
-      if [ ! -s "${BIN}" ]; then
+      if [ ! -r "${BIN}" ]; then
         echo "Assert: No mariadbd, mysqld or mysqld-debug binary was found in ${BASEDIR}/bin"
         echo 'Please check script options and please set the $BASEDIR variable correctly'
         echo "The BASEDIR variable is currently set to ${BASEDIR}"
@@ -997,7 +1014,7 @@ options_check(){
       echo "Terminating now."
       exit 1
     elif [ $PQUERY_MULTI_CLIENT_THREADS -eq 1 ]; then
-      echoit "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to 1; 1 thread for a multi-threaded issue does not seem logical. Proceeding, but this is highly likely incorrect. Please check. NOTE: There is at least one possible use case for this: proving that a sporadic mysqld startup can be reproduced (with a near-empty SQL file; i.e. the run is concerned with reproducing the startup issue, not reducing the SQL file)"
+      echoit "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to 1; 1 thread for a multi-threaded issue does not seem logical. Proceeding, but this is highly likely incorrect. Please check. NOTE: There is at least one possible use case for this: proving that a sporadic mariadbd/mysqld startup can be reproduced (with a near-empty SQL file; i.e. the run is concerned with reproducing the startup issue, not reducing the SQL file)"
     elif [ $PQUERY_MULTI_CLIENT_THREADS -lt 5 ]; then
       echoit "Warning: PQUERY_MULTI active, and PQUERY_MULTI_CLIENT_THREADS is set to $PQUERY_MULTI_CLIENT_THREADS, $PQUERY_MULTI_CLIENT_THREADS threads for reproducing a multi-threaded issue via random replay seems insufficient. You may want to increase PQUERY_MULTI_CLIENT_THREADS. Proceeding, but this is likely incorrect. Please check"
     fi
@@ -1017,7 +1034,7 @@ options_check(){
     fi
     if [[ $MDG -gt 0 || $GRP_RPL -eq 1 ]]; then
       echo "GLIBC testcase reduction is not yet supported for MDG=1 or GRP_RPL=1. This would be very complex to code, except perhaps for a single node cluster or for one node only. See source code for details. Search for 'GLIBC crash reduction'"
-      echo "A workaround may be to see if this GLIBC crash reproduces on standard (non-cluster) mysqld also, which is likely."
+      echo "A workaround may be to see if this GLIBC crash reproduces on standard (non-cluster) mariadbd/mysqld also, which is likely."
       echo "Terminating now."
       exit 1
     fi
@@ -1076,7 +1093,7 @@ options_check(){
     fi
     if [ "${USE_NEW_TEXT_STRING}" != "1" ]; then
       echoit "[Setup] SCAN_FOR_NEW_BUGS was set to 1, yet USE_NEW_TEXT_STRING is not set to 1 (set to '${USE_NEW_TEXT_STRING}'). This setup is not covered by this script yet. Ref inside reducer for more info. Automatically turning SCAN_FOR_NEW_BUGS off."
-      # Reason is that the new text string script is used in conjunction with the new bugs string list. This could be expanded to include the older bugs string list also, but this would seem to be wasted effort as that list is no longer maintained inside MariaDB (the new unique bug id's are used instead and are much better/of much higher quality). Rather, and this is also provides additional ROI in other areas; update the new text string script to call the old script for any case where a new unique bug ID can not be obtained (quite limited limited amount of cases; usually only when incorrect core dumps (stack smashing, OOS, mysqld failed to create a coredump) are used.
+      # Reason is that the new text string script is used in conjunction with the new bugs string list. This could be expanded to include the older bugs string list also, but this would seem to be wasted effort as that list is no longer maintained inside MariaDB (the new unique bug id's are used instead and are much better/of much higher quality). Rather, and this is also provides additional ROI in other areas; update the new text string script to call the old script for any case where a new unique bug ID can not be obtained (quite limited limited amount of cases; usually only when incorrect core dumps (stack smashing, OOS, mariadbd/mysqld failed to create a coredump) are used.
       SCAN_FOR_NEW_BUGS=0
     fi
   fi
@@ -1125,11 +1142,13 @@ set_internal_options(){  # Internal options: do not modify!
   # Try and raise max user processes limit (please also preset the soft/hard nproc settings in /etc/security/limits.conf (Centos), both to at least 20480 - see mariadb-qa/setup_server.sh for an example)
   #ulimit -u 4000  2>/dev/null
   # ^ This was removed, because it was causing the system to run out of available file descriptors. i.e. while ulimit -n may be set to a maximum of 1048576, and whilst that limit may never be reached, a system would still run into "fork: retry: Resource temporarily unavailable" issues. Ref https://askubuntu.com/questions/1236454
-  # Unless core files are specifically requested (--core-file or --core option passed to mysqld via MYEXTRA), disable all core file generation (OS+mysqld)
-  if [ $USE_NEW_TEXT_STRING -eq 0 ]; then  # Do not disable core file generation if we need it for TEXT_STRING_LOC which uses core files to generate unique bug strings
-    # It would be good if we could disable OS core file generation without disabling mysqld core file generation, but for the moment it looks like
-    # ulimit -c 0 disables ALL core file generation, both OS and mysqld, so instead, ftm, reducer checks for "CORE" in MYEXTRA (uppercase-ed via ^^)
-    # and if present reducer does not disable core file generation (OS nor mysqld)
+  # Unless core files are specifically requested (--core-file or --core option passed to mariadbd/mysqld via MYEXTRA), disable all core file generation (OS+mariadbd/mysqld)
+  if [ "${PAUSE_AFTER_EACH_OCCURENCE}" -eq 1 ]; then
+    MYEXTRA="${MYEXTRA} --core-file"  # Enable core file generation if PAUSE_AFTER_EACH_OCCURENCE is set, as this option is commonly used to debug cores directly after each issue occurence happens. Also, do not disable core file generation (ref elif)
+  elif [ "${USE_NEW_TEXT_STRING}" != "1" ]; then  # Also do not disable core file generation if we need it for the 'new text string' binary (as specified by TEXT_STRING_LOC), which uses core files to generate UniqueID bug strings
+    # It would be good if we could disable OS core file generation without disabling mariadbd/mysqld core file generation, but for the moment it looks like
+    # ulimit -c 0 disables ALL core file generation, both OS and mariadbd/mysqld, so instead, ftm, reducer checks for "CORE" in MYEXTRA (uppercase-ed via ^^)
+    # and if present reducer does not disable core file generation (OS nor mariadbd/mysqld)
     if [[ "${MYEXTRA^^}" != *"CORE"* ]]; then  # ^^ = Uppercase MYEXTRA contents before compare
       ulimit -c 0 >/dev/null
     fi
@@ -1193,6 +1212,7 @@ kill_multi_reducer(){
 }
 
 multi_reducer(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
   MULTI_FOUND=0
   # This function handles starting and checking subreducer threads used for verification AND simplification of sporadic issues (as such it is the parent
   # function watching over multiple [seperately started] subreducer threads, each child containing the written MULTI_REDUCER=1 setting set in #VARMOD# -
@@ -1267,8 +1287,22 @@ multi_reducer(){
     echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for all forked verification subreducer threads to finish/terminate"
     TXT_OUT="$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Finished/Terminated verification subreducer threads:"
     for t in $(eval echo {1..$MULTI_THREADS}); do
-      # TODO: An ideal situation would be to have a check here for 'Failed to start mysqld server' in the subreducer logs. However, this would require a change to how this section works; the "wait" for PID would have to be changed to some sort of loop. However, as a stopped verify thread (1 in 10 for starters) is quickly surpassed by a new set of threads - i.e. after 10 threads, 20 are started (a new run with +10 threads) - it is not deemed very necessary to change this atm. This error also would only show on very busy servers. However, this check SHOULD be done for non-verify MULTI stages, as for simplification, all threads keep running (if they remain live) untill a simplified testcase is found. Thus, if 8 out of 10 threads sooner or later end up with 'Failed to start mysqld server', then only 2 threads would remain that try and reproduce the issue (till ifinity). The 'Failed to start mysqld server' is seen on very busy servers (presumably some timeout hit). This second part (starting with 'However,...' is implemented already below. RV update 12/8/20: When a different crash is seen then the one specified using TEXT, the thread will also get restarted, with the message being displayed being the 'busy server' one which is not correct. Some update to that output already made below.
-      wait $(eval echo $(echo '$MULTI_PID'"$t"))
+      while true; do  # Wait for subreducer to naturally finish, or check if it has a failed server start issue
+        SUBREDUCER_CHECK_PID="$(eval echo $(echo '$MULTI_PID'"$t"))"
+        if ! kill -0 ${SUBREDUCER_CHECK_PID} 2>/dev/null; then
+          break
+        fi
+        SUBREDUCER_LOGFILE="$(ps -ef | grep --binary-files=text ${SUBREDUCER_CHECK_PID} | grep --binary-files=text -v 'grep' | grep --binary-files=text -o 'error=/.*subreducer/[0-9]/' | sed 's|^error=||;s|$|reducer.log|' | head -n1)"  # TODO: Perhaps there is a better way to get to the subreducer reducer log file without using the PID directly, though it is not clear how, as in this loop all we seem to have is the subreducer PID
+        if [ -f "${SUBREDUCER_LOGFILE}" -a -r "${SUBREDUCER_LOGFILE}" ]; then
+          if grep -Eqi --binary-files=text 'Failed to start the.*server' "${SUBREDUCER_LOGFILE}"; then
+            kill -9 ${SUBREDUCER_CHECK_PID}  # Ensure the subreducer is terminated immediately. Defensive as a later process cleanup will likely catch it as well
+            break
+          fi
+          sleep 0.25  # Do not query the disk too often
+        fi
+        sleep 0.25  # ps re-check delay
+      done
+      SUBREDUCER_CHECK_PID=;SUBREDUCER_LOGFILE=
       TXT_OUT="$TXT_OUT #$t"
       echoit_overwrite "$TXT_OUT"
       if [ $t -eq 20 -a $MULTI_THREADS -gt 20 ]; then
@@ -1310,7 +1344,7 @@ multi_reducer(){
           else
             echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads... done"
           fi
-          # The subshell in the following line simply retrieves the WORKO output file from the subreducer Then, the grep -v removes any mysqld option line before copying the file to the new/next WORKF for the next trial If this step was not done, the new/next WORKF testcase would always be +1 line longer. The way this would show for example in SKIPV mode is that the main reducer would indicate that it had found a shorter testcase (-1 line for example) whereas the next trial would start with the same line number (as +1 line was re-added). This is not so clear when large chunks are removed at the time, but it becomes very clear when only ~5-15 lines are left. This was fixed and the line below does not suffer from said problem
+          # The subshell in the following line simply retrieves the WORKO output file from the subreducer Then, the grep -v removes any mariadbd/mysqld option line before copying the file to the new/next WORKF for the next trial If this step was not done, the new/next WORKF testcase would always be +1 line longer. The way this would show for example in SKIPV mode is that the main reducer would indicate that it had found a shorter testcase (-1 line for example) whereas the next trial would start with the same line number (as +1 line was re-added). This is not so clear when large chunks are removed at the time, but it becomes very clear when only ~5-15 lines are left. This was fixed and the line below does not suffer from said problem
           grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') > $WORKF
           if [ "${FIREWORKS}" != "1" ]; then
             if [ -r "$WORKO" ]; then  # Avoid first occurence when there is no $WORKO yet
@@ -1336,7 +1370,8 @@ multi_reducer(){
           fi
           FOUND_VERIFIED=1  # Outer loop terminate setup
           if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
-            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURENCE is active: reducer is pausing as the issue occured. Press 'Enter' to continue..."
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURENCE is active: reducer is pausing as the issue occured. Press 'Enter' twice to continue..."
+            read -p ''
             read -p ''
           fi
           break  # Inner loop terminate
@@ -1347,16 +1382,16 @@ multi_reducer(){
         if [ "$(ps -p$PID_TO_CHECK | grep -E --binary-files=text -o $PID_TO_CHECK)" != "$PID_TO_CHECK" ]; then
           RESTART_WORKD=$(eval echo $(echo '$WORKD'"$t"))
           SUBR_SVR_START_FAILURE=0
-          if grep -Eqi --binary-files=text ".ERROR. Failed to start mysqld server" $RESTART_WORKD/reducer.log 2>/dev/null; then  # Check if this was a subreducer who's mysqld failed to start
+          if grep -Eqi --binary-files=text "Failed to start the.*server" $RESTART_WORKD/reducer.log 2>/dev/null; then  # Check if this was a subreducer who's mariadbd/mysqld failed to start
             SUBR_SVR_START_FAILURE=1
             TMP_RND_FILENAME="err_$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/').txt"  # Subshell creates random number with 6 digits
-            cp $RESTART_WORKD/log/master.err /tmp/${TMP_RND_FILENAME}  # Copy the mysqld error log from the subreducer run which had a failed startup to /tmp for research
+            cp $RESTART_WORKD/log/master.err /tmp/${TMP_RND_FILENAME}  # Copy the mariadbd/mysqld error log from the subreducer run which had a failed startup to /tmp for research
             if [ -r $RESTART_WORKD/log/slave.err ]; then
               cp $RESTART_WORKD/log/slave.err /tmp/${TMP_RND_FILENAME}.slave
             fi
           fi
           if [ "${FIREWORKS}" != "1" ]; then  # We do not want to spam FireWorks mode output
-            if grep -E --binary-files=text "Do you already have another mysqld server running on port|Address already in use|Got error: 98" $RESTART_WORKD/log/*.err 2>/dev/null; then  # A server likely crashed on a different bug
+            if grep -E --binary-files=text "Do you already have another.*running|Got error: 98" $RESTART_WORKD/log/*.err 2>/dev/null; then  # A server likely crashed on a different bug
               echoit "$ATLEASTONCE [Stage $STAGE] [WARNING] this script tried to restart the thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")), but failed due to a TCP/IP port address already in use error, which can be seen in $RESTART_WORKD/log/*.err - The most likely reason for this is that this thread previously crashed on another crash then the one specified in TEXT. It is highly unlikely that this script ran into an actual duplicate port issue due to the advanced checking for the same in multi_reducer(). If this message is looping, you want to:  tail -n5 $(echo "${RESTART_WORKD}" | sed 's|/$||;s|/[^/]\+$|/*/log/*.err|')  repeatadely untill you see a crash, followed by actually checking (i.e. vi) the error log quickly (to avoid overwrite) once you see a crash, to see which crash is being generated, and then stop reducer and modify the search TEXT text or make other required changes (like updating MYEXTRA) to find the original bug being looked for. It may work out better to first reduce for the new issue seen; it is likely the same bug. Alternatively, set this reducer to MODE=4 to look for any crash (provided you are reducing for a crash), with the caveat that if the SQL is capable of introducing two different crashes (and it looks like it is), you may end up with the wrong crash reduced. In that case, try again, or research the crash seen as described using the tail command. This script will now attempt to terminate and restart the thread."
             fi
           fi
@@ -1382,12 +1417,12 @@ multi_reducer(){
               echoit "Assert: /tmp/$TMP_RND_FILENAME not found or not readable! Did the volume hosting /tmp run out of space?"
               echoit "Will try and continue assuming this is a recoverable situation, though it may not be"
             fi
-            if egrep --binary-files=text -qi "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|mysqld: disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28" /tmp/$TMP_RND_FILENAME*; then
-              echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Thread #$t disappeared (mysqld start failed) due to running out of diskspace. Restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))."
-              #echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Copied the last mysqld error log to /tmp/$TMP_RND_FILENAME (and /tmp/$TMP_RND_FILENAME.slave if a started slave was present) for review. Otherwise, please ignore the \"check...\" message just above; the files are no longer there given the restart above)"
+            if egrep --binary-files=text -qi "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|disk full|waiting for someone to free some space|out of disk space|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28|Disk is full writing|Errcode: 28|No space left on device|Waiting for someone to free space|up to 60 secs delay for server to continue after freeing disk space" /tmp/$TMP_RND_FILENAME*; then
+              echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Thread #$t disappeared (mariadbd/mysqld start failed) due to running out of diskspace. Restarted thread with PID #$(eval echo $(echo '$MULTI_PID'"$t"))."
+              #echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [OOS] Copied the last mariadbd/mysqld error log to /tmp/$TMP_RND_FILENAME (and /tmp/$TMP_RND_FILENAME.slave if a started slave was present) for review. Otherwise, please ignore the \"check...\" message just above; the files are no longer there given the restart above)"
             else
               if [ "${FIREWORKS}" != "1" ]; then  # Only show the full output in non-fireworks mode
-                echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happen irregularly on busy servers OR when there is not sufficient diskspace). If the message is repeating continuously, please investigate. reducer has also copied the last mysqld error log to /tmp/$TMP_RND_FILENAME (and /tmp/$TMP_RND_FILENAME.slave if a started slave was present) for review, though an out of diskpace may not show in there.)"  # This may happen irregularly due to mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
+                echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared due to a failed start of mariadbd/mysqld inside a subreducer thread, restarted the subreducer thread with PID #$(eval echo $(echo '$MULTI_PID'"$t")) (This will happen irregularly on busy servers OR when there is not sufficient diskspace). If the message is repeating continuously, please investigate. reducer has also copied the last mariadbd/mysqld error log to /tmp/$TMP_RND_FILENAME (and /tmp/$TMP_RND_FILENAME.slave if a started slave was present) for review, though an out of diskpace may not show in there.)"  # This may happen irregularly due to mariadbd/mysqld startup timeouts etc. | Check the last few lines of the subreducer log to find reason (you may need a pause above before the thread is restarted!)
               else
                 echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread #$t disappeared. Thread restarted (PID #$(eval echo $(echo '$MULTI_PID'"$t")))"
               fi
@@ -1401,7 +1436,7 @@ multi_reducer(){
               if grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log 2>/dev/null; then
                 echoit "Assert: Access denied for user detected in at least one of the subreducers. Check:  grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log  # This issue may be hard to recover from"
               else
-                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/*.err\n3) mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/*.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/*.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
+                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/*.err\n3) mariadbd/mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mariadb-admin/mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/*.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mariadb-admin/mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/*.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mariadb-admin/mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
               fi
               echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] Issue detected. Debug info: cat /dev/shm/$EPOCH/debug.aid"
               # TODO: Reason 1 does happen. Observed:
@@ -1429,6 +1464,26 @@ multi_reducer(){
       export MULTI_WORKD=$(eval echo $(echo '$WORKD'"$t"))
       if [ -s $MULTI_WORKD/VERIFIED ]; then
         ATLEASTONCE="[*]"  # The issue was seen at least once
+        if [ "${PAUSE_AFTER_EACH_OCCURENCE}" -eq 1 ]; then
+          echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread $t reproduced the issue. As PAUSE_AFTER_EACH_OCCURENCE is set, pausing for analysis. Press enter twice to continue. Directory: ${MULTI_WORKD}"
+          if [ -r "${TEXT_STRING_LOC}" ]; then  # Attempt to give more information
+            cd $MULTI_WORKD
+            if [ "${MULTI_WORKD}" != "${PWD}" ]; then
+              echoit "Assert: cd ${MULTI_WORKD} before NEW_TEXT_STRING parsing failed. Terminating."
+              exit 1
+            fi
+            if [ $MDG -eq 1 ]; then
+              export GALERA_ERROR_LOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
+              export GALERA_CORE_LOC=$WORKD/node1/*core*
+            fi
+            MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
+            cd - >/dev/null
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] NEW_TEXT_STRING Output: ${MYBUGFOUND}"
+            MYBUGFOUND=
+          fi
+          read -p ''
+          read -p ''
+        fi
         MULTI_FOUND=$[$MULTI_FOUND+1]
         TXT_OUT="$TXT_OUT #$t"
       fi
@@ -1651,6 +1706,7 @@ init_workdir_and_files(){
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
   echoit "[Init] Reducer: $(cd "`dirname $0`" && pwd)/$(basename "$0")"  # With thanks (basename), https://stackoverflow.com/a/192337/1208218
+  echoit "[Init] Reducer PID: $$"
   export TMP=$WORKD/tmp
   if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then echoit "[Init] Console typescript log for REDUCE_GLIBC_OR_SS_CRASHES: /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log"; fi
   # jemalloc configuration for TokuDB plugin
@@ -1777,16 +1833,16 @@ init_workdir_and_files(){
   else
     if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -gt 0 ]; then
       if [ $FORCE_SKIPV -gt 0 -a $FORCE_SPORADIC -gt 0 ]; then
-        echoit "[Init] PQUERY_REVERSE_NOSHUFFLE_OPT turned on. Replay will be random instead of sequential (whilst still using a single thread client per mysqld)"
+        echoit "[Init] PQUERY_REVERSE_NOSHUFFLE_OPT turned on. Replay will be random instead of sequential (whilst still using a single thread client per mariadbd/mysqld)"
       else
-        echoit "[Init] PQUERY_REVERSE_NOSHUFFLE_OPT turned on. Replay will be random instead of sequential (whilst still using a single thread client per mysqld). This setting is best combined with FORCE_SKIPV=1 and FORCE_SPORADIC=1 ! Please edit the settings, unless you know what you're doing"
+        echoit "[Init] PQUERY_REVERSE_NOSHUFFLE_OPT turned on. Replay will be random instead of sequential (whilst still using a single thread client per mariadbd/mysqld). This setting is best combined with FORCE_SKIPV=1 and FORCE_SPORADIC=1 ! Please edit the settings, unless you know what you're doing"
       fi
     fi
   fi
   if [ $FORCE_SKIPV -gt 0 -a "${FIREWORKS}" != "1" ]; then
-    if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer
+    if [ "$MULTI_REDUCER" != "1" -a "$SKIPSTAGEBELOW" -lt 2 ]; then  # This is the main reducer and we're in stage < 2
       echoit "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing multi threaded simplification"
-    else  # This is a subreducer (i.e. not multi-threaded)
+    else  # This is a subreducer (i.e. not multi-threaded), or a main reducer in stage >= 2 (later stages are not multi-threaded)
       echoit "[Init] FORCE_SKIPV active. Verify stage skipped, and immediately commencing simplification"
     fi
   fi
@@ -1828,7 +1884,7 @@ init_workdir_and_files(){
   fi
   if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
     echoit "[Init] REDUCE_STARTUP_ISSUES active. Issue is assumed to be a startup issue"
-    echoit "[Info] Note: REDUCE_STARTUP_ISSUES is normally used for debugging mysqld startup issues only; for example caused by a misbehaving --option to mysqld. You may want to make the SQL input file really small (for example 'SELECT 1;' only) to ensure that when the particular issue being debugged is not seen, reducer will not spent a long time on executing SQL unrelated to the real issue, i.e. failing mysqld startup"
+    echoit "[Info] Note: REDUCE_STARTUP_ISSUES is normally used for debugging mariadbd/mysqld startup issues only; for example caused by a misbehaving --option to mariadbd/mysqld. You may want to make the SQL input file really small (for example 'SELECT 1;' only) to ensure that when the particular issue being debugged is not seen, reducer will not spent a long time on executing SQL unrelated to the real issue, i.e. failing mariadbd/mysqld startup"
   fi
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then
     echoit "[Init] Querytimeout: ${QUERYTIMEOUT}s (For RQG-originating testcase reductions, ensure this is at least 1.5x what was set in RQG using the --querytimeout option)"
@@ -1882,8 +1938,8 @@ init_workdir_and_files(){
     echoit "[Init] NR_OF_TRIAL_REPEATS>1: setting SKIPSTAGEBELOW=1, ensuring repeated line-by-line reduction trials"
     export -n SKIPSTAGEBELOW=1
   fi
-  if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echoit "[Init] Passing the following additional options to mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
-  if [ "$MYINIT" != "" ]; then echoit "[Init] Passing the following additional options to mysqld initialization: $MYINIT"; fi
+  if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echoit "[Init] Passing the following additional options to mariadbd/mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
+  if [ "$MYINIT" != "" ]; then echoit "[Init] Passing the following additional options to mariadbd/mysqld initialization: $MYINIT"; fi
   if [ $MODE -ge 6 ]; then
     if [ $TS_TRXS_SETS -eq 1 ]; then echoit "[Init] ThreadSync: using last transaction set (accross threads) only"; fi
     if [ $TS_TRXS_SETS -gt 1 ]; then echoit "[Init] ThreadSync: using last $TS_TRXS_SETS transaction sets (accross threads) only"; fi
@@ -1956,7 +2012,7 @@ init_workdir_and_files(){
       INIT_OPT="--no-defaults --force ${MYINIT}"
       START_OPT="--core"
     elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
-      echo "WARNING: mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may fail."
+      echo "WARNING: mariadbd/mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mariadbd/mysqld. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may fail."
     fi
     if [[ $MDG -ne 1 && $GRP_RPL -ne 1 ]]; then
       echoit "[Init] Setting up standard data directory working template (without using MYEXTRA options)"
@@ -1967,10 +2023,11 @@ init_workdir_and_files(){
         echo "Terminating now."
         exit 1
       else
-        # Note that 'mv data data.init' needs to come BEFORE first mysqld startup attempt, to not pollute the template with an actual mysqld startup (think --init-file, tokudb, and the reduction of startup options in STAGE8)
+        # Note that 'mv data data.init' needs to come BEFORE first mariadbd/mysqld startup attempt, to not pollute the template with an actual mariadbd/mysqld startup (think --init-file, tokudb, and the reduction of startup options in STAGE8)
+        if [ ! -d "${WORKD}" ]; then abort; fi
         mv ${WORKD}/data ${WORKD}/data.init
         mkdir -p ${WORKD}/data
-        cp -a ${WORKD}/data.init/* ${WORKD}/data/  # We need this for the first mysqld startup attempt just below
+        cp -a ${WORKD}/data.init/* ${WORKD}/data/  # We need this for the first mariadbd/mysqld startup attempt just below
         if [ "${REPLICATION}" -eq 1 ]; then
           mkdir -p ${WORKD}/data_slave
           cp -a ${WORKD}/data.init/* ${WORKD}/data_slave/
@@ -1989,18 +2046,21 @@ init_workdir_and_files(){
       fi
       FIRST_MYSQLD_START_FLAG=1
       if [ $MODE -ne 1 -a $MODE -ne 6 ]; then start_mysqld_main; else start_valgrind_mysqld_main; fi
-      if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
+      ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+      if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
+      if ! ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
         if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
-          echoit "[Init] [NOTE] Failed to cleanly start mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mysqld). Normally this would cause reducer.sh to halt here (and advice you to check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log + check that there is plenty of space on the device being used). However, because REDUCE_STARTUP_ISSUES is set to 1, we continue this reducer run. See above for more info on the REDUCE_STARTUP_ISSUES setting"
+          echoit "[Init] [NOTE] Failed to cleanly start mariadbd/mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mariadbd/mysqld). Normally this would cause reducer.sh to halt here (and advice you to check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log + check that there is plenty of space on the device being used). However, because REDUCE_STARTUP_ISSUES is set to 1, we continue this reducer run. See above for more info on the REDUCE_STARTUP_ISSUES setting"
         else
-          echoit "[Init] [ERROR] Failed to start mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mysqld), check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
-          echoit "[Init] [INFO] If however you want to debug a mysqld startup issue, for example caused by a misbehaving --option to mysqld, set REDUCE_STARTUP_ISSUES=1 and restart reducer.sh"
+          echoit "[Init] [ERROR] Failed to start the mariadbd/mysqld server (This was the 1st startup attempt with all MYEXTRA options passed to mariadbd/mysqld), check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text 'Failed to start the.*server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error!
+          echoit "[Init] [INFO] If however you want to debug a mariadbd/mysqld startup issue, for example caused by a misbehaving --option to mariadbd/mysqld, set REDUCE_STARTUP_ISSUES=1 and restart reducer.sh"
           echo "Terminating now."
           exit 1
         fi
       else
-        echoit "[Init] First mariadbd/mysqld startup with all MYEXTRA options passed to mysqld successful"
+        echoit "[Init] First mariadbd/mysqld startup with all MYEXTRA options passed to mariadbd/mysqld successful"
       fi
+      ADMIN_BIN_TO_USE=
       if [ $LOAD_TIMEZONE_DATA -gt 0 ]; then
         echoit "[Init] Loading timezone data into mysql database"
         # echoit "[Info] You may safely ignore any 'Warning: Unable to load...' messages, unless there are very many (Ref. BUG#13563952)"
@@ -2024,7 +2084,10 @@ init_workdir_and_files(){
       done
     elif [[ $GRP_RPL -eq 1 ]]; then
       echoit "[Init] Setting up standard Group Replication data directory working template (without using MYEXTRA options)"
-      MID="${BASEDIR}/bin/mysqld --no-defaults --initialize-insecure ${MYINIT} --basedir=${BASEDIR}"
+      BIN_TO_USE="${BASEDIR}/bin/mariadbd"
+      if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
+      MID="${BIN_TO_USE} --no-defaults --initialize-insecure ${MYINIT} --basedir=${BASEDIR}"
+      BIN_TO_USE=
       node1="${WORKD}/node1"
       node2="${WORKD}/node2"
       node3="${WORKD}/node3"
@@ -2050,7 +2113,7 @@ generate_run_scripts(){
   if [ "${FIREWORKS}" == "1" ]; then  # No need to generate run sripts in FIREWORKS mode
     return 0
   fi
-  # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a mysql cli), _stop (stop mysqld). _start (starts mysqld)
+  # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a client/CLI), _stop (stop mariadbd/mysqld). _start (starts mariadbd/mysqld)
   # (start_mysqld_main and start_valgrind_mysqld_main). Togheter these scripts can be used for executing the final testcase ($WORKO_start > $WORKO_run)
   if [[ ${MDG} -eq 1 ]]; then
     local EPOCH_SOCKET="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}_socket.sock"
@@ -2065,13 +2128,13 @@ generate_run_scripts(){
   echo "#!/bin/bash" > $WORK_INIT
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_INIT
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_INIT
-  echo "echo \"Attempting to prepare mysqld environment at /dev/shm/${EPOCH}...\"" >> $WORK_INIT
+  echo "echo \"Attempting to prepare mariadbd/mysqld environment at /dev/shm/${EPOCH}...\"" >> $WORK_INIT
   echo "rm -Rf /dev/shm/${EPOCH}" >> $WORK_INIT
   if [[ ${MDG} -eq 0 ]]; then
     echo "mkdir -p /dev/shm/${EPOCH}/tmp /dev/shm/${EPOCH}/log" >> $WORK_INIT
   fi
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`" >> $WORK_INIT
-  echo "if [ -n \"\$BIN\"  ]; then" >> $WORK_INIT
+  echo "if [ -n \"\$BIN\" ]; then" >> $WORK_INIT
   echo "  if [ \"\$BIN\" != \"\${BASEDIR}/bin/mysqld\" -a \"\$BIN\" != \"\${BASEDIR}/bin/mysqld-debug\" ];then" >> $WORK_INIT
   echo "    if [ ! -h \${BASEDIR}/bin/mysqld -o ! -f \${BASEDIR}/bin/mysqld ]; then mkdir -p \${BASEDIR}/bin; ln -s \$BIN \${BASEDIR}/bin/mysqld; fi" >> $WORK_INIT
   echo "    if [ ! -h \${BASEDIR}/bin/mysql -o ! -f \${BASEDIR}/bin/mysql ]; then ln -s \${BASEDIR}/client/mysql \${BASEDIR}/bin/mysql ; fi" >> $WORK_INIT
@@ -2100,8 +2163,9 @@ generate_run_scripts(){
   else
     echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_RUN
     echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN
-    echo "echo \"Executing testcase ./${EPOCH}.sql against mysqld with socket ${EPOCH_SOCKET} using the mysql CLI client...\"" >> $WORK_RUN
+    echo "echo \"Executing testcase ./${EPOCH}.sql against mariadbd/mysqld with socket ${EPOCH_SOCKET} using the mysql CLI client...\"" >> $WORK_RUN
     if [ "$CLI_MODE" == "" ]; then CLI_MODE=99; fi  # Leads to assert below
+    if [ ! -d "${WORKD}" ]; then abort; fi
     case $CLI_MODE in
       0) echo "cat ./${EPOCH}.sql | \${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --binary-mode --force test" >> $WORK_RUN ;;
       1) echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} --execute=\"SOURCE ./${EPOCH}.sql;\" --force test" >> $WORK_RUN ;;  # TODO When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.
@@ -2111,7 +2175,7 @@ generate_run_scripts(){
     chmod +x $WORK_RUN
     if [ $USE_PQUERY -eq 1 ]; then
       cp $PQUERY_LOC $WORK_PQUERY_BIN  # Make a copy of the pquery binary for easy replay later (no need to download)
-      echo "echo \"Executing testcase ./${EPOCH}.sql against mysqld with socket ${EPOCH_SOCKET} using pquery...\"" > $WORK_RUN_PQUERY
+      echo "echo \"Executing testcase ./${EPOCH}.sql against mariadbd/mysqld with socket ${EPOCH_SOCKET} using pquery...\"" > $WORK_RUN_PQUERY
       echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" >> $WORK_RUN_PQUERY
       echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_RUN_PQUERY
       echo "export LD_LIBRARY_PATH=\${BASEDIR}/lib" >> $WORK_RUN_PQUERY
@@ -2141,27 +2205,30 @@ generate_run_scripts(){
   fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_GDB
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_GDB
+  BIN_TO_USE_SHORT="bin/mariadbd"
+  if [ ! -r "${BASEDIR}/bin/mariadbd" ]; then BIN_TO_USE="bin/mysqld"; fi
   if [[ ${MDG} -eq 1 ]]; then
-    echo "gdb \${BASEDIR}/bin/mysqld \$(ls --color=never /dev/shm/${EPOCH}/node1/core*)" >> $WORK_GDB
+    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node1/core*)" >> $WORK_GDB
   else
-    echo "gdb \${BASEDIR}/bin/mysqld \$(ls --color=never /dev/shm/${EPOCH}/data/core*)" >> $WORK_GDB
+    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/data*/core*)" >> $WORK_GDB
   fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_PARSE_CORE
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_PARSE_CORE
   if [[ ${MDG} -eq 1 ]]; then
-    echo "gdb \${BASEDIR}/bin/mysqld \$(ls --color=never /dev/shm/${EPOCH}/node1/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
+    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node1/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
   else
-    echo "gdb \${BASEDIR}/bin/mysqld \$(ls --color=never /dev/shm/${EPOCH}/data/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
+    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/data/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
   fi
+  BIN_TO_USE_SHORT=
   echo -e "  set auto-load safe-path /\n  set libthread-db-search-path /usr/lib/\n  set trace-commands on\n  set pagination off\n  set print pretty on\n  set print array on\n  set print array-indexes on\n  set print elements 4096\n  set print frame-arguments all\n  set logging file ${EPOCH}_FULL.gdb\n  set logging on\n  thread apply all bt full\n  set logging off\n  set logging file ${EPOCH}_STD.gdb\n  set logging on\n  thread apply all bt\n  set logging off\n  quit\nEOF" >> $WORK_PARSE_CORE
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_STOP
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_STOP
-  echo "echo \"Attempting to shutdown mysqld with socket ${EPOCH_SOCKET}...\"" >> $WORK_STOP
+  echo "echo \"Attempting to shutdown mariadbd/mysqld with socket ${EPOCH_SOCKET}...\"" >> $WORK_STOP
   echo "MYADMIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadb-admin -type f -o -name mysqladmin -type f -o -name mysqladmin -type l \`" >> $WORK_STOP
   echo "\$MYADMIN -uroot -S${EPOCH_SOCKET} shutdown" >> $WORK_STOP
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_CL
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_CL
-  echo "echo \"Connecting to mysqld with socket -S${EPOCH_SOCKET} test using the mysql CLI client...\"" >> $WORK_CL
+  echo "echo \"Connecting to mariadbd/mysqld with socket -S${EPOCH_SOCKET} test using the mysql CLI client...\"" >> $WORK_CL
   if [[ ${MDG} -eq 1 ]]; then
     echo "\${BASEDIR}/bin/mysql -uroot -S${EPOCH_SOCKET} \$(ls --color=never -d /dev/shm/${EPOCH}/node1/test 2>/dev/null | grep -o 'test')" >> $WORK_CL
   else
@@ -2171,21 +2238,21 @@ generate_run_scripts(){
   echo "$ vi ${EPOCH}_mybase         # STEP1: Update the base path in this file (usually the only change required!). If you use a non-binary distribution, please update SOURCE_DIR location also" >> $WORK_HOW_TO_USE
   echo "$ ./${EPOCH}_init            # STEP2: Initializes the data dir" >> $WORK_HOW_TO_USE
   if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
-    echo "$ ./${EPOCH}_start_valgrind  # STEP3: Starts mysqld under Valgrind (make sure to use a Valgrind instrumented build) (note: this can easily take 20-30 seconds or more)" >> $WORK_HOW_TO_USE
+    echo "$ ./${EPOCH}_start_valgrind  # STEP3: Starts mariadbd/mysqld under Valgrind (make sure to use a Valgrind instrumented build) (note: this can easily take 20-30 seconds or more)" >> $WORK_HOW_TO_USE
   else
-    echo "$ ./${EPOCH}_start           # STEP3: Starts mysqld" >> $WORK_HOW_TO_USE
+    echo "$ ./${EPOCH}_start           # STEP3: Starts mariadbd/mysqld" >> $WORK_HOW_TO_USE
   fi
-  echo "$ ./${EPOCH}_cl              # STEP4: To check mysqld is up (repeat if necessary)" >> $WORK_HOW_TO_USE
+  echo "$ ./${EPOCH}_cl              # STEP4: To check mariadbd/mysqld is up (repeat if necessary)" >> $WORK_HOW_TO_USE
   if [ $USE_PQUERY -eq 1 ]; then
     echo "$ ./${EPOCH}_run_pquery      # STEP5: Run the testcase with the pquery binary" >> $WORK_HOW_TO_USE
     echo "$ ./${EPOCH}_run             # OPTIONAL: Run the testcase with the mysql CLI (may not reproduce the issue, as the pquery binary was used for the original testcase reduction)" >> $WORK_HOW_TO_USE
     if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
-      echo "$ ./${EPOCH}_stop            # STEP6: Stop mysqld (and wait for Valgrind to write end-of-Valgrind-run details to the mysqld error log)" >> $WORK_HOW_TO_USE
+      echo "$ ./${EPOCH}_stop            # STEP6: Stop mariadbd/mysqld (and wait for Valgrind to write end-of-Valgrind-run details to the mariadbd/mysqld error log)" >> $WORK_HOW_TO_USE
     fi
   else
     echo "$ ./${EPOCH}_run             # STEP5: Run the testcase with the mysql CLI" >> $WORK_HOW_TO_USE
     if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
-      echo "$ ./${EPOCH}_stop            # STEP6: Stop mysqld (and wait for Valgrind to write end-of-Valgrind-run details to the mysqld error log)" >> $WORK_HOW_TO_USE
+      echo "$ ./${EPOCH}_stop            # STEP6: Stop mariadbd/mysqld (and wait for Valgrind to write end-of-Valgrind-run details to the mariadbd/mysqld error log)" >> $WORK_HOW_TO_USE
     fi
   fi
   if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
@@ -2193,12 +2260,14 @@ generate_run_scripts(){
   else
     echo "$ vi ${EPOCH_ERROR_LOG}  # STEP6: Verify the error log" >> $WORK_HOW_TO_USE
   fi
-  echo "$ ./${EPOCH}_gdb             # OPTIONAL: Brings you to a gdb prompt with gdb attached to the used mysqld and attached to the generated core" >> $WORK_HOW_TO_USE
+  echo "$ ./${EPOCH}_gdb             # OPTIONAL: Brings you to a gdb prompt with gdb attached to the used mariadbd/mysqld and attached to the generated core" >> $WORK_HOW_TO_USE
   echo "$ ./${EPOCH}_parse_core      # OPTIONAL: Creates ${EPOCH}_STD.gdb and ${EPOCH}_FULL.gdb; standard and full variables gdb stack traces" >> $WORK_HOW_TO_USE
   chmod +x $WORK_CL $WORK_STOP $WORK_GDB $WORK_PARSE_CORE $WORK_INIT
 }
 
 init_mysql_dir(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   if [[ $MDG -eq 1 ]] ; then
     for i in $(seq 1 ${NR_OF_NODES}); do
       sudo rm -Rf ${WORKD}/node${i}
@@ -2236,51 +2305,69 @@ init_mysql_dir(){
 
 start_mysqld_or_valgrind_or_mdg(){
   init_mysql_dir
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   if [ $MDG -eq 1 ]; then
     start_mdg_main
   elif [ $GRP_RPL -eq 1 ]; then
     gr_start_main
   else
     # Pre-start cleanup
-    if [ -f $WORKD/log/master.err ]; then mv -f $WORKD/log/master.err $WORKD/log/master.err.prev; fi  # mysqld error log (single server or master)
-    if [ -f $WORKD/log/slave.err ]; then mv -f $WORKD/log/slave.err $WORKD/log/slave.err.prev; fi  # mysqld error log (slave)
-    if [ -f $WORKD/log/mysqld.out ]; then mv -f $WORKD/log/mysqld.out $WORKD/mysqld.prev; fi  # mysqld stdout & stderr output, as well as some mysqladmin output (single server or master)
-    if [ -f $WORKD/log/mysqld_slave.out ]; then mv -f $WORKD/log/mysqld_slave.out $WORKD/mysqld.prev; fi  # mysqld stdout & stderr output, as well as some mysqladmin output (slave)
+    if [ -f $WORKD/log/master.err ]; then mv -f $WORKD/log/master.err $WORKD/log/master.err.prev; fi  # mariadbd/mysqld error log (single server or master)
+    if [ -f $WORKD/log/slave.err ]; then mv -f $WORKD/log/slave.err $WORKD/log/slave.err.prev; fi  # mariadbd/mysqld error log (slave)
+    if [ -f $WORKD/log/mysqld.out ]; then mv -f $WORKD/log/mysqld.out $WORKD/mysqld.prev; fi  # mariadbd/mysqld stdout & stderr output, as well as some mariadb-admin/mysqladmin output (single server or master)
+    if [ -f $WORKD/log/mysqld_slave.out ]; then mv -f $WORKD/log/mysqld_slave.out $WORKD/mysqld.prev; fi  # mariadbd/mysqld stdout & stderr output, as well as some mariadb-admin/mysqladmin output (slave)
     if [ -f $WORKD/log/mysql.out ]; then mv -f $WORKD/log/mysql.out $WORKD/mysql.prev; fi  # mysql client output (only applicable to single server or master)
     if [ -f $WORKD/log/default.node.tld_thread-0.out ]; then mv -f $WORKD/log/default.node.tld_thread-0.out $WORKD/log/default.node.tld_thread-0.prev; fi  # pquery client output
     if [ -f $WORKD/default.node.tld_thread-0.sql ]; then mv -f $WORKD/default.node.tld_thread-0.sql $WORKD/log/default.node.tld_thread-0.prevsql; fi
     # Start
+    FAILURE_RETURN_CODE=
     if [ $MODE -ne 1 -a $MODE -ne 6 ]; then
       start_mysqld_main
+      if [ "${?}" == "3" ]; then
+        FAILURE_RETURN_CODE=3
+      fi
     else
       start_valgrind_mysqld_main
+      if [ "${?}" == "3" ]; then
+        FAILURE_RETURN_CODE=3
+      fi
     fi
     if [ ${REDUCE_STARTUP_ISSUES} -le 0 ]; then
-      if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
+      ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+      if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
+      if ! ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
         if [ ${STAGE} -eq 8 -o ${STAGE} -eq 9 ]; then
           if [ ${STAGE} -eq 8 ]; then STAGE8_NOT_STARTED_CORRECTLY=1; fi
           if [ ${STAGE} -eq 9 ]; then STAGE9_NOT_STARTED_CORRECTLY=1; fi
-          echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, assuming this option set is required"
+          echoit "$ATLEASTONCE [Stage $STAGE] [Note] Assuming this option set is required as the server did not start"  # Do not use 'Failed to start the.*server' text here to avoid that being detected as a subreducer failure (for future use, as subreducers currently do not run STAGE8)
         else
-          if [ "${REPLICATION}" -eq 1 ]; then  # With replication, we continue reducing as at times there are m/s startup issues #TODO: research further as to reason, seems to be timing related (timeout was increased from 60 to 90 now)
-            return 1  # We return a 1 status which, in combination with REPLICATION=1 will indicate that a m/s startup issue happened. run_and_check() will then just return a '0' based on this indicating that this trial did not reproduce the issue
+          if [ "${FAILURE_RETURN_CODE}" == "3" ]; then  # Replication startup failure
+            # There is no need to show the warning below here, as the code in start_mysqld_main already issues a similar warning when replication startup fail
+            FAILURE_RETURN_CODE=
+            return 3  # Return a replication-specific failure code (3)
           else
-            echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server, check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log (The last good known testcase may be at $WORKO if the disk being used did not run out of space)"
-            echo "Terminating now."
-            exit 1
-          fi
+            echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] Failed to start the mariadbd/mysqld server, retrying by restarting the server. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
+            return 1  # Return a general startup failure
+          fi 
         fi
       else
         # Ref discussion RV/RS 27 Nov 19 via 1:1 (RV;should be covered in SQL,RS;issue seen)
         # RV update 24-08-2020: Added back in to provision for using test db always in CLI/pquery startup
-        ${BASEDIR}/bin/mysql -uroot -S$WORKD/socket.sock -e "create database if not exists test" > /dev/null 2>&1
+        CLIENT_BIN_TO_USE="${BASEDIR}/bin/mariadb"
+        if [ ! -r "${CLIENT_BIN_TO_USE}" ]; then CLIENT_BIN_TO_USE="${BASEDIR}/bin/mysql"; fi
+        ${CLIENT_BIN_TO_USE} -uroot -S$WORKD/socket.sock -e "create database if not exists test" > /dev/null 2>&1
+        CLIENT_BIN_TO_USE=
       fi
+      ADMIN_BIN_TO_USE=
     fi
   fi
   STARTUPCOUNT=$[$STARTUPCOUNT+1]
 }
 
 start_mdg_main(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   generate_run_scripts
   #clean existing processes
   (ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
@@ -2411,12 +2498,18 @@ start_mdg_main(){
       echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START
       echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --wsrep-new-cluster > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       echo "sleep 10" >> $WORK_START
-      ${RR_OPTIONS} ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/node${j}.err 2>&1 &
+      BIN_TO_USE="${BASEDIR}/bin/mariadbd"
+      if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
+      ${RR_OPTIONS} ${BIN_TO_USE} --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA --wsrep-new-cluster > ${WORKD}/node${j}/node${j}.err 2>&1 &
+      BIN_TO_USE=
       mdg_node_startup_status ${WORKD}/node${j}/node${j}.err
     else
       echo "${TIMEOUT_COMMAND} \$BIN --defaults-file=\$SCRIPT_DIR/${EPOCH}_n${j}.cnf $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA > $WORKD/node${j}/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       echo "sleep 60" >> $WORK_START
-      ${BASEDIR}/bin/mysqld --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA > ${WORKD}/node${j}/node${j}.err 2>&1 &
+      BIN_TO_USE="${BASEDIR}/bin/mariadbd"
+      if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
+      ${BIN_TO_USE} --defaults-file=${WORKD}/n${j}.cnf $MYEXTRA > ${WORKD}/node${j}/node${j}.err 2>&1 &
+      BIN_TO_USE=
       mdg_node_startup_status ${WORKD}/node${j}/node${j}.err
     fi
   done
@@ -2428,6 +2521,8 @@ start_mdg_main(){
 }
 
 gr_start_main(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   ADDR="127.0.0.1"
   init_empty_port
   RBASE1=$NEWPORT
@@ -2464,7 +2559,9 @@ gr_start_main(){
     fi
   }
 
-  ${BASEDIR}/bin/mysqld --no-defaults \
+  BIN_TO_USE="${BASEDIR}/bin/mariadbd"
+  if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
+  ${BIN_TO_USE} --no-defaults \
     --basedir=${BASEDIR} --datadir=$node1 \
     --innodb_file_per_table $MYEXTRA --innodb_autoinc_lock_mode=2 --innodb_locks_unsafe_for_binlog=1 \
     --server_id=1 --gtid_mode=ON --enforce_gtid_consistency=ON \
@@ -2480,21 +2577,30 @@ gr_start_main(){
     --loose-group_replication_start_on_boot=off --loose-group_replication_local_address="$LADDR1" \
     --loose-group_replication_group_seeds="$LADDR1,$LADDR2,$LADDR3" \
     --loose-group_replication_bootstrap_group=off --super_read_only=OFF > $node1/node1.err 2>&1 &
+  BIN_TO_USE=
 
+  ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+  if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
   for X in $(seq 0 200); do
     sleep 1
-    if ${BASEDIR}/bin/mysqladmin -uroot -S$node1/node1_socket.sock ping > /dev/null 2>&1; then
+    if ${ADMIN_BIN_TO_USE} -uroot -S$node1/node1_socket.sock ping > /dev/null 2>&1; then
       sleep 2
-      ${BASEDIR}/bin/mysql -uroot -S$node1/node1_socket.sock -Bse "create database if not exists test" > /dev/null 2>&1
-      ${BASEDIR}/bin/mysql -uroot -S$node1/node1_socket.sock -Bse "SET SQL_LOG_BIN=0;CREATE USER rpl_user@'%';GRANT REPLICATION SLAVE ON *.* TO rpl_user@'%' IDENTIFIED BY 'rpl_pass';FLUSH PRIVILEGES;SET SQL_LOG_BIN=1;" > /dev/null 2>&1
-      ${BASEDIR}/bin/mysql -uroot -S$node1/node1_socket.sock -Bse "CHANGE MASTER TO MASTER_USER='rpl_user', MASTER_PASSWORD='rpl_pass' FOR CHANNEL 'group_replication_recovery';" > /dev/null 2>&1
-      ${BASEDIR}/bin/mysql -uroot -S$node1/node1_socket.sock -Bse "INSTALL PLUGIN group_replication SONAME 'group_replication.so';SET GLOBAL group_replication_bootstrap_group=ON;START GROUP_REPLICATION;SET GLOBAL group_replication_bootstrap_group=OFF;" > /dev/null 2>&1
+      CLIENT_BIN_TO_USE="${BASEDIR}/bin/mariadb"
+      if [ ! -r "${CLIENT_BIN_TO_USE}" ]; then CLIENT_BIN_TO_USE="${BASEDIR}/bin/mysql"; fi
+      ${CLIENT_BIN_TO_USE} -uroot -S$node1/node1_socket.sock -Bse "create database if not exists test" > /dev/null 2>&1
+      ${CLIENT_BIN_TO_USE} -uroot -S$node1/node1_socket.sock -Bse "SET SQL_LOG_BIN=0;CREATE USER rpl_user@'%';GRANT REPLICATION SLAVE ON *.* TO rpl_user@'%' IDENTIFIED BY 'rpl_pass';FLUSH PRIVILEGES;SET SQL_LOG_BIN=1;" > /dev/null 2>&1
+      ${CLIENT_BIN_TO_USE} -uroot -S$node1/node1_socket.sock -Bse "CHANGE MASTER TO MASTER_USER='rpl_user', MASTER_PASSWORD='rpl_pass' FOR CHANNEL 'group_replication_recovery';" > /dev/null 2>&1
+      ${CLIENT_BIN_TO_USE} -uroot -S$node1/node1_socket.sock -Bse "INSTALL PLUGIN group_replication SONAME 'group_replication.so';SET GLOBAL group_replication_bootstrap_group=ON;START GROUP_REPLICATION;SET GLOBAL group_replication_bootstrap_group=OFF;" > /dev/null 2>&1
+      CLIENT_BIN_TO_USE=
       break
     fi
     gr_startup_chk $node1/node1.err
   done
+  ADMIN_BIN_TO_USE=
 
-  ${BASEDIR}/bin/mysqld --no-defaults \
+  BIN_TO_USE="${BASEDIR}/bin/mariadbd"
+  if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
+  ${BIN_TO_USE} --no-defaults \
     --basedir=${BASEDIR} --datadir=$node2 \
     --innodb_file_per_table $MYEXTRA --innodb_autoinc_lock_mode=2 --innodb_locks_unsafe_for_binlog=1 \
     --server_id=1 --gtid_mode=ON --enforce_gtid_consistency=ON \
@@ -2510,20 +2616,29 @@ gr_start_main(){
     --loose-group_replication_start_on_boot=off --loose-group_replication_local_address="$LADDR2" \
     --loose-group_replication_group_seeds="$LADDR1,$LADDR2,$LADDR3" \
     --loose-group_replication_bootstrap_group=off --super_read_only=OFF > $node2/node2.err 2>&1 &
+  BIN_TO_USE=
 
+  ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+  if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
   for X in $(seq 0 200); do
     sleep 1
-    if ${BASEDIR}/bin/mysqladmin -uroot -S$node2/node2_socket.sock ping > /dev/null 2>&1; then
+    if ${ADMIN_BIN_TO_USE} -uroot -S$node2/node2_socket.sock ping > /dev/null 2>&1; then
       sleep 2
-      ${BASEDIR}/bin/mysql -uroot -S$node2/node2_socket.sock -Bse "SET SQL_LOG_BIN=0;CREATE USER rpl_user@'%';GRANT REPLICATION SLAVE ON *.* TO rpl_user@'%' IDENTIFIED BY 'rpl_pass';FLUSH PRIVILEGES;SET SQL_LOG_BIN=1;" > /dev/null 2>&1
-      ${BASEDIR}/bin/mysql -uroot -S$node2/node2_socket.sock -Bse "CHANGE MASTER TO MASTER_USER='rpl_user', MASTER_PASSWORD='rpl_pass' FOR CHANNEL 'group_replication_recovery';" > /dev/null 2>&1
-      ${BASEDIR}/bin/mysql -uroot -S$node2/node2_socket.sock -Bse "INSTALL PLUGIN group_replication SONAME 'group_replication.so';START GROUP_REPLICATION;" > /dev/null 2>&1
+      CLIENT_BIN_TO_USE="${BASEDIR}/bin/mariadb"
+      if [ ! -r "${CLIENT_BIN_TO_USE}" ]; then CLIENT_BIN_TO_USE="${BASEDIR}/bin/mysql"; fi
+      ${CLIENT_BIN_TO_USE} -uroot -S$node2/node2_socket.sock -Bse "SET SQL_LOG_BIN=0;CREATE USER rpl_user@'%';GRANT REPLICATION SLAVE ON *.* TO rpl_user@'%' IDENTIFIED BY 'rpl_pass';FLUSH PRIVILEGES;SET SQL_LOG_BIN=1;" > /dev/null 2>&1
+      ${CLIENT_BIN_TO_USE} -uroot -S$node2/node2_socket.sock -Bse "CHANGE MASTER TO MASTER_USER='rpl_user', MASTER_PASSWORD='rpl_pass' FOR CHANNEL 'group_replication_recovery';" > /dev/null 2>&1
+      ${CLIENT_BIN_TO_USE} -uroot -S$node2/node2_socket.sock -Bse "INSTALL PLUGIN group_replication SONAME 'group_replication.so';START GROUP_REPLICATION;" > /dev/null 2>&1
+      CLIENT_BIN_TO_USE=
       break
     fi
     gr_startup_chk $node2/node2.err
   done
+  ADMIN_BIN_TO_USE=
 
-  ${BASEDIR}/bin/mysqld --no-defaults \
+  BIN_TO_USE="${BASEDIR}/bin/mariadbd"
+  if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
+  ${BIN_TO_USE} --no-defaults \
     --basedir=${BASEDIR} --datadir=$node3 \
     --innodb_file_per_table $MYEXTRA --innodb_autoinc_lock_mode=2 --innodb_locks_unsafe_for_binlog=1 \
     --server_id=1 --gtid_mode=ON --enforce_gtid_consistency=ON \
@@ -2539,21 +2654,30 @@ gr_start_main(){
     --loose-group_replication_start_on_boot=off --loose-group_replication_local_address="$LADDR3" \
     --loose-group_replication_group_seeds="$LADDR1,$LADDR2,$LADDR3" \
     --loose-group_replication_bootstrap_group=off --super_read_only=OFF > $node3/node3.err 2>&1 &
+  BIN_TO_USE=
 
+  ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+  if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
   for X in $(seq 0 200); do
     sleep 1
-    if ${BASEDIR}/bin/mysqladmin -uroot -S$node3/node3_socket.sock ping > /dev/null 2>&1; then
+    if ${ADMIN_BIN_TO_USE} -uroot -S$node3/node3_socket.sock ping > /dev/null 2>&1; then
       sleep 2
-      ${BASEDIR}/bin/mysql -uroot -S$node3/node3_socket.sock -Bse "SET SQL_LOG_BIN=0;CREATE USER rpl_user@'%';GRANT REPLICATION SLAVE ON *.* TO rpl_user@'%' IDENTIFIED BY 'rpl_pass';FLUSH PRIVILEGES;SET SQL_LOG_BIN=1;" > /dev/null 2>&1
-      ${BASEDIR}/bin/mysql -uroot -S$node3/node3_socket.sock -Bse "CHANGE MASTER TO MASTER_USER='rpl_user', MASTER_PASSWORD='rpl_pass' FOR CHANNEL 'group_replication_recovery';" > /dev/null 2>&1
-      ${BASEDIR}/bin/mysql -uroot -S$node3/node3_socket.sock -Bse "INSTALL PLUGIN group_replication SONAME 'group_replication.so';START GROUP_REPLICATION;" > /dev/null 2>&1
+      CLIENT_BIN_TO_USE="${BASEDIR}/bin/mariadb"
+      if [ ! -r "${CLIENT_BIN_TO_USE}" ]; then CLIENT_BIN_TO_USE="${BASEDIR}/bin/mysql"; fi
+      ${CLIENT_BIN_TO_USE} -uroot -S$node3/node3_socket.sock -Bse "SET SQL_LOG_BIN=0;CREATE USER rpl_user@'%';GRANT REPLICATION SLAVE ON *.* TO rpl_user@'%' IDENTIFIED BY 'rpl_pass';FLUSH PRIVILEGES;SET SQL_LOG_BIN=1;" > /dev/null 2>&1
+      ${CLIENT_BIN_TO_USE} -uroot -S$node3/node3_socket.sock -Bse "CHANGE MASTER TO MASTER_USER='rpl_user', MASTER_PASSWORD='rpl_pass' FOR CHANNEL 'group_replication_recovery';" > /dev/null 2>&1
+      ${CLIENT_BIN_TO_USE} -uroot -S$node3/node3_socket.sock -Bse "INSTALL PLUGIN group_replication SONAME 'group_replication.so';START GROUP_REPLICATION;" > /dev/null 2>&1
+      CLIENT_BIN_TO_USE=
       break
     fi
     gr_startup_chk $node3/node3.err
   done
+  ADMIN_BIN_TO_USE=
 }
 
 start_mysqld_main(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
     echo "Terminating now."
@@ -2561,7 +2685,7 @@ start_mysqld_main(){
   fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
-  echo "echo \"Attempting to start mysqld (socket /dev/shm/${EPOCH}/socket.sock)...\"" >> $WORK_START
+  echo "echo \"Attempting to start mariadbd/mysqld (socket /dev/shm/${EPOCH}/socket.sock)...\"" >> $WORK_START
   #echo $JE1 >> $WORK_START; echo $JE2 >> $WORK_START; echo $JE3 >> $WORK_START; echo $JE4 >> $WORK_START;echo $JE5 >> $WORK_START
   echo $JE1 >> $WORK_START; echo $JE2 >> $WORK_START; echo $JE3 >> $WORK_START; echo $JE4 >> $WORK_START
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mariadbd/mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
@@ -2589,32 +2713,42 @@ start_mysqld_main(){
     if [ "${REPLICATION}" -eq 1 ]; then
       # ---- Master
       init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
-      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data --tmpdir=$WORKD/tmp --port=$MYPORT --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $MASTER_EXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_START_TIME=$(date +'%s')
       $CMD > $WORKD/log/mysqld.out 2>&1 &
       PIDV="$!"
       # ---- Slave
       init_empty_port; MYPORT_SLAVE=$NEWPORT; NEWPORT=  # Obtain new empty port
-      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
-      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_SLAVE_START_TIME=$(date +'%s')
       $CMD > $WORKD/log/mysqld_slave.out 2>&1 &
       PIDV_SLAVE="$!"
       # ---- Init replication
       # Ensure both servers are live
       MASTER_STARTUP_OK=0; SLAVE_STARTUP_OK=0
-      for((delay=0;delay<90;delay++)); do  # 90 Second max master+slave startup (normally, only ~2 seconds are required, though on very busy servers it can take >60 seconds)
+      ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+      if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
+      for((delay=0;delay<75;delay++)); do  # 75 Second max master+slave startup (normally, only ~2 seconds are required, though on very busy servers it can take >60 seconds)
         sleep 1
-        touch ${WORKD}  # Ensure that watchdog scripts like ~/ds do not think this directory no-longer-in-use
-        if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then MASTER_STARTUP_OK=1; fi
-        if ${BASEDIR}/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock ping > /dev/null 2>&1; then SLAVE_STARTUP_OK=1; fi
+        touch ${WORKD}  # Ensure that watchdog scripts like ~/ds do not think this directory is no longer in use
+        touch ${WORKD}/reducer.log  # Idem
+        if ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then MASTER_STARTUP_OK=1; fi
+        if ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/slave_socket.sock ping > /dev/null 2>&1; then SLAVE_STARTUP_OK=1; fi
         if [ "${MASTER_STARTUP_OK}" -eq 1 -a "${SLAVE_STARTUP_OK}" -eq 1 ]; then break; fi
       done
+      ADMIN_BIN_TO_USE=
       if [ "${MASTER_STARTUP_OK}" -ne 1 -o "${SLAVE_STARTUP_OK}" -ne 1 ]; then
-        echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Assert: MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1. Restarting"
+        if [ ! -d "${WORKD}" ]; then abort; fi
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] MASTER_STARTUP_OK=${MASTER_STARTUP_OK}, SLAVE_STARTUP_OK=${SLAVE_STARTUP_OK}: not both 1, retrying by restarting both. Possible reasons: overloaded server, OOS. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
         PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;
-        return 1  # The '1' error value is not used, but we need to return here
+        if [ ! -z "${TRIAL}" ]; then
+          if [ "${TRIAL}" -gt 1 ]; then
+            TRIAL=$[ ${TRIAL} - 1 ]  # Repeat the trial
+          fi
+        fi
+        return 3  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 3' special return code will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution) TODO
       fi
       MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
       # Setup replication, master side
@@ -2622,7 +2756,26 @@ start_mysqld_main(){
       ${BASEDIR}/bin/mysql -uroot -S$WORKD/socket.sock -e "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" 2>/dev/null
       # Setup replication, slave side
       ${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=${MYPORT}, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ; START SLAVE;" 2>/dev/null
-      sleep 2  # Replication setup delay
+      IO_AND_SQL_THREADS_RUNNING_COUNT=0
+      for((delay=0;delay<25;delay++)); do  # Give replication up to 25 seconds to come up
+        IO_AND_SQL_THREADS_RUNNING_COUNT="$(${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e 'SHOW SLAVE STATUS\G' | grep -o 'Slave_[SQLIO]\+_Running:.*' | grep ': Yes' | wc -l)"
+        if [ "${IO_AND_SQL_THREADS_RUNNING_COUNT}" == "2" ]; then
+          break
+        fi
+        sleep 1
+      done
+      if [ "${IO_AND_SQL_THREADS_RUNNING_COUNT}" != "2" ]; then
+        EXTRA_SLAVE_DEBUG_OUTPUT="$(${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e 'SHOW SLAVE STATUS\G' | grep -o 'Slave_[SQLIO]\+_Running:.*' | grep ': Yes' | tr '\n' ' ' | sed 's| $||g')"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] The IO and/or SQL threads failed to both start on the slave: ${EXTRA_SLAVE_DEBUG_OUTPUT}, retrying by restarting both. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
+        PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;IO_AND_SQL_THREADS_RUNNING_COUNT=;
+        if [ ! -z "${TRIAL}" ]; then
+          if [ "${TRIAL}" -gt 1 ]; then
+            TRIAL=$[ ${TRIAL} - 1 ]  # Repeat the trial
+          fi
+        fi
+        return 3  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 3' special return code will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution) TODO
+      fi
+      IO_AND_SQL_THREADS_RUNNING_COUNT=
       echoit "[Info] Replication enabled between master and slave in ${WORKD} using port ${MYPORT}"
     else
       init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port
@@ -2642,8 +2795,11 @@ start_mysqld_main(){
   # Disabling it for the moment. If any issues are seen, it can be reverted
   # sed -i "s|\.so\;|\.so\\\;|" $WORK_START
   chmod +x $WORK_START
+  ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+  if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
   for X in $(seq 1 120); do
-    sleep 1; if $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then break; fi
+    sleep 1
+    if ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then break; fi
     # Check if the server crashed or shutdown, then there is no need to wait any longer (new beta feature as of 1 July 16)
     # RV fix made 10 Jan 17; if no log/master.err is created (for whatever reason) then 120x4 'not found' messages scroll on the screen: added '2>/dev/null'. The Reason for the missing log/master.err files in some circumstances needs to be found (seems to be related to bad startup options (usually in stage 8), but why is there no output at all?)
     if grep -E --binary-files=text -qi "identify the cause of the crash" $WORKD/log/*.err 2>/dev/null; then break; fi
@@ -2652,9 +2808,12 @@ start_mysqld_main(){
     if grep -E --binary-files=text -qi "terribly wrong" $WORKD/log/*.err 2>/dev/null; then break; fi
     if grep -E --binary-files=text -qi "Shutdown complete" $WORKD/log/*.err 2>/dev/null; then break; fi
   done
+  ADMIN_BIN_TO_USE=
 }
 
 start_valgrind_mysqld_main(){
+  if [ ! -d "${WORKD}" ]; then abort; fi
+  touch $WORKD
   if [ "$(du -sc $WORKD/data | grep -v 'total' | awk '{print $1}')" == "0" ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data is 0 bytes. The volume likely ran out of space"
     echo "Terminating now."
@@ -2670,7 +2829,7 @@ start_valgrind_mysqld_main(){
   PIDV="$!"; STARTUPCOUNT=$[$STARTUPCOUNT+1]
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START_VALGRIND
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START_VALGRIND
-  echo "echo \"Attempting to start mysqld under Valgrind (socket /dev/shm/${EPOCH}/socket.sock)...\"" >> $WORK_START_VALGRIND
+  echo "echo \"Attempting to start mariadbd/mysqld under Valgrind (socket /dev/shm/${EPOCH}/socket.sock)...\"" >> $WORK_START_VALGRIND
   echo $JE1 >> $WORK_START_VALGRIND; echo $JE2 >> $WORK_START_VALGRIND; echo $JE3 >> $WORK_START_VALGRIND
   #echo $JE4 >> $WORK_START_VALGRIND; echo $JE5 >> $WORK_START_VALGRIND
   echo $JE4 >> $WORK_START_VALGRIND
@@ -2680,19 +2839,22 @@ start_valgrind_mysqld_main(){
   sed -i "s|pid.pid|pid.pid --core-file --core|" $WORK_START_VALGRIND
   sed -i "s|\.so\;|\.so\\\;|" $WORK_START_VALGRIND
   chmod +x $WORK_START_VALGRIND
+  ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+  if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
   for X in $(seq 1 360); do
     sleep 1
-    if $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
+    if ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
       break
     fi
   done
-  if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
+  if ! ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
     if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer. No point in displaying this for subreducers, as the said files will already have been replaced
-      echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start mysqld server under Valgrind, check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
+      echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] Failed to start the mariadbd/mysqld server under Valgrind, check $WORKD/log/mysqld.out, $WORKD/log/*.err, $WORKD/init.log and maybe $WORKD/data/error.log. Also check that there is plenty of space on the device being used"  # Do not change the text '[ERROR] Failed to start the mariadbd/mysqld server' without updating it everwhere else in this script, including the place where reducer checks whether subreducers having run into this error.
     fi
     echo "Terminating now."
     exit 1
   fi
+  ADMIN_BIN_TO_USE=
 }
 
 determine_chunk(){
@@ -2889,7 +3051,8 @@ cut_threadsync_chunk(){
 
 run_and_check(){
   start_mysqld_or_valgrind_or_mdg
-  if [ ${?} -eq 1 -a "${REPLICATION}" -eq 1 ]; then stop_mysqld_or_mdg; return 0; fi  # Special provision for replication startup failures (REPLICATION=1). The hack is to return 0 here, indicating that no reduction was succesful, see start_mysqld_or_valgrind_or_mdg for more info
+  if [ ${?} -eq 3 ]; then stop_mysqld_or_mdg; return 0; fi  # Provision for various startup failures. The hack is to return 0 here, indicating that no reduction was succesful
+  if [ ${?} -eq 1 ]; then stop_mysqld_or_mdg; echo 'RETURN CODE WAS 1'; return 0; fi  # Is this correct?
   run_sql_code
   if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then stop_mysqld_or_mdg; fi
   process_outcome
@@ -2937,7 +3100,7 @@ run_sql_code(){
   fi
   #DEBUG
   #read -p "Go! (run_sql_code break)"
-  if   [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [DATA] Loading datafile before SQL threads replay"
     # Note that the two following grep -v solutions still work fine for DROPC removal as this is using the mysql cli which can handle multiple statements on one line and DROPC is NOT being changed into a multi-line statement. Search for 'DROPC' to learn more.
     if [ $TS_DBG_CLI_OUTPUT -eq 0 ]; then
@@ -3043,6 +3206,7 @@ run_sql_code(){
       else
         CLIENT_SOCKET=$WORKD/socket.sock
       fi
+      if [ ! -d "${WORKD}" ]; then abort; fi
       case $CLI_MODE in
         0) cat $WORKT | $BASEDIR/bin/mysql -uroot -S${CLIENT_SOCKET} --binary-mode --force test > $WORKD/log/mysql.out 2>&1 ;;
         1) $BASEDIR/bin/mysql -uroot -S${CLIENT_SOCKET} --execute="SOURCE ${WORKT};" --force test > $WORKD/log/mysql.out 2>&1 ;;  # When http://bugs.mysql.com/bug.php?id=81782 is fixed, re-add --binary-mode to this command. Also note that due to http://bugs.mysql.com/bug.php?id=81784, the --force option has to be after the --execute option.
@@ -3147,7 +3311,7 @@ cleanup_and_save(){
     echo "# $ATLEASTONCE Issue was reproduced during this simplification subreducer." >> $WORKD/VERIFIED
     echoit "$ATLEASTONCE [Stage $STAGE] Issue was reproduced during this simplification subreducer. Terminating now."
     # This is a simplification subreducer started by a parent/main reducer, to simplify an issue. We terminate now after discovering the issue here.
-    # We rely on the parent/main reducer to kill off mysqld processes (on the next multi_reducer() call - at the top of the function).
+    # We rely on the parent/main reducer to kill off mariadbd/mysqld processes (on the next multi_reducer() call - at the top of the function).
     finish $INPUTFILE
   else
     echo "# $ATLEASTONCE Issue was seen at least once during this run of reducer" >> $WORKD/VERIFIED
@@ -3252,7 +3416,7 @@ process_outcome(){
       return 0
     fi
 
-  # MODE3: mysqld error output log testing (set TEXT)
+  # MODE3: mariadbd/mysqld error output log testing (set TEXT)
   # When PQUERY_CONS_Q_FAIL=1 then the pquery log will be checked for 'Last [0-9]+ consecutive queries all failed' instead
   elif [ $MODE -eq 3 ]; then
     M3_ISSUE_FOUND=0
@@ -3463,12 +3627,17 @@ process_outcome(){
                 fi
                 NEWBUGTEXT_FINAL=
                 NEWBUGTEXT=
+                sed -i "s|^FORCE_SKIPV=.*|FORCE_SKIPV=0|" "${NEWBUGRE}"  # Do not skip verification (more handy when using large_newbug_run.sh)
                 sed -i "s|^THREADS=.*|THREADS=3|" "${NEWBUGRE}"
                 sed -i "s|^MULTI_THREADS_INCREASE=.*|MULTI_THREADS_INCREASE=1|" "${NEWBUGRE}"
                 sed -i "s|^MULTI_THREADS_MAX=.*|MULTI_THREADS_MAX=5|" "${NEWBUGRE}"
-                sed -i "s|^STAGE1_LINES=.*|STAGE1_LINES=5|" "${NEWBUGRE}"
+                sed -i "s|^STAGE1_LINES=.*|STAGE1_LINES=7|" "${NEWBUGRE}"
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
-                #sed -i "s|^MYEXTRA=.*|MYEXTRA=\"${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO Needs more work. Whilst the original is for example "--no-defaults --log-output=none --sql_mode=ONLY_FULL_GROUP_BY" this will end up with "--log-output=none" only which is not so good as "--no-defaults" is missing and more importantly, it's incorrect.
+                sed -i "s|^MYEXTRA=.*|MYEXTRA=\"--no-defaults ${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO check this works correctly now
+                sed -i "s|^REPLICATION=.*|REPLICATION=${REPLICATION}|" "${NEWBUGRE}"
+                sed -i "s|^REPL_EXTRA=.*|REPL_EXTRA=\"${REPL_EXTRA}\"|" "${NEWBUGRE}"
+                sed -i "s|^MASTER_EXTRA=.*|MASTER_EXTRA=\"${MASTER_EXTRA}\"|" "${NEWBUGRE}"
+                sed -i "s|^SLAVE_EXTRA=.*|SLAVE_EXTRA=\"${SLAVE_EXTRA}\"|" "${NEWBUGRE}"
                 chmod +x "${NEWBUGRE}"
                 echoit "[NewBug] Saved the new bug reducer to: ${NEWBUGRE}"
                 NEWBUGSO=
@@ -3509,22 +3678,24 @@ process_outcome(){
 
   # MODE4: Crash testing
   elif [ $MODE -eq 4 ]; then
+    ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+    if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
     M4_ISSUE_FOUND=0
     if [ $MDG -eq 1 ]; then
       for i in $(seq 1 ${NR_OF_NODES}); do
         if [ $MDG_ISSUE_NODE -eq 0 -o $MDG_ISSUE_NODE -eq ${i} ]; then
-          if ! $BASEDIR/bin/mysqladmin -uroot --socket=$WORKD/node${i}/node${i}_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
+          if ! ${ADMIN_BIN_TO_USE} -uroot --socket=$WORKD/node${i}/node${i}_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
         fi
       done
     elif [ $GRP_RPL -eq 1 ]; then
       if [ $GRP_RPL_ISSUE_NODE -eq 0 -o $GRP_RPL_ISSUE_NODE -eq 1 ]; then
-        if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
+        if ! ${ADMIN_BIN_TO_USE} -uroot --socket=${node1}/node1_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
       if [ $GRP_RPL_ISSUE_NODE -eq 0 -o $GRP_RPL_ISSUE_NODE -eq 2 ]; then
-        if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node2}/node2_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
+        if ! ${ADMIN_BIN_TO_USE} -uroot --socket=${node2}/node2_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
       if [ $GRP_RPL_ISSUE_NODE -eq 0 -o $GRP_RPL_ISSUE_NODE -eq 3 ]; then
-        if ! $BASEDIR/bin/mysqladmin -uroot --socket=${node3}/node3_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
+        if ! ${ADMIN_BIN_TO_USE} -uroot --socket=${node3}/node3_socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
     else
       if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
@@ -3537,9 +3708,10 @@ process_outcome(){
           M4_ISSUE_FOUND=1
         fi
       else
-        if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
+        if ! ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then M4_ISSUE_FOUND=1; fi
       fi
     fi
+    ADMIN_BIN_TO_USE=
     if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
       M4_OUTPUT_TEXT="GlibcCrash"
     else
@@ -3638,7 +3810,7 @@ process_outcome(){
       return 0
     fi
 
-  # MODE8: ThreadSync mysqld error output log testing (set TEXT)
+  # MODE8: ThreadSync mariadbd/mysqld error output log testing (set TEXT)
   elif [ $MODE -eq 8 ]; then
     if grep -E --binary-files=text -iq "$TEXT" $WORKD/log/*.err; then
       if [ "$STAGE" = "T" ]; then
@@ -3659,7 +3831,9 @@ process_outcome(){
 
   # MODE9: ThreadSync Crash testing
   elif [ $MODE -eq 9 ]; then
-    if ! $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
+    ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+    if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
+    if ! ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock ping > /dev/null 2>&1; then
       if [ "$STAGE" = "T" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCrash*] [$NOISSUEFLOW] Swapping files & saving last known good crash thread file(s) in $WORKD/log/"
       elif [ ! "$STAGE" = "V" ]; then
@@ -3675,6 +3849,7 @@ process_outcome(){
       fi
       return 0
     fi
+    ADMIN_BIN_TO_USE=
 
   # Invalid mode
   else
@@ -3690,7 +3865,7 @@ stop_mysqld_or_mdg(){
     ( ps -def | grep -E 'n*.cnf' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
     sleep 2; sync
   else
-    if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 -a ${FIRST_MYSQLD_START_FLAG} -ne 1 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mysqld. For the first init startup of mysqld, kill should also not be used.
+    if [ ${FORCE_KILL} -eq 1 -a ${MODE} -ne 0 -a ${FIRST_MYSQLD_START_FLAG} -ne 1 ]; then  # In MODE=0 we may be checking for shutdown hang issues, so do not kill mariadbd/mysqld. For the first init startup of mariadbd/mysqld, kill should also not be used.
       while :; do
         KPIDS="${PIDV}"
         if [ "${REPLICATION}" -eq 1 ]; then
@@ -3706,23 +3881,29 @@ stop_mysqld_or_mdg(){
       done
     else
       # RV-15/09/14 Added timeout due to bug http://bugs.mysql.com/bug.php?id=73914
-      # RV-02/12/14 We do not want too fast a shutdown either; quite a few bugs happen when mysqld is being shutdown
-      # RV-22/03/17 To check for shutdown hangs, need to make sure that timeout of mysqladmin is longer then TIMEOUT_CHECK seconds + 10 seconds safety margin
+      # RV-02/12/14 We do not want too fast a shutdown either; quite a few bugs happen when mariadbd/mysqld is being shutdown
+      # RV-22/03/17 To check for shutdown hangs, need to make sure that timeout of mariadb-admin/mysqladmin is longer then TIMEOUT_CHECK seconds + 10 seconds safety margin
       if [ $MODE -eq 0 ]; then
-        timeout -k${MODE0_MIN_SHUTDOWN_TIME} -s9 ${MODE0_MIN_SHUTDOWN_TIME}s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
+        ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+        if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
+        timeout -k${MODE0_MIN_SHUTDOWN_TIME} -s9 ${MODE0_MIN_SHUTDOWN_TIME}s ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
         if [ "${REPLICATION}" -eq 1 ]; then
-          timeout -k${MODE0_MIN_SHUTDOWN_TIME} -s9 ${MODE0_MIN_SHUTDOWN_TIME}s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1
+          timeout -k${MODE0_MIN_SHUTDOWN_TIME} -s9 ${MODE0_MIN_SHUTDOWN_TIME}s ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1
         fi
+        ADMIN_BIN_TO_USE=
         if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld*.out; then
           echoit "Assert: Access denied for user detected (ref $WORKD/log/mysqld*.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
-          # exit 1  # RV-11/01/2022 We should not unconditionally exit here, and potentially not exit at all; if this is a subreducer thread, the mysqld kill below is a much more sensible next step. For example, if the sql has had a chunck removed which caused this 'Access denied' than the next trial it may be perfectly possible reduce the testcase further in anohter way (for example, the sql that causes the 'Access denied' issue in the first place may be filtered out, etc. Even if an exit would be preferred here (unlikely), then it should be made conditional.
+          # exit 1  # RV-11/01/2022 We should not unconditionally exit here, and potentially not exit at all; if this is a subreducer thread, the mariadbd/mysqld kill below is a much more sensible next step. For example, if the sql has had a chunck removed which caused this 'Access denied' than the next trial it may be perfectly possible reduce the testcase further in anohter way (for example, the sql that causes the 'Access denied' issue in the first place may be filtered out, etc. Even if an exit would be preferred here (unlikely), then it should be made conditional.
         fi
       else
         # RV 02/01/2021: increased timeout to 60 up from 40 as even high end servers which are busy may take bit longer to write a core
-        timeout -k60 -s9 60s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1  # Note it is myqladmin being terminated with -9, not mysqld !
+        ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+        if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
+        timeout -k60 -s9 60s ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1  # Note it is mariadb-admin/myqlsadmin being terminated with -9, not mariadbd/mysqld !
         if [ "${REPLICATION}" -eq 1 ]; then
-          timeout -k60 -s9 60s $BASEDIR/bin/mysqladmin -uroot -S$WORKD/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1  # Note it is myqladmin being terminated with -9, not mysqld !
+          timeout -k60 -s9 60s ${ADMIN_BIN_TO_USE} -uroot -S$WORKD/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1  # Note it is mariadb-admin/myqladmin being terminated with -9, not mysqld !
         fi
+        ADMIN_BIN_TO_USE=
         if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld*.out; then
           echoit "Assert: Access denied for user detected (ref $WORKD/log/mysqld*.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
           # exit 1  # Ref RV-11/01/2022 note above
@@ -3734,7 +3915,7 @@ stop_mysqld_or_mdg(){
       if [ "${REPLICATION}" -eq 1 ]; then
         KPIDS="${PIDV} ${PIDV_SLAVE}"
       fi
-      if [ "${FIREWORKS}" == "1" ]; then  # Terminate mysqld directly in fireworks mode
+      if [ "${FIREWORKS}" == "1" ]; then  # Terminate mariadbd/mysqld directly in fireworks mode
         ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
         sleep 0.02
         while :; do
@@ -3748,14 +3929,16 @@ stop_mysqld_or_mdg(){
         done
       else
         # Try various things now to bring server down, upto kill -9
+        ADMIN_BIN_TO_USE="${BASEDIR}/bin/mariadb-admin"
+        if [ ! -r "${ADMIN_BIN_TO_USE}" ]; then ADMIN_BIN_TO_USE="${BASEDIR}/bin/mysqladmin"; fi
         while :; do
           sleep 1
           if kill -0 ${KPIDS} >/dev/null 2>&1; then
             if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then sleep 5; else sleep 2; fi
             if kill -0 ${KPIDS} >/dev/null 2>&1; then  # Retry shutdown one more time
-              ${BASEDIR}/bin/mysqladmin -uroot -S${WORKD}/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
+              ${ADMIN_BIN_TO_USE} -uroot -S${WORKD}/socket.sock shutdown >> $WORKD/log/mysqld.out 2>&1
               if [ "${REPLICATION}" -eq 1 ]; then
-                ${BASEDIR}/bin/mysqladmin -uroot -S${WORKD}/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1
+                ${ADMIN_BIN_TO_USE} -uroot -S${WORKD}/slave_socket.sock shutdown >> $WORKD/log/mysqld_slave.out 2>&1
               fi
               if grep -qiE "Access denied for user|Доступ закрыт для пользователя" $WORKD/log/mysqld*.out; then
                 echoit "Assert: Access denied for user detected (ref $WORKD/log/mysqld*.out)"  # If you update the 'Access denied for user detected' here, make sure to update it everwhere else in this script also, especially the grep -qi which checks for this text
@@ -3775,7 +3958,7 @@ stop_mysqld_or_mdg(){
               fi
               if kill -0 ${KPIDS} >/dev/null 2>&1; then
                 if [ $MODE -ne 0 ]; then  # For MODE=0, the following is not a WARNING but fairly normal
-                  echoit "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server(s) with PID(s) ${KPIDS} failed. Now forcing kill of mysqld"
+                  echoit "$ATLEASTONCE [Stage $STAGE] [WARNING] Attempting to bring down server(s) with PID(s) ${KPIDS} failed. Now forcing kill of mariadbd/mysqld"
                 fi
                 ( kill -9 ${KPIDS} >/dev/null 2>&1; ) >/dev/null 2>&1
               else
@@ -3786,6 +3969,7 @@ stop_mysqld_or_mdg(){
             break
           fi
         done
+        ADMIN_BIN_TO_USE=
       fi
     fi
     KPIDS=
@@ -3819,7 +4003,7 @@ finish(){
   echoit "[Finish] Final testcase for script use     : $WORK_OUT (handy to use in combination with the scripts below)"
   echoit "[Finish] File containing datadir           : $WORK_BASEDIR (All scripts below use this. Update this when basedir changes)"
   echoit "[Finish] Matching data dir init script     : $WORK_INIT (This script will use /dev/shm/${EPOCH} as working directory)"
-  echoit "[Finish] Matching startup script           : $WORK_START (Starts mysqld with same options as used in reducer)"
+  echoit "[Finish] Matching startup script           : $WORK_START (Starts mariadbd/mysqld with same options as used in reducer)"
   if [ $MODE -ge 6 ]; then
     # See init_workdir_and_files() and search for WORK_RUN for more info. Also more info in improvements section at top
     echoit "[Finish] Matching run script               : $WORK_RUN (though you can look at this file for an example, implementation for MODE6+ is not finished yet)"
@@ -3834,10 +4018,10 @@ finish(){
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is the parent/main reducer
     MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|--sql_mode=|--sql_mode= |g;s|[ \t]\+| |g")
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
-      echoit "[Finish] mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED (the testcase will not reproduce the issue without these options passed to mysqld)"
+      echoit "[Finish] mariadbd/mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED (the testcase will not reproduce the issue without these options passed to mariadbd/mysqld)"
     fi
     if [ "${MYINIT}" == "" ]; then
-      echoit "[Finish] mysqld initialization options reqd: $MYINIT (the testcase will not reproduce the issue without these options passed to mysqld initialization)"
+      echoit "[Finish] mariadbd/mysqld initialization options reqd: $MYINIT (the testcase will not reproduce the issue without these options passed to mariadbd/mysqld initialization)"
     fi
     MYSQLD_OPTIONS_REQUIRED=
     if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
@@ -3857,7 +4041,7 @@ finish(){
   fi
   if [ "${1}" == 'abort' ]; then
     echoit "[Abort] Done. Terminating reducer"
-    trap SIGINT
+    trap SIGINT  # Clear the SIGINT trap
     exit 2
   fi
   exit 0
@@ -3967,7 +4151,7 @@ verify_not_found(){
   if [ $MODE -eq 1 -o $MODE -eq 6 ]; then
     echoit "[Finish] Valgrind output         : ${PRINTWORKD}/${EXTRA_PATH}valgrind.out          (Check if there are really 0 errors)"
   fi
-  echoit "[Finish] mysqld error log output : ${PRINTWORKD}/${EXTRA_PATH}error.log(.out)       (Check if the mysqld server output looks normal. '.out' = last startup)"
+  echoit "[Finish] mariadbd/mysqld error log : ${PRINTWORKD}/${EXTRA_PATH}error.log(.out)       (Check if the mariadbd/mysqld server output looks normal. '.out' = last startup)"
   echoit "[Finish] initialization output   : ${PRINTWORKD}/${EXTRA_PATH}init.log              (Check if the inital server initalization happened correctly)"
   echoit "[Finish] time init output        : ${PRINTWORKD}/${EXTRA_PATH}timezone.init         (Check if the timezone information was installed correctly)"
   exit 1
@@ -4006,11 +4190,14 @@ verify(){
         report_linecounts
         break
       fi
-      echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, now increasing number of threads to $[$MULTI_THREADS+MULTI_THREADS_INCREASE] (maximum is $MULTI_THREADS_MAX)"
-      MULTI_THREADS=$[$MULTI_THREADS+MULTI_THREADS_INCREASE]
-      if [ $MULTI_THREADS -gt $MULTI_THREADS_MAX ]; then  # Verify failed. Terminate.
+      MULTI_THREADS=$[ ${MULTI_THREADS} + ${MULTI_THREADS_INCREASE} ]
+      if [ ${MULTI_THREADS} -gt ${$MULTI_THREADS_MAX} ]; then  # Verify failed. Terminate.
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, and as the configured maximum number of threads ($MULTI_THREADS_MAX) has been reached, now terminating verification"
         verify_not_found
-      elif [ $MULTI_THREADS -ge 35 ]; then
+      else
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, now increasing number of threads to ${MULTI_THREADS} (maximum is $MULTI_THREADS_MAX)"
+      fi
+      if [ $MULTI_THREADS -ge 35 ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: High load active. You may start seeing messages releated to server overload like:"
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: 'command not found', 'No such file or directory' or 'fork: retry: Resource temporarily unavailable'"
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: These can safely be ignored, reducer is trying to see if the issue can be reproduced at all"
@@ -4039,7 +4226,7 @@ verify(){
           done
         else
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & cleanup"
-          grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-| \[Note\] |====|  WARNING: |^Hope that|^Logging: |\++++| exit with exit status |Lost connection to | valgrind |Using [MSI]|Using dynamic|MySQL Version|\------|TIME \(ms\)$|Skipping ndb|Setting mysqld |Binaries are debug |Killing Possible Leftover|Removing Stale Files|Creating Directories|Installing Master Database|Servers started, |Try: yum|Missing separate debug|SOURCE|CURRENT_TEST|\[ERROR\]|with SSL|_root_|connect to MySQL|No such file|is deprecated at|just omit the defined" $WORKF \
+          grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-| \[Note\] |====|  WARNING: |^Hope that|^Logging: |\++++| exit with exit status |Lost connection to | valgrind |Using [MSI]|Using dynamic|MySQL Version|\------|TIME \(ms\)$|Skipping ndb|Setting mysqld |Setting mariadbd |Binaries are debug |Killing Possible Leftover|Removing Stale Files|Creating Directories|Installing Master Database|Servers started, |Try: yum|Missing separate debug|SOURCE|CURRENT_TEST|\[ERROR\]|with SSL|_root_|connect to MySQL|No such file|is deprecated at|just omit the defined" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed 's/[\t ]\+/ /g' \
             | sed 's/Query ([0-9a-fA-F]): \(.*\)/\1;/g' \
@@ -4241,12 +4428,12 @@ verify(){
       fi
       run_and_check
       if [ "$?" -eq "1" ]; then  # Verify success, exit loop
-        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Success. Issue detected. Saved files."
+        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Success: Issue detected, saved files"
         report_linecounts
         TRIAL_REPEAT_COUNT=0
         break
       else  # Verify fail, 'while' loop continues (and possibly with repeated trials if NR_OF_TRIAL_REPEATS>1)
-        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Failed. Issue not detected."
+        echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #$TRIAL: Failed: Issue not detected"
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
@@ -4296,7 +4483,7 @@ fireworks_setup(){
   echoit "[Init] > STAGE1_LINES=-1: Avoid STAGE1 from ever terminating (required)"
   STAGE1_LINES=-1
   echoit "[Init] > MULTI_THREADS=25: If system overload is seen, decrease this in-code (preference)"
-  MULTI_THREADS=25  # Setting this to a low number (1-5) will likely not yield great results. If the server supports it you can raise this. For 32 threads, 128GB and /dev/shm resized to 90GB, a good setting is MULTI_THREADS=25 with two reducer.sh scripts running both in fireworks mode, with /dev/shm cleaned out prior to starting them, and provided nothing else is running on the server. Watch out for OOS issues on /dev/shm tmpfs and/or OOM. Note that this setting basically means: x mysqld servers (with one client thread running against it) per reducer started in fireworks mode.
+  MULTI_THREADS=25  # Setting this to a low number (1-5) will likely not yield great results. If the server supports it you can raise this. For 32 threads, 128GB and /dev/shm resized to 90GB, a good setting is MULTI_THREADS=25 with two reducer.sh scripts running both in fireworks mode, with /dev/shm cleaned out prior to starting them, and provided nothing else is running on the server. Watch out for OOS issues on /dev/shm tmpfs and/or OOM. Note that this setting basically means: x mariadbd/mysqld servers (with one client thread running against it) per reducer started in fireworks mode.
   # Note that MULTI_THREADS_INCREASE and MULTI_THREADS_MAX are of no significance as long as a reasonably lenght input SQL file is used; reducer will never reach this.
   if [ "${PQUERY_REVERSE_NOSHUFFLE_OPT}" != "0" ]; then
     # Requires --no-shuffle option to pquery as reducer (in fireworks mode) will pre-shuffle the in.tmp (i.e. WORKT) file before execution. Using pquery shuffling for this (i.e. without --no-shuffle,  is not the best solution for this, as it requires grabbing the SQL by pquery, whereas if it is pre-shuffled by reducer, issue reproducibility will, presumably, be much more perfect as there is zero post or re-parsing (i.e. the same SQL file can be used again in exactly the same way)
@@ -4326,9 +4513,9 @@ fireworks_setup(){
   options_check $1
   init_workdir_and_files
   if [ $MODE -eq 9 ]; then echoit "[Init] Run mode: MODE=9: ThreadSync Crash [ALPHA]"
-                           echoit "[Init] Looking for any mysqld crash"; fi
-  if [ $MODE -eq 8 ]; then echoit "[Init] Run mode: MODE=8: ThreadSync mysqld error log [ALPHA]"
-                           echoit "[Init] Looking for this string: '$TEXT' in mysqld error log output (@ $WORKD/log/*.err when MULTI mode is not active)"; fi
+                           echoit "[Init] Looking for any mariadbd/mysqld crash"; fi
+  if [ $MODE -eq 8 ]; then echoit "[Init] Run mode: MODE=8: ThreadSync mariadbd/mysqld error log [ALPHA]"
+                           echoit "[Init] Looking for this string: '$TEXT' in mariadbd/mysqld error log output (@ $WORKD/log/*.err when MULTI mode is not active)"; fi
   if [ $MODE -eq 7 ]; then echoit "[Init] Run mode: MODE=7: ThreadSync mysql CLI output [ALPHA]"
                            echoit "[Init] Looking for this string: '$TEXT' in mysql CLI output (@ $WORKD/log/mysql.out when MULTI mode is not active)"; fi
   if [ $MODE -eq 6 ]; then echoit "[Init] Run mode: MODE=6: ThreadSync Valgrind output [ALPHA]"
@@ -4343,7 +4530,7 @@ fireworks_setup(){
                            echoit "[Init] Looking for any GLIBC crash";
     else
                            echoit "[Init] Run mode: MODE=4: Crash"
-                           echoit "[Init] Looking for any mysqld crash"; fi; fi
+                           echoit "[Init] Looking for any mariadbd/mysqld crash"; fi; fi
   if [ $MODE -eq 3 ]; then
     if [ "$PQUERY_CONS_Q_FAIL" -eq 1 ]; then
       echoit "[Init] PQUERY_CONS_Q_FAIL active: MODE set to 3, USE_PQUERY set to 1, USE_NEW_TEXT_STRING set to 0"
@@ -4360,8 +4547,8 @@ fireworks_setup(){
                            echoit "[Init] Run mode: FireWorks with MODE=3, using new_text_string.sh for UniqueID generation"
       fi
     else
-                           echoit "[Init] Run mode: MODE=3: mysqld error log"
-                           echoit "[Init] Looking for this string: '$TEXT' in mysqld error log output (@ $WORKD/log/*.err when MULTI mode is not active)"; fi; fi
+                           echoit "[Init] Run mode: MODE=3: mariadbd/mysqld error log"
+                           echoit "[Init] Looking for this string: '$TEXT' in mariadbd/mysqld error log output (@ $WORKD/log/*.err when MULTI mode is not active)"; fi; fi
   if [ $MODE -eq 2 ]; then
     if [ $USE_PQUERY -eq 1 ]; then
                            echoit "[Init] Run mode: MODE=2: pquery client output"
@@ -4477,7 +4664,7 @@ if [ $MODE -ge 6 ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded mysql CLI output testing (MODE2)"
     elif [ $MODE -eq 8 ]; then
       export -n MODE=3
-      echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded mysqld output simplification (MODE3)"
+      echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded mariadbd/mysqld output simplification (MODE3)"
     elif [ $MODE -eq 9 ]; then
       export -n MODE=4
       echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Swapped to standard single-threaded crash simplification (MODE4)"
@@ -4513,7 +4700,7 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
     fi
     while [ $LINECOUNTF -ge $STAGE1_LINES ]; do
       if [ $LINECOUNTF -eq $STAGE1_LINES  ]; then NEXTACTION="& Progress to the next stage"; fi
-      if [ $TRIAL -gt 1 -a "${FIREWORKS}" != "1" ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
+      if [ "${FIREWORKS}" != "1" ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
       if [ "$MULTI_REDUCER" != "1" -a $SPORADIC -eq 1 -a $REDUCE_GLIBC_OR_SS_CRASHES -le 0 ]; then
         # This is the parent/main reducer AND the issue is sporadic (so; need to use multiple threads). Disabled for REDUCE_GLIBC_OR_SS_CRASHES as it is always single-threaded
         if [ "${FIREWORKS}" == "1" ]; then  # FireWorks mode does not use WORKF but INPUTFILE
@@ -4583,9 +4770,11 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
     done
     TRIAL_REPEAT_COUNT=0
     if [ "${FIREWORKS}" -eq 1 ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+      if [ ! -r "${INPUTFILE}" ]; then abort; fi
       SIZEF=$(stat -c %s ${INPUTFILE})
       LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
     else
+      if [ ! -r "${WORKF}" ]; then abort; fi
       SIZEF=$(stat -c %s ${WORKF})
       LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
     fi
@@ -4599,6 +4788,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
   STAGE=3
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
+  if [ ! -r "${WORKF}" ]; then abort; fi
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
@@ -4667,6 +4857,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     elif [ $TRIAL -eq 60 ]; then sed 's/`//g' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
+    if [ ! -r "${WORKT}" ]; then abort; fi
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
@@ -4691,9 +4882,11 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
         NEXTACTION="& try next testcase complexity reducing sed"
       fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+        if [ ! -r "${WORKF}" ]; then abort; fi
         SIZEF=$(stat -c %s ${WORKF})
         LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
       else
+        if [ ! -r "${INPUTFILE}" ]; then abort; fi
         SIZEF=$(stat -c %s ${INPUTFILE})
         LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
       fi
@@ -4707,6 +4900,7 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
   STAGE=4
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
+  if [ ! -r "${WORKF}" ]; then abort; fi
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
@@ -4997,6 +5191,7 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 281 ]; then sed "s/CONCURRENT//i" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
+    if [ ! -r "${WORKT}" ]; then abort; fi
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
@@ -5021,9 +5216,11 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
         NEXTACTION="& try next query syntax complexity reducing sed"
       fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+        if [ ! -r "${WORKF}" ]; then abort; fi
         SIZEF=$(stat -c %s ${WORKF})
         LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
       else
+        if [ ! -r "${INPUTFILE}" ]; then abort; fi
         SIZEF=$(stat -c %s ${INPUTFILE})
         LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
       fi
@@ -5080,6 +5277,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
   NEXTACTION="& try and rename this column (if it failed removal) or remove the next column"
   STAGE=6
   TRIAL=1
+  if [ ! -r "${WORKF}" ]; then abort; fi
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
@@ -5124,9 +5322,11 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
             fi
             COLUMN=$[$COLUMN+1]
             if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+              if [ ! -r "${WORKF}" ]; then abort; fi
               SIZEF=$(stat -c %s ${WORKF})
               LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
             else
+              if [ ! -r "${INPUTFILE}" ]; then abort; fi
               SIZEF=$(stat -c %s ${INPUTFILE})
               LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
             fi
@@ -5257,9 +5457,11 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
           if [ $? -eq 0 ]; then
             if [ "$COL" != "c$C_COL_COUNTER" ]; then
               if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+                if [ ! -r "${WORKF}" ]; then abort; fi
                 SIZEF=$(stat -c %s ${WORKF})
                 LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
               else
+                if [ ! -r "${INPUTFILE}" ]; then abort; fi
                 SIZEF=$(stat -c %s ${INPUTFILE})
                 LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
               fi
@@ -5282,9 +5484,11 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
             COUNTCOLS=$[$COUNTCOLS-1]
           fi
           if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+            if [ ! -r "${WORKF}" ]; then abort; fi
             SIZEF=$(stat -c %s ${WORKF})
             LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
           else
+            if [ ! -r "${INPUTFILE}" ]; then abort; fi
             SIZEF=$(stat -c %s ${INPUTFILE})
             LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
           fi
@@ -5301,6 +5505,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
   STAGE=7
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
+  if [ ! -r "${WORKF}" ]; then abort; fi
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
@@ -5571,9 +5776,9 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
         cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.
       fi
     elif [ $TRIAL -eq 254 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
-    # RV 25/01/21 Disabled next trial to see if this fixes the # mysqld options required insert
+    # RV 25/01/21 Disabled next trial to see if this fixes the # mariadbd/mysqld options required insert
     # RV 09/05/22 It seems to help. Reinstated trial by temporary dummy swap instead
-    elif [ $TRIAL -eq 255 ]; then sed 's|^# mysqld|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
+    elif [ $TRIAL -eq 255 ]; then sed 's|^# mysqld|DONOTDELETE|;s|# mariadbd|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
     elif [ $TRIAL -eq 256 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
     elif [ $TRIAL -eq 257 ]; then sed "s/t0/t/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 258 ]; then sed "s/c0/c/gi" $WORKF > $WORKT
@@ -5582,6 +5787,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 261 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
+    if [ ! -r "${WORKT}" ]; then abort; fi
     SIZET=`stat -c %s $WORKT`
     if [ ${NOSKIP} -eq 0 -a $SIZET -ge $SIZEF ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as it does not reduce filesize"
@@ -5606,9 +5812,11 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
         NEXTACTION="& try next testcase complexity reducing sed"
       fi
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+        if [ ! -r "${WORKF}" ]; then abort; fi
         SIZEF=$(stat -c %s ${WORKF})
         LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
       else
+        if [ ! -r "${INPUTFILE}" ]; then abort; fi
         SIZEF=$(stat -c %s ${INPUTFILE})
         LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
       fi
@@ -5616,9 +5824,9 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
   done
 fi
 
-#STAGE8: Execute mysqld option simplification. Perform a check if the issue is still present once options are removed one-by-one
+#STAGE8: Execute mariadbd/mysqld option simplification. Perform a check if the issue is still present once options are removed one-by-one
 if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
-  NEXTACTION="& try removing next mysqld option"
+  NEXTACTION="& try removing next mariadbd/mysqld option"
   STAGE=8
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
@@ -5628,6 +5836,8 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
 
   myextra_split(){
+    if [ ! -d "${WORKD}" ]; then abort; fi
+    touch $WORKD
     echo $MYEXTRA | sed 's|[ \t]\+| |g' | tr -s " " "\n" | grep -v "^[ \t]*$" > $WORKD/mysqld_opt.out
     MYSQLD_OPTION_COUNT=$(cat $WORKD/mysqld_opt.out | wc -l)
     head -n $((MYSQLD_OPTION_COUNT/2)) $WORKD/mysqld_opt.out > $FILE1
@@ -5638,7 +5848,7 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
     while read line; do
       STAGE8_CHK=0
       STAGE8_NOT_STARTED_CORRECTLY=0
-      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Filtering mysqld option $line from MYEXTRA";
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Filtering mariadbd/mysqld option $line from MYEXTRA";
       MYEXTRA=$(echo $MYEXTRA | sed "s|$line||")
       while :; do
         run_and_check
@@ -5646,7 +5856,7 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
         if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)
           if [ ${TRIAL_REPEAT_COUNT} -lt ${NR_OF_TRIAL_REPEATS} ]; then
             echoit "$ATLEASTONCE [Stage $STAGE] Repeating trial (Attempt $[ ${TRIAL_REPEAT_COUNT} + 1 ]/${NR_OF_TRIAL_REPEATS})"
-            NEXTACTION="& reattempt removing the same mysqld option"
+            NEXTACTION="& reattempt removing the same mariadbd/mysqld option"
             continue
           else  # Maximum repeats reached and issue failed to reproduce in any of them
             MYEXTRA="$MYEXTRA $line"
@@ -5657,7 +5867,7 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
           break
         fi
       done
-      NEXTACTION="& try removing next mysqld option"
+      NEXTACTION="& try removing next mariadbd/mysqld option"
       TRIAL_REPEAT_COUNT=0
       TRIAL=$[$TRIAL+1]
     done < $WORKD/mysqld_opt.out
@@ -5673,12 +5883,12 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
     myextra_split
     if [ $MYSQLD_OPTION_COUNT -eq 0 ]; then  # 0 options
       if [ -n "$(echo ${MYEXTRA} | sed "s|[ \t]*||")" ]; then
-        echoit "Assert: counted number of mysqld options was zero, yet \$MYEXTRA is not empty;"
+        echoit "Assert: counted number of mariadbd/mysqld options was zero, yet \$MYEXTRA is not empty;"
         echoit "MYEXTRA: $MYEXTRA"
         echoit "Please check. Terminating."
         exit 1
       fi
-      echoit "$ATLEASTONCE [Stage $STAGE] Skipping this stage as the testcase does not contain extraneous mysqld options"
+      echoit "$ATLEASTONCE [Stage $STAGE] Skipping this stage as the testcase does not contain extraneous mariadbd/mysqld options"
     elif [ $MYSQLD_OPTION_COUNT -ge 1 -a $MYSQLD_OPTION_COUNT -le 4 ]; then  # 1-4 options
       myextra_reduction
     else  # 4+ options
@@ -5687,14 +5897,14 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
         MYEXTRA=$(cat $FILE1 | tr -s "\n" " " | sed 's|[ \t]\+| |g;s| $||g;s|^ ||g')
         STAGE8_CHK=0
         STAGE8_NOT_STARTED_CORRECTLY=0
-        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using first set of mysqld option(s) from MYEXTRA: $MYEXTRA";
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using first set of mariadbd/mysqld option(s) from MYEXTRA: $MYEXTRA";
         run_and_check
         TRIAL=$[$TRIAL+1]
         if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, try second set
           MYEXTRA=$(cat $FILE2 | tr -s "\n" " " | sed 's|[ \t]\+| |g;s| $||g;s|^ ||g')
           STAGE8_CHK=0
           STAGE8_NOT_STARTED_CORRECTLY=0
-          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using second set of mysqld option(s) from MYEXTRA: $MYEXTRA";
+          echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Using second set of mariadbd/mysqld option(s) from MYEXTRA: $MYEXTRA";
           run_and_check
           TRIAL=$[$TRIAL+1]
           if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, try reducing 1-by-1
@@ -5808,13 +6018,13 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
     fi
   fi
   if [ "${MYINIT}" != "" ]; then  # Try and drop both MYINIT and any matching options from MYEXTRA as well
-    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing MYINIT options from startup options & from mysqld initialization"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing MYINIT options from startup options & from mariadbd/mysqld initialization"
     STAGE9_FILTER=$(echo ${MYINIT} | sed 's|^[ \t]\+||;s|[ \t]\+$||')
     MYINIT_DROP=1
     stage9_run
   fi
   if [ "${MYINIT}" != "" ]; then  # Previous one failed, so try MYINIT removal only
-    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing MYINIT options from mysqld initialization"
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing MYINIT options from mariadbd/mysqld initialization"
     MYINIT_DROP=1
     stage9_run
   fi

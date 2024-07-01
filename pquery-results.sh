@@ -244,11 +244,17 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
     echo '** Trials with START SLAVE & MASTER_POS_WAIT (known hang/timeout issue waiting for an invalid position):'
     echo "${TRIALS_MASTER_POS_WAIT}"
   fi
+  TRIALS_MDEV_22727="$(grep --binary-files=text -il 'set.*aria_group_commit_interval' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'set.*aria_group_commit.*hard' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  if [ ! -z "${TRIALS_MDEV_22727}" ]; then
+    echo '** Trials with SET aria_group_commit_interval & SET aria_group_commit=HARD (known hang/timeout issue MDEV-22727):'
+    echo "${TRIALS_MDEV_22727}"
+  fi
   COUNT=
   STRING_OUT=
   COUNT_OUT=
   TRIALS_MDEV_30418=
   TRIALS_MASTER_POS_WAIT=
+  TRIALS_MDEV_22727=
 fi
 
 
