@@ -128,7 +128,7 @@ if [ "${MDG}" != "1" ]; then
 fi
 
 if [[ ${MDG} -eq 1 ]]; then
-  ERROR_LOGS=${GALERA_ERROR_LOGS}
+  ERROR_LOGS=${GALERA_ERROR_LOG}
   LATEST_CORE=${GALERA_CORE_LOC}
   if [ -z "${ERROR_LOGS}" ]; then  # Interactive call from basedir
     if [ -r ${LOC}/node1/node1.err ]; then
