@@ -10,3 +10,6 @@ SELECT JSON_ARRAY_INTERSECT (@json1,@json2);
 
 SET collation_connection='utf16le_general_ci';
 SELECT JSON_KEY_VALUE('{"key1":"val1"}', '$');
+
+SET character_set_connection=utf32;
+SELECT JSON_OBJECT_TO_ARRAY ('{"q": 1}');
