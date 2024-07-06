@@ -2010,6 +2010,11 @@ pquery_test() {
                 PRE_SHUFFLE_DUR_START=
                 if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
                   STORAGE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
+                  if [ -z "${STORAGE_ENGINE_SWAP_PERCENTAGE}" ]; then  # TODO: move this code to top var checking section and add change statement as well as further validity checking
+                    STORAGE_ENGINE_SWAP_PERCENTAGE=100
+                  fi
+                  #echoit "STORAGE_ENGINE_SWAP Active: changing ${STORAGE_ENGINE_SWAP_PERCENTAGE}% of storage engine references to ${STORAGE_ENGINE_SWAP}"  # TODO: the code below needs to change SE's based on a percentage. Perhaps first % part of file would work best?
+                  #if [ $[ $RANDOM % 100 ] -le ${STORAGE_ENGINE_SWAP_PERCENTAGE} ]; then
                   echoit "STORAGE_ENGINE_SWAP Active: changing all storage engine references to ${STORAGE_ENGINE_SWAP}"
                   sed -i "s|InnoDB|${STORAGE_ENGINE_SWAP}|gi;s|Aria|${STORAGE_ENGINE_SWAP}|gi;s|MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|BLACKHOLE|${STORAGE_ENGINE_SWAP}|gi;s|RocksDB|${STORAGE_ENGINE_SWAP}|gi;s|RocksDBcluster|${STORAGE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|SEQUENCE|${STORAGE_ENGINE_SWAP}|gi;s|NDB|${STORAGE_ENGINE_SWAP}|gi;s|NDBCluster|${STORAGE_ENGINE_SWAP}|gi;s|CSV|${STORAGE_ENGINE_SWAP}|gi;s|TokuDB|${STORAGE_ENGINE_SWAP}|gi;s|MEMORY|${STORAGE_ENGINE_SWAP}|gi;s|ARCHIVE|${STORAGE_ENGINE_SWAP}|gi;s|CASSANDRA|${STORAGE_ENGINE_SWAP}|gi;s|CONNECT|${STORAGE_ENGINE_SWAP}|gi;s|EXAMPLE|${STORAGE_ENGINE_SWAP}|gi;s|FALCON|${STORAGE_ENGINE_SWAP}|gi;s|HEAP|${STORAGE_ENGINE_SWAP}|gi;s|${STORAGE_ENGINE_SWAP}cluster|${STORAGE_ENGINE_SWAP}|gi;s|MARIA|${STORAGE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${STORAGE_ENGINE_SWAP}|gi;s|MERGE|${STORAGE_ENGINE_SWAP}|gi;s|FEDERATED|${STORAGE_ENGINE_SWAP}|gi;s|\$engine|${STORAGE_ENGINE_SWAP}|gi;s|NonExistentEngine|${STORAGE_ENGINE_SWAP}|gi;s|Spider|${STORAGE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
                   echoit "STORAGE_ENGINE_SWAP: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${STORAGE_ENGINE_SWAP_DUR_START} ] seconds"

@@ -55,9 +55,9 @@ if [ ! -z "$(ls --color=never ./node*/node*.err 2>/dev/null)" ]; then
 fi
 if [ "${LAST_THREE}" != "dbg" -a "${LAST_THREE}" != "opt" ]; then  # in-trial ./stack call
   if [ "${MDG}" -eq 1 ]; then
-    LAST_THREE="$(grep --binary-files=text -Eo "\-dbg|\-opt" ./node*/node*.err 2>/dev/null | head -n1 | sed 's|\-||')"
+    LAST_THREE="$(grep --binary-files=text -Eoh "\-dbg|\-opt" ./node*/node*.err 2>/dev/null | head -n1 | sed 's|\-||')"
   else
-    LAST_THREE="$(grep --binary-files=text -Eo "\-dbg|\-opt" ./log/master.err 2>/dev/null | head -n1 | sed 's|\-||')"
+    LAST_THREE="$(grep --binary-files=text -Eoh "\-dbg|\-opt" ./log/master.err ./var/log/mysqld.*.err 2>/dev/null | head -n1 | sed 's|\-||')"
   fi
 fi
 if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi

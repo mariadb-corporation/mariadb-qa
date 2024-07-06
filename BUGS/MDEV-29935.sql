@@ -1,0 +1,6 @@
+CREATE TABLE t1 ( pk int) ;
+create view v as SELECT * FROM t1 ORDER BY pk;
+insert into v select * from v;
+
+CREATE TABLE t (a INT KEY,b INT) COMMENT='' ENGINE=InnoDB;
+SELECT 1 FROM t WHERE 1 IN (SELECT 1 FROM t WHERE 1=(EXISTS (SELECT a FROM (SELECT 1) s GROUP BY 1=ANY (SELECT 1 FROM t HAVING a) HAVING 1)));

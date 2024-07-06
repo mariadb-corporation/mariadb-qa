@@ -876,7 +876,7 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   sed -i 's|^KNOWN_BUGS_LOC=[^#]\+|KNOWN_BUGS_LOC="${HOME}/mariadb-qa/known_bugs.strings"   |' ./reducer_new_text_string.sh
   sed -i 's|^FORCE_SKIPV=0|FORCE_SKIPV=1|' ./reducer_new_text_string.sh
   sed -i 's|^USE_NEW_TEXT_STRING=0|USE_NEW_TEXT_STRING=1|' ./reducer_new_text_string.sh
-  sed -i 's|^STAGE1_LINES=[^#]\+|STAGE1_LINES=100  |' ./reducer_new_text_string.sh
+  sed -i 's|^STAGE1_LINES=[^#]\+|STAGE1_LINES=13  |' ./reducer_new_text_string.sh
   sed -i 's|^SCAN_FOR_NEW_BUGS=[^#]\+|SCAN_FOR_NEW_BUGS=1   |' ./reducer_new_text_string.sh
   sed -i 's|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR="/data/NEWBUGS"   |' ./reducer_new_text_string.sh
   sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="${HOME}/mariadb-qa/new_text_string.sh"   |' ./reducer_new_text_string.sh
@@ -888,7 +888,7 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   # ------------------- ./reducer_errorlog_pquery.sh creation
   sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_errorlog.sh > ./reducer_errorlog_pquery.sh
   # ------------------- ./reducer_hang.sh creation
-  sed 's|^MODE=[0-9]|MODE=0|;s|TIMEOUT_CHECK=[0-9]*|TIMEOUT_CHECK=150|;s|MULTI_THREADS=[0-9]*|MULTI_THREADS=3|;s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=10|' ./reducer_errorlog.sh > ./reducer_hang.sh  # Timeout of 150s is a best guess, it may need to be higher. 3 Threads is plenty as we need to wait for the timeout in any case (unless sporadic)
+  sed 's|^MODE=[0-9]|MODE=0|;s|TIMEOUT_CHECK=[0-9]*|TIMEOUT_CHECK=150|;s|MULTI_THREADS=[0-9]*|MULTI_THREADS=3|;s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=13|' ./reducer_errorlog.sh > ./reducer_hang.sh  # Timeout of 150s is a best guess, it may need to be higher. 3 Threads is plenty as we need to wait for the timeout in any case (unless sporadic)
   # ------------------- ./reducer_hang_pquery.sh creation
   sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_hang.sh > ./reducer_hang_pquery.sh
   # ------------------- ./reducer_new_text_string_pquery.sh creation

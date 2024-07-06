@@ -27,6 +27,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1305  ## MDEV-33794
 MARIADB_ERROR_CODE|MariaDB error code: 1347  ## SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 MARIADB_ERROR_CODE|MariaDB error code: 1399
 MARIADB_ERROR_CODE|MariaDB error code: 1429  ## SPECIAL-13 (ref REGEX_ERRORS_FILTER.info)
+MARIADB_ERROR_CODE|MariaDB error code: 1440  ## MDEV-34113 (may mask other bugs)
 MARIADB_ERROR_CODE|MariaDB error code: 1442  ## MDEV-33793
 MARIADB_ERROR_CODE|MariaDB error code: 1452  ## MDEV-33378
 MARIADB_ERROR_CODE|MariaDB error code: 1472  ## SPECIAL-14 (ref REGEX_ERRORS_FILTER.info)
@@ -169,6 +170,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-32864
+SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-34501
+SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-29935
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit          ## MDEV-34486
 SIGSEGV|my_b_gets|MYSQL_BIN_LOG::find_next_log|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit                                                                     ## MDEV-34486 
 slot_rec|SIGABRT|ut_dbg_assertion_failed|page_zip_dir_delete|page_cur_delete_rec|btr_cur_pessimistic_delete                                                                    ## MDEV-34357
@@ -894,7 +898,12 @@ SIGABRT|__cxa_throw () from|gu::ThrowError::~ThrowError|galera::WriteSetOut::che
 thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_detach|trans_xa_detach|THD::cleanup|unlink_thd                                                     ## MENT-1426
 ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## MENT-1424
 SIGSEGV|Item_change_list::rollback_item_tree_changes|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                               ## MDEV-27920
+# SIGSEGV|spider_db_conn_queue_action|spider_db_before_query|spider_db_query|spider_db_open_handler                                                                              ## MDEV-27902 (for MDEV-31788, 10.5 opt only)
+SIGSEGV|server_mysql_real_connect|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                       ## MDEV-27902
+SIGSEGV|__strcmp_avx2|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MDEV-27902
+SIGSEGV|__strnlen_avx2|process_str_arg|my_vsnprintf_ex|my_error                                                                                                                ## MDEV-27902
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                                      ## MDEV-27902
+SIGABRT|__libc_message|__libc_assert_fail|___pthread_mutex_lock|inline_mysql_mutex_lock                                                                                        ## MDEV-27902
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-27902
 SIGSEGV|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan|ha_partition::rnd_next                                                              ## MDEV-27902
 SIGSEGV|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first|mysql_ha_read                                                                           ## MDEV-27902
@@ -2073,9 +2082,9 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # fixed|SIGABRT|Item_sp_variable::val_str|spider_db_open_item_string|spider_db_print_item_type|spider_db_mbase_util::open_item_func                                   ## Fixed ## MDEV-30191
 # b->xid_count == 0|SIGABRT|MYSQL_BIN_LOG::cleanup|clean_up|mysqld_main|main                                                                                          ## Fixed ## MDEV-24660
 # !is_thread_specific || (mysqld_server_initialized && thd)|SIGABRT|my_malloc_size_cb_func|my_free|delete_dynamic|my_hash_free                                        ## Fixed ## MDEV-25389
-# !m_freed_pages|SIGABRT|mtr_t::start|btr_free_but_not_root|btr_drop_temporary_table|ha_innobase::delete_table                                                        ## Fixed ## MDEV-30527 (no tc)
-# !m_freed_pages|SIGABRT|mtr_t::start|trx_undo_seg_free|trx_undo_commit_cleanup|trx_t::commit_in_memory                                                               ## Fixed ## MDEV-30527 (no tc)
-# !m_freed_pages|SIGABRT|mtr_t::start|trx_undo_truncate_end|trx_undo_try_truncate|row_undo_rec_get                                                                    ## Fixed ## MDEV-30527 (no tc)
+# !m_freed_pages|SIGABRT|mtr_t::start|btr_free_but_not_root|btr_drop_temporary_table|ha_innobase::delete_table                                                        ## Fixed ## MDEV-30527
+# !m_freed_pages|SIGABRT|mtr_t::start|trx_undo_seg_free|trx_undo_commit_cleanup|trx_t::commit_in_memory                                                               ## Fixed ## MDEV-30527
+# !m_freed_pages|SIGABRT|mtr_t::start|trx_undo_truncate_end|trx_undo_try_truncate|row_undo_rec_get                                                                    ## Fixed ## MDEV-30527
 # !m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::truncate|handler::ha_truncate                                                             ## Fixed ## MDEV-30527
 # !m_freed_pages|SIGABRT|mtr_t::start|btr_drop_temporary_table|ha_innobase::delete_table|hton_drop_table                                                              ## Fixed ## MDEV-30527
 # thd->mdl_context.is_lock_owner(MDL_key::TABLE, db.str, table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse ## Fixed ## MDEV-23205
@@ -2397,9 +2406,9 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGABRT|ib::fatal::~fatal|os_file_sync_posix|os_file_flush_func|log_file_t::flush                                                                                   ## Fixed ## MDEV-31861
 # !srv_read_only_mode|SIGABRT|log_buffer_flush_to_disk|ha_innobase::extra|select_insert::prepare_eof|select_insert::send_eof                                          ## Fixed ## MDEV-31861
 # xid->gtrid_length + xid->bqual_length < 128|SIGABRT|trx_undo_write_xid|trx_undo_set_state_at_prepare|trx_prepare_low|trx_prepare                                    ## Fixed ## MDEV-31928
-# SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                        ## Fixed ## MDEV-31996 (fixed, filtering, waiting for upmerge )
-# SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_delete_all_rows|ha_spider::delete_all_rows                                                                ## Fixed ## MDEV-31996 (idem)
-# mutex->__data.__owner == 0|SIGABRT|___pthread_mutex_lock|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                     ## Fixed ## MDEV-31996 (idem)
+# SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                        ## Fixed ## MDEV-31996
+# SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_delete_all_rows|ha_spider::delete_all_rows                                                                ## Fixed ## MDEV-31996
+# mutex->__data.__owner == 0|SIGABRT|___pthread_mutex_lock|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                     ## Fixed ## MDEV-31996
 # SIGSEGV|__strlen_avx2|safe_mutex_lock|inline_mysql_mutex_lock|spider_db_delete_all_rows                                                                             ## Fixed ## MDEV-31996
 # SIGABRT|my_vsnprintf_utf32|my_snprintf_utf32|Field_varstring::sql_rpl_type|table_def::compatible_with                                                               ## Fixed ## MDEV-32249
 # SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|pars_retrieve_table_def                                                                                    ## Fixed ## MDEV-32346

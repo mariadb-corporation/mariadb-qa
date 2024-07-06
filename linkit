@@ -76,9 +76,10 @@ ln -fs /home/${USER}/mariadb-qa/linkit /home/${USER}/li 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${USER}/crc 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/count_testcases_out /home/${USER}/cto 2>&1
 
-# Git bisect clone script
+# Git bisect clone & main scripts
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
 ln -fs /home/${USER}/mariadb-qa/commit_check.sh /test/git-bisect/commit_check.sh 2>&1
+ln -fs /home/${USER}/mariadb-qa/git-bisect.sh /test/git-bisect/git-bisect.sh 2>&1
 
 # Build scripts (mostly/mainly used from /test)
 ln -fs /home/${USER}/mariadb-qa/git-bisect.sh /test/git-bisect.sh 2>&1

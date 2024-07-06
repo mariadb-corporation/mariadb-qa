@@ -19,7 +19,11 @@
 #BASEDIR=/test/MDEV19123_UBASAN_MD120624-mariadb-11.6.0-linux-x86_64-dbg
 #BASEDIR=/test/MDEV19123_MD120624-mariadb-11.6.0-linux-x86_64-dbg
 #BASEDIR=/test/MD180624-mariadb-11.2.5-linux-x86_64-dbg
-BASEDIR=/test/preview-11.6-preview_MD200624-mariadb-11.6.0-linux-x86_64-opt
+#BASEDIR=/test/preview-11.6-preview_MD200624-mariadb-11.6.0-linux-x86_64-opt
+#BASEDIR=/test/MDEV31788_MD020724-mariadb-10.5.26-linux-x86_64-opt
+#BASEDIR=/test/MDEV31788_MD020724-mariadb-10.6.19-linux-x86_64-opt
+#BASEDIR=/test/MDEV31788_MD020724-mariadb-10.11.9-linux-x86_64-opt
+BASEDIR=/test/MDEV31788_MD020724-mariadb-11.1.6-linux-x86_64-opt
 #BASEDIR=/test/MDEV-34421_MD270624-mariadb-10.11.9-linux-x86_64-dbg
 #MD060224-mariadb-11.4.0-linux-x86_64-dbg
 #UBASAN_MD190224-mariadb-11.4.2-linux-x86_64-dbg
@@ -27,10 +31,10 @@ BASEDIR=/test/preview-11.6-preview_MD200624-mariadb-11.6.0-linux-x86_64-opt
 #MD271223-mariadb-11.4.0-linux-x86_64-opt  # base for MDEV-7850
 #PATCH4_MD281123-mariadb-10.6.17-linux-x86_64-dbg
 #MD311023-mariadb-11.3.0-linux-x86_64-dbg BASE
-RUNSOPT=0
-RUNSDBG=3
-#CONF=pquery-run-MD-spider.conf  # Set to multi-threaded (MDEV-34421), PRE_SHUFFLE_SQL=2 and spider swap
-CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
+RUNSOPT=1
+RUNSDBG=1
+CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2 and spider swap
+#CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
 #CONF=pquery-run-MD-federated.conf
 #CONF=pquery-run-mdev-31152.conf
 #CONF=pquery-run-MD-crt.conf

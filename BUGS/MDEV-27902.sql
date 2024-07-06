@@ -107,3 +107,30 @@ INSERT INTO ti VALUES (+1,+1,'GuouFix9aU','npmQUXtICRhmUw9','fi7fNNixs2eaasF4dW4
 INSERT INTO t2 VALUES (+1);
 SELECT SLEEP (1);
 INSERT INTO ti VALUES (+1,0,'j5PdMJaSyqZfK4UhINT8bTpIOyMkkl9jSiH1W1WOIioTzyn','9RdEWjrZb9','Uij6wOXbYGNsAKqhhsHlnHOWluciiRwyq','DdMOZMJwyCL5TXAuiwqXLXojWDYUlcxvkWfgwU2LoQeYQEvUTntf7nDFdLNfRUFZgpqddR1Hqq9Hl2MEnuNx8aiOu9s6bQIzw6uwCdM3rfJWSXobIkwhUXnq2aDLSXkTPwHu2VRqHPZ3Ufq1G',0,'E3',4);
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+SET default_storage_engine=Spider;
+CREATE DATABASE db1 CHARACTER SET utf8;
+CREATE TABLE db1.t1 (a INT, b INT);
+HANDLER db1.t1 OPEN;
+DROP TABLE t1;
+HANDLER t1 READ NEXT LIMIT 2;
+SELECT COUNT(*) FROM foo;
+HANDLER t1 READ NEXT;
+
+# Repeat until a crash is observed
+DROP DATABASE test;
+CREATE DATABASE test;
+USE test;
+SET sql_mode='', default_storage_engine=Spider;
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE TABLE t1 (c1 INT) ENGINE=Spider;  
+SELECT * FROM t1;  
+SET GLOBAL table_open_cache=100;
+CREATE TABLE t2 (c1 INT NULL, c2 INT NULL, UNIQUE (c1,c2));
+XA START 'a';
+SELECT * FROM t2;
+LOAD DATA INFILE 'foo' INTO TABLE t1;
+SELECT SLEEP (3);
+INSERT INTO t2 VALUES (NULL,'b');  # Crashing query
+SHOW CREATE TABLE t2;
