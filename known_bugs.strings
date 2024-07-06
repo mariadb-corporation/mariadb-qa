@@ -173,6 +173,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-32864
 SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-34501
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-29935
+(*(map2)->last_word_ptr & (map2)->last_bit_mask) == 0|SIGABRT|bitmap_copy|TABLE::mark_columns_per_binlog_row_image|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event ## MDEV-34535
+0|SIGABRT|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event|mysql_client_binlog_statement                                                ## MDEV-34524
+0|SIGABRT|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event                                             ## MDEV-34524
+!srv_read_only_mode|SIGABRT|fil_write_flushed_lsn|checkpoint_now_set|sys_var_pluginvar::global_update|sys_var::update                                                          ## MDEV-34519
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit          ## MDEV-34486
 SIGSEGV|my_b_gets|MYSQL_BIN_LOG::find_next_log|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit                                                                     ## MDEV-34486 
 slot_rec|SIGABRT|ut_dbg_assertion_failed|page_zip_dir_delete|page_cur_delete_rec|btr_cur_pessimistic_delete                                                                    ## MDEV-34357
@@ -570,6 +574,7 @@ trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_c
 is_started()|SIGABRT|Ha_trx_info::is_trx_read_write|ha_count_rw_2pc|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event                                             ## MDEV-28988
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_load|mysql_execute_command                                           ## MDEV-26492
 !m_innodb|SIGABRT|ha_partition::cmp_ref|refpos_order_cmp|my_qsort2|Refpos_container_sorted_array::sort                                                                         ## MDEV-30672
+strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|convert_to_array|Item_func_json_object_to_array::val_str|Type_handler::Item_send_str                                     ## MDEV-30691
 strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_key_value::get_key_value|Item_func_json_key_value::val_str|Type_handler::Item_send_str                    ## MDEV-30691
 strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|get_intersect_between_arrays|Item_func_json_array_intersect::val_str|Type_handler::Item_send_str                         ## MDEV-30691
 strlen(Ptr) == str_length|SIGABRT|Static_binary_string::chop|json_nice|Item_func_json_format::val_str|Type_handler::Item_send_str                                              ## MDEV-30691
