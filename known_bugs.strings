@@ -170,6 +170,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+lock_trx_has_sys_table_locks(trx) == __null|SIGABRT|row_mysql_unfreeze_data_dictionary|row_undo|row_undo_step|que_thr_step                                                     ## MDEV-34542
+(key_part->key_part_flag & 4) == 0|SIGABRT|key_hashnr|JOIN_CACHE_HASHED::get_hash_idx_complex|JOIN_CACHE_HASHED::key_search|JOIN_CACHE_HASHED::put_record                      ## MDEV-34536
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-32864
 SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-34501
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-29935
