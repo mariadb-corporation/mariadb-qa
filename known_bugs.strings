@@ -170,6 +170,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|spider_db_conn::fin_loop_check|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                      ## MDEV-34541
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_show_create|mysql_execute_command                                ## MDEV-34540
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-32864
 SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-34501
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-29935
@@ -186,7 +188,7 @@ stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows
 stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|ha_innobase::estimate_rows_upper_bound|filesort                                   ## MDEV-34474
 SIGABRT|ut_dbg_assertion_failed|trx_start_if_not_started_xa_low|row_insert_for_mysql|ha_innobase::write_row                                                                    ## MDEV-34362
 SIGSEGV|vio_get_normalized_ip|vio_get_normalized_ip_string|activate_tcp_port|network_init                                                                                      ## MDEV-34437
-#SIGSEGV|parse_engine_part_options|open_table_from_share|open_table|open_and_process_table                                                                                      ## MDEV-34421  # TESTING FIX
+SIGSEGV|parse_engine_part_options|open_table_from_share|open_table|open_and_process_table                                                                                      ## MDEV-34421
 SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ReportIncompatibleRT|__asan::AsanCheckIncompatibleRT                                                                       ## MDEV-30950
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_sql_stmt_prepare|mysql_execute_command                               ## MDEV-34402
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|sp_head::show_routine_code|mysql_execute_command                        ## MDEV-34401

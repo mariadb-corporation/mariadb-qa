@@ -13,12 +13,12 @@ while true; do
   ~/mariadb-qa/tmpfs_clean.sh 1
   if [ ${COUNT} -eq 0 ]; then
     if [ -r "${HOME}/ds" ]; then
-      timeout --signal=9 60s ${HOME}/ds automated  # Run ds for 90 sec
+      timeout --signal=9 40s ${HOME}/ds automated  # Run ds for 90 sec
     fi
     if [ -r "${HOME}/memory" ]; then
-      timeout --signal=9 60s ${HOME}/memory  # Run memory for 90 sec
+      timeout --signal=9 40s ${HOME}/memory  # Run memory for 90 sec
     fi
-    COUNT=20
+    COUNT=30
   fi
   # Cleanup filtered_infile.sql from finished data WORKDIRs
   PSLIST="$(ps -ef | grep --color=never -o '\.ge[0-9][0-9][0-9][0-9][0-9][0-9][^0-9]' | grep -o '[0-9]\+' | tr '\n' '|' | sed 's/[|]\+$//')"
