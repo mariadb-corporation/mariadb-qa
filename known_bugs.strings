@@ -172,6 +172,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|spider_db_conn::fin_loop_check|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                      ## MDEV-34541
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_show_create|mysql_execute_command                                ## MDEV-34540
+lock_trx_has_sys_table_locks(trx) == __null|SIGABRT|row_mysql_unfreeze_data_dictionary|row_undo|row_undo_step|que_thr_step                                                     ## MDEV-34542
+(key_part->key_part_flag & 4) == 0|SIGABRT|key_hashnr|JOIN_CACHE_HASHED::get_hash_idx_complex|JOIN_CACHE_HASHED::key_search|JOIN_CACHE_HASHED::put_record                      ## MDEV-34536
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-32864
 SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-34501
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-29935
