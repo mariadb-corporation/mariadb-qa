@@ -14,9 +14,12 @@ delete_trial(){
       rm -f ./reducer${TRIAL}-*.sh > /dev/null 2>&1
     else
       rm -f ./reducer${TRIAL}-${MDG_NODE}.sh > /dev/null 2>&1
-      rm -f ./${MDG_TMP_DIR} > /dev/null 2>&1
+      rm -Rf ./${MDG_TMP_DIR} > /dev/null 2>&1
     fi
     echo "- pquery MDG trial #${TRIAL_DIR} and all related files wiped"
+    if  [[ $(ls -d 2/node*/ 2>/dev/null | wc -l) -lt 1 ]]   ; then
+      rm -Rf ./${TRIAL}
+    fi
   else
     rm -Rf ./${TRIAL} > /dev/null 2>&1
     rm -f ./reducer${TRIAL}.sh > /dev/null 2>&1
@@ -42,7 +45,7 @@ TRIAL_DIR=
 if [[ ${MDG} -eq 1 ]];then
   TRIAL_DIR="$(echo $TRIAL | sed 's|-|/node|')"  # Note that TRIAL_DIR can be a root trial dir i.e. ./100 for trial #100 (invoked as ~/dt 100) or a node subdirectory like ./100/node1 for node 1 in trial #100 (invoked as ~/dt 100-1)
   if [[ "${TRIAL}" == *"-"* ]]; then
-    MDG_TMP_DIR="$(echo $TRIAL | sed 's|/node|/tmp|')"
+    MDG_TMP_DIR="$(echo $TRIAL_DIR | sed 's|/node|/tmp|')"
     MDG_NODE="$(echo $TRIAL | cut -d'-' -f2)"
     TRIAL="$(echo $TRIAL | cut -d'-' -f1)"
   fi

@@ -4,6 +4,12 @@
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 WORKD_PWD=$PWD
 
+# Check if this is a MariaDB Galera Cluster run
+MDG=0
+if grep -qi 'MDG Mode:.*TRUE' ./pquery-run.log 2>/dev/null; then
+  MDG=1
+fi
+
 #Checking TRIAL number
 if [ "" == "$1" ]; then
   echo "This script expects one parameter: the trial number to extract failing queries"
@@ -11,6 +17,7 @@ if [ "" == "$1" ]; then
   exit 1
 else
   TRIAL=$1
+  NODE=$2
 fi
 
 failing_queries_core(){
@@ -40,7 +47,15 @@ failing_queries_pquery_trace(){
 # Ideally, we would have a failing_queries_cli_trace as well, to implement when used
 
 rm -Rf ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
-ERRLOG="${WORKD_PWD}/${TRIAL}/log/master.err"
+if [[ $MDG -eq 1 ]]; then
+  if [[ -z $NODE ]]; then
+    ERRLOG="${WORKD_PWD}/${TRIAL}/node$2/node$2.err"
+  else
+    ERRLOG="${WORKD_PWD}/${TRIAL}/log/master.err"
+  fi
+else
+  ERRLOG="${WORKD_PWD}/${TRIAL}/log/master.err"
+fi
 if [ -r ${WORKD_PWD}/mysqld/mysqld ]; then BIN="${WORKD_PWD}/mysqld/mysqld"
 elif [ -r ${WORKD_PWD}/mysqld/mariadbd ]; then BIN="${WORKD_PWD}/mysqld/mariadbd"
 fi
