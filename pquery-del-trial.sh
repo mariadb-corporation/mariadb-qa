@@ -17,7 +17,7 @@ delete_trial(){
       rm -Rf ./${MDG_TMP_DIR} > /dev/null 2>&1
     fi
     echo "- pquery MDG trial #${TRIAL_DIR} and all related files wiped"
-    if  [[ $(ls -d 2/node*/ 2>/dev/null | wc -l) -lt 1 ]]   ; then
+    if  [[ $(ls -d ${TRIAL}/node*/ 2>/dev/null | wc -l) -lt 1 ]]   ; then
       rm -Rf ./${TRIAL}
     fi
   else
