@@ -1,0 +1,10 @@
+CREATE TABLE t (a INT KEY,b INT) ENGINE=InnoDB;
+SET max_statement_time=0.001;
+LOCK TABLE t WRITE;
+TRUNCATE t;
+
+SET max_session_mem_used=0;
+CREATE TABLE t (c BLOB);
+INSERT INTO t VALUES();
+LOCK TABLE t WRITE;
+TRUNCATE TABLE t;

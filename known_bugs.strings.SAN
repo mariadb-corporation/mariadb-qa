@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct String'|sql/item.cc|Item::save_str_in_field|Item::save_in_field|TABLE::update_default_fields|fill_record               ## MDEV-34583
+UBSAN|member access within null pointer of type 'struct String'|sql/item.cc|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field|TABLE::update_default_fields ## MDEV-34583
 ASAN|heap-use-after-free|storage/spider/spd_conn.cc|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect|spider_db_conn_queue_action        ## MDEV-34555
 ASAN|heap-use-after-free|storage/spider/spd_db_mysql.cc|spider_db_mbase::fin_loop_check|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                     ## MDEV-34541
 ASAN|heap-use-after-free|mysys/mf_iocache2.c|my_b_gets|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit                                 ## MDEV-34486

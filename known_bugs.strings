@@ -87,6 +87,8 @@ GOT_ERROR|Got error 1146|when reading table                    ## MDEV-29663
 GOT_ERROR|Got error 1227|when reading table                    ## MDEV-29659 (spider_internal_sql_log_off)
 GOT_ERROR|Got error 1429|when reading table                    ## SPECIAL-6 (Spider)
 GOT_ERROR|Got error 12524|when reading table                   ## MDEV-33196
+GOT_ERROR|Got error 12524|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196
+GOT_ERROR|Got error 12524|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-26543
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
@@ -171,6 +173,14 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_truncate_table::execute|mysql_execute_command                      ## MDEV-34584
+SIGSEGV|Item::save_str_in_field|Item::save_in_field|TABLE::update_default_fields|fill_record                                                                                   ## MDEV-34583
+SIGSEGV|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field|TABLE::update_default_fields                                                ## MDEV-34583
+SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                                                                    ## MDEV-30756
+SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-30756
+next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_heap::write_row|handler::ha_write_row|write_record                         ## MDEV-24038
+next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                     ## MDEV-27770 (now MDEV-24038)
+0|SIGABRT|Item::val_native|Arg_comparator::min_max_update_field_native|Item_sum_min_max::min_max_update_native_field|Item_sum_min_max::update_field                            ## MDEV-31759
 SIGSEGV|spider_db_conn::fin_loop_check|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                      ## MDEV-34541
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_show_create|mysql_execute_command                                ## MDEV-34540
 lock_trx_has_sys_table_locks(trx) == __null|SIGABRT|row_mysql_unfreeze_data_dictionary|row_undo|row_undo_step|que_thr_step                                                     ## MDEV-34542
@@ -937,7 +947,7 @@ SIGSEGV|ha_spider::index_read_map_internal|ha_spider::index_read_map|handler::ha
 SIGSEGV|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_read_map_internal|ha_spider::index_read_map                                                      ## MDEV-27902
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                                               ## MDEV-27902
 SIGSEGV|charset_info_st::strntoull10rnd|Field_num::get_int|Field_long::store|spider_db_errorno                                                                                 ## MDEV-27902
-SIGSEGV|spider_conn_queue_and_merge_loop_check|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect                                         ## MDEV-27902 (now #MDEV-34555)
+SIGSEGV|spider_conn_queue_and_merge_loop_check|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect                                         ## MDEV-27902 (now MDEV-34555)
 SIGSEGV|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal|spider_db_set_names                                                                    ## MDEV-27902
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                                   ## MDEV-27902
 SIGSEGV|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect|spider_db_ping_internal                                                        ## MDEV-27902
@@ -972,7 +982,6 @@ SIGSEGV|replace_routine_table|mysql_routine_grant|mysql_execute_command|mysql_pa
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_dfield_dfield|row_merge_tuple_cmp                                                           ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_data|cmp_dtuple_rec_with_match_low|page_cur_search_with_match                                        ## MDEV-27768
 (cs->state & 0x20000) == 0|SIGABRT|my_strnncollsp_nchars_generic_8bit|cmp_whole_field|cmp_data|cmp_dtuple_rec_with_match_low                                                   ## MDEV-27768
-next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                     ## MDEV-27770
 l_offset >= 0 && table->s->rec_buff_length - l_offset > 0|SIGABRT|Field::ptr_in_record|Column_definition::Column_definition|Create_field::Create_field|mysql_prepare_alter_table ## MDEV-27769
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-27688
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-22768

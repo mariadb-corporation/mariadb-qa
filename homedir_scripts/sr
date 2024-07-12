@@ -27,7 +27,7 @@ elif [ -r ${1}.reducer.sh ]; then
 elif [ -r ${1}.sh ]; then
   screen -admS s${1} bash -c "./${1}.sh 2>&1 | tee -a ./reducer.logs/${1}.log; for((i=1;i<=${PGE_LOOPS};i++)); do echo \"---------------- PGE Run \${i}/${PGE_LOOPS} ----------------\" | tee -a ./reducer.logs/reducer${1}.log; ${PGE} ${1} | tee -a ./reducer.logs/reducer${1}.log; done; bash"
 else
-  echo "Assert: No such reducer script: ./reducer${1}.sh, nor ${1}, nor ${1}.sh"
+  echo "Assert: No such reducer script: reducer${1}.sh, nor ${1}, nor ${1}.sh"
   exit 1
 fi
 if [ "${2}" != "" ]; then screen -d -r s${1}; fi

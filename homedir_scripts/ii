@@ -1,12 +1,13 @@
 #!/bin/bash
 
 grep -io 'Basedir:.*' pquery-run.log | sed 's|basedir:[ \t]\+|BASEDIR                 |i'  # Use pquery-run.log instead of pquery*.conf as that one may have incorrect basedir depending on what it was set to
-if grep -q 'PRE_SHUFFLE_SQL=[01]' pquery*.conf; then
+if grep -q '^PRE_SHUFFLE_SQL=[01]' pquery*.conf; then
   grep '^INFILE' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|;s|\${SCRIPT_PWD}|~/mariadb-qa|'
 fi
 ls pquery*.conf | tr '\n' ' ' | sed 's|^|PQUERY_CONFIGURATION    |;s|$|\n|'
 grep '^PQUERY_BIN' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|;s|\${SCRIPT_PWD}|~/mariadb-qa|'
 grep '^PRE_SHUFFLE_SQL' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t|'
+grep '^STORAGE_ENGINE_SWAP' pquery*.conf | grep -v PERCENTAGE | sed 's|[ ]\+#.*||;s|=|   \t|;s|""|No|' | sed "s|''|No|"
 grep '^ADD_RANDOM_OPTIONS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
 grep '^PQUERY_RUN_TIMEOUT' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
 grep '^THREADS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
