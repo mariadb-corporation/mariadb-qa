@@ -4,22 +4,22 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=11.1                                                        # Use the earliest major version affected by the bug
+VERSION=10.5                                                        # Use the earliest major version affected by the bug
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
-DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
+DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
-LAST_KNOWN_GOOD_COMMIT='f2dc4d4c10ac36a73b5c1eb765352d3aee808d66'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='2b61ff8f2221745f0a96855a0feb0825c426f993'   # Revision of first known bad commit
-TESTCASE='/test/in13.sql'                                           # The testcase to be tested
-UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+LAST_KNOWN_GOOD_COMMIT='e7b76f87c461c988cec28842fdf5f51c8b28a7f9'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='3c508d4c71c8bf27c6ecceba53ab9d4325a1bd6c'   # Revision of first known bad commit
+TESTCASE='/test/in14.sql'                                           # The testcase to be tested
+UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
-TEXT='Got error 1440 when reading table'                            # The string to scan for in the error log [Exclusive]
+TEXT='in spider_create_sys_thd'                                     # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead
 # i.e. 3 different modes in total: UNIQUEID, TEXT or core files scan
@@ -237,7 +237,11 @@ while :; do
     continue
   fi
   cd /test/git-bisect || die 1 'Could not change directory to /test/git-bisect'
-  TEST_DIR="$(ls -d MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
+  if [ "${UBASAN}" -eq 1 ]; then
+    TEST_DIR="$(ls -d UBASAN_MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
+  else
+    TEST_DIR="$(ls -d MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
+  fi
   if [ -z "${TEST_DIR}" ]; then
     echo "Assert: TEST_DIR is empty" | tee -a "${MAINLOG}"
     exit 1

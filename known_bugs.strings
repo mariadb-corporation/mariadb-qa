@@ -79,16 +79,15 @@ GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
 GOT_ERROR|Got error 1430|when reading table                    ## Presumed non-issue (federatedx base table removed)
 GOT_ERROR|Got error 1430|Unknown error 1430                    ## MDEV-29923
 GOT_ERROR|Got error 1440|when reading table                    ## MDEV-29454
-GOT_ERROR|Got error 1062|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-31111 (Spider)
-GOT_ERROR|Got error 1062|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-31111 (Spider)
-GOT_ERROR|Got error 1062|when trying to execute action for entry 3 of type 'rename table'  ## MDEV-31111 (Spider)
 GOT_ERROR|Got error 1100|when reading table                    ## MDEV-31409 (Spider)
 GOT_ERROR|Got error 1146|when reading table                    ## MDEV-29663
 GOT_ERROR|Got error 1227|when reading table                    ## MDEV-29659 (spider_internal_sql_log_off)
 GOT_ERROR|Got error 1429|when reading table                    ## SPECIAL-6 (Spider)
+GOT_ERROR|Got error 1969|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)
+GOT_ERROR|Got error 1969|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 12524|when reading table                   ## MDEV-33196
-GOT_ERROR|Got error 12524|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196
-GOT_ERROR|Got error 12524|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196
+GOT_ERROR|Got error 12524|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)
+GOT_ERROR|Got error 12524|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-26543
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
@@ -173,6 +172,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|Sql_cmd_check_table::execute                          ## MDEV-34589
+thd == _current_thd() || ((&(&thd->LOCK_thd_data)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&thd->LOCK_thd_data)->m_mutex)->thread))|SIGABRT|thd_get_ha_data|spider_get_trx|spider_check_trx_and_get_conn|ha_spider::append_lock_tables_list ## MDEV-29786
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_truncate_table::execute|mysql_execute_command                      ## MDEV-34584
 SIGSEGV|Item::save_str_in_field|Item::save_in_field|TABLE::update_default_fields|fill_record                                                                                   ## MDEV-34583
 SIGSEGV|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field|TABLE::update_default_fields                                                ## MDEV-34583
@@ -2485,3 +2486,6 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # GOT_ERROR|Got error 1032|when trying to execute action for entry 6 of type 'rename table'  ## Fixed ## MDEV-29800
 # GOT_ERROR|Got error 1032|when trying to execute action for entry 7 of type 'rename table'  ## Fixed ## MDEV-29800
 # GOT_ERROR|Got error 12524|when trying to execute action for entry 6 of type 'rename table'  ## Fixed ## MDEV-29800
+# GOT_ERROR|Got error 1062|when trying to execute action for entry 1 of type 'rename table'  ## Fixed ## MDEV-31111 (Spider)
+# GOT_ERROR|Got error 1062|when trying to execute action for entry 2 of type 'rename table'  ## Fixed ## MDEV-31111 (Spider)
+# GOT_ERROR|Got error 1062|when trying to execute action for entry 3 of type 'rename table'  ## Fixed ## MDEV-31111 (Spider)

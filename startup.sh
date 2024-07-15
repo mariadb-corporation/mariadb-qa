@@ -597,8 +597,14 @@ echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till
 echo "  while [ ! -r ./data/core* ]; do loop; done;" >>multirun_loop
 echo "fi" >>multirun_loop
 echo "sleep 2" >>multirun_loop
+echo "-- tt output:" >>multirun_loop
 echo "\${HOME}/tt" >>multirun_loop
-echo "echo \"Number of loops executed to obtain ./data/core*: \${NR_OF_LOOPS}\"" >>multirun_loop
+echo "--" >>multirun_loop
+echo "if [ -z \"\${ELBUG}\" ]; then" >>multirun_loop
+echo "  echo \"Number of loops executed to obtain ./data/core*: \${NR_OF_LOOPS}\"" >>multirun_loop
+echo "else" >>multirun_loop
+echo "  echo \"Number of loops executed to observe \"\${ELBUG}\" in error log: \${NR_OF_LOOPS}\"" >>multirun_loop
+echo "fi" >>multirun_loop
 echo "rm -Rf ./data.multirun" >>multirun_loop
 cp multirun_loop multirun_loop_pquery
 ln -s ./multirun_loop_pquery ./mlp
@@ -910,7 +916,7 @@ echo 'echo "DROP DATABASE test;" > ./in.sql' >>fixin
 echo 'echo "CREATE DATABASE test;" >> ./in.sql' >>fixin
 echo 'echo "USE test;" >> ./in.sql' >>fixin
 echo 'if [ -r ./in.tmp ]; then cat in.tmp >> in.sql; rm -f in.tmp; fi' >>fixin
-echo 'echo "You may want to add  SET sql_mode='';  to the top of the in.sql file also, if the original run had it' >>fixin
+echo "echo \"You may want to add  SET sql_mode='';  to the top of the in.sql file also, if the original run had it\"" >>fixin
 
 echo "${SCRIPT_PWD}/stack.sh" >stack
 if [ -d ./mysql-test ]; then

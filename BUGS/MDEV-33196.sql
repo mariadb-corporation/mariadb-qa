@@ -4,3 +4,21 @@ DROP TABLE mysql.spider_link_mon_servers;
 CREATE TABLE t1(c DATE) ENGINE=MyISAM;
 CREATE TABLE t(c DATE,PRIMARY KEY(c)) ENGINE=Spider COMMENT='socket "../socket.sock",table "t1 t2"' CONNECTION='mkd "1"';
 SELECT * FROM t WHERE c=0;
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE TABLE t (c INT KEY,c1 BLOB,c2 TEXT) ENGINE=Spider;
+DROP DATABASE mysql;
+RENAME TABLE t TO c,v2 TO t;
+
+DROP DATABASE test;
+CREATE DATABASE test;
+USE test;
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE TABLE t (a INT) ENGINE=Spider;
+SET @@max_statement_time=0.0001;
+RENAME TABLE t TO t2,t3 TO t3,t2 TO t;
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE TABLE t (a INT) ENGINE=Spider;
+SET @@max_statement_time=0.0001;
+RENAME TABLE t TO t2,t3 TO t3,t2 TO t;
