@@ -1,0 +1,6 @@
+SET GLOBAL log_output='TABLE';
+CREATE TABLE t1 (c INT);
+CREATE OR REPLACE TABLE mysql.general_log (a INT);
+SET GLOBAL general_log=ON;
+PREPARE s FROM "INSERT INTO t1 VALUES(1)";
+EXECUTE s;
