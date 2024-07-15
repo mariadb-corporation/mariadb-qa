@@ -1473,7 +1473,7 @@ multi_reducer(){
               exit 1
             fi
             if [ $MDG -eq 1 ]; then
-              export GALERA_ERROR_LOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
+              export GALERA_ERROR_LOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
               export GALERA_CORE_LOC=$WORKD/node1/*core*
             fi
             MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
@@ -1700,8 +1700,6 @@ init_workdir_and_files(){
     else
       mkdir $WORKD/data $WORKD/tmp $WORKD/log
     fi
-  else
-    ERROR_NODE=$(echo  $0 | cut -d'-' -f2 | cut -d'.' -f1)
   fi
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
@@ -2112,8 +2110,8 @@ generate_run_scripts(){
   # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a client/CLI), _stop (stop mariadbd/mysqld). _start (starts mariadbd/mysqld)
   # (start_mysqld_main and start_valgrind_mysqld_main). Togheter these scripts can be used for executing the final testcase ($WORKO_start > $WORKO_run)
   if [[ ${MDG} -eq 1 ]]; then
-    local EPOCH_SOCKET="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}_socket.sock"
-    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}.err"
+    local EPOCH_SOCKET="/dev/shm/${EPOCH}/node${GALERA_NODE}/node${GALERA_NODE}_socket.sock"
+    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/node${GALERA_NODE}/node${GALERA_NODE}.err"
   else
     local EPOCH_SOCKET="/dev/shm/${EPOCH}/socket.sock"
     local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/log/master.err"
@@ -3419,7 +3417,7 @@ process_outcome(){
     SKIP_NEWBUG=0
     ERRORLOG=
     if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-      ERRORLOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
+      ERRORLOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
       sudo chmod 777 $ERRORLOG
     else
       ERRORLOG=$WORKD/log/*.err
@@ -3456,7 +3454,7 @@ process_outcome(){
           exit 1
         fi
         if [ $MDG -eq 1 ]; then
-          export GALERA_ERROR_LOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
+          export GALERA_ERROR_LOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
           export GALERA_CORE_LOC=$WORKD/node1/*core*
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
