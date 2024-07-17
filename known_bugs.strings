@@ -172,6 +172,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|create_internal_tmp_table|create_internal_tmp_table_from_heap|select_unit::write_record|select_unit_ext::unfold_record                                                 ## MDEV-34610
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::update_row                                       ## MDEV-34594
 SIGSEGV|gu_mutex_lock_SYS|gu::Mutex::lock|galera::TrxHandleMaster::lock|galera::TrxHandleLock::TrxHandleLock                                                                   ## MDEV-34593
 total_length + thd->wsrep_sr().log_position() == saved_pos|SIGABRT|wsrep_write_cache_inc|wsrep_write_cache|Wsrep_client_service::prepare_data_for_replication|wsrep::transaction::certify_commit ## MDEV-34587
