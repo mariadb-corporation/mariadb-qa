@@ -1,0 +1,36 @@
+---- ASAN Unit tests of san_text_string.sh ----
+A01: ASAN|use-after-poison|sql/sql_table.cc|__interceptor_vsprintf|__interceptor_sprintf|mysql_alter_table|mysql_recreate_table
+A02: ASAN|heap-use-after-free|storage/maria/ma_range.c|_ma_record_pos|maria_records_in_range|ha_maria::records_in_range|handler::multi_range_read_info_const
+A03: ASAN|use-after-poison|strings/json_lib.c|json_path_parts_compare|json_path_compare|path_exact
+A04: ASAN|stack-buffer-overflow|plugin/type_inet/sql_type_inet.hh|Inet6::cmp|Inet6::cmp|Type_handler_inet6::stored_field_cmp_to_item
+A05: ASAN|stack-buffer-overflow|strings/strmake.c|strmake|my_strnxfrm_tis620|Field::pos_in_interval_val_str|Field_str::pos_in_interval
+A06: ASAN|use-after-poison|strings/ctype.c|my_convert|copy_and_convert|sql_strmake_with_convert|Item::set_name
+A07: ASAN|global-buffer-overflow|libmariadb/ma_net.c|ma_net_write_buff|ma_net_write_command|mthd_my_send_cmd|mysql_stmt_prepare
+A08: ASAN|use-after-poison|storage/innobase/rem/rem0cmp.cc|cmp_data|cmp_dtuple_rec_with_match_low|page_cur_search_with_match
+A09: ASAN|heap-buffer-overflow|libmariadb/mariadb_lib.c|net_field_length|ma_read_ok_packet|mthd_my_read_query_result|mysql_next_result
+A10: ASAN|unknown-crash|sql/opt_range.cc|__interceptor_memcpy.part.0|QUICK_GROUP_MIN_MAX_SELECT::next_min_in_range|QUICK_GROUP_MIN_MAX_SELECT::next_min|QUICK_GROUP_MIN_MAX_SELECT::get_next
+A11: ASAN|dynamic-stack-buffer-overflow|sql/key.cc|key_restore|QUICK_GROUP_MIN_MAX_SELECT::next_min|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick
+---- TSAN Unit tests of san_text_string.sh ----
+T01: TSAN|data race|storage/innobase/srv/srv0mon.cc|srv_mon_default_on|innodb_init|ha_initialize_handlerton|plugin_initialize
+T02: TSAN|data race|storage/innobase/buf/buf0lru.cc|buf_LRU_get_free_block|buf_page_init_for_read|buf_read_page_low|buf_read_page_background
+T03: TSAN|data race|storage/innobase/os/os0file.cc|os_file_pread|os_file_read_page|os_file_read_func|os_aio
+T04: TSAN|data race|    #0 __tsan_atomic64_fetch_add <null> (libtsan.so.0+0x7f2d9)|__tsan_atomic64_fetch_add|os_file_pread|os_file_read_page|os_file_read_func
+T05: TSAN|data race|sql/log.cc|LOGGER::init_error_log|LOGGER::init_error_log|LOGGER::set_handlers|init_server_components
+T06: TSAN|data race|storage/innobase/os/os0file.cc|os_file_pread|os_file_read_page|os_file_read_func|os_aio
+T07: TSAN|data race|include/ut0counter.h:132|ib_counter_t|ib_counter_t|rw_lock_x_lock_wait_func|rw_lock_x_lock_low
+T08: TSAN|data race|mysys/thr_mutex.c:240|safe_mutex_lockbuild|inline_mysql_mutex_lockbuild|my_thread_initbuild|fts_optimize_thread
+T09: TSAN|data race|storage/innobase/btr/btr0cur.cc:1295|btr_cur_search_to_nth_level_func|btr_pcur_open_low|row_search_on_row_ref|row_purge_reposition_pcur
+---- UBSAN Unit tests of san_text_string.sh ----
+U01: UBSAN|member call on null pointer of type 'struct fil_space_t'|storage/innobase/srv/srv0start.cc|innodb_shutdown|innobase_end|ha_finalize_handlerton|plugin_deinitialize
+U02: UBSAN|applying zero offset to null pointer|mysys/hash.c|my_hash_free_elements|my_hash_free|ignore_db_dirs_free|clean_up
+U03: UBSAN|applying zero offset to null pointer|mysys/hash.c|my_hash_iterate|grant_reload|grant_init|mysqld_main
+U04: UBSAN|member call on address X which does not point to an object of type 'Query_arena'|sql/item.cc|Item_sp::execute_impl|Item_sp::execute|Item_func_sp::val_int|Type_handler::Item_send_long
+U05: UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/item_sum.cc|Item_sum_num::fix_fields|Item_window_func::fix_fields|Item_window_func::fix_fields|Item::fix_fields_if_needed
+U06: UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|validate_comment_length|mysql_prepare_create_table|mysql_create_frm_image
+U07: UBSAN|applying non-zero offset X to null pointer|sql/sql_select.cc|JOIN::make_aggr_tables_info|JOIN::optimize_inner|JOIN::optimize|mysql_select(THD*,
+U08: UBSAN|load of value X, which is not a valid value for type 'enum_binlog_format'|sql/sql_class.h|THD::set_current_stmt_binlog_format_stmt|THD::reset_current_stmt_binlog_format_row|THD::init|THD::THD
+U09: UBSAN|index X out of bounds for type 'byte [38]'|storage/innobase/buf/buf0buddy.cc|buf_buddy_alloc_zip|buf_buddy_alloc_low|buf_buddy_alloc|buf_page_create
+U10: UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command
+U11: UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/opt_split.cc|JOIN::fix_all_splittings_in_plan|JOIN::optimize_inner|JOIN::optimize|mysql_select
+U12: UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/sql_type_int.h|Func_handler_shift_right_decimal_to_ulonglong::to_longlong_null|Item_handled_func::Handler_int::val_int|Item_handled_func::val_int
+U13: UBSAN|call to function show_binlog_vars(THD*, st_mysql_show_var*, char*) through pointer to incorrect function type 'int (*)(THD *, st_mysql_show_var *, void *, system_status_var *, enum_var_type)'|sql/sql_show.cc|show_status_array|fill_status|get_schema_tables_result|JOIN::exec_inner

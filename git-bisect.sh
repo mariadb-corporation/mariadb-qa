@@ -18,6 +18,7 @@ FIRST_KNOWN_BAD_COMMIT='3c508d4c71c8bf27c6ecceba53ab9d4325a1bd6c'   # Revision o
 TESTCASE='/test/in14.sql'                                           # The testcase to be tested
 UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
+USE_PQUERY=1                                                        # Uses pquery if set to 1, otherwise the CLI is used
 UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
 TEXT='in spider_create_sys_thd'                                     # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
@@ -50,7 +51,7 @@ elif [ -z "${LAST_KNOWN_GOOD_COMMIT}" -o -z "${FIRST_KNOWN_BAD_COMMIT}" ]; then
 elif [ ! -r "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh" ]; then
   echo "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh missing. Try cloning mariadb-qa again from Github into your home directory"
   if [ "${UBASAN}" -eq 1 ]; then
-    echo "(note: UBASAN=1 so a UBASAN build would have been used to build the server in any case, however the script looks for this script above, as asimple verification whetter mariadb-qa was cloned and is generally ready to be used)"
+    echo "(note: UBASAN=1 so a UBASAN build would have been used to build the server in any case, however the script looks for this script above, as a simple verification whetter mariadb-qa was cloned and is generally ready to be used)"
   fi
   exit 1
 elif [ ! -r "${HOME}/start" ]; then
@@ -254,13 +255,21 @@ while :; do
   cp ${TESTCASE} ./in.sql
   if [ "${REPLICATION}" -eq 0 ]; then
     ./all_no_cl >/dev/null 2>&1 || die 1 "Could not execute ./all_no_cl in ${PWD}"  # wipe, start
-    ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+    if [ "${USE_PQUERY}" -eq 1 ]; then
+      ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+    else
+      ./test >/dev/null 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
+    fi
     ./stop  2>&1 >/dev/null  # Output is removed as otherwise it may contain, for example, 'bin/mariadb-admin: connect to server at 'localhost' failed' if the server already crashed
     ./kill 2>&1 >/dev/null
   else
     export SRNOCL=1  # No CLI when using ./start_replication
     ./start_replication 2>&1 | grep -vE 'To get a |^Note: |Adding scripts: '
-    ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+    if [ "${USE_PQUERY}" -eq 1 ]; then
+      ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+    else
+      ./test >/dev/null 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
+    fi
     ./stop_replication 2>&1 >/dev/null  # Output is removed, ref above
     ./kill_replication 2>&1 >/dev/null
   fi
