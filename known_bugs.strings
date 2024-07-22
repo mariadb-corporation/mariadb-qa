@@ -172,6 +172,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_datetime_literal::do_build_clone|Item::build_clone|Item_equal::create_pushable_equalities                           ## MDEV-34634
+typeid(*clone) == typeid(*this)|SIGABRT|Item::clone_const_item|change_cond_ref_to_const|change_cond_ref_to_const|propagate_cond_constants                                      ## MDEV-34634
+typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_int::do_build_clone|Item::build_clone|Item_equal::create_pushable_equalities                                        ## MDEV-34634
+table->field[0]->ptr >= table->record[0] && table->field[0]->ptr <= table->record[0] + table->s->reclength|SIGABRT|handler::assert_icp_limitations|handler::ha_index_first|join_read_first|sub_select ## MDEV-34632
 SIGSEGV|create_internal_tmp_table|create_internal_tmp_table_from_heap|select_unit::write_record|select_unit_ext::unfold_record                                                 ## MDEV-34610
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::update_row                                       ## MDEV-34594
 SIGSEGV|gu_mutex_lock_SYS|gu::Mutex::lock|galera::TrxHandleMaster::lock|galera::TrxHandleLock::TrxHandleLock                                                                   ## MDEV-34593
