@@ -5,6 +5,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct Field'|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap|ha_spider::set_select_column_mode|ha_spider::rnd_init ## MDEV-34639
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::update_create_info|ha_partition::update_create_info|mysql_prepare_alter_table|mysql_alter_table                ## MDEV-34636
+UBSAN|member access within null pointer of type 'struct handlerton'|sql/create_options.cc|parse_engine_part_options|open_table_from_share|ha_create_table|mysql_alter_table    ## MDEV-34421
+UBSAN|member access within null pointer of type 'struct handlerton'|sql/create_options.cc|parse_engine_part_options|open_table_from_share|open_table|open_and_process_table    ## MDEV-34421
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock|handler::ha_external_unlock                     ## MDEV-29962, MDEV-34590
 UBSAN|member access within null pointer of type 'struct st_my_thread_var'|storage/spider/spd_table.cc|spider_create_sys_thd|spider_table_bg_sts_action|start_thread|clone3     ## MDEV-34591
 UBSAN|downcast of address X which does not point to an object of type 'Field_num'|sql/sql_type.cc|Type_handler_long::make_conversion_table_field|Virtual_conversion_table::add|table_def::create_conversion_table|table_def::compatible_with ## MDEV-34607

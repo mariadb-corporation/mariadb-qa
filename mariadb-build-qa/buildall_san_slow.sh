@@ -14,12 +14,13 @@ BUILD_10_8=0
 BUILD_10_9=0
 BUILD_10_10=0
 BUILD_10_11=1
-BUILD_11_0=1
+BUILD_11_0=0
 BUILD_11_1=1
 BUILD_11_2=1
 BUILD_11_3=0
 BUILD_11_4=1
 BUILD_11_5=1
+BUILD_11_6=1
 
 #if [ ! -r ./terminate_ds_memory.sh ]; then
 #  echo './terminate_ds_memory.sh missing!'
@@ -46,11 +47,16 @@ cleanup_dirs(){
          10.1_opt_san 10.2_opt_san 10.3_opt_san 10.4_opt_san 10.5_opt_san 10.6_opt_san 10.7_opt_san \
          10.8_dbg_san 10.9_dbg_san 10.10_dbg_san 10.11_dbg_san 11.0_dbg_san 11.1_dbg_san 11.2_dbg_san \
          10.8_opt_san 10.9_opt_san 10.10_opt_san 10.11_opt_san 11.0_opt_san 11.1_opt_san 11.2_opt_san \
-         11.3_dbg_san 11.4_dbg_san 11.5_dbg_san \
-         11.3_opt_san 11.4_opt_san 11.5_opt_san
+         11.3_dbg_san 11.4_dbg_san 11.5_dbg_san 11.6_dbg_san \
+         11.3_opt_san 11.4_opt_san 11.5_opt_san 11.6_opt_san
 }
 
 buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use (newer builds=larger=longer)
+  if [ ${BUILD_11_6} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/11.6 && ~/mariadb-qa/build_mdpsms_opt_san.sh
+    cleanup_dirs; cd ${DIR}/11.6 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
+  fi
+
   if [ ${BUILD_11_5} -eq 1 ]; then
     cleanup_dirs; cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh
     cleanup_dirs; cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_dbg_san.sh

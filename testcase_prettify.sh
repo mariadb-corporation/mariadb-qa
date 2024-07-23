@@ -353,6 +353,7 @@ cat "${1}" | tr -d '`' | \
        s|day_second|DAY_SECOND|gi; \
        s|day_minute|DAY_MINUTE|gi; \
        s|day_hour|DAY_HOUR|gi; \
+       s|hour_micro|HOUR_MICRO|gi; \
        s|yearweek|YEARWEEK|gi; \
        s|minute_second|MINUTE_SECOND|gi; \
        s|system_time|SYSTEM_TIME|gi; \

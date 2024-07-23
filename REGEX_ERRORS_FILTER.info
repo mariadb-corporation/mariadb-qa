@@ -123,6 +123,7 @@ Got error 194 when reading table                      MDEV-27952 (tablespace dis
 Got error 194 .Tablespace is missing .* engine InnoDB MDEV-27952 (tablespace discarded)
 Got error 1054 when reading table                     MDEV-29430 (Spider)
 Got error 1054 when reading table                     MDEV-29663 (Spider, 29430 duplicate)
+Got error 1056 when reading table                     MDEV-34638 (Spider)
 Got error 1100 when reading table                     MDEV-31409 (Spider)
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
 Got error 1184 when reading table                     MDEV-29583 (init_connect failed, Spider)

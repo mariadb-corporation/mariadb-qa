@@ -70,11 +70,14 @@ GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being r
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine Spider, Error_code: 1030; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine Aria, Error_code: 1030; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine MyISAM, Error_code: 1030; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936
+GOT_ERROR|Got error 171|'unknown' from SPIDER, Error_code: 1296; Unable to connect to foreign data source: localhost, Error_code: 1429; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1296 ## MDEV-22936
+GOT_ERROR|Got error 171|'unknown' from SPIDER, Error_code: 1296; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1296 ## MDEV-22936
 GOT_ERROR|Got error 175|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 188|when reading table                     ## Presumed non-issue (Operation was interrupted, max_statement_time)
 GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (discarded tablespace)
 GOT_ERROR|Got error 194|"Tablespace is missing for a table" from storage engine InnoDB ## MDEV-27952 (idem)
 GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and MDEV-29430
+GOT_ERROR|Got error 1056|when reading table                    ## MDEV-34638
 GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
 GOT_ERROR|Got error 1430|when reading table                    ## Presumed non-issue (federatedx base table removed)
 GOT_ERROR|Got error 1430|Unknown error 1430                    ## MDEV-29923
@@ -172,6 +175,12 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|ha_spider::field_exchange|ha_spider::set_searched_bitmap|ha_spider::set_searched_bitmap|ha_spider::set_select_column_mode                                              ## MDEV-34639
+SIGSEGV|ha_spider::field_exchange|ha_spider::set_searched_bitmap|ha_spider::set_select_column_mode|ha_spider::rnd_init                                                         ## MDEV-34639
+SIGSEGV|ha_spider::update_create_info|ha_partition::update_create_info|mysql_prepare_alter_table|mysql_alter_table                                                             ## MDEV-34636
+SIGSEGV|my_hash_insert|spider_create_trx_alter_table|ha_spider::update_create_info|ha_partition::update_create_info                                                            ## MDEV-34636
+SIGSEGV|parse_engine_part_options|open_table_from_share|ha_create_table|mysql_alter_table                                                                                      ## MDEV-34421
+SIGSEGV|spider_db_unlock_tables|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock                                                                      ## MDEV-34590
 SIGSEGV|create_internal_tmp_table|create_internal_tmp_table_from_heap|select_unit::write_record|select_unit_ext::unfold_record                                                 ## MDEV-34610
 client_state.transaction().active()|SIGABRT|wsrep_thd_append_key|wsrep_append_key|ha_innobase::wsrep_append_keys|ha_innobase::update_row                                       ## MDEV-34594
 SIGSEGV|gu_mutex_lock_SYS|gu::Mutex::lock|galera::TrxHandleMaster::lock|galera::TrxHandleLock::TrxHandleLock                                                                   ## MDEV-34593
