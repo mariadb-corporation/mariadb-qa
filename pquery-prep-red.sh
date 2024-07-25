@@ -559,7 +559,7 @@ generate_reducer_script(){
     MDG_CLEANUP2="0,/^[ \t]*NR_OF_NODES[ \t]*=.*$/s|^[ \t]*NR_OF_NODES[ \t]*=.*$|#NR_OF_NODES=<set_below_in_machine_variables_section>|"
     MDG_STRING1="0,/#VARMOD#/s:#VARMOD#:export MDG=1\n#VARMOD#:"
     MDG_STRING2="0,/#VARMOD#/s:#VARMOD#:NR_OF_NODES=${NR_OF_NODES}\n#VARMOD#:"
-    MDG_STRING3="0,/#VARMOD#/s:#VARMOD#:GALERA_NODE=${GALERA_NODE}\n#VARMOD#:"
+    MDG_STRING3="0,/#VARMOD#/s:#VARMOD#:GALERA_NODE=${SUBDIR}\n#VARMOD#:"
   else
     MDG_CLEANUP1="s|ZERO0|ZERO0|"  # Idem as above
     MDG_STRING1="s|ZERO0|ZERO0|"
