@@ -44,7 +44,8 @@ if [ -z "${MYSQLD}" ]; then
   exit 1
 else
   SOURCE_CODE_REV="$(${SCRIPT_PWD}/../source_code_rev.sh)"
-  SERVER_VERSION="$(${MYSQLD} --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
+  # For EMD, if the version is for example '11.4.2-1', it is simplified to '11.4.2' by the first sed below
+  SERVER_VERSION="$(${MYSQLD} --version | sed 's|\-[0-9]\-|-|' | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
   if [ -z "${SERVER_VERSION}" ]; then  # Likely MS
     SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
   fi
