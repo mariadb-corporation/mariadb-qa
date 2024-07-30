@@ -178,6 +178,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+.corrupted lock system. == 0|SIGABRT|lock_rec_unlock_unmodified|lock_release_on_prepare|trx_prepare|trx_prepare_for_mysql                                                      ## MDEV-34663
 SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                             ## MENT-2102
 SIGABRT|__libc_message_impl|__libc_assert_fail|__GI___pthread_tpp_change_priority|ha_spider::rnd_next_internal                                                                 ## MENT-2102
 SIGSEGV|ha_spider::rnd_next_internal|ha_spider::rnd_next|handler::ha_rnd_next|mysql_ha_read                                                                                    ## MENT-2102
@@ -306,6 +307,7 @@ thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIG
 !(thd->rgi_slave && !thd->rgi_slave->worker_error && thd->rgi_slave->did_mark_start_commit)|SIGABRT|ha_rollback_trans|rpl_slave_state::record_gtid|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-33879
 !(thd->rgi_slave && !thd->rgi_slave->worker_error && thd->rgi_slave->did_mark_start_commit) || (thd->transaction->xid_state.is_explicit_XA() || (thd->rgi_slave->gtid_ev_flags2 & Gtid_log_event::FL_PREPARED_XA))|SIGABRT|ha_rollback_trans|rpl_slave_state::record_gtid|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-33879
 !_current_thd()|SIGABRT|destroy_background_thd|dict_stats_recalc_pool_deinit|dict_stats_deinit|innodb_shutdown                                                                 ## MDEV-33873
+(ulonglong) next_free_value % real_increment == (ulonglong) offset|SIGABRT|sequence_definition::adjust_values|SEQUENCE::set_value|Item_func_setval::val_int|Type_handler::Item_send_longlong ## MDEV-33836
 (ulonglong) next_free_value % real_increment == (ulonglong) offset|SIGABRT|sequence_definition::adjust_values|SEQUENCE::read_stored_values|SEQUENCE::read_initial_values|ha_sequence::open ## MDEV-33836
 SIGSEGV|ha_storage_engine_is_enabled|ha_checktype|ha_check_if_updates_are_ignored|create_table_impl                                                                            ## MDEV-33804
 SIGSEGV|TABLE::column_bitmaps_set|TABLE::use_all_columns|handle_roles_mappings_table|handle_grant_table                                                                        ## MDEV-33783
