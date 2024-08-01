@@ -195,6 +195,8 @@ SIGSEGV|ha_spider::update_create_info|ha_partition::update_create_info|mysql_pre
 SIGSEGV|my_hash_insert|spider_create_trx_alter_table|ha_spider::update_create_info|ha_partition::update_create_info                                                            ## MDEV-34636
 SIGSEGV|parse_engine_part_options|open_table_from_share|ha_create_table|mysql_alter_table                                                                                      ## MDEV-34421
 SIGSEGV|spider_db_unlock_tables|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock                                                                      ## MDEV-34590
+SIGSEGV|Item::build_clone|Item_func_case_simple::do_build_clone|Item::build_clone|Item_func_case_simple::do_build_clone                                                        ## MDEV-34683
+SIGSEGV|Item_func_case_simple::do_build_clone|Item::build_clone|Item_func_case_simple::do_build_clone|Item::build_clone                                                        ## MDEV-34683
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_field::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                            ## MDEV-34683
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_datetime_literal::do_build_clone|Item::build_clone|Item_equal::create_pushable_equalities                           ## MDEV-34634
 typeid(*clone) == typeid(*this)|SIGABRT|Item::clone_const_item|change_cond_ref_to_const|change_cond_ref_to_const|propagate_cond_constants                                      ## MDEV-34634
