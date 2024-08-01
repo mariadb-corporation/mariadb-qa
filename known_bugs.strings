@@ -178,6 +178,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|thd_get_ha_data|spider_direct_sql_body|spider_direct_sql|udf_handler::val_int                                                                                          ## MDEV-34682
+SIGSEGV|thd_get_ha_data|spider_get_trx|spider_direct_sql_body|udf_handler::val_int                                                                                             ## MDEV-34682
+SIGSEGV|buf_pool_t::resize|buf_resize_callback|tpool::task_group::execute|tpool::thread_pool_generic::worker_main                                                              ## MDEV-34677
 .corrupted lock system. == 0|SIGABRT|lock_rec_unlock_unmodified|lock_release_on_prepare|trx_prepare|trx_prepare_for_mysql                                                      ## MDEV-34663
 SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                             ## MENT-2102
 SIGABRT|__libc_message_impl|__libc_assert_fail|__GI___pthread_tpp_change_priority|ha_spider::rnd_next_internal                                                                 ## MENT-2102
