@@ -178,6 +178,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+lex == &main_lex|SIGABRT|THD::reset_for_next_command|Rows_log_event::do_apply_event|Log_event::apply_event|mysql_client_binlog_statement                                       ## MDEV-34702
 marked_for_read()|SIGABRT|Field_varstring::val_str|Item_field::val_str|Item_func_trim::val_str|Item::save_str_in_field                                                         ## MDEV-34693
 SIGSEGV|thd_get_ha_data|spider_direct_sql_body|spider_direct_sql|udf_handler::val_int                                                                                          ## MDEV-34682
 SIGSEGV|thd_get_ha_data|spider_get_trx|spider_direct_sql_body|udf_handler::val_int                                                                                             ## MDEV-34682
@@ -1359,6 +1360,7 @@ is_open()|SIGABRT|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_tr
 marked_for_read()|SIGABRT|Field_varstring::val_real|Item_field::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op                            ## MDEV-22943
 marked_for_read()|SIGABRT|Field_varstring::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                             ## MDEV-22943
 marked_for_read()|SIGABRT|Field_blob::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                                  ## MDEV-22943
+(*(map)->last_word_ptr & (map)->last_bit_mask) == 0|SIGABRT|bitmap_union|ha_partition::index_init|handler::ha_index_init|Rows_log_event::find_row                              ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event                   ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Rows_log_event::write_row|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event                 ## MDEV-22936
 binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update                                               ## MDEV-22921
