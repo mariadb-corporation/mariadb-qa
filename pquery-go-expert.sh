@@ -137,13 +137,15 @@ while(true); do                                     # Main loop
   if [ $(ls --color=never */*.sql 2>/dev/null | wc -l) -gt 0 ]; then  # If trials are available
     background_sed_loop &                           # Start background_sed_loop in a background thread, it will patch reducer<nr>.sh scripts and, before doing so, remove MYBUG when ERROR_LOG_SCAN_ISSUE is found and MYBUG contains the 'no core, no fallback string' text
     PID=$!                                          # Capture the PID of the background_sed_loop so we can kill -9 it once pquery-prep-red.sh is complete
+    ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE | sed 's|/SHUTDOWN_TIMEOUT_ISSUE|/data*/core|' | xargs -I{} echo "ls --color=never {} 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*|/SHUTDOWN_TIMEOUT_ISSUE|' | xargs -I{} rm {}  # Prevent trials which have core files from being marked as SHUTDOWN HANG/TIMEOUT isues and thus possibly being eliminated later [*]
+    ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE | sed 's|/SHUTDOWN_TIMEOUT_ISSUE|/MYBUG|' | xargs -I{} echo "grep -iEl 'SAN|ERROR|MUTEX|MEMORY|SIG|MARKED|ERRNO' {} 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*|/SHUTDOWN_TIMEOUT_ISSUE|' | xargs -I{} rm {}  # Idem, for trials which have detected *SAN bugs or other error log errors  (ref new_text_string.sh). Note this still excludes 'Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output' (in MYBUG contents) trials, which can be deleted if they are known shutdown hang/timeout issues
     ${SCRIPT_PWD}/pquery-prep-red.sh                # Execute pquery-prep.red generating reducer<nr>.sh scripts, auto-updated by the background thread
     echo -e "\nCleaning up known issues..."
     ${SCRIPT_PWD}/pquery-clean-known.sh             # Clean known issues
     ${SCRIPT_PWD}/pquery-clean-known++.sh           # Expert clean known issues (quite strong cleanup)
     ${SCRIPT_PWD}/pquery-eliminate-dups.sh          # Eliminate dups, leaving at least x trials for issues where the number of trials >=x. Will also leave alone all other (<x) trials. x can be set in that script
     if [ -r ${SCRIPT_PWD}/pquery-results.sh -a ${SCRIPT_PWD}/pquery-del-trial.sh ]; then
-      ${SCRIPT_PWD}/pquery-results.sh | grep --binary-files=text -A1 'Trials with.*known hang.*timeout' | grep --binary-files=text -v '^\*\*' | grep --binary-files=text -o '[0-9]\+' | sort -u | xargs -I{} echo "if [ -d './{}/data' ]; then echo '${SCRIPT_PWD}/pquery-del-trial.sh {}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" # Eliminate known hang/timeout issues
+      ${SCRIPT_PWD}/pquery-results.sh | grep --binary-files=text -iA1 'trials.*with.*known.*hang.*timeout' | grep --binary-files=text -vi 'trials.*with.*known.*hang.*timeout' | grep --binary-files=text -o '[0-9]\+' | sort -u | xargs -I{} echo "if [ -r './{}/SHUTDOWN_TIMEOUT_ISSUE' ]; then echo '${SCRIPT_PWD}/pquery-del-trial.sh {}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"  # Eliminate known hang/timeout issues ([*] ref two filters above which pre-exclude trials with core files or *SAN bugs)
     fi
   fi
   if [ $(ls --color=never reducer*.sh quick_*reducer*.sh 2>/dev/null | wc -l) -gt 0 ]; then  # If reducers are available after cleanup
