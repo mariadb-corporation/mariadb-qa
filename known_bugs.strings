@@ -182,6 +182,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|drop_routine|mysql_execute_command                                         ## MDEV-34708
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-34708
 !(sql_mode & ~full_sql_mode)|SIGABRT|spider_conn_queue_sql_mode|spider_check_and_set_sql_mode|spider_internal_start_trx_for_connection|ha_spider::dml_init                     ## MENT-2108
+lex == &main_lex|SIGABRT|THD::reset_for_next_command|Rows_log_event::do_apply_event|Log_event::apply_event|mysql_client_binlog_statement                                       ## MDEV-34702
+marked_for_read()|SIGABRT|Field_varstring::val_str|Item_field::val_str|Item_func_trim::val_str|Item::save_str_in_field                                                         ## MDEV-34693
+SIGSEGV|thd_get_ha_data|spider_direct_sql_body|spider_direct_sql|udf_handler::val_int                                                                                          ## MDEV-34682
+SIGSEGV|thd_get_ha_data|spider_get_trx|spider_direct_sql_body|udf_handler::val_int                                                                                             ## MDEV-34682
+SIGSEGV|buf_pool_t::resize|buf_resize_callback|tpool::task_group::execute|tpool::thread_pool_generic::worker_main                                                              ## MDEV-34677
 .corrupted lock system. == 0|SIGABRT|lock_rec_unlock_unmodified|lock_release_on_prepare|trx_prepare|trx_prepare_for_mysql                                                      ## MDEV-34663
 SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                             ## MENT-2102
 SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::rnd_next_internal|handler::ha_rnd_next                                                            ## MENT-2102
@@ -197,6 +202,9 @@ SIGSEGV|ha_spider::update_create_info|ha_partition::update_create_info|mysql_pre
 SIGSEGV|my_hash_insert|spider_create_trx_alter_table|ha_spider::update_create_info|ha_partition::update_create_info                                                            ## MDEV-34636
 SIGSEGV|parse_engine_part_options|open_table_from_share|ha_create_table|mysql_alter_table                                                                                      ## MDEV-34421
 SIGSEGV|spider_db_unlock_tables|ha_spider::lock_tables|ha_spider::external_lock|handler::ha_external_lock                                                                      ## MDEV-34590
+SIGSEGV|Item::build_clone|Item_func_case_simple::do_build_clone|Item::build_clone|Item_func_case_simple::do_build_clone                                                        ## MDEV-34683
+SIGSEGV|Item_func_case_simple::do_build_clone|Item::build_clone|Item_func_case_simple::do_build_clone|Item::build_clone                                                        ## MDEV-34683
+typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_field::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                            ## MDEV-34683
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_datetime_literal::do_build_clone|Item::build_clone|Item_equal::create_pushable_equalities                           ## MDEV-34634
 typeid(*clone) == typeid(*this)|SIGABRT|Item::clone_const_item|change_cond_ref_to_const|change_cond_ref_to_const|propagate_cond_constants                                      ## MDEV-34634
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_int::do_build_clone|Item::build_clone|Item_equal::create_pushable_equalities                                        ## MDEV-34634
@@ -1361,6 +1369,7 @@ is_open()|SIGABRT|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_tr
 marked_for_read()|SIGABRT|Field_varstring::val_real|Item_field::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op                            ## MDEV-22943
 marked_for_read()|SIGABRT|Field_varstring::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                             ## MDEV-22943
 marked_for_read()|SIGABRT|Field_blob::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                                  ## MDEV-22943
+(*(map)->last_word_ptr & (map)->last_bit_mask) == 0|SIGABRT|bitmap_union|ha_partition::index_init|handler::ha_index_init|Rows_log_event::find_row                              ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event                   ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Rows_log_event::write_row|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event                 ## MDEV-22936
 binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update                                               ## MDEV-22921
