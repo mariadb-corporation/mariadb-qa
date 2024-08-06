@@ -3,3 +3,8 @@ UPDATE mysql.innodb_index_stats SET stat_value=0;
 SELECT * FROM t;
 FLUSH TABLES;
 UPDATE t SET c1=+1 ORDER BY c2;
+
+CREATE TABLE t (c TIME,c2 CHAR(1),c3 INT(1),c4 CHAR(1) KEY,c5 TIME UNIQUE KEY,c6 NUMERIC(0,0) DEFAULT 3);
+UPDATE mysql.innodb_index_stats SET stat_value=0;
+ALTER TABLE t CHANGE COLUMN a a CHAR(1);
+SELECT * FROM t ORDER BY c;

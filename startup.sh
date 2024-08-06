@@ -441,10 +441,11 @@ MTR_DIR="./mysql-test"
 if [ -d "./mariadb-test" ]; then MTR_DIR="./mariadb-test"; fi
 if [ -d "${MTR_DIR}" ]; then
   echo 'export UBSAN_OPTIONS=print_stacktrace=1' >${MTR_DIR}/cl_mtr
-  echo 'if [ -z "$(netstat -tuln | grep ':16000')" ]; then' >>${MTR_DIR}/cl_mtr
+  echo 'PORT=$(grep -o "port=[0-9]\+" var/my.cnf | grep -o "[0-9]\+" | head -n1)' >>${MTR_DIR}/cl_mtr
+  echo 'if [ -z "${PORT}" ]; then' >>${MTR_DIR}/cl_mtr
   echo '  ./mtr --start-and-exit' >>${MTR_DIR}/cl_mtr
   echo 'fi' >>${MTR_DIR}/cl_mtr
-  echo '../bin/mariadb -P16000 -h127.0.0.1 -uroot' >>${MTR_DIR}/cl_mtr
+  echo '../bin/mariadb -P${PORT} -h127.0.0.1 -uroot' >>${MTR_DIR}/cl_mtr
   sed "s|\/mtr |/mtr --mysqld=--innodb --mysqld=--default-storage-engine=Innodb |" ${MTR_DIR}/cl_mtr > ${MTR_DIR}/cl_mtr_innodb
   chmod +x ${MTR_DIR}/cl_mtr ${MTR_DIR}/cl_mtr_innodb
   echo '#Loop MTR on main/test.test till it fails' >${MTR_DIR}/loop_mtr

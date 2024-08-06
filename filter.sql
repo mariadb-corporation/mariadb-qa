@@ -7,3 +7,4 @@ ALTER.*TABLE.*mysql\.
 DROP.*TABLE.*mysql\.
 SET.*key_buffer_size.*18446744073709547520
 SET.*key_buffer_size.*000000000000
+SET.*net_retry_count.*429496729500

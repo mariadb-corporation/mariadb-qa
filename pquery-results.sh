@@ -249,6 +249,11 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
     echo '** Trials with SET aria_group_commit_interval & SET aria_group_commit=HARD (known hang/timeout issue MDEV-22727):'
     echo "${TRIALS_MDEV_22727}"
   fi
+  TRIALS_NET_RETRY="$(grep --binary-files=text -il 'set.*net_retry_count' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  if [ ! -z "${TRIALS_NET_RETRY}" ]; then
+    echo '** Trials with SET net_retry_count (known to cause hang/timeout issues):'
+    echo "${TRIALS_NET_RETRY}"
+  fi
   COUNT=
   STRING_OUT=
   COUNT_OUT=

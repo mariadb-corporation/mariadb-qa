@@ -134,3 +134,16 @@ LOAD DATA INFILE 'foo' INTO TABLE t1;
 SELECT SLEEP (3);
 INSERT INTO t2 VALUES (NULL,'b');  # Crashing query
 SHOW CREATE TABLE t2;
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+SET default_storage_engine=Spider;
+CREATE TABLE t (c INT,c1 CHAR(5),c3 DATE) PARTITION BY HASH (YEAR (c3));
+SET SESSION profiling=ON;
+INSERT INTO t VALUES (1,1,'');
+CREATE TABLE t1 (id INT) ENGINE=Spider;
+XA START 'a';
+SET GLOBAL table_open_cache=1;
+INSERT INTO t1 VALUES(+1);
+SELECT * FROM t;
+SELECT SLEEP(1);
+SELECT * FROM t1 WHERE id=2 OR id=5 OR id=9;

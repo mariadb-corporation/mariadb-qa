@@ -48,6 +48,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2013  ## Ref REGEX_ERRORS_FILTER.info (se
 MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22 (require_secure_transport)
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
+MARIADB_ERROR_CODE|MariaDB error code: 12701 ## MDEV-22936
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
 MARKED_AS_CRASHED|mysqld: Table sql-temptable-X is marked as crashed and should be repaired  ## MDEV-31588
 GOT_ERROR|Got error 9|when reading table                       ## MDEV-23297
@@ -178,8 +179,12 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|drop_routine|mysql_execute_command                                         ## MDEV-34708
+! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-34708
+!(sql_mode & ~full_sql_mode)|SIGABRT|spider_conn_queue_sql_mode|spider_check_and_set_sql_mode|spider_internal_start_trx_for_connection|ha_spider::dml_init                     ## MENT-2108
 .corrupted lock system. == 0|SIGABRT|lock_rec_unlock_unmodified|lock_release_on_prepare|trx_prepare|trx_prepare_for_mysql                                                      ## MDEV-34663
 SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                             ## MENT-2102
+SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::rnd_next_internal|handler::ha_rnd_next                                                            ## MENT-2102
 SIGABRT|__libc_message_impl|__libc_assert_fail|__GI___pthread_tpp_change_priority|ha_spider::rnd_next_internal                                                                 ## MENT-2102
 SIGSEGV|ha_spider::rnd_next_internal|ha_spider::rnd_next|handler::ha_rnd_next|mysql_ha_read                                                                                    ## MENT-2102
 SIGSEGV|Binary_string::q_append|spider_string::q_append|spider_db_mbase_util::print_item_func|spider_db_mbase_util::open_item_func                                             ## MDEV-34659
@@ -228,6 +233,7 @@ slot_rec|SIGABRT|ut_dbg_assertion_failed|page_zip_dir_delete|page_cur_delete_rec
 stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|filesort|mysql_update                                                             ## MDEV-34474
 stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|filesort|Sql_cmd_update::update_single_table                                      ## MDEV-34474
 stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|ha_innobase::estimate_rows_upper_bound|filesort                                   ## MDEV-34474
+stat_n_leaf_pages > 0|SIGABRT|ut_dbg_assertion_failed|ha_innobase::estimate_rows_upper_bound|filesort|create_sort_index                                                        ## MDEV-34474
 SIGABRT|ut_dbg_assertion_failed|trx_start_if_not_started_xa_low|row_insert_for_mysql|ha_innobase::write_row                                                                    ## MDEV-34362
 SIGSEGV|vio_get_normalized_ip|vio_get_normalized_ip_string|activate_tcp_port|network_init                                                                                      ## MDEV-34437
 SIGSEGV|parse_engine_part_options|open_table_from_share|open_table|open_and_process_table                                                                                      ## MDEV-34421
@@ -946,6 +952,8 @@ thd->wsrep_trx().state() == wsrep::transaction::s_prepared|SIGABRT|wsrep_xa_deta
 ret == 0 || state() == s_aborted|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse                      ## MENT-1424
 SIGSEGV|Item_change_list::rollback_item_tree_changes|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event                                               ## MDEV-27920
 # SIGSEGV|spider_db_conn_queue_action|spider_db_before_query|spider_db_query|spider_db_open_handler                                                                              ## MDEV-27902 (for MDEV-31788, 10.5 opt only)
+SIGSEGV|__strcmp_evex|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MDEV-27902
+SIGSEGV|__strnlen_evex|process_str_arg|my_vsnprintf_ex|my_error                                                                                                                ## MDEV-27902
 SIGSEGV|server_mysql_real_connect|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                       ## MDEV-27902
 SIGSEGV|__strcmp_avx2|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MDEV-27902
 SIGSEGV|__strnlen_avx2|process_str_arg|my_vsnprintf_ex|my_error                                                                                                                ## MDEV-27902
@@ -1052,6 +1060,7 @@ SIGABRT|myrocks::rdb_i_s_global_info_fill_table|get_schema_tables_result|JOIN::e
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert|ha_spider::end_bulk_insert                                          ## MDEV-26587
 mutex->__data.__owner == 0|SIGABRT|__GI___pthread_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|spider_db_bulk_insert                                                      ## MDEV-26587
 inited==RND|SIGABRT|handler::ha_rnd_end|ha_partition::direct_delete_rows|handler::ha_direct_delete_rows|mysql_delete                                                           ## MDEV-26540
+inited==RND|SIGABRT|handler::ha_rnd_end|ha_partition::direct_delete_rows|handler::ha_direct_delete_rows|Sql_cmd_delete::delete_from_single_table                               ## MDEV-26540
 maybe_null || !null_value|SIGABRT|Item_func_ceiling::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-26536
 maybe_null() || !null_value|SIGABRT|Item_func_ceiling::time_op|Type_handler_time_common::Item_func_hybrid_field_type_get_date|Type_handler::Item_func_hybrid_field_type_get_date_with_warn|Item_func_hybrid_field_type::get_date ## MDEV-26536
 m_status == DA_ERROR || m_status == DA_OK || m_status == DA_OK_BULK || m_status == DA_EOF_BULK|SIGABRT|Diagnostics_area::message|get_schema_tables_record|fill_schema_table_by_open|get_all_tables ## MDEV-26496
