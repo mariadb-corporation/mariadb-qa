@@ -142,6 +142,9 @@ while(true); do                                     # Main loop
     ${SCRIPT_PWD}/pquery-clean-known.sh             # Clean known issues
     ${SCRIPT_PWD}/pquery-clean-known++.sh           # Expert clean known issues (quite strong cleanup)
     ${SCRIPT_PWD}/pquery-eliminate-dups.sh          # Eliminate dups, leaving at least x trials for issues where the number of trials >=x. Will also leave alone all other (<x) trials. x can be set in that script
+    if [ -r ${SCRIPT_PWD}/pquery-results.sh -a ${SCRIPT_PWD}/pquery-del-trial.sh ]; then
+      ${SCRIPT_PWD}/pquery-results.sh | grep --binary-files=text -A1 'Trials with.*known hang.*timeout' | grep --binary-files=text -v '^\*\*' | grep --binary-files=text -o '[0-9]\+' | sort -u | xargs -I{} echo "if [ -d './{}/data' ]; then echo '${SCRIPT_PWD}/pquery-del-trial.sh {}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" # Eliminate known hang/timeout issues
+    fi
   fi
   if [ $(ls --color=never reducer*.sh quick_*reducer*.sh 2>/dev/null | wc -l) -gt 0 ]; then  # If reducers are available after cleanup
     echo ""
