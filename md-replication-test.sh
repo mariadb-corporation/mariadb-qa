@@ -7,7 +7,6 @@
 #   Master-Master replication
 #   Multi Source replication
 #   Multi thread replication
-#   Master Slave replication using MariaBackup
 
 # Bash internal configuration
 set -o nounset    # no undefined variables
@@ -28,6 +27,7 @@ declare ENGINE=""
 declare KEYRING_PLUGIN=""
 declare TESTCASE=""
 declare ENCRYPTION=""
+declare BINLOG_FORMAT=""
 declare TC_ARRAY=""
 declare ROOT_FS=""
 declare SDURATION=""
@@ -57,16 +57,15 @@ usage () {
   echo "                                      master_master_test"
   echo "                                      msr_test"
   echo "                                      mtr_test"
-  echo "                                      mgr_test"
-  echo "                                      xb_master_slave_test"
   echo "                                    If you specify 'all', the script will execute all testcases"
   echo "  -e, --with-encryption             Run the script with encryption feature"
+  echo "  -f, --binlog-format               Specify binlog_format"
 }
 
 # Check if we have a functional getopt(1)
 if ! getopt --test
   then
-  go_out="$(getopt --options=d:w:b:s:k:t:eh --longoptions=basedir:,workdir:,storage-engine:,build-number:,keyring-plugin:,testcase:,with-encryption,help \
+  go_out="$(getopt --options=d:w:b:s:k:t:f:eh --longoptions=basedir:,workdir:,storage-engine:,build-number:,keyring-plugin:,testcase:,with-encryption,binlog-format,help \
   --name="$(basename "$0")" -- "$@")"
   test $? -eq 0 || exit 1
   eval set -- "$go_out"
@@ -81,9 +80,9 @@ for arg do
   case "$arg" in
     -- ) shift; break;;
     -d | --basedir )
-    MDBASEDIR="$2"
-        if [[ ! -d "$MDBASEDIR" ]]; then
-      echo "ERROR: Basedir ($MDBASEDIR) directory does not exist. Terminating!"
+    MD_BASEDIR="$2"
+    if [[ ! -d "$MD_BASEDIR" ]]; then
+      echo "ERROR: Basedir ($MD_BASEDIR) directory does not exist. Terminating!"
       exit 1
     fi
     shift 2
@@ -120,6 +119,10 @@ for arg do
     ;;
     -t | --testcase )
     TESTCASE="$2"
+    shift 2
+    ;;
+    -f | --binlog-format )
+    BINLOG_FORMAT="$2"
     shift 2
     ;;
     -e | --with-encryption )
@@ -204,6 +207,10 @@ if [ -z "$ENGINE" ]; then
   ENGINE="innodb"
 fi
 
+if [ -z "$BINLOG_FORMAT" ]; then
+  BINLOG_FORMAT="MIXED"
+fi
+
 WORKDIR="${ROOT_FS}/$BUILD_NUMBER"
 mkdir -p $WORKDIR/logs
 
@@ -234,46 +241,37 @@ cleanup(){
     rm -f $WORKDIR/vault/vault
     cp -af $WORKDIR/vault $WORKDIR/logs
   fi
-  tar czf $ROOT_FS/results-${BUILD_NUMBER}${TEST_DESCRIPTION:-}.tar.gz $WORKDIR/logs || true
+  echoit "Test logs are saved in ${ROOT_FS}/results-${BUILD_NUMBER}${TEST_DESCRIPTION:-}.tar.gz"
+  tar czf ${ROOT_FS}/results-${BUILD_NUMBER}${TEST_DESCRIPTION:-}.tar.gz $WORKDIR/logs || true
 }
 
 trap cleanup EXIT KILL
 
-#Check MD binary tar ball
-#MD_TAR=`ls -1td MD*mariadb*linux | grep ".tar" | head -n1`
-#if [ ! -z $MD_TAR ];then
-#  tar -xzf $MD_TAR
-#  MDBASE=`ls -1td MD*mariadb*linux | grep -v ".tar" | head -n1`
-#  if [[ -z $MDBASE ]]; then
-#    echo "ERROR! Could not find MariaDB Server directory. Terminating!"
-#    exit 1
-#  else
-#    export PATH="$ROOT_FS/$MDBASE/bin:$PATH"
-#  fi
-#else
-#  MDBASE=`ls -1td MD*mariadb*linux 2>/dev/null | grep -v ".tar" | head -n1`
-#  if [[ -z $MDBASE ]] ; then
-#    echoit "ERROR! Could not find MariaDB Server directory. Terminating!"
-#    exit 1
-#  else
-#    export PATH="$ROOT_FS/$MDBASE/bin:$PATH"
-#  fi
-#fi
-#MD_BASEDIR="${ROOT_FS}/$MDBASE"
-
-#Check Percona Toolkit binary tar ball
-#PT_TAR=`ls -1td ?ercona-?oolkit* | grep ".tar" | head -n1`
-#if [ ! -z $PT_TAR ];then
-#  tar -xzf $PT_TAR
-#  PTBASE=`ls -1td ?ercona-?oolkit* | grep -v ".tar" | head -n1`
-#  export PATH="$ROOT_FS/$PTBASE/bin:$PATH"
-#else
-#  wget httmd://www.percona.com/downloads/percona-toolkit/2.2.16/tarball/percona-toolkit-2.2.16.tar.gz
-#  PT_TAR=`ls -1td ?ercona-?oolkit* | grep ".tar" | head -n1`
-#  tar -xzf $PT_TAR
-#  PTBASE=`ls -1td ?ercona-?oolkit* | grep -v ".tar" | head -n1`
-#  export PATH="$ROOT_FS/$PTBASE/bin:$PATH"
-#fi
+# Find empty port
+init_empty_port(){
+  # Choose a random port number in 13-65K range, with triple check to confirm it is free
+  NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]
+  DOUBLE_CHECK=0
+  while :; do
+    # Check if the port is free in three different ways
+    ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
+    ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
+    ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
+    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
+      if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
+        break  # Suitable port number found
+      else
+        DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
+        sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
+        continue  # Loop the check
+      fi
+    else
+      NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]  # Try a new port
+      DOUBLE_CHECK=0  # Reset the double check
+      continue  # Recheck the new port
+    fi
+  done
+}
 
 function check_xb_dir(){
   #Check Percona XtraBackup binary tar ball
@@ -298,8 +296,6 @@ if [[ ! -e `which sysbench` ]];then
   echoit "Sysbench not found"
   exit 1
 fi
-echoit "Note: Using sysbench at $(which sysbench)"
-
 #sysbench command should compatible with versions 0.5 and 1.0
 sysbench_run(){
   local TEST_TYPE="${1:-}"
@@ -323,21 +319,35 @@ sysbench_run(){
   fi
 }
 
-
-declare MYSQL_VERSION=$(${MD_BASEDIR}/bin/mysqld --version 2>&1 | grep -oe ' Ver [0-9]\.[0-9][\.0-9]*'|sed 's/ Ver //')
-#mysql install db check
-if ! check_for_version $MYSQL_VERSION "5.7.0" ; then
-  MID="${MD_BASEDIR}/scripts/mysql_install_db --no-defaults --basedir=${MD_BASEDIR}"
+# Find mysqld binary
+if [ -r ${MD_BASEDIR}/bin/mariadbd ]; then
+  BIN=${MD_BASEDIR}/bin/mariadbd
+elif [ -r ${MD_BASEDIR}/bin/mariadbd ]; then
+  BIN=${MD_BASEDIR}/bin/mariadbd
 else
-  if [[ -z $ENCRYPTION ]]; then
-    MID="${MD_BASEDIR}/bin/mysqld --no-defaults --initialize-insecure --basedir=${MD_BASEDIR}"
-  else
-    if [[ "$KEYRING_PLUGIN" == "file" ]]; then
-      MID="${MD_BASEDIR}/bin/mysqld --no-defaults --initialize-insecure --early-plugin-load=keyring_file.so --keyring_file_data=keyring --basedir=${MD_BASEDIR} --innodb_sys_tablespace_encrypt=ON"
-    elif [[ "$KEYRING_PLUGIN" == "vault" ]]; then
-      MID="${MD_BASEDIR}/bin/mysqld --no-defaults --initialize-insecure --early-plugin-load=keyring_vault.so --keyring_vault_config=$WORKDIR/vault/keyring_vault_md.cnf --basedir=${MD_BASEDIR} --innodb_sys_tablespace_encrypt=ON"
+  # Check if this is a debug build by checking if debug string is present in dirname
+  if [[ ${MD_BASEDIR} = *debug* ]]; then
+    if [ -r ${BASMD_BASEDIREDIR}/bin/mariadbd-debug ]; then
+      BIN=${MD_BASEDIR}/bin/mariadbd-debug
+    else
+      echo "Assert: there is no (script readable) mysqld binary at ${MD_BASEDIR}/bin/mariadbd[-debug] ?"
+      exit 1
     fi
+  else
+    echo "Assert: there is no (script readable) mysqld/mariadbd binary at ${MD_BASEDIR}/bin ?"
+    exit 1
   fi
+fi
+
+# Get version specific options
+MID=
+if [ -r ${MD_BASEDIR}/scripts/mariadb-install-db ]; then MID="${MD_BASEDIR}/scripts/mariadb-install-db --no-defaults --force --auth-root-authentication-method=normal --basedir=${MD_BASEDIR}"; fi
+if [ -r ${MD_BASEDIR}/scripts/mysql_install_db ]; then MID="${MD_BASEDIR}/scripts/mysql_install_db --no-defaults --force --auth-root-authentication-method=normal --basedir=${MD_BASEDIR} "; fi
+declare MARIADB_VERSION=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-1]\.[0-9][0-9]*' | head -n1)
+
+if [ -z "${MID}" ]; then
+  echoit "Assert: Version was detected as ${MARIADB_VERSION}, yet ./scripts/mariadb-install-db nor ./scripts/mysql_install_db is present!"
+  exit 1
 fi
 
 #Check command failure
@@ -358,17 +368,15 @@ function async_rpl_test(){
     fi
     for i in `seq 1 $INTANCES`;do
       local STARTUP_OPTION="${2:-}"
-      local RBASE1="$((RPORT + ( 100 * $i )))"
-      if ps -ef | grep  "\--port=${RBASE1}"  | grep -qv grep  ; then
-        echoit "INFO! Another mysqld server running on port: ${RBASE1}. Using different port"
-        RBASE1="$(( (RPORT + ( 100 * $i )) + 10 ))"
-      fi
+      init_empty_port
+      local RBASE1=${NEWPORT}
+      NEWPORT=
       echoit "Starting independent MD node${i}.."
       local node="${WORKDIR}/mdnode${i}"
       rm -rf $node
-      if ! check_for_version $MYSQL_VERSION "5.7.0" ; then
-        mkdir -p $node
-      fi
+
+      # Initialize database directory
+      ${MID} --datadir=$node  > ${WORKDIR}/logs/mdnode${i}.err 2>&1 || exit 1;
 
       # Creating MD configuration file
       rm -rf ${MD_BASEDIR}/n${i}.cnf
@@ -380,7 +388,13 @@ function async_rpl_test(){
       echo "port=$RBASE1" >> ${MD_BASEDIR}/n${i}.cnf
       echo "innodb_file_per_table" >> ${MD_BASEDIR}/n${i}.cnf
       echo "log-bin=mysql-bin" >> ${MD_BASEDIR}/n${i}.cnf
-      echo "binlog-format=ROW" >> ${MD_BASEDIR}/n${i}.cnf
+      if [ "$BINLOG_FORMAT" == "STATEMENT" ]; then
+        echo "binlog-format=ROW" >> ${MD_BASEDIR}/n${i}.cnf
+      elif [ "$BINLOG_FORMAT" == "ROW" ]; then
+        echo "binlog-format=ROW" >> ${MD_BASEDIR}/n${i}.cnf
+      else
+        echo "binlog-format=ROW" >> ${MD_BASEDIR}/n${i}.cnf
+      fi
       echo "log-slave-updates" >> ${MD_BASEDIR}/n${i}.cnf
       echo "relay_log_recovery=1" >> ${MD_BASEDIR}/n${i}.cnf
       echo "binlog-stmt-cache-size=1M">> ${MD_BASEDIR}/n${i}.cnf
@@ -390,6 +404,7 @@ function async_rpl_test(){
       echo "core-file" >> ${MD_BASEDIR}/n${i}.cnf
       echo "log-output=none" >> ${MD_BASEDIR}/n${i}.cnf
       echo "server-id=10${i}" >> ${MD_BASEDIR}/n${i}.cnf
+      echo "gtid_domain_id=1${i}" >> ${MD_BASEDIR}/n${i}.cnf
       echo "report-host=$ADDR" >> ${MD_BASEDIR}/n${i}.cnf
       echo "report-port=$RBASE1" >> ${MD_BASEDIR}/n${i}.cnf
       if [ "$ENGINE" == "innodb" ]; then
@@ -410,11 +425,11 @@ function async_rpl_test(){
         echo "slave-parallel-workers=5" >> ${MD_BASEDIR}/n${i}.cnf
       fi
       if [[ "$MYEXTRA_CHECK" == "GTID" ]]; then
-        echo "gtid-mode=ON" >> ${MD_BASEDIR}/n${i}.cnf
-        echo "enforce-gtid-consistency" >> ${MD_BASEDIR}/n${i}.cnf
+        echo "gtid_strict_mode=1" >> ${MD_BASEDIR}/n${i}.cnf
+        echo "log_slave_updates=ON" >> ${MD_BASEDIR}/n${i}.cnf
       fi
       if [[ "$ENCRYPTION" == 1 ]];then
-        if ! check_for_version $MYSQL_VERSION "8.0.16" ; then
+        if ! check_for_version $MARIADB_VERSION "8.0.16" ; then
           echo "encrypt_binlog=ON" >> ${MD_BASEDIR}/n${i}.cnf
           echo "innodb_encrypt_tables=OFF" >> ${MD_BASEDIR}/n${i}.cnf
         else
@@ -437,28 +452,16 @@ function async_rpl_test(){
         fi
       fi
 
-      if [[ "$EXTRA_OPT" == "XB" ]]; then
-        if [[ "$ENCRYPTION" == 1 ]];then
-          if [[ "$KEYRING_PLUGIN" == "file" ]]; then
-            ${MD_BASEDIR}/bin/mysqld --no-defaults --initialize-insecure --early-plugin-load=keyring_file.so --keyring_file_data=keyring --basedir=${MD_BASEDIR} --datadir=$node > ${WORKDIR}/logs/mdnode${i}.err 2>&1 || exit 1;
-          elif [[ "$KEYRING_PLUGIN" == "vault" ]]; then
-            ${MD_BASEDIR}/bin/mysqld --no-defaults --initialize-insecure --early-plugin-load=keyring_vault.so --keyring_vault_config=$WORKDIR/vault/keyring_vault_md.cnf --basedir=${MD_BASEDIR} --datadir=$node > ${WORKDIR}/logs/mdnode${i}.err 2>&1 || exit 1;
-          fi
-        else
-          ${MID} --datadir=$node  > ${WORKDIR}/logs/mdnode${i}.err 2>&1 || exit 1;
-        fi
-      fi
-
-      ${MD_BASEDIR}/bin/mysqld --defaults-file=${MD_BASEDIR}/n${i}.cnf > $WORKDIR/logs/mdnode${i}.err 2>&1 &
+      ${MD_BASEDIR}/bin/mariadbd --defaults-file=${MD_BASEDIR}/n${i}.cnf > $WORKDIR/logs/mdnode${i}.err 2>&1 &
 
       for X in $(seq 0 ${MD_START_TIMEOUT}); do
         sleep 1
-        if ${MD_BASEDIR}/bin/mysqladmin -uroot -S/tmp/md${i}.sock ping > /dev/null 2>&1; then
+        if ${MD_BASEDIR}/bin/mariadb-admin -uroot -S/tmp/md${i}.sock ping > /dev/null 2>&1; then
           if [[ "$ENCRYPTION" == 1 ]];then
-            if ! check_for_version $MYSQL_VERSION "8.0.16" ; then
-              ${MD_BASEDIR}/bin/mysql  -uroot -S/tmp/md${i}.sock -e"SET GLOBAL innodb_encrypt_tables=ON;"  > /dev/null 2>&1
+            if ! check_for_version $MARIADB_VERSION "8.0.16" ; then
+              ${MD_BASEDIR}/bin/mariadb  -uroot -S/tmp/md${i}.sock -e"SET GLOBAL innodb_encrypt_tables=ON;"  > /dev/null 2>&1
             else
-              ${MD_BASEDIR}/bin/mysql  -uroot -S/tmp/md${i}.sock -e"SET GLOBAL default_table_encryption=ON;"  > /dev/null 2>&1
+              ${MD_BASEDIR}/bin/mariadb  -uroot -S/tmp/md${i}.sock -e"SET GLOBAL default_table_encryption=ON;"  > /dev/null 2>&1
             fi
           fi
           break
@@ -489,39 +492,39 @@ function async_rpl_test(){
     local DATABASE=${1:-}
     local MASTER_SOCKET=${2:-}
     local SLAVE_SOCKET=${3:-}
-    local TABLES_MASTER=$(${MD_BASEDIR}/bin/mysql -sN -uroot --socket=${MASTER_SOCKET} -e "SELECT GROUP_CONCAT(TABLE_NAME SEPARATOR \", \") FROM information_schema.tables WHERE table_schema = \"${DATABASE}\";")
-    local TABLES_SLAVE=$(${MD_BASEDIR}/bin/mysql -sN -uroot --socket=${SLAVE_SOCKET} -e "SELECT GROUP_CONCAT(TABLE_NAME SEPARATOR \", \") FROM information_schema.tables WHERE table_schema = \"${DATABASE}\";")
-    local CHECKSUM_MASTER=$(${MD_BASEDIR}/bin/mysql -sN -uroot --socket=${MASTER_SOCKET} -e "checksum table ${TABLES_MASTER};" -D ${DATABASE})
-    local CHECKSUM_SLAVE=$(${MD_BASEDIR}/bin/mysql -sN -uroot --socket=${SLAVE_SOCKET} -e "checksum table ${TABLES_SLAVE};" -D ${DATABASE})
+    local TABLES_MASTER=''
+    #$(${MD_BASEDIR}/bin/mariadb -sN -uroot --socket=${MASTER_SOCKET} -e "SELECT GROUP_CONCAT(TABLE_NAME SEPARATOR \", \") FROM information_schema.tables WHERE table_schema = \"${DATABASE}\";")
+    readarray -t TABLES_MASTER < <(${MD_BASEDIR}/bin/mariadb -sN -uroot --socket=${MASTER_SOCKET} -e "SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = \"${DATABASE}\";" 2>/dev/null)
+    local TABLES_SLAVE=''
+    #$(${MD_BASEDIR}/bin/mariadb -sN -uroot --socket=${SLAVE_SOCKET} -e "SELECT GROUP_CONCAT(TABLE_NAME SEPARATOR \", \") FROM information_schema.tables WHERE table_schema = \"${DATABASE}\";")
+    readarray -t TABLES_SLAVE < <(${MD_BASEDIR}/bin/mariadb -sN -uroot --socket=${SLAVE_SOCKET} -e "SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = \"${DATABASE}\";" 2>/dev/null)
+    for TABLE in "${TABLES_MASTER[@]}" ; do
+      local CHECKSUM_MASTER=$(${MD_BASEDIR}/bin/mariadb -sN -uroot --socket=${MASTER_SOCKET} -e "checksum table ${TABLE};" -D ${DATABASE} 2>/dev/null)
+      local CHECKSUM_SLAVE=$(${MD_BASEDIR}/bin/mariadb -sN -uroot --socket=${SLAVE_SOCKET} -e "checksum table ${TABLE};" -D ${DATABASE} 2>/dev/null)
 
-    echoit "Master ${MASTER_SOCKET} database ${DATABASE} tables: ${TABLES_MASTER}"
-    echoit "Master ${MASTER_SOCKET} database ${DATABASE} checksums:"
-    echoit "${CHECKSUM_MASTER}"
-    echoit "Slave ${SLAVE_SOCKET} database ${DATABASE} tables: ${TABLES_SLAVE}"
-    echoit "Slave ${SLAVE_SOCKET} database ${DATABASE} checksums:"
-    echoit "${CHECKSUM_SLAVE}"
-    if [[ -z "${TABLES_MASTER}" || -z "${TABLES_SLAVE}" || -z "${CHECKSUM_MASTER}" || -z "${CHECKSUM_SLAVE}" ]]; then
-      echoit "One of the checksum values is empty!"
-      exit 1
-    elif [[ "${CHECKSUM_MASTER}" == "${CHECKSUM_SLAVE}" ]]; then
-      echoit "Database checksums are the same."
-    else
-      echoit "Difference noticed in the checksums!"
-      exit 1
-    fi
+      if [[ -z "${TABLE}" || -z "${CHECKSUM_MASTER}" || -z "${CHECKSUM_SLAVE}" ]]; then
+        echoit "One of the checksum values is empty!"
+        exit 1
+      elif [[ "${CHECKSUM_MASTER}" != "${CHECKSUM_SLAVE}" ]]; then
+        echoit "Difference noticed in the checksums! Master socket ${MASTER_SOCKET} - Slave socket "
+        echoit "Source  checksum : ${CHECKSUM_MASTER}"
+        echoit "Replica checksum : ${CHECKSUM_SLAVE}"
+        exit 1
+      fi
+    done  
   }
 
   function invoke_slave(){
     local MASTER_SOCKET=${1:-}
     local SLAVE_SOCKET=${2:-}
     local REPL_STRING=${3:-}
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=$MASTER_SOCKET -e"FLUSH LOGS"
-    local MASTER_LOG_FILE=`${MD_BASEDIR}/bin/mysql -uroot --socket=$MASTER_SOCKET -Bse "show master logs" | awk '{print $1}' | tail -1`
-    local MASTER_HOST_PORT=`${MD_BASEDIR}/bin/mysql -uroot --socket=$MASTER_SOCKET -Bse "select @@port"`
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=$MASTER_SOCKET -e"FLUSH LOGS" 2>/dev/null
+    local MASTER_LOG_FILE=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$MASTER_SOCKET -Bse "show master logs" 2>/dev/null | awk '{print $1}' | tail -1`
+    local MASTER_HOST_PORT=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$MASTER_SOCKET -Bse "select @@port" 2>/dev/null` 
     if [ "$MYEXTRA_CHECK" == "GTID" ]; then
-      ${MD_BASEDIR}/bin/mysql -uroot --socket=$SLAVE_SOCKET -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$MASTER_HOST_PORT, MASTER_USER='root', MASTER_AUTO_POSITION=1 $REPL_STRING"
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SLAVE_SOCKET -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$MASTER_HOST_PORT, MASTER_USER='root', MASTER_USE_GTID=slave_pos $REPL_STRING" 2>/dev/null
     else
-      ${MD_BASEDIR}/bin/mysql -uroot --socket=$SLAVE_SOCKET -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$MASTER_HOST_PORT, MASTER_USER='root', MASTER_LOG_FILE='$MASTER_LOG_FILE', MASTER_LOG_POS=4 $REPL_STRING"
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SLAVE_SOCKET -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$MASTER_HOST_PORT, MASTER_USER='root', MASTER_LOG_FILE='$MASTER_LOG_FILE', MASTER_LOG_POS=4 $REPL_STRING" 2>/dev/null
     fi
   }
 
@@ -530,13 +533,13 @@ function async_rpl_test(){
     local SLAVE_STATUS=${2:-}
     local ERROR_LOG=${3:-}
     local MSR_SLAVE_STATUS=${4:-}
-    local SB_MASTER=`${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET_FILE -Bse "show slave status $MSR_SLAVE_STATUS\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
+    local SB_MASTER=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET_FILE -Bse "show slave status $MSR_SLAVE_STATUS\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
     local COUNTER=0
     while ! [[  "$SB_MASTER" =~ ^[0-9]+$ ]]; do
-      SB_MASTER=`${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET_FILE -Bse "show slave status $MSR_SLAVE_STATUS\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
+      SB_MASTER=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET_FILE -Bse "show slave status $MSR_SLAVE_STATUS\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
       let COUNTER=COUNTER+1
       if [ $COUNTER -eq 10 ];then
-        ${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" > $SLAVE_STATUS
+        ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET_FILE -Bse "show slave status $MSR_SLAVE_STATUS\G" 2>/dev/null > $SLAVE_STATUS
         echoit "Slave is not started yet. Please check error log and slave status : $ERROR_LOG, $SLAVE_STATUS"
         exit 1
       fi
@@ -548,12 +551,12 @@ function async_rpl_test(){
     local SOCKET_FILE=${1:-}
     local SLAVE_STATUS=${2:-}
     local ERROR_LOG=${3:-}
-    local SB_MASTER=`${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
+    local SB_MASTER=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
     local COUNTER=0
     while [[ $SB_MASTER -gt 0 ]]; do
-      SB_MASTER=`${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
+      SB_MASTER=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
       if ! [[ "$SB_MASTER" =~ ^[0-9]+$ ]]; then
-        ${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" > $WORKDIR/logs/slave_status_mdnode1.log
+        ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" 2>/dev/null > $WORKDIR/logs/slave_status_mdnode1.log
         echoit "Slave is not started yet. Please check error log and slave status : $WORKDIR/logs/mdnode1.err,  $WORKDIR/logs/slave_status_mdnode1.log"
         exit 1
       fi
@@ -568,7 +571,8 @@ function async_rpl_test(){
 
   function create_test_user(){
     local SOCKET=${1:-}
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET -e "CREATE USER IF NOT EXISTS test_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO test_user@'%'" 2>&1
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET -e "SET sql_log_bin=0; DELETE FROM mysql.user WHERE user=''; SET sql_log_bin=1; FLUSH PRIVILEGES;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET -e "CREATE USER IF NOT EXISTS test_user@'%' IDENTIFIED BY 'test';GRANT ALL ON *.* TO test_user@'%'; FLUSH PRIVILEGES;" 2>/dev/null
   }
 
   function async_sysbench_rw_run(){
@@ -610,14 +614,14 @@ function async_rpl_test(){
   function gt_test_run(){
     local DATABASE_NAME=${1:-}
     local SOCKET=${2:-}
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET $DATABASE_NAME -e "CREATE TABLESPACE ${DATABASE_NAME}_gen_ts1 ADD DATAFILE '${DATABASE_NAME}_gen_ts1.ibd' ENCRYPTION='Y'"  2>&1
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET $DATABASE_NAME -e "CREATE TABLE ${DATABASE_NAME}_gen_ts_tb1(id int auto_increment, str varchar(32), primary key(id)) TABLESPACE ${DATABASE_NAME}_gen_ts1" 2>&1
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET $DATABASE_NAME -e "CREATE TABLE ${DATABASE_NAME}_sys_ts_tb1(id int auto_increment, str varchar(32), primary key(id)) TABLESPACE=innodb_system" 2>&1
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET $DATABASE_NAME -e "CREATE TABLESPACE ${DATABASE_NAME}_gen_ts1 ADD DATAFILE '${DATABASE_NAME}_gen_ts1.ibd' ENCRYPTION='Y'"  2>&1
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET $DATABASE_NAME -e "CREATE TABLE ${DATABASE_NAME}_gen_ts_tb1(id int auto_increment, str varchar(32), primary key(id)) TABLESPACE ${DATABASE_NAME}_gen_ts1" 2>&1
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET $DATABASE_NAME -e "CREATE TABLE ${DATABASE_NAME}_sys_ts_tb1(id int auto_increment, str varchar(32), primary key(id)) TABLESPACE=innodb_system" 2>&1
     local NUM_ROWS=$(shuf -i 50-100 -n 1)
     for i in `seq 1 $NUM_ROWS`; do
       local STRING=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-      ${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET $DATABASE_NAME -e "INSERT INTO ${DATABASE_NAME}_gen_ts_tb1 (str) VALUES ('${STRING}')"
-      ${MD_BASEDIR}/bin/mysql -uroot --socket=$SOCKET $DATABASE_NAME -e "INSERT INTO ${DATABASE_NAME}_sys_ts_tb1 (str) VALUES ('${STRING}')"
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET $DATABASE_NAME -e "INSERT INTO ${DATABASE_NAME}_gen_ts_tb1 (str) VALUES ('${STRING}')" 2>/dev/null
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET $DATABASE_NAME -e "INSERT INTO ${DATABASE_NAME}_sys_ts_tb1 (str) VALUES ('${STRING}')" 2>/dev/null
     done
   }
 
@@ -657,11 +661,11 @@ function async_rpl_test(){
       sed "s|mdnode1|bkmdlave|g" |
       sed "0,/^[ \t]*socket[ \t]*=.*$/s|^[ \t]*socket[ \t]*=.*$|socket=/tmp/bkmdlave.sock|"  > ${MD_BASEDIR}/bkmdlave.cnf 2>&1
 
-    ${MD_BASEDIR}/bin/mysqld --defaults-file=${MD_BASEDIR}/bkmdlave.cnf > $WORKDIR/logs/bkmdlave.err 2>&1 &
+    ${MD_BASEDIR}/bin/mariadbd --defaults-file=${MD_BASEDIR}/bkmdlave.cnf > $WORKDIR/logs/bkmdlave.err 2>&1 &
 
     for X in $(seq 0 ${MD_START_TIMEOUT}); do
       sleep 1
-      if ${MD_BASEDIR}/bin/mysqladmin -uroot -S/tmp/bkmdlave.sock ping > /dev/null 2>&1; then
+      if ${MD_BASEDIR}/bin/mariadb-admin -uroot -S/tmp/bkmdlave.sock ping > /dev/null 2>&1; then
         break
       fi
       if [ $X -eq ${MD_START_TIMEOUT} ]; then
@@ -683,9 +687,10 @@ function async_rpl_test(){
     echoit "Checking slave startup"
     slave_startup_check "/tmp/md2.sock" "$WORKDIR/logs/slave_status_mdnode2.log" "$WORKDIR/logs/mdnode2.err"
 
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -e "drop database if exists sbtest_md_slave;create database sbtest_md_slave;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "drop database if exists sbtest_md_master;create database sbtest_md_master;"
-	create_test_user "/tmp/md1.sock"
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e "drop database if exists sbtest_md_slave;create database sbtest_md_slave;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists sbtest_md_master;create database sbtest_md_master;" 2>/dev/null
+	  create_test_user "/tmp/md1.sock"
+    create_test_user "/tmp/md2.sock"
     async_sysbench_load sbtest_md_master "/tmp/md1.sock"
     async_sysbench_load sbtest_md_slave "/tmp/md2.sock"
 
@@ -702,14 +707,11 @@ function async_rpl_test(){
     echoit "Checking slave sync status"
     slave_sync_check "/tmp/md2.sock" "$WORKDIR/logs/slave_status_mdnode2.log" "$WORKDIR/logs/mdnode2.err"
     sleep 10
-    echoit "1. MD master slave: Checksum result."
-    if [ "$ENGINE" == "rocksdb" ]; then
-      run_mysqlchecksum "sbtest_md_master" "/tmp/md1.sock" "/tmp/md2.sock"
-    else
-      run_pt_table_checksum "sbtest_md_master" "/tmp/md1.sock" "none"
-    fi
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md1.sock -u root shutdown
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md2.sock -u root shutdown
+    echoit "MD master slave: Checking data consistency"
+    run_mysqlchecksum "sbtest_md_master" "/tmp/md1.sock" "/tmp/md2.sock"
+    
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md1.sock -u root shutdown
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md2.sock -u root shutdown
   }
 
   function master_multi_slave_test(){
@@ -727,11 +729,14 @@ function async_rpl_test(){
     slave_startup_check "/tmp/md3.sock" "$WORKDIR/logs/slave_status_mdnode3.log" "$WORKDIR/logs/mdnode3.err"
     slave_startup_check "/tmp/md4.sock" "$WORKDIR/logs/slave_status_mdnode4.log" "$WORKDIR/logs/mdnode4.err"
 
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -e"drop database if exists sbtest_md_slave_1;create database sbtest_md_slave_1;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md3.sock -e"drop database if exists sbtest_md_slave_2;create database sbtest_md_slave_2;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md4.sock -e"drop database if exists sbtest_md_slave_3;create database sbtest_md_slave_3;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e"drop database if exists sbtest_md_master;create database sbtest_md_master;"
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e"drop database if exists sbtest_md_slave_1;create database sbtest_md_slave_1;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md3.sock -e"drop database if exists sbtest_md_slave_2;create database sbtest_md_slave_2;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md4.sock -e"drop database if exists sbtest_md_slave_3;create database sbtest_md_slave_3;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e"drop database if exists sbtest_md_master;create database sbtest_md_master;" 2>/dev/null
     create_test_user "/tmp/md1.sock"
+    create_test_user "/tmp/md2.sock"
+    create_test_user "/tmp/md3.sock"
+    create_test_user "/tmp/md4.sock"
     async_sysbench_load sbtest_md_master "/tmp/md1.sock"
     async_sysbench_load sbtest_md_slave_1 "/tmp/md2.sock"
     async_sysbench_load sbtest_md_slave_2 "/tmp/md3.sock"
@@ -761,18 +766,15 @@ function async_rpl_test(){
     slave_sync_check "/tmp/md3.sock" "$WORKDIR/logs/slave_status_mdnode3.log" "$WORKDIR/logs/mdnode3.err"
     slave_sync_check "/tmp/md4.sock" "$WORKDIR/logs/slave_status_mdnode4.log" "$WORKDIR/logs/mdnode4.err"
     sleep 10
-    echoit "2. MD master multi slave: Checksum result."
-    if [ "$ENGINE" == "rocksdb" ]; then
-      run_mysqlchecksum "sbtest_md_master" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "sbtest_md_master" "/tmp/md1.sock" "/tmp/md3.sock"
-      run_mysqlchecksum "sbtest_md_master" "/tmp/md1.sock" "/tmp/md4.sock"
-    else
-      run_pt_table_checksum "sbtest_md_master" "/tmp/md1.sock" "none"
-    fi
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md1.sock -u root shutdown
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md2.sock -u root shutdown
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md3.sock -u root shutdown
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md4.sock -u root shutdown
+    echoit "MD master multi slave: Checking data consistency."
+    run_mysqlchecksum "sbtest_md_master" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "sbtest_md_master" "/tmp/md1.sock" "/tmp/md3.sock"
+    run_mysqlchecksum "sbtest_md_master" "/tmp/md1.sock" "/tmp/md4.sock"
+
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md1.sock -u root shutdown 2>/dev/null
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md2.sock -u root shutdown 2>/dev/null
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md3.sock -u root shutdown 2>/dev/null
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md4.sock -u root shutdown 2>/dev/null
   }
 
   function master_master_test(){
@@ -788,9 +790,10 @@ function async_rpl_test(){
     slave_startup_check "/tmp/md1.sock" "$WORKDIR/logs/slave_status_mdnode1.log" "$WORKDIR/logs/mdnode1.err"
     slave_startup_check "/tmp/md2.sock" "$WORKDIR/logs/slave_status_mdnode2.log" "$WORKDIR/logs/mdnode2.err"
 
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e"drop database if exists sbtest_md_master_1;create database sbtest_md_master_1;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -e"drop database if exists sbtest_md_master_2;create database sbtest_md_master_2;"
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e"drop database if exists sbtest_md_master_1;create database sbtest_md_master_1;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e"drop database if exists sbtest_md_master_2;create database sbtest_md_master_2;" 2>/dev/null
     create_test_user "/tmp/md1.sock"
+    create_test_user "/tmp/md2.sock"
     async_sysbench_load sbtest_md_master_1 "/tmp/md1.sock"
     async_sysbench_load sbtest_md_master_2 "/tmp/md2.sock"
 
@@ -812,15 +815,11 @@ function async_rpl_test(){
     slave_sync_check "/tmp/md2.sock" "$WORKDIR/logs/slave_status_mdnode2.log" "$WORKDIR/logs/mdnode2.err"
 
     sleep 10
-    echoit "3. MD master master: Checksum result."
-    if [ "$ENGINE" == "rocksdb" ]; then
-      run_mysqlchecksum "sbtest_md_master_1" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "sbtest_md_master_2" "/tmp/md1.sock" "/tmp/md2.sock"
-    else
-      run_pt_table_checksum "sbtest_md_master_1,sbtest_md_master_2" "/tmp/md1.sock" "none"
-    fi
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md1.sock -u root shutdown
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md2.sock -u root shutdown
+    echoit "MD master master: Checking data consistency."
+    run_mysqlchecksum "sbtest_md_master_1" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "sbtest_md_master_2" "/tmp/md1.sock" "/tmp/md2.sock"
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md1.sock -u root shutdown 2>/dev/null
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md2.sock -u root shutdown 2>/dev/null
   }
 
   function msr_test(){
@@ -828,23 +827,25 @@ function async_rpl_test(){
     #MD server initialization
     echoit "MD server initialization"
     md_start 4
-    echo "Sysbench Run for replication master master test : Prepare stage"
     invoke_slave "/tmp/md2.sock" "/tmp/md1.sock" "FOR CHANNEL 'master1';"
     invoke_slave "/tmp/md3.sock" "/tmp/md1.sock" "FOR CHANNEL 'master2';"
     invoke_slave "/tmp/md4.sock" "/tmp/md1.sock" "FOR CHANNEL 'master3';"
 
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e"START SLAVE;"
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e"START SLAVE FOR CHANNEL 'master1';" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e"START SLAVE FOR CHANNEL 'master2';" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e"START SLAVE FOR CHANNEL 'master3';" 2>/dev/null
+
     slave_startup_check "/tmp/md1.sock" "$WORKDIR/logs/slave_status_mdnode1.log" "$WORKDIR/logs/mdnode1.err" "for channel 'master1'"
     slave_startup_check "/tmp/md1.sock" "$WORKDIR/logs/slave_status_mdnode1.log" "$WORKDIR/logs/mdnode1.err" "for channel 'master2'"
     slave_startup_check "/tmp/md1.sock" "$WORKDIR/logs/slave_status_mdnode1.log" "$WORKDIR/logs/mdnode1.err" "for channel 'master3'"
 
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -e "drop database if exists msr_db_master1;create database msr_db_master1;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md3.sock -e "drop database if exists msr_db_master2;create database msr_db_master2;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md4.sock -e "drop database if exists msr_db_master3;create database msr_db_master3;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "drop database if exists msr_db_slave;create database msr_db_slave;"
-	create_test_user "/tmp/md2.sock"
-	create_test_user "/tmp/md3.sock"
-	create_test_user "/tmp/md4.sock"
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e "drop database if exists msr_db_master1;create database msr_db_master1;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md3.sock -e "drop database if exists msr_db_master2;create database msr_db_master2;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md4.sock -e "drop database if exists msr_db_master3;create database msr_db_master3;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists msr_db_slave;create database msr_db_slave;" 2>/dev/null
+	  create_test_user "/tmp/md2.sock"
+	  create_test_user "/tmp/md3.sock"
+	  create_test_user "/tmp/md4.sock"
     sleep 5
     # Sysbench dataload for MSR test
     async_sysbench_load msr_db_master1 "/tmp/md2.sock"
@@ -864,7 +865,7 @@ function async_rpl_test(){
     async_sysbench_insert_run msr_db_master1 "/tmp/md2.sock"
     async_sysbench_insert_run msr_db_master2 "/tmp/md3.sock"
     async_sysbench_insert_run msr_db_master3 "/tmp/md4.sock"
-	sleep 5
+	  sleep 5
 
     if [ "$ENCRYPTION" == 1 ];then
       echoit "Running general tablespace encryption test run"
@@ -874,9 +875,9 @@ function async_rpl_test(){
     fi
 
     sleep 10
-    local SB_CHANNEL1=`$MD_BASEDIR/bin/mysql -uroot --socket=/tmp/md1.sock -Bse "show slave status for channel 'master1'\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
-    local SB_CHANNEL2=`$MD_BASEDIR/bin/mysql -uroot --socket=/tmp/md1.sock -Bse "show slave status for channel 'master2'\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
-    local SB_CHANNEL3=`$MD_BASEDIR/bin/mysql -uroot --socket=/tmp/md1.sock -Bse "show slave status for channel 'master3'\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
+    local SB_CHANNEL1=`$MD_BASEDIR/bin/mariadb -uroot --socket=/tmp/md1.sock -Bse "show slave status for channel 'master1'\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
+    local SB_CHANNEL2=`$MD_BASEDIR/bin/mariadb -uroot --socket=/tmp/md1.sock -Bse "show slave status for channel 'master2'\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
+    local SB_CHANNEL3=`$MD_BASEDIR/bin/mariadb -uroot --socket=/tmp/md1.sock -Bse "show slave status for channel 'master3'\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
 
     if ! [[ "$SB_CHANNEL1" =~ ^[0-9]+$ ]]; then
       echo "Slave is not started yet. Please check error log : $WORKDIR/logs/mdnode1.err"
@@ -892,7 +893,7 @@ function async_rpl_test(){
     fi
 
     while [ $SB_CHANNEL3 -gt 0 ]; do
-      SB_CHANNEL3=`$MD_BASEDIR/bin/mysql -uroot --socket=/tmp/md1.sock -Bse "show slave status for channel 'master3'\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
+      SB_CHANNEL3=`$MD_BASEDIR/bin/mariadb -uroot --socket=/tmp/md1.sock -Bse "show slave status for channel 'master3'\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
       if ! [[ "$SB_CHANNEL3" =~ ^[0-9]+$ ]]; then
         echo "Slave is not started yet. Please check error log : $WORKDIR/logs/mdnode1.err"
         exit 1
@@ -900,29 +901,17 @@ function async_rpl_test(){
       sleep 5
     done
     sleep 10
-    echoit "4. multi source replication: Checksum result."
+    echoit "Multi source replication: Checking data consistency."
 
-    if [ "$ENGINE" == "rocksdb" ]; then
-      echoit "Checksum for msr_db_master1 database"
-      run_mysqlchecksum "msr_db_master1" "/tmp/md2.sock" "/tmp/md1.sock"
-      echoit "Checksum for msr_db_master2 database"
-      run_mysqlchecksum "msr_db_master2" "/tmp/md3.sock" "/tmp/md1.sock"
-      echoit "Checksum for msr_db_master3 database"
-      run_mysqlchecksum "msr_db_master3" "/tmp/md4.sock" "/tmp/md1.sock"
-    else
-      echoit "Checksum for msr_db_master1 database"
-      run_pt_table_checksum "msr_db_master1" "/tmp/md2.sock" "master1"
-      echoit "Checksum for msr_db_master2 database"
-      run_pt_table_checksum "msr_db_master2" "/tmp/md3.sock" "master2"
-      echoit "Checksum for msr_db_master3 database"
-      run_pt_table_checksum "msr_db_master3" "/tmp/md4.sock" "master3"
-    fi
+    run_mysqlchecksum "msr_db_master1" "/tmp/md2.sock" "/tmp/md1.sock"
+    run_mysqlchecksum "msr_db_master2" "/tmp/md3.sock" "/tmp/md1.sock"
+    run_mysqlchecksum "msr_db_master3" "/tmp/md4.sock" "/tmp/md1.sock"
 
     #Shutdown MD servers for MSR test
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md1.sock -u root shutdown
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md2.sock -u root shutdown
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md3.sock -u root shutdown
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md4.sock -u root shutdown
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md1.sock -u root shutdown 2>/dev/null
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md2.sock -u root shutdown 2>/dev/null
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md3.sock -u root shutdown 2>/dev/null
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md4.sock -u root shutdown 2>/dev/null
   }
 
   function mtr_test(){
@@ -931,25 +920,25 @@ function async_rpl_test(){
     echoit "MD server initialization"
     md_start 2 "MTR"
 
-    echo "Sysbench Run for replication master master test : Prepare stage"
     invoke_slave "/tmp/md1.sock" "/tmp/md2.sock" ";START SLAVE;"
     invoke_slave "/tmp/md2.sock" "/tmp/md1.sock" ";START SLAVE;"
 
     slave_startup_check "/tmp/md2.sock" "$WORKDIR/logs/slave_status_mdnode2.log" "$WORKDIR/logs/mdnode2.err"
     slave_startup_check "/tmp/md1.sock" "$WORKDIR/logs/slave_status_mdnode1.log" "$WORKDIR/logs/mdnode1.err"
 
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_1;create database mtr_db_md1_1;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_2;create database mtr_db_md1_2;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_3;create database mtr_db_md1_3;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_4;create database mtr_db_md1_4;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_5;create database mtr_db_md1_5;"
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_1;create database mtr_db_md1_1;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_2;create database mtr_db_md1_2;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_3;create database mtr_db_md1_3;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_4;create database mtr_db_md1_4;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists mtr_db_md1_5;create database mtr_db_md1_5;" 2>/dev/null
 
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_1;create database mtr_db_md2_1;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_2;create database mtr_db_md2_2;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_3;create database mtr_db_md2_3;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_4;create database mtr_db_md2_4;"
-    ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_5;create database mtr_db_md2_5;"
-	create_test_user "/tmp/md1.sock"
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_1;create database mtr_db_md2_1;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_2;create database mtr_db_md2_2;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_3;create database mtr_db_md2_3;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_4;create database mtr_db_md2_4;" 2>/dev/null
+    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e "drop database if exists mtr_db_md2_5;create database mtr_db_md2_5;" 2>/dev/null
+	  create_test_user "/tmp/md1.sock"
+    create_test_user "/tmp/md2.sock"
     sleep 5
     # Sysbench dataload for MTR test
     echoit "Sysbench dataload for MTR test"
@@ -1020,13 +1009,13 @@ function async_rpl_test(){
     fi
 
     sleep 10
-    local SB_MD_1=`$MD_BASEDIR/bin/mysql -uroot --socket=/tmp/md2.sock -Bse "show slave status\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
-    local SB_MD_2=`$MD_BASEDIR/bin/mysql -uroot --socket=/tmp/md1.sock -Bse "show slave status\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
+    local SB_MD_1=`$MD_BASEDIR/bin/mariadb -uroot --socket=/tmp/md2.sock -Bse "show slave status\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
+    local SB_MD_2=`$MD_BASEDIR/bin/mariadb -uroot --socket=/tmp/md1.sock -Bse "show slave status\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
 
     while [ $SB_MD_1 -gt 0 ]; do
-      SB_MD_1=`$MD_BASEDIR/bin/mysql -uroot --socket=/tmp/md2.sock -Bse "show slave status\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
+      SB_MD_1=`$MD_BASEDIR/bin/mariadb -uroot --socket=/tmp/md2.sock -Bse "show slave status\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
       if ! [[ "$SB_MD_1" =~ ^[0-9]+$ ]]; then
-        ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md2.sock -Bse "show slave status\G" > $WORKDIR/logs/slave_status_mdnode2.log
+        ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -Bse "show slave status\G" 2>/dev/null > $WORKDIR/logs/slave_status_mdnode2.log
         echo "Slave is not started yet. Please check error log and slave status : $WORKDIR/logs/mdnode2.err,  $WORKDIR/logs/slave_status_mdnode2.log"
         exit 1
       fi
@@ -1034,9 +1023,9 @@ function async_rpl_test(){
     done
 
     while [ $SB_MD_2 -gt 0 ]; do
-      SB_MD_2=`$MD_BASEDIR/bin/mysql -uroot --socket=/tmp/md1.sock -Bse "show slave status\G" | grep Seconds_Behind_Master | awk '{ print $2 }'`
+      SB_MD_2=`$MD_BASEDIR/bin/mariadb -uroot --socket=/tmp/md1.sock -Bse "show slave status\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
       if ! [[ "$SB_MD_2" =~ ^[0-9]+$ ]]; then
-        ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -Bse "show slave status\G" > $WORKDIR/logs/slave_status_mdnode1.log
+        ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -Bse "show slave status\G" 2>/dev/null > $WORKDIR/logs/slave_status_mdnode1.log
         echo "Slave is not started yet. Please check error log and slave status : $WORKDIR/logs/mdnode1.err,  $WORKDIR/logs/slave_status_mdnode1.log"
         exit 1
       fi
@@ -1044,36 +1033,32 @@ function async_rpl_test(){
     done
 
     sleep 10
-    echoit "5. multi thread replication: Checksum result."
-    if [ "$ENGINE" == "rocksdb" ]; then
-      run_mysqlchecksum "mtr_db_md1_1" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "mtr_db_md1_2" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "mtr_db_md1_3" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "mtr_db_md1_4" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "mtr_db_md1_5" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "mtr_db_md2_1" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "mtr_db_md2_2" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "mtr_db_md2_3" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "mtr_db_md2_4" "/tmp/md1.sock" "/tmp/md2.sock"
-      run_mysqlchecksum "mtr_db_md2_5" "/tmp/md1.sock" "/tmp/md2.sock"
-    else
-      run_pt_table_checksum "mtr_db_md1_1,mtr_db_md1_2,mtr_db_md1_3,mtr_db_md1_4,mtr_db_md1_5,mtr_db_md2_1,mtr_db_md2_2,mtr_db_md2_3,mtr_db_md2_4,mtr_db_md2_5" "/tmp/md1.sock" "none"
-    fi
+    echoit "Multi thread replication: Checking data consistency."
+    run_mysqlchecksum "mtr_db_md1_1" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "mtr_db_md1_2" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "mtr_db_md1_3" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "mtr_db_md1_4" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "mtr_db_md1_5" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "mtr_db_md2_1" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "mtr_db_md2_2" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "mtr_db_md2_3" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "mtr_db_md2_4" "/tmp/md1.sock" "/tmp/md2.sock"
+    run_mysqlchecksum "mtr_db_md2_5" "/tmp/md1.sock" "/tmp/md2.sock"
 
     #Shutdown MD servers
     echoit "Shuttingdown MD servers"
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md1.sock -u root shutdown
-    $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md2.sock -u root shutdown
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md1.sock -u root shutdown 2>/dev/null
+    $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md2.sock -u root shutdown 2>/dev/null
   }
 
   function xb_master_slave_test(){
     if [[ "$ENGINE" == "tokudb" ]]; then
       echoit "XtraBackup doesn't support tokudb backup so skipping!"
       return 0
-    elif ! check_for_version $MYSQL_VERSION "8.0.15" && [[ "$ENGINE" == "rocksdb" ]]; then
+    elif ! check_for_version $MARIADB_VERSION "8.0.15" && [[ "$ENGINE" == "rocksdb" ]]; then
       echoit "XtraBackup 2.4 with MD 5.7 doesn't support rocksdb backup so skipping!"
       return 0
-    elif ! check_for_version $MYSQL_VERSION "8.0.15" && [[ "$ENCRYPTION" == 1 ]]; then
+    elif ! check_for_version $MARIADB_VERSION "8.0.15" && [[ "$ENCRYPTION" == 1 ]]; then
       echoit "XtraBackup 2.4 with MD 5.7 supports only limited functionality for encryption so skipping!"
       return 0
     else
@@ -1081,7 +1066,7 @@ function async_rpl_test(){
       #MD server initialization
       echoit "MD server initialization"
       md_start 1 "XB"
-      ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "drop database if exists sbtest_xb_db;create database sbtest_xb_db;"
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists sbtest_xb_db;create database sbtest_xb_db;" 2>/dev/null
       create_test_user "/tmp/md1.sock"
       async_sysbench_load sbtest_xb_db "/tmp/md1.sock"
       async_sysbench_insert_run sbtest_xb_db "/tmp/md1.sock"
@@ -1091,25 +1076,23 @@ function async_rpl_test(){
       echoit "Initiate xtrabackup"
       backup_database "/tmp/md1.sock"
 
-      ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "drop database if exists sbtest_xb_check;create database sbtest_xb_check;"
-      ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -e "create table sbtest_xb_check.t1(id int);"
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists sbtest_xb_check;create database sbtest_xb_check;" 2>/dev/null
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "create table sbtest_xb_check.t1(id int);" 2>/dev/null
       local BINLOG_FILE=$(cat ${WORKDIR}/backupdir/full/xtrabackup_binlog_info | awk '{print $1}')
       local BINLOG_POS=$(cat ${WORKDIR}/backupdir/full/xtrabackup_binlog_info | awk '{print $2}')
       echoit "Starting replication on restored slave"
-      local PORT=$(${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/md1.sock -Bse "select @@port")
-      ${MD_BASEDIR}/bin/mysql -uroot --socket=/tmp/bkmdlave.sock -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$PORT, MASTER_USER='root', MASTER_LOG_FILE='$BINLOG_FILE',MASTER_LOG_POS=$BINLOG_POS;START SLAVE"
+      local PORT=$(${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -Bse "select @@port" 2>/dev/null)
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/bkmdlave.sock -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$PORT, MASTER_USER='root', MASTER_LOG_FILE='$BINLOG_FILE',MASTER_LOG_POS=$BINLOG_POS;START SLAVE" 2>/dev/null
 
       slave_startup_check "/tmp/bkmdlave.sock" "$WORKDIR/logs/slave_status_bkmdlave.log" "$WORKDIR/logs/bkmdlave.err"
 
-      echoit "7. XB master slave replication: Checksum result."
-      if [ "$ENGINE" == "rocksdb" ]; then
-        run_mysqlchecksum "sbtest_xb_db" "/tmp/md1.sock" "/tmp/bkmdlave.sock"
-        run_mysqlchecksum "sbtest_xb_check" "/tmp/md1.sock" "/tmp/bkmdlave.sock"
-      else
-        run_pt_table_checksum "sbtest_xb_db,sbtest_xb_check" "/tmp/md1.sock" "none"
-      fi
-      $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/md1.sock -u root shutdown
-      $MD_BASEDIR/bin/mysqladmin  --socket=/tmp/bkmdlave.sock -u root shutdown
+      echoit "XB master slave replication: Checking data consistency."
+      
+      run_mysqlchecksum "sbtest_xb_db" "/tmp/md1.sock" "/tmp/bkmdlave.sock"
+      run_mysqlchecksum "sbtest_xb_check" "/tmp/md1.sock" "/tmp/bkmdlave.sock"
+
+      $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/md1.sock -u root shutdown 2>/dev/null
+      $MD_BASEDIR/bin/mariadb-admin  --socket=/tmp/bkmdlave.sock -u root shutdown 2>/dev/null
     fi
   }
 
@@ -1119,36 +1102,27 @@ function async_rpl_test(){
   	    master_slave_test
   	  elif [[ "$i" == "master_multi_slave_test" ]]; then
   	    master_multi_slave_test
-  	  elif [[ "$i" == "xb_master_slave_test" ]]; then
-        xb_master_slave_test
   	  elif [[ "$i" == "master_master_test" ]]; then
   	    master_master_test
   	  elif [[ "$i" == "msr_test" ]]; then
-        if check_for_version $MYSQL_VERSION "5.7.0" ; then
+        if check_for_version $MARIADB_VERSION "5.7.0" ; then
           msr_test
         fi
       elif [[ "$i" == "mtr_test" ]]; then
-  	   mtr_test
-      elif [[ "$i" == "mgr_test" ]]; then
-       if [[ "$MYEXTRA_CHECK" == "GTID" ]]; then
-         mgr_test
-       fi
+  	    mtr_test
       fi
     done
   else
     master_slave_test
     master_multi_slave_test
     master_master_test
-    if check_for_version $MYSQL_VERSION "5.7.0" ; then
+    if check_for_version $MARIADB_VERSION "5.7.0" ; then
       msr_test
     fi
     mtr_test
-    if [[ "$MYEXTRA_CHECK" == "GTID" ]]; then
-      mgr_test
-    fi
-	  xb_master_slave_test
   fi
 }
 
 async_rpl_test
 async_rpl_test GTID
+
