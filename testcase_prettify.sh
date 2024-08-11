@@ -152,7 +152,7 @@ cat "${1}" | tr -d '`' | \
        s|start|START|gi; \
        s|stop|STOP|gi; \
        s|slave|SLAVE|gi; \
-       s|xa|XA|gi; \
+       s|xa |XA |gi; \
        s|shutdown|SHUTDOWN|gi; \
        s|elt|ELT|gi; \
        s|trim|TRIM|gi; \

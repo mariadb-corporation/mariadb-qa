@@ -249,15 +249,16 @@ trap cleanup EXIT KILL
 
 # Find empty port
 init_empty_port(){
-  # Choose a random port number in 13-65K range, with triple check to confirm it is free
-  NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]
+  # Choose a random port number in 47-65K range, with triple check to confirm it is free
+  NEWPORT=$[ 47001 + ( ${RANDOM} % 18000 ) ]
   DOUBLE_CHECK=0
   while :; do
     # Check if the port is free in three different ways
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
-    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
+    ISPORTFREE4="$(netstat -tuln | grep :${NEWPORT})"
+    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE4}" ]; then
       if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
         break  # Suitable port number found
       else
@@ -266,7 +267,7 @@ init_empty_port(){
         continue  # Loop the check
       fi
     else
-      NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]  # Try a new port
+      NEWPORT=$[ 47001 + ( ${RANDOM} % 18000 ) ]  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi

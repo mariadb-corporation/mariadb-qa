@@ -1592,15 +1592,16 @@ TS_init_all_sql_files(){
 
 # Find empty port
 init_empty_port(){
-  # Choose a random port number in 13-65K range, with triple check to confirm it is free
-  NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]
+  # Choose a random port number in 13-47K range, with triple check to confirm it is free
+  NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]
   DOUBLE_CHECK=0
   while :; do
     # Check if the port is free in three different ways
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
-    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
+    ISPORTFREE4="$(netstat -tuln | grep :${NEWPORT})"
+    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE4}" ]; then
       if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
         break  # Suitable port number found
       else
@@ -1609,7 +1610,7 @@ init_empty_port(){
         continue  # Loop the check
       fi
     else
-      NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]  # Try a new port
+      NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi
@@ -4181,7 +4182,7 @@ verify(){
         break
       fi
       MULTI_THREADS=$[ ${MULTI_THREADS} + ${MULTI_THREADS_INCREASE} ]
-      if [ ${MULTI_THREADS} -gt ${$MULTI_THREADS_MAX} ]; then  # Verify failed. Terminate.
+      if [ ${MULTI_THREADS} -gt ${MULTI_THREADS_MAX} ]; then  # Verify failed. Terminate.
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, and as the configured maximum number of threads ($MULTI_THREADS_MAX) has been reached, now terminating verification"
         verify_not_found
       else
@@ -4531,7 +4532,7 @@ fireworks_setup(){
                            echoit "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then
       if [ "${FIREWORKS}" != "1" ]; then
-                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump matching with new_text_string.sh"
+                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump stack matching with new_text_string.sh"
                            echoit "[Init] Looking for this string: '$TEXT' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
       else
                            echoit "[Init] Run mode: FireWorks with MODE=3, using new_text_string.sh for UniqueID generation"

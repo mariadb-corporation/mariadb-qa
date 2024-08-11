@@ -89,6 +89,7 @@ GOT_ERROR|Got error 1100|when reading table                    ## MDEV-31409 (Sp
 GOT_ERROR|Got error 1146|when reading table                    ## MDEV-29663
 GOT_ERROR|Got error 1227|when reading table                    ## MDEV-29659 (spider_internal_sql_log_off)
 GOT_ERROR|Got error 1429|when reading table                    ## SPECIAL-6 (Spider)
+GOT_ERROR|Got error 1814|when reading table                    ## MDEV-33042
 GOT_ERROR|Got error 1969|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 1969|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 12524|when reading table                   ## MDEV-33196
@@ -179,6 +180,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|ha_spider::rm_bulk_tmp_table|ha_spider::reset|ha_spider::open|handler::ha_open                                                                                         ## MENT-2113
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|drop_routine|mysql_execute_command                                         ## MDEV-34708
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-34708
 !(sql_mode & ~full_sql_mode)|SIGABRT|spider_conn_queue_sql_mode|spider_check_and_set_sql_mode|spider_internal_start_trx_for_connection|ha_spider::dml_init                     ## MENT-2108
@@ -224,6 +226,7 @@ next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::updat
 next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                     ## MDEV-27770 (now MDEV-24038)
 0|SIGABRT|Item::val_native|Arg_comparator::min_max_update_field_native|Item_sum_min_max::min_max_update_native_field|Item_sum_min_max::update_field                            ## MDEV-31759
 SIGSEGV|spider_db_conn::fin_loop_check|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                      ## MDEV-34541
+SIGSEGV|spider_db_conn::fin_loop_check|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                         ## MDEV-34541
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_show_create|mysql_execute_command                                ## MDEV-34540
 lock_trx_has_sys_table_locks(trx) == __null|SIGABRT|row_mysql_unfreeze_data_dictionary|row_undo|row_undo_step|que_thr_step                                                     ## MDEV-34542
 (key_part->key_part_flag & 4) == 0|SIGABRT|key_hashnr|JOIN_CACHE_HASHED::get_hash_idx_complex|JOIN_CACHE_HASHED::key_search|JOIN_CACHE_HASHED::put_record                      ## MDEV-34536

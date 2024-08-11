@@ -1436,7 +1436,7 @@ multi_reducer(){
               if grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log 2>/dev/null; then
                 echoit "Assert: Access denied for user detected in at least one of the subreducers. Check:  grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log  # This issue may be hard to recover from"
               else
-                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs: grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/*.err\n3) mariadbd/mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mariadb-admin/mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing; grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/*.err, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mariadb-admin/mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/*.err\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/mysql.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mariadb-admin/mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
+                echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs:\n  grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/*.err\n3) mariadbd/mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mariadb-admin/mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing;\n  grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/*.err\n, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mariadb-admin/mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/*.err\n  tail -n5 /dev/shm/$EPOCH/log/mysql*.out /dev/shm/$EPOCH/subreducer/*/log/mysql*.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mariadb-admin/mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
               fi
               echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] Issue detected. Debug info: cat /dev/shm/$EPOCH/debug.aid"
               # TODO: Reason 1 does happen. Observed:
@@ -1473,7 +1473,7 @@ multi_reducer(){
               exit 1
             fi
             if [ $MDG -eq 1 ]; then
-              export GALERA_ERROR_LOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
+              export GALERA_ERROR_LOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
               export GALERA_CORE_LOC=$WORKD/node1/*core*
             fi
             MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
@@ -1700,8 +1700,6 @@ init_workdir_and_files(){
     else
       mkdir $WORKD/data $WORKD/tmp $WORKD/log
     fi
-  else
-    ERROR_NODE=$(echo  $0 | cut -d'-' -f2 | cut -d'.' -f1)
   fi
   chmod -R 777 $WORKD
   touch $WORKD/reducer.log
@@ -1929,10 +1927,6 @@ init_workdir_and_files(){
   if [ ${NR_OF_TRIAL_REPEATS} -gt 50 ]; then
     echoit "[Init] Note: NR_OF_TRIAL_REPEATS is set larger than 50. This will take a long time."
   fi
-  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${FORCE_SKIPV} -ne 0 ]; then
-    echoit "[Init] NR_OF_TRIAL_REPEATS>1: setting FORCE_SKIPV=0, skipping the verify stage (issue is deemed to be sporadic)"
-    export -n FORCE_SKIPV=0
-  fi
   if [ ${NR_OF_TRIAL_REPEATS} -gt 1 -a ${SKIPSTAGEBELOW} -eq 0 ]; then
     # As NR_OF_TRIAL_REPEATS is set >1, reducer sets SKIPSTAGEBELOW to 1 to avoid stage 1 single-threaded reduction attempts (with block chuncks, and without trial repeats) in the case where STAGE1_LINES was set to a number less than the (restructured) testcase. This is the most straightforward and best approach to negate this possibility.
     echoit "[Init] NR_OF_TRIAL_REPEATS>1: setting SKIPSTAGEBELOW=1, ensuring repeated line-by-line reduction trials"
@@ -2116,8 +2110,8 @@ generate_run_scripts(){
   # Add various scripts (with {epoch} prefix): _mybase (setup variables), _init (setup), _run (runs the sql), _cl (starts a client/CLI), _stop (stop mariadbd/mysqld). _start (starts mariadbd/mysqld)
   # (start_mysqld_main and start_valgrind_mysqld_main). Togheter these scripts can be used for executing the final testcase ($WORKO_start > $WORKO_run)
   if [[ ${MDG} -eq 1 ]]; then
-    local EPOCH_SOCKET="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}_socket.sock"
-    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/node${ERROR_NODE}/node${ERROR_NODE}.err"
+    local EPOCH_SOCKET="/dev/shm/${EPOCH}/node${GALERA_NODE}/node${GALERA_NODE}_socket.sock"
+    local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/node${GALERA_NODE}/node${GALERA_NODE}.err"
   else
     local EPOCH_SOCKET="/dev/shm/${EPOCH}/socket.sock"
     local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/log/master.err"
@@ -3423,7 +3417,7 @@ process_outcome(){
     SKIP_NEWBUG=0
     ERRORLOG=
     if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-      ERRORLOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
+      ERRORLOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
       sudo chmod 777 $ERRORLOG
     else
       ERRORLOG=$WORKD/log/*.err
@@ -3460,7 +3454,7 @@ process_outcome(){
           exit 1
         fi
         if [ $MDG -eq 1 ]; then
-          export GALERA_ERROR_LOG=$WORKD/node${ERROR_NODE}/node${ERROR_NODE}.err
+          export GALERA_ERROR_LOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
           export GALERA_CORE_LOC=$WORKD/node1/*core*
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
@@ -4159,10 +4153,6 @@ verify_not_found(){
 
 #STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
 verify(){
-  if [ ${NR_OF_TRIAL_REPEATS} -gt 1 ]; then
-    echoit "$ATLEASTONCE [Stage $STAGE] Skipping verify stage as NR_OF_TRIAL_REPEATS=${NR_OF_TRIAL_REPEATS} (issue deemed to be sporadic)"  # "issue deemed to be sporadic": it is good to display this here. as FORCE_SKIPV is always 0 when NR_OF_TRIAL_REPEATS > 1 (configured during setup), and because FORCE_SKIPV is 0, such message is not displayed in the log otherwise
-    return
-  fi
   STAGE='V'
   TRIAL=1
   TRIAL_REPEAT_COUNT=0
@@ -4191,7 +4181,7 @@ verify(){
         break
       fi
       MULTI_THREADS=$[ ${MULTI_THREADS} + ${MULTI_THREADS_INCREASE} ]
-      if [ ${MULTI_THREADS} -gt ${$MULTI_THREADS_MAX} ]; then  # Verify failed. Terminate.
+      if [ ${MULTI_THREADS} -gt ${MULTI_THREADS_MAX} ]; then  # Verify failed. Terminate.
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, and as the configured maximum number of threads ($MULTI_THREADS_MAX) has been reached, now terminating verification"
         verify_not_found
       else
@@ -4541,7 +4531,7 @@ fireworks_setup(){
                            echoit "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then
       if [ "${FIREWORKS}" != "1" ]; then
-                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump matching with new_text_string.sh"
+                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump stack matching with new_text_string.sh"
                            echoit "[Init] Looking for this string: '$TEXT' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
       else
                            echoit "[Init] Run mode: FireWorks with MODE=3, using new_text_string.sh for UniqueID generation"
