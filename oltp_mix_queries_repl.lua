@@ -40,44 +40,121 @@ function prepare_statements()
    -- function to be defined
 end
 
-function event()
-   local table_name = "sbtest" .. sysbench.rand.uniform(1, sysbench.opt.tables)
+-------------------------------------------------------------------------------
+-------------------------Common functions--------------------------------------
+-------------------------------------------------------------------------------
+
+-- Execute query under xa
+function xa_wrap(thread_id, query_func, ...)
+   local xid = thread_id
+   local success, ret
+   --local two_phase= (thread_id % 2)
+   --local two_phase= math.random(0,1)
+
+   --con:query(string.format("SET @@binlog_xa_two_phase=%u",two_phase));
+   con:query(string.format("XA START 'xid_%u'", xid));
+   success, ret = pcall(query_func, thread_id, ...)
+
+   if not success then
+     -- type(ret) is "table" only if --mysql-ignore-errors contains the error,
+     -- that's why start sysbench with --mysql-ignore-errors=1213,1614,1205
+     if type(ret) == "table" and
+        ret.errcode == sysbench.error.RESTART_EVENT and
+        -- deadlock or lock wait timeout or dup key error
+        (ret.sql_errno == 1213 or ret.sql_errno == 1205 or ret.sql_errno == 1062)
+     then
+        local retx
+        pcall(con.query, con, string.format("XA END 'xid_%u'", xid))
+        con:query(string.format("XA ROLLBACK 'xid_%u'", xid))
+     end
+     error(ret)
+   end
+
+   con:query(string.format("XA END 'xid_%u'", xid))
+   --con:query(string.format("XA COMMIT 'xid_%u' ONE PHASE", xid))
+   con:query(string.format("XA PREPARE 'xid_%u'", xid))
+   con:query(string.format("XA COMMIT 'xid_%u'", xid))
+
+   --check_reconnect()
+end
+
+function xa_mix(thread_id, non_xa_func, ...)
+   xa_wrap(thread_id, non_xa_func, ...)
+end
+
+function insert(table_name, k_val, c_val, pad_val)
+   print("INSERT")
    local k_val = sysbench.rand.default(1, sysbench.opt.table_size)
    local c_val = get_c_value()
    local pad_val = get_pad_value()
+   if (sysbench.opt.auto_inc) then
+      con:query(string.format("INSERT INTO %s (k, c, pad) VALUES " ..
+                                 "(%d, '%s', '%s')",
+                              table_name, k_val, c_val, pad_val))
+   else
+      if (sysbench.opt.auto_inc) then
+         i = 0
+      else
+         -- Convert a uint32_t value to SQL INT
+         i = sysbench.rand.unique() - 2147483648
+      end
+
+      con:query(string.format("INSERT INTO %s (id, k, c, pad) VALUES " ..
+                                 "(%d, %d, '%s', '%s')",
+                              table_name, i, k_val, c_val, pad_val))
+   end
+end
+
+function delete(table_name)
+   print("DELETE")
+   local rand_id = sysbench.rand.uniform(0, sysbench.opt.table_size*2)
+   local query = string.format("DELETE FROM %s WHERE id = %d", table_name, rand_id) 
+   con:query(query)
+end
+
+function update(table_name)
+   print("UPDATE")
+   local old_num = sysbench.rand.uniform(0, sysbench.opt.table_size*2)
+   local new_num = sysbench.rand.uniform(0, sysbench.opt.table_size*2)
+   local query =  string.format("UPDATE %s SET k = %d WHERE k = %d", table_name, new_num, old_num)
+   con:query(query)
+end
+
+function dml_mix(table_name, ins_pct, del_pct, upd_pct)
+   local cur_pct = sysbench.rand.uniform(0, 100)
+   if cur_pct <= ins_pct then
+      insert(table_name, k_val, c_val, pad_val)
+   elseif cur_pct <= (ins_pct + del_pct) then
+      delete(table_name)
+   elseif cur_pct <= (ins_pct + del_pct + upd_pct) then
+      update(table_name)
+   end
+end
+
+function rand_xa_query()
+   local table_name = "sbtest" .. sysbench.rand.uniform(1, sysbench.opt.tables)
+   local cur_rnd = sysbench.rand.uniform(0, 100)
+   if (cur_rnd % 3) == 0 then
+      print(string.format("XA INSERT %s", table_name))
+      insert(table_name, k_val, c_val, pad_val)
+   elseif (cur_rnd % 2) == 0 then
+      print(string.format("XA DELETE %s", table_name))
+      delete(table_name)
+   else
+      print(string.format("XA UPDATE %s", table_name))
+      update(table_name)
+   end 
+end
+function event(thread_id)
+   local table_name = "sbtest" .. sysbench.rand.uniform(1, sysbench.opt.tables)
    local ins_pct = sysbench.opt.inserts
    local del_pct = sysbench.opt.deletes
    local upd_pct = sysbench.opt.updates
+   local xa_pct = sysbench.opt.xas
+   local cur_pct = sysbench.rand.uniform(0, 100)
 
-   local cur_query = sysbench.rand.uniform(0, 100)
-   if cur_query <= ins_pct then
-     print("INSERT")
-     if (sysbench.opt.auto_inc) then
-        con:query(string.format("INSERT INTO %s (k, c, pad) VALUES " ..
-                                   "(%d, '%s', '%s')",
-                                table_name, k_val, c_val, pad_val))
-     else
-        if (sysbench.opt.auto_inc) then
-           i = 0
-        else
-           -- Convert a uint32_t value to SQL INT
-           i = sysbench.rand.unique() - 2147483648
-        end
-
-        con:query(string.format("INSERT INTO %s (id, k, c, pad) VALUES " ..
-                                   "(%d, %d, '%s', '%s')",
-                                table_name, i, k_val, c_val, pad_val))
-     end
-   elseif cur_query <= (ins_pct + del_pct) then
-     print("DELETE")
-     local rand_id = sysbench.rand.uniform(0, sysbench.opt.table_size*2)
-     local query = string.format("DELETE FROM %s WHERE id = %d", table_name, rand_id) 
-     con:query(query)
-   elseif cur_query <= (ins_pct + del_pct + upd_pct) then
-     print("UPDATE")
-     local old_num = sysbench.rand.uniform(0, sysbench.opt.table_size*2)
-     local new_num = sysbench.rand.uniform(0, sysbench.opt.table_size*2)
-     local query =  string.format("UPDATE %s SET k = %d WHERE k = %d", table_name, new_num, old_num)
-     con:query(query)
+   dml_mix(table_name, ins_pct, del_pct, upd_pct)
+   if cur_pct <= (ins_pct + del_pct + upd_pct + xa_pct) then
+      xa_mix(thread_id, rand_xa_query)
    end
 end
