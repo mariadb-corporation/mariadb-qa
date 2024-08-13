@@ -54,10 +54,8 @@ sysbench.cmdline.options = {
       {"percentile of XA transactions to run", 20},
    add_index =
       {"percentile of ADD INDEX queries to run", 5},
-   add_unique_index =
+   add_uniq_index =
       {"percentile of ADD UNIQUE INDEX queries to run", 5},
-   drop_index =
-      {"percentile of DROP INDEX queries to run", 5},
    selects =
       {"percentile of SELECT queries to run", 5},
 }
@@ -140,10 +138,8 @@ function create_table(drv, con, table_num)
    local query
 
    if sysbench.opt.secondary then
-     print("Hello")
      id_index_def = "KEY xid"
    else
-     print("Hi")
      id_index_def = "PRIMARY KEY"
    end
 

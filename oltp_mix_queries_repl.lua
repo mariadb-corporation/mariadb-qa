@@ -15,9 +15,15 @@
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
--- ----------------------------------------------------------------------
--- OLTP Point Select benchmark
--- ----------------------------------------------------------------------
+-- ------------------------------------------------------------------------
+-- OLTP Mix Queries of INSERT, UPDATE, DELETE, XA, ADD INDEX and DROP INDEX
+-- Sample usage:
+-- sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" \
+--          --tables=1 --table_size=10000 --mysql-db=test \
+--          --mysql-ignore-errors=1061,1062,1091 --threads=16 \
+--          --time=300 --inserts=20 --deletes=1 --updates=20 --xas=10 \
+--          --add_index=1 --add_uniq_index=1 oltp_mix_queries_repl.lua run
+-- ------------------------------------------------------------------------
 
 require("oltp_common_repl")
 
@@ -83,7 +89,6 @@ function xa_mix(thread_id, non_xa_func, ...)
 end
 
 function insert(table_name, k_val, c_val, pad_val)
-   print("INSERT")
    local k_val = sysbench.rand.default(1, sysbench.opt.table_size)
    local c_val = get_c_value()
    local pad_val = get_pad_value()
@@ -106,22 +111,46 @@ function insert(table_name, k_val, c_val, pad_val)
 end
 
 function delete(table_name)
-   print("DELETE")
    local rand_id = sysbench.rand.uniform(0, sysbench.opt.table_size*2)
    local query = string.format("DELETE FROM %s WHERE id = %d", table_name, rand_id) 
    con:query(query)
 end
 
 function update(table_name)
-   print("UPDATE")
    local old_num = sysbench.rand.uniform(0, sysbench.opt.table_size*2)
    local new_num = sysbench.rand.uniform(0, sysbench.opt.table_size*2)
    local query =  string.format("UPDATE %s SET k = %d WHERE k = %d", table_name, new_num, old_num)
    con:query(query)
 end
 
+function add_index(table_name, col_name)
+   local idx_name = "non_uniq_idx"
+   local query = "SELECT COUNT(1) IndexIsThere FROM INFORMATION_SCHEMA.STATISTICS WHERE table_schema=DATABASE() AND table_name='sbtest1' AND index_name='non_uniq_idx'"
+   local rs = con:query(query)
+   local index_there = tonumber(unpack(rs:fetch_row(), 1, rs.nfields))
+   if index_there == 1 then
+      query =  string.format("ALTER TABLE %s DROP INDEX %s", table_name, idx_name)
+      con:query(query)
+   end
+   query = string.format("ALTER TABLE %s ADD INDEX %s (%s)", table_name, idx_name, col_name)
+   con:query(query)
+end
+
+function add_unique_index(table_name, col_name)
+   local idx_name = "non_uniq_idx"
+   local query = "SELECT COUNT(1) IndexIsThere FROM INFORMATION_SCHEMA.STATISTICS WHERE table_schema=DATABASE() AND table_name='sbtest1' AND index_name='non_uniq_idx'"
+   local rs = con:query(query)
+   local index_there = tonumber(unpack(rs:fetch_row(), 1, rs.nfields))
+   if index_there == 1 then
+      query =  string.format("ALTER TABLE %s DROP INDEX %s", table_name, idx_name)
+      con:query(query)
+   end
+   query = string.format("ALTER TABLE %s ADD UNIQUE INDEX %s (%s)", table_name, idx_name, col_name)
+   con:query(query)
+end
+
 function dml_mix(table_name, ins_pct, del_pct, upd_pct)
-   local cur_pct = sysbench.rand.uniform(0, 100)
+   local cur_pct = sysbench.rand.uniform(1, 100)
    if cur_pct <= ins_pct then
       insert(table_name, k_val, c_val, pad_val)
    elseif cur_pct <= (ins_pct + del_pct) then
@@ -133,15 +162,12 @@ end
 
 function rand_xa_query()
    local table_name = "sbtest" .. sysbench.rand.uniform(1, sysbench.opt.tables)
-   local cur_rnd = sysbench.rand.uniform(0, 100)
+   local cur_rnd = sysbench.rand.uniform(1, 100)
    if (cur_rnd % 3) == 0 then
-      print(string.format("XA INSERT %s", table_name))
       insert(table_name, k_val, c_val, pad_val)
    elseif (cur_rnd % 2) == 0 then
-      print(string.format("XA DELETE %s", table_name))
       delete(table_name)
    else
-      print(string.format("XA UPDATE %s", table_name))
       update(table_name)
    end 
 end
@@ -151,10 +177,23 @@ function event(thread_id)
    local del_pct = sysbench.opt.deletes
    local upd_pct = sysbench.opt.updates
    local xa_pct = sysbench.opt.xas
-   local cur_pct = sysbench.rand.uniform(0, 100)
+   local add_idx_pct = sysbench.opt.add_index
+   local add_unq_idx_pct = sysbench.opt.add_uniq_index
+   local cur_pct = sysbench.rand.uniform(1, 100)
 
    dml_mix(table_name, ins_pct, del_pct, upd_pct)
+   
    if cur_pct <= (ins_pct + del_pct + upd_pct + xa_pct) then
       xa_mix(thread_id, rand_xa_query)
+   end
+
+   if cur_pct <= (ins_pct + del_pct + upd_pct + xa_pct + add_idx_pct) then
+      col_name = 'c'
+      add_index(table_name, col_name)
+   end
+
+   if cur_pct <= (ins_pct + del_pct + upd_pct + xa_pct + add_idx_pct + add_unq_idx_pct) then
+      col_name = 'k'
+      add_unique_index(table_name, col_name)
    end
 end
