@@ -18,8 +18,12 @@
 -- ------------------------------------------------------------------------
 -- OLTP Mix Queries of INSERT, UPDATE, DELETE, XA, ADD INDEX and DROP INDEX
 -- Sample usage:
+-- The following run expects oltp_common_repl.lua to be in the system $PATH
+-- sysbench --mysql-user=root --mysql-socket="$PWD/socket.sock" \
+--          --tables=1 --table_size=10000 --mysql-db=test --threads=16 \
+--          oltp_mix_queries_repl.lua prepare
 -- sysbench --mysql-user=root --mysql-socket="${PWD}/socket.sock" \
---          --tables=1 --table_size=10000 --mysql-db=test \
+--          --tables=1 --mysql-db=test \
 --          --mysql-ignore-errors=1061,1062,1091 --threads=16 \
 --          --time=300 --inserts=20 --deletes=1 --updates=20 --xas=10 \
 --          --add_index=1 --add_uniq_index=1 oltp_mix_queries_repl.lua run
