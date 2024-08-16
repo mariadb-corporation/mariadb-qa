@@ -1474,7 +1474,7 @@ multi_reducer(){
             fi
             if [ $MDG -eq 1 ]; then
               export GALERA_ERROR_LOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
-              export GALERA_CORE_LOC=$WORKD/node1/*core*
+              export GALERA_CORE_LOC=$WORKD/node${GALERA_NODE}/*core*
             fi
             MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
             cd - >/dev/null
@@ -2203,14 +2203,14 @@ generate_run_scripts(){
   BIN_TO_USE_SHORT="bin/mariadbd"
   if [ ! -r "${BASEDIR}/bin/mariadbd" ]; then BIN_TO_USE="bin/mysqld"; fi
   if [[ ${MDG} -eq 1 ]]; then
-    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node1/core*)" >> $WORK_GDB
+    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node${GALERA_NODE}/core*)" >> $WORK_GDB
   else
     echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/data*/core*)" >> $WORK_GDB
   fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_PARSE_CORE
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_PARSE_CORE
   if [[ ${MDG} -eq 1 ]]; then
-    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node1/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
+    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node${GALERA_NODE}/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
   else
     echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/data/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
   fi
@@ -3456,7 +3456,7 @@ process_outcome(){
         fi
         if [ $MDG -eq 1 ]; then
           export GALERA_ERROR_LOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
-          export GALERA_CORE_LOC=$WORKD/node1/*core*
+          export GALERA_CORE_LOC=$WORKD/node${GALERA_NODE}/*core*
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
         NTSEXITCODE=${?}
