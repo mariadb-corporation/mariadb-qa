@@ -180,6 +180,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGABRT|galera::FSM<galera::TrxHandle::State, galera::TrxHandle::Transition>::shift_to|galera::TrxHandle::set_state|galera::TrxHandleSlave::set_state|galera::ReplicatorSMM::commit_order_leave ## MDEV-34760
+state() == s_committing|SIGABRT|wsrep::transaction::ordered_commit|wsrep::client_state::ordered_commit|wsrep_ordered_commit|MYSQL_BIN_LOG::queue_for_group_commit              ## MDEV-34760
 (0)|SIGABRT|wsrep_to_isolation_begin|Sql_cmd_optimize_table::execute|mysql_execute_command|mysql_parse                                                                         ## MDEV-34746
 SIGSEGV|ha_spider::rm_bulk_tmp_table|ha_spider::reset|ha_spider::open|handler::ha_open                                                                                         ## MENT-2113
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|drop_routine|mysql_execute_command                                         ## MDEV-34708
