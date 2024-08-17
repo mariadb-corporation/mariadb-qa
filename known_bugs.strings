@@ -185,6 +185,10 @@ block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tre
 block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                              ## MDEV-34736
 len > alloc_length|SIGABRT|Binary_string::realloc_raw|Binary_string::realloc|Binary_string::reserve|spider_string::reserve                                                     ## MDEV-34735
 SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                                   ## MDEV-34735
+client_state_.mode() == wsrep::client_state::m_local|SIGABRT|wsrep::transaction::after_statement|wsrep::transaction::after_statement|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service ## MDEV-34761
+SIGABRT|galera::FSM<galera::TrxHandle::State, galera::TrxHandle::Transition>::shift_to|galera::TrxHandle::set_state|galera::TrxHandleSlave::set_state|galera::ReplicatorSMM::commit_order_leave ## MDEV-34760
+state() == s_committing|SIGABRT|wsrep::transaction::ordered_commit|wsrep::client_state::ordered_commit|wsrep_ordered_commit|MYSQL_BIN_LOG::queue_for_group_commit              ## MDEV-34760
+(0)|SIGABRT|wsrep_to_isolation_begin|Sql_cmd_optimize_table::execute|mysql_execute_command|mysql_parse                                                                         ## MDEV-34746
 SIGSEGV|ha_spider::rm_bulk_tmp_table|ha_spider::reset|ha_spider::open|handler::ha_open                                                                                         ## MENT-2113
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|drop_routine|mysql_execute_command                                         ## MDEV-34708
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-34708
@@ -312,6 +316,7 @@ SIGSEGV|dict_table_t::is_active_ddl|trx_t::rollback_low|trx_t::rollback|trx_t::r
 # table_block_data->m_cached_query_count >= 0|SIGABRT|Query_cache::unlink_table|Query_cache::register_all_tables|Query_cache::store_query|execute_sqlcom_select                ## MDEV-34075 Shadow stack (check for query_cache use)
 # reinterpret_cast<size_t>(ptr) % Alignment == 0|SIGABRT|my_assume_aligned<8, LF_SLIST*>|my_assume_aligned<8, LF_SLIST*>|l_find|l_search                                       ## MDEV-34075 Shadow stack (check for query_cache use)
 SIGSEGV|Item_field::used_tables|Used_tables_and_const_cache::used_tables_and_const_cache_join|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join ## MDEV-34068
+!trx->is_bulk_insert()|SIGABRT|ha_innobase::delete_row|handler::ha_delete_row|TABLE::delete_row|Sql_cmd_delete::delete_from_single_table                                       ## MDEV-34058
 trx->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low                                       ## MDEV-34058
 # SIGSEGV|dict_table_t::is_active_ddl|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                                   ## MDEV-34051 (WIP)
 # table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                                       ## MDEV-34049 (Needs testcase)

@@ -35,37 +35,45 @@ declare TSIZE=""
 declare NUMT=""
 declare TCOUNT=""
 declare MD_TAR=""
-#declare MDBASE=""
 declare MD_BASEDIR=""
-#declare PT_TAR=""
-#declare PTBASE=""
 declare MID=""
 declare SYSBENCH_OPTIONS=""
+declare SYSBENCH_INSERT_PERCENTILE=""
+declare SYSBENCH_DELETE_PERCENTILE=""
+declare SYSBENCH_UPDATE_PERCENTILE=""
+declare SYSBENCH_XAS_PERCENTILE=""
+declare SYSBENCH_ADD_UNIQ_INDEX_PERCENTILE=""
+declare SYSBENCH_ADD_INDEX_PERCENTILE=""
 
 # Dispay script usage details
 usage () {
   echo "Usage: [ options ]"
   echo "Options:"
-  echo "  -d, --basedir                     Specify the basedirectory (e.g. /test/MD220623-mariadb-11.1.2-linux-x86_64-dbg)"
-  echo "  -w, --workdir                     Specify work directory"
-  echo "  -s, --storage-engine              Specify mysql server storage engine"
-  echo "  -b, --build-number                Specify work build directory"
-  echo "  -k, --keyring-plugin=[file|vault] Specify which keyring plugin to use(default keyring-file)"
-  echo "  -t, --testcase=<testcases|all>    Run only following comma-separated list of testcases"
-  echo "                                      master_slave_test"
-  echo "                                      master_multi_slave_test"
-  echo "                                      master_master_test"
-  echo "                                      msr_test"
-  echo "                                      mtr_test"
-  echo "                                    If you specify 'all', the script will execute all testcases"
-  echo "  -e, --with-encryption             Run the script with encryption feature"
-  echo "  -f, --binlog-format               Specify binlog_format"
+  echo "  -d, --basedir                         Specify the basedirectory (e.g. /test/MD220623-mariadb-11.1.2-linux-x86_64-dbg)"
+  echo "  -w, --workdir                         Specify work directory"
+  echo "  -s, --storage-engine                  Specify mysql server storage engine"
+  echo "  -b, --build-number                    Specify work build directory"
+  echo "  -t, --testcase=<testcases|all>        Run only following comma-separated list of testcases"
+  echo "                                          master_slave_test"
+  echo "                                          master_multi_slave_test"
+  echo "                                          master_master_test"
+  echo "                                          msr_test"
+  echo "                                          mtr_test"
+  echo "                                        If you specify 'all', the script will execute all testcases"
+  echo "  -e, --with-encryption                 Run the script with encryption feature"
+  echo "  -f, --binlog-format                   Specify binlog_format"
+  echo "  --sysbench-inserts-percentile         Specify sysbench insert percentile"
+  echo "  --sysbench-deletes-percentile         Specify sysbench delete percentile"
+  echo "  --sysbench-updates-percentile         Specify sysbench update percentile"
+  echo "  --sysbench-xas-percentile             Specify sysbench XA percentile"
+  echo "  --sysbench-add-index-percentile       Specify sysbench ADD INDEX percentile"
+  echo "  --sysbench-add-uniq-index-percentile  Specify sysbench UNIQUE INDEX percentile"
 }
 
 # Check if we have a functional getopt(1)
 if ! getopt --test
   then
-  go_out="$(getopt --options=d:w:b:s:k:t:f:eh --longoptions=basedir:,workdir:,storage-engine:,build-number:,keyring-plugin:,testcase:,with-encryption,binlog-format,help \
+  go_out="$(getopt --options=d:w:b:s:k:t:f:eh --longoptions=basedir:,workdir:,storage-engine:,build-number:,testcase:,with-encryption,binlog-format:,sysbench-inserts-percentile:,sysbench-deletes-percentile:,sysbench-updates-percentile:,sysbench-xas-percentile:,sysbench-add-index-percentile:,sysbench-add-uniq-index-percentile:,help \
   --name="$(basename "$0")" -- "$@")"
   test $? -eq 0 || exit 1
   eval set -- "$go_out"
@@ -108,15 +116,6 @@ for arg do
     fi
     shift 2
     ;;
-    -k | --keyring-plugin )
-    KEYRING_PLUGIN="$2"
-    shift 2
-    if [[ "$KEYRING_PLUGIN" != "file" ]] && [[ "$KEYRING_PLUGIN" != "vault" ]] ; then
-      echo "ERROR: Invalid --keyring-plugin passed:"
-      echo "  Please choose any of these keyring-plugin options: 'file' or 'vault'"
-      exit 1
-    fi
-    ;;
     -t | --testcase )
     TESTCASE="$2"
     shift 2
@@ -128,6 +127,30 @@ for arg do
     -e | --with-encryption )
     shift
     ENCRYPTION=1
+    ;;
+    --sysbench-inserts-percentile )
+    SYSBENCH_INSERT_PERCENTILE="$2"
+    shift 2
+    ;;
+    --sysbench-deletes-percentile )
+    SYSBENCH_DELETE_PERCENTILE="$2"
+    shift 2
+    ;;
+    --sysbench-updates-percentile )
+    SYSBENCH_UPDATE_PERCENTILE="$2"
+    shift 2
+    ;;
+    --sysbench-xas-percentile )
+    SYSBENCH_XAS_PERCENTILE="$2"
+    shift 2
+    ;;
+    --sysbench-add-index-percentile )
+    SYSBENCH_ADD_INDEX_PERCENTILE="$2"
+    shift 2
+    ;;
+    --sysbench-add-uniq-index-percentile )
+    SYSBENCH_ADD_UNIQ_INDEX_PERCENTILE="$2"
+    shift 2
     ;;
     -h | --help )
     usage
@@ -211,6 +234,30 @@ if [ -z "$BINLOG_FORMAT" ]; then
   BINLOG_FORMAT="MIXED"
 fi
 
+if [ -z "$SYSBENCH_INSERT_PERCENTILE" ]; then
+  SYSBENCH_INSERT_PERCENTILE="20"
+fi
+
+if [ -z "$SYSBENCH_DELETE_PERCENTILE" ]; then
+  SYSBENCH_DELETE_PERCENTILE="20"
+fi
+
+if [ -z "$SYSBENCH_UPDATE_PERCENTILE" ]; then
+  SYSBENCH_UPDATE_PERCENTILE="20"
+fi
+
+if [ -z "$SYSBENCH_XAS_PERCENTILE" ]; then
+  SYSBENCH_XAS_PERCENTILE="20"
+fi
+
+if [ -z "$SYSBENCH_ADD_INDEX_PERCENTILE" ]; then
+  SYSBENCH_ADD_INDEX_PERCENTILE="5"
+fi
+
+if [ -z "$SYSBENCH_ADD_UNIQ_INDEX_PERCENTILE" ]; then
+  SYSBENCH_ADD_UNIQ_INDEX_PERCENTILE="5"
+fi
+
 WORKDIR="${ROOT_FS}/$BUILD_NUMBER"
 mkdir -p $WORKDIR/logs
 
@@ -249,8 +296,8 @@ trap cleanup EXIT KILL
 
 # Find empty port
 init_empty_port(){
-  # Choose a random port number in 47-65K range, with triple check to confirm it is free
-  NEWPORT=$[ 47001 + ( ${RANDOM} % 18000 ) ]
+  # Choose a random port number in 13-47K range, with triple check to confirm it is free
+  NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]
   DOUBLE_CHECK=0
   while :; do
     # Check if the port is free in three different ways
@@ -267,7 +314,7 @@ init_empty_port(){
         continue  # Loop the check
       fi
     else
-      NEWPORT=$[ 47001 + ( ${RANDOM} % 18000 ) ]  # Try a new port
+      NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi
@@ -297,6 +344,13 @@ if [[ ! -e `which sysbench` ]];then
   echoit "Sysbench not found"
   exit 1
 fi
+
+if [ ! -r ${ROOT_FS}/oltp_mix_queries_repl.lua ] && [ ! -r ${ROOT_FS}/oltp_common_repl.lua ] ; then
+  cp $SCRIPT_PWD/oltp_mix_queries_repl.lua ${ROOT_FS}/oltp_mix_queries_repl.lua
+  cp $SCRIPT_PWD/oltp_common_repl.lua ${ROOT_FS}/oltp_common_repl.lua
+fi
+
+
 #sysbench command should compatible with versions 0.5 and 1.0
 sysbench_run(){
   local TEST_TYPE="${1:-}"
@@ -311,11 +365,11 @@ sysbench_run(){
     fi
   elif [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "1.0" ]; then
     if [ "$TEST_TYPE" == "load_data" ];then
-      SYSBENCH_OPTIONS="/usr/share/sysbench/oltp_insert.lua --table-size=$TSIZE --tables=$TCOUNT --mysql-storage-engine=$ENGINE --mysql-db=$DB --mysql-user=test_user --mysql-password=test  --threads=$NUMT --db-driver=mysql"
+      SYSBENCH_OPTIONS="${ROOT_FS}/oltp_mix_queries_repl.lua --table-size=$TSIZE --tables=$TCOUNT --mysql-storage-engine=$ENGINE --mysql-db=$DB --mysql-user=test_user --mysql-password=test  --threads=$NUMT --db-driver=mysql --mysql-ignore-errors=1062,1213,1614,1205"
     elif [ "$TEST_TYPE" == "oltp" ];then
-      SYSBENCH_OPTIONS="/usr/share/sysbench/oltp_read_write.lua --table-size=$TSIZE --tables=$TCOUNT --mysql-db=$DB --mysql-user=test_user --mysql-password=test  --threads=$NUMT --time=$SDURATION --report-interval=1 --events=1870000000 --db-driver=mysql --db-ps-mode=disable"
+      SYSBENCH_OPTIONS="${ROOT_FS}/oltp_mix_queries_repl.lua --table-size=$TSIZE --tables=$TCOUNT --mysql-db=$DB --mysql-user=test_user --mysql-password=test  --threads=$NUMT --time=$SDURATION --report-interval=1 --events=1870000000 --db-driver=mysql --db-ps-mode=disable --inserts=$SYSBENCH_INSERT_PERCENTILE --deletes=$SYSBENCH_DELETE_PERCENTILE --updates=$SYSBENCH_UPDATE_PERCENTILE --xas=$SYSBENCH_XAS_PERCENTILE --add_uniq_index=$SYSBENCH_ADD_UNIQ_INDEX_PERCENTILE --add_index=$SYSBENCH_ADD_INDEX_PERCENTILE --mysql-ignore-errors=1062,1213,1614,1205,1061,1091,1440"
     elif [ "$TEST_TYPE" == "insert_data" ];then
-      SYSBENCH_OPTIONS="/usr/share/sysbench/oltp_insert.lua --table-size=$TSIZE --tables=$TCOUNT --mysql-db=$DB --mysql-user=test_user --mysql-password=test  --threads=$NUMT --time=10 --events=1870000000 --db-driver=mysql --db-ps-mode=disable"
+      SYSBENCH_OPTIONS="${ROOT_FS}/oltp_mix_queries_repl.lua --table-size=$TSIZE --tables=$TCOUNT --mysql-db=$DB --mysql-user=test_user --mysql-password=test  --threads=$NUMT --time=10 --events=1870000000 --db-driver=mysql --db-ps-mode=disable --inserts=$SYSBENCH_INSERT_PERCENTILE --deletes=$SYSBENCH_DELETE_PERCENTILE --updates=$SYSBENCH_UPDATE_PERCENTILE --xas=$SYSBENCH_XAS_PERCENTILE --add_uniq_index=$SYSBENCH_ADD_UNIQ_INDEX_PERCENTILE --add_index=$SYSBENCH_ADD_INDEX_PERCENTILE --mysql-ignore-errors=1062,1213,1614,1205,1061,1091,1440"
     fi
   fi
 }
@@ -554,6 +608,11 @@ function async_rpl_test(){
     local ERROR_LOG=${3:-}
     local SB_MASTER=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
     local COUNTER=0
+    if [ "$SB_MASTER" = "NULL" ] || [ -z "$SB_MASTER" ]; then
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" > $WORKDIR/logs/slave_status.log 2>/dev/null 
+      echoit "Replica is not running. Please check error log and slave status : $ERROR_LOG,  $WORKDIR/logs/slave_status.log"
+      exit 1
+    fi
     while [[ $SB_MASTER -gt 0 ]]; do
       SB_MASTER=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$SOCKET_FILE -Bse "show slave status\G" 2>/dev/null | grep Seconds_Behind_Master | awk '{ print $2 }'`
       if ! [[ "$SB_MASTER" =~ ^[0-9]+$ ]]; then
@@ -577,21 +636,13 @@ function async_rpl_test(){
   }
 
   function async_sysbench_rw_run(){
-    local MASTER_DB=${1:-}
-    local SLAVE_DB=${2:-}
-    local MASTER_SOCKET=${3:-}
-    local SLAVE_SOCKET=${4:-}
-    #OLTP RW run on master
-    echoit "OLTP RW run on master (Database: $MASTER_DB)"
-    sysbench_run oltp $MASTER_DB
-    $SBENCH $SYSBENCH_OPTIONS --mysql-socket=$MASTER_SOCKET run  > $WORKDIR/logs/sysbench_master_rw.log 2>&1 &
-    check_cmd $? "Failed to execute sysbench oltp read/write run on master ($MASTER_SOCKET)"
-
-    #OLTP RW run on slave
-    echoit "OLTP RW run on slave (Database: $SLAVE_DB)"
-    sysbench_run oltp $SLAVE_DB
-    $SBENCH $SYSBENCH_OPTIONS --mysql-socket=$SLAVE_SOCKET run  > $WORKDIR/logs/sysbench_slave_rw.log 2>&1
-    check_cmd $? "Failed to execute sysbench oltp read/write run on slave($SLAVE_SOCKET)"
+    local DB=${1:-}
+    local SOCKET=${2:-}
+    #OLTP RW run
+    echoit "OLTP RW run on database: $DB - socket: $SOCKET "
+    sysbench_run oltp $DB
+    $SBENCH $SYSBENCH_OPTIONS --mysql-socket=$SOCKET run  > $WORKDIR/logs/sysbench_rw.log 2>&1 &
+    check_cmd $? "Failed to execute sysbench oltp read/write run ($SOCKET)"
   }
 
   function async_sysbench_insert_run(){
@@ -688,14 +739,10 @@ function async_rpl_test(){
     echoit "Checking slave startup"
     slave_startup_check "/tmp/md2.sock" "$WORKDIR/logs/slave_status_mdnode2.log" "$WORKDIR/logs/mdnode2.err"
 
-    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e "drop database if exists sbtest_md_slave;create database sbtest_md_slave;" 2>/dev/null
     ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e "drop database if exists sbtest_md_master;create database sbtest_md_master;" 2>/dev/null
 	  create_test_user "/tmp/md1.sock"
-    create_test_user "/tmp/md2.sock"
     async_sysbench_load sbtest_md_master "/tmp/md1.sock"
-    async_sysbench_load sbtest_md_slave "/tmp/md2.sock"
-
-    async_sysbench_rw_run sbtest_md_master sbtest_md_slave "/tmp/md1.sock" "/tmp/md2.sock"
+    async_sysbench_rw_run sbtest_md_master "/tmp/md1.sock"
     sleep 5
 
     if [ "$ENCRYPTION" == 1 ];then
@@ -730,27 +777,11 @@ function async_rpl_test(){
     slave_startup_check "/tmp/md3.sock" "$WORKDIR/logs/slave_status_mdnode3.log" "$WORKDIR/logs/mdnode3.err"
     slave_startup_check "/tmp/md4.sock" "$WORKDIR/logs/slave_status_mdnode4.log" "$WORKDIR/logs/mdnode4.err"
 
-    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md2.sock -e"drop database if exists sbtest_md_slave_1;create database sbtest_md_slave_1;" 2>/dev/null
-    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md3.sock -e"drop database if exists sbtest_md_slave_2;create database sbtest_md_slave_2;" 2>/dev/null
-    ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md4.sock -e"drop database if exists sbtest_md_slave_3;create database sbtest_md_slave_3;" 2>/dev/null
     ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -e"drop database if exists sbtest_md_master;create database sbtest_md_master;" 2>/dev/null
     create_test_user "/tmp/md1.sock"
-    create_test_user "/tmp/md2.sock"
-    create_test_user "/tmp/md3.sock"
-    create_test_user "/tmp/md4.sock"
     async_sysbench_load sbtest_md_master "/tmp/md1.sock"
-    async_sysbench_load sbtest_md_slave_1 "/tmp/md2.sock"
-    async_sysbench_load sbtest_md_slave_2 "/tmp/md3.sock"
-    async_sysbench_load sbtest_md_slave_3 "/tmp/md4.sock"
-
-    async_sysbench_rw_run sbtest_md_master sbtest_md_slave_1 "/tmp/md1.sock" "/tmp/md2.sock"
-    async_sysbench_rw_run sbtest_md_master sbtest_md_slave_2 "/tmp/md1.sock" "/tmp/md3.sock"
-    async_sysbench_rw_run sbtest_md_master sbtest_md_slave_3 "/tmp/md1.sock" "/tmp/md4.sock"
-
-    async_sysbench_insert_run sbtest_md_master "/tmp/md1.sock"
-    async_sysbench_insert_run sbtest_md_slave_1 "/tmp/md2.sock"
-    async_sysbench_insert_run sbtest_md_slave_2 "/tmp/md3.sock"
-    async_sysbench_insert_run sbtest_md_slave_3 "/tmp/md4.sock"
+    async_sysbench_rw_run sbtest_md_master "/tmp/md1.sock"
+    
     sleep 5
 
     if [ "$ENCRYPTION" == 1 ];then
@@ -798,10 +829,9 @@ function async_rpl_test(){
     async_sysbench_load sbtest_md_master_1 "/tmp/md1.sock"
     async_sysbench_load sbtest_md_master_2 "/tmp/md2.sock"
 
-    async_sysbench_rw_run sbtest_md_master_1 sbtest_md_master_2 "/tmp/md1.sock" "/tmp/md2.sock"
+    async_sysbench_rw_run sbtest_md_master_1 "/tmp/md1.sock"
+    async_sysbench_rw_run sbtest_md_master_2 "/tmp/md2.sock"
 
-    async_sysbench_insert_run sbtest_md_master_1 "/tmp/md1.sock"
-    async_sysbench_insert_run sbtest_md_master_2 "/tmp/md2.sock"
     sleep 5
 
     if [ "$ENCRYPTION" == 1 ];then
@@ -863,9 +893,6 @@ function async_rpl_test(){
     $SBENCH $SYSBENCH_OPTIONS --mysql-socket=/tmp/md4.sock  run  > $WORKDIR/logs/sysbench_md_channel3_rw.log 2>&1
     check_cmd $? "Failed to execute sysbench read/write run (/tmp/md4.sock)"
 
-    async_sysbench_insert_run msr_db_master1 "/tmp/md2.sock"
-    async_sysbench_insert_run msr_db_master2 "/tmp/md3.sock"
-    async_sysbench_insert_run msr_db_master3 "/tmp/md4.sock"
 	  sleep 5
 
     if [ "$ENCRYPTION" == 1 ];then
