@@ -58,6 +58,7 @@ BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1440  MDEV-34113
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 BINLOG_BASE64_EVENT.*Error executing row event.*Unable to connect to foreign data source.*Internal MariaDB error code: 12701  MDEV-22936
+BINLOG_BASE64_EVENT:.*Could not execute Write_rows_v1 event on table.*Remote.*server has gone away.*Error_code: 12701.*Internal MariaDB error code: 12701  MDEV-22936 (Remote.*server: Remote MariaDB, Remote MySQL were both observed)
 Slave SQL: Error executing row event: .*is not of type .BASE TABLE.*Internal MariaDB error code: 1347  SPECIAL-16
 Error reading packet from server: The binlog on the master is missing the GTID.*requested by the slave .even though both a prior and a subsequent sequence number does exist.. and GTID strict mode is enabled .server_errno=1236  MDEV-33445
 Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Connections using insecure transport are prohibited while ..require_secure_transport=ON. Internal MariaDB error code: 3159  Ref SPECIAL-22  (require_secure_transport)
@@ -126,6 +127,7 @@ Got error 194 .Tablespace is missing .* engine InnoDB MDEV-27952 (tablespace dis
 Got error 1054 when reading table                     MDEV-29430 (Spider)
 Got error 1054 when reading table                     MDEV-29663 (Spider, 29430 duplicate)
 Got error 1056 when reading table                     MDEV-34638 (Spider)
+Got error 1064 when reading table                     MDEV-33042 (Spider)
 Got error 1100 when reading table                     MDEV-31409 (Spider)
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
 Got error 1184 when reading table                     MDEV-29583 (init_connect failed, Spider)

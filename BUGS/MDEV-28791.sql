@@ -19,3 +19,12 @@ INSERT DELAYED INTO t VALUES(0);
 SET @@GLOBAL.binlog_format=ROW;
 SET SQL_LOG_BIN=1;
 INSERT DELAYED INTO t VALUES(1);
+
+# mysqld options required for replay: --log_bin 
+SET GLOBAL binlog_format=1;
+CREATE TABLE t (a CHAR(1),FULLTEXT (a)) ENGINE=MyISAM;
+CALL sys.statement_performance_analyzer (1,1,1);
+INSERT DELAYED INTO t VALUES (2);
+SET GLOBAL binlog_format=MIXED;
+SET sql_log_bin=1;
+INSERT DELAYED INTO t VALUES (1);

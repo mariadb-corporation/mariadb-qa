@@ -81,6 +81,7 @@ GOT_ERROR|Got error 1032|when trying to execute action for entry 1 of type 'rena
 GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and MDEV-29430
 GOT_ERROR|Got error 1056|when reading table                    ## MDEV-34638
+GOT_ERROR|Got error 1064|when reading table                    ## MDEV-33042 (Spider)
 GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
 GOT_ERROR|Got error 1430|when reading table                    ## Presumed non-issue (federatedx base table removed)
 GOT_ERROR|Got error 1430|Unknown error 1430                    ## MDEV-29923
@@ -180,6 +181,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                               ## MDEV-34736
+block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                              ## MDEV-34736
+len > alloc_length|SIGABRT|Binary_string::realloc_raw|Binary_string::realloc|Binary_string::reserve|spider_string::reserve                                                     ## MDEV-34735
+SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                                   ## MDEV-34735
 SIGSEGV|ha_spider::rm_bulk_tmp_table|ha_spider::reset|ha_spider::open|handler::ha_open                                                                                         ## MENT-2113
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|drop_routine|mysql_execute_command                                         ## MDEV-34708
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-34708
@@ -496,7 +501,6 @@ SIGSEGV|get_schema_key_period_usage_record|fill_schema_table_by_open|get_all_tab
 SIGSEGV|calc_row_difference|ha_innobase::update_row|handler::ha_update_row|Event_db_repository::update_timing_fields_for_event                                                 ## MDEV-32221
 SIGSEGV|ha_innobase::update_row|handler::ha_update_row|Event_db_repository::update_timing_fields_for_event|Event_queue::get_top_for_execution_if_time                          ## MDEV-32221
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|Event_db_repository::create_event|Events::create_event|mysql_execute_command ## MDEV-32221 
-info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## MDEV-32194 
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
 role == *(ACL_ROLE**)pop|SIGABRT|undo_add_role_user_mapping|mysql_grant_role|mysql_execute_command|mysql_parse                                                                 ## MDEV-32095
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|Item_str_func::fix_fields|Virtual_column_info::fix_expr|Virtual_column_info::fix_session_expr                             ## MDEV-32094
@@ -823,6 +827,7 @@ SIGABRT|ib::fatal::~fatal|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_fre
 !(mysql_bin_log.is_open() && !thd.is_current_stmt_binlog_format_row())|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|pfs_spawn_thread|start_thread              ## MDEV-28791
 !(mysql_bin_log.is_open() && !thd.is_current_stmt_binlog_format_row())|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|start_thread|clone                         ## MDEV-28791
 !mysql_bin_log.is_open() || thd.is_current_stmt_binlog_format_row()|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|start_thread|clone                            ## MDEV-28791
+!mysql_bin_log.is_open() || thd.is_current_stmt_binlog_format_row()|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|pfs_spawn_thread|start_thread                 ## MDEV-28791
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|ha_partition::handle_opt_part ## MDEV-26035
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert ## MDEV-26035
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|mysql_admin_table ## MDEV-26035
@@ -2161,7 +2166,7 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGABRT|acquire_xid|binlog_rollback_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                          ## Fixed ## MDEV-32257
 # SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|wsrep_ha_commit_or_rollback_by_xid                                                            ## Fixed ## MDEV-32257
 # SIGABRT|acquire_xid|binlog_commit_by_xid|ha_commit_or_rollback_by_xid|trans_xa_commit                                                                               ## Fixed ## MDEV-32257
-# is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|Backtrace stopped: Cannot access memory at address|                                ## Fixed ## MDEV-32347
+# is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|Backtrace stopped: Cannot access memory at address                                 ## Fixed ## MDEV-32347
 # is_async_xac || thd->lex->xid->eq(thd->transaction->xid_state.get_xid())|SIGABRT|binlog_rollback_flush_trx_cache|binlog_rollback|ha_rollback_trans|trans_rollback_implicit ## Fixed ## MDEV-32347
 # SIGSEGV|serialize_xid|event_xid_t::serialize|serialize_with_xid|binlog_rollback_flush_trx_cache                                                                     ## Fixed ## MDEV-Fixed ## 32347
 # is_prepared_xa(thd) || ((thd->lex->sql_command == SQLCOM_XA_ROLLBACK && thd->transaction->xid_state.get_state_code() == XA_IDLE) || thd->lex->xa_opt == XA_ONE_PHASE)|SIGABRT|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog ## Fixed ## MDEV-32852
@@ -2538,3 +2543,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                         ## Fixed ## MENT-1519 (Likely fixed; ref comment) 
 # SIGSEGV|spider_check_and_set_trx_isolation|ha_spider::external_lock|handler::ha_external_lock|lock_external                                                         ## Fixed ## MDEV-27902
 # SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::rnd_next                                                         ## Fixed ## MDEV-27902
+# info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info  ## Fixed ## MDEV-32194 

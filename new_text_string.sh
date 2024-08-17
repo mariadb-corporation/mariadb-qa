@@ -90,6 +90,11 @@ if [ -z "${MYSQLD}" ]; then
     mariadbd="../../../../../bin/mariadbd"
   elif [ -r ../../../../../bin/mysqld -a ! -d ../../../../../bin/mysqld ]; then  # Used with/for MTR 
     MYSQLD="../../../../../bin/mysqld"
+  elif [ -r ./log/mysqld.out ]; then  # Reducer
+    POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/mysqld.out | sed 's|: .*||;s|^.* ||' | head -n1)"
+    if [ -r ${POTENTIAL_MYSQLD} ]; then
+      MYSQLD="${POTENTIAL_MYSQLD}"
+    fi
   elif [ -r ./log/master.err ]; then
     POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
     if [ -r ${POTENTIAL_MYSQLD} ]; then
@@ -204,6 +209,9 @@ if [ -z "${ERROR_LOGS}" ]; then
   fi
   if [ -r "./var/log/mysqld.2.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
     ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.1.err"
+  fi
+  if [ -r "./log/mysqld.out" ]; then  # Reducer
+    ERROR_LOGS="${ERROR_LOGS} ./log/mysqld.out"
   fi
 fi
 
@@ -343,10 +351,12 @@ if [ -z "${LATEST_CORE}" ]; then
       COUNT_NR_OF_ERROR_LOGS="$(echo "${ERROR_LOGS}" | tr ' ' '\n' | wc -l)"
       for((i=0;i<${COUNT_NR_OF_ERROR_LOGS};i++)){
         # echo "${ERROR_LOGS}" | tr ' ' '\n' | head -n${i} | tail -n1  # debug to see what logs are scanned
-        TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "$(echo "${ERROR_LOGS}" | tr ' ' '\n' | head -n${i} | tail -n1)" 2>&1 | grep -v 'No relevant strings were found in')"  # Try FTS, one log at the time. Note: spaces in the path may break this, but with a standard server setup (i.e. ~/mariadb-qa, /test, /data and /dev/shm, this should never happen as every path used is without spaces). FTS was never made multi-error-log aware, the ROI is too low
+        TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "$(echo "${ERROR_LOGS}" | tr ' ' '\n' | head -n${i} | tail -n1)" 2>&1 | grep -v 'No relevant strings were found in')"  # Try FTS, one log at the time. Note: spaces in the path may break this, but with a standard server setup (i.e. ~/mariadb-qa, /test, /data and /dev/shm, this should never happen as every path used is without spaces). fallback_text_string.sh was never made multi-error-log aware, the ROI is too low
         if [ ! -z "${TEXT}" ]; then
-          echo "${TEXT}"
-          exit 0
+          if [[ "${TEXT}" != *"Assert"* ]]; then
+            echo "${TEXT}"
+            exit 0
+          fi
         fi
       }
       echo "Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output for all logs"
@@ -467,6 +477,7 @@ fi
 # Minor adjustments
 TEXT="$(echo "${TEXT}" | sed 's|__cxa_pure_virtual () from|__cxa_pure_virtual|g')"
 TEXT="$(echo "${TEXT}" | sed 's|"/test/[^/"]\+[/"]|"|')"  # To cleanup, for example: inline_mysql_file_tell("/test/bb-11.4-MDEV-7850_dbg/mysys/mf_iocache2.c"
+TEXT="$(echo "${TEXT}" | sed 's/^SIGABRT|Backtrace stopped: Cannot access memory at address|$/GENERIC_MEMORY_CORRUPTION_ISSUE|DO_NOT_ADD_TO_KNOWN_BUGS|SIGABRT|Backtrace stopped: Cannot access memory at address|/g')"  # Do not log this UniqueID to kb
 
 # Report bug identifier string
 if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
