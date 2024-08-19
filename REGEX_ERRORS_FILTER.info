@@ -54,6 +54,7 @@ init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave 
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1062  Ref SPECIAL-8 and search this file for 1062
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wait timeout exceeded)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
+ERROR.*DDL_LOG.*Got error 1290 when trying to execute action for entry 2 of type.*rename table  Ref SPECIAL-18
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1440  MDEV-34113
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)

@@ -83,6 +83,7 @@ GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and
 GOT_ERROR|Got error 1056|when reading table                    ## MDEV-34638
 GOT_ERROR|Got error 1064|when reading table                    ## MDEV-33042 (Spider)
 GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
+GOT_ERROR|Got error 1290|when trying to execute action for entry 2 of type 'rename table'  ## SPECIAL-18
 GOT_ERROR|Got error 1430|when reading table                    ## Presumed non-issue (federatedx base table removed)
 GOT_ERROR|Got error 1430|Unknown error 1430                    ## MDEV-29923
 GOT_ERROR|Got error 1440|when reading table                    ## MDEV-29454
@@ -181,6 +182,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!table || !table->in_use || table->in_use == _current_thd()|SIGABRT|handler::ha_thd|handler::ha_rnd_next|spider_db_get_row_from_tmp_tbl|spider_db_fetch_table                  ## MDEV-34769
+status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|spider_bg_conn_action|start_thread                                          ## MDEV-34769
+thd->status_var.tmp_space_used >= track->previous_file_size|SIGABRT|temp_file_size_cb_func|_ma_update_tmp_file_size|ha_maria::drop_table|free_tmp_table                        ## MDEV-34769
 block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                               ## MDEV-34736
 block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                              ## MDEV-34736
 len > alloc_length|SIGABRT|Binary_string::realloc_raw|Binary_string::realloc|Binary_string::reserve|spider_string::reserve                                                     ## MDEV-34735
@@ -401,6 +405,7 @@ SIGSEGV|mrn::ContextPool::pull|mroonga_snippet_html_init|udf_handler::fix_fields
 0|SIGABRT|Item_row::illegal_method_call|Item_row::get_date|Event_parse_data::init_ends|Event_parse_data::check_parse_data                                                      ## MDEV-33472
 0|SIGABRT|Item_row::illegal_method_call|Item_row::get_date|Event_parse_data::init_starts|Event_parse_data::check_parse_data                                                    ## MDEV-33472
 0|SIGABRT|Item_row::illegal_method_call|Item_row::val_int|get_interval_value|Event_parse_data::init_interval                                                                   ## MDEV-33472
+0|SIGABRT|Item_row::illegal_method_call|Item_row::val_int|Item::to_longlong_null|Item::to_longlong_hybrid_null                                                                 ## MDEV-33472
 m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::start_psi_batch_mode|sub_select|do_select|JOIN::exec_inner                                                            ## MDEV-32697
 inited == RND|SIGABRT|handler::ha_rnd_next|rr_sequential|READ_RECORD::read_record|sub_select                                                                                   ## MDEV-32697
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-33470

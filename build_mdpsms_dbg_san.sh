@@ -29,6 +29,14 @@ IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_M
 # cd ..
 # TMP_CLANG/clang/scripts/update.py
 
+# Prevent compilation termiation errors alike to:
+#==1574414==Shadow memory range interleaves with an existing memory mapping. ASan cannot proceed correctly. ABORTING.
+#==1574414==ASan shadow was supposed to be located in the [0x00007fff7000-0x10007fff7fff] range.
+#==1574414==This might be related to ELF_ET_DYN_BASE change in Linux 4.12.
+#==1574414==See https://github.com/google/sanitizers/issues/856 for possible workarounds.
+sudo sysctl vm.mmap_rnd_bits=28  # https://github.com/google/sanitizers/issues/856
+# Interestingly, this issue only seems to halt 10.5-10.11 builds, and 11.1 dbg, but not 11.1 opt nor 11.2+
+
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
 
 if [ "${PERFSCHEMA}" != "NO" -a "${PERFSCHEMA}" != "YES" -a "${PERFSCHEMA}" != "STATIC" -a "${PERFSCHEMA}" != "DYNAMIC" ]; then
