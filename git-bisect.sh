@@ -4,7 +4,7 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=10.5                                                        # Use the earliest major version affected by the bug
+VERSION=11.6                                                        # Use the earliest major version affected by the bug
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
@@ -13,14 +13,14 @@ BISECT_REPLAY=0                                                     # Set to 1 t
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
-LAST_KNOWN_GOOD_COMMIT='3c508d4c71c8bf27c6ecceba53ab9d4325a1bd6c'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='0e27351028a4888b0da271e2089bf1f847620396'   # Revision of first known bad commit
+LAST_KNOWN_GOOD_COMMIT='29e9ade269d803b6823ec57808e0b7fad28baf9e'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='d83742622dd1bece3f6a3a11ac0be64de0f3ff84'   # Revision of first known bad commit
 TESTCASE='/test/in15.sql'                                           # The testcase to be tested
-UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
-TEXT='Sys_var_charptr_base'                                         # The string to scan for in the error log [Exclusive]
+UNIQUEID='SIGSEGV|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_rm_tables'                                                         # The UniqueID to scan for [Exclusive]
+TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead
 # i.e. 3 different modes in total: UNIQUEID, TEXT or core files scan

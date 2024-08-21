@@ -499,6 +499,7 @@ cat "${1}" | tr -d '`' | \
        s|after_sync|AFTER_SYNC|gi; \
        s|information_schema\.PROCESSLIST|information_schema.processlist|gi; \
        s|DELIMITER;|DELIMITER ;|gi; \
+       s|USERSTAT|userstat|gi; \
        s|test / |test/|gi; \
        s|sleep[ ]*(|SLEEP(|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line

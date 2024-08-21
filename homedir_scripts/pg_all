@@ -8,4 +8,5 @@ else
   echo "Start this script as ~/pg_all REGEN if you want to also delete/regenerate all reducers."
   sleep 2
 fi
-ls --color=never -d [0-9][0-9][0-9][0-9][0-9][0-9] | xargs -I{} echo "cd {}; ~/pg & cd - >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
+# Run pquery-go-expert.sh once for all workdirs
+ls --color=never -d [0-9][0-9][0-9][0-9][0-9][0-9] | xargs -I{} echo "cd {}; ~/pg ONCEONLY & cd - >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"  # Note that -P50 does not restrict the number of directories handled at once, as pg is started in background (&), it simply a scaling of the startup of pg

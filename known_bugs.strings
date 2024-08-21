@@ -1,5 +1,12 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Follow the existing formatting.
 
+##### MDEV-20250 preliminary test ####
+SIGSEGV|Field::check_assignability_from|Item::check_assignability_to|TABLE::check_assignability_explicit_fields|TABLE::check_assignability_opt_fields                          ## MDEV-20250
+m_internal_handler != __null|SIGABRT|THD::pop_internal_handler|set_used_partition|Insert_prelocking_strategy::handle_end|open_tables                                           ## MDEV-20250
+marked_for_write_or_computed()|SIGABRT|Field_varstring::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record_with_mask                                   ## MDEV-20250
+s->visible_fields == values.elements|SIGABRT|TABLE::check_assignability_all_visible_fields|TABLE::check_assignability_opt_fields|mysql_insert|mysql_execute_command            ## MDEV-20250
+SIGSEGV|TABLE::check_assignability_all_visible_fields|TABLE::check_assignability_opt_fields|mysql_insert|mysql_execute_command                                                 ## MDEV-20250
+
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
@@ -182,6 +189,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_rm_tables                                                                          ## MDEV-34782
 !table || !table->in_use || table->in_use == _current_thd()|SIGABRT|handler::ha_thd|handler::ha_rnd_next|spider_db_get_row_from_tmp_tbl|spider_db_fetch_table                  ## MDEV-34769
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|spider_bg_conn_action|start_thread                                          ## MDEV-34769
 thd->status_var.tmp_space_used >= track->previous_file_size|SIGABRT|temp_file_size_cb_func|_ma_update_tmp_file_size|ha_maria::drop_table|free_tmp_table                        ## MDEV-34769

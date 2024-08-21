@@ -124,17 +124,19 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
 }
 
 while(true); do                                     # Main loop
-  while(true); do                                   # Prevent a bug when pquery-go-expert.sh is started and no trials are present yet
-    if [ "$(ls --color=never -d [0-9]* 2>/dev/null)" == "" ]; then
-      echo "Waiting for next round... Sleeping 300 seconds..."
-      sleep 300                                     # Sleep 5 minutes
-      continue
-    else
+  if [ "$(ls --color=never -d [0-9]* 2>/dev/null)" == "" ]; then  # No trial dirs present [yet]
+    if [ "$1" == "ONCEONLY" ]; then
+      echo "pquery-go-expert.sh was called with the ONCEONLY option, and no trials are present; one run complete; terminating"
+      exit 0
       break
+    else
+      echo "Waiting for next round... Sleeping 2 minutes..."
+      sleep 120                                     # Sleep 2 minutes
+      continue
     fi
-  done
+  fi
   touch ${MUTEX}                                    # Create mutex (indicating that background_sed_loop is live)
-  if [ $(ls --color=never */*.sql 2>/dev/null | wc -l) -gt 0 ]; then  # If trials are available
+  if [ $(ls --color=never */*.sql 2>/dev/null | wc -l) -gt 0 ]; then  # If trials with SQL are available
     background_sed_loop &                           # Start background_sed_loop in a background thread, it will patch reducer<nr>.sh scripts and, before doing so, remove MYBUG when ERROR_LOG_SCAN_ISSUE is found and MYBUG contains the 'no core, no fallback string' text
     PID=$!                                          # Capture the PID of the background_sed_loop so we can kill -9 it once pquery-prep-red.sh is complete
     ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE | sed 's|/SHUTDOWN_TIMEOUT_ISSUE|/data*/core|' | xargs -I{} echo "ls --color=never {} 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*|/SHUTDOWN_TIMEOUT_ISSUE|' | xargs -I{} rm {}  # Prevent trials which have core files from being marked as SHUTDOWN HANG/TIMEOUT isues and thus possibly being eliminated later [*] by deleting SHUTDOWN_TIMEOUT_ISSUE
@@ -154,6 +156,12 @@ while(true); do                                     # Main loop
   fi
   while [ -r ${MUTEX} ]; do sleep 1; done           # Ensure kill of background_sed_loop only happens when background process has just started sleeping
   kill -9 ${PID} >/dev/null 2>&1                    # Kill the background_sed_loop
-  echo "Waiting for next round... Sleeping 2 minutes..."
-  sleep 120                                         # Sleep 2 minutes
+  if [ "$1" == "ONCEONLY" ]; then
+    echo "pquery-go-expert.sh was called with the ONCEONLY option; one run complete; terminating"
+    exit 0
+    break
+  else
+    echo "Waiting for next round... Sleeping 2 minutes..."
+    sleep 120                                         # Sleep 2 minutes
+  fi
 done

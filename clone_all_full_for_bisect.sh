@@ -15,3 +15,4 @@ rm -Rf 11.2; git clone --recurse-submodules -j8 --branch=11.2 https://github.com
 #rm -Rf 11.3; git clone --recurse-submodules -j8 --branch=11.3 https://github.com/MariaDB/server.git 11.3 &
 rm -Rf 11.4; git clone --recurse-submodules -j8 --branch=11.4 https://github.com/MariaDB/server.git 11.4 &
 rm -Rf 11.5; git clone --recurse-submodules -j8 --branch=11.5 https://github.com/MariaDB/server.git 11.5 &
+rm -Rf 11.6; git clone --recurse-submodules -j8 --branch=11.6 https://github.com/MariaDB/server.git 11.6 &
