@@ -9,7 +9,7 @@ if [ -r mark_as_fixed.list ]; then
     while read LINE; do
       LINEMOD="$(echo "${LINE}" | sed 's{         ## MDEV{## MDEV{;s{## MDEV{## Fixed MDEV{' | sed 's{^{# {')"  # { is not a symbol used in known bugs
       echo "${LINEMOD}" >> known_bugs.strings  # Add line to end as ## Fixed
-      sed -i "{${LINE}{d" known_bugs.strings  # Remove the original line
+      sed -i "/${LINE}/d" known_bugs.strings  # Remove the original line
       LINE=; LINEMOD=
     done < ${CURLINES}
     if [ ! -z "${CURLINES}" -a -r "${CURLINES}" ]; then rm -f ${CURLINES}; fi
