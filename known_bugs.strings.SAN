@@ -5,6 +5,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct ha_handler_stats'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|close_thread_tables|Locked_tables_list::unlock_locked_tables ## MDEV-34782
+UBSAN|member access within null pointer of type 'struct ha_handler_stats'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_rm_tables ## MDEV-34782
+UBSAN|member access within null pointer of type 'struct ha_handler_stats'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_close ## MDEV-34782
 UBSAN|member access within null pointer of type 'struct Field'|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap|ha_spider::set_select_column_mode|ha_spider::rnd_init ## MDEV-34639
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::update_create_info|ha_partition::update_create_info|mysql_prepare_alter_table|mysql_alter_table                ## MDEV-34636
 UBSAN|member access within null pointer of type 'struct handlerton'|sql/create_options.cc|parse_engine_part_options|open_table_from_share|ha_create_table|mysql_alter_table    ## MDEV-34421

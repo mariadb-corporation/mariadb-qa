@@ -22,6 +22,7 @@ cat "${1}" | tr -d '`' | \
        s|srv \"srv\"|SRV \"srv\"|gi; \
        s|do |DO |gi; \
        s|open|OPEN|gi; \
+       s|close|CLOSE|gi; \
        s|div|DIV|gi; \
        s|rollup|ROLLUP|gi; \
        s|execute|EXECUTE|gi; \

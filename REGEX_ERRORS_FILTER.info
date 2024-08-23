@@ -65,6 +65,7 @@ Error reading packet from server: The binlog on the master is missing the GTID.*
 Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Connections using insecure transport are prohibited while ..require_secure_transport=ON. Internal MariaDB error code: 3159  Ref SPECIAL-22  (require_secure_transport)
 Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 0  MDEV-33359
 Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1045  MDEV-33359  # error.*connecting: covers error connecting and error reconnecting
+Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 1130  SPECIAL-29
 Slave I.O: Got fatal error 1236 from master when reading data from binary log.*Binary log is not open.*Internal MariaDB error code: 1236  SPECIAL-28
 Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*Internal MariaDB error code: 2003  MDEV-33359
 Slave I.O: error.*connecting to master .repl_user@127.0.0.1.*secure-auth mode.*password in the old format.*change the password to the new format, Internal MariaDB error code: 1275  MDEV-33956

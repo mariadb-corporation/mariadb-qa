@@ -21,6 +21,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1064
 MARIADB_ERROR_CODE|MariaDB error code: 1100  ## SPECIAL-11 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1104  ## SPECIAL-27 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1114  ## MDEV-23212
+MARIADB_ERROR_CODE|MariaDB error code: 1130  ## SPECIAL-29
 MARIADB_ERROR_CODE|MariaDB error code: 1146  ## SPECIAL-10 or MDEV-33376
 MARIADB_ERROR_CODE|MariaDB error code: 1168  ## SPECIAL-12 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1193
@@ -189,7 +190,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+thd->mdl_context.is_lock_owner(MDL_key::TABLE, db.str, table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse            ## MDEV-34789
 SIGSEGV|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_rm_tables                                                                          ## MDEV-34782
+SIGSEGV|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_close                                                                              ## MDEV-34782
+SIGSEGV|handler::update_global_table_stats|close_thread_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                     ## MDEV-34782
 !table || !table->in_use || table->in_use == _current_thd()|SIGABRT|handler::ha_thd|handler::ha_rnd_next|spider_db_get_row_from_tmp_tbl|spider_db_fetch_table                  ## MDEV-34769
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|spider_bg_conn_action|start_thread                                          ## MDEV-34769
 thd->status_var.tmp_space_used >= track->previous_file_size|SIGABRT|temp_file_size_cb_func|_ma_update_tmp_file_size|ha_maria::drop_table|free_tmp_table                        ## MDEV-34769
@@ -255,6 +259,9 @@ lock_trx_has_sys_table_locks(trx) == __null|SIGABRT|row_mysql_unfreeze_data_dict
 (key_part->key_part_flag & 4) == 0|SIGABRT|key_hashnr|JOIN_CACHE_HASHED::get_hash_idx_complex|JOIN_CACHE_HASHED::key_search|JOIN_CACHE_HASHED::put_record                      ## MDEV-34536
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-32864
 SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-34501
+SIGSEGV|__strlen_evex|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-34501
+SIGSEGV|pfs_start_mutex_wait_v1|inline_mysql_mutex_lock|get_current_user|sp_process_definer                                                                                    ## MDEV-34501
+SIGSEGV|my_hash_first|my_hash_search|find_acl_role|get_current_user                                                                                                            ## MDEV-34501
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-29935
 (*(map2)->last_word_ptr & (map2)->last_bit_mask) == 0|SIGABRT|bitmap_copy|TABLE::mark_columns_per_binlog_row_image|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event ## MDEV-34535
 0|SIGABRT|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event|mysql_client_binlog_statement                                                ## MDEV-34524
@@ -659,6 +666,7 @@ trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_x
 trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_commit|fix_autocommit                                                                           ## MDEV-30489
 is_started()|SIGABRT|Ha_trx_info::is_trx_read_write|ha_count_rw_2pc|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event                                             ## MDEV-28988
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_load|mysql_execute_command                                           ## MDEV-26492
+SIGSEGV|get_all_tables|get_schema_tables_result|JOIN::exec_inner|JOIN::exec                                                                                                    ## MDEV-26492
 !m_innodb|SIGABRT|ha_partition::cmp_ref|refpos_order_cmp|my_qsort2|Refpos_container_sorted_array::sort                                                                         ## MDEV-30672
 strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|convert_to_array|Item_func_json_object_to_array::val_str|Type_handler::Item_send_str                                     ## MDEV-30691
 strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|Item_func_json_key_value::get_key_value|Item_func_json_key_value::val_str|Type_handler::Item_send_str                    ## MDEV-30691

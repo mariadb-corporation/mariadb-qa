@@ -381,7 +381,7 @@ if grep -qm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/nu
   grep -lm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
 fi
 if grep -qm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null; then
-  echo '** Trials where the slave SQL thread aborted: manual verification may be needed'
+  echo '** Trials where the slave SQL thread aborted: manual reducer setup verification may be required'
   grep -lm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
 fi
 rm -f ./errorlogs.tmp
