@@ -40,12 +40,13 @@ else
   BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "${MAJOR_VERSION}" | grep "${DBG_OR_OPT}")"
 fi
 
-echo "Testing if trial ${TRIAL} bug also exists in CS BASEDIR ${BASEDIR}"
-echo "Feature BASEDIR: ${FEATURE_DIR} | Major MariaDB Ver: ${MAJOR_VERSION}"
+echo "Testing if the issue seen in trial ${TRIAL} also exists in CS BASEDIR ${BASEDIR}"
+echo "Feature BASEDIR: ${FEATURE_DIR} | Major MariaDB Ver: ${MAJOR_VERSION} | Build type: ${DBG_OR_OPT}"
 cp ./reducer${TRIAL}.sh ./base_reducer${TRIAL}.sh
 sed -i "s|${FEATURE_DIR}|${BASEDIR}|" ./base_reducer${TRIAL}.sh
 sed -i 's|^FORCE_SKIPV=[0-9]\+|FORCE_SKIPV=0|' ./base_reducer${TRIAL}.sh
 sed -i 's|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=10|' ./base_reducer${TRIAL}.sh
+sed -i 's|^MULTI_THREADS_MAX=[0-9]\+|MULTI_THREADS_MAX=40|' ./base_reducer${TRIAL}.sh
 sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=10|' ./base_reducer${TRIAL}.sh
 echo "Created ./base_reducer${TRIAL}.sh | Starting..."
 echo ''
