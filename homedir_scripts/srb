@@ -1,0 +1,34 @@
+#!/bin/bash
+PGE_LOOPS=2  # Immediately improves testcase quality after first base_reducer round. Ideal to maxout machine time. Set to 0 to disable. At least 1 recommended as it can greatly improve testcase quality
+
+if [ -z "${1}" ]; then
+  echo "Assert: please pass base_reducer/trial nr to start"
+  exit 1
+fi
+PGE=
+if [ -r "${HOME}/pge" ]; then PGE="${HOME}/pge";
+elif [ -r "${HOME}/mariadb-qa/pquery-goexp-patch.sh" ]; then PGE="${HOME}/mariadb-qa/pquery-goexp-patch.sh"; 
+fi
+if [ -z "${PGE}" -o -z "${PGE_LOOPS}" ]; then
+  echo "Assert: PGE or PGE_LOOPS is empty?"
+  exit 1
+fi
+mkdir -p ./base_reducer.logs
+if [ -r base_reducer_val${1}.sh ]; then
+  screen -admS s${1} bash -c "./base_reducer_val${1}.sh 2>&1 | tee -a ./base_reducer.logs/base_reducer_val${1}.log; for((i=1;i<=${PGE_LOOPS};i++)); do echo \"---------------- PGE Run \${i}/${PGE_LOOPS} ----------------\" | tee -a ./base_reducer.logs/base_reducer_val${1}.log; ${PGE} ${1} | tee -a ./base_reducer.logs/base_reducer_val${1}.log; done; bash"
+elif [ -r base_reducer${1}.sh ]; then
+  #screen -admS s${1} bash -c "ulimit -u 4000;./base_reducer${1}.sh;bash"
+  screen -admS s${1} bash -c "./base_reducer${1}.sh 2>&1 | tee -a ./base_reducer.logs/base_reducer${1}.log; for((i=1;i<=${PGE_LOOPS};i++)); do echo \"---------------- PGE Run \${i}/${PGE_LOOPS} ----------------\" | tee -a ./base_reducer.logs/base_reducer${1}.log; ${PGE} ${1} | tee -a ./base_reducer.logs/base_reducer${1}.log; done; bash"
+elif [ -r ${1} ]; then
+  LOGNAME="$(echo ./${1} | sed 's|\.sh|.log|')"
+  screen -admS s${1} bash -c "./${1} 2>&1 | tee -a ./base_reducer.logs/${LOGNAME}; for((i=1;i<=${PGE_LOOPS};i++)); do echo \"---------------- PGE Run \${i}/${PGE_LOOPS} ----------------\" | tee -a ./base_reducer.logs/base_reducer${1}.log; ${PGE} ${1} | tee -a ./base_reducer.logs/base_reducer${1}.log; done; bash"
+elif [ -r ${1}.base_reducer.sh ]; then
+  screen -admS s${1} bash -c "./${1}.base_reducer.sh 2>&1 | tee -a ./base_reducer.logs/${1}.base_reducer.log; for((i=1;i<=${PGE_LOOPS};i++)); do echo \"---------------- PGE Run \${i}/${PGE_LOOPS} ----------------\" | tee -a ./base_reducer.logs/base_reducer${1}.log; ${PGE} ${1} | tee -a ./base_reducer.logs/base_reducer${1}.log; done; bash"
+elif [ -r ${1}.sh ]; then
+  screen -admS s${1} bash -c "./${1}.sh 2>&1 | tee -a ./base_reducer.logs/${1}.log; for((i=1;i<=${PGE_LOOPS};i++)); do echo \"---------------- PGE Run \${i}/${PGE_LOOPS} ----------------\" | tee -a ./base_reducer.logs/base_reducer${1}.log; ${PGE} ${1} | tee -a ./base_reducer.logs/base_reducer${1}.log; done; bash"
+else
+  echo "Assert: No such base_reducer script: base_reducer${1}.sh, nor ${1}, nor ${1}.sh"
+  exit 1
+fi
+if [ "${2}" != "" ]; then screen -d -r s${1}; fi
+exit 0
