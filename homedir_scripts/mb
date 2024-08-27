@@ -46,7 +46,7 @@ cp ./reducer${TRIAL}.sh ./base_reducer${TRIAL}.sh
 sed -i "s|${FEATURE_DIR}|${BASEDIR}|" ./base_reducer${TRIAL}.sh
 sed -i 's|^FORCE_SKIPV=[0-9]\+|FORCE_SKIPV=0|' ./base_reducer${TRIAL}.sh
 sed -i 's|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=10|' ./base_reducer${TRIAL}.sh
-sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=2|' ./base_reducer${TRIAL}.sh
+sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=10|' ./base_reducer${TRIAL}.sh
 echo "Created ./base_reducer${TRIAL}.sh | Starting..."
-sleep 1
+echo ''
 ./base_reducer${TRIAL}.sh
