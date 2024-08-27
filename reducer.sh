@@ -4183,10 +4183,10 @@ verify(){
       fi
       MULTI_THREADS=$[ ${MULTI_THREADS} + ${MULTI_THREADS_INCREASE} ]
       if [ ${MULTI_THREADS} -gt ${MULTI_THREADS_MAX} ]; then  # Verify failed. Terminate.
-        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, and as the configured maximum number of threads ($MULTI_THREADS_MAX) has been reached, now terminating verification"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with ${MULTI_THREADS} threads, and as the configured maximum number of threads (${MULTI_THREADS_MAX}) has been reached, now terminating verification"
         verify_not_found
       else
-        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, now increasing number of threads to ${MULTI_THREADS} (maximum is $MULTI_THREADS_MAX)"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $[ ${MULTI_THREADS} - ${MULTI_THREADS_INCREASE} ] threads, now increasing number of threads to ${MULTI_THREADS} (maximum is ${MULTI_THREADS_MAX})"
       fi
       if [ $MULTI_THREADS -ge 35 ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: High load active. You may start seeing messages releated to server overload like:"
