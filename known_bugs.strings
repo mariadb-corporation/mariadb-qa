@@ -1,11 +1,12 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Follow the existing formatting.
 
-##### MDEV-20250 preliminary test ####
-SIGSEGV|Field::check_assignability_from|Item::check_assignability_to|TABLE::check_assignability_explicit_fields|TABLE::check_assignability_opt_fields                          ## MDEV-20250
-m_internal_handler != __null|SIGABRT|THD::pop_internal_handler|set_used_partition|Insert_prelocking_strategy::handle_end|open_tables                                           ## MDEV-20250
-marked_for_write_or_computed()|SIGABRT|Field_varstring::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record_with_mask                                   ## MDEV-20250
-s->visible_fields == values.elements|SIGABRT|TABLE::check_assignability_all_visible_fields|TABLE::check_assignability_opt_fields|mysql_insert|mysql_execute_command            ## MDEV-20250
-SIGSEGV|TABLE::check_assignability_all_visible_fields|TABLE::check_assignability_opt_fields|mysql_insert|mysql_execute_command                                                 ## MDEV-20250
+##### MDEV-34780 preliminary test ####
+#SIGSEGV|Field::check_assignability_from|Item::check_assignability_to|TABLE::check_assignability_explicit_fields|TABLE::check_assignability_opt_fields                          ## MDEV-34780
+#m_internal_handler != __null|SIGABRT|THD::pop_internal_handler|set_used_partition|Insert_prelocking_strategy::handle_end|open_tables                                           ## MDEV-34780
+#marked_for_write_or_computed()|SIGABRT|Field_varstring::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record_with_mask                                   ## MDEV-34780
+#s->visible_fields == values.elements|SIGABRT|TABLE::check_assignability_all_visible_fields|TABLE::check_assignability_opt_fields|mysql_insert|mysql_execute_command            ## MDEV-34780
+#SIGSEGV|TABLE::check_assignability_all_visible_fields|TABLE::check_assignability_opt_fields|mysql_insert|mysql_execute_command                                                 ## MDEV-34780
+#marked_for_write_or_computed()|SIGABRT|Field_long::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record_with_mask                                        ## MDEV-34780
 
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
@@ -190,6 +191,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_prepare|trans_xa_prepare                                                                        ## MDEV-34810
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, db.str, table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse            ## MDEV-34789
 SIGSEGV|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_rm_tables                                                                          ## MDEV-34782
 SIGSEGV|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_close                                                                              ## MDEV-34782
@@ -201,6 +203,8 @@ typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_hex_hybrid::do_build_
 item->type() == Item::FIELD_ITEM || (item->type() == Item::REF_ITEM && ((Item_ref *) item)->ref_type() == Item_ref::VIEW_REF)|SIGABRT|find_producing_item|Item_field::derived_field_transformer_for_where|Item_default_value::transform|Item_args::transform_args ## MDEV-31007
 block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                               ## MDEV-34736
 block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                              ## MDEV-34736
+block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|mi_init_bulk_insert                                                                          ## MDEV-34736
+block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|mi_init_bulk_insert                                                                         ## MDEV-34736
 len > alloc_length|SIGABRT|Binary_string::realloc_raw|Binary_string::realloc|Binary_string::reserve|spider_string::reserve                                                     ## MDEV-34735
 SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                                   ## MDEV-34735
 client_state_.mode() == wsrep::client_state::m_local|SIGABRT|wsrep::transaction::after_statement|wsrep::transaction::after_statement|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service ## MDEV-34761
@@ -263,6 +267,7 @@ SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ReportIncompatibleRT|__asan:
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_sql_stmt_prepare|mysql_execute_command                               ## MDEV-34402
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|sp_head::show_routine_code|mysql_execute_command                        ## MDEV-34401
 SIGSEGV|GetDefaultPrec|Serialize|MakeResult|json_array_add                                                                                                                     ## MDEV-34400
+SIGSEGV|JSON::GetType|JVALUE::GetValType|MakeTypedValue|json_array_add                                                                                                         ## MDEV-34400
 (buff[7] & 7) == HEAD_PAGE || (buff[7] & 7) == UNALLOCATED_PAGE|SIGABRT|_ma_read_block_record|maria_rrnd|ha_maria::rnd_pos|handler::ha_rnd_pos                                 ## MDEV-34306
 is_valid_ident(*this)|SIGABRT|Lex_ident_fs::streq|get_table_category|wsrep_tables_accessible_when_detached|mysql_execute_command                                               ## MDEV-34281
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-34344

@@ -1,0 +1,52 @@
+#!/bin/bash
+# Created by Roel Van de Paar, MariaDB
+
+if [ -z "${1}" ]; then
+  echo 'Please pass the trial number for which you want to make a base_reducer.sh script'
+  exit 1
+elif [ ! -d "./${1}" ]; then
+  echo "Assert: trial [directory] './${1}' does not exist, please pass the trial number for which you want to make a base_reducer.sh script"
+  exit 1
+elif [ ! -r "./reducer${1}.sh" ]; then
+  echo "Assert: no ./reducer${1}.sh exists, please pass a trial number (only) for which a reducer.sh script already exists (run ~/pg ?)"
+  exit 1
+else
+  TRIAL="${1}"
+fi
+
+FEATURE_DIR="$(grep '^BASEDIR=' ./reducer${TRIAL}.sh | head -n1 | grep -o '/test/[^"]\+')"
+if [ -z "${FEATURE_DIR}" ]; then
+  echo "Assert: could not determine the feature base directory from ./reducer${TRIAL}.sh"
+  exit 1
+fi
+MAJOR_VERSION="$(echo "${FEATURE_DIR}" | grep -o '1[0-9]\.[0-9]\+\.[0-9]\+' | grep -o '1[0-9]\.[0-9]\+')"
+if [ -z "${MAJOR_VERSION}" ]; then
+  echo "Assert: could not determine the major MariaDB version number from the feature base directory name: '${FEATURE_DIR}'"
+  exit 1
+fi
+DBG_OR_OPT="$(echo "${FEATURE_DIR}" | grep -o '\-[do][bp][gt]' | grep -o '[a-z]\+')"
+if [ "${DBG_OR_OPT}" != "dbg" -a "${DBG_OR_OPT}" != "opt" ]; then
+  echo "Assert: could not determine build type (dbg or opt) from the feature base directory name: '${FEATURE_DIR}'"
+  exit 1
+fi
+if [ ! -r /test/gendirs.sh ]; then
+  echo "Assert: /test/gendirs.sh does not exist"
+  exit 1
+fi
+if [ "$(cd /test; ./gendirs.sh | grep "${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | wc -l)" -ne 1 ]; then
+  echo "Assert: ./gendirs.sh returned multiple results when grepping for major version '${MAJOR_VERSION}' and build type '${DBG_OR_OPT}'"
+  exit 1
+else
+  BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "${MAJOR_VERSION}" | grep "${DBG_OR_OPT}")"
+fi
+
+echo "Testing if trial ${TRIAL} bug also exists in CS BASEDIR ${BASEDIR}"
+echo "Feature BASEDIR: ${FEATURE_DIR} | Major MariaDB Ver: ${MAJOR_VERSION}"
+cp ./reducer${TRIAL}.sh ./base_reducer${TRIAL}.sh
+sed -i "s|${FEATURE_DIR}|${BASEDIR}|" ./base_reducer${TRIAL}.sh
+sed -i 's|^FORCE_SKIPV=[0-9]\+|FORCE_SKIPV=0|' ./base_reducer${TRIAL}.sh
+sed -i 's|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=10|' ./base_reducer${TRIAL}.sh
+sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=2|' ./base_reducer${TRIAL}.sh
+echo "Created ./base_reducer${TRIAL}.sh | Starting..."
+sleep 1
+./base_reducer${TRIAL}.sh
