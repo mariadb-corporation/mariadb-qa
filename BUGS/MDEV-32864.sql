@@ -5,14 +5,6 @@ create table t1 (c int) ENGINE=Spider COMMENT='WRAPPER "mysql", srv "srv",TABLE 
 show table status like "t1";
 shutdown;
 
-SET sql_mode='';
-INSTALL PLUGIN Spider SONAME 'ha_spider.so';
-CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE'',USER'',PASSWORD'');
-CREATE TABLE tm (c INT KEY,c1 BLOB,c2 TEXT) ENGINE=InnoDB;
-CREATE TABLE t2 (c INT KEY,c1 BLOB,c2 TEXT) ENGINE=Spider COMMENT='WRAPPER "mysql",SRV "srv",TABLE "tm"';
-LOCK TABLE t2 READ;
-SHUTDOWN;
-
 INSTALL PLUGIN Spider SONAME 'ha_spider.so';
 CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE'',USER'',PASSWORD'');
 SET GLOBAL wait_timeout=True;

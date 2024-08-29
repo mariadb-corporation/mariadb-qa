@@ -49,7 +49,7 @@ sed -i 's|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=10|' ./base_reducer${TRIAL}.sh
 sed -i 's|^MULTI_THREADS_MAX=[0-9]\+|MULTI_THREADS_MAX=40|' ./base_reducer${TRIAL}.sh
 sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=10|' ./base_reducer${TRIAL}.sh
 cp ./base_reducer${TRIAL}.sh ./feature_reducer${TRIAL}.sh
-sed -i "s|${BASEDIR}|${FEATURE_DIR}|" ./base_reducer${TRIAL}.sh
+sed -i "s|${BASEDIR}|${FEATURE_DIR}|" ./feature_reducer${TRIAL}.sh
 echo "Created ./base_reducer${TRIAL}.sh | Starting..."
 echo ''
 ./base_reducer${TRIAL}.sh

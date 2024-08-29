@@ -1,10 +1,11 @@
 DROP.*DATABASE.*test
 SHUTDOWN
-SET @@global.wsrep_cluster_address=AUTO
 SET.*GLOBAL.*wsrep_cluster_address
 RENAME.*TABLE.*mysql\.
 ALTER.*TABLE.*mysql\.
 DROP.*TABLE.*mysql\.
-SET.*key_buffer_size.*18446744073709547520
-SET.*key_buffer_size.*000000000000
-SET.*net_retry_count.*429496729500
+SET.*key_buffer_size.*[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]
+SET.*net_retry_count.*[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]
+SET.*innodb_flush_log_at_timeout.*[0-9][0-9][0-9]
+SET.*innodb_flush_log_at_timeout.*[5-9][0-9]
+INSERT.*corrupted.*VALUE

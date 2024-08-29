@@ -205,6 +205,8 @@ block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tre
 block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|Unique::Unique                                                                              ## MDEV-34736
 block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|mi_init_bulk_insert                                                                          ## MDEV-34736
 block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|mi_init_bulk_insert                                                                         ## MDEV-34736
+block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|maria_init_bulk_insert                                                                       ## MDEV-34736
+block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|maria_init_bulk_insert                                                                      ## MDEV-34736
 len > alloc_length|SIGABRT|Binary_string::realloc_raw|Binary_string::realloc|Binary_string::reserve|spider_string::reserve                                                     ## MDEV-34735
 SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                                   ## MDEV-34735
 client_state_.mode() == wsrep::client_state::m_local|SIGABRT|wsrep::transaction::after_statement|wsrep::transaction::after_statement|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service ## MDEV-34761
