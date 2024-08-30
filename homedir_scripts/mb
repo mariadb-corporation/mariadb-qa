@@ -34,10 +34,15 @@ if [ ! -r /test/gendirs.sh ]; then
   exit 1
 fi
 if [ "$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | wc -l)" -ne 1 ]; then
-  echo "Assert: ./gendirs.sh returned multiple results when grepping for major version '${MAJOR_VERSION}' and build type '${DBG_OR_OPT}'"
+  echo "Warning: ./gendirs.sh returned multiple results when grepping for major version '${MAJOR_VERSION}' and build type '${DBG_OR_OPT}'"
+fi
+BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | sort -h | tac | head -n1)"
+if [ -z "${BASEDIR}" ]; then
+  echo "Assert: BASEDIR variable empty after running gendirs.sh"
   exit 1
-else
-  BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}")"
+elif [ ! -d "${BASEDIR}" ]; then
+  echo "Assert: BASEDIR set to '${BASEDIR}' yet this is not a directory"
+  exit 1
 fi
 
 cp ./reducer${TRIAL}.sh ./base_reducer${TRIAL}.sh
@@ -50,11 +55,11 @@ cp ./base_reducer${TRIAL}.sh ./feature_reducer${TRIAL}.sh
 sed -i "s|${BASEDIR}|${FEATURE_DIR}|" ./feature_reducer${TRIAL}.sh
 TEXT="$(grep '^   TEXT=' reducer${TRIAL}.sh | head -n1 | sed 's|^   TEXT="||;s|"[ \t]*$||')"
 if [ ! -z "${TEXT}" ]; then
-  echo "grep -F \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/MYBUG | sed 's|MYBUG:|MYBUG: |'" > ./find${TRIAL}.sh
+  echo "grep -Fi --binary-files=text \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/MYBUG | sed 's|MYBUG:|MYBUG: |'" > ./find${TRIAL}.sh
   chmod +x find${TRIAL}.sh
 fi
 if [ "${2}" == "NOSTART" ]; then  # pg automation
-  echo "[async mb thread] Created ./base_reducer${TRIAL}.sh, ./feature_reducer${TRIAL}.sh and ./find${TRIAL}.sh"
+  echo "[async upd thread][mb] Created ./base_reducer${TRIAL}.sh, ./feature_reducer${TRIAL}.sh and ./find${TRIAL}.sh"
 else
   echo "Testing if the issue seen in trial ${TRIAL} also exists in CS BASEDIR ${BASEDIR}"
   echo "Feature BASEDIR: ${FEATURE_DIR} | Major MariaDB Ver: ${MAJOR_VERSION} | Build type: ${DBG_OR_OPT}"

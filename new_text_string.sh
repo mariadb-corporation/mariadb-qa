@@ -283,6 +283,13 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MARKEDASCRASHED=
+  INNODBERROR="$(grep -hio 'ERROR. InnoDB.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|ERROR. InnoDB[: ]*||' | sed 's|table.*index.*stat[^:]\+:|table.*index.*stat.*|')"
+  if [ ! -z "${INNODBERROR}" ]; then
+    TEXT="INNODB_ERROR|${INNODBERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  INNODBERROR=
   MDERRORCODE="$(grep -hio 'MariaDB error code: [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
   if [ ! -z "${MDERRORCODE}" ]; then
     TEXT="MARIADB_ERROR_CODE|${MDERRORCODE}"

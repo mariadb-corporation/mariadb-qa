@@ -335,6 +335,7 @@ cat "${1}" | tr -d '`' | \
        s|rand|RAND|gi; \
        s|seed|SEED|gi; \
        s|rowid|ROWID|gi; \
+       s|serializable|SERIALIZABLE|gi; \
        s|tablespace|TABLESPACE|gi; \
        s|discard|DISCARD|gi; \
        s|fts_doc_id|FTS_DOC_ID|gi; \

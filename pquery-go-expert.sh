@@ -117,6 +117,7 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
             TERRIBLY_OFFSET=;SHUTDOWN_OFFSET=
           fi
           echo '#DONEDONE' >> ${REDUCER}
+          echo "[async upd thread] Updated ${REDUCER}"
           # Next, we run mb (make base reducer etc.) for the trial - ref info in the header of this script
           if [ -x ${HOME}/mb ]; then
             ${HOME}/mb ${TRIAL} NOSTART
