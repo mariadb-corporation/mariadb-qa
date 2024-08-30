@@ -52,7 +52,7 @@ cp ./base_reducer${TRIAL}.sh ./feature_reducer${TRIAL}.sh
 sed -i "s|${BASEDIR}|${FEATURE_DIR}|" ./feature_reducer${TRIAL}.sh
 TEXT="$(grep '^   TEXT=' reducer3604.sh | head -n1 | sed 's|^   TEXT="||;s|"[ \t]*$||')"
 if [ ! -z "${TEXT}" ]; then
-  echo "grep -F \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/MYBUG" > ./find${TRIAL}.sh
+  echo "grep -F \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/MYBUG | sed 's|MYBUG:|MYBUG: |'" > ./find${TRIAL}.sh
   chmod +x find${TRIAL}.sh
 fi
 echo "Created ./base_reducer${TRIAL}.sh, ./feature_reducer${TRIAL}.sh and ./find${TRIAL}.sh | Starting ./base_reducer${TRIAL}.sh..."

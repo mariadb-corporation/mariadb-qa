@@ -1,5 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
+# Updated by Roel Van de Paar, MariaDB
+
 # You can start this script from within a pquery working directory, and it will - every 10 minutes - prepare reducer's, cleanup known issues, and display the results of the
 # current run. Recommended to run this inside a screen session (alike to pquery-run.sh running in a screen session), so that your hdd/ssd does not run out of space, and so
 # reducer scripts are ready when needed. This script furthermore modifies some more expert reducer.sh settings which aid in mass-bug handling, though they require some more
@@ -11,6 +13,8 @@
 # MULTI_THREADS_MAX is set to 9
 # STAGE1_LINES is set to 13  # This was previously 13, which is better for stable systems, as it will allow reducer to continue towards auto pquery-go-expert.sh. Auto-ge (i.e. all other stages after stage 1, as can also be set/done by calling ~/ge) is good for non-sporadic issues as it will drop any uncessary lines after stage 1 in stage 2. However, it is not good for sporadic issues as this will leave regularly 5-10 lines in the testcase which are not needed, requiring one to lower the number of STAGE1_LINES and re-running reducer. The tradeoff however is that one needs to be more diligent in checking runs and regularly CTRL+C > ~/ge for trials which have reduced to a large number of lines. To reach some 'ideal' tradeoff between the two, for the moment 5 was chosen. Updated to 7 on 25/9/21 to better cater for tests which exactly require 5 lines. This will still require some trials (i.e. the non-sporadic ones) to be CTRL+C > ~/ge'd, and some trials (the sporadic ones) where STAGE1_LINES needs to be set lower. Ideally, at some point, an auto-restart-reducers script may be best where FORCE_SKIPV is tested and changes are made based on the result. Thinking about it, it may be better to include this functionality in reducer itself. The risk is that the issue does not reproduce even on 50 threads (auto-increased). To counter this, another type of STAGE V may be implemented; one which executes the testcase up to 10000 times. This is slow however, and then perhas the current system is best; rely on the skill of the engineer to see difference between sporadic/non-sporadic.
 # INPUTFILE is auto-optimized towards latest sql trace inc _out* handling
+# homedir_scripts/mb is called to create base_reducer{trialnr}.sh, feature_reducer{trialnr}.sh and find{trialnr} scripts
+# In short, these scripts; 1) allow verification if the bug is in a base BASEDIR is present also, 2) allow quick re-verification against the feature BASEDIR itself, 3) find if the same bug is present in other /data workdirs
 # The effect of FORCE_SKIPV=1 is that reducer will skip the verify stage, start reduction immediately, using 3 threads (MULTI_THREADS=3), and never increases the set amount of
 # threads (result of using FORCE_SKIPV=1). Note that MULTI_THREADS_INCREASE is only relevant for non-FORCE_SKIPV runs, more on why this is changed then below.
 # In short, the big benefit of making these settings is that (assuming you are doing a standard single (client) threaded run) you can easily start 10-20 reducers, as each of
@@ -93,8 +97,8 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
             sed -i 's|^INPUTFILE="\([^"]\+\)"|INPUTFILE="$(ls --color=never -s \1* \| grep --binary-files=text -vE "backup\|failing\|prev" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\+\|\|\")"|' ${REDUCER}
           fi
           # Next, we consider if we will set FORCE_KILL=1 by doing many checks to see if it makes sense
+          TRIAL="$(echo ${REDUCER} | grep -o '[0-9]\+')"
           if grep --binary-files=text -qiE "^MODE=3|^MODE=4" ${REDUCER}; then  # Mode 3 or 4 (and not 0)
-            TRIAL="$(echo ${REDUCER} | grep -o '[0-9]\+')"
             if [ ! -r "./${TRIAL}/AVOID_FORCE_KILL" ]; then  # Not flagged by pquery-prep-red.sh as a trial for which AVOID_FORCE_KILL should be avoided (i.e. likely a trial for which SHUTDOWN_TIMEOUT_ISSUE was previously found/set and which also had a core dump present - i.e. actual shutdown and wait IS required to reduce towards the core dump issue seen; thus FORCE_KILL should not be set)
               if [ -z "$(tail -n1 ${TRIAL}/log/*.err ${TRIAL}/node*/node*.err 2>/dev/null | grep --binary-files=text -E 'invalid|alloc|free|corruption|corrupted')" ]; then  # Ensure that the last line of the log is not a memory corruption like "malloc(): , double free or corruption, free(): , Warning: Memory not freed" or similar (i.e. the result of the tail/grep is empty and -z "" the test will proceed with then clause) in which case we do NOT want to set FORCE_KILL=1 as that would prevent such a message which is seen on/after server shutdown.
                 if [ ! -r "./${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE" ]; then  # Not a shutdown timeout issue
@@ -110,9 +114,16 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
                 fi
               fi
             fi
-            TRIAL=;TERRIBLY_OFFSET=;SHUTDOWN_OFFSET=
+            TERRIBLY_OFFSET=;SHUTDOWN_OFFSET=
           fi
           echo '#DONEDONE' >> ${REDUCER}
+          # Next, we run mb (make base reducer etc.) for the trial - ref info in the header of this script
+          if [ -x ${HOME}/mb ]; then
+            ${HOME}/mb ${TRIAL}
+          elif [ -x ${SCRIPT_PWD}/homedir_scripts/mb ]; then
+            ${SCRIPT_PWD}/homedir_scripts/mb ${TRIAL}
+          fi
+          TRIAL=
         fi
       fi
     done
@@ -139,8 +150,8 @@ while(true); do                                     # Main loop
   if [ $(ls --color=never */*.sql 2>/dev/null | wc -l) -gt 0 ]; then  # If trials with SQL are available
     background_sed_loop &                           # Start background_sed_loop in a background thread, it will patch reducer<nr>.sh scripts and, before doing so, remove MYBUG when ERROR_LOG_SCAN_ISSUE is found and MYBUG contains the 'no core, no fallback string' text
     PID=$!                                          # Capture the PID of the background_sed_loop so we can kill -9 it once pquery-prep-red.sh is complete
-    ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE | sed 's|/SHUTDOWN_TIMEOUT_ISSUE|/data*/core|' | xargs -I{} echo "ls --color=never {} 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*|/SHUTDOWN_TIMEOUT_ISSUE|' | xargs -I{} rm {}  # Prevent trials which have core files from being marked as SHUTDOWN HANG/TIMEOUT isues and thus possibly being eliminated later [*] by deleting SHUTDOWN_TIMEOUT_ISSUE
-    ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE | sed 's|/SHUTDOWN_TIMEOUT_ISSUE|/MYBUG|' | xargs -I{} echo "grep -iEl 'SAN|ERROR|MUTEX|MEMORY|SIG|MARKED|ERRNO' {} 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*|/SHUTDOWN_TIMEOUT_ISSUE|' | xargs -I{} rm {}  # Idem, for trials which have detected *SAN bugs or other error log errors  (ref new_text_string.sh). Note this still excludes 'Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output' (in MYBUG contents) trials, which can be deleted if they are known shutdown hang/timeout issues
+    ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/SHUTDOWN_TIMEOUT_ISSUE|/data*/core|' | xargs -I{} echo "ls --color=never {} 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*|/SHUTDOWN_TIMEOUT_ISSUE|' | xargs -I{} rm {}  # Prevent trials which have core files from being marked as SHUTDOWN HANG/TIMEOUT isues and thus possibly being eliminated later [*] by deleting SHUTDOWN_TIMEOUT_ISSUE
+    ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/SHUTDOWN_TIMEOUT_ISSUE|/MYBUG|' | xargs -I{} echo "grep -iEl 'SAN|ERROR|MUTEX|MEMORY|SIG|MARKED|ERRNO' {} 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*|/SHUTDOWN_TIMEOUT_ISSUE|' | xargs -I{} rm {}  # Idem, for trials which have detected *SAN bugs or other error log errors  (ref new_text_string.sh). Note this still excludes 'Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output' (in MYBUG contents) trials, which can be deleted if they are known shutdown hang/timeout issues
     ${SCRIPT_PWD}/pquery-prep-red.sh                # Execute pquery-prep.red generating reducer<nr>.sh scripts, auto-updated by the background thread
     echo -e "\nCleaning up known issues..."
     ${SCRIPT_PWD}/pquery-clean-known.sh             # Clean known issues
