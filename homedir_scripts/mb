@@ -33,15 +33,13 @@ if [ ! -r /test/gendirs.sh ]; then
   echo "Assert: /test/gendirs.sh does not exist"
   exit 1
 fi
-if [ "$(cd /test; ./gendirs.sh | grep "${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | wc -l)" -ne 1 ]; then
+if [ "$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | wc -l)" -ne 1 ]; then
   echo "Assert: ./gendirs.sh returned multiple results when grepping for major version '${MAJOR_VERSION}' and build type '${DBG_OR_OPT}'"
   exit 1
 else
-  BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "${MAJOR_VERSION}" | grep "${DBG_OR_OPT}")"
+  BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}")"
 fi
 
-echo "Testing if the issue seen in trial ${TRIAL} also exists in CS BASEDIR ${BASEDIR}"
-echo "Feature BASEDIR: ${FEATURE_DIR} | Major MariaDB Ver: ${MAJOR_VERSION} | Build type: ${DBG_OR_OPT}"
 cp ./reducer${TRIAL}.sh ./base_reducer${TRIAL}.sh
 sed -i "s|${FEATURE_DIR}|${BASEDIR}|" ./base_reducer${TRIAL}.sh
 sed -i 's|^FORCE_SKIPV=[0-9]\+|FORCE_SKIPV=0|' ./base_reducer${TRIAL}.sh
@@ -50,12 +48,16 @@ sed -i 's|^MULTI_THREADS_MAX=[0-9]\+|MULTI_THREADS_MAX=40|' ./base_reducer${TRIA
 sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=10|' ./base_reducer${TRIAL}.sh
 cp ./base_reducer${TRIAL}.sh ./feature_reducer${TRIAL}.sh
 sed -i "s|${BASEDIR}|${FEATURE_DIR}|" ./feature_reducer${TRIAL}.sh
-TEXT="$(grep '^   TEXT=' reducer3604.sh | head -n1 | sed 's|^   TEXT="||;s|"[ \t]*$||')"
+TEXT="$(grep '^   TEXT=' reducer${TRIAL}.sh | head -n1 | sed 's|^   TEXT="||;s|"[ \t]*$||')"
 if [ ! -z "${TEXT}" ]; then
   echo "grep -F \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/MYBUG | sed 's|MYBUG:|MYBUG: |'" > ./find${TRIAL}.sh
   chmod +x find${TRIAL}.sh
 fi
-if [ "${2}" != "NOSTART" ]; then 
+if [ "${2}" == "NOSTART" ]; then  # pg automation
+  echo "[async mb thread] Created ./base_reducer${TRIAL}.sh, ./feature_reducer${TRIAL}.sh and ./find${TRIAL}.sh"
+else
+  echo "Testing if the issue seen in trial ${TRIAL} also exists in CS BASEDIR ${BASEDIR}"
+  echo "Feature BASEDIR: ${FEATURE_DIR} | Major MariaDB Ver: ${MAJOR_VERSION} | Build type: ${DBG_OR_OPT}"
   echo "Created ./base_reducer${TRIAL}.sh, ./feature_reducer${TRIAL}.sh and ./find${TRIAL}.sh | Starting ./base_reducer${TRIAL}.sh..."
   echo ''
   ./base_reducer${TRIAL}.sh
