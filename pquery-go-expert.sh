@@ -119,9 +119,9 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
           echo '#DONEDONE' >> ${REDUCER}
           # Next, we run mb (make base reducer etc.) for the trial - ref info in the header of this script
           if [ -x ${HOME}/mb ]; then
-            ${HOME}/mb ${TRIAL}
+            ${HOME}/mb ${TRIAL} NOSTART
           elif [ -x ${SCRIPT_PWD}/homedir_scripts/mb ]; then
-            ${SCRIPT_PWD}/homedir_scripts/mb ${TRIAL}
+            ${SCRIPT_PWD}/homedir_scripts/mb ${TRIAL} NOSTART
           fi
           TRIAL=
         fi

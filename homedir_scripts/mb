@@ -55,6 +55,8 @@ if [ ! -z "${TEXT}" ]; then
   echo "grep -F \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/MYBUG | sed 's|MYBUG:|MYBUG: |'" > ./find${TRIAL}.sh
   chmod +x find${TRIAL}.sh
 fi
-echo "Created ./base_reducer${TRIAL}.sh, ./feature_reducer${TRIAL}.sh and ./find${TRIAL}.sh | Starting ./base_reducer${TRIAL}.sh..."
-echo ''
-./base_reducer${TRIAL}.sh
+if [ "${2}" != "NOSTART" ]; then 
+  echo "Created ./base_reducer${TRIAL}.sh, ./feature_reducer${TRIAL}.sh and ./find${TRIAL}.sh | Starting ./base_reducer${TRIAL}.sh..."
+  echo ''
+  ./base_reducer${TRIAL}.sh
+fi
