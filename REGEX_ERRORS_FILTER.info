@@ -216,6 +216,8 @@ Operating system error number 36 in a file operation  MDEV-19849 (file name too 
 Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
 ERROR.*InnoDB.*RENAME.*is ref.*foreign.*not compatible.*new table def  MDEV-33284
 ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussion (ref email thread 'Discuss')
+ERROR.*InnoDB.*Cannot save index statistics for table.*index.*stat.*: Lock wait timeout  MDEV-32667
+ERROR.*InnoDB.*Cannot save table statistics for table.*: Lock wait timeout  MDEV-32667
 Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
 ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussion (ref email thread 'Discuss')
 Slave SQL: Could not.*Write_rows_v1 event on table.*Cannot add or update a child row: a foreign key constraint fails.*Error_code: 1452.*HA_ERR_NO_REFERENCED_ROW  MDEV-33378

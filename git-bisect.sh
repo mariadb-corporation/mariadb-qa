@@ -4,22 +4,22 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=11.6                                                        # Use the earliest major version affected by the bug
+VERSION=10.5                                                        # Use the earliest major version affected by the bug
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
-DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
+DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
-LAST_KNOWN_GOOD_COMMIT='29e9ade269d803b6823ec57808e0b7fad28baf9e'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='d83742622dd1bece3f6a3a11ac0be64de0f3ff84'   # Revision of first known bad commit
-TESTCASE='/test/in15.sql'                                           # The testcase to be tested
+LAST_KNOWN_GOOD_COMMIT='b06ac9a8cd2146e89270cc2150d306d8ed1b33fb'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='362c0950e8999a88f5866fc7361e10615364e4a3'   # Revision of first known bad commit
+TESTCASE='/test/in16.sql'                                           # The testcase to be tested
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID='SIGSEGV|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_rm_tables'                                                         # The UniqueID to scan for [Exclusive]
+UNIQUEID='INNODB_ERROR|Cannot save index statistics for table.*index.*stat.*: Lock wait timeout'                                                         # The UniqueID to scan for [Exclusive]
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead

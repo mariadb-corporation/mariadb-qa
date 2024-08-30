@@ -41,7 +41,7 @@ cleanup(){
   if [ ${CONFLICT} -eq 1 ]; then
     echo "Assert: the known bug list filter file (${STRING_FILE}) contains a merge conflict!"
     echo "Not continuing as doing so may incorrectly delete various trials which should not be deleted"
-    echo "Please scan the file for '<<<<<<<', '=======', and '>>>>>>>' strings"
+    echo "Please search the file for '<<<<<<<', '=======', and '>>>>>>>' strings"
     exit 1
   fi
 
