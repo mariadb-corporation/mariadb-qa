@@ -40,7 +40,7 @@ fi
 
 # Partial code duplication with homedir_scripts/myver
 SVR=''  # ES,CS,MS
-if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep "BASEDIR" ./start | grep -o 'EMD' | head -n1)" == "EMD" ]; then
+if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep --binary-files=text "BASEDIR" ./start 2>/dev/null | grep -o 'EMD' | head -n1)" == "EMD" ]; then
   SERVER_VERSION="$(${BIN}  --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]-MariaDB' | sed 's|-MariaDB||')"
   SVR='ES'
 else
