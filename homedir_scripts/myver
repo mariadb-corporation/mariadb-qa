@@ -7,47 +7,59 @@
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
-MYSQLD=
+BIN=
 if [ -r ./bin/mariadbd -a ! -d ./bin/mariadbd ]; then
-  MYSQLD="./bin/mariadbd"
+  BIN="./bin/mariadbd"
 elif [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
-  MYSQLD="./bin/mysqld"
-elif [ -r ./mariadbd ]; then  # Ported from previous version of myver script
-  MYSQLD="./mariadbd"
-elif [ -r ./mysqld ]; then  # Ported from previous version of myver script
-  MYSQLD="./mysqld"
-elif [ -r ../bin/mariadbd ]; then  # Handy when myver is being executed from the mysql-test dir
-  MYSQLD="../bin/mariadbd"
-elif [ -r ../bin/mysqld ]; then  # Handy when myver is being executed from the mysql-test dir
-  MYSQLD="../bin/mysqld"
+  BIN="./bin/mysqld"
+elif [ -r ./mariadbd -a ! -d ./mariadbd ]; then  # Ported from previous version of myver script
+  BIN="./mariadbd"
+elif [ -r ./mysqld -a ! -d ./mysqld ]; then  # Ported from previous version of myver script
+  BIN="./mysqld"
+elif [ -r ./mysqld/mariadbd -a ! -d ./mysqld/mariadbd ]; then  # Exec from within workdir root
+  BIN="./mysqld/mariadbd"
+elif [ -r ./mysqld/mysqld -a ! -d ./mysqld/mysqld ]; then  # Exec from within workdir root
+  BIN="./mysqld/mysqld"
+elif [ -r ../bin/mariadbd -a ! -d ../bin/mariadbd ]; then  # Handy when myver is being executed from the mysql-test dir
+  BIN="../bin/mariadbd"
+elif [ -r ../bin/mysqld -a ! -d ../bin/mysqld ]; then  # Handy when myver is being executed from the mysql-test dir
+  BIN="../bin/mysqld"
 elif [ -r ../mariadbd -a ! -d ../mariadbd ]; then  # Not currently used, but provisioned alike to ~/t
-  MYSQLD="../mariadbd"
+  BIN="../mariadbd"
 elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Not currently used, but provisioned alike to ~/t
-  MYSQLD="../mysqld"
+  BIN="../mysqld"
 elif [ -r ../mysqld/mariadbd -a ! -d ../mysqld/mariadbd ]; then  # For direct use inside trial directories
-  MYSQLD="../mysqld/mariadbd"
+  BIN="../mysqld/mariadbd"
 elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
-  MYSQLD="../mysqld/mysqld"
+  BIN="../mysqld/mysqld"
 elif [ -r ./log/master.err ]; then
-  POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-  if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
-    MYSQLD="${POTENTIAL_MYSQLD}"
+  POTENTIAL_BIN="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -f ${POTENTIAL_BIN} -a -r ${POTENTIAL_BIN} ]; then
+    BIN="${POTENTIAL_BIN}"
   fi
 elif [ -r ./node1/node1.err ]; then
-  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-  if [ -f ${POTENTIAL_MYSQLD} -a -r ${POTENTIAL_MYSQLD} ]; then
-    MYSQLD="${POTENTIAL_MYSQLD}"
+  POTENTIAL_BIN="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -f ${POTENTIAL_BIN} -a -r ${POTENTIAL_BIN} ]; then
+    BIN="${POTENTIAL_BIN}"
   fi
 fi
-if [ -z "${MYSQLD}" ]; then
+if [ -z "${BIN}" ]; then
   echo "Assert: mysqld not found at ./bin/mysqld, nor ../mysqld, nor ../mysqld/mysqld nor other potential mysqld's extracted from any logs at ./log/master.err or ./node1/node1.err"
   exit 1
 else
   SOURCE_CODE_REV="$(${SCRIPT_PWD}/../source_code_rev.sh)"
-  # For EMD, if the version is for example '11.4.2-1', it is simplified to '11.4.2' by the first sed below
-  SERVER_VERSION="$(${MYSQLD} --version | sed 's|\-[0-9]\-|-|' | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
+  # Partial code duplication with stack.sh
+  SVR=''  # ES,CS,MS
+  if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep "BASEDIR" ./start | grep -o 'EMD' | head -n1)" == "EMD" ]; then
+    SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]-MariaDB' | sed 's|-MariaDB||')"
+    SVR='ES'
+  else
+    SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
+    SVR='CS'
+  fi
   if [ -z "${SERVER_VERSION}" ]; then  # Likely MS
     SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
+    SVR='MS'
   fi
   # mysql-testi, bin etc. can always be filtered
   DIRFILTER='s|/mysql-test$||;s|/mariadb-test$||;s|/bin$||'
@@ -68,7 +80,24 @@ else
       if [ -z "${SAN}" ]; then BUILD_TYPE=" (Debug)"; else BUILD_TYPE=" (Debug, ${SAN})"; fi
     fi
   fi
-  echo "{noformat:title=${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
+  # Partial code duplication with stack.sh
+  MDG=0
+  if [ ! -z "$(ls --color=never ./node*/node*.err 2>/dev/null)" ]; then
+    MDG=1
+  fi
+  if [ "${LAST_THREE}" != "dbg" -a "${LAST_THREE}" != "opt" ]; then  # in-trial myver call
+    if [ "${MDG}" -eq 1 ]; then 
+      LAST_THREE="$(grep --binary-files=text -Eoh "\-dbg|\-opt" ./node*/node*.err 2>/dev/null | head -n1 | sed 's|\-||')"
+    else
+      LAST_THREE="$(grep --binary-files=text -Eoh "\-dbg|\-opt" ./log/master.err ./var/log/mysqld.*.err 2>/dev/null | head -n1 | sed 's|\-||')"
+    fi
+  fi
+  if [ "${LAST_THREE}" != "dbg" -a "${LAST_THREE}" != "opt" ]; then  # in-trial myver call for ES
+    LAST_THREE="$(grep --binary-files=text -oh "BASEDIR.*\-[do][bp][gt]" start 2>/dev/null | grep --binary-files=text -Eoh "\-dbg|\-opt" | head -n1 | sed 's|\-||')"
+  fi
+  if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
+  if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
+  echo "{noformat:title=${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
   echo ""
   echo "{noformat}"
 fi

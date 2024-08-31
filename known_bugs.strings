@@ -114,8 +114,6 @@ GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spi
 GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or SPECIAL-24 / MDEV-33291, or presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
 INNODB_ERROR|Cannot save index statistics for table.*index.*stat.*: Lock wait timeout  ## MDEV-32667
 INNODB_ERROR|Cannot save table statistics for table `test`.`t`: Lock wait timeout  ## MDEV-32667
-ERROR. InnoDB: Cannot save index statistics for table.*Lock wait timeout
-ERROR. InnoDB: Cannot save table statistics for table.*Lock wait timeout
 
 ##### Slave errors
 SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346
