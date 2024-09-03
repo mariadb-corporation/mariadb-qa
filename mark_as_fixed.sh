@@ -7,7 +7,7 @@ if [ -r mark_as_fixed.list ]; then
     CURLINES="$(mktemp)"
     grep "${BUG}" known_bugs.strings | grep -v '## Fixed' > ${CURLINES}
     while read LINE; do
-      LINEMOD="$(echo "${LINE}" | sed 's{         ## MDEV{## MDEV{;s{## MDEV{## Fixed MDEV{' | sed 's{^{# {')"  # { is not a symbol used in known bugs
+      LINEMOD="$(echo "${LINE}" | sed 's{         ## MDEV{## MDEV{;s{## MDEV{## Fixed ## MDEV{' | sed 's{^{# {')"  # { is not a symbol used in known bugs
       echo "${LINEMOD}" >> known_bugs.strings  # Add line to end as ## Fixed
       sed -i "/${LINE}/d" known_bugs.strings  # Remove the original line
       LINE=; LINEMOD=
