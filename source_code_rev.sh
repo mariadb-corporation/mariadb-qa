@@ -57,12 +57,15 @@ clean_and_validate
 
 if [ -z "$SOURCE_CODE_REV" ]; then
   BIN=
-  if [ -r ./bin/mariadbd ]; then BIN='./bin/mariadbd'; 
-  elif [ -r ../bin/mariadbd ]; then BIN='../bin/mariadbd'; 
-  elif [ -r ./bin/mysqld ]; then BIN='./bin/mysqld'; 
-  elif [ -r ../bin/mysqld ]; then BIN='../bin/mysqld'; 
-  elif [ -r ./bin/mysqld-debug ]; then BIN='./bin/mysqld-debug'; 
-  elif [ -r ../bin/mysqld-debug ]; then BIN='../bin/mysqld-debug'; 
+  if [ -x ./bin/mariadbd ]; then BIN='./bin/mariadbd'; 
+  elif [ -x ../bin/mariadbd ]; then BIN='../bin/mariadbd'; 
+  elif [ -x ./bin/mysqld ]; then BIN='./bin/mysqld'; 
+  elif [ -x ../bin/mysqld ]; then BIN='../bin/mysqld'; 
+  elif [ -x ./bin/mysqld-debug ]; then BIN='./bin/mysqld-debug'; 
+  elif [ -x ../bin/mysqld-debug ]; then BIN='../bin/mysqld-debug'; 
+  elif [ -x ../../mariadbd ]; then BIN='../../mariadbd'; 
+  elif [ -x ../../mysqld ]; then BIN='../../mysqld'; 
+  else echo "Assert: Server binary could not be found"; exit 1;
   fi
   if [ -r "${BIN}" ]; then
     # Newer method, after Feb 2023

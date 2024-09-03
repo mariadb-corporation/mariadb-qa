@@ -1,0 +1,12 @@
+SET sql_mode='';
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+SET optimizer_trace=1;
+CREATE TABLE t1 (c INT, PRIMARY KEY(c)) ENGINE=Spider;
+CREATE TABLE t2 (c INT) ENGINE=Spider;
+XA START 'a';
+SELECT * FROM t2;
+SET GLOBAL table_open_cache=10;
+INSERT INTO t1 VALUES (0);
+INSERT INTO t2 VALUES (0);
+SELECT SLEEP(3);
+INSERT INTO t1 VALUES (0);

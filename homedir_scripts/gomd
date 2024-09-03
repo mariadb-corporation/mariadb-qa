@@ -3,12 +3,6 @@
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
 BASEDIR=/test/MDEV33853-MD300724-mariadb-11.6.0-linux-x86_64-dbg
-#MD060224-mariadb-11.4.0-linux-x86_64-dbg
-#UBASAN_MD190224-mariadb-11.4.2-linux-x86_64-dbg
-#to complete | TODO#    MDEV33426_MD160224-mariadb-11.4.0-linux-x86_64-dbg
-#MD271223-mariadb-11.4.0-linux-x86_64-opt  # base for MDEV-7850
-#PATCH4_MD281123-mariadb-10.6.17-linux-x86_64-dbg
-#MD311023-mariadb-11.3.0-linux-x86_64-dbg BASE
 RUNSOPT=3
 RUNSDBG=3
 #CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2 and spider swap

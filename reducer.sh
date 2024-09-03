@@ -4532,7 +4532,7 @@ fireworks_setup(){
                            echoit "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then
       if [ "${FIREWORKS}" != "1" ]; then
-                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump stack matching with new_text_string.sh"
+                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump stack matching using new_text_string.sh"
                            echoit "[Init] Looking for this string: '$TEXT' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
       else
                            echoit "[Init] Run mode: FireWorks with MODE=3, using new_text_string.sh for UniqueID generation"
