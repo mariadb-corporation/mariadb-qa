@@ -1,12 +1,24 @@
 #!/bin/bash
+
+if [ "${STY}" == "" -a -z "${1}" ]; then
+  THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
+  SCREEN_NAME='mtr_to_sql_all'
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "${SCREEN_NAME}" bash -c "${THIS_SCRIPT} ${*}"
+  sleep 1
+  screen -d -r "${SCREEN_NAME}"
+  return 2> /dev/null; exit 0
+fi
+
 cd /test
 rm -f ${HOME}/mtrtosql.exec
 touch ${HOME}/mtrtosql.exec
-./gendirs.sh | grep dbg | sed 's|^|cd |;s|$|; ${HOME}/mariadb-qa/mtr_to_sql.sh; mv -n ${HOME}/mtr_to_sql[0-9]* ${HOME}/mtrtosql/; cd -|' >> ${HOME}/mtrtosql.exec
+./gendirs.sh | grep dbg | sed 's|^|cd |;s|$|; echo "Processing: ${PWD}"; ${HOME}/mariadb-qa/mtr_to_sql.sh; mv -n ${HOME}/mtr_to_sql[0-9]* ${HOME}/mtrtosql/; cd -|' >> ${HOME}/mtrtosql.exec
 ls -d 10.* 11.* | grep -vE '_dbg|_opt' | sed 's|^|cd |;s|$|; ${HOME}/mariadb-qa/mtr_to_sql.sh; mv -n ${HOME}/mtr_to_sql[0-9]* ${HOME}/mtrtosql/; cd -|' >> ${HOME}/mtrtosql.exec
-./gendirs.sh | grep dbg | sed 's|^|cd |;s|$|; ${HOME}/mariadb-qa/mtr_to_sql_v2.sh; mv -n ${HOME}/mtr_to_sql[0-9]* ${HOME}/mtrtosql/; cd -|' >> ${HOME}/mtrtosql.exec
+./gendirs.sh | grep dbg | sed 's|^|cd |;s|$|; echo "Processing: ${PWD}"; ${HOME}/mariadb-qa/mtr_to_sql_v2.sh; mv -n ${HOME}/mtr_to_sql[0-9]* ${HOME}/mtrtosql/; cd -|' >> ${HOME}/mtrtosql.exec
 ls -d 10.* 11.* | grep -vE '_dbg|_opt' | sed 's|^|cd |;s|$|; ${HOME}/mariadb-qa/mtr_to_sql_v2.sh; mv -n ${HOME}/mtr_to_sql[0-9]* ${HOME}/mtrtosql/; cd -|' >> ${HOME}/mtrtosql.exec
 mkdir -p ${HOME}/mtrtosql
+chmod +x ${HOME}/mtrtosql.exec
 ${HOME}/mtrtosql.exec | tee ${HOME}/mtrtosql.log
 echo "Done. Files are in ${HOME}/mtrtosql"
 echo "Log is in ${HOME}/mtrtosql.log and runtime is in ${HOME}/mtrtosql.exec"

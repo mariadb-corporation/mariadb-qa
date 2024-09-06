@@ -132,6 +132,7 @@ alias all='./all'    # Idem
 alias cl='${HOME}/cl &'    # Run ${HOME}/mariadb-qa/pquery-clean-known.sh for the current (pquery) workdir, in background (it is slow)
 alias c='cat '       # cat (display) a file (pass file name)
 alias k='clear'      # Clear screen
+alias ck='cd ${HOME};clear'   # Clear screen and jump to homedir
 alias b='${HOME}/b'        # Start bug report for in.sql in current BASEDIR
 alias bs='${HOME}/b SAN'   # Start SAN based bug report for in.sql in current BASEDIR
 alias br='${HOME}/b REPL'  # Start replication based bug report for in.sql in current BASEDIR (checks master+slave for bugs)

@@ -80,7 +80,7 @@ else
       if [ -z "${SAN}" ]; then BUILD_TYPE=" (Debug)"; else BUILD_TYPE=" (Debug, ${SAN})"; fi
     fi
   fi
-  # Partial code duplication with stack.sh
+  # Partial code duplication with stack.sh, however that script does not check for SAN build types (as it is not commonly needed; almost all crashing bugs reproduce in regular non-SAN builds also, and SAN stacks are usually manually copied from cat log/*.err with a ~/m prefix/suffix)
   MDG=0
   if [ ! -z "$(ls --color=never ./node*/node*.err 2>/dev/null)" ]; then
     MDG=1
@@ -95,8 +95,6 @@ else
   if [ "${LAST_THREE}" != "dbg" -a "${LAST_THREE}" != "opt" ]; then  # in-trial myver call for ES
     LAST_THREE="$(grep --binary-files=text -oh "BASEDIR.*\-[do][bp][gt]" start 2>/dev/null | grep --binary-files=text -Eoh "\-dbg|\-opt" | head -n1 | sed 's|\-||')"
   fi
-  if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
-  if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
   echo "{noformat:title=${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
   echo ""
   echo "{noformat}"

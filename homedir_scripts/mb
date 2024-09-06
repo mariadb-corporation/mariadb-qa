@@ -36,6 +36,7 @@ fi
 if [ "$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | wc -l)" -ne 1 ]; then
   echo "Warning: ./gendirs.sh returned multiple results when grepping for major version '${MAJOR_VERSION}' and build type '${DBG_OR_OPT}'"
 fi
+# TODO: possible improvement: auto-base BASEDIR where instead of using gendirs.sh in this script, it is used from the patched reducer instead
 BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | sort -h | tac | head -n1)"
 if [ -z "${BASEDIR}" ]; then
   echo "Assert: BASEDIR variable empty after running gendirs.sh"
@@ -53,11 +54,19 @@ sed -i 's|^MULTI_THREADS_MAX=[0-9]\+|MULTI_THREADS_MAX=40|' ./base_reducer${TRIA
 sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=10|' ./base_reducer${TRIAL}.sh
 cp ./base_reducer${TRIAL}.sh ./feature_reducer${TRIAL}.sh
 sed -i "s|${BASEDIR}|${FEATURE_DIR}|" ./feature_reducer${TRIAL}.sh
+
 TEXT="$(grep '^   TEXT=' reducer${TRIAL}.sh | head -n1 | sed 's|^   TEXT="||;s|"[ \t]*$||')"
 if [ ! -z "${TEXT}" ]; then
   echo "grep -Fi --binary-files=text \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/MYBUG | sed 's|MYBUG:|MYBUG: |'" > ./find${TRIAL}.sh
   chmod +x find${TRIAL}.sh
 fi
+
+# As it was observed that issue reproducibility on base BASEDIRs is higher with the original input in certain cases, the created base_reducer{trial}.sh script is set to use the original full input file, instead of any already partially reduced files as general reducers automatically do
+INPUTFILE_LINE="$(grep '^INPUTFILE=' ./base_reducer${TRIAL}.sh 2>/dev/null | grep -o '[-_=/a-zA-Z0-9]\+/default.node.tld_thread-0.sql' | sed "s|^|INPUTFILE='|;s|$|'|")"
+if [ ! -z "${INPUTFILE_LINE}" ]; then
+  sed -i "s|^INPUTFILE=.*|${INPUTFILE_LINE}|" ./base_reducer${TRIAL}.sh
+fi
+
 if [ "${2}" == "NOSTART" ]; then  # pg automation
   echo "[async upd thread][mb] Created ./base_reducer${TRIAL}.sh, ./feature_reducer${TRIAL}.sh and ./find${TRIAL}.sh"
 else

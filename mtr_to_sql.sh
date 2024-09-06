@@ -42,14 +42,6 @@ echoit(){
   echo "[$(date +'%T')] $1"
 }
 
-if [ ! -r "${TESTS_PATH}/t/1st.test" -a ! -r "${TESTS_PATH}/main/kill.test" ]; then
-  echoit "Assert: this script cannot find any tests in ${TESTS_PATH}"
-  echoit "You may want to check the TESTS_PATH setting at the top of this script (currently set to '${TESTS_PATH}')"
-  #exit 1
-else
-  echoit "Found tests located at ${TESTS_PATH}..."
-fi
-
 # Setup
 rm -f ${TEMP_SQL};  if [ -r ${TEMP_SQL} ]; then echoit "Assert: this script tried to remove ${TEMP_SQL}, but the file is still there afterwards."; exit 1; fi
 rm -f ${FINAL_SQL}; if [ -r ${FINAL_SQL} ]; then echoit "Assert: this script tried to remove ${FINAL_SQL}, but the file is still there afterwards."; exit 1; fi
@@ -63,7 +55,7 @@ echoit "Output file: ${FINAL_SQL}"
 echoit "> Stage 1: Generating SQL with approach #1..."
 find . -type f \( -name "*.test" -o -name "*.inc" \) -exec cat {} + 2>/dev/null | grep --binary-files=text -ihE "^SELECT |^INSERT |^UPDATE |^DROP |^CREATE |^RENAME |^TRUNCATE |^REPLACE |^START |^SAVEPOINT |^ROLLBACK |^RELEASE |^LOCK |^UNLOCK|^XA |^PURGE |^RESET |^SHOW |^CHANGE |^START |^STOP |^PREPARE |^EXECUTE |^DEALLOCATE |^BEGIN |^DECLARE |^FETCH |^CASE |^IF |^ITERATE |^LEAVE |^LOOP |^REPEAT |^RETURN |^WHILE |^CLOSE |^GET |^RESIGNAL |^SIGNAL |^EXPLAIN |^DESCRIBE |^HELP |^USE |^GRANT |^ANALYZE |^CHECK |^CHECKSUM |^OPTIMIZE |^REPAIR |^INSTALL |^UNINSTALL |^BINLOG |^CACHE |^FLUSH |^KILL |^LOAD |^CALL |^DELETE |^DO |^HANDLER |^LOAD DATA |^LOAD XML |^ALTER |^SET " | \
  grep --binary-files=text -viE "innodb_fil_make_page_dirty_debug|innodb_trx_rseg_n_slots_debug|innodb_spin_wait_delay|innodb_replication_delay|strict|restart_server_args|json_binary::parse_binary|^\-\-|^print|delete.*mysql.user|drop.*mysql.user|update.*mysql.user|where.*user.*root|default_password_lifetime|innodb[-_]track[-_]redo[-_]log[-_]now|innodb[-_]log[-_]checkpoint[-_]now|innodb[-_]purge[-_]stop[-_]now|innodb[-_]track_changed[-_]pages|yfos|set[ @globalsession\.\t]*debug[ \.\t]*=|^[# \t]$|^#" | \
- sed 's|SLEEP[ \t]*([\.0-9]\+)|SLEEP(0.01)|gi' | sed 's///g' | \
+ sed 's|SLEEP[ \t]*([\.0-9]\+)|SLEEP(0.1)|gi' | sed 's///g' | \
  sed 's/.*[^;]$//' | grep --binary-files=text -v "^[ \t]*$" | \
  sed 's/$/ ;;;/' | sed 's/[ \t;]*$/;/' >> ${TEMP_SQL}
 
