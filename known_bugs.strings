@@ -1164,6 +1164,7 @@ active()|SIGABRT|wsrep::transaction::assign_xid|wsrep::client_state::assign_xid|
 is_streaming() == false|SIGABRT|wsrep::transaction::cleanup|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement                     ## MENT-1110
 !thd->mdl_context.has_locks() || thd->transaction->xid_state.is_explicit_XA()|SIGABRT|do_command|do_handle_one_connection|handle_one_connection|pfs_spawn_thread               ## MENT-1109
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
+state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|prepare_or_error MDEV-32193
 state() == s_executing || state() == s_prepared || state() == s_committing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans ## MDEV-32193
 0|SIGABRT|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const                                ## MDEV-24902
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command                                                                   ## MDEV-24814
