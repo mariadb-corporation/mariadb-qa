@@ -80,6 +80,13 @@ else
       if [ -z "${SAN}" ]; then BUILD_TYPE=" (Debug)"; else BUILD_TYPE=" (Debug, ${SAN})"; fi
     fi
   fi
+  if [ -z "${BUILD_TYPE}" -a -x "${BIN}" ]; then
+    if [ "$(${BING} --help 2>&1 | head -n1 | grep -o "\-debug")" == "-debug" ]; then
+      BUILD_TYPE=" (Debug)";
+    else
+      BUILD_TYPE=" (Optimized)";
+    fi
+  fi
   # Partial code duplication with stack.sh, however that script does not check for SAN build types (as it is not commonly needed; almost all crashing bugs reproduce in regular non-SAN builds also, and SAN stacks are usually manually copied from cat log/*.err with a ~/m prefix/suffix)
   MDG=0
   if [ ! -z "$(ls --color=never ./node*/node*.err 2>/dev/null)" ]; then

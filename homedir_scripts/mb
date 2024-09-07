@@ -57,15 +57,16 @@ sed -i "s|${BASEDIR}|${FEATURE_DIR}|" ./feature_reducer${TRIAL}.sh
 
 TEXT="$(grep '^   TEXT=' reducer${TRIAL}.sh | head -n1 | sed 's|^   TEXT="||;s|"[ \t]*$||')"
 if [ ! -z "${TEXT}" ]; then
-  echo "echo '--- Other occurences of the same issue:'" > ./find${TRIAL}
+  echo '#!/bin/bash' > ./find${TRIAL}
+  echo "echo '--- Other occurences of the same issue:'" >> ./find${TRIAL}
   echo "LIST1=\"\$(grep -FiH --color=never --binary-files=text \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/MYBUG | sed 's|MYBUG:|MYBUG: |')\"" >> ./find${TRIAL}
   echo 'echo "${LIST1}" | grep --binary-files=text -v "^[ \t]*$"' >> ./find${TRIAL}
   echo "LIST2=\"\$(grep -iH --color=never --binary-files=text \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/log/*.err | sed 's|\.err:[-0-9: ]\+|.err: |' | grep --binary-files=text -v '^[ \\t]*$')\"" >> ./find${TRIAL}
   echo 'echo "${LIST2}" | grep --binary-files=text -v "^[ \t]*$"' >> ./find${TRIAL}
   echo "echo ''" >> ./find${TRIAL}
   echo "echo '--- Reduced testcases for the same issue:'" >> ./find${TRIAL}
-  echo 'echo "${LIST1}" | sed "s|MYBUG.*||" | xargs -I{} echo "ls --color=never -s {}*out 2>/dev/null" | xargs -I{} bash -c "{}" | sed "s|^[ \t]\+||" | sort -h' >> ./find${TRIAL}
-  echo 'echo "${LIST2}" | sed "s|log/[^ ]\+\.err:.*||" | xargs -I{} echo "ls --color=never -s {}*out 2>/dev/null" | xargs -I{} bash -c "{}" | sed "s|^[ \t]\+||" | sort -h' >> ./find${TRIAL}
+  echo 'echo "${LIST1}" | sed "s|MYBUG.*||" | xargs -I{} echo "ls --color=never -S {}*out 2>/dev/null" | xargs -I{} bash -c "{}" | sed "s|^[ \t]\+||" | xargs -I{} wc -l {} | sort -h' >> ./find${TRIAL}
+  echo 'echo "${LIST2}" | sed "s|log/[^ ]\+\.err:.*||" | xargs -I{} echo "ls --color=never -S {}*out 2>/dev/null" | xargs -I{} bash -c "{}" | sed "s|^[ \t]\+||" | xargs -I{} wc -l {} | sort -h' >> ./find${TRIAL}
   chmod +x find${TRIAL}
 fi
 

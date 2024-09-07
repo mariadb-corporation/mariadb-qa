@@ -23,6 +23,16 @@ if [ -z "$SOURCE_CODE_REV" -a -r ../include/mysql/server/private/source_revision
 fi
 clean_and_validate
 
+if [ -z "$SOURCE_CODE_REV" -a -r ./mysqld/source_revision.h ]; then
+  SOURCE_CODE_REV="$(cat ./mysqld/source_revision.h 2>/dev/null | cut -d'"' -f2)"
+fi
+clean_and_validate
+
+if [ -z "$SOURCE_CODE_REV" -a -r ../mysqld/source_revision.h ]; then
+  SOURCE_CODE_REV="$(cat ../mysqld/source_revision.h 2>/dev/null | cut -d'"' -f2)"
+fi
+clean_and_validate
+
 if [ -z "$SOURCE_CODE_REV" -a -r ./docs/INFO_SRC ]; then  # MS build
   SOURCE_CODE_REV="$(grep -om1 'commit.*' ./docs/INFO_SRC | awk '{print $2}' | sed 's|[ \n\t]\+||g')"
 fi
@@ -63,6 +73,10 @@ if [ -z "$SOURCE_CODE_REV" ]; then
   elif [ -x ../bin/mysqld ]; then BIN='../bin/mysqld'; 
   elif [ -x ./bin/mysqld-debug ]; then BIN='./bin/mysqld-debug'; 
   elif [ -x ../bin/mysqld-debug ]; then BIN='../bin/mysqld-debug'; 
+  elif [ -x ./mysqld/mysqld ]; then BIN='./mysqld/myqsld'; 
+  elif [ -x ./mysqld/mariadbd ]; then BIN='./mysqld/mariadbd'; 
+  elif [ -x ../mysqld/mysqld ]; then BIN='../mysqld/myqsld'; 
+  elif [ -x ../mysqld/mariadbd ]; then BIN='../mysqld/mariadbd'; 
   elif [ -x ../../mariadbd ]; then BIN='../../mariadbd'; 
   elif [ -x ../../mysqld ]; then BIN='../../mysqld'; 
   else echo "Assert: Server binary could not be found"; exit 1;

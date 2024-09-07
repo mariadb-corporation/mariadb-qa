@@ -3039,6 +3039,10 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
     echo "Making a copy of ${BIN} in ${RUNDIR} for in-run coredump analysis..."
     cp ${BIN} ${RUNDIR}
   fi
+  if [ -r ${BASEDIR}/include/mysql/server/private/source_revision.h ]; then
+    echo "Making a copy of source_revision.h to ${WORKDIR}/mysqld for later version reference"
+    cp ${BASEDIR}/include/mysql/server/private/source_revision.h ${WORKDIR}/mysqld/
+  fi
   echoit "Making a copy of the ldd files required for mysqld/mariadbd core analysis to ${WORKDIR}/mysqld..."
   PWDTMPSAVE="${PWD}"
   cd ${WORKDIR}/mysqld || exit 1
