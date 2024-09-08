@@ -194,9 +194,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+(mem_root->flags & 4) == 0|SIGABRT|alloc_root|parse_escaped_string|File_parser::parse|mysql_make_view                                                                          ## MDEV-34895
 SIGSEGV|my_scan_weight_utf8mb3_bin|my_scan_weight_utf8mb3_bin|my_strnncoll_utf8mb3_bin|hashcmp                                                                                 ## MDEV-34893
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_assign_to_keycache                              ## MDEV-34887
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|THD::my_ok_with_recreate_info|mysql_alter_table                            ## MDEV-34886
+SIGSEGV|__strnlen_evex|process_str_arg|my_vsnprintf_ex|my_error                                                                                                                ## MDEV-34849
 SIGSEGV|server_mysql_real_connect|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                       ## MDEV-34849
 SIGSEGV|__strcmp_evex|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MDEV-34849
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-34849

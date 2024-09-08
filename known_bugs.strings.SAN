@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of address X with insufficient space for an object of type 'uchar'|sql/sys_vars.inl|Sys_var_charptr_base::cleanup|sys_var_end|clean_up|clean_up                     ## MDEV-34849
 UBSAN|member access within null pointer of type 'struct ha_handler_stats'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|close_thread_tables|Locked_tables_list::unlock_locked_tables ## MDEV-34782
 UBSAN|member access within null pointer of type 'struct ha_handler_stats'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_rm_tables ## MDEV-34782
 UBSAN|member access within null pointer of type 'struct ha_handler_stats'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_close ## MDEV-34782
