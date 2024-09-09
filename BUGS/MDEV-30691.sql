@@ -13,3 +13,7 @@ SELECT JSON_KEY_VALUE('{"key1":"val1"}', '$');
 
 SET character_set_connection=utf32;
 SELECT JSON_OBJECT_TO_ARRAY ('{"q": 1}');
+
+SET collation_connection=ucs2_bin;
+SET @JSON='{ "A": [0,[1,2,3],[4,5,6],"seven",8,true,false,"eleven",[1,[1,1],{"KEY1":"VALUE1"},[1]],true],"B": {"C": 1},"D": 2 }';
+SELECT JSON_DETAILED (@JSON);

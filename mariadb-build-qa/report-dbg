@@ -1,0 +1,9 @@
+#!/bin/bash
+rm -f current-dbg
+if [ -r ./current-dbg ]; then echo "Assert: current-dbg exists after removal attempt!"; exit 1; fi
+echo '#!/bin/bash' > current-dbg
+./allruns | grep "10.5.*dbg" | grep -vE "MT|MONTY|SAN" | sed 's|:.*||' | tr '\n' '|' | sed 's|^|grep -E "|;s/|$/" current-dbg | grep -vE "grep|exit|bin.*bash"\n/' >> current-dbg
+echo "exit 0" >> current-dbg
+~/ooo >> current-dbg
+chmod +x current-dbg
+./current-dbg
