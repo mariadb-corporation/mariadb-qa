@@ -2,13 +2,12 @@
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
-#BASEDIR=/test/MDEV-31466_MD060924-mariadb-11.6.0-linux-x86_64-dbg
-BASEDIR=/test/MDEV-28009_MD060924-mariadb-11.7.0-linux-x86_64-dbg
+BASEDIR=/test/MDEV-31466_MD090924-mariadb-11.7.0-linux-x86_64-dbg
 RUNSOPT=2
 RUNSDBG=2
-CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=1 24, and spider swap
+#CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=1 24, and spider swap
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
-#CONF=pquery-run-MD.conf  # Set currently to PRE_SHUFFLE_SQL=1
+CONF=pquery-run-MD.conf  # Set currently to PRE_SHUFFLE_SQL=1 24
 #CONF=pquery-run-MD-federated.conf
 #CONF=pquery-run-mdev-31152.conf
 #CONF=pquery-run-MD-crt.conf

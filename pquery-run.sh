@@ -2829,6 +2829,7 @@ mkdir -p ${WORKDIR} ${WORKDIR}/log ${RUNDIR}
 chmod -R +rX ${WORKDIR}
 echo "grep -E '^BASEDIR=|^INFILE=|^THREADS=|^MYEXTRA=|^MYINIT=|^ADD_RANDOM_OPTIONS=' pquery*run*conf | sed 's|   #.*||;s|ADD_RANDOM|RND|;s|=|: \\t|'" > ${WORKDIR}/i
 echo "find . | grep '_out$' | xargs -I{} wc -l {} | sort -h" > ${WORKDIR}/my
+echo "${BASEDIR}" > ${WORKDIR}/BASEDIR.template
 ln -s "${SCRIPT_PWD}/filter_from_base.sh" "${WORKDIR}/filter_from_base"  # This script replaces pr_without_base_prs previously used, now remarked, in lines below
 #echo '#!/bin/bash' > ${WORKDIR}/pr_without_base_prs
 #echo 'set +H' >> ${WORKDIR}/pr_without_base_prs

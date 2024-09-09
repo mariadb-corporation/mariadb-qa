@@ -36,8 +36,18 @@ fi
 if [ "$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | wc -l)" -ne 1 ]; then
   echo "Warning: ./gendirs.sh returned multiple results when grepping for major version '${MAJOR_VERSION}' and build type '${DBG_OR_OPT}'"
 fi
-# TODO: possible improvement: auto-base BASEDIR where instead of using gendirs.sh in this script, it is used from the patched reducer instead
-BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | sort -h | tac | head -n1)"
+BASEDIR=
+if [ -r ./BASEDIR ]; then
+  BASEDIR="$(cat ./BASEDIR | head -n1 | sed 's|^[ \t]\+||;s|[ \t]\+$||')"
+  if [ ! -d ${BASEDIR} ]; then
+    echo "Assert: ./BASEDIR found, yet the directory/contents therein (${BASEDIR}) do not point to an actual BASEDIR. Please specify a fully qualified and existing directory name within it, or remove the ./BASEDIR file allowing this script to use gendirs.sh instead."
+    exit 1
+  fi
+  echo "BASEDIR for 'base_' reducers set to ${BASEDIR} as specified in ./BASEDIR"
+else
+  # TODO: possible improvement: auto-base BASEDIR where instead of using gendirs.sh in this script, gendirs.sh is used from the patched reducer instead
+  BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | sort -h | tac | head -n1)"
+fi
 if [ -z "${BASEDIR}" ]; then
   echo "Assert: BASEDIR variable empty after running gendirs.sh"
   exit 1
