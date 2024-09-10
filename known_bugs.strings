@@ -115,6 +115,7 @@ GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or 
 INNODB_ERROR|Cannot save index statistics for table.*index.*stat.*: Lock wait timeout  ## MDEV-32667
 INNODB_ERROR|Cannot save table statistics for table `test`.`t`: Lock wait timeout  ## MDEV-32667
 INNODB_ERROR|Table mysql.innodb_table_stats not found          ## SPECIAL-30 (non-issue)
+INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
 
 ##### Slave errors
 SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346
