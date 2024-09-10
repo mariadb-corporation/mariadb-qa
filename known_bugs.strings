@@ -377,6 +377,7 @@ view->table != 0 && view->field_translation != 0|SIGABRT|check_view_insertabilit
 SIGABRT|__cxa_throw|wsrep::server_state::provider|Wsrep_server_state::get_provider|wsrep_replication_process                                                                   ## MDEV-33632
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_slave_sql|pfs_spawn_thread                                           ## MDEV-33579
 (old_flags & 1) == ((my_flags & 0x10000U) ? 1 : 0)|SIGABRT|my_realloc|_ma_alloc_buffer|sort_get_next_record|sort_key_read                                                      ## MDEV-33562
+marked_for_read()|SIGABRT|Field_datetime0::val_str|Item_field::val_str|Item_func_conv_charset::Item_func_conv_charset|Item::safe_charset_converter                             ## MDEV-33524
 marked_for_read()|SIGABRT|Field_newdate::val_str|Item_field::val_str|Item_func_conv_charset::Item_func_conv_charset|Item::safe_charset_converter                               ## MDEV-33524
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|sp_head::show_create_routine|Sp_handler::sp_show_create_routine         ## MDEV-33483
 0|SIGABRT|Item_row::illegal_method_call|Item_row::get_date|Event_parse_data::init_execute_at|Event_parse_data::check_parse_data                                                ## MDEV-33472
