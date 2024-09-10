@@ -58,7 +58,9 @@ if [ $(ls ./*/*.sql 2>/dev/null | wc -l) -eq 0 ]; then
     exit 1
   fi
 elif [ $(ls ./reducer* ./qcreducer* 2>/dev/null | wc -l) -eq 0 ]; then
-  echo "Assert: no reducer scripts were found in this directory. Did you forgot to execute ${SCRIPT_PWD}/pquery-prep-red.sh ?"
+  echo "Note: no reducer scripts were found in this directory."
+  echo "  Did you forget to run ${SCRIPT_PWD}/pquery-prep-red.sh (or better ~/pg)?"
+  echo "  Or, if you used ~/gomd to start this run, it is possible that ~/pg has not (loop) processed this directory yet"
   exit 1
 fi
 

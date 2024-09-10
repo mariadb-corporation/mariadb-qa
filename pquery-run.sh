@@ -306,7 +306,7 @@ add_handy_scripts(){  # Add handy stack and gdb scripts per trial
     SAVE_HANDY_LOC=${RUNDIR}/${TRIAL}
     CORE_TO_ANALYZE="./data*/*core*"
   fi
-  ln -s "${SCRIPT_PWD}/stack.sh" ${SAVE_HANDY_LOC}/stack
+  ln -s "${SCRIPT_PWD}/stack.sh" ${SAVE_HANDY_LOC}/stack 2>/dev/null
   echo "echo 'Handy copy and paste script:'" > ${SAVE_HANDY_LOC}/gdb
   echo "echo '  set pagination off'" >> ${SAVE_HANDY_LOC}/gdb
   echo "echo '  set print pretty on'" >> ${SAVE_HANDY_LOC}/gdb
@@ -1331,7 +1331,7 @@ pquery_test() {
       sudo chmod -R 777 "${_RR_TRACE_DIR}"
       CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --loose-innodb-flush-method=fsync --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
     fi
-    if [ -r "${HOME}/stack" ]; then
+    if [ -r "${HOME}/stack" -a ! -r ${RUNDIR}/${TRIAL}/stack ]; then
       ln -s ${HOME}/stack ${RUNDIR}/${TRIAL}/stack  # Handy ./stack shorthand (automatically copied later to WORKDIR if trial is saved)
     fi
     diskspace

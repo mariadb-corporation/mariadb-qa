@@ -1184,6 +1184,8 @@ SIGSEGV|replace_table_table|mysql_table_grant|mysql_execute_command|mysql_parse 
 DICT_TF2_FLAG_IS_SET(index->table, DICT_TF2_TEMPORARY)|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low ## MDEV-24812
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_low|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                         ## MDEV-24812
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_undo|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                        ## MDEV-24812
+SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::pfs_begin_lock|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_low|trx_undo_report_row_operation       ## MDEV-24812
+SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                                        ## MDEV-24812
 thr->graph->trx->id == trx_read_trx_id( static_cast<const byte*>( trx_id->data)) || static_cast<ins_node_t*>( thr->run_node)->bulk_insert|SIGABRT|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-24716
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                    ## MDEV-24706
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                     ## MDEV-24706
