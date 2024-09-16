@@ -1,0 +1,9 @@
+SET GLOBAL general_log='ON';
+CREATE OR REPLACE TABLE mysql.general_log (a INT);
+CREATE TEMPORARY TABLE t (c INT) ENGINE=InnoDB;;
+INSERT INTO t VALUES (1);
+SET GLOBAL log_output='TABLE';
+SET SESSION autocommit=0;
+UPDATE t SET c=0;
+TRUNCATE t;
+SELECT a;

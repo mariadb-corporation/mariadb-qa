@@ -55,6 +55,8 @@ BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1062  Ref SPECIAL-8 and search
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wait timeout exceeded)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
 ERROR.*DDL_LOG.*Got error 1290 when trying to execute action for entry 2 of type.*rename table  Ref SPECIAL-18
+BINLOG_BASE64_EVENT.*Error_code: 4094.*HA_ERR_GENERIC.*Internal MariaDB error code: 1366  MDEV-34927  
+BINLOG_BASE64_EVENT.*Error_code: 1442.*HA_ERR_GENERIC.*Internal MariaDB error code: 1442  MDEV-34927
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1440  MDEV-34113
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
@@ -196,6 +198,7 @@ wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  MDEV-29744
 wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  MDEV-29744
 InnoDB: Invalid column name for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
 InnoDB: Invalid column type for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
+ERROR. RocksDB: Failed to get column family flags from CF with id = 2. MyRocks data dictionary may be corrupted  MDEV-26677	
 ERROR.*InnoDB: User stopword table                    Presumed non-issue (missing stopword table). Note: the suffix ' .* does not exist' cannot be used as special characters will make the regex fail #TODO research further: 'table test/stop_it�002dIT does not exist'
 InnoDB: Cannot add field.*which is greater than max   Presumed non-issue (max row size exceeded)
 InnoDB: The.*doesn.t have.*tablespace.*was discarded  Presumed non-issue (tablespace removed from under table)

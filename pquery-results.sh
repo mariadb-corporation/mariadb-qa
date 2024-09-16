@@ -241,29 +241,35 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
     echo '** Trials with SET GLOBAL of wsrep_cluster_address & wsrep_slave_threads (known hang/timeout issue MDEV-30418):'
     echo "${TRIALS_MDEV_30418}"
   fi
+  TRIALS_MDEV_30418=
   TRIALS_MASTER_POS_WAIT="$(grep --binary-files=text -il 'start.*slave' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'master_pos_wait' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
   if [ ! -z "${TRIALS_MASTER_POS_WAIT}" ]; then
     echo '** Trials with START SLAVE & MASTER_POS_WAIT (known hang/timeout issue waiting for an invalid position):'
     echo "${TRIALS_MASTER_POS_WAIT}"
   fi
+  TRIALS_MASTER_POS_WAIT=
   TRIALS_MDEV_22727="$(grep --binary-files=text -il 'set.*aria_group_commit_interval' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'set.*aria_group_commit.*hard' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
   if [ ! -z "${TRIALS_MDEV_22727}" ]; then
     echo '** Trials with SET aria_group_commit_interval & SET aria_group_commit=HARD (known hang/timeout issue MDEV-22727):'
     echo "${TRIALS_MDEV_22727}"
   fi
+  TRIALS_MDEV_22727=
   TRIALS_NET_RETRY="$(grep --binary-files=text -il 'set.*net_retry_count' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
   if [ ! -z "${TRIALS_NET_RETRY}" ]; then
     echo '** Trials with SET net_retry_count (known to cause hang/timeout issues):'
     echo "${TRIALS_NET_RETRY}"
   fi
+  TRIALS_NET_RETRY=
+  TRIALS_MDEV_25611="$(grep --binary-files=text -il 'innodb_flush_log_at_timeout' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'RESET[ \t]*MASTER' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  if [ ! -z "${TRIALS_MDEV_25611}" ]; then
+    echo '** Trials with SET innodb_flush_log_at_timeout and RESET MASTER (known to cause hang/timeout issues, ref MDEV-25611):'
+    echo "${TRIALS_MDEV_25611}"
+  fi
+  TRIALS_MDEV_25611=
   COUNT=
   STRING_OUT=
   COUNT_OUT=
-  TRIALS_MDEV_30418=
-  TRIALS_MASTER_POS_WAIT=
-  TRIALS_MDEV_22727=
 fi
-
 
 # 'MySQL server has gone away' seen >= 200 times + timeout was not reached
 if [ $(ls */GONEAWAY 2>/dev/null | wc -l) -gt 0 ]; then

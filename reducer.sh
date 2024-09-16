@@ -5775,7 +5775,9 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 258 ]; then sed "s/c0/c/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 259 ]; then sed "s/FROM DUAL//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 260 ]; then sed "s/WITHOUT VALIDATION//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 261 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 261 ]; then sed "s/PARTITION.*;/;/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 262 ]; then sed "s/[ \t]\+CHARACTER SET[^)]\+)/)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 263 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     if [ ! -r "${WORKT}" ]; then abort; fi
