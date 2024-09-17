@@ -300,6 +300,8 @@ SIGSEGV|ha_show_status|mysql_execute_command|Prepared_statement::execute|Prepare
 SIGSEGV|myrocks::rocksdb_show_status|ha_show_status|mysql_execute_command|Prepared_statement::execute                                                                          ## MDEV-34199
 0|SIGABRT|JOIN_CACHE::get_match_flag_by_pos|JOIN_CACHE::skip_if_not_needed_match|JOIN_CACHE_BNL::skip_next_candidate_for_match|JOIN_CACHE::join_matching_records               ## MDEV-23949 (11.3 only)
 SIGSEGV|st_select_lex::update_used_tables|JOIN::optimize_inner|JOIN::optimize|mysql_select                                                                                     ## MDEV-34184
+entry|SIGABRT|Active_tranx::assert_thd_is_waiter|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_sync|MYSQL_BIN_LOG::write                                 ## MDEV-34122
+entry|SIGABRT|Active_tranx::assert_thd_is_waiter|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|trans_commit_stmt                                  ## MDEV-34122
 entry|SIGABRT|Active_tranx::assert_thd_is_waiter|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans                                    ## MDEV-34122
 page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_merge_bulk_t::write_to_index|row_merge_bulk_t::write_to_table                                   ## MDEV-34119
 ! thd->in_sub_stmt|SIGABRT|trans_rollback_stmt|Wsrep_client_service::bf_rollback|wsrep::transaction::after_statement|wsrep::client_state::after_statement                      ## MDEV-34117
@@ -1072,6 +1074,7 @@ status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|T
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|one_thread_per_connection_end|do_handle_one_connection                      ## MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Backtrace stopped: Cannot access memory at address                                              ## MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|__isoc99_fscanf@plt                                                                             ## MDEV-25927
+*mbmaxlen < 5|SIGABRT|innobase_get_cset_width|dtype_get_mblen|dict_mem_fill_column_struct|dict_mem_table_add_col                                                               ## MDEV-25900
 field_length < 1024|SIGABRT|Field_string::save_field_metadata|Table_map_log_event::save_field_metadata|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map    ## MDEV-25900
 octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|copy_data_between_tables ## MDEV-25900
 octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|MYSQL_BIN_LOG::write_table_map ## MDEV-25900
@@ -1448,6 +1451,8 @@ subq_pred->engine->engine_type() == subselect_engine::SINGLE_SELECT_ENGINE|SIGAB
 SIGSEGV|select_value_catcher::setup|execute_degenerate_jtbm_semi_join|setup_jtbm_semi_joins|JOIN::optimize_inner                                                               ## MDEV-22700
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|copy_fields|end_write                                                                                 ## MDEV-22702
 len == ref_length|SIGABRT|ha_innobase::position|find_all_keys|filesort|create_sort_index                                                                                       ## MDEV-22873
+0|SIGABRT|Item::val_native|Item::val_native_result|Type_handler_fbt<Inet4, Type_collection_inet>::Item_val_native_with_conversion_result|Item::val_native_with_conversion_result ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_result|Type_handler_fbt<Inet4, Type_collection_fbt<Inet4> >::Item_val_native_with_conversion_result|Item::val_native_with_conversion_result ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_result|Type_handler_timestamp_common::Item_val_native_with_conversion_result|Item::val_native_with_conversion_result               ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion                                      ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|FixedBinTypeBundle<Inet6>::Type_handler_fbt::Item_val_native_with_conversion                        ## MDEV-22885

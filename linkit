@@ -75,6 +75,7 @@ ln -fs /home/${USER}/mariadb-qa/san_text_string.sh /home/${USER}/st 2>&1
 ln -fs /home/${USER}/mariadb-qa/linkit /home/${USER}/li 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${USER}/crc 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/count_testcases_out /home/${USER}/cto 2>&1
+ln -fs /home/${USER}/mariadb-qa/mini_mtr_to_sql.sh /home/${USER}/mmtr 2>&1
 
 # Git bisect clone & main scripts
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
@@ -187,6 +188,7 @@ alias mul='./multirun_loop'  # From a BASEDIR, loop in.sql till a core is found 
 alias mu='./multirun'  # From a BASEDIR, loop in.sql till a crash is observed
 alias mup='./multirun_pquery'  # From a BASEDIR, loop in.sql, using pquery, till a crash is observed
 alias my='./my'      # List simplified testcases in current (pquery) workdir
+alias mmtr='${HOME}/mariadb-qa/mini_mtr_to_sql.sh'  # Run Mini MTR-to-SQL for a given testcase
 alias stack='./stack'  # Produce a stack for the core in /data (run from within a BASEDIR or trial dir)
 alias as='cd /test; ./allstrings'  # Show UniqueID's per version after running ${HOME}/b (b)
 alias asm='cd /test; ./allstrings_merged'  # Show a list of merged UniqueID's seen after running ${HOME}/b (b)

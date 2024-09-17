@@ -86,6 +86,9 @@ cat "${1}" | tr -d '`' | \
        s|local|LOCAL|gi; \
        s|infile|INFILE|gi; \
        s|cascade|CASCADE|gi; \
+       s|cascaded|CASCADED|gi; \
+       s|ALLOCATE|ALLOCATE|gi; \
+       s|deallocate|DEALLOCATE|gi; \
        s|duplicate|DUPLICATE|gi; \
        s|terminated by|TERMINATED BY|gi; \
        s|table|TABLE|gi; \
@@ -95,7 +98,6 @@ cat "${1}" | tr -d '`' | \
        s|status|STATUS|gi; \
        s|using|USING|gi; \
        s|distinct|DISTINCT|gi; \
-       s|cascaded|CASCADED|gi; \
        s|check option|CHECK OPTION|gi; \
        s|comment|COMMENT|gi; \
        s|format|FORMAT|gi; \
@@ -195,6 +197,7 @@ cat "${1}" | tr -d '`' | \
        s|change|CHANGE|gi; \
        s|master|MASTER|gi; \
        s|asc|ASC|gi; \
+       s|as |AS |gi; \
        s|ascii|ASCII|gi; \
        s|limit|LIMIT|gi; \
        s|DELIMITER|DELIMITER|gi; \

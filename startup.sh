@@ -448,11 +448,16 @@ if [ -d "${MTR_DIR}" ]; then
   echo '../bin/mariadb -P${PORT} -h127.0.0.1 -uroot' >>${MTR_DIR}/cl_mtr
   sed "s|\/mtr |/mtr --mysqld=--innodb --mysqld=--default-storage-engine=Innodb |" ${MTR_DIR}/cl_mtr > ${MTR_DIR}/cl_mtr_innodb
   chmod +x ${MTR_DIR}/cl_mtr ${MTR_DIR}/cl_mtr_innodb
-  echo '#Loop MTR on main/test.test till it fails' >${MTR_DIR}/loop_mtr
-  echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; ./mtr test 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr
+  echo '#!/bin/bash' >${MTR_DIR}/loop_mtr
+  echo '#Loop MTR on main/test.test (or any other test, if specified) till it fails' >>${MTR_DIR}/loop_mtr
+  echo 'if [ -z "${1}" ]; then TEST="test"; else TEST="${1}"; fi' >>${MTR_DIR}/loop_mtr
+  echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; ./mtr \${TEST} 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr
   chmod +x ${MTR_DIR}/loop_mtr
-  cp ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_multi
-  sed -i 's^ ./mtr test^ MTR_MEM=/dev/shm ./mysql-test-run --parallel=100 --repeat 100 --mem --force --retry=0 --retry-failure=0 test{,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,} ^' ${MTR_DIR}/loop_mtr_multi
+  echo '#!/bin/bash' >${MTR_DIR}/loop_mtr_multi
+  echo '#Multi-loop MTR on main/test.test (or any other test, if specified) till it fails' >>${MTR_DIR}/loop_mtr_multi
+  echo 'if [ -z "${1}" ]; then TEST="test"; else TEST="${1}"; fi' >>${MTR_DIR}/loop_mtr_multi
+  echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; MTR_MEM=/dev/shm ./mysql-test-run --parallel=100 --repeat 100 --mem --force --retry=0 --retry-failure=0 \${TEST}{,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,} 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr_multi
+  chmod +x ${MTR_DIR}/loop_mtr_multi
   cp ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_skip_slave_err
   cp ${MTR_DIR}/loop_mtr_multi ${MTR_DIR}/loop_mtr_multi_skip_slave_err
   sed -i 's^ ./mtr^ ./mtr --mysqld=--slave_skip_errors=ALL^' ${MTR_DIR}/loop_mtr_skip_slave_err

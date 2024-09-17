@@ -185,7 +185,7 @@ remove_non_sql_from_trace(){
 
 add_failing_and_trigger_queries_to_trace(){  # Improve issue reproducibility by adding failing/trigger queries to the SQL trace
   if [ "${1}" != "NOREGEN" ]; then  # Normal operation -or- first call (i.e. without NOREGEN)
-    echo "* Obtaining failing and helpful trigger SQL queries using pquery-failing-sql.sh"
+    echo "* Obtaining failing and helpful issue trigger SQL queries using pquery-failing-sql.sh"
     # Note that pquery-failing-sql.sh deletes ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing before [re-]creating it
     ${SCRIPT_PWD}/pquery-failing-sql.sh ${TRIAL} 1
   else  # NOREGEN is used when the failing/trigger queries were already obtained using pquery-failing-sql.sh, when generating the MULTI=1 quick_${TRIAL}.sql files
