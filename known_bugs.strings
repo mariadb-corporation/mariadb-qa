@@ -120,6 +120,7 @@ INNODB_ERROR|Cannot save index statistics for table.*index.*stat.*: Lock wait ti
 INNODB_ERROR|Cannot save table statistics for table `test`.`t`: Lock wait timeout  ## MDEV-32667
 INNODB_ERROR|Table mysql.innodb_table_stats not found          ## SPECIAL-30 (non-issue)
 INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
+INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
 
 ##### Slave errors
 SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346
