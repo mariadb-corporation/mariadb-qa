@@ -3050,7 +3050,28 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
   ${SCRIPT_PWD}/ldd_files.sh
   cd ${PWDTMPSAVE} || exit 1
 
-  ${INIT_TOOL} ${INIT_OPT} --basedir=${BASEDIR} --datadir=${WORKDIR}/data.template > ${WORKDIR}/log/mysql_install_db.txt 2>&1
+  # Data template creation
+  TEMPLATE_CREATE_ATTEMPTS=0
+  while true; do
+    TEMPLATE_CREATE_ATTEMPTS=$[ ${TEMPLATE_CREATE_ATTEMPTS} + 1]
+    rm -Rf ${WORKDIR}/data.template
+    ${INIT_TOOL} ${INIT_OPT} --basedir=${BASEDIR} --datadir=${WORKDIR}/data.template > ${WORKDIR}/log/mysql_install_db.txt 2>&1
+    if [ "$(ls ${WORKDIR}/data.template/mysql 2>/dev/null | wc -l)" -gt 50 ]; then  # Likely succesfull template creation
+      echoit "Created datadir template at ${WORKDIR}/data.template"
+      break
+    else
+      echoit "Attempt ${TEMPLATE_CREATE_ATTEMPTS} (max: 10) of creating a datadiri template at ${WORKDIR}/data.template failed. Retrying in 10 seconds"
+      sleep 10
+      if [ "${TEMPLATE_CREATE_ATTEMPTS}" -eq 10 ]; then
+        echo "Assert: 10 attempts to create ${WORKDIR}/data.template failed. Terminating"
+        exit 1
+        break
+      else
+        continue
+      fi
+    fi
+  done
+  TEMPLATE_CREATE_ATTEMPTS=
   # Sysbench dataload
   diskspace
   if [ ${SYSBENCH_DATALOAD} -eq 1 ]; then
