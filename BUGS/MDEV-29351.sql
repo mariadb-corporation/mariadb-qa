@@ -31,3 +31,7 @@ CREATE TABLE t2 (c INT) ENGINE=InnoDB;
 INSERT INTO t2 VALUES (0, 1);
 EXPLAIN SELECT c+0 FROM t2;
 UPDATE t1 SET d=1 ORDER BY (SELECT d);
+
+CREATE TABLE t (a INT);
+INSERT INTO t VALUES('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',0);
+UPDATE t SET c=1 ORDER BY (SELECT c);

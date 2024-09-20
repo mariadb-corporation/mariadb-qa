@@ -50,7 +50,6 @@ Error reading packet from server.*the last event read from.*the last byte read f
 Internal MariaDB error code: 1017                     Presumed non-issue (mysql db was dropped causing slave issues)
 Internal MariaDB error code: 1030                     MDEV-22936
 Internal MariaDB error code: 1046                     Presumed non-issue (init_slave query cannot be executed) See MDEV-29499
-init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave thread cannot execute init_slave query)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1062  Ref SPECIAL-8 and search this file for 1062
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wait timeout exceeded)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
@@ -118,6 +117,8 @@ Internal MariaDB error code: 1969                     Presumed non-issue (max_st
 Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master, or invalid IP address or invalid MASTER user or invalid host: Can't connect)
 Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
 Internal MariaDB error code: 4145                     Presumed non-issue (binlog event cannot execute as BACKUP STAGE is active)
+Replication slave GTID position. is invalid. Internal MariaDB error code: 12501  SPECIAL-31 (ref kb)
+init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave thread cannot execute init_slave query)
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
 Got error 9 when reading table                        MDEV-23297
 Got error 170                                         MDEV-26261

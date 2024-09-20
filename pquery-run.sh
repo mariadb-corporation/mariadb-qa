@@ -3060,7 +3060,7 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
       echoit "Created datadir template at ${WORKDIR}/data.template"
       break
     else
-      echoit "Attempt ${TEMPLATE_CREATE_ATTEMPTS} (max: 10) of creating a datadiri template at ${WORKDIR}/data.template failed. Retrying in 10 seconds"
+      echoit "Attempt ${TEMPLATE_CREATE_ATTEMPTS} (max: 10) of creating a datadir template at ${WORKDIR}/data.template failed. Retrying in 10 seconds"
       sleep 10
       if [ "${TEMPLATE_CREATE_ATTEMPTS}" -eq 10 ]; then
         echo "Assert: 10 attempts to create ${WORKDIR}/data.template failed. Terminating"

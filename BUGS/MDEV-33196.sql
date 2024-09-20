@@ -22,3 +22,12 @@ INSTALL PLUGIN Spider SONAME 'ha_spider.so';
 CREATE TABLE t (a INT) ENGINE=Spider;
 SET @@max_statement_time=0.0001;
 RENAME TABLE t TO t2,t3 TO t3,t2 TO t;
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE TABLE t (c INT);
+CREATE OR REPLACE TABLE t (a INT);
+CREATE TABLE t2 (t2_i INT KEY,t2_j BLOB) ENGINE=Spider;
+DROP TABLE Ｔ１;
+DROP TABLE t;
+SET max_statement_time=0.000001;
+RENAME TABLE t2 TO t,t2 TO t3,t TO t3;

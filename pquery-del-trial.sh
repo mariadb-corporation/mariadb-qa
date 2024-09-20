@@ -25,7 +25,7 @@ delete_trial(){
     rm -f ./reducer${TRIAL}.sh > /dev/null 2>&1
     rm -f ./base_reducer${TRIAL}.sh 2>&1
     rm -f ./feature_reducer${TRIAL}.sh 2>&1
-    rm -f ./find${TRIAL}.sh 2>&1
+    rm -f ./find${TRIAL} 2>&1
     rm -f ./quick_*reducer${TRIAL}.sh > /dev/null 2>&1
     rm -f ./reducer_val${TRIAL}.sh > /dev/null 2>&1
     rm -f ./quick_*reducer_val${TRIAL}.sh > /dev/null 2>&1

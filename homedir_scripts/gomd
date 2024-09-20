@@ -2,7 +2,8 @@
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
-BASEDIR=/test/MDEV-34931-MDEV-31466-fix_MD170924-mariadb-11.7.0-linux-x86_64-dbg
+BASEDIR=/test/PATCH2_MD200924-mariadb-11.7.0-linux-x86_64-dbg
+#MDEV-34931-MDEV-31466-fix_MD170924-mariadb-11.7.0-linux-x86_64-dbg
 #MDEV-15696_MD140924-mariadb-11.7.0-linux-x86_64-opt
 #MDEV-31466_MD090924-mariadb-11.7.0-linux-x86_64-dbg
 RUNSOPT=2

@@ -59,6 +59,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2013  ## Ref REGEX_ERRORS_FILTER.info (se
 MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22 (require_secure_transport)
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
+MARIADB_ERROR_CODE|MariaDB error code: 12501 ## SPECIAL-31 (to be expected; remote table not available)
 MARIADB_ERROR_CODE|MariaDB error code: 12701 ## MDEV-22936
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
 MARKED_AS_CRASHED|mysqld: Table sql-temptable-X is marked as crashed and should be repaired  ## MDEV-31588
@@ -107,6 +108,7 @@ GOT_ERROR|Got error 1429|when reading table                    ## SPECIAL-6 (Spi
 GOT_ERROR|Got error 1814|when reading table                    ## MDEV-33042
 GOT_ERROR|Got error 1969|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 1969|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196 (Spider)
+GOT_ERROR|Got error 1969|when trying to execute action for entry 4 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 12524|when reading table                   ## MDEV-33196
 GOT_ERROR|Got error 12524|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 12524|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196 (Spider)
@@ -2629,3 +2631,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|Item_func_case_simple::do_build_clone|Item::build_clone|Item_func_case_simple::do_build_clone|Item::build_clone                                             ## Fixed ## MDEV-34683
 # typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_field::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                 ## Fixed ## MDEV-34683
 # typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_hex_hybrid::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                            ## Fixed ## MDEV-34771
+# SIGSEGV|st_select_lex_unit::rename_types_list|st_select_lex_unit::prepare|mysql_derived_prepare|mysql_handle_single_derived                                         ## Fixed ## MDEV-34941
