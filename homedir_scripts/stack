@@ -1,2 +1,0 @@
-#!/bin/bash
-${HOME}/mariadb-qa/stack.sh

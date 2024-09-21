@@ -30,27 +30,28 @@ elif [ -r ./node3/node3.err ]; then
   if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
 else echo "Assert: mariadbd nor mysqld found!"; exit 1; fi
 
+# Partial code duplication with/between stack.sh and myver (update both if changing this)
 if [ -r "${SCRIPT_PWD}/source_code_rev.sh" ]; then
   SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
+elif [ -r "${SCRIPT_PWD}/../source_code_rev.sh" ]; then
+  SOURCE_CODE_REV="$(${SCRIPT_PWD}/../source_code_rev.sh)"
 elif [ -r "${HOME}/mariadb-qa/source_code_rev.sh" ]; then
   SOURCE_CODE_REV="$(${HOME}/mariadb-qa/source_code_rev.sh)"
 else
   SOURCE_CODE_REV='unknown'
 fi
-
-# Partial code duplication with homedir_scripts/myver
 SVR=''  # ES,CS,MS
-if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep --binary-files=text "BASEDIR" ./start 2>/dev/null | grep -o 'EMD' | head -n1)" == "EMD" ]; then
-  SERVER_VERSION="$(${BIN}  --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]-MariaDB' | sed 's|-MariaDB||')"
+if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'EMD' | head -n1)" == "EMD" ]; then
+  SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]\+-MariaDB' | sed 's|-MariaDB||')"
   SVR='ES'
-else
+elif [ "$(echo "${PWD}" | grep -o MD)" == "MD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MD' | head -n1)" == "MD" ]; then    
   SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
   SVR='CS'
-fi
-if [ -z "${SERVER_VERSION}" ]; then  # Likely MS
+elif [ "$(echo "${PWD}" | grep -o MS)" == "MS" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MS' | head -n1)" == "MS" ]; then 
   SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
   SVR='MS'
 fi
+# /Partial code duplication end
 
 BUILD_TYPE=
 LAST_THREE="$(echo "${PWD}" | sed 's|.*\(...\)$|\1|')"

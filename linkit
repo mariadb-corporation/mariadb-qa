@@ -59,7 +59,7 @@ if [ ! -d /home/${USER}/fuzzing/fuzzing_root/init_lib ]; then
 fi
 
 # Homedir scripts
-rm -f ${HOME}/tcp ${HOME}/pge ${HOME}/pg ${HOME}/tr ${HOME}/tc ${HOME}/t ${HOME}/fc ${HOME}/mcl ${HOME}/s ${HOME}/st ${HOME}/li
+rm -f ${HOME}/tcp ${HOME}/pge ${HOME}/pg ${HOME}/tr ${HOME}/tc ${HOME}/t ${HOME}/fc ${HOME}/mcl ${HOME}/s ${HOME}/st ${HOME}/li ${HOME}/crc ${HOME}/cto ${HOME}/mmtr ${HOME}/stack
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/testcase_prettify.sh /home/${USER}/tcp 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/pge 2>&1
@@ -76,6 +76,7 @@ ln -fs /home/${USER}/mariadb-qa/linkit /home/${USER}/li 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${USER}/crc 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/count_testcases_out /home/${USER}/cto 2>&1
 ln -fs /home/${USER}/mariadb-qa/mini_mtr_to_sql.sh /home/${USER}/mmtr 2>&1
+ln -fs /home/${USER}/mariadb-qa/stack.sh /home/${USER}/stack 2>&1
 
 # Git bisect clone & main scripts
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
