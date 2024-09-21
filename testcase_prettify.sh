@@ -60,7 +60,7 @@ cat "${1}" | tr -d '`' | \
        s|numeric|NUMERIC|gi; \
        s|value|VALUE|gi; \
        s|server|SERVER|gi; \
-       s|wrapper|WRAPPER|gi;s|wrapper \+mysql|WRAPPER MYSQL|gi; \
+       s|wrapper|WRAPPER|gi;s|wrapper \+mysql|WRAPPER mysql|gi; \
        s|options|OPTIONS|gi; \
        s|socket|SOCKET|gi;s|socket.sock|socket.sock|gi; \
        s|extractvalue|EXTRACTVALUE|gi; \
@@ -285,6 +285,7 @@ cat "${1}" | tr -d '`' | \
        s|memory|MEMORY|gi; \
        s|innodb|InnoDB|gi; \
        s|spider|Spider|gi; \
+       s|spider_|spider_|gi; \
        s|myisam|MyISAM|gi; \
        s|rocksdb|RocksDB|gi; \
        s|csv|CSV|gi; \
@@ -507,6 +508,7 @@ cat "${1}" | tr -d '`' | \
        s|DELIMITER;|DELIMITER ;|gi; \
        s|USERSTAT|userstat|gi; \
        s|test / |test/|gi; \
+       s|_offset|_offset|gi; \
        s|sleep[ ]*(|SLEEP(|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
 

@@ -137,6 +137,7 @@ Got error 1064 when reading table                     MDEV-33042 (Spider)
 Got error 1100 when reading table                     MDEV-31409 (Spider)
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
 Got error 1184 when reading table                     MDEV-29583 (init_connect failed, Spider)
+mysql_ha_read: Got error 1317 when reading table      SPECIAL-32
 Got error 1400 when reading table                     MDEV-31318 (Spider XA)
 Got error 1429 when reading table                     Presumed non-issue (ref SPECIAL-6.sql: Spider undef. reference ALTER)
 Got error 1430 when reading table                     Presumed non-issue (federatedx base table removed)

@@ -98,6 +98,7 @@ GOT_ERROR|Got error 1056|when reading table                    ## MDEV-34638
 GOT_ERROR|Got error 1064|when reading table                    ## MDEV-33042 (Spider)
 GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
 GOT_ERROR|Got error 1290|when trying to execute action for entry 2 of type 'rename table'  ## SPECIAL-18
+GOT_ERROR|Got error 1317|when reading table                    ## SPECIAL-32
 GOT_ERROR|Got error 1430|when reading table                    ## Presumed non-issue (federatedx base table removed)
 GOT_ERROR|Got error 1430|Unknown error 1430                    ## MDEV-29923
 GOT_ERROR|Got error 1440|when reading table                    ## MDEV-29454
@@ -211,6 +212,7 @@ info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MY
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|parse_escaped_string|File_parser::parse|mysql_make_view                                                                          ## MDEV-34895
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Item::operator new|Type_std_attributes::agg_item_set_converter|Item_func_or_sum::agg_arg_charsets_for_comparison                 ## MDEV-34895
 SIGSEGV|my_scan_weight_utf8mb3_bin|my_scan_weight_utf8mb3_bin|my_strnncoll_utf8mb3_bin|hashcmp                                                                                 ## MDEV-34893
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_preload_keys                                    ## MDEV-34887
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysql_admin_table|mysql_assign_to_keycache                              ## MDEV-34887
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|THD::my_ok_with_recreate_info|mysql_alter_table                            ## MDEV-34886
 SIGSEGV|__strnlen_evex|process_str_arg|my_vsnprintf_ex|my_error                                                                                                                ## MDEV-34849
