@@ -589,7 +589,7 @@ echoit(){
   echo "$(date +'%F %T') $1"
   if [ -r $WORKD/reducer.log ]; then echo "$(date +'%F %T') $1" >> $WORKD/reducer.log; fi
   if [ "${ABORT_ACTIVE}" != "1" ]; then
-    if [ ! -r $INPUTFILE ]; then abort; fi  # The inputfile was removed (likely cleanup
+    if [ ! -r $INPUTFILE ]; then abort; fi  # The inputfile was removed (for example by homedir_scripts/ca etc.)
   fi
 }
 
@@ -841,6 +841,15 @@ options_check(){
       fi
     else
       export -n INPUTFILE=$1  # export -n is not necessary for this script, but it is here to prevent pquery-prep-red.sh from seeing this as a adjustable var
+    fi
+    if [ -r "${INPUTFILE}_out" ]; then  # A reduced testcase already exists, copy it unless a previously made copy already exists too
+      if [ -r "${INPUTFILE}_out_copy" ]; then  # A previously made copy of a previously reduced testcase also already exists
+        echo "Error: the input file (${INPUTFILE}) already has a reduced testcase (${INPUTFILE}_out), which would be ovewritten by running this reducer script as-is. Still, in such cases reducer generally takes a copy of the previously reduced testcase into ${INPUTFILE}_out_copy, howerver, that file also already exists. Please cleanup files as deemed best, and then restart reducer."
+        exit 1
+      else
+        echo "Warning: a reduced testcase (${INPUTFILE}_out) already exists and will be overwritten, thus backing it up as ${INPUTFILE}_out_copy now"
+        cp ${INPUTFILE}_out ${INPUTFILE}_out_copy
+      fi
     fi
     if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
       TOKUDB_RUN_DETECTED=0
@@ -1434,7 +1443,7 @@ multi_reducer(){
               # Only show this in non-fireworks mode. In fireworks mode, this outcome is expected.
               # TODO: The following can be improved much further: this script can actually check for 1) self-existence, 2) workdir existence, 3) any --init-file called SQL files existence, 4) check for for "Access denied for user 'root'" in or "user specified as.*does not exist" (i.e. [ERROR] Event Scheduler: [..@..][test.t1] The user specified as a definer ('..'@'..') does not exist) in log/master.err or log/slave.err and in log/mysqld.out. And if 1/2/3/4 are handled as such, the error message below can be made much nicer and shorter. For example "ERROR: This script (./reducer<nr>.sh) was deleted! Terminating." etc. Make sure that any terminates of scripts are done properly, i.e. if possible still report last optimized file etc.
               if grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log 2>/dev/null; then
-                echoit "Assert: Access denied for user detected in at least one of the subreducers. Check:  grep -qi 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log  # This issue may be hard to recover from"
+                echoit "Assert: Access denied for user detected in at least one of the subreducers. Check:  grep -i 'Access denied for user detected' /dev/shm/$EPOCH/subreducer/*/reducer.log  # This issue may be hard to recover from"
               else
                 echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs:\n  grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/*.err\n3) mariadbd/mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mariadb-admin/mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing;\n  grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/*.err\n, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mariadb-admin/mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/*.err\n  tail -n5 /dev/shm/$EPOCH/log/mysql*.out /dev/shm/$EPOCH/subreducer/*/log/mysql*.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mariadb-admin/mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
               fi
@@ -1474,7 +1483,7 @@ multi_reducer(){
             fi
             if [ $MDG -eq 1 ]; then
               export GALERA_ERROR_LOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
-              export GALERA_CORE_LOC=$WORKD/node1/*core*
+              export GALERA_CORE_LOC=$WORKD/node${GALERA_NODE}/*core*
             fi
             MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
             cd - >/dev/null
@@ -1592,15 +1601,16 @@ TS_init_all_sql_files(){
 
 # Find empty port
 init_empty_port(){
-  # Choose a random port number in 13-65K range, with triple check to confirm it is free
-  NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]
+  # Choose a random port number in 13-47K range, with triple check to confirm it is free
+  NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]
   DOUBLE_CHECK=0
   while :; do
     # Check if the port is free in three different ways
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
-    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 ]; then
+    ISPORTFREE4="$(netstat -tuln | grep :${NEWPORT})"
+    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE4}" ]; then
       if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
         break  # Suitable port number found
       else
@@ -1609,7 +1619,7 @@ init_empty_port(){
         continue  # Loop the check
       fi
     else
-      NEWPORT=$[ 13001 + ( ${RANDOM} % 52000 ) ]  # Try a new port
+      NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi
@@ -2202,14 +2212,14 @@ generate_run_scripts(){
   BIN_TO_USE_SHORT="bin/mariadbd"
   if [ ! -r "${BASEDIR}/bin/mariadbd" ]; then BIN_TO_USE="bin/mysqld"; fi
   if [[ ${MDG} -eq 1 ]]; then
-    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node1/core*)" >> $WORK_GDB
+    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node${GALERA_NODE}/core*)" >> $WORK_GDB
   else
     echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/data*/core*)" >> $WORK_GDB
   fi
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_PARSE_CORE
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_PARSE_CORE
   if [[ ${MDG} -eq 1 ]]; then
-    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node1/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
+    echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node${GALERA_NODE}/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
   else
     echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/data/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
   fi
@@ -3455,7 +3465,7 @@ process_outcome(){
         fi
         if [ $MDG -eq 1 ]; then
           export GALERA_ERROR_LOG=$WORKD/node${GALERA_NODE}/node${GALERA_NODE}.err
-          export GALERA_CORE_LOC=$WORKD/node1/*core*
+          export GALERA_CORE_LOC=$WORKD/node${GALERA_NODE}/*core*
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
         NTSEXITCODE=${?}
@@ -4182,10 +4192,10 @@ verify(){
       fi
       MULTI_THREADS=$[ ${MULTI_THREADS} + ${MULTI_THREADS_INCREASE} ]
       if [ ${MULTI_THREADS} -gt ${MULTI_THREADS_MAX} ]; then  # Verify failed. Terminate.
-        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, and as the configured maximum number of threads ($MULTI_THREADS_MAX) has been reached, now terminating verification"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with ${MULTI_THREADS} threads, and as the configured maximum number of threads (${MULTI_THREADS_MAX}) has been reached, now terminating verification"
         verify_not_found
       else
-        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $MULTI_THREADS threads, now increasing number of threads to ${MULTI_THREADS} (maximum is $MULTI_THREADS_MAX)"
+        echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] As (possibly sporadic) issue did not reproduce with $[ ${MULTI_THREADS} - ${MULTI_THREADS_INCREASE} ] threads, now increasing number of threads to ${MULTI_THREADS} (maximum is ${MULTI_THREADS_MAX})"
       fi
       if [ $MULTI_THREADS -ge 35 ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] WARNING: High load active. You may start seeing messages releated to server overload like:"
@@ -4531,7 +4541,7 @@ fireworks_setup(){
                            echoit "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then
       if [ "${FIREWORKS}" != "1" ]; then
-                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump stack matching with new_text_string.sh"
+                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump stack matching using new_text_string.sh"
                            echoit "[Init] Looking for this string: '$TEXT' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
       else
                            echoit "[Init] Run mode: FireWorks with MODE=3, using new_text_string.sh for UniqueID generation"
@@ -5774,7 +5784,9 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 258 ]; then sed "s/c0/c/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 259 ]; then sed "s/FROM DUAL//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 260 ]; then sed "s/WITHOUT VALIDATION//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 261 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 261 ]; then sed "s/PARTITION.*;/;/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 262 ]; then sed "s/[ \t]\+CHARACTER SET[^)]\+)/)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 263 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     if [ ! -r "${WORKT}" ]; then abort; fi

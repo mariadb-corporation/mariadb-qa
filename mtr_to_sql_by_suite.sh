@@ -1,6 +1,9 @@
+#!/bin/bash
 ####################################################################################
 # Usage: mysql-test$ mtr_to_sql_by_suite.sh suite/rpl suite/binlog                 #
 ####################################################################################
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
+
 if [ "$#" -eq 0 ]; then
   echo "Please supply suite path(s) which contains *.test files."
 fi
@@ -13,7 +16,7 @@ for arg in "${@}"; do
     echo "$dir does not exist, so skipping it."
   else
     for tc in $(find $dir -type f -name "*.test"); do
-      res=$(~/mariadb-qa/mini_mtr_to_sql.sh $tc)
+      res="$(${SCRIPT_PWD}/mini_mtr_to_sql.sh $tc)"
       tc_sql_file=$(echo $res | grep -oP '(?<=Output: ).*(?= \()')
       cat $tc_sql_file >> $SQLFILE
     done
