@@ -589,7 +589,7 @@ echoit(){
   echo "$(date +'%F %T') $1"
   if [ -r $WORKD/reducer.log ]; then echo "$(date +'%F %T') $1" >> $WORKD/reducer.log; fi
   if [ "${ABORT_ACTIVE}" != "1" ]; then
-    if [ ! -r $INPUTFILE ]; then abort; fi  # The inputfile was removed (likely cleanup
+    if [ ! -r $INPUTFILE ]; then abort; fi  # The inputfile was removed (for example by homedir_scripts/ca etc.)
   fi
 }
 
@@ -841,6 +841,15 @@ options_check(){
       fi
     else
       export -n INPUTFILE=$1  # export -n is not necessary for this script, but it is here to prevent pquery-prep-red.sh from seeing this as a adjustable var
+    fi
+    if [ -r "${INPUTFILE}_out" ]; then  # A reduced testcase already exists, copy it unless a previously made copy already exists too
+      if [ -r "${INPUTFILE}_out_copy" ]; then  # A previously made copy of a previously reduced testcase also already exists
+        echo "Error: the input file (${INPUTFILE}) already has a reduced testcase (${INPUTFILE}_out), which would be ovewritten by running this reducer script as-is. Still, in such cases reducer generally takes a copy of the previously reduced testcase into ${INPUTFILE}_out_copy, howerver, that file also already exists. Please cleanup files as deemed best, and then restart reducer."
+        exit 1
+      else
+        echo "Warning: a reduced testcase (${INPUTFILE}_out) already exists and will be overwritten, thus backing it up as ${INPUTFILE}_out_copy now"
+        cp ${INPUTFILE}_out ${INPUTFILE}_out_copy
+      fi
     fi
     if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
       TOKUDB_RUN_DETECTED=0

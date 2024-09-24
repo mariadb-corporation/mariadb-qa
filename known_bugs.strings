@@ -69,6 +69,7 @@ GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ##
 GOT_ERROR|Got error 126|when reading table                     ## MDEV-26492  ## entries to check
 GOT_ERROR|Got error '126 "Index is corrupted"' for './test/t.MAI' ## MDEV-31029
 GOT_ERROR|Got error 127|when reading table                     ## MDEV-34472
+GOT_ERROR|Got error 128|when reading table                     ## MDEV-34991
 GOT_ERROR|Got error 134|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 140|"Wrong create options" from storage engine InnoDB Error_code: 1030  ## MDEV-33961
 GOT_ERROR|Got error 170|"It is not possible to log this statement" from storage engine InnoDB ## MDEV-32354
@@ -96,6 +97,7 @@ GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rena
 GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and MDEV-29430
 GOT_ERROR|Got error 1056|when reading table                    ## MDEV-34638
 GOT_ERROR|Got error 1064|when reading table                    ## MDEV-33042 (Spider)
+GOT_ERROR|Got error 1099|when reading table                    ## MDEV-34990 (Spider)
 GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
 GOT_ERROR|Got error 1290|when trying to execute action for entry 2 of type 'rename table'  ## SPECIAL-18
 GOT_ERROR|Got error 1317|when reading table                    ## SPECIAL-32
@@ -109,6 +111,7 @@ GOT_ERROR|Got error 1429|when reading table                    ## SPECIAL-6 (Spi
 GOT_ERROR|Got error 1814|when reading table                    ## MDEV-33042
 GOT_ERROR|Got error 1969|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 1969|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196 (Spider)
+GOT_ERROR|Got error 1969|when trying to execute action for entry 3 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 1969|when trying to execute action for entry 4 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 12524|when reading table                   ## MDEV-33196
 GOT_ERROR|Got error 12524|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)
@@ -203,6 +206,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|spider_db_rollback|spider_rollback|ha_rollback_trans|trans_rollback_stmt                                                                                               ## MDEV-34997
+SIGSEGV|spider_tree_first|spider_rollback|ha_rollback_trans|trans_rollback_stmt                                                                                                ## MDEV-34997
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_ci_lengthsp|my_uca_strnxfrm_utf32|charset_info_st::strnxfrm                                                                     ## MDEV-34935
 SIGSEGV|dict_table_t::is_active_ddl|trx_t::rollback_low|trx_t::rollback|trx_t::rollback                                                                                        ## MDEV-34928
 SIGSEGV|dict_table_t::is_native_online_ddl|trx_t::rollback_low|trx_t::rollback|trx_t::rollback                                                                                 ## MDEV-34928

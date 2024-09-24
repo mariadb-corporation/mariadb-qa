@@ -121,19 +121,21 @@ Replication slave GTID position. is invalid. Internal MariaDB error code: 12501 
 init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave thread cannot execute init_slave query)
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
 Got error 9 when reading table                        MDEV-23297
-Got error 170                                         MDEV-26261
-Got error 171 .The event was corrupt                  MDEV-22936 (May mask other bugs?)
 Got error 126 when reading table                      MDEV-27902 (May mask other bugs)
 Got error 127 when reading table                      MDEV-27903
+Got error 128 when reading table                      MDEV-34991
 Got error 134 when reading table                      MDEV-34230
+Got error 170 .It is not possible to log this statement  MDEV-26261
+Got error 171 .The event was corrupt                  MDEV-22936 (May mask other bugs?)
 Got error 188 when reading table                      Presumed non-issue (Operation was interrupted, max_statement_time)
-Got error 192                                         MDEV-26258 (various error 192 msgs)
+Got error 192                                         MDEV-26258 (various error 192 msgs). Note we have a space in 'rf' after 192 to avoid all 192* errors being caught
 Got error 194 when reading table                      MDEV-27952 (tablespace discarded)
 Got error 194 .Tablespace is missing .* engine InnoDB MDEV-27952 (tablespace discarded)
 Got error 1054 when reading table                     MDEV-29430 (Spider)
 Got error 1054 when reading table                     MDEV-29663 (Spider, 29430 duplicate)
 Got error 1056 when reading table                     MDEV-34638 (Spider)
 Got error 1064 when reading table                     MDEV-33042 (Spider)
+Got error 1099 when reading table                     MDEV-34990 (Spider)
 Got error 1100 when reading table                     MDEV-31409 (Spider)
 Got error 1146 when reading table                     Presumed non-issue (Spider: underlaying table deleted + SELECT on Spider)
 Got error 1184 when reading table                     MDEV-29583 (init_connect failed, Spider)

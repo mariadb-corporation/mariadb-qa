@@ -32,7 +32,7 @@ rm -Rf 11.6
 #./clone.sh 10.10 &
 ./clone.sh 10.11 &
 #./clone.sh 11.0 &
-./clone.sh 11.1 &
+#./clone.sh 11.1 &
 ./clone.sh 11.2 &
 #./clone.sh 11.3 &
 ./clone.sh 11.4 &
