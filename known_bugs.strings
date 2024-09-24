@@ -208,6 +208,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|spider_db_rollback|spider_rollback|ha_rollback_trans|trans_rollback_stmt                                                                                               ## MDEV-34997
 SIGSEGV|spider_tree_first|spider_rollback|ha_rollback_trans|trans_rollback_stmt                                                                                                ## MDEV-34997
+marked_for_read()|SIGABRT|Field_timestamp0::get_timestamp|Field::get_timestamp|Field_timestamp::get_date|Item_field::get_date_result                                           ## MDEV-34992
+length <= copy->to_length - 2|SIGABRT|do_varstring2_no_truncation|do_copy_null|copy_fields|end_write_group                                                                     ## MDEV-34984
+SIGSEGV|next_free_record_pos|heap_write|ha_heap::write_row|handler::ha_write_tmp_row                                                                                           ## MDEV-34984
+fts_id_index->fields[1].col->vers_sys_end()|SIGABRT|fts_add_doc_by_id|fts_add|fts_commit_table|fts_commit                                                                      ## MDEV-34982
 (length % 4) == 0|SIGABRT|my_lengthsp_utf32|my_ci_lengthsp|my_uca_strnxfrm_utf32|charset_info_st::strnxfrm                                                                     ## MDEV-34935
 SIGSEGV|dict_table_t::is_active_ddl|trx_t::rollback_low|trx_t::rollback|trx_t::rollback                                                                                        ## MDEV-34928
 SIGSEGV|dict_table_t::is_native_online_ddl|trx_t::rollback_low|trx_t::rollback|trx_t::rollback                                                                                 ## MDEV-34928
