@@ -49,70 +49,18 @@ if [ -z "${BIN}" ]; then
   exit 1
 fi
 
-# Partial code duplication with/between stack.sh and myver (update both if changing this)
-if [ -r "${SCRIPT_PWD}/source_code_rev.sh" ]; then
-  SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
-elif [ -r "${SCRIPT_PWD}/../source_code_rev.sh" ]; then
-  SOURCE_CODE_REV="$(${SCRIPT_PWD}/../source_code_rev.sh)"
-elif [ -r "${HOME}/mariadb-qa/source_code_rev.sh" ]; then
-  SOURCE_CODE_REV="$(${HOME}/mariadb-qa/source_code_rev.sh)"
+# Call the version check helper script to set the following vars:
+# SOURCE_CODE_REV, SVR, SERVER_VERSION, BUILD_TYPE, MDG
+# Note: this helper script find/call code is universal; it will works for/from all scripts
+if [ -r "${SCRIPT_PWD}/../version_chk_helper.source" ]; then
+  source "${SCRIPT_PWD}/../version_chk_helper.source"
+elif [ -r "${SCRIPT_PWD}/version_chk_helper.source" ]; then
+  source "${SCRIPT_PWD}/version_chk_helper.source"
 else
-  SOURCE_CODE_REV='unknown'
+  echo "Assert: version_chk_helper.sh not found/readable by this script ($0)"
+  exit 1
 fi
-SVR=''  # ES,CS,MS
-if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'EMD' | head -n1)" == "EMD" ]; then
-  SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]\+-MariaDB' | sed 's|-MariaDB||')"
-  SVR='ES'
-elif [ "$(echo "${PWD}" | grep -o MD)" == "MD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MD' | head -n1)" == "MD" ]; then 
-  SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
-  SVR='CS'
-elif [ "$(echo "${PWD}" | grep -o MS)" == "MS" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MS' | head -n1)" == "MS" ]; then 
-  SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
-  SVR='MS'
-fi
-# /Partial code duplication end
 
-# mysql-testi, bin etc. can always be filtered
-DIRFILTER='s|/mysql-test$||;s|/mariadb-test$||;s|/bin$||'
-LAST_THREE="$(echo "${PWD}" | sed "${DIRFILTER}" | sed 's|.*\(...\)$|\1|')"
-BUILD_TYPE=
-SAN="$(echo "${PWD}" | sed "${DIRFILTER}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"
-if [ -z "${SAN}" ]; then
-  if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
-  if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
-else
-  if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, ${SAN})"; fi
-  if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug, ${SAN})"; fi
-fi
-if [ -z "${BUILD_TYPE}" -a -r ./BUILD_CMD_CMAKE ]; then
-  if ! grep -qi '=Debug' ./BUILD_CMD_CMAKE 2>/dev/null; then
-    if [ -z "${SAN}" ]; then BUILD_TYPE=" (Optimized)"; else BUILD_TYPE=" (Optimized, ${SAN})"; fi
-  else
-    if [ -z "${SAN}" ]; then BUILD_TYPE=" (Debug)"; else BUILD_TYPE=" (Debug, ${SAN})"; fi
-  fi
-fi
-if [ -z "${BUILD_TYPE}" -a -x "${BIN}" ]; then
-  if [ "$(${BING} --help 2>&1 | head -n1 | grep -o "\-debug")" == "-debug" ]; then
-    BUILD_TYPE=" (Debug)";
-  else
-    BUILD_TYPE=" (Optimized)";
-  fi
-fi
-# Partial code duplication with stack.sh, however that script does not check for SAN build types (as it is not commonly needed; almost all crashing bugs reproduce in regular non-SAN builds also, and SAN stacks are usually manually copied from cat log/*.err with a ~/m prefix/suffix)
-MDG=0
-if [ ! -z "$(ls --color=never ./node*/node*.err 2>/dev/null)" ]; then
-  MDG=1
-fi
-if [ "${LAST_THREE}" != "dbg" -a "${LAST_THREE}" != "opt" ]; then  # in-trial myver call
-  if [ "${MDG}" -eq 1 ]; then 
-    LAST_THREE="$(grep --binary-files=text -Eoh "\-dbg|\-opt" ./node*/node*.err 2>/dev/null | head -n1 | sed 's|\-||')"
-  else
-    LAST_THREE="$(grep --binary-files=text -Eoh "\-dbg|\-opt" ./log/master.err ./var/log/mysqld.*.err 2>/dev/null | head -n1 | sed 's|\-||')"
-  fi
-fi
-if [ "${LAST_THREE}" != "dbg" -a "${LAST_THREE}" != "opt" ]; then  # in-trial myver call for ES
-  LAST_THREE="$(grep --binary-files=text -oh "BASEDIR.*\-[do][bp][gt]" start 2>/dev/null | grep --binary-files=text -Eoh "\-dbg|\-opt" | head -n1 | sed 's|\-||')"
-fi
 echo "{noformat:title=${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
 echo ""
 echo "{noformat}"
