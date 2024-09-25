@@ -462,6 +462,7 @@ SIGSEGV|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions|ha_p
 ((&(&conn->mta_conn_mutex)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&conn->mta_conn_mutex)->m_mutex)->thread))|SIGABRT|spider_db_errorno|spider_db_store_result|spider_bg_conn_action|pfs_spawn_thread ## MDEV-33197
 ((&(&conn->mta_conn_mutex)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&conn->mta_conn_mutex)->m_mutex)->thread))|SIGABRT|spider_db_errorno|spider_db_store_result|spider_bg_conn_action|start_thread ## MDEV-33197
 SIGSEGV|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|spider_db_seek_next                                                                     ## MDEV-33197
+SIGSEGV|spider_db_store_result|spider_bg_conn_action|start_thread|clone3                                                                                                       ## MDEV-33197
 SIGSEGV|inline_mysql_rwlock_wrlock|Query_cache_query::lock_writing|Query_cache::insert|query_cache_insert                                                                      ## MDEV-10826
 SIGSEGV|inline_mysql_rwlock_unlock|Query_cache_query::unlock_writing|Query_cache::store_query|execute_sqlcom_select                                                            ## MDEV-10826
 SIGSEGV|my_hash_sort_bin|my_ci_hash_sort|my_hash_sort|rec_hashnr                                                                                                               ## MDEV-10826
