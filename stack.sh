@@ -4,34 +4,8 @@ SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
 
-BIN=
-if [ -r ./bin/mariadbd ]; then BIN='./bin/mariadbd'; 
-elif [ -r ./bin/mysqld ]; then BIN='./bin/mysqld';
-elif [ -r ../mysqld/mariadbd ]; then BIN='../mysqld/mariadbd'; 
-elif [ -r ../mysqld/mysqld ]; then BIN='../mysqld/mysqld'; 
-elif [ -r ../bin/mariadbd ]; then BIN='../bin/mariadbd';  # For MTR
-elif [ -r ../bin/mysqld ]; then BIN='../bin/mysqld';  # For MTR
-elif [ -r ../../bin/mariadbd ]; then BIN='../../bin/mariadbd';
-elif [ -r ../../bin/mysqld ]; then BIN='../../bin/mysqld';
-elif [ -r ./log/master.err ]; then
-  POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
-elif [ -r ./log/slave.err ]; then
-  POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/slave.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
-elif [ -r ./node1/node1.err ]; then
-  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
-elif [ -r ./node2/node2.err ]; then
-  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node2/node2.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
-elif [ -r ./node3/node3.err ]; then
-  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node3/node3.err | sed 's|: .*||;s|^.* ||' | head -n1)"
-  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
-else echo "Assert: mariadbd nor mysqld found!"; exit 1; fi
-
 # Call the version check helper script to set the following vars:
-# SOURCE_CODE_REV, SVR, SERVER_VERSION, BUILD_TYPE, MDG
+# BIN, SOURCE_CODE_REV, SVR, SERVER_VERSION, BUILD_TYPE, MDG
 # Note: this helper script find/call code is universal; it will works for/from all scripts
 if [ -r "${SCRIPT_PWD}/../version_chk_helper.source" ]; then
   source "${SCRIPT_PWD}/../version_chk_helper.source"

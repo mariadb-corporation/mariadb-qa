@@ -248,7 +248,7 @@ fi
 cd - >/dev/null || exit 1
 
 # Call the version check helper script to set the following vars:
-# SOURCE_CODE_REV, SVR, SERVER_VERSION, BUILD_TYPE, MDG
+# BIN, SOURCE_CODE_REV, SVR, SERVER_VERSION, BUILD_TYPE, MDG
 # Note: this helper script find/call code is universal; it will works for/from all scripts
 if [ -r "${SCRIPT_PWD}/../version_chk_helper.source" ]; then
   source "${SCRIPT_PWD}/../version_chk_helper.source"

@@ -9,6 +9,64 @@ if [ ! -z "$(ls --color=never ./node*/node*.err 2>/dev/null)" ]; then
   MDG=1
 fi
 
+if [ ! -z "${BIN}" ]; then
+  if [ ! -x "${BIN}" ]; then
+    BIN=
+  fi
+fi
+
+POTENTIAL_MYSQLD=
+if [ -r ./bin/mariadbd -a ! -d ./bin/mariadbd ]; then
+  BIN="./bin/mariadbd"
+elif [ -r ./bin/mysqld -a ! -d ./bin/mysqld ]; then  # For direct use in BASEDIR, like ~/tt
+  BIN="./bin/mysqld"
+elif [ -r ./mariadbd -a ! -d ./mariadbd ]; then  # Ported from previous version of myver script
+  BIN="./mariadbd"
+elif [ -r ./mysqld -a ! -d ./mysqld ]; then  # Ported from previous version of myver script
+  BIN="./mysqld"
+elif [ -r ./mysqld/mariadbd -a ! -d ./mysqld/mariadbd ]; then  # Exec from within workdir root
+  BIN="./mysqld/mariadbd"
+elif [ -r ./mysqld/mysqld -a ! -d ./mysqld/mysqld ]; then  # Exec from within workdir root
+  BIN="./mysqld/mysqld"
+elif [ -r ../bin/mariadbd -a ! -d ../bin/mariadbd ]; then  # Handy when myver is being executed from the mysql-test dir
+  BIN="../bin/mariadbd"
+elif [ -r ../bin/mysqld -a ! -d ../bin/mysqld ]; then  # Handy when myver is being executed from the mysql-test dir
+  BIN="../bin/mysqld"
+elif [ -r ../mariadbd -a ! -d ../mariadbd ]; then  # Not currently used, but provisioned alike to ~/t
+  BIN="../mariadbd"
+elif [ -r ../mysqld -a ! -d ../mysqld ]; then  # Not currently used, but provisioned alike to ~/t
+  BIN="../mysqld"
+elif [ -r ../mysqld/mariadbd -a ! -d ../mysqld/mariadbd ]; then  # For direct use inside trial directories
+  BIN="../mysqld/mariadbd"
+elif [ -r ../mysqld/mysqld -a ! -d ../mysqld/mysqld ]; then  # For direct use inside trial directories
+  BIN="../mysqld/mysqld"
+elif [ -r ../../bin/mariadbd -a ! -d ../../bin/mariadbd ]; then
+  BIN="../../bin/mariadbd"
+elif [ -r ../../bin/mysqld -a ! -d ../../bin/mysqld ]; then
+  BIN="../../bin/mysqld"
+elif [ -r ./log/master.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
+elif [ -r ./log/slave.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/slave.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
+elif [ -r ./node1/node1.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node1/node1.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
+elif [ -r ./node2/node2.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node2/node2.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
+elif [ -r ./node3/node3.err ]; then
+  POTENTIAL_MYSQLD="$(grep "ready for connections" ./node3/node3.err | sed 's|: .*||;s|^.* ||' | head -n1)"
+  if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi
+fi
+POTENTIAL_MYSQLD=
+
+if [ -z "${BIN}" ]; then
+  echo "Assert: mysqld/mariadbd not found in any location (checked ./bin/mysqld, ../mysqld, ../mysqld/mysqld and their mariadbd alternatives, as well as other potential locations extracted from any logs at ./log/master.err or ./node1/node1.err)"
+  exit 1
+fi
+
 if [ -r "${SCRIPT_PWD}/source_code_rev.sh" ]; then
   SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
 elif [ -r "${SCRIPT_PWD}/../source_code_rev.sh" ]; then
@@ -19,17 +77,24 @@ else
   SOURCE_CODE_REV='unknown'
 fi
 SVR=''  # ES,CS,MS
-if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'EMD' | head -n1)" == "EMD" -o "$(grep --binary-files=text -io "BASEDIR.*" pquery-run.log | grep -o 'EMD' | head -n1)" == "EMD" ]; then
-  SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]\+-MariaDB' | sed 's|-MariaDB||')"
+if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'EMD' | head -n1)" == "EMD" -o "$(grep --binary-files=text -io "BASEDIR.*" pquery-run.log 2>/dev/null | grep -o 'EMD' | head -n1)" == "EMD" ]; then
+  if [ -x "${BIN}" ]; then
+    SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]\+-MariaDB' | sed 's|-MariaDB||')"
+  fi
   SVR='ES'
-elif [ "$(echo "${PWD}" | grep -o MD)" == "MD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MD' | head -n1)" == "MD" -o "$(grep --binary-files=text -io "BASEDIR.*" pquery-run.log | grep -o 'MD' | head -n1)" == "MD" ]; then
-  SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
+elif [ "$(echo "${PWD}" | grep -o MD)" == "MD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MD' | head -n1)" == "MD" -o "$(grep --binary-files=text -io "BASEDIR.*" pquery-run.log 2>/dev/null | grep -o 'MD' | head -n1)" == "MD" ]; then
+  if [ -x "${BIN}" ]; then
+    SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
+  fi
   SVR='CS'
-elif [ "$(echo "${PWD}" | grep -o MS)" == "MS" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MS' | head -n1)" == "MS" -o "$(grep --binary-files=text -io "BASEDIR.*" pquery-run.log | grep -o 'MS' | head -n1)" == "MS" ]; then
-  SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
+elif [ "$(echo "${PWD}" | grep -o MS)" == "MS" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MS' | head -n1)" == "MS" -o "$(grep --binary-files=text -io "BASEDIR.*" pquery-run.log 2>/dev/null | grep -o 'MS' | head -n1)" == "MS" ]; then
+  if [ -x "${BIN}" ]; then
+    SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
+  fi
   SVR='MS'
 fi
 SERVER_VERSION="$(echo "${SERVER_VERSION}" | tr -d ' ')"
+echo $BIN > /tmp/mybin
 
 BUILD_TYPE=
 DIRFILTER='s|/mysql-test$||;s|/mariadb-test$||;s|/bin$||'
