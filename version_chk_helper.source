@@ -19,13 +19,13 @@ else
   SOURCE_CODE_REV='unknown'
 fi
 SVR=''  # ES,CS,MS
-if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'EMD' | head -n1)" == "EMD" ]; then
+if [ "$(echo "${PWD}" | grep -o EMD)" == "EMD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'EMD' | head -n1)" == "EMD" -o "$(grep --binary-files=text -io "BASEDIR.*" pquery-run.log | grep -o 'EMD' | head -n1)" == "EMD" ]; then
   SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-[0-9]\+-MariaDB' | sed 's|-MariaDB||')"
   SVR='ES'
-elif [ "$(echo "${PWD}" | grep -o MD)" == "MD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MD' | head -n1)" == "MD" ]; then
+elif [ "$(echo "${PWD}" | grep -o MD)" == "MD" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MD' | head -n1)" == "MD" -o "$(grep --binary-files=text -io "BASEDIR.*" pquery-run.log | grep -o 'MD' | head -n1)" == "MD" ]; then
   SERVER_VERSION="$(${BIN} --version | grep -om1 --binary-files=text '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
   SVR='CS'
-elif [ "$(echo "${PWD}" | grep -o MS)" == "MS" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MS' | head -n1)" == "MS" ]; then
+elif [ "$(echo "${PWD}" | grep -o MS)" == "MS" -o "$(grep "BASEDIR" --binary-files=text ./start 2>/dev/null | grep -o 'MS' | head -n1)" == "MS" -o "$(grep --binary-files=text -io "BASEDIR.*" pquery-run.log | grep -o 'MS' | head -n1)" == "MS" ]; then
   SERVER_VERSION="MySQL $(pwd | grep -o 'mysql-[\.0-9]\+' | sed 's|mysql-||')"
   SVR='MS'
 fi
