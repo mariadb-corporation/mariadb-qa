@@ -206,6 +206,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|spider_db_mbase::append_lock_tables|spider_mbase_handler::lock_tables|spider_db_lock_tables|ha_spider::lock_tables                                                     ## MDEV-35011
+SIGSEGV|spider_db_mbase::append_lock_tables|spider_db_mbase::append_lock_tables|spider_mbase_handler::lock_tables|ha_spider::lock_tables                                       ## MDEV-35011
+SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp                                                                                                          ## MDEV-35011
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_insert|mysql_execute_command                                         ## MDEV-35008
 SIGSEGV|my_charset_repertoire|DTCollation::DTCollation|Type_handler_null::make_table_field_from_def|Column_definition_attributes::make_field                                   ## MDEV-35003
 SIGSEGV|spider_db_rollback|spider_rollback|ha_rollback_trans|trans_rollback_stmt                                                                                               ## MDEV-34997
@@ -220,6 +223,7 @@ SIGSEGV|dict_table_t::is_native_online_ddl|trx_t::rollback_low|trx_t::rollback|t
 SIGSEGV|st_join_table::choose_best_splitting|best_access_path|best_extension_by_limited_search|best_extension_by_limited_search                                                ## MDEV-31440
 SIGSEGV|st_join_table::choose_best_splitting|best_access_path|get_costs_for_tables|best_extension_by_limited_search                                                            ## MDEV-31440
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::purge_logs_before_date|MYSQL_BIN_LOG::purge           ## MDEV-34897
+(mem_root->flags & 4) == 0|SIGABRT|alloc_root|Sql_alloc::operator new|base_list::push_back|List<TABLE_LIST>::push_back                                                         ## MDEV-34895
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|parse_escaped_string|File_parser::parse|mysql_make_view                                                                          ## MDEV-34895
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Item::operator new|Type_std_attributes::agg_item_set_converter|Item_func_or_sum::agg_arg_charsets_for_comparison                 ## MDEV-34895
 SIGSEGV|my_scan_weight_utf8mb3_bin|my_scan_weight_utf8mb3_bin|my_strnncoll_utf8mb3_bin|hashcmp                                                                                 ## MDEV-34893
@@ -727,7 +731,6 @@ transaction_.active() == false|SIGABRT|wsrep::client_state::~client_state|Wsrep_
 sp > last_savepoint()|SIGABRT|federatedx_io_mysql::savepoint_set|federatedx_txn::sp_acquire|federatedx_txn::txn_begin|ha_federatedx::external_lock                             ## MDEV-29178
 sp > last_savepoint()|SIGABRT|federatedx_io_mysql::savepoint_set|federatedx_txn::sp_acquire|federatedx_txn::stmt_begin|ha_federatedx::external_lock                            ## MDEV-29178
 sl->join == 0|SIGABRT|reinit_stmt_before_use|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute                                               ## MENT-1653
-SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp                                                                                                          ## MDEV-29854
 SIGSEGV|lock_sys_t::hash_table::resize|lock_sys_t::resize|buf_pool_t::resize|buf_resize_callback                                                                               ## MDEV-29799
 thd->wsrep_exec_mode == LOCAL_STATE|SIGABRT|wsrep_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                   ## MDEV-29808
 thd->ha_data[wsrep_hton->slot].ha_info[all].is_trx_read_write()|SIGABRT|wsrep_prepare|prepare_or_error|ha_prepare|trans_xa_prepare                                             ## MDEV-29807
@@ -2646,3 +2649,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_field::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                 ## Fixed ## MDEV-34683
 # typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_hex_hybrid::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                            ## Fixed ## MDEV-34771
 # SIGSEGV|st_select_lex_unit::rename_types_list|st_select_lex_unit::prepare|mysql_derived_prepare|mysql_handle_single_derived                                         ## Fixed ## MDEV-34941
+# SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp                                                                                               ## Fixed ## MDEV-29854

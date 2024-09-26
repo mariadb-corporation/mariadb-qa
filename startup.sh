@@ -89,7 +89,7 @@ if [ -r ${BASEDIR}/scripts/mariadb-install-db ]; then MID="${BASEDIR}/scripts/ma
 if [ -r ${PWD}/scripts/mysql_install_db ]; then MID="${PWD}/scripts/mysql_install_db"; fi
 if [ -r ${PWD}/bin/mysql_install_db ]; then MID="${PWD}/bin/mysql_install_db"; fi
 START_OPT="--core-file"                        # Compatible with 5.6,5.7,8.0
-INIT_OPT="--no-defaults --initialize-insecure" # Compatible with     5.7,8.0 (mysqld init)
+INIT_OPT="--no-defaults --initialize-insecure --tmpdir=${PWD}/tmp" # Compatible with     5.7,8.0 (mysqld init)
 INIT_TOOL="${BIN}"                             # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
 VERSION_INFO=$(${BIN} --version | grep --binary-files=text -oe '[58]\.[01567]' | head -n1)
 if [ -z "${VERSION_INFO}" ]; then VERSION_INFO="NA"; fi
@@ -99,12 +99,12 @@ if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
 if [[ "${VERSION_INFO_2}" =~ ^10.[1-3]$ ]]; then
   VERSION_INFO="5.1"
   INIT_TOOL="${PWD}/scripts/mysql_install_db"
-  INIT_OPT="--no-defaults --force"
+  INIT_OPT="--no-defaults --force --tmpdir=${PWD}/tmp"
   START_OPT="--core"
 elif [[ "${VERSION_INFO_2}" =~ ^1[0-1].[0-9][0-9]* ]]; then
   VERSION_INFO="5.6"
   INIT_TOOL="${PWD}/scripts/mariadb-install-db"
-  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
+  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal --tmpdir=${PWD}/tmp ${MYINIT}"
   #START_OPT="--core-file --core"
   START_OPT="--core-file"
 elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
@@ -492,7 +492,7 @@ echo "PORT=\$NEWPORT" >>start
 cp start start_valgrind # Idem setup for Valgrind
 cp start start_gypsy    # Idem setup for gypsy
 cp start start_rr       # Idem setup for rr
-echo "$BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
+echo "$BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
 echo "for X in \$(seq 0 90); do if ${PWD}/bin/mysqladmin ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
 if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO}" != "5.6" ]; then
   if [ -r "${PWD}/bin/mariadb" ]; then
@@ -501,8 +501,8 @@ if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO
     echo "${PWD}/bin/mysql -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
   fi
 fi
-echo " valgrind --suppressions=${PWD}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
-echo "$BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_gypsy
+echo " valgrind --suppressions=${PWD}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
+echo "$BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_gypsy
 echo "export _RR_TRACE_DIR=\"${PWD}/rr\"" >>start_rr
 echo "if [ -d \"\${_RR_TRACE_DIR}\" ]; then  # Security measure to avoid incorrect mass-rm" >>start_rr
 echo "  if [ \"\${_RR_TRACE_DIR}\" == \"\${PWD}/rr\" ]; then  # Security measure to avoid incorrect mass-rm" >>start_rr
@@ -510,7 +510,7 @@ echo "    rm -Rf \"\${_RR_TRACE_DIR}\"" >>start_rr
 echo "  fi" >>start_rr
 echo "fi" >>start_rr
 echo "mkdir -p \"\${_RR_TRACE_DIR}\"" >>start_rr
-echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} \${MYEXTRA_OPT} ${START_OPT} --loose-innodb-flush-method=fsync --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/data --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
+echo "/usr/bin/rr record --chaos $BIN \${MYEXTRA} \${MYEXTRA_OPT} ${START_OPT} --loose-innodb-flush-method=fsync --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_rr
 echo "echo 'Server socket: ${SOCKET} with datadir: ${PWD}/data'" >>start
 tail -n1 start >>start_valgrind
 tail -n1 start >>start_gypsy
@@ -534,8 +534,9 @@ echo "./init;./start;./cl;./stop;./kill >/dev/null 2>&1;tail log/master.err" >se
 
 echo 'MYEXTRA_OPT="$*"' >wipe
 echo "./stop >/dev/null 2>&1" >>wipe
-echo "rm -Rf ${PWD}/data ${PWD}/rr" >>wipe
-echo "rm -Rf ${PWD}/data_slave  # Avoid old slave data interference" >>wipe
+echo "rm -Rf ${PWD}/data ${PWD}/tmp ${PWD}/rr" >>wipe
+echo "rm -Rf ${PWD}/data_slave ${PWD}/tmp_slave  # Avoid old slave data interference" >>wipe
+echo "mkdir ${PWD}/tmp ${PWD}/tmp_slave  # A dedicated tmpdir avoids the scripts/mariadb-install-db issue described in MDEV-34789" >>wipe
 if [ "${USE_JE}" -eq 1 ]; then
   echo $JE1 >>wipe
   echo $JE2 >>wipe
@@ -555,7 +556,8 @@ else
 fi
 # Creating init script
 echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
-echo "rm -Rf ${PWD}/data" >> init
+echo "rm -Rf ${PWD}/data ${PWD}/tmp" >> init
+echo "mkdir ${PWD}/tmp" >>wipe
 echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>init
 echo "rm -f log/master.*" >>init
 
@@ -965,6 +967,7 @@ sed -i 's|\-\-server-id=[0-9]\+||g' start_master
 sed -i 's|\-\-server-id=[0-9]\+||g' start_slave
 sed -i 's|master.err|slave.err|g' start_slave cl_slave
 sed -i 's|master.err|slave.err|g' kill_slave
+sed -i 's|/tmp |/tmp_slave |g' wipe_slave
 sed -i 's|/start|/start_slave|g' wipe_slave
 sed -i 's|/stop|/stop_slave|g' wipe_slave
 # The DUMMY provision is to prevent /data/ volume references (like in /data/VARIOUS_BUILDS which contains '/data') from being overwritten: swap and swap back
