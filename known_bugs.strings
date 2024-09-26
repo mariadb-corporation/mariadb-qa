@@ -209,6 +209,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 SIGSEGV|spider_db_mbase::append_lock_tables|spider_mbase_handler::lock_tables|spider_db_lock_tables|ha_spider::lock_tables                                                     ## MDEV-35011
 SIGSEGV|spider_db_mbase::append_lock_tables|spider_db_mbase::append_lock_tables|spider_mbase_handler::lock_tables|ha_spider::lock_tables                                       ## MDEV-35011
 SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp                                                                                                          ## MDEV-35011
+m_lock_type == 2|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                       ## MDEV-35014 
+len_arg > 0|SIGABRT|Field_varstring_compressed::Field_varstring_compressed|Type_handler_varchar::make_table_field_from_def|Column_definition_attributes::make_field|Column_definition::make_field ## MDEV-35013
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_insert|mysql_execute_command                                         ## MDEV-35008
 SIGSEGV|my_charset_repertoire|DTCollation::DTCollation|Type_handler_null::make_table_field_from_def|Column_definition_attributes::make_field                                   ## MDEV-35003
 SIGSEGV|spider_db_rollback|spider_rollback|ha_rollback_trans|trans_rollback_stmt                                                                                               ## MDEV-34997
