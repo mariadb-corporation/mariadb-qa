@@ -722,6 +722,7 @@ trid >= info->s->state.create_trid|SIGABRT|transid_store_packed|_ma_make_key|mar
 (ret == 0 && state() == s_preparing) || (state() == s_must_abort || state() == s_must_replay || state() == s_cert_failed)|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|ha_prepare ## MENT-1675
 !error|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|mysql_delete                                                                                  ## MDEV-30067
 !error|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|multi_delete::do_table_deletes                                                                ## MDEV-30067
+!error|SIGABRT|ha_partition::delete_row|handler::ha_delete_row|TABLE::delete_row|Sql_cmd_delete::delete_from_single_table                                                      ## MDEV-30067
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-23212
 SIGSEGV|Field::eq|Item_equal::contains|Item_equal::merge_with_check|Item_equal::merge_into_list                                                                                ## MDEV-30051
 SIGSEGV|Item_equal_iterator<List_iterator_fast, Item>::get_curr_field|Item_equal::contains|Item_equal::merge_with_check|Item_equal::merge_into_list                            ## MDEV-30051
