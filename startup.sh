@@ -557,7 +557,7 @@ fi
 # Creating init script
 echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
 echo "rm -Rf ${PWD}/data ${PWD}/tmp" >> init
-echo "mkdir ${PWD}/tmp" >>wipe
+echo "mkdir ${PWD}/tmp" >>init
 echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>init
 echo "rm -f log/master.*" >>init
 

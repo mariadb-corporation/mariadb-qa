@@ -337,6 +337,9 @@ if [[ "${TAR_dbg}" == *".tar.gz"* ]]; then
   git log | grep -om1 'commit.*' | awk '{print $2}' | sed 's|[ \n\t]\+||g' > ../${DIR_dbg_new}/git_revision.txt
   echo $CMD > ../${DIR_dbg_new}/BUILD_CMD_CMAKE
   #rm -Rf ${CURPATH}_dbg  # Best not to delete it; this way gdb dbgging is better quality as source will be available!
+  cd ${DIR_dbg_new}
+  perl -i -0777 -pe 's/(  do_resolve=1\n)(then\n)/$2$1/' scripts/mariadb-install-db  # Fix MDEV-34468 if present
+  cd - >/dev/null
   exit 0
 else
   echo "There was some unknown build issue... Have a nice day!"

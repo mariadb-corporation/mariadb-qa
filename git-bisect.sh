@@ -4,22 +4,22 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=10.6                                                        # Use the earliest major version affected by the bug
+VERSION=11.1                                                        # Use the earliest major version affected by the bug
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
-DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
+DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
-LAST_KNOWN_GOOD_COMMIT='83d3ed4908836ff1613208037ff29c8ae3b2e04d'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='2e580dc2a8da4aaf3a7f1b3cfb4f897dbb5f7089'   # Revision of first known bad commit
-TESTCASE='/test/in17.sql'                                           # The testcase to be tested
+LAST_KNOWN_GOOD_COMMIT='2d3e2c58b6d8e74cbec36a806e5ca9f3cbca3fb5'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='3e3a326108ab0ec74a02fd1c63430b7373faf51f'   # Revision of first known bad commit
+TESTCASE='/test/in18.sql'                                           # The testcase to be tested
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID='(mem_root->flags & 4) == 0|SIGABRT|alloc_root|parse_escaped_string|File_parser::parse|mysql_make_view'                                         # The UniqueID to scan for [Exclusive]
+UNIQUEID='SIGSEGV|list_delete|hp_close|heap_close|closefrm'         # The UniqueID to scan for [Exclusive]
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead
@@ -195,6 +195,10 @@ while :; do
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
       echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, skipping..." | tee -a "${MAINLOG}"
       git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"
+      if grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${MAINLOG}"; then
+        exit 1
+        break
+      fi
       continue
     elif [ "${CUR_COMMIT}" == "${LAST_TESTED_COMMIT}" ]; then
       # This seems to happen when for example a patch was attempted to be applied but did not apply correctly or source files were changed - i.e. the tree state is not clean anymore. TODO: this is a provisional patch; it may not work. Setting RECLONE=1 is another way to work around such issues (full reclone)
@@ -206,6 +210,10 @@ while :; do
       break
     fi
   done
+  if grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${MAINLOG}"; then
+    exit 1
+    break
+  fi
   CONTINUE_MAIN_LOOP=0
   OUTCOME_BUILD=
   SCREEN_NAME=
@@ -257,24 +265,24 @@ while :; do
   ${HOME}/start 2>&1 | grep -vE 'To get a |^Note: |Adding scripts: '  # Init BASEDIR with runtime scripts
   cp ${TESTCASE} ./in.sql
   if [ "${REPLICATION}" -eq 0 ]; then
-    ./all_no_cl >/dev/null 2>&1 || die 1 "Could not execute ./all_no_cl in ${PWD}"  # wipe, start
+    ./all_no_cl >>"${MAINLOG}" 2>&1 || die 1 "Could not execute ./all_no_cl in ${PWD}"  # wipe, start
     if [ "${USE_PQUERY}" -eq 1 ]; then
-      ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+      ./test_pquery >>"${MAINLOG}" 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
     else
-      ./test >/dev/null 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
+      ./test >>"${MAINLOG}" 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
     fi
-    echo "$(./stop 2>&1)" 2>&1 >/dev/null  # Output is removed as otherwise it may contain, for example, 'bin/mariadb-admin: connect to server at 'localhost' failed' if the server already crashed due to testcase exec
-    ./kill 2>&1 >/dev/null
+    echo "$(./stop 2>&1)" >/dev/null 2>&1  # Output is removed as otherwise it may contain, for example, 'bin/mariadb-admin: connect to server at 'localhost' failed' if the server already crashed due to testcase exec
+    ./kill >/dev/null 2>&1
   else
     export SRNOCL=1  # No CLI when using ./start_replication
     ./start_replication 2>&1 | grep -vE 'To get a |^Note: |Adding scripts: '
     if [ "${USE_PQUERY}" -eq 1 ]; then
-      ./test_pquery >/dev/null 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
+      ./test_pquery >>"${MAINLOG}" 2>&1 || die 1 "Could not execute ./test_pquery in ${PWD}"  # ./in.sql exec test
     else
-      ./test >/dev/null 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
+      ./test >>"${MAINLOG}" 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
     fi
-    ./stop_replication 2>&1 >/dev/null  # Output is removed, ref above
-    ./kill_replication 2>&1 >/dev/null
+    ./stop_replication >/dev/null 2>&1 # Output is removed, ref above
+    ./kill_replication >/dev/null 2>&1
   fi
   if [ ! -z "${UNIQUEID}" ]; then
     if [ "$(${HOME}/t)" == "${UNIQUEID}" ]; then
