@@ -596,6 +596,7 @@ SIGSEGV|spider_db_open_item_ident|spider_mbase_handler::append_order_by|spider_m
 thd->start_time|SIGABRT|LOGGER::slow_log_print|slow_log_print|log_slow_statement|dispatch_command                                                                              ## MDEV-31366
 !thd->is_current_stmt_binlog_format_row()|SIGABRT|sp_revoke_privileges|mysql_execute_command|mysql_parse|wsrep_mysql_parse                                                     ## MDEV-31352
 mon > 0 && mon < 13|SIGABRT|sec_since_epoch|Time_zone_offset::TIME_to_gmt_sec|TIME_to_timestamp|Timestamp::Timestamp                                                           ## MDEV-31302
+table->skip_alter_undo || !check_foreigns|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                                ## MDEV-34934
 table->skip_alter_undo || !check_unique_secondary|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                        ## MDEV-34934
 !check_foreigns|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                                                          ## MDEV-31298
 SIGSEGV|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal|VDec::VDec|VDec2_lazy::VDec2_lazy                        ## MDEV-31284
