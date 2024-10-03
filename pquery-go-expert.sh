@@ -93,7 +93,8 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
           sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=13|" ${REDUCER}  # This was '7' before. However, many Spider testcases are a little longer than this, and we want more non-sporadic reducers to proceed to stage 2-9. The flipside is that sporadic reducers will attempt stage 2-9 and not be able to reduce much further, but this is not too bad as these can be reviewed during the manual reducer's cleanups.
           # Auto-set the inputfile to the most recent sql trace inc _out* handling
           # Also exclude 'backup/failing' for multi-threaded runs. For example, WORKDIR/TRIALDIR/trial.sql.failing (/data/487127/48/48.sql.failing)
-          if ! grep --binary-files=text -qi 'backup|failing|prev' ${REDUCER}; then  # Avoid changing it twice (corrupts text)
+          # Also exclude _copy files made by base_reducer<trial>.sh's
+          if ! grep --binary-files=text -qi 'backup|failing|prev|copy' ${REDUCER}; then  # Avoid changing it twice (corrupts text)
             sed -i 's|^INPUTFILE="\([^"]\+\)"|INPUTFILE="$(ls --color=never -S \1* \| grep --binary-files=text -vE "backup\|failing\|prev" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\+\|\|\")"|' ${REDUCER}
           fi
           # Next, we consider if we will set FORCE_KILL=1 by doing many checks to see if it makes sense
