@@ -8,7 +8,7 @@
 # ========================================= User configurable variables
 # Note: if an option is passed to this script, it will use that option as the configuration file instead, for example ./pquery-run.sh pquery-run-MD105.conf
 CONFIGURATION_FILE=pquery-run.conf # Do not use any path specifiers, the .conf file should be in the same path as pquery-run.sh
-ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|oracle|track_system_variables|^#|^\-\-|set.*ndb_|^let"  # Used for PRE_SHUFFLE=1/2 as an advanced post filter (differs from FILTER_SQL=1 functionality, which filters the original infile, before starting, with the filter in mariadb-qa/filter.sql), and the latter thus applies even when PRE_SHUFFLE is set to 0. The reasoning is that if you use PRE_SHUFFLE=0 you will have a specific SQL infile set and will not want that to be filtered with this advanced filter (for a more comprehensive run, or for testing debug_dbug variables for example). For PRE_SHUFFLE=0, only the FILTER_SQL=1 filter.sql can be used, and for PRE_SHUFFLE=1/2 ADV_FILTER_LIST will always be used, and FILTER_SQL=1 can be set additionally. You can disable it here if needed, but please re-enable as it is a global var in this script pquery-run.sh and is not bound to individual config files. # TODO: consider moving it to config files
+ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|oracle|track_system_variables|^#|^\-\-|set.*ndb_|^let|^[ \t]*$"  # Used for PRE_SHUFFLE=1/2 as an advanced post filter (differs from FILTER_SQL=1 functionality, which filters the original infile, before starting, with the filter in mariadb-qa/filter.sql), and the latter thus applies even when PRE_SHUFFLE is set to 0. The reasoning is that if you use PRE_SHUFFLE=0 you will have a specific SQL infile set and will not want that to be filtered with this advanced filter (for a more comprehensive run, or for testing debug_dbug variables for example). For PRE_SHUFFLE=0, only the FILTER_SQL=1 filter.sql can be used, and for PRE_SHUFFLE=1/2 ADV_FILTER_LIST will always be used, and FILTER_SQL=1 can be set additionally. You can disable it here if needed, but please re-enable as it is a global var in this script pquery-run.sh and is not bound to individual config files. Update 9 Oct 24: PRE_SHUFFLE=2 now uses mariadb-qa/filter.sql as another filter also (if FILTER_SQL=1) # TODO: consider moving it to config files
 
 # ========================================= Improvement ideas
 # * SAVE_TRIALS_WITH_BUGS_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
@@ -376,6 +376,73 @@ if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
     fi
   fi
 fi
+
+# PRE_SHUFFLE=1/2 handling
+pre_shuffle_setup(){
+  local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
+  INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
+  WORKNRDIR=
+  echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES}+ lines of SQL into ${INFILE_SHUFFLED} Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+  PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
+  RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
+  if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+    if [ "${PRE_SHUFFLE_INTERLEAVE}" == "1" ]; then
+      echoit "PRE_SHUFFLE_INTERLEAVE=1: Interleaving SQL in PRE_SHUFFLE_INTERLEAVE_SQL into the input file every ${PRE_SHUFFLE_INTERLEAVE_LINES}th line"
+      shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | awk -v sql="${PRE_SHUFFLE_INTERLEAVE_SQL}" "NR%${PRE_SHUFFLE_INTERLEAVE_LINES}==0{print sql}{print}" > ${INFILE_SHUFFLED}
+    else
+      shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" > ${INFILE_SHUFFLED}
+    fi
+    PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
+    if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
+      echoit "Assert: obtaining the PRE_SHUFFLE_SQL=1 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
+      exit 1
+    fi
+    echoit "Obtaining the PRE_SHUFFLE_SQL=1 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
+  elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
+    touch ${INFILE_SHUFFLED}
+    rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
+    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+    chmod +x ${INFILE_SHUFFLED}.sh
+    ${INFILE_SHUFFLED}.sh  # No leading './' needed as INFILE_SHUFFLED is a fully qualified path (already starts with /)
+    rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
+    if [ "${PRE_SHUFFLE_INTERLEAVE}" == "1" ]; then
+      echoit "PRE_SHUFFLE_INTERLEAVE=1: Interleaving SQL in PRE_SHUFFLE_INTERLEAVE_SQL into the input file every ${PRE_SHUFFLE_INTERLEAVE_LINES}th line"
+      mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
+      awk -v sql="${PRE_SHUFFLE_INTERLEAVE_SQL}" "NR%${PRE_SHUFFLE_INTERLEAVE_LINES}==0{print sql}{print}" ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
+      rm -f ${INFILE_SHUFFLED}.temp
+    fi
+    # Filtering using ${SCRIPT_PWD}/filter.sql when FILTER_SQL=1 and PRE_SHUFFLE_SQL=2 is done here as it would not be possible to do it on all input files that PRE_SHUFFLE_SQL=2 uses. Filtering for PRE_SHUFFLE_SQL=0 and PRE_SHUFFLE_SQL=1 is done elsewhere (at the start) of this script, as that can be done on the single input filefile  applicable when =0/=1 is used
+    if [ "${FILTER_SQL}" == "1" ]; then
+      echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
+      mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
+      grep --binary-files=text -vif ${SCRIPT_PWD}/filter.sql ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
+      rm -f ${INFILE_SHUFFLED}.temp
+    fi
+    PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
+    if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
+      echoit "Assert: obtaining the PRE_SHUFFLE_SQL=2 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
+      exit 1
+    fi
+    
+    echoit "Obtaining the PRE_SHUFFLE_SQL=2 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
+  else
+    echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
+    exit 1
+  fi
+  PRE_SHUFFLE_DUR_START=
+  if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
+    STORAGE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
+    if [ -z "${STORAGE_ENGINE_SWAP_PERCENTAGE}" ]; then  # TODO: move this code to top var checking section and add change statement as well as further validity checking
+      STORAGE_ENGINE_SWAP_PERCENTAGE=100
+    fi
+    #echoit "STORAGE_ENGINE_SWAP Active: changing ${STORAGE_ENGINE_SWAP_PERCENTAGE}% of storage engine references to ${STORAGE_ENGINE_SWAP}"  # TODO: the code below needs to change SE's based on a percentage. Perhaps first % part of file would work best?
+    #if [ $[ $RANDOM % 100 ] -le ${STORAGE_ENGINE_SWAP_PERCENTAGE} ]; then
+    echoit "STORAGE_ENGINE_SWAP Active: changing all storage engine references to ${STORAGE_ENGINE_SWAP}"
+    sed -i "s|InnoDB|${STORAGE_ENGINE_SWAP}|gi;s|Aria|${STORAGE_ENGINE_SWAP}|gi;s|MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|BLACKHOLE|${STORAGE_ENGINE_SWAP}|gi;s|RocksDB|${STORAGE_ENGINE_SWAP}|gi;s|RocksDBcluster|${STORAGE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|SEQUENCE|${STORAGE_ENGINE_SWAP}|gi;s|NDB|${STORAGE_ENGINE_SWAP}|gi;s|NDBCluster|${STORAGE_ENGINE_SWAP}|gi;s|CSV|${STORAGE_ENGINE_SWAP}|gi;s|TokuDB|${STORAGE_ENGINE_SWAP}|gi;s|MEMORY|${STORAGE_ENGINE_SWAP}|gi;s|ARCHIVE|${STORAGE_ENGINE_SWAP}|gi;s|CASSANDRA|${STORAGE_ENGINE_SWAP}|gi;s|CONNECT|${STORAGE_ENGINE_SWAP}|gi;s|EXAMPLE|${STORAGE_ENGINE_SWAP}|gi;s|FALCON|${STORAGE_ENGINE_SWAP}|gi;s|HEAP|${STORAGE_ENGINE_SWAP}|gi;s|${STORAGE_ENGINE_SWAP}cluster|${STORAGE_ENGINE_SWAP}|gi;s|MARIA|${STORAGE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${STORAGE_ENGINE_SWAP}|gi;s|MERGE|${STORAGE_ENGINE_SWAP}|gi;s|FEDERATED|${STORAGE_ENGINE_SWAP}|gi;s|\$engine|${STORAGE_ENGINE_SWAP}|gi;s|NonExistentEngine|${STORAGE_ENGINE_SWAP}|gi;s|Spider|${STORAGE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
+    echoit "STORAGE_ENGINE_SWAP: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${STORAGE_ENGINE_SWAP_DUR_START} ] seconds"
+    STORAGE_ENGINE_SWAP_DUR_START=
+  fi
+}
 
 # Main startup
 if [ ${QUERY_DURATION_TESTING} -eq 1 ]; then
@@ -1976,50 +2043,7 @@ pquery_test() {
                 sleep 10  # Perhaps OOS?
               done
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
-                local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
-                INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
-                WORKNRDIR=
-                echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES}+ lines of SQL into ${INFILE_SHUFFLED} Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
-                PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
-                RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
-                if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-                  shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" > ${INFILE_SHUFFLED}
-                  PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-                  if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
-                    echoit "Assert: obtaining the PRE_SHUFFLE_SQL=1 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
-                    exit 1
-                  fi
-                  echoit "Obtaining the PRE_SHUFFLE_SQL=1 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
-                elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
-                  touch ${INFILE_SHUFFLED}
-                  rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
-                  find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
-                  chmod +x ${INFILE_SHUFFLED}.sh
-                  ${INFILE_SHUFFLED}.sh
-                  rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
-                  PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-                  if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
-                    echoit "Assert: obtaining the PRE_SHUFFLE_SQL=2 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
-                    exit 1
-                  fi
-                  echoit "Obtaining the PRE_SHUFFLE_SQL=2 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
-                else
-                  echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
-                  exit 1
-                fi
-                PRE_SHUFFLE_DUR_START=
-                if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
-                  STORAGE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
-                  if [ -z "${STORAGE_ENGINE_SWAP_PERCENTAGE}" ]; then  # TODO: move this code to top var checking section and add change statement as well as further validity checking
-                    STORAGE_ENGINE_SWAP_PERCENTAGE=100
-                  fi
-                  #echoit "STORAGE_ENGINE_SWAP Active: changing ${STORAGE_ENGINE_SWAP_PERCENTAGE}% of storage engine references to ${STORAGE_ENGINE_SWAP}"  # TODO: the code below needs to change SE's based on a percentage. Perhaps first % part of file would work best?
-                  #if [ $[ $RANDOM % 100 ] -le ${STORAGE_ENGINE_SWAP_PERCENTAGE} ]; then
-                  echoit "STORAGE_ENGINE_SWAP Active: changing all storage engine references to ${STORAGE_ENGINE_SWAP}"
-                  sed -i "s|InnoDB|${STORAGE_ENGINE_SWAP}|gi;s|Aria|${STORAGE_ENGINE_SWAP}|gi;s|MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|BLACKHOLE|${STORAGE_ENGINE_SWAP}|gi;s|RocksDB|${STORAGE_ENGINE_SWAP}|gi;s|RocksDBcluster|${STORAGE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|SEQUENCE|${STORAGE_ENGINE_SWAP}|gi;s|NDB|${STORAGE_ENGINE_SWAP}|gi;s|NDBCluster|${STORAGE_ENGINE_SWAP}|gi;s|CSV|${STORAGE_ENGINE_SWAP}|gi;s|TokuDB|${STORAGE_ENGINE_SWAP}|gi;s|MEMORY|${STORAGE_ENGINE_SWAP}|gi;s|ARCHIVE|${STORAGE_ENGINE_SWAP}|gi;s|CASSANDRA|${STORAGE_ENGINE_SWAP}|gi;s|CONNECT|${STORAGE_ENGINE_SWAP}|gi;s|EXAMPLE|${STORAGE_ENGINE_SWAP}|gi;s|FALCON|${STORAGE_ENGINE_SWAP}|gi;s|HEAP|${STORAGE_ENGINE_SWAP}|gi;s|${STORAGE_ENGINE_SWAP}cluster|${STORAGE_ENGINE_SWAP}|gi;s|MARIA|${STORAGE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${STORAGE_ENGINE_SWAP}|gi;s|MERGE|${STORAGE_ENGINE_SWAP}|gi;s|FEDERATED|${STORAGE_ENGINE_SWAP}|gi;s|\$engine|${STORAGE_ENGINE_SWAP}|gi;s|NonExistentEngine|${STORAGE_ENGINE_SWAP}|gi;s|Spider|${STORAGE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
-                  echoit "STORAGE_ENGINE_SWAP: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${STORAGE_ENGINE_SWAP_DUR_START} ] seconds"
-                  STORAGE_ENGINE_SWAP_DUR_START=
-                fi
+                pre_shuffle_setup
               else
                 echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_FIN_LINES} lines) Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
               fi
@@ -2099,35 +2123,7 @@ EOF
                   echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
                 fi
                 if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
-                  local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
-                  INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
-                  WORKNRDIR=
-                  echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL into ${INFILE_SHUFFLED} | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
-                  PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
-                  RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
-                  if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-                    shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} > ${INFILE_SHUFFLED}
-                    echoit "Obtaining the PRE_SHUFFLE_SQL=1 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
-                  elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
-                    touch ${INFILE_SHUFFLED}
-                    rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
-                    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
-                    chmod +x ${INFILE_SHUFFLED}.sh
-                    ${INFILE_SHUFFLED}.sh
-                    rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
-                    PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-                    if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
-  
-                      echoit "Assert: obtaining the PRE_SHUFFLE_SQL=2 pre-shuffle SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
-                      exit 1
-                    fi
-                    echoit "Obtaining the PRE_SHUFFLE_SQL=2 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds, and the final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
-                  else
-                    echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
-                    exit 1
-                  fi
-                  #SHUFFLE_FILELIST=
-                  PRE_SHUFFLE_DUR_START=
+                  pre_shuffle_setup
                 else
                   echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_FIN_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
                 fi
@@ -2192,36 +2188,7 @@ EOF
             echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
           fi
           if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
-            local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
-            INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
-            WORKNRDIR=
-            echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES}+ lines of SQL into ${INFILE_SHUFFLED} Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
-            PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
-            RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
-            if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-              shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" > ${INFILE_SHUFFLED}
-              echoit "Obtaining the PRE_SHUFFLE_SQL=1 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds"
-            elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
-              touch ${INFILE_SHUFFLED}
-              rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
-              find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
-              chmod +x ${INFILE_SHUFFLED}.sh
-              ${INFILE_SHUFFLED}.sh
-              rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
-              PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-              echoit "Obtaining the PRE_SHUFFLE_SQL=2 pre-shuffle SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds, and the final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
-            else
-              echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
-              exit 1
-            fi
-            PRE_SHUFFLE_DUR_START=
-            if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
-              STORAGE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
-              echoit "STORAGE_ENGINE_SWAP Active: changing all storage engine references to ${STORAGE_ENGINE_SWAP}"
-              sed -i "s|InnoDB|${STORAGE_ENGINE_SWAP}|gi;s|Aria|${STORAGE_ENGINE_SWAP}|gi;s|MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|BLACKHOLE|${STORAGE_ENGINE_SWAP}|gi;s|RocksDB|${STORAGE_ENGINE_SWAP}|gi;s|RocksDBcluster|${STORAGE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|SEQUENCE|${STORAGE_ENGINE_SWAP}|gi;s|NDB|${STORAGE_ENGINE_SWAP}|gi;s|NDBCluster|${STORAGE_ENGINE_SWAP}|gi;s|CSV|${STORAGE_ENGINE_SWAP}|gi;s|TokuDB|${STORAGE_ENGINE_SWAP}|gi;s|MEMORY|${STORAGE_ENGINE_SWAP}|gi;s|ARCHIVE|${STORAGE_ENGINE_SWAP}|gi;s|CASSANDRA|${STORAGE_ENGINE_SWAP}|gi;s|CONNECT|${STORAGE_ENGINE_SWAP}|gi;s|EXAMPLE|${STORAGE_ENGINE_SWAP}|gi;s|FALCON|${STORAGE_ENGINE_SWAP}|gi;s|HEAP|${STORAGE_ENGINE_SWAP}|gi;s|${STORAGE_ENGINE_SWAP}cluster|${STORAGE_ENGINE_SWAP}|gi;s|MARIA|${STORAGE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${STORAGE_ENGINE_SWAP}|gi;s|MERGE|${STORAGE_ENGINE_SWAP}|gi;s|FEDERATED|${STORAGE_ENGINE_SWAP}|gi;s|\$engine|${STORAGE_ENGINE_SWAP}|gi;s|NonExistentEngine|${STORAGE_ENGINE_SWAP}|gi;s|Spider|${STORAGE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
-              echoit "STORAGE_ENGINE_SWAP Active: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${STORAGE_ENGINE_SWAP_DUR_START} ] seconds"
-              STORAGE_ENGINE_SWAP_DUR_START=
-            fi
+            pre_shuffle_setup 
           else
             echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_FIN_LINES} lines) Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
           fi
@@ -2935,7 +2902,7 @@ else
   SLAVE_EXTRA=
 fi
 
-# Filter SQL from the main input file
+# Filter SQL from the main input file (Not possible for PRE_SHUFFLE_SQL=2 as that involves many files, however this is done from without the PRE_SHUFFLE_SQL=2 section directly)
 if [[ ${FILTER_SQL} -eq 1 ]]; then
   if [ "${PRE_SHUFFLE_SQL}" == "0" -o "${PRE_SHUFFLE_SQL}" == "1" ]; then
     echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"

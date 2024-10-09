@@ -7,8 +7,8 @@ BASEDIR=/test/MDEV-15696_MD140924-mariadb-11.7.0-linux-x86_64-opt
 #MDEV-34931-MDEV-31466-fix_MD170924-mariadb-11.7.0-linux-x86_64-dbg
 #MDEV-15696_MD140924-mariadb-11.7.0-linux-x86_64-opt
 #MDEV-31466_MD090924-mariadb-11.7.0-linux-x86_64-dbg
-RUNSOPT=2
-RUNSDBG=2
+RUNSOPT=3
+RUNSDBG=3
 CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=1 24, and spider swap -> updated to PS=2
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
 #CONF=pquery-run-MD.conf  # Set currently to PRE_SHUFFLE_SQL=1 24
