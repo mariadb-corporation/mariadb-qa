@@ -386,18 +386,14 @@ pre_shuffle_setup(){
   PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
   RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
   if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-    if [ "${PRE_SHUFFLE_INTERLEAVE}" == "1" ]; then
-      echoit "PRE_SHUFFLE_INTERLEAVE=1: Interleaving SQL in PRE_SHUFFLE_INTERLEAVE_SQL into the input file every ${PRE_SHUFFLE_INTERLEAVE_LINES}th line"
-      shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | awk -v sql="${PRE_SHUFFLE_INTERLEAVE_SQL}" "NR%${PRE_SHUFFLE_INTERLEAVE_LINES}==0{print sql}{print}" > ${INFILE_SHUFFLED}
-    else
-      shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" > ${INFILE_SHUFFLED}
-    fi
+    shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" > ${INFILE_SHUFFLED}
     PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
     if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
       echoit "Assert: obtaining the PRE_SHUFFLE_SQL=1 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
       exit 1
     fi
     echoit "Obtaining the PRE_SHUFFLE_SQL=1 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
+    PRE_SHUFFLE_RES_FIN_LINES=
   elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
     touch ${INFILE_SHUFFLED}
     rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
@@ -405,13 +401,8 @@ pre_shuffle_setup(){
     chmod +x ${INFILE_SHUFFLED}.sh
     ${INFILE_SHUFFLED}.sh  # No leading './' needed as INFILE_SHUFFLED is a fully qualified path (already starts with /)
     rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
-    if [ "${PRE_SHUFFLE_INTERLEAVE}" == "1" ]; then
-      echoit "PRE_SHUFFLE_INTERLEAVE=1: Interleaving SQL in PRE_SHUFFLE_INTERLEAVE_SQL into the input file every ${PRE_SHUFFLE_INTERLEAVE_LINES}th line"
-      mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
-      awk -v sql="${PRE_SHUFFLE_INTERLEAVE_SQL}" "NR%${PRE_SHUFFLE_INTERLEAVE_LINES}==0{print sql}{print}" ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
-      rm -f ${INFILE_SHUFFLED}.temp
-    fi
     # Filtering using ${SCRIPT_PWD}/filter.sql when FILTER_SQL=1 and PRE_SHUFFLE_SQL=2 is done here as it would not be possible to do it on all input files that PRE_SHUFFLE_SQL=2 uses. Filtering for PRE_SHUFFLE_SQL=0 and PRE_SHUFFLE_SQL=1 is done elsewhere (at the start) of this script, as that can be done on the single input filefile  applicable when =0/=1 is used
+    PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
     if [ "${FILTER_SQL}" == "1" ]; then
       echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
       mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
@@ -422,9 +413,15 @@ pre_shuffle_setup(){
     if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
       echoit "Assert: obtaining the PRE_SHUFFLE_SQL=2 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
       exit 1
+    else
+      if [ "${FILTER_SQL}" == "1" ]; then
+        echoit "Obtaining the PRE_SHUFFLE_SQL=2 SQL inc filter.sql application took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines ($[ ${PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER} - ${PRE_SHUFFLE_RES_FIN_LINES} ] lines were filtered)"
+      else
+        echoit "Obtaining the PRE_SHUFFLE_SQL=2 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
+      fi
     fi
-    
-    echoit "Obtaining the PRE_SHUFFLE_SQL=2 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
+    PRE_SHUFFLE_RES_FIN_LINES=
+    PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER=
   else
     echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
     exit 1
@@ -441,6 +438,22 @@ pre_shuffle_setup(){
     sed -i "s|InnoDB|${STORAGE_ENGINE_SWAP}|gi;s|Aria|${STORAGE_ENGINE_SWAP}|gi;s|MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|BLACKHOLE|${STORAGE_ENGINE_SWAP}|gi;s|RocksDB|${STORAGE_ENGINE_SWAP}|gi;s|RocksDBcluster|${STORAGE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|SEQUENCE|${STORAGE_ENGINE_SWAP}|gi;s|NDB|${STORAGE_ENGINE_SWAP}|gi;s|NDBCluster|${STORAGE_ENGINE_SWAP}|gi;s|CSV|${STORAGE_ENGINE_SWAP}|gi;s|TokuDB|${STORAGE_ENGINE_SWAP}|gi;s|MEMORY|${STORAGE_ENGINE_SWAP}|gi;s|ARCHIVE|${STORAGE_ENGINE_SWAP}|gi;s|CASSANDRA|${STORAGE_ENGINE_SWAP}|gi;s|CONNECT|${STORAGE_ENGINE_SWAP}|gi;s|EXAMPLE|${STORAGE_ENGINE_SWAP}|gi;s|FALCON|${STORAGE_ENGINE_SWAP}|gi;s|HEAP|${STORAGE_ENGINE_SWAP}|gi;s|${STORAGE_ENGINE_SWAP}cluster|${STORAGE_ENGINE_SWAP}|gi;s|MARIA|${STORAGE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${STORAGE_ENGINE_SWAP}|gi;s|MERGE|${STORAGE_ENGINE_SWAP}|gi;s|FEDERATED|${STORAGE_ENGINE_SWAP}|gi;s|\$engine|${STORAGE_ENGINE_SWAP}|gi;s|NonExistentEngine|${STORAGE_ENGINE_SWAP}|gi;s|Spider|${STORAGE_ENGINE_SWAP}|gi;" ${INFILE_SHUFFLED}
     echoit "STORAGE_ENGINE_SWAP: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${STORAGE_ENGINE_SWAP_DUR_START} ] seconds"
     STORAGE_ENGINE_SWAP_DUR_START=
+  fi
+  # Interleave post-storage-engine-swap to ensure not modifying CREATE TABLE ... ENGINE=... statements in interleave SQL
+  if [ "${PRE_SHUFFLE_INTERLEAVE}" == "1" ]; then
+    PRE_SHUFFLE_INTERLEAVE_DUR_START=$(date +'%s' | tr -d '\n')
+    echoit "PRE_SHUFFLE_INTERLEAVE: Interleaving SQL in PRE_SHUFFLE_INTERLEAVE_SQL into the input file every ${PRE_SHUFFLE_INTERLEAVE_LINES}th line"
+    mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
+    awk -v sql="${PRE_SHUFFLE_INTERLEAVE_SQL}" "NR%${PRE_SHUFFLE_INTERLEAVE_LINES}==0{print sql}{print}" ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
+    rm -f ${INFILE_SHUFFLED}.temp
+    INTERLEAVE_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
+    if [ "${INTERLEAVE_FIN_LINES}" -eq 0 ]; then
+      echoit "Assert: PRE_SHUFFLE_INTERLEAVE interleaving failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
+      exit 1
+    fi
+    echoit "PRE_SHUFFLE_INTERLEAVE: Interleaving SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_INTERLEAVE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${INTERLEAVE_FIN_LINES} lines"
+    INTERLEAVE_FIN_LINES=
+    PRE_SHUFFLE_INTERLEAVE_DUR_START=
   fi
 }
 
@@ -2045,7 +2058,7 @@ pquery_test() {
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
                 pre_shuffle_setup
               else
-                echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_FIN_LINES} lines) Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+                echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} for Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
               fi
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
                 PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
@@ -2125,7 +2138,7 @@ EOF
                 if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
                   pre_shuffle_setup
                 else
-                  echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_FIN_LINES} lines) | Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+                  echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} for Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
                 fi
                 if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
                   PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
@@ -2170,7 +2183,7 @@ EOF
         echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
         $CMD >> ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
         PQPID="$!"
-      else
+      else  # PQUERY3!=1
         ## Pre-shuffle (if activated)
         if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
           ## Check pre-shuffle directory
@@ -2190,7 +2203,7 @@ EOF
           if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
             pre_shuffle_setup 
           else
-            echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} (${PRE_SHUFFLE_RES_FIN_LINES} lines) Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
+            echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} for Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
           fi
           if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
             PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
@@ -2906,8 +2919,13 @@ fi
 if [[ ${FILTER_SQL} -eq 1 ]]; then
   if [ "${PRE_SHUFFLE_SQL}" == "0" -o "${PRE_SHUFFLE_SQL}" == "1" ]; then
     echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
+    BEFORE_FILTER_LINES_NR="$(wc -l ${INFILE} | awk '{print $1}')"
     grep --binary-files=text -vif ${SCRIPT_PWD}/filter.sql ${INFILE} > ${WORKDIR}/filtered_infile.sql
     INFILE=${WORKDIR}/filtered_infile.sql
+    AFTER_FILTER_LINES_NR="$(wc -l ${INFILE} | awk '{print $1}')"
+    echoit "SQL filter: Filtered $[ ${BEFORE_FILTER_LINES_NR} -${AFTER_FILTER_LINES_NR} ] lines from the input file"
+    BEFORE_FILTER_LINES_NR=
+    AFTER_FILTER_LINES_NR=
     if [ ! -d "${RUNDIR}" ]; then mkdir -p ${RUNDIR}; fi  # In case the filtering took a long time and tmpfs_clean.sh cleaned up the RUNDIR directory already. Note this does not affect the filtered infile (filtered_infile.sql), which is the WORKDIR, not RUNDIR
   fi
 fi
