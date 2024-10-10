@@ -693,6 +693,7 @@ owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|wsrep::client_state::b
 owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|Wsrep_client_service::bf_rollback|wsrep::client_state::close|Wsrep_applier_service::~Wsrep_applier_service|Wsrep_prepared_applier_service::~Wsrep_prepared_applier_service ## MENT-1729
 SIGSEGV|thd_get_thread_id|lock_wait_wsrep|lock_wait|row_mysql_handle_errors                                                                                                    ## MENT-1728
 (total_length + thd->wsrep_sr().log_position() == saved_pos) || ((thd->wsrep_trx().is_xa()) && (total_length == 0) && (saved_pos == 0))|SIGABRT|wsrep_write_cache_inc|wsrep_write_cache|Wsrep_client_service::prepare_data_for_replication|wsrep::transaction::certify_commit ## MENT-1727
+m_status == DA_ERROR|SIGABRT|Diagnostics_area::sql_errno|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command                                                  ## MDEV-29289
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-29289
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|threadpool_process_request                                                                                       ## MDEV-29289 (with threadpool load)
 SIGABRT|__cxa_throw|gu::ThrowError::~ThrowError|galera::WriteSetOut::check_size|galera::WriteSetOut::gather                                                                    ## MENT-1725
