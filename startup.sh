@@ -575,7 +575,7 @@ echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DR
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >>loopin
 echo "#!/bin/bash" >multirun_loop
 ln -s ./multirun_loop ./ml
-echo "# This script will keep looping in.sql until ./data/core* is present/detected. If loop cycles take 90 seconds or more, you may want to check that the server is not hanging in those 90 seconds (there is a 90 second timeout in ./stop which is being used, you could also increase that to establish if it is is the mysqladmin shutdown is hanging). Only other possible reason is a(very) large input SQL testcase. Generally loops will take 5 seconds or less with a small input file." >>multirun_loop
+echo "# This script will keep looping in.sql until a ./data/core* file, or a timeout, is detected. If a loop cycles take more than or equal to 90 seconds, it is terminated as it is unlikely that even a large testcase takes >=90 seconds to reproduce (or mysqladmin shutdown is hanging). In such cases, it is somewhat likely that 1) there was a thread hang, 2) 'mysqladmin shutdown' (called by ./stop) hung, or 3) there was a full sever hang (less common). If the testcase is very large you could set this timeout larger by manually changing it in this script, and keep the 90 'mysqladmin shutdown' timeout in ./stop in mind. Generally loops will take 5 seconds or less with a small input file." >>multirun_loop
 echo "# To look for a specific UniqueID bug, do:" >>multirun_loop
 echo "# export BUG='...'    # Where ... is a UniqueID" >>multirun_loop
 echo "# or, to look for a specific error log based bug, do:" >>multirun_loop
@@ -587,21 +587,45 @@ echo "echo \"Number of lines in in.sql: \$(wc -l in.sql | sed 's| .*||')\"" >>mu
 echo "rm -Rf ./data ./data.multirun" >>multirun_loop
 echo "./all_no_cl \${*} > ./last_all_no_cl.multirun.log 2>&1" >>multirun_loop
 echo "mv data data.multirun" >>multirun_loop
+echo "LOOP_START=" >>multirun_loop
 echo "loop(){" >>multirun_loop
-echo "  NR_OF_LOOPS=\$[ \${NR_OF_LOOPS} + 1]; echo \"\$(date +'%F %T') Loop: \${NR_OF_LOOPS}...\"; rm -Rf ./data; cp -r ./data.multirun ./data; ./all_no_cl \${*} > ./last_all_no_cl.multirun.log 2>&1; ./test; ./stop >/dev/null 2>&1; sleep 2" >>multirun_loop
+echo "  NR_OF_LOOPS=\$[ \${NR_OF_LOOPS} + 1]" >>multirun_loop
+echo "  if [ -z \"\${LOOP_START}\" ]; then" >>multirun_loop
+echo "    echo \"\$(date +'%F %T') Loop: \${NR_OF_LOOPS}...\"" >>multirun_loop
+echo "  else" >>multirun_loop
+echo "    echo \"\$(date +'%F %T') Loop: \${NR_OF_LOOPS}... (Last loop took \${DURATION}s)\"" >>multirun_loop
+echo "  fi" >>multirun_loop
+echo "  LOOP_START=\$(date +'%s' | tr -d '\n')" >>multirun_loop
+echo "  rm -Rf ./data; cp -r ./data.multirun ./data" >>multirun_loop
+echo "  ./all_no_cl \${*} > ./last_all_no_cl.multirun.log 2>&1" >>multirun_loop
+echo "  ./test" >>multirun_loop
+echo "  ./stop >/dev/null 2>&1" >>multirun_loop
+echo "  DURATION=\$[ \$(date +'%s' | tr -d '\n') - \${LOOP_START} ]" >>multirun_loop
+echo "  if [ ! -z "\${DURATION}" ]; then" >>multirun_loop
+echo "    if [ "\${DURATION}" -ge 90 ]; then" >>multirun_loop
+echo "      echo \"Duration of the last loop was \${DURATION}s which is >=90: likely thread or sever hang, or mysqladmin shutdown timeout\"" >>multirun_loop
+echo "      exit 1; break" >>multirun_loop
+echo "    fi" >>multirun_loop
+echo "  fi" >>multirun_loop
+echo "  sleep 2" >>multirun_loop  # Allow core to be written
 echo "}" >>multirun_loop
 echo "if [ ! -z \"\${BUG}\" -a ! -z \"\${ELBUG}\" ]; then" >>multirun_loop
 echo "  echo \"Assert: both BUG and ELBUG variables are set, please only set one\"" >>multirun_loop
 echo "elif [ ! -z \"\${BUG}\" ]; then" >>multirun_loop
 echo "  echo -e \"Looking for UniqueID (As per the BUG environment variable):\n   \${BUG}\"" >>multirun_loop
 echo "  BUGSEEN=" >>multirun_loop
-echo "  while [ \"\${BUGSEEN}\" != \"\${BUG}\" ]; do BUGSEEN=; loop; BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-|Assert:' )\"; if [ ! -z \"\${BUGSEEN}\" -a \"\${BUGSEEN}\" != \"\${BUG}\" ]; then echo \"Another bug than the one being looked for was observed: \${BUGSEEN}\"; fi done" >>multirun_loop
+echo "  while [ \"\${BUGSEEN}\" != \"\${BUG}\" ]; do" >>multirun_loop
+echo "    BUGSEEN=" >>multirun_loop
+echo "    loop" >>multirun_loop
+echo "    BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-|Assert:' )\"" >>multirun_loop
+echo "    if [ ! -z \"\${BUGSEEN}\" -a \"\${BUGSEEN}\" != \"\${BUG}\" ]; then echo \"Another bug than the one being looked for was observed: \${BUGSEEN}\"; fi" >>multirun_loop
+echo "  done" >>multirun_loop
 echo "elif [ ! -z \"\${ELBUG}\" ]; then" >>multirun_loop
 echo "  echo -e \"Looking for this string in the error log (As per the ELBUG environment variable):\n   \${ELBUG}\"" >>multirun_loop
 echo "  BUGSEEN=" >>multirun_loop
 echo "  while [ -z \"\$(grep --binary-files=text -iE \"\${ELBUG}\" ./log/master.err)\" ]; do loop; if [ -r ./data/core* ]; then if [ -z \"\$(grep --binary-files=text -iE \"\${ELBUG}\" ./log/master.err)\" ]; then BUGSEEN=\"\$(\${HOME}/t | grep -vE '\-\-\-\-\-' )\"; echo \"While the searched for string was not found in the error log, a crash was observed with UniqueID: \${BUGSEEN}\"; fi; fi; done" >>multirun_loop
 echo "else" >>multirun_loop
-echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till a core* file is found\"" >>multirun_loop
+echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till a core* file, or a 90 second timeout, is detected\"" >>multirun_loop
 echo "  while [ ! -r ./data/core* ]; do loop; done;" >>multirun_loop
 echo "fi" >>multirun_loop
 echo "sleep 2" >>multirun_loop
@@ -924,7 +948,7 @@ echo 'echo "DROP DATABASE test;" > ./in.sql' >>fixin
 echo 'echo "CREATE DATABASE test;" >> ./in.sql' >>fixin
 echo 'echo "USE test;" >> ./in.sql' >>fixin
 echo 'if [ -r ./in.tmp ]; then cat in.tmp >> in.sql; rm -f in.tmp; fi' >>fixin
-echo "echo \"Done. You may want to add  SET sql_mode='';  to the top of the in.sql file also, if the original run had it, for higher reproducibility\"" >>fixin
+echo "echo \"fixin: Done. You may want to add  SET sql_mode='';  to the top of the in.sql file also, if the original run had it, for higher reproducibility\"" >>fixin
 
 echo "${SCRIPT_PWD}/stack.sh" >stack
 if [ -d ./mysql-test ]; then
