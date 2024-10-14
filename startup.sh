@@ -629,9 +629,9 @@ echo "  echo -e \"BUG/ELBUG environment variables not set: looping testcase till
 echo "  while [ ! -r ./data/core* ]; do loop; done;" >>multirun_loop
 echo "fi" >>multirun_loop
 echo "sleep 2" >>multirun_loop
-echo "-- tt output:" >>multirun_loop
+echo "echo '-- tt output:'" >>multirun_loop
 echo "\${HOME}/tt" >>multirun_loop
-echo "--" >>multirun_loop
+echo "echo '--'" >>multirun_loop
 echo "if [ -z \"\${ELBUG}\" ]; then" >>multirun_loop
 echo "  echo \"Number of loops executed to obtain ./data/core*: \${NR_OF_LOOPS}\"" >>multirun_loop
 echo "else" >>multirun_loop
