@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-if [ -z "${1}" ]; then echo "Assert: please specify a version, like 10.8"; exit 1; fi
+if [ -z "${1}" ]; then echo "Assert: please specify a version, like 11.2"; exit 1; fi
 if [[ "${1}" == "10."* || "${1}" == "11."* ]]; then rm -Rf ${1}; fi
 
 if [ "${1}" == "11.7" ]; then
