@@ -15,3 +15,11 @@ CREATE TABLE t1 (id int  KEY) ENGINE=MyISAM;
 SET GLOBAL gtid_slave_pos='100-100-100';
 INSERT INTO t1 VALUES(1);
 ALTER TABLE t4 CHANGE c1 c1 SMALLINT UNSIGNED ;
+
+# mysqld options required for replay: --log_bin 
+SET sql_mode='';
+SET autocommit=OFF;
+CREATE TABLE t (a INT KEY) ENGINE=MEMORY;
+SET GLOBAL gtid_slave_pos='0-1-1';
+INSERT INTO t VALUES();
+BEGIN;

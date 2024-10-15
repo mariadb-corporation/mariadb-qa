@@ -842,13 +842,15 @@ options_check(){
     else
       export -n INPUTFILE=$1  # export -n is not necessary for this script, but it is here to prevent pquery-prep-red.sh from seeing this as a adjustable var
     fi
-    if [ -r "${INPUTFILE}_out" ]; then  # A reduced testcase already exists, copy it unless a previously made copy already exists too
-      if [ -r "${INPUTFILE}_out_copy" ]; then  # A previously made copy of a previously reduced testcase also already exists
-        echo "Error: the input file (${INPUTFILE}) already has a reduced testcase (${INPUTFILE}_out), which would be ovewritten by running this reducer script as-is. Still, in such cases reducer generally takes a copy of the previously reduced testcase into ${INPUTFILE}_out_copy, howerver, that file also already exists. Please cleanup files as deemed best, and then restart reducer."
-        exit 1
-      else
-        echo "Warning: a reduced testcase (${INPUTFILE}_out) already exists and will be overwritten, thus backing it up as ${INPUTFILE}_out_copy now"
-        cp ${INPUTFILE}_out ${INPUTFILE}_out_copy
+    if [[ "${0}" == *"base_reducer"* ]]; then
+      if [ -r "${INPUTFILE}_out" ]; then  # A reduced testcase already exists, copy it unless a previously made copy already exists too
+        if [ -r "${INPUTFILE}_out_copy" ]; then  # A previously made copy of a previously reduced testcase also already exists
+          echo "Error: the input file (${INPUTFILE}) already has a reduced testcase (${INPUTFILE}_out), which would be ovewritten by running this reducer script as-is. Still, in such cases reducer generally takes a copy of the previously reduced testcase into ${INPUTFILE}_out_copy, howerver, that file also already exists. Please cleanup files as deemed best, and then restart reducer."
+          exit 1
+        else
+          echo "Warning: a reduced testcase (${INPUTFILE}_out) already exists and will be overwritten, thus backing it up as ${INPUTFILE}_out_copy now"
+          cp ${INPUTFILE}_out ${INPUTFILE}_out_copy
+        fi
       fi
     fi
     if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
@@ -5786,7 +5788,45 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 260 ]; then sed "s/WITHOUT VALIDATION//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 261 ]; then sed "s/PARTITION.*;/;/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 262 ]; then sed "s/[ \t]\+CHARACTER SET[^)]\+)/)/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 263 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 263 ]; then sed "s/index_merge=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 264 ]; then sed "s/index_merge_union=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 265 ]; then sed "s/index_merge_sort_union=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 266 ]; then sed "s/index_merge_intersection=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 267 ]; then sed "s/index_merge_sort_intersection=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 268 ]; then sed "s/index_condition_pushdown=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 269 ]; then sed "s/derived_merge=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 270 ]; then sed "s/derived_with_keys=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 271 ]; then sed "s/firstmatch=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 272 ]; then sed "s/loosescan=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 273 ]; then sed "s/materialization=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 274 ]; then sed "s/in_to_exists=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 275 ]; then sed "s/semijoin=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 276 ]; then sed "s/partial_match_rowid_merge=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 277 ]; then sed "s/partial_match_table_scan=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 278 ]; then sed "s/subquery_cache=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 279 ]; then sed "s/mrr=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 280 ]; then sed "s/mrr_cost_based=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 281 ]; then sed "s/mrr_sort_keys=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 282 ]; then sed "s/outer_join_with_cache=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 283 ]; then sed "s/semijoin_with_cache=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 284 ]; then sed "s/join_cache_incremental=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 285 ]; then sed "s/join_cache_hashed=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 286 ]; then sed "s/join_cache_bka=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 287 ]; then sed "s/optimize_join_buffer_size=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 288 ]; then sed "s/table_elimination=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 289 ]; then sed "s/extended_keys=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 290 ]; then sed "s/exists_to_in=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 291 ]; then sed "s/orderby_uses_equalities=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 292 ]; then sed "s/condition_pushdown_for_derived=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 293 ]; then sed "s/split_materialized=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 294 ]; then sed "s/condition_pushdown_for_subquery=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 295 ]; then sed "s/rowid_filter=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 296 ]; then sed "s/condition_pushdown_from_having=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 297 ]; then sed "s/not_null_range_scan=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 298 ]; then sed "s/hash_join_cardinality=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 299 ]; then sed "s/cset_narrowing=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 300 ]; then sed "s/sargable_casefold=[ofn]\+[,]*//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 301 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     if [ ! -r "${WORKT}" ]; then abort; fi

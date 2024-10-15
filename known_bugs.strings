@@ -207,6 +207,14 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|ha_maria::index_read_map                                                                                                     ## MDEV-31278
+SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|handler::ha_index_read_map                                                                                                   ## MDEV-31278
+SIGABRT|__gnu_debug::_Error_formatter::_M_error|__gnu_debug::operator==|range_set::add_range|fil_space_t::add_free_range                                                       ## MDEV-35149
+LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|fsp_page_create|fsp_alloc_free_page|fseg_alloc_free_page_low         ## MDEV-35149
+LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|fseg_inode_try_get                    ## MDEV-35149
+LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|btr_drop_temporary_table              ## MDEV-35149
+LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|fsp_header_init|fil_ibd_create|dict_create_index_space               ## MDEV-35149
+SIGSEGV|std::_Rb_tree_insert_and_rebalance|std::_Rb_tree<range_t, range_t, std::_Identity<range_t>, range_compare, std::allocator<range_t> >::_M_insert_node|std::_Rb_tree<range_t, range_t, std::_Identity<range_t>, range_compare, std::allocator<range_t> >::_Auto_node::_M_insert|std::_Rb_tree<range_t, range_t, std::_Identity<range_t>, range_compare, std::allocator<range_t> >::_M_emplace_unique<range_t&> ## MDEV-35149
 SIGSEGV|dict_table_get_next_index|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|ha_innobase::info                                                              ## MDEV-35116
 SIGSEGV|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|handler::get_dup_key|handler::get_dup_key                                                                ## MDEV-35116
 !mysql_parse_status || thd->is_error() || thd->get_internal_handler()|SIGABRT|parse_sql|mysql_parse|dispatch_command|do_command                                                ## MDEV-35107
@@ -1379,6 +1387,7 @@ m_psi_batch_mode == PSI_BATCH_MODE_NONE|SIGABRT|handler::ha_close|create_interna
 ! thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_instr_stmt::execute                                        ## MDEV-22853
 ! thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_instr::reset_lex_and_exec_core|sp_lex_instr::validate_lex_and_execute_core                    ## MDEV-22853
 ! thd->in_sub_stmt|SIGABRT|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core|sp_lex_keeper::validate_lex_and_exec_core                     ## MDEV-22853
+trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_commit_trans|trans_begin                                                                        ## MDEV-22848
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_commit_trans|trans_commit_implicit                                                              ## MDEV-22848
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_savepoint|ha_savepoint|trans_savepoint|mysql_execute_command                                                                   ## MDEV-22848
 SIGSEGV|set_field_to_null_with_conversions|Item::save_in_field|Item_result_field::save_in_result_field|copy_sum_funcs                                                          ## MDEV-22814
