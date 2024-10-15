@@ -207,6 +207,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGABRT|ib::fatal::~fatal|dict_sys_t::lock_wait|dict_sys_t::lock|trx_purge_table_open                                                                                          ## MDEV-35154
 SIGSEGV|dict_table_get_next_index|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|ha_innobase::info                                                              ## MDEV-35116
 SIGSEGV|innobase_get_mysql_key_number_for_index|ha_innobase::info_low|handler::get_dup_key|handler::get_dup_key                                                                ## MDEV-35116
 !mysql_parse_status || thd->is_error() || thd->get_internal_handler()|SIGABRT|parse_sql|mysql_parse|dispatch_command|do_command                                                ## MDEV-35107
