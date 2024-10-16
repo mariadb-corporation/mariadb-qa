@@ -1,0 +1,6 @@
+CREATE TABLE t1 (a INT KEY,b INT, KEY(b)) ;
+SET optimizer_join_limit_pref_ratio=1;
+INSERT INTO t1 VALUES (2,NULL);
+SET SESSION sql_select_limit=1;
+INSERT INTO t1 VALUES (5,NULL);
+SELECT * FROM t1 NATURAL JOIN t1 AS t2 WHERE t1.b=NULL ORDER BY t1.a;
