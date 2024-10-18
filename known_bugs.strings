@@ -212,6 +212,7 @@ join->best_read < double(1.79769313486231570814527423731704357e+308L)|SIGABRT|gr
 SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|ha_maria::index_read_map                                                                                                     ## MDEV-31278
 SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|handler::ha_index_read_map                                                                                                   ## MDEV-31278
 SIGABRT|__gnu_debug::_Error_formatter::_M_error|__gnu_debug::operator==|range_set::add_range|fil_space_t::add_free_range                                                       ## MDEV-35149
+LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|trx_undo_reuse_cached                 ## MDEV-35149
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|fsp_page_create|fsp_alloc_free_page|fseg_alloc_free_page_low         ## MDEV-35149
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|fseg_inode_try_get                    ## MDEV-35149
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|btr_drop_temporary_table              ## MDEV-35149
