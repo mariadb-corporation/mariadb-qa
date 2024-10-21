@@ -13,6 +13,29 @@ FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot 
 export -n __AFL_SHM_ID
 export -n AFL_MAP_SIZE
 
+# Check GR
+if find . -name group_replication.so | grep -q .; then
+  GRP_RPL=1
+else
+  echo "Note: Group Replication plugin not found. Skipping Group Replication startup"
+  GRP_RPL=0
+fi
+
+# Check MariaDB Galera Cluster
+MDG=0
+GALERA_LIB=
+if [ -r lib/libgalera_smm.so ]; then
+  echo "CS Galera plugin found. Adding CS Galera startup"
+  MDG=1
+  GALERA_LIB=${PWD}/lib/libgalera_smm.so
+elif [ -r lib/libgalera_enterprise_smm.so ]; then
+  echo "ES Galera plugin found. Adding ES Galera startup"
+  MDG=1
+  GALERA_LIB=${PWD}/lib/libgalera_enterprise_smm.so
+else
+  echo "Note: Galera plugin not found. Skipping Galera startup"
+fi
+
 # Nr of MDG nodes 1-n
 NR_OF_NODES=${1}
 if [ -z "${NR_OF_NODES}" ] ; then
@@ -22,6 +45,8 @@ fi
 if [[ "${PWD}" == *"SAN"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856 (also ref the same line in 'start' created below)
 
 PORT=$NEWPORT
+SOCKET=${PWD}/socket.sock
+SLAVE_SOCKET=${PWD}/socket_slave.sock
 MTRT=$((${RANDOM} % 100 + 700))
 BUILD=$(pwd | sed 's|^.*/||')
 SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
@@ -85,11 +110,16 @@ if [ -z "${BIN}" ]; then
   exit 1
 fi
 MID=
+if [[ $MDG -eq 1 ]]; then
+  TMP_DIR=""
+else
+  TMP_DIR="--tmpdir=${PWD}/tmp"
+fi
 if [ -r ${BASEDIR}/scripts/mariadb-install-db ]; then MID="${BASEDIR}/scripts/mariadb-install-db"; fi
 if [ -r ${PWD}/scripts/mysql_install_db ]; then MID="${PWD}/scripts/mysql_install_db"; fi
 if [ -r ${PWD}/bin/mysql_install_db ]; then MID="${PWD}/bin/mysql_install_db"; fi
 START_OPT="--core-file"                        # Compatible with 5.6,5.7,8.0
-INIT_OPT="--no-defaults --initialize-insecure --tmpdir=${PWD}/tmp" # Compatible with     5.7,8.0 (mysqld init)
+INIT_OPT="--no-defaults --initialize-insecure ${TMP_DIR}" # Compatible with     5.7,8.0 (mysqld init)
 INIT_TOOL="${BIN}"                             # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
 VERSION_INFO=$(${BIN} --version | grep --binary-files=text -oe '[58]\.[01567]' | head -n1)
 if [ -z "${VERSION_INFO}" ]; then VERSION_INFO="NA"; fi
@@ -99,12 +129,12 @@ if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
 if [[ "${VERSION_INFO_2}" =~ ^10.[1-3]$ ]]; then
   VERSION_INFO="5.1"
   INIT_TOOL="${PWD}/scripts/mysql_install_db"
-  INIT_OPT="--no-defaults --force --tmpdir=${PWD}/tmp"
+  INIT_OPT="--no-defaults --force ${TMP_DIR}"
   START_OPT="--core"
 elif [[ "${VERSION_INFO_2}" =~ ^1[0-1].[0-9][0-9]* ]]; then
   VERSION_INFO="5.6"
   INIT_TOOL="${PWD}/scripts/mariadb-install-db"
-  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal --tmpdir=${PWD}/tmp ${MYINIT}"
+  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${TMP_DIR} ${MYINIT}"
   #START_OPT="--core-file --core"
   START_OPT="--core-file"
 elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
@@ -125,31 +155,6 @@ if echo "${PWD}" | grep -q EMD ; then
   if [ "${VERSION_INFO_2}" == "10.3" -o "${VERSION_INFO_2}" == "10.2" ]; then
     INIT_OPT="${INIT_OPT} --auth-root-authentication-method=normal ${MYINIT}"
   fi
-fi
-
-# Check GR
-if find . -name group_replication.so | grep -q .; then
-  GRP_RPL=1
-else
-  echo "Note: Group Replication plugin not found. Skipping Group Replication startup"
-  GRP_RPL=0
-fi
-
-# Check MariaDB Galera Cluster
-MDG=0
-GALERA_LIB=
-SOCKET=${PWD}/socket.sock
-SLAVE_SOCKET=${PWD}/socket_slave.sock
-if [ -r lib/libgalera_smm.so ]; then
-  echo "CS Galera plugin found. Adding CS Galera startup"
-  MDG=1
-  GALERA_LIB=${PWD}/lib/libgalera_smm.so
-elif [ -r lib/libgalera_enterprise_smm.so ]; then
-  echo "ES Galera plugin found. Adding ES Galera startup"
-  MDG=1
-  GALERA_LIB=${PWD}/lib/libgalera_enterprise_smm.so
-else
-  echo "Note: Galera plugin not found. Skipping Galera startup"
 fi
 
 # Setup scritps
@@ -376,11 +381,14 @@ if [[ $MDG -eq 1 ]]; then
   echo "fi" >> ./gal_start_rr
   echo "mkdir -p \"\${_RR_TRACE_DIR}\"" >> ./gal_start_rr
   echo "./gal_stop >/dev/null 2>&1;./gal_kill >/dev/null 2>&1" >./gal_init
-  echo "rm -Rf ${PWD}/node*" >>./gal_init
+  echo "rm -Rf ${PWD}/node* ${PWD}/tmp*" >>./gal_init
   echo "" > ./gal_stop
   echo "./gal_stop >/dev/null 2>&1" >gal_wipe
-  echo "rm -Rf ${PWD}/node* ${PWD}/galera_rr" >>gal_wipe
+  echo "rm -Rf ${PWD}/node* ${PWD}/tmp* ${PWD}/galera_rr" >> ./gal_wipe
   for i in $(seq 1 "${NR_OF_NODES}"); do
+    echo "mkdir ${PWD}/tmp${i}">>./gal_init
+    echo "mkdir ${PWD}/tmp${i}">>./gal_wipe
+
     if [ "${i}" -eq 1 ] ; then
       echo "/usr/bin/rr record --chaos ${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --loose-innodb-flush-method=fsync --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start_rr
       echo "check_node_startup ${i}" >> ./gal_start_rr
@@ -393,7 +401,6 @@ if [[ $MDG -eq 1 ]]; then
       echo "check_node_startup ${i}" >> ./gal_start
     fi
     echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>./gal_init
-
     echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock test --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
     echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>gal_wipe
     echo "if [ -r node1/node${i}.err ]; then rm node${i}/node${i}.err*; fi" >>gal_wipe
