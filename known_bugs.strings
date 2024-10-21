@@ -207,6 +207,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+is_wsrep() == wsrep_on(mysql_thd)|SIGABRT|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist|trx_t::commit                                                        ## MDEV-35218
 found_tables > 0|SIGABRT|best_extension_by_limited_search|greedy_search|choose_plan|make_join_statistics                                                                       ## MDEV-35164
 join->best_read < double(1.79769313486231570814527423731704357e+308L)|SIGABRT|greedy_search|choose_plan|make_join_statistics|JOIN::optimize_inner                              ## MDEV-35164
 SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|ha_maria::index_read_map                                                                                                     ## MDEV-31278
