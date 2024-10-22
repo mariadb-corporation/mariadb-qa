@@ -224,11 +224,8 @@ LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGAB
 SIGABRT|__gnu_debug::_Error_formatter::_M_error|std::__debug::set<range_t, range_compare, std::allocator<range_t>|range_set::add_within_range|range_set::add_range             ## MDEV-35149
 SIGABRT|__gnu_debug::_Error_formatter::_M_error|__gnu_debug::_Safe_iterator<std::_Rb_tree_const_iterator<range_t>, std::__debug::set<range_t, range_compare, std::allocator<range_t> >, std::bidirectional_iterator_tag>::operator--|std::__advance<__gnu_debug::_Safe_iterator<std::_Rb_tree_const_iterator<range_t>, std::__debug::set<range_t, range_compare, std::allocator<range_t> >, std::bidirectional_iterator_tag>, long>|std::advance<__gnu_debug::_Safe_iterator<std::_Rb_tree_const_iterator<range_t>, std::__debug::set<range_t, range_compare, std::allocator<range_t> >, std::bidirectional_iterator_tag>, long> ## MDEV-35149
 SIGABRT|__gnu_debug::_Error_formatter::_M_error|__gnu_debug::operator==|range_set::add_range|fil_space_t::add_free_range                                                       ## MDEV-35149
-<<<<<<< HEAD
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|dict_hdr_get                          ## MDEV-35149
-=======
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|trx_undo_reuse_cached                 ## MDEV-35149
->>>>>>> f10925f9f3024a5df8fd4f8c495ec999f6c07ac0
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|fsp_page_create|fsp_alloc_free_page|fseg_alloc_free_page_low         ## MDEV-35149
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|fseg_inode_try_get                    ## MDEV-35149
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|btr_drop_temporary_table              ## MDEV-35149
