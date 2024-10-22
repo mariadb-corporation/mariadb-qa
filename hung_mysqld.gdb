@@ -11,3 +11,4 @@ show target-async
 display/i $pc
 disassemble
 info reg
+print buf_pool

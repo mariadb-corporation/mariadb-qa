@@ -1,15 +1,15 @@
 #!/bin/bash
 set +H
 
-# This script, by default, cleans up /data/NEWBUGS (or instead any directory passed as the first option to this script) by indexing all seen bugs into a newbugs.list (using 'find' as 'ls' will easily report 'ls: Argument list too long' for this directory as it often has 300-800k files in it). Then this list is reviewed line by line and for the first 3 occurences of any string, that bug/index is kept (iow the three string, sql and reducer files are kept). This thus eliminates >3 duplicates.
+# This script, by default, cleans up /data/NEWBUGS (or instead any directory passed as the first option to this script) by indexing all seen bugs into a newbugs.list (using 'find' as 'ls' will easily report 'ls: Argument list too long' for this directory as it often has 300-800k files in it). Then this list is reviewed line by line and for the first 3 occurrences of any string, that bug/index is kept (iow the three string, sql and reducer files are kept). This thus eliminates >3 duplicates.
 
 # User variables
 ENABLE_OUTPUT=1    # 0 For silence, 1 For output
 KNOWN_BUGS="${HOME}/mariadb-qa/known_bugs.strings"
-KEEP_OCCURENCES=2  # 1, 2, or 3. Keep this number of occurences
+KEEP_OCCURRENCES=2  # 1, 2, or 3. Keep this number of occurrences
 
 # System variable(s) and options check
-NEWBUG_COUNT="$(ps -ef | grep clean_newbug | grep -v grep | wc -l)"  # +1 occurence due to subshell
+NEWBUG_COUNT="$(ps -ef | grep clean_newbug | grep -v grep | wc -l)"  # +1 occurrence due to subshell
 if [ "${NEWBUG_COUNT}" -gt 2 ]; then  # Ensure clean_newbugs is not running already!
   echo "Assert: ./clean_newbug is already running elsewhere!"
   exit 1
@@ -94,7 +94,7 @@ delete_newbug(){
 } 
 
 if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-  echo ".. De-duplicating ({$KEEP_OCCURENCES} occurences max), and removing known bugs"
+  echo ".. De-duplicating ({$KEEP_OCCURRENCES} occurrences max), and removing known bugs"
 fi
 IDX=0
 rm -f newbugs.dedup
@@ -111,17 +111,17 @@ while IFS=$'\n' read STRING_FILE; do
     fi
     delete_newbug
   else
-    # Count nr of occurences in ./newbugs.dedup, a file used to count/add up to KEEP_OCCURENCES times the same bug: the rest is discarded
+    # Count nr of occurrences in ./newbugs.dedup, a file used to count/add up to KEEP_OCCURRENCES times the same bug: the rest is discarded
     DUPS="$(grep -Fic --binary-files=text "${STRING}" ./newbugs.dedup)"
     if [ -z "${DUPS}" ]; then DUPS=0; fi
-    if [ "${DUPS}" -gt $[ ${KEEP_OCCURENCES} - 1 ] ]; then
+    if [ "${DUPS}" -gt $[ ${KEEP_OCCURRENCES} - 1 ] ]; then
       if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence >=$[ ${DUPS} + 1 ]: filtering"
+        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurrence >=$[ ${DUPS} + 1 ]: filtering"
       fi
       delete_newbug
     else
       if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurence $[ ${DUPS} + 1 ]/${KEEP_OCCURENCES}, adding to ./newbugs.dedup"
+        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurrence $[ ${DUPS} + 1 ]/${KEEP_OCCURRENCES}, adding to ./newbugs.dedup"
       fi
       echo "${STRING}" >> ./newbugs.dedup
     fi 

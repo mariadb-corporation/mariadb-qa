@@ -27,7 +27,7 @@ ${SCRIPT_PWD}/pquery-results.sh | grep -A1 "Likely out of disk space trials" | \
 # 2022-03-12 16:14:19 4 [ERROR] mysqld: Unknown key id 1. Can't continue!
 # Which comes as a result of using 'SET GLOBAL aria_encrypt_tables=1;' without proper configuration
 # See also https://jira.mariadb.org/browse/MDEV-26258
-# The reason a thousands-line-before (-B1000) error log grep for these occurences is safe is that:
+# The reason a thousands-line-before (-B1000) error log grep for these occurrences is safe is that:
 # 1) The one-liner script below first confirms there are no cores for the given trial
 # 2) The one-liner script also confirms 'Unknown key id' is present for the given trial
 # 3) (minor) The 'Unknown key id' has to come before (-B) these errors to be considered

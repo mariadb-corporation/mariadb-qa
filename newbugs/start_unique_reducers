@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script works differently than start_reducers, which starts from a numerically sorted list. Instead this script starts from a unique UniqueID sorted list. This will likely work better in a directory which is not constantly updated when >3 occurences of the same UniqueID are deleted.
+# This script works differently than start_reducers, which starts from a numerically sorted list. Instead this script starts from a unique UniqueID sorted list. This will likely work better in a directory which is not constantly updated when >3 occurrences of the same UniqueID are deleted.
 
 set +H
 

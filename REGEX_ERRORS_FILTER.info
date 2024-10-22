@@ -11,14 +11,14 @@ Filter Text                                           Info at
 Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
 Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested
 Event invalid                                         MDEV-26270
-ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurences
-ERROR. InnoDB: Operating sys.*error.*13 in a file op  MDEV-19849 or similar occurences
-ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurences
-ERROR. InnoDB: Operating sys.*error.* 2 in a file op  MDEV-19849 or similar occurences
-ERROR. InnoDB: Error number 2 means.*file.*or dir     MDEV-19849 or similar occurences
-ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occurences
-ERROR. InnoDB: Operating sys.*error.* 3 in a file op  MDEV-19849 or similar occurences
-ERROR. InnoDB: .*error means.*system.*not find.*path  MDEV-19849 or similar occurences
+ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurrences
+ERROR. InnoDB: Operating sys.*error.*13 in a file op  MDEV-19849 or similar occurrences
+ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurrences
+ERROR. InnoDB: Operating sys.*error.* 2 in a file op  MDEV-19849 or similar occurrences
+ERROR. InnoDB: Error number 2 means.*file.*or dir     MDEV-19849 or similar occurrences
+ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occurrences
+ERROR. InnoDB: Operating sys.*error.* 3 in a file op  MDEV-19849 or similar occurrences
+ERROR. InnoDB: .*error means.*system.*not find.*path  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Cannot delete tablespace.*because it is not found in the tablespace memory cache  Older versions report this with a number before showing a warning that explains. Results of double ALTER TABLE t DISCARD TABLESPACE;
 ERROR. InnoDB: cannot enable encryption, encryption plugin is not available  --innodb-encrypt-temporary-tables=1 used without configuration, ref https://mariadb.com/kb/en/innodb-enabling-encryption/
 ERROR. InnoDB: innodb_page_size=.*requires innodb_buffer_pool_size >= 5MiB current  --innodb-buffer-pool-size set too small
@@ -90,6 +90,7 @@ Slave SQL: Error executing row event: 'You can't combine write-locking of system
 Slave: You can't combine write-locking of system tables with other tables or lock types Error_code: 1428  MDEV-34011
 safe_mutex: Found wrong usage of mutex .LOCK_plugin. and .LOCK_thd_kill  MDEV-32477
 safe_mutex: Found wrong usage of mutex .LOCK_thd_data. and .LOCK_plugin  MDEV-32477
+safe_mutex: Found wrong usage of mutex .LOCK_log. and .LOCK_global_system_variables  MDEV-35197
 Failed to open log .file .647.. errno 2               MDEV-22921 (ref comment) (can also show 'server_errno=29' at the end of the line, on a slave with RESET MASTER TO 0x7FFFFFFF; CREATE TABLE ... executed on master)
 Error reading packet from server. File .647. not found  MDEV-22921 (ref comment)
 Internal MariaDB error code: 1064                     Presumed non-issue (init_slave query error), though see MDEV-26247 (1064)

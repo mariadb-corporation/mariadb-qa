@@ -8,7 +8,7 @@ USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re
 BOOST_LOCATION=/tmp/boost_043581/
 USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
 CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
-USE_CLANG=1             # 0 or 1 # Use the clang compiler instead of gcc
+USE_CLANG=0             # 0 or 1 # Use the clang compiler instead of gcc
 USE_SAN=1               # 0 or 1 # Use [ASAN or MSAN], UBSAN, TSAN
 USE_TSAN=0              # 0 or 1 # 1 Enables TSAN, disables ASAN+UBSAN. 0 Enables ASAN+UBSAN,disables TSAN
 ASAN_OR_MSAN=0          # 0 or 1 # 0: ASAN, 1: MSAN
@@ -362,7 +362,7 @@ if [[ "${TAR_opt_san}" == *".tar.gz"* ]]; then
   echo $CMD > ../${DIR_opt_san_new}/BUILD_CMD_CMAKE
   #rm -Rf ${CURPATH}_opt_san  # Best not to delete it; this way gdb debugging is better quality as source will be available!
   cd ../${DIR_opt_san_new}
-  perl -i -0777 -pe 's/(  do_resolve=1\n)(then\n)/$2$1/' scripts/mariadb-install-db  # Fix MDEV-34468 if present
+  perl -i -0777 -pe 's/(  do_resolve=1\n)(then\n)/$2$1/' scripts/mariadb-install-db 2>/dev/null  # Fix MDEV-34468 if present
   cd - >/dev/null
   exit 0
 else

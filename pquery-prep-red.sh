@@ -726,7 +726,7 @@ generate_reducer_script(){
         cat ${RUNDIR}/${TRIAL}/*thread-[0-9]*.sql > ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null
         # Then do the same standard processing: add failing queries thrice, add SELECT 1's, add SELECT SLEEP's, ...
         # Note that if there is one failing query and one in the error log, then result is it will be added 6x
-        # This is fine and >=3 occurences is desired in any case (may help with sporadic issues)
+        # This is fine and >=3 occurrences is desired in any case (may help with sporadic issues)
         if [ -r ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing ]; then
           for((i=0;i<3;i++)){
             cat ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing >> ${RUNDIR}/${TRIAL}/quick_${TRIAL}.sql 2>/dev/null

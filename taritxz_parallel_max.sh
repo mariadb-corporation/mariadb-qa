@@ -1,4 +1,4 @@
-tar -hcf - . | XZ_OPT=-9e xz --verbose --stdout --threads 0 -2 > myarchive.tar.xz
+tar --exclude=myarchive.tar.xz -hcf - . | XZ_OPT=-9e xz --verbose --stdout --threads 0 -2 > myarchive.tar.xz
 # To extract:
 # tar -xf myarchive.tar.xz -I 'xz --verbose --threads 0 -2'
 # or

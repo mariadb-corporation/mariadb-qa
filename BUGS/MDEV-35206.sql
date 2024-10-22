@@ -1,0 +1,3 @@
+SET optimizer_join_limit_pref_ratio=10;
+SET optimizer_search_depth=1;
+SELECT ENGINE,SUPPORT,TRANSACTIONS FROM information_schema.ENGINES WHERE SUPPORT IN (SELECT SUPPORT FROM information_schema.ENGINES WHERE ENGINE IN (SELECT ENGINE FROM information_schema.ENGINES WHERE ENGINE IN (NULL))) ORDER BY ENGINE LIMIT 1;

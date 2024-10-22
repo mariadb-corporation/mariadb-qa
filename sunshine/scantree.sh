@@ -18,17 +18,17 @@ fi
 mapfile -t grammar < grammar.txt; GRAMMAR=${#grammar[*]}; 
 
 scan_grammar(){
-  # Scan the grammar for all occurences of either the header (^${1}:) or the variations thereof (idem as header; additional occurences thereof), or the variations (^| immediately after any found header). We always have to scan the whole array as variations of the header and/or variations can happen from the first till the last element/line thereof. In essence, a header, a variation of the header and a variations are all equal in value: they all provide different expressions of possible idioms contained therein. There are likely multiple header variations (rather than variations) to cater for different possible query expressions, though it is somwehat unclear why these were not written as variations rather than header variations. TODO: this may be a possible mysqld grammar optimization?
-  local occurences=()
+  # Scan the grammar for all occurrences of either the header (^${1}:) or the variations thereof (idem as header; additional occurrences thereof), or the variations (^| immediately after any found header). We always have to scan the whole array as variations of the header and/or variations can happen from the first till the last element/line thereof. In essence, a header, a variation of the header and a variations are all equal in value: they all provide different expressions of possible idioms contained therein. There are likely multiple header variations (rather than variations) to cater for different possible query expressions, though it is somwehat unclear why these were not written as variations rather than header variations. TODO: this may be a possible mysqld grammar optimization?
+  local occurrences=()
   local FLAG_COMMENCED=0
   for ((i=0;i<${GRAMMAR};i++)); do
     if [[ "${grammar[${i}]}" == "${1}:"* ]]; then
-      occurences[${#occurences[@]}]=${grammar[${i}]}
+      occurrences[${#occurrences[@]}]=${grammar[${i}]}
       FLAG_COMMENCED=1
       continue
     elif [ "${FLAG_COMMENCED}" -eq 1 ]; then
       if [[ "${grammar[${i}]}" == "|"* ]]; then
-        occurences[${#occurences[@]}]=${grammar[${i}]}
+        occurrences[${#occurrences[@]}]=${grammar[${i}]}
         continue
       else
         FLAG_COMMENCED=0
@@ -37,37 +37,37 @@ scan_grammar(){
     fi
   done
   # Now that we captured all possible variations, select a random one if there is more than one
-  #echo "${#occurences[*]}"
-  local SELECTED_OCCURENCE=
-  if [ ${#occurences[*]} -gt 1 ]; then
-    SELECTED_OCCURENCE=${occurences[$[$RANDOM % ${#occurences[*]}]]}
+  #echo "${#occurrences[*]}"
+  local SELECTED_OCCURRENCE=
+  if [ ${#occurrences[*]} -gt 1 ]; then
+    SELECTED_OCCURRENCE=${occurrences[$[$RANDOM % ${#occurrences[*]}]]}
     while true; do
-      if [ "$(echo "${LINE}" | grep -o "${SELECTED_OCCURENCE}" | wc -l)" -gt ${MAX_REPEATS} ]; then
-        SELECTED_OCCURENCE=${occurences[$[$RANDOM % ${#occurences[*]}]]}
+      if [ "$(echo "${LINE}" | grep -o "${SELECTED_OCCURRENCE}" | wc -l)" -gt ${MAX_REPEATS} ]; then
+        SELECTED_OCCURRENCE=${occurrences[$[$RANDOM % ${#occurrences[*]}]]}
         continue
       else
         break
       fi
     done
   else
-    SELECTED_OCCURENCE=${occurences[0]}
-    if [ "$(echo "${LINE}" | grep -o "${SELECTED_OCCURENCE}" | wc -l)" -gt ${MAX_REPEATS} ]; then
-      SELECTED_OCCURENCE=''
-      occurences=
+    SELECTED_OCCURRENCE=${occurrences[0]}
+    if [ "$(echo "${LINE}" | grep -o "${SELECTED_OCCURRENCE}" | wc -l)" -gt ${MAX_REPEATS} ]; then
+      SELECTED_OCCURRENCE=''
+      occurrences=
     fi
   fi
 
 
       #if [ "$(grep "^${idioms[${j}]}$" ${RANDOMF} | wc -l)" -gt ${MAX_REPEATS} ]; then continue; fi
 
-  # When ${#occurences[*]} is 0, it means we have reached the end element of a tree; an actual query item
-  if [ ${#occurences[*]} -ne 0 ]; then
-    # Cleanup SELECTED_OCCURENCE variations by changing the leading '| ' (indicating a variation) to the input header (and thus also the format the LINE= code a bit lower expects). Note this will only change variations as headers (which in/by themselves are also variations) already have the input header and no '| '. The header then needs to be removed as it was re-inserted as part of the SELECTED_OCCURENCE string (only when a '^${1}: ' was present/used).
-    SELECTED_OCCURENCE="$(echo "${SELECTED_OCCURENCE}" | sed "s|^[ ]\+||;s/^| /${1} /;s|^${1}: | |")"
-    # Now swap the header (or variation thereof) in the line to the randomly select occurence
-    LINE="$(echo "${LINE}" | sed "s|^${1}[: ]\+|${SELECTED_OCCURENCE} |")"
-    if [ "${LINE}" == "${LASTLINE}" ]; then LINE="$(echo "${LINE}" | sed "s| ${1}[: ]\+|${SELECTED_OCCURENCE} |")"; fi
-    if [ "${LINE}" == "${LASTLINE}" ]; then LINE="$(echo "${LINE}" | sed "s|^[ ]*${1}[ ]*$|${SELECTED_OCCURENCE} |")"; fi  # start
+  # When ${#occurrences[*]} is 0, it means we have reached the end element of a tree; an actual query item
+  if [ ${#occurrences[*]} -ne 0 ]; then
+    # Cleanup SELECTED_OCCURRENCE variations by changing the leading '| ' (indicating a variation) to the input header (and thus also the format the LINE= code a bit lower expects). Note this will only change variations as headers (which in/by themselves are also variations) already have the input header and no '| '. The header then needs to be removed as it was re-inserted as part of the SELECTED_OCCURRENCE string (only when a '^${1}: ' was present/used).
+    SELECTED_OCCURRENCE="$(echo "${SELECTED_OCCURRENCE}" | sed "s|^[ ]\+||;s/^| /${1} /;s|^${1}: | |")"
+    # Now swap the header (or variation thereof) in the line to the randomly select occurrence
+    LINE="$(echo "${LINE}" | sed "s|^${1}[: ]\+|${SELECTED_OCCURRENCE} |")"
+    if [ "${LINE}" == "${LASTLINE}" ]; then LINE="$(echo "${LINE}" | sed "s| ${1}[: ]\+|${SELECTED_OCCURRENCE} |")"; fi
+    if [ "${LINE}" == "${LASTLINE}" ]; then LINE="$(echo "${LINE}" | sed "s|^[ ]*${1}[ ]*$|${SELECTED_OCCURRENCE} |")"; fi  # start
     if [ "${LINE}" != "${LASTLINE}" ]; then
       # echo "LINE: |${LINE}| LASTLINE: |${LASTLINE}|"  # Debug
       echo "LINE: ${LINE}"  # Debug

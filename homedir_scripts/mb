@@ -68,7 +68,7 @@ sed -i "s|${BASEDIR}|${FEATURE_DIR}|" ./feature_reducer${TRIAL}.sh
 TEXT="$(grep '^   TEXT=' reducer${TRIAL}.sh | head -n1 | sed 's|^   TEXT="||;s|"[ \t]*$||')"
 if [ ! -z "${TEXT}" ]; then
   echo '#!/bin/bash' > ./find${TRIAL}
-  echo "echo '--- All occurences of this issue:'" >> ./find${TRIAL}
+  echo "echo '--- All occurrences of this issue:'" >> ./find${TRIAL}
   echo "LIST1=\"\$(grep -FiH --color=never --binary-files=text \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/MYBUG | sed 's|MYBUG:|MYBUG: |')\"" >> ./find${TRIAL}
   echo 'echo "${LIST1}" | grep --binary-files=text -v "^[ \t]*$"' >> ./find${TRIAL}
   echo "LIST2=\"\$(grep -iH --color=never --binary-files=text \"$(echo "${TEXT}" | sed 's|"|\\"|g')\" /data/[0-9]*/[0-9]*/log/*.err | sed 's|\.err:[-0-9: ]\+|.err: |' | grep --binary-files=text -v '^[ \\t]*$')\"" >> ./find${TRIAL}
@@ -94,7 +94,7 @@ else
   echo "Created ./base_reducer${TRIAL}.sh, ./feature_reducer${TRIAL}.sh and ./find${TRIAL}"
   echo ''
   if [ -x ./find${TRIAL} ]; then
-    echo "Executing ./find${TRIAL} to search for other occurences first:"
+    echo "Executing ./find${TRIAL} to search for other occurrences first:"
     ./find${TRIAL}
     sleep 2
     echo ''

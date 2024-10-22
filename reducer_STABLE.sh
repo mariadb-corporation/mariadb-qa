@@ -82,7 +82,7 @@ NEW_BUGS_SAVE_DIR="/data/NEWBUGS"  # Save new bugs into a specific directory (ot
 SHOW_SETUP_DEBUGGING=0          # Set to 1 to enable [Setup] messages with extra debug information
 RR_TRACING=0                    # Set to 1 to start server under the 'rr' debugger
 RR_SAVE_ALL_TRACES=0            # Set to 1 to save all rr traces rather than only the final one
-PAUSE_AFTER_EACH_OCCURENCE=0    # Set to 1 to pause reducer after each successful issue occurence (other search keywords: stop, halt, kill)
+PAUSE_AFTER_EACH_OCCURRENCE=0   # Set to 1 to pause reducer after each successful issue occurrence (other search keywords: stop, halt, kill)
 
 # === Expert options (Do not change, unless you fully understand the change)
 MULTI_THREADS=10                # Default=10 | Number of subreducers. This setting has no effect if PQUERY_MULTI=1, use PQUERY_MULTI_THREADS instead when using PQUERY_MULTI=1 (ref below). Each subreducer can idependently find the issue and will report back to the main reducer.
@@ -99,7 +99,7 @@ SAVE_RESULTS=0                  # On/Off (1/0) (Default=1: save a copy of reduce
 # === pquery options            # Note: only relevant if pquery is used for testcase replay, ref USE_PQUERY and PQUERY_MULTI
 USE_PQUERY=0                    # On/Off (1/0) Enable to use pquery instead of the mysql CLI. pquery binary (as set in PQUERY_LOC) must be available
 PQUERY_LOC="${SCRIPT_PWD}/pquery/pquery2-md"  # The pquery binary in mariadb-qa. To get this binary use:  cd ~; git clone https://github.com/Percona-QA/mariadb-qa.git
-PQUERY_CONS_Q_FAIL=0            # On/Off (1/0) (Default=0) Checks the pquery log for 'Last [0-9]+ consecutive queries all failed' while ignoring all other issue occurences (auto-sets USE_PQUERY=1, MODE=3, TEXT='Last [0-9]+ consecutive queries all failed', and USE_NEW_TEXT_STRING=0). This is a MODE=3 hack to use the pquery log irrespective of any crashes/TEXT/error log contents or similar to debug the 'x consecutive queries all failed' scenario (which may indicate valid bugs). Do not turn on unless specifically needed. When using this, note that testcases can never become much shorter then let's say 251-265 queries, and that only the top 1 to 10 orso queries will matter (i.e. until it starts failing queries, which will should be visible in the pquery output i.e. ;#ERROR... or likely similar in the CLI) as the last 250 queries in the testcase are needed to produce the reducible outcome of having that message in the pquery log
+PQUERY_CONS_Q_FAIL=0            # On/Off (1/0) (Default=0) Checks the pquery log for 'Last [0-9]+ consecutive queries all failed' while ignoring all other issue occurrences (auto-sets USE_PQUERY=1, MODE=3, TEXT='Last [0-9]+ consecutive queries all failed', and USE_NEW_TEXT_STRING=0). This is a MODE=3 hack to use the pquery log irrespective of any crashes/TEXT/error log contents or similar to debug the 'x consecutive queries all failed' scenario (which may indicate valid bugs). Do not turn on unless specifically needed. When using this, note that testcases can never become much shorter then let's say 251-265 queries, and that only the top 1 to 10 orso queries will matter (i.e. until it starts failing queries, which will should be visible in the pquery output i.e. ;#ERROR... or likely similar in the CLI) as the last 250 queries in the testcase are needed to produce the reducible outcome of having that message in the pquery log
 
 # === Other options             # The options are not often changed
 CLI_MODE=2                      # When using the CLI; 0: sent SQL using a pipe, 1: sent SQL using --execute="SOURCE ..." command, 2: sent SQL using redirection (mysql < input.sql)
@@ -152,7 +152,7 @@ TS_VARIABILITY_SLEEP=1
 #   - MODE=2: mysql CLI (Command Line Interface, i.e. the mysql client)/pquery client output testing (set TEXT)
 #   - MODE=3: mariadbd/mysqld error output log or console/typescript log (when REDUCE_GLIBC_OR_SS_CRASHES=1) testing (set TEXT)
 #   - MODE=4: Crash or GLIBC crash (when REDUCE_GLIBC_OR_SS_CRASHES=1) testing
-#   - MODE=5 [BETA]: MTR testcase reduction (set TEXT) (Can also be used for multi-occurence CLI output testing - see MODE5_COUNTTEXT)
+#   - MODE=5 [BETA]: MTR testcase reduction (set TEXT) (Can also be used for multi-occurrence CLI output testing - see MODE5_COUNTTEXT)
 #   - MODE=6 [ALPHA]: Multi threaded (ThreadSync) Valgrind output testing (set TEXT)
 #   - MODE=7 [ALPHA]: Multi threaded (ThreadSync) mysql CLI/pquery client output testing (set TEXT)
 #   - MODE=8 [ALPHA]: Multi threaded (ThreadSync) mariadbd/mysqld error output log testing (set TEXT)
@@ -209,7 +209,7 @@ TS_VARIABILITY_SLEEP=1
 #   Still, even in this case there are methods that can be employed to let the testcase reproduce. For further ideas what to do in these cases, see; https://github.com/mariadb-corporation/mariadb-qa/blob/master/reproducing_and_simplification.txt
 # - FORCE_SPORADIC=0 or 1: If set to 1, STAGE1_LINES setting is ignored and set to 3, unless it was set to a non-default number (i.e. !=90 - to enable reduction of issues via MULTI until a given amount of lines is reached, which is handy for tools like pquery-reach.sh where a mix of sporadic and non-sporadic issues may be seen). MULTI reducer mode is used after verify, even if issue is found to seemingly not be sporadic (i.e. all verify threads reproduced the issue). This can be handy for issues which are very slow to reduce or which, on visual inspection of the testcase reduction
 #   process are clearly sporadic (i.e. it comes to 2 line chunks with still thousands of lines in the testcase and/or there are many trials without the issue being observed. Another situation which would call for use of this parameter is when produced testcases are still greater then 15 to 80 lines - this also indicates a possibly sporadic issue (even if verify stage manages to produce it against all started subreducer threads).
-#   Note that this may be a bug in reducer too - i.e. a mismatch between verify stage and stage 1. Yet, if that were true, the issue would likely not reproduce to start with. Another plausible reason for this occurence (all threads verified in verify stage but low frequency reproduction later on) is the existence of all threads in verify stage vs 1 thread in stage 1. It has been observed that a very loaded server (or using Valgrind as it also slows the code down significantly) is better at reproducing (many) issues then a low-load/single-thread-running machine. Whatever the case, this option will help.
+#   Note that this may be a bug in reducer too - i.e. a mismatch between verify stage and stage 1. Yet, if that were true, the issue would likely not reproduce to start with. Another plausible reason for this occurrence (all threads verified in verify stage but low frequency reproduction later on) is the existence of all threads in verify stage vs 1 thread in stage 1. It has been observed that a very loaded server (or using Valgrind as it also slows the code down significantly) is better at reproducing (many) issues then a low-load/single-thread-running machine. Whatever the case, this option will help.
 # - FORCE_SKIV=0 or 1: If set to 1, FORCE_SPORADIC is automatically set to 1 also. This option skips the verify stage and goes straight into testcase reduction mode. Ideal for issues that have a very low reproducibility, at least initially (usually either increases or decreases during a simplification run.)
 #   Note that skipping the verify stage means that you may not be sure if the issue is reproducibile untill it actually reproduces (how long is a piece of string), and the other caveat is that the verify stage normally does some very important inital simplifications which is now skipped. It is suggested that
 #   if the issue becomes more reproducible during simplification, to restart reducer with this option turned off. This way you get the best of both worlds.
@@ -940,7 +940,7 @@ options_check(){
   if [ $MODE -eq 2 ]; then
     if [ $USE_PQUERY -eq 1 ]; then  # pquery client output testing run in MODE=2 - we need to make sure we have pquery client logging activated
       if [ "$(echo $PQUERY_EXTRA_OPTIONS | grep -E --binary-files=text -io "log-client-output")" != "log-client-output" ]; then
-        echo "Assert: USE_PQUERY=1 && PQUERY_EXTRA_OPTIONS does not contain log-client-output, so not sure what file reducer.sh should check for TEXT occurence."
+        echo "Assert: USE_PQUERY=1 && PQUERY_EXTRA_OPTIONS does not contain log-client-output, so not sure what file reducer.sh should check for TEXT occurrence."
         exit 1
       fi
     fi
@@ -1154,8 +1154,8 @@ set_internal_options(){  # Internal options: do not modify!
   #ulimit -u 4000  2>/dev/null
   # ^ This was removed, because it was causing the system to run out of available file descriptors. i.e. while ulimit -n may be set to a maximum of 1048576, and whilst that limit may never be reached, a system would still run into "fork: retry: Resource temporarily unavailable" issues. Ref https://askubuntu.com/questions/1236454
   # Unless core files are specifically requested (--core-file or --core option passed to mariadbd/mysqld via MYEXTRA), disable all core file generation (OS+mariadbd/mysqld)
-  if [ "${PAUSE_AFTER_EACH_OCCURENCE}" -eq 1 ]; then
-    MYEXTRA="${MYEXTRA} --core-file"  # Enable core file generation if PAUSE_AFTER_EACH_OCCURENCE is set, as this option is commonly used to debug cores directly after each issue occurence happens. Also, do not disable core file generation (ref elif)
+  if [ "${PAUSE_AFTER_EACH_OCCURRENCE}" -eq 1 ]; then
+    MYEXTRA="${MYEXTRA} --core-file"  # Enable core file generation if PAUSE_AFTER_EACH_OCCURRENCE is set, as this option is commonly used to debug cores directly after each issue occurrence happens. Also, do not disable core file generation (ref elif)
   elif [ "${USE_NEW_TEXT_STRING}" != "1" ]; then  # Also do not disable core file generation if we need it for the 'new text string' binary (as specified by TEXT_STRING_LOC), which uses core files to generate UniqueID bug strings
     # It would be good if we could disable OS core file generation without disabling mariadbd/mysqld core file generation, but for the moment it looks like
     # ulimit -c 0 disables ALL core file generation, both OS and mariadbd/mysqld, so instead, ftm, reducer checks for "CORE" in MYEXTRA (uppercase-ed via ^^)
@@ -1280,7 +1280,7 @@ multi_reducer(){
       | sed "0,/#VARMOD#/s:#VARMOD#:PQUERY_MULTI_QUERIES=$PQUERY_MULTI_QUERIES\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:TS_TRXS_SETS=$TS_TRXS_SETS\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:TS_DBG_CLI_OUTPUT=$TS_DBG_CLI_OUTPUT\n#VARMOD#:" \
-      | sed "0,/#VARMOD#/s:#VARMOD#:PAUSE_AFTER_EACH_OCCURENCE=\"$PAUSE_AFTER_EACH_OCCURENCE\"\n#VARMOD#:" \
+      | sed "0,/#VARMOD#/s:#VARMOD#:PAUSE_AFTER_EACH_OCCURRENCE=\"$PAUSE_AFTER_EACH_OCCURRENCE\"\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:BASEDIR=\"$BASEDIR\"\n#VARMOD#:" \
       | sed "0,/#VARMOD#/s:#VARMOD#:MYUSER=\"$MYUSER\"\n#VARMOD#:" > $MULTI_WORKD/subreducer
 
@@ -1327,7 +1327,7 @@ multi_reducer(){
     # Wait for one of the forked processes to succeed to:
     # Without FIREWORKS: find a better reduction file
     # With FIREWORKS: to find a new bug
-    # Note that the term/file '/VERIFIED' is used for both instances/occurences
+    # Note that the term/file '/VERIFIED' is used for both instances/occurrences
     if [ "${FIREWORKS}" != "1" ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Waiting for any forked simplifation subreducer threads to find a shorter file (Issue is deemed or assumed to be sporadic: this may take time)"
     else
@@ -1358,7 +1358,7 @@ multi_reducer(){
           # The subshell in the following line simply retrieves the WORKO output file from the subreducer Then, the grep -v removes any mariadbd/mysqld option line before copying the file to the new/next WORKF for the next trial If this step was not done, the new/next WORKF testcase would always be +1 line longer. The way this would show for example in SKIPV mode is that the main reducer would indicate that it had found a shorter testcase (-1 line for example) whereas the next trial would start with the same line number (as +1 line was re-added). This is not so clear when large chunks are removed at the time, but it becomes very clear when only ~5-15 lines are left. This was fixed and the line below does not suffer from said problem
           grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') > $WORKF
           if [ "${FIREWORKS}" != "1" ]; then
-            if [ -r "$WORKO" ]; then  # Avoid first occurence when there is no $WORKO yet
+            if [ -r "$WORKO" ]; then  # Avoid first occurrence when there is no $WORKO yet
               if [[ ${RR_TRACING} -eq 1 ]]; then
                 if [[ ${RR_SAVE_ALL_TRACES} -eq 1 ]]; then
                   save_rr_trace "${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
@@ -1380,8 +1380,8 @@ multi_reducer(){
             echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [${NR_OF_NEWBUGS} New Bugs Found] Thread #$t found a new unseen bug: $(cat $MULTI_WORKD/MYBUG.FOUND | head -n1)"
           fi
           FOUND_VERIFIED=1  # Outer loop terminate setup
-          if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
-            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURENCE is active: reducer is pausing as the issue occured. Press 'Enter' twice to continue..."
+          if [ "${PAUSE_AFTER_EACH_OCCURRENCE}" == "1" ]; then
+            echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] PAUSE_AFTER_EACH_OCCURRENCE is active: reducer is pausing as the issue occured. Press 'Enter' twice to continue..."
             read -p ''
             read -p ''
           fi
@@ -1475,8 +1475,8 @@ multi_reducer(){
       export MULTI_WORKD=$(eval echo $(echo '$WORKD'"$t"))
       if [ -s $MULTI_WORKD/VERIFIED ]; then
         ATLEASTONCE="[*]"  # The issue was seen at least once
-        if [ "${PAUSE_AFTER_EACH_OCCURENCE}" -eq 1 ]; then
-          echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread $t reproduced the issue. As PAUSE_AFTER_EACH_OCCURENCE is set, pausing for analysis. Press enter twice to continue. Directory: ${MULTI_WORKD}"
+        if [ "${PAUSE_AFTER_EACH_OCCURRENCE}" -eq 1 ]; then
+          echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Thread $t reproduced the issue. As PAUSE_AFTER_EACH_OCCURRENCE is set, pausing for analysis. Press enter twice to continue. Directory: ${MULTI_WORKD}"
           if [ -r "${TEXT_STRING_LOC}" ]; then  # Attempt to give more information
             cd $MULTI_WORKD
             if [ "${MULTI_WORKD}" != "${PWD}" ]; then
@@ -1889,8 +1889,8 @@ init_workdir_and_files(){
       echoit "[Init] FORCE_SPORADIC active, so automatically enabled SLOW_DOWN_CHUNK_SCALING to speed up testcase reduction (SLOW_DOWN_CHUNK_SCALING_NR is set to $SLOW_DOWN_CHUNK_SCALING_NR)"
     fi
   fi
-  if [ "${PAUSE_AFTER_EACH_OCCURENCE}" == "1" ]; then
-    echoit "[Init] PAUSE_AFTER_EACH_OCCURENCE active, so reducer will pause after each occurence of the issue"
+  if [ "${PAUSE_AFTER_EACH_OCCURRENCE}" == "1" ]; then
+    echoit "[Init] PAUSE_AFTER_EACH_OCCURRENCE active, so reducer will pause after each occurrence of the issue"
   fi
   if [ ${REDUCE_STARTUP_ISSUES} -eq 1 ]; then
     echoit "[Init] REDUCE_STARTUP_ISSUES active. Issue is assumed to be a startup issue"
@@ -3018,11 +3018,11 @@ cut_threadsync_chunk(){
     export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
     export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
     if [ $TS_TRXS_SETS -gt 0 ]; then
-      FIRST_DS_OCCURENCE=$(tac $TS_WORKF | grep -E --binary-files=text -v "^[\t ]*;[\t ]*$" | grep -E --binary-files=text -m1 -n "SET DEBUG_SYNC" | awk -F":" '{print $1}');
+      FIRST_DS_OCCURRENCE=$(tac $TS_WORKF | grep -E --binary-files=text -v "^[\t ]*;[\t ]*$" | grep -E --binary-files=text -m1 -n "SET DEBUG_SYNC" | awk -F":" '{print $1}');
       if grep -E --binary-files=text -qi "SIGNAL GO_T2" $TS_WORKF; then
         # Control thread
         LAST_LINE=$( \
-        if [ $FIRST_DS_OCCURENCE -gt 1 ]; then \
+        if [ $FIRST_DS_OCCURRENCE -gt 1 ]; then \
           tac $TS_WORKF | awk '/now SIGNAL GO_T2/,/SET DEBUG_SYNC/ {print NR; i++; if (i>$TS_TRXS_SETS) nextfile}' | tail -n1; \
         else \
           tac $TS_WORKF | awk '/now SIGNAL GO_T2/,/SET DEBUG_SYNC/ {print NR; i++; if (i>1+$TS_TRXS_SETS) nextfile}' | tail -n1; \
@@ -3036,7 +3036,7 @@ cut_threadsync_chunk(){
       else
         # Sub threads
         LAST_LINE=$( \
-        if [ $FIRST_DS_OCCURENCE -gt 1 ]; then \
+        if [ $FIRST_DS_OCCURRENCE -gt 1 ]; then \
           tac $TS_WORKF | awk '/now WAIT_FOR GO_T/,/SET DEBUG_SYNC/ {print NR; i++; if (i>$TS_TRXS_SETS) nextfile}' | tail -n1; \
         else \
           tac $TS_WORKF | awk '/now WAIT_FOR GO_T/,/SET DEBUG_SYNC/ {print NR; i++; if (i>1+$TS_TRXS_SETS) nextfile}' | tail -n1; \
@@ -3388,37 +3388,37 @@ process_outcome(){
     if [ ! -z "$QCTEXT" ]; then
       NEWLINENUMBER="$(grep -E --binary-files=text "$QCTEXT" $FILETOCHECK2|grep -E --binary-files=text -o "#[0-9]+$"|sed 's/#//g')"
     fi
-    # TODO: Add check if same query has same output multiple times (add variable for number of occurences)
-    MODE2_OCCURENCE=0
+    # TODO: Add check if same query has same output multiple times (add variable for number of occurrences)
+    MODE2_OCCURRENCE=0
     if [ -z "$QCTEXT" ]; then  # Normal run, not QC
       if [ $USE_PQUERY -eq 1 ]; then  # pquery client output testing run, check both logs ftm (TODO: check if this is needed)
         if [ $(grep -E --binary-files=text -c "$TEXT" $FILETOCHECK $FILETOCHECK2 2>/dev/null) -gt 0 ]; then
-          MODE2_OCCURENCE=1
+          MODE2_OCCURRENCE=1
         fi
       else  # mysql CLI output testing run
         if [ $(grep -E --binary-files=text -c "$TEXT" $FILETOCHECK 2>/dev/null) -gt 0 ]; then
-          MODE2_OCCURENCE=1
+          MODE2_OCCURRENCE=1
         fi
       fi
     else  # QC  # TODO: RV 21/07/2022: It is not sure that the '$TEXT#$NEWLINENUMBER$' code is correct, it was what was here to start with. Test later when fixing up QC. Ref QC comment above. It may be that pquery vs CLI also needs to be split.
       if [ $(grep -E --binary-files=text -c "$TEXT#$NEWLINENUMBER$" $FILETOCHECK 2>/dev/null) -gt 0 ]; then
-        MODE2_OCCURENCE=1
+        MODE2_OCCURRENCE=1
       fi
     fi
-    if [ $MODE2_OCCURENCE -eq 1 ]; then
+    if [ $MODE2_OCCURRENCE -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*ClientOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good client output issue in $WORKO"
         control_backtrack_flow
       fi
       cleanup_and_save
-      MODE2_OCCURENCE=
+      MODE2_OCCURRENCE=
       return 1
     else
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoClientOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
         NOISSUEFLOW=$[$NOISSUEFLOW+1]
       fi
-      MODE2_OCCURENCE=
+      MODE2_OCCURRENCE=
       return 0
     fi
 
@@ -3748,10 +3748,10 @@ process_outcome(){
 
   # MODE5: MTR testcase reduction testing (set TEXT)
   elif [ $MODE -eq 5 ]; then
-    COUNT_TEXT_OCCURENCES=$(grep -E --binary-files=text -ic "$TEXT" $WORKD/log/mysql.out)
-    if [ $COUNT_TEXT_OCCURENCES -ge $MODE5_COUNTTEXT ]; then
-      COUNT_TEXT_OCCURENCES=$(grep -E --binary-files=text -ic "$MODE5_ADDITIONAL_TEXT" $WORKD/log/mysql.out)
-      if [ $COUNT_TEXT_OCCURENCES -ge $MODE5_ADDITIONAL_COUNTTEXT ]; then
+    COUNT_TEXT_OCCURRENCES=$(grep -E --binary-files=text -ic "$TEXT" $WORKD/log/mysql.out)
+    if [ $COUNT_TEXT_OCCURRENCES -ge $MODE5_COUNTTEXT ]; then
+      COUNT_TEXT_OCCURRENCES=$(grep -E --binary-files=text -ic "$MODE5_ADDITIONAL_TEXT" $WORKD/log/mysql.out)
+      if [ $COUNT_TEXT_OCCURRENCES -ge $MODE5_ADDITIONAL_COUNTTEXT ]; then
         if [ ! "$STAGE" = "V" ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*MTRCaseOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good MTR testcase output issue in $WORKO"
           control_backtrack_flow
@@ -4848,8 +4848,8 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     elif [ $TRIAL -eq 49 ]; then sed "s/'[^']\+'/'abcde'/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 50 ]; then sed "s/'[^']\+'/NULL/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 51 ]; then sed "s/NULL,/,/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 52 ]; then sed "s/NULL,/,/" $WORKF > $WORKT  # 1st occurence only
-    elif [ $TRIAL -eq 53 ]; then sed "s/NULL,/,/" $WORKF > $WORKT  # 2nd occurence only
+    elif [ $TRIAL -eq 52 ]; then sed "s/NULL,/,/" $WORKF > $WORKT  # 1st occurrence only
+    elif [ $TRIAL -eq 53 ]; then sed "s/NULL,/,/" $WORKF > $WORKT  # 2nd occurrence only
     elif [ $TRIAL -eq 54 ]; then sed "s/'[^']\+'/'a'/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 55 ]; then sed "s/'[^']\+'/'0'/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 56 ]; then sed "s/'[^']\+'/''/g" $WORKF > $WORKT
@@ -5052,9 +5052,9 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 140 ]; then sed "s/MAX[ \t]\+[0-9]\+//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 141 ]; then sed "s/MAX[ \t]\+//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 142 ]; then sed "s/NOT NULL//gi" $WORKF > $WORKT  # All
-    elif [ $TRIAL -eq 143 ]; then sed "s/NOT NULL//i" $WORKF > $WORKT  # First occurence only
-    elif [ $TRIAL -eq 144 ]; then sed "s/NOT NULL//i" $WORKF > $WORKT  # Second occurence only
-    elif [ $TRIAL -eq 145 ]; then sed "s/NOT NULL//i" $WORKF > $WORKT  # Third occurence only
+    elif [ $TRIAL -eq 143 ]; then sed "s/NOT NULL//i" $WORKF > $WORKT  # First occurrence only
+    elif [ $TRIAL -eq 144 ]; then sed "s/NOT NULL//i" $WORKF > $WORKT  # Second occurrence only
+    elif [ $TRIAL -eq 145 ]; then sed "s/NOT NULL//i" $WORKF > $WORKT  # Third occurrence only
     elif [ $TRIAL -eq 146 ]; then sed "s/TEMPORARY//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 147 ]; then sed "s/TEMPORARY//i" $WORKF > $WORKT
     elif [ $TRIAL -eq 148 ]; then sed "s/AUTO_INCREMENT KEY//i" $WORKF > $WORKT
@@ -5241,7 +5241,7 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
   COUNTTABLES=$(grep -E --binary-files=text "CREATE[\t ]*TABLE" $WORKF | wc -l)
   if [ $COUNTTABLES -gt 0 ]; then
     for i in $(eval echo {$COUNTTABLES..1}); do  # Reverse order
-      # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurence)
+      # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurrence)
       TABLENAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed 's/CREATE[\t ]*TABLE/\n/2' \
         | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
       sed "s/\([(. ]\)$TABLENAME\([ )]\)/\1 $TABLENAME \2/gi;s/ $TABLENAME / t$i /gi" $WORKF > $WORKT
@@ -5259,7 +5259,7 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
   COUNTVIEWS=$(grep -E --binary-files=text "CREATE[\t ]*VIEW" $WORKF | wc -l)
   if [ $COUNTVIEWS -gt 0 ]; then
     for i in $(eval echo {$COUNTVIEWS..1}); do  # Reverse order
-      # the '...\n/2' sed is a precaution against multiple CREATE VIEWs on one line (it replaces the second occurence)
+      # the '...\n/2' sed is a precaution against multiple CREATE VIEWs on one line (it replaces the second occurrence)
       VIEWNAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*VIEW" $WORKF | tail -n1 | sed 's/CREATE[\t ]*VIEW/\n/2' \
         | head -n1 | sed -e 's/CREATE[\t ]*VIEW[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
       sed "s/\([(. ]\)$VIEWNAME\([ )]\)/\1 $VIEWNAME \2/gi;s/ $VIEWNAME / v$i /gi" $WORKF > $WORKT
@@ -5296,7 +5296,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
   COUNTTABLES=$(grep -E --binary-files=text "CREATE[\t ]*TABLE" $WORKF | wc -l)
   if [ ${COUNTTABLES} -ge 1 ]; then
     for t in $(eval echo {$COUNTTABLES..1}); do  # Reverse order process all tables
-      # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurence)
+      # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurrence)
       TABLENAME=$(grep -E --binary-files=text -m$t "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed 's/CREATE[\t ]*TABLE/\n/2' \
         | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
 
@@ -5343,7 +5343,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
         TEMPTABLENAME=$TABLENAME
         while grep -E --binary-files=text -qi "INSERT.*INTO.*$TEMPTABLENAME.*SELECT" $WORKF; do
           NUMOFINVOLVEDTABLES=$[$NUMOFINVOLVEDTABLES+1]
-          # the '...\n/2' sed is a precaution against multiple INSERT INTOs on one line (it replaces the second occurence)
+          # the '...\n/2' sed is a precaution against multiple INSERT INTOs on one line (it replaces the second occurrence)
           export TABLENAME$NUMOFINVOLVEDTABLES=$(grep -E --binary-files=text "INSERT.*INTO.*$TEMPTABLENAME.*SELECT" $WORKF | tail -n1 | sed 's/INSERT.*INTO/\n/2' | head -n1 | sed -e "s/INSERT.*INTO.*$TEMPTABLENAME.*SELECT.*FROM[\t ]*\(.*\)/\1/" -e 's/ //g;s/;//g')
           TEMPTABLENAME=$(eval echo $(echo '$TABLENAME'"$NUMOFINVOLVEDTABLES"))
         done
@@ -5356,7 +5356,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
         for COL in $COLS; do
           echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Trying to eliminate column '$COL' in table '$TABLENAME'"
 
-          # Eliminate the column from the correct CREATE TABLE table (this will match the first occurence of that column name in the correct CREATE TABLE)
+          # Eliminate the column from the correct CREATE TABLE table (this will match the first occurrence of that column name in the correct CREATE TABLE)
           # This sed presumes that each column is on one line, by itself, terminated by a comma (can be improved upon as per the above remark note)
           WORKT2=`echo $WORKT | sed 's/$/.2/'`
           sed "/CREATE.*TABLE.*$TABLENAME/,/^[ ]*$COL.*,/s/^[ ]*$COL.*,//1" $WORKF | grep -E --binary-files=text -v "^$" > $WORKT2  # Remove the column from table defintion
@@ -5365,7 +5365,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
           cp -f $WORKT2 $WORKT
 
           # If present, the script also need to drop the same column from the INSERT for that table, otherwise the testcase will definitely fail (incorrect INSERT)
-          # Small limitation 1: ,',', (a comma inside a txt string) is not handled correctly. Column elimination will work, but only upto this occurence (per table)
+          # Small limitation 1: ,',', (a comma inside a txt string) is not handled correctly. Column elimination will work, but only upto this occurrence (per table)
           # Small limitation 2: INSERT..INTO..SELECT <specific columns> does not work. SELECT * in such cases is handled. You could manually edit the testcase.
 
           for c in $(eval echo {1..$NUMOFINVOLVEDTABLES}); do

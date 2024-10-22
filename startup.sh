@@ -91,7 +91,7 @@ if [ -r ${PWD}/bin/mysql_install_db ]; then MID="${PWD}/bin/mysql_install_db"; f
 START_OPT="--core-file"                        # Compatible with 5.6,5.7,8.0
 INIT_OPT="--no-defaults --initialize-insecure --tmpdir=${PWD}/tmp" # Compatible with     5.7,8.0 (mysqld init)
 INIT_TOOL="${BIN}"                             # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
-VERSION_INFO=$(${BIN} --version | grep --binary-files=text -oe '[58]\.[01567]' | head -n1)
+VERSION_INFO=$(${BIN} --version | grep --binary-files=text -oe '[589]\.[01567]' | head -n1)
 if [ -z "${VERSION_INFO}" ]; then VERSION_INFO="NA"; fi
 VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-1]\.[0-9][0-9]*' | head -n1)
 if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
@@ -115,7 +115,7 @@ elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_IN
   INIT_TOOL="${MID}"
   INIT_OPT="--no-defaults --force"
   START_OPT="--core"
-elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" ]; then
+elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" -a "${VERSION_INFO}" != "9.1" ]; then
   echo "=========================================================================================="
   echo "WARNING: mysqld (${BIN}) version detection failed. This is likely caused by using this script with a non-supported distribution or version of mysqld, or simply because this directory is not a proper MySQL[-fork] base directory. Please expand this script to handle (which shoud be easy to do). Even so, the scipt will now try and continue as-is, but this may and will likely fail."
   echo "=========================================================================================="

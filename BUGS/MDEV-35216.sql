@@ -1,0 +1,8 @@
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+GRANT ALL ON * TO Spider@localhost;
+CREATE SERVER srv FOREIGN DATA WRAPPER mysql OPTIONS (SOCKET '../socket.sock',DATABASE'',USER 'Spider',PASSWORD'');
+CREATE TABLE t (c1 INT,c2 INT) ENGINE=Spider COMMENT='WRAPPER "mysql",SRV "srv",TABLE "foo"';
+SET GLOBAL init_connect='SET autocomit=0';
+SET autocommit=0;
+INSERT INTO t VALUES (0);
+CREATE SERVER s2 FOREIGN DATA WRAPPER mysql OPTIONS (HOST'');

@@ -55,7 +55,7 @@ if [ "${1}" == "GAL" ]; then
     echo "Assert: TEXT is set to '${TEXT}', but BBB was expected. TODO: add 'export TEXT=...' support for Galera Cluster"
     exit 1
   else  # BBB
-    echo "NOTE: Looking for crashes/asserts in the galera node error logs as well as core files to validate issue occurence."
+    echo "NOTE: Looking for crashes/asserts in the galera node error logs as well as core files to validate issue occurrence."
   fi
   GAL_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
@@ -64,7 +64,7 @@ elif [ "${1}" == "SAN" ]; then
     echo "Assert: TEXT is empty, use export TEXT= to set it!"
     exit 1
   else
-    echo "NOTE: SAN Mode: Looking for '${TEXT}' in the error log to validate issue occurence."
+    echo "NOTE: SAN Mode: Looking for '${TEXT}' in the error log to validate issue occurrence."
   fi
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
@@ -76,7 +76,7 @@ elif [ "${1}" == "REPL" ]; then
     echo "Assert: TEXT is set to '${TEXT}', but BBB was expected. TODO: add 'export TEXT=...' support for replication"
     exit 1
   else  # BBB
-    echo "NOTE: Looking for crashes/asserts in the master+slave error logs as well as core files to validate issue occurence."
+    echo "NOTE: Looking for crashes/asserts in the master+slave error logs as well as core files to validate issue occurrence."
   fi
   REPL_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|REPL||')"
@@ -87,9 +87,9 @@ else
     echo "  export TEXT='your_search_text'  # to set it before running this script"
   else
     if [ "${TEXT}" == "BBB" ]; then
-      echo "NOTE: Looking for crashes/asserts in the error log as well as core files to validate issue occurence."
+      echo "NOTE: Looking for crashes/asserts in the error log as well as core files to validate issue occurrence."
     else
-      echo "NOTE: Looking for '${TEXT}' in the error log to validate issue occurence."
+      echo "NOTE: Looking for '${TEXT}' in the error log to validate issue occurrence."
     fi
   fi
 fi
@@ -449,7 +449,7 @@ else
 fi
 echo '-------------------- /BUG REPORT --------------------'
 if [ "${1}" == "SAN" ]; then
-  echo "TOTAL SAN OCCURENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
+  echo "TOTAL SAN OCCURRENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 elif [ "${1}" == "GAL" ]; then
   echo "TOTAL GALERA CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 elif [ "${REPL_MODE}" -eq 1 ]; then

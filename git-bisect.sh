@@ -98,7 +98,7 @@ if [ ! -z "${UNIQUEID}" ]; then
 elif [ ! -z "${TEXT}" ]; then
   echo "Searching for Error log text Bug: '${TEXT}'" | tee -a "${MAINLOG}"
 else
-  echo "Searching for core files in the data directory to validate issue occurence" | tee -a "${MAINLOG}"
+  echo "Searching for core files in the data directory to validate issue occurrence" | tee -a "${MAINLOG}"
 fi
 
 bisect_good(){

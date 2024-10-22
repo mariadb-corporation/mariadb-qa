@@ -40,6 +40,7 @@ cat "${1}" | tr -d '`' | \
        s|pointfromtext|POINTFROMTEXT|gi; \
        s|multipointfromtext|MULTIPOINTFROMTEXT|gi; \
        s|json|JSON|gi; \
+       s|btree|BTREE|gi; \
        s|sqlexception |SQLEXCEPTION |gi; \
        s|continue |CONTINUE |gi; \
        s|until |UNTIL |gi; \
@@ -290,7 +291,6 @@ cat "${1}" | tr -d '`' | \
        s|rocksdb|RocksDB|gi; \
        s|csv|CSV|gi; \
        s|archive|ARCHIVE|gi; \
-       s|values|VALUES|gi; \
        s|against|AGAINST|gi; \
        s|key_block_size|KEY_BLOCK_SIZE|gi; \
        s|compressed|COMPRESSED|gi; \
@@ -418,7 +418,6 @@ cat "${1}" | tr -d '`' | \
        s|inet_aton|INET_ATON|gi; \
        s|weight_string|WEIGHT_STRING|gi; \
        s|count *(|COUNT(|gi; \
-       s|values *(|VALUES (|gi; \
        s|str_to_date *(|STR_TO_DATE(|gi; \
        s|substring *(|SUBSTRING(|gi; \
        s| \+| |g; \
@@ -489,6 +488,8 @@ cat "${1}" | tr -d '`' | \
        s|mid[ ]*(|MID(|gi; \
        s|row[ ]*(|ROW(|gi; \
        s|uuid[ ]*(|UUID(|gi; \
+       s|values|VALUES|gi; \
+       s|values *(|VALUES (|gi; \
        s|JSON_ARRAYAGG[ ]*(|JSON_ARRAYAGG(|gi; \
        s|json_array_add|json_array_add|gi; \
        s|_JOIN_|_join_|gi; \

@@ -38,3 +38,19 @@ SET gtid_seq_no=4;
 SET GLOBAL rpl_semi_sync_master_enabled=1;
 SET gtid_domain_id=1;
 FLUSH TABLES;
+
+# Loop till it asserts
+# mysqld options required for replay: --log_bin
+DROP DATABASE test;
+CREATE DATABASE test;
+USE test;
+SET @@max_statement_time=0.00001;
+SET default_storage_engine=MEMORY;
+CREATE TABLE foo;
+XA START 'a';
+SET GLOBAL rpl_semi_sync_master_enabled=1;
+CREATE TEMPORARY TABLE tmp(a INT);
+SET GLOBAL rpl_semi_sync_master_enabled=0;
+DROP TABLE t;
+SET GLOBAL rpl_semi_sync_master_enabled=1;
+SELECT * FROM sys.memory_by_host_by_current_bytes;

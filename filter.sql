@@ -1,5 +1,6 @@
 DROP.*DATABASE.*test
 SHUTDOWN
+DELIMITER
 SET.*GLOBAL.*wsrep_cluster_address
 RENAME.*TABLE.*mysql\.
 ALTER.*TABLE.*mysql\.

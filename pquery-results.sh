@@ -402,7 +402,7 @@ rm -f ./errorlogs.tmp
 find . -type f -name "master.err" | grep '\./[0-9]\+/log/master.err' > ./errorlogs.tmp
 find . -type f -name "slave.err" | grep '\./[0-9]\+/log/slave.err' >> ./errorlogs.tmp
 if [ -r ./errorlogs.tmp ]; then
-  FIRST_OCCURENCE=0
+  FIST_OCCURRENCE=0
   while read ERROR_LOG; do
     if [ -r ${ERROR_LOG} ]; then
       # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
@@ -411,9 +411,9 @@ if [ -r ./errorlogs.tmp ]; then
       ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep --binary-files=text -vE "${ERROR_MSG_FILTER}" | grep -vE "^[ \t]*$")"
       ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "${ERROR_MSG_FILTER}" | grep -vE "^[ \t]*$")"
       if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then
-        if [ "${FIRST_OCCURENCE}" != "1" ]; then
+        if [ "${FIST_OCCURRENCE}" != "1" ]; then
           echo "** Significant/Major errors (if any)"
-          FIRST_OCCURENCE=1
+          FIST_OCCURRENCE=1
         fi
         echo "${ERROR_LOG}: $(DOUBLE=0; echo "$(if [ ! -z "${ERRORS}" ]; then echo -n "${ERRORS}"; DOUBLE=1; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then if [ "${DOUBLE}" -eq 1 ]; then echo ", ${ERRORS_LAST_LINE}"; else echo ", ${ERRORS_LAST_LINE}"; fi; else echo ''; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')" | sed 's|:[ ,]\+mariadbd: /test.*_dbg/|: |;s|: Assertion |Assertion |'
       fi
