@@ -214,6 +214,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|create_server|mysql_execute_command                                        ## MDEV-35216
 !(entry->using_trx_cache && !mngr->trx_cache.empty() && mngr->get_binlog_cache_log((1))->error)|SIGABRT|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog ## MDEV-35207
 nests_entered == cur_sj_inner_tables|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|optimize_semi_joins|best_extension_by_limited_search                            ## MDEV-35206
+is_wsrep() == wsrep_on(mysql_thd)|SIGABRT|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist|trx_t::commit                                                        ## MDEV-35218
+found_tables > 0|SIGABRT|best_extension_by_limited_search|greedy_search|choose_plan|make_join_statistics                                                                       ## MDEV-35164
+join->best_read < double(1.79769313486231570814527423731704357e+308L)|SIGABRT|greedy_search|choose_plan|make_join_statistics|JOIN::optimize_inner                              ## MDEV-35164
 SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|ha_maria::index_read_map                                                                                                     ## MDEV-31278
 SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|handler::ha_index_read_map                                                                                                   ## MDEV-31278
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|trx_undo_reuse_cached                 ## MDEV-35149
@@ -221,7 +224,11 @@ LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGAB
 SIGABRT|__gnu_debug::_Error_formatter::_M_error|std::__debug::set<range_t, range_compare, std::allocator<range_t>|range_set::add_within_range|range_set::add_range             ## MDEV-35149
 SIGABRT|__gnu_debug::_Error_formatter::_M_error|__gnu_debug::_Safe_iterator<std::_Rb_tree_const_iterator<range_t>, std::__debug::set<range_t, range_compare, std::allocator<range_t> >, std::bidirectional_iterator_tag>::operator--|std::__advance<__gnu_debug::_Safe_iterator<std::_Rb_tree_const_iterator<range_t>, std::__debug::set<range_t, range_compare, std::allocator<range_t> >, std::bidirectional_iterator_tag>, long>|std::advance<__gnu_debug::_Safe_iterator<std::_Rb_tree_const_iterator<range_t>, std::__debug::set<range_t, range_compare, std::allocator<range_t> >, std::bidirectional_iterator_tag>, long> ## MDEV-35149
 SIGABRT|__gnu_debug::_Error_formatter::_M_error|__gnu_debug::operator==|range_set::add_range|fil_space_t::add_free_range                                                       ## MDEV-35149
+<<<<<<< HEAD
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|dict_hdr_get                          ## MDEV-35149
+=======
+LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|trx_undo_reuse_cached                 ## MDEV-35149
+>>>>>>> f10925f9f3024a5df8fd4f8c495ec999f6c07ac0
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|fsp_page_create|fsp_alloc_free_page|fseg_alloc_free_page_low         ## MDEV-35149
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|fseg_inode_try_get                    ## MDEV-35149
 LRU_size <= 256 || available >= scan_depth || buf_pool.need_LRU_eviction()|SIGABRT|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen|btr_drop_temporary_table              ## MDEV-35149
