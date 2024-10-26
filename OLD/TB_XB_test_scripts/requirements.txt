@@ -1,2 +1,2 @@
-mysql-connector-python==2.0.4
+mysql-connector-python==9.1.0   # Was 2.0.4 but that has a security issue
 watchdog==0.8.3

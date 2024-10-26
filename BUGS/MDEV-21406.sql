@@ -1,6 +1,18 @@
-INSTALL PLUGIN Spider SONAME 'ha_spider.so';
-CREATE USER Spider@localhost IDENTIFIED BY 'PWD123';
-CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD 'PWD123');
-CREATE TABLE t (c INT) ENGINE=InnoDB;
-CREATE TABLE t2 (DATE DATETIME,KEY DATE (DATE)) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
-EXPLAIN SELECT 1 FROM DUAL WHERE (0) IN (SELECT * FROM t2);
+CREATE TABLE t1 (a DATETIME DEFAULT CURRENT_TIMESTAMP, b INT);
+INSERT INTO t1 () VALUES (),();
+SELECT * FROM t1 WHERE IFNULL(b, DEFAULT(a)) IS NOT NULL;
+
+CREATE TABLE t1 (a DATETIME DEFAULT CURRENT_TIMESTAMP, b INT);
+INSERT INTO t1 () VALUES (),();
+SELECT * FROM t1 WHERE IFNULL(b, DEFAULT(a));
+
+CREATE TABLE t1 (a DATETIME DEFAULT CURRENT_TIMESTAMP);
+SELECT * FROM t1 WHERE DEFAULT(a) < 0 ORDER BY BINARY(DES_ENCRYPT('bar' >= 'foo'));
+
+create table t1 (d1 datetime not null);
+insert into t1 values ('0000-00-00 00:00:00'), ('0000-00-00 00:00:00');
+select avg(d1) over () from t1 group by uuid() with rollup;
+
+create or replace table t1 (d1 datetime not null);
+insert into t1 values ('0000-00-00 00:00:00'), ('0000-00-00 00:00:00');
+select avg(d1) over () from t1 group by rand() with rollup;

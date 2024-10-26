@@ -7,7 +7,7 @@
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 
 # Filter the following text (regex aware) from INIT_TOOL startup
-FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|To start mariadbd at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved|^[2-9][0-9][0-9][0-9][0-9][0-9] [0-2][0-9]:|^20[2-9][0-9]|See the manual|start the MySQL daemon|bin/mysqld_safe|test the MySQL daemon with|latest information about|http://|https://|by buying support/|Found existing config file|Because this file might be in use|but was used in bootstrap|when you later start the server|new default config file was created|compare it with your file|root.*new.*password|Alternatively you can run|will be used by default|You may edit this file to change|Filling help tables|TIMESTAMP with implicit DEFAULT value|You can find the latest source|the maria-discuss email list|Please check all of the above|Optimizer switch:|perl mariadb|^cd |bin/mariadb-secure-installation|secure-file-priv value as server is running with|starting as process|Using unique option prefix core|Deprecated program name|Corporation subscription customer|consultative guidance on questions|how to tune for performance'
+FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|To start mariadbd at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved|^[2-9][0-9][0-9][0-9][0-9][0-9] [0-2][0-9]:|^20[2-9][0-9]|See the manual|start the MySQL daemon|bin/mysqld_safe|test the MySQL daemon with|latest information about|http://|https://|by buying support/|Found existing config file|Because this file might be in use|but was used in bootstrap|when you later start the server|new default config file was created|compare it with your file|root.*new.*password|Alternatively you can run|will be used by default|You may edit this file to change|Filling help tables|TIMESTAMP with implicit DEFAULT value|You can find the latest source|the maria-discuss email list|Please check all of the above|Optimizer switch:|perl mariadb|^cd |bin/mariadb-secure-installation|secure-file-priv value as server is running with|starting as process|Using unique option prefix core|Deprecated program name|Corporation subscription customer|consultative guidance on questions|how to tune for performance|manual for more instructions|additional information about the'
 
 # Ensure that if AFL variables were set, they are cleared first to avoid the server not starting due to 'shmat for map: Bad file descriptor'
 export -n __AFL_SHM_ID
@@ -158,8 +158,8 @@ if echo "${PWD}" | grep -q EMD ; then
 fi
 
 # Setup scritps
-rm -f *_node_cl* *cl cl* *cli all* binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test ts tsp test_* wipe* clean_failing_queries memory_use_trace afl* ml mlp master_setup.sql slave_setup.sql mysql.out mysql_slave.out 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | test_timed | test_timed_pquery | test_sanity | test_sanity_pquery | init | wipe | wipe_slave | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | multirun_loop_replication | kill_multirun | loopin | gdb | fixin | stack | memory_use_trace | myrocks_tokudb_init | afl | aflnew | multitest | stress.sh"
+rm -f *_node_cl* *cl cl* *cli all* anc binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test ts tsp test_* wipe* clean_failing_queries memory_* ml mlp master_setup.sql slave_setup.sql mysql.out mysql_slave.out 2>/dev/null
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | test_timed | test_timed_pquery | test_sanity | test_sanity_pquery | init | wipe | wipe_slave | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | multirun_loop_replication | kill_multirun | loopin | gdb | fixin | stack | memory_monitor | memory_use_trace | myrocks_tokudb_init | afl | aflnew | multitest | stress.sh"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -173,6 +173,7 @@ fi
 # AFL Squirrel
 # OLD
 if [ -r ${HOME}/mariadb-qa/fuzzer/afl ]; then
+  rm -f ./afl
   ln -s ${HOME}/mariadb-qa/fuzzer/afl ./afl
 fi
 # NEW  (Note that we can clear __AFL_SHM_ID and AFL_MAP_SIZE ocne server is started as it maintains the same when already started)
@@ -567,7 +568,42 @@ echo "rm -Rf ${PWD}/data ${PWD}/tmp" >> init
 echo "mkdir ${PWD}/tmp" >>init
 echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>init
 echo "rm -f log/master.*" >>init
-
+echo "#!/bin/bash" >memory_monitor
+echo "MTR=0  # Set to MTR=1 if you want to monitor MTR memory usage instead (for the first MTR instance, i.e. master)" >>memory_monitor
+echo 'if [ ! -z "${1}" ]; then MTR=1; fi  # Shortcut to MTR use' >>memory_monitor
+echo '' >>memory_monitor
+echo "if [ \"\${MTR}\" == '1' ]; then" >>memory_monitor
+echo "  if [ -d \"\${PWD}/mariadb-test\" ]; then" >>memory_monitor
+echo "    PID=\"\$(cat \${PWD}/mariadb-test/var/run/mysqld.1.pid 2>/dev/null)\"" >>memory_monitor
+echo "  else" >>memory_monitor
+echo "    PID=\"\$(cat \${PWD}/mysql-test/var/run/mysqld.1.pid 2>/dev/null)\"" >>memory_monitor
+echo "  fi" >>memory_monitor
+echo "  if [ -z \"\${PID}\" ]; then echo \"MTR Server is not running?\"; exit 1; fi" >>memory_monitor
+echo "else" >>memory_monitor
+echo "  if [ ! -r \"\${PWD}/socket.sock\" ]; then echo \"Server is not running? No \${PWD}/socket.sock found\"; echo \"Try running ./anc (full startup without client) ?\"; exit 1; fi" >>memory_monitor
+echo "  PID=\"\$(ps -ef | grep -E 'mariadbd|mysqld' | grep \"\${PWD}/socket.sock\" | grep -v grep | awk '{print \$2}')\";" >>memory_monitor
+echo "fi" >>memory_monitor
+echo "echo 'PID  %MEM  THREADS  RSS  VSZ  Command'" >>memory_monitor
+echo "if [ \"\${MTR}\" == '1' ]; then" >>memory_monitor
+echo "  while true; do ps -eo pid,pmem,thcount,rss,vsz,comm | grep \${PID} | grep -vE 'cc.*plus|bash|mariadb$|mysql$'; sleep 1; if [ \"\$(ls \${PWD}/*-test/var/run/mysqld.1.pid 2>/dev/null | wc -l | tr -d '\\n')\" != '1' ]; then echo \"Server pid file (ls \${PWD}/*-test/var/run/mysqld.1.pid) was removed. Server terminated?\"; exit 1; fi; done" >>memory_monitor
+echo "else" >>memory_monitor
+echo "  while true; do ps -eo pid,pmem,thcount,rss,vsz,comm | grep \${PID} | grep -vE 'cc.*plus|bash|mariadb$|mysql$'; sleep 1; if [ ! -r \"\${PWD}/socket.sock\" ]; then echo \"Server socket file \${PWD}/socket.sock was removed. Server terminated?\"; exit 1; fi; done" >>memory_monitor
+echo "fi" >>memory_monitor
+echo "#!/bin/bash" >memory_load
+echo "# This script provides a method of quickly loading many threads with the same query against a server. It starts n (default: 200, as set in the printf and xargs commands) Bash background threads, running a given query repeatedly against the server using an optimized client call. In other words, the server is loaded (up to --max_connections, which you may want to set to 5k to 10k, for example) repeatedly with the same query. This generally reveals memory increasing bugs quickly. You will want to run this in combination with ./memory_monitor running in another shell, and look for quick and subtantial increases in RSS/VSZ. Once you find a deemed memory bug, try a control query (for example changing a SELECT <something> FROM ... to SELECT 1 FROM ...) to check if there is an actual memory loss. You can also check much older versions or early major releases (for example 10.5.5) to see if the issue exists there. To terminate the client threads, use ./stop_memory_load or you can use ./stop_memory_load_all to stop all such memory_load scripts (sever wide; not just for this BASEDIR)" >>memory_load
+echo '' >>memory_load
+echo "QUERY=\"SELECT index_length FROM information_schema.tables\"" >>memory_load
+echo '' >>memory_load
+echo "if [ -x bin/mariadb ]; then BIN='bin/mariadb'; else BIN='bin/mysql'; fi" >>memory_load
+echo 'rm -f ./sml' >>memory_load
+echo "printf '%s\\n' {1..200} | xargs -P200 -I{} bash -c \"while true; do if [ -r ./sml ]; then break; fi; bin/mariadb -uroot -e '\${QUERY}' -S\${PWD}/socket.sock --silent --skip-column-names --unbuffered >/dev/null 2>&1; done &\"" >>memory_load
+# Previous method (keep, may still be of use)
+#echo "# This script provides a method of quickly loading many threads with the same query against a server. It starts many Bash background threads, running each for \$TIMEOUT (default=2) seconds, which in turn repeat the given query repeatedly against the server using an optimized client call. In other words, the server is loaded (up to --max_connections, which you may want to set to 5k to 10k, for example) repeatedly with the same query. This generally reveals memory increasing bugs quickly. You will want to run this in combination with ./memory_monitor running in another shell, and look for quick and subtantial increases in RSS/VSZ. Once you find a deemed memory bug, try a control query (for example changing a SELECT <something> FROM ... to SELECT 1 FROM ...) to check if there is an actual memory loss. You can also check much older versions or early major releases (for example 10.5.5) to see if the issue exists there. Tip: use ctrl+z, then 'kill %1' to terminate the script when needed" >>memory_load
+#echo "TIMEOUT=2" >>memory_load
+#echo "while true; do timeout -k\${TIMEOUT}s -s9 \${TIMEOUT}s bash -c \"while true; do \${BIN} -uroot -e '\${QUERY}' -S\${PWD}/socket.sock --silent --skip-column-names --unbuffered >/dev/null 2>&1 & done\"; done" >>memory_load
+echo "touch ./sml" >>stop_memory_load
+echo "ps -ef | grep 'while true.*sml.*mariadb' | grep -v grep | awk '{print \$2}' | xargs -P20 -I{} kill -9 {}" >>stop_memory_load_all
+chmod +x memory_monitor memory_load stop_memory_load stop_memory_load_all
 echo "#!/bin/bash" >loopin
 echo 'if [ -z "${1}" ]; then echo "Assert: please specify how many copies to make as the first option to this script"; exit 1; fi' >>loopin
 echo 'rm -f out.sql' >>loopin
@@ -1164,6 +1200,7 @@ echo 'MYEXTRA_OPT="$*"' >all_stbe
 echo "./all --early-plugin-load=keyring_file.so --keyring_file_data=keyring --innodb_sys_tablespace_encrypt=ON \${MYEXTRA_OPT}" >>all_stbe # './all_stbe' is './all' with system tablespace encryption
 echo 'MYEXTRA_OPT="$*"' >all_no_cl
 echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT}" >>all_no_cl
+ln -s ./all_no_cl ./anc
 echo 'MYEXTRA_OPT="$*"' >all_no_cl_rr
 echo "./kill >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start_rr \${MYEXTRA_OPT};sleep 10" >>all_no_cl_rr
 echo 'MYEXTRA_OPT="$*"' >all_rr

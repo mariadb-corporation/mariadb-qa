@@ -13,7 +13,12 @@ fi
 if [ ! -x "${HOME}/tcp" ]; then echo "${HOME}/tcp does not exist (run ~/mariadb-qa/linkit to create it)"; exit 1; fi
 
 RES="$(mktemp)"
-${HOME}/tcp "${TEST}" | grep --binary-files=text -vE '^[ \t]*$|^#|^\-|^{|^}|^eval|^let|^conn|^disc|^echo|^while' | tr '\n' ' ' | sed 's|;|;\n|g' | sed 's|^[ \t]*||g;s|[ \t]\+| |g;s|^eval[p]* ||;s|\$[a-zA-Z0-9]+|1|g' | grep --binary-files=text -vE '^[a-z]' > ${RES}
+${HOME}/tcp "${TEST}" | grep --binary-files=text -vE '^[ \t]*$|^#|^\-|^{|^}|^eval|^let|^conn|^disc|^echo|^while|^skip' | tr '\n' ' ' | sed 's|;|;\n|g' | sed 's|^[ \t]*||g;s|[ \t]\+| |g;s|^eval[p]* ||;s|\$[a-zA-Z0-9]+|1|g' | grep --binary-files=text -vE '^[a-z]' > ${RES}
+
+# Remove leading IF statements
+for ((i=0;i<20;i++)){
+  sed -i 's|^IF([\!]*$[^)]\+)[ \t]*||' ${RES}
+}
 
 echo "Input: ${TEST} ($(wc -l "${TEST}" | awk '{print $1}') lines)"
 echo "Output: ${RES} ($(wc -l "${RES}" | awk '{print $1}') lines)"
