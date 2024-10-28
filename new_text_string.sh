@@ -286,6 +286,7 @@ find_other_possible_issue_strings(){
   INNODBERROR="$(grep -hio 'ERROR. InnoDB.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|ERROR. InnoDB[: ]*||' | sed 's|table.*index.*stat[^:]\+|table.*index.*stat.*|;s|User stopword table.*does not exist|User stopword table does not exist|;s|\.$||')"
   if [ ! -z "${INNODBERROR}" ]; then
     TEXT="INNODB_ERROR|${INNODBERROR}"
+    TEXT="$(echo "${TEXT}" | sed 's|Cannot rename.*to.*because the target schema directory doesnt exist|Cannot rename.*to.*because the target schema directory doesnt exist|')"  # https://jira.mariadb.org/browse/MDEV-27952?focusedCommentId=283382&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-283382
     echo "${TEXT}"
     exit 0
   fi

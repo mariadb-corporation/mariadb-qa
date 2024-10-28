@@ -98,7 +98,7 @@ MDEV_OR_MENT="$(echo "${PWD}" | grep -Eo 'MDEV[-_0-9]+|MENT[-_0-9]+' | sed 's|^[
 if [ ! -z "${MDEV_OR_MENT}" ]; then
   NR="$(echo "${MDEV_OR_MENT}" | grep -o '[0-9]\+')"
   if [ ! -z "$(echo "${NR}" | sed 's|^[0-9]||;s|^[0-9]||')" ]; then  # At least 3 long
-    BB="$(ls -d /test/bb*${NR}* | head -n1 | sed 's|_dbg||;s|_opt||;s|/test/||')"
+    BB="$(ls -d /test/bb*${NR}* 2>/dev/null | head -n1 | sed 's|_dbg||;s|_opt||;s|/test/||')"
     if [ ! -z "${BB}" ]; then
       SVR="${BB} ${SVR}"
     else

@@ -127,7 +127,8 @@ INNODB_ERROR|Cannot save table statistics for table `test`.`t`: Lock wait timeou
 INNODB_ERROR|Table mysql.innodb_table_stats not found          ## SPECIAL-30 (non-issue)
 INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
-INNODB_ERROR|The table `test`.`t` doesnt have a corresponding tablespace, it was discarded  ## SPECIAL-33 (non-issue)
+INNODB_ERROR|The table `test`.`t` doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
+INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables and LOCK_log             ## MDEV-29744
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_commit_ordered and LOCK_global_system_variables  ## MDEV-29744
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
@@ -337,7 +338,7 @@ SIGSEGV|__strlen_avx2|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock    
 SIGSEGV|__strlen_evex|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock                                                                                                   ## MDEV-34501
 SIGSEGV|pfs_start_mutex_wait_v1|inline_mysql_mutex_lock|get_current_user|sp_process_definer                                                                                    ## MDEV-34501
 SIGSEGV|my_hash_first|my_hash_search|find_acl_role|get_current_user                                                                                                            ## MDEV-34501
-SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-29935
+SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-35277
 (*(map2)->last_word_ptr & (map2)->last_bit_mask) == 0|SIGABRT|bitmap_copy|TABLE::mark_columns_per_binlog_row_image|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event ## MDEV-34535
 0|SIGABRT|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event|mysql_client_binlog_statement                                                ## MDEV-34524
 0|SIGABRT|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event                                             ## MDEV-34524
