@@ -1,0 +1,6 @@
+INSTALL SONAME 'ha_rocksdb';
+CREATE TABLE t (a CHAR, KEY(a)) ENGINE=RocksDB ;
+START TRANSACTION;
+INSERT INTO t VALUES ('a');
+UPDATE t SET a=1;
+SELECT * FROM t AS ta,t AS tb WHERE ta.a=tb.a;

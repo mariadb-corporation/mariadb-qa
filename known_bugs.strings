@@ -212,6 +212,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+reader != nullptr|SIGABRT|myrocks::rdb_read_unpack_simple|myrocks::Rdb_key_def::unpack_simple|myrocks::Rdb_convert_to_record_key_decoder::decode_field|myrocks::Rdb_convert_to_record_key_decoder::decode ## MDEV-29703
+SIGSEGV|myrocks::Rdb_bit_reader::read|myrocks::rdb_read_unpack_simple|myrocks::Rdb_key_def::unpack_simple|myrocks::Rdb_convert_to_record_key_decoder::decode                   ## MDEV-29703
+!is_cond()|SIGABRT|Item_bool_func::val_int|Item_int_func::val_str|Item_copy_string::copy|copy_fields                                                                           ## MDEV-35288
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|create_server|mysql_execute_command                                        ## MDEV-35216
 !(entry->using_trx_cache && !mngr->trx_cache.empty() && mngr->get_binlog_cache_log((1))->error)|SIGABRT|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog ## MDEV-35207
 nests_entered == cur_sj_inner_tables|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|optimize_semi_joins|best_extension_by_limited_search                            ## MDEV-35206
