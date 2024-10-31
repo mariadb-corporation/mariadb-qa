@@ -1,0 +1,21 @@
+SET sql_mode='';
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+GRANT ALL ON * TO Spider@localhost;
+CREATE SERVER srv FOREIGN DATA WRAPPER mysql OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD'');
+CREATE TABLE t1 (c INT PRIMARY KEY,c1 BLOB,c2 TEXT) ENGINE=Spider COMMENT='WRAPPER "mysql",SRV "srv",TABLE "t"';
+CREATE TABLE t (a INT) PARTITION BY KEY(a) PARTITIONS 2 (PARTITION p0 ENGINE=Spider,PARTITION p ENGINE=Spider);
+SELECT * FROM t1;
+LOCK TABLES t1 AS a3 READ,t1 AS a9 READ LOCAL;
+
+USE test;
+SET sql_mode='';
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+GRANT ALL ON * TO spider@localhost;
+CREATE server srv FOREIGN DATA wrapper mysql options(socket '../socket.sock',DATABASE 'test',USER 'spider',PASSWORD'');
+CREATE TABLE t1(c INT PRIMARY KEY,c1 BLOB,c2 TEXT)ENGINE=Spider COMMENT='wrapper "mysql",srv "srv",TABLE "t"';
+CREATE TABLE t(a INT)partition by KEY(a) partitions 2 (partition p0 ENGINE=Spider,partition p ENGINE=Spider);
+SET @@global.Spider_ft_enable_stopword = @start_global_value;
+SELECT * FROM t1 LIMIT 2;
+LOCK TABLES t1 AS a3 READ,t1 AS a9 READ LOCAL;
+CREATE TABLE foo DEFAULT CHARSET = ucs2 engine=Spider;
+SET @@SESSION.OPTIMIZER_SWITCH="block_nested_loop=ON";

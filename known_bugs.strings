@@ -100,6 +100,7 @@ GOT_ERROR|Got error 1064|when reading table                    ## MDEV-33042 (Sp
 GOT_ERROR|Got error 1099|when reading table                    ## MDEV-34990 (Spider)
 GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
 GOT_ERROR|Got error 1290|when trying to execute action for entry 2 of type 'rename table'  ## SPECIAL-18
+GOT_ERROR|Got error 1290|when trying to execute action for entry 5 of type 'rename table'  ## SPECIAL-18
 GOT_ERROR|Got error 1317|when reading table                    ## SPECIAL-32
 GOT_ERROR|Got error 1430|when reading table                    ## Presumed non-issue (federatedx base table removed)
 GOT_ERROR|Got error 1430|Unknown error 1430                    ## MDEV-29923
@@ -116,6 +117,7 @@ GOT_ERROR|Got error 1969|when trying to execute action for entry 4 of type 'rena
 GOT_ERROR|Got error 12524|when reading table                   ## MDEV-33196
 GOT_ERROR|Got error 12524|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 12524|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196 (Spider)
+GOT_ERROR|Got error 12714|'unknown' from SPIDER                ## MDEV-35278
 GOT_ERROR|Got error 12701|when reading table                   ## MENT-2102
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-26543
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
@@ -212,6 +214,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::append_lock_tables_list|ha_spider::store_lock                                                      ## MENT-2151
+SIGSEGV|intern_sys_var_ptr|mysql_sys_var_int|spider_param_semi_table_lock_connection|spider_check_trx_and_get_conn                                                             ## MENT-2151
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|create_server|mysql_execute_command                                        ## MDEV-35216
 !(entry->using_trx_cache && !mngr->trx_cache.empty() && mngr->get_binlog_cache_log((1))->error)|SIGABRT|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog ## MDEV-35207
 nests_entered == cur_sj_inner_tables|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|optimize_semi_joins|best_extension_by_limited_search                            ## MDEV-35206
@@ -318,6 +322,7 @@ SIGSEGV|ha_spider::field_exchange|ha_spider::set_searched_bitmap|ha_spider::set_
 SIGSEGV|ha_spider::update_create_info|ha_partition::update_create_info|mysql_prepare_alter_table|mysql_alter_table                                                             ## MDEV-34636
 SIGSEGV|my_hash_insert|spider_create_trx_alter_table|ha_spider::update_create_info|ha_partition::update_create_info                                                            ## MDEV-34636
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_field::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                            ## MDEV-34683
+typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_float::do_build_clone|Item::build_clone|Item_field::derived_field_transformer_for_where                             ## MDEV-34683
 table->field[0]->ptr >= table->record[0] && table->field[0]->ptr <= table->record[0] + table->s->reclength|SIGABRT|handler::assert_icp_limitations|handler::ha_index_first|join_read_first|sub_select ## MDEV-34632
 SIGSEGV|create_internal_tmp_table|create_internal_tmp_table_from_heap|select_unit::write_record|select_unit_ext::unfold_record                                                 ## MDEV-34610
 SIGSEGV|gu_mutex_lock_SYS|gu::Mutex::lock|galera::TrxHandleMaster::lock|galera::TrxHandleLock::TrxHandleLock                                                                   ## MDEV-34593
@@ -1339,6 +1344,7 @@ open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 &&
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::change_table_name|do_rename|rename_tables                                       ## MDEV-23977
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::prepare_for_rename|do_rename|rename_tables                                      ## MDEV-23977
 SIGSEGV|__GI___pthread_mutex_lock|calloc () from|asn1_array2tree () from|call_init                                                                                             ## MDEV-23985
+!result|SIGABRT|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_bool_rowready_func2::fix_length_and_dec|Item_func::fix_fields                         ## MDEV-23800
 !result|SIGABRT|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator|Item_bool_rowready_func2::fix_length_and_dec          ## MDEV-23800
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|store_key_field::copy_inner|store_key::copy                                                           ## MDEV-23749
 SIGSEGV|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse                                                                                                  ## MDEV-23731

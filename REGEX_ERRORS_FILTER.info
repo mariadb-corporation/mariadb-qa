@@ -10,6 +10,7 @@ Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
 Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
 Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested
+Warning. InnoDB: Table.*contains.*user defined columns in InnoDB, but.*in MariaDB.*INFORMATION_SCHEMA.INNODB_SYS_COLUMNS  MDEV25654
 Event invalid                                         MDEV-26270
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Operating sys.*error.*13 in a file op  MDEV-19849 or similar occurrences
