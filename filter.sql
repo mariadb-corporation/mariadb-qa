@@ -11,3 +11,4 @@ SET.*innodb_flush_log_at_timeout.*[0-9][0-9][0-9]
 SET.*innodb_flush_log_at_timeout.*[5-9][0-9]
 INSERT.*corrupted.*VALUE
 RENAME.*USER.*current_user.*TO
+FOR.*rec.*IN.*DO.*SELECT

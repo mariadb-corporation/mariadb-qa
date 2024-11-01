@@ -141,6 +141,7 @@ alias br='${HOME}/b REPL'  # Start replication based bug report for in.sql in cu
 alias bd='screen -admS \"dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_dbg.sh; bash\"; screen -d -r dbg_build'  # Start a debug build for the current sourcedir (ref /test/clone.sh)
 alias bo='screen -admS \"opt_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh; bash\"; screen -d -r opt_build'  # Idem, optimized build
 alias ba='screen -admS \"opt_and_dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh & sleep 70; ${HOME}/mariadb-qa/build_mdpsms_dbg.sh; bash\"; screen -d -r \$(screen -ls | grep \"Detached\" | head -n1 | grep \"opt_and_dbg_build\" | sed \"s|\..*||\")'  # Idem, both
+alias bas='screen -admS \"opt_and_dbg_san_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt_san.sh & sleep 70; ${HOME}/mariadb-qa/build_mdpsms_dbg_san.sh; bash\"; screen -d -r \$(screen -ls | grep \"Detached\" | head -n1 | grep \"opt_and_dbg_san_build\" | sed \"s|\..*||\")'  # Idem, both, SAN
 alias ca='cd /data; ./clean_all'  # Goes through all workdirs, deleting all [recently] added known bugs'
 alias cur='${HOME}/cur'    # Show current WORKDIR numbers/ongoing runs
 alias gc='git commit -a -m '  # Commit to git with a given message (pass quoted message)

@@ -131,6 +131,7 @@ INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
 INNODB_ERROR|The table `test`.`t` doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
 INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
+# INNODB_ERROR|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD ## MDEV-35187 (Filtered as this is possibly a common error)
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables and LOCK_log             ## MDEV-29744
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_commit_ordered and LOCK_global_system_variables  ## MDEV-29744
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
@@ -282,6 +283,7 @@ SIGSEGV|__strcmp_evex|spider_db_mbase::connect|spider_db_connect|spider_db_conn_
 SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                      ## MDEV-34849
 trx_is_registered_for_2pc(trx)|SIGABRT|innobase_xa_prepare|prepare_or_error|ha_prepare|trans_xa_prepare                                                                        ## MDEV-34810
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, db.str, table_name.str, MDL_SHARED)|SIGABRT|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command|mysql_parse            ## MDEV-34789
+SIGSEGV|handler::update_global_table_stats|close_thread_table|close_all_tables_for_name|Sql_cmd_truncate_table::lock_table                                                     ## MDEV-34782
 SIGSEGV|handler::update_global_table_stats|close_thread_table|close_all_tables_for_name|mysql_rm_table_no_locks                                                                ## MDEV-34782
 SIGSEGV|handler::update_global_table_stats|close_thread_table|close_all_tables_for_name|close_cached_tables                                                                    ## MDEV-34782
 SIGSEGV|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_rm_tables                                                                          ## MDEV-34782

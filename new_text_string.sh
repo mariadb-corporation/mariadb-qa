@@ -287,6 +287,7 @@ find_other_possible_issue_strings(){
   if [ ! -z "${INNODBERROR}" ]; then
     TEXT="INNODB_ERROR|${INNODBERROR}"
     TEXT="$(echo "${TEXT}" | sed 's|Cannot rename.*to.*because the target schema directory doesnt exist|Cannot rename.*to.*because the target schema directory doesnt exist|')"  # https://jira.mariadb.org/browse/MDEV-27952?focusedCommentId=283382&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-283382
+    TEXT="$(echo "${TEXT}" | sed 's|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD.*|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD|')"  # MDEV-35187
     echo "${TEXT}"
     exit 0
   fi
