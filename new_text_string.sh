@@ -236,13 +236,13 @@ find_other_possible_issue_strings(){
   # sed 's|: [0-9]\+||': Remove the number of of bytes, as often this significantly increases reproducibility of the SQL
   WRONGMUTEXUSAGE="$(grep -hio "safe_mutex: Found wrong usage of mutex .* and .*" ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g")"
   if [ ! -z "${WRONGMUTEXUSAGE}" ]; then
-    TEXT="MUTEX_ERROR|${WRONGMUTEXUSAGE}"
+    TEXT="MUTEX_ERROR|${WRONGMUTEXUSAGE}"  # Found wrong usage of mutex
     echo "${TEXT}"
     exit 0
   else
-    WRONGMUTEXUSAGE="$(grep -hio 'safe_mutex: .*' ${ERROR_LOGS} 2>/dev/null | head -n1)"
+    WRONGMUTEXUSAGE="$(grep -hio 'safe_mutex: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed 's|, line.*||;s|/test/[^/]\+/||')"
     if [ ! -z "${WRONGMUTEXUSAGE}" ]; then
-      TEXT="MUTEX_ERROR|${WRONGMUTEXUSAGE}"
+      TEXT="MUTEX_ERROR|${WRONGMUTEXUSAGE}"  # For example, 'Trying to lock uninitialized mutex...'
       echo "${TEXT}"
       exit 0
     fi

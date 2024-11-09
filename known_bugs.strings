@@ -124,8 +124,8 @@ GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
 GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spider)
 GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or SPECIAL-24 / MDEV-33291, or presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
-INNODB_ERROR|Cannot save index statistics for table.*index.*stat.*: Lock wait timeout  ## MDEV-32667
-INNODB_ERROR|Cannot save table statistics for table `test`.`t`: Lock wait timeout  ## MDEV-32667
+INNODB_ERROR|Cannot save index statistics for table.*index.*stat.*: Lock wait timeout  ## MDEV-35374 (Was: MDEV-32667)
+INNODB_ERROR|Cannot save table statistics for table `test`.`t`: Lock wait timeout  ## MDEV-35374 (Was: MDEV-32667)
 INNODB_ERROR|Table mysql.innodb_table_stats not found          ## SPECIAL-30 (non-issue)
 INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
@@ -136,6 +136,7 @@ MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables 
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_commit_ordered and LOCK_global_system_variables  ## MDEV-29744
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_system_variables             ## MDEV-35197
+MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
 
 ##### Slave errors
 SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346
@@ -215,6 +216,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_lock_before_query|spider_db_open_handler                                                                                ## MDEV-35375
+SIGSEGV|spider_send_query|ha_spider::index_first_internal|handler::ha_index_first|mysql_ha_read                                                                                ## MDEV-35375
+SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_lock_before_query|spider_db_open_handler                                                                                ## MDEV-35375
+SIGABRT|safe_mutex_lock|psi_mutex_lock|inline_mysql_mutex_lock|spider_lock_before_query                                                                                        ## MDEV-35375
+SIGSEGV|spider_send_query|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first                                                                       ## MDEV-35375
 SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::append_lock_tables_list|ha_spider::store_lock                                                      ## MENT-2151
 SIGSEGV|intern_sys_var_ptr|mysql_sys_var_int|spider_param_semi_table_lock_connection|spider_check_trx_and_get_conn                                                             ## MENT-2151
 reader != nullptr|SIGABRT|myrocks::rdb_read_unpack_simple|myrocks::Rdb_key_def::unpack_simple|myrocks::Rdb_convert_to_record_key_decoder::decode_field|myrocks::Rdb_convert_to_record_key_decoder::decode ## MDEV-29703
@@ -250,6 +256,7 @@ SIGSEGV|list_delete|hp_close|heap_close|ha_partition::close                     
 SIGSEGV|list_delete|hp_close|heap_close|closefrm                                                                                                                               ## MDEV-35046
 SIGSEGV|THD::reset_db|Rows_log_event::Db_restore_ctx::Db_restore_ctx|Rows_log_event::do_apply_event                                                                            ## MDEV-35016
 SIGSEGV|spider_db_mbase::append_lock_tables|spider_mbase_handler::lock_tables|spider_db_lock_tables|ha_spider::lock_tables                                                     ## MDEV-35011
+SIGSEGV|spider_mbase_handler::append_lock_tables_list|ha_spider::append_lock_tables_list|ha_spider::store_lock|ha_spider::store_lock                                           ## MDEV-35011
 SIGSEGV|spider_db_mbase::append_lock_tables|spider_db_mbase::append_lock_tables|spider_mbase_handler::lock_tables|ha_spider::lock_tables                                       ## MDEV-35011
 SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp                                                                                                          ## MDEV-35011
 m_lock_type == 2|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                       ## MDEV-35014 

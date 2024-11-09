@@ -5,6 +5,12 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|my_hash_key|hashcmp|my_hash_first_from_hash_value                                                     ## MDEV-35011
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_first_internal|handler::ha_index_first|mysql_ha_read                                   ## MDEV-35375
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first                          ## MDEV-35375
+UBSAN|signed integer overflow: X - -Y cannot be represented in type 'long long int'|sql/item_func.cc|Item_func_minus::int_op|Item_func_hybrid_field_type::val_int_from_int_op|Type_handler_int_result::Item_func_hybrid_field_type_val_int|Item_func_hybrid_field_type::val_int ## MDEV-35329
+UBSAN|signed integer overflow: X - -Y cannot be represented in type 'long long int'|sql/item_func.cc|Item_func_minus::int_op|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## MDEV-35329
+LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_io_cache_ext|init_io_cache                                                                                            ## MDEV-35326
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/compat56.cc|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_datetime_with_dec::val_str|Field::val_str ## MDEV-35252
 ASAN|attempting free|include/sync0types.h|operator|LatchCounter::~LatchCounter|LatchMeta<LatchCounter>::~LatchMeta|sync_latch_meta_destroy                                     ## MDEV-34945
 UBSAN|load of address X with insufficient space for an object of type 'uchar'|sql/sys_vars.inl|Sys_var_charptr_base::cleanup|sys_var_end|clean_up|clean_up                     ## MDEV-34849
