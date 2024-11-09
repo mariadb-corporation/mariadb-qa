@@ -499,6 +499,7 @@ cat "${1}" | tr -d '`' | \
        s|pk_name|PK_NAME|gi; \
        s|remote_server|REMOTE_SERVER|gi; \
        s|utc_timestamp|UTC_TIMESTAMP|gi; \
+       s|from_unixtime|FROM_UNIXTIME|gi; \
        s|remote_table|REMOTE_TABLE|gi; \
        s|rownum|ROWNUM|gi; \
        s|monitoring_kind|MONITORING_KIND|gi; \

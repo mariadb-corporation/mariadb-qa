@@ -1,0 +1,7 @@
+INSTALL SONAME 'ha_rocksdb';
+CREATE TABLE t (a INT) ENGINE=RocksDB;
+ALTER TABLE t ADD INDEX (a);
+
+INSTALL SONAME 'ha_rocksdb';
+CREATE TABLE t1 (a INT,b INT,KEY(a,b)) ENGINE=RocksDB;
+CREATE INDEX i1 ON t1 (a);
