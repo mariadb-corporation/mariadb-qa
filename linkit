@@ -5,7 +5,7 @@ USER="$(whoami)"
 set +H
 
 if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
-  sudo mkdir -p /test /data /test/TESTCASES/ /test/git-bisect /data/NEWBUGS /data/tmp /test/git-bisect
+  sudo mkdir -p /test /data /test/TESTCASES/ /test/git-bisect /data/NEWBUGS /data/NBUGS /data/tmp /test/git-bisect
   sudo chown -R ${USER}:${USER} /test
   sudo chown -R ${USER}:${USER} /data
   sudo chmod -R +rX /test
@@ -99,6 +99,10 @@ ln -fs /home/${USER}/mariadb-qa/newbugs/* /data/NEWBUGS/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /data/NEWBUGS/clean_newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/newbugs/* /home/${USER}/fuzzing/newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /home/${USER}/fuzzing/newbugs/clean_newbugs 2>&1
+
+# Nbugs (automated newbugs cleanup testing)
+ln -fs /home/${USER}/mariadb-qa/nbugs_run_all.sh /data/NBUGS/run_all
+ln -fs /home/${USER}/mariadb-qa/sql_dedup.sh /data/NBUGS/dedup
 
 # Link ${HOME}/BUGS to ${HOME}/mariadb-qa/BUGS for ease-of-access
 if [ ! -d /home/${USER}/BUGS ]; then

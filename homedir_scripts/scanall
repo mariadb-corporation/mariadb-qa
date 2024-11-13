@@ -4,5 +4,5 @@ INPUT="${1}"
 echo "--- Searching for '${INPUT}' in known bugs strings file ---------------------"
 ~/kbs "${INPUT}"
 echo "--- Searching for '${INPUT}' in various locations: This may take a while! ---"
-grep --binary-files=text -Fi "${INPUT}" /test/*/*/*.err /data/*/*/*.err /test/*/*/*/*.err /data/*/*/*/*.err /test/*/*/*/*/*.err /data/*/*/*/*/*.err /test/*/*/MYBUG* /test/*/*/*/MYBUG* /data/*/*/MYBUG* /data/*/*/*/MYBUG* /test/TESTCASES/*.report /data/TESTCASES/*.report /data/TESTCASES/*/*.report /data/NEWBUGS/*.string /data/FIREWORKS/*.string 2>/dev/null
+grep --binary-files=text -Fi "${INPUT}" /test/*/*/*.err /data/*/*/*.err /test/*/*/*/*.err /data/*/*/*/*.err /test/*/*/*/*/*.err /data/*/*/*/*/*.err /data/*/*/*/*/*/*.err /test/*/*/MYBUG* /test/*/*/*/MYBUG* /data/*/*/MYBUG* /data/*/*/*/MYBUG* /test/*/*.report /data/*.report /data/*/*.report /data/*/*/*.report /data/*/*/*/*.report /data/*/*/*/*/*.report /data/*/*/*/*/*/*.report /data/*.string /data/*/*.string  /data/*/*/*.string /data/*/*/*/*.string /data/*/*/*/*/*.string /data/*/*/*/*/*/*.string 2>/dev/null
 echo "-----------------------------------------------------------------------------"

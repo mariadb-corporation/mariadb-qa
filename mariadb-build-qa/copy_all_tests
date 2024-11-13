@@ -14,7 +14,7 @@ if [ -z "${LAST}" ]; then LAST=0; fi
 find . 2>/dev/null | grep "_out$" | cat -n | while read n f; do 
   if [[ "${f}" != *"NEWBUGS"* && "${f}" != *"KEEP"* && "${f}" != *"VARIOUS_BUILDS"* && "${f}" != *"MDEV"* ]]; then
     n=$[ ${n} + ${LAST} ]
-    cp -n "$f" "${TARGET}/$n.sql"
+    cp --update=none "$f" "${TARGET}/$n.sql"
     echo "Copied $f to ${TARGET}/$n.sql..."
   fi
 done

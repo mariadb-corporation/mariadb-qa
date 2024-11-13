@@ -21,3 +21,5 @@ insert into t3  values (1), (3);
 create table t4 (d int);
 insert into t4 values (1);
 select c from t3 where c in (select (select a from t2 group by (select a from t4)) from t1);
+
+SELECT(WITH x AS(SELECT (0)AS x) SELECT x FROM x WHERE x IN (SELECT 0 FROM x WHERE (SELECT x FROM (SELECT 0 UNION SELECT 0) AS x GROUP BY (SELECT x))));

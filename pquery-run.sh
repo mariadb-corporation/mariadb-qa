@@ -2960,6 +2960,20 @@ if [ ${STORE_COPY_OF_INFILE} -eq 1 ]; then
   cp ${INFILE} ${WORKDIR}
 fi
 
+# Workaround, ref https://github.com/google/sanitizers/issues/856
+# This will show even for the "version detection" below, causing it to fail if the vm.mmap_rnd_bits workaround is not set
+#==180506==Shadow memory range interleaves with an existing memory mapping. ASan cannot proceed correctly. ABORTING.
+#==180506==ASan shadow was supposed to be located in the [0x00007fff7000-0x10007fff7fff] range.
+#==180506==This might be related to ELF_ET_DYN_BASE change in Linux 4.12.
+#==180506==See https://github.com/google/sanitizers/issues/856 for possible workarounds.
+#==180506==Process memory map follows:
+#...
+#==180506==End of process memory map.
+if [[ "${PWD}" == *"SAN"* ]]; then
+  sudo sysctl vm.mmap_rnd_bits=28
+  sysctl vm.mmap_rnd_bits=28
+fi
+
 # Get version specific options
 MID=
 if [ -r ${BASEDIR}/scripts/mariadb-install-db ]; then MID="${BASEDIR}/scripts/mariadb-install-db"; fi
