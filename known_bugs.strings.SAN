@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|unknown-crash|sql/field.h|__asan_memset|Field_varstring::reset|set_field_to_null_with_conversions|fill_record                                                             ## MDEV-35393
+!__asan_region_is_poisoned((void*) dest,templ->mysql_col_len)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc ## MDEV-35392
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406
 UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner        ## MDEV-30756
