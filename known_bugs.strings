@@ -218,6 +218,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+key->algorithm <= HA_KEY_ALG_BTREE|SIGABRT|innobase_create_index_def|ha_innobase_inplace_ctx::create_key_defs|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table ## MDEV-35419
+!m_modifications || !recv_no_log_write|SIGABRT|mtr_t::commit|dict_hdr_get_new_id|dict_build_index_def|row_create_index_for_mysql                                               ## MDEV-35417
+!m_modifications || !recv_no_log_write|SIGABRT|mtr_t::commit|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert                                 ## MDEV-35417
 rpl_semi_sync_master_off_times > thd->expected_semi_sync_offs|SIGABRT|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans|THD::commit_whole_transaction_and_close_tables ## MDEV-35397 
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_lock_before_query|spider_db_open_handler                                                                                ## MDEV-35375
 SIGSEGV|spider_send_query|ha_spider::index_first_internal|handler::ha_index_first|mysql_ha_read                                                                                ## MDEV-35375
