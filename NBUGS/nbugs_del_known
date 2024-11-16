@@ -1,0 +1,16 @@
+#!/bin/bash
+if [ ! -r ${HOME}/mariadb-qa/known_bugs.strings ]; then
+  echo "Assert: ${HOME}/mariadb-qa/known_bugs.strings not available"
+  exit 1
+fi
+grep -A1 '\- Bug String' *.D *.O *.D_s *.O_s 2>/dev/null | \
+ grep -vE '\- Bug String|^\-\-|Assert: no core file found ' | \
+ sed 's|\(.*\.sql\.[DO][_s]*\).*|\1|' | \
+ xargs -I{} echo '
+  FILE="$(echo "{}" | sed "s|\.sql.*||")"; 
+  TEXT="$(grep -A1 "\- Bug String" {} 2>/dev/null | tail -n1)"; 
+  if [ "$(echo ${TEXT} | wc -c)" -gt 25 ]; then 
+   if grep -Fqi "${TEXT}" ${HOME}/mariadb-qa/known_bugs.strings; then 
+    if [ -f "${FILE}.sql" ]; then 
+     echo  "Removing ${FILE}.*"; rm -f ${FILE}.*; 
+  fi; fi; fi' > tmpr; chmod +x tmpr; ./tmpr; rm ./tmpr

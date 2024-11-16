@@ -1,0 +1,1 @@
+grep -l "POTENTIALLY NEW BUG " *.O *.D *.O_s *.D_s | xargs -I{} head -n2 {} | grep -v '\- Bug String  \-' | sort -u | xargs -I{} grep -m1 -F '{}' *.sql.D *.O *.O_s *.D_s | sed 's|.sql.[OD][_s]*:|.sql\t|' | sort -u -k2

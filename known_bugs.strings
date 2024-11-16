@@ -218,6 +218,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|spider_db_mbase::xa_end                                                                                       ## MDEV-35426
+str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_append_xid_str|spider_db_mbase::xa_end|spider_db_xa_end                              ## MDEV-35426
+SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|spider_db_mbase::xa_end                                                                                       ## MDEV-35426
+str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_append_xid_str|spider_db_mbase::xa_end|spider_db_xa_end                              ## MDEV-35426
+key_buff_elements && cur_key_idx < key_buff_elements|SIGABRT|Ordered_key::add_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec       ## MDEV-24986
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_lock_before_query|spider_db_open_handler                                                                                ## MDEV-35375
 SIGSEGV|spider_send_query|ha_spider::index_first_internal|handler::ha_index_first|mysql_ha_read                                                                                ## MDEV-35375
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_lock_before_query|spider_db_open_handler                                                                                ## MDEV-35375
@@ -352,6 +357,8 @@ SIGSEGV|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|I
 SIGSEGV|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                                                                    ## MDEV-30756
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-30756
 next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_heap::write_row|handler::ha_write_row|write_record                         ## MDEV-24038
+next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_archive::write_row|handler::ha_write_row|write_record                      ## MDEV-24038
+next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_myisam::write_row|handler::ha_write_row|write_record                       ## MDEV-24038
 next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::update_auto_increment|ha_innobase::write_row|handler::ha_write_row|write_record                     ## MDEV-27770 (now MDEV-24038)
 0|SIGABRT|Item::val_native|Arg_comparator::min_max_update_field_native|Item_sum_min_max::min_max_update_native_field|Item_sum_min_max::update_field                            ## MDEV-31759
 !is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|mysqld_show_create|mysql_execute_command                                ## MDEV-34540
@@ -626,6 +633,9 @@ SIGSEGV|maria_rtree_insert|maria_update|handler::ha_update_row|mysql_update     
 SIGSEGV|maria_rtree_insert|maria_update|handler::ha_update_row|Sql_cmd_update::update_single_table                                                                             ## MDEV-31766
 SIGSEGV|maria_rtree_split_page|maria_rtree_add_key|maria_rtree_insert_req|maria_rtree_insert_level                                                                             ## MDEV-31766
 got_name == named_item_expected()|SIGABRT|Json_writer::on_start_object|Json_writer::start_object|Json_writer_object::Json_writer_object|Json_writer_object::Json_writer_object ## MDEV-31752
+INNODB_ERROR|Column last_update in table `mysql`.`innodb_table_stats` is BINARY(5) NOT NULL but should be INT UNSIGNED NOT NULL (flags mismatch)                               ## MDEV-31740
+# SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|dict_table_remove_from_cache_low                                                                                      ## MDEV-31740 (MS)
+field->col->is_dropped() || !field->col->mbmaxlen || len >= field->col->mbminlen * fixed_len / field->col->mbmaxlen|SIGABRT|rec_get_converted_size_comp_prefix_low<>rem0rec.cc|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_update ## MDEV-31740
 size == rec_offs_size(*offsets)|SIGABRT|page_cur_tuple_insert|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                ## MDEV-31740
 field->col->is_dropped() || !field->col->mbmaxlen || len >= field->col->mbminlen * fixed_len / field->col->mbmaxlen|SIGABRT|rec_get_converted_size_comp_prefix_low<>dict0mem.h|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_insert ## MDEV-31740
 field->col->is_dropped() || !field->col->mbmaxlen || len >= field->col->mbminlen * fixed_len / field->col->mbmaxlen|SIGABRT|rec_get_converted_size_comp_prefix_low<>dict0mem.h|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_update ## MDEV-31740
@@ -734,6 +744,7 @@ SIGABRT|gu::Mutex::~Mutex|galera::Monitor<galera::ReplicatorSMM::ApplyOrder>::~M
 (longlong) n_rows >= 0|SIGABRT|get_frame_cursor|get_window_functions_required_cursors|Window_func_runner::exec|Window_funcs_sort::exec                                         ## MDEV-30682
 SIGFPE|String::needs_conversion|String::copy|Type_handler::partition_field_append_value|add_column_list_values                                                                 ## MDEV-30681
 cs->mbmaxlen <= MAX_MULTI_BYTE_CHAR_SIZE|SIGABRT|myrocks::rdb_get_mem_comparable_space|myrocks::Rdb_field_packing::setup|myrocks::ha_rocksdb::check_keyread_allowed|myrocks::ha_rocksdb::index_flags ## MDEV-30679
+cs->mbmaxlen <= MAX_MULTI_BYTE_CHAR_SIZE|SIGABRT|myrocks::rdb_get_mem_comparable_space|myrocks::Rdb_field_packing::setup|myrocks::Rdb_key_def::setup|myrocks::ha_rocksdb::create_key_def ## MDEV-30679
 SIGSEGV|wsrep_thd_trx_seqno|wsrep_thd_order_before|lock_rec_has_to_wait|lock_rec_other_has_conflicting                                                                         ## MENT-1737
 SIGSEGV|wsrep_thd_trx_seqno|wsrep_thd_order_before|lock_rec_has_to_wait_in_queue|lock_rec_queue_validate                                                                       ## MENT-1737
 cache_mngr->trx_cache.empty()|SIGABRT|binlog_close_connection|ha_close_connection|slave_applier_reset_xa_trans|trans_xa_prepare                                                ## MENT-1733
@@ -752,6 +763,7 @@ m_status == DA_ERROR|SIGABRT|Diagnostics_area::sql_errno|mysql_alter_table|Sql_c
 SIGABRT|__cxa_throw|gu::ThrowError::~ThrowError|galera::WriteSetOut::check_size|galera::WriteSetOut::gather                                                                    ## MENT-1725
 state() == s_executing || state() == s_prepared || state() == s_committed || state() == s_aborted || state() == s_must_replay|SIGABRT|wsrep::transaction::after_statement|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse ## MDEV-30550
 precision > 0|SIGABRT|Item_func_div::result_precision|Item_func_div::fix_length_and_dec|Item_func::fix_fields|setup_fields                                                     ## MDEV-23444
+precision > 0|SIGABRT|decimal_bin_size|User_var_log_event::write|Log_event_writer::write|Event_log::write_event                                                                ## MDEV-23444
 precision > 0|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::Field_new_decimal|Type_handler_newdecimal::make_table_field                               ## MDEV-23444
 precision > 0|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::set_and_validate_prec|Field_new_decimal::Field_new_decimal                                ## MDEV-23444
 scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::Field_new_decimal|Field_new_decimal::create_from_item ## MDEV-23444
@@ -1161,11 +1173,6 @@ status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|T
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|one_thread_per_connection_end|do_handle_one_connection                      ## MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Backtrace stopped: Cannot access memory at address                                              ## MDEV-25927
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|__isoc99_fscanf@plt                                                                             ## MDEV-25927
-*mbmaxlen < 5|SIGABRT|innobase_get_cset_width|dtype_get_mblen|dict_mem_fill_column_struct|dict_mem_table_add_col                                                               ## MDEV-25900
-field_length < 1024|SIGABRT|Field_string::save_field_metadata|Table_map_log_event::save_field_metadata|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map    ## MDEV-25900
-octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|copy_data_between_tables ## MDEV-25900
-octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|MYSQL_BIN_LOG::write_table_map ## MDEV-25900
-octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map ## MDEV-25900
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|innodb_wait_allow_writes|os_file_write_func                                                                                    ## MDEV-25890
 thd->wsrep_trx_meta.gtid.seqno == (-1)|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|my_message_sql|my_error                                                 ## MDEV-25842
 thd->wsrep_trx_meta.gtid.seqno == (-1)|SIGABRT|wsrep_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                ## MDEV-25842
@@ -2720,3 +2727,8 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_hex_hybrid::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                            ## Fixed ## MDEV-34771
 # SIGSEGV|st_select_lex_unit::rename_types_list|st_select_lex_unit::prepare|mysql_derived_prepare|mysql_handle_single_derived                                         ## Fixed ## MDEV-34941
 # SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp                                                                                               ## Fixed ## MDEV-29854
+# *mbmaxlen < 5|SIGABRT|innobase_get_cset_width|dtype_get_mblen|dict_mem_fill_column_struct|dict_mem_table_add_col                                                    ## Fixed ## MDEV-25900
+# field_length < 1024|SIGABRT|Field_string::save_field_metadata|Table_map_log_event::save_field_metadata|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map ## Fixed ## MDEV-25900
+# octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|copy_data_between_tables ## Fixed ## MDEV-25900
+# octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|MYSQL_BIN_LOG::write_table_map ## MDEV-25900
+# octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map ## MDEV-25900

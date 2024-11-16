@@ -13,6 +13,11 @@ OS='/test/UBASAN_MD131124-mariadb-11.7.1-linux-x86_64-opt'
 DS='/test/UBASAN_MD131124-mariadb-11.7.1-linux-x86_64-dbg'
 CURDIR="${PWD}"
 export O D OS DS CURDIR
+echo "cd '${O}'" > ./O
+echo "cd '${D}'" > ./D
+echo "cd '${OS}'" > ./OS
+echo "cd '${DS}'" > ./DS
+chmod +x O D OS DS
 
 ctrl-c(){
   echoit "CTRL+C Was pressed. Attempting to terminate running processes..."
@@ -30,7 +35,7 @@ setup(){
 
 btest(){
   COUNTER=$[ ${COUNTER} + 1 ]
-  echo "Testing ${COUNTER}/${COUNT}: ${1}..."
+  echo "====== Testing ${COUNTER}/${COUNT}: ${1}..."
   OPT="$(head -n1 "${1}" 2>/dev/null | grep --binary-files=text -io 'mysqld options required for replay.*' | sed 's|mysqld options required for replay[: ]*||' | tr '\t' ' ' | sed 's| [ ]*| |;s|^[ ]*||;s|[ ]*$||')"
   if [ ! -z "${OPT}" ]; then
     echo "  > Options used: ${OPT}"
@@ -41,14 +46,22 @@ btest(){
   cp "${1}" ${D}/in.sql
   cp "${1}" ${OS}/in.sql
   cp "${1}" ${DS}/in.sql
+  echo "====== Testing ${COUNTER}/${COUNT} [1/8]: ${1}..."
   cd ${CURDIR}; cd ${O}; timeout -k30 -s9 30s bash -c "./anc ${OPT}"; timeout -k90 -s9 90s bash -c "./test_pquery; sleep 1; ${HOME}/tt 2>&1 | grep -v 'Assert.*yielded a non-0 exit code' | tee '${CURDIR}/${1}.O'"; timeout -k30 -s9 30s bash -c "./stop"; timeout -k30 -s9 30s bash -c "./kill"
+  echo "====== Testing ${COUNTER}/${COUNT} [2/8]: ${1}..."
   cd ${CURDIR}; cd ${D}; timeout -k30 -s9 30s bash -c "./anc ${OPT}"; timeout -k90 -s9 90s bash -c "./test_pquery; sleep 1; ${HOME}/tt 2>&1 | grep -v 'Assert.*yielded a non-0 exit code' | tee '${CURDIR}/${1}.D'"; timeout -k30 -s9 30s bash -c "./stop"; timeout -k30 -s9 30s bash -c "./kill"
+  echo "====== Testing ${COUNTER}/${COUNT} [3/8]: ${1}..."
   cd ${CURDIR}; cd ${OS}; timeout -k30 -s9 30s bash -c "./anc ${OPT}"; timeout -k90 -s9 90s bash -c "./test_pquery; sleep 1; ${HOME}/tt 2>&1 | grep -v 'Assert.*yielded a non-0 exit code' | tee '${CURDIR}/${1}.OS'"; timeout -k30 -s9 30s bash -c "./stop"; timeout -k30 -s9 30s bash -c "./kill"
+  echo "====== Testing ${COUNTER}/${COUNT} [4/8]: ${1}..."
   cd ${CURDIR}; cd ${DS}; timeout -k30 -s9 30s bash -c "./anc ${OPT}"; timeout -k90 -s9 90s bash -c "./test_pquery; sleep 1; ${HOME}/tt 2>&1 | grep -v 'Assert.*yielded a non-0 exit code' | tee '${CURDIR}/${1}.DS'"; timeout -k30 -s9 30s bash -c "./stop"; timeout -k30 -s9 30s bash -c "./kill"
   OPT="${OPT} --sql_mode= --log-bin"
+  echo "====== Testing ${COUNTER}/${COUNT} [5/8]: ${1}..."
   cd ${CURDIR}; cd ${O}; timeout -k30 -s9 30s bash -c "./anc ${OPT}"; timeout -k90 -s9 90s bash -c "./test_pquery; sleep 1; ${HOME}/tt 2>&1 | grep -v 'Assert.*yielded a non-0 exit code' | tee '${CURDIR}/${1}.O_s'"; timeout -k30 -s9 30s bash -c "./stop"; timeout -k30 -s9 30s bash -c "./kill"
+  echo "====== Testing ${COUNTER}/${COUNT} [6/8]: ${1}..."
   cd ${CURDIR}; cd ${D}; timeout -k30 -s9 30s bash -c "./anc ${OPT}"; timeout -k90 -s9 90s bash -c "./test_pquery; sleep 1; ${HOME}/tt 2>&1 | grep -v 'Assert.*yielded a non-0 exit code' | tee '${CURDIR}/${1}.D_s'"; timeout -k30 -s9 30s bash -c "./stop"; timeout -k30 -s9 30s bash -c "./kill"
+  echo "====== Testing ${COUNTER}/${COUNT} [7/8]: ${1}..."
   cd ${CURDIR}; cd ${OS}; timeout -k30 -s9 30s bash -c "./anc ${OPT}"; timeout -k90 -s9 90s bash -c "./test_pquery; sleep 1; ${HOME}/tt 2>&1 | grep -v 'Assert.*yielded a non-0 exit code' | tee '${CURDIR}/${1}.OS_s'"; timeout -k30 -s9 30s bash -c "./stop"; timeout -k30 -s9 30s bash -c "./kill"
+  echo "====== Testing ${COUNTER}/${COUNT} [8/8]: ${1}..."
   cd ${CURDIR}; cd ${DS}; timeout -k30 -s9 30s bash -c "./anc ${OPT}"; timeout -k90 -s9 90s bash -c "./test_pquery; sleep 1; ${HOME}/tt 2>&1 | grep -v 'Assert.*yielded a non-0 exit code' | tee '${CURDIR}/${1}.DS_s'"; timeout -k30 -s9 30s bash -c "./stop"; timeout -k30 -s9 30s bash -c "./kill"
   cd ${CURDIR}
 }
@@ -56,8 +69,9 @@ export -f btest
 
 COUNT=$(ls --color=never *.sql | wc -l)
 COUNTER=0
+export COUNT COUNTER
 #rm *.O *.D *.DS *.DS_s
 setup
-ls --color=never *.sql | xargs -P1 -I{} bash -c 'btest {}'  # -P1 as each dir is re-used, can be improved to use /dev/shm etca
+ls --color=never *.sql | xargs -P1 -I{} bash -c 'btest {}'  # -P1 as each dir is re-used, can be improved to use /dev/shm etc.
 
 export -n btest O D OS DS CURDIR

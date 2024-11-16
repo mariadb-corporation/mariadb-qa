@@ -34,3 +34,8 @@ if [ -r /data/TESTCASES/mvknown ]; then
   cd /data/TESTCASES
   ~/mariadb-qa/move_known.sh
 fi
+
+if [ -r /data/NBUGS/clean_known ]; then
+  cd /data/NBUGS/
+  ./clean_known
+fi

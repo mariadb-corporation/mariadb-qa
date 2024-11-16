@@ -1,0 +1,1 @@
+if [ ! -r _e -a ! -r _c ]; then echo 'sql' > _e; echo 10000 > _c ;find . -name "*.$(cat _e)" -print0 | xargs -0 -t -I{} bash -c 'mv -n "{}" $(cat _c).$(cat _e);echo $[ $(cat _c) + 1 ] > _c'; rm -f _e _c; fi

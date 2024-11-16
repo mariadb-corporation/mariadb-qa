@@ -101,7 +101,10 @@ ln -fs /home/${USER}/mariadb-qa/newbugs/* /home/${USER}/fuzzing/newbugs 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/clean_newbugs /home/${USER}/fuzzing/newbugs/clean_newbugs 2>&1
 
 # Nbugs (automated newbugs cleanup testing)
-ln -fs /home/${USER}/mariadb-qa/nbugs_run_all.sh /data/NBUGS/run_all
+ln -fs /home/${USER}/mariadb-qa/NBUGS/nbugs_run_all.sh /data/NBUGS/run_all
+ln -fs /home/${USER}/mariadb-qa/NBUGS/nbugs_my /data/NBUGS/nbugs
+ln -fs /home/${USER}/mariadb-qa/NBUGS/rename /data/NBUGS/rename
+ln -fs /home/${USER}/mariadb-qa/NBUGS/nbugs_del_known /data/NBUGS/clean_known
 ln -fs /home/${USER}/mariadb-qa/sql_dedup.sh /data/NBUGS/dedup
 
 # Link ${HOME}/BUGS to ${HOME}/mariadb-qa/BUGS for ease-of-access
