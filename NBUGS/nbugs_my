@@ -1,4 +1,3 @@
 #!/bin/bash
 echo "$(grep -l "POTENTIALLY NEW BUG " *.O *.OS *.D *.DS *.O_s *OS_s *.D_s *.DS_s | xargs -I{} head -n2 {} | grep -v '\- Bug String  \-' | sort -u | xargs -I{} grep -m1 -F '{}' *.O* 2>/dev/null | sed 's|.sql.[OD][S_s]*:|.sql\t|' | sort -u -k2)\n
- $(grep -l "POTENTIALLY NEW BUG " *.O *.OS *.D *.DS *.O_s *OS_s *.D_s *.DS_s | xargs -I{} head -n2 {} | grep -v '\- Bug String  \-' | sort -u | xargs -I{} grep -m1 -F '{}' *.D* 2>/dev/null | sed 's|.sql.[OD][S_s]*:|.sql\t|' | sort -u -k2)" | sort -k1
-
+ $(grep -l "POTENTIALLY NEW BUG " *.O *.OS *.D *.DS *.O_s *OS_s *.D_s *.DS_s | xargs -I{} head -n2 {} | grep -v '\- Bug String  \-' | sort -u | xargs -I{} grep -m1 -F '{}' *.D* 2>/dev/null | sed 's|.sql.[OD][S_s]*:|.sql\t|' | sort -u -k2)" | sort -k1 | sort -u

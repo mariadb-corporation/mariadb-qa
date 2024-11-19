@@ -218,6 +218,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+is_null() >= item->null_value|SIGABRT|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null|Item_func_unix_timestamp::get_timestamp_value|Item_func_unix_timestamp::int_op|Item_func_hybrid_field_type::val_str_from_int_op ## MDEV-35427
 sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_release|ha_federatedx::savepoint_release|ha_release_savepoint|savepoint_add                   ## MDEV-29317
 sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_release|ha_federatedx::savepoint_release|ha_release_savepoint|trans_savepoint                 ## MDEV-29317
 SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|spider_db_mbase::xa_end                                                                                       ## MDEV-35426

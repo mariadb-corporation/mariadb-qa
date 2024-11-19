@@ -5,10 +5,15 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc|Item_sum_xor::set_bits_from_counters|Item_sum_bit::add_as_window|Frame_cursor::add_value_to_items|Frame_range_current_row_bottom::pre_next_partition ## MDEV-35439
+# UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc                                                                                                      ## Likely MDEV-35439 but to generic to filter
+UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc|Item_sum_xor::set_bits_from_counters|Item_sum_bit::add_as_window|Item_sum_xor::add|Frame_cursor::add_value_to_items ## MDEV-35439
+UBSAN|load of null pointer of type 'my_bitmap_map'|include/my_bitmap.h|bitmap_clear_bit|temp_pool_clear_bit|free_tmp_table|close_thread_tables                                 ## MDEV-26334
 ASAN|use-after-poison|storage/federatedx/federatedx_txn.cc|federatedx_txn::sp_release|ha_release_savepoint|savepoint_add|trans_savepoint                                       ## MDEV-29317
 ASAN|heap-buffer-overflow|sql/item_subselect.h|Ordered_key::add_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                     ## MDEV-24986
 ASAN|unknown-crash|sql/field.h|__asan_memset|Field_varstring::reset|set_field_to_null_with_conversions|fill_record                                                             ## MDEV-35393
 !__asan_region_is_poisoned((void*) dest,templ->mysql_col_len)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc ## MDEV-35392
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Type_handler::Item_send_date|Type_handler_temporal_with_date::Item_send|Item::send ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406
 UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner        ## MDEV-30756
@@ -86,7 +91,7 @@ UBSAN|member call on null pointer of type 'struct TABLE'|sql/sql_acl.cc|replace_
 ASAN|heap-use-after-free|sql/table.h|TABLE::versioned|TABLE_LIST::print|print_table_array|print_join                                                                           ## MDEV-23208
 ASAN|heap-use-after-free|storage/spider/spd_direct_sql.cc|spider_direct_sql_body|spider_direct_sql|udf_handler::val_int|Item_func_udf_int::val_int                             ## MDEV-30727
 ASAN|heap-use-after-free|storage/spider/spd_direct_sql.cc|spider_direct_sql_body|udf_handler::val_int|Item_func_udf_int::val_int|Type_handler::Item_send_longlong              ## MDEV-30727
-#UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc                                                                                           ## Often though not always MDEV-33149
+# UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc                                                                                           ## Often though not always MDEV-33149
 UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc|Item_func_json_array_intersect::prepare_json_and_create_hash|Item_func_json_array_intersect::fix_length_and_dec|Item_func::fix_fields|Item_str_func::fix_fields ## MDEV-33149
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions|ha_partition::change_partitions_to_open ## MDEV-33240
 UBSAN|member access within null pointer of type 'struct TABLE'|storage/spider/spd_db_conn.cc|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|ha_spider::rnd_next_internal ## MDEV-33197
@@ -195,7 +200,7 @@ ASAN|heap-use-after-free|sql/event_queue.cc|event_queue_element_compare_q|insert
 ASAN|heap-use-after-free|sql/event_queue.cc|event_queue_element_compare_q|insert_at|queue_insert_safe|Event_queue::update_event                                                ## MDEV-24686
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/sql_select.h|POSITION::operator=|optimize_wo_join_buffering|LooseScan_picker::check_qep|optimize_semi_joins ## MDEV-30939
 UBSAN|load of value X, which is not a valid value for type 'sj_strategy_enum'|sql/sql_select.h|st_position::operator=|optimize_wo_join_buffering|LooseScan_picker::check_qep|optimize_semi_joins ## MDEV-30939
-# UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc                                                                           ## Likely MDEV-30931
+# UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc                                                                           ## Likely MDEV-30931 or now MDEV-35406
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/item_timefunc.cc|get_interval_value|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-30931
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Temporal_with_date::make_from_item|Date::Date|Item_datefunc::val_real ## MDEV-30931
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Temporal_with_date::make_from_item|Temporal_with_date::Temporal_with_date|Date::Date ## MDEV-30931
@@ -298,6 +303,7 @@ UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an u
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item::save_str_in_field ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item_func_concat::val_str|Type_handler::Item_send_str ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item_func_concat::val_str ## MDEV-28386
+UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select               ## MDEV-28374
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|JOIN_CACHE::generate_full_extensions ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc                                                                          ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374
