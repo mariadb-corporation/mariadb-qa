@@ -3,7 +3,7 @@
 
 rm -Rf 10.[0-9]
 rm -Rf 10.1[0-1]
-rm -Rf 11.[0-7]
+rm -Rf 11.[0-9]
 
 #./clone.sh 10.1 &
 #./clone.sh 10.2 &
@@ -23,4 +23,5 @@ rm -Rf 11.[0-7]
 ./clone.sh 11.4 &
 ./clone.sh 11.5 &
 ./clone.sh 11.6 &
-git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git 11.7 &  # 11.7: Trunk is currently the only 11.7 branch
+./clone.sh 11.7 &
+git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git 11.8 &  # Trunk is currently the only 11.8 branch

@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|dynamic-stack-buffer-overflow|sql/key.cc|key_restore|QUICK_GROUP_MIN_MAX_SELECT::next_min|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick                                   ## MDEV-24906
+ASAN|unknown-crash|sql/opt_range.cc|__interceptor_memcpy|QUICK_GROUP_MIN_MAX_SELECT::next_min_in_range|QUICK_GROUP_MIN_MAX_SELECT::next_min|QUICK_GROUP_MIN_MAX_SELECT::get_next ## MDEV-24906
 UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc|Item_sum_xor::set_bits_from_counters|Item_sum_bit::add_as_window|Frame_cursor::add_value_to_items|Frame_range_current_row_bottom::pre_next_partition ## MDEV-35439
 # UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc                                                                                                      ## Likely MDEV-35439 but to generic to filter
 UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc|Item_sum_xor::set_bits_from_counters|Item_sum_bit::add_as_window|Item_sum_xor::add|Frame_cursor::add_value_to_items ## MDEV-35439

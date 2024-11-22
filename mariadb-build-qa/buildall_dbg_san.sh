@@ -22,41 +22,35 @@ if [ "${STY}" == "" ]; then
 fi
 
 DIR=${PWD}
-rm -Rf 10.5_dbg 10.6_dbg 10.7_dbg 10.8_dbg 10.9_dbg 10.10_dbg 11.0_dbg 11.1_dbg 11.2_dbg 11.3_dbg 11.4_dbg 11.5_dbg 11.6_dbg
+rm -Rf 10.5_dbg 10.6_dbg 10.7_dbg 10.8_dbg 10.9_dbg 10.10_dbg 11.0_dbg 11.1_dbg 11.2_dbg 11.3_dbg 11.4_dbg 11.5_dbg 11.6_dbg 11.7_dbg 11.8_dbg
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-#sleep 1
 #cd ${DIR}/10.4 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-#sleep 2
 cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 3
+sleep 10
 cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-#sleep 4
+sleep 10
 #cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-#sleep 5
 #cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-#sleep 6
 #cd ${DIR}/10.9 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-#sleep 7
 #cd ${DIR}/10.10 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 8
 cd ${DIR}/10.11 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 9
+sleep 10
 #cd ${DIR}/11.0 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-#sleep 10
 #cd ${DIR}/11.1 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-#sleep 11
 cd ${DIR}/11.2 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 12
+sleep 10
 #cd ${DIR}/11.3 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-#sleep 13
 cd ${DIR}/11.4 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 14
+sleep 10
+#cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 14
-cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-sleep 15
+sleep 10
 cd ${DIR}/11.6 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+sleep 10
+cd ${DIR}/11.7 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+sleep 10
+cd ${DIR}/11.8 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 
 echo "All processes started as background threads... Output will commence soon."
