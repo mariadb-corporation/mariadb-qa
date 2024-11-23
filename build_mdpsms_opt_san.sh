@@ -35,6 +35,7 @@ IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_M
 #==1574414==This might be related to ELF_ET_DYN_BASE change in Linux 4.12.
 #==1574414==See https://github.com/google/sanitizers/issues/856 for possible workarounds.
 sudo sysctl vm.mmap_rnd_bits=28  # https://github.com/google/sanitizers/issues/856
+sysctl vm.mmap_rnd_bits=28 2>/dev/null
 # Interestingly, this issue only seems to halt 10.5-10.11 builds, and 11.1 dbg, but not 11.1 opt nor 11.2+
 
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name

@@ -393,7 +393,7 @@ BASEDIR_ALT=
 #==180506==End of process memory map.
 if [[ "${PWD}" == *"SAN"* ]]; then
   sudo sysctl vm.mmap_rnd_bits=28
-  sysctl vm.mmap_rnd_bits=28
+  sysctl vm.mmap_rnd_bits=28 2>/dev/null
 fi
 #Check replication option
 if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want any REPL_EXTRA, MASTER_EXTRA and SLAVE_EXTRA options to take effect

@@ -5,16 +5,21 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|unknown-crash|sql/field.h|__interceptor_memset|Field_varstring::reset|set_field_to_null_with_conversions|fill_record                                                      ## MDEV-35490
+ASAN|unknown-crash|sql/field.h|__interceptor_memset|Field_varstring::reset|set_field_to_null_with_conversions|save_field_in_field                                              ## MDEV-35490
+ASAN|unknown-crash|sql/field.h|memset|Field_varstring::reset|set_field_to_null_with_conversions|fill_record                                                                    ## MDEV-35490
+ASAN|unknown-crash|sql/field.h|memset|Field_varstring::reset|set_field_to_null_with_conversions|save_field_in_field                                                            ## MDEV-35490
 ASAN|dynamic-stack-buffer-overflow|sql/key.cc|key_restore|QUICK_GROUP_MIN_MAX_SELECT::next_min|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick                                   ## MDEV-24906
 ASAN|unknown-crash|sql/opt_range.cc|__interceptor_memcpy|QUICK_GROUP_MIN_MAX_SELECT::next_min_in_range|QUICK_GROUP_MIN_MAX_SELECT::next_min|QUICK_GROUP_MIN_MAX_SELECT::get_next ## MDEV-24906
 UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc|Item_sum_xor::set_bits_from_counters|Item_sum_bit::add_as_window|Frame_cursor::add_value_to_items|Frame_range_current_row_bottom::pre_next_partition ## MDEV-35439
-# UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc                                                                                                      ## Likely MDEV-35439 but to generic to filter
+# UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc                                                                                                      ## Likely MDEV-35439 but too generic to filter
 UBSAN|shift exponent X is too large for 32-bit type 'int'|sql/item_sum.cc|Item_sum_xor::set_bits_from_counters|Item_sum_bit::add_as_window|Item_sum_xor::add|Frame_cursor::add_value_to_items ## MDEV-35439
 UBSAN|load of null pointer of type 'my_bitmap_map'|include/my_bitmap.h|bitmap_clear_bit|temp_pool_clear_bit|free_tmp_table|close_thread_tables                                 ## MDEV-26334
 ASAN|use-after-poison|storage/federatedx/federatedx_txn.cc|federatedx_txn::sp_release|ha_release_savepoint|savepoint_add|trans_savepoint                                       ## MDEV-29317
 ASAN|heap-buffer-overflow|sql/item_subselect.h|Ordered_key::add_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                     ## MDEV-24986
 ASAN|unknown-crash|sql/field.h|__asan_memset|Field_varstring::reset|set_field_to_null_with_conversions|fill_record                                                             ## MDEV-35393
 !__asan_region_is_poisoned((void*) dest,templ->mysql_col_len)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc ## MDEV-35392
+# UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc                                                                                 ## Likely MDEV-35406 but too generic to filter
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Type_handler::Item_send_date|Type_handler_temporal_with_date::Item_send|Item::send ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406
@@ -347,6 +352,7 @@ UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_
 UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/item_func.cc|Item_func_shift_right::val_int|Item::send|Protocol::send_result_set_row|select_send::send_data ## MDEV-24198
 UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/item_func.cc|Item_func_shift_right::val_int|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## MDEV-24198
 UBSAN|shift exponent X is too large for 64-bit type 'long long unsigned int'|sql/item_func.cc|Item_func_shift_right::val_int|Type_handler::Item_send_longlong|Type_handler_longlong::Item_send|Item::send ## MDEV-24198
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|sort_key_read|find_all_keys|_ma_create_index_by_sort           ## MDEV-26839
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|ha_maria::write_row|handler::ha_write_row          ## MDEV-26839
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|handler::ha_write_row|copy_data_between_tables     ## MDEV-26839
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|handler::ha_write_row|write_record                 ## MDEV-26839

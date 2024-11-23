@@ -19,3 +19,7 @@ INSERT INTO t (a) VALUES (0);
 SET sql_mode='';
 CREATE TABLE t (c BLOB,c2 INT(1),c3 CHAR(1) BINARY,PRIMARY KEY(c (1))) ENGINE=Aria;
 INSERT INTO t (c2) VALUES (1);
+
+SET sql_mode='';
+CREATE TABLE t1 (a INT,b BLOB NOT NULL,INDEX sk (b)) ROW_FORMAT=compact ENGINE=Aria;
+INSERT INTO t1 SELECT @p,@p FROM seq_0_to_0;
