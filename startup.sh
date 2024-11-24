@@ -69,11 +69,11 @@ fi
 
 add_san_options() {
   # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-  echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1' >>"${1}"
+  echo "export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1" >>"${1}"
   # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
   # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
-  #echo 'export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1' >> "${1}"
-  echo 'export UBSAN_OPTIONS=print_stacktrace=1' >>"${1}"
+  #echo "export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1" >> "${1}"
+  echo "export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1" >>"${1}"
   echo 'export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1' >>"${1}"
   echo 'export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0' >>"${1}"
 }
@@ -177,7 +177,7 @@ if [ -r ${HOME}/mariadb-qa/fuzzer/afl ]; then
   ln -s ${HOME}/mariadb-qa/fuzzer/afl ./afl
 fi
 # NEW  (Note that we can clear __AFL_SHM_ID and AFL_MAP_SIZE ocne server is started as it maintains the same when already started)
-echo "export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1; export UBSAN_OPTIONS=print_stacktrace=1; export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1; export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0; ./kill >/dev/null 2>&1; rm -f ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
+echo "export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1; export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1; export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1; export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0; ./kill >/dev/null 2>&1; rm -f ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
 chmod +x aflnew
 
 #GR startup scripts
@@ -448,7 +448,7 @@ touch in.sql
 MTR_DIR="./mysql-test"
 if [ -d "./mariadb-test" ]; then MTR_DIR="./mariadb-test"; fi
 if [ -d "${MTR_DIR}" ]; then
-  echo 'export UBSAN_OPTIONS=print_stacktrace=1' >${MTR_DIR}/cl_mtr
+  echo "export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1" >${MTR_DIR}/cl_mtr
   echo 'PORT=$(grep -o "port=[0-9]\+" var/my.cnf | grep -o "[0-9]\+" | head -n1)' >>${MTR_DIR}/cl_mtr
   echo 'if [ -z "${PORT}" ]; then' >>${MTR_DIR}/cl_mtr
   echo '  ./mtr --start-and-exit' >>${MTR_DIR}/cl_mtr
@@ -541,6 +541,7 @@ echo "echo 'Server on socket ${SOCKET} with datadir ${PWD}/data halted'" >>stop
 echo "./init;./start;./cl;./stop;./kill >/dev/null 2>&1;tail log/master.err" >setup
 
 echo 'MYEXTRA_OPT="$*"' >wipe
+add_san_options wipe
 echo "./stop >/dev/null 2>&1" >>wipe
 echo "rm -Rf ${PWD}/data ${PWD}/tmp ${PWD}/rr" >>wipe
 echo "rm -Rf ${PWD}/data_slave ${PWD}/tmp_slave  # Avoid old slave data interference" >>wipe

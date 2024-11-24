@@ -5,7 +5,7 @@ SET.*GLOBAL.*wsrep_cluster_address
 RENAME.*TABLE.*mysql\.
 ALTER.*TABLE.*mysql\.
 DROP.*TABLE.*mysql\.
-MASTER_GTID_WAIT
+MASTER_.*_WAIT
 SET.*key_buffer_size.*[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]
 SET.*net_retry_count.*[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]
 SET.*innodb_flush_log_at_timeout.*[0-9][0-9][0-9]

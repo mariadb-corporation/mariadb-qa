@@ -47,8 +47,7 @@ sleep 10
 #cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 sleep 10
-cd ${DIR}/11.6 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
-sleep 10
+#cd ${DIR}/11.6 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 cd ${DIR}/11.7 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 sleep 10
 cd ${DIR}/11.8 && ~/mariadb-qa/build_mdpsms_opt_san.sh &

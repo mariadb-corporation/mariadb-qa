@@ -5,6 +5,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-buffer-overflow|sql/my_decimal.h|my_decimal::fix_buffer_pointer|update_hash|Item_func_set_user_var::update_hash|Item_func_set_user_var::update                       ## MDEV-35492
+ASAN|heap-buffer-overflow|sql/my_decimal.h|my_decimal::fix_buffer_pointer|update_hash|update_hash|Item_func_set_user_var::update_hash                                          ## MDEV-35492
+ASAN|heap-use-after-free|sql/sql_type.h|Type_handler_hybrid_field_type::set_handler|update_hash|Item_func_set_user_var::update_hash|Item_func_set_user_var::save_in_field      ## MDEV-23041
+ASAN|heap-use-after-free|sql/sql_type.h|Type_handler_hybrid_field_type::set_handler|update_hash|Item_func_set_user_var::update_hash|Item_func_set_user_var::update             ## MDEV-23041
 ASAN|unknown-crash|sql/field.h|__interceptor_memset|Field_varstring::reset|set_field_to_null_with_conversions|fill_record                                                      ## MDEV-35490
 ASAN|unknown-crash|sql/field.h|__interceptor_memset|Field_varstring::reset|set_field_to_null_with_conversions|save_field_in_field                                              ## MDEV-35490
 ASAN|unknown-crash|sql/field.h|memset|Field_varstring::reset|set_field_to_null_with_conversions|fill_record                                                                    ## MDEV-35490
@@ -18,7 +22,6 @@ UBSAN|load of null pointer of type 'my_bitmap_map'|include/my_bitmap.h|bitmap_cl
 ASAN|use-after-poison|storage/federatedx/federatedx_txn.cc|federatedx_txn::sp_release|ha_release_savepoint|savepoint_add|trans_savepoint                                       ## MDEV-29317
 ASAN|heap-buffer-overflow|sql/item_subselect.h|Ordered_key::add_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                     ## MDEV-24986
 ASAN|unknown-crash|sql/field.h|__asan_memset|Field_varstring::reset|set_field_to_null_with_conversions|fill_record                                                             ## MDEV-35393
-!__asan_region_is_poisoned((void*) dest,templ->mysql_col_len)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc ## MDEV-35392
 # UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc                                                                                 ## Likely MDEV-35406 but too generic to filter
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Type_handler::Item_send_date|Type_handler_temporal_with_date::Item_send|Item::send ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406

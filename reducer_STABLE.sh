@@ -347,11 +347,11 @@ MYPORT=
 # https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
 # https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer (LSAN is enabled by default except on OS X)
 # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
+export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
 # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
-#export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
-export UBSAN_OPTIONS=print_stacktrace=1
+#export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
+export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
 export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0
 
@@ -382,6 +382,19 @@ elif [ -d "${BASEDIR_ALT}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/
   BASEDIR="${BASEDIR_ALT}"
 fi
 BASEDIR_ALT=
+# Workaround, ref https://github.com/google/sanitizers/issues/856
+# This will show even for simple version detection, causing it to fail if the vm.mmap_rnd_bits workaround is not set
+#==180506==Shadow memory range interleaves with an existing memory mapping. ASan cannot proceed correctly. ABORTING.
+#==180506==ASan shadow was supposed to be located in the [0x00007fff7000-0x10007fff7fff] range.
+#==180506==This might be related to ELF_ET_DYN_BASE change in Linux 4.12.
+#==180506==See https://github.com/google/sanitizers/issues/856 for possible workarounds.
+#==180506==Process memory map follows:
+#...
+#==180506==End of process memory map.
+if [[ "${PWD}" == *"SAN"* ]]; then
+  sudo sysctl vm.mmap_rnd_bits=28
+  sysctl vm.mmap_rnd_bits=28 2>/dev/null
+fi
 #Check replication option
 if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want any REPL_EXTRA, MASTER_EXTRA and SLAVE_EXTRA options to take effect
   REPL_EXTRA=

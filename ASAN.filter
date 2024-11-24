@@ -1,0 +1,3 @@
+# ----- ASAN filter list - used as:
+# ASAN_OPTIONS=suppressions=${HOME}/mariadb-qa/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
+# Ref UBSAN.filter for more information  # TODO

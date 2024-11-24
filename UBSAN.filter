@@ -1,0 +1,23 @@
+# ----- UBSAN filter list - used as:
+# UBSAN_OPTIONS=suppressions=${HOME}/mariadb-qa/UBSAN.filter:print_stacktrace=1:report_error_type=1
+# ----- Documentation links:
+# https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html#issue-suppression
+# https://clang.llvm.org/docs/SanitizerSpecialCaseList.html
+# https://maskray.me/blog/2023-01-29-all-about-undefined-behavior-sanitizer
+# https://github.com/llvm/llvm-project/issues/72060
+# ----- Other info:
+# Recognized error types: undefined, null, nullability-assign, pointer-overflow, alignment, object-size, signed-integer-overflow, unsigned-integer-overflow, integer-divide-by-zero, float-divide-by-zero, invalid-builtin-use, invalid-objc-cast, implicit-unsigned-integer-truncation, implicit-signed-integer-truncation, implicit-integer-sign-change, implicit-signed-integer-truncation,implicit-integer-sign-change, shift-base, shift-exponent, bounds, unreachable, return, vla-bound, float-cast-overflow, bool, enum, function, returns-nonnull-attribute, nullability-return, nonnull-attribute, nullability-arg, vptr, cfi, vptr_check
+# 'report_error_type=1' in UBSAN_OPTIONS may provide additional information on the error type
+# ----- Examples:
+# function:innobase_trx_init  - filter reports for function innobase_trx_init 
+# function:ha_innodb.cc       - filter reports for all functions in ha_innodb.cc (not recommended!)
+# ----- Notes:
+# Please note that the supression file does not allow for post-supression comments like:
+# function:some_function   # Some bug reference/link
+# As such, please use header-based comments only, following the syntax below
+
+## MDEV-34512
+function:ha_maria::repair
+function:ha_maria::enable_indexes
+## MDEV-33158
+function:innobase_trx_init

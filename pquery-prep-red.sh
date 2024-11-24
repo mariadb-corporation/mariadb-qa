@@ -908,7 +908,7 @@ if [ ${QC} -eq 0 ]; then
         rm -Rf ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing
         touch ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing
         if [ ${REACH} -eq 0 ]; then # Avoid normal output if this is an automated run (REACH=1)
-          echo "========== Processing pquery trial $TRIAL"
+          echo "========== Processing pquery trial ${TRIAL} in ${RUNDIR}"
         fi
         if [ ! -r ./${TRIAL}/start ]; then
           echo "* No ./${TRIAL}/start detected, so this was likely a SAVE_SQL=1, SAVE_TRIALS_WITH_CORE_ONLY=1 trial with no core generated. Skipping to next trial."
