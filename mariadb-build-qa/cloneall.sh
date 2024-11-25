@@ -18,10 +18,10 @@ rm -Rf 11.[0-9]
 ./clone.sh 10.11 &
 #./clone.sh 11.0 &
 #./clone.sh 11.1 &
-./clone.sh 11.2 &
+#./clone.sh 11.2 &
 #./clone.sh 11.3 &
-./clone.sh 11.4 &
-./clone.sh 11.5 &
-./clone.sh 11.6 &
+/clone.sh 11.4 &
+#./clone.sh 11.5 &
+#/clone.sh 11.6 &
 ./clone.sh 11.7 &
 git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git 11.8 &  # Trunk is currently the only 11.8 branch
