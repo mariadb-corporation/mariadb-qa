@@ -218,6 +218,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!(table->key_info[active_index].flags & 262144U)|SIGABRT|handler::ha_index_init|join_read_always_key|sub_select|do_select                                                      ## MDEV-35399
 SIGSEGV|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields|setup_fields_with_no_wrap                                                                ## MDEV-31233
 SIGSEGV|multi_update::prepare|JOIN::prepare|Sql_cmd_update::prepare_inner|Sql_cmd_dml::prepare                                                                                 ## MDEV-31233
 !__asan_region_is_poisoned((void*) dest,templ->mysql_col_len)|SIGABRT|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc ## MDEV-35392
@@ -341,6 +342,7 @@ SIGSEGV|ha_spider::rm_bulk_tmp_table|ha_spider::reset|ha_spider::open|handler::h
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-34708
 !(sql_mode & ~full_sql_mode)|SIGABRT|spider_conn_queue_sql_mode|spider_check_and_set_sql_mode|spider_internal_start_trx_for_connection|ha_spider::dml_init                     ## MENT-2108
 lex == &main_lex|SIGABRT|THD::reset_for_next_command|Rows_log_event::do_apply_event|Log_event::apply_event|mysql_client_binlog_statement                                       ## MDEV-34702
+marked_for_read()|SIGABRT|Field_blob::val_str|Field::val_str|Field_blob::store_field|field_conv_incompatible                                                                   ## MDEV-34693
 marked_for_read()|SIGABRT|Field_varstring::val_str|Item_field::val_str|Item_func_trim::val_str|Item::save_str_in_field                                                         ## MDEV-34693
 SIGSEGV|buf_pool_t::resize|buf_resize_callback|tpool::task_group::execute|tpool::thread_pool_generic::worker_main                                                              ## MDEV-34677
 .corrupted lock system. == 0|SIGABRT|lock_rec_unlock_unmodified|lock_release_on_prepare|trx_prepare|trx_prepare_for_mysql                                                      ## MDEV-34663
