@@ -42,6 +42,7 @@ if [ -z "${NR_OF_NODES}" ] ; then
   NR_OF_NODES=3
 fi
 
+# TODO: check if CLANG also needs this workaround or not. If not, remove it. If so, use  if [[ "${PWD}" != *"CLANG"* ]]; then ...
 if [[ "${PWD}" == *"SAN"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; sysctl vm.mmap_rnd_bits=28 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856 (also ref the same line in 'start' created below)
 
 PORT=$NEWPORT
@@ -541,10 +542,12 @@ chmod +x smalltmp
 # TODO: fix the line below somehow, and add binary-files=text for all greps. Also revert redirect to >> for second line
 #echo "set +H" > kill  # Fails with odd './kill: 1: set: Illegal option -H' when kill_all is used?
 echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
+touch stop
+add_san_options stop
 if [ -r ./bin/mariadb-admin ]; then
-  echo "timeout -k90 -s9 90s ${PWD}/bin/mariadb-admin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
+  echo "timeout -k90 -s9 90s ${PWD}/bin/mariadb-admin -uroot -S${SOCKET} shutdown" >>stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
 else
-  echo "timeout -k90 -s9 90s ${PWD}/bin/mysqladmin -uroot -S${SOCKET} shutdown" >stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
+  echo "timeout -k90 -s9 90s ${PWD}/bin/mysqladmin -uroot -S${SOCKET} shutdown" >>stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
 fi
 echo "./kill >/dev/null 2>&1" >>stop
 echo "echo 'Server on socket ${SOCKET} with datadir ${PWD}/data halted'" >>stop

@@ -395,7 +395,14 @@ fi
 if [ ${SAN_MODE} -eq 1 ]; then
   echo -e '{noformat}\n\nSetup:\n'
   echo '{noformat}'
-  echo "Compiled with a recent version of GCC (I used GCC $(gcc --version | head -n1 | sed 's|.* ||')) and:"
+  if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh san | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
+    echo "Compiled with a recent version of Clang (I used Clang $(clang --version | head -n1 | grep -o '[\.0-9][\.0-9][\.0-9]\+')) with LLVM 18:"
+    echo '# llvm-17-linker-tools installs /usr/lib/llvm-17/lib/LLVMgold.so, which is needed for compilation, and LLVMgold.so is no longer included in LLVM 18'
+    echo 'sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev llvm-17-linker-tools'
+    echo 'sudo ln -s /usr/lib/llvm-17/lib/LLVMgold.so /usr/lib/llvm-18/lib/LLVMgold.so'
+  else
+    echo "Compiled with a recent version of GCC (I used GCC $(gcc --version | head -n1 | sed 's|.* ||')) and:"
+  fi
   if grep -Eiqm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
     # A note on exitcode=0: whereas we do not use this in our runs, it is required to let MTR bootstrap succeed.
     # TODO: Once code becomes more stable add: halt_on_error=1

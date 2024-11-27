@@ -21,3 +21,5 @@ function:ha_maria::repair
 function:ha_maria::enable_indexes
 ## MDEV-33158
 function:innobase_trx_init
+## MDEV-35500
+function:my_auth.c

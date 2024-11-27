@@ -158,6 +158,7 @@ while(true); do                                     # Main loop
     echo -e "\nCleaning up known issues..."
     ${SCRIPT_PWD}/pquery-clean-known.sh             # Clean known issues
     ${SCRIPT_PWD}/pquery-clean-known++.sh           # Expert clean known issues (quite strong cleanup)
+    echo -e "\n Eliminating dupplicate issues..."
     ${SCRIPT_PWD}/pquery-eliminate-dups.sh          # Eliminate dups, leaving at least x trials for issues where the number of trials >=x. Will also leave alone all other (<x) trials. x can be set in that script
     if [ -r ${SCRIPT_PWD}/pquery-results.sh -a ${SCRIPT_PWD}/pquery-del-trial.sh ]; then
       ${SCRIPT_PWD}/pquery-results.sh | grep --binary-files=text -iA1 'trials.*with.*known.*hang.*timeout' | grep --binary-files=text -vi 'trials.*with.*known.*hang.*timeout' | grep --binary-files=text -o '[0-9]\+' | sort -u | xargs -I{} echo "if [ -r './{}/SHUTDOWN_TIMEOUT_ISSUE' ]; then echo '${SCRIPT_PWD}/pquery-del-trial.sh {}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"  # Eliminate known hang/timeout issues ([*] ref two filters above which pre-exclude trials with core files or *SAN bugs)

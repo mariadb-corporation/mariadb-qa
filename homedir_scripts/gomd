@@ -6,7 +6,8 @@
 #BASEDIR=/test/MD091024-mariadb-11.7.0-linux-x86_64-dbg
 #BASEDIR=/test/MENT-796_EMD171024-mariadb-11.4.3-1-linux-x86_64-dbg
 #BASEDIR=/test/UBASAN_MD221124-mariadb-11.6.2-linux-x86_64-dbg
-BASEDIR=/test/UBASAN_MD251124-mariadb-10.5.28-linux-x86_64-dbg
+#BASEDIR=/test/UBASAN_MD251124-mariadb-10.5.28-linux-x86_64-dbg
+BASEDIR=/test/CLANG_UBASAN_MD251124-mariadb-10.5.28-linux-x86_64-opt
 #MD221124-mariadb-10.6.21-linux-x86_64-dbg
 #UBASAN_MD011124-mariadb-11.2.6-linux-x86_64-opt
 #MDEV-15696_MD140924-mariadb-11.7.0-linux-x86_64-opt
