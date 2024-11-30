@@ -82,7 +82,11 @@ if [ -z "${OUT}" ]; then
     echo "${OUT2}"
   fi
 elif [[ "${OUT}" == "#"* ]]; then
-  echo "ALREADY KNOWN *PREVIOUSLY FIXED (OR NON-FILTERED)* BUG! POTENTIALLY NEW BUG TO LOG; SEARCH(/CHECK) FIRST:"
+  if [ ! -z "$(echo "${OUT}" | grep -v '^#')" ]; then  # Fixed or non-filtered bug + unfixed bug found
+    echo "ALREADY KNOWN BUG! NOTE: PREVIOUSLY FIXED (OR NON-FILTERED) BUG(S) AS WELL AS ALREADY KNOWN BUG(S) WERE FOUND"
+  else  # Only fixed or non-filtered bug found
+    echo "ALREADY KNOWN *PREVIOUSLY FIXED (OR NON-FILTERED)* BUG! POTENTIALLY NEW BUG TO LOG; SEARCH(/CHECK) FIRST:"  # Do not change this line to read "ALREADY KNOWN BUG" as that text string is used elsewhere
+  fi
   echo "${OUT}"
 else
   echo "ALREADY KNOWN BUG!"

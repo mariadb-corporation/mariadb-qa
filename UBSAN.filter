@@ -7,14 +7,18 @@
 # https://github.com/llvm/llvm-project/issues/72060
 # ----- Other info:
 # Recognized error types: undefined, null, nullability-assign, pointer-overflow, alignment, object-size, signed-integer-overflow, unsigned-integer-overflow, integer-divide-by-zero, float-divide-by-zero, invalid-builtin-use, invalid-objc-cast, implicit-unsigned-integer-truncation, implicit-signed-integer-truncation, implicit-integer-sign-change, implicit-signed-integer-truncation,implicit-integer-sign-change, shift-base, shift-exponent, bounds, unreachable, return, vla-bound, float-cast-overflow, bool, enum, function, returns-nonnull-attribute, nullability-return, nonnull-attribute, nullability-arg, vptr, cfi, vptr_check
+# For 'nullptr-with-offset' issues, use 'pointer-overflow:function_name', for example see MDEV-35538
 # 'report_error_type=1' in UBSAN_OPTIONS may provide additional information on the error type
 # ----- Examples:
 # function:innobase_trx_init  - filter reports for function innobase_trx_init 
 # function:ha_innodb.cc       - filter reports for all functions in ha_innodb.cc (not recommended!)
 # ----- Notes:
-# Please note that the supression file does not allow for post-supression comments like:
-# function:some_function   # Some bug reference/link
-# As such, please use header-based comments only, following the syntax below
+# * Please note that the supression file does not allow for post-supression comments like:
+#   function:some_function   # Some bug reference/link
+#   As such, please use header-based comments only, following the syntax below
+# * Future improvement idea: split opt vs dbg filters
+# * Note that function filters will filter any stack that contains the terms specified
+#   Also see https://github.com/llvm/llvm-project/issues/118150
 
 ## MDEV-34512
 function:ha_maria::repair
@@ -23,3 +27,21 @@ function:ha_maria::enable_indexes
 function:innobase_trx_init
 ## MDEV-35500
 function:my_auth.c
+## MDEV-35530
+function:my_hash_key
+## MDEV-35531
+function:init_key_cache_internal
+## MDEV-35532
+function:tree_insert
+## MDEV-35533 (also filters the my_qsort2 stack)
+function:my_qsort
+## MDEV-35534
+function:group_commit_lock::release
+## MDEV-35535
+function:my_hash_free_elements
+## MDEV-35536
+function:end_key_cache_internal
+## MDEV-35537
+pointer-overflow:my_get_stack_bounds
+## MDEV-35538
+pointer-overflow:check_rules
