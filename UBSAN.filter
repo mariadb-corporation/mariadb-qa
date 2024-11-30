@@ -45,3 +45,11 @@ function:end_key_cache_internal
 pointer-overflow:my_get_stack_bounds
 ## MDEV-35538
 pointer-overflow:check_rules
+pointer-overflow:init_weight_level
+## MDEV-35539
+function:process_optimizer_costs
+## MDEV-35560
+function:plugin_do_initialize
+function:plugin_deinitialize
+## MDEV-35561
+pointer-overflow:my_b_flush_io_cache
