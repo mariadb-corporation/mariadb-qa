@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying non-zero offset X to null pointer|sql/spatial.cc|Gis_geometry_collection::init_from_opresult|Geometry::create_from_opresult|Item_func_spatial_operation::val_str|Geometry_ptr_with_buffer_and_mbr::construct ## MDEV-35545
 ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next|List_iterator<Item>::operator++|setup_fields|setup_fields_with_no_wrap                                           ## MDEV-31233
 ASAN|heap-buffer-overflow|sql/my_decimal.h|my_decimal::fix_buffer_pointer|update_hash|Item_func_set_user_var::update_hash|Item_func_set_user_var::update                       ## MDEV-35492
 ASAN|heap-buffer-overflow|sql/my_decimal.h|my_decimal::fix_buffer_pointer|update_hash|update_hash|Item_func_set_user_var::update_hash                                          ## MDEV-35492

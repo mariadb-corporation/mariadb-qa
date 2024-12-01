@@ -68,7 +68,7 @@ fi
 #==180506==End of process memory map.
 if [[ "${PWD}" == *"SAN"* ]]; then
   sudo sysctl vm.mmap_rnd_bits=28
-  sysctl vm.mmap_rnd_bits=28
+  sysctl vm.mmap_rnd_bits=28 2>/dev/null
 fi
 
 export TEXT=
