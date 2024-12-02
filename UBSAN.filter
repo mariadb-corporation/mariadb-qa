@@ -7,7 +7,8 @@
 # https://github.com/llvm/llvm-project/issues/72060
 # ----- Other info:
 # Recognized error types: undefined, null, nullability-assign, pointer-overflow, alignment, object-size, signed-integer-overflow, unsigned-integer-overflow, integer-divide-by-zero, float-divide-by-zero, invalid-builtin-use, invalid-objc-cast, implicit-unsigned-integer-truncation, implicit-signed-integer-truncation, implicit-integer-sign-change, implicit-signed-integer-truncation,implicit-integer-sign-change, shift-base, shift-exponent, bounds, unreachable, return, vla-bound, float-cast-overflow, bool, enum, function, returns-nonnull-attribute, nullability-return, nonnull-attribute, nullability-arg, vptr, cfi, vptr_check
-# For 'nullptr-with-offset' 'nullptr-with-nonzero-offset' and similar issues, use 'pointer-overflow:function_name', for example see MDEV-35538
+# For 'nullptr-with-offset', 'nullptr-with-nonzero-offset' and similar issues, use 'pointer-overflow:function_name', for example see MDEV-35538
+# For 'out-of-bounds-index' and similar issues, use 'bounds:function_name', for example see MDEV-35548
 # 'report_error_type=1' in UBSAN_OPTIONS may provide additional information on the error type
 # ----- Examples:
 # function:innobase_trx_init  - filter reports for function innobase_trx_init 
@@ -20,40 +21,50 @@
 # * Note that function filters will filter any stack that contains the terms specified
 #   Also see https://github.com/llvm/llvm-project/issues/118150
 
+# ----- Current bugs
+
 ## MDEV-34512
 function:ha_maria::repair
 function:ha_maria::enable_indexes
+function:ha_myisam::enable_indexes
 ## MDEV-33158
 function:innobase_trx_init
 ## MDEV-35500
 function:my_auth.c
-## MDEV-35530 # Fixed up to 10.11 by upmerge
-function:my_hash_key
-## MDEV-35531 # Fixed up to 10.11 by upmerge
-function:init_key_cache_internal
-## MDEV-35532 # Fixed up to 10.11 by upmerge
-function:tree_insert
-## MDEV-35533 (also filters the my_qsort2 stack) # Fixed up to 10.11 by upmerge
-function:my_qsort
-## MDEV-35534 # Fixed up to 10.11 by upmerge
-function:group_commit_lock::release
-## MDEV-35535 # Fixed up to 10.11 by upmerge
-function:my_hash_free_elements
-## MDEV-35536 # Fixed up to 10.11 by upmerge
-function:end_key_cache_internal
-## MDEV-35537 # Fixed up to 10.11 by upmerge
-pointer-overflow:my_get_stack_bounds
 ## MDEV-35538
 pointer-overflow:check_rules
 pointer-overflow:init_weight_level
-## MDEV-35539
-function:process_optimizer_costs
-## MDEV-35540
-function:plugin_do_initialize
-function:plugin_deinitialize
 ## MDEV-35541
 pointer-overflow:my_b_flush_io_cache
-## MDEV-35544
-function:delete_dynamic_with_callback
 ## MDEV-35545
 pointer-overflow:Gis_geometry_collection::init_from_opresult
+## MDEV-35548
+bounds:json_get_path_start
+## MDEV-35549
+pointer-overflow:my_string_repertoire_8bit
+
+# ----- Fixed bugs
+
+## MDEV-35530 # Fixed by MDEV-34348
+#function:my_hash_key
+## MDEV-35531 # Fixed by MDEV-34348
+#function:init_key_cache_internal
+## MDEV-35532 # Fixed by MDEV-34348
+#function:tree_insert
+## MDEV-35533 (also filters the my_qsort2 stack) # Fixed by MDEV-34348
+#function:my_qsort
+## MDEV-35534 # Fixed by MDEV-34348
+#function:group_commit_lock::release
+## MDEV-35535 # Fixed by MDEV-34348
+#function:my_hash_free_elements
+## MDEV-35536 # Fixed by MDEV-34348
+#function:end_key_cache_internal
+## MDEV-35537 # Fixed by MDEV-34348
+#pointer-overflow:my_get_stack_bounds
+## MDEV-35544 # Fixed by MDEV-34348
+#function:delete_dynamic_with_callback
+## MDEV-35539 # Fixed by MDEV-34348
+#function:process_optimizer_costs
+## MDEV-35540 # Fixed by MDEV-34348
+#function:plugin_do_initialize
+#function:plugin_deinitialize

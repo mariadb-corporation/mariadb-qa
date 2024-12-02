@@ -414,13 +414,13 @@ if [ ${SAN_MODE} -eq 1 ]; then
     if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # ASAN
       # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
       echo 'Set before execution:'
-      echo "    export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
+      echo "    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
       # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
       # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
-      #echo "    export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
+      #echo "    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
     elif grep -Eiqm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
       echo 'Set before execution:'
-      echo "    export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1"
+      echo "    export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1"
     fi
   elif grep -Eiqm1 --binary-files=text 'MemorySanitizer:' ../*SAN*/log/master.err; then  # MSAN
     echo '    -DWITH_MSAN=ON -DWITH_UBSAN=ON  # Note: WITH_MSAN=ON is auto-ignored when not using clang (MDEV-20377)'

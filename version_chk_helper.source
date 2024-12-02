@@ -129,8 +129,13 @@ if [ -z "${SAN}" ]; then
   if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
   if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
 else
-  if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, ${SAN})"; fi
-  if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug, ${SAN})"; fi
+  if grep -qi 'COMPILER=/[^ ]\+clang' BUILD_CMD_CMAKE 2>/dev/null; then
+    if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, ${SAN}, Clang)"; fi
+    if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug, ${SAN}, Clang)"; fi
+  else  # GCC, or no BUILD_CMD_CMAKE to check, or any other issue
+    if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, ${SAN})"; fi
+    if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug, ${SAN})"; fi
+  fi
 fi
 if [ -z "${BUILD_TYPE}" -a -r ./BUILD_CMD_CMAKE ]; then
   if ! grep -qi '=Debug' ./BUILD_CMD_CMAKE 2>/dev/null; then

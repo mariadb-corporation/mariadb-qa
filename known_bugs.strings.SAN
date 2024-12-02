@@ -5,6 +5,11 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|call to function mysql_sys_var_longlong(THD*, int) through pointer to incorrect function type 'unsigned long long *(*)(THD *, int)'|storage/myisam/ha_myisam.cc|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert|copy_data_between_tables ## MDEV-34512
+UBSAN|call to function mysql_sys_var_long(THD*, int) through pointer to incorrect function type 'unsigned long *(*)(THD *, int)'|storage/myisam/ha_myisam.cc|ha_myisam::repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|copy_data_between_tables ## MDEV-34512
+UBSAN|applying zero offset to null pointer|strings/ctype.c|my_string_repertoire_8bit|my_string_metadata_get|Item_basic_value::Metadata::Metadata|Item_string::Item_string      ## MDEV-35549
+UBSAN|index -X out of bounds for type 'json_path_step_t[32]' (aka 'struct st_json_path_step_t[32]')|strings/json_lib.c|json_get_path_start|Item_func_json_extract::read_json|Item_func_json_extract::val_decimal|Item::val_decimal_result ## MDEV-35548
+UBSAN|index -X out of bounds for type 'json_path_step_t[32]' (aka 'struct st_json_path_step_t[32]')|strings/json_lib.c|json_get_path_start|Item_func_json_extract::read_json|Item_func_json_extract::val_decimal|Item_cache_decimal::cache_value ## MDEV-35548
 UBSAN|applying non-zero offset X to null pointer|sql/spatial.cc|Gis_geometry_collection::init_from_opresult|Geometry::create_from_opresult|Item_func_spatial_operation::val_str|Geometry_ptr_with_buffer_and_mbr::construct ## MDEV-35545
 ASAN|use-after-poison|sql/sql_list.h|base_list_iterator::next|List_iterator<Item>::operator++|setup_fields|setup_fields_with_no_wrap                                           ## MDEV-31233
 ASAN|heap-buffer-overflow|sql/my_decimal.h|my_decimal::fix_buffer_pointer|update_hash|Item_func_set_user_var::update_hash|Item_func_set_user_var::update                       ## MDEV-35492
