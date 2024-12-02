@@ -42,8 +42,7 @@ if [ -z "${NR_OF_NODES}" ] ; then
   NR_OF_NODES=3
 fi
 
-# TODO: check if CLANG also needs this workaround or not. If not, remove it. If so, use  if [[ "${PWD}" != *"CLANG"* ]]; then ...
-if [[ "${PWD}" == *"SAN"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; sysctl vm.mmap_rnd_bits=28 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856 (also ref the same line in 'start' created below)
+if [[ "${PWD}" == *"SAN"* && "$(sudo sysctl -n vm.mmap_rnd_bits)" != "28" ]]; then sudo sysctl vm.mmap_rnd_bits=28; 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856 (also ref the same line in 'start' and 'all', both created below)
 
 PORT=$NEWPORT
 SOCKET=${PWD}/socket.sock
@@ -504,7 +503,7 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>start
   echo $JE7 >>start
 fi
-echo "if [[ \"${PWD}\" == *\"SAN\"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856" >> start
+echo "if [[ \"${PWD}\" == *\"SAN\"* && \"\$(sudo sysctl -n vm.mmap_rnd_bits)\" != \"28\" ]]; then sudo sysctl vm.mmap_rnd_bits=28; 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856" >> start
 echo "source ${PWD}/init_empty_port.sh" >>start
 echo "init_empty_port" >>start
 echo "PORT=\$NEWPORT" >>start
@@ -1208,6 +1207,8 @@ if [ ! -r ./in.sql ]; then touch ./in.sql; fi  # Make new empty file if does not
 echo './all --sql_mode=' >sqlmode
 echo './all --log_bin' >binlog
 echo 'MYEXTRA_OPT="$*"' >all
+add_san_options all
+echo "if [[ \"${PWD}\" == *\"SAN\"* && \"\$(sudo sysctl -n vm.mmap_rnd_bits)\" != \"28\" ]]; then sudo sysctl vm.mmap_rnd_bits=28; 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856" >> all
 echo "./kill >/dev/null 2>&1;./kill_replication >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT};./cl" >>all
 ln -s ./all ./a 2>/dev/null
 echo 'MYEXTRA_OPT="$*"' >all_stbe

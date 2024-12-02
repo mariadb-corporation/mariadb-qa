@@ -391,10 +391,7 @@ BASEDIR_ALT=
 #==180506==Process memory map follows:
 #...
 #==180506==End of process memory map.
-if [[ "${PWD}" == *"SAN"* ]]; then
-  sudo sysctl vm.mmap_rnd_bits=28
-  sysctl vm.mmap_rnd_bits=28 2>/dev/null
-fi
+if [[ "${PWD}" == *"SAN"* && "$(sudo sysctl -n vm.mmap_rnd_bits)" != "28" ]]; then sudo sysctl vm.mmap_rnd_bits=28; 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856
 #Check replication option
 if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want any REPL_EXTRA, MASTER_EXTRA and SLAVE_EXTRA options to take effect
   REPL_EXTRA=
