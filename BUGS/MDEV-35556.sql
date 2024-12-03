@@ -1,0 +1,2 @@
+INSTALL SONAME 'ha_rocksdb';
+CREATE TABLE t (a INT,KEY(a)) ENGINE=RocksDB;

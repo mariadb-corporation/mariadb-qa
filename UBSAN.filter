@@ -7,6 +7,7 @@
 # https://github.com/llvm/llvm-project/issues/72060
 # ----- Other info:
 # Recognized error types: undefined, null, nullability-assign, pointer-overflow, alignment, object-size, signed-integer-overflow, unsigned-integer-overflow, integer-divide-by-zero, float-divide-by-zero, invalid-builtin-use, invalid-objc-cast, implicit-unsigned-integer-truncation, implicit-signed-integer-truncation, implicit-integer-sign-change, implicit-signed-integer-truncation,implicit-integer-sign-change, shift-base, shift-exponent, bounds, unreachable, return, vla-bound, float-cast-overflow, bool, enum, function, returns-nonnull-attribute, nullability-return, nonnull-attribute, nullability-arg, vptr, cfi, vptr_check
+# Where 'function_name' is mentioned below, it refers to the most specific frame (i.e. #0 if available or #1 if #0 is blank) available in the stack
 # For 'nullptr-with-offset', 'nullptr-with-nonzero-offset' and similar issues, use 'pointer-overflow:function_name', for example see MDEV-35538
 # For 'out-of-bounds-index' and similar issues, use 'bounds:function_name', for example see MDEV-35548
 # 'report_error_type=1' in UBSAN_OPTIONS may provide additional information on the error type
@@ -42,6 +43,12 @@ pointer-overflow:Gis_geometry_collection::init_from_opresult
 bounds:json_get_path_start
 ## MDEV-35549
 pointer-overflow:my_string_repertoire_8bit
+## MDEV-35554
+function:show_status_array
+## MDEV-35555
+pointer-overflow:sel_trees_must_be_ored
+## MDEV-35556
+#pointer-overflow:myrocks::Rdb_key_def::setup
 
 # ----- Fixed bugs
 
