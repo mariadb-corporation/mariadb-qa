@@ -24,6 +24,8 @@
 
 # ----- Current bugs
 
+## MDEV-35557
+pointer-overflow:get_server_from_table_to_cache
 ## MDEV-34512
 function:ha_maria::repair
 function:ha_maria::enable_indexes
