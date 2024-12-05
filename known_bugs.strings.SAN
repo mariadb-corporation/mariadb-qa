@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|133 byte(s) leaked in 4 allocation(s).                                                                                                                                    ## MDEV-35575
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/sql_servers.cc|get_server_from_table_to_cache|servers_load|servers_reload|reload_acl_and_cache ## MDEV-35557
 UBSAN|applying non-zero offset X to null pointer|storage/rocksdb/rdb_datadic.cc|myrocks::Rdb_key_def::setup|myrocks::ha_rocksdb::create_key_def|myrocks::ha_rocksdb::create_key_defs|myrocks::ha_rocksdb::create_table ## MDEV-35556
 UBSAN|applying non-zero offset X to null pointer|sql/opt_range.cc|sel_trees_must_be_ored|tree_or|Item_cond::get_mm_tree|prune_partitions                                       ## MDEV-35555

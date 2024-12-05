@@ -1,0 +1,2 @@
+INSTALL SONAME 'auth_gssapi';
+SHUTDOWN;
