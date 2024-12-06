@@ -1,1 +1,3 @@
 SELECT JSON_EXTRACT('{a:true}','$.a')=TRUE;
+
+SELECT JSON_EXTRACT('0E+0','$');

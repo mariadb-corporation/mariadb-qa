@@ -76,7 +76,7 @@ if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
     exit 1
   fi
   if [ -z "${2}" ]; then
-    export TEXT="=ERROR:|runtime error:|ThreadSanitizer:|LeakSanitizer:"
+    export TEXT="^SUMMARY:|=ERROR:|runtime error:|ThreadSanitizer:|LeakSanitizer:"
   else
     export TEXT="${2}"
   fi

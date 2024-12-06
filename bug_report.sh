@@ -233,7 +233,7 @@ if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then
   fi
 else
   if [ "${1}" == "SAN" ]; then
-    #echo "Searching error logs for the '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:' (SAN mode enabled)"
+    #echo "Searching error logs for the '^SUMMARY:|=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:' (SAN mode enabled)"  # This is now set in ~/b (when using ~/bs) - ref/use linkit if ~/b or ~/bs are not present
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
     #CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
@@ -337,14 +337,11 @@ else
   echo "{noformat:title=${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
   grep -Ei --binary-files=text "${TEXT}" ./log/master.err | grep --binary-files=text -v "^[ \t]*$"
   # Check if a SAN stack is present and add it to output seperately
-  if [ "$(grep -Ei --binary-files=text -A1 "${TEXT}" ./log/master.err | tail -n1 | grep -o '^[ ]*#0' | sed 's|[^#0]||g')" == "#0" ]; then
-    LINE_BEFORE_SAN_STACK=$(grep -nEi --binary-files=text "${TEXT}" ./log/master.err | grep -o --binary-files=text '^[0-9]\+' | head -n1)
+  if [ "$(grep -Ei --binary-files=text -A1 "${TEXT}" ./log/master.err | grep -o '^[ ]*#0' | sed 's|[^#0]||g' | head -n1)" == "#0" ]; then  # Validate there is a stack
+    LINE_BEFORE_SAN_STACK=$(grep -nEi --binary-files=text "${TEXT}" ./log/master.err | grep -o --binary-files=text '^[0-9]\+' | head -n1)  # Get the last line before the stack starts (for the first issue; this is issue is to be filtered/supressed before the next one is handled)
     if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
-      echo '{noformat}'
-      echo ''
-      echo "{noformat:title=${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
       LINE_TO_READ=${LINE_BEFORE_SAN_STACK}
-      while :; do  # Read stack line by line and print
+      while :; do  # Read stack line by line and print, untill an open line is found (before 'SUMMARY:' there is always an open line)
         LINE_TO_READ=$[ ${LINE_TO_READ} + 1 ]
         LINE="$(head -n${LINE_TO_READ} ./log/master.err | tail -n1)"
         if [ -z "$(echo ${LINE} | sed 's|[ \t]||g')" ]; then break; fi
@@ -354,6 +351,11 @@ else
       LINE_TO_READ=
     fi
     LINE_BEFORE_SAN_STACK=
+    SUMMARY_LINE="$(grep -Ei -m1 --binary-files=text "^SUMMARY:" ./log/master.err)"
+    if [ ! -z "${SUMMARY_LINE}" ]; then
+      echo -e "\n${SUMMARY_LINE}"
+    fi
+    SUMMARY_LINE=
   fi
   # Check if a SAN stack is present in the alternative (dbg vs opt) and add it to output as well
   ALT_BASEDIR=
@@ -366,20 +368,22 @@ else
     ALT_BUILD_TYPE=" (Optimized)"
   fi
   if [ ! -z "${ALT_BASEDIR}" -a "${ALT_BASEDIR}" != "${PWD}" ]; then
-    if [ "$(grep -A1 --binary-files=text "${TEXT}" ${ALT_BASEDIR}/log/master.err | tail -n1 | grep -o '^[ ]*#0' | sed 's|[^#0]||g')" == "#0" ]; then
-      LINE_BEFORE_SAN_STACK=$(grep -n "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o '^[0-9]\+' | head -n1)
+    # Check if a SAN stack is present and add it to output seperately
+    if [ "$(grep -A1 --binary-files=text "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o '^[ ]*#0' | sed 's|[^#0]||g' | head -n1)" == "#0" ]; then  # Validate there is a stack
+      LINE_BEFORE_SAN_STACK=$(grep -nEi --binary-files=text "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o --binary-files=text '^[0-9]\+' | head -n1)  # Get the last line before the stack starts (for the first issue; this is issue is to be filtered/supressed before the next one is handled)
       if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
-        echo '{noformat}'
+        echo '{noformat}'  # Close previous opt/dbg output from above
         cd ${ALT_BASEDIR}
         ALT_SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
         cd - >/dev/null
         ALT_SERVER_VERSION="$(${ALT_BASEDIR}/bin/mysqld --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
         echo ''
-        echo "{noformat:title=${ALT_SERVER_VERSION} ${ALT_SOURCE_CODE_REV}${ALT_BUILD_TYPE}}"
+        echo "{noformat:title=${SVR} ${ALT_SERVER_VERSION} ${ALT_SOURCE_CODE_REV}${ALT_BUILD_TYPE}}"
+        grep -Ei --binary-files=text "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep --binary-files=text -v "^[ \t]*$"
         ALT_SOURCE_CODE_REV=
         ALT_SERVER_VERSION=
         LINE_TO_READ=${LINE_BEFORE_SAN_STACK}
-        while :; do  # Read stack line by line and print
+        while :; do  # Read stack line by line and print (for alternative basedir), untill an open line is found (before 'SUMMARY:' there is always an open line)
           LINE_TO_READ=$[ ${LINE_TO_READ} + 1 ]
           LINE="$(head -n${LINE_TO_READ} ${ALT_BASEDIR}/log/master.err | tail -n1)"
           if [ -z "$(echo ${LINE} | sed 's|[ \t]||g')" ]; then break; fi
@@ -389,6 +393,15 @@ else
         LINE_TO_READ=
       fi
       LINE_BEFORE_SAN_STACK=
+      SUMMARY_LINE="$(grep -Ei -m1 --binary-files=text "^SUMMARY:" ${ALT_BASEDIR}/log/master.err )"
+      if [ ! -z "${SUMMARY_LINE}" ]; then
+        echo -e "\n${SUMMARY_LINE}"
+      fi
+      SUMMARY_LINE=
+      ALT_BASEDIR=
+      ALT_SERVER_VERSION=
+      ALT_SOURCE_CODE_REV=
+      ALT_BUILD_TYPE=
     fi
   fi
 fi

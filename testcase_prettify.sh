@@ -95,6 +95,7 @@ cat "${1}" | tr -d '`' | \
        s|table|TABLE|gi; \
        s|tables|TABLES|gi; \
        s|view|VIEW|gi; \
+       s|views|views|gi; \
        s|merge|MERGE|gi; \
        s|status|STATUS|gi; \
        s|using|USING|gi; \

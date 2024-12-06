@@ -10,6 +10,7 @@
 # Where 'function_name' is mentioned below, it refers to the most specific frame (i.e. #0 if available or #1 if #0 is blank) available in the stack
 # For 'nullptr-with-offset', 'nullptr-with-nonzero-offset' and similar issues, use 'pointer-overflow:function_name', for example see MDEV-35538
 # For 'out-of-bounds-index' and similar issues, use 'bounds:function_name', for example see MDEV-35548
+# For 'invalid-bool-load' and similar issues, use 'bool:function_name', for example see MDEV-35589
 # 'report_error_type=1' in UBSAN_OPTIONS may provide additional information on the error type
 # ----- Examples:
 # function:innobase_trx_init  - filter reports for function innobase_trx_init 
@@ -24,56 +25,60 @@
 
 # ----- Current bugs
 
+## MDEV-35590
+bool:mysql_make_view
+## MDEV-35589
+bool:extract_date_time
 ## MDEV-35557
 pointer-overflow:get_server_from_table_to_cache
+## MDEV-35556
+pointer-overflow:myrocks::Rdb_key_def::setup
+## MDEV-35555
+pointer-overflow:sel_trees_must_be_ored
+## MDEV-35554
+function:show_status_array
+## MDEV-35549
+pointer-overflow:my_string_repertoire_8bit
+## MDEV-35548
+bounds:json_get_path_start
+## MDEV-35545
+pointer-overflow:Gis_geometry_collection::init_from_opresult
+## MDEV-35541
+pointer-overflow:my_b_flush_io_cache
+## MDEV-35538
+pointer-overflow:check_rules
+pointer-overflow:init_weight_level
+## MDEV-35500
+function:my_auth.c
+## MDEV-33158
+function:innobase_trx_init
 ## MDEV-34512
 function:ha_maria::repair
 function:ha_maria::enable_indexes
 function:ha_myisam::enable_indexes
-## MDEV-33158
-function:innobase_trx_init
-## MDEV-35500
-function:my_auth.c
-## MDEV-35538
-pointer-overflow:check_rules
-pointer-overflow:init_weight_level
-## MDEV-35541
-pointer-overflow:my_b_flush_io_cache
-## MDEV-35545
-pointer-overflow:Gis_geometry_collection::init_from_opresult
-## MDEV-35548
-bounds:json_get_path_start
-## MDEV-35549
-pointer-overflow:my_string_repertoire_8bit
-## MDEV-35554
-function:show_status_array
-## MDEV-35555
-pointer-overflow:sel_trees_must_be_ored
-## MDEV-35556
-pointer-overflow:myrocks::Rdb_key_def::setup
 
 # ----- Fixed bugs
 
-## MDEV-35530 # Fixed by MDEV-34348
-#function:my_hash_key
-## MDEV-35531 # Fixed by MDEV-34348
-#function:init_key_cache_internal
-## MDEV-35532 # Fixed by MDEV-34348
-#function:tree_insert
-## MDEV-35533 (also filters the my_qsort2 stack) # Fixed by MDEV-34348
-#function:my_qsort
-## MDEV-35534 # Fixed by MDEV-34348
-#function:group_commit_lock::release
-## MDEV-35535 # Fixed by MDEV-34348
-#function:my_hash_free_elements
-## MDEV-35536 # Fixed by MDEV-34348
-#function:end_key_cache_internal
-## MDEV-35537 # Fixed by MDEV-34348
-#pointer-overflow:my_get_stack_bounds
-## MDEV-35544 # Fixed by MDEV-34348
-#function:delete_dynamic_with_callback
-## MDEV-35539 # Fixed by MDEV-34348
-#function:process_optimizer_costs
 ## MDEV-35540 # Fixed by MDEV-34348
 #function:plugin_do_initialize
 #function:plugin_deinitialize
+## MDEV-35539 # Fixed by MDEV-34348
+#function:process_optimizer_costs
+## MDEV-35544 # Fixed by MDEV-34348
+#function:delete_dynamic_with_callback
+## MDEV-35537 # Fixed by MDEV-34348
+#pointer-overflow:my_get_stack_bounds
+## MDEV-35536 # Fixed by MDEV-34348
+#function:end_key_cache_internal
+## MDEV-35535 # Fixed by MDEV-34348
+#function:my_hash_free_elements
+## MDEV-35534 # Fixed by MDEV-34348
+#function:group_commit_lock::release
+## MDEV-35533 (also filters the my_qsort2 stack) # Fixed by MDEV-34348
+#function:my_qsort
+## MDEV-35532 # Fixed by MDEV-34348
+#function:tree_insert
+## MDEV-35531 # Fixed by MDEV-34348
+#function:init_key_cache_internal
+## MDEV-35530 # Fixed by MDEV-34348
+#function:my_hash_key
