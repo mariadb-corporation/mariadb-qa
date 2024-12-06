@@ -11,6 +11,7 @@
 # For 'nullptr-with-offset', 'nullptr-with-nonzero-offset' and similar issues, use 'pointer-overflow:function_name', for example see MDEV-35538
 # For 'out-of-bounds-index' and similar issues, use 'bounds:function_name', for example see MDEV-35548
 # For 'invalid-bool-load' and similar issues, use 'bool:function_name', for example see MDEV-35589
+# For 'invalid-enum-load' and similar issues, use 'enum:function_name', for example see MDEV-35595
 # 'report_error_type=1' in UBSAN_OPTIONS may provide additional information on the error type
 # ----- Examples:
 # function:innobase_trx_init  - filter reports for function innobase_trx_init 
@@ -25,6 +26,10 @@
 
 # ----- Current bugs
 
+## MDEV-35595
+enum:Gis_polygon::init_from_wkb
+enum:wkb_get_uint
+enum:Gis_line_string::init_from_wkb
 ## MDEV-35590
 bool:mysql_make_view
 ## MDEV-35589

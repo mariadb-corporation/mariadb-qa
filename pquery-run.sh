@@ -2738,7 +2738,23 @@ EOF
         echoit "'MySQL server has gone away' detected >=200 times for this trial, and the pquery timeout was not reached; saving this trial for further analysis"
         savetrial
         TRIAL_SAVED=1
-      elif [ $(grep -im1 --binary-files=text "=ERROR:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+      fi
+    if [ ${TRIAL_SAVED} -eq 0 ]; then
+      # If there are *SAN bugs, delete any known ones from the top of the error log(s)
+      CUR_PWD_TMP="${PWD}"
+      cd "${RUNDIR}/${TRIAL}"
+      ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh
+      cd "${CUR_PWD_TMP}"
+      # Now check for remaining SAN issues, if any 
+      if [ $(grep -im1 --binary-files=text "=ERROR:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+        echoit "ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        savetrial
+        TRIAL_SAVED=1
+      elif [ $(grep -im1 --binary-files=text "runtime error:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+        echoit "UBSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        savetrial
+        TRIAL_SAVED=1
+      elif [ $(grep -im1 --binary-files=text "AddressSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
@@ -2748,10 +2764,6 @@ EOF
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "LSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
-        savetrial
-        TRIAL_SAVED=1
-      elif [ $(grep -im1 --binary-files=text "runtime error:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
-        echoit "UBSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then

@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of value X, which is not a valid value for type 'Geometry::wkbByteOrder'|sql/spatial.cc|wkb_get_uint|Gis_polygon::init_from_wkb|Gis_multi_polygon::init_from_wkb|Geometry::create_from_wkb ## MDEV-35595
+UBSAN|load of value X, which is not a valid value for type 'wkbByteOrder'|sql/spatial.cc|Gis_polygon::init_from_wkb|Gis_multi_polygon::init_from_wkb|Geometry::create_from_wkb|Item_func_geometry_from_wkb::val_str ## MDEV-35595
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/sql_view.cc|mysql_make_view|fill_schema_table_from_frm|get_all_tables|get_schema_tables_result           ## MDEV-35590
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_timefunc.cc|extract_date_time|Item_func_str_to_date::get_date_common|Func_handler_str_to_date_datetime_usec::get_date|Item_handled_func::get_date ## MDEV-35589
 #ASAN|133 byte(s) leaked in 4 allocation(s).                                                                                                                                    ## Likely MDEV-35575
@@ -14,6 +16,7 @@ UBSAN|applying non-zero offset X to null pointer|sql/opt_range.cc|sel_trees_must
 UBSAN|call to function show_binlog_space_total(THD*, st_mysql_show_var*, char*, system_status_var*, enum_var_type) through pointer to incorrect function type 'int (*)(THD *, st_mysql_show_var *, void *, system_status_var *, enum_var_type)'|sql/sql_show.cc|show_status_array|fill_status|get_schema_tables_result|JOIN::exec_inner ## MDEV-35554
 UBSAN|call to function show_cached_thread_count(THD*, st_mysql_show_var*, char*, enum_var_type) through pointer to incorrect function type 'int (*)(THD *, st_mysql_show_var *, void *, system_status_var *, enum_var_type)'|sql/sql_show.cc|show_status_array|fill_status|get_schema_tables_result|JOIN::exec_inner ## MDEV-35554
 UBSAN|call to function mysql_sys_var_longlong(THD*, int) through pointer to incorrect function type 'unsigned long long *(*)(THD *, int)'|storage/myisam/ha_myisam.cc|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert|copy_data_between_tables ## MDEV-34512
+UBSAN|call to function mysql_sys_var_longlong(THD*, int) through pointer to incorrect function type 'unsigned long long *(*)(THD *, int)'|storage/myisam/ha_myisam.cc|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|copy_data_between_tables|mysql_alter_table # MDEV-34512
 UBSAN|call to function mysql_sys_var_long(THD*, int) through pointer to incorrect function type 'unsigned long *(*)(THD *, int)'|storage/myisam/ha_myisam.cc|ha_myisam::repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|copy_data_between_tables ## MDEV-34512
 UBSAN|applying zero offset to null pointer|strings/ctype.c|my_string_repertoire_8bit|my_string_metadata_get|Item_basic_value::Metadata::Metadata|Item_string::Item_string      ## MDEV-35549
 UBSAN|index -X out of bounds for type 'json_path_step_t[32]' (aka 'struct st_json_path_step_t[32]')|strings/json_lib.c                                                         ## MDEV-35548
