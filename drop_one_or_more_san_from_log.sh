@@ -25,7 +25,7 @@ del_first_san_issue(){
   fi
 }
 
-del_known_san_issuse(){
+del_known_san_issues(){
   if [ -r "${1}" ]; then
     if grep --binary-files=text -qiE "${START_STRING_GREP}" "${1}"; then  # Avoid much work if no *SAN issue is present
       # Loop till a new/unknown (or no) issue/bug is found
@@ -42,6 +42,6 @@ if [ ! -z "${1}" ]; then
     del_first_san_issue "./log/slave.err"
   fi
 else
-  del_known_san_issuse "./log/master.err"
-  del_known_san_issuse "./log/slave.err"
+  del_known_san_issues "./log/master.err"
+  del_known_san_issues "./log/slave.err"
 fi
