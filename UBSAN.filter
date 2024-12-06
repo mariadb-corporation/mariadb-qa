@@ -48,7 +48,7 @@ function:show_status_array
 ## MDEV-35555
 pointer-overflow:sel_trees_must_be_ored
 ## MDEV-35556
-#pointer-overflow:myrocks::Rdb_key_def::setup
+pointer-overflow:myrocks::Rdb_key_def::setup
 
 # ----- Fixed bugs
 
