@@ -679,7 +679,7 @@ ctrl-c() {
   exit 2
 }
 
-savetrial() { # Only call this if you definitely want to save a trial
+savetrial() {  # Only call this if we definitely want to save a trial
   if [ "${TRIAL_SAVED}" == "1" ]; then
     echoit "Warning: savetrial() was called but TRIAL_SAVED was already 1. Ensure this trial has been actually saved as we don't attempt to save it again now"
     return 1
@@ -720,7 +720,7 @@ savetrial() { # Only call this if you definitely want to save a trial
     CUR_PWD_TMP=
   fi
   if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
-    # As we already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh
+    # As we are already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh
     if [ "$(echo "${TEXT}" | grep --binary-files=text -o 'no core.*empty output' | grep --binary-files=text -o 'no core' | head -n1)" == "no core" ]; then
       echo "Debug Assert: a *SAN text string was found in the error log at ${RUNDIR}/${TRIAL}/log/*.err yet TEXT ('${TEXT}') contains 'no core.*empty output'. Possibly master vs slave issue. Feel free to improve code in this area."  # TODO
     fi
@@ -842,17 +842,12 @@ handle_bugs() {
   echoit "Bug found (as per new_text_string.sh): ${TEXT}"
   TRIAL_TO_SAVE=1
   if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
-    # As we already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh 
-    # As such, ELIMINATE_KNOWN_BUGS filtering is also not required in this case
+    # As we are already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh 
+    # As such, ELIMINATE_KNOWN_BUGS filtering is also not required in this case, and should not be called  # TODO: ',and should not ...': Defensive or required?
+    TRIAL_TO_SAVE=1  # Defensive, leave
     if [ "$(echo "${TEXT}" | grep --binary-files=text -o 'no core.*empty output' | grep --binary-files=text -o 'no core' | head -n1)" == "no core" ]; then
       echo "Debug Assert: a *SAN text string was found in the error log at ${RUNDIR}/${TRIAL}/log/*.err yet TEXT ('${TEXT}') contains 'no core.*empty output'. Possibly master vs slave issue. Feel free to improve code in this area."  # TODO
     fi
-    NEWBUGS=$[ ${NEWBUGS} + 1 ]
-    if [ -r ${RUNDIR}/${TRIAL}/TOP_SAN_ISSUES_REMOVED ]; then
-      echoit "[${NEWBUGS}] *** NEW SAN BUG *** (as detected by dropping all known SAN bugs from the top of the error log, if any)"
-    else
-      echoit "[${NEWBUGS}] *** NEW SAN BUG *** (not found in ${SCRIPT_PWD}/known_bugs.strings, or found but marked as already fixed)"
-    fi  
   else
     if [ "${ELIMINATE_KNOWN_BUGS}" == "1" -a -r ${SCRIPT_PWD}/known_bugs.strings ]; then # "1": String check hack to ensure backwards compatibility with older pquery-run.conf files
       FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings)"
