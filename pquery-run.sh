@@ -19,6 +19,9 @@ ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|ki
 
 # ========================================= MAIN CODE
 
+# Disables history substitution and avoids  -bash: !: event not found  like errors
+set +H  
+
 # Discourage OOM killer on this process
 sudo echo -1000 > /proc/$$/oom_score_adj
 
@@ -782,6 +785,12 @@ check_cmd() {
 handle_bugs() {
   cd ${RUNDIR}/${TRIAL} || exit 1
   add_handy_scripts
+  # If there are *SAN bugs, delete any known ones from the top of the error log(s)
+  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+    echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
+    # We are already in ${RUNDIR}/${TRIAL} directory (ref above), so no need to change to it
+    ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as that will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
+  fi
   if [[ "${MDG}" -eq 1 ]]; then
     export GALERA_ERROR_LOGS=${RUNDIR}/${TRIAL}/node${j}/node${j}.err
     TEXT="$(${SCRIPT_PWD}/new_text_string.sh)" # Note this will auto-call san_text_string.sh or fallback_text_string.sh if required
@@ -807,22 +816,29 @@ handle_bugs() {
       fi
     fi
   fi
-  echoit "Bug found (as per new_text_string.sh): ${TEXT}"
   TRIAL_TO_SAVE=1
-  if [ "${ELIMINATE_KNOWN_BUGS}" == "1" -a -r ${SCRIPT_PWD}/known_bugs.strings ]; then # "1": String check hack to ensure backwards compatibility with older pquery-run.conf files
-    set +H                                                                          # Disables history substitution and avoids  -bash: !: event not found  like errors
-    FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings)"
-    if [[ "${FINDBUG}" =~ ^[[:space:]]*# ]]; then FINDBUG=""; fi  # Bugs marked as fixed need to be excluded
-    if [ ! -z "${FINDBUG}" ]; then  # do not call savetrial, known/filtered bug seen
-      echoit "This is aleady known and logged, non-fixed bug: ${FINDBUG}"
-      echoit "Deleting trial as ELIMINATE_KNOWN_BUGS=1, bug was already logged and is still open"
-      ALREADY_KNOWN=$[ ${ALREADY_KNOWN} + 1]
+  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+    if [ "$(echo "${TEXT}" | grep --binary-files=text -o 'no core.*empty output' | grep --binary-files=text -o 'no core' | head -n1)" == "no core" ]; then
       TRIAL_TO_SAVE=0
-    else
-      NEWBUGS=$[ ${NEWBUGS} + 1 ]
-      echoit "[${NEWBUGS}] *** NEW BUG *** (not found in ${SCRIPT_PWD}/known_bugs.strings, or found but marked as already fixed)"
+      echoit "Not saving trial as 'no core.*empty output' was seen in NTS output, likely due to known *SAN issue filtering"
     fi
-    FINDBUG=
+  fi
+  if [ "${TRIAL_TO_SAVE}" != "0" ]; then
+    echoit "Bug found (as per new_text_string.sh): ${TEXT}"
+    if [ "${ELIMINATE_KNOWN_BUGS}" == "1" -a -r ${SCRIPT_PWD}/known_bugs.strings ]; then # "1": String check hack to ensure backwards compatibility with older pquery-run.conf files
+      FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings)"
+      if [[ "${FINDBUG}" =~ ^[[:space:]]*# ]]; then FINDBUG=""; fi  # Bugs marked as fixed need to be excluded
+      if [ ! -z "${FINDBUG}" ]; then  # do not call savetrial, known/filtered bug seen
+        echoit "This is aleady known and logged, non-fixed bug: ${FINDBUG}"
+        echoit "Deleting trial as ELIMINATE_KNOWN_BUGS=1, bug was already logged and is still open"
+        ALREADY_KNOWN=$[ ${ALREADY_KNOWN} + 1]
+        TRIAL_TO_SAVE=0
+      else
+       NEWBUGS=$[ ${NEWBUGS} + 1 ]
+        echoit "[${NEWBUGS}] *** NEW BUG *** (not found in ${SCRIPT_PWD}/known_bugs.strings, or found but marked as already fixed)"
+      fi
+      FINDBUG=
+    fi
   fi
 }
 

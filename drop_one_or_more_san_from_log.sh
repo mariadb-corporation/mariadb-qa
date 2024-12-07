@@ -21,7 +21,9 @@ del_first_san_issue(){
     if [ -r ./MYBUG -o -r ./pquery.log -o -r ./MYEXTRA -o -r ./MYEXTRA -o -r ./ERROR_LOG_SCAN_ISSUE ]; then  # If present, update MYBUG to match the new top issue. If not present, and this is a pquery trial (as validated by any of the other checks), add it
       rm -f ./MYBUG
       ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
-      touch ./TOP_SAN_ISSUES_REMOVED
+      if [ "${2}" == "${AKB}" ]; then
+        touch ./TOP_SAN_ISSUES_REMOVED
+      fi
     fi
   fi
 }
@@ -31,7 +33,10 @@ del_known_san_issues(){
     if grep --binary-files=text -qiE "${START_STRING_GREP}" "${1}"; then  # Avoid much work if no *SAN issue is present
       # Loop till a new/unknown (or no) issue/bug is found
       while [ "$(${SCRIPT_PWD}/homedir_scripts/tt | grep -o '^ALREADY KNOWN BUG' | head -n1)" == "ALREADY KNOWN BUG" ]; do
-        del_first_san_issue "${1}"
+        if [ ! -r "${1}.pre_known_san_removal" ]; then
+          cp "${1}" "${1}.pre_known_san_removal"
+        fi
+        del_first_san_issue "${1}" "AKB"
       done
     fi
   fi

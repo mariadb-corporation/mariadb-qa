@@ -14,8 +14,8 @@ BASEDIR=/test/CLANG_UBASAN_MD251124-mariadb-10.5.28-linux-x86_64-opt
 #MDEV-34931-MDEV-31466-fix_MD170924-mariadb-11.7.0-linux-x86_64-dbg
 #MDEV-15696_MD140924-mariadb-11.7.0-linux-x86_64-opt
 #MDEV-31466_MD090924-mariadb-11.7.0-linux-x86_64-dbg
-RUNSOPT=3
-RUNSDBG=5
+RUNSOPT=1
+RUNSDBG=1
 #CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=1 24, and spider swap -> updated to PS=2
 #CONF=pquery-run-MD-optimizer.conf
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
@@ -66,9 +66,12 @@ if grep -qi '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*2' ${HOME}/mariadb-qa/${CONF}; t
   echo "*** IMPORTANT NOTE: PRE_SHUFFLE_SQL=2 is set. No custom-set SQL input file will be used! Make sure this was intended! ***"
   echo "*************************************************************************************************************************"
   sleep 2
-else
-  echo "PRE_SHUFFLE_SQL setting: $(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+') ($(grep '^INFILE=' ${HOME}/mariadb-qa/${CONF} | sed 's|=|: |' | tr -d '\n'))"
 fi
+COMPILER="GCC"
+if grep -qi '/cang ' ${BASEDIR}/BUILD_CMD_CMAKE; then
+  COMPILER="Clang"
+fi
+echo "# Compiler: ${COMPILER} | PRE_SHUFFLE_SQL setting: $(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+') | $(grep '^INFILE=' ${HOME}/mariadb-qa/${CONF} | sed 's|=|: |' | tr -d '\n')"
 if grep -qi '^PRELOAD=1' ${HOME}/mariadb-qa/${CONF}; then
   echo "PRELOAD is enabled: using sql preload file: $(grep -o '^PRELOAD_SQL[^#]\+' ${HOME}/mariadb-qa/${CONF} | sed 's|PRELOAD_SQL=||;s| *$||')"
 fi
@@ -76,7 +79,7 @@ if [[ "${BASEDIR}" != "/test"* ]]; then
   BASEDIRNEW="$(echo "/test/${BASEDIR}" | sed 's|/\./|/|g')"
   if [ -d "${BASEDIRNEW}" ]; then
     BASEDIR="${BASEDIRNEW}"
-    echo "Basedir updated to ${BASEDIR}"
+    echo "# Basedir updated to ${BASEDIR}"
   fi
   BASEDIRNEW=
 fi
@@ -86,8 +89,8 @@ if [ ! -d "${BASEDIR}" ]; then
   exit 1
 fi
 
-echo "Basedir: ${BASEDIR}"
-echo "Configuration in use: ${HOME}/mariadb-qa/${CONF}"
+echo "# Basedir: ${BASEDIR}"
+echo "# Configuration in use: ${HOME}/mariadb-qa/${CONF}"
 echo "This script should show further output in 10-20 seconds. If it does not, see:"
 echo "screen -d -r pr1  # for the cause"
 echo ""

@@ -3482,7 +3482,7 @@ process_outcome(){
         # If there are *SAN bugs, and if pquery-run.sh wrote a TOP_SAN_ISSUES_REMOVED for the trial, then delete any known ones from the top of the error log(s)
         if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${WORKD}/log/*.err; then
           if [ -r "$(echo "${INPUTFILE}" | sed 's|/default.node.tld.*|/TOP_SAN_ISSUES_REMOVED|')" ]; then
-            echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] TOP_SAN_ISSUES_REMOVED found: dropping any known *SAN bugs from the top of the error log, if any"
+            echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] TOP_SAN_ISSUES_REMOVED flag file found: dropping any known *SAN bugs from the top of the error log, if any"
             CUR_PWD_TMP="${PWD}"
             cd "${WORKDIR}"
             ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as it will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
