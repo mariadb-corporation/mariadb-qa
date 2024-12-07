@@ -719,6 +719,29 @@ savetrial() { # Only call this if you definitely want to save a trial
     cd "${CUR_PWD_TMP}"
     CUR_PWD_TMP=
   fi
+  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+    # As we already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh
+    if [ "$(echo "${TEXT}" | grep --binary-files=text -o 'no core.*empty output' | grep --binary-files=text -o 'no core' | head -n1)" == "no core" ]; then
+      echo "Debug Assert: a *SAN text string was found in the error log at ${RUNDIR}/${TRIAL}/log/*.err yet TEXT ('${TEXT}') contains 'no core.*empty output'. Possibly master vs slave issue. Feel free to improve code in this area."  # TODO
+    fi
+    cd ${RUNDIR}/${TRIAL} || exit 1
+    # TODO: Add Galera+SAN configuration (this code was copied from elsewhere but seems to require updating for ${j}?)
+    #if [[ "${MDG}" -eq 1 ]]; then
+    #  export GALERA_ERROR_LOGS=${RUNDIR}/${TRIAL}/node${j}/node${j}.err
+    #  TEXT="$(${SCRIPT_PWD}/new_text_string.sh)" # Note this will auto-call san_text_string.sh or fallback_text_string.sh if required
+    #  echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node${j}/MYBUG
+    #  export GALERA_ERROR_LOGS=""
+    #else
+      echoit "SAN Bug found: $(${SCRIPT_PWD}/new_text_string.sh)"  
+    #fi
+    cd - >/dev/null || exit 1
+    NEWBUGS=$[ ${NEWBUGS} + 1 ]
+    if [ -r ${RUNDIR}/${TRIAL}/TOP_SAN_ISSUES_REMOVED ]; then
+      echoit "[${NEWBUGS}] *** NEW SAN BUG *** (as detected by dropping all known SAN bugs from the top of the error log, if any)"
+    else
+      echoit "[${NEWBUGS}] *** NEW SAN BUG *** (not found in ${SCRIPT_PWD}/known_bugs.strings, or found but marked as already fixed)"
+    fi
+  fi
   echoit "Saving Trial: Moving rundir from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
   mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1 | tee -a /${WORKDIR}/pquery-run.log
   chmod -R +rX ${WORKDIR}/${TRIAL}/
@@ -816,25 +839,31 @@ handle_bugs() {
       fi
     fi
   fi
+  echoit "Bug found (as per new_text_string.sh): ${TEXT}"
   TRIAL_TO_SAVE=1
   if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+    # As we already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh 
+    # As such, ELIMINATE_KNOWN_BUGS filtering is also not required in this case
     if [ "$(echo "${TEXT}" | grep --binary-files=text -o 'no core.*empty output' | grep --binary-files=text -o 'no core' | head -n1)" == "no core" ]; then
-      TRIAL_TO_SAVE=0
-      echoit "Not saving trial as 'no core.*empty output' was seen in NTS output, likely due to known *SAN issue filtering"
+      echo "Debug Assert: a *SAN text string was found in the error log at ${RUNDIR}/${TRIAL}/log/*.err yet TEXT ('${TEXT}') contains 'no core.*empty output'. Possibly master vs slave issue. Feel free to improve code in this area."  # TODO
     fi
-  fi
-  if [ "${TRIAL_TO_SAVE}" != "0" ]; then
-    echoit "Bug found (as per new_text_string.sh): ${TEXT}"
+    NEWBUGS=$[ ${NEWBUGS} + 1 ]
+    if [ -r ${RUNDIR}/${TRIAL}/TOP_SAN_ISSUES_REMOVED ]; then
+      echoit "[${NEWBUGS}] *** NEW SAN BUG *** (as detected by dropping all known SAN bugs from the top of the error log, if any)"
+    else
+      echoit "[${NEWBUGS}] *** NEW SAN BUG *** (not found in ${SCRIPT_PWD}/known_bugs.strings, or found but marked as already fixed)"
+    fi  
+  else
     if [ "${ELIMINATE_KNOWN_BUGS}" == "1" -a -r ${SCRIPT_PWD}/known_bugs.strings ]; then # "1": String check hack to ensure backwards compatibility with older pquery-run.conf files
       FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings)"
       if [[ "${FINDBUG}" =~ ^[[:space:]]*# ]]; then FINDBUG=""; fi  # Bugs marked as fixed need to be excluded
       if [ ! -z "${FINDBUG}" ]; then  # do not call savetrial, known/filtered bug seen
-        echoit "This is aleady known and logged, non-fixed bug: ${FINDBUG}"
+        echoit "This is an already known and logged, non-fixed bug: ${FINDBUG}"
         echoit "Deleting trial as ELIMINATE_KNOWN_BUGS=1, bug was already logged and is still open"
         ALREADY_KNOWN=$[ ${ALREADY_KNOWN} + 1]
         TRIAL_TO_SAVE=0
       else
-       NEWBUGS=$[ ${NEWBUGS} + 1 ]
+        NEWBUGS=$[ ${NEWBUGS} + 1 ]
         echoit "[${NEWBUGS}] *** NEW BUG *** (not found in ${SCRIPT_PWD}/known_bugs.strings, or found but marked as already fixed)"
       fi
       FINDBUG=
