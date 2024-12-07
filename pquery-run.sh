@@ -707,6 +707,15 @@ savetrial() { # Only call this if you definitely want to save a trial
     fi
     PQUERY_DEFAULT_FILE=
   fi
+  # If there are *SAN bugs, delete any known ones from the top of the error log(s)
+  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+    echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
+    CUR_PWD_TMP="${PWD}"
+    cd "${RUNDIR}/${TRIAL}"
+    ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as that will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
+    cd "${CUR_PWD_TMP}"
+    CUR_PWD_TMP=
+  fi
   echoit "Saving Trial: Moving rundir from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
   mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1 | tee -a /${WORKDIR}/pquery-run.log
   chmod -R +rX ${WORKDIR}/${TRIAL}/
@@ -2738,15 +2747,7 @@ EOF
         echoit "'MySQL server has gone away' detected >=200 times for this trial, and the pquery timeout was not reached; saving this trial for further analysis"
         savetrial
         TRIAL_SAVED=1
-      fi
-    if [ ${TRIAL_SAVED} -eq 0 ]; then
-      # If there are *SAN bugs, delete any known ones from the top of the error log(s)
-      CUR_PWD_TMP="${PWD}"
-      cd "${RUNDIR}/${TRIAL}"
-      ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh
-      cd "${CUR_PWD_TMP}"
-      # Now check for remaining SAN issues, if any 
-      if [ $(grep -im1 --binary-files=text "=ERROR:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+      elif [ $(grep -im1 --binary-files=text "=ERROR:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1

@@ -21,6 +21,7 @@ del_first_san_issue(){
     if [ -r ./MYBUG -o -r ./pquery.log -o -r ./MYEXTRA -o -r ./MYEXTRA -o -r ./ERROR_LOG_SCAN_ISSUE ]; then  # If present, update MYBUG to match the new top issue. If not present, and this is a pquery trial (as validated by any of the other checks), add it
       rm -f ./MYBUG
       ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+      touch ./TOP_SAN_ISSUES_REMOVED
     fi
   fi
 }
