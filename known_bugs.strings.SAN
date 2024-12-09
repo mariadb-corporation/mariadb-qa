@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-buffer-overflow|storage/myisam/sp_key.c|sp_get_linestring_mbr|sp_get_geometry_mbr|sp_mbr_from_wkb|sp_make_key                                                        ## MDEV-35591
+ASAN|heap-buffer-overflow|storage/innobase/gis/gis0geo.cc|rtree_get_linestring_mbr|rtree_get_geometry_mbr|rtree_mbr_from_wkb|row_ins_spatial_index_entry_set_mbr_field         ## MDEV-35591
 UBSAN|load of value X, which is not a valid value for type 'Geometry::wkbByteOrder'|sql/spatial.cc|wkb_get_uint|Gis_polygon::init_from_wkb|Gis_multi_polygon::init_from_wkb|Geometry::create_from_wkb ## MDEV-35595
 UBSAN|load of value X, which is not a valid value for type 'wkbByteOrder'|sql/spatial.cc|Gis_polygon::init_from_wkb|Gis_multi_polygon::init_from_wkb|Geometry::create_from_wkb|Item_func_geometry_from_wkb::val_str ## MDEV-35595
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/sql_view.cc|mysql_make_view|fill_schema_table_from_frm|get_all_tables|get_schema_tables_result           ## MDEV-35590
