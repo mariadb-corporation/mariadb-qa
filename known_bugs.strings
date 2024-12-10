@@ -218,6 +218,12 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|filter_query_type|log_statement_ex|log_statement|auditing                                                                                                              ## MDEV-35604
+!item->null_value|SIGABRT|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send|Protocol::send_result_set_row                                           ## MDEV-35603
+type_handler()->result_type() == value.type_handler()->result_type()|SIGABRT|Item_param::get_date|Item::get_date_result|Item::val_datetime_packed_result|Item_cache_temporal::cache_value ## MDEV-35596
+SIGSEGV|get_field|get_field|get_server_from_table_to_cache|servers_load                                                                                                        ## MDEV-35557
+SIGSEGV|Field::get_thd|get_field|get_server_from_table_to_cache|servers_load                                                                                                   ## MDEV-35557
+SIGSEGV|get_field|get_server_from_table_to_cache|servers_load|servers_reload                                                                                                   ## MDEV-35557
 SIGSEGV|get_server_from_table_to_cache|servers_load|servers_reload|reload_acl_and_cache                                                                                        ## MDEV-35557
 SIGSEGV|__strlen_avx2|get_server_from_table_to_cache|servers_load|servers_reload                                                                                               ## MDEV-35557
 !(table->key_info[active_index].flags & 262144U)|SIGABRT|handler::ha_index_init|join_read_always_key|sub_select|do_select                                                      ## MDEV-35399
