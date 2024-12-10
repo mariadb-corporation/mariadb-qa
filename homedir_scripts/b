@@ -66,7 +66,7 @@ fi
 #==180506==Process memory map follows:
 #...
 #==180506==End of process memory map.
-if [[ "${PWD}" == *"SAN"* && "$(sudo sysctl -n vm.mmap_rnd_bits)" != "28" ]]; then sudo sysctl vm.mmap_rnd_bits=28; 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856
+if [[ "${PWD}" == *"SAN"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856
 
 export TEXT=
 MYEXTRA_OPT=

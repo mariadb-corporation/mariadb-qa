@@ -42,7 +42,16 @@ if [ -z "${NR_OF_NODES}" ] ; then
   NR_OF_NODES=3
 fi
 
-if [[ "${PWD}" == *"SAN"* && "$(sudo sysctl -n vm.mmap_rnd_bits)" != "28" ]]; then sudo sysctl vm.mmap_rnd_bits=28; 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856 (also ref the same line in 'start' and 'all', both created below)
+# Workaround, ref https://github.com/google/sanitizers/issues/856
+# This will show even for simple version detection, causing it to fail if the vm.mmap_rnd_bits workaround is not set
+#==180506==Shadow memory range interleaves with an existing memory mapping. ASan cannot proceed correctly. ABORTING.
+#==180506==ASan shadow was supposed to be located in the [0x00007fff7000-0x10007fff7fff] range.
+#==180506==This might be related to ELF_ET_DYN_BASE change in Linux 4.12.
+#==180506==See https://github.com/google/sanitizers/issues/856 for possible workarounds.
+#==180506==Process memory map follows:
+#...
+#==180506==End of process memory map.
+sudo sysctl vm.mmap_rnd_bits=28  # Workaround, ref https://github.com/google/sanitizers/issues/856
 
 PORT=$NEWPORT
 SOCKET=${PWD}/socket.sock
@@ -503,7 +512,7 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>start
   echo $JE7 >>start
 fi
-echo "if [[ \"${PWD}\" == *\"SAN\"* && \"\$(sudo sysctl -n vm.mmap_rnd_bits)\" != \"28\" ]]; then sudo sysctl vm.mmap_rnd_bits=28; 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856" >> start
+echo "if [[ \"${PWD}\" == *\"SAN\"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856 (also ref the same line in 'start' and 'all', both created below)"  >> start
 echo "source ${PWD}/init_empty_port.sh" >>start
 echo "init_empty_port" >>start
 echo "PORT=\$NEWPORT" >>start
@@ -1208,7 +1217,7 @@ echo './all --sql_mode=' >sqlmode
 echo './all --log_bin' >binlog
 echo 'MYEXTRA_OPT="$*"' >all
 add_san_options all
-echo "if [[ \"${PWD}\" == *\"SAN\"* && \"\$(sudo sysctl -n vm.mmap_rnd_bits)\" != \"28\" ]]; then sudo sysctl vm.mmap_rnd_bits=28; 2>/dev/null; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856" >> all
+echo "if [[ \"${PWD}\" == *\"SAN\"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856" >> all
 echo "./kill >/dev/null 2>&1;./kill_replication >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT};./cl" >>all
 ln -s ./all ./a 2>/dev/null
 echo 'MYEXTRA_OPT="$*"' >all_stbe
