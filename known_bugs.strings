@@ -241,6 +241,7 @@ SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|spider_db_mbase
 str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|spider_db_append_xid_str|spider_db_mbase::xa_end|spider_db_xa_end                              ## MDEV-35426
 key_buff_elements && cur_key_idx < key_buff_elements|SIGABRT|Ordered_key::add_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec       ## MDEV-24986
 key->algorithm <= HA_KEY_ALG_BTREE|SIGABRT|innobase_create_index_def|ha_innobase_inplace_ctx::create_key_defs|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table ## MDEV-35419
+!srv_read_only_mode|SIGABRT|buf_flush_wait_flushed|log_make_checkpoint|sst_disable_innodb_writes|innodb_disable_internal_writes                                                ## MDEV-35417
 !m_modifications || !recv_no_log_write|SIGABRT|mtr_t::commit|dict_hdr_get_new_id|dict_build_index_def|row_create_index_for_mysql                                               ## MDEV-35417
 !m_modifications || !recv_no_log_write|SIGABRT|mtr_t::commit|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert                                 ## MDEV-35417
 rpl_semi_sync_master_off_times > thd->expected_semi_sync_offs|SIGABRT|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans|THD::commit_whole_transaction_and_close_tables ## MDEV-35397 

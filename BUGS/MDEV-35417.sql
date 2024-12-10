@@ -7,3 +7,6 @@ INSERT INTO t VALUES (1) ;
 
 FLUSH TABLES WITH READ LOCK AND DISABLE CHECKPOINT;
 CREATE TEMPORARY TABLE t(a int) ENGINE=INNODB;
+
+# mysqld options required for replay:  --innodb-read-only=1
+FLUSH TABLES WITH READ LOCK AND DISABLE checkpoint;
