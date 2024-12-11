@@ -220,6 +220,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|filter_query_type|log_statement_ex|log_statement|auditing                                                                                                              ## MDEV-35604
 !item->null_value|SIGABRT|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send|Protocol::send_result_set_row                                           ## MDEV-35603
+type_handler()->result_type() == value.type_handler()->result_type()|SIGABRT|Item_param::get_date|Temporal_with_date::make_from_item|Temporal_with_date::Temporal_with_date|Datetime::Datetime ## MDEV-35596
 type_handler()->result_type() == value.type_handler()->result_type()|SIGABRT|Item_param::get_date|Item::get_date_result|Item::val_datetime_packed_result|Item_cache_temporal::cache_value ## MDEV-35596
 SIGSEGV|get_field|get_field|get_server_from_table_to_cache|servers_load                                                                                                        ## MDEV-35557
 SIGSEGV|Field::get_thd|get_field|get_server_from_table_to_cache|servers_load                                                                                                   ## MDEV-35557
