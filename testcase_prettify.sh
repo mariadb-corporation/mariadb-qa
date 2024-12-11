@@ -357,6 +357,7 @@ cat "${1}" | tr -d '`' | \
        s|use_frm|USE_FRM|gi; \
        s|from_base64[ ]*(|FROM_BASE64(|gi; \
        s|date_add|DATE_ADD|gi; \
+       s|date_format|DATE_FORMAT|gi; \
        s|day_second|DAY_SECOND|gi; \
        s|day_minute|DAY_MINUTE|gi; \
        s|day_hour|DAY_HOUR|gi; \

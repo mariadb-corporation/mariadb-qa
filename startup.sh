@@ -512,7 +512,7 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>start
   echo $JE7 >>start
 fi
-echo "if [[ \"${PWD}\" == *\"SAN\"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856 (also ref the same line in 'start' and 'all', both created below)"  >> start
+echo "if [[ \"${PWD}\" == *\"SAN\"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856"  >> start
 echo "source ${PWD}/init_empty_port.sh" >>start
 echo "init_empty_port" >>start
 echo "PORT=\$NEWPORT" >>start

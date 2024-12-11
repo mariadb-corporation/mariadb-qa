@@ -45,24 +45,32 @@ cleanup(){
     exit 1
   fi
 
+  LINE_CNT=0
   while read line; do
+    LINE_CNT=$[ ${LINE_CNT} + 1 ]
     STRING="$(echo "$line" | sed 's|[ \t]*##.*$||' |  sed 's|"|\\\"|g')"  # For more information on the " to \" sed, ref pquery-prep-red.sh (search for:  The sed transforms "  ), and pquery-results.sh (search for:  sed reverts the insertion of  ). Note there is one backslash less in this one
     if [ -z "${STRING}" ]; then continue; fi
-    # echo "${STRING}..."  # For debugging
-    # sleep 1  # For debugging
+    if [[ "${STRING}" == "#"* ]]; then continue; fi
+    # Next 4 lines: for debugging (you can use the ge/le line selector, and match against the main known bugs list (!= SAN) or the SAN bug list (== SAN, or instead leave off the if/fi and use the script utility, then search for the reducer<nr>.sh in the typescript). Also see next debugging section just below (often best used together)
+    #if [[ ${LINE_CNT} -ge 20 && ${LINE_CNT} -le 22 && "${STRINGS_FILE}" == *"SAN"* ]]; then
+    #  echo "[${LINE_CNT}] \"${STRING}\""
+    #  sleep 1  # For debugging
+    #fi
     if [ ! -z "$(echo "$STRING" | sed 's|^[ \t]*$||' | grep -v '^[ \t]*#')" ]; then
       if [ $(ls reducer[0-9]* 2>/dev/null | wc -l) -gt 0 ]; then
-        # echo $STRING  # For debugging
-        # sleep 1  # For debugging
+        # Next 5 lines: for debugging (you can use the ge/le line selector, and match against the main known bugs list (!= SAN) or the SAN bug list (== SAN, or instead leave off the if/fi and use the script utility, then search for the reducer<nr>.sh in the typescript). Also see debugging section just above
+        #if [[ ${LINE_CNT} -ge 20 && ${LINE_CNT} -le 22 && "${STRINGS_FILE}" == *"SAN"* ]]; then
+        #  echo "[grep][${LINE_CNT}] grep -Fli --binary-files=text \"${STRING}\" reducer[0-9]*"
+  	    #  grep -Fli --binary-files=text "${STRING}" reducer[0-9]*
+        #  sleep 1
+        #fi
         if [[ ${MDG} -eq 1 || ${GRP_RPL} -eq 1 ]]; then
-  	      # grep -Fli "${STRING}" reducer[0-9]*  # For debugging (use script utility, then search for the reducer<nr>.sh in the typescript)
           if [ "${1}" == "1" ]; then
             grep -Fli --binary-files=text "${STRING}" reducer[0-9]* | awk -F'.'  '{print substr($1,8)}' | xargs -I{} $SCRIPT_PWD/pquery-del-trial.sh {} 1
           else
             grep -Fli --binary-files=text "${STRING}" reducer[0-9]* | awk -F'.'  '{print substr($1,8)}' | xargs -I{} $SCRIPT_PWD/pquery-del-trial.sh {}
           fi
         else
-  	      # grep -Fli "${STRING}" reducer[0-9]*  # For debugging (use script utility, then search for the reducer<nr>.sh in the typescript)
           if [ "${1}" == "1" ]; then  # Also wipe trials which pquery-del-trial.sh would normal prevent from being deleted by the fact that they have error messages within them. This is used for when clean_all calls pquery-clean-all.sh which in turn calls this script. The "1" is passed in all cases, and here set to be the second option to pquery-del-trial thereby enabling pquery-del-trial to delete all trials. Note this does not delete all trials which have error log items in it, it only enables deleting trials which would normally be deleted by ./clean_all (i.e. they have a matched crash UniqueID in known_bugs.strings) and happen to have an error log string as well.
             grep -Fli --binary-files=text "${STRING}" reducer[0-9]* | sed 's/[^0-9]//g' | xargs -I{} ${SCRIPT_PWD}/pquery-del-trial.sh {} 1
           else
