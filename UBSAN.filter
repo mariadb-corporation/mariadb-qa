@@ -25,7 +25,11 @@
 #   Also see https://github.com/llvm/llvm-project/issues/118150
 
 # ----- Current bugs
-
+## MDEV-35623
+function:spider_param_conn_recycle_mode
+function:spider_param_conn_recycle_strict
+function:spider_param_internal_xa_snapshot
+function:spider_param_block_size
 ## MDEV-35595
 enum:Gis_polygon::init_from_wkb
 enum:wkb_get_uint

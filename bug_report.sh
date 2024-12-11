@@ -410,9 +410,10 @@ if [ ${SAN_MODE} -eq 1 ]; then
   echo '{noformat}'
   if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh san | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
     echo "Compiled with a recent version of Clang (I used Clang $(clang --version | head -n1 | grep -o '[\.0-9][\.0-9][\.0-9]\+')) with LLVM 18:"
-    echo '# llvm-17-linker-tools installs /usr/lib/llvm-17/lib/LLVMgold.so, which is needed for compilation, and LLVMgold.so is no longer included in LLVM 18'
-    echo 'sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev llvm-17-linker-tools'
-    echo 'sudo ln -s /usr/lib/llvm-17/lib/LLVMgold.so /usr/lib/llvm-18/lib/LLVMgold.so'
+    echo '     # Note: llvm-17-linker-tools installs /usr/lib/llvm-17/lib/LLVMgold.so, which is needed for compilation, and LLVMgold.so is no longer included in LLVM 18'
+    echo '     sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev llvm-17-linker-tools'
+    echo '     sudo ln -s /usr/lib/llvm-17/lib/LLVMgold.so /usr/lib/llvm-18/lib/LLVMgold.so'
+    echo "Compiled with: '-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++' and:"
   else
     echo "Compiled with a recent version of GCC (I used GCC $(gcc --version | head -n1 | sed 's|.* ||')) and:"
   fi
@@ -424,16 +425,16 @@ if [ ${SAN_MODE} -eq 1 ]; then
     echo '    export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1:exitcode=0'
   elif grep -Eiqm1 --binary-files=text 'runtime error:|=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # UBSAN/ASAN/LSAN(ASAN) (best not to split ASAN vs UBSAN build here, and to just leave both enabled, as these features, when both are enabled, may affect the server differently then only one is enabled: we thus maximize bug reproducibility through leaving the same options enabled as where there during testing)  # elif; avoids double printing
     echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON'
-    if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # ASAN
+    if grep -Eiqm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
+      echo 'Set before execution:'
+      echo "    export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1   # And you may also want to supress UBSAN startup issues using 'suppressions=UBSAN.filter'. For an example of UBSAN.filter, which includes current startup issues see: https://github.com/mariadb-corporation/mariadb-qa/blob/master/UBSAN.filter"
+    elif grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # ASAN
       # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
       echo 'Set before execution:'
       echo "    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
       # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
       # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
       #echo "    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
-    elif grep -Eiqm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
-      echo 'Set before execution:'
-      echo "    export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1"
     fi
   elif grep -Eiqm1 --binary-files=text 'MemorySanitizer:' ../*SAN*/log/master.err; then  # MSAN
     echo '    -DWITH_MSAN=ON -DWITH_UBSAN=ON  # Note: WITH_MSAN=ON is auto-ignored when not using clang (MDEV-20377)'
