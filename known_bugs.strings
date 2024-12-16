@@ -218,6 +218,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+commit_trx|SIGABRT|innobase_commit|commit_one_phase_2|ha_commit_trans|trans_commit_stmt                                                                                        ## MDEV-35653
 SIGSEGV|rtr_check_discard_page|btr_compress|btr_cur_compress_if_useful|btr_cur_compress_if_useful                                                                              ## MDEV-35420
 SIGSEGV|rtr_check_discard_page|btr_compress|btr_cur_compress_if_useful|btr_cur_pessimistic_delete                                                                              ## MDEV-35420
 SIGSEGV|spider_db_print_item_type|spider_mbase_handler::append_group_by|spider_mbase_handler::append_group_by|spider_make_query                                                ## MDEV-35623
