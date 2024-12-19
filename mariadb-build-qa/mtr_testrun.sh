@@ -84,4 +84,8 @@ rm -f ${TEMP}
 echo '-------------- mtr_testrun.sh Results (core files, if any) --------------'
 find . | grep -vE 'MDEV' | grep -E '/mysql-test/|/mariadb-test/' | grep '/var/log/.*/data/' | grep "${TEST}" | grep 'core' | sort -u
 echo '-------------- mtr_testrun.sh Results (error log: add your search string and run query) --------------'
-echo "SEARCH_STRING='your_search_string'; ./gendirs.sh | xargs -I{} echo \"grep --binary-files=text -H '\${SEARCH_STRING}' /test/{}/m*test/var/log/*err 2>/dev/null\" | tr '\\n' '\\0' | xargs -0 -I{} bash -c \"{}\""
+echo "SEARCH_STRING='your_search_string'; ./gendirs.sh ${3} | xargs -I{} echo \"grep --binary-files=text -H '\${SEARCH_STRING}' /test/{}/m*test/var/log/*err 2>/dev/null\" | tr '\\n' '\\0' | xargs -0 -I{} bash -c \"{}\""
+if [ "${3}" == "SAN" ]; then
+  echo '-------------- mtr_testrun.sh Results example for various SAN errors --------------'
+  echo "SEARCH_STRING='SUMMARY: '; ./gendirs.sh ${3} | xargs -I{} echo \"grep --binary-files=text -H '\${SEARCH_STRING}' /test/{}/m*test/var/log/*err 2>/dev/null\" | tr '\\n' '\\0' | xargs -0 -I{} bash -c \"{}\""
+fi

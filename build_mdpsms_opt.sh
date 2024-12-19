@@ -8,7 +8,7 @@ USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re
 BOOST_LOCATION=/tmp/boost_043581/
 USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
 CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
-USE_CLANG=0             # 0 or 1 # Use the clang compiler instead of gcc
+USE_CLANG=1             # 0 or 1 # Use the clang compiler instead of gcc
 USE_SAN=0               # 0 or 1 # Use ASAN, MSAN, UBSAN  # DO NOT SET TO 1, USE build_mdpsms_dbg_san.sh instead!
 PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.

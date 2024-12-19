@@ -950,8 +950,18 @@ if [ ${QC} -eq 0 ]; then
           fi
         fi
         if [ ! -r "${BIN}" ]; then
-          echo "Assert! mariadbd/mysqld binary '${BIN}' could not be read"
-          exit 1
+          ALT_DATA_BIN="$(echo "${BIN}" | sed 's|^/test|/data/VARIOUS_BUILDS|')"
+          if [ -r "${ALT_DATA_BIN}" ]; then
+            BIN=${ALT_DATA_BIN}
+          else
+            echo "Assert! mariadbd/mysqld binary '${BIN}' could not be read. The script also checked: '${ALT_DATA_BIN}' which was equally unavailable"
+            CHECK_TARS_DIR_GZ="$(echo "${BIN}" | sed 's|^/test/|/data/TARS/|;s|/bin/.*|.tar.gz|')"
+            if [ -r "${CHECK_TARS_DIR_GZ}" ]; then
+              echo "Note: A ${CHECK_TARS_DIR_GZ} tarball was found; you may like to decompress that file (and rename the resulting extracted directory to match the directory name in /test), and retry"
+            fi
+            exit 1
+          fi
+          ALT_DATA_BIN=
         fi
         BASE="$(echo ${BIN} | sed 's|/bin/mariadbd||;s|/bin/mysqld||')"
         if [ ! -d "${BASE}" ]; then

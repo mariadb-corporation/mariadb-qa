@@ -23,8 +23,18 @@
 # * Future improvement idea: split opt vs dbg filters
 # * Note that function filters will filter any stack that contains the terms specified
 #   Also see https://github.com/llvm/llvm-project/issues/118150
+# ----- TODO/WIP:
+# Issues at startup should be kept in this file and marked with '[Startup]', others should be removed, as they are covered by UniqueID combined with new multi-SAN issue handling already. Partial '[Startup]' marking complete
 
 # ----- Current bugs
+## MDEV-35688 [Startup]
+pointer-overflow:my_casedn_utf8mb3
+## MDEV-35687 [Startup]
+function:maria_open
+function:mi_open
+function:_ma_open_datafile
+function:mi_open_datafile
+function:thr_multi_lock
 ## MDEV-35623
 function:spider_param_conn_recycle_mode
 function:spider_param_conn_recycle_strict
@@ -61,10 +71,11 @@ pointer-overflow:init_weight_level
 function:my_auth.c
 ## MDEV-33158
 function:innobase_trx_init
-## MDEV-34512
+## MDEV-34512 [Startup]
+function:ha_myisam::repair
 function:ha_maria::repair
-function:ha_maria::enable_indexes
 function:ha_myisam::enable_indexes
+function:ha_maria::enable_indexes
 
 # ----- Fixed bugs
 
