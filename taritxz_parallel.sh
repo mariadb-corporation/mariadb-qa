@@ -1,1 +1,1 @@
-tar -hcf - . | xz --verbose --stdout --threads 0 -2 > myarchive.tar.xz
+tar -c -I 'xz --verbose -T0' -f myarchive.tar.xz .
