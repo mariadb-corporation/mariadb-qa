@@ -31,12 +31,17 @@ del_first_san_issue(){
 del_known_san_issues(){
   if [ -r "${1}" ]; then
     if grep --binary-files=text -qiE "${START_STRING_GREP}" "${1}"; then  # Avoid much work if no *SAN issue is present
-      # Loop till a new/unknown (or no) issue/bug is found
+      # Loop till a new/unknown (or no) issue/bug is found, with a maximum of 70 loops
+      LOOPCNT=1
       while [ "$(${SCRIPT_PWD}/homedir_scripts/tt | grep -o '^ALREADY KNOWN BUG' | head -n1)" == "ALREADY KNOWN BUG" ]; do
         if [ ! -r "${1}.pre_known_san_removal" ]; then
           cp "${1}" "${1}.pre_known_san_removal"
         fi
         del_first_san_issue "${1}" "AKB"
+        LOOPCNT=$[ ${LOOPCNT} + 1 ]
+        if [ "${LOOPCNT}" -gt 70 ]; then
+          break
+        fi
       done
     fi
   fi

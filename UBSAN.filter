@@ -24,7 +24,7 @@
 # * Note that function filters will filter any stack that contains the terms specified
 #   Also see https://github.com/llvm/llvm-project/issues/118150
 # ----- TODO/WIP:
-# Issues at startup should be kept in this file and marked with '[Startup]', others should be removed, as they are covered by UniqueID combined with new multi-SAN issue handling already. Partial '[Startup]' marking complete
+# Issues at startup should be kept in this file and marked with '[Startup]', others should be removed, as they are covered by UniqueID combined with new multi-SAN issue handling already. Partial '[Startup]' marking complete. OTOH, high frequency issues may be opportune to filter out? Todo: review multi-SAN. Ftm, please mark any issues known not to be on startup with '(not-startup)'.
 
 # ----- Current bugs
 ## MDEV-35688 [Startup]
@@ -35,11 +35,13 @@ function:mi_open
 function:_ma_open_datafile
 function:mi_open_datafile
 function:thr_multi_lock
-## MDEV-35623
+## MDEV-35623 [Startup]
 function:spider_param_conn_recycle_mode
 function:spider_param_conn_recycle_strict
 function:spider_param_internal_xa_snapshot
 function:spider_param_block_size
+## MDEV-35698 (not-startup)
+function:spider_param_force_commit
 ## MDEV-35595
 enum:Gis_polygon::init_from_wkb
 enum:wkb_get_uint
@@ -76,6 +78,7 @@ function:ha_myisam::repair
 function:ha_maria::repair
 function:ha_myisam::enable_indexes
 function:ha_maria::enable_indexes
+function:ha_myisam::optimize
 
 # ----- Fixed bugs
 

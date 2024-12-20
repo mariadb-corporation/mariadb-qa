@@ -1,0 +1,5 @@
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (SOCKET '../socket.sock',DATABASE 'a',user 'Spider',PASSWORD '');
+CREATE TABLE t1 (c CHAR) ENGINE=Spider COMMENT='WRAPPER "mysql",srv "srv",TABLE "t"';
+XA START 'xa1';
+SELECT 1 FROM t1;
