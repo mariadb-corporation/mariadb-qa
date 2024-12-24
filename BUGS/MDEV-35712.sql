@@ -1,0 +1,1 @@
+SET SESSION collation_connection=utf8_german2_ci;

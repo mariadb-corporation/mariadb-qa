@@ -5,6 +5,16 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|strings/ctype-latin1.c|my_mb_wc_latin1|my_convert_fix|String_copier::well_formed_copy|String::copy                                                       ## MDEV-33235
+ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_convert_fix|String_copier::well_formed_copy|String::copy                                                  ## MDEV-33235
+ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_mb_wc_utf8mb4|my_convert_fix|String_copier::well_formed_copy                                              ## MDEV-33235
+UBSAN|applying zero offset to null pointer|strings/ctype.c|my_convert_fix|String_copier::well_formed_copy|String::copy|String_copier_for_item::copy_with_warn                  ## MDEV-33235
+UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|Field_bit_as_char::store|Item_float::save_in_field|fill_record          ## MDEV-35715
+UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|Field_bit_as_char::store|fill_record|fill_record_n_invoke_before_triggers ## MDEV-35715
+UBSAN|downcast of address X with insufficient space for an object of type 'my_decimal'|sql/item_strfunc.cc|Item_dyncol_get::get_date|Temporal_with_date::make_from_item|Temporal_with_date::Temporal_with_date|Date::Date ## MDEV-35714
+UBSAN|load of value X, which is not a valid value for type 'enum enum_schema_tables'|sql/sql_show.cc|optimize_for_get_all_tables|optimize_schema_tables_reads|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-35713
+UBSAN|load of value X, which is not a valid value for type 'enum enum_schema_tables'|sql/sql_show.cc|get_all_tables|get_schema_tables_result|JOIN::exec_inner|JOIN::exec       ## MDEV-35713
+UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|my_uca_contraction_find|my_char_weight_put|apply_one_rule|init_weight_level                                     ## MDEV-35712
 ASAN|stack-buffer-overflow|sql/sql_string.h|__asan_memcpy|Binary_string::q_append|spider_string::q_append|spider_db_append_xid_str                                             ## MDEV-35426
 ASAN|stack-buffer-overflow|sql/sql_string.h|__asan_memcpy|Static_binary_string::q_append|spider_string::q_append|spider_db_append_xid_str                                      ## MDEV-35426
 UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect function type 'unsigned int *(*)(THD *, int)'|storage/spider/spd_param.cc|spider_param_force_commit|spider_internal_xa_rollback|spider_rollback|ha_rollback_trans ## MDEV-35698
@@ -13,6 +23,8 @@ UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect
 UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect function type 'unsigned int *(*)(THD *, int)'|storage/spider/spd_param.cc|spider_param_internal_xa_snapshot|spider_internal_start_trx|ha_spider::external_lock|handler::ha_external_lock ## MDEV-35623
 UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect function type 'unsigned int *(*)(THD *, int)'|storage/spider/spd_param.cc|spider_param_block_size|ha_spider::info|TABLE_LIST::fetch_number_of_rows|make_join_statistics ## MDEV-35623
 UBSAN|member call on null pointer of type 'Item'|storage/spider/spd_db_conn.cc|spider_db_print_item_type|spider_mbase_handler::append_group_by|spider_mbase_handler::append_group_by_part|spider_make_query ## MDEV-35623
+UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnxfrm_simple_internal|my_strnxfrm_simple|charset_info_st::strnxfrm|Item_func_weight_string::val_str    ## MDEV-35621
+UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|my_uca_scanner_init_any|my_uca_strnxfrm_onelevel_internal_utf8mb4|my_uca_strnxfrm_onelevel_utf8mb4|my_uca_strnxfrm_utf8mb4 ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|my_uca_scanner_init_any|my_uca_strnxfrm_onelevel_internal_utf8mb3|my_uca_strnxfrm_onelevel_utf8mb3|my_uca_strnxfrm_utf8mb3 ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnxfrm_utf8mb3_general_ci|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int ## MDEV-35621
 UBSAN|applying zero offset to null pointer|storage/maria/ma_unique.c|_ma_unique_hash|maria_write|ha_maria::write_row|handler::ha_write_tmp_row                                 ## MDEV-35620
@@ -59,6 +71,8 @@ ASAN|use-after-poison|storage/federatedx/federatedx_txn.cc|federatedx_txn::sp_re
 ASAN|heap-buffer-overflow|sql/item_subselect.h|Ordered_key::add_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                     ## MDEV-24986
 ASAN|unknown-crash|sql/field.h|__asan_memset|Field_varstring::reset|set_field_to_null_with_conversions|fill_record                                                             ## MDEV-35393
 # UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc                                                                                 ## Likely MDEV-35406 but too generic to filter
+UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406
+UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Type_handler::Item_send_date|Type_handler_temporal_with_date::Item_send|Item::send ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406
