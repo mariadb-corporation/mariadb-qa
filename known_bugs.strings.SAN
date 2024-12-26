@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq ## MDEV-35717
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-ascii.h|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq ## MDEV-35717
 ASAN|use-after-poison|strings/ctype-latin1.c|my_mb_wc_latin1|my_convert_fix|String_copier::well_formed_copy|String::copy                                                       ## MDEV-33235
 ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_convert_fix|String_copier::well_formed_copy|String::copy                                                  ## MDEV-33235
 ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_mb_wc_utf8mb4|my_convert_fix|String_copier::well_formed_copy                                              ## MDEV-33235

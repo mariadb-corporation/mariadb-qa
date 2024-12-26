@@ -1,0 +1,3 @@
+WITH a AS (SELECT * FROM a FOR TIME ALL;
+
+

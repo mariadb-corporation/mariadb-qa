@@ -4,7 +4,7 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=11.1                                                        # Use the earliest major version affected by the bug
+VERSION=11.7                                                        # Use the earliest major version affected by the bug
 SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
@@ -14,7 +14,7 @@ BISECT_REPLAY=0                                                     # Set to 1 t
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.  #LAST_KNOWN_GOOD_COMMIT='a4ef05d0d5e9aeb5c919af88db2879a19092259a'   # Revision of last known good commit
-LAST_KNOWN_GOOD_COMMIT='03854a84abf71c734f7a1c49897e3ef010a3fe4e'   # Revision of last known good commit
+LAST_KNOWN_GOOD_COMMIT='09049fe496eea1c19cd3ce80a788fa4b75d9609e'   # Revision of last known good commit
 FIRST_KNOWN_BAD_COMMIT='2447dda2c004fdc996372da32aeff2c7a871c70e'   # Revision of first known bad commit
 TESTCASE='/test/in18.sql'                                           # The testcase to be tested
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
