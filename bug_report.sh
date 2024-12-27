@@ -335,28 +335,11 @@ if [ ${SAN_MODE} -eq 0 ]; then
   fi
 else
   echo "{noformat:title=${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
-  grep -Ei --binary-files=text "${TEXT}" ./log/master.err | grep --binary-files=text -v "^[ \t]*$"
-  # Check if a SAN stack is present and add it to output seperately
-  if [ "$(grep -Ei --binary-files=text -A1 "${TEXT}" ./log/master.err | grep -o '^[ ]*#0' | sed 's|[^#0]||g' | head -n1)" == "#0" ]; then  # Validate there is a stack
-    LINE_BEFORE_SAN_STACK=$(grep -nEi --binary-files=text "${TEXT}" ./log/master.err | grep -o --binary-files=text '^[0-9]\+' | head -n1)  # Get the last line before the stack starts (for the first issue; this is issue is to be filtered/supressed before the next one is handled)
-    if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
-      LINE_TO_READ=${LINE_BEFORE_SAN_STACK}
-      while :; do  # Read stack line by line and print, untill an open line is found (before 'SUMMARY:' there is always an open line)
-        LINE_TO_READ=$[ ${LINE_TO_READ} + 1 ]
-        LINE="$(head -n${LINE_TO_READ} ./log/master.err | tail -n1)"
-        if [ -z "$(echo ${LINE} | sed 's|[ \t]||g')" ]; then break; fi
-        echo "${LINE}"
-        LINE=
-      done
-      LINE_TO_READ=
-    fi
-    LINE_BEFORE_SAN_STACK=
-    SUMMARY_LINE="$(grep -Ei -m1 --binary-files=text "^SUMMARY:" ./log/master.err)"
-    if [ ! -z "${SUMMARY_LINE}" ]; then
-      echo -e "\n${SUMMARY_LINE}"
-    fi
-    SUMMARY_LINE=
-  fi
+  # START_LINE: the 1st line on which any *SAN issue shows (ref TEXT in ~/b), END_LINE: the last of either '^SUMMARY:' or '=ABORTING$'
+  START_LINE=$(grep -n -m 1 -E "${TEXT}" ./log/master.err | cut -d: -f1)
+  END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ./log/master.err | tail -1 | cut -d: -f1)
+  sed -n "${START_LINE},${END_LINE}p" ./log/master.err
+  START_LINE=;END_LINE=
   # Check if a SAN stack is present in the alternative (dbg vs opt) and add it to output as well
   ALT_BASEDIR=
   ALT_BUILD_TYPE=
@@ -367,49 +350,28 @@ else
     ALT_BASEDIR="$(pwd | sed 's|dbg$|opt|')"
     ALT_BUILD_TYPE=" (Optimized)"
   fi
-  if [ ! -z "${ALT_BASEDIR}" -a "${ALT_BASEDIR}" != "${PWD}" ]; then
-    # Check if a SAN stack is present and add it to output seperately
-    if [ "$(grep -A1 --binary-files=text "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o '^[ ]*#0' | sed 's|[^#0]||g' | head -n1)" == "#0" ]; then  # Validate there is a stack
-      LINE_BEFORE_SAN_STACK=$(grep -nEi --binary-files=text "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep -o --binary-files=text '^[0-9]\+' | head -n1)  # Get the last line before the stack starts (for the first issue; this is issue is to be filtered/supressed before the next one is handled)
-      if [ ! -z "${LINE_BEFORE_SAN_STACK}" ]; then
-        echo '{noformat}'  # Close previous opt/dbg output from above
-        cd ${ALT_BASEDIR}
-        ALT_SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
-        cd - >/dev/null
-        ALT_SERVER_VERSION="$(${ALT_BASEDIR}/bin/mysqld --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
-        echo ''
-        echo "{noformat:title=${SVR} ${ALT_SERVER_VERSION} ${ALT_SOURCE_CODE_REV}${ALT_BUILD_TYPE}}"
-        grep -Ei --binary-files=text "${TEXT}" ${ALT_BASEDIR}/log/master.err | grep --binary-files=text -v "^[ \t]*$"
-        ALT_SOURCE_CODE_REV=
-        ALT_SERVER_VERSION=
-        LINE_TO_READ=${LINE_BEFORE_SAN_STACK}
-        while :; do  # Read stack line by line and print (for alternative basedir), untill an open line is found (before 'SUMMARY:' there is always an open line)
-          LINE_TO_READ=$[ ${LINE_TO_READ} + 1 ]
-          LINE="$(head -n${LINE_TO_READ} ${ALT_BASEDIR}/log/master.err | tail -n1)"
-          if [ -z "$(echo ${LINE} | sed 's|[ \t]||g')" ]; then break; fi
-          echo "${LINE}"
-          LINE=
-        done
-        LINE_TO_READ=
-      fi
-      LINE_BEFORE_SAN_STACK=
-      SUMMARY_LINE="$(grep -Ei -m1 --binary-files=text "^SUMMARY:" ${ALT_BASEDIR}/log/master.err )"
-      if [ ! -z "${SUMMARY_LINE}" ]; then
-        echo -e "\n${SUMMARY_LINE}"
-      fi
-      SUMMARY_LINE=
-      ALT_BASEDIR=
-      ALT_SERVER_VERSION=
-      ALT_SOURCE_CODE_REV=
-      ALT_BUILD_TYPE=
+  if [ ! -z "${ALT_BASEDIR}" -a -d "${ALT_BASEDIR}" -a "${ALT_BASEDIR}" != "${PWD}" ]; then
+    ALT_START_LINE=$(grep -n -m 1 -E "${TEXT}" ${ALT_BASEDIR}/log/master.err | cut -d: -f1)
+    ALT_END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ${ALT_BASEDIR}/log/master.err | tail -1 | cut -d: -f1)
+    echo '{noformat}'  # Close previous opt/dbg output from above
+    cd ${ALT_BASEDIR}
+    ALT_SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
+    cd - >/dev/null
+    if [ -x ${ALT_BASEDIR}/bin/mariadbd ]; then
+      ALT_SERVER_VERSION="$(${ALT_BASEDIR}/bin/mariadbd --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
+    else
+      ALT_SERVER_VERSION="$(${ALT_BASEDIR}/bin/mysqld --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
     fi
+    echo ''
+    echo "{noformat:title=${SVR} ${ALT_SERVER_VERSION} ${ALT_SOURCE_CODE_REV}${ALT_BUILD_TYPE}}"
+    sed -n "${ALT_START_LINE},${ALT_END_LINE}p" ${ALT_BASEDIR}/log/master.err
+    ALT_START_LINE=;ALT_END_LINE=;ALT_SOURCE_CODE_REV=;ALT_SERVER_VERSION=
   fi
-fi
-if [ ${SAN_MODE} -eq 1 ]; then
+  ALT_BASEDIR=;ALT_BUILD_TYPE=
   echo -e '{noformat}\n\nSetup:\n'
   echo '{noformat}'
   if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh san | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
-    echo "Compiled with a recent version of Clang (I used Clang $(clang --version | head -n1 | grep -o '[\.0-9][\.0-9][\.0-9]\+')) with LLVM 18:"
+    echo "Compiled with a recent version of Clang (I used Clang $(clang --version | head -n1 | grep -o '[\.0-9][\.0-9][\.0-9]\+')) with LLVM 18. Ubuntu instructions:"
     echo '     # Note: llvm-17-linker-tools installs /usr/lib/llvm-17/lib/LLVMgold.so, which is needed for compilation, and LLVMgold.so is no longer included in LLVM 18'
     echo '     sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev llvm-17-linker-tools'
     echo '     sudo ln -s /usr/lib/llvm-17/lib/LLVMgold.so /usr/lib/llvm-18/lib/LLVMgold.so'

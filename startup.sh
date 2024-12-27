@@ -576,7 +576,7 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>wipe
   echo $JE7 >>wipe
 fi
-echo "$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >> wipe
+echo "timeout -k120 -s9 120s bash -c \"$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'\"" >> wipe
 echo "rm -f log/*err*" >>wipe
 # Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
 if [ -r "${PWD}/bin/mariadb" ]; then

@@ -4,8 +4,8 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=11.7                                                        # Use the earliest major version affected by the bug
-SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version
+VERSION=11.5                                                        # Use the earliest major version affected by the bug
+SKIP_NON_SAME_VERSION=1                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
 RECLONE=0                                                           # Set to 1 to reclone a tree before starting
@@ -14,17 +14,18 @@ BISECT_REPLAY=0                                                     # Set to 1 t
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.  #LAST_KNOWN_GOOD_COMMIT='a4ef05d0d5e9aeb5c919af88db2879a19092259a'   # Revision of last known good commit
-LAST_KNOWN_GOOD_COMMIT='09049fe496eea1c19cd3ce80a788fa4b75d9609e'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='2447dda2c004fdc996372da32aeff2c7a871c70e'   # Revision of first known bad commit
-TESTCASE='/test/in18.sql'                                           # The testcase to be tested
-UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+LAST_KNOWN_GOOD_COMMIT='de9c357284edb46084c45c3b96600c854efdf69a'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='b2fc885469a7db2c25eab67fbc8e220dc2f805f8'   # Revision of first known bad commit
+TESTCASE='/test/in19.sql'                                           # The testcase to be tested
+UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID='SIGSEGV|list_delete|hp_close|heap_close|closefrm'         # The UniqueID to scan for [Exclusive]
-TEXT=''                                                             # The string to scan for in the error log [Exclusive]
+UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
+TEXT='my_strnncoll_utf8mb3_general1400_as_ci|my_strcoll_ascii_4bytes_found'                       # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead
 # i.e. 3 different modes in total: UNIQUEID, TEXT or core files scan
+# Note that TEXT is regex-capable and case-sensitive
 
 # Script variables, do not change
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
@@ -194,7 +195,7 @@ while :; do
     source ./VERSION
     CUR_VERSION="${MYSQL_VERSION_MAJOR}.${MYSQL_VERSION_MINOR}"
     CUR_COMMIT="$(git log | head -n1 | tr -d '\n')"
-    CUR_DATE="$(git log | head -n4 | tail -n1 | sed 's|Date:[ \t]*||;s|[ \t]*+.*||' | tr -d '\n')"
+    CUR_DATE="$(git log | head -n4 | grep '^Date:' | head -n1 | sed 's|Date:[ \t]*||;s|[ \t]*+.*||' | tr -d '\n')"
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
       if [ "${SKIP_NON_SAME_VERSION}" == "1" ]; then
         echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, skipping..." | tee -a "${MAINLOG}"
@@ -227,7 +228,7 @@ while :; do
   SCREEN_NAME=
   while :; do
     echo "|> Cleaning up any previous builds in /test/git-bisect" | tee -a "${MAINLOG}"
-    rm -Rf /test/git-bisect/MD*
+    rm -Rf /test/git-bisect/*MD*mariadb*
     SCREEN_NAME="git-bisect-build.${SEED}"
     echo "|> Building revision in a screen session: use  screen -d -r '${SCREEN_NAME}'  to see the build process" | tee -a "${MAINLOG}"
     rm -f ${TMPLOG2}
@@ -305,27 +306,27 @@ while :; do
   if [ ! -z "${UNIQUEID}" ]; then
     UNIQUEID_CHECK="$(${HOME}/t)"
     if [ "${UNIQUEID_CHECK}" == "${UNIQUEID}" ]; then
-      echo "UniqueID Bug found: ${UNIQUEID_CHECK} -> bad commit" | tee -a "${MAINLOG}"
+      echo "UniqueID Bug found: ${UNIQUEID_CHECK} -> bad commit (${CUR_COMMIT})" | tee -a "${MAINLOG}"
       bisect_bad
     else
-      echo "UniqueID Bug not found: '$(echo "${UNIQUEID_CHECK}" | sed 's|Assert: n|N|;s|found.*, and|found, and|;s| for all logs.*||')' seen versus target '${UNIQUEID}' -> good commit" | tee -a "${MAINLOG}"
+      echo "UniqueID Bug not found: '$(echo "${UNIQUEID_CHECK}" | sed 's|Assert: n|N|;s|found.*, and|found, and|;s| for all logs.*||')' seen versus target '${UNIQUEID}' -> good commit (${CUR_COMMIT})" | tee -a "${MAINLOG}"
       bisect_good
     fi
     UNIQUEID_CHECK=
   elif [ ! -z "${TEXT}" ]; then
-    if [ ! -z "$(grep "${TEXT}" log/master.err)" ]; then
-      echo 'TEXT Bug found; bad commit' | tee -a "${MAINLOG}"
+    if [ ! -z "$(grep -E "${TEXT}" log/master.err)" ]; then
+      echo "TEXT Bug found; bad commit (${CUR_COMMIT})" | tee -a "${MAINLOG}"
       bisect_bad
     else
-      echo 'TEXT Bug not found; good commit' | tee -a "${MAINLOG}"
+      echo "TEXT Bug not found; good commit (${CUR_COMMIT})" | tee -a "${MAINLOG}"
       bisect_good
     fi
   else
     if [ $(ls -l data/*core* 2>/dev/null | wc -l) -ge 1 ]; then
-      echo 'Core file found in ./data; bad commit' | tee -a "${MAINLOG}"
+      echo "Core file found in ./data; bad commit (${CUR_COMMIT})" | tee -a "${MAINLOG}"
       bisect_bad
     else
-      echo 'No core file found in ./data; good commit' | tee -a "${MAINLOG}"
+      echo "No core file found in ./data; good commit (${CUR_COMMIT})" | tee -a "${MAINLOG}"
       bisect_good
     fi
   fi

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Ref https://mariadb.org/mariadb/all-releases/ for versions
 
 # Read the version from the VERSION file
 VERSION_FILE="VERSION"
