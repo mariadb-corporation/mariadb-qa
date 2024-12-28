@@ -5,3 +5,6 @@ SET NAMES armscii8 COLLATE armscii8_nopad_bin;
 SELECT CHAR((WEIGHT_STRING (EXTRACTVALUE ((''),('tX')))));
 
 SELECT CHAR((WEIGHT_STRING (EXTRACTVALUE ((0),('tX')))));
+
+SET collation_connection='gb2312_bin';
+DO CHAR((WEIGHT_STRING (EXTRACTVALUE ((0),('t')) LEVEL 7)) USING cp852);

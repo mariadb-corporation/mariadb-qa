@@ -79,6 +79,7 @@ function:ha_maria::repair
 function:ha_myisam::enable_indexes
 function:ha_maria::enable_indexes
 function:ha_myisam::optimize
+function:ha_maria::optimize
 
 # ----- Fixed bugs
 ## MDEV-35540 # Fixed by MDEV-34348

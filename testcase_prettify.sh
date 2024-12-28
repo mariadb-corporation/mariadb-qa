@@ -31,6 +31,7 @@ cat "${1}" | tr -d '`' | \
        s|immediate|IMMEDIATE|g; \
        s|reverse|REVERSE|gi; \
        s|hex|HEX|gi; \
+       s|length|LENGTH|gi; \
        s|scalar|SCALAR|gi; \
        s|declare|DECLARE|gi; \
        s|having|HAVING|gi; \
@@ -387,6 +388,7 @@ cat "${1}" | tr -d '`' | \
        s|char *(|CHAR(|gi; \
        s|if *(|IF(|gi; \
        s|current_user *(|CURRENT_USER(|gi; \
+       s|current_time|CURRENT_TIME|gi; \
        s|current_timestamp|CURRENT_TIMESTAMP|gi; \
        s|mysql\.\([a-z]\+\)|mysql.\L\1|gi; \
        s|password *(|PASSWORD(|gi; \

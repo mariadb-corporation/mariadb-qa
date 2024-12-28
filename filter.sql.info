@@ -4,3 +4,4 @@ FOR.*rec.*IN.*DO.*SELECT      # MDEV-27627
 JSON_ARRAY_INTERSECT.*@.*@    # MDEV-33149: an abbreviated UBSAN stack (ref kba) is regularly seen for this issue
 DATE_ADD.*INTERV.*YEAR_MONTH  # MDEV-35406: an abbreviated UBSAN stack (ref kba) is regularly seen for this issue
 MAKEDATE.*e+                  # MDEV-35406: an abbreviated UBSAN stack (ref kba) is regularly seen for this issue
+ST_GEOMFROMWKB                # MDEV-26813

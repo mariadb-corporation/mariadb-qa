@@ -334,7 +334,7 @@ if [ ${SAN_MODE} -eq 0 ]; then
     fi
   fi
 else
-  echo "{noformat:title=${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
+  ${SCRIPT_PWD}/homedir_scripts/myver | head -n1
   # START_LINE: the 1st line on which any *SAN issue shows (ref TEXT in ~/b), END_LINE: the last of either '^SUMMARY:' or '=ABORTING$'
   START_LINE=$(grep -n -m 1 -E "${TEXT}" ./log/master.err | cut -d: -f1)
   END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ./log/master.err | tail -1 | cut -d: -f1)
@@ -342,32 +342,22 @@ else
   START_LINE=;END_LINE=
   # Check if a SAN stack is present in the alternative (dbg vs opt) and add it to output as well
   ALT_BASEDIR=
-  ALT_BUILD_TYPE=
   if [[ "${PWD}" == *"opt" ]]; then
     ALT_BASEDIR="$(pwd | sed 's|opt$|dbg|')"
-    ALT_BUILD_TYPE=" (Debug)"
   elif [[ "${PWD}" == *"dbg" ]]; then
     ALT_BASEDIR="$(pwd | sed 's|dbg$|opt|')"
-    ALT_BUILD_TYPE=" (Optimized)"
   fi
   if [ ! -z "${ALT_BASEDIR}" -a -d "${ALT_BASEDIR}" -a "${ALT_BASEDIR}" != "${PWD}" ]; then
     ALT_START_LINE=$(grep -n -m 1 -E "${TEXT}" ${ALT_BASEDIR}/log/master.err | cut -d: -f1)
     ALT_END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ${ALT_BASEDIR}/log/master.err | tail -1 | cut -d: -f1)
     echo '{noformat}'  # Close previous opt/dbg output from above
     cd ${ALT_BASEDIR}
-    ALT_SOURCE_CODE_REV="$(${SCRIPT_PWD}/source_code_rev.sh)"
+    ${SCRIPT_PWD}/homedir_scripts/myver | head -n1
     cd - >/dev/null
-    if [ -x ${ALT_BASEDIR}/bin/mariadbd ]; then
-      ALT_SERVER_VERSION="$(${ALT_BASEDIR}/bin/mariadbd --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
-    else
-      ALT_SERVER_VERSION="$(${ALT_BASEDIR}/bin/mysqld --version | grep -om1 '[0-9\.]\+-MariaDB' | sed 's|-MariaDB||')"
-    fi
-    echo ''
-    echo "{noformat:title=${SVR} ${ALT_SERVER_VERSION} ${ALT_SOURCE_CODE_REV}${ALT_BUILD_TYPE}}"
     sed -n "${ALT_START_LINE},${ALT_END_LINE}p" ${ALT_BASEDIR}/log/master.err
-    ALT_START_LINE=;ALT_END_LINE=;ALT_SOURCE_CODE_REV=;ALT_SERVER_VERSION=
+    ALT_START_LINE=;ALT_END_LINE=
   fi
-  ALT_BASEDIR=;ALT_BUILD_TYPE=
+  ALT_BASEDIR=
   echo -e '{noformat}\n\nSetup:\n'
   echo '{noformat}'
   if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh san | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
