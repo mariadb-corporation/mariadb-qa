@@ -3483,11 +3483,8 @@ process_outcome(){
         if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${WORKD}/log/*.err; then
           if [ -r "$(echo "${INPUTFILE}" | sed 's|/default.node.tld.*|/TOP_SAN_ISSUES_REMOVED|')" ]; then
             echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] TOP_SAN_ISSUES_REMOVED flag file found: dropping any known *SAN bugs from the top of the error log, if any"
-            CUR_PWD_TMP="${PWD}"
-            cd "${WORKDIR}"
-            ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as it will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
-            cd "${CUR_PWD_TMP}"
-            CUR_PWD_TMP=
+            # We are already in $WORKD so we can immediately execute drop_one_or_more_san_from_log.sh from here
+            ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as it will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not: we want only known issues to be removed
           fi
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"

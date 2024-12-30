@@ -9,10 +9,12 @@ SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 if [ "$1" == "" ]; then
   echo "Assert: This script expects one option: how many reducers to start on pquery-results.sh output."
+  echo "Note that you can set this to a high number to ensure all issues in the current dir are reduced."
   echo "Additionally one can pass a second option to 'skip' a number of results."
   echo "For example, ./pquery-mass-reduce.sh 10 5 will start to reduce items 6-16 of the pquery-results.sh output."
-  echo "Note that it is likely not wise to start more then 10-15 reducers, unless you are using a very high-end server."
-  echo "That last note is applicable when pquery-go-expert.sh was used. If not, then likely much less (e.g. 2-5) reducers should be started (on a higher end server), or they need to be monitored more closely. For the reason why, please see the extensive help text near the top of the pquery-go-expert.sh script"
+  echo "Note that it is likely not wise to start more then 15-20 orso reducers, unless you are using a high-end server."
+  echo "On a machine with 32 cores and 128GB RAM however, you can likely 50-75 reducers, or more."
+  echo "Those last notes apply when pquery-go-expert.sh was used. If it was not used, then likely much less (e.g. 2-5) reducers should be started (on a higher end server), or they need to be monitored more closely. For the reason why, please see the extensive help text near the top of the pquery-go-expert.sh script"
   echo "Terminating."
   exit 1
 elif [ "$(echo $1 | sed 's|^[0-9]\+||')" != "" ]; then

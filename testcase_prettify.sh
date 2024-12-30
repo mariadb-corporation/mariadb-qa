@@ -346,7 +346,7 @@ cat "${1}" | tr -d '`' | \
        s|discard|DISCARD|gi; \
        s|fts_doc_id|FTS_DOC_ID|gi; \
        s|mysql\.\([^ ]\+\)|mysql.\L\1|gi; \
-       s|range|RANGE|gi; \
+       s|range|RANGE|gi;s|_range|_range|gi; \
        s|less than|LESS THAN|gi; \
        s|column_format|COLUMN_FORMAT|gi; \
        s|column_create|COLUMN_CREATE|gi; \
