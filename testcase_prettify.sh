@@ -117,6 +117,9 @@ cat "${1}" | tr -d '`' | \
        s|minute|MINUTE|gi; \
        s|hour|HOUR|gi; \
        s|day|DAY|gi; \
+       s|week|WEEK|gi; \
+       s|month|MONTH|gi; \
+       s|year|YEAR|gi; \
        s|dayname|DAYNAME|gi; \
        s|begin|BEGIN|gi; \
        s| in | IN |gi;s| in(| IN(|gi; \
