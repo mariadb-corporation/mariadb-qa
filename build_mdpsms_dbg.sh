@@ -8,6 +8,7 @@ USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re
 BOOST_LOCATION=/tmp/boost_465114
 USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
 CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
+O_LEVEL='1'             # 0,1,2,3,g: -O Compiler optimization level. Recommended: '1': for testing dbg, '2': opt, 'g': debugging
 USE_CLANG=1             # 0 or 1 # Use the clang compiler instead of gcc
 USE_SAN=0               # 0 or 1 # Use ASAN, MSAN, UBSAN  # DO NOT SET TO 1, USE build_mdpsms_dbg_san.sh instead!
 PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
@@ -221,25 +222,15 @@ else
     FLAGS='-DCMAKE_CXX_FLAGS=-march=native'  # -DCMAKE_CXX_FLAGS="-march=native" is the default for FB tree
   else  # Normal builds
     if [ $USE_SAN -eq 1 ]; then
-      # TODO: Check following code is correct. This error:
-      # c++: error: unrecognized command line option ‘-fsanitize-coverage=trace-pc-guard’; did you mean ‘-fsanitize-coverage=trace-pc’?
-      # Is seen when using gcc (i.e. USE_CLANG=0) + USE_SAN=1. Quick hack that needs more research.
-      # Also ref https://clang.llvm.org/docs/SanitizerCoverage.html which has '-guard' but uses CLANG (hence the current change)
       if [ $USE_CLANG -eq 1 ]; then
-        FLAGS='-DCMAKE_CXX_FLAGS=-fsanitize-coverage=trace-pc-guard'
+        # FLAGS='-DCMAKE_CXX_FLAGS=-fsanitize-coverage=trace-pc-guard'  Removed: '-fsanitize-coverage=trace-pc-guard' is only helpful for code coverage analysis, ref https://clang.llvm.org/docs/SanitizerCoverage.html
+        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native'"
+        echo "Using Clang for SAN build."
       else
-        # This was disabled also due to the following errors:
-        # testCXXCompiler.cxx:(.text+0xa): undefined reference to `__sanitizer_cov_trace_pc'
-        # testCXXCompiler.cxx:(.text+0x14): undefined reference to `__sanitizer_cov_trace_pc'
-        # FLAGS='-DCMAKE_CXX_FLAGS=-fsanitize-coverage=trace-pc'
-        # And the following was needed to avoid this error on mysqld startup:
+        # '-static-libasan' is needed to avoid this error on mysqld startup:
         # ==PID== ASan runtime does not come first in initial library list; you should either link runtime to your application or manually preload it with LD_PRELOAD.
-        FLAGS='-DCMAKE_CXX_FLAGS=-static-libasan'
-        echo "Using GCC for ASAN build."
-      fi
-    else  # Normal builds, not SAN
-      if [ $USE_CLANG -ne 1 ]; then  # With thanks to Marko, 7/1/20, ref chat
-        FLAGS="-DCMAKE_C_FLAGS='-Og -march=native -mtune=native' -DCMAKE_CXX_FLAGS='-Og -march=native -mtune=native'"
+        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -static-libasan'"
+        echo "Using GCC for SAN build."
       fi
     fi
   fi
@@ -293,7 +284,7 @@ if [ $FB -eq 0 ]; then
     sed -i 's:\(sigaction(SIG[SABIF]\)://\1:' sql/mysqld.cc
   fi
   # Search key: Mac
-  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_UNIT_TESTS=0 -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 -DWITHOUT_GROUP_REPLICATION=1 ${SAN} ${FLAGS}"
+  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_UNIT_TESTS=0 -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_{SAFEMALLOC,NUMA}=OFF -DWITH_UNIT_TESTS=OFF -DCONC_WITH_{UNITTEST,SSL}=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 -DWITHOUT_GROUP_REPLICATION=1 ${SAN} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
   eval "$CMD" 2>&1 | tee /tmp/psms_dbg_build_${RANDOMD}

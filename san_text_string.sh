@@ -1,8 +1,9 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-# This script generates a UniqueID for the first ASAN, UBSAN, TSAN or MSAN error seen in a given mysqld/mariadbd error log
-# after the 'ready for connections' string is seen. If the string is not present, the scan starts from line #1
+# This script generates a UniqueID for the first ASAN, LSAN, UBSAN, TSAN or MSAN error seen in a given mysqld/mariadbd 
+# error log after the 'ready for connections' string is seen. If the string is not present, the scan starts from line #1
+
 # Usage: ~/mariadb-qa/san_text_string.sh ${1}
 # ${1}: First input, only option, point to mysqld error log directly, or to a basedir which contains ./log/master.err
 #       If the option is not specified, the script will attempt to look in ${PWD}/log/master.err and ${PWD}/master.err
@@ -184,7 +185,7 @@ tsan_file_preparse(){
       TSAN_FILE_PREPARSE=''
     fi
     if [[ "${TSAN_FILE_PREPARSE}" == "tsan/"* ]]; then
-      # The location is a tsan location (for example: tsan/tsan_interface_atomic.cpp with frame __tsan_atomic64_fetch_add) and likely not as helpful as a mysqld function which can likely be retrieved from the next frame
+      # The location is a tsan location (for example: tsan/tsan_interface_atomic.cpp with frame tsan_atomic64_fetch_add) and likely not as helpful as a mysqld function which can likely be retrieved from the next frame
       TSAN_FILE_PREPARSE=''
     fi
   fi
@@ -211,6 +212,7 @@ fi
 for FILE in ${ERROR_LOGS}; do
   while IFS=$'\n' read -r LINE; do
     LINE_COUNTER=$[ ${LINE_COUNTER} + 1 ]
+    LINE="$(echo "${LINE}" | sed 's|(<unknown module>)|<unknown_module>|g')"
     if [ ${STARTED} -eq 0 ]; then
       if [[ "${LINE}" == *"ready for connections"* ]]; then
         STARTED=1
@@ -233,7 +235,7 @@ for FILE in ${ERROR_LOGS}; do
           asan_file_preparse
         fi
         if [[ "${LINE}" == *" #1 0x"* ]]; then
-          ASAN_FRAME2="$(echo "__${LINE}" | sed 's|^[^i]\+in[ ]\+||;s|(.*)||g;s|[ ]\+.*||')"
+          ASAN_FRAME2="$(echo "${LINE}" | sed 's|^[^i]\+in[ ]\+||;s|(.*)||g;s|[ ]\+.*||')"
           asan_file_preparse
         fi
         if [[ "${LINE}" == *" #2 0x"* ]]; then
@@ -350,6 +352,13 @@ for FILE in ${ERROR_LOGS}; do
       if [ ! -z "${ASAN_FRAME3}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME3}"; fi
       if [ ! -z "${ASAN_FRAME4}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME4}"; fi
       UNIQUE_ID="$(echo "${UNIQUE_ID}" | sed 's/ASAN|LeakSanitizer: detected memory leaks/LSAN|memory leak/')"  # LSAN
+      # Specific issue (odd stack): LSAN in operator new from dlopen
+      if [ "${UNIQUE_ID}" == "LSAN|memory leak|<unknown_module>|operator" ]; then
+        if grep -qi 'dlopen' ${ERROR_LOGS} 2>/dev/null; then
+          if grep -qi 'plugin_dl_add' ${ERROR_LOGS} 2>/dev/null; then
+            if grep -qi 'plugin_dl_foreach' ${ERROR_LOGS} 2>/dev/null; then
+              UNIQUE_ID="LSAN|memory leak|sql/sql_plugin.cc|operator new|dlopen|plugin_dl_add|plugin_dl_foreach"
+      fi; fi; fi; fi
       echo "${UNIQUE_ID}"
       exit 0
     fi

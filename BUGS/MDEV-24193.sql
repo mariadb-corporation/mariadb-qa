@@ -12,3 +12,6 @@ RENAME USER 'a'@'a' TO 'a'@'a';
 
 CREATE OR REPLACE TABLE mysql.procs_priv (id INT);
 DROP USER'';
+
+CREATE OR REPLACE TABLE mysql.procs_priv (id INT);
+CREATE USER u1@localhost;

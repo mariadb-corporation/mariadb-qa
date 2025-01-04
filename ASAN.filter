@@ -1,3 +1,9 @@
 # ----- ASAN filter list - used as:
 # ASAN_OPTIONS=suppressions=${HOME}/mariadb-qa/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 # Ref UBSAN.filter for more information  # TODO
+# https://releases.llvm.org/3.8.0/tools/clang/docs/AddressSanitizer.html#issue-suppression
+# Supported ASAN supressions: interceptor_name, interceptor_via_fun, interceptor_via_lib, odr_violation
+
+# MDEV-35738 [During compilation]
+interceptor_via_lib:comp_sql.c
+interceptor_via_fun:process_option

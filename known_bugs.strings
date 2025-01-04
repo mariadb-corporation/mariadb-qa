@@ -218,6 +218,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|get_field_item_for_having|Item_field::derived_field_transformer_for_having|Item::transform|Item_args::transform_args                                                 ## MDEV-26940
 state == TRX_STATE_PREPARED || state == TRX_STATE_PREPARED_RECOVERED || state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-35681
 trx_state == TRX_STATE_PREPARED || trx_state == TRX_STATE_PREPARED_RECOVERED || trx_state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-35681
 thd->is_error()|SIGABRT|Field::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_return_value|sp_instr_freturn::exec_core                                           ## MDEV-35677
@@ -251,6 +252,9 @@ str.alloced_length() >= str.length() + data_len|SIGABRT|spider_string::q_append|
 key_buff_elements && cur_key_idx < key_buff_elements|SIGABRT|Ordered_key::add_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec       ## MDEV-24986
 key->algorithm <= HA_KEY_ALG_BTREE|SIGABRT|innobase_create_index_def|ha_innobase_inplace_ctx::create_key_defs|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table ## MDEV-35419
 !srv_read_only_mode|SIGABRT|buf_flush_wait_flushed|log_make_checkpoint|sst_disable_innodb_writes|innodb_disable_internal_writes                                                ## MDEV-35417
+!recv_no_log_write|SIGABRT|log_checkpoint_low|log_checkpoint|buf_flush_wait_flushed|log_make_checkpoint                                                                        ## MDEV-35417
+!recv_no_log_write || srv_operation != SRV_OPERATION_NORMAL|SIGABRT|log_write_up_to|log_checkpoint_low|buf_flush_sync_for_checkpoint|buf_flush_page_cleaner                    ## MDEV-35417
+!recv_no_log_write|SIGABRT|log_checkpoint_low|buf_flush_sync_for_checkpoint|buf_flush_page_cleaner|std::__invoke_impl<void, void                                               ## MDEV-35417
 !m_modifications || !recv_no_log_write|SIGABRT|mtr_t::commit|dict_hdr_get_new_id|dict_build_index_def|row_create_index_for_mysql                                               ## MDEV-35417
 !m_modifications || !recv_no_log_write|SIGABRT|mtr_t::commit|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert                                 ## MDEV-35417
 rpl_semi_sync_master_off_times > thd->expected_semi_sync_offs|SIGABRT|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans|THD::commit_whole_transaction_and_close_tables ## MDEV-35397 
@@ -731,7 +735,6 @@ SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|lf_hash_search          
 SIGSEGV|l_find|l_search|lf_hash_search_using_hash_value|MDL_map::find_or_insert                                                                                                ## MDEV-30926
 SIGSEGV|lf_hash_destroy|MDL_map::destroy|mdl_destroy|clean_up                                                                                                                  ## MDEV-30926
 SIGSEGV|lf_hash_destroy|clean_up|clean_up|mysqld_main                                                                                                                          ## MDEV-30926
-ASAN|heap-buffer-overflow|include/c++/current_version/bits/shared_ptr_base.h|std::__shared_ptr<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|myrocks::ha_rocksdb::index_first                                              ## MDEV-23956
 SIGSEGV|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_last_intern ## MDEV-23956
 SIGSEGV|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_last_intern|myrocks::ha_rocksdb::index_first       ## MDEV-23956
 SIGSEGV|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator ## MDEV-23956
