@@ -1,0 +1,10 @@
+CREATE TABLE t (s DATE,e DATE,PERIOD FOR tp0 (s,e)) ENGINE=INNODB;
+INSERT INTO t (s,e) VALUES (0,'1-1-1');
+XA START 'a';
+SET pseudo_slave_mode=1;
+INSERT INTO t (s,e) VALUES (0,'1-1-1');
+XA END 'a';
+XA PREPARE 'a';
+XA START 'foo';
+SELECT * FROM t;
+DELETE FROM t FOR PORTION OF tp0 FROM '' TO '1-1-1';
