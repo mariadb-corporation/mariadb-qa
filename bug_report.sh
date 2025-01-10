@@ -375,20 +375,27 @@ else
     echo '    -DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys'
     echo 'Set before execution:'
     echo '    export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1:exitcode=0'
-  elif grep -Eiqm1 --binary-files=text 'runtime error:|=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # UBSAN/ASAN/LSAN(ASAN) (best not to split ASAN vs UBSAN build here, and to just leave both enabled, as these features, when both are enabled, may affect the server differently then only one is enabled: we thus maximize bug reproducibility through leaving the same options enabled as where there during testing)  # elif; avoids double printing
+  fi
+  if grep -Eiqm1 --binary-files=text 'runtime error:|=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # UBSAN/ASAN/LSAN(ASAN) (best not to split ASAN vs UBSAN build here, and to just leave both enabled, as these features, when both are enabled, may affect the server differently then only one is enabled: we thus maximize bug reproducibility through leaving the same options enabled as where there during testing)  # elif; avoids double printing
     echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON'
+    UBFLAG=0
     if grep -Eiqm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
+      UBFLAG=1
       echo 'Set before execution:'
-      echo "    export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1   # And you may also want to supress UBSAN startup issues using 'suppressions=UBSAN.filter'. For an example of UBSAN.filter, which includes current startup issues see: https://github.com/mariadb-corporation/mariadb-qa/blob/master/UBSAN.filter"
-    elif grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # ASAN
+      echo "    export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1   # And you may also want to supress UBSAN startup issues using 'suppressions=UBSAN.filter' in UBSAN_OPTIONS. For an example of UBSAN.filter, which includes current startup issues see: https://github.com/mariadb-corporation/mariadb-qa/blob/master/UBSAN.filter"
+    fi
+    if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # ASAN
       # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-      echo 'Set before execution:'
+      if [ "${UBFLAG}" != "1" ]; then  # Avoid double 'Set ...'
+        echo 'Set before execution:'
+      fi
       echo "    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
       # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
       # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
       #echo "    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
     fi
-  elif grep -Eiqm1 --binary-files=text 'MemorySanitizer:' ../*SAN*/log/master.err; then  # MSAN
+  fi
+  if grep -Eiqm1 --binary-files=text 'MemorySanitizer:' ../*SAN*/log/master.err; then  # MSAN
     echo '    -DWITH_MSAN=ON -DWITH_UBSAN=ON  # Note: WITH_MSAN=ON is auto-ignored when not using clang (MDEV-20377)'
     echo 'Set before execution:'
     echo '    export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0'

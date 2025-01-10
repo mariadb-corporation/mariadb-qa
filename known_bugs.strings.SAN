@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                       ## MDEV-29605
+UBSAN|member access within address X which does not point to an object of type 'ha_spider'|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query ## MDEV-29605
 LSAN|memory leak|sql/sql_plugin.cc|operator new|dlopen|plugin_dl_add|plugin_dl_foreach                                                                                         ## MDEV-35772
 UBSAN|applying zero offset to null pointer|strings/ctype.c|my_convert_using_func|my_convert|copy_and_convert|Protocol::net_store_data_cs                                       ## MDEV-35771
 UBSAN|call to function mysql_sys_var_long(THD*, int) through pointer to incorrect function type 'unsigned long *(*)(THD *, int)'|storage/rocksdb/ha_rocksdb.cc|myrocks::get_or_create_tx|myrocks::ha_rocksdb::external_lock|handler::ha_external_lock|copy_data_between_tables ## MDEV-35736
@@ -138,6 +140,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_io_cache_ext|init_io_ca
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/compat56.cc|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_datetime_with_dec::val_str|Field::val_str ## MDEV-35252
 ASAN|attempting free|include/sync0types.h|operator|LatchCounter::~LatchCounter|LatchMeta<LatchCounter>::~LatchMeta|sync_latch_meta_destroy                                     ## MDEV-34945
 UBSAN|load of address X with insufficient space for an object of type 'uchar'|sql/sys_vars.inl|Sys_var_charptr_base::cleanup|sys_var_end|clean_up|clean_up                     ## MDEV-34849
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                       ## MDEV-34849
 UBSAN|member access within null pointer of type 'struct ha_handler_stats'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|close_thread_tables|Locked_tables_list::unlock_locked_tables ## MDEV-34782
 UBSAN|member access within null pointer of type 'struct ha_handler_stats'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_rm_tables ## MDEV-34782
 UBSAN|member access within null pointer of type 'struct ha_handler_stats'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|mysql_ha_close_table|mysql_ha_close ## MDEV-34782

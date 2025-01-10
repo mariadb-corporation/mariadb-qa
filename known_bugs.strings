@@ -867,9 +867,9 @@ inited == NONE|SIGABRT|handler::ha_reset|ha_partition::reset|handler::ha_reset|m
 tmp != ((long long) 0x8000000000000000LL)|SIGABRT|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_datetimef::get_date|Field_datetime_with_dec::val_str      ## MDEV-35252 (was 21406)
 transaction->implicit_xid.is_null()|SIGABRT|THD::init_for_queries|prepare_new_connection_state|thd_prepare_connection|do_handle_one_connection                                 ## MDEV-29606
 transaction.is_empty()|SIGABRT|THD::init_for_queries|prepare_new_connection_state|thd_prepare_connection|do_handle_one_connection                                              ## MDEV-29606
-# SIGSEGV|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                         ## MDEV-29605 New traces needed
-# SIGSEGV|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                                      ## MDEV-29605 Idem
-# SIGSEGV|spider_db_connect|spider_db_ping_internal|spider_db_ping|spider_db_conn_queue_action                                                                                   ## MDEV-29605 Idem
+# SIGSEGV|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal                                                                         ## MDEV-29605 Additional traces may help
+# SIGSEGV|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                                                                      ## MDEV-29605 Additional traces may help 
+# SIGSEGV|spider_db_connect|spider_db_ping_internal|spider_db_ping|spider_db_conn_queue_action                                                                                   ## MDEV-29605 Additional traces may help
 IGABRT|safe_mutex_destroy|inline_mysql_mutex_destroy|fts_cache_destroy|fts_t::~fts_t                                                                                           ## MDEV-29053
 share->tdc->flushed|SIGABRT|close_all_tables_for_name|handle_alter_part_error|fast_alter_partition_table|mysql_alter_table                                                     ## MDEV-29503
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|ha_partition::external_lock|handler::ha_external_lock|handler::ha_external_unlock                   ## MDEV-29450
@@ -1336,6 +1336,8 @@ SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_low|t
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_undo|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                        ## MDEV-24812
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::pfs_begin_lock|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_low|trx_undo_report_row_operation       ## MDEV-24812
 SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                                        ## MDEV-24812
+SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|srw_mutex_impl<true>::wr_lock_try|srw_mutex_impl<true>::wr_lock|ssux_lock_impl<true>::wr_lock                ## MDEV-24812
+SIGSEGV|std::__atomic_base<unsigned int>::compare_exchange_strong|TTASEventMutex<GenericPolicy>::try_lock|TTASEventMutex<GenericPolicy>::enter|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter ## MDEV-24812
 thr->graph->trx->id == trx_read_trx_id( static_cast<const byte*>( trx_id->data)) || static_cast<ins_node_t*>( thr->run_node)->bulk_insert|SIGABRT|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-24716
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                    ## MDEV-24706
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                     ## MDEV-24706
