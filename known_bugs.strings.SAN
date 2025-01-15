@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|call to function thd_kill_timeout through pointer to incorrect function type 'void (*)(void *)'|mysys/thr_timer.c|process_timers|timer_handler|asan_thread_start|start_thread ## MDEV-35822
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                       ## MDEV-29605
 UBSAN|member access within address X which does not point to an object of type 'ha_spider'|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query ## MDEV-29605
 LSAN|memory leak|sql/sql_plugin.cc|operator new|dlopen|plugin_dl_add|plugin_dl_foreach                                                                                         ## MDEV-35772

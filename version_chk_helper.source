@@ -95,6 +95,13 @@ elif [ "$(echo "${PWD}" | grep -o MS | head -n1)" == "MS" -o "$(grep "BASEDIR" -
 fi
 SERVER_VERSION="$(echo "${SERVER_VERSION}" | tr -d ' ')"
 MDEV_OR_MENT="$(echo "${PWD}" | grep -Eo 'MDEV[-_0-9]+|MENT[-_0-9]+' | sed 's|^[-_]||;s|[-_]$||;s|_|-|g' | tr -d ' ')"
+if [ -z "${MDEV_OR_MENT}" ]; then  # If we are currently not in BASEDIR but for example in /data/some_work_dir[/some_trial]. The trial subdir is handled by the grep in './start' and the some_work_dir is handled by grep in './pquery*run*.conf'
+  TRIAL_BASEDIR="$(grep "^[ \t]*BASEDIR" ./start ./pquery*run*.conf 2>/dev/null | head -n1)"
+  if [ ! -z "${TRIAL_BASEDIR}" ]; then
+    MDEV_OR_MENT="$(echo "${TRIAL_BASEDIR}" | grep -Eo 'MDEV[-_0-9]+|MENT[-_0-9]+' | sed 's|^[-_]||;s|[-_]$||;s|_|-|g' | tr -d ' ')"
+  fi
+  TRIAL_BASEDIR=
+fi
 if [ ! -z "${MDEV_OR_MENT}" ]; then
   NR="$(echo "${MDEV_OR_MENT}" | grep -o '[0-9]\+')"
   if [ ! -z "$(echo "${NR}" | sed 's|^[0-9]||;s|^[0-9]||')" ]; then  # At least 3 long

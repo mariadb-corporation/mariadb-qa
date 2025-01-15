@@ -218,6 +218,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|list_add|heap_open|ha_heap::open|handler::ha_open                                                                                                                      ## MDEV-35851
 prebuilt->sql_stat_start || prebuilt->table->no_rollback()|SIGABRT|row_search_mvcc|ha_innobase::index_read|ha_innobase::rnd_pos|handler::ha_rnd_pos                            ## MDEV-29120
 UT_LIST_GET_LEN(trx->lock.trx_locks) == 0|SIGABRT|ut_dbg_assertion_failed|TrxFactory::destroy|Pool<trx_t, TrxFactory, TrxPoolLock>::~Pool|PoolManager<Pool<trx_t, TrxFactory, TrxPoolLock>, TrxPoolManagerLock>::destroy ## MDEV-29120
 0|SIGABRT|get_field_item_for_having|Item_field::derived_field_transformer_for_having|Item::transform|Item_args::transform_args                                                 ## MDEV-26940
@@ -546,6 +547,7 @@ thd->wsrep_trx().is_xa()|SIGABRT|Wsrep_applier_service::apply_write_set|Wsrep_sc
 SIGSEGV|fut_get_ptr|fseg_inode_try_get|fseg_inode_get|fseg_n_reserved_pages                                                                                                    ## MDEV-33398
 SIGSEGV|mach_read_from_4|mach_read_from_8|fseg_inode_try_get|fseg_inode_get                                                                                                    ## MDEV-33398
 m_table|SIGABRT|ha_perfschema::rnd_end|ha_perfschema::rnd_end|handler::ha_rnd_end|mysql_checksum_table                                                                         ## MDEV-33285
+m_table|SIGABRT|ha_perfschema::rnd_end|handler::ha_rnd_end|mysql_checksum_table|mysql_execute_command                                                                          ## MDEV-33285
 # m_table|SIGABRT|__pthread_mutex_lock_full|                                                                                                                                   ## MDEV-33285 (filtered ftm: partial stack)
 marked_for_write_or_computed()|SIGABRT|Field_long::store|Field_num::save_in_field|Field::store_field|field_conv_incompatible                                                   ## MDEV-33244
 state_ == s_exec|SIGABRT|wsrep::client_state::after_row|wsrep_after_row_internal|wsrep_after_row|handler::ha_write_row                                                         ## MDEV-33253
