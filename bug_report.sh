@@ -361,11 +361,20 @@ else
   echo -e '{noformat}\n\nSetup:\n'
   echo '{noformat}'
   if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh san | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
+    # TODO: consider use of dpkg --list | grep -o 'llvm-[0-9]\+' | sort -h -r | head -n1 | grep -o '[0-9]\+'
     echo "Compiled with a recent version of Clang (I used Clang $(clang --version | head -n1 | grep -o '[\.0-9][\.0-9][\.0-9]\+')) with LLVM 18. Ubuntu instructions:"
     echo '     # Note: llvm-17-linker-tools installs /usr/lib/llvm-17/lib/LLVMgold.so, which is needed for compilation, and LLVMgold.so is no longer included in LLVM 18'
     echo '     sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev llvm-17-linker-tools'
     echo '     sudo ln -s /usr/lib/llvm-17/lib/LLVMgold.so /usr/lib/llvm-18/lib/LLVMgold.so'
-    echo "Compiled with: '-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++' and:"
+    O_LEVEL_STMT=
+    if [ -r ./BUILD_CMD_CMAKE ]; then
+      O_LEVEL_STMT="$(grep -o '\-O[0-9g] ' ./BUILD_CMD_CMAKE)"
+    fi
+    if [ -z "${O_LEVEL_STMT}" ]; then
+      O_LEVEL_STMT='-O1 ' # Commonly used for dbg builds
+      if [[ "${PWD}" == *"opt" ]]; then O_LEVEL_STMT='-O2 '; fi  # For opt builds
+    fi
+    echo "Compiled with: \"-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C{,XX}_FLAGS='${O_LEVEL_SMT}-march=native -mtune=native'\" and:"
   else
     echo "Compiled with a recent version of GCC (I used GCC $(gcc --version | head -n1 | sed 's|.* ||')) and:"
   fi

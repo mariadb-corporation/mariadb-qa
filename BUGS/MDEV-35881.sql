@@ -1,0 +1,3 @@
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+CREATE TABLE t (c INT) ENGINE=Spider DEFAULT_GROUP=foo;
+INSERT INTO t VALUES (1);

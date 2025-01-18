@@ -218,6 +218,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|__strcmp_evex|get_defaults_options|my_load_defaults|mysql_read_default_options                                                                                         ## MDEV-35881
 SIGSEGV|list_add|heap_open|ha_heap::open|handler::ha_open                                                                                                                      ## MDEV-35851
 prebuilt->sql_stat_start || prebuilt->table->no_rollback()|SIGABRT|row_search_mvcc|ha_innobase::index_read|ha_innobase::rnd_pos|handler::ha_rnd_pos                            ## MDEV-29120
 UT_LIST_GET_LEN(trx->lock.trx_locks) == 0|SIGABRT|ut_dbg_assertion_failed|TrxFactory::destroy|Pool<trx_t, TrxFactory, TrxPoolLock>::~Pool|PoolManager<Pool<trx_t, TrxFactory, TrxPoolLock>, TrxPoolManagerLock>::destroy ## MDEV-29120

@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct st_my_thread_var'|storage/spider/spd_table.cc|spider_create_sys_thd|spider_table_bg_sts_action|asan_thread_start|start_thread ## MDEV-35881
 UBSAN|call to function thd_kill_timeout through pointer to incorrect function type 'void (*)(void *)'|mysys/thr_timer.c|process_timers|timer_handler|asan_thread_start|start_thread ## MDEV-35822
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                       ## MDEV-29605
 UBSAN|member access within address X which does not point to an object of type 'ha_spider'|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query ## MDEV-29605
@@ -52,6 +53,7 @@ UBSAN|-nan is outside the range of representable values of type 'unsigned long l
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|Field_longstr::well_formed_copy_with_check ## MDEV-35718
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq ## MDEV-35717
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-ascii.h|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq ## MDEV-35717
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|is_infoschema_db ## MDEV-35717
 ASAN|use-after-poison|strings/ctype-latin1.c|my_mb_wc_latin1|my_convert_fix|String_copier::well_formed_copy|String::copy                                                       ## MDEV-33235
 ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_convert_fix|String_copier::well_formed_copy|String::copy                                                  ## MDEV-33235
 ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_mb_wc_utf8mb4|my_convert_fix|String_copier::well_formed_copy                                              ## MDEV-33235
