@@ -218,6 +218,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+m_comparator.cmp_type() != ROW_RESULT|SIGABRT|Item_func_in::compatible_types_scalar_bisection_possible|Item_func_in::vcol_subst_transformer|Item_func::compile|Item::top_level_compile ## MDEV-35913
 marked_for_write_or_computed()|SIGABRT|Field_new_decimal::store_value|Field_new_decimal::store_value|Field_new_decimal::reset|convert_null_to_field_value_or_error             ## MDEV-35911
 SIGSEGV|Field::store_timestamp|TR_table::store|TR_table::update|ha_commit_trans                                                                                                ## MDEV-35842
 SIGSEGV|__strcmp_evex|get_defaults_options|my_load_defaults|mysql_read_default_options                                                                                         ## MDEV-35881
