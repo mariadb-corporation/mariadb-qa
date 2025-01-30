@@ -330,6 +330,7 @@ fi
 make -j${MAKE_THREADS} | tee -a /tmp/psms_opt_san_build_${RANDOMD}
 if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 
+echo $CMD > BUILD_CMD_CMAKE
 if [ ! -r ./scripts/make_binary_distribution ]; then  # Note: ./scripts/binary_distribution is created on-the-fly during the make compile
   echo "Assert: ./scripts/make_binary_distribution was not found. Terminating."
   exit 1

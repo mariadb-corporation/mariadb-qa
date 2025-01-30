@@ -4,7 +4,7 @@
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
 BASEDIR=/test/MDEV-35504_UBASAN_MD100125-mariadb-11.8.0-linux-x86_64-opt
 RUNSOPT=2
-RUNSDBG=0
+RUNSDBG=3
 #CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=1 24, and spider swap -> updated to PS=2
 #CONF=pquery-run-MD-optimizer.conf
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
@@ -56,9 +56,12 @@ if grep -qi '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*2' ${HOME}/mariadb-qa/${CONF}; t
   echo "*************************************************************************************************************************"
   sleep 2
 fi
-COMPILER="GCC"
-if grep -qi '/clang ' ${BASEDIR}/BUILD_CMD_CMAKE; then
-  COMPILER="Clang"
+COMPILER="unknown"
+if -r [ ${BASEDIR}/BUILD_CMD_CMAKE ]; then
+  COMPILER="GCC"  # GCC is not specified, but the old/previous default on test servers
+  if grep -qi '/clang ' ${BASEDIR}/BUILD_CMD_CMAKE; then  # Clang is specified
+    COMPILER="Clang"
+  fi
 fi
 echo "# Compiler: ${COMPILER} | PRE_SHUFFLE_SQL setting: $(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+') | $(grep '^INFILE=' ${HOME}/mariadb-qa/${CONF} | sed 's|=|: |' | tr -d '\n')"
 if grep -qi '^PRELOAD=1' ${HOME}/mariadb-qa/${CONF}; then

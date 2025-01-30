@@ -129,7 +129,7 @@ INNODB_ERROR|Cannot save table statistics for table `test`.`t`: Lock wait timeou
 INNODB_ERROR|Table mysql.innodb_table_stats not found          ## SPECIAL-30 (non-issue)
 INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
-INNODB_ERROR|The table `test`.`t` doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
+INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
 INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
 # INNODB_ERROR|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD ## MDEV-35187 (Filtered as this is possibly a common error)
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables and LOCK_log             ## MDEV-29744

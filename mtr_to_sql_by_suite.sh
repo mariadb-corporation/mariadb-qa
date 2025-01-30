@@ -6,6 +6,7 @@ SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 if [ "$#" -eq 0 ]; then
   echo "Please supply suite path(s) which contains *.test files."
+  exit 1
 fi
 
 SQLFILE=$(mktemp)
