@@ -218,6 +218,18 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|plugin_hton|TABLE_SHARE::db_type|get_schema_tables_record|fill_schema_table_by_open                                                                                    ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::db_type|get_schema_tables_record|fill_schema_table_from_frm                                                                                   ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::db_type|ha_table_exists|create_table_impl                                                                                                     ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::db_type|ha_table_exists|fill_schema_table_names                                                                                               ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::db_type|ha_table_exists|upgrade_lock_if_not_exists                                                                                            ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::db_type|open_table_from_share|open_table                                                                                                      ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::db_type|TABLE::mark_columns_per_binlog_row_image|TABLE::mark_columns_needed_for_delete                                                        ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::db_type|TABLE::mark_columns_per_binlog_row_image|TABLE::mark_columns_needed_for_insert                                                        ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::init_from_sql_statement_string|TABLE::hlindex_open|handler::ha_check                                                                          ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::init_from_sql_statement_string|TABLE::hlindex_open|TABLE::hlindex_read_first                                                                  ## MDEV-36005
+SIGSEGV|plugin_hton|TABLE_SHARE::init_from_sql_statement_string|TABLE::hlindex_open|TABLE::open_hlindexes_for_write                                                            ## MDEV-36005
+SIGSEGV|plugin_lock|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command                                                                                               ## MDEV-36005
 order|SIGABRT|join_read_first|sub_select|do_select|JOIN::exec_inner                                                                                                            ## MDEV-35978
 last_pos == 0 || pos > last_pos|SIGABRT|fts_cache_node_add_positions|row_fts_insert_tuple|row_fts_merge_insert|fts_parallel_merge                                              ## MDEV-35967
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement                                            ## MDEV-35937
