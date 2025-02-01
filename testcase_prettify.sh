@@ -323,7 +323,7 @@ cat "${1}" | tr -d '`' | \
        s|maxvalue|MAXVALUE|gi; \
        s|increment|INCREMENT|gi; \
        s|increment by|INCREMENT BY|gi; \
-       s|checkpoint|checkpoint|gi; \
+       s|checkpoint|CHECKPOINT|gi; \
        s|coordinates|coordinates|gi; \
        s|_\([a-zA-Z]\+\)|_\L\1|gi;s|\([a-zA-Z]\+\)_|\L\1_|gi; \
        s|json_\([_a-zA-Z]\+\)|JSON_\U\1|gi; \
@@ -454,6 +454,8 @@ cat "${1}" | tr -d '`' | \
        s|), (|),(|gi; \
        s|BY''|BY ''|gi; \
        s|port|PORT|gi; \
+       s|portion|PORTION|gi; \
+       s| of | OF |gi; \
        s| *= *|=|gi;s|sql_mode=\([^ ']\)|sql_mode= \1|; \
        s|=on;$|=ON;|g; \
        s|=off;$|=OFF;|g; \

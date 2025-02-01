@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_bool|Item_bool_func::val_int               ## MDEV-36003
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_int|Type_handler::Item_send_long           ## MDEV-36003
 UBSAN|member access within null pointer of type 'struct st_my_thread_var'|storage/spider/spd_table.cc|spider_create_sys_thd|spider_table_bg_sts_action|asan_thread_start|start_thread ## MDEV-35881
 UBSAN|call to function thd_kill_timeout through pointer to incorrect function type 'void (*)(void *)'|mysys/thr_timer.c|process_timers|timer_handler|asan_thread_start|start_thread ## MDEV-35822
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                       ## MDEV-29605
@@ -47,10 +49,17 @@ UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnncollsp
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.inl|my_uca_strnncollsp_onelevel_utf8mb4|my_uca_strnncollsp_utf8mb4|cmp_data|cmp_dtuple_rec_with_match_low         ## MDEV-35723
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|my_uca_scanner_init_any|my_uca_strnncollsp_onelevel_utf8mb4|my_uca_strnncollsp_utf8mb4|cmp_data                 ## MDEV-35723
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-uca-scanner_next.inl|my_uca_scanner_next_utf8mb4|my_uca_strnncollsp_onelevel_utf8mb4|my_uca_strnncollsp_utf8mb4|cmp_data ## MDEV-35723
+UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|get_schema_stat_record ## MDEV-35721
 UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|Sql_cmd_delete::prepare_inner ## MDEV-35721
 UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|open_and_lock_tables ## MDEV-35721
 UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|read_statistics_for_tables_if_needed ## MDEV-35721
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|Field_longstr::well_formed_copy_with_check ## MDEV-35718
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|mysql_prepare_create_table_finalize ## MDEV-35717
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|st_select_lex::period_setup_conds ## MDEV-35717
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-ascii.h|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq ## MDEV-35717
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|handle_if_exists_options ## MDEV-35717
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|LEX::add_period ## MDEV-35717
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|mysql_prepare_alter_table ## MDEV-35717
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq ## MDEV-35717
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-ascii.h|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq ## MDEV-35717
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|is_infoschema_db ## MDEV-35717

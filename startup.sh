@@ -482,11 +482,13 @@ if [ -d "${MTR_DIR}" ]; then
   sed "s|\/mtr |/mtr --mysqld=--innodb --mysqld=--default-storage-engine=Innodb |" ${MTR_DIR}/cl_mtr > ${MTR_DIR}/cl_mtr_innodb
   chmod +x ${MTR_DIR}/cl_mtr ${MTR_DIR}/cl_mtr_innodb
   echo '#!/bin/bash' >${MTR_DIR}/loop_mtr
+  add_san_options ${MTR_DIR}/loop_mtr
   echo '#Loop MTR on main/test.test (or any other test, if specified) till it fails' >>${MTR_DIR}/loop_mtr
   echo 'if [ -z "${1}" ]; then TEST="test"; else TEST="${1}"; fi' >>${MTR_DIR}/loop_mtr
   echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; ./mtr \${TEST} 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr
   chmod +x ${MTR_DIR}/loop_mtr
   echo '#!/bin/bash' >${MTR_DIR}/loop_mtr_multi
+  add_san_options ${MTR_DIR}/loop_mtr_multi
   echo '#Multi-loop MTR on main/test.test (or any other test, if specified) till it fails' >>${MTR_DIR}/loop_mtr_multi
   echo 'if [ -z "${1}" ]; then TEST="test"; else TEST="${1}"; fi' >>${MTR_DIR}/loop_mtr_multi
   echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; MTR_MEM=/dev/shm ./mysql-test-run --parallel=100 --repeat 100 --mem --force --retry=0 --retry-failure=0 \${TEST}{,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,} 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr_multi
@@ -649,6 +651,7 @@ echo 'wc -l out.sql' >>loopin
 echo 'echo "Generated out.sql which contains ${1} copies of in.sql, including DROP/CREATE/USE DATABASE test!"' >>loopin
 echo 'echo "You may now want to: mv out.sql in.sql and then start ~/b which will then use the multi-looped in.sql"' >>loopin
 echo "#!/bin/bash" >multirun_loop
+add_san_options multirun_loop
 ln -s ./multirun_loop ./ml
 echo "# This script will keep looping in.sql until a ./data/core* file, or a timeout, is detected. If a loop cycles take more than or equal to 90 seconds, it is terminated as it is unlikely that even a large testcase takes >=90 seconds to reproduce (or mysqladmin shutdown is hanging). In such cases, it is somewhat likely that 1) there was a thread hang, 2) 'mysqladmin shutdown' (called by ./stop) hung, or 3) there was a full sever hang (less common). If the testcase is very large you could set this timeout larger by manually changing it in this script, and keep the 90 'mysqladmin shutdown' timeout in ./stop in mind. Generally loops will take 5 seconds or less with a small input file." >>multirun_loop
 echo "# To look for a specific UniqueID bug, do:" >>multirun_loop
@@ -718,6 +721,7 @@ ln -s ./multirun_loop_pquery ./mlp
 ln -s ${SCRIPT_PWD}/multirun_loop_replication ${PWD}/multirun_loop_replication
 sed -i 's|./test;|./test_pquery >/dev/null 2>\&1;|' multirun_loop_pquery
 echo "#!/bin/bash" >multirun_mysqld
+add_san_options multirun_mysqld
 echo "~/mariadb-qa/multirun_mysqld.sh \"\${*}\"" >>multirun_mysqld
 echo "#!/bin/bash" >multirun_mysqld_text
 echo "# First option passed to ./multirun_mysqld_text should be the string to look for" >>multirun_mysqld_text
@@ -732,6 +736,7 @@ echo "REPLICATION=0       # Set to 1 for replication runs" >>multirun
 echo "USERANDOM=0         # Set to 1 for random order SQL runs" >>multirun
 echo "MULTI_THREADED=0    # Set to 1 for using more than 1 thread" >>multirun
 echo "MULTI_THREADS=5000  # When MULTI_THREADED=1, this sets the number of threads used" >>multirun
+add_san_options multirun
 echo "if [ ! -r ./in.sql ]; then echo 'Missing ./in.sql - please create it!'; exit 1; fi" >>multirun
 echo "if [ ! -r ./all_no_cl ]; then echo 'Missing ./all_no_cl - perhaps run ~/start or ~/mariadb-qa/startup.sh again?'; exit 1; fi" >>multirun
 echo "if [ \"\$(grep -o 'DROP DATABASE test' ./in.sql)\" == \"\" -o \"\$(grep -o 'CREATE DATABASE test' ./in.sql)\" == \"\" -o \"\$(grep -o 'USE test' ./in.sql)\" == \"\" ]; then" >>multirun

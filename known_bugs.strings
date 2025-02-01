@@ -269,6 +269,8 @@ key->algorithm <= HA_KEY_ALG_BTREE|SIGABRT|innobase_create_index_def|ha_innobase
 !recv_no_log_write|SIGABRT|log_checkpoint_low|buf_flush_sync_for_checkpoint|buf_flush_page_cleaner|std::__invoke_impl<void, void                                               ## MDEV-35417
 !m_modifications || !recv_no_log_write|SIGABRT|mtr_t::commit|dict_hdr_get_new_id|dict_build_index_def|row_create_index_for_mysql                                               ## MDEV-35417
 !m_modifications || !recv_no_log_write|SIGABRT|mtr_t::commit|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert                                 ## MDEV-35417
+!m_modifications || !recv_no_log_write|SIGABRT|log_checkpoint_low|buf_flush_sync_for_checkpoint|buf_flush_page_cleaner|std::execute_native_thread_routine                      ## Likely MDEV-3541
+!m_modifications || !recv_no_log_write|SIGABRT|log_write_up_to|buf_page_t::flush|buf_do_flush_list_batch|buf_flush_list_holding_mutex                                          ## Likely MDEV-35417
 rpl_semi_sync_master_off_times > thd->expected_semi_sync_offs|SIGABRT|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_commit|ha_commit_trans|THD::commit_whole_transaction_and_close_tables ## MDEV-35397 
 SIGABRT|safe_mutex_lock|inline_mysql_mutex_lock|spider_lock_before_query|spider_db_open_handler                                                                                ## MDEV-35375
 SIGSEGV|spider_send_query|ha_spider::index_first_internal|handler::ha_index_first|mysql_ha_read                                                                                ## MDEV-35375
@@ -637,6 +639,9 @@ SIGSEGV|ha_innobase::update_row|handler::ha_update_row|Event_db_repository::upda
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|Event_db_repository::create_event|Events::create_event|mysql_execute_command ## MDEV-32221 
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
 role == *(ACL_ROLE**)pop|SIGABRT|undo_add_role_user_mapping|mysql_grant_role|mysql_execute_command|mysql_parse                                                                 ## MDEV-32095
+marked_for_read()|SIGABRT|Field_newdate::val_str|Item_func_conv_charset::Item_func_conv_charset|Item::safe_charset_converter|Type_std_attributes::agg_item_set_converter       ## MDEV-32094
+marked_for_read()|SIGABRT|Field_newdate::get_TIME|Field_newdate::get_date|Item_field::get_date|Item_func_date_format::val_str                                                  ## MDEV-32094
+marked_for_read()|SIGABRT|Field_newdate::get_TIME|Item_field::get_date|Item_func_date_format::val_str|Item_func_conv_charset::Item_func_conv_charset                           ## MDEV-32094
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|Item_str_func::fix_fields|Virtual_column_info::fix_expr|Virtual_column_info::fix_session_expr                             ## MDEV-32094
 used_tables_cache == 0|SIGABRT|Item_func::fix_fields|Item_str_func::fix_fields|Item_json_str_multipath::fix_fields|Item::fix_fields_if_needed                                  ## MDEV-32094
 !strcmp(&path[strlen(path) - strlen(dot_ext[IBD])], dot_ext[IBD])|SIGABRT|mtr_t::log_file_op|fil_name_write|fil_names_clear|log_checkpoint_low                                 ## MDEV-32089
@@ -655,6 +660,7 @@ m_files.empty()|SIGABRT|CreateTracker::~CreateTracker|__run_exit_handlers|__GI_e
 !maria_assert_if_crashed_table|SIGABRT|_ma_read_block_record|maria_rrnd|ha_maria::rnd_pos|handler::ha_rnd_pos                                                                  ## MDEV-31863
 SIGSEGV|Binary_string::free_buffer|Binary_string::free|Binary_string::~Binary_string|String::~String                                                                           ## MDEV-31860
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|mysql_parse                                          ## MDEV-31842
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|mysql_execute_command|mysql_parse|dispatch_command                               ## MDEV-31842
 SIGABRT|btr_attach_half_pages|btr_page_split_and_insert|btr_cur_pessimistic_insert|btr_insert_on_non_leaf_level                                                                ## MDEV-31815
 SIGSEGV|Item::print_parenthesised|Item_cond::print|st_select_lex::print|subselect_single_select_engine::print                                                                  ## MDEV-31850
 SIGSEGV|Field::set_default|Field::set_default|Field::save_in_field_default_value|Item_param::save_in_field                                                                     ## MDEV-31849
@@ -767,7 +773,6 @@ SIGSEGV|json_string_set_cs|json_string_setup|json_scan_start|Item_func_json_inse
 transaction.is_streaming()|SIGABRT|wsrep::transaction::adopt|wsrep::client_state::adopt_transaction|Wsrep_high_priority_service::adopt_transaction|wsrep::server_state::close_orphaned_sr_transactions ## MDEV-30764
 transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::after_statement|wsrep_after_statement|wsrep_mysql_parse|dispatch_command                    ## MDEV-29271
 marked_for_read()|SIGABRT|Field_bit::val_int|Field_bit::update_min|Column_statistics_collected::add|collect_statistics_for_table                                               ## MDEV-31063
-marked_for_read()|SIGABRT|Field_newdate::get_TIME|Field_newdate::get_date|Item_field::get_date|Item_func_date_format::val_str                                                  ## MDEV-30730
 SIGSEGV|mysql_derived_prepare|mysql_derived_merge_for_insert|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end                                                  ## MDEV-21630
 SIGSEGV|Binary_string::free|Binary_string::~Binary_string|String::~String|Copy_field::~Copy_field                                                                              ## MDEV-21630
 SIGSEGV|mysql_derived_prepare|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end|Multiupdate_prelocking_strategy::handle_end                                     ## MDEV-21630
@@ -2784,3 +2789,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|copy_data_between_tables ## Fixed ## MDEV-25900
 # octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|MYSQL_BIN_LOG::write_table_map ## MDEV-25900
 # octets < 1024|SIGABRT|Binlog_type_info_fixed_string::Binlog_type_info_fixed_string|Field_string::binlog_type_info|Table_map_log_event::Table_map_log_event|THD::binlog_write_table_map ## MDEV-25900
+# marked_for_read()|SIGABRT|Field_newdate::get_TIME|Field_newdate::get_date|Item_field::get_date|Item_func_date_format::val_str                                       ## Fixed ## MDEV-30730
