@@ -8,3 +8,8 @@ SELECT CHAR((WEIGHT_STRING (EXTRACTVALUE ((0),('tX')))));
 
 SET collation_connection='gb2312_bin';
 DO CHAR((WEIGHT_STRING (EXTRACTVALUE ((0),('t')) LEVEL 7)) USING cp852);
+
+DO CHAR((WEIGHT_STRING (EXTRACTVALUE ((0),('t')) LEVEL 7 DESC)) USING cp852);
+
+SET @@collation_connection=latin1_german2_ci;
+DO CHAR((WEIGHT_STRING (EXTRACTVALUE ((0),('a')) LEVEL 7)) USING cp852);

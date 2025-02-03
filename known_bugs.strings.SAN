@@ -5,6 +5,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|String::copy                            ## MDEV-36014
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Type_handler_string_result::stored_field_cmp_to_item|stored_field_cmp_to_item|SEL_ARG_LT::SEL_ARG_LT ## MDEV-32768
+UBSAN|X is outside the range of representable values of type 'long long'|sql/field.h|Field_set::store|Field_str::store_decimal|Item_decimal::save_in_field|fill_record         ## MDEV-36013
+UBSAN|X is outside the range of representable values of type 'long long'|sql/field.h|Field_set::store|Field_str::store_decimal|fill_record|fill_record_n_invoke_before_triggers ## MDEV-36013
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_bool|Item_bool_func::val_int               ## MDEV-36003
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_int|Type_handler::Item_send_long           ## MDEV-36003
 UBSAN|member access within null pointer of type 'struct st_my_thread_var'|storage/spider/spd_table.cc|spider_create_sys_thd|spider_table_bg_sts_action|asan_thread_start|start_thread ## MDEV-35881
@@ -84,11 +88,17 @@ UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect
 UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect function type 'unsigned int *(*)(THD *, int)'|storage/spider/spd_param.cc|spider_param_internal_xa_snapshot|spider_internal_start_trx|ha_spider::external_lock|handler::ha_external_lock ## MDEV-35623
 UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect function type 'unsigned int *(*)(THD *, int)'|storage/spider/spd_param.cc|spider_param_block_size|ha_spider::info|TABLE_LIST::fetch_number_of_rows|make_join_statistics ## MDEV-35623
 UBSAN|member call on null pointer of type 'Item'|storage/spider/spd_db_conn.cc|spider_db_print_item_type|spider_mbase_handler::append_group_by|spider_mbase_handler::append_group_by_part|spider_make_query ## MDEV-35623
+UBSAN|applying zero offset to null pointer|strings/ctype-latin1.c|my_strnxfrm_latin1_de|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int      ## MDEV-35621
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-uca-scanner_next.inl|my_uca_scanner_next_utf8mb3|my_uca_strnxfrm_onelevel_internal_utf8mb3|my_uca_strnxfrm_onelevel_utf8mb3|my_uca_strnxfrm_utf8mb3 ## MDEV-35621
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-uca-scanner_next.inl|my_uca_scanner_next_utf8mb4|my_uca_strnxfrm_onelevel_internal_utf8mb4|my_uca_strnxfrm_onelevel_utf8mb4|my_uca_strnxfrm_utf8mb4 ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_strnxfrm_mb_internal|my_strnxfrm_mb|charset_info_st::strnxfrm|Item_func_weight_string::val_str                ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnxfrm_simple_internal|my_strnxfrm_simple|charset_info_st::strnxfrm|Item_func_weight_string::val_str    ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|my_uca_scanner_init_any|my_uca_strnxfrm_onelevel_internal_utf8mb4|my_uca_strnxfrm_onelevel_utf8mb4|my_uca_strnxfrm_utf8mb4 ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|my_uca_scanner_init_any|my_uca_strnxfrm_onelevel_internal_utf8mb3|my_uca_strnxfrm_onelevel_utf8mb3|my_uca_strnxfrm_utf8mb3 ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnxfrm_utf8mb3_general_ci|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int ## MDEV-35621
+UBSAN|applying zero offset to null pointer|strings/strings_def.h|skip_trailing_space|my_hash_sort_mb_bin|my_ci_hash_sort|_ma_unique_hash                                       ## MDEV-35620
+UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_hash_sort_mb_nopad_bin|my_hash_sort_mb_bin|my_ci_hash_sort|_ma_unique_hash                                    ## MDEV-35620
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|ha_compare_char_varying|_ma_unique_comp|_ma_cmp_dynamic_unique                       ## MDEV-35620
 UBSAN|applying zero offset to null pointer|storage/maria/ma_unique.c|_ma_unique_hash|maria_write|ha_maria::write_row|handler::ha_write_tmp_row                                 ## MDEV-35620
 UBSAN|applying zero offset to null pointer|storage/maria/ma_unique.c|_ma_unique_hash|maria_write|handler::ha_write_tmp_row|end_write                                           ## MDEV-35620
 ASAN|heap-buffer-overflow|storage/myisam/sp_key.c|sp_get_linestring_mbr|sp_get_geometry_mbr|sp_mbr_from_wkb|sp_make_key                                                        ## MDEV-35591
@@ -142,7 +152,9 @@ UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long'|sql/s
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Type_handler::Item_send_date|Type_handler_temporal_with_date::Item_send|Item::send ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|is_infoschema_db ## MDEV-30756
 UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner        ## MDEV-30756
+UBSAN|member access within null pointer of type 'JOIN_TAB' (aka 'st_join_table')|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-30756
 ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|my_hash_key|hashcmp|my_hash_first_from_hash_value                                                     ## MDEV-35011
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_first_internal|handler::ha_index_first|mysql_ha_read                                   ## MDEV-35375
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first                          ## MDEV-35375
@@ -396,9 +408,11 @@ UBSAN|downcast of address X which does not point to an object of type 'Item_row'
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select ## MDEV-28346
 UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-28346
 UBSAN|member call on null pointer of type 'struct Item'|sql/sql_select.cc|handle_select|execute_sqlcom_select|mysql_execute_command|mysql_parse                                ## MDEV-22447
+ASAN|heap-use-after-free|sql/sql_string.cc|__asan_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                   ## MDEV-26822
+ASAN|heap-use-after-free|sql/sql_string.cc|__asan_memmove|Binary_string::copy|String::copy|Item_copy_string::copy                                                              ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|interceptor_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                              ## MDEV-26822
-ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                          ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|interceptor_memmove|Binary_string::copy|String::copy|Item_copy_string::copy                                                         ## MDEV-26822
+ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                          ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|memmove|Binary_string::copy|String::copy|Item_copy_string::copy                                                                     ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|asan_memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str_generic                                                   ## MDEV-29462
 ASAN|heap-use-after-free|sql/sql_string.cc|interceptor_memmove|Binary_string::copy|String::copy|Item_char_typecast::val_str_generic                                            ## MDEV-29462

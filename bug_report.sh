@@ -338,7 +338,12 @@ else
   # START_LINE: the 1st line on which any *SAN issue shows (ref TEXT in ~/b), END_LINE: the last of either '^SUMMARY:' or '=ABORTING$'
   START_LINE=$(grep -n -m 1 -E "${TEXT}" ./log/master.err | cut -d: -f1)
   END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ./log/master.err | tail -1 | cut -d: -f1)
-  sed -n "${START_LINE},${END_LINE}p" ./log/master.err
+  if [ ! -z "${START_LINE}" ]; then
+    if [ -z "${END_LINE}" ]; then END_LINE=10000; fi
+    sed -n "${START_LINE},${END_LINE}p" ./log/master.err
+  else
+    echo "N/A"
+  fi
   START_LINE=;END_LINE=
   # Check if a SAN stack is present in the alternative (dbg vs opt) and add it to output as well
   ALT_BASEDIR=

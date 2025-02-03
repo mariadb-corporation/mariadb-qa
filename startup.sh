@@ -6,6 +6,10 @@
 # Random entropy init
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 
+# Accidental run from wrong directory: cd
+if [[ "${PWD}" == *"/mariadb-test" ]]; then cd ..; fi
+if [[ "${PWD}" == *"/mysql-test" ]]; then cd ..; fi
+
 # Filter the following text (regex aware) from INIT_TOOL startup
 FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|To start mariadbd at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved|^[2-9][0-9][0-9][0-9][0-9][0-9] [0-2][0-9]:|^20[2-9][0-9]|See the manual|start the MySQL daemon|bin/mysqld_safe|test the MySQL daemon with|latest information about|http://|https://|by buying support/|Found existing config file|Because this file might be in use|but was used in bootstrap|when you later start the server|new default config file was created|compare it with your file|root.*new.*password|Alternatively you can run|will be used by default|You may edit this file to change|Filling help tables|TIMESTAMP with implicit DEFAULT value|You can find the latest source|the maria-discuss email list|Please check all of the above|Optimizer switch:|perl mariadb|^cd |bin/mariadb-secure-installation|secure-file-priv value as server is running with|starting as process|Using unique option prefix core|Deprecated program name|Corporation subscription customer|consultative guidance on questions|how to tune for performance|manual for more instructions|additional information about the'
 
@@ -473,7 +477,14 @@ touch in.sql
 MTR_DIR="./mysql-test"
 if [ -d "./mariadb-test" ]; then MTR_DIR="./mariadb-test"; fi
 if [ -d "${MTR_DIR}" ]; then
-  echo "export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1" >${MTR_DIR}/cl_mtr
+  rm -f ${MTR_DIR}/mtra ${MTR_DIR}/cl_mtr ${MTR_DIR}/cl_mtr_innodb ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_multi ${MTR_DIR}/loop_mtr_skip_slave_err ${MTR_DIR}/loop_mtr_multi_skip_slave_err
+  echo '#!/bin/bash' >${MTR_DIR}/mtra
+  add_san_options ${MTR_DIR}/mtra
+  echo 'Running: ./mtr ${*}' >> ${MTR_DIR}/mtra
+  echo './mtr ${*}' >> ${MTR_DIR}/mtra
+  chmod +x ${MTR_DIR}/mtra
+  echo '#!/bin/bash' >${MTR_DIR}/cl_mtr
+  add_san_options ${MTR_DIR}/cl_mtr
   echo 'PORT=$(grep -o "port=[0-9]\+" var/my.cnf | grep -o "[0-9]\+" | head -n1)' >>${MTR_DIR}/cl_mtr
   echo 'if [ -z "${PORT}" ]; then' >>${MTR_DIR}/cl_mtr
   echo '  ./mtr --start-and-exit' >>${MTR_DIR}/cl_mtr
