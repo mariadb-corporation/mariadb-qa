@@ -132,7 +132,7 @@ done < ./newbugs.list
 rm 16*_* 2>/dev/null # {epoch}_run, {epoch}_start etc. scripts created by reducer (can easily be recreated if needed)
 
 # Delete trials that have 'Backtrace stopped: Cannot access memory at address' as part of their UniqueID
-grep --binary-files=text -i 'Backtrace stopped: Cannot access memory at address' newbug*.string | sed 's|.string.*||' | igrep --binary-files=text '^newbug_' | xargs -I{} echo "rm {}.*" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+grep --binary-files=text -i 'Backtrace stopped: Cannot access memory at address' newbug*.string | sed 's|.string.*||' | grep --binary-files=text '^newbug_' | xargs -I{} echo "rm {}.*" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
 
 # Fireworks cleanup
 if [ -d /data/FIREWORKS ]; then 

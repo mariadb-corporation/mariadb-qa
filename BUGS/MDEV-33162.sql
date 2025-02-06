@@ -15,3 +15,10 @@ PREPARE s FROM 'select JSON_ARRAYAGG(?)';
 EXECUTE s USING'';
 SET names latin1;
 EXECUTE s USING'';
+
+SET sql_mode='';
+CREATE TABLE t1 (a INT,b CHAR,PRIMARY KEY(a)) ENGINE=RocksDB;
+PREPARE stmt FROM 'SELECT GROUP_CONCAT(t1.a ORDER BY t1.a) FROM t1 JOIN t1 t2 GROUP BY t1.a WITH ROLLUP';
+EXECUTE stmt;
+SET @@collation_connection=latin1_bin;
+EXECUTE stmt;

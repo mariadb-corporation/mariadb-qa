@@ -6,7 +6,7 @@
 # Random entropy init
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 
-# Accidental run from wrong directory: cd
+# Run from test directory: cd ..
 if [[ "${PWD}" == *"/mariadb-test" ]]; then cd ..; fi
 if [[ "${PWD}" == *"/mysql-test" ]]; then cd ..; fi
 

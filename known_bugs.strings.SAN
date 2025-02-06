@@ -5,6 +5,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|X is outside the range of representable values of type 'unsigned long'|include/row0row.inl|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-36015
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|String::copy                            ## MDEV-36014
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Type_handler_string_result::stored_field_cmp_to_item|stored_field_cmp_to_item|SEL_ARG_LT::SEL_ARG_LT ## MDEV-32768
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.h|Field_set::store|Field_str::store_decimal|Item_decimal::save_in_field|fill_record         ## MDEV-36013
@@ -71,6 +72,8 @@ ASAN|use-after-poison|strings/ctype-latin1.c|my_mb_wc_latin1|my_convert_fix|Stri
 ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_convert_fix|String_copier::well_formed_copy|String::copy                                                  ## MDEV-33235
 ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_mb_wc_utf8mb4|my_convert_fix|String_copier::well_formed_copy                                              ## MDEV-33235
 UBSAN|applying zero offset to null pointer|strings/ctype.c|my_convert_fix|String_copier::well_formed_copy|String::copy|String_copier_for_item::copy_with_warn                  ## MDEV-33235
+UBSAN|X is outside the range of representable values of type 'long long'|sql/field.h|Field_set::store|Field::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable ## MDEV-35715
+UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_enum::store|fill_record|fill_record_n_invoke_before_triggers|mysql_insert          ## MDEV-35715
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|Item_float::save_in_field|fill_record|fill_record_n_invoke_before_triggers ## MDEV-35715
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|fill_record|fill_record_n_invoke_before_triggers|mysql_insert           ## MDEV-35715
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|Field_bit_as_char::store|Item_float::save_in_field|fill_record          ## MDEV-35715
@@ -152,6 +155,7 @@ UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long'|sql/s
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sql/item_timefunc.cc|Item_func_makedate::get_date|Type_handler::Item_send_date|Type_handler_temporal_with_date::Item_send|Item::send ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq  ## MDEV-30756
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|is_infoschema_db ## MDEV-30756
 UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner        ## MDEV-30756
 UBSAN|member access within null pointer of type 'JOIN_TAB' (aka 'st_join_table')|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-30756
@@ -359,6 +363,7 @@ UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::get_cache_parameters|Item_in_optimizer::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache ## MDEV-30842
 UBSAN|member access within null pointer of type 'struct Field'|sql/item.cc|Item_field::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived|Item_equal::create_pushable_equalities ## MDEV-30841
 UBSAN|member access within null pointer of type 'struct THD'|sql/item_strfunc.cc|Item_func_concat::append_value|Item_func_concat::val_str|Item::save_str_in_field|Item::save_in_field ## MDEV-23294
+ASAN|use-after-poison|sql/sql_string.h|__asan_memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                                      ## MDEV-30785
 ASAN|use-after-poison|sql/sql_string.h|interceptor_memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                                 ## MDEV-30785
 ASAN|use-after-poison|sql/sql_string.h|memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                                             ## MDEV-30785
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-26373
