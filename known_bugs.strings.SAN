@@ -5,6 +5,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::FVectorNode|mhnsw_insert|TABLE::hlindexes_on_insert                        ## MDEV-36033
+UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::make_vec|FVectorNode::FVectorNode|mhnsw_insert                             ## MDEV-36033
 UBSAN|X is outside the range of representable values of type 'unsigned long'|include/row0row.inl|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-36015
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|String::copy                            ## MDEV-36014
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Type_handler_string_result::stored_field_cmp_to_item|stored_field_cmp_to_item|SEL_ARG_LT::SEL_ARG_LT ## MDEV-32768
