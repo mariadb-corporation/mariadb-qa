@@ -131,6 +131,7 @@ INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
 INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
 INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
+INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 # INNODB_ERROR|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD ## MDEV-35187 (Filtered as this is possibly a common error)
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_global_system_variables and LOCK_log             ## MDEV-29744
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_commit_ordered and LOCK_global_system_variables  ## MDEV-29744

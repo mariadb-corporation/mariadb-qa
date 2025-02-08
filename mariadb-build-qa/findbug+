@@ -3,7 +3,7 @@
 
 if [ ! -r ./gendirs.sh ]; then echo 'Assert: ./gendirs.sh missing'; exit 1; fi
 
-REGEX_EXCLUDE="$(cat REGEX_EXCLUDE 2>/dev/null)"  # Handy to exclude a particular build
+REGEX_EXCLUDE="$(cat REGEX_EXCLUDE 2>/dev/null)"  # Handy to exclude a particular build. The 'MENT' exclusion is because some SAN issues have for example 'passed as argument 2' in their summary, note the 'ment' in 'argument'
 if [ -z "${REGEX_EXCLUDE}" ]; then REGEX_EXCLUDE="DUMMYSTRINGNEVERSEEN"; fi
 
 # The following is not perfect (other upper/lowercase combinations are possible, but we cannot universally change $1 to uppercase as $1 may be a bug string to search for. At least most common combinations are covered.
@@ -51,10 +51,13 @@ rm -f /tmp/pri.t /tmp/sec.t
 
 VER_SCAN_STRING='mariadb-[-\.0-9]+-[od][pb][tg]|mysql-[\.0-9]+-[od][pb][tg]'
 
+# TODO: the below is not entirely thread safe. If one runs 'b' and 'bs' at the same time and in the remote case where these runs reach the code below/finish in close succession, it is possible that /tmp/pri.t and/or /tmp/sec.t were overwritten/conflict. To be fixed by using mktemp for all files
+
+# Generate a baseline list /tmp/pri.t of all directories (to compare against the list generated below i.e. /tmp/sec.t)
 ./gendirs.sh ${GENDIRS} | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -uV > /tmp/pri.t
 
-# Generate bug list
-./gendirs.sh ${GENDIRS} | xargs -I{} echo "grep -Ei --binary-files=text '${TEXT}' {}/log/master.err {}/node${NODE}/node${NODE}.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -uV > /tmp/sec.t
+# Generate list of directories in which the bug is observed as /tmp/sec.t
+./gendirs.sh ${GENDIRS} | grep -vEi --binary-files=text "${REGEX_EXCLUDE}" | xargs -I{} echo "grep -Ei --binary-files=text '${TEXT}' {}/log/master.err {}/node${NODE}/node${NODE}.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|-linux-x86_64||' | grep -oE --binary-files=text "${VER_SCAN_STRING}" | sort -uV > /tmp/sec.t
 
 if [ "${BBB_MODE}" -eq 1 ]; then
   mv /tmp/sec.t /tmp/sec.t.1

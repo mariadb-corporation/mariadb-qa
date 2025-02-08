@@ -3,8 +3,12 @@
 ##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
+UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb2312_chinese_ci|Arg_comparator::compare|Item_func_eq::val_bool|evaluate_join_record            ## MDEV-36045
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb2312_chinese_ci|Arg_comparator::compare|Item_func_eq::val_int|evaluate_join_record             ## MDEV-36045
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb2312_chinese_ci|Arg_comparator::compare|Item_func_eq::val_bool|make_join_select                ## MDEV-36045
 UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::FVectorNode|mhnsw_insert|TABLE::hlindexes_on_insert                        ## MDEV-36033
 UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::make_vec|FVectorNode::FVectorNode|mhnsw_insert                             ## MDEV-36033
 UBSAN|X is outside the range of representable values of type 'unsigned long'|include/row0row.inl|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-36015
@@ -80,6 +84,7 @@ UBSAN|X is outside the range of representable values of type 'long long'|sql/fie
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|fill_record|fill_record_n_invoke_before_triggers|mysql_insert           ## MDEV-35715
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|Field_bit_as_char::store|Item_float::save_in_field|fill_record          ## MDEV-35715
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|Field_bit_as_char::store|fill_record|fill_record_n_invoke_before_triggers ## MDEV-35715
+UBSAN|downcast of address X with insufficient space for an object of type 'my_decimal'|sql/item_strfunc.cc|Item_dyncol_get::get_date|Time::make_from_item|Time::Time|Time::Time ## MDEV-35714
 UBSAN|downcast of address X with insufficient space for an object of type 'my_decimal'|sql/item_strfunc.cc|Item_dyncol_get::get_date|Temporal_with_date::make_from_item|Temporal_with_date::Temporal_with_date|Date::Date ## MDEV-35714
 UBSAN|downcast of address X with insufficient space for an object of type 'my_decimal'|sql/item_strfunc.cc|Item_dyncol_get::get_date|Temporal_with_date::make_from_item|Temporal_with_date::Temporal_with_date|Datetime::Datetime ## MDEV-35714
 UBSAN|load of value X, which is not a valid value for type 'enum enum_schema_tables'|sql/sql_show.cc|optimize_for_get_all_tables|optimize_schema_tables_reads|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-35713
@@ -93,6 +98,7 @@ UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect
 UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect function type 'unsigned int *(*)(THD *, int)'|storage/spider/spd_param.cc|spider_param_internal_xa_snapshot|spider_internal_start_trx|ha_spider::external_lock|handler::ha_external_lock ## MDEV-35623
 UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect function type 'unsigned int *(*)(THD *, int)'|storage/spider/spd_param.cc|spider_param_block_size|ha_spider::info|TABLE_LIST::fetch_number_of_rows|make_join_statistics ## MDEV-35623
 UBSAN|member call on null pointer of type 'Item'|storage/spider/spd_db_conn.cc|spider_db_print_item_type|spider_mbase_handler::append_group_by|spider_mbase_handler::append_group_by_part|spider_make_query ## MDEV-35623
+UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnxfrm_8bit_nopad_bin|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/ctype-latin1.c|my_strnxfrm_latin1_de|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int      ## MDEV-35621
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-uca-scanner_next.inl|my_uca_scanner_next_utf8mb3|my_uca_strnxfrm_onelevel_internal_utf8mb3|my_uca_strnxfrm_onelevel_utf8mb3|my_uca_strnxfrm_utf8mb3 ## MDEV-35621
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-uca-scanner_next.inl|my_uca_scanner_next_utf8mb4|my_uca_strnxfrm_onelevel_internal_utf8mb4|my_uca_strnxfrm_onelevel_utf8mb4|my_uca_strnxfrm_utf8mb4 ## MDEV-35621
@@ -205,6 +211,7 @@ UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/sql_selec
 UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/sql_select.cc|best_access_path|get_costs_for_tables|best_extension_by_limited_search|greedy_search      ## MDEV-34130
 ASAN|heap-use-after-free|strings/ctype-simple.c|my_strnncollsp_simple|ha_compare_char_varying|_ma_unique_comp|maria_update                                                     ## MDEV-23443
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/sql_lex.cc|st_select_lex_unit::set_limit|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_real ## MDEV-29411
+UBSAN|applying zero offset to null pointer|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_discover_table_structure|create_table_impl       ## MDEV-34102
 ASAN|heap-use-after-free|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_db_open_item_field|spider_db_mbase_util::print_item_func           ## MDEV-34102
 ASAN|heap-use-after-free|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_db_open_item_field|spider_db_print_item_type                       ## MDEV-34102
 ASAN|dynamic-stack-buffer-overflow|strings/decimal.c|bin2decimal|my_decimal::my_decimal|Field_new_decimal::val_str|Field::val_str                                              ## MDEV-23444
@@ -284,6 +291,7 @@ ASAN|heap-use-after-free|storage/heap/ha_heap.cc|ha_heap::find_unique_row|select
 LSAN|memory leak|mysys/my_malloc.c|interceptor_malloc|my_malloc|init_dynamic_string|mariadb_dyncol_json                                                                        ## MDEV-31274
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_string|mariadb_dyncol_json                                                                                    ## MDEV-31274
 ASAN|use-after-poison|sql/sql_class.h|TMP_TABLE_PARAM::cleanup|spider_rm_sys_tmp_table_for_result|spider_db_free_result|ha_spider::reset                                       ## MDEV-31860
+UBSAN|member access within null pointer of type 'JOIN_TAB' (aka 'st_join_table')|sql/sql_select.cc|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields|update_ref_and_keys ## MDEV-28509
 UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/sql_select.cc|add_key_field|add_key_equal_fields|Item_func_ne::add_key_fields|update_ref_and_keys        ## MDEV-28509
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_lt::val_int ## MDEV-31845
 UBSAN|null pointer passed as argument 1, which is declared to never be null|strings/ctype-bin.c|my_strnncoll_binary|my_strnncollsp_binary|Arg_comparator::compare|Item_func_gt::val_int ## MDEV-31845

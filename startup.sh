@@ -480,7 +480,7 @@ if [ -d "${MTR_DIR}" ]; then
   rm -f ${MTR_DIR}/mtra ${MTR_DIR}/cl_mtr ${MTR_DIR}/cl_mtr_innodb ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_multi ${MTR_DIR}/loop_mtr_skip_slave_err ${MTR_DIR}/loop_mtr_multi_skip_slave_err
   echo '#!/bin/bash' >${MTR_DIR}/mtra
   add_san_options ${MTR_DIR}/mtra
-  echo 'Running: ./mtr ${*}' >> ${MTR_DIR}/mtra
+  echo 'echo "Running: ./mtr ${*}"' >> ${MTR_DIR}/mtra
   echo './mtr ${*}' >> ${MTR_DIR}/mtra
   chmod +x ${MTR_DIR}/mtra
   echo '#!/bin/bash' >${MTR_DIR}/cl_mtr

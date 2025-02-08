@@ -333,14 +333,16 @@ if [ ${SAN_MODE} -eq 0 ]; then
       echo "THIS TESTCASE DID NOT CRASH ${SERVER_VERSION} (the version of the basedir in which you started this script), SO NO BACKTRACE IS SHOWN HERE. YOU CAN RE-EXECUTE THIS SCRIPT FROM ONE OF THE 'Bug confirmed present in' DIRECTORIES BELOW TO OBTAIN ONE, OR EXECUTE ./all_no_cl; ./test; ./stack FROM WITHIN THAT DIRECTORY TO GET A BACKTRACE ETC. MANUALLY!"
     fi
   fi
+  echo '{noformat}'
 else
-  ${SCRIPT_PWD}/homedir_scripts/myver | head -n1
   # START_LINE: the 1st line on which any *SAN issue shows (ref TEXT in ~/b), END_LINE: the last of either '^SUMMARY:' or '=ABORTING$'
   START_LINE=$(grep -n -m 1 -E "${TEXT}" ./log/master.err | cut -d: -f1)
   END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ./log/master.err | tail -1 | cut -d: -f1)
   if [ ! -z "${START_LINE}" ]; then
     if [ -z "${END_LINE}" ]; then END_LINE=10000; fi
+    ${SCRIPT_PWD}/homedir_scripts/myver | head -n1
     sed -n "${START_LINE},${END_LINE}p" ./log/master.err
+    echo '{noformat}'
   else
     echo "N/A"
   fi
@@ -355,15 +357,18 @@ else
   if [ ! -z "${ALT_BASEDIR}" -a -d "${ALT_BASEDIR}" -a "${ALT_BASEDIR}" != "${PWD}" ]; then
     ALT_START_LINE=$(grep -n -m 1 -E "${TEXT}" ${ALT_BASEDIR}/log/master.err | cut -d: -f1)
     ALT_END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ${ALT_BASEDIR}/log/master.err | tail -1 | cut -d: -f1)
-    echo '{noformat}'  # Close previous opt/dbg output from above
-    cd ${ALT_BASEDIR}
-    ${SCRIPT_PWD}/homedir_scripts/myver | head -n1
-    cd - >/dev/null
-    sed -n "${ALT_START_LINE},${ALT_END_LINE}p" ${ALT_BASEDIR}/log/master.err
+    if [ ! -z "${START_LINE}" ]; then
+      if [ -z "${END_LINE}" ]; then END_LINE=10000; fi
+      cd ${ALT_BASEDIR}
+      ${SCRIPT_PWD}/homedir_scripts/myver | head -n1
+      cd - >/dev/null
+      sed -n "${ALT_START_LINE},${ALT_END_LINE}p" ${ALT_BASEDIR}/log/master.err
+      echo '{noformat}'
+    fi
     ALT_START_LINE=;ALT_END_LINE=
   fi
   ALT_BASEDIR=
-  echo -e '{noformat}\n\nSetup:\n'
+  echo -e '\nSetup:\n'
   echo '{noformat}'
   if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh san | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
     # TODO: consider use of dpkg --list | grep -o 'llvm-[0-9]\+' | sort -h -r | head -n1 | grep -o '[0-9]\+'

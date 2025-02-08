@@ -2,6 +2,34 @@
 # Created by Roel Van de Paar, MariaDB
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 
+# Likely mistaken use cases (reversed)
+if [[ "${PWD}" == *"SAN"* && "${1}" != "SAN" ]]; then
+  echo "*********************************************************************************************************"
+  echo "Warning: you are starting '~/b' (b) from a SAN basedir. Do you maybe want to use '~/b san' (bs) instead?"
+  echo "Warning: this will lead to errors in the output, particularly in terms of versions affected"
+  echo "Pausing 5 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
+  echo "*********************************************************************************************************"
+  echo ''
+  sleep 5
+elif [[ "${PWD}" != *"SAN"* && "${1}" == "SAN" ]]; then
+  echo "*********************************************************************************************************"
+  echo "Warning: you are starting '~/b san' (bs) from a non-SAN basedir. Do you maybe want to use '~/b' (b) instead?"
+  echo "Warning: this will lead to errors in the output, particularly in terms of versions affected"
+  echo "Pausing 5 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
+  echo "*********************************************************************************************************"
+  echo ''
+  sleep 5
+elif [[ "${PWD}" == *"SAN"* && "${1}" == "REPL" ]]; then
+  echo "*********************************************************************************************************"
+  echo "Warning: you are starting '~/b repl' (br) from a SAN basedir. Do you maybe want to use '~/bs' (bs) instead?"
+  echo "Warning: this will lead to errors in the output, particularly in terms of versions affected"
+  echo "Additionally, this mode has not been tested and likely does not function correctly yet"  #TODO
+  echo "Pausing 5 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
+  echo "*********************************************************************************************************"
+  echo ''
+  sleep 5
+fi
+
 echo 'Starting up...'
 
 if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (like ~/b) has set this option. If not, set it here                                                                                         
@@ -27,25 +55,6 @@ set "${1^^}" "${2}"  # Make ${1} uppercase ('san' > 'SAN')
 sleep 10
 rm -f report.log
 if [ -r report.log ]; then echo "Assert: report.log still present though this script tried to delete it!"; exit 1; fi
-
-# Likely mistaken use cases (reversed)
-if [[ "${PWD}" == *"SAN"* && "${1}" != "SAN" ]]; then
-  echo "Warning: you are starting '~/b' from a SAN basedir. Do you maybe want to use '~/b san' instead?"
-  echo "Pausing 3 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
-  echo ''
-  sleep 3
-elif [[ "${PWD}" != *"SAN"* && "${1}" == "SAN" ]]; then
-  echo "Warning: you are starting '~/b san' from a non-SAN basedir. Do you maybe want to use '~/b' instead?"
-  echo "Pausing 3 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
-  echo ''
-  sleep 3
-elif [[ "${PWD}" == *"SAN"* && "${1}" == "REPL" ]]; then
-  echo "Warning: you are starting '~/b repl' from a SAN basedir. Do you maybe want to use '~/bs' instead?"
-  echo "Additionally, this mode has not been tested and likely does not function correctly yet"  #TODO
-  echo "Pausing 3 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
-  echo ''
-  sleep 3
-fi
 
 if [ "${1}" == "GAL" ]; then
   if [ -z "$(echo "$(cd ..;./gendirs.sh GAL)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
