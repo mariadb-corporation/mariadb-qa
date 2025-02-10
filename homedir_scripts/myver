@@ -28,6 +28,6 @@ else
   exit 1
 fi
 
-echo "{noformat:title=${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE}}"
+echo "{noformat:title=${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE} ${BUILD_DATE}}"
 echo ""
 echo "{noformat}"

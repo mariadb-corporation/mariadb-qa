@@ -243,6 +243,7 @@ SIGSEGV|__strcmp_evex|get_defaults_options|my_load_defaults|mysql_read_default_o
 SIGSEGV|list_add|heap_open|ha_heap::open|handler::ha_open                                                                                                                      ## MDEV-35851
 prebuilt->sql_stat_start || prebuilt->table->no_rollback()|SIGABRT|row_search_mvcc|ha_innobase::index_read|ha_innobase::rnd_pos|handler::ha_rnd_pos                            ## MDEV-29120
 UT_LIST_GET_LEN(trx->lock.trx_locks) == 0|SIGABRT|ut_dbg_assertion_failed|TrxFactory::destroy|Pool<trx_t, TrxFactory, TrxPoolLock>::~Pool|PoolManager<Pool<trx_t, TrxFactory, TrxPoolLock>, TrxPoolManagerLock>::destroy ## MDEV-29120
+0|SIGABRT|get_field_item_for_having|Item_field::derived_field_transformer_for_having|Item_args::transform_args|Item_func::transform                                            ## MDEV-26940
 0|SIGABRT|get_field_item_for_having|Item_field::derived_field_transformer_for_having|Item::transform|Item_args::transform_args                                                 ## MDEV-26940
 state() == s_executing || state() == s_prepared || state() == s_committing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-35763
 state == TRX_STATE_PREPARED || state == TRX_STATE_PREPARED_RECOVERED || state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-35681
@@ -881,6 +882,10 @@ sl->join == 0|SIGABRT|reinit_stmt_before_use|Prepared_statement::execute|Prepare
 SIGSEGV|lock_sys_t::hash_table::resize|lock_sys_t::resize|buf_pool_t::resize|buf_resize_callback                                                                               ## MDEV-29799
 thd->wsrep_exec_mode == LOCAL_STATE|SIGABRT|wsrep_prepare|prepare_or_error|ha_commit_trans|trans_commit_stmt                                                                   ## MDEV-29808
 thd->ha_data[wsrep_hton->slot].ha_info[all].is_trx_read_write()|SIGABRT|wsrep_prepare|prepare_or_error|ha_prepare|trans_xa_prepare                                             ## MDEV-29807
+charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_spvar_definition|sp_head::row_fill_field_definitions|LEX::sp_variable_declarations_row_finalize       ## MDEV-25135
+charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_spvar_definition|sp_head::fill_spvar_definition|MYSQLparse                                            ## MDEV-25135
+charset|SIGABRT|Column_definition::sp_prepare_create_field|MYSQLparse|parse_sql|mysql_parse                                                                                    ## MDEV-25135
+charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_spvar_definition|LEX::sp_variable_declarations_finalize|MYSQLparse                                    ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|LEX::sp_variable_declarations_finalize                ## MDEV-25135
 SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_definition::prepare_stage1_string|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|sp_head::fill_spvar_definition                        ## MDEV-25135
@@ -934,6 +939,8 @@ lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|MYSQLparse|parse_sql|mysql_parse|wsrep_mysql_parse                                                                 ## MDEV-29312 
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|ORAparse|parse_sql|mysql_parse|dispatch_command                                                                    ## MDEV-29312
 lex->current_select->linkage != GLOBAL_OPTIONS_TYPE|SIGABRT|ORAparse|parse_sql|mysql_parse|wsrep_mysql_parse                                                                   ## MDEV-29312
+*ref && (*ref)->fixed()|SIGABRT|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_order_by               ## MDEV-29300
+*ref && (*ref)->is_fixed()|SIGABRT|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_order_by            ## MDEV-29300
 *ref && (*ref)->fixed()|SIGABRT|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar                            ## MDEV-29300
 *ref && (*ref)->is_fixed()|SIGABRT|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar                         ## MDEV-29300
 0|SIGABRT|Type_handler_string_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys                                                                               ## MDEV-29283
@@ -1520,6 +1527,8 @@ SIGSEGV|set_field_to_null_with_conversions|Item::save_in_field|Item_result_field
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-22783
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22716
 SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                            ## MDEV-22716
+(*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item_func::fix_fields                                               ## MDEV-22713
+(*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item_func::fix_fields                                            ## MDEV-22713
 (*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                       ## MDEV-22713
 (*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                          ## MDEV-22713
 (*select_ref)->fixed|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item::fix_fields_if_needed                                            ## MDEV-22713
@@ -1554,6 +1563,7 @@ SIGSEGV|Item::operator new|Type_handler_json_common::make_json_valid_expr|JOIN::
 SIGABRT|__cxa_pure_virtual|Item::real_type|Value_source::Context::Context|Item_func_in::propagate_equal_fields                                                                 ## MDEV-22444
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22444
 SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|JOIN::transform_in_predicates_into_in_subq      ## MDEV-22444
+0|SIGABRT|stored_field_cmp_to_item|convert_const_to_int|Item_bool_rowready_func2::fix_length_and_dec|Item_func::fix_fields                                                     ## MDEV-22385
 0|SIGABRT|stored_field_cmp_to_item|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_func::setup_args_and_comparator                                    ## MDEV-22385
 0|SIGABRT|stored_field_cmp_to_item|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_bool_rowready_func2::fix_length_and_dec                            ## MDEV-22385
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                     ## MYSQL-99377
