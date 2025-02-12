@@ -22,6 +22,7 @@ UBSAN|X is outside the range of representable values of type 'long long'|sql/fie
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_bool|Item_bool_func::val_int               ## MDEV-36003
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_int|Type_handler::Item_send_long           ## MDEV-36003
 UBSAN|member access within null pointer of type 'struct st_my_thread_var'|storage/spider/spd_table.cc|spider_create_sys_thd|spider_table_bg_sts_action|asan_thread_start|start_thread ## MDEV-35881
+UBSAN|member access within null pointer of type 'struct st_my_thread_var'|storage/spider/spd_table.cc|spider_create_sys_thd|spider_table_bg_crd_action|asan_thread_start|start_thread ## MDEV-35881
 UBSAN|call to function thd_kill_timeout through pointer to incorrect function type 'void (*)(void *)'|mysys/thr_timer.c|process_timers|timer_handler|asan_thread_start|start_thread ## MDEV-35822
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                       ## MDEV-29605
 UBSAN|member access within address X which does not point to an object of type 'ha_spider'|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query ## MDEV-29605
@@ -252,6 +253,7 @@ ASAN|heap-use-after-free|storage/spider/spd_direct_sql.cc|spider_direct_sql_body
 # UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc                                                                                           ## Often though not always MDEV-33149
 UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc|Item_func_json_array_intersect::prepare_json_and_create_hash|Item_func_json_array_intersect::fix_length_and_dec|Item_func::fix_fields|Item_str_func::fix_fields ## MDEV-33149
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions|ha_partition::change_partitions_to_open ## MDEV-33240
+UBSAN|member access within null pointer of type 'TABLE'|storage/spider/spd_db_conn.cc|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|ha_spider::rnd_next_internal ## MDEV-33197
 UBSAN|member access within null pointer of type 'struct TABLE'|storage/spider/spd_db_conn.cc|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|ha_spider::rnd_next_internal ## MDEV-33197
 UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate ## MDEV-33191
 UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::truncate|Sql_cmd_truncate_table::handler_truncate|Sql_cmd_truncate_table::truncate_table ## MDEV-33191
