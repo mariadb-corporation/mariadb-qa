@@ -123,7 +123,7 @@ if [ ${MYSQL_VERSION_MAJOR} -eq 8 ]; then  # CMake Error at cmake/zlib.cmake:136
   ZLIB="-DWITH_ZLIB=bundled"
 fi
 DATE=$(date +'%d%m%y')
-if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-1]$ ]]; then
+if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-5]$ ]]; then  # Provision for MariaDB 10.x, 11.x, ... 15.x
   MD=1
   if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then
     PREFIX="${PREFIX}EMD${DATE}"
@@ -174,7 +174,7 @@ if [ $USE_CLANG -eq 1 ]; then
     exit 1
   fi
   echo "======================================================"
-  echo "Note: USE_CLANG is set to 1, using the clang compiler!"
+  echo "Note: USE_CLANG is set to 1, using the Clang compiler!"
   echo "======================================================"
   sleep 3
   CLANG="-DCMAKE_C_COMPILER=$CLANG_LOCATION -DCMAKE_CXX_COMPILER=${CLANG_LOCATION}++"  # clang++ location is assumed to be same with ++

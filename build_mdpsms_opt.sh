@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
-MAKE_THREADS=35        # Number of build threads
+MAKE_THREADS=30         # Number of build threads
 WITH_EMBEDDED_SERVER=0  # 0 or 1 # Include the embedder server (removed in 8.0)
 WITH_LOCAL_INFILE=1     # 0 or 1 # Include the possibility to use LOAD DATA LOCAL INFILE (LOCAL option was removed in 8.0?)
 USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re-download
@@ -96,7 +96,7 @@ MD=0
 if [ ${MYSQL_VERSION_MAJOR} -eq 8 ]; then  # CMake Error at cmake/zlib.cmake:136 (MESSAGE): ZLIB version must be at least 1.2.12, found 1.2.11.
   ZLIB="-DWITH_ZLIB=bundled"
 fi
-if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-1]$ ]]; then
+if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-5]$ ]]; then  # Provision for MariaDB 10.x, 11.x, ... 15.x
   MD=1
   if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then
     PREFIX="EMD${DATE}"
@@ -150,7 +150,7 @@ if [ $USE_CLANG -eq 1 ]; then
     exit 1
   fi
   echo "======================================================"
-  echo "Note: USE_CLANG is set to 1, using the clang compiler!"
+  echo "Note: USE_CLANG is set to 1, using the Clang compiler!"
   echo "======================================================"
   sleep 3
   CLANG="-DCMAKE_C_COMPILER=$CLANG_LOCATION -DCMAKE_CXX_COMPILER=${CLANG_LOCATION}++"  # clang++ location is assumed to be same with ++

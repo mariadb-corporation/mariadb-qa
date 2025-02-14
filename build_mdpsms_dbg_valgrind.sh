@@ -138,7 +138,7 @@ if [ $USE_CLANG -eq 1 ]; then
     exit 1
   fi
   echo "======================================================"
-  echo "Note: USE_CLANG is set to 1, using the clang compiler!"
+  echo "Note: USE_CLANG is set to 1, using the Clang compiler!"
   echo "======================================================"
   sleep 3
   CLANG="-DCMAKE_C_COMPILER=$CLANG_LOCATION -DCMAKE_CXX_COMPILER=${CLANG_LOCATION}++"  # clang++ location is assumed to be same with ++

@@ -6,6 +6,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-ucs2.c|my_utf16le_uni|my_charlen_utf16|my_ismbchar|my_numchars_utf16                                            ## MDEV-36085
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-utf32.h|my_mb_wc_utf32_quick|charset_info_st::mb_wc|fix_escape_item|Item_func_like::fix_fields                  ## MDEV-36085
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-ucs2.h|my_mb_wc_ucs2_quick|my_ucs2_uni|charset_info_st::mb_wc|fix_escape_item                                   ## MDEV-36085
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_bool|Item::save_bool_in_field              ## MDEV-36003
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_int|Item::save_int_in_field                ## MDEV-36003
 UBSAN|applying zero offset to null pointer|strings/ctype-utf8.c|my_strnxfrm_unicode_full_bin|charset_info_st::strnxfrm|Type_handler_string_result::make_sort_key_part|make_sortkey ## MDEV-36046
@@ -17,6 +20,7 @@ UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::
 UBSAN|X is outside the range of representable values of type 'unsigned long'|include/row0row.inl|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-36015
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|String::copy                            ## MDEV-36014
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Type_handler_string_result::stored_field_cmp_to_item|stored_field_cmp_to_item|SEL_ARG_LT::SEL_ARG_LT ## MDEV-32768
+UBSAN|X is outside the range of representable values of type 'long long'|sql/field.h|Field_set::store|fill_record|fill_record_n_invoke_before_triggers|mysql_insert            ## MDEV-36013
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.h|Field_set::store|Field_str::store_decimal|Item_decimal::save_in_field|fill_record         ## MDEV-36013
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.h|Field_set::store|Field_str::store_decimal|fill_record|fill_record_n_invoke_before_triggers ## MDEV-36013
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_bool|Item_bool_func::val_int               ## MDEV-36003
@@ -82,6 +86,8 @@ ASAN|use-after-poison|strings/ctype-latin1.c|my_mb_wc_latin1|my_convert_fix|Stri
 ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_convert_fix|String_copier::well_formed_copy|String::copy                                                  ## MDEV-33235
 ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_mb_wc_utf8mb4|my_convert_fix|String_copier::well_formed_copy                                              ## MDEV-33235
 UBSAN|applying zero offset to null pointer|strings/ctype.c|my_convert_fix|String_copier::well_formed_copy|String::copy|String_copier_for_item::copy_with_warn                  ## MDEV-33235
+UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|Field_bit_as_char::store|Item::save_in_field|fill_record                ## MDEV-35715
+UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_enum::store|Item::save_in_field|fill_record|fill_record_n_invoke_before_triggers   ## MDEV-35715
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.h|Field_set::store|Field::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable ## MDEV-35715
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_enum::store|fill_record|fill_record_n_invoke_before_triggers|mysql_insert          ## MDEV-35715
 UBSAN|X is outside the range of representable values of type 'long long'|sql/field.cc|Field_bit::store|Item_float::save_in_field|fill_record|fill_record_n_invoke_before_triggers ## MDEV-35715
@@ -528,6 +534,10 @@ UBSAN|null pointer passed as argument 2, which is declared to never be null|stor
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_update|handler::ha_update_row|Sql_cmd_update::update_single_table ## MDEV-26839
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_update|handler::ha_update_row|mysql_update               ## MDEV-26839
 UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-26840
+ASAN|stack-buffer-overflow|strings/int2str.c|int2str|Item_func_conv::val_str|Item_func_soundex::val_str|Item_cache_str::cache_value                                            ## MDEV-32755 (Still in 10.5)
+ASAN|stack-buffer-overflow|strings/int2str.c|int2str|Item_func_conv::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                                         ## MDEV-32755 (Still in 10.5)
+ASAN|stack-buffer-overflow|strings/int2str.c|int2str|Item_func_conv::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                 ## MDEV-32755 (Still in 10.5)
+ASAN|stack-buffer-overflow|strings/int2str.c|int2str|Item_func_conv::val_str|Item::save_str_in_field|Item::save_in_field                                                       ## MDEV-32755 (Still in 10.5)
 
 ###### FIXED BUGS ######
 # UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/ddl_log.cc|ddl_log_write_execute_entry|ddl_log_write_execute_entry|ddl_log_write|ddl_log_create_table ## Fixed ## MDEV-27048

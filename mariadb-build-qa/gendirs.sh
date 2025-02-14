@@ -12,8 +12,8 @@ elif [ "${1}" == "GAL" ]; then
     ls --color=never -d GAL_MD*   2>/dev/null | grep -vE "${GEN_FILTER}"
     ls --color=never -d GAL_EMD* 2>/dev/null | grep -vE "${GEN_FILTER}"
 else
-  ls --color=never -d EMD*1[0-1].[0-9]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | grep -vE "SAN|GAL"
-  ls --color=never -d MD*1[0-1].[0-9]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | grep -vE "SAN|GAL"
+  ls --color=never -d EMD*1[0-5].[0-9]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | grep -vE "SAN|GAL"
+  ls --color=never -d MD*1[0-5].[0-9]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | grep -vE "SAN|GAL"
   ls --color=never -d MS*[589].[0-9]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | grep -vE "SAN|GAL"
   if [ "${1}" == "ALLALL" ]; then
     ls --color=never -d UBASAN_M* TSAN_M* 2>/dev/null | grep -vE "${GEN_FILTER}"

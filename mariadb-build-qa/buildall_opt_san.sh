@@ -2,7 +2,7 @@
 # Created by Roel Van de Paar, MariaDB
 # This script can likely be sourced (. ./buildall_opt.sh) to be able to use job control ('jobs', 'fg' etc)
 
-# A note on memory consumption: buildall_opt_san.sh consumes about 75-90G on an otherwise idle server, when MAKE_THREADS=16 in ~/mariadb-qa/build_mdpsms_opt_san.sh - if this is too much, use buildall_san_slow.sh instead. This script will also create a significant I/O load. It is best to run this on an otherwise idle server with at least 120GB memory. Using MAKE_THREADS=30 will consume >150G (at around 95-100% into the compilations). Swap will be used when there is not sufficient physical memory, and if it is available, but it will be slower
+# A note on memory consumption: buildall_opt_san.sh consumes about 35-40G on an otherwise idle server, when MAKE_THREADS=30 in ~/mariadb-qa/build_mdpsms_opt_san.sh - if this is too much, use /test/buildall_san_slow.sh instead. This script will also create a significant I/O load. It is best to run this on an otherwise idle server with at least 120GB memory. 
 
 # No longer deemed necessary: ref terminate_ds_memory.sh
 #if [ ! -r ./terminate_ds_memory.sh ]; then
@@ -22,7 +22,8 @@ if [ "${STY}" == "" ]; then
 fi
 
 DIR=${PWD}
-rm -Rf 10.5_opt 10.6_opt 10.7_opt 10.8_opt 10.9_opt 10.10_opt 11.0_opt 11.1_opt 11.2_opt 11.3_opt 11.4_opt 11.5_opt 11.6_opt 11.7_opt 11.8_opt
+rm -Rf 1[0-2].[0-9]_opt_san
+rm -Rf 10.1[0-1]_opt_san
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 #cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
@@ -44,11 +45,11 @@ sleep 10
 cd ${DIR}/11.4 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 sleep 10
 #cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
-cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
-sleep 10
+#cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 #cd ${DIR}/11.6 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
-cd ${DIR}/11.7 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
-sleep 10
+#cd ${DIR}/11.7 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 cd ${DIR}/11.8 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
+sleep 10
+cd ${DIR}/12.0 && ~/mariadb-qa/build_mdpsms_opt_san.sh &
 
 echo "All processes started as background threads... Output will commence soon."
