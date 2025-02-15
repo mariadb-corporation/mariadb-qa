@@ -3,9 +3,10 @@
 
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
+if [ "${1}" == "san" ]; then set "SAN" "${2}"; fi  # ${1} 'san' > 'SAN'
 
 # User variables
-ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS=1
+ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=1
 DEBUG_OUTPUT=0  # Set to 1 to see full output of test_all and kill_all (note: this generates lots of output, and it is in parallel threads, so it likely only useful for debugging major issues with test_all and/or kill_all, but it is likely better to check a ./test_all run in a BASEDIR directly). Default: 0, legacy default: 1 (i.e. before this option was implemented, all output was shown)
 
 if [ ! -r /test/gendirs.sh ]; then
@@ -14,20 +15,26 @@ if [ ! -r /test/gendirs.sh ]; then
 fi
 
 # Script variables: do not change
-SAN_BUILD_FOR_NON_SAN_REPORTS_OPT="/test/$(cd /test; ./gendirs.sh san | grep 'MD.*\-11.[0-9]' | grep 'opt' | sort -h | tail -n1)"
-SAN_BUILD_FOR_NON_SAN_REPORTS_DBG="$(echo "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" | sed 's|\-opt|-dbg|')"
+SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'MD.*\-11.[0-9]' | grep 'opt' | sort -h | tail -n1)"
+SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK="$(echo "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" | sed 's|\-opt|-dbg|')"
 
-if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
-  if [ "${1}" != "SAN" ]; then
-    if [ ! -d "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" ]; then
-      echo "Assert: ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled in the script (1), yet the directory SAN_BUILD_FOR_NON_SAN_REPORTS_OPT (${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}) does not exist"
+if [ "${1}" != 'SAN' ]; then
+  # If enabled (ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=1), then check what are deemed to be regular (i.e. non-*SAN) testcases against SAN builds also, as this often reveals new *SAN bugs additional to the original SIGSEGV/SIGABRT etc.
+  if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" == '1' ]; then
+    if [ ! -d "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" ]; then
+      echo "Assert: ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS is enabled in the script (1), yet the directory SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK (${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}) does not exist"
       exit 1
-    elif [ ! -d "${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}" ]; then
-      echo "Assert: ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled in the script (1), yet the directory SAN_BUILD_FOR_NON_SAN_REPORTS_DBG (${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}) does not exist"
+    elif [ ! -d "${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}" ]; then
+      echo "Assert: ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS is enabled in the script (1), yet the directory SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK (${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}) does not exist"
       exit 1
     fi
   #else  # We do not need to display this, it is unecessary info
-    #echo "ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS is enabled (1), however this is a SAN run already, so ignoring this setting (safe)"
+    #echo "ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS is enabled (1), however this is a SAN run already, so ignoring this setting (safe)"
+  fi
+else
+  # If we are using SAN builds, we likely also want to check for cores for testcases which SIGSEGV/SIGABRT *SAN builds, and count them as bugs. For example, some testcases only SIGSEGV on *SAN builds while not triggering any *SAN issues, while not crashing regular opt/dbg builds
+  if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES}" == '1' ]; then
+    export ALSO_CHECK_SAN_BUILDS_FOR_CORES=1  # Used by findbug+ to also check SAN build directories for cores
   fi
 fi
 
@@ -65,6 +72,9 @@ elif [ "${1}" == "SAN" ]; then
     exit 1
   else
     echo "NOTE: SAN Mode: Looking for '${TEXT}' in the error log to validate issue occurrence."
+    if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES}" == '1' ]; then
+      echo "NOTE: ALSO_CHECK_SAN_BUILDS_FOR_CORES[_SET]=1: Will also look for core files in *SAN dirs to validate issue occurence. It is recommended to leave this enabled."  # ... (as set in ~/bs), given that short testcases leading to a SIGSEGV/SIGABRT on *SAN builds are likely directly/immediately related to any *SAN issues they may produce otherwise
+    fi
   fi
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
@@ -458,10 +468,10 @@ else
   echo "TOTAL CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 fi
 if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then
-  if [ "${ALSO_TEST_SAN_BUILD_FOR_NON_SAN_REPORTS}" -eq 1 ]; then
-    echo "----- SAN Execution of the testcase ----- (Builds used: ${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT} and _dbg)"
-    test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_OPT}" opt
-    test_san_build "${SAN_BUILD_FOR_NON_SAN_REPORTS_DBG}" dbg
+  if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" -eq 1 ]; then
+    echo "----- SAN Execution of the testcase ----- (Builds used: ${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK} and _dbg)"
+    test_san_build "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" opt
+    test_san_build "${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}" dbg
     echo '-----------------------------------------'
   fi
 fi

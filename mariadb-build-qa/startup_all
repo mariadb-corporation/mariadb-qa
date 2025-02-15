@@ -28,8 +28,6 @@ sync
 
 sudo mv /etc/mysql /etc/mysql.old 2>/dev/null  # Avoids any local my.cnf from being used by any mysqld
 
-# The echo below will not show at the end due to the background processes. TODO: fix by waiting for no more startup.sh processes to be present
 echo "-------------------"
-echo "Complete! The last information above (on './all') refers to the scripts which were created INSIDE the"
-echo "BASEDIR directories, i.e. you can now do: cd someBASEDIR; ./all"
-echo "To get a list of available BASEDIR directories, ./gendirs.sh may help!"
+echo "Complete! You can now:  cd someBASEDIR; ./all  # to get a full clean server startup"
+echo "To get a list of available BASEDIR directories, run:  ./gendirs.sh  or  ./gendirs.sh san for SAN BASEDIRs"

@@ -2,6 +2,9 @@
 # Created by Roel Van de Paar, MariaDB
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 
+# User variables
+ALSO_CHECK_SAN_BUILDS_FOR_CORES_SET=1  # Recommended to leave as default=1, search for 'ALSO_CHECK_SAN_BUILDS_FOR_CORES' to read more on this.
+
 # Likely mistaken use cases (reversed)
 if [[ "${PWD}" == *"SAN"* && "${1}" != "SAN" ]]; then
   echo "*********************************************************************************************************"
@@ -79,6 +82,7 @@ if [[ "${PWD}" == *"SAN"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workar
 
 export TEXT=
 MYEXTRA_OPT=
+export ALSO_CHECK_SAN_BUILDS_FOR_CORES=0
 if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
   if [ ! -z "$(grep --binary-files=text -i "[^M]SAN" ../REGEX_EXCLUDE | grep -v 'SAN_MD[0-9]')" ]; then
     echo "Assert: remove SAN from ../REGEX_EXCLUDE"
@@ -86,6 +90,9 @@ if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
   fi
   if [ -z "${2}" ]; then
     export TEXT="^SUMMARY:|=ERROR:|runtime error:|ThreadSanitizer:|LeakSanitizer:"
+    if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES_SET}" == '1' ]; then
+      export ALSO_CHECK_SAN_BUILDS_FOR_CORES=1
+    fi
   else
     export TEXT="${2}"
   fi
