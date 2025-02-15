@@ -347,11 +347,11 @@ MYPORT=
 # https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
 # https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer (LSAN is enabled by default except on OS X)
 # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
-export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
+export ASAN_OPTIONS=suppressions=${HOME}/mariadb-qa/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 # check_initialization_order=1 cannot be used due to https://jira.mariadb.org/browse/MDEV-24546 TODO
 # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
 #export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
-export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1
+export UBSAN_OPTIONS=suppressions=${HOME}/mariadb-qa/UBSAN.filter:print_stacktrace=1:report_error_type=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
 export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0
 
@@ -2008,13 +2008,13 @@ init_workdir_and_files(){
     INIT_OPT="--no-defaults --initialize-insecure ${MYINIT}"  # Compatible with     5.7,8.0 (mysqld init)
     INIT_TOOL="${BIN}"                # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
     VERSION_INFO=$(${BIN} --version | grep -E --binary-files=text -oe '[58]\.[01567]' | head -n1)
-    VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-1]\.[0-9][0-9]*' | head -n1)
+    VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-5]\.[0-9][0-9]*' | head -n1)
     if [[ "${VERSION_INFO_2}" =~ ^10.[1-3]$ ]]; then
       VERSION_INFO="5.1"
       INIT_TOOL="${BASEDIR}/scripts/mysql_install_db"
       INIT_OPT="--no-defaults --force"
       START_OPT="--core"
-    elif [[ "${VERSION_INFO_2}" =~ ^1[0-1].[0-9][0-9]* ]]; then
+    elif [[ "${VERSION_INFO_2}" =~ ^1[0-5].[0-9][0-9]* ]]; then
       VERSION_INFO="5.6"
       INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
       INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
@@ -3483,11 +3483,8 @@ process_outcome(){
         if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${WORKD}/log/*.err; then
           if [ -r "$(echo "${INPUTFILE}" | sed 's|/default.node.tld.*|/TOP_SAN_ISSUES_REMOVED|')" ]; then
             echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] TOP_SAN_ISSUES_REMOVED flag file found: dropping any known *SAN bugs from the top of the error log, if any"
-            CUR_PWD_TMP="${PWD}"
-            cd "${WORKDIR}"
-            ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as it will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
-            cd "${CUR_PWD_TMP}"
-            CUR_PWD_TMP=
+            # We are already in $WORKD so we can immediately execute drop_one_or_more_san_from_log.sh from here
+            ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as it will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not: we want only known issues to be removed
           fi
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
