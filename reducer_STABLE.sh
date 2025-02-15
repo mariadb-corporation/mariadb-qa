@@ -2236,7 +2236,7 @@ generate_run_scripts(){
     echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/data/core*) >/dev/null 2>&1 <<EOF" >> $WORK_PARSE_CORE
   fi
   BIN_TO_USE_SHORT=
-  echo -e "  set auto-load safe-path /\n  set libthread-db-search-path /usr/lib/\n  set trace-commands on\n  set pagination off\n  set print pretty on\n  set print array on\n  set print array-indexes on\n  set print elements 4096\n  set print frame-arguments all\n  set logging file ${EPOCH}_FULL.gdb\n  set logging on\n  thread apply all bt full\n  set logging off\n  set logging file ${EPOCH}_STD.gdb\n  set logging on\n  thread apply all bt\n  set logging off\n  quit\nEOF" >> $WORK_PARSE_CORE
+  echo -e "  set auto-load safe-path /\n  set libthread-db-search-path /usr/lib/\n  set trace-commands on\n  set pagination off\n  set print pretty on\n  set print array on\n  set print array-indexes on\n  set print elements 4096\n  set print frame-arguments all\n  set logging file ${EPOCH}_FULL.gdb\n  set logging enabled on\n  thread apply all bt full\n  set logging enabled off\n  set logging file ${EPOCH}_STD.gdb\n  set logging enabled on\n  thread apply all bt\n  set logging enabled off\n  quit\nEOF" >> $WORK_PARSE_CORE
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_STOP
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_STOP
   echo "echo \"Attempting to shutdown mariadbd/mysqld with socket ${EPOCH_SOCKET}...\"" >> $WORK_STOP

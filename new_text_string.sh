@@ -406,9 +406,9 @@ gdb -q ${MYSQLD} ${LATEST_CORE} >/tmp/${RANDF}.gdb1 2>&1 << EOF
   set print array-indexes off
   set print elements 1
   set logging file /tmp/${RANDF}.gdb2
-  set logging on
+  set logging enabled on
   bt
-  set logging off
+  set logging enabled off
   quit
 EOF
 
@@ -441,7 +441,7 @@ rm -f /tmp/${RANDF}.gdb1
 
 # Stack catch
 IMPROVE_FLAG=''
-FRAMES_FILTER='__interceptor_strcmp.part.0|std::terminate.*from|fprintf|__pthread_kill_.*|__GI___pthread_kill|__GI_raise |__GI_abort |__assert_fail|memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called|uw_update_context_1|uw_init_context_1|_Unwind_Resume|Warning: .set logging off|Use .set logging enabled'
+FRAMES_FILTER='__interceptor_strcmp.part.0|std::terminate.*from|fprintf|__pthread_kill_.*|__GI___pthread_kill|__GI_raise |__GI_abort |__assert_fail|memmove|memcpy|\?\? \(\)|\(gdb\)|signal handler called|uw_update_context_1|uw_init_context_1|_Unwind_Resume|Warning: .set logging enabled off|Use .set logging enabled'
 grep --binary-files=text -A100 'signal handler called' /tmp/${RANDF}.gdb2 | grep --binary-files=text -vEi "${FRAMES_FILTER}" | sed 's|^#[0-9]\+[ \t]\+||' | sed 's|(.*) at ||;s|:[ 0-9]\+$||' > /tmp/${RANDF}.gdb4
 if [ "$(wc -m /tmp/${RANDF}.gdb4 2>/dev/null | sed 's| .*||')" == "0" ]; then
   # 'signal handler called' was not found, try another method

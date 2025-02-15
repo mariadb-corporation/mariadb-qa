@@ -39,13 +39,13 @@ for CORE in $(find . | grep "core" | grep -v "mysql-test") ; do
     set print elements 4096
     set print frame-arguments all
     set logging file gdb_${COREFILE}_FULL.txt
-    set logging on
+    set logging enabled on
     thread apply all bt full
-    set logging off
+    set logging enabled off
     set logging file gdb_${COREFILE}_STD.txt
-    set logging on
+    set logging enabled on
     thread apply all bt
-    set logging off
+    set logging enabled off
     quit
 EOF
 done;

@@ -10,7 +10,7 @@ set print elements 65536
 # Avoids the "'A' <repeats 24 times>" output in returned (query) strings
 set print repeats 999999999
 set logging file /tmp/gdb_PARSE.txt
-set logging on
+set logging enabled on
 t 1
 print do_command::thd->query_string.string.str
 print do_command::thd->m_query_string.str
