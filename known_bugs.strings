@@ -215,6 +215,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item_field::Item_field|TR_table::query|Item_func_trt_id::get_by_commit_ts|Item_func_trt_id::val_int                                                                    ## MDEV-36119
+SIGSEGV|Sql_mode_save::Sql_mode_save|Sql_mode_instant_remove::Sql_mode_instant_remove|get_field|GRANT_NAME::GRANT_NAME                                                         ## MDEV-36119
 SIGSEGV|Item::print_parenthesised|Item::print_for_table_def|Virtual_column_info::print|get_schema_column_record                                                                ## MDEV-36104
 node->pcur->rel_pos == BTR_PCUR_ON|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row                                         ## MDEV-36115
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Item::operator new|Field_iterator_table::create_item|Field_iterator_table_ref::create_item                                       ## MDEV-36114
