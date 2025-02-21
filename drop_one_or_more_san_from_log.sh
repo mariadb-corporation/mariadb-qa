@@ -12,8 +12,10 @@
 
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 START_STRING='=ERROR:\|runtime error:\|AddressSanitizer:\|ThreadSanitizer:\|LeakSanitizer:\|MemorySanitizer:'
-START_STRING_GREP="$(echo "${START_STRING}" | sed 's|\\||g')"
 END_STRING='^SUMMARY:\|=ABORTING'
+
+START_STRING_GREP="$(echo "${START_STRING}" | sed 's|\\||g')"
+END_STRING_GREP="$(echo "${END_STRING}" | sed 's|\\||g')"
 
 del_first_san_issue(){
   if [ -r "${1}" ]; then
@@ -28,22 +30,26 @@ del_first_san_issue(){
   fi
 }
 
-del_known_san_issues(){
+del_known_san_issues(){  # Note that the final while loop may take some time as `tt` for a core file takea a bit more time to process then *SAN errors which are read from the error log. i.e. when all known *SAN issues have been removed from the error log, and in the specific case where no *SAN issues remain, `tt` will (provided a core was generated) obtain a UniqueID from the core dump which takes more time. This may at times make drop_one_or_more_san_from_log.sh processing seem a little slow on high load servers, but is mostly due to Clang UBASAN builds GDB Core file stack extraction being quite slow.
   if [ -r "${1}" ]; then
-    if grep --binary-files=text -qiE "${START_STRING_GREP}" "${1}"; then  # Avoid much work if no *SAN issue is present
-      # Loop till a new/unknown (or no) issue/bug is found, with a maximum of 70 loops
-      LOOPCNT=1
-      while [ "$(${SCRIPT_PWD}/homedir_scripts/tt | grep -o '^ALREADY KNOWN BUG' | head -n1)" == "ALREADY KNOWN BUG" ]; do
-        if [ ! -r "${1}.pre_known_san_removal" ]; then
-          cp "${1}" "${1}.pre_known_san_removal"
-        fi
-        del_first_san_issue "${1}" "AKB"
-        LOOPCNT=$[ ${LOOPCNT} + 1 ]
-        if [ "${LOOPCNT}" -gt 70 ]; then
-          break
-        fi
-      done
-    fi
+    # Loop till a new/unknown (or no) issue/bug is found, with a maximum of 70 loops. 70 or higher is recommended given that pquery trials may run into a lot of *SAN issues especially if the run time is high
+    LOOPCNT=0
+    while [ "$(${SCRIPT_PWD}/homedir_scripts/tt | grep -o '^ALREADY KNOWN BUG' | head -n1)" == "ALREADY KNOWN BUG" ]; do
+      if ! grep --binary-files=text -qiE "${START_STRING_GREP}" "${1}"; then  # Avoid much work if no *SAN issue is present
+        break
+      fi
+      if ! grep --binary-files=text -qiE "${END_STRING_GREP}" "${1}"; then  # Avoid endless loops if no more *SAN issues are present
+        break
+      fi
+      LOOPCNT=$[ ${LOOPCNT} + 1 ]
+      if [ "${LOOPCNT}" -gt 70 ]; then
+        break
+      fi
+      if [ ! -r "${1}.pre_known_san_removal" ]; then
+        cp "${1}" "${1}.pre_known_san_removal"
+      fi
+      del_first_san_issue "${1}" "AKB"
+    done
   fi
 }
 

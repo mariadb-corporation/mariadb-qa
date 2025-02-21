@@ -336,6 +336,17 @@ LSAN|memory leak|storage/innobase/mem/mem0mem.cc|interceptor_malloc|mem_heap_cre
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                                         ## MDEV-31271
 LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|interceptor_malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                             ## MDEV-31271
 LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                                         ## MDEV-31271
+ASAN|use-after-poison|sql/item.cc|Item::print_parenthesised|Item_func::print_op|Item::print_parenthesised|Item_cond::print                                                     ## MDEV-31269
+UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item.cc|Item::print_parenthesised|Item::print_parenthesised|Item_cond::print|dbug_print_item ## MDEV-31269
+ASAN|use-after-poison|sql/item.h|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool                    ## MDEV-31269
+ASAN|use-after-poison|sql/item.cc|Item::print_parenthesised|Item::print_parenthesised|Item_cond::print|dbug_print_item                                                         ## MDEV-31269
+ASAN|use-after-poison|sql/item.h|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool                    ## MDEV-31269
+UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item.cc|Item::print_parenthesised|Item_func::print_op|Item::print_parenthesised|Item_cond::print ## MDEV-31269
+ASAN|use-after-poison|sql/item.h|Item::fixed|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar                                            ## MDEV-31269
+UBSAN|member access within address X which does not point to an object of type 'const Item'|sql/item.h|Item::fixed|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar ## MDEV-31269
+UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item.h|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool ## MDEV-31269
+UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item_func.cc|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool|Item_cond::fix_fields ## MDEV-31269
+UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item_func.cc|Item_func::print_op|Item::print_parenthesised|Item_cond::print|dbug_print_item ## MDEV-31269
 ASAN|use-after-poison|sql/item_func.cc|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool              ## MDEV-31269
 ASAN|use-after-poison|sql/item_func.cc|Item_func::print_op|Item_bool_rowready_func2::print|Item::print_parenthesised|Item_cond::print                                          ## MDEV-31269
 UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::make_empty_rec_store_default_value|make_empty_rec_store_default|make_empty_rec ## MDEV-15703
