@@ -14,6 +14,8 @@ UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_ut
 UBSAN|applying zero offset to null pointer|strings/ctype-utf8.c|my_strnxfrm_unicode_full_bin|charset_info_st::strnxfrm|Type_handler_string_result::make_sort_key_part|make_sortkey ## MDEV-36046
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb2312_chinese_ci|Arg_comparator::compare|Item_func_eq::val_bool|evaluate_join_record            ## MDEV-36045
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb2312_chinese_ci|Arg_comparator::compare|Item_func_eq::val_int|evaluate_join_record             ## MDEV-36045
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Arg_comparator::compare|Item_func_eq::val_int|evaluate_join_record            ## MDEV-36045
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Arg_comparator::compare|Item_func_eq::val_bool|evaluate_join_record           ## MDEV-36045
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb2312_chinese_ci|Arg_comparator::compare|Item_func_eq::val_bool|make_join_select                ## MDEV-36045
 UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::FVectorNode|mhnsw_insert|TABLE::hlindexes_on_insert                        ## MDEV-36033
 UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::make_vec|FVectorNode::FVectorNode|mhnsw_insert                             ## MDEV-36033
@@ -233,6 +235,7 @@ LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_fu
 ASAN|heap-use-after-free|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::store                                                               ## MDEV-34076
 ASAN|heap-use-after-free|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::store_string_aux                                                    ## MDEV-34076
 ASAN|heap-buffer-overflow|sql/sql_cache.cc|Query_cache_block::init|Query_cache::split_block|Query_cache::allocate_block|Query_cache::write_block_data                          ## MDEV-34075
+UBSAN|addition of unsigned offset to X overflowed to Y|strings/ctype-bin.c|my_hash_sort_bin|my_ci_hash_sort|my_hash_sort|rec_hashnr                                            ## MDEV-34075
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_free_result|ha_spider::close|ha_partition::close|alter_close_table                                            ## MDEV-29027
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_free_result|ha_spider::close|handler::ha_close|ha_partition::close                                            ## MDEV-29027
 UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_command.cpp|mroonga_command_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed  ## MDEV-21166

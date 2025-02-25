@@ -430,8 +430,9 @@ else
     echo 'Set before execution:'
     echo '    export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0'
   fi
+  echo '{noformat}'
 fi
-echo -e '{noformat}\n'
+echo ''
 if [ -z "${TEXT}" ]; then
   if [ -r ../test.results ]; then
     cat ../test.results

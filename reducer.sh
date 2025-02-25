@@ -35,9 +35,9 @@
 INPUTFILE=                      # The SQL file to be reduced. This can also be given as the first option to reducer.sh. Do not use double quotes
 MODE=4                          # Required. Most often used modes: 4=Any crash (TEXT not required), 3=Search for a specific TEXT in mariadbd/mysqld error log, 2=Idem, but in client log
 TEXT="somebug"                  # The text string you want reducer to search for, in specific locations depending on the MODE selected. Regex capable. Use with MODEs=1,2,3,5,6,7,8
-MODE3_ANY_SIG=0                 # MODE=3 Modifier that works similar to MODE=4: MODE 3 will look for any UniqueID starting with 'SIG'. Only enable (1) when required. Requires USE_NEW_TEXT_STRING=1. TEXT is blanked when enabled
+MODE3_ANY_SIG=0                 # MODE=3 Modifier which works similar to MODE=4. 1: MODE 3 will look for any UniqueID starting with 'SIG'. Requires USE_NEW_TEXT_STRING. TEXT is ignored
 WORKDIR_LOCATION=1              # 0: use /tmp (disk bound) | 1: use tmpfs (default) | 2: use ramfs (needs setup) | 3: use storage at WORKDIR_M3_DIRECTORY
-WORKDIR_M3_DIRECTORY="/data"     # Only relevant if WORKDIR_LOCATION is set to 3, use a specific directory/mount point
+WORKDIR_M3_DIRECTORY="/data"    # Only relevant if WORKDIR_LOCATION is set to 3, use a specific directory/mount point
 MYEXTRA="--no-defaults --log-output=none --sql_mode="  # mariadbd/mysqld options to be used (and reduced). Note: TokuDB plugin loading is checked/done automatically. # RV 14/05/22 ONLY_FULL_GROUP_BY removed 
 MYINIT=""                       # Extra options to pass to mariadbd/mysqld AND at data dir init time. See pquery-run-*.conf for more info
 BASEDIR="${PWD}"                # Path to the MySQL BASE directory to be used
