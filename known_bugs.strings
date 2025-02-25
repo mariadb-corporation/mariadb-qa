@@ -215,6 +215,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+(0x7 & mode) != LOCK_X || lock_table_has(trx, index->table, LOCK_IX)|SIGABRT|lock_rec_lock|lock_sec_rec_read_check_and_lock|sel_set_rec_lock|row_search_mvcc                   ## MDEV-36163
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_bool|JOIN::exec_inner ## MDEV-35654
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_int|JOIN::exec_inner ## MDEV-35654
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_bool|Item::eval_const_cond ## MDEV-35654
