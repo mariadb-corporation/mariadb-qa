@@ -55,10 +55,14 @@ del_known_san_issues(){  # Note that the final while loop may take some time as 
 
 if [ ! -z "${1}" ]; then
   del_first_san_issue "./log/master.err"
+  del_first_san_issue "./var/log/mysqld.1.err"  # MTR, master or standalone
   if [ ! -z "${2}" ]; then
     del_first_san_issue "./log/slave.err"
+    del_first_san_issue "./var/log/mysqld.2.err"  # MTR, slave
   fi
 else
   del_known_san_issues "./log/master.err"
   del_known_san_issues "./log/slave.err"
+  del_known_san_issue "./var/log/mysqld.1.err"  # MTR, master or standalone
+  del_known_san_issue "./var/log/mysqld.2.err"  # MTR, slave
 fi

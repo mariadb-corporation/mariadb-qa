@@ -57,6 +57,7 @@ cat "${1}" | tr -d '`' | \
        s|check|CHECK|gi; \
        s|spatial|SPATIAL|gi; \
        s|enum|ENUM|gi; \
+       s|vector|VECTOR|gi; \
        s|varbinary|VARBINARY|gi;s|binary|BINARY|gi; \
        s|decimal|DECIMAL|gi; \
        s|numeric|NUMERIC|gi; \
