@@ -215,6 +215,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|Type_handler_row::Item_save_in_value|Item::save_in_value|Item_param::set_value|sp_head::bind_output_param                                                            ## MDEV-36179
+0|SIGABRT|Type_handler_row::Item_save_in_value|Item::save_in_value|Item_param::set_value|sp_head::execute_procedure                                                            ## MDEV-36179
 prebuilt->select_lock_type != LOCK_NONE || srv_read_only_mode || trx->read_view.is_open()|SIGABRT|ut_dbg_assertion_failed|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last ## MDEV-36177
 prebuilt->sql_stat_start || prebuilt->table->no_rollback()|SIGABRT|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last|handler::ha_index_last                      ## MDEV-36177
 0|SIGABRT|Field_new_decimal::get_equal_const_item|Item_field::propagate_equal_fields|Item_ref::propagate_equal_fields|Item::propagate_equal_fields_and_change_item_tree        ## MDEV-36175
