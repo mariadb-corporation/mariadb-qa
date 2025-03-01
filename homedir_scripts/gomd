@@ -64,7 +64,12 @@ if [ -r ${BASEDIR}/BUILD_CMD_CMAKE ]; then
     COMPILER="Clang"
   fi
 fi
-echo "# Compiler: ${COMPILER} | PRE_SHUFFLE_SQL setting: $(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+') | $(grep '^INFILE=' ${HOME}/mariadb-qa/${CONF} | sed 's|=|: |' | tr -d '\n') | $(grep '^PQUERY_RUN_TIMEOUT' ${HOME}/mariadb-qa/${CONF} | sed 's|[ ]\+#.*||;s|PQUERY_RUN_TIMEOUT=|Trial runtime: |;s|$|s|')"
+PSS="$(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+')"
+INF=''
+if [ "${PSS}" != "2" ]; then
+  INF=" $(grep '^INFILE=' ${HOME}/mariadb-qa/${CONF} | sed 's|=|: |' | tr -d '\n') |"
+fi
+echo "# Compiler: ${COMPILER} | PRE_SHUFFLE_SQL setting: ${PSS} |${INF} $(grep '^PQUERY_RUN_TIMEOUT' ${HOME}/mariadb-qa/${CONF} | sed 's|[ ]\+#.*||;s|PQUERY_RUN_TIMEOUT=|Trial runtime: |;s|$|s|')"
 if grep -qi '^PRELOAD=1' ${HOME}/mariadb-qa/${CONF}; then
   echo "# PRELOAD is enabled: using sql preload file: $(grep -o '^PRELOAD_SQL[^#]\+' ${HOME}/mariadb-qa/${CONF} | sed 's|PRELOAD_SQL=||;s| *$||')"
 fi
