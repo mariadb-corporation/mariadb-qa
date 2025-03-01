@@ -217,6 +217,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### CURRENT BUGS (Search key: Mac) #####
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|handler::read_first_row|handler::ha_read_first_row|join_read_system                    ## MDEV-36176
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|rr_sequential|READ_RECORD::read_record|join_init_read_record                           ## MDEV-36176
+inited == NONE || lookup_handler != this|SIGABRT|handler::ha_write_row|FVectorNode::save|mhnsw_insert|TABLE::hlindexes_on_insert                                               ## MDEV-36188
 0|SIGABRT|Type_handler_row::Item_save_in_value|Item::save_in_value|Item_param::set_value|sp_head::bind_output_param                                                            ## MDEV-36179
 0|SIGABRT|Type_handler_row::Item_save_in_value|Item::save_in_value|Item_param::set_value|sp_head::execute_procedure                                                            ## MDEV-36179
 prebuilt->select_lock_type != LOCK_NONE || srv_read_only_mode || trx->read_view.is_open()|SIGABRT|ut_dbg_assertion_failed|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_last ## MDEV-36177
