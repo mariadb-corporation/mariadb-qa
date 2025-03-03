@@ -63,6 +63,6 @@ if [ ! -z "${1}" ]; then
 else
   del_known_san_issues "./log/master.err"
   del_known_san_issues "./log/slave.err"
-  del_known_san_issue "./var/log/mysqld.1.err"  # MTR, master or standalone
-  del_known_san_issue "./var/log/mysqld.2.err"  # MTR, slave
+  del_known_san_issues "./var/log/mysqld.1.err"  # MTR, master or standalone
+  del_known_san_issues "./var/log/mysqld.2.err"  # MTR, slave
 fi
