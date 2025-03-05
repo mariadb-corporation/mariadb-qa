@@ -383,10 +383,12 @@ else
   if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh san | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
     # TODO: consider use of dpkg --list | grep -o 'llvm-[0-9]\+' | sort -h -r | head -n1 | grep -o '[0-9]\+'
     echo "Compiled with a recent version of Clang (I used Clang $(clang --version | head -n1 | grep -o '[\.0-9][\.0-9][\.0-9]\+')) with LLVM 18. Ubuntu instructions:"
-    echo "  # Note: It is strongly recommended to uninstall all old Clang & LLVM packages (ref  dpkg --list | grep -iE 'clang|llvm'  and use  apt purge  and  dpkg --purge  to remove the packages), before following these steps"
-    echo '     # Note: llvm-17-linker-tools installs /usr/lib/llvm-17/lib/LLVMgold.so, which is needed for compilation, and LLVMgold.so is no longer included in LLVM 18'
-    echo '     sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev llvm-17-linker-tools'
-    echo '     sudo ln -s /usr/lib/llvm-17/lib/LLVMgold.so /usr/lib/llvm-18/lib/LLVMgold.so'
+    echo "  # Note: It is strongly recommended to uninstall all old Clang & LLVM packages (ref  dpkg --list | grep -iE 'clang|llvm'  and use  apt purge  and  dpkg --purge  to remove the packages), before installing Clang/LLVM 18"
+    # There now is a /usr/lib/llvm-18/lib/LLVMgold.so installed; llvm-17-linker-tools is no longer required
+    #echo '     # Note: llvm-17-linker-tools installs /usr/lib/llvm-17/lib/LLVMgold.so, which is needed for compilation, and LLVMgold.so is no longer included in LLVM 18'
+    #echo '     sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev llvm-17-linker-tools'
+    echo '     sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev'
+    #echo '     sudo ln -s /usr/lib/llvm-17/lib/LLVMgold.so /usr/lib/llvm-18/lib/LLVMgold.so'
     O_LEVEL_STMT=
     if [ -r ./BUILD_CMD_CMAKE ]; then
       O_LEVEL_STMT="$(grep -o '\-O[0-9g] ' ./BUILD_CMD_CMAKE)"
