@@ -215,6 +215,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|TABLE::actual_n_key_parts|calculate_key_len|handler::index_read_map|handler::index_read_idx_map                                                                        ## MDEV-36221
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|handler::read_first_row|handler::ha_read_first_row|join_read_system                    ## MDEV-36176
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|rr_sequential|READ_RECORD::read_record|join_init_read_record                           ## MDEV-36176
 inited == NONE || lookup_handler != this|SIGABRT|handler::ha_write_row|FVectorNode::save|mhnsw_insert|TABLE::hlindexes_on_insert                                               ## MDEV-36188
@@ -754,6 +755,7 @@ thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.
 0|SIGABRT|Type_handler_string_result::make_packed_sort_key_part|make_packed_sortkey|make_sortkey|find_all_keys                                                                 ## MDEV-30371
 0|SIGABRT|Type_handler_string_result::make_sort_key|make_sortkey|find_all_keys|filesort                                                                                        ## MDEV-30371
 0|SIGABRT|make_sortkey|find_all_keys|filesort|mysql_update                                                                                                                     ## MDEV-30371
+!have_any()|SIGABRT|srw_lock_debug::rd_lock|dict_sys_t::freeze|dict_table_open_on_id|row_undo_ins_parse_undo_rec                                                               ## MDEV-30363
 trx->error_state == DB_SUCCESS|SIGABRT|ut_dbg_assertion_failed|que_run_threads|fts_eval_sql|fts_config_set_value                                                               ## MDEV-30363
 trx->error_state == DB_SUCCESS|SIGABRT|ut_dbg_assertion_failed|que_run_threads|que_run_threads|fts_eval_sql                                                                    ## MDEV-30363
 info->end_of_file - (info->append_read_pos-info->write_buffer) == (res= inline_mysql_file_tell(info->file, (myf) (0)))|SIGABRT|my_b_append_tell|my_b_safe_tell|Log_event_writer::pos|Log_event::write_header ## MDEV-30176
