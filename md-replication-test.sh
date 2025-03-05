@@ -519,6 +519,9 @@ function async_rpl_test(){
               ${MD_BASEDIR}/bin/mariadb  -uroot -S/tmp/md${i}.sock -e"SET GLOBAL default_table_encryption=ON;"  > /dev/null 2>&1
             fi
           fi
+          sleep 5
+          ${MD_BASEDIR}/bin/mariadb  -uroot -S/tmp/md${i}.sock -e"SET sql_log_bin=0; DELETE FROM mysql.user WHERE user='';FLUSH PRIVILEGES; SET sql_log_bin=1;"  > /dev/null 2>&1
+          ${MD_BASEDIR}/bin/mariadb  -uroot -S/tmp/md${i}.sock -e"GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;"  > /dev/null 2>&1
           break
         fi
         if [ $X -eq ${MD_START_TIMEOUT} ]; then
@@ -575,11 +578,11 @@ function async_rpl_test(){
     local REPL_STRING=${3:-}
     ${MD_BASEDIR}/bin/mariadb -uroot --socket=$MASTER_SOCKET -e"FLUSH LOGS" 2>/dev/null
     local MASTER_LOG_FILE=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$MASTER_SOCKET -Bse "show master logs" 2>/dev/null | awk '{print $1}' | tail -1`
-    local MASTER_HOST_PORT=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$MASTER_SOCKET -Bse "select @@port" 2>/dev/null` 
+    local MASTER_HOST_PORT=`${MD_BASEDIR}/bin/mariadb -uroot --socket=$MASTER_SOCKET -Bse "select @@port" 2>/dev/null`
     if [ "$MYEXTRA_CHECK" == "GTID" ]; then
-      ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SLAVE_SOCKET -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$MASTER_HOST_PORT, MASTER_USER='root', MASTER_USE_GTID=slave_pos $REPL_STRING" 2>/dev/null
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SLAVE_SOCKET -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$MASTER_HOST_PORT, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos $REPL_STRING" 2>/dev/null
     else
-      ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SLAVE_SOCKET -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$MASTER_HOST_PORT, MASTER_USER='root', MASTER_LOG_FILE='$MASTER_LOG_FILE', MASTER_LOG_POS=4 $REPL_STRING" 2>/dev/null
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=$SLAVE_SOCKET -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$MASTER_HOST_PORT, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_LOG_FILE='$MASTER_LOG_FILE', MASTER_LOG_POS=4 $REPL_STRING" 2>/dev/null
     fi
   }
 
@@ -1110,7 +1113,7 @@ function async_rpl_test(){
       local BINLOG_POS=$(cat ${WORKDIR}/backupdir/full/xtrabackup_binlog_info | awk '{print $2}')
       echoit "Starting replication on restored slave"
       local PORT=$(${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/md1.sock -Bse "select @@port" 2>/dev/null)
-      ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/bkmdlave.sock -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$PORT, MASTER_USER='root', MASTER_LOG_FILE='$BINLOG_FILE',MASTER_LOG_POS=$BINLOG_POS;START SLAVE" 2>/dev/null
+      ${MD_BASEDIR}/bin/mariadb -uroot --socket=/tmp/bkmdlave.sock -e"CHANGE MASTER TO MASTER_HOST='${ADDR}', MASTER_PORT=$PORT, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_LOG_FILE='$BINLOG_FILE',MASTER_LOG_POS=$BINLOG_POS;START SLAVE" 2>/dev/null
 
       slave_startup_check "/tmp/bkmdlave.sock" "$WORKDIR/logs/slave_status_bkmdlave.log" "$WORKDIR/logs/bkmdlave.err"
 
