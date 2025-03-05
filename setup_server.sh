@@ -78,6 +78,8 @@ EOF
 fi
 
 # Enable true core file creation by disabling apport, with thanks https://askubuntu.com/a/93467
+# Note that a server restart is needed for core files to work [again], even if the service is stopped
+sudo systemctl stop apport.service
 sudo systemctl disable apport.service
 sudo systemctl mask apport.service
 
