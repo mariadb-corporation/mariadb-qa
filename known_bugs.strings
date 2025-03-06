@@ -215,6 +215,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGABRT|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::inc|ib_counter_t<unsigned long, ib_counter_element_t, 128>::operator++ ## MDEV-36231
 SIGABRT|page_rec_check|page_rec_is_supremum|page_simple_validate_new|page_cur_delete_rec                                                                                       ## MDEV-36228
 SIGSEGV|TABLE::actual_n_key_parts|calculate_key_len|handler::index_read_map|handler::index_read_idx_map                                                                        ## MDEV-36221
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|handler::read_first_row|handler::ha_read_first_row|join_read_system                    ## MDEV-36176
