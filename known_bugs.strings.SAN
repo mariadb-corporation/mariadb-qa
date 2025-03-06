@@ -439,6 +439,8 @@ UBSAN|member call on address X which does not point to an object of type 'Item_e
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_user_table|mysql_create_user|mysql_execute_command|mysql_parse                             ## MDEV-23731
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_user_table|mysql_alter_user|mysql_execute_command|mysql_parse                              ## MDEV-23731
 UBSAN|member call on null pointer of type 'struct Field'|sql/sql_acl.cc|User_table::set_user|replace_user_table|mysql_grant|Sql_cmd_grant_proxy::execute                       ## MDEV-26716
+UBSAN|member access within address X which does not point to an object of type 'Item_field'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal::val_bool|JOIN::exec_inner|JOIN::exec ## MDEV-29733
+UBSAN|downcast of address X which does not point to an object of type 'Item_field'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal::val_bool|JOIN::exec_inner|JOIN::exec ## MDEV-29733
 UBSAN|downcast of address X which does not point to an object of type 'Item_field'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool ## MDEV-29733
 UBSAN|downcast of address X which does not point to an object of type 'Item_field'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal::val_int|JOIN::exec_inner|JOIN::exec ## MDEV-29733
 UBSAN|downcast of address X which does not point to an object of type 'Item_field'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int ## MDEV-29733

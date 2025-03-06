@@ -216,6 +216,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGABRT|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::inc|ib_counter_t<unsigned long, ib_counter_element_t, 128>::operator++ ## MDEV-36231
+thd->is_error()|SIGABRT|store_server_fields|insert_server_record|insert_server|create_server                                                                                   ## MDEV-36230
+trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                              ## MDEV-36022
 SIGABRT|page_rec_check|page_rec_is_supremum|page_simple_validate_new|page_cur_delete_rec                                                                                       ## MDEV-36228
 SIGSEGV|TABLE::actual_n_key_parts|calculate_key_len|handler::index_read_map|handler::index_read_idx_map                                                                        ## MDEV-36221
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|handler::read_first_row|handler::ha_read_first_row|join_read_system                    ## MDEV-36176
@@ -461,6 +463,7 @@ status == 0|SIGABRT|add_role_user_mapping_action|my_hash_iterate|rebuild_role_gr
 SIGSEGV|TDC_element::flush|prepare_for_repair|mysql_admin_table|Sql_cmd_repair_table::execute                                                                                  ## MDEV-33676
 SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> >::remove|MDL_context::release_lock|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks ## MDEV-33675
 SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                                        ## MDEV-33597
+SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|row_ins_clust_index_entry_low                                                    ## MDEV-33597
 SIGSEGV|PolicyMutex<TTASEventMutex<GenericPolicy> >::pfs_begin_lock|PolicyMutex<TTASEventMutex<GenericPolicy> >::enter|trx_undo_assign_low|trx_undo_report_row_operation       ## MDEV-33597
 SIGSEGV|check_view_insertability|check_insert_fields|mysql_prepare_insert|mysql_insert                                                                                         ## MDEV-33633
 view->table != 0 && view->field_translation != 0|SIGABRT|check_view_insertability|check_insert_fields|mysql_prepare_insert|mysql_insert                                        ## MDEV-33633
@@ -794,6 +797,7 @@ SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_defini
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|LEX::sf_return_fill_definition|MYSQLparse                                            ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|MYSQLparse|parse_sql                                                                 ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|sp_head::row_fill_field_definitions                   ## MDEV-25135
+SIGSEGV|Item_equal::val_bool|JOIN::exec_inner|JOIN::exec|subselect_single_select_engine::exec                                                                                  ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int                                                                   ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool|Item_cond_or::val_int                                                                        ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|JOIN::exec_inner|JOIN::exec                                                                                                    ## MDEV-29733
@@ -1358,6 +1362,7 @@ inited == RND|SIGABRT|handler::ha_rnd_next|select_unit_ext::send_eof|do_select|J
 t->s->tmp_table || thd->mdl_context.is_lock_owner(MDL_key::TABLE, t->s->db.str, t->s->table_name.str, t->reginfo.lock_type >= TL_WRITE_ALLOW_WRITE ? MDL_SHARED_WRITE : MDL_SHARED_READ)|SIGABRT|lock_tables_check|mysql_lock_tables|lock_tables|open_and_lock_tables ## MDEV-23211
 SIGSEGV|TABLE_LIST::print|print_table_array|print_join|st_select_lex::print                                                                                                    ## MDEV-23208
 s|SIGABRT|TABLE::versioned|TABLE_LIST::print|print_table_array|print_join                                                                                                      ## MDEV-23208
+SIGSEGV|TABLE::versioned|TABLE_LIST::print|print_table_array|print_join                                                                                                        ## MDEV-23208
 tl->table == __null|SIGABRT|THD::open_temporary_table|THD::open_temporary_tables|admin_recreate_table|mysql_admin_table                                                        ## MDEV-23207
 tl->table == __null|SIGABRT|THD::open_temporary_table|THD::open_temporary_tables|open_only_one_table|mysql_admin_table                                                         ## MDEV-23207
 SIGSEGV|btr_search_sys_t::get_part|dict_index_t::n_ahi_pages|dict_index_remove_from_cache_low|dict_sys_t::remove                                                               ## MDEV-23206
