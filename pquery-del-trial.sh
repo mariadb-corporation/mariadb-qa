@@ -115,7 +115,7 @@ if [ ! -z "${ERROR_LOG}" ]; then  # Do not use -r as it will not work if both ma
     if [ "${2}" != "CHECK" ]; then
       delete_trial
     fi
-  elif [ -z "${ERRORS}" -a ! -z "${ERRORS_LAST_LINE}" -a ! -z "$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --binary-files=text -o 'Assertion .* failed' 2>/dev/null | sed "s|'|.|g" | sed 's|"|.|g' | sed "s|^Assertion .||;s|. failed$||" | xargs -I{} grep --binary-files=text -Fi "{}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null)" ]; then  # There are no other errors, and there is an assertion on the last line of the error log which exactly matches an already known assertion in the known bugs file: ok to proceed with deletion
+  elif [ -z "${ERRORS}" -a ! -z "${ERRORS_LAST_LINE}" -a ! -z "$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --binary-files=text -o 'Assertion .* failed' 2>/dev/null | sed "s|'|.|g" | sed 's|"|.|g' | sed "s|^Assertion .||;s|. failed$||" | xargs -I{} grep --binary-files=text -i "{}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null)" ]; then  # There are no other errors, and there is an assertion on the last line of the error log which exactly matches an already known assertion in the known bugs file: ok to proceed with deletion
     delete_trial
   else  # There are uknown issues remaining: do not delete unless an overwrite "1" is passed as an option to the script
     if [ "${2}" != "1" ]; then
