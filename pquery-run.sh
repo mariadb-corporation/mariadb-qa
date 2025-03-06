@@ -1072,6 +1072,7 @@ mdg_startup() {
         else
           export _RR_TRACE_DIR="${RUNDIR}/${TRIAL}/rr"
           mkdir -p "${_RR_TRACE_DIR}"
+          sudo chmod -R 777 "${_RR_TRACE_DIR}"
           /usr/bin/rr record --chaos ${BIN} --defaults-file=${DATADIR}/n${j}.cnf $STARTUP_OPTION $MYEXTRA_KEYRING $MYEXTRA $MDG_MYEXTRA --wsrep-new-cluster > ${ERR_FILE} 2>&1 &
         fi
       fi
@@ -2521,8 +2522,9 @@ EOF
             # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld/mariadbd) so that the rr trace can finish correctly
             echoit "RR Tracing is active, sending SIGABRT to tracee mysqld/mariadbd and providing time for RR trace to finish correctly"
             echo -n "$(cat ${RUNDIR}/${TRIAL}/pid.pid | xargs -I{} kill -6 {})"  # Hack, which works well
-            MAX_RR_WAIT=60; CUR_RR_WAIT=0;
-            while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete -o ${RUNDIR}/${TRIAL}/rr/mariadbd-0/incomplete ]; do
+            sleep 3  # Default wait to allow RR to finish
+            MAX_RR_WAIT=60; CUR_RR_WAIT=3;
+            while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete -o -r ${RUNDIR}/${TRIAL}/rr/mariadbd-0/incomplete ]; do
               sleep 1
               CUR_RR_WAIT=$[ ${CUR_RR_WAIT} + 1 ]
               if [ ${CUR_RR_WAIT} -gt ${MAX_RR_WAIT} ]; then
@@ -2531,7 +2533,7 @@ EOF
               fi
             done
             if [ ${CUR_RR_WAIT} -le ${MAX_RR_WAIT} ]; then
-              echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 or rr/mariadbd-0 directory inside the trial directory"
+              echoit "RR completed successfully and the trace was saved in the rr/mysqld-0 or rr/mariadbd-0 directory inside the trial directory"
             fi
           fi
           sleep 1
@@ -2549,7 +2551,8 @@ EOF
               echoit "RR Tracing is active, sending SIGABRT to tracee mysqld/mariadbd and providing time for RR trace to finish correctly"
               kill -6 ${SLAVE_MPID}
               kill -6 $(ps -o ppid= -p ${SLAVE_MPID})  # Kill the PPID, which is more succesful than killing the PID of the server
-              MAX_RR_WAIT=60; CUR_RR_WAIT=0;
+              sleep 3  # Default wait to allow RR to finish
+              MAX_RR_WAIT=60; CUR_RR_WAIT=3;
               while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete -o -r ${RUNDIR}/${TRIAL}/rr/mariadbd-0/incomplete ]; do
                 sleep 1
                  CUR_RR_WAIT=$[ ${CUR_RR_WAIT} + 1 ]
@@ -2559,7 +2562,7 @@ EOF
                 fi
               done
               if [ ${CUR_RR_WAIT} -le ${MAX_RR_WAIT} ]; then
-                echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 or rr/mariadbd-0 directory inside the trial directory"
+                echoit "RR completed successfully and the trace was saved in the rr/mysqld-0 or rr/mariadbd-0 directory inside the trial directory"
               fi
             fi
             sleep 1
@@ -2597,24 +2600,7 @@ EOF
       if [ $? -eq 137 ]; then
         echoit "mysqld/mariadbd for node3 failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
         touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
-        #if [ "${RR_TRACING}" == "1" ]; then
-        #  # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0 or mariadbd-0)
-        #  # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld/mariadbd) so that the rr trace can finish correctly
-        #  echoit "RR Tracing is active, sending SIGABRT to tracee mysqld/mariadbd and providing time for RR trace to finish correctly"
-        #  kill -6 ${SLAVE_MPID}
-        #  kill -6 $(ps -o ppid= -p ${SLAVE_MPID})  # Kill the PPID, which is more succesful than killing the PID of the server
-        #  MAX_RR_WAIT=60; CUR_RR_WAIT=0;
-        #  while [ -r ${RUNDIR}/${TRIAL}/rr/mysqld-0/incomplete -o -r ${RUNDIR}/${TRIAL}/rr/mariadbd-0/incomplete ]; do
-        #    sleep 1
-        #     CUR_RR_WAIT=$[ ${CUR_RR_WAIT} + 1 ]
-        #    if [ ${CUR_RR_WAIT} -gt ${MAX_RR_WAIT} ]; then
-        #      echoit "pquery-run waited ${CUR_RR_WAIT} seconds for the RR trace to finish correctly, but it did not complete within this time: terminating this trial, but the trace is highly likely to be incomplete"
-        #      break
-        #    fi
-        #   done
-        #  if [ ${CUR_RR_WAIT} -le ${MAX_RR_WAIT} ]; then
-        #    echoit "RR traces completed successfully and trace was saved in the rr/mysqld-0 or rr/mariadbd-0 directory inside the trial directory"
-        #  fi
+        # Minor TODO: add RR provision for SHUTDOWN_TIMEOUT_ISSUEs seen under Valgrind (search for 'incomplete')
         sleep 1
         savetrial
         TRIAL_SAVED=1
