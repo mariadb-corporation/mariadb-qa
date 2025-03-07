@@ -215,6 +215,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+marked_for_read()|SIGABRT|Field_int::val_decimal|Item_field::val_decimal|VDec::VDec|Arg_comparator::compare_decimal                                                            ## MDEV-36241
 trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                              ## MDEV-36022
 SIGABRT|page_rec_check|page_rec_is_supremum|page_simple_validate_new|page_cur_delete_rec                                                                                       ## MDEV-36228
 SIGSEGV|TABLE::actual_n_key_parts|calculate_key_len|handler::index_read_map|handler::index_read_idx_map                                                                        ## MDEV-36221
@@ -266,6 +267,7 @@ state == TRX_STATE_PREPARED || state == TRX_STATE_PREPARED_RECOVERED || state ==
 trx_state == TRX_STATE_PREPARED || trx_state == TRX_STATE_PREPARED_RECOVERED || trx_state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-35681
 commit_trx || trx->is_wsrep()|SIGABRT|innobase_commit|commit_one_phase_2|ha_commit_trans|trans_commit_stmt                                                                     ## MDEV-35653
 commit_trx|SIGABRT|innobase_commit|commit_one_phase_2|ha_commit_trans|trans_commit_stmt                                                                                        ## MDEV-35653
+SIGSEGV|page_id_t::operator==|rtr_check_discard_page|btr_compress|btr_cur_compress_if_useful                                                                                   ## MDEV-35420
 SIGSEGV|rtr_check_discard_page|btr_compress|btr_cur_compress_if_useful|btr_cur_compress_if_useful                                                                              ## MDEV-35420
 SIGSEGV|rtr_check_discard_page|btr_compress|btr_cur_compress_if_useful|btr_cur_pessimistic_delete                                                                              ## MDEV-35420
 SIGSEGV|spider_db_print_item_type|spider_mbase_handler::append_group_by|spider_mbase_handler::append_group_by|spider_make_query                                                ## MDEV-35623
