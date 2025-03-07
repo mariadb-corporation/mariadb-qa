@@ -215,10 +215,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
-SIGABRT|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::inc|ib_counter_t<unsigned long, ib_counter_element_t, 128>::operator++ ## MDEV-36231
 thd->is_error()|SIGABRT|store_server_fields|insert_server_record|insert_server|create_server                                                                                   ## MDEV-36230
 trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                              ## MDEV-36022
-SIGABRT|page_rec_check|page_rec_is_supremum|page_simple_validate_new|page_cur_delete_rec                                                                                       ## MDEV-36228
 SIGSEGV|TABLE::actual_n_key_parts|calculate_key_len|handler::index_read_map|handler::index_read_idx_map                                                                        ## MDEV-36221
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|handler::read_first_row|handler::ha_read_first_row|join_read_system                    ## MDEV-36176
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|rr_sequential|READ_RECORD::read_record|join_init_read_record                           ## MDEV-36176
@@ -2857,3 +2855,5 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|list_add|heap_open|ha_heap::open|handler::ha_open                                                                                                           ## Fixed ## MDEV-35851
 # marked_for_write_or_computed()|SIGABRT|Field_new_decimal::store_value|Field_new_decimal::store_value|Field_new_decimal::reset|convert_null_to_field_value_or_error  ## Fixed ## MDEV-35911
 # MARIADB_ERROR_CODE|MariaDB error code: 1526  ## Fixed ## MDEV-33291 or MDEV-5798
+# SIGABRT|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::inc|ib_counter_t<unsigned long, ib_counter_element_t, 128>::operator++ ## Needs different occurences ## MDEV-36231
+# SIGABRT|page_rec_check|page_rec_is_supremum|page_simple_validate_new|page_cur_delete_rec                                                                             ## Idem ## MDEV-36228

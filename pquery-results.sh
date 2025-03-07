@@ -221,6 +221,13 @@ else
   fi
 fi
 
+if grep -qi 'RR.*enabled.*:.*YES' pquery-run.log; then
+  if [ ! -z "$(ls */AVOID_FORCE_KILL 2>/dev/null)" ]; then  # AVOID_FORCE_KILL is only created (by pquery-prep-red.sh) when pquery-run.sh wrote a ./SHUTDOWN_TIMEOUT_ISSUE flag (and that flag is deleted upon writing AVOID_FORCE_KILL). In that case, we want to check if this was an RR run. If so, remind about SIGABRT as per below
+    echo '** RR traced trials which also experienced shutdown timeout issues, and were subsequently sent a SIGABRT to ensure RR trace stability. These likely require in-depth review before logging (Ref MDEV-36228 and MDEV-36231 for more info):'  
+    ls */AVOID_FORCE_KILL 2>/dev/null | grep -o '[0-9]\+' | xargs -I{} grep -l 'SIGABRT' {}/MYBUG | grep -o '[0-9]\+' | tr '\n' ' ' | sed 's|[ ]\+$||;s|$|\n|'
+  fi
+fi
+
 # mysqld shutdown timeout issue trials
 # Semi-false positives; (Though the issues below refer to reducer.sh, they apply similarly to the original trials which failed due to the same circumstances)
 # * Where a shutdown issue testcase reduces to something like: SET PASSWORD=PASSWORD('somepass'); it is a false positive.

@@ -6,7 +6,7 @@ WIPE_TMP_ENABLED=0  # /tmp cleaning, generally should NOT be enabled
 FILTER_LARGE_NEWBUG_RUNS=1  # For large-scale newbug verification/reduction runs (normally reducers themselves are not filtered)
 
 # Filter this list of processes from termination  # TODO: may need xargs? (only add if proven to be needed as filter)
-FILTER="uniq_newbugs|large_newbug_run|grep|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr"  
+FILTER="uniq_newbugs|large_newbug_run|pquery-results|grep|timeout|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr"  
 
 update_current_filter_pids(){  # Do not include reducers (reducer123.sh) themselves in this list!
   PR_PID_FILTER=;GE_PID_FILTER=;S_PID_FILTER=;NEWBUG_PID_FILTER=
