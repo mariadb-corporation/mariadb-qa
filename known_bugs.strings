@@ -215,6 +215,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|_ma_reset_history|_ma_trnman_end_trans_hook|trnman_end_trn|ma_commit                                                                                                   ## MDEV-36256
 marked_for_read()|SIGABRT|Field_int::val_decimal|Item_field::val_decimal|VDec::VDec|Arg_comparator::compare_decimal                                                            ## MDEV-36241
 trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                              ## MDEV-36022
 SIGABRT|page_rec_check|page_rec_is_supremum|page_simple_validate_new|page_cur_delete_rec                                                                                       ## MDEV-36228
