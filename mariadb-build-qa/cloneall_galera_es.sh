@@ -22,9 +22,9 @@ clone_multi_repos(){
   rm -Rf 10.5-es
   rm -Rf 10.6-es
   rm -Rf 11.4-es
-  ./clone_galera.sh 10.5 &
-  ./clone_galera.sh 10.6 automation &
-  ./clone_galera.sh 11.4 automation &
+  ./clone_galera_es.sh 10.5 &
+  ./clone_galera_es.sh 10.6 automation &
+  ./clone_galera_es.sh 11.4 automation &
 }
 
 clone_multi_repos

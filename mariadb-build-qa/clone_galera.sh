@@ -4,6 +4,12 @@
 
 # shellcheck disable=SC2120
 
+if [ -z "${1}" ]; then
+  echo "Please specify the version of CS to clone as the first option to this script, for example 11.4"
+  echo "The corresponding CS Galera branch will also be retrieved (into directory 'galera_3x' or 'galera_4x')"
+  exit 1
+fi
+
 # Call the credentials check helper script to check ~/.git-credentials provisioning
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 if [ -r "${SCRIPT_PWD}/credentials_helper.source" ]; then
