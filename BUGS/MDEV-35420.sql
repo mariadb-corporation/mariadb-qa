@@ -13,3 +13,22 @@ INSERT INTO t SELECT * FROM t;
 INSERT INTO t SELECT * FROM t;
 INSERT INTO t SELECT * FROM t;
 INSERT INTO t SELECT * FROM t;
+
+CREATE TABLE t1 (c POINT NOT NULL, SPATIAL(c)) engine=InnoDB;
+set max_statement_time= 1;
+check table t1;
+INSERT INTO t1  VALUES(ST_GeomFromText('POINT(114368751 656950466)'));
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+insert t1 select * FROM t1;
+

@@ -215,8 +215,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
 ##### CURRENT BUGS (Search key: Mac) #####
-SIGABRT|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::add|ib_counter_t<unsigned long, ib_counter_element_t, 128>::inc|ib_counter_t<unsigned long, ib_counter_element_t, 128>::operator++ ## MDEV-36231
-thd->is_error()|SIGABRT|store_server_fields|insert_server_record|insert_server|create_server                                                                                   ## MDEV-36230
+SIGSEGV|_ma_reset_history|_ma_trnman_end_trans_hook|trnman_end_trn|ma_commit                                                                                                   ## MDEV-36256
+marked_for_read()|SIGABRT|Field_int::val_decimal|Item_field::val_decimal|VDec::VDec|Arg_comparator::compare_decimal                                                            ## MDEV-36241
 trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                              ## MDEV-36022
 SIGABRT|page_rec_check|page_rec_is_supremum|page_simple_validate_new|page_cur_delete_rec                                                                                       ## MDEV-36228
 SIGSEGV|TABLE::actual_n_key_parts|calculate_key_len|handler::index_read_map|handler::index_read_idx_map                                                                        ## MDEV-36221
@@ -268,6 +268,7 @@ state == TRX_STATE_PREPARED || state == TRX_STATE_PREPARED_RECOVERED || state ==
 trx_state == TRX_STATE_PREPARED || trx_state == TRX_STATE_PREPARED_RECOVERED || trx_state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-35681
 commit_trx || trx->is_wsrep()|SIGABRT|innobase_commit|commit_one_phase_2|ha_commit_trans|trans_commit_stmt                                                                     ## MDEV-35653
 commit_trx|SIGABRT|innobase_commit|commit_one_phase_2|ha_commit_trans|trans_commit_stmt                                                                                        ## MDEV-35653
+SIGSEGV|page_id_t::operator==|rtr_check_discard_page|btr_compress|btr_cur_compress_if_useful                                                                                   ## MDEV-35420
 SIGSEGV|rtr_check_discard_page|btr_compress|btr_cur_compress_if_useful|btr_cur_compress_if_useful                                                                              ## MDEV-35420
 SIGSEGV|rtr_check_discard_page|btr_compress|btr_cur_compress_if_useful|btr_cur_pessimistic_delete                                                                              ## MDEV-35420
 SIGSEGV|spider_db_print_item_type|spider_mbase_handler::append_group_by|spider_mbase_handler::append_group_by|spider_make_query                                                ## MDEV-35623
@@ -797,7 +798,6 @@ SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_defini
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|LEX::sf_return_fill_definition|MYSQLparse                                            ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|MYSQLparse|parse_sql                                                                 ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|sp_head::row_fill_field_definitions                   ## MDEV-25135
-SIGSEGV|Item_equal::val_bool|JOIN::exec_inner|JOIN::exec|subselect_single_select_engine::exec                                                                                  ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int                                                                   ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool|Item_cond_or::val_int                                                                        ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|JOIN::exec_inner|JOIN::exec                                                                                                    ## MDEV-29733
