@@ -11,17 +11,17 @@ else
   exit 1
 fi
 
-if [ ! -r ./clone_galera.sh ]; then
-  echo 'Assert: ./clone_galera.sh not found or readable by this script'
+if [ ! -r ./clone_galera_es.sh ]; then
+  echo 'Assert: ./clone_galera_es.sh not found or readable by this script'
   exit 1
 fi
 
 clone_multi_repos(){
   rm -Rf galera_3x
   rm -Rf galera_4x
-  rm -Rf 10.5 
-  rm -Rf 10.6 
-  rm -Rf 11.4
+  rm -Rf 10.5-es
+  rm -Rf 10.6-es
+  rm -Rf 11.4-es
   ./clone_galera.sh 10.5 &
   ./clone_galera.sh 10.6 automation &
   ./clone_galera.sh 11.4 automation &
