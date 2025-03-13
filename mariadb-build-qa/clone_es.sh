@@ -15,7 +15,13 @@ else
   exit 1
 fi
 
-if [[ "${1}" == "10."* ]]; then rm -Rf ${1}-es; fi
-if [[ "${1}" == "11."* ]]; then rm -Rf ${1}-es; fi
+if [[ "${1}" == "10."* ]]; then 
+  rm -Rf ${1}-es;
+elif [[ "${1}" == "11."* ]]; then 
+  rm -Rf ${1}-es; 
+else
+  echo "Assert: please provide valid version (eg : 11.x)"
+  exit 1
+fi
 
 git clone --depth=1 --recurse-submodules -j8 --branch=$1-enterprise https://github.com/mariadb-corporation/MariaDBEnterprise $1-es &

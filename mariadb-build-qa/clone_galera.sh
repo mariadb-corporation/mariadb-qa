@@ -19,8 +19,16 @@ else
   exit 1
 fi
 
-if [[ "${1}" == "10."* ]]; then rm -Rf ${1}; fi
-if [[ "${1}" == "11."* ]]; then rm -Rf ${1}; fi
+if [[ "${1}" == "10."* ]]; then 
+  rm -Rf ${1}; 
+elif [[ "${1}" == "11."* ]]; then 
+  rm -Rf ${1};
+elif [[ "${1}" == "12."* ]]; then
+  rm -Rf ${1}; 
+else
+  echo "Assert: please provide valid version (eg : 11.x)"
+  exit 1
+fi
 
 clone_cs_mdg_repo(){
   git clone --depth=1 --recurse-submodules -j8 --branch=${1} https://github.com/MariaDB/server.git ${1} &
