@@ -1,8 +1,8 @@
-#!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
 # User variables
 SHORTER_STOP_TIME=25  # TODO: this can be improved
+LEGACY_MODE=0  # When set to 1, the older/legacy findbug+ is used to look for a specific TEXT string. The default setting is '0' which uses the newer findbug_new, which outputs a bug detection matrix and is not TEXT-string based. It may still be handy for manual testing, but please set this setting back to 0 after use
 
 if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (like mariadb-qa/bug_report.sh) has set this option. If not, set it here
   PASS_MYEXTRA_TO_START_ONLY=1  # If 0, then MYEXTRA_OPT is passed to ./all (i.e. options take effect on init and start). If 1, then MYEXTRA_OPT is passed to ./start only (i.e. options take effect on start only, not init). When using for example --innodb_page_size=4 (an option needed for both server init + start), 0 is required. When using for example --innodb-force-recovery=1 or --innodb-read-only=1 (options that can only be used with start and not with init), 1 is required. TODO: this option can be automated 0/1 towards known options that require either 0 or 1 for this setting. Scan MYEXSTRA_OPT to do so
@@ -13,7 +13,9 @@ MYEXTRA_OPT="$*"
 SAN_MODE=0
 GAL_MODE=0
 REPL_MODE=0
+# To ensure thread-safety, only delete the relevant test.result[.san/.gal] file so that b and bs (but not b and br) can run at the same time - for the meaning of 'b/bs/br' see the corresponding aliases in ~/.bashrc after running ~/mariadb-qa/linkit and following it's instructions for creating ~/.bashrc
 if [ "${1}" == "SAN" ]; then
+  rm -f test.result.san
    if [ -z "${TEXT}" ]; then   # Passed normally by ~/bs and bug_report.sh script
     echo "Assert: TEXT is empty, use export TEXT= to set it!"
     exit 1
@@ -21,14 +23,16 @@ if [ "${1}" == "SAN" ]; then
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
 elif [ "${1}" == "GAL" ]; then
+  rm -f test.result.gal
   GAL_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
 elif [ "${1}" == "REPL" ]; then
+  rm -f test.result
   REPL_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|REPL||')"
+else  # Regular mode
+  rm -f test.result
 fi
-
-rm -f test.result
 
 if [ ! -r ./in.sql ]; then
   echo "./in.sql does not exist!"
@@ -119,11 +123,22 @@ else
 fi
 sync
 
-# Output results and save copy of reasy bug reporting (mariadb-qa/bug_report.sh)
-if [ ${SAN_MODE} -eq 1 ]; then
-  ./findbug+ SAN "${TEXT}" | tee test.results
-elif [ ${GAL_MODE} -eq 1 ]; then
-  ./findbug+ GAL "${TEXT}" | tee test.results
-else  # Standard run, includes REPL run
-  ./findbug+ "${TEXT}" | tee test.results
+if [ "${LEGACY_MODE}" -eq 0 ]; then
+  # Defaut mode: output bug detection matrix using ./findbug_new, and save copy for easy bug reporting (mariadb-qa/bug_report.sh)
+  if [ ${SAN_MODE} -eq 1 ]; then
+    ./findbug_new SAN | tee test.results.san
+  elif [ ${GAL_MODE} -eq 1 ]; then
+    ./findbug_new GAL | tee test.results.gal
+  else  # Standard run, includes REPL run
+    ./findbug_new | tee test.results
+  fi
+else
+  # Legacy mode: output results. Saving of results is no longer supported (nor needed)
+  if [ ${SAN_MODE} -eq 1 ]; then
+    ./findbug+ SAN "${TEXT}"
+  elif [ ${GAL_MODE} -eq 1 ]; then
+    ./findbug+ GAL "${TEXT}"
+  else  # Standard run, includes REPL run
+    ./findbug+ "${TEXT}" 
+  fi
 fi

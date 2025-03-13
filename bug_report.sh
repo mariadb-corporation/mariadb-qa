@@ -31,11 +31,6 @@ if [ "${1}" != 'SAN' ]; then
   #else  # We do not need to display this, it is unecessary info
     #echo "ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS is enabled (1), however this is a SAN run already, so ignoring this setting (safe)"
   fi
-else
-  # If we are using SAN builds, we likely also want to check for cores for testcases which SIGSEGV/SIGABRT *SAN builds, and count them as bugs. For example, some testcases only SIGSEGV on *SAN builds while not triggering any *SAN issues, while not crashing regular opt/dbg builds
-  if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES}" == '1' ]; then
-    export ALSO_CHECK_SAN_BUILDS_FOR_CORES=1  # Used by findbug+ to also check SAN build directories for cores
-  fi
 fi
 
 # Terminate any other bug_report.sh scripts ongoing
@@ -435,29 +430,28 @@ else
   echo '{noformat}'
 fi
 echo ''
-if [ -z "${TEXT}" ]; then
+# The test_all script auto-runs ./findbug_new which generates ../test.results[.san/.gal]. 
+# If it does not exist, something went wrong
+if [ "${1}" == "SAN" ]; then
+  if [ -r ../test.results.san ]; then
+    cat ../test.results.san
+  else
+    echo "ERROR: expected ../test.results.san to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
+    exit 1
+  fi
+elif [ "${1}" == "GAL" ]; then
+  if [ -r ../test.results.gal ]; then
+    cat ../test.results.gal
+  else
+    echo "ERROR: expected ../test.results.gal to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
+    exit 1
+  fi
+else
   if [ -r ../test.results ]; then
     cat ../test.results
   else
-    echo "--------------------------------------------------------------------------------------------------------------"
-    echo "ERROR: expected ../test.results to exist, but it did not. Running:  ./findbug+ 'BBB' (common crash strings are all scanned), though this may fail."
-    echo "--------------------------------------------------------------------------------------------------------------"
-    cd ..; ./findbug+ 'BBB'; cd - >/dev/null
-  fi
-else
-  if [ "${1}" == "SAN" ]; then
-    if [ -r ../test.results ]; then
-      cat ../test.results
-    else
-      echo "--------------------------------------------------------------------------------------------------------------"
-      echo "ERROR: expected ../test.results to exist, but it did not. Running:  ./findbug+ SAN '${TEXT}', though this may fail."
-      echo "--------------------------------------------------------------------------------------------------------------"
-      cd ..; ./findbug+ SAN "${TEXT}"; cd - >/dev/null
-    fi
-  elif [ "${1}" == "GAL" ]; then
-    cd ..; ./findbug+ GAL "${TEXT}"; cd - >/dev/null
-  else
-    cd ..; ./findbug+ "${TEXT}"; cd - >/dev/null
+    echo "ERROR: expected ../test.results to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
+    exit 1
   fi
 fi
 echo '-------------------- /BUG REPORT --------------------'

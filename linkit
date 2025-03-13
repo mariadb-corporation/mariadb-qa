@@ -130,6 +130,11 @@ if [ ! -r /usr/bin/rr -a -r /usr/local/bin/rr ]; then
   sudo ln -s /usr/local/bin/rr /usr/bin/rr
 fi
 
+# Remove any broken symlinks
+for SL in /test/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
+for SL in /data/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
+for SL in ${HOME}/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
+
 # Suggest alias'es (Search key: Mac)
 # If you run into issues with predefined system commands try
 # grep '^alias' ${HOME}/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /bin/{} 2>/dev/null  # Ignore start of output

@@ -181,8 +181,8 @@ if echo "${PWD}" | grep -q EMD ; then
 fi
 
 # Setup scritps
-rm -f *_node_cl* *cl cl* *cli all* anc binlog fixin gal* gdb init loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test ts tsp test_* wipe* clean_failing_queries memory_* ml mlp master_setup.sql slave_setup.sql select.py select.sh mysql.out mysql_slave.out 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | test_timed | test_timed_pquery | test_sanity | test_sanity_pquery | init | wipe | wipe_slave | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_any_sig.sh | reducer_any_sig_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | select.sh/.py | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | multirun_loop_replication | kill_multirun | loopin | gdb | fixin | stack | memory_monitor | memory_use_trace | myrocks_tokudb_init | afl | aflnew | multitest | stress.sh"
+rm -f *_node_cl* *cl cl* *cli all* anc binlog fixin gal* gdb init line loopin *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test ts tsp test_* wipe* clean_failing_queries memory_* ml mlp master_setup.sql slave_setup.sql select.py select.sh mysql.out mysql_slave.out 2>/dev/null
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | test_timed | test_timed_pquery | test_sanity | test_sanity_pquery | init | line | wipe | wipe_slave | sqlmode | binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_any_sig.sh | reducer_any_sig_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | select.sh/.py | sysbench_prepare | sysbench_run | sysbench_measure | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | multirun_loop_replication | kill_multirun | loopin | gdb | fixin | stack | memory_monitor | memory_use_trace | myrocks_tokudb_init | afl | aflnew | multitest | stress.sh"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -609,10 +609,30 @@ else
 fi
 # Creating init script
 echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
-echo "rm -Rf ${PWD}/data ${PWD}/tmp" >> init
+echo "rm -Rf ${PWD}/data ${PWD}/tmp" >>init
 echo "mkdir ${PWD}/tmp" >>init
 echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>init
 echo "rm -f log/master.*" >>init
+# line script (used by findbug+) 
+echo '#!/bin/bash' >>line
+echo '' >>line
+echo 'if [ ! -d "${HOME}/mariadb-qa" ]; then' >>line
+echo '  echo "Assert: ${HOME}/mariadb-qa not found, please clone mariadb-qa into your home directory"' >>line
+echo '  exit 1' >>line
+echo 'elif [ ! -r "${HOME}/mariadb-qa/version_chk_helper.source" ]; then' >>line
+echo '  echo "Assert: ${HOME}/mariadb-qa/version_chk_helper.source not found, which should not happen"' >>line
+echo '  exit 1' >>line
+echo 'elif [ ! -r "${HOME}/mariadb-qa/new_text_string.sh" ]; then' >>line
+echo '  echo "Assert: ${HOME}/mariadb-qa/new_text_string.sh not found, which should not happen"' >>line
+echo '  exit 1' >>line
+echo 'else' >>line
+echo '  source "${HOME}/mariadb-qa/version_chk_helper.source"' >>line
+echo 'fi' >>line
+echo '' >>line
+echo '# Line item for Bug Detection Matrix' >>line
+echo 'printf "%-3s %-6s %-4s %-7s %-41s %-30s\n" "${SVR}" "$(echo "${SERVER_VERSION}" | grep -o "[0-9]\+\.[0-9]\+")" "${BUILD_TYPE_SHORT}" "${BUILD_DATE_SHORT}" "${SOURCE_CODE_REV}" "$(${HOME}/mariadb-qa/new_text_string.sh | sed "s|^Assert: .*|No bug found|")"' >>line
+chmod +x line
+# memory monitoring scripts
 echo "#!/bin/bash" >memory_monitor
 echo "MTR=0  # Set to MTR=1 if you want to monitor MTR memory usage instead (for the first MTR instance, i.e. master)" >>memory_monitor
 echo 'if [ ! -z "${1}" ]; then MTR=1; fi  # Shortcut to MTR use' >>memory_monitor
