@@ -43,5 +43,8 @@ cd ${DIR}/11.4 && ~/mariadb-qa/build_mdpsms_opt.sh &
 #cd ${DIR}/11.7 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/11.8 && ~/mariadb-qa/build_mdpsms_opt.sh &
 cd ${DIR}/12.0 && ~/mariadb-qa/build_mdpsms_opt.sh &
+if [ -d ${DIR}/10.5-es ]; then cd ${DIR}/10.5-es && ~/mariadb-qa/build_mdpsms_opt.sh & fi
+if [ -d ${DIR}/10.6-es ]; then cd ${DIR}/10.6-es && ~/mariadb-qa/build_mdpsms_opt.sh & fi
+if [ -d ${DIR}/11.4-es ]; then cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_opt.sh & fi
 
 echo "All processes started as background threads... Output will commence soon."

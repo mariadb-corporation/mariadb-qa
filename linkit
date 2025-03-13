@@ -119,7 +119,7 @@ git add *
 
 # Create REGEX_EXCLUDE if it does not exist yet, adding some common defaults
 if [ ! -r /test/REGEX_EXCLUDE ]; then 
-  echo 'MDEV|VALGRIND' > /test/REGEX_EXCLUDE
+  echo 'MDEV|MENT|VALGRIND' > /test/REGEX_EXCLUDE
 fi
 
 # Protect homedir links which are easily overwritten by mistake
