@@ -4,7 +4,8 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=11.5                                                        # Use the earliest major version affected by the bug
+VERSION=11.4                                                        # Use the earliest major version affected by the bug
+ES=1                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
 SKIP_NON_SAME_VERSION=1                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
@@ -13,15 +14,15 @@ UPDATETREE=1                                                        # Set to 1 t
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-#  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.  #LAST_KNOWN_GOOD_COMMIT='a4ef05d0d5e9aeb5c919af88db2879a19092259a'   # Revision of last known good commit
-LAST_KNOWN_GOOD_COMMIT='de9c357284edb46084c45c3b96600c854efdf69a'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='b2fc885469a7db2c25eab67fbc8e220dc2f805f8'   # Revision of first known bad commit
-TESTCASE='/test/in19.sql'                                           # The testcase to be tested
-UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+#  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.i
+LAST_KNOWN_GOOD_COMMIT='d61d096878d0d35604ea30afb49b77f9404c551e'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='f6f50b2e5ed518dbbb1d0bd8c1b6bff00ccd3e60'   # Revision of first known bad commit
+TESTCASE='/test/in20.sql'                                           # The testcase to be tested
+UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
-TEXT='my_strnncoll_utf8mb3_general1400_as_ci|my_strcoll_ascii_4bytes_found'                       # The string to scan for in the error log [Exclusive]
+UNIQUEID='SIGSEGV|TABLE_LIST::is_active_sjm|TABLE_LIST::is_sjm_scan_table|JOIN::add_sorting_to_table|JOIN::make_aggr_tables_info'                                                         # The UniqueID to scan for [Exclusive]
+TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead
 # i.e. 3 different modes in total: UNIQUEID, TEXT or core files scan
@@ -38,7 +39,20 @@ die(){
   echo "$2"; exit $1
 }
 
-if [ "${DBG_OR_OPT}" != 'dbg' -a "${DBG_OR_OPT}" != 'opt' ]; then
+# Variable checks
+if [ "${ES}" -eq 1 ]; then
+  CHS="../credentials_helper.source"
+  if [ ! -r "${CHS}" ]; then CHS="/test/credentials_helper.source"; fi
+  if [ ! -r "${CHS}" ]; then
+    echo "ES=1 and ../credentials_helper.source nor /test/credentials_helper.source were found - please fix your install"
+    exit 1
+  fi
+  source "${CHS}"  # Call the credentials check helper script to check ~/.git-credentials provisioning
+fi
+if [ "${ES}" -eq 1 -a ! -z "${FEATURETREE}" ]; then
+  echo "TODO: please add ES=1 with FEATURETREE='xyz' functionality, not implemented yet"
+  exit 1
+elif [ "${DBG_OR_OPT}" != 'dbg' -a "${DBG_OR_OPT}" != 'opt' ]; then
   echo "DBG_OR_OPT variable is incorrectly set: use 'dbg' or 'opt' only"
   exit 1
 elif [[ "${VERSION}" != "10."* && "${VERSION}" != "11."* && "${FEATURETREE}" == "" ]]; then
@@ -82,15 +96,26 @@ if [ ! -z "${FEATURETREE}" ]; then
   VERSION="${FEATURETREE}"
 fi
 if [ "${RECLONE}" -eq 1 ]; then
-  rm -Rf "${VERSION}"
-  git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
-  cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
-else
-  if [ -d ${VERSION} ]; then
-    cd "${VERSION}" || die 1 "While version ${VERSION} directory existed, we could not change directory to it"
+  if [ "${ES}" -eq 1 ]; then
+    rm -Rf "${VERSION}"
+    git clone --recurse-submodules -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # We clone the ES branch into ./${VERSION} for simplicity in later handling
+    cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
   else
+    rm -Rf "${VERSION}"
     git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
     cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
+  fi
+else
+  if [ -d ${VERSION} ]; then
+    cd "${VERSION}" || die 1 "While version ${VERSION} directory existed, this script could not change directory to it"
+  else  # RECLONE=0 but we do not have the directory in any case; clone it
+    if [ "${ES}" -eq 1 ]; then
+      git clone --recurse-submodules -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # Idem as above
+      cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
+    else
+      git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
+      cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
+    fi
   fi
 fi
 
@@ -144,10 +169,19 @@ if [ "${?}" != "0" ]; then
   echo "Assert: git clean -xfd failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   exit 1
 fi
-git checkout --force --recurse-submodules "${VERSION}" | tee -a "${MAINLOG}"  # Ensure we have the right version
-if [ "${?}" != "0" ]; then
-  echo "Assert: git checkout --force --recurse-submodules '${VERSION}' failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
-  exit 1
+# Ensure we have the right version
+if [ "${ES}" == "1" ]; then
+  git checkout --force --recurse-submodules "${VERSION}-enterprise" | tee -a "${MAINLOG}"
+  if [ "${?}" != "0" ]; then
+    echo "Assert: git checkout --force --recurse-submodules '${VERSION}-enterprise' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
+    exit 1
+  fi
+else
+  git checkout --force --recurse-submodules "${VERSION}" | tee -a "${MAINLOG}"
+  if [ "${?}" != "0" ]; then
+    echo "Assert: git checkout --force --recurse-submodules '${VERSION}' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
+    exit 1
+  fi
 fi
 if [ "${UPDATETREE}" -eq 1 ]; then
   git pull --recurse-submodules | tee -a "${MAINLOG}"  # Ensure we have the latest version
@@ -199,7 +233,7 @@ while :; do
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
       if [ "${SKIP_NON_SAME_VERSION}" == "1" ]; then
         echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, skipping..." | tee -a "${MAINLOG}"
-        git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"
+        git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
       else
         echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, and SKIP_NON_SAME_VERSION=0, proceeding..." | tee -a "${MAINLOG}"
         break
@@ -212,7 +246,7 @@ while :; do
     elif [ "${CUR_COMMIT}" == "${LAST_TESTED_COMMIT}" ]; then
       # This seems to happen when for example a patch was attempted to be applied but did not apply correctly or source files were changed - i.e. the tree state is not clean anymore. TODO: this is a provisional patch; it may not work. Setting RECLONE=1 is another way to work around such issues (full reclone)
       echo "|> ${CUR_COMMIT} is the same as the last tested commit ${LAST_TESTED_COMMIT}, skipping..." | tee -a "${MAINLOG}"
-      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"
+      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
     else
       echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, proceeding..." | tee -a "${MAINLOG}"
       LAST_TESTED_COMMIT="${CUR_COMMIT}"
@@ -244,7 +278,7 @@ while :; do
     OUTCOME_BUILD="$(cat ${TMPLOG2} 2>/dev/null | head -n1 | tr -d '\n')"
     if [ "${OUTCOME_BUILD}" != "0" ]; then
       echo "|> Build failure... Skipping revision ${CUR_COMMIT}" | tee -a "${MAINLOG}"
-      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # The 'unable to rmdir' is just for 3rd party/plugins etc. it not a fatal error
+      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # The 'unable to rmdir' is just for 3rd party/plugins etc. - it is not a fatal error
       CONTINUE_MAIN_LOOP=1
       break  # Failed build, CONTINUE_MAIN_LOOP=1 set, break, then 'continue' in main loop for next revision
     else
@@ -258,25 +292,26 @@ while :; do
     continue
   fi
   cd /test/git-bisect || die 1 'Could not change directory to /test/git-bisect'
-  if [ "${SKIP_NON_SAME_VERSION}" == "1" ]; then
-    if [ "${UBASAN}" -eq 1 ]; then
-      TEST_DIR="$(ls -d UBASAN_MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
-    else
-      TEST_DIR="$(ls -d MD$(date +'%d%m%y')*${VERSION}*${DBG_OR_OPT} 2>/dev/null)"
-    fi
-  else
-    if [ "${UBASAN}" -eq 1 ]; then
-      TEST_DIR="$(ls -d UBASAN_MD$(date +'%d%m%y')*${CUR_VERSION}*${DBG_OR_OPT} 2>/dev/null)"
-    else
-      TEST_DIR="$(ls -d MD$(date +'%d%m%y')*${CUR_VERSION}*${DBG_OR_OPT} 2>/dev/null)"
-    fi
-  fi
+  sleep 1
+  # Find the TEST_DIR name by taking the name of the tarball created in the last two minutes and removing .tar.gz
+  TEST_DIR="$(find . -type f -mmin -2 -maxdepth 1 -name "*.tar.gz" -exec bash -c 'basename "{}" .tar.gz' \;)"
   if [ -z "${TEST_DIR}" ]; then
-    echo "Assert: TEST_DIR is empty" | tee -a "${MAINLOG}"
+    echo "Assert: TEST_DIR is empty (no .tar.gz was created in the last two minutes by the build script)" | tee -a "${MAINLOG}"
+    echo "Will try and recover by using git skip for this commit. Bisecting may fail" | tee -a "${MAINLOG}"
+    cd "${VERSION}" || die 1 "Script could not change directory to ${VERSION}"
+    git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
+    continue
+  elif [ "$(echo "${TEST_DIR}" | wc -l)" -ne "1" ]; then
+    echo "Assert: TEST_DIR does not contain exactly one line; this should not happen. The current value is:" | tee -a "${MAINLOG}"
+    echo "${TEST_DIR}" | tee -a "${MAINLOG}"
     exit 1
+    break
   elif [ ! -d "${TEST_DIR}" ]; then
-    echo "Assert: TEST_DIR (${TEST_DIR}) does not exist" | tee -a "${MAINLOG}"
-    exit 1
+    echo "Assert: TEST_DIR ${TEST_DIR} does not exits" | tee -a "${MAINLOG}"
+    echo "Will try and recover by using git skip for this commit. Bisecting may fail" | tee -a "${MAINLOG}"
+    cd "${VERSION}" || die 1 "Script could not change directory to ${VERSION}"
+    git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
+    continue
   fi
   cd "${TEST_DIR}" || die 1 "Could not change directory to TEST_DIR (${TEST_DIR})"
   ${HOME}/start 2>&1 | grep -vE 'To get a |^Note: |Adding scripts: '  # Init BASEDIR with runtime scripts

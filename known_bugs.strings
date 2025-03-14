@@ -849,7 +849,7 @@ SIGSEGV|subselect_indexsubquery_engine::print|Item_subselect::print|Item_func::p
 SIGSEGV|subselect_indexsubquery_engine::print|Item_subselect::print|Item_in_subselect::print|Item_func::print_args                                                             ## MDEV-29261
 SIGSEGV|subselect_uniquesubquery_engine::print|Item_subselect::print|Item_func::print_args|Item_func::print                                                                    ## MDEV-29261
 SIGSEGV|subselect_uniquesubquery_engine::print|Item_subselect::print|Item_in_subselect::print|Item_func::print_args                                                            ## MDEV-29261
-SIGSEGV|TABLE_LIST::is_active_sjm|TABLE_LIST::is_sjm_scan_table|JOIN::add_sorting_to_table|JOIN::make_aggr_tables_info                                                         ## MDEV-29261
+SIGSEGV|TABLE_LIST::is_active_sjm|TABLE_LIST::is_sjm_scan_table|JOIN::add_sorting_to_table|JOIN::make_aggr_tables_info                                                         ## MDEV-29210
 SIGSEGV|JOIN::make_sum_func_list|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                                                        ## MDEV-29210
 param->field_count > (uint) (copy - copy_start)|SIGABRT|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                               ## MDEV-29210
 active()|SIGABRT|wsrep::transaction::append_data|wsrep::client_state::append_data|THD::binlog_start_trans_and_stmt|MYSQL_BIN_LOG::write                                        ## MDEV-29202

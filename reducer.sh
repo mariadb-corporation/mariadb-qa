@@ -3495,7 +3495,14 @@ process_outcome(){
           if [ -r "$(echo "${INPUTFILE}" | sed 's|/default.node.tld.*|/TOP_SAN_ISSUES_REMOVED|')" ]; then
             echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] TOP_SAN_ISSUES_REMOVED flag file found: dropping any known *SAN bugs from the top of the error log, if any"
             # We are already in $WORKD so we can immediately execute drop_one_or_more_san_from_log.sh from here
-            ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as it will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not: we want only known issues to be removed
+            if [ -r ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh ]; then
+              ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as it will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not: we want only known issues to be removed
+            elif [ -r ${HOME}/mariadb-qa/drop_one_or_more_san_from_log.sh ]; then  # This location is used for example when starting ./reducer_new_text_string.sh from within a BASEDIR (As created by startup.sh)
+              ${HOME}/mariadb-qa/drop_one_or_more_san_from_log.sh  # Idem as above; do not add options
+            else
+              echo "Assert: ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh nor ${HOME}/mariadb-qa/drop_one_or_more_san_from_log.sh found - please check your setup"
+              exit 1
+            fi
           fi
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
@@ -3670,7 +3677,7 @@ process_outcome(){
                 sed -i "s|^THREADS=.*|THREADS=3|" "${NEWBUGRE}"
                 sed -i "s|^MULTI_THREADS_INCREASE=.*|MULTI_THREADS_INCREASE=1|" "${NEWBUGRE}"
                 sed -i "s|^MULTI_THREADS_MAX=.*|MULTI_THREADS_MAX=5|" "${NEWBUGRE}"
-                sed -i "s|^STAGE1_LINES=.*|STAGE1_LINES=7|" "${NEWBUGRE}"
+                sed -i "s|^STAGE1_LINES=.*|STAGE1_LINES=15|" "${NEWBUGRE}"  # Leave at 15. 7 Proved too low for most issues (looping)
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
                 sed -i "s|^MYEXTRA=.*|MYEXTRA=\"--no-defaults ${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO check this works correctly now
                 sed -i "s|^REPLICATION=.*|REPLICATION=${REPLICATION}|" "${NEWBUGRE}"
