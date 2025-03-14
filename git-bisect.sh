@@ -294,7 +294,7 @@ while :; do
   cd /test/git-bisect || die 1 'Could not change directory to /test/git-bisect'
   sleep 1
   # Find the TEST_DIR name by taking the name of the tarball created in the last two minutes and removing .tar.gz
-  TEST_DIR="$(find . -type f -mmin -2 -maxdepth 1 -name "*.tar.gz" -exec bash -c 'basename "{}" .tar.gz' \;)"
+  TEST_DIR="$(find . -maxdepth 1 -type f -mmin -2 -name "*.tar.gz" -exec bash -c 'basename "{}" .tar.gz' \;)"
   if [ -z "${TEST_DIR}" ]; then
     echo "Assert: TEST_DIR is empty (no .tar.gz was created in the last two minutes by the build script)" | tee -a "${MAINLOG}"
     echo "Will try and recover by using git skip for this commit. Bisecting may fail" | tee -a "${MAINLOG}"
