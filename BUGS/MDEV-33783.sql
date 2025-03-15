@@ -14,3 +14,6 @@ SELECT b FROM t;
 
 RENAME TABLE mysql.procs_priv TO mysql.procs_gone;
 CREATE USER'';
+
+CREATE OR REPLACE TABLE mysql.servers (c BLOB,INDEX (c));
+CREATE OR REPLACE SERVER s0 FOREIGN DATA WRAPPER mysql OPTIONS (HOST '0',PORT '0');

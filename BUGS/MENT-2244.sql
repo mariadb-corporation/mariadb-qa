@@ -1,0 +1,1 @@
+SELECT ST_ASTEXT (BOUNDARY (INET6_aton ('1.0.1.1'))) AS c;

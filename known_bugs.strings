@@ -214,7 +214,17 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 #SIGABRT|my_malloc|ilink::operator new|handle_accepted_socket|handle_connections_sockets                                                                                        ## debug='+d,simulate_out_of_memory'
 ### And, 'SIGKILL MYSELF' message is seen after: debug_dbug='d,crash_commit_after', and debug_dbug='+d,crash_dispatch_command_before'
 
+##### Not merged to 11.4 ES yet (remove after merge is done)
+thd->start_time|SIGABRT|LOGGER::slow_log_print|slow_log_print|log_slow_statement|dispatch_command ## MDEV-31366
+!ldate->neg|SIGABRT|mix_date_and_time_complex|mix_date_and_time|time_to_datetime|time_to_datetime_with_warn ## MDEV-35489 
+SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spider_db_set_names_internal ## MDEV-34849 etc
+SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
+
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str                                                  ## MENT-2244
+SIGSEGV|Binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Type_handler::Item_send_str                                                   ## MENT-2244
+SIGSEGV|Static_binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str                                           ## MENT-2244
+SIGSEGV|Static_binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Type_handler::Item_send_str                                            ## MENT-2244
 SIGSEGV|_ma_reset_history|_ma_trnman_end_trans_hook|trnman_end_trn|ma_commit                                                                                                   ## MDEV-36256
 marked_for_read()|SIGABRT|Field_int::val_decimal|Item_field::val_decimal|VDec::VDec|Arg_comparator::compare_decimal                                                            ## MDEV-36241
 trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                              ## MDEV-36022
@@ -2864,3 +2874,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|list_add|heap_open|ha_heap::open|handler::ha_open                                                                                                           ## Fixed ## MDEV-35851
 # marked_for_write_or_computed()|SIGABRT|Field_new_decimal::store_value|Field_new_decimal::store_value|Field_new_decimal::reset|convert_null_to_field_value_or_error  ## Fixed ## MDEV-35911
 # MARIADB_ERROR_CODE|MariaDB error code: 1526  ## Fixed ## MDEV-33291 or MDEV-5798
+# !ldate->neg|SIGABRT|mix_date_and_time_complex|mix_date_and_time|time_to_datetime|time_to_datetime_with_warn                                                         ## Fixed ## MDEV-35489 

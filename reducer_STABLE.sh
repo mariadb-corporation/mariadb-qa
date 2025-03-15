@@ -15,7 +15,7 @@
 # This program has been used to reduce tens of thousands of SQL based testcases,
 # from tens (or hundreds) of thousands of SQL lines to less then 10 lines, each.
 
-# In active development: 2012-2024
+# In active development: 2012-2025
 
 # Learn more at:
 # https://www.percona.com/blog/2014/09/03/reducer-sh-a-powerful-mysql-test-case-simplificationreducer-tool/
@@ -35,8 +35,9 @@
 INPUTFILE=                      # The SQL file to be reduced. This can also be given as the first option to reducer.sh. Do not use double quotes
 MODE=4                          # Required. Most often used modes: 4=Any crash (TEXT not required), 3=Search for a specific TEXT in mariadbd/mysqld error log, 2=Idem, but in client log
 TEXT="somebug"                  # The text string you want reducer to search for, in specific locations depending on the MODE selected. Regex capable. Use with MODEs=1,2,3,5,6,7,8
+MODE3_ANY_SIG=0                 # MODE=3 Modifier which works similar to MODE=4. 1: MODE 3 will look for any UniqueID starting with 'SIG'. Requires USE_NEW_TEXT_STRING. TEXT is ignored
 WORKDIR_LOCATION=1              # 0: use /tmp (disk bound) | 1: use tmpfs (default) | 2: use ramfs (needs setup) | 3: use storage at WORKDIR_M3_DIRECTORY
-WORKDIR_M3_DIRECTORY="/data"     # Only relevant if WORKDIR_LOCATION is set to 3, use a specific directory/mount point
+WORKDIR_M3_DIRECTORY="/data"    # Only relevant if WORKDIR_LOCATION is set to 3, use a specific directory/mount point
 MYEXTRA="--no-defaults --log-output=none --sql_mode="  # mariadbd/mysqld options to be used (and reduced). Note: TokuDB plugin loading is checked/done automatically. # RV 14/05/22 ONLY_FULL_GROUP_BY removed 
 MYINIT=""                       # Extra options to pass to mariadbd/mysqld AND at data dir init time. See pquery-run-*.conf for more info
 BASEDIR="${PWD}"                # Path to the MySQL BASE directory to be used
@@ -891,6 +892,14 @@ options_check(){
       fi
     fi
   fi
+  if [ "${MODE3_ANY_SIG}" == "1" ]; then
+    if [ "${USE_NEW_TEXT_STRING}" != "1" ]; then
+      echo "Error: MODE3_ANY_SIG is set to 1, yet USE_NEW_TEXT_STRING, which is required for MODE3_ANY_SIG=1, is set to ${USE_NEW_TEXT_STRING}"
+      echo "Terminating now."
+      exit 1
+    fi
+    TEXT=''  # TEXT is not used when using the MODE3_ANY_SIG modifier as reducer will look for the regex '^SIG' in the USE_NEW_TEXT_STRING output
+  fi
   # Sanitize input filenames which do not have a path specified by pointing to the current path (only possible conclusion). This ensures [Finish] output looks correct (ref $WORK_BUG_DIR)
   if [[ "${INPUTFILE}" != *"/"* ]]; then
     INPUTFILE="${PWD}/${INPUTFILE}"
@@ -928,8 +937,10 @@ options_check(){
     if [ $(echo "${TEXT}" | sed 's/[^|]//g' | tr -d '\n' | wc -m) -lt 3 ]; then  # Actual normal is 4. 3 Used for small safety buffer yet avoiding most '||' (OR) error-log-search based TEXT's. Still, the new text string could in principle have less then 4 also if not enough stacks were available in the core dump, or if we ever decide to use the old unique strings as a fallback for the case where new strings are not available (unlikely).
       if [ "${FIREWORKS}" != "1" ]; then
         if [[ "${TEXT}" != "MUTEX"* && "${TEXT}" != "MEMORY_NOT_FREED"* && "${TEXT}" != "GOT_FATAL_ERROR"* && "${TEXT}" != "GOT_ERROR"* && "$TEXT" != "MARKED_AS_CRASHED"* && "$TEXT" != "MARIADB_ERROR_CODE"* && "${TEXT}" != "FALLBACK"* ]]; then  # Avoid situations where it is expected to see this
-          echo "Likely misconfiguration: MODE=3 and USE_NEW_TEXT_STRING=1, yet the TEXT string ('${TEXT}') does not contain at least 3 '|' symbols, which are normally used in new text string unique bug ID's! It is highly likely reducer will not locate any bugs this way. Are you perhaps attempting to look for a specific TEXT string in the standard server error log? If so, please set USE_NEW_TEXT_STRING=0 and SCAN_FOR_NEW_BUGS=0 ! Another possibility is that you incorrectly set the TEXT variable to something that is not a/the unique bug ID. Please check your setup. Pausing 13 seconds for consideration. Press CTRL+c if you want to stop at this point. If not, reducer will look for '${TEXT}' in the new text string script unique bug ID output. Again, this is unlikely to work, unless in the specific use case of looking for a partial match of a limited TEXT string against the new text string script unique bug ID output."
-          sleep 13
+          if [ "${MODE3_ANY_SIG}" != "1" ]; then  # When MODE3_ANY_SIG is being used, TEXT is blanked
+            echo "Likely misconfiguration: MODE=3 and USE_NEW_TEXT_STRING=1, yet the TEXT string ('${TEXT}') does not contain at least 3 '|' symbols, which are normally used in new text string unique bug ID's! It is highly likely reducer will not locate any bugs this way. Are you perhaps attempting to look for a specific TEXT string in the standard server error log? If so, please set USE_NEW_TEXT_STRING=0 and SCAN_FOR_NEW_BUGS=0 ! Another possibility is that you incorrectly set the TEXT variable to something that is not a/the unique bug ID. Please check your setup. Pausing 13 seconds for consideration. Press CTRL+c if you want to stop at this point. If not, reducer will look for '${TEXT}' in the new text string script unique bug ID output. Again, this is unlikely to work, unless in the specific use case of looking for a partial match of a limited TEXT string against the new text string script unique bug ID output."
+            sleep 13
+          fi
         fi
       fi
     fi
@@ -976,7 +987,7 @@ options_check(){
     exit 1
   fi
   if [ $MODE -eq 1 -o $MODE -eq 2 -o $MODE -eq 3 -o $MODE -eq 5 -o $MODE -eq 6 -o $MODE -eq 7 -o $MODE -eq 8 ]; then
-    if [ ! -n "$TEXT" ]; then
+    if [ ! -n "$TEXT" -a "${MODE3_ANY_SIG}" != "1" ]; then
       echo "Error: MODE set to $MODE, but no \$TEXT variable was defined, or \$TEXT is blank"
       echo 'Please check script contents/options ($TEXT variable)'
       echo "Terminating now."
@@ -3484,7 +3495,14 @@ process_outcome(){
           if [ -r "$(echo "${INPUTFILE}" | sed 's|/default.node.tld.*|/TOP_SAN_ISSUES_REMOVED|')" ]; then
             echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] TOP_SAN_ISSUES_REMOVED flag file found: dropping any known *SAN bugs from the top of the error log, if any"
             # We are already in $WORKD so we can immediately execute drop_one_or_more_san_from_log.sh from here
-            ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as it will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not: we want only known issues to be removed
+            if [ -r ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh ]; then
+              ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as it will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not: we want only known issues to be removed
+            elif [ -r ${HOME}/mariadb-qa/drop_one_or_more_san_from_log.sh ]; then  # This location is used for example when starting ./reducer_new_text_string.sh from within a BASEDIR (As created by startup.sh)
+              ${HOME}/mariadb-qa/drop_one_or_more_san_from_log.sh  # Idem as above; do not add options
+            else
+              echo "Assert: ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh nor ${HOME}/mariadb-qa/drop_one_or_more_san_from_log.sh found - please check your setup"
+              exit 1
+            fi
           fi
         fi
         MYBUGFOUND="$(${TEXT_STRING_LOC} "${BIN}" 2>/dev/null)"
@@ -3518,7 +3536,11 @@ process_outcome(){
           fi
         fi
         SAVEPATH=
-        FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${WORKD}/MYBUG.FOUND)"  # Do not use "^${TEXT}", not only will this not work (the grep is not regex aware, nor can it be, due to the many special (regex-like) characters in the unique bug strings), but it is also not required here; we want to be able to search for part of the string, and the risk of an incorrect "more generic unique bug string with a more specific one being looked for" match is very low.
+        if [ "${MODE3_ANY_SIG}" != "1" ]; then
+          FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${WORKD}/MYBUG.FOUND)"  # Do not use "^${TEXT}", not only will this not work (the grep is not regex aware, nor can it be, due to the many special (regex-like) characters in the unique bug strings), but it is also not required here; we want to be able to search for part of the string, and the risk of an incorrect "more generic unique bug string with a more specific one being looked for" match is very low.
+        else
+          FINDBUG="$(grep -i --binary-files=text "^SIG" ${WORKD}/MYBUG.FOUND)"  # Search for any signal (SIGSEGV, SIGABRT, etc.) using regex "^SIG"
+        fi
         if [ ! -z "${FINDBUG}" ]; then  # $TEXT_STRING_LOC yielded same bug as the one being reduced for
           M3_ISSUE_FOUND=1
           FINDBUG=
@@ -3655,7 +3677,7 @@ process_outcome(){
                 sed -i "s|^THREADS=.*|THREADS=3|" "${NEWBUGRE}"
                 sed -i "s|^MULTI_THREADS_INCREASE=.*|MULTI_THREADS_INCREASE=1|" "${NEWBUGRE}"
                 sed -i "s|^MULTI_THREADS_MAX=.*|MULTI_THREADS_MAX=5|" "${NEWBUGRE}"
-                sed -i "s|^STAGE1_LINES=.*|STAGE1_LINES=7|" "${NEWBUGRE}"
+                sed -i "s|^STAGE1_LINES=.*|STAGE1_LINES=15|" "${NEWBUGRE}"  # Leave at 15. 7 Proved too low for most issues (looping)
                 sed -i "s|^BASEDIR=.*|BASEDIR=\"${BASEDIR}\"|" "${NEWBUGRE}"
                 sed -i "s|^MYEXTRA=.*|MYEXTRA=\"--no-defaults ${MYEXTRA}\"|" "${NEWBUGRE}"  # TODO check this works correctly now
                 sed -i "s|^REPLICATION=.*|REPLICATION=${REPLICATION}|" "${NEWBUGRE}"
@@ -4552,6 +4574,12 @@ fireworks_setup(){
                            echoit "[Init] Run mode: MODE=4: Crash"
                            echoit "[Init] Looking for any mariadbd/mysqld crash"; fi; fi
   if [ $MODE -eq 3 ]; then
+
+  if [ "${MODE3_ANY_SIG}" == "1" -a "${USE_NEW_TEXT_STRING}" != "1" ]; then
+    echo "Error: MODE3_ANY_SIG is set to 1, yet USE_NEW_TEXT_STRING, which is required for MODE3_ANY_SIG=1, is set to ${USE_NEW_TEXT_STRING}"
+    echo "Terminating now."
+    exit 1
+  fi
     if [ "$PQUERY_CONS_Q_FAIL" -eq 1 ]; then
       echoit "[Init] PQUERY_CONS_Q_FAIL active: MODE set to 3, USE_PQUERY set to 1, USE_NEW_TEXT_STRING set to 0"
       echoit "[Init] PQUERY_CONS_Q_FAIL active: All other issues (crashes/asserts, any TEXT, error log contents etc.) will be ignored"
@@ -4559,6 +4587,9 @@ fireworks_setup(){
     elif [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
                            echoit "[Init] Run mode: MODE=3 with REDUCE_GLIBC_OR_SS_CRASHES=1: console typscript log"
                            echoit "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
+    elif [ "${MODE3_ANY_SIG}" == "1" ]; then  # If MODE3_ANY_SIG=1 then USE_NEW_TEXT_STRING=1
+                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1 and MODE3_ANY_SIG=1: coredump signal matching using new_text_string.sh"
+                           echoit "[Init] Looking for this regex string: '^SIG' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then
       if [ "${FIREWORKS}" != "1" ]; then
                            echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump stack matching using new_text_string.sh"

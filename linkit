@@ -80,7 +80,7 @@ ln -fs /home/${USER}/mariadb-qa/stack.sh /home/${USER}/stack 2>&1
 
 # Git bisect clone & main scripts
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
-ln -fs /home/${USER}/mariadb-qa/commit_check.sh /test/git-bisect/commit_check.sh 2>&1
+ln -fs /home/${USER}/mariadb-qa/contains_commit_check.sh /test/git-bisect/contains_commit_check.sh 2>&1
 ln -fs /home/${USER}/mariadb-qa/git-bisect.sh /test/git-bisect/git-bisect.sh 2>&1
 ln -fs /home/${USER}/mariadb-qa/ver_specific_git_history.sh  /test/git-bisect/ver_specific_git_history.sh 2>&1
 
@@ -132,6 +132,7 @@ fi
 
 # Remove any broken symlinks
 for SL in /test/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
+for SL in /test/git-bisect/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
 for SL in /data/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
 for SL in ${HOME}/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
 
