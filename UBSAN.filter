@@ -27,6 +27,12 @@
 # Issues at startup should be kept in this file and marked with '[Startup]', others should be removed, as they are covered by UniqueID combined with new multi-SAN issue handling already. Partial '[Startup]' marking complete. OTOH, high frequency issues may be opportune to filter out? Todo: review multi-SAN. Ftm, please mark any issues known not to be on startup with '(not-startup)'.
 
 # ----- Current bugs
+## MDEV-36343 [MTR, main.update_innodb, Daniel]
+float-cast-overflow:Index_statistics::set_avg_frequency
+## MDEV-36344 [MTR, main.index_intersect_innodb, Daniel]
+pointer-overflow:Forward_lifo_buffer::have_space_for
+## MDEV-36346 [MTR, main.select, Daniel]
+float-cast-overflow:test_if_cheaper_ordering
 ## MDEV-35872 [CLI Startup]
 pointer-overflow:ctype-uca.c
 ## MDEV-35688 [Startup]

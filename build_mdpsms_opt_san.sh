@@ -284,7 +284,7 @@ CURPATH="$(echo $PWD | sed 's|.*/||')"
 
 cd ..
 rm -Rf ${CURPATH}_opt_san
-rm -f /tmp/psms_opt_san_build_${RANDOMD}
+rm -f /tmp/mdpsms_opt_san_build_${RANDOMD}
 cp -R ${CURPATH} ${CURPATH}_opt_san
 cd ${CURPATH}_opt_san
 

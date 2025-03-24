@@ -280,7 +280,7 @@ CURPATH=$(echo $PWD | sed 's|.*/||')
 
 cd ..
 rm -Rf ${CURPATH}_dbg_san
-rm -f /tmp/psms_dbg_san_build_${RANDOMD}
+rm -f /tmp/mdpsms_dbg_san_build_${RANDOMD}
 cp -R ${CURPATH} ${CURPATH}_dbg_san
 cd ${CURPATH}_dbg_san
 

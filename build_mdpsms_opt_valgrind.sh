@@ -232,7 +232,7 @@ CURPATH=$(echo $PWD | sed 's|.*/||')
 
 cd ..
 rm -Rf ${CURPATH}_opt
-rm -f /tmp/psms_opt_build_${RANDOMD}
+rm -f /tmp/valgrind_opt_build_${RANDOMD}
 cp -R ${CURPATH} ${CURPATH}_opt
 cd ${CURPATH}_opt
 
