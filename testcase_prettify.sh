@@ -77,6 +77,7 @@ cat "${1}" | tr -d '`' | \
        s|snapshot|SNAPSHOT|gi; \
        s|commit|COMMIT|gi; \
        s|committed|COMMITTED|gi; \
+       s|uncommitted|UNCOMMITTED|gi; \
        s|isolation|ISOLATION|gi; \
        s|create|CREATE|gi; \
        s|data|DATA|gi; \

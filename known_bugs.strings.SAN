@@ -6,6 +6,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|hashcmp|my_hash_first_from_hash_value|my_hash_search_using_hash_value                                 ## MDEV-36376
 ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                              ## MDEV-35622
 UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_int_in_field|Item::save_in_field|save_window_function_values|compute_window_func                      ## MDEV-36356
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_in_subselect::Item_in_subselect|MYSQLparse|parse_sql ## MDEV-36353
