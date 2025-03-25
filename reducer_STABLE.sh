@@ -392,7 +392,8 @@ BASEDIR_ALT=
 #==180506==Process memory map follows:
 #...
 #==180506==End of process memory map.
-if [[ "${BASEDIR}" == *"SAN"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856
+#This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.
+#if [[ "${BASEDIR}" == *"SAN"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856
 #Check replication option
 if [ $REPLICATION -ne 1 ]; then  # If replication is not active, we do not want any REPL_EXTRA, MASTER_EXTRA and SLAVE_EXTRA options to take effect
   REPL_EXTRA=

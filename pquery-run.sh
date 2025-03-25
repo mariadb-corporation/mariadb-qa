@@ -3008,7 +3008,8 @@ fi
 #==180506==Process memory map follows:
 #...
 #==180506==End of process memory map.
-sudo sysctl vm.mmap_rnd_bits=28   # Workaround, ref https://github.com/google/sanitizers/issues/856
+#This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.
+#sudo sysctl vm.mmap_rnd_bits=28   # Workaround, ref https://github.com/google/sanitizers/issues/856
 
 # Get version specific options
 MID=
