@@ -6,6 +6,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_int_in_field|Item::save_in_field|save_window_function_values|compute_window_func                      ## MDEV-36356
+UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_in_subselect::Item_in_subselect|MYSQLparse|parse_sql ## MDEV-36353
+UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|mysql_multi_update_prepare ## MDEV-36343
 UBSAN|applying non-zero offset X to null pointer|sql/sql_lifo_buffer.h|Forward_lifo_buffer::have_space_for|DsMrr_impl::dsmrr_init|ha_innobase::multi_range_read_init|QUICK_RANGE_SELECT::reset ## MDEV-36344
 UBSAN|inf is outside the range of representable values of type 'unsigned long long'|sql/sql_select.cc|test_if_cheaper_ordering|test_if_skip_sort_order|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-36346
 ASAN|heap-use-after-free|sql/sql_analyse.cc|field_str::add|analyse::send_row|end_send|evaluate_join_record                                                                     ## MDEV-36300

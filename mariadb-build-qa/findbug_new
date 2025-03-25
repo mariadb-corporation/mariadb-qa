@@ -3,7 +3,15 @@
 
 CURPWD="${PWD}"
 
-echo "{noformat:title=Bug Detection Matrix}"
+if [ "${1}" == "san" ]; then set "SAN"; fi  # san > SAN
+if [ "${1}" == "gal" ]; then set "GAL"; fi  # gal > GAL
+if [ "${1}" == "SAN" ]; then
+  echo "{noformat:title=SAN Bug Detection Matrix}"
+elif [ "${1}" == "GAL" ]; then
+  echo "{noformat:title=Galera Bug Detection Matrix}"
+else
+  echo "{noformat:title=Bug Detection Matrix}"
+fi
 printf "%-3s %-6s %-4s %-7s %-41s %-30s\n" "" "Rel" "o/d" "Build" "Commit" "UniqueID observed"
 
 ./gendirs.sh "${1}" | xargs -I{} echo "cd {}; ./line; cd ${CURPWD}" | xargs -I{} bash -c "{}" | sort -V

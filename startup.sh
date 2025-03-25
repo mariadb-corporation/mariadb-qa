@@ -55,7 +55,8 @@ fi
 #==180506==Process memory map follows:
 #...
 #==180506==End of process memory map.
-sudo sysctl vm.mmap_rnd_bits=28  # Workaround, ref https://github.com/google/sanitizers/issues/856
+#sudo sysctl vm.mmap_rnd_bits=28  # Workaround, ref https://github.com/google/sanitizers/issues/856
+#This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.
 
 PORT=$NEWPORT
 SOCKET=${PWD}/socket.sock
@@ -531,7 +532,8 @@ if [ "${USE_JE}" -eq 1 ]; then
   echo $JE6 >>start
   echo $JE7 >>start
 fi
-echo "if [[ \"${PWD}\" == *\"SAN\"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856"  >> start
+#This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.
+#echo "if [[ \"${PWD}\" == *\"SAN\"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856"  >> start
 echo "source ${PWD}/init_empty_port.sh" >>start
 echo "init_empty_port" >>start
 echo "PORT=\$NEWPORT" >>start
@@ -1268,7 +1270,8 @@ echo './all --sql_mode=' >sqlmode
 echo './all --log_bin' >binlog
 echo 'MYEXTRA_OPT="$*"' >all
 add_san_options all
-echo "if [[ \"${PWD}\" == *\"SAN\"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856" >> all
+#This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.
+#echo "if [[ \"${PWD}\" == *\"SAN\"* ]]; then sudo sysctl vm.mmap_rnd_bits=28; fi  # Workaround, ref https://github.com/google/sanitizers/issues/856" >> all
 echo "./kill >/dev/null 2>&1;./kill_replication >/dev/null 2>&1;rm -f socket.sock socket.sock.lock;sync;./wipe \${MYEXTRA_OPT};./start \${MYEXTRA_OPT};./cl" >>all
 ln -s ./all ./a 2>/dev/null
 echo 'MYEXTRA_OPT="$*"' >all_stbe

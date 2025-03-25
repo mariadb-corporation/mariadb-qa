@@ -221,6 +221,13 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|JOIN::fix_all_splittings_in_plan|JOIN::optimize_inner|JOIN::optimize|mysql_select                                                                                      ## MDEV-32084
+found_tables > 0|SIGABRT|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                      ## MDEV-32084
+SIGSEGV|Field::set_notnull|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                                             ## MDEV-36356
+SIGSEGV|Field::set_notnull|Item::save_int_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
+SIGSEGV|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                                                                                                       ## MDEV-36355
+SIGSEGV|internal_str2dec|str2my_decimal|Value_source::Converter_str2my_decimal::Converter_str2my_decimal|Value_source::Converter_str2my_decimal_with_warn::Converter_str2my_decimal_with_warn ## MDEV-36354
+SIGSEGV|Item_subselect::init|Item_in_subselect::Item_in_subselect|MYSQLparse|parse_sql                                                                                         ## MDEV-36353
 SIGSEGV|Binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str                                                  ## MENT-2244
 SIGSEGV|Binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Type_handler::Item_send_str                                                   ## MENT-2244
 SIGSEGV|Static_binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str                                           ## MENT-2244

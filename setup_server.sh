@@ -144,6 +144,7 @@ if [ "$(grep -m1 '^vm.panic_on_oom=0' /etc/sysctl.conf)" != 'vm.panic_on_oom=0' 
 fi
 
 # Note that a high number (>20480) for soft+hard nproc may cause system instability/hang on Centos7
+# soft/hard stack 16000000: based upon https://github.com/google/sanitizers/issues/856#issuecomment-2749596588
 sudo bash -c "cat << EOF > /etc/security/limits.conf
 * soft core unlimited
 * hard core unlimited
@@ -157,8 +158,8 @@ sudo bash -c "cat << EOF > /etc/security/limits.conf
 * hard nofile 1048576
 * soft rss unlimited
 * hard rss unlimited
-* soft stack unlimited
-* hard stack unlimited
+* soft stack 16000000
+* hard stack 16000000
 * soft cpu unlimited
 * hard cpu unlimited
 * soft nproc unlimited

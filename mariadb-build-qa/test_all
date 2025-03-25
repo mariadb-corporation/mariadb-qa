@@ -1,3 +1,4 @@
+#!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
 # User variables
@@ -125,6 +126,7 @@ sync
 
 if [ "${LEGACY_MODE}" -eq 0 ]; then
   # Defaut mode: output bug detection matrix using ./findbug_new, and save copy for easy bug reporting (mariadb-qa/bug_report.sh)
+  echo 'Generating the Bug Detection Matrix, this may take a few mintues!'
   if [ ${SAN_MODE} -eq 1 ]; then
     ./findbug_new SAN | tee test.results.san
   elif [ ${GAL_MODE} -eq 1 ]; then

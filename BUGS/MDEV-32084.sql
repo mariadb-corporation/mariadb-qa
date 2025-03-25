@@ -1,0 +1,2 @@
+CREATE TABLE t1 (i INT);
+SELECT 1 FROM t1 WHERE i IN (SELECT 1 FROM t1 c LEFT JOIN (t1 a LEFT JOIN t1 b ON t1.i = b.i) ON c.i = t1.i);
