@@ -6,6 +6,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                              ## MDEV-35622
 UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_int_in_field|Item::save_in_field|save_window_function_values|compute_window_func                      ## MDEV-36356
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_in_subselect::Item_in_subselect|MYSQLparse|parse_sql ## MDEV-36353
 UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|mysql_multi_update_prepare ## MDEV-36343
@@ -534,8 +535,6 @@ TSAN|data race|storage/innobase/os/os0file.cc|LinuxAIOHandler::collect|LinuxAIOH
 TSAN|data race|tpool/aio_linux.cc|tpool::aio_linux::getevent_thread_routine|voidstd::__invoke_impl|std::__invoke_result|voidstd::thread::_Invoker                              ## MDEV-27133
 UBSAN|pointer index expression with base X overflowed to Y|mysys/my_thr_init.c|my_thread_init|timer_handler|start_thread|clone                                                 ## MDEV-27077
 TSAN|data race|storage/innobase/os/os0file.cc|tsan_atomic64_fetch_add|os_file_pread|os_file_read_page|os_file_read_func                                                        ## MDEV-24332
-ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                                ## MDEV-24193
-ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                              ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                     ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                       ## MDEV-24193
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_rename_user|mysql_execute_command                     ## MDEV-24193
@@ -689,3 +688,5 @@ ASAN|stack-buffer-overflow|strings/int2str.c|int2str|Item_func_conv::val_str|Ite
 # ASAN|heap-use-after-free|sql/protocol.cc|interceptor_memcpy|Protocol::net_store_data|Protocol::store_string_aux|Protocol::store                                              ## Fixed ## MDEV-34003
 # ASAN|heap-use-after-free|sql/protocol.cc|interceptor_memcpy|Protocol::net_store_data|Protocol::store_string_aux|Protocol_text::store_str                                     ## Fixed ## MDEV-34003
 # UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|THD::copy_fix                         ## Fixed ## MDEV-34226
+# ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                              ## Fixed ## MDEV-24193
+# ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                            ## Fixed ## MDEV-24193

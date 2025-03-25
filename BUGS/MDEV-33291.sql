@@ -57,3 +57,11 @@ INSERT INTO t2 SELECT * FROM t;
 # [Warning] Slave: Column 'c' cannot be null Error_code: 1048
 # [Warning] Slave: Duplicate entry '0' for key 'PRIMARY' Error_code: 1062
 # [ERROR] Error running query, slave SQL thread aborted. Fix the problem, and restart the slave SQL thread with "SLAVE START". We stopped at log 'binlog.000001' position 1120; GTID position '0-1-5'
+
+SET SESSION max_error_count=-1;
+CREATE TABLE t1 (a INT);
+BINLOG ' SOgWTg8CAAAAbgAAAHIAAAAAAAQANS42LjMtbTUtZGVidWctbG9nAAAAAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAABI6BZOEzgNAAgAEgAEBAQEEgAAVgAEGggAAAAICAgCAAAAAAVAYI8=';
+binlog 'bBf2ZBMBAAAANAAAAHUkAAAAAHEAAAAAAAEABHRlc3QAAnQxAAQDDw8IBP0C4h0AaTGFIg==bBf2ZBgBAAAASAAAAL0kAAAAAHEAAAAAAAEABP//8I + kAAABAGIBAGWuv1VNCQAAAPBuWwAAAQBiAQBlrr9VTQkAAADxS9Lu';
+# CLI: ERROR 1032 (HY000): Can't find record in 't1'
+# ERR: [ERROR] mariadbd: Can't find record in 't1'
+# ERR: [ERROR]  BINLOG_BASE64_EVENT: Could not execute Update_rows_v1 event on table test.t1; handler error HA_ERR_END_OF_FILE; the event's master log FIRST, end_log_pos 9405, Internal MariaDB error code: 1032

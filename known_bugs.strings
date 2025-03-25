@@ -221,6 +221,11 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Field::get_thd|get_field|get_field|handle_grant_table                                                                                                                  ## MDEV-35622
+SIGSEGV|Field::get_thd|get_field|handle_grant_table|handle_grant_data                                                                                                          ## MDEV-35622
+SIGSEGV|Field::val_str|Field::val_lex_cstring|handle_grant_table|handle_grant_data                                                                                             ## MDEV-35622
+SIGSEGV|Sql_mode_save::Sql_mode_save|Sql_mode_instant_remove::Sql_mode_instant_remove|get_field|get_field                                                                      ## MDEV-35622
+SIGSEGV|Sql_mode_save::Sql_mode_save|Sql_mode_instant_remove::Sql_mode_instant_remove|get_field|handle_grant_table                                                             ## MDEV-35622
 SIGSEGV|JOIN::fix_all_splittings_in_plan|JOIN::optimize_inner|JOIN::optimize|mysql_select                                                                                      ## MDEV-32084
 found_tables > 0|SIGABRT|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                      ## MDEV-32084
 SIGSEGV|Field::set_notnull|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                                             ## MDEV-36356

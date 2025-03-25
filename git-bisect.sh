@@ -4,25 +4,25 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=11.4                                                        # Use the earliest major version affected by the bug
-ES=1                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
-SKIP_NON_SAME_VERSION=1                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
+VERSION=12.0                                                        # Use the earliest major version affected by the bug
+ES=0                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
+SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
-RECLONE=0                                                           # Set to 1 to reclone a tree before starting
+RECLONE=1                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.i
-LAST_KNOWN_GOOD_COMMIT='d61d096878d0d35604ea30afb49b77f9404c551e'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='f6f50b2e5ed518dbbb1d0bd8c1b6bff00ccd3e60'   # Revision of first known bad commit
-TESTCASE='/test/in20.sql'                                           # The testcase to be tested
+LAST_KNOWN_GOOD_COMMIT='c92add291e636c797e6d6ddca605905541b2a441'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='c3f21762e9db30c4a5dd1e9ac676dbdafa303d4a'   # Revision of first known bad commit
+TESTCASE='/test/in21.sql'                                           # The testcase to be tested
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID='SIGSEGV|TABLE_LIST::is_active_sjm|TABLE_LIST::is_sjm_scan_table|JOIN::add_sorting_to_table|JOIN::make_aggr_tables_info'                                                         # The UniqueID to scan for [Exclusive]
-TEXT=''                                                             # The string to scan for in the error log [Exclusive]
+UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
+TEXT='persistent statistics storage is corrupted'                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead
 # i.e. 3 different modes in total: UNIQUEID, TEXT or core files scan
@@ -55,7 +55,7 @@ if [ "${ES}" -eq 1 -a ! -z "${FEATURETREE}" ]; then
 elif [ "${DBG_OR_OPT}" != 'dbg' -a "${DBG_OR_OPT}" != 'opt' ]; then
   echo "DBG_OR_OPT variable is incorrectly set: use 'dbg' or 'opt' only"
   exit 1
-elif [[ "${VERSION}" != "10."* && "${VERSION}" != "11."* && "${FEATURETREE}" == "" ]]; then
+elif [[ "${VERSION}" != "10."* && "${VERSION}" != "11."* && "${VERSION}" != "12."* && "${FEATURETREE}" == "" ]]; then
   echo "Version (${VERSION}) does not look correct"
   exit 1
 elif [ ! -z "${UNIQUEID}" -a ! -z "${TEXT}" ]; then
@@ -102,7 +102,11 @@ if [ "${RECLONE}" -eq 1 ]; then
     cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
   else
     rm -Rf "${VERSION}"
-    git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
+    if [ "${VERSION}" == "12.0" ]; then  # Update as trunk changes to a new version 
+      git clone --recurse-submodules -j20 https://github.com/MariaDB/server.git "${VERSION}"
+    else
+      git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
+    fi
     cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
   fi
 else

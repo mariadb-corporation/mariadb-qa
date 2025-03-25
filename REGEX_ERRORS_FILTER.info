@@ -12,6 +12,7 @@ Error while setting value .* to                       Invalid mysqld option valu
 Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested
 Warning. InnoDB: Table.*contains.*user defined columns in InnoDB, but.*in MariaDB.*INFORMATION_SCHEMA.INNODB_SYS_COLUMNS  MDEV25654
 Event invalid                                         MDEV-26270
+Warning. InnoDB: Recalculation of persistent statistics requested for table.*but the required persistent statistics storage is corrupted  MDEV-36373
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Operating sys.*error.*13 in a file op  MDEV-19849 or similar occurrences
 ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurrences
@@ -82,6 +83,7 @@ Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NO
 Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_KEY_NOT_FOUND  MDEV-33291
 Could not execute Delete_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  MDEV-33291
 Could not execute Update_rows_v1 event on table.*Error_code: 1032.*HA_ERR_END_OF_FILE  MDEV-33291
+Could not execute Update_rows_v1 event on table.*handler error HA_ERR_END_OF_FILE.*MariaDB error code: 1032  MDEV-33291
 Could not execute Write_rows_v1 event on table.*Error_code: 1526.*HA_ERR_NO_PARTITION_FOUND  MDEV-33291
 Could not execute Write_rows_v1 event on table.*Error_code: 1048.*HA_ERR_FOUND_DUPP_KEY  MDEV-33291
 Could not execute Write_rows_v1 event on table.*Error_code: 1036.*HA_ERR_TABLE_READONLY  MDEV-33579
