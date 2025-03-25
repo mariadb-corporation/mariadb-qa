@@ -27,6 +27,10 @@
 # Issues at startup should be kept in this file and marked with '[Startup]', others should be removed, as they are covered by UniqueID combined with new multi-SAN issue handling already. Partial '[Startup]' marking complete. OTOH, high frequency issues may be opportune to filter out? Todo: review multi-SAN. Ftm, please mark any issues known not to be on startup with '(not-startup)'.
 
 # ----- Current bugs
+## MDEV-35715 [MTR, main.type_enum]
+float-cast-overflow:Field_bit::store
+float-cast-overflow:Field_set::store
+float-cast-overflow:Field_enum::store
 ## MDEV-36343 [MTR, main.update_innodb, Daniel]
 float-cast-overflow:Index_statistics::set_avg_frequency
 ## MDEV-36344 [MTR, main.index_intersect_innodb, Daniel]
