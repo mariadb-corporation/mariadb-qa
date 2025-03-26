@@ -223,6 +223,7 @@ SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## 
 ##### CURRENT BUGS (Search key: Mac) #####
 thd->lex == sp_instr_lex|SIGABRT|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core|sp_lex_keeper::cursor_reset_lex_and_exec_core|sp_instr_copen_by_ref::execute ## MDEV-36377
 SIGSEGV|st_select_lex_unit::unclean|reinit_stmt_before_use|sp_lex_keeper::reset_lex_and_exec_core|sp_lex_keeper::validate_lex_and_exec_core                                    ## MDEV-36377
+SIGSEGV|Spvar_definition::is_table_rowtype_ref|sp_rcontext::init_var_items|sp_rcontext::create|sp_head::rcontext_create                                                        ## MDEV-36377
 SIGSEGV|Binary_string::length|spider_string::length|spider_link_get_key|my_hash_key                                                                                            ## MDEV-36376
 SIGSEGV|spider_db_mbase::append_lock_tables|spider_mbase_handler::lock_tables|ha_spider::lock_tables|ha_spider::external_lock                                                  ## MDEV-36376
 thd->is_error()|SIGABRT|store_server_fields|insert_server_record|insert_server|create_server                                                                                   ## MDEV-36230
