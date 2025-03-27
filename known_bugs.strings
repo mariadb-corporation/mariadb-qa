@@ -221,6 +221,7 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+marked_for_read()|SIGABRT|Field_short::val_int|Field_sys_refcursor::val_ref|Field_sys_refcursor::update_to_not_null_ref|Field_sys_refcursor::store_ref                         ## MDEV-36409
 thd->lex == sp_instr_lex|SIGABRT|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core|sp_lex_keeper::cursor_reset_lex_and_exec_core|sp_instr_copen_by_ref::execute ## MDEV-36377
 SIGSEGV|st_select_lex_unit::unclean|reinit_stmt_before_use|sp_lex_keeper::reset_lex_and_exec_core|sp_lex_keeper::validate_lex_and_exec_core                                    ## MDEV-36377
 SIGSEGV|Spvar_definition::is_table_rowtype_ref|sp_rcontext::init_var_items|sp_rcontext::create|sp_head::rcontext_create                                                        ## MDEV-36377
