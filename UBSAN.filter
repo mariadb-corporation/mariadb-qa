@@ -31,11 +31,11 @@
 float-cast-overflow:Field_bit::store
 float-cast-overflow:Field_set::store
 float-cast-overflow:Field_enum::store
-## MDEV-36343 [MTR, main.update_innodb, Daniel]
+## MDEV-36343 [MTR, main.update_innodb]
 float-cast-overflow:Index_statistics::set_avg_frequency
-## MDEV-36344 [MTR, main.index_intersect_innodb, Daniel]
+## MDEV-36344 [MTR, main.index_intersect_innodb]
 pointer-overflow:Forward_lifo_buffer::have_space_for
-## MDEV-36346 [MTR, main.select, Daniel]
+## MDEV-36346 [MTR, main.select]
 float-cast-overflow:test_if_cheaper_ordering
 ## MDEV-35872 [CLI Startup]
 pointer-overflow:ctype-uca.c
