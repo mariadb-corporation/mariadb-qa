@@ -27,6 +27,14 @@
 # Issues at startup should be kept in this file and marked with '[Startup]', others should be removed, as they are covered by UniqueID combined with new multi-SAN issue handling already. Partial '[Startup]' marking complete. OTOH, high frequency issues may be opportune to filter out? Todo: review multi-SAN. Ftm, please mark any issues known not to be on startup with '(not-startup)'.
 
 # ----- Current bugs
+## MDEV-35714 [MTR, main.dyncol]
+object-size:Item_dyncol_get::get_date
+## MDEV-36375 [MTR, main.gis]
+enum:get_all_tables
+## MDEV-36451 [MTR, main.blackhole]
+float-cast-overflow:best_access_path
+## MDEV-36453 [MTR, main.mysqltest]
+pointer-overflow:do_block
 ## MDEV-35715 [MTR, main.type_enum]
 float-cast-overflow:Field_bit::store
 float-cast-overflow:Field_set::store
@@ -74,7 +82,7 @@ function:show_status_array
 pointer-overflow:my_string_repertoire_8bit
 ## MDEV-35548
 bounds:json_get_path_start
-## MDEV-35545
+## MDEV-35545 [MTR, main.gis]
 pointer-overflow:Gis_geometry_collection::init_from_opresult
 ## MDEV-35541
 pointer-overflow:my_b_flush_io_cache
