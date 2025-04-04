@@ -98,6 +98,7 @@ GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rena
 GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and MDEV-29430
 GOT_ERROR|Got error 1056|when reading table                    ## MDEV-34638
 GOT_ERROR|Got error 1064|when reading table                    ## MDEV-33042 (Spider)
+GOT_ERROR|Got error 1064|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-27027
 GOT_ERROR|Got error 1099|when reading table                    ## MDEV-34990 (Spider)
 GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
 GOT_ERROR|Got error 1290|when trying to execute action for entry 2 of type 'rename table'  ## SPECIAL-18
@@ -222,6 +223,14 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+operation_failed || !pos_in_locked_tables->table|SIGABRT|Table_specification_st::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-36435
+keyinfo_array.size() == 0|SIGABRT|Opt_hints_table::fix_hint|Opt_hints_qb::fix_hints_for_table|setup_tables|setup_tables_and_check_access                                       ## MDEV-36486
+*str != '\0'|SIGABRT|my_message_sql|Table_triggers_list::check_for_broken_triggers|Table_triggers_list::prepare_for_rename|rename_triggers                                     ## MDEV-36484
+*str != '\0'|SIGABRT|my_message_sql|my_message|Table_triggers_list::check_for_broken_triggers|Table_triggers_list::prepare_for_rename                                          ## MDEV-36484
+!param->got_error|SIGABRT|Table_triggers_list::change_table_name|rename_triggers|ddl_log_execute_action|ddl_log_execute_entry_no_lock                                          ## MDEV-36484
+!param->got_error|SIGABRT|Table_triggers_list::change_table_name|rename_triggers|ddl_log_execute_action|ddl_log_execute_entry_no_lock                                          ## MDEV-27027
+*str != '\0'|SIGABRT|my_message_sql|my_message|Table_triggers_list::check_for_broken_triggers|Table_triggers_list::change_table_name                                           ## MDEV-27027
+*str != '\0'|SIGABRT|my_message_sql|my_message|Table_triggers_list::check_for_broken_triggers|Table_triggers_list::prepare_for_rename                                          ## MDEV-27027
 marked_for_read()|SIGABRT|Field_short::val_int|Field_sys_refcursor::val_ref|Field_sys_refcursor::update_to_not_null_ref|Field_sys_refcursor::store_ref                         ## MDEV-36409
 thd->lex == sp_instr_lex|SIGABRT|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core|sp_lex_keeper::cursor_reset_lex_and_exec_core|sp_instr_copen_by_ref::execute ## MDEV-36377
 SIGSEGV|st_select_lex_unit::unclean|reinit_stmt_before_use|sp_lex_keeper::reset_lex_and_exec_core|sp_lex_keeper::validate_lex_and_exec_core                                    ## MDEV-36377
