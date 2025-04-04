@@ -73,6 +73,7 @@ GOT_ERROR|Got error 128|when reading table                     ## MDEV-34991
 GOT_ERROR|Got error 134|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 140|"Wrong create options" from storage engine InnoDB Error_code: 1030  ## MDEV-33961
 GOT_ERROR|Got error 170|"It is not possible to log this statement" from storage engine InnoDB ## MDEV-32354
+GOT_ERROR|Got error 171|"The event was corrupt, leading to illegal data being read" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine MEMORY, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (looks duplicate to previous line but it is a different SE)
 GOT_ERROR|Got error 171|\"The event was corrupt, leading to illegal data being read\" from storage engine Spider, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030
@@ -1417,6 +1418,7 @@ is_open()|SIGABRT|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_tr
 marked_for_read()|SIGABRT|Field_varstring::val_real|Item_field::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op                            ## MDEV-22943
 marked_for_read()|SIGABRT|Field_varstring::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                             ## MDEV-22943
 marked_for_read()|SIGABRT|Field_blob::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                                  ## MDEV-22943
+SIGSEGV|__strnlen_evex|process_str_arg|my_vsnprintf_ex|my_error                                                                                                                ## MDEV-22943
 (*(map)->last_word_ptr & (map)->last_bit_mask) == 0|SIGABRT|bitmap_union|ha_partition::index_init|handler::ha_index_init|Rows_log_event::find_row                              ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event                   ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Rows_log_event::write_row|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event                 ## MDEV-22936

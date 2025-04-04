@@ -16,6 +16,9 @@
   RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
 # Random selection of echo's, with another type of entropy pool init
   RANDOM=`date +%s%N | cut -b14-19`; case $[$RANDOM % 3 + 1] in 1) echo '1';; 2) echo '2';; 3) echo '3';; *) echo '+';; esac
+# Random selection of 32 hex chars
+  head -c 32 /dev/urandom | xxd -p  # OR
+  openssl rand -hex 32
 # Random number between 0-9 based on nanosecond clock. To get random number between 0 and 99 do -b18-19 and so on
   date +%s%N | cut -b19-19
 # Random number between 1 and X
