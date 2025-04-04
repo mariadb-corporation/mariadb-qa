@@ -1,0 +1,82 @@
+# This mtr test is a boiler-plate which
+# sets up  master-slave, chain replication,
+# multi-source replication environment. Testers can add
+# the actual testing steps in the script appropriately.
+# rep topologies covered,
+# s1->s3, s2-s3 (multi-source)
+# s3->s4 (chain))
+# s4->s5, s5->s4 (master-master)
+# Other system settiings can be done in the accompanied 
+# rep_topologies.cnf file 
+# Usage:
+# cd mariadb-test
+# cp rep_topologies.cnf rep_topologies.testsuite/multi-source
+# ./mtr --suite=multi_source rep_topologies.test
+
+--source include/have_innodb.inc
+--echo Setup multi-source replication s1->s3, s2->s3
+--connect (s3,127.0.0.1,root,,,$SERVER_MYPORT_3)
+# Start replication from server1 
+eval change master 's1-to-s3' to 
+master_port=$SERVER_MYPORT_1, 
+master_host='127.0.0.1', 
+master_user='root',
+master_ssl_verify_server_cert=0;
+
+start slave 's1-to-s3';
+set default_master_connection = 's1-to-s3';
+--source include/wait_for_slave_to_start.inc
+
+# Start replication from server2
+eval change master 's2-to-s3' to 
+master_port=$SERVER_MYPORT_2, 
+master_host='127.0.0.1', 
+master_user='root',
+master_ssl_verify_server_cert=0;
+
+start slave 's2-to-s3';
+set default_master_connection = 's2-to-s3';
+--source include/wait_for_slave_to_start.inc
+--query_vertical SHOW ALL SLAVES STATUS
+--echo ================================= 
+--echo Setup chain replication s1->s3->s4, s2->s3->s4
+--connect (s4,127.0.0.1,root,,,$SERVER_MYPORT_4)
+# Start replication from server3
+eval change master 's3-to-s4' to 
+master_port=$SERVER_MYPORT_3, 
+master_host='127.0.0.1', 
+master_user='root',
+master_ssl_verify_server_cert=0;
+
+start slave 's3-to-s4';
+set default_master_connection = 's3-to-s4';
+--source include/wait_for_slave_to_start.inc
+--query_vertical SHOW ALL SLAVES STATUS
+--echo ================================= 
+
+--echo Setup master-master replication between s4 and s5
+--connection s4
+eval change master 's5-to-s4' to 
+master_port=$SERVER_MYPORT_5, 
+master_host='127.0.0.1', 
+master_user='root',
+master_ssl_verify_server_cert=0;
+
+start slave 's5-to-s4';
+set default_master_connection = 's5-to-s4';
+--source include/wait_for_slave_to_start.inc
+--query_vertical SHOW ALL SLAVES STATUS
+--echo =================================
+
+--connect (s5,127.0.0.1,root,,,$SERVER_MYPORT_5)
+eval change master 's4-to-s5' to
+master_port=$SERVER_MYPORT_4,
+master_host='127.0.0.1',
+master_user='root',
+master_ssl_verify_server_cert=0;
+
+start slave 's4-to-s5';
+set default_master_connection = 's4-to-s5';
+--source include/wait_for_slave_to_start.inc
+--query_vertical SHOW ALL SLAVES STATUS
+--echo =================================
