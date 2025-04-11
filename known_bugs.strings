@@ -223,6 +223,8 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_admin_table                            ## MDEV-36563
+!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|admin_recreate_table                         ## MDEV-36563
 operation_failed || !pos_in_locked_tables->table|SIGABRT|Table_specification_st::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-36435
 keyinfo_array.size() == 0|SIGABRT|Opt_hints_table::fix_hint|Opt_hints_qb::fix_hints_for_table|setup_tables|setup_tables_and_check_access                                       ## MDEV-36486
 *str != '\0'|SIGABRT|my_message_sql|Table_triggers_list::check_for_broken_triggers|Table_triggers_list::prepare_for_rename|rename_triggers                                     ## MDEV-36484
@@ -269,6 +271,8 @@ prebuilt->sql_stat_start || prebuilt->table->no_rollback()|SIGABRT|row_search_mv
 0|SIGABRT|Field_new_decimal::get_equal_const_item|Item_field::propagate_equal_fields|Item_ref::propagate_equal_fields|Item::propagate_equal_fields_and_change_item_tree        ## MDEV-36175
 0|SIGABRT|create_histogram|Column_stat::get_stat_values|read_statistics_for_table|read_statistics_for_tables                                                                   ## MDEV-36173
 (0x7 & mode) != LOCK_X || lock_table_has(trx, index->table, LOCK_IX)|SIGABRT|lock_rec_lock|lock_sec_rec_read_check_and_lock|sel_set_rec_lock|row_search_mvcc                   ## MDEV-36163
+(engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item_in_optimizer::val_bool|JOIN::exec_inner|JOIN::exec ## MDEV-35654
+(engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item_in_optimizer::val_int|JOIN::exec_inner|JOIN::exec ## MDEV-35654
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_bool|JOIN::exec_inner ## MDEV-35654
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_int|JOIN::exec_inner ## MDEV-35654
 (engine->uncacheable() & ~8) || ! engine->is_executed() || with_recursive_reference|SIGABRT|Item_in_subselect::val_bool|Item::val_bool_result|Item_in_optimizer::val_bool|Item::eval_const_cond ## MDEV-35654
