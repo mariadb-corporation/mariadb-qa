@@ -123,11 +123,24 @@ fi
 # Delete any .cnf files. Whilst the framework takes care of not accidentally reading .cnf files (generally by using --no-defaults everwhere), it is best to delete these unnecessary files. Also cleanup some other non-used files
 rm -f *.cnf COPYING CREDITS README-wsrep THIRDPARTY README* LICENSE*
 
+CLIENT_TO_USE=
+if [ -r ${PWD}/bin/mariadb ]; then 
+  CLIENT_TO_USE="${PWD}/bin/mariadb";
+else
+  CLIENT_TO_USE="${PWD}/bin/mysql";
+fi
+MYSQLADMIN_TO_USE=
+if [ -r ${PWD}/bin/mariadb-admin ]; then 
+  MYSQLADMIN_TO_USE="${PWD}/bin/mariadb-admin"; 
+else
+  MYSQLADMIN_TO_USE="${PWD}/bin/mysqladmin";
+fi
+
 # Get version specific options
 BIN=
-if [ -r ${PWD}/bin/mariadbd ]; then BIN="${PWD}/bin/mariadbd"; 
-elif [ -r ${PWD}/bin/mysqld-debug ]; then BIN="${PWD}/bin/mysqld-debug";  # Needs to come first so it's overwritten in next line if both exist
-elif [ -r ${PWD}/bin/mysqld ]; then BIN="${PWD}/bin/mysqld"; 
+if [ -r ${PWD}/bin/mariadbd ]; then BIN="${PWD}/bin/mariadbd";  
+elif [ -r ${PWD}/bin/mysqld-debug ]; then BIN="${PWD}/bin/mysqld-debug"; # Needs to come first so it's overwritten in next line if both exist
+elif [ -r ${PWD}/bin/mysqld ]; then BIN="${PWD}/bin/mysqld";  
 fi
 if [ -z "${BIN}" ]; then
   echo "Assert: no mariadb, mysqld-debug or mysqld binary was found!"
@@ -386,8 +399,8 @@ if [[ $MDG -eq 1 ]]; then
   echo -e "check_node_startup(){" >>./gal_start
   echo -e "  for X in \$(seq 0 \${GALERA_START_TIMEOUT}); do" >>./gal_start
   echo -e "    sleep 1" >>./gal_start
-  echo -e "    if \${BUILD}/bin/mysqladmin -uroot -S\$BUILD/node\$1/node\$1_socket.sock ping > /dev/null 2>&1; then" >>./gal_start
-  echo -e "      if [ \"\`\${BUILD}/bin/mysql -uroot -S\$BUILD/node\$1/node\$1_socket.sock -Bse\"show global status like 'wsrep_local_state_comment'\" | awk '{print \$2}'\`\" == \"Synced\" ]; then" >>./gal_start
+  echo -e "    if \${BUILD}/bin/mariadb-admin -uroot -S\$BUILD/node\$1/node\$1_socket.sock ping > /dev/null 2>&1; then" >>./gal_start
+  echo -e "      if [ \"\`\${BUILD}/bin/mariadb -uroot -S\$BUILD/node\$1/node\$1_socket.sock -Bse\"show global status like 'wsrep_local_state_comment'\" | awk '{print \$2}'\`\" == \"Synced\" ]; then" >>./gal_start
   echo -e "        echo \"Server on socket \$BUILD/node\$1/node\$1_socket.sock with datadir \$BUILD/node\$1 started\"" >>./gal_start
   echo -e "        echo \" Configuration file : ${BUILD}/n\$1.cnf\"" >>./gal_start
   echo -e "        break" >>./gal_start
@@ -421,27 +434,27 @@ if [[ $MDG -eq 1 ]]; then
     echo "mkdir ${PWD}/tmp${i}">>./gal_wipe
 
     if [ "${i}" -eq 1 ] ; then
-      echo "/usr/bin/rr record --chaos ${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --loose-innodb-flush-method=fsync --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start_rr
+      echo "/usr/bin/rr record --chaos ${BIN} --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --loose-innodb-flush-method=fsync --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start_rr
       echo "check_node_startup ${i}" >> ./gal_start_rr
-      echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start
+      echo "${BIN} --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA --wsrep-new-cluster > ${PWD}/node${i}/node${i}.err 2>&1 & " >> ./gal_start
       echo "check_node_startup ${i}" >> ./gal_start
     else
-      echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA > $PWD/node${i}/node${i}.err 2>&1 &" >> ./gal_start_rr
+      echo "${BIN} --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA > $PWD/node${i}/node${i}.err 2>&1 &" >> ./gal_start_rr
       echo "check_node_startup ${i}" >> ./gal_start_rr
-      echo "${PWD}/bin/mysqld --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA > $PWD/node${i}/node${i}.err 2>&1 &" >> ./gal_start
+      echo "${BIN} --defaults-file=${PWD}/n${i}.cnf \$MYEXTRA > $PWD/node${i}/node${i}.err 2>&1 &" >> ./gal_start
       echo "check_node_startup ${i}" >> ./gal_start
     fi
     echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>./gal_init
-    echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node${i}/node${i}_socket.sock test --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
+    echo "${CLIENT_TO_USE} -A -uroot -S${PWD}/node${i}/node${i}_socket.sock test --prompt \"node${i}:\\u@\\h> \"" >${PWD}/${i}_node_cli
     echo "$INIT_TOOL ${INIT_OPT} --basedir=${PWD} --datadir=${PWD}/node${i} 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'" >>gal_wipe
     echo "if [ -r node1/node${i}.err ]; then rm node${i}/node${i}.err*; fi" >>gal_wipe
   done
   for i in $(seq "${NR_OF_NODES}" -1 1); do
-    echo "${PWD}/bin/mysqladmin -uroot -S${PWD}/node${i}/node${i}_socket.sock shutdown" >> ./gal_stop
+    echo "${MYSQLADMIN_TO_USE} -uroot -S${PWD}/node${i}/node${i}_socket.sock shutdown" >> ./gal_stop
     echo "echo \"Server on socket ${PWD}/node${i}/node${i}_socket.sock halted\"" >>./gal_stop
   done
-  echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start_rr
-  echo "${PWD}/bin/mysql -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start
+  echo "${CLIENT_TO_USE} -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start_rr
+  echo "${CLIENT_TO_USE} -A -uroot -S${PWD}/node1/node1_socket.sock -e 'CREATE DATABASE IF NOT EXISTS test;'" >> ./gal_start
   echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/n.*.cnf\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >gal_kill
   echo "./gal_kill >/dev/null 2>&1" >>./gal_stop
   echo "./gal_init;./gal_start;./1_node_cli;./gal_stop;./gal_kill >/dev/null 2>&1;tail node1/node1.err" > gal_setup
@@ -542,16 +555,12 @@ cp start start_gypsy    # Idem setup for gypsy
 cp start start_rr       # Idem setup for rr
 echo "$BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
 if [[ "${PWD}" == *"SAN"* ]]; then   # Clang build SAN instances take longer to start. Observed: seq 0 240 is insufficient
-  echo "for X in \$(seq 0 480); do if ${PWD}/bin/mysqladmin ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
+  echo "for X in \$(seq 0 480); do if ${MYSQLADMIN_TO_USE} ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
 else
-  echo "for X in \$(seq 0 90); do if ${PWD}/bin/mysqladmin ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
+  echo "for X in \$(seq 0 90); do if ${MYSQLADMIN_TO_USE} ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
 fi
 if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO}" != "5.6" ]; then
-  if [ -r "${PWD}/bin/mariadb" ]; then
-    echo "${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
-  else
-    echo "${PWD}/bin/mysql -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
-  fi
+    echo "${CLIENT_TO_USE} -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
 fi
 echo " valgrind --suppressions=${PWD}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
 echo "$BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_gypsy
@@ -577,11 +586,7 @@ chmod +x smalltmp
 echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
 touch stop
 add_san_options stop
-if [ -r ./bin/mariadb-admin ]; then
-  echo "timeout -k90 -s9 90s ${PWD}/bin/mariadb-admin -uroot -S${SOCKET} shutdown" >>stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
-else
-  echo "timeout -k90 -s9 90s ${PWD}/bin/mysqladmin -uroot -S${SOCKET} shutdown" >>stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
-fi
+echo "timeout -k90 -s9 90s ${MYSQLADMIN_TO_USE} -uroot -S${SOCKET} shutdown" >>stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
 echo "./kill >/dev/null 2>&1" >>stop
 echo "echo 'Server on socket ${SOCKET} with datadir ${PWD}/data halted'" >>stop
 echo "./init;./start;./cl;./stop;./kill >/dev/null 2>&1;tail log/master.err" >setup
@@ -604,11 +609,7 @@ fi
 echo "timeout -k120 -s9 120s bash -c \"$INIT_TOOL ${INIT_OPT} \${MYEXTRA_OPT} --basedir=${PWD} --datadir=${PWD}/data 2>&1 | grep --binary-files=text -vEi '${FILTER_INIT_TEXT}'\"" >> wipe
 echo "rm -f log/*err*" >>wipe
 # Replacement for code below which was disabled. RV/RS considered it necessary to leave this to make it easier to use start and immediately have the test db available so it can be used for quick access. It also does not affect using --init-file=...plugins_80.sql
-if [ -r "${PWD}/bin/mariadb" ]; then
-  echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test'; ./stop" >>wipe
-else
-  echo "./start \${MYEXTRA_OPT}; ${PWD}/bin/mysql -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test'; ./stop" >>wipe
-fi
+echo "./start \${MYEXTRA_OPT}; ${CLIENT_TO_USE} -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test'; ./stop" >>wipe
 # Creating init script
 echo "./stop >/dev/null 2>&1;./kill >/dev/null 2>&1" >init
 echo "rm -Rf ${PWD}/data ${PWD}/tmp" >>init
@@ -811,10 +812,6 @@ ln -s ./multirun ./m 2>/dev/null
 cp ./multirun ./multirun_pquery
 
 echo "if [ \"\${MULTI_THREADED}\" != \"1\" ]; then" >>multirun
-CLIENT_TO_USE="mysql"
-if [ -r "${PWD}/bin/mariadb" ]; then
-  CLIENT_TO_USE="mariadb"
-fi
 echo "  ~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/${CLIENT_TO_USE} ${SOCKET}" >>multirun
 echo "else" >>multirun
 echo "  ~/mariadb-qa/multirun_cli.sh \${MULTI_THREADS} 100000 in.sql ${PWD}/bin/${CLIENT_TO_USE} ${SOCKET}" >>multirun
@@ -844,13 +841,13 @@ if [[ $MDG -eq 0 ]]; then
   if [ ! -z "$LOAD_TOKUDB_INIT_FILE" ]; then
     echo "./start; ${PWD}/bin/mysql -A -uroot -S${SOCKET} < ${LOAD_TOKUDB_INIT_FILE}" >myrocks_tokudb_init
     if [ ! -z "$LOAD_ROCKSDB_INIT_FILE" ]; then
-      echo " ${PWD}/bin/mysql -A -uroot -S${SOCKET} < ${LOAD_ROCKSDB_INIT_FILE} ; ./stop " >>myrocks_tokudb_init
+      echo " ${CLIENT_TO_USE} -A -uroot -S${SOCKET} < ${LOAD_ROCKSDB_INIT_FILE} ; ./stop " >>myrocks_tokudb_init
     else
       echo "./stop " >>myrocks_tokudb_init
     fi
   else
     if [[ ! -z "$LOAD_ROCKSDB_INIT_FILE" ]]; then
-      echo "./start; ${PWD}/bin/mysql -A -uroot -S${SOCKET} < ${LOAD_ROCKSDB_INIT_FILE} ; ./stop" >myrocks_tokudb_init
+      echo "./start; ${CLIENT_TO_USE} -A -uroot -S${SOCKET} < ${LOAD_ROCKSDB_INIT_FILE} ; ./stop" >myrocks_tokudb_init
     fi
   fi
 fi
@@ -874,38 +871,22 @@ elif [ -r ${PWD}/mysql-test/mtr ]; then
 fi
 touch cl_noprompt
 add_san_options cl_noprompt
-if [ -r "${PWD}/bin/mariadb" ]; then
-  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprompt
-else
-  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprompt
-fi
+echo "${CLIENT_TO_USE} -A -uroot -S${SOCKET} --force ${BINMODE}test" >>cl_noprompt
 touch cl_noprompt_nobinary
 add_san_options cl_noprompt_nobinary
-if [ -r "${PWD}/bin/mariadb" ]; then
-  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
-else
-  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
-fi
+echo "${CLIENT_TO_USE} -A -uroot -S${SOCKET} --force test" >>cl_noprompt_nobinary
 echo "#!/bin/bash" > test
 add_san_options test
 cp test test_pquery
 cp test test_timed
 echo "sed -i \"s|MYPORT|\$(grep -o 'port=[0-9]\+' start 2>/dev/null | sed 's|port=||')|\" in.sql" >>test
-if [ -r "${PWD}/bin/mariadb" ]; then
-  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
-else
-  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
-fi
+echo "${CLIENT_TO_USE} -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test
 echo "if [ -t 1 ]; then echo \"Exit status of client: \${?}\"; fi  # With thanks, https://serverfault.com/a/753459" >> test
 echo "${HOME}/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery
 echo "# Timing code, with thanks, https://stackoverflow.com/a/42359046/1208218 (dormi330)" >>test_timed
 echo "start_at=\$(date +%s,%N)" >>test_timed
 cp test_timed test_pquery_timed
-if [ -r "${PWD}/bin/mariadb" ]; then
-  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test_timed
-else
-  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test_timed
-fi
+echo "${CLIENT_TO_USE} -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/in.sql > ${PWD}/mysql.out 2>&1" >>test_timed
 echo "${HOME}/mariadb-qa/pquery/pquery2-md --database=test --infile=${PWD}/in.sql --threads=1 --logdir=${PWD} --log-all-queries --log-failed-queries --log-query-duration --no-shuffle --user=root --socket=${SOCKET} 2>&1 | tee ${PWD}/pquery.out" >>test_pquery_timed
 echo "end_at=\$(date +%s,%N)" >t_tmp1  # Temporary file to avoid duplicating commands here
 echo "_s1=\$(echo \${start_at} | cut -d',' -f1)   # sec" >>t_tmp1
@@ -961,11 +942,7 @@ fi
 
 if [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "0.5" ]; then
   if [ "${VERSION_INFO}" == "8.0" ]; then
-    if [ -r "${PWD}/bin/mariadb" ]; then
-      echo "${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
-    else
-      echo "${PWD}/bin/mysql -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
-    fi
+    echo "${CLIENT_TO_USE} -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
     echo "sysbench --test=/usr/share/doc/sysbench/tests/db/parallel_prepare.lua --mysql-engine-trx=yes --mysql-table-engine=innodb --oltp_table_size=10000 --oltp_tables_count=10 --mysql-db=test --mysql-user=sysbench_user --mysql-password=test  --db-driver=mysql --mysql-socket=${SOCKET} prepare" >>sysbench_prepare
     echo "sysbench --report-interval=10 --max-time=50 --max-requests=0 --mysql-engine-trx=yes --test=/usr/share/doc/sysbench/tests/db/oltp.lua --init-rng=on --oltp_index_updates=10 --oltp_non_index_updates=10 --oltp_distinct_ranges=15 --oltp_order_ranges=15 --oltp_tables_count=1 --num-threads=4 --oltp_table_size=1000000 --mysql-db=test --mysql-user=sysbench_user --mysql-password=test  --db-driver=mysql --mysql-socket=${SOCKET} run" >sysbench_run
   else
@@ -1149,17 +1126,9 @@ echo './wipe ${MYEXTRA_OPT}' >>start_replication
 echo './wipe_slave ${MYEXTRA_OPT}' >>start_replication  # TODO: MYEXTRA_OPT handling may need work
 echo './start_master ${MYEXTRA_OPT}' >>start_replication
 echo 'rm -f mysql.out mysql_slave.out data*/core*' >>start_replication
-if [ -r "${PWD}/bin/mariadb" ]; then
-  echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/master_setup.sql > ${PWD}/mysql.out 2>&1" >>start_replication
-else
-  echo "${PWD}/bin/mysql -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/master_setup.sql > ${PWD}/mysql.out 2>&1" >>start_replication
-fi
+echo "${CLIENT_TO_USE} -A -uroot -S${SOCKET} --force ${BINMODE}test < ${PWD}/master_setup.sql > ${PWD}/mysql.out 2>&1" >>start_replication
 echo './start_slave ${MYEXTRA_OPT}' >>start_replication  # idem 
-if [ -r "${PWD}/bin/mariadb" ]; then
-  echo "${PWD}/bin/mariadb -A -uroot -S${SLAVE_SOCKET} --force ${BINMODE}test < ${PWD}/slave_setup.sql > ${PWD}/mysql_slave.out" >>start_replication
-else
-  echo "${PWD}/bin/mysql -A -uroot -S${SLAVE_SOCKET} --force ${BINMODE}test < ${PWD}/slave_setup.sql > ${PWD}/mysql_slave.out" >>start_replication
-fi
+echo "${CLIENT_TO_USE} -A -uroot -S${SLAVE_SOCKET} --force ${BINMODE}test < ${PWD}/slave_setup.sql > ${PWD}/mysql_slave.out" >>start_replication
 echo 'sleep 2' >>start_replication
 echo 'if [ -z "${SRNOCL}" ]; then ./cl; fi' >>start_replication
 
