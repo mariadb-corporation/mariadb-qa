@@ -1,0 +1,1 @@
+SELECT INTERVAL (0,ROW(1,1),1,1,1,1,1,1,1) AS i;
