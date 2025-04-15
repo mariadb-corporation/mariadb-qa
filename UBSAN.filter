@@ -95,3 +95,33 @@ pointer-overflow:my_b_flush_io_cache
 #function:ha_maria::enable_indexes
 #function:ha_myisam::optimize
 #function:ha_maria::optimize
+## MDEV-33158
+#function:innobase_trx_init
+## MDEV-35500/CONC-711
+#function:my_auth.c
+## MDEV-35538
+#pointer-overflow:check_rules
+#pointer-overflow:init_weight_level
+## MDEV-35549
+#pointer-overflow:my_string_repertoire_8bit
+## MDEV-35554
+#function:show_status_array
+## MDEV-35557
+#pointer-overflow:get_server_from_table_to_cache
+## MDEV-35698 (not-startup) # Fixed by MDEV-33158
+#function:spider_param_force_commit
+## MDEV-35623 [Startup] # Fixed by MDEV-33158
+#function:spider_param_conn_recycle_mode
+#function:spider_param_conn_recycle_strict
+#function:spider_param_internal_xa_snapshot
+#function:spider_param_block_size
+## MDEV-35687 [Startup]
+#function:maria_open
+#function:mi_open
+#function:_ma_open_datafile
+#function:mi_open_datafile
+#function:thr_multi_lock
+## MDEV-35688 [Startup]
+#pointer-overflow:my_casedn_utf8mb3
+## MDEV-35872 [CLI Startup] # Fixed by MDEV-35538
+#pointer-overflow:ctype-uca.c
