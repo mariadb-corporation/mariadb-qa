@@ -45,11 +45,6 @@ float-cast-overflow:Index_statistics::set_avg_frequency
 pointer-overflow:Forward_lifo_buffer::have_space_for
 ## MDEV-36346 [MTR, main.select]
 float-cast-overflow:test_if_cheaper_ordering
-## MDEV-35623 [Startup]
-function:spider_param_conn_recycle_mode
-function:spider_param_conn_recycle_strict
-function:spider_param_internal_xa_snapshot
-function:spider_param_block_size
 ## MDEV-35698 (not-startup)
 function:spider_param_force_commit
 ## MDEV-35595
