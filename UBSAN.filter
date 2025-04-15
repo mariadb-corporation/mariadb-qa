@@ -63,13 +63,6 @@ bounds:json_get_path_start
 pointer-overflow:Gis_geometry_collection::init_from_opresult
 ## MDEV-35541
 pointer-overflow:my_b_flush_io_cache
-## MDEV-34512 [Startup]
-function:ha_myisam::repair
-function:ha_maria::repair
-function:ha_myisam::enable_indexes
-function:ha_maria::enable_indexes
-function:ha_myisam::optimize
-function:ha_maria::optimize
 
 # ----- Fixed bugs
 ## MDEV-35540 # Fixed by MDEV-34348
@@ -95,3 +88,10 @@ function:ha_maria::optimize
 #function:init_key_cache_internal
 ## MDEV-35530 # Fixed by MDEV-34348
 #function:my_hash_key
+## MDEV-34512 [Startup]
+#function:ha_myisam::repair
+#function:ha_maria::repair
+#function:ha_myisam::enable_indexes
+#function:ha_maria::enable_indexes
+#function:ha_myisam::optimize
+#function:ha_maria::optimize
