@@ -45,8 +45,6 @@ float-cast-overflow:Index_statistics::set_avg_frequency
 pointer-overflow:Forward_lifo_buffer::have_space_for
 ## MDEV-36346 [MTR, main.select]
 float-cast-overflow:test_if_cheaper_ordering
-## MDEV-35872 [CLI Startup]
-pointer-overflow:ctype-uca.c
 ## MDEV-35688 [Startup]
 pointer-overflow:my_casedn_utf8mb3
 ## MDEV-35687 [Startup]
