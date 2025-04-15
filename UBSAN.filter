@@ -53,8 +53,6 @@ enum:Gis_line_string::init_from_wkb
 bool:mysql_make_view
 ## MDEV-35589/MDEV-36542
 bool:extract_date_time
-## MDEV-35557
-pointer-overflow:get_server_from_table_to_cache
 ## MDEV-35556
 pointer-overflow:myrocks::Rdb_key_def::setup
 ## MDEV-35555
