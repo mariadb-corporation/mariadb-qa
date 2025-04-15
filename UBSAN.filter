@@ -49,9 +49,9 @@ float-cast-overflow:test_if_cheaper_ordering
 enum:Gis_polygon::init_from_wkb
 enum:wkb_get_uint
 enum:Gis_line_string::init_from_wkb
-## MDEV-35590
+## MDEV-35590/MDEV-36542 [MTR, main.information_schema]
 bool:mysql_make_view
-## MDEV-35589
+## MDEV-35589/MDEV-36542
 bool:extract_date_time
 ## MDEV-35557
 pointer-overflow:get_server_from_table_to_cache
