@@ -57,8 +57,6 @@ bool:extract_date_time
 pointer-overflow:myrocks::Rdb_key_def::setup
 ## MDEV-35555
 pointer-overflow:sel_trees_must_be_ored
-## MDEV-35554
-function:show_status_array
 ## MDEV-35549
 pointer-overflow:my_string_repertoire_8bit
 ## MDEV-35548
