@@ -45,8 +45,6 @@ float-cast-overflow:Index_statistics::set_avg_frequency
 pointer-overflow:Forward_lifo_buffer::have_space_for
 ## MDEV-36346 [MTR, main.select]
 float-cast-overflow:test_if_cheaper_ordering
-## MDEV-35698 (not-startup)
-function:spider_param_force_commit
 ## MDEV-35595
 enum:Gis_polygon::init_from_wkb
 enum:wkb_get_uint
