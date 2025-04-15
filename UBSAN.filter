@@ -63,8 +63,6 @@ bounds:json_get_path_start
 pointer-overflow:Gis_geometry_collection::init_from_opresult
 ## MDEV-35541
 pointer-overflow:my_b_flush_io_cache
-## MDEV-33158
-function:innobase_trx_init
 ## MDEV-34512 [Startup]
 function:ha_myisam::repair
 function:ha_maria::repair
