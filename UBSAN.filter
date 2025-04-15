@@ -45,12 +45,6 @@ float-cast-overflow:Index_statistics::set_avg_frequency
 pointer-overflow:Forward_lifo_buffer::have_space_for
 ## MDEV-36346 [MTR, main.select]
 float-cast-overflow:test_if_cheaper_ordering
-## MDEV-35687 [Startup]
-function:maria_open
-function:mi_open
-function:_ma_open_datafile
-function:mi_open_datafile
-function:thr_multi_lock
 ## MDEV-35623 [Startup]
 function:spider_param_conn_recycle_mode
 function:spider_param_conn_recycle_strict
