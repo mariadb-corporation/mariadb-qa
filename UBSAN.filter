@@ -39,7 +39,7 @@ pointer-overflow:do_block
 float-cast-overflow:Field_bit::store
 float-cast-overflow:Field_set::store
 float-cast-overflow:Field_enum::store
-## MDEV-36343 [MTR, main.update_innodb]
+## MDEV-35721 [MTR, main.update_innodb, 10.11+ fixed]
 float-cast-overflow:Index_statistics::set_avg_frequency
 ## MDEV-36344 [MTR, main.index_intersect_innodb]
 pointer-overflow:Forward_lifo_buffer::have_space_for
