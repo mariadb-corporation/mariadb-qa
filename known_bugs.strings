@@ -353,6 +353,11 @@ marked_for_read()|SIGABRT|Field_long::val_int|Item_field::val_int|VSec9::VSec9|I
 marked_for_read()|SIGABRT|Field_long::val_int|Item_field::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare                                                   ## MDEV-35310
 SIGSEGV|spider_conn_first_link_idx|spider_check_trx_and_get_conn|ha_spider::append_lock_tables_list|ha_spider::store_lock                                                      ## MENT-2151
 SIGSEGV|intern_sys_var_ptr|mysql_sys_var_int|spider_param_semi_table_lock_connection|spider_check_trx_and_get_conn                                                             ## MENT-2151
+SIGSEGV|std::__shared_ptr<myrocks::Rdb_key_def,|std::shared_ptr<myrocks::Rdb_key_def>::operator=|myrocks::ha_rocksdb::create_table|myrocks::ha_rocksdb::create                 ## MDEV-29703
+reader != nullptr|SIGABRT|myrocks::rdb_read_unpack_simple|myrocks::Rdb_key_def::unpack_simple|myrocks::Rdb_convert_to_record_key_decoder::decode|myrocks::Rdb_key_field_iterator::next ## MDEV-29703
+SIGSEGV|myrocks::Rdb_key_def::unpack_simple_varchar_space_pad|myrocks::Rdb_convert_to_record_key_decoder::decode_field|myrocks::Rdb_convert_to_record_key_decoder::decode|myrocks::Rdb_key_field_iterator::next ## MDEV-29703
+unp_reader != nullptr|SIGABRT|myrocks::Rdb_key_def::unpack_simple_varchar_space_pad|myrocks::Rdb_convert_to_record_key_decoder::decode_field|myrocks::Rdb_convert_to_record_key_decoder::decode|myrocks::Rdb_key_field_iterator::next ## MDEV-29703
+unp_reader != nullptr|SIGABRT|myrocks::Rdb_key_def::unpack_simple_varchar_space_pad|myrocks::Rdb_convert_to_record_key_decoder::decode|myrocks::Rdb_key_field_iterator::next|myrocks::Rdb_key_def::unpack_record ## MDEV-29703
 reader != nullptr|SIGABRT|myrocks::rdb_read_unpack_simple|myrocks::Rdb_key_def::unpack_simple|myrocks::Rdb_convert_to_record_key_decoder::decode_field|myrocks::Rdb_convert_to_record_key_decoder::decode ## MDEV-29703
 SIGSEGV|myrocks::Rdb_bit_reader::read|myrocks::rdb_read_unpack_simple|myrocks::Rdb_key_def::unpack_simple|myrocks::Rdb_convert_to_record_key_decoder::decode                   ## MDEV-29703
 !is_cond()|SIGABRT|Item_bool_func::val_int|Item_int_func::val_str|Item_copy_string::copy|copy_fields                                                                           ## MDEV-35288

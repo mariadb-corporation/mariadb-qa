@@ -1,6 +1,26 @@
 INSTALL SONAME 'ha_rocksdb';
+CREATE TABLE t1 (f1 VARCHAR(10), KEY(f1)) ENGINE=RocksDB;
+INSERT INTO t1 VALUES ("'q'"),("'s'");
+CREATE TABLE t2 (f2 INT) ENGINE=RocksDB;
+INSERT INTO t2 VALUES (1),(2);
+START TRANSACTION;
+UPDATE t1 SET f1 = NULL;
+UPDATE t2, t1 SET f2 = 3 WHERE f1 IS NULL;
+
+INSTALL SONAME 'ha_rocksdb';
 CREATE TABLE t (a CHAR, KEY(a)) ENGINE=RocksDB ;
 START TRANSACTION;
 INSERT INTO t VALUES ('a');
 UPDATE t SET a=1;
 SELECT * FROM t AS ta,t AS tb WHERE ta.a=tb.a;
+
+INSTALL SONAME 'ha_rocksdb';
+SET sql_mode='';
+SET @@storage_engine=RocksDB;
+CREATE TABLE t (c DOUBLE,c2 INT,c3 INT,c4 VARCHAR(1) NOT NULL);
+ALTER TABLE t ADD INDEX (c,c3,c2,c4);
+XA START 'a','a';
+INSERT INTO t (c) VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+DELETE FROM t;
+INSERT INTO t (c) VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+SELECT * FROM t WHERE c IN ('a','a');
