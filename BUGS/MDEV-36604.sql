@@ -1,0 +1,3 @@
+SET GLOBAL character_set_client='big5';
+SET NAMES DEFAULT;
+DO CHAR((WEIGHT_STRING (EXTRACTVALUE ((1),('a')) LEVEL 7)) USING cp852);

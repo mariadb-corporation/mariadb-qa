@@ -2818,19 +2818,19 @@ EOF
         if [ ${SAVE_SQL} -eq 1 ]; then
           if [ "${VALGRIND_RUN}" == "1" ]; then
             if [ ${VALGRIND_ERRORS_FOUND} -ne 1 ]; then
-              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
+              echoit "Nothing to save (SAVE_TRIALS_WITH_BUGS_ONLY=1 and no issue was seen), except the SQL trace (SAVE_SQL=1)"
             fi
           else
-            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1, and no issue was seen), except the SQL trace (as SAVE_SQL=1)"
+            echoit "Nothing to save (SAVE_TRIALS_WITH_BUGS_ONLY=1 and no issue was seen), except the SQL trace (SAVE_SQL=1)"
           fi
           savesql
         else
           if [ "${VALGRIND_RUN}" == "1" ]; then
             if [ ${VALGRIND_ERRORS_FOUND} -ne 1 ]; then
-              echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
+              echoit "Nothing to save (SAVE_TRIALS_WITH_BUGS_ONLY=1, SAVE_SQL=0, and no issue was seen)"
             fi
           else
-            echoit "Not saving anything for this trial (as SAVE_TRIALS_WITH_BUGS_ONLY=1 and SAVE_SQL=0, and no issue was seen)"
+            echoit "Nothing to save (SAVE_TRIALS_WITH_BUGS_ONLY=1, SAVE_SQL=0, and no issue was seen)"
           fi
         fi
       fi
@@ -2969,11 +2969,17 @@ if [[ ${FILTER_SQL} -eq 1 ]]; then
   fi
 fi
 
+SQL_INPUT_TEXT=
 if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-  echoit "PRE_SHUFFLE_SQL=1: This script will randomly pre-shuffle ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL into a temporary file in ${PRE_SHUFFLE_DIR} and reuse this file for ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trial(s)"
+  echoit "PRE_SHUFFLE_SQL=1: This script will randomly pre-shuffle ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL of ${INFILE} ($(wc -l ${INFILE} | awk '{print $1}') lines) into a temporary file in ${PRE_SHUFFLE_DIR} and reuse this file for ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trial(s)"
+  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 1"
+elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
+  echoit "PRE_SHUFFLE_SQL=2: This script will randomly pre-shuffle ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL (from all available SQL testcases) into a temporary file in ${PRE_SHUFFLE_DIR} and reuse this file for ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trial(s)"
+  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 2"
+else
+  SQL_INPUT_TEXT="SQL file used: ${INFILE} ($(wc -l ${INFILE} | awk '{print $1}') lines)"
 fi
 
-SQL_INPUT_TEXT="SQL file used: ${INFILE} ($(wc -l ${INFILE} | awk '{print $1}') lines)"
 if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
   if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 0 ]; then
     SQL_INPUT_TEXT="Using SQL Generator"

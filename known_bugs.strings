@@ -128,6 +128,7 @@ GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spi
 GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or SPECIAL-24 / MDEV-33291, or presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
 INNODB_ERROR|Table mysql.innodb_table_stats not found          ## SPECIAL-30 (non-issue)
 INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
+INNODB_ERROR|FTS_DOC_ID must be larger than 0 for table        ## SPECIAL-34 (non-issue)
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
 INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
 INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
@@ -223,6 +224,8 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|myrocks::Rdb_transaction_impl::get_write_batch|myrocks::Rdb_transaction::make_stmt_savepoint_permanent|myrocks::rocksdb_commit|commit_one_phase_2                      ## MDEV-16523
+!eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare                                          ## MDEV-36610
 SIGSEGV|__strcmp_evex|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MENT-2274
 0|SIGABRT|Item_row::illegal_method_call|Item_row::val_real|Item_func_interval::fix_length_and_dec|Item_func::fix_fields                                                        ## MDEV-36569
 find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|handler::ha_rnd_pos|rr_from_tempfile|Sql_cmd_update::update_single_table                                        ## MDEV-36438

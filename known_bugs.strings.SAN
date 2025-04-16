@@ -6,6 +6,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member call on null pointer of type 'rocksdb::Transaction'|storage/rocksdb/ha_rocksdb.cc|myrocks::Rdb_transaction_impl::get_write_batch|myrocks::Rdb_transaction::make_stmt_savepoint_permanent|myrocks::rocksdb_commit|commit_one_phase_2 ## MDEV-36611
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnxfrm_big5_chinese_ci|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int   ## MDEV-36604
 UBSAN|member access within null pointer of type 'KEY' (aka 'st_key')|storage/archive/ha_archive.cc|ha_archive::create|handler::ha_create|ha_create_table|create_table_impl     ## MDEV-36495
 ASAN|heap-use-after-free|sql/field.cc|__asan_memcpy|Field_blob::pack|Field::pack|ha_archive::pack_row                                                                          ## MDEV-36495
 ASAN|use-after-poison|storage/innobase/handler/ha_innodb.cc|ha_innobase::can_be_renamed_to_backup|ha_can_be_renamed_to_backup|ha_check_if_table_can_be_renamed_to_backup|create_table_impl ## MDEV-36475
