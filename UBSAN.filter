@@ -39,67 +39,30 @@ pointer-overflow:do_block
 float-cast-overflow:Field_bit::store
 float-cast-overflow:Field_set::store
 float-cast-overflow:Field_enum::store
-## MDEV-36343 [MTR, main.update_innodb]
+## MDEV-35721 [MTR, main.update_innodb, 10.11+ fixed]
 float-cast-overflow:Index_statistics::set_avg_frequency
 ## MDEV-36344 [MTR, main.index_intersect_innodb]
 pointer-overflow:Forward_lifo_buffer::have_space_for
 ## MDEV-36346 [MTR, main.select]
 float-cast-overflow:test_if_cheaper_ordering
-## MDEV-35872 [CLI Startup]
-pointer-overflow:ctype-uca.c
-## MDEV-35688 [Startup]
-pointer-overflow:my_casedn_utf8mb3
-## MDEV-35687 [Startup]
-function:maria_open
-function:mi_open
-function:_ma_open_datafile
-function:mi_open_datafile
-function:thr_multi_lock
-## MDEV-35623 [Startup]
-function:spider_param_conn_recycle_mode
-function:spider_param_conn_recycle_strict
-function:spider_param_internal_xa_snapshot
-function:spider_param_block_size
-## MDEV-35698 (not-startup)
-function:spider_param_force_commit
 ## MDEV-35595
 enum:Gis_polygon::init_from_wkb
 enum:wkb_get_uint
 enum:Gis_line_string::init_from_wkb
-## MDEV-35590
+## MDEV-35590/MDEV-36542 [MTR, main.information_schema]
 bool:mysql_make_view
-## MDEV-35589
+## MDEV-35589/MDEV-36542
 bool:extract_date_time
-## MDEV-35557
-pointer-overflow:get_server_from_table_to_cache
 ## MDEV-35556
 pointer-overflow:myrocks::Rdb_key_def::setup
 ## MDEV-35555
 pointer-overflow:sel_trees_must_be_ored
-## MDEV-35554
-function:show_status_array
-## MDEV-35549
-pointer-overflow:my_string_repertoire_8bit
 ## MDEV-35548
 bounds:json_get_path_start
 ## MDEV-35545 [MTR, main.gis]
 pointer-overflow:Gis_geometry_collection::init_from_opresult
 ## MDEV-35541
 pointer-overflow:my_b_flush_io_cache
-## MDEV-35538
-pointer-overflow:check_rules
-pointer-overflow:init_weight_level
-## MDEV-35500/CONC-711 (CONC-711 was fixed, but isssue still shows: check again Feb-Mar 25
-function:my_auth.c
-## MDEV-33158
-function:innobase_trx_init
-## MDEV-34512 [Startup]
-function:ha_myisam::repair
-function:ha_maria::repair
-function:ha_myisam::enable_indexes
-function:ha_maria::enable_indexes
-function:ha_myisam::optimize
-function:ha_maria::optimize
 
 # ----- Fixed bugs
 ## MDEV-35540 # Fixed by MDEV-34348
@@ -125,3 +88,40 @@ function:ha_maria::optimize
 #function:init_key_cache_internal
 ## MDEV-35530 # Fixed by MDEV-34348
 #function:my_hash_key
+## MDEV-34512 [Startup]
+#function:ha_myisam::repair
+#function:ha_maria::repair
+#function:ha_myisam::enable_indexes
+#function:ha_maria::enable_indexes
+#function:ha_myisam::optimize
+#function:ha_maria::optimize
+## MDEV-33158
+#function:innobase_trx_init
+## MDEV-35500/CONC-711
+#function:my_auth.c
+## MDEV-35538
+#pointer-overflow:check_rules
+#pointer-overflow:init_weight_level
+## MDEV-35549
+#pointer-overflow:my_string_repertoire_8bit
+## MDEV-35554
+#function:show_status_array
+## MDEV-35557
+#pointer-overflow:get_server_from_table_to_cache
+## MDEV-35698 (not-startup) # Fixed by MDEV-33158
+#function:spider_param_force_commit
+## MDEV-35623 [Startup] # Fixed by MDEV-33158
+#function:spider_param_conn_recycle_mode
+#function:spider_param_conn_recycle_strict
+#function:spider_param_internal_xa_snapshot
+#function:spider_param_block_size
+## MDEV-35687 [Startup]
+#function:maria_open
+#function:mi_open
+#function:_ma_open_datafile
+#function:mi_open_datafile
+#function:thr_multi_lock
+## MDEV-35688 [Startup]
+#pointer-overflow:my_casedn_utf8mb3
+## MDEV-35872 [CLI Startup] # Fixed by MDEV-35538
+#pointer-overflow:ctype-uca.c
