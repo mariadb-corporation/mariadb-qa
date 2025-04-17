@@ -224,6 +224,9 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+last_val > 0|SIGABRT|myrocks::ha_rocksdb::get_auto_increment|handler::update_auto_increment|myrocks::ha_rocksdb::write_row|handler::ha_write_row                               ## MDEV-36636
+SIGSEGV|key_restore|get_full_part_id_from_key|get_partition_set|ha_partition::multi_range_key_create_key                                                                       ## MDEV-36635
+SIGSEGV|set_PF_fields_in_key|get_partition_set|ha_partition::multi_range_key_create_key|ha_partition::multi_range_read_info_const                                              ## MDEV-36635
 SIGSEGV|myrocks::Rdb_transaction_impl::get_write_batch|myrocks::Rdb_transaction::make_stmt_savepoint_permanent|myrocks::rocksdb_commit|commit_one_phase_2                      ## MDEV-16523
 !eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare                                          ## MDEV-36610
 SIGSEGV|__strcmp_evex|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MENT-2274

@@ -1,0 +1,7 @@
+INSTALL SONAME 'ha_rocksdb';
+CREATE TABLE t (a INT,b DATE,KEY(a,b),INDEX idxb (b)) ENGINE=RocksDB PARTITION BY RANGE (TO_DAYS(b)) (PARTITION p0 VALUES LESS THAN (2));
+SET SESSION sql_buffer_result=1;
+SELECT 1 FROM t ;
+SET max_session_mem_used=8192;
+SELECT 1 FROM t;
+SELECT 1 FROM t WHERE a=2;
