@@ -31,6 +31,8 @@ UBSAN|load of value X, which is not a valid value for type 'Histogram_type' (aka
 UBSAN|load of value X, which is not a valid value for type 'Histogram_type' (aka 'enum_histogram_type')|sql/sql_statistics.cc|create_histogram|Column_stat::get_stat_values|read_statistics_for_table|read_statistics_for_tables ## MDEV-36173
 UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/buf/buf0flu.cc|page_cleaner_flush_pages_recommendation|buf_flush_page_cleaner|execute_native_thread_routine|asan_thread_start ## MDEV-36149
 UBSAN|applying zero offset to null pointer|strings/ctype-czech.c|my_strnxfrm_czech|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Type_handler_string_result::Item_update_null_value ## MDEV-35621
+UBSAN|applying zero offset to null pointer|strings/ctype-utf8.c|my_strnxfrm_unicode_full_bin|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int  ## MDEV-35621
+UBSAN|applying zero offset to null pointer|strings/ctype-latin1.c|my_strnxfrm_latin1_de|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Type_handler_string_result::Item_update_null_value ## MDEV-35621
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-ucs2.c|my_utf16le_uni|my_charlen_utf16|my_ismbchar|my_numchars_utf16                                            ## MDEV-36085
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-utf32.h|my_mb_wc_utf32_quick|charset_info_st::mb_wc|fix_escape_item|Item_func_like::fix_fields                  ## MDEV-36085
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-ucs2.h|my_mb_wc_ucs2_quick|my_ucs2_uni|charset_info_st::mb_wc|fix_escape_item                                   ## MDEV-36085
