@@ -24,3 +24,11 @@ INSERT INTO t (c) VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
 DELETE FROM t;
 INSERT INTO t (c) VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
 SELECT * FROM t WHERE c IN ('a','a');
+
+INSTALL SONAME 'ha_rocksdb';
+CREATE TABLE t (c VARCHAR(254) BINARY CHARACTER SET 'latin1' COLLATE 'latin1_bin',c2 VARCHAR(254) CHARACTER SET 'latin1' COLLATE 'latin1_bin',c3 VARCHAR(1) BINARY CHARACTER SET 'latin1' COLLATE 'latin1_bin',c4 VARCHAR(1) CHARACTER SET 'latin1' COLLATE 'latin1_bin') ENGINE=RocksDB ROW_FORMAT=REDUNDANT;
+ALTER TABLE t ADD CONSTRAINT UNIQUE KEY i1 (c);
+XA START 'a';
+INSERT INTO t (c) VALUES (0);
+UPDATE t SET c=load_file ('$_vardir / temp.txt');
+SELECT 1 FROM t WHERE c IS NULL;

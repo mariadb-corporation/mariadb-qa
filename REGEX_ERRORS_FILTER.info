@@ -36,6 +36,9 @@ Warning. InnoDB: Table mysql.innodb_index_stats has length mismatch in the colum
 Warning. InnoDB: Table mysql.innodb_table_stats has length mismatch in the column name.*run mysql_upgrade  Modified innodb_table_stats table
 ERROR. WSREP: Failed to load provider                 wsrep misconfig for example --wsrep-provider=0 + SET GLOBAL wsrep_on=ON;
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
+Failed to acquire lock due to rocksdb_max_row_locks limit.*Internal MariaDB error code: 1296 SPECIAL-35
+Error finishing bulk load                             RocksDB, Not a real issue, ref SPECIAL-36
+ERROR. Got error 221 when reading table               RocksDB, Not a real issue, ref SPECIAL-37
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name
 _corrupted_to_rename                                  Not real corruption, just a partial table name

@@ -1,0 +1,12 @@
+SET sql_mode='';
+INSTALL SONAME 'ha_rocksdb';
+CREATE TABLE t (a INT UNSIGNED,b INT,c CHAR(1),d BINARY (1),e CHAR(1),f BINARY (1),g BLOB,h BLOB,id INT,KEY(b),KEY(e),PRIMARY KEY(id)) ENGINE=RocksDB;
+SET SESSION rocksdb_bulk_load=1;
+INSERT INTO t VALUES (+1,+1,'0B0wq93sANCzGPn','JdKZA1TcHq4XK7I','6Z','XGy9awWAgG2GURQOxP52C8eowvh7',0,0,1);
+CREATE TABLE t2 (a INT UNSIGNED,b INT UNSIGNED,c CHAR(1),d CHAR(1),e BINARY (1),f BINARY (1),g BLOB,h BLOB,id INT,KEY(b),KEY(e),PRIMARY KEY(id)) COLLATE=tis620_nopad_bin ENGINE=RocksDB;
+CREATE TABLE t3 (c CHAR(1) KEY,c2 CHAR(1) BINARY CHARACTER SET 'latin1' COLLATE 'latin1_bin',c3 CHAR(1) CHARACTER SET 'utf8' COLLATE 'utf8_bin',c4 VARCHAR(1) BINARY CHARACTER SET 'latin1' COLLATE 'latin1_bin') ENGINE=RocksDB ROW_FORMAT=DYNAMIC;
+INSERT INTO t2 (a) VALUES (1);
+INSERT INTO t VALUES (+1,+1,'dDohF5DUKst2yw39Idjkqum0anG1wFs','pcJEPeRBUV7l6R7HAUF4WubwQwFJP','FWSaBX3sMppc',0,0,0,1);
+ALTER TABLE t3 ADD UNIQUE (c3);
+# CLI: ERROR 4055 (HY000): Rows inserted during bulk load must not overlap existing rows
+# ERR: [ERROR] Error finishing bulk load.
