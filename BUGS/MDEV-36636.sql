@@ -1,0 +1,7 @@
+INSTALL SONAME 'ha_rocksdb';
+CREATE OR REPLACE TABLE t (c BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY) engine=ROCKSDB;
+SET @@session.auto_increment_increment=5;
+SET @@session.auto_increment_offset=5;
+INSERT INTO t (c) VALUES (18446744073709551615);
+INSERT INTO t VALUES ();
+INSERT INTO t VALUES ();
