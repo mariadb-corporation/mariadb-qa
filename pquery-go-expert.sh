@@ -84,8 +84,8 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
     # TODO: this needs work. While the logic seems correct (look for 'Assert: no core file found in' in reducer files, then set PQUERY_CONS_Q_FAIL=1) it seems to somehow incorrectly make some? or many? (one rundir had all) reducers use PQUERY_CONS_Q_FAIL=1 where it should not happen. Also, the functionality of PQUERY_CONS_Q_FAIL may be somewhat limited if ~250 queries remain, though it could be used to find failure queries which cause this 'Last [0-9]\+ consecutive queries all failed' (TBD if correct)
     #grep -lm1 --binary-files=text "Assert: no core file found in" reducer*.sh 2>/dev/null | grep -o '[0-9]\+' | xargs -I{} grep -lm1 --binary-files=text 'Last [0-9]\+ consecutive queries all failed' {}/pquery.log | grep -o '[0-9]\+' | xargs -I{} sed -i 's|^PQUERY_CONS_Q_FAIL=0|PQUERY_CONS_Q_FAIL=1|;s|TEXT="Assert: no core file found in.*"|TEXT="Last [0-9]\+ consecutive queries all failed"|;s|^USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|;s|^USE_PQUERY=0|USE_PQUERY=1|;s|^MODE=[04]|MODE=3|' reducer{}.sh
     for REDUCER in $(ls --color=never reducer*.sh quick_*reducer*.sh 2>/dev/null); do
-      if egrep -q '^finish .INPUTFILE' ${REDUCER}; then  # Ensure that pquery-prep-red.sh has fully finished writing this file (grep is for a string present on the last line only)
-        if ! grep --binary-files=text -q '^.DONEDONE' ${REDUCER}; then       # Ensure that we're only updating files that were not updated previously (and possibly subsequently edited manually)
+      if egrep -q '^finish .INPUTFILE' ${REDUCER} 2>/dev/null; then  # Ensure that pquery-prep-red.sh has fully finished writing this file (grep is for a string present on the last line only)
+        if ! grep --binary-files=text -q '^.DONEDONE' ${REDUCER} 2>/dev/null; then       # Ensure that we're only updating files that were not updated previously (and possibly subsequently edited manually)
           sed -i "s|^FORCE_SKIPV=0|FORCE_SKIPV=1|" ${REDUCER}
           sed -i "s|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=3 |" ${REDUCER}
           sed -i "s|^MULTI_THREADS_INCREASE=[0-9]\+|MULTI_THREADS_INCREASE=3|" ${REDUCER}
@@ -94,12 +94,12 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
           # Auto-set the inputfile to the most recent sql trace inc _out* handling
           # Also exclude 'backup/failing' for multi-threaded runs. For example, WORKDIR/TRIALDIR/trial.sql.failing (/data/487127/48/48.sql.failing)
           # Also exclude _copy files made by base_reducer<trial>.sh's
-          if ! grep --binary-files=text -qi 'backup|failing|prev|copy' ${REDUCER}; then  # Avoid changing it twice (corrupts text)
+          if ! grep --binary-files=text -qi 'backup|failing|prev|copy' ${REDUCER} 2>/dev/null; then  # Avoid changing it twice (corrupts text)
             sed -i 's|^INPUTFILE="\([^"]\+\)"|INPUTFILE="$(ls --color=never -S \1* \| grep --binary-files=text -vE "backup\|failing\|prev" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\+\|\|\")"|' ${REDUCER}
           fi
           # Next, we consider if we will set FORCE_KILL=1 by doing many checks to see if it makes sense
           TRIAL="$(echo ${REDUCER} | grep -o '[0-9]\+')"
-          if grep --binary-files=text -qiE "^MODE=3|^MODE=4" ${REDUCER}; then  # Mode 3 or 4 (and not 0)
+          if grep --binary-files=text -qiE "^MODE=3|^MODE=4" ${REDUCER} 2>/dev/null; then  # Mode 3 or 4 (and not 0)
             if [ ! -r "./${TRIAL}/AVOID_FORCE_KILL" ]; then  # Not flagged by pquery-prep-red.sh as a trial for which AVOID_FORCE_KILL should be avoided (i.e. likely a trial for which SHUTDOWN_TIMEOUT_ISSUE was previously found/set and which also had a core dump present - i.e. actual shutdown and wait IS required to reduce towards the core dump issue seen; thus FORCE_KILL should not be set)
               if [ -z "$(tail -n1 ${TRIAL}/log/*.err ${TRIAL}/node*/node*.err 2>/dev/null | grep --binary-files=text -E 'invalid|alloc|free|corruption|corrupted')" ]; then  # Ensure that the last line of the log is not a memory corruption like "malloc(): , double free or corruption, free(): , Warning: Memory not freed" or similar (i.e. the result of the tail/grep is empty and -z "" the test will proceed with then clause) in which case we do NOT want to set FORCE_KILL=1 as that would prevent such a message which is seen on/after server shutdown.
                 if [ ! -r "./${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE" ]; then  # Not a shutdown timeout issue

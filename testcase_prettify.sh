@@ -426,6 +426,7 @@ cat "${1}" | tr -d '`' | \
        s|timestamp *(|TIMESTAMP(|gi; \
        s|insert_method|INSERT_METHOD|gi; \
        s|inet_aton|INET_ATON|gi; \
+       s|inet6_aton|INET6_ATON|gi; \
        s|weight_string|WEIGHT_STRING|gi; \
        s|count *(|COUNT(|gi; \
        s|str_to_date *(|STR_TO_DATE(|gi; \

@@ -38,3 +38,11 @@ SET GLOBAL event_scheduler=ON;
 SET GLOBAL log_output='FILE,TABLE';
 SET GLOBAL slow_query_log=ON;
 SET GLOBAL long_query_time=FALSE;
+
+INSTALL SONAME 'ha_rocksdb';
+SET autocommit=0;
+SET GLOBAL log_output='TABLE';
+SET default_storage_engine=RocksDB;
+CREATE OR REPLACE TABLE mysql.general_log (a INT);
+SET GLOBAL general_log=1;
+CREATE TABLE t1 (a INT) ENGINE RocksDB;

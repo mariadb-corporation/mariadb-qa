@@ -233,7 +233,7 @@ check_field_pointers(table)|SIGABRT|close_thread_tables|mysql_execute_command|my
 last_val > 0|SIGABRT|myrocks::ha_rocksdb::get_auto_increment|handler::update_auto_increment|myrocks::ha_rocksdb::write_row|handler::ha_write_row                               ## MDEV-36636
 SIGSEGV|key_restore|get_full_part_id_from_key|get_partition_set|ha_partition::multi_range_key_create_key                                                                       ## MDEV-36635
 SIGSEGV|set_PF_fields_in_key|get_partition_set|ha_partition::multi_range_key_create_key|ha_partition::multi_range_read_info_const                                              ## MDEV-36635
-SIGSEGV|myrocks::Rdb_transaction_impl::get_write_batch|myrocks::Rdb_transaction::make_stmt_savepoint_permanent|myrocks::rocksdb_commit|commit_one_phase_2                      ## MDEV-16523
+SIGSEGV|myrocks::Rdb_transaction_impl::get_write_batch|myrocks::Rdb_transaction::make_stmt_savepoint_permanent|myrocks::rocksdb_commit|commit_one_phase_2                      ## MDEV-36611
 !eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare                                          ## MDEV-36610
 SIGSEGV|__strcmp_evex|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MENT-2274
 0|SIGABRT|Item_row::illegal_method_call|Item_row::val_real|Item_func_interval::fix_length_and_dec|Item_func::fix_fields                                                        ## MDEV-36569
@@ -868,6 +868,7 @@ SIGSEGV|Column_definition::create_length_to_internal_length_string|Column_defini
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|LEX::sf_return_fill_definition|MYSQLparse                                            ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|MYSQLparse|parse_sql                                                                 ## MDEV-25135
 charset|SIGABRT|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition|sp_head::fill_spvar_definition|sp_head::row_fill_field_definitions                   ## MDEV-25135
+SIGSEGV|Item_equal::val_bool|JOIN::exec_inner|JOIN::exec|subselect_single_select_engine::exec                                                                                  ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item_cond_or::val_int                                                                   ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool|Item_cond_or::val_int                                                                        ## MDEV-29733
 SIGSEGV|Item_equal::val_int|Item_equal::val_int|JOIN::exec_inner|JOIN::exec                                                                                                    ## MDEV-29733

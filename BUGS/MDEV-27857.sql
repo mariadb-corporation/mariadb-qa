@@ -1,4 +1,4 @@
-REATE OR REPLACE TABLE mysql.general_log (a INT);
+CREATE OR REPLACE TABLE mysql.general_log (a INT);
 SET SESSION sql_log_off=1;
 SET GLOBAL init_slave='SELECT 3';
 SET GLOBAL log_output='TABLE';
