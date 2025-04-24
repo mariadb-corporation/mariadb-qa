@@ -224,6 +224,7 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|sp_instr_set::print|sp_head::show_routine_code|mysql_execute_command|mysql_parse                                                                                       ## MDEV-36659
 SIGSEGV|myrocks::ha_rocksdb::index_first|myrocks::ha_rocksdb::check|handler::ha_check|ha_partition::handle_opt_part                                                            ## MDEV-36640
 column_family != nullptr|SIGABRT|rocksdb::Iterator|myrocks::Rdb_transaction::get_iterator|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_first_intern     ## MDEV-36640
 SIGSEGV|myrocks::ha_rocksdb::can_use_bloom_filter|myrocks::ha_rocksdb::check_bloom_and_set_bounds|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_first_intern ## MDEV-36640
