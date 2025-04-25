@@ -226,6 +226,8 @@ SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|Item_ref::const_item|Item::cache_const_expr_analyzer|Item_ref::compile|Item_func::compile                                                                              ## MDEV-36678
 SIGSEGV|Item_ref::update_used_tables|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Item_func::update_used_tables ## MDEV-36678
+!check_interleaving_with_nj(s)|SIGABRT|get_costs_for_tables|best_extension_by_limited_search|greedy_search|choose_plan                                                         ## MDEV-36688
+join->best_read < 1.7976931348623157e+308|SIGABRT|greedy_search|choose_plan|make_join_statistics|JOIN::optimize_inner                                                          ## MDEV-36688
 SIGSEGV|sp_instr_set::print|sp_head::show_routine_code|mysql_execute_command|mysql_parse                                                                                       ## MDEV-36659
 SIGSEGV|myrocks::ha_rocksdb::index_first|myrocks::ha_rocksdb::check|handler::ha_check|ha_partition::handle_opt_part                                                            ## MDEV-36640
 column_family != nullptr|SIGABRT|rocksdb::Iterator|myrocks::Rdb_transaction::get_iterator|myrocks::ha_rocksdb::setup_scan_iterator|myrocks::ha_rocksdb::index_first_intern     ## MDEV-36640
