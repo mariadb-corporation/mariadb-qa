@@ -27,6 +27,7 @@ UBSAN|-nan is outside the range of representable values of type 'unsigned long l
 UBSAN|applying non-zero offset X to null pointer|sql/sql_lifo_buffer.h|Forward_lifo_buffer::have_space_for|DsMrr_impl::dsmrr_init|ha_innobase::multi_range_read_init|QUICK_RANGE_SELECT::reset ## MDEV-36344
 UBSAN|inf is outside the range of representable values of type 'unsigned long long'|sql/sql_select.cc|test_if_cheaper_ordering|test_if_skip_sort_order|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-36346
 ASAN|heap-use-after-free|sql/sql_analyse.cc|field_str::add|analyse::send_row|end_send|evaluate_join_record                                                                     ## MDEV-36300
+UBSAN|call to function wolfSSL_X509_free through pointer to incorrect function type 'void (*)(void *)'|extra/wolfssl/wolfssl/src/ssl.c                                         ## MDEV-36298
 UBSAN|call to function wolfSSL_X509_free through pointer to incorrect function type 'void (*)(void *)'|extra/wolfssl/wolfssl/src/ssl.c|wolfSSL_sk_pop_free|wolfSSL_sk_X509_pop_free|wolfSSL_X509_STORE_CTX_free|DoVerifyCallback ## MDEV-36298
 UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnncollsp_simple|Arg_comparator::compare|Item_func_eq::val_bool|make_join_select                        ## MDEV-36240
 UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnncollsp_simple|Arg_comparator::compare|Item_func_eq::val_int|make_join_select                         ## MDEV-36240
