@@ -722,7 +722,7 @@ SIGSEGV|VDec2_lazy::VDec2_lazy|Item_func_plus::decimal_op|VDec_op::VDec_op|Type_
 SIGSEGV|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal|VDec::VDec                              ## MDEV-31284
 SIGSEGV|VDec::VDec|VDec2_lazy::VDec2_lazy|Item_func_plus::decimal_op|VDec_op::VDec_op                                                                                          ## MDEV-31284
 SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-31269
-SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ScopedInErrorReport::~ScopedInErrorReport|__asan::ReportGenericError                                                       ## MDEV-31269
+SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ScopedInErrorReport::~ScopedInErrorReport|__asan::ReportGenericError                                                       ## MDEV-31269 (UBASAN builds)
 SIGSEGV|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar                                                      ## MDEV-31269
 SIGSEGV|Item_func::fix_func_arg|Item_func::fix_fields|Item_cond::fix_fields|st_select_lex::setup_cond                                                                          ## MDEV-31269
 SIGABRT|__cxa_pure_virtual|Item_func::check_argument_types_like_args0|Item_func::fix_fields|Item_func::fix_fields                                                              ## MDEV-31269
@@ -1020,6 +1020,7 @@ SIGSEGV|my_strcasecmp_bin|find_field_in_table_ref|find_field_in_tables|Item_fiel
 SIGSEGV|create_view_field|Field_iterator_view::create_item|find_field_in_view|find_field_in_table_ref                                                                          ## MDEV-28506
 SIGSEGV|lex_string_cmp|TABLE::find_field_by_name|find_field_in_table|find_field_in_table_ref                                                                                   ## MDEV-28506
 SIGSEGV|__interceptor_strlen.part.0|Lex_cstring_strlen::Lex_cstring_strlen|find_field_in_table_ref|find_field_in_tables                                                        ## MDEV-28506 (on UBASAN builds)
+SIGSEGV|__interceptor_strlen|Lex_cstring_strlen::Lex_cstring_strlen|find_field_in_table_ref|find_field_in_tables                                                               ## MDEV-28506 (on UBASAN builds)
 SIGSEGV|Lex_cstring_strlen::Lex_cstring_strlen|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                             ## MDEV-28506 (on UBASAN builds)
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|Item::fix_fields_if_needed                                                       ## MDEV-28506
 table_list->table|SIGABRT|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields|find_order_in_list                                                               ## MDEV-28506

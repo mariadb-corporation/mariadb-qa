@@ -6,6 +6,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_conn.cc|spider_create_ipport_conn|spider_create_conn|spider_get_conn|spider_internal_xa_rollback_by_xid ## MDEV-36709
+UBSAN|load of value X, which is not a valid value for type 'bool'|sql/sql_table.cc|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command|execute_server_code    ## MDEV-36699
+UBSAN|member access within null pointer of type 'KEY' (aka 'st_key')|storage/spider/spd_db_mysql.cc|spider_mbase_handler::append_key_order_with_alias|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_read_map_internal|handler::index_read_idx_map ## MDEV-36699 
 UBSAN|load of null pointer of type 'Item *'|sql/item.cc|Item_ref::update_used_tables|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join ## MDEV-36678
 UBSAN|load of null pointer of type 'Item *'|sql/item.h|Item_ref::const_item|Item::cache_const_expr_analyzer|Item_ref::compile|Item_func::compile                               ## MDEV-36678
 ASAN|heap-use-after-free|include/c++/current_version/bits/shared_ptr_base.h|std::__shared_ptr<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|std::__shared_ptr_access<myrocks::Rdb_key_def,|myrocks::ha_rocksdb::index_first ## MDEV-36640
@@ -372,6 +375,8 @@ LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_fu
 LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|interceptor_malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                             ## MDEV-31271
 LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                                         ## MDEV-31271
 ASAN|use-after-poison|sql/item.cc|Item::print_parenthesised|Item_func::print_op|Item::print_parenthesised|Item_cond::print                                                     ## MDEV-31269
+UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item_func.cc|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool|Item_cond::fix_fields ## MDEV-31269
+UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item_func.cc|Item_func::print_op|Item::print_parenthesised|Item_cond::print|dbug_print_item ## MDEV-31269 
 UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item.cc|Item::print_parenthesised|Item::print_parenthesised|Item_cond::print|dbug_print_item ## MDEV-31269
 ASAN|use-after-poison|sql/item.h|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool                    ## MDEV-31269
 ASAN|use-after-poison|sql/item.cc|Item::print_parenthesised|Item::print_parenthesised|Item_cond::print|dbug_print_item                                                         ## MDEV-31269
