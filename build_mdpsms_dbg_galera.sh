@@ -97,7 +97,7 @@ MD=0
 if [ ${MYSQL_VERSION_MAJOR} -eq 8 ]; then  # CMake Error at cmake/zlib.cmake:136 (MESSAGE): ZLIB version must be at least 1.2.12, found 1.2.11.
   ZLIB="-DWITH_ZLIB=bundled"
 fi
-if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-1]$ ]]; then
+if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-9]$ ]]; then
   MD=1
   if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then
     PREFIX="GAL_EMD${DATE}"
