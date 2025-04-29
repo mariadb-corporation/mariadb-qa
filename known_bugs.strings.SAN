@@ -6,6 +6,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::set_select_column_mode|ha_spider::open|handler::ha_open|ha_spider::clone                                       ## MDEV-36713
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/spider/spd_conn.cc|spider_create_ipport_conn|spider_create_conn|spider_get_conn|spider_internal_xa_rollback_by_xid ## MDEV-36709
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/sql_table.cc|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command|execute_server_code    ## MDEV-36699
 UBSAN|member access within null pointer of type 'KEY' (aka 'st_key')|storage/spider/spd_db_mysql.cc|spider_mbase_handler::append_key_order_with_alias|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_read_map_internal|handler::index_read_idx_map ## MDEV-36699 
