@@ -224,6 +224,7 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+copied_in|SIGABRT|Item_copy_string::val_str|Item_direct_ref::val_str|Item_direct_ref::val_str|Item_ref::str_result                                                             ## MDEV-36706
 SIGSEGV|Item_ref::const_item|Item::cache_const_expr_analyzer|Item_ref::compile|Item_func::compile                                                                              ## MDEV-36678
 SIGSEGV|Item_ref::update_used_tables|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Item_func::update_used_tables ## MDEV-36678
 !check_interleaving_with_nj(s)|SIGABRT|get_costs_for_tables|best_extension_by_limited_search|greedy_search|choose_plan                                                         ## MDEV-36688
