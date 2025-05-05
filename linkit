@@ -226,7 +226,7 @@ alias reg='vi /test/REGEX_EXCLUDE'  # Open the REGEX exclude dir for gendirs.sh 
 alias v='${HOME}/v '       # Opens reducer{trial}.sh for a given trial (pass trial number)
 alias tcp='${HOME}/tcp '   # Testcase prettify (pass SQL file)
 alias tl='tail log/master.err' # Display tail of mariadbd/mysqld error log in the current BASEDIR or pquery trial dir
-alias prg='${HOME}/pr | grep ' # Search ${HOME}/pr for a specific string or trial number (pass search string or trial number)
+alias prg='${HOME}/pr | grep -i ' # Search ${HOME}/pr for a specific string or trial number (pass search string or trial number)
 alias j='. ${HOME}/j '     # Jump to a particular /data directory (pass, for example, workdir number)
 alias ml='./multirun_loop ' # Execute ./multirun_loop in a BASEDIR
 " > /tmp/.bashrc

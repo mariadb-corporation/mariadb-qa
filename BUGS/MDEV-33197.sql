@@ -25,3 +25,21 @@ CREATE TABLE t2 (c INT PRIMARY KEY,c1 BLOB,c2 TEXT) ENGINE=Spider COMMENT='WRAPP
 SET spider_bgs_mode=1;
 SET SESSION spider_quick_page_byte=0;
 ANALYZE TABLE t2 PERSISTENT FOR ALL;
+
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE SERVER srv FOREIGN DATA WRAPPER mysql OPTIONS (SOCKET '../socket.sock',DATABASE'',USER'',PASSWORD'');
+CREATE TABLE t (c INT,c1 BLOB,c2 TEXT) ENGINE=InnoDB;
+INSERT INTO t VALUES (0,0,0);
+CREATE TABLE t3 (c INT,c1 BLOB,c2 TEXT) ENGINE=Spider COMMENT='WRAPPER "mysql",SRV "srv",TABLE "t"';
+INSERT INTO t VALUES (0,0,0);
+START SLAVE UNTIL sql_after_gtids="a - b-c";
+SET spider_disable_group_by_handler=1,spider_quick_page_byte=0,spider_bgs_mode=1;
+SELECT * FROM t3;
+
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+CREATE server srv FOREIGN DATA wrapper mysql options (socket '../socket.sock', DATABASE 'test', USER 'spider', PASSWORD '');
+CREATE TABLE tm (c INT KEY,c1 BLOB, c2 TEXT) ENGINE=MyISAM;
+INSERT INTO tm VALUES (0,NULL,'a'),(1,'B','b'),(2,0,'c');
+CREATE TABLE t2 (c INT KEY,c1 BLOB, c2 TEXT) ENGINE=Spider COMMENT='wrapper "mysql", srv "srv", TABLE "tm"';
+SET Spider_bgs_mode=1;
+SELECT * FROM t2 WHERE c1 NOT IN (SELECT DISTINCT c1 FROM t2 UNION SELECT DISTINCT c1 FROM t2);

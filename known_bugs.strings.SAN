@@ -298,6 +298,7 @@ ASAN|heap-use-after-free|storage/spider/spd_direct_sql.cc|spider_direct_sql_body
 # UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc                                                                                           ## Often though not always MDEV-33149
 UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc|Item_func_json_array_intersect::prepare_json_and_create_hash|Item_func_json_array_intersect::fix_length_and_dec|Item_func::fix_fields|Item_str_func::fix_fields ## MDEV-33149
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::open|handler::ha_open|ha_partition::open_read_partitions|ha_partition::change_partitions_to_open ## MDEV-33240
+UBSAN|member call on null pointer of type 'spider_db_result'|storage/spider/spd_db_conn.cc|spider_db_store_result|spider_bg_conn_action|asan_thread_start|start_thread         ## MDEV-33197
 UBSAN|member access within null pointer of type 'TABLE'|storage/spider/spd_db_conn.cc|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|ha_spider::rnd_next_internal ## MDEV-33197
 UBSAN|member access within null pointer of type 'struct TABLE'|storage/spider/spd_db_conn.cc|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|ha_spider::rnd_next_internal ## MDEV-33197
 UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate ## MDEV-33191

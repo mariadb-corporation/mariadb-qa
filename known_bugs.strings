@@ -590,6 +590,7 @@ is_current_stmt_binlog_format_row()|SIGABRT|THD::binlog_write_table_maps|binlog_
 !check_foreigns|SIGABRT|trx_t::bulk_insert_apply_low|trx_t::bulk_insert_apply|ha_innobase::start_stmt|check_lock_and_start_stmt                                                ## MDEV-33243
 ((&(&conn->mta_conn_mutex)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&conn->mta_conn_mutex)->m_mutex)->thread))|SIGABRT|spider_db_errorno|spider_db_store_result|spider_bg_conn_action|pfs_spawn_thread ## MDEV-33197
 ((&(&conn->mta_conn_mutex)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&conn->mta_conn_mutex)->m_mutex)->thread))|SIGABRT|spider_db_errorno|spider_db_store_result|spider_bg_conn_action|start_thread ## MDEV-33197
+SIGSEGV|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|ha_spider::rnd_next_internal                                                            ## MDEV-33197
 SIGSEGV|spider_db_get_row_from_tmp_tbl|spider_db_fetch_minimum_columns|spider_db_fetch|spider_db_seek_next                                                                     ## MDEV-33197
 SIGSEGV|spider_db_store_result|spider_bg_conn_action|start_thread|clone3                                                                                                       ## MDEV-33197
 SIGSEGV|inline_mysql_rwlock_wrlock|Query_cache_query::lock_writing|Query_cache::insert|query_cache_insert                                                                      ## MDEV-10826

@@ -27,6 +27,8 @@
 # Issues at startup should be kept in this file and marked with '[Startup]', others should be removed, as they are covered by UniqueID combined with new multi-SAN issue handling already. Partial '[Startup]' marking complete. OTOH, high frequency issues may be opportune to filter out? Todo: review multi-SAN. Ftm, please mark any issues known not to be on startup with '(not-startup)'.
 
 # ----- Current bugs
+## MDEV-36298
+function:wolfSSL_sk_pop_free
 ## MDEV-35714 [MTR, main.dyncol]
 object-size:Item_dyncol_get::get_date
 ## MDEV-36375 [MTR, main.gis]
