@@ -2511,8 +2511,15 @@ EOF
     else
       if [ ${QUERY_CORRECTNESS_TESTING} -ne 1 ]; then
         # This shutdown in the main shutdown done for every standard/default options pquery trial
-        timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
-        if [ $? -eq 137 ]; then
+        TO_EXIT_CODE=
+        if [ "${RR_TRACING}" == "1" ]; then
+          timeout --signal=9 240s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 240 sec wait for rr) + see NOTE** above
+          TO_EXIT_CODE=$?
+        else
+          timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait) + see NOTE** above
+          TO_EXIT_CODE=$?
+        fi
+        if [ ${TO_EXIT_CODE} -eq 137 ]; then
           if [ ${ISSTARTED} -eq 1 ]; then  # Only display a failed shutdown message if the server was correctly started to being with. We still try and do the shutdown above, "just in case" the server came up with a large delay
             echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
           fi
@@ -2540,6 +2547,7 @@ EOF
           savetrial
           TRIAL_SAVED=1
         fi
+        TO_EXIT_CODE=
         if [[ ${REPLICATION} -eq 1 ]]; then
           timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
           if [ $? -eq 137 ]; then

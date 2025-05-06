@@ -940,7 +940,7 @@ if [[ $MDG -eq 1 ]]; then
   sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_cl gal_cl_noprompt gal_cl_noprompt_nobinary gal_test gal_test_pquery
 fi
 
-if [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "0.5" ]; then
+if [ "$(sysbench --version 2>/dev/null | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "0.5" ]; then
   if [ "${VERSION_INFO}" == "8.0" ]; then
     echo "${CLIENT_TO_USE} -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
     echo "sysbench --test=/usr/share/doc/sysbench/tests/db/parallel_prepare.lua --mysql-engine-trx=yes --mysql-table-engine=innodb --oltp_table_size=10000 --oltp_tables_count=10 --mysql-db=test --mysql-user=sysbench_user --mysql-password=test  --db-driver=mysql --mysql-socket=${SOCKET} prepare" >>sysbench_prepare
@@ -949,7 +949,7 @@ if [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "0.5"
     echo "sysbench --test=/usr/share/doc/sysbench/tests/db/parallel_prepare.lua --mysql-engine-trx=yes --mysql-table-engine=innodb --oltp_table_size=10000 --oltp_tables_count=10 --mysql-db=test --mysql-user=root  --db-driver=mysql --mysql-socket=${SOCKET} prepare" >sysbench_prepare
     echo "sysbench --report-interval=10 --max-time=50 --max-requests=0 --mysql-engine-trx=yes --test=/usr/share/doc/sysbench/tests/db/oltp.lua --init-rng=on --oltp_index_updates=10 --oltp_non_index_updates=10 --oltp_distinct_ranges=15 --oltp_order_ranges=15 --oltp_tables_count=10 --num-threads=10 --oltp_table_size=10000 --mysql-db=test --mysql-user=root  --db-driver=mysql --mysql-socket=${SOCKET} run" >sysbench_run
   fi
-elif [ "$(sysbench --version | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "1.0" ]; then
+elif [ "$(sysbench --version 2>/dev/null | cut -d ' ' -f2 | grep -oe '[0-9]\.[0-9]')" == "1.0" ]; then
   if [ "${VERSION_INFO}" == "8.0" ]; then
     if [ -r "${PWD}/bin/mariadb" ]; then
       echo "${PWD}/bin/mariadb -uroot --socket=${SOCKET} -e \"CREATE USER IF NOT EXISTS sysbench_user@'%' identified with mysql_native_password by 'test';GRANT ALL ON *.* TO sysbench_user@'%'\" 2>&1" >sysbench_prepare
