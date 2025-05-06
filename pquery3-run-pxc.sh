@@ -1303,7 +1303,7 @@ if [ -r ${BASEDIR}/bin/mysql_install_db ]; then MID="${BASEDIR}/bin/mysql_instal
 START_OPT="--core-file"  # Compatible with 5.6,5.7,8.0
 INIT_OPT="--no-defaults --initialize-insecure ${MYINIT}"  # Compatible with 5.7,8.0 (mysqld init)
 INIT_TOOL="${BIN}"  # Compatible with 5.7,8.0 (mysqld init), changed to MID later if version <=5.6
-VERSION_INFO=$(${BIN} --version | grep -oe '[58]\.[01567]' | head -n1)
+VERSION_INFO=$(${BIN} --version | grep -oe '[589]\.[0-9]' | head -n1)
 if [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
   if [ "${MID}" == "" ]; then
     echo "Assert: Version was detected as ${VERSION_INFO}, yet ./scripts/mysql_install_db nor ./bin/mysql_install_db is present!"

@@ -158,7 +158,7 @@ if [ -r ${PWD}/bin/mysql_install_db ]; then MID="${PWD}/bin/mysql_install_db"; f
 START_OPT="--core-file"                        # Compatible with 5.6,5.7,8.0
 INIT_OPT="--no-defaults --initialize-insecure ${TMP_DIR}" # Compatible with     5.7,8.0 (mysqld init)
 INIT_TOOL="${BIN}"                             # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
-VERSION_INFO=$(${BIN} --version | grep --binary-files=text -oe '[589]\.[01567]' | head -n1)
+VERSION_INFO=$(${BIN} --version | grep --binary-files=text -oe '[589]\.[0-9]' | head -n1)
 if [ -z "${VERSION_INFO}" ]; then VERSION_INFO="NA"; fi
 VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-5]\.[0-9][0-9]*' | head -n1)
 if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
