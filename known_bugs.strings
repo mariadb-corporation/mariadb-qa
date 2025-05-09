@@ -224,6 +224,10 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+is_json_type_handler(th)|SIGABRT|Type_handler_json_common::json_type_handler_from_generic|Type_handler_general_purpose_string_to_json<Type_handler_varchar, type_handler_varchar>::Item_hybrid_func_fix_attributes|Item_func_nullif::fix_length_and_dec|Item_func::fix_fields ## MDEV-36763
+(victim_thd && (WSREP_PROVIDER_EXISTS_ && victim_thd->variables.wsrep_on)) ? victim_thd->wsrep_trx().active() : 1|SIGABRT|wsrep_bf_abort_low|wsrep_abort_thd|THD::notify_shared_lock|MDL_lock::notify_conflicting_locks ## MENT-2296
+level != Sql_condition::WARN_LEVEL_ERROR|SIGABRT|push_warning|push_warning_printf|wsrep_TOI_begin|wsrep_to_isolation_begin                                                     ## MENT-2293
+lock_sys.is_holder()|SIGABRT|lock_sys_t::hash_table::assert_locked|lock_rec_print|wsrep_is_BF_lock_timeout|lock_wait                                                           ## MDEV-36690
 prm.count > 0|SIGABRT|Item_exists_subselect::exists2in_processor|Item_subselect::walk|Item_in_optimizer::walk|Item_args::walk_args                                             ## MDEV-36754
 prm.count > 0|SIGABRT|Item_exists_subselect::exists2in_processor|Item_subselect::walk|Item_in_optimizer::walk|JOIN::optimize_inner                                             ## MDEV-36754
 SIGSEGV|Time_and_counter_tracker::incr_loops|JOIN::exec|subselect_single_select_engine::exec|Item_subselect::exec                                                              ## MDEV-36750
