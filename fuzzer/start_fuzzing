@@ -3,7 +3,7 @@
 # Expanded by Ramesh Sivaraman, MariaDB
 
 # User variables
-BASEDIR=/test/AFL-ASAN-MD171222-mariadb-10.11.2-linux-x86_64  # BASEDIR directory of server to test (MariaDB, MySQL, Percona)
+BASEDIR=BASEDIR=/test/AFL-MD060525-mariadb-11.8.1-linux-x86_64-dbg  # BASEDIR directory of server to test (MariaDB, MySQL, Percona)
 
 # Script variables; do not change
 FUZZING_ROOT=~/fuzzing/fuzzing_root

@@ -65,7 +65,7 @@ Note: *ALL* steps below are required. If you skip a single step, things will fai
   sudo apt -y update && sudo apt-get -y upgrade
   sudo apt -y install gdb bison flex git make cmake build-essential gcc-multilib g++-multilib xinetd libreadline-dev zlib1g-dev libssl-dev libncurses5-dev clang-14 liblld-14 liblldb-14 liblld-14-dev vim tmux python3-pip llvm llvm-dev llvm-runtime libmysqlclient-dev
   # In the next line, we want to install gcc-9-plugin-dev - or any other version (like -9-) relevant to your GCC
-  # Yyou can find out the version using gcc --version  
+  # You can find out the version using gcc --version  
   sudo apt install gcc-$(gcc --version | grep -o 'Ubuntu [0-9]\+' | grep -o '[0-9]\+$' | head -n1)-plugin-dev
   pip install libtmux
   sudo reboot

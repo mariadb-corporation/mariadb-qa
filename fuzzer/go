@@ -52,6 +52,7 @@ echo "LD_LIBRARY_PATH    : ${LD_LIBRARY_PATH}"  # It is important that the LD_LI
 
 # Setting the AFL_MAP_SIZE size is not required on AFL side
 # Instance log is needed for passing of the SHM_ENV_VAR value to __AFL_SHM_ID
+export AFL_DISABLE_ASLR=1
 screen -admS ${INSTANCE} bash -c "../afl${1}-fuzz -t 2000 -m 20000 -i ${SQL_PATH} -o ../$(date +%s) ${INSTANCE} 2> ~/fuzzing/${INSTANCE}.log"  
 
 echo "Start of instance ${1} complete!"

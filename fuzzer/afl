@@ -9,6 +9,10 @@ if [ ! -z ${GAL_RUN} ]; then
 fi
 MAX_RUNTIME_MIN=1440  # 24h
 
+# Disable ASLR (Address Space Layout Randomization)
+echo 0 | sudo tee /proc/sys/kernel/randomize_va_space
+export AFL_DISABLE_ASLR=1
+
 if [ "${PWD}" == "${HOME}/fuzzing" ]; then
   echo "This script is not meant to be executed from ~/fuzzing. It is here only for editing convience"
   exit 1
@@ -62,23 +66,27 @@ fi
 
 sed -i "s|^/test/|timeout --signal=9 ${MAX_RUNTIME_MIN}m /test/|" start  # Restart instance every 15 minutes to avoid lockups. Note: this will sometimes create a single dud testcase
 
-rm -f /test/afl${1}_socket.sock
-
 # Prep *SAN
-export ASAN_OPTIONS=quarantine_size_mb=512:atexit=1:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
-export UBSAN_OPTIONS=print_stacktrace=1
+export ASAN_OPTIONS=suppressions=/home/roel/mariadb-qa/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
+export UBSAN_OPTIONS=suppressions=/home/roel/mariadb-qa/UBSAN.filter:print_stacktrace=1:report_error_type=1
 export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
+export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0
 
 echo 'Remember that this needs to be run from a clean shell where no AFL variables were ever set, EVEN if they were made empty before starting! However, restarting this script is fine.'
 echo "If you see '.shmat for map: Bad file descriptor' then __AFL_SHM_ID was likely set incorrectly!"
+__AFL_SHM_ID=
+export __AFL_SHM_ID=
+export -n __AFL_SHM_ID
+./kill
+rm -f /test/afl${1}_socket.sock*
 sleep 2
 if [ ! -z ${GAL_RUN} ]; then
   ./gal_no_cl --max_statement_time=1
-  sleep 3
+  sleep 1
   ./gal_stop
 else
   ./all_no_cl --max_statement_time=1
-  sleep 3
+  sleep 1
   ./stop
 fi
 #export AFL_TMPDIR=/dev/shm/fuzzcache
@@ -89,14 +97,14 @@ fi
 export AFL_MAP_SIZE=50000000  # Generic, should always work
 
 export __AFL_SHM_ID="$(cat ~/fuzzing/${INSTANCE}.log | grep --binary-files=text 'SHM_ENV_VAR' | tail -n1 | grep --binary-files=text -o '[0-9]\+')"
+echo "debug: ${__AFL_SHM_ID}"
 if [ ! -z ${GAL_RUN} ]; then
   ./gal_start
 else
   ./start
 fi
-echo 'Status will show in 20 seconds...'
-sleep 20 # give server time start before starting loop
-clear
+echo 'Status will show in 2 seconds...'
+sleep 2 # give server time start before starting loop
 echo "Server started at: $(date) | ID: ${INSTANCE} | Max runtime: ${MAX_RUNTIME_MIN}m (sig 9)"
 echo "Node: ${1} | Basedir: ${PWD} | socket: /test/afl${1}_socket.sock"
 echo "Client: ${PWD}/bin/mysql -S/test/afl${1}_socket.sock -uroot"

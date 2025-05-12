@@ -95,6 +95,7 @@ GOT_ERROR|Got error 220|when reading table                     ## MDEV-34936
 GOT_ERROR|Got error 222|when reading table                     ## MDEV-34936
 GOT_ERROR|Got error 1032|when trying to execute action for entry 1 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rename table' ## MDEV-34660
+GOT_ERROR|Got error 1032|when trying to execute action for entry 4 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and MDEV-29430
 GOT_ERROR|Got error 1056|when reading table                    ## MDEV-34638
 GOT_ERROR|Got error 1064|when reading table                    ## MDEV-33042 (Spider)
@@ -224,6 +225,13 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read                                                                                          ## MDEV-36773
+SIGSEGV|row_search_mvcc|ha_innobase::index_read|handler::ha_index_read_map|handler::read_range_first                                                                           ## MDEV-36773
+cursor->pos_state == BTR_PCUR_IS_POSITIONED|SIGABRT|btr_pcur_get_rec|row_search_mvcc|ha_innobase::index_read|handler::index_read_map                                           ## MDEV-36773
+cursor->pos_state == BTR_PCUR_IS_POSITIONED|SIGABRT|btr_pcur_get_rec|row_search_mvcc|ha_innobase::index_read|handler::ha_index_read_map                                        ## MDEV-36773
+m_prebuilt->search_tuple->n_fields > 0|SIGABRT|ha_innobase::index_read|handler::index_read_map|handler::ha_index_read_map|handler::read_range_first                            ## MDEV-36773
+m_prebuilt->search_tuple->n_fields > 0|SIGABRT|ha_innobase::index_read|handler::ha_index_read_map|handler::read_range_first|handler::multi_range_read_next                     ## MDEV-36773
+bulk_insert == TRX_NO_BULK|SIGABRT|trx_t::assert_freed|trx_t::free|trx_free_at_shutdown|rw_trx_hash_t::rw_trx_hash_shutdown_destructor                                         ## MDEV-36771
 prm.count > 0|SIGABRT|Item_exists_subselect::exists2in_processor|Item_subselect::walk|Item_in_optimizer::walk|Item_args::walk_args                                             ## MDEV-36754
 prm.count > 0|SIGABRT|Item_exists_subselect::exists2in_processor|Item_subselect::walk|Item_in_optimizer::walk|JOIN::optimize_inner                                             ## MDEV-36754
 SIGSEGV|Time_and_counter_tracker::incr_loops|JOIN::exec|subselect_single_select_engine::exec|Item_subselect::exec                                                              ## MDEV-36750

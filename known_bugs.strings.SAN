@@ -6,6 +6,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying non-zero offset X to null pointer|include/rem0rec.inl|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read
+UBSAN|load of misaligned address X for type 'const rec_t' (aka 'const unsigned char'), which requires 2 byte alignment|include/rem0rec.inl|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read
+UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::ha_index_read_map
+
 UBSAN|shift exponent X is too large for 64-bit type 'size_t' (aka 'unsigned long')|storage/innobase/buf/buf0buddy.cc|buf_pool_t::contains_zip|buf_buddy_alloc_from|buf_buddy_alloc_low|buf_buddy_alloc ## MDEV-36755
 UBSAN|member access within null pointer of type 'Explain_select'|sql/sql_select.cc|JOIN::exec|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_bool ## MDEV-36750
 UBSAN|member access within null pointer of type 'Explain_select'|sql/sql_select.cc|JOIN::exec|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_int ## MDEV-36750

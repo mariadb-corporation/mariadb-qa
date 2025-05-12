@@ -416,6 +416,7 @@ cat "${1}" | tr -d '`' | \
        s|exp *(|EXP(|gi; \
        s|bin *(|BIN(|gi; \
        s|lead *(|LEAD(|gi; \
+       s|repeat *(|REPEAT(|gi; \
        s|extract *(|EXTRACT(|gi; \
        s|date_add *(|DATE_ADD(|gi; \
        s|get_format *(|GET_FORMAT(|gi; \
