@@ -8,6 +8,11 @@
 #SIGSEGV|TABLE::check_assignability_all_visible_fields|TABLE::check_assignability_opt_fields|mysql_insert|mysql_execute_command                                                 ## MDEV-34780
 #marked_for_write_or_computed()|SIGABRT|Field_long::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record_with_mask                                        ## MDEV-34780
 
+##### MDEV-32830 preliminary test ####
+thd->lex->sql_command == SQLCOM_XA_COMMIT || (thd->lex->sql_command == SQLCOM_XA_ROLLBACK || (thd->lex->sql_command == SQLCOM_PRELOAD_KEYS && thd->get_stmt_da()->get_sql_errno() ))|SIGABRT|run_xa_complete_ordered|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_with_engines|MYSQL_BIN_LOG::trx_group_commit_leader ## MDEV-36799
+thd_arg->in_multi_stmt_transaction_mode()|SIGABRT|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_with_engines ## MDEV-36800
+!((&(&LOCK_commit_ordered)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&LOCK_commit_ordered)->m_mutex)->thread))|SIGABRT|ha_commit_trans|THD::commit_whole_transaction_and_close_tables|spider_sys_close_table|spider_internal_xa_commit_by_xid ## MDEV-36802
+
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017

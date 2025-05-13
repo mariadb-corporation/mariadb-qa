@@ -44,6 +44,8 @@ elif [ -r ../../bin/mariadbd -a ! -d ../../bin/mariadbd ]; then
   BIN="../../bin/mariadbd"
 elif [ -r ../../bin/mysqld -a ! -d ../../bin/mysqld ]; then
   BIN="../../bin/mysqld"
+elif [ -r ./dbuild/sql/mariadbd ]; then
+  BIN="./dbuild/sql/mariadbd"
 elif [ -r ./log/master.err ]; then
   POTENTIAL_MYSQLD="$(grep "ready for connections" ./log/master.err | sed 's|: .*||;s|^.* ||' | head -n1)"
   if [ -x ${POTENTIAL_MYSQLD} ]; then BIN="${POTENTIAL_MYSQLD}"; fi

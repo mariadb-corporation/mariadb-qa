@@ -2,9 +2,9 @@
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
-BASEDIR=/test/MD060525-mariadb-11.4.6-linux-x86_64-dbg
-RUNSOPT=2
-RUNSDBG=3
+BASEDIR=/test/UBASAN_MDEV-32830_MD120525-mariadb-12.0.1-linux-x86_64-dbg
+RUNSOPT=3
+RUNSDBG=4
 #CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=1 24, and spider swap -> updated to PS=2
 #CONF=pquery-run-MD-optimizer.conf
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
@@ -15,9 +15,9 @@ RUNSDBG=3
 #CONF=pquery-run-MD-allb.conf
 #CONF=pquery-run-MD_mtr.conf  # PRE_SHUFFLE_SQL=1
 #CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql (replication enabled)
-#CONF=pquery-run-MD-repl.conf  # Using PRE_SHUFFLE_SQL=2
+CONF=pquery-run-MD-repl.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD.conf  # Using PRE_SHUFFLE_SQL=2
-CONF=pquery-run-MD2.conf  # Using PRE_SHUFFLE_SQL=2
+#CONF=pquery-run-MD2.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-multi.conf  # Using PRE_SHUFFLE_SQL=2, multithreaded
 #CONF=pquery-run-MD-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-VAL.conf  # Using PRE_SHUFFLE_SQL=2, VAL
@@ -151,8 +151,8 @@ for RUN in $(seq 1 ${TOTALRUNS}); do
     fi
   done
 done
-echo ""
-echo "For updating the results script (add/edit /data/results.list, then run the /data/results script):"
+echo ''
+echo 'For updating the results script (add/edit /data/results.list, then run the /data/results script):'
 for RUN in $(seq 1 ${TOTALRUNS}); do
   echo "MON[${RUN}]=${MON[${RUN}]}"
 done
