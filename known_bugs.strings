@@ -230,6 +230,9 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+b == &type_handler_row || b == &type_handler_null|SIGABRT|Type_collection_row::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Arg_comparator::set_cmp_func ## MDEV-36792
+b == &type_handler_row|SIGABRT|Type_collection_row::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Arg_comparator::set_cmp_func ## MDEV-36792
+SIGSEGV|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func_for_row_arguments|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func                                  ## MDEV-36792
 SIGSEGV|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read                                                                                          ## MDEV-36773
 SIGSEGV|row_search_mvcc|ha_innobase::index_read|handler::ha_index_read_map|handler::read_range_first                                                                           ## MDEV-36773
 cursor->pos_state == BTR_PCUR_IS_POSITIONED|SIGABRT|btr_pcur_get_rec|row_search_mvcc|ha_innobase::index_read|handler::index_read_map                                           ## MDEV-36773
