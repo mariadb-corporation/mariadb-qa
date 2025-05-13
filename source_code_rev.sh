@@ -79,6 +79,7 @@ if [ -z "$SOURCE_CODE_REV" ]; then
   elif [ -x ../mysqld/mariadbd ]; then BIN='../mysqld/mariadbd'; 
   elif [ -x ../../mariadbd ]; then BIN='../../mariadbd'; 
   elif [ -x ../../mysqld ]; then BIN='../../mysqld'; 
+  elif [ -x ./dbuild/sql/mariadbd ]; then BIN="./dbuild/sql/mariadbd";
   else echo "Assert: Server binary could not be found"; exit 1;
   fi
   if [ -r "${BIN}" ]; then
