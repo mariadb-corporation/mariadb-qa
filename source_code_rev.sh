@@ -33,6 +33,11 @@ if [ -z "$SOURCE_CODE_REV" -a -r ../mysqld/source_revision.h ]; then
 fi
 clean_and_validate
 
+if [ -z "$SOURCE_CODE_REV" -a -r ./dbuild/Docs/INFO_SRC ]; then  # MS build
+  SOURCE_CODE_REV="$(grep -om1 'commit.*' ./dbuild/Docs/INFO_SRC | awk '{print $2}' | sed 's|[ \n\t]\+||g')"
+fi
+clean_and_validate
+
 if [ -z "$SOURCE_CODE_REV" -a -r ./docs/INFO_SRC ]; then  # MS build
   SOURCE_CODE_REV="$(grep -om1 'commit.*' ./docs/INFO_SRC | awk '{print $2}' | sed 's|[ \n\t]\+||g')"
 fi
