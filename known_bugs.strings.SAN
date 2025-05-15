@@ -6,6 +6,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/row/row0ins.cc|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-36823
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-utf16.h|my_mb_wc_utf16_quick|my_charlen_utf16|my_ismbchar|my_numchars_utf16                                     ## MDEV-36821
 UBSAN|applying non-zero offset X to null pointer|include/rem0rec.inl|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read
 UBSAN|load of misaligned address X for type 'const rec_t' (aka 'const unsigned char'), which requires 2 byte alignment|include/rem0rec.inl|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read
 UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::ha_index_read_map
