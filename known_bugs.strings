@@ -12,6 +12,10 @@
 thd->lex->sql_command == SQLCOM_XA_COMMIT || (thd->lex->sql_command == SQLCOM_XA_ROLLBACK || (thd->lex->sql_command == SQLCOM_PRELOAD_KEYS && thd->get_stmt_da()->get_sql_errno() ))|SIGABRT|run_xa_complete_ordered|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_with_engines|MYSQL_BIN_LOG::trx_group_commit_leader ## MDEV-36799
 thd_arg->in_multi_stmt_transaction_mode()|SIGABRT|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_with_engines ## MDEV-36800
 !((&(&LOCK_commit_ordered)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&LOCK_commit_ordered)->m_mutex)->thread))|SIGABRT|ha_commit_trans|THD::commit_whole_transaction_and_close_tables|spider_sys_close_table|spider_internal_xa_commit_by_xid ## MDEV-36802
+is_started()|SIGABRT|Ha_trx_info::ht|TC_LOG::run_prepare_ordered|MYSQL_BIN_LOG::queue_for_group_commit|MYSQL_BIN_LOG::write_transaction_with_group_commit                      ## MDEV-36804
+SIGSEGV|TC_LOG::run_prepare_ordered|MYSQL_BIN_LOG::queue_for_group_commit|MYSQL_BIN_LOG::write_transaction_with_group_commit|MYSQL_BIN_LOG::write_transaction_to_binlog_events ## MDEV-36804
+!thd->transaction->xid_state.is_explicit_XA() || thd->transaction->xid_state.get_error() > 0|SIGABRT|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_with_engines|MYSQL_BIN_LOG::write_transaction_with_group_commit|MYSQL_BIN_LOG::write_transaction_to_binlog_events                ## MDEV-36804 (stack cleared by MDEV-36804 fix)
+
 
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
@@ -230,6 +234,7 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|movelink|my_hash_delete|get_intersect_between_arrays|Item_func_json_array_intersect::val_str                                                                           ## MDEV-36809
 b == &type_handler_row || b == &type_handler_null|SIGABRT|Type_collection_row::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Arg_comparator::set_cmp_func ## MDEV-36792
 b == &type_handler_row|SIGABRT|Type_collection_row::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Arg_comparator::set_cmp_func ## MDEV-36792
 SIGSEGV|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func_for_row_arguments|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func                                  ## MDEV-36792

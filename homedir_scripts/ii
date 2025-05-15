@@ -21,6 +21,15 @@ if grep -q '^USE_GENERATOR_INSTEAD_OF_INFILE=1' pquery*.conf; then
   grep '^QUERIES_PER_GENERATOR_RUN' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
   grep '^GENERATE_NEW_QUERIES_EVERY_X_TRIALS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
 fi
+if grep -qi '^MYEXTRA.*log.bin' pquery*.conf || grep -qi '^MASTER_EXTRA.*log.bin' pquery*.conf; then
+  if grep -qi '^MYEXTRA.*binlog.format' pquery*.conf || grep -qi '^MASTER_EXTRA.*binlog.format' pquery*.conf; then
+    grep '^ROTATE_BINLOG_FORMAT' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
+  fi
+fi
+grep '^PRE_SHUFFLE_INTERLEAVE' pquery*.conf | grep -vE '^PRE_SHUFFLE_INTERLEAVE_' | sed 's|[ ]\+#.*||;s|=|\t|'
+if grep -q '^PRE_SHUFFLE_INTERLEAVE=1' pquery*.conf; then
+  grep '^PRE_SHUFFLE_INTERLEAVE_' pquery*.conf | sed 's|^PRE_SHUFFLE_| > |' | sed 's|[ ]\+#.*||;s|=|\t|'
+fi
 grep '^MYINIT' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
 grep '^MYSAFE' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
 if grep -q '^QUERY_CORRECTNESS_TESTING=1' pquery*.conf; then
