@@ -1,11 +1,15 @@
 #!/bin/bash
 # Run this script to see testcase reduction progress for directories currently listed in results.list
 # If you add anything as an option to this script, the script will also show results for remarked (#) workdirs
+# If you add "ge" as an option to this script, the script will use screen -ls | grep ge[nr] to search for workdirsinstead of using results.list, which can be used to check (only) ongoing runs
 
-if [ -z "${1}" ]; then
-  SEARCH_REGEX='^[ \t]*MON'
+if [ "${1}" == "ge" ]; then
+   screen -ls | grep -o 'ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|ge||' | xargs -I{} echo "cd {}; my | sed 's| \./| ./{}/|'; cd - >/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -ic "{}" | sort -n
 else
-  SEARCH_REGEX='^[# \t]*MON'
+  if [ -z "${1}" ]; then
+    SEARCH_REGEX='^[ \t]*MON'
+  else
+    SEARCH_REGEX='^[# \t]*MON'
+  fi
+  grep -E "${SEARCH_REGEX}" results.list | sed 's|.*=[ \t]*||' | xargs -I{} echo "cd {}; my | sed 's| \./| ./{}/|'; cd - >/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -ic "{}"
 fi
-
-grep -E "${SEARCH_REGEX}" results.list | sed 's|.*=[ \t]*||' | xargs -I{} echo "cd {}; my | sed 's| \./| ./{}/|'; cd - >/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -ic "{}"
