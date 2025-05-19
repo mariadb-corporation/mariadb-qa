@@ -595,8 +595,8 @@ echo 'MYEXTRA_OPT="$*"' >wipe
 add_san_options wipe
 echo "./stop >/dev/null 2>&1" >>wipe
 echo "rm -Rf ${PWD}/data ${PWD}/tmp ${PWD}/rr" >>wipe
-echo "rm -Rf ${PWD}/data_slave ${PWD}/tmp_slave  # Avoid old slave data interference" >>wipe
-echo "mkdir ${PWD}/tmp ${PWD}/tmp_slave  # A dedicated tmpdir avoids the scripts/mariadb-install-db issue described in MDEV-34789" >>wipe
+echo "INSERT_SLAVE_SQL_HERE" >>wipe  # Ref wipe_slave creation/copy for context later; this text is replaced after wipe_slave is created
+echo "mkdir ${PWD}/tmp  # A dedicated tmpdir avoids the scripts/mariadb-install-db issue described in MDEV-34789" >>wipe
 if [ "${USE_JE}" -eq 1 ]; then
   echo $JE1 >>wipe
   echo $JE2 >>wipe
@@ -1080,7 +1080,7 @@ cp start start_master
 cp start start_slave
 cp stop stop_slave
 cp kill kill_slave
-cp wipe wipe_slave 
+grep -v '^INSERT_SLAVE_SQL_HERE' wipe > wipe_slave  # Ref below for info on INSERT_SLAVE_SQL_HERE for wipe
 cp cl cl_slave
 sed -i 's|\-\-server-id=[0-9]\+||g' start_master
 sed -i 's|\-\-server-id=[0-9]\+||g' start_slave
@@ -1099,6 +1099,7 @@ sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
 sed -i 's|socket.sock|socket_slave.sock|g' cl_slave
 sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\nMYEXTRA=\" --no-defaults --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
+sed -i "s|^INSERT_SLAVE_SQL_HERE|rm -Rf ${PWD}/data_slave ${PWD}/tmp_slave  # Avoid old slave data interference|" wipe  # This cannot be inserted earlier into wipe (when it is created) as taking a copy of wipe to wipe_slave will then invalide path names when /data is changed to /data_slave, rendering /data_slave_slave (and it is not needed in wipe_slave)
 # Replaced --slave-parallel-mode=aggressive with --slave-parallel-mode=conservative, ref various discussions and MDEV's discussing [optimistic|aggressive]
 sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|# slave_transaction_retries: see #replication 12 Mar 24 discussion between AE/RV\n#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=conservative --slave-parallel-max-queued=65536 --slave_transaction_retries=4294967295 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\nMYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
 # [ERROR] Slave worker thread retried transaction 10 time(s) in vain, giving up. Consider raising the value of the slave_transaction_retries variable.

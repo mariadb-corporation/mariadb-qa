@@ -1,0 +1,10 @@
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+SET max_session_mem_used=32768;
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+XA START 'a';
+INSERT INTO t VALUES ();
+INSERT INTO t VALUES ();
+SET pseudo_slave_mode=1;
+XA END 'a';
+XA PREPARE 'a';
+XA ROLLBACK 'a';
