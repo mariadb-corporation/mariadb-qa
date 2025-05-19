@@ -2,8 +2,8 @@ SET GLOBAL innodb_log_file_disabled=ON;
 SET GLOBAL innodb_log_file_disabled=OFF;
 CREATE TABLE t (a INT,KEY(a)) ENGINE=InnoDB;
 
-SET max_statement_time=0.001;                                                                                                                                                                                         
-SET GLOBAL innodb_log_file_disabled=ON;                                                                                                                                                                               
+SET max_statement_time=0.001;
+SET GLOBAL innodb_log_file_disabled=ON;
 SET GLOBAL innodb_log_file_disabled=OFF;
 
 CREATE TABLE t (c INT) ENGINE=InnoDB;
