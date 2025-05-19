@@ -18,6 +18,7 @@ CONF=pquery-run-MD-MDEV-32830.conf
 #CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql (replication enabled)
 #CONF=pquery-run-MD-repl.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD2.conf  # Using PRE_SHUFFLE_SQL=2
+#CONF=pquery-run-MD.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD_saahil.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-multi.conf  # Using PRE_SHUFFLE_SQL=2, multithreaded
 #CONF=pquery-run-MD-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
