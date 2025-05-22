@@ -229,6 +229,9 @@ SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|spider_bg_all_conn_break|spider_db_free_result|ha_spider::close|closefrm                                                                                               ## MDEV-36239
 SIGSEGV|spider_bg_all_conn_break|spider_db_free_result|ha_spider::close|handler::ha_close                                                                                      ## MDEV-36239
+SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|ORAparse|parse_sql                                                                                   ## MDEV-36857
+SIGSEGV|Item_sp_variable::save_in_field|fill_record|fill_record_n_invoke_before_triggers|mysql_insert                                                                          ## MDEV-36850
+max_autoinc <= max|SIGABRT|btr_read_autoinc_with_fallback|initialize_auto_increment|ha_innobase::open|handler::ha_open                                                         ## MDEV-36834
 SIGSEGV|movelink|my_hash_delete|get_intersect_between_arrays|Item_func_json_array_intersect::val_str                                                                           ## MDEV-36809
 b == &type_handler_row || b == &type_handler_null|SIGABRT|Type_collection_row::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Arg_comparator::set_cmp_func ## MDEV-36792
 b == &type_handler_row|SIGABRT|Type_collection_row::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Arg_comparator::set_cmp_func ## MDEV-36792
