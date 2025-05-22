@@ -130,6 +130,13 @@ if [ ! -r /usr/bin/rr -a -r /usr/local/bin/rr ]; then
   sudo ln -s /usr/local/bin/rr /usr/bin/rr
 fi
 
+# Provide a script to cleanup build dirs which also have a saved tarball
+if [ -d /data/VARIOUS_BUILDS ]; then
+  echo "# A script to cleanup build dirs which also have a saved tarball. Note that running this limits the ability of reduer.sh to auto-find and use a previous basedir" >/data/VARIOUS_BUILDS/cleanup_builds_which_have_tar.sh
+  echo "ls -1 | xargs -I{} ls ../TARS/{}.tar.gz 2>/dev/null | sed 's|../TARS/||' | xargs -I{} rm -f {}" >>/data/VARIOUS_BUILDS/cleanup_builds_which_have_tar.sh 
+  chmod +x /data/VARIOUS_BUILDS/cleanup_builds_which_have_tar.sh
+fi
+
 # Remove any broken symlinks
 for SL in /test/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
 for SL in /test/git-bisect/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done

@@ -2779,21 +2779,23 @@ start_mysqld_main(){
         return 3  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 3' special return code will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution) TODO
       fi
       MASTER_STARTUP_OK=; SLAVE_STARTUP_OK=
+      R_CLIENT_BIN_TO_USE="mysql"
+      if [ -x ${BASEDIR}/bin/mariadb ]; then R_CLIENT_BIN_TO_USE="mariadb"; fi
       # Setup replication, master side
-      ${BASEDIR}/bin/mysql -uroot -S$WORKD/socket.sock -e "DELETE FROM mysql.user WHERE user='';" 2>/dev/null
-      ${BASEDIR}/bin/mysql -uroot -S$WORKD/socket.sock -e "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" 2>/dev/null
+      ${BASEDIR}/bin/${R_CLIENT_BIN_TO_USE} -uroot -S$WORKD/socket.sock -e "DELETE FROM mysql.user WHERE user='';" 2>/dev/null
+      ${BASEDIR}/bin/${R_CLIENT_BIN_TO_USE} -uroot -S$WORKD/socket.sock -e "GRANT REPLICATION SLAVE ON *.* TO 'repl_user'@'%' IDENTIFIED BY 'repl_pass'; FLUSH PRIVILEGES;" 2>/dev/null
       # Setup replication, slave side
-      ${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=${MYPORT}, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ; START SLAVE;" 2>/dev/null
+      ${BASEDIR}/bin/${R_CLIENT_BIN_TO_USE} -uroot -S$WORKD/slave_socket.sock -e "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=${MYPORT}, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ; START SLAVE;" 2>/dev/null
       IO_AND_SQL_THREADS_RUNNING_COUNT=0
       for((delay=0;delay<25;delay++)); do  # Give replication up to 25 seconds to come up
-        IO_AND_SQL_THREADS_RUNNING_COUNT="$(${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e 'SHOW SLAVE STATUS\G' | grep -o 'Slave_[SQLIO]\+_Running:.*' | grep ': Yes' | wc -l)"
+        IO_AND_SQL_THREADS_RUNNING_COUNT="$(${BASEDIR}/bin/${R_CLIENT_BIN_TO_USE} -uroot -S$WORKD/slave_socket.sock -e 'SHOW SLAVE STATUS\G' | grep -o 'Slave_[SQLIO]\+_Running:.*' | grep ': Yes' | wc -l)"
         if [ "${IO_AND_SQL_THREADS_RUNNING_COUNT}" == "2" ]; then
           break
         fi
         sleep 1
       done
       if [ "${IO_AND_SQL_THREADS_RUNNING_COUNT}" != "2" ]; then
-        EXTRA_SLAVE_DEBUG_OUTPUT="$(${BASEDIR}/bin/mysql -uroot -S$WORKD/slave_socket.sock -e 'SHOW SLAVE STATUS\G' | grep -o 'Slave_[SQLIO]\+_Running:.*' | grep ': Yes' | tr '\n' ' ' | sed 's| $||g')"
+        EXTRA_SLAVE_DEBUG_OUTPUT="$(${BASEDIR}/bin/${R_CLIENT_BIN_TO_USE} -uroot -S$WORKD/slave_socket.sock -e 'SHOW SLAVE STATUS\G' | grep -o 'Slave_[SQLIO]\+_Running:.*' | grep ': Yes' | tr '\n' ' ' | sed 's| $||g')"
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] The IO and/or SQL threads failed to both start on the slave: ${EXTRA_SLAVE_DEBUG_OUTPUT}, retrying by restarting both. If this message appears a few times, it is fine. If it is persistantly looping, it indicates a persistant problem that may require manual intervention. Logs: $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log. Last good known testcase: $WORKO (provided the disk being used did not run out of space)"
         PIDV=;PIDV_SLAVE=;MYSQLD_START_TIME=;MYSQLD_SLAVE_START_TIME=;MASTER_STARTUP_OK=;SLAVE_STARTUP_OK=;MYPORT=;IO_AND_SQL_THREADS_RUNNING_COUNT=;
         if [ ! -z "${TRIAL}" ]; then
@@ -2803,6 +2805,7 @@ start_mysqld_main(){
         fi
         return 3  # A mariadbd/mysqld startup issue happened: run_and_check() on receiving this 'return 3' special return code will return a '0', indicating that this trial did not reproduce the issue (hack; could use more permanent solution) TODO
       fi
+      R_CLIENT_BIN_TO_USE=
       IO_AND_SQL_THREADS_RUNNING_COUNT=
       echoit "[Info] Replication enabled between master and slave in ${WORKD} using port ${MYPORT}"
     else
@@ -4589,11 +4592,11 @@ fireworks_setup(){
                            echoit "[Init] Run mode: MODE=3 with REDUCE_GLIBC_OR_SS_CRASHES=1: console typscript log"
                            echoit "[Init] Looking for this string: '$TEXT' in console typscript log output (@ /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log)";
     elif [ "${MODE3_ANY_SIG}" == "1" ]; then  # If MODE3_ANY_SIG=1 then USE_NEW_TEXT_STRING=1
-                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1 and MODE3_ANY_SIG=1: coredump signal matching using new_text_string.sh"
+                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1 and MODE3_ANY_SIG=1: UniqueID matching using new_text_string.sh"
                            echoit "[Init] Looking for this regex string: '^SIG' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
     elif [ $USE_NEW_TEXT_STRING -gt 0 ]; then
       if [ "${FIREWORKS}" != "1" ]; then
-                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: coredump stack matching using new_text_string.sh"
+                           echoit "[Init] Run mode: MODE=3 with USE_NEW_TEXT_STRING=1: UniqueID matching using new_text_string.sh"
                            echoit "[Init] Looking for this string: '$TEXT' in ${TEXT_STRING_LOC} output (@ $WORKD/MYBUG.FOUND when MULTI mode is not active)";
       else
                            echoit "[Init] Run mode: FireWorks with MODE=3, using new_text_string.sh for UniqueID generation"

@@ -206,7 +206,7 @@ add_failing_and_trigger_queries_to_trace(){  # Improve issue reproducibility by 
     fi
   else
     echo "*** ASSERT ***: ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing lenght is 0, which should not happen, as trigger queries are always added"
-    exit 1
+    #exit 1  # While for normal operation exit 1 is recommend here, most setups now use automation (i.e. ~/gomd) and as such an exit here is not recommended as it will constantly stop short pquery-go-expert.sh runs
   fi
 }
 
