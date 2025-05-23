@@ -9,6 +9,8 @@
 #marked_for_write_or_computed()|SIGABRT|Field_long::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record_with_mask                                        ## MDEV-34780
 
 ##### MDEV-32830 preliminary test ####
+MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
+MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
@@ -227,6 +229,8 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|spider_ping_table_init                                                                                      ## MDEV-36865
+SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields                                                                                     ## MDEV-36865
 SIGSEGV|spider_bg_all_conn_break|spider_db_free_result|ha_spider::close|closefrm                                                                                               ## MDEV-36239
 SIGSEGV|spider_bg_all_conn_break|spider_db_free_result|ha_spider::close|handler::ha_close                                                                                      ## MDEV-36239
 SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|ORAparse|parse_sql                                                                                   ## MDEV-36857
