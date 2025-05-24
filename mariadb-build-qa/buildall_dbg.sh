@@ -26,7 +26,7 @@ rm -Rf 10.1[0-1]_dbg
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #cd ${DIR}/10.4 && ~/mariadb-qa/build_mdpsms_dbg.sh &
-cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_dbg.sh &
+#cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #cd ${DIR}/10.8 && ~/mariadb-qa/build_mdpsms_dbg.sh &
@@ -43,6 +43,7 @@ cd ${DIR}/11.4 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #cd ${DIR}/11.7 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 cd ${DIR}/11.8 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 cd ${DIR}/12.0 && ~/mariadb-qa/build_mdpsms_dbg.sh &
+cd ${DIR}/12.1 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 if [ -d ${DIR}/10.5-es ]; then cd ${DIR}/10.5-es && ~/mariadb-qa/build_mdpsms_dbg.sh & fi
 if [ -d ${DIR}/10.6-es ]; then cd ${DIR}/10.6-es && ~/mariadb-qa/build_mdpsms_dbg.sh & fi
 if [ -d ${DIR}/11.4-es ]; then cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_dbg.sh & fi

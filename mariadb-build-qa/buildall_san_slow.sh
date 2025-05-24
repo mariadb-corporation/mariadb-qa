@@ -24,6 +24,7 @@ BUILD_11_6=0
 BUILD_11_7=1
 BUILD_11_8=1
 BUILD_12_0=1
+BUILD_12_1=1
 BUILD_ES_10_5=1
 BUILD_ES_10_6=1
 BUILD_ES_11_4=1
@@ -54,6 +55,11 @@ cleanup_dirs(){
 }
 
 buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use (newer builds=larger=longer)
+  if [ ${BUILD_12_1} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/12.1 && ~/mariadb-qa/build_mdpsms_opt_san.sh
+    cleanup_dirs; cd ${DIR}/12.1 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
+  fi
+
   if [ ${BUILD_12_0} -eq 1 ]; then
     cleanup_dirs; cd ${DIR}/12.0 && ~/mariadb-qa/build_mdpsms_opt_san.sh
     cleanup_dirs; cd ${DIR}/12.0 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
