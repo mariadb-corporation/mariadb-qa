@@ -3556,7 +3556,8 @@ process_outcome(){
               FINDBUG="$(grep -Fi --binary-files=text "${MYBUGFOUND}" ${KNOWN_BUGS_LOC} | head -n1)"
               if [[ "${FINDBUG}" == "#"* ]]; then FINDBUG=''; fi  # Bugs marked as fixed need to be excluded. This cannot be done by using "^${TEXT}" as the grep is not regex aware, nor can it be, due to the many special (regex-like) characters in the unique bug strings
               if [ -z "${FINDBUG}" ]; then  # Reducer found a new bug (nothing found in known bugs)
-                echoit "[NewBug] Reducer located a new bug whilst reducing this issue: $(cat ${WORKD}/MYBUG.FOUND 2>/dev/null | head -n1)"
+                # TODO: need some provision for when MYBUG.FOUND is empty (possibly due to top SAN issues being dropped?)
+                echoit "[NewBug] Reducer located a new bug while reducing this issue: $(cat ${WORKD}/MYBUG.FOUND 2>/dev/null | head -n1)"
                 EPOCH_RAN="$(date +%H%M%S%N)${RANDOM}"
                 if [ ! -z "${NEW_BUGS_SAVE_DIR}" ]; then  # If set, we need to copy this new bug to the NEW_BUGS_SAVE_DIR
                   if [ ! -d "${NEW_BUGS_SAVE_DIR}" ]; then  # Leave this check, it re-checks if the [previously created, at the start of the script] NEW_BUGS_SAVE_DIR still exists

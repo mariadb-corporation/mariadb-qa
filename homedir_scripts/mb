@@ -33,8 +33,13 @@ if [ ! -r /test/gendirs.sh ]; then
   echo "Assert: /test/gendirs.sh does not exist"
   exit 1
 fi
+# TODO: this code does not consider SAN builds, while the ~/mb script may be running for SAN builds. It seems to work fine (to be verified), and it is just a test/cosmetic-output here, but perhaps this can be improved somehow (or removed, though it may be handy when viewing `ge` output)
 if [ "$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | wc -l)" -ne 1 ]; then
-  echo "Warning: ./gendirs.sh returned multiple results when grepping for major version '${MAJOR_VERSION}' and build type '${DBG_OR_OPT}'"
+  if [ "$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | wc -l)" -eq 0 ]; then
+    echo "Warning: ./gendirs.sh returned zero results when grepping for major version '${MAJOR_VERSION}' and build type '${DBG_OR_OPT}'"
+  else
+    echo "Warning: ./gendirs.sh returned multiple results when grepping for major version '${MAJOR_VERSION}' and build type '${DBG_OR_OPT}'"
+  fi
 fi
 BASEDIR=
 if [ -r ./BASEDIR ]; then

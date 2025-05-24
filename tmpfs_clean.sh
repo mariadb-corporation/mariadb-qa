@@ -3,7 +3,7 @@
 
 # TODO: Idea: the current file check (only done for reducer.log) checks the file age. Likely other directories could have a file age check by using ls -t 2>/dev/null | head -n1 and taking the age of that file. If any updates happen in the directory then this would show directory is still live/active
 
-EXCLUDE_DIR_REGEX='multipath|var_|afl|sql_shuffled'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
+EXCLUDE_DIR_REGEX='multipath|var_|afl|sql_shuffled|r1'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
 LOW_MEMORY=20  # A number, reflecting a minimum 'directly free available memory' before long-running reducers which have been successful thus far (i.e. at least 2 ~/pge started after the original reduction, and file is _out_out_out already), are terminated. If total memory is for example 128GB then 20 may be a good number to use here, or similar.
 
 ARMED=0

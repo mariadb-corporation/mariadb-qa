@@ -6,6 +6,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_table         ## MDEV-26805
 UBSAN|load of null pointer of type 'const uint' (aka 'const unsigned int')|sql/sql_class.cc|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields ## MDEV-36865
 UBSAN|member access within null pointer of type 'const struct transaction_participant'|sql/sql_class.cc|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields ## MDEV-36865
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|storage/heap/hp_hash.c|heap_update_auto_increment|heap_write|ha_heap::write_row|handler::ha_write_row ## MDEV-36823

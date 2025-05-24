@@ -11,13 +11,13 @@ sudo bash -c "echo -1000 > /proc/$MYPID/oom_score_adj" || {
 
 # User variables
 KILL_PERCENT=7       # For example: 4: All processes using >=4% of memory will be killed
-FILTER="uniq_newbugs|large_newbug_run|findbug|bug_report|pquery-results|xargs|grep|timeout|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr|swapoff|swapon"  # Filter this list of processes from termination
+FILTER="uniq_newbugs|large_newbug_run|findbug|bug_report|pquery-results|xargs|grep|timeout|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr|swapoff|swapon|memory"  # Filter this list of processes from termination
 
 if [ "${STY}" == "" ]; then
   THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
   SCREEN_NAME='memory'
   echo "Not a screen, restarting myself inside a screen"
-  screen -admS "${SCREEN_NAME}" bash -c "${THIS_SCRIPT} ${*}"
+  screen -admS "${SCREEN_NAME}" bash -c "while true; do ${THIS_SCRIPT} ${*}; echo '***** MEMORY WATCHDOG SELF-RESTART *****'; done; bash"
   sleep 1
   screen -d -r "${SCREEN_NAME}"
   return 2> /dev/null; exit 0
