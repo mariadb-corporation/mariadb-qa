@@ -2070,7 +2070,7 @@ init_workdir_and_files(){
       if [ "${REPLICATION}" -ne 1 ]; then
         echoit "[Init] Attempting first mariadbd/mysqld startup with all MYEXTRA options passed"
       else
-        echoit "[Init] Attempting first mariadbd/mysqld startups (master & slave) with all MYEXTRA options passed"
+        echoit "[Init] Attempting first mariadbd/mysqld startups (master & slave) with all MYEXTRA* options passed"
       fi
       FIRST_MYSQLD_START_FLAG=1
       if [ $MODE -ne 1 -a $MODE -ne 6 ]; then start_mysqld_main; else start_valgrind_mysqld_main; fi

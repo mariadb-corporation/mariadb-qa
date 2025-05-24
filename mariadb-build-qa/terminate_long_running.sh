@@ -24,17 +24,18 @@ done
 echo "--- Terminating parent PPIDs of <defunct> processes where the process has been live at least ${MAX_DEFUNCT} sec"
 COUNT="$(ps -eo pid,ppid,etimes,state --no-headers | awk -v m=${MAX_DEFUNCT} '$4 == "Z" && $3 > m' | wc -l)"
 COUNTER=0
-ps -eo pid,ppid,etimes,state --no-headers | awk -v m=${MAX_DEFUNCT} '$4 == "Z" && $3 > m' | while read -r pid ppid etimes state; do  # awk: grep on col 4 being Z
+ps -eo pid,ppid,etimes,state,comm --no-headers | awk -v m=${MAX_DEFUNCT} '$4 == "Z" && $3 > m' | while read -r pid ppid etimes state comm; do  # awk: grep on col 4 being Z
   COUNTER=$[ ${COUNTER} + 1 ]
-  echo "[${COUNTER}/${COUNT}] Processing <defunct> PID $pid with parent PPID $ppid (Age: $etimes sec)"  # Do not log to disk as these messages may loop many times
+  PPID_COMM="$(ps -eo comm -q ${ppid} --no-headers)"
+  echo "[${COUNTER}/${COUNT}] Processing <defunct> PID $pid (${comm}) with parent PPID $ppid (${PPID_COMM}) (Age: $etimes sec)"  # Do not log to disk as these messages may loop many times
   if [ "${etimes}" -gt ${MAX_DEFUNCT} -a "${etimes}" != "4123168608" ]; then  # The first condition is defensive coding/not strictly needed as the awk above already guarantees this (but not the second)
     if kill -0 "$ppid" 2>/dev/null; then
-      echo "Terminating parent PPID ${ppid} of <defunct> PID ${pid} (Age: ${etimes} sec)" | tee -a /tmp/terminate_long_running.log
+      echo "Terminating parent PPID ${ppid} (${PPID_COMM}) of <defunct> PID ${pid} (${comm}) (Age: ${etimes} sec)" | tee -a /tmp/terminate_long_running.log
       for((l=0;l<3;l++)){
         sudo kill -9 ${ppid} 2>/dev/null
       }
     else
-      echo "<defunct> PID ${pid} (Age: ${etimes} sec) already has dead parent PPID ${ppid}"  # Do not log, idem
+      echo "<defunct> PID ${pid} (${comm}) (Age: ${etimes} sec) already has dead parent PPID ${ppid} (${PPID_COMM})"  # Do not log, idem
     fi
   fi
 done

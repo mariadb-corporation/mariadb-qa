@@ -1,6 +1,14 @@
 #!/bin/bash
 # Also see ~/mariadb-qa/memory_leaks_howto.txt for related throubleshooting info, otherwise unrelated to the monitoring script below
 
+# Set oom_score_adj with sudo to avoid this process being terminated by the OS OOM killer watchdog
+MYPID=$$
+sudo bash -c "echo -1000 > /proc/$MYPID/oom_score_adj" || {
+    echo "Failed to set oom_score_adj with sudo"
+    exit 1
+}
+# cat /proc/$MYPID/oom_score_adj # Debug (checked)
+
 # User variables
 KILL_PERCENT=7       # For example: 4: All processes using >=4% of memory will be killed
 FILTER="uniq_newbugs|large_newbug_run|findbug|bug_report|pquery-results|xargs|grep|timeout|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr|swapoff|swapon"  # Filter this list of processes from termination
@@ -44,6 +52,6 @@ while :; do
     }
   fi
   echo '------- Memory watchdog: main memory use evaluate/terminate finished.'
-  echo '------- Sleeping for 13 seconds till next run.'
+  echo '--- Sleeping for 13 seconds till next run.'
   sleep 13
 done
