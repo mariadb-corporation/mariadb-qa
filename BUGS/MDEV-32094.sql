@@ -20,3 +20,10 @@ CREATE TABLE t (d1 DATE NOT NULL,d2 DATE NOT NULL,gd TEXT AS (CONCAT (d1,IF(d1=d
 SELECT * FROM (SELECT f2 AS a FROM t UNION SELECT f3 FROM t) t;
 SET collation_connection=ucs2_general_ci;
 INSERT INTO t (b) SELECT * FROM t;
+
+SET sql_mode=ORACLE;
+SET NAMES latin7 COLLATE latin7_estonian_cs;
+SET max_session_mem_used=8192;
+CREATE TABLE t (a DATE,b DATE NOT NULL,gd TEXT AS (CONCAT (a,IF(a=b,DATE_FORMAT(b,''),''))));
+SELECT * FROM t;
+INSERT INTO t (a,b) VALUES (now(), now());

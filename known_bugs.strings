@@ -674,6 +674,7 @@ SIGSEGV|ha_innobase::update_row|handler::ha_update_row|Event_db_repository::upda
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|Event_db_repository::create_event|Events::create_event|mysql_execute_command ## MDEV-32221
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
 role == *(ACL_ROLE**)pop|SIGABRT|undo_add_role_user_mapping|mysql_grant_role|mysql_execute_command|mysql_parse                                                                 ## MDEV-32095
+marked_for_read()|SIGABRT|Field_datetimef::get_TIME|Field_datetimef::get_date|Item_field::get_date|Item_func_date_format::val_str                                              ## MDEV-32094
 marked_for_read()|SIGABRT|Field_newdate::val_str|Item_func_conv_charset::Item_func_conv_charset|Item::safe_charset_converter|Type_std_attributes::agg_item_set_converter       ## MDEV-32094
 marked_for_read()|SIGABRT|Field_newdate::get_TIME|Field_newdate::get_date|Item_field::get_date|Item_func_date_format::val_str                                                  ## MDEV-32094
 marked_for_read()|SIGABRT|Field_newdate::get_TIME|Item_field::get_date|Item_func_date_format::val_str|Item_func_conv_charset::Item_func_conv_charset                           ## MDEV-32094
