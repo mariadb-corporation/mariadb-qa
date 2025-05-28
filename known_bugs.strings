@@ -229,6 +229,9 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+marked_for_read()|SIGABRT|Field_varstring::val_str|Field_varstring::sort_string|Field::make_sort_key_part|make_sortkey                                                         ## MDEV-36896
+SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-36481
+SIGSEGV|Field_row::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable|sp_instr_set::exec_core                                                               ## MDEV-36481
 SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|spider_ping_table_init                                                                                      ## MDEV-36865
 SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields                                                                                     ## MDEV-36865
 SIGSEGV|spider_bg_all_conn_break|spider_db_free_result|ha_spider::close|closefrm                                                                                               ## MDEV-36239
@@ -674,6 +677,7 @@ SIGSEGV|ha_innobase::update_row|handler::ha_update_row|Event_db_repository::upda
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|Event_db_repository::create_event|Events::create_event|mysql_execute_command ## MDEV-32221
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
 role == *(ACL_ROLE**)pop|SIGABRT|undo_add_role_user_mapping|mysql_grant_role|mysql_execute_command|mysql_parse                                                                 ## MDEV-32095
+marked_for_read()|SIGABRT|Field_datetimef::get_TIME|Field_datetimef::get_date|Item_field::get_date|Item_func_date_format::val_str                                              ## MDEV-32094
 marked_for_read()|SIGABRT|Field_newdate::val_str|Item_func_conv_charset::Item_func_conv_charset|Item::safe_charset_converter|Type_std_attributes::agg_item_set_converter       ## MDEV-32094
 marked_for_read()|SIGABRT|Field_newdate::get_TIME|Field_newdate::get_date|Item_field::get_date|Item_func_date_format::val_str                                                  ## MDEV-32094
 marked_for_read()|SIGABRT|Field_newdate::get_TIME|Item_field::get_date|Item_func_date_format::val_str|Item_func_conv_charset::Item_func_conv_charset                           ## MDEV-32094
