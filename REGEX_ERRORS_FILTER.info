@@ -22,7 +22,6 @@ ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occu
 ERROR. InnoDB: Operating sys.*error.* 3 in a file op  MDEV-19849 or similar occurrences
 ERROR. InnoDB: .*error means.*system.*not find.*path  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Cannot delete tablespace.*because it is not found in the tablespace memory cache  Older versions report this with a number before showing a warning that explains. Results of double ALTER TABLE t DISCARD TABLESPACE;
-ERROR. InnoDB: Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD MDEV-35187
 ERROR. InnoDB: cannot enable encryption, encryption plugin is not available  --innodb-encrypt-temporary-tables=1 used without configuration, ref https://mariadb.com/kb/en/innodb-enabling-encryption/
 ERROR. InnoDB: innodb_page_size=.*requires innodb_buffer_pool_size >= 5MiB current  --innodb-buffer-pool-size set too small
 ERROR. InnoDB: Cannot rename.*target schema directory doesn.t exist  CREATE TABLE t (c INT); RENAME TABLE t TO foo.t; (as of ~10.6.18)
@@ -270,3 +269,4 @@ sql.sql_alloc.h.*Sql_alloc::operator delete.*0x       Part of stack trace caught
 #read_log_event..: .Event truncated                   MDEV-32628, Fixed
 #Got error 1032.*entry [1-7] of type.*rename          MDEV-29800 (CoR bug), Fixed
 #Got error 12524.*entry 6 of type.*rename             MDEV-29800 (CoR bug), Fixed
+#ERROR. InnoDB: Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD   MDEV-35187, Fixed

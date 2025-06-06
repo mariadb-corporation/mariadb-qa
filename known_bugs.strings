@@ -63,6 +63,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2013  ## Ref REGEX_ERRORS_FILTER.info (se
 MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22 (require_secure_transport)
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
+#MARIADB_ERROR_CODE|MariaDB error code: 4226  ## Not filtered FTM, see MDEV-29499
 MARIADB_ERROR_CODE|MariaDB error code: 12501 ## SPECIAL-31 (to be expected; remote table not available)
 MARIADB_ERROR_CODE|MariaDB error code: 12701 ## MDEV-22936
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
@@ -138,7 +139,6 @@ INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDE
 INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
 INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
 INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
-# INNODB_ERROR|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD ## MDEV-35187 (Filtered as this is possibly a common error)
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_system_variables             ## MDEV-35197
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
@@ -229,6 +229,7 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Explain_query::~Explain_query|delete_explain_query|log_slow_statement|dispatch_command                                                                                 ## MDEV-31793
 marked_for_read()|SIGABRT|Field_varstring::val_str|Field_varstring::sort_string|Field::make_sort_key_part|make_sortkey                                                         ## MDEV-36896
 SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-36481
 SIGSEGV|Field_row::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable|sp_instr_set::exec_core                                                               ## MDEV-36481
@@ -2992,3 +2993,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # !((&(&LOCK_commit_ordered)->m_mutex)->count > 0 && pthread_equal(pthread_self(), (&(&LOCK_commit_ordered)->m_mutex)->thread))|SIGABRT|ha_commit_trans|THD::commit_whole_transaction_and_close_tables|spider_sys_close_table|spider_internal_xa_rollback_by_xid ## Fixed ## MDEV-36802 (stack cleared likely by MDEV-36802 fix)
 # thd->lex->sql_command != SQLCOM_XA_ROLLBACK || thd->transaction->xid_state.is_explicit_XA()|SIGABRT|ha_rollback_trans|trans_rollback_stmt|open_ltable|spider_sys_open_table  ## Fixed ## MDEV-36825
 # thd->lex->sql_command == SQLCOM_XA_COMMIT || (thd->lex->sql_command == SQLCOM_XA_ROLLBACK || (thd->lex->sql_command == SQLCOM_PRELOAD_KEYS && thd->get_stmt_da()->get_sql_errno() ))|SIGABRT|run_xa_complete_ordered|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_with_engines|MYSQL_BIN_LOG::trx_group_commit_leader ## Fixed ## MDEV-36799
+# INNODB_ERROR|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD ## Fixed MDEV-35187

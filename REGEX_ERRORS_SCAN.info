@@ -1,3 +1,4 @@
-* 'DATA TUPLE' was removed as a scan string, as InnoDB will show DATA TUPLE in situations were there is no error. For example creating a table referencing (via FK) a non-existing table while foreign_key_checks=0 is set, then turning this setting back on (=1), and subsequently/consequently running into a 'the required table/ibd file/index does not exist' together with a DATA TUPLE record when the table is accessed. Displaying the DATA TUPLE when such things happen is legacy/historical InnoDB behavior.
-* '[ERROR] InnoDB' in test as of 10/10/22 - it may be too verbose
-* 'while consolidating' - ref MDEV-23627
+'DATA TUPLE' was removed as a scan string, as InnoDB will show DATA TUPLE in situations were there is no error. For example creating a table referencing (via FK) a non-existing table while foreign_key_checks=0 is set, then turning this setting back on (=1), and subsequently/consequently running into a 'the required table/ibd file/index does not exist' together with a DATA TUPLE record when the table is accessed. Displaying the DATA TUPLE when such things happen is legacy/historical InnoDB behavior.
+'[ERROR] InnoDB' in test as of 10/10/22 - it may be too verbose
+'while consolidating' - ref MDEV-23627
+'InnoDB: Long wait' and 'for double-write buffer flush' - ref https://github.com/MariaDB/server/pull/3885 and Slack discussion
