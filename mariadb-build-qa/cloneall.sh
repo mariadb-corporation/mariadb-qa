@@ -8,7 +8,7 @@ rm -Rf 10.1[0-1]
 #./clone.sh 10.2 &
 #./clone.sh 10.3 &
 #./clone.sh 10.4 & 
-./clone.sh 10.5 &
+#./clone.sh 10.5 &
 ./clone.sh 10.6 &
 #./clone.sh 10.7 &
 #./clone.sh 10.8 &
