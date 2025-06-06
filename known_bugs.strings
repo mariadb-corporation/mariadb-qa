@@ -230,6 +230,7 @@ SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## 
 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|Explain_query::~Explain_query|delete_explain_query|log_slow_statement|dispatch_command                                                                                 ## MDEV-31793
+SIGSEGV|do_mark_index_columns|prepare_record_for_error_message|multi_update::do_updates|multi_update::send_eof                                                                 ## MDEV-36937
 marked_for_read()|SIGABRT|Field_varstring::val_str|Field_varstring::sort_string|Field::make_sort_key_part|make_sortkey                                                         ## MDEV-36896
 SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-36481
 SIGSEGV|Field_row::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable|sp_instr_set::exec_core                                                               ## MDEV-36481
