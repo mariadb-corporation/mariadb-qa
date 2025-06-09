@@ -6,3 +6,4 @@ DATE_ADD.*INTERV.*YEAR_MONTH  # MDEV-35406: an abbreviated UBSAN stack (ref kba)
 MAKEDATE.*e+                  # MDEV-35406: an abbreviated UBSAN stack (ref kba) is regularly seen for this issue
 ST_GEOMFROMWKB                # MDEV-26813
 query_cache_type.*DEMAND      # MDEV-34075
+AAAAAAAQANS42LjMtbTUtZGVidididididi  # SPECIAL-39

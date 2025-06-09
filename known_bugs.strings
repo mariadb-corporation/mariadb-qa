@@ -141,6 +141,7 @@ INNODB_ERROR|FTS_DOC_ID must be larger than 0 for table        ## SPECIAL-34 (no
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
 INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
 INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
+INNODB_ERROR|Operating system error number 17 in a file operation ## SPECIAL-40
 INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_system_variables             ## MDEV-35197
@@ -232,6 +233,8 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|Charset_collation_map_st::insert_or_replace                                                                   ## MDEV-36971
+ret == BINLOG_CHECKSUM_ALG_OFF || ret == BINLOG_CHECKSUM_ALG_UNDEF || ret == BINLOG_CHECKSUM_ALG_CRC32|SIGABRT|get_checksum_alg|Log_event::read_log_event|mysql_client_binlog_statement|mysql_execute_command ## SPECIAL-39
 SIGSEGV|Item::check_cols|cmp_row_type|cmp_row_type|cmp_row_type                                                                                                                ## MDEV-36964
 SIGSEGV|Item_hybrid_func::type_handler|Item::result_type|cmp_row_type|cmp_row_type                                                                                             ## MDEV-36964
 SIGSEGV|Explain_query::~Explain_query|delete_explain_query|log_slow_statement|dispatch_command                                                                                 ## MDEV-31793

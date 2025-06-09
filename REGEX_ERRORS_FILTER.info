@@ -14,12 +14,14 @@ Warning. InnoDB: Table.*contains.*user defined columns in InnoDB, but.*in MariaD
 Event invalid                                         MDEV-26270
 Warning. InnoDB: Recalculation of persistent statistics requested for table.*but the required persistent statistics storage is corrupted  MDEV-36373
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurrences
-ERROR. InnoDB: Operating sys.*error.*13 in a file op  MDEV-19849 or similar occurrences
 ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurrences
-ERROR. InnoDB: Operating sys.*error.* 2 in a file op  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Error number 2 means.*file.*or dir     MDEV-19849 or similar occurrences
+ERROR. InnoDB: Error number 17 means.*file exists     SPECIAL-40 or similar occurrences
 ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occurrences
+ERROR. InnoDB: Operating sys.*error.* 2 in a file op  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Operating sys.*error.* 3 in a file op  MDEV-19849 or similar occurrences
+ERROR. InnoDB: Operating sys.*error.* 13 in a file op MDEV-19849 or similar occurrences
+ERROR. InnoDB: Operating sys.*error.* 17 in a file op SPECIAL-40 or similar occurrences
 ERROR. InnoDB: .*error means.*system.*not find.*path  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Cannot delete tablespace.*because it is not found in the tablespace memory cache  Older versions report this with a number before showing a warning that explains. Results of double ALTER TABLE t DISCARD TABLESPACE;
 ERROR. InnoDB: cannot enable encryption, encryption plugin is not available  --innodb-encrypt-temporary-tables=1 used without configuration, ref https://mariadb.com/kb/en/innodb-enabling-encryption/

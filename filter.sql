@@ -19,3 +19,4 @@ MAKEDATE.*e+
 debug_dbug
 ST_GEOMFROMWKB
 query_cache_type.*DEMAND
+AAAAAAAQANS42LjMtbTUtZGVidididididi

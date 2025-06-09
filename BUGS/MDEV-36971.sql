@@ -1,0 +1,1 @@
+SET character_set_collations='utf00000000000000000000000000000000000000000=uca1400_latvian_ai_ci';
