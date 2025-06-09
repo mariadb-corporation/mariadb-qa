@@ -37,6 +37,8 @@ ERROR. WSREP: Failed to load provider                 wsrep misconfig for exampl
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
 Failed to acquire lock due to rocksdb_max_row_locks limit.*Internal MariaDB error code: 1296 SPECIAL-35
 Error finishing bulk load                             RocksDB, Not a real issue, ref SPECIAL-36
+ERROR. InnoDB indexes are inconsistent with what def  MDEV-34951
+ERROR. Got error 123 when reading table               MDEV-36963
 ERROR. Got error 221 when reading table               RocksDB, Not a real issue, ref SPECIAL-37
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name
@@ -62,6 +64,7 @@ ERROR.*DDL_LOG.*Got error 1290 when trying to execute action for entry 2 of type
 BINLOG_BASE64_EVENT.*Error_code: 4094.*HA_ERR_GENERIC.*Internal MariaDB error code: 1366  MDEV-34927  
 BINLOG_BASE64_EVENT.*Error_code: 1442.*HA_ERR_GENERIC.*Internal MariaDB error code: 1442  MDEV-34927
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1440  MDEV-34113
+BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1800  SPECIAL-38 (not a bug, corrupted ALTER inside a BINLOG command)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 4057  Ref SPECIAL-15 (incorrect MyRocks isolation level)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1347  Ref SPECIAL-16 (VIEW is not a BASE TABLE in BINLOG_BASE64_EVENT)
 BINLOG_BASE64_EVENT.*Error executing row event.*Unable to connect to foreign data source.*Internal MariaDB error code: 12701  MDEV-22936

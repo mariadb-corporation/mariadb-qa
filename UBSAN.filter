@@ -88,8 +88,8 @@ pointer-overflow:my_b_flush_io_cache
 #function:tree_insert
 ## MDEV-35531 # Fixed by MDEV-34348
 #function:init_key_cache_internal
-## MDEV-35530 # Fixed by MDEV-34348
-#function:my_hash_key
+## MDEV-35530 # Fixed by MDEV-34348  # Left enabled as it still appears in ES 10.5 ft
+function:my_hash_key
 ## MDEV-34512 [Startup]
 #function:ha_myisam::repair
 #function:ha_maria::repair

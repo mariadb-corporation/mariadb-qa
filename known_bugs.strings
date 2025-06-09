@@ -53,6 +53,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1610  ## MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1677  ## SPECIAL-9 or MDEV-33377
 MARIADB_ERROR_CODE|MariaDB error code: 1698  ## SPECIAL-19 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1792
+MARIADB_ERROR_CODE|MariaDB error code: 1800  ## SPECIAL-38 (not a bug, corrupted ALTER inside a BINLOG command)
 MARIADB_ERROR_CODE|MariaDB error code: 1942  ## SPECIAL-23 (mysql.old_gtid_slave_pos removed or changed like PK removed) or MDEV-34346
 MARIADB_ERROR_CODE|MariaDB error code: 1944
 MARIADB_ERROR_CODE|MariaDB error code: 1964  ## MDEV-34346
@@ -68,8 +69,10 @@ MARIADB_ERROR_CODE|MariaDB error code: 12501 ## SPECIAL-31 (to be expected; remo
 MARIADB_ERROR_CODE|MariaDB error code: 12701 ## MDEV-22936
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
 MARKED_AS_CRASHED|mysqld: Table sql-temptable-X is marked as crashed and should be repaired  ## MDEV-31588
+GOT_ERROR|Got error 1|when reading table                       ## MDEV-34951 (may mask other bugs)
 GOT_ERROR|Got error 9|when reading table                       ## MDEV-23297
 GOT_ERROR|Got error 10|'Operation aborted: Failed to acquire lock due to rocksdb_max_row_locks limit' from ROCKSDB, Error_code: 1296; Got error 221 'RocksDB status: lock limit reached.' from ROCKSDB, Error_code: 1296; handler error No Error!; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1296 # SPECIAL-35
+GOT_ERROR|Got error 123|when reading table                     ## MDEV-36963
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ## 126's, so it may be worthwhile to once
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
 GOT_ERROR|Got error 126|when reading table                     ## MDEV-26492  ## entries to check
@@ -229,6 +232,8 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item::check_cols|cmp_row_type|cmp_row_type|cmp_row_type                                                                                                                ## MDEV-36964
+SIGSEGV|Item_hybrid_func::type_handler|Item::result_type|cmp_row_type|cmp_row_type                                                                                             ## MDEV-36964
 SIGSEGV|Explain_query::~Explain_query|delete_explain_query|log_slow_statement|dispatch_command                                                                                 ## MDEV-31793
 SIGSEGV|do_mark_index_columns|TABLE::mark_index_columns_no_reset|TABLE::mark_index_columns|prepare_record_for_error_message                                                    ## MDEV-36937
 SIGSEGV|do_mark_index_columns|prepare_record_for_error_message|multi_update::do_updates|multi_update::send_eof                                                                 ## MDEV-36937

@@ -6,4 +6,4 @@ ALTER TABLE t DROP PRIMARY KEY;
 CREATE TABLE t1 (id INT PRIMARY KEY,t1_id INT,INDEX par_ind (t1_id),FOREIGN KEY(t1_id) REFERENCES t1 (id) ON DELETE CASCADE);
 ALTER TABLE t1 DROP PRIMARY KEY;
 # CLI: ERROR 1025 (HY000): Error on rename of './test/#sql-alter-263f47-4' to './test/t1' (errno: 150 "Foreign key constraint is incorrectly formed")
-# ERR: 2024-06-18 15:34:30 4 [ERROR] InnoDB: In ALTER TABLE `test`.`t1` has or is referenced in foreign key constraints which are not compatible with the new table definition.
+# ERR: [ERROR] InnoDB: In ALTER TABLE `test`.`t1` has or is referenced in foreign key constraints which are not compatible with the new table definition.

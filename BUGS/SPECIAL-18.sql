@@ -28,4 +28,4 @@ DROP TABLE t3;
 CREATE TABLE t4 (c1 INT);
 RENAME TABLE t TO t3,t3 TO t,t3 TO t2;
 # CLI: ERROR 1290 (HY000): The MariaDB server is running with the --max-session-mem-used=9223372036854775808 option so it cannot execute this statement
-# ERR: 2024-10-29 11:10:54 4 [ERROR] DDL_LOG: Got error 1290 when trying to execute action for entry 5 of type 'rename table'
+# ERR: [ERROR] DDL_LOG: Got error 1290 when trying to execute action for entry 5 of type 'rename table'

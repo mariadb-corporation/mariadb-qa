@@ -1,0 +1,4 @@
+SET GLOBAL log_bin_trust_function_creators=1;
+CREATE FUNCTION f() RETURNS ROW TYPE OF t RETURN 1;
+CREATE TABLE t (c INT KEY,c2 INT,UNIQUE (c2));
+SELECT ROW(COALESCE(f()),1)=ROW(1,1) AS eq;
