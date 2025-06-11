@@ -15,8 +15,8 @@ if [ ! -r /test/gendirs.sh ]; then
 fi
 
 # Script variables: do not change
-SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'MD.*\-11.[0-9]' | grep 'opt' | sort -h | tail -n1)"
-SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK="$(echo "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" | sed 's|\-opt|-dbg|')"
+SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'MD.*\-1[12].[0-9]' | grep 'opt' | sort -h | tail -n1)"
+SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'MD.*\-1[12].[0-9]' | grep 'dbg' | sort -h | tail -n1)"
 
 if [ "${1}" != 'SAN' ]; then
   # If enabled (ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=1), then check what are deemed to be regular (i.e. non-*SAN) testcases against SAN builds also, as this often reveals new *SAN bugs additional to the original SIGSEGV/SIGABRT etc.
