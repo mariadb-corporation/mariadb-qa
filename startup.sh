@@ -583,7 +583,7 @@ chmod +x smalltmp
 # /path/to/image_file /path/to/directory ext4 loop 0 0 
 # TODO: fix the line below somehow, and add binary-files=text for all greps. Also revert redirect to >> for second line
 #echo "set +H" > kill  # Fails with odd './kill: 1: set: Illegal option -H' when kill_all is used?
-echo "ps -ef | grep \"\$(whoami)\" | grep \"\${PWD}/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
+echo "ps -ef | grep \"\$(whoami)\" | grep \"\$(dirname \$(readlink -f \"\${0}\"))/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
 touch stop
 add_san_options stop
 echo "timeout -k90 -s9 90s ${MYSQLADMIN_TO_USE} -uroot -S${SOCKET} shutdown" >>stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)

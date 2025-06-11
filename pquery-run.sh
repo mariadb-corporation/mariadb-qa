@@ -430,6 +430,13 @@ pre_shuffle_setup(){
     exit 1
   fi
   PRE_SHUFFLE_DUR_START=
+  if [ "${TABLE_NAMES_SWAP_TO_T1}" != "0" ]; then
+    TABLE_NAMES_SWAP_START=$(date +'%s' | tr -d '\n')  
+    echoit "TABLE_NAMES_SWAP_TO_T1 Active: changing all table names to t1"
+    sed -i 's|CREATE TABLE\([^(]*\)\+(|CREATE TABLE \1 (|gi;s|[ \t][ \t]\+| |g;s|CREATE TABLE [^ ]\+ |CREATE TABLE t1 |gi' ${INFILE_SHUFFLED}
+    echoit "TABLE_NAMES_SWAP: Swapping table names took $[ $(date +'%s' | tr -d '\n') - ${TABLE_NAMES_SWAP_START} ] seconds"
+    TABLE_NAMES_SWAP_START=
+  fi
   if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
     STORAGE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
     if [ -z "${STORAGE_ENGINE_SWAP_PERCENTAGE}" ]; then  # TODO: move this code to top var checking section and add change statement as well as further validity checking

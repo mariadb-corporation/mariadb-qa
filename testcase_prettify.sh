@@ -219,6 +219,8 @@ cat "${1}" | tr -d '`' | \
        s|prepare|PREPARE|gi; \
        s|show|SHOW|gi; \
        s|row|ROW|gi; \
+       s|statement|STATEMENT|gi; \
+       s|mixed|MIXED|gi; \
        s|grant|GRANT|gi; \
        s|grantee|GRANTEE|gi; \
        s|concat|CONCAT|gi; \

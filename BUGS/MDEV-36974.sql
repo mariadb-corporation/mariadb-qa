@@ -1,0 +1,14 @@
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+INSERT INTO t VALUES (1);
+INSTALL PLUGIN server_audit SONAME 'server_audit';
+UNINSTALL PLUGIN server_audit;
+XA START 'a';
+SET GLOBAL lock_wait_timeout=0;
+SET GLOBAL innodb_stats_persistent=DEFAULT;
+INSERT INTO t VALUES (2);
+XA END 'a';
+SET pseudo_slave_mode=1;
+XA PREPARE 'a';
+INSERT INTO t VALUES (3),(4);
+INSTALL PLUGIN server_audit SONAME 'server_audit';
+DROP TABLE t;
