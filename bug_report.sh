@@ -474,6 +474,7 @@ if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then
 fi
 if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then
   echo 'Remember to action:'
+  echo "*) Check the 'SAN Execution of the testcase' mini-report just above. If a *SAN (i.e. 'ASAN|...', 'UBSAN|...' or 'TBSAN|...' etc.) UniqueID was seen in a SAN build, then please run a 'bs' report using the same in.sql testcase in that SAN build also. Copy the full resulting SAN matrix (and info on how to create/build a similar SAN build) into the bug report as well"
   echo '*) If no engine is specified, add ENGINE=InnoDB to table definitions and re-run the bug report'
   if [ ${NOCORE} -ne 1 -o ${SAN_MODE} -eq 1 ]; then
     cd ${RUN_PWD}
