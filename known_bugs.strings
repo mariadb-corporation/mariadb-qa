@@ -233,6 +233,9 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+(have_last && !have_first) || (have_last && have_first && (last_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record ## MDEV-25964
+(have_max && !have_min) || (have_max && have_min && (max_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record       ## MDEV-25964
+(have_max && !have_min) || (have_max && have_min && (max_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|sub_select                  ## MDEV-25964
 !thd->is_error()|SIGABRT|TABLE_SHARE::init_from_sql_statement_string|ha_create_table|dd_recreate_table|prepare_for_repair                                                      ## MDEV-36985
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED) || thd->mdl_context.is_lock_warrantee(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-36980
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-36976
