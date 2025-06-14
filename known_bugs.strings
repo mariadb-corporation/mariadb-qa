@@ -383,6 +383,7 @@ order|SIGABRT|join_read_first|sub_select|do_select|JOIN::exec_inner             
 last_pos == 0 || pos > last_pos|SIGABRT|fts_cache_node_add_positions|row_fts_insert_tuple|row_fts_merge_insert|fts_parallel_merge                                              ## MDEV-35967
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement                                            ## MDEV-35937
 offsets|SIGABRT|btr_check_node_ptr|btr_compress|btr_cur_compress_if_useful|btr_cur_pessimistic_delete                                                                          ## MDEV-35935
+m_comparator.cmp_type() != ROW_RESULT|SIGABRT|Item_func_in::compatible_types_scalar_bisection_possible|Item_func_in::vcol_subst_transformer|Item_func::compile|Item_cond::do_compile ## MDEV-35913
 m_comparator.cmp_type() != ROW_RESULT|SIGABRT|Item_func_in::compatible_types_scalar_bisection_possible|Item_func_in::vcol_subst_transformer|Item_func::compile|Item::top_level_compile ## MDEV-35913
 SIGSEGV|Field::store_timestamp|TR_table::store|TR_table::update|ha_commit_trans                                                                                                ## MDEV-35842
 SIGSEGV|__strcmp_evex|get_defaults_options|my_load_defaults|mysql_read_default_options                                                                                         ## MDEV-35881
@@ -1626,6 +1627,7 @@ SIGSEGV|sortlength|filesort|create_sort_index|Window_funcs_sort::exec           
 checksum_start + checksum_length == f->ptr|SIGABRT|handler::calculate_checksum|ha_partition::calculate_checksum|mysql_checksum_table|mysql_execute_command                     ## MDEV-11783
 table->s->db_create_options == part_table->s->db_create_options|SIGABRT|compare_table_with_partition|Sql_cmd_alter_table_exchange_partition::exchange_partition|Sql_cmd_alter_table_exchange_partition::execute|mysql_execute_command ## MDEV-228116
 "invalid state" == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables                                                              ## MDEV-15494
+"invalid state" == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|ha_partition::external_lock|handler::ha_external_lock                                        ## MDEV-15494
 SIGABRT|ut_dbg_assertion_failed|trx_rollback_last_sql_stat_for_mysql|innobase_rollback|ha_rollback_trans                                                                       ## MDEV-15494
 (*tables)->reginfo.lock_type >= TL_READ|SIGABRT|lock_external|mysql_lock_tables|lock_tables|Sql_cmd_insert::mysql_insert                                                       ## MDEV-16686
 (*tables)->reginfo.lock_type >= TL_READ|SIGABRT|lock_external|mysql_lock_tables|lock_tables|mysql_insert                                                                       ## MDEV-16686

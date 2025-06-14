@@ -1,2 +1,5 @@
 CREATE TABLE t (a TEXT UNIQUE);
 SELECT 1 FROM t WHERE ROW(a, (a,a)) IN ((1, (1,1)),(2, (2,1)));
+
+CREATE TABLE t (a INT KEY,b INT,vb DATE AS (b) VIRTUAL,KEY(vb));
+SELECT * FROM t WHERE b<7 AND (a,b) NOT IN ((1,2),(8,9),(5,1));
