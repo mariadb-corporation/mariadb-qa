@@ -9,6 +9,7 @@ UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through poin
 ASAN|heap-use-after-free|include/dict0mem.h|dict_table_t::is_active_ddl|trx_t::rollback_low|innobase_rollback|ha_rollback_trans                                                ## MDEV-34928
 ASAN|heap-use-after-free|include/dict0mem.h|dict_table_t::is_native_online_ddl|trx_t::rollback_low|innobase_rollback|ha_rollback_trans                                         ## MDEV-34928
 ASAN|use-after-poison|sql/field.cc|__asan_memcpy|Field_string::get_key_image|key_copy|sub_select                                                                               ## MDEV-31793
+UBSAN|division by zero|sql/rowid_filter.cc|get_max_range_rowid_filter_elems_for_table|TABLE::init_cost_info_for_usable_range_rowid_filters|make_join_statistics|JOIN::optimize_inner  ## MDEV-36990
 UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_table         ## MDEV-26805
 UBSAN|load of null pointer of type 'const uint' (aka 'const unsigned int')|sql/sql_class.cc|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields ## MDEV-36865
 UBSAN|member access within null pointer of type 'const struct transaction_participant'|sql/sql_class.cc|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields ## MDEV-36865
