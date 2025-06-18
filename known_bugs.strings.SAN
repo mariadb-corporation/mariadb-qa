@@ -6,6 +6,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                        ## MDEV_34735
+ASAN|stack-use-after-return|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                     ## MDEV_34735
 ASAN|heap-use-after-free|include/dict0mem.h|dict_table_t::is_active_ddl|trx_t::rollback_low|innobase_rollback|ha_rollback_trans                                                ## MDEV-34928
 ASAN|heap-use-after-free|include/dict0mem.h|dict_table_t::is_native_online_ddl|trx_t::rollback_low|innobase_rollback|ha_rollback_trans                                         ## MDEV-34928
 ASAN|use-after-poison|sql/field.cc|__asan_memcpy|Field_string::get_key_image|key_copy|sub_select                                                                               ## MDEV-31793
@@ -71,8 +73,6 @@ UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Arg_comparator::compare|Item_func_eq::val_int|evaluate_join_record            ## MDEV-36045
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Arg_comparator::compare|Item_func_eq::val_bool|evaluate_join_record           ## MDEV-36045
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb2312_chinese_ci|Arg_comparator::compare|Item_func_eq::val_bool|make_join_select                ## MDEV-36045
-UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::FVectorNode|mhnsw_insert|TABLE::hlindexes_on_insert                        ## MDEV-36033
-UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::make_vec|FVectorNode::FVectorNode|mhnsw_insert                             ## MDEV-36033
 UBSAN|X is outside the range of representable values of type 'unsigned long'|include/row0row.inl|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-36015
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|String::copy                            ## MDEV-36014
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Type_handler_string_result::stored_field_cmp_to_item|stored_field_cmp_to_item|SEL_ARG_LT::SEL_ARG_LT ## MDEV-32768
@@ -734,3 +734,5 @@ ASAN|stack-buffer-overflow|strings/int2str.c|int2str|Item_func_conv::val_str|Ite
 # UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|THD::copy_fix                         ## Fixed ## MDEV-34226
 # ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                              ## Fixed ## MDEV-24193
 # ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                            ## Fixed ## MDEV-24193
+# UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::FVectorNode|mhnsw_insert|TABLE::hlindexes_on_insert                      ## Fixed ## MDEV-36033
+# UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::make_vec|FVectorNode::FVectorNode|mhnsw_insert                           ## Fixed ## MDEV-36033

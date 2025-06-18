@@ -95,7 +95,7 @@ background_sed_loop(){  # Update reducer<nr>.sh scripts as they are being create
           # Also exclude 'backup/failing' for multi-threaded runs. For example, WORKDIR/TRIALDIR/trial.sql.failing (/data/487127/48/48.sql.failing)
           # Also exclude _copy files made by base_reducer<trial>.sh's
           if ! grep --binary-files=text -qi 'backup|failing|prev|copy' ${REDUCER} 2>/dev/null; then  # Avoid changing it twice (corrupts text)
-            sed -i 's|^INPUTFILE="\([^"]\+\)"|INPUTFILE="$(ls --color=never -S \1* \| grep --binary-files=text -vE "backup\|failing\|prev" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\+\|\|\")"|' ${REDUCER}
+            sed -i 's|^INPUTFILE="\([^"]\+\)"|INPUTFILE="$(ls --color=never -S \1* 2>/dev/null \| grep --binary-files=text -vE "backup\|failing\|prev" \| tac \| head -n1 \| sed \"s\|^[ 0-9]\\+\|\|\")"|' ${REDUCER}
           fi
           # Next, we consider if we will set FORCE_KILL=1 by doing many checks to see if it makes sense
           TRIAL="$(echo ${REDUCER} | grep -o '[0-9]\+')"

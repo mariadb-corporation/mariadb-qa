@@ -430,13 +430,6 @@ pre_shuffle_setup(){
     exit 1
   fi
   PRE_SHUFFLE_DUR_START=
-  if [ "${TABLE_NAMES_SWAP_TO_T1}" != "0" ]; then
-    TABLE_NAMES_SWAP_START=$(date +'%s' | tr -d '\n')  
-    echoit "TABLE_NAMES_SWAP_TO_T1 Active: changing all table names to t1"
-    sed -i 's|CREATE TABLE\([^(]*\)\+(|CREATE TABLE \1 (|gi;s|[ \t][ \t]\+| |g;s|CREATE TABLE [^ ]\+ |CREATE TABLE t1 |gi' ${INFILE_SHUFFLED}
-    echoit "TABLE_NAMES_SWAP: Swapping table names took $[ $(date +'%s' | tr -d '\n') - ${TABLE_NAMES_SWAP_START} ] seconds"
-    TABLE_NAMES_SWAP_START=
-  fi
   if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
     STORAGE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
     if [ -z "${STORAGE_ENGINE_SWAP_PERCENTAGE}" ]; then  # TODO: move this code to top var checking section and add change statement as well as further validity checking
@@ -464,6 +457,55 @@ pre_shuffle_setup(){
     echoit "PRE_SHUFFLE_INTERLEAVE: Interleaving SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_INTERLEAVE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${INTERLEAVE_FIN_LINES} lines"
     INTERLEAVE_FIN_LINES=
     PRE_SHUFFLE_INTERLEAVE_DUR_START=
+  fi
+  # The following needs to be the last step in the process (except SWAP_ALL_TABLE_NAMES_TO_T1) to ensure that any PRE_SHUFFLE_INTERLEAVE sql is also swapped to table name t1
+  if [ "${SWAP_CREATE_TABLE_NAMES_TO_T1}" != "0" ]; then
+    SWAP_CREATE_TABLE_NAMES_TO_T1_START=$(date +'%s' | tr -d '\n')  
+    echoit "SWAP_CREATE_TABLE_NAMES_TO_T1 Active: changing all CREATE TABLE table names to t1"
+    sed -i 's|CREATE TABLE\([^(]*\)\+(|CREATE TABLE \1 (|gi;s|[ \t][ \t]\+| |g;s|CREATE TABLE [^ ]\+ |CREATE TABLE t1 |gi' ${INFILE_SHUFFLED}
+    echoit "SWAP_CREATE_TABLE_NAMES_TO_T1: Swapping CREATE TABLE table names to t1 took $[ $(date +'%s' | tr -d '\n') - ${SWAP_CREATE_TABLE_NAMES_TO_T1_START} ] seconds"
+    SWAP_CREATE_TABLE_NAMES_TO_T1_START=
+  fi
+  # The following needs to be the last step in the process (ref above for reason)
+  # Ref:  grep --binary-files=text -oi "CREATE TABLE [^ (]\+[ (]" main-ms-ps-md.sql | tr -d '`' | tr -d '(' | sed 's|[ ]*$||' | sed 's|create table|CREATE TABLE|i' | grep -v "TABLE IF" | sort -h | uniq -c |sort -n | tac | head -n20
+  if [ "${SWAP_ALL_TABLE_NAMES_TO_T1}" != "0" ]; then
+    SWAP_ALL_TABLE_NAMES_TO_T1_START=$(date +'%s' | tr -d '\n')  
+    echoit "SWAP_ALL_TABLE_NAMES_TO_T1 Active: changing all table names to t1"
+    # Except for the provisions at the end of the list of changes, do not add the sed global 'g' option as otherwise some statements will become invalid due to repeated t1
+    sed -i "s|\([ \.]\+\)t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)t[itm]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)t\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)m[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)articles\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)foo\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)bar\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)Ｔ[４７１]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)db[0-9]\+.t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)child\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)parent\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)ｱｱｱ\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)龗龗龗\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)龖龖龖\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)testdb_wl5522.t1\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)tm[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)src\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)federated.t1\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)variant\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)RocksDB.t1\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)ndb\$test\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)test_wl5522.t1\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)test_ps_sample_pages\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)t1_will_crash\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)d[0-9]\+.t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|\([ \.]\+\)db\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
+    sed -i "s|t1[ \t]\+TO[ \t]\+t1|t1 TO t2|gi" ${INFILE_SHUFFLED}  # RENAME TABLE provision
+    sed -i "s|t1[ \t]\+LIKE[ \t]\+t1|t2 LIKE t1|gi" ${INFILE_SHUFFLED}  # CREATE TABLE...LIKE provision
+    sed -i "s|t1[ \t]\+RENAME TO[ \t]\+t1|t1 RENAME TO t2|gi" ${INFILE_SHUFFLED}  # ALTER TABLE provision
+    sed -i "s|t1[ \t]*,[ \t]*t1|t1|gi" ${INFILE_SHUFFLED}  # SELECT, DROP TABLE, etc. provision
+    sed -i "s|([ \t]*t1[ \t]*,[ \t]*t[0-9]\+[ \t]*)|(t2,t3)|gi;s|([ \t]*t1[ \t]*,[ \t]*t[0-9]\+[ \t]*,[ \t]*t[0-9]\+[ \t]*)|(t2,t3)|gi" ${INFILE_SHUFFLED}  # CREATE TABLE...UNION provision
+    # A few other minor provisions can be made: CREATE TABLE...SELECT, [LEFT etc.] JOIN (w/o aliases), etc.
+    echoit "ALL_NAMES_SWAP: Swapping all table names to t1 took $[ $(date +'%s' | tr -d '\n') - ${SWAP_ALL_TABLE_NAMES_TO_T1_START} ] seconds"
+    SWAP_ALL_TABLE_NAMES_TO_T1_START=
   fi
 }
 

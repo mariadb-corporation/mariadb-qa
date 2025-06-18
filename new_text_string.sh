@@ -271,6 +271,7 @@ find_other_possible_issue_strings(){
     GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/.*sql-temptable.*MAI|.*sql-temptable.*MAI|' | sed 's|/[dt][ae][ts][at]/.*sql-temptable.*MAI|.*sql-temptable.*MAI|')"
     if [ ! -z "${GOTERROR}" ]; then
       TEXT="GOT_ERROR|${GOTERROR}"
+      TEXT="$(echo "${TEXT}" | sed "s|marked as crashed and should be repaired\"' for .*|marked as crashed and should be repaired\" for 'X'|")"  # Use a generic indentifier 'X' for any table name, similar to X/Y value handling in *SAN bugs
       echo "${TEXT}"
       exit 0
     fi
@@ -290,6 +291,7 @@ find_other_possible_issue_strings(){
     TEXT="$(echo "${TEXT}" | sed 's|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD.*|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD|')"  # MDEV-35187
     TEXT="$(echo "${TEXT}" | sed 's|for table [^ ]\+|for table|g')"  # MDEV-34951
     TEXT="$(echo "${TEXT}" | sed 's|The table [^ ]\+ doesnt have|The table doesnt have|g')"  # SPECIAL-33
+    TEXT="$(echo "${TEXT}" | sed 's|Unable to import tablespace .* because it already exists.  Please DISCARD the tablespace before IMPORT|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT|')"  # Use a generic indentifier 'X' for any table name, similar to X/Y value handling in *SAN bugs
     echo "${TEXT}"
     exit 0
   fi
