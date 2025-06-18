@@ -1,0 +1,2 @@
+SET @arg1=1e+50;
+SELECT SUBSTR(1,@arg1,5);
