@@ -6,6 +6,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|strings/ctype-bin.c|my_strnncollsp_8bit_bin|group_concat_key_cmp_with_order|tree_insert|Item_func_group_concat::add                 ## MDEV-37036
+UBSAN|applying zero offset to null pointer|strings/ctype-uca.inl|my_uca_strnncollsp_onelevel_utf8mb4|group_concat_key_cmp_with_order|tree_insert|Item_func_group_concat::add   ## MDEV-37036
 ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                        ## MDEV_34735
 ASAN|stack-use-after-return|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                     ## MDEV_34735
 UBSAN|member access within address X which does not point to an object of type 'THD'|sql/semisync_master.cc|signal_waiting_transaction|Active_tranx::clear_active_tranx_nodes|Repl_semi_sync_master::switch_off|Repl_semi_sync_master::disable_master ## MDEV-37014
