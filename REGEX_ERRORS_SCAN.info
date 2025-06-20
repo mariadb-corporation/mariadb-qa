@@ -2,3 +2,4 @@
 '[ERROR] InnoDB' in test as of 10/10/22 - it may be too verbose
 'while consolidating' - ref MDEV-23627
 'InnoDB: Long wait' and 'for double-write buffer flush' - ref https://github.com/MariaDB/server/pull/3885 and Slack discussion
+-'Got an error' - for example 'Got an error from thread_id=5, /test/bb-12.1-MDEV-36205-subdist_dbg/storage/myisam/mi_write.c:227'
