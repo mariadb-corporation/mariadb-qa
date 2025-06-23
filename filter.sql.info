@@ -7,3 +7,4 @@ MAKEDATE.*e+                  # MDEV-35406: an abbreviated UBSAN stack (ref kba)
 ST_GEOMFROMWKB                # MDEV-26813
 query_cache_type.*DEMAND      # MDEV-34075
 AAAAAAAQANS42LjMtbTUtZGVidididididi  # SPECIAL-39
+key_cache_segments            # MDEV-26492

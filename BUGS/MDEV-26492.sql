@@ -83,3 +83,14 @@ INSERT INTO t VALUES();
 ALTER TABLE t CHANGE c c INT FIRST,ALGORITHM=INPLACE;
 INSERT INTO t (id,a) VALUES (1);
 SHOW TABLES;
+
+CREATE TEMPORARY TABLE t (f INT PRIMARY KEY) ENGINE=MyISAM;
+SET GLOBAL key_cache_segments=1;
+INSERT INTO t VALUES (1),(1);
+SET GLOBAL key_cache_segments=1;
+INSERT INTO t VALUES (1);
+# CLI: ERROR 126 (HY000): Index for table 'ariadb-11.4.8-linux-x86_64-dbg/tmp/#sql-temptable-28967a-4-0.MYI' is corrupt; try to repair it
+# [ERROR] mariadbd: Index for table 'ariadb-11.4.8-linux-x86_64-dbg/tmp/#sql-temptable-28967a-4-0.MYI' is corrupt; try to repair it
+# [ERROR] mariadbd: Index for table 'ariadb-11.4.8-linux-x86_64-dbg/tmp/#sql-temptable-28967a-4-0.MYI' is corrupt; try to repair it
+# [ERROR] Got an error from unknown thread, /test/11.4_dbg/storage/myisam/mi_write.c:226
+# [ERROR] mariadbd: Index for table 't' is corrupt; try to repair it

@@ -8,6 +8,7 @@ Note: While unlikely to ever happen, REGEX_ERRORS_FILTER should never be fully e
 ------------------------------------------------------------------------------------------------------------------------
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
+ERROR. mariadbd: Can.t find record in                 MDEV-37068 (Vector)  # Filter not activated; find additional testcases
 Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
 Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested
 Warning. InnoDB: Table.*contains.*user defined columns in InnoDB, but.*in MariaDB.*INFORMATION_SCHEMA.INNODB_SYS_COLUMNS  MDEV25654

@@ -284,6 +284,14 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
   TRIALS_MDEV_25611=
 fi
 
+# Other MDEV related issues worth highlighting, aiding issue management
+TRIALS_MDEV_26492="$(grep --binary-files=text -il 'key_cache_segments' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'ERROR] Got an error' {}/log/*.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+if [ ! -z "${TRIALS_MDEV_26492}" ]; then
+  echo '** Trials with SET key_cache_segments resulting in '[ERROR] Got an error' (from a thread or an unknown thread), a know bug; ref MDEV-26492'
+  echo "${TRIALS_MDEV_26492}"
+fi
+TRIALS_MDEV_26492=
+
 # 'MySQL server has gone away' seen >= 200 times + timeout was not reached
 if [ $(ls */GONEAWAY 2>/dev/null | wc -l) -gt 0 ]; then
   echo "'** MySQL server has gone away' trials found: $(ls */GONEAWAY | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||')"

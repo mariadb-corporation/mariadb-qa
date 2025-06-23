@@ -12,7 +12,8 @@
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
-##### KNOWN NON-ISSUES (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
+##### For known non-issues (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
+MARIADBD_ERROR|mariadbd: Can't find record in table  ## MDEV-37068
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
@@ -493,6 +494,9 @@ block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tre
 block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|mi_init_bulk_insert                                                                         ## MDEV-34736
 block_size <= 0xFFFFFFFFL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|maria_init_bulk_insert                                                                       ## MDEV-34736
 block_size <= 0xFFFFFFFFUL|SIGABRT|calculate_block_sizes|init_alloc_root|init_tree|maria_init_bulk_insert                                                                      ## MDEV-34736
+SIGSEGV|spider_mbase_handler::append_key_order_with_alias|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_read_map_internal|handler::index_read_idx_map       ## MDEV-34735
+SIGSEGV|spider_mbase_handler::append_key_order_with_alias|spider_mbase_handler::append_key_order_with_alias_part|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_read_map_internal ## MDEV-34735
+SIGSEGV|spider_mbase_handler::append_key_order_with_alias|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_read_map_internal|handler::index_read_idx_map       ## MDEV-34735 (UBASAN builds)
 SIGSEGV|spider_mbase_handler::append_key_order_with_alias|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_first_internal|handler::ha_index_first              ## MDEV-34735
 ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                        ## MDEV-34735
 ASAN|stack-use-after-return|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                     ## MDEV-34735

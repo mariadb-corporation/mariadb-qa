@@ -20,3 +20,4 @@ debug_dbug
 ST_GEOMFROMWKB
 query_cache_type.*DEMAND
 AAAAAAAQANS42LjMtbTUtZGVidididididi
+key_cache_segments

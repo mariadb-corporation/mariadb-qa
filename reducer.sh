@@ -630,7 +630,7 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
       echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Last good known testcase: $WORKO (provided the disk being used did not run out of space). Terminating."
     fi
     # TODO: ~/ds (most likely) or ~/memory seem to be causing this more recently and more frequently: to fix
-    echoit "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
+    echoit "[Abort] Any 'Killed' message on the next line is reducer self-terminating after an [Abort]; it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
     exit 1
   elif [ -r $INPUTFILE ]; then
@@ -638,7 +638,7 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
   else
     echoit "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
     echoit "[Abort] The source for this reducer was likely deleted. Terminating."
-    echo "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
+    echo "[Abort] Any 'Killed' message on the next line is reducer self-terminating after an [Abort]; it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
     exit 1
   fi

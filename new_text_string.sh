@@ -303,6 +303,13 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MDERRORCODE=
+  MDBDERROR="$(grep -hio 'ERROR] mariadbd: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed "s|^ERROR] ||;s|'t[0-9]*'|table|")"
+  if [ ! -z "${MDBDERROR}" ]; then
+    TEXT="MARIADBD_ERROR|${MDBDERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  MDBDERROR=
   SERVER_ERRNO="$(grep -hio 'server_errno: [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
   if [ ! -z "${SERVER_ERRNO}" ]; then
     TEXT="SERVER_ERRNO|${SERVER_ERRNO}"
