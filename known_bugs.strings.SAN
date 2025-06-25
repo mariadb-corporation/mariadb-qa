@@ -348,6 +348,7 @@ LSAN|memory leak|extra/wolfssl/wolfssl/src/x509.c|malloc|wolfSSL_X509_new|vio_ge
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_case_bin|Item_str_conv::val_str|Arg_comparator::compare_string|Arg_comparator::compare ## MDEV-32479
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_case_bin|Item_str_conv::val_str|Item_str_func::val_decimal|VDec::VDec       ## MDEV-32479
 UBSAN|store to null pointer of type 'roll_ptr_t'|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-32453
+UBSAN|member call on null pointer of type 'Reprepare_observer'|sql/sql_prepare.cc|Prepared_statement::check_charset_collation_map_version|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute ## MDEV-31844
 UBSAN|member call on null pointer of type 'struct Reprepare_observer'|sql/sql_prepare.cc|Prepared_statement::check_charset_collation_map_version|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute ## MDEV-31844
 ASAN|heap-use-after-free|sql-common/client.c|server_mysql_real_connect|Repl_semi_sync_slave::kill_connection|Repl_semi_sync_slave::slave_stop|handle_slave_io                  ## MDEV-27845
 ASAN|heap-use-after-free|sql/item.cc|Item_field::print|Item_equal::print|st_select_lex::print|st_select_lex_unit::print                                                        ## MDEV-24658
