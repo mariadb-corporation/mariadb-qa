@@ -255,6 +255,7 @@ marked_for_read()|SIGABRT|Field_varstring::val_str|Field_varstring::sort_string|
 SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-36481
 SIGSEGV|Field_row::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable|sp_instr_set::exec_core                                                               ## MDEV-36481
 SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|spider_ping_table_init                                                                                      ## MDEV-36865
+strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|json_nice|Item_func_json_format::val_str|Item::save_str_in_field                                                         ## MDEV-37084
 SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields                                                                                     ## MDEV-36865
 SIGFPE|get_max_range_rowid_filter_elems_for_table|TABLE::init_cost_info_for_usable_range_rowid_filters|make_join_statistics|JOIN::optimize_inner                               ## MDEV-36990
 SIGSEGV|spider_bg_all_conn_break|spider_db_free_result|ha_spider::close|closefrm                                                                                               ## MDEV-36239
