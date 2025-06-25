@@ -1635,6 +1635,7 @@ table->s->db_create_options == part_table->s->db_create_options|SIGABRT|compare_
 "invalid state" == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables                                                              ## MDEV-15494
 "invalid state" == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|ha_partition::external_lock|handler::ha_external_lock                                        ## MDEV-15494
 SIGABRT|ut_dbg_assertion_failed|trx_rollback_last_sql_stat_for_mysql|innobase_rollback|ha_rollback_trans                                                                       ## MDEV-15494
+(*tables)->reginfo.lock_type >= TL_READ_SKIP_LOCKED|SIGABRT|lock_external|mysql_lock_tables|mysql_lock_tables|lock_tables                                                      ## MDEV-16686
 (*tables)->reginfo.lock_type >= TL_READ|SIGABRT|lock_external|mysql_lock_tables|lock_tables|Sql_cmd_insert::mysql_insert                                                       ## MDEV-16686
 (*tables)->reginfo.lock_type >= TL_READ|SIGABRT|lock_external|mysql_lock_tables|lock_tables|mysql_insert                                                                       ## MDEV-16686
 (*tables)->reginfo.lock_type >= TL_READ|SIGABRT|lock_external|mysql_lock_tables|lock_tables|open_and_lock_tables                                                               ## MDEV-16686
