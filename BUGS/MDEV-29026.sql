@@ -1,0 +1,3 @@
+CREATE TABLE t (a JSON);
+INSERT INTO t VALUES ('1e+1'),('1e-1'),('-1e+1');
+SELECT JSON_EQUALS (a,a) FROM t;

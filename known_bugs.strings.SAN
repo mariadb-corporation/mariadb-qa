@@ -19,6 +19,8 @@ ASAN|stack-use-after-return|storage/spider/spd_table.cc|spider_get_select_lex|sp
 UBSAN|member access within address X which does not point to an object of type 'THD'|sql/semisync_master.cc|signal_waiting_transaction|Active_tranx::clear_active_tranx_nodes|Repl_semi_sync_master::switch_off|Repl_semi_sync_master::disable_master ## MDEV-37014
 UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|user_var_entry::val_int|Item_func_substr::fix_length_and_dec|Item_func::fix_fields|Item_str_func::fix_fields ## MDEV-37012
 UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strntoull10rnd_8bit|charset_info_st::strntoull10rnd|Field_longlong::store|store_trigger                   ## MDEV-37003
+ASAN|use-after-poison|asan_interceptors.cpp.o|StrtolFixAndCheck|__isoc23_strtol|json_normalize_number|json_norm_value_number_init                                              ## MDEV-29026
+ASAN|use-after-poison|sql/sql_string.h|Binary_string::c_ptr|Item_func_json_equals::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long                               ## MDEV-29026
 ASAN|heap-use-after-free|include/dict0mem.h|dict_table_t::is_active_ddl|trx_t::rollback_low|innobase_rollback|ha_rollback_trans                                                ## MDEV-34928
 ASAN|heap-use-after-free|include/dict0mem.h|dict_table_t::is_native_online_ddl|trx_t::rollback_low|innobase_rollback|ha_rollback_trans                                         ## MDEV-34928
 ASAN|use-after-poison|sql/field.cc|__asan_memcpy|Field_string::get_key_image|key_copy|sub_select                                                                               ## MDEV-31793
