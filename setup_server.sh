@@ -142,6 +142,12 @@ fi
 if [ "$(grep -m1 '^vm.panic_on_oom=0' /etc/sysctl.conf)" != 'vm.panic_on_oom=0' ]; then
   sudo bash -c 'echo "vm.panic_on_oom=0" >> /etc/sysctl.conf'
 fi
+# On GCP test instances, set the number of hugepages to 0
+if grep -qi 'vm.nr_hugepages' /etc/sysctl.conf; then
+  sudo sed -i 's|^vm.nr_hugepages.*|vm.nr_hugepages=0|' /etc/sysctl.conf; sudo sysctl -p
+else
+  sudo bash -c 'echo "vm.nr_hugepages=0" >> /etc/sysctl.conf'
+fi
 
 # Note that a high number (>20480) for soft+hard nproc may cause system instability/hang on Centos7
 # hard stack 16000000: based upon https://github.com/google/sanitizers/issues/856#issuecomment-2749596588

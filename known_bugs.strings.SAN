@@ -6,6 +6,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare|Item_func_eq::val_bool ## MDEV-37062
+UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare|Item_func_eq::val_int ## MDEV-37062
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select ## MDEV-37073
 ASAN|stack-buffer-overflow|strings/strmake.c|strmake|Charset_collation_map_st::insert_or_replace|Charset_collation_map_st::from_text|Sys_var_charset_collation_map::charset_collation_map_from_item ## MDEV-36971
 UBSAN|call to function show_func_example(THD*, st_mysql_show_var*, char*) through pointer to incorrect function type 'int (*)(THD *, st_mysql_show_var *, void *, system_status_var *, enum_var_type)'|sql/sql_show.cc|show_status_array|show_status_array|fill_status|get_schema_tables_result ## MDEV-37064
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|sql/item_func.cc|Item_func_sleep::val_int|Type_handler::Item_send_long|Protocol::send_result_set_row|select_send::send_data ## MDEV-37062
@@ -99,6 +102,7 @@ UBSAN|call to function thd_kill_timeout through pointer to incorrect function ty
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query                                       ## MDEV-29605
 UBSAN|member access within address X which does not point to an object of type 'ha_spider'|storage/spider/spd_db_conn.cc|spider_db_ping|spider_db_conn_queue_action|spider_db_before_query|spider_db_query ## MDEV-29605
 LSAN|memory leak|sql/sql_plugin.cc|operator new|dlopen|plugin_dl_add|plugin_dl_foreach                                                                                         ## MDEV-35772
+LSAN|memory leak|sql/sql_plugin.cc|operator new|dl_open_worker|dlopen|plugin_dl_add                                                                                            ## MDEV-35772
 UBSAN|applying zero offset to null pointer|strings/ctype.c|my_convert_using_func|my_convert|copy_and_convert|Protocol::net_store_data_cs                                       ## MDEV-35771
 UBSAN|call to function mysql_sys_var_long(THD*, int) through pointer to incorrect function type 'unsigned long *(*)(THD *, int)'|storage/rocksdb/ha_rocksdb.cc|myrocks::get_or_create_tx|myrocks::ha_rocksdb::external_lock|handler::ha_external_lock|copy_data_between_tables ## MDEV-35736
 UBSAN|call to function mysql_sys_var_long(THD*, int) through pointer to incorrect function type 'unsigned long *(*)(THD *, int)'|storage/rocksdb/ha_rocksdb.cc|myrocks::get_or_create_tx|myrocks::rocksdb_start_tx_and_assign_read_view|snapshot_handlerton|plugin_foreach_with_mask ## MDEV-35736
@@ -563,6 +567,7 @@ UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an u
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item::save_str_in_field ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|Item_func_conv::val_str|Item_func_concat::val_str|Type_handler::Item_send_str ## MDEV-28386
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoull_8bit|charset_info_st::strntoull|Item_func_conv::val_str|Item_func_concat::val_str ## MDEV-28386
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select ## MDEV-28374
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374
 UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select               ## MDEV-28374
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|JOIN_CACHE::generate_full_extensions ## MDEV-28374

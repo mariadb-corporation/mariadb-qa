@@ -358,6 +358,8 @@ for FILE in ${ERROR_LOGS}; do
           if grep -qi 'plugin_dl_add' ${ERROR_LOGS} 2>/dev/null; then
             if grep -qi 'plugin_dl_foreach' ${ERROR_LOGS} 2>/dev/null; then
               UNIQUE_ID="LSAN|memory leak|sql/sql_plugin.cc|operator new|dlopen|plugin_dl_add|plugin_dl_foreach"
+            elif grep -qi 'dl_open_worker' ${ERROR_LOGS} 2>/dev/null; then
+              UNIQUE_ID="LSAN|memory leak|sql/sql_plugin.cc|operator new|dl_open_worker|dlopen|plugin_dl_add"
       fi; fi; fi; fi
       echo "${UNIQUE_ID}"
       exit 0
