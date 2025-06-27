@@ -257,7 +257,7 @@ find_other_possible_issue_strings(){
   GOT_FATAL_ERROR=
   MEMNOTFREED="$(grep -hi 'Warning: Memory not freed' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed 's|: [0-9]\+||' | tr -d '\n')"
   if [ ! -z "${MEMNOTFREED}" ]; then
-    TEXT="MEMORY_NOT_FREED|${MEMNOTFREED}"
+    TEXT="GENERIC_ISSUE-DO_NOT_ADD_TO_KB_OR_KBA|MEMORY_NOT_FREED|${MEMNOTFREED}"
     echo "${TEXT}"
     exit 0
   fi

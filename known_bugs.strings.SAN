@@ -629,6 +629,7 @@ ASAN|stack-buffer-overflow|strings/int2str.c|int2str|Item_func_conv::val_str|Typ
 ASAN|stack-buffer-overflow|strings/int2str.c|int2str|Item_func_conv::val_str|Item::save_str_in_field|Item::save_in_field                                                       ## MDEV-32755 (Still in 10.5)
 
 ###### FIXED BUGS ######
+# LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|root_alloc|init_alloc_root                                                                                               ## MDEV-37093 Filtered; stack is too generic
 # UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/ddl_log.cc|ddl_log_write_execute_entry|ddl_log_write_execute_entry|ddl_log_write|ddl_log_create_table ## Fixed ## MDEV-27048
 # ASAN|heap-use-after-free|mysys/mf_keycache.c|flush_all_key_blocks|prepare_resize_simple_key_cache|resize_partitioned_key_cache|resize_key_cache                              ## Fixed ## MDEV-22590
 # UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|strings/decimal.c|decimal2longlong|my_decimal2int|my_decimal::to_longlong|Item_decimal::val_int ## Fixed ## MDEV-22742
