@@ -386,6 +386,7 @@ order|SIGABRT|join_read_first|sub_select|do_select|JOIN::exec_inner             
 last_pos == 0 || pos > last_pos|SIGABRT|fts_cache_node_add_positions|row_fts_insert_tuple|row_fts_merge_insert|fts_parallel_merge                                              ## MDEV-35967
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement                                            ## MDEV-35937
 offsets|SIGABRT|btr_check_node_ptr|btr_compress|btr_cur_compress_if_useful|btr_cur_pessimistic_delete                                                                          ## MDEV-35935
+mtr->memo_contains_flagged(&index.lock, MTR_MEMO_X_LOCK)|SIGABRT|btr_block_reget|btr_discard_page|btr_cur_pessimistic_delete|btr_cur_node_ptr_delete                           ## MDEV-37097
 m_comparator.cmp_type() != ROW_RESULT|SIGABRT|Item_func_in::compatible_types_scalar_bisection_possible|Item_func_in::vcol_subst_transformer|Item_func::compile|Item_cond::do_compile ## MDEV-35913
 m_comparator.cmp_type() != ROW_RESULT|SIGABRT|Item_func_in::compatible_types_scalar_bisection_possible|Item_func_in::vcol_subst_transformer|Item_func::compile|Item::top_level_compile ## MDEV-35913
 SIGSEGV|Field::store_timestamp|TR_table::store|TR_table::update|ha_commit_trans                                                                                                ## MDEV-35842
