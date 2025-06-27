@@ -65,7 +65,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2013  ## Ref REGEX_ERRORS_FILTER.info (se
 MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22 (require_secure_transport)
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
-#MARIADB_ERROR_CODE|MariaDB error code: 4226  ## Not filtered FTM, see MDEV-29499
+#MARIADB_ERROR_CODE|MariaDB error code: 4226  ## Not enabled FTM, see MDEV-29499 and MDEV-36390
 MARIADB_ERROR_CODE|MariaDB error code: 12501 ## SPECIAL-31 (to be expected; remote table not available)
 MARIADB_ERROR_CODE|MariaDB error code: 12701 ## MDEV-22936
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
@@ -255,6 +255,7 @@ marked_for_read()|SIGABRT|Field_varstring::val_str|Field_varstring::sort_string|
 SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-36481
 SIGSEGV|Field_row::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable|sp_instr_set::exec_core                                                               ## MDEV-36481
 SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|spider_ping_table_init                                                                                      ## MDEV-36865
+strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|json_nice|Item_func_json_format::val_str|Item::save_str_in_field                                                         ## MDEV-37084
 SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields                                                                                     ## MDEV-36865
 SIGFPE|get_max_range_rowid_filter_elems_for_table|TABLE::init_cost_info_for_usable_range_rowid_filters|make_join_statistics|JOIN::optimize_inner                               ## MDEV-36990
 SIGSEGV|spider_bg_all_conn_break|spider_db_free_result|ha_spider::close|closefrm                                                                                               ## MDEV-36239
@@ -1634,6 +1635,7 @@ table->s->db_create_options == part_table->s->db_create_options|SIGABRT|compare_
 "invalid state" == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables                                                              ## MDEV-15494
 "invalid state" == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|ha_partition::external_lock|handler::ha_external_lock                                        ## MDEV-15494
 SIGABRT|ut_dbg_assertion_failed|trx_rollback_last_sql_stat_for_mysql|innobase_rollback|ha_rollback_trans                                                                       ## MDEV-15494
+(*tables)->reginfo.lock_type >= TL_READ_SKIP_LOCKED|SIGABRT|lock_external|mysql_lock_tables|mysql_lock_tables|lock_tables                                                      ## MDEV-16686
 (*tables)->reginfo.lock_type >= TL_READ|SIGABRT|lock_external|mysql_lock_tables|lock_tables|Sql_cmd_insert::mysql_insert                                                       ## MDEV-16686
 (*tables)->reginfo.lock_type >= TL_READ|SIGABRT|lock_external|mysql_lock_tables|lock_tables|mysql_insert                                                                       ## MDEV-16686
 (*tables)->reginfo.lock_type >= TL_READ|SIGABRT|lock_external|mysql_lock_tables|lock_tables|open_and_lock_tables                                                               ## MDEV-16686
