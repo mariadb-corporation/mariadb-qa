@@ -23,7 +23,7 @@ elif [ "${1}" == "GAL" ]; then
 elif [ "${1}" == "REPL" ]; then
   ${GENDIRS} | xargs -I{} echo "cd {}; if [ -r ./kill_replication ]; then ./kill_replication; else echo './kill_replication did not exist for directory {} - please run ./startup_all or instead do cd {}; ~/mariadb-qa/startup.sh; cd -'; fi; cd .." | xargs -P50 -I{} bash -c "{}"
 else
-  ${GENDIRS} | xargs -I{} echo "cd {}; if [ -r ./kill ]; then ./kill; else echo './kill did not exist for directory {} - please run ./startup_all or instead do cd {}; ~/mariadb-qa/startup.sh; cd -'; fi; cd .." | xargs -P50 -I{} bash -c "{}"
+  ${GENDIRS} | xargs -I{} echo "cd {}; if [ -r ./kill ]; then ./kill; else echo './kill did not exist for directory {} - running ~/mariadb-qa/startup.sh for cd {}; ~/mariadb-qa/startup.sh; cd -'; fi; cd .." | xargs -P50 -I{} bash -c "{}"
 fi
 
 sync
