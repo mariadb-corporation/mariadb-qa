@@ -250,6 +250,7 @@ ret == BINLOG_CHECKSUM_ALG_OFF || ret == BINLOG_CHECKSUM_ALG_UNDEF || ret == BIN
 SIGSEGV|Item::check_cols|cmp_row_type|cmp_row_type|cmp_row_type                                                                                                                ## MDEV-36964
 SIGSEGV|Item_hybrid_func::type_handler|Item::result_type|cmp_row_type|cmp_row_type                                                                                             ## MDEV-36964
 SIGSEGV|Explain_query::~Explain_query|delete_explain_query|log_slow_statement|dispatch_command                                                                                 ## MDEV-31793
+!have_any()|SIGABRT|srw_lock_debug::rd_lock|dict_sys_t::freeze|dict_table_open_on_id|dict_stats_process_entry_from_defrag_pool                                                 ## MDEV-37123
 SIGSEGV|do_mark_index_columns|TABLE::mark_index_columns_no_reset|TABLE::mark_index_columns|prepare_record_for_error_message                                                    ## MDEV-36937
 SIGSEGV|do_mark_index_columns|prepare_record_for_error_message|multi_update::do_updates|multi_update::send_eof                                                                 ## MDEV-36937
 SIGSEGV|do_mark_index_columns|prepare_record_for_error_message|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                                               ## MDEV-36937
