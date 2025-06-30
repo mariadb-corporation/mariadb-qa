@@ -242,6 +242,7 @@ share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::d
 (have_max && !have_min) || (have_max && have_min && (max_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record       ## MDEV-25964
 (have_max && !have_min) || (have_max && have_min && (max_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|sub_select                  ## MDEV-25964
 !thd->is_error()|SIGABRT|TABLE_SHARE::init_from_sql_statement_string|ha_create_table|dd_recreate_table|prepare_for_repair                                                      ## MDEV-36985
+!sea_cur|SIGABRT|rtr_get_father_node|rtr_page_get_father_node_ptr|rtr_page_get_father_block|rtr_adjust_upper_level                                                             ## MDEV-37125
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED) || thd->mdl_context.is_lock_warrantee(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-36980
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-36976
 SIGSEGV|get_loc_info|auditing|plugins_dispatch|mysql_audit_notify                                                                                                              ## MDEV-36974
