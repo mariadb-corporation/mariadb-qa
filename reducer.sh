@@ -1626,24 +1626,25 @@ TS_init_all_sql_files(){
 # Find empty port
 init_empty_port(){
   # Choose a random port number in 13-47K range, with triple check to confirm it is free
-  NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]
+  # Note that reducer.sh uses a 13-47K port range, whereas init_empty_port.sh uses 10-13K to further avoid conflicts
+  NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # 'RANDOM << 15': 1st $RANDOM is bit-shifted left by 15 places (i.e. * 2^15), '| RANDOM': Bitwise OR operation with a 2nd $RANDOM, which fills the lower 15 bits with a new random number. Result: 30-bit random integer
   DOUBLE_CHECK=0
   while :; do
-    # Check if the port is free in three different ways
+    # Check if the port is free in four different ways
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     ISPORTFREE4="$(netstat -tuln | grep :${NEWPORT})"
     if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE4}" ]; then
       if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
-        break  # Suitable port number found
+        break  # Suitable free port number found
       else
         DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
         sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
         continue  # Loop the check
       fi
     else
-      NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]  # Try a new port
+      NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi

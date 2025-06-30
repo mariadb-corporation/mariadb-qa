@@ -3,6 +3,7 @@
 # The empty port number will then be stored in the ${NEWPORT} variable for you to use.
 init_empty_port(){  # Find an empty port
   # Choose a random port number in 10-13K range (**), with triple check to confirm it is free
+  # Note that reducer.sh uses a 13-47K port range, whereas init_empty_port.sh uses 10-13K to further avoid conflicts
   NEWPORT=$[ 10001 + ( ${RANDOM} % 3000 ) ]
   DOUBLE_CHECK=0
   while :; do

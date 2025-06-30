@@ -630,7 +630,7 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
       echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Last good known testcase: $WORKO (provided the disk being used did not run out of space). Terminating."
     fi
     # TODO: ~/ds (most likely) or ~/memory seem to be causing this more recently and more frequently: to fix
-    echoit "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
+    echoit "[Abort] Any 'Killed' message on the next line is reducer self-terminating after an [Abort]; it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
     exit 1
   elif [ -r $INPUTFILE ]; then
@@ -638,7 +638,7 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
   else
     echoit "[Abort] Original input file (${INPUTFILE}) no longer present or readable."
     echoit "[Abort] The source for this reducer was likely deleted. Terminating."
-    echo "[Abort] Any 'Killed' message on the next line is reducer self-terminating, it is not caused by any watchdog"
+    echo "[Abort] Any 'Killed' message on the next line is reducer self-terminating after an [Abort]; it is not caused by any watchdog"
     kill -9 $$  # Effectively self-terminate
     exit 1
   fi
@@ -1626,24 +1626,25 @@ TS_init_all_sql_files(){
 # Find empty port
 init_empty_port(){
   # Choose a random port number in 13-47K range, with triple check to confirm it is free
-  NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]
+  # Note that reducer.sh uses a 13-47K port range, whereas init_empty_port.sh uses 10-13K to further avoid conflicts
+  NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # 'RANDOM << 15': 1st $RANDOM is bit-shifted left by 15 places (i.e. * 2^15), '| RANDOM': Bitwise OR operation with a 2nd $RANDOM, which fills the lower 15 bits with a new random number. Result: 30-bit random integer
   DOUBLE_CHECK=0
   while :; do
-    # Check if the port is free in three different ways
+    # Check if the port is free in four different ways
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     ISPORTFREE4="$(netstat -tuln | grep :${NEWPORT})"
     if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE4}" ]; then
       if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
-        break  # Suitable port number found
+        break  # Suitable free port number found
       else
         DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
         sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
         continue  # Loop the check
       fi
     else
-      NEWPORT=$[ 13001 + ( ${RANDOM} % 34000 ) ]  # Try a new port
+      NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi
@@ -2070,7 +2071,7 @@ init_workdir_and_files(){
       if [ "${REPLICATION}" -ne 1 ]; then
         echoit "[Init] Attempting first mariadbd/mysqld startup with all MYEXTRA options passed"
       else
-        echoit "[Init] Attempting first mariadbd/mysqld startups (master & slave) with all MYEXTRA options passed"
+        echoit "[Init] Attempting first mariadbd/mysqld startups (master & slave) with all MYEXTRA* options passed"
       fi
       FIRST_MYSQLD_START_FLAG=1
       if [ $MODE -ne 1 -a $MODE -ne 6 ]; then start_mysqld_main; else start_valgrind_mysqld_main; fi
@@ -3556,7 +3557,8 @@ process_outcome(){
               FINDBUG="$(grep -Fi --binary-files=text "${MYBUGFOUND}" ${KNOWN_BUGS_LOC} | head -n1)"
               if [[ "${FINDBUG}" == "#"* ]]; then FINDBUG=''; fi  # Bugs marked as fixed need to be excluded. This cannot be done by using "^${TEXT}" as the grep is not regex aware, nor can it be, due to the many special (regex-like) characters in the unique bug strings
               if [ -z "${FINDBUG}" ]; then  # Reducer found a new bug (nothing found in known bugs)
-                echoit "[NewBug] Reducer located a new bug whilst reducing this issue: $(cat ${WORKD}/MYBUG.FOUND 2>/dev/null | head -n1)"
+                # TODO: need some provision for when MYBUG.FOUND is empty (possibly due to top SAN issues being dropped?)
+                echoit "[NewBug] Reducer located a new bug while reducing this issue: $(cat ${WORKD}/MYBUG.FOUND 2>/dev/null | head -n1)"
                 EPOCH_RAN="$(date +%H%M%S%N)${RANDOM}"
                 if [ ! -z "${NEW_BUGS_SAVE_DIR}" ]; then  # If set, we need to copy this new bug to the NEW_BUGS_SAVE_DIR
                   if [ ! -d "${NEW_BUGS_SAVE_DIR}" ]; then  # Leave this check, it re-checks if the [previously created, at the start of the script] NEW_BUGS_SAVE_DIR still exists
