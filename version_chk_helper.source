@@ -108,7 +108,7 @@ fi
 if [ ! -z "${MDEV_OR_MENT}" ]; then
   NR="$(echo "${MDEV_OR_MENT}" | grep -o '[0-9]\+')"
   if [ ! -z "$(echo "${NR}" | sed 's|^[0-9]||;s|^[0-9]||')" ]; then  # At least 3 long
-    BB="$(ls -d /test/bb*${NR}* 2>/dev/null | head -n1 | sed 's|_dbg||;s|_opt||;s|/test/||')"
+    BB="$(ls -d /test/bb*${NR}* 2>/dev/null | head -n1 | sed 's|_dbg||;s|_opt||;s|/test/||;s|[\-_]*MD[0-9][0-9][0-9]\+.*||')"
     if [ ! -z "${BB}" ]; then
       SVR="${BB} ${SVR}"
     else
@@ -119,14 +119,12 @@ if [ ! -z "${MDEV_OR_MENT}" ]; then
     SVR="${MDEV_OR_MENT} ${SVR}"
   fi
   NR=
-else  # No MDEV/MENT number found; still attempt to retrieve a buildbot ('bb-') branch name, if present
+else  # No MDEV/MENT number found; still attempt to retrieve a buildbot ('bb...') branch name, if present
+  BB="$(echo "${PWD}" | sed 's|.*\(bb[-_]\)|\1|;s|[\-_]\+MD[0-9][0-9][0-9]\+.*||;s|[\-_]*MD[0-9][0-9][0-9]\+.*||')"
   if [[ "${PWD}" == *"bb-"* || "${PWD}" == *"bb_"* ]]; then
-    BB="$(echo "${PWD}" | sed 's|.*\(bb[-_]\)|\1|;s|[\-_M]\+D[0-9][0-9][0-9]\+.*||')"
-    if [ ! -z "${BB}" ]; then
-      SVR="${BB} ${SVR}"
-    fi
-    BB=
+    SVR="${BB} ${SVR}"
   fi
+  BB=
 fi
 MDEV_OR_MENT=
 

@@ -234,6 +234,8 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                 ## MDEV-37108
+!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                         ## MDEV-37108 (SAN builds)
 share.key_info[share.keys].algorithm == HA_KEY_ALG_VECTOR|SIGABRT|ha_create_table|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command                          ## MDEV-37022
 share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::delete_row|multi_delete::rowid_table_deletes                                                     ## MDEV-36997
 (have_last && !have_first) || (have_last && have_first && (last_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record ## MDEV-25964
@@ -310,9 +312,6 @@ find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|handler::ha_rnd_p
 key_len != 0 || find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|ha_innobase::rnd_pos|handler::ha_rnd_pos|rr_from_tempfile                                       ## MDEV-36438
 find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|ha_innobase::rnd_pos|handler::ha_rnd_pos|rr_from_tempfile                                                       ## MDEV-36438
 SIGSEGV|Locked_tables_list::unlink_from_list|close_all_tables_for_name|mysql_alter_table|Sql_cmd_alter_table::execute                                                          ## MDEV-36561
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-36563
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_admin_table                            ## MDEV-36563
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|admin_recreate_table                         ## MDEV-36563
 operation_failed || !pos_in_locked_tables->table|SIGABRT|Table_specification_st::finalize_locked_tables|mysql_create_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-36435
 keyinfo_array.size() == 0|SIGABRT|Opt_hints_table::fix_hint|Opt_hints_qb::fix_hints_for_table|setup_tables|setup_tables_and_check_access                                       ## MDEV-36486
 *str != '\0'|SIGABRT|my_message_sql|Table_triggers_list::check_for_broken_triggers|Table_triggers_list::prepare_for_rename|rename_triggers                                     ## MDEV-36484
@@ -3039,3 +3038,6 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # thd->lex->sql_command == SQLCOM_XA_COMMIT || (thd->lex->sql_command == SQLCOM_XA_ROLLBACK || (thd->lex->sql_command == SQLCOM_PRELOAD_KEYS && thd->get_stmt_da()->get_sql_errno() ))|SIGABRT|run_xa_complete_ordered|TC_LOG::run_commit_ordered|MYSQL_BIN_LOG::trx_group_commit_with_engines|MYSQL_BIN_LOG::trx_group_commit_leader ## Fixed ## MDEV-36799
 # INNODB_ERROR|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD ## Fixed MDEV-35187
 # !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|wsrep_mysql_parse|dispatch_command      ## Fixed ## MDEV-25668
+# !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query     ## Fixed ## MDEV-36563
+# !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_admin_table                 ## Fixed ## MDEV-36563
+# !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|admin_recreate_table              ## Fixed ## MDEV-36563
