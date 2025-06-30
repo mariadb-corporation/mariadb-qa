@@ -36,6 +36,8 @@ UBSAN|X is outside the range of representable values of type 'unsigned long long
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|storage/myisam/mi_key.c|retrieve_auto_increment|mi_write|handler::ha_write_row|write_record  ## MDEV-36823
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|storage/maria/ma_key.c|ma_retrieve_auto_increment|_ma_write_undo_key_insert|_ma_ck_write_btree_with_log|_ma_ck_write_btree ## MDEV-36823
 UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/row/row0ins.cc|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-36823
+UBSAN|X is outside the range of representable values of type 'unsigned long'|include/row0row.inl|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_upd_clust_rec_by_insert     ## MDEV-36823
+UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/row/row0ins.cc|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_upd_clust_rec_by_insert  ##MDEV-36823
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-utf16.h|my_mb_wc_utf16_quick|my_charlen_utf16|my_ismbchar|my_numchars_utf16                                     ## MDEV-36821
 UBSAN|applying non-zero offset X to null pointer|include/rem0rec.inl|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read
 UBSAN|load of misaligned address X for type 'const rec_t' (aka 'const unsigned char'), which requires 2 byte alignment|include/rem0rec.inl|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read
