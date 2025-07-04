@@ -234,6 +234,8 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|inline_mysql_mutex_lock|logger_sync|log_statement_ex|log_statement                                                                                                      ## MDEV-37122
+SIGSEGV|safe_mutex_lock|inline_mysql_mutex_lock|logger_sync|log_statement_ex                                                                                                    ## MDEV-37122
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                 ## MDEV-37108
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                         ## MDEV-37108 (SAN builds)
 share.key_info[share.keys].algorithm == HA_KEY_ALG_VECTOR|SIGABRT|ha_create_table|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command                          ## MDEV-37022
