@@ -1,0 +1,11 @@
+SET SQL_MODE='';
+CREATE TABLE t(Coordinates POINT NOT NULL,SPATIAL INDEX(Coordinates));
+XA START 'a';
+SET GLOBAL INNODB_status_output_locks=1;
+INSERT INTO t VALUES(GeomFromText('POINT(1 1)'));
+insert INTO t values(PointFromWKB(POINT(1e+1,2e+1)));
+SET GLOBAL innodb_limit_optimistic_insert_debug=2;
+insert INTO t values(POINT(1e-1,3e+1));
+INSERT INTO t VALUES(GeomFromText('POINT(1 1)'));
+INSERT INTO t VALUES();
+SHOW ENGINE INNODB STATUS;

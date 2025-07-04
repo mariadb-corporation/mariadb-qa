@@ -148,6 +148,7 @@ MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_system_variables             ## MDEV-35197
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at sql/sql_acl.cc                             ## MDEV-34501 (ES)
+MARIADBD_ERROR|mariadbd: innodb_buffer_pool_size change aborted                                          ## MDEV-37149
 
 ##### Slave errors
 SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346
@@ -238,12 +239,17 @@ SIGSEGV|inline_mysql_mutex_lock|logger_sync|log_statement_ex|log_statement      
 SIGSEGV|safe_mutex_lock|inline_mysql_mutex_lock|logger_sync|log_statement_ex                                                                                                    ## MDEV-37122
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                 ## MDEV-37108
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                         ## MDEV-37108 (SAN builds)
+page_is_leaf(block->page.frame)|SIGABRT|lock_rec_print|lock_trx_print_locks|lock_print_info::operatorlock0lock.cc|thread_safe_trx_ilist_t::for_each<lock_print_info>            ## MDEV-37127
 share.key_info[share.keys].algorithm == HA_KEY_ALG_VECTOR|SIGABRT|ha_create_table|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command                          ## MDEV-37022
+backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                       ## MDEV-37139
 share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::delete_row|multi_delete::rowid_table_deletes                                                     ## MDEV-36997
 (have_last && !have_first) || (have_last && have_first && (last_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record ## MDEV-25964
 (have_max && !have_min) || (have_max && have_min && (max_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record       ## MDEV-25964
 (have_max && !have_min) || (have_max && have_min && (max_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|sub_select                  ## MDEV-25964
 !thd->is_error()|SIGABRT|TABLE_SHARE::init_from_sql_statement_string|ha_create_table|dd_recreate_table|prepare_for_repair                                                      ## MDEV-36985
+btr_node_ptr_get_child_page_no(rec, offsets) == page_no|SIGABRT|rtr_compare_cursor_rec|rtr_get_father_node|rtr_page_get_father_node_ptr|rtr_page_get_father_block              ## MDEV-37150
+offsets|SIGABRT|rec_offs_n_fields|rec_offs_validate|rec_offs_comp|rtr_update_mbr_field                                                                                         ## MDEV-37150
+!sea_cur|SIGABRT|rtr_get_father_node|rtr_page_get_father_node_ptr|rtr_page_get_father_block|rtr_adjust_upper_level                                                             ## MDEV-37125
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED) || thd->mdl_context.is_lock_warrantee(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-36980
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-36976
 SIGSEGV|get_loc_info|auditing|plugins_dispatch|mysql_audit_notify                                                                                                              ## MDEV-36974
@@ -252,6 +258,7 @@ ret == BINLOG_CHECKSUM_ALG_OFF || ret == BINLOG_CHECKSUM_ALG_UNDEF || ret == BIN
 SIGSEGV|Item::check_cols|cmp_row_type|cmp_row_type|cmp_row_type                                                                                                                ## MDEV-36964
 SIGSEGV|Item_hybrid_func::type_handler|Item::result_type|cmp_row_type|cmp_row_type                                                                                             ## MDEV-36964
 SIGSEGV|Explain_query::~Explain_query|delete_explain_query|log_slow_statement|dispatch_command                                                                                 ## MDEV-31793
+!have_any()|SIGABRT|srw_lock_debug::rd_lock|dict_sys_t::freeze|dict_table_open_on_id|dict_stats_process_entry_from_defrag_pool                                                 ## MDEV-37123
 SIGSEGV|do_mark_index_columns|TABLE::mark_index_columns_no_reset|TABLE::mark_index_columns|prepare_record_for_error_message                                                    ## MDEV-36937
 SIGSEGV|do_mark_index_columns|prepare_record_for_error_message|multi_update::do_updates|multi_update::send_eof                                                                 ## MDEV-36937
 SIGSEGV|do_mark_index_columns|prepare_record_for_error_message|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                                               ## MDEV-36937
@@ -341,6 +348,7 @@ SIGSEGV|Field::set_notnull|Item::save_int_in_field|Item::save_in_field|save_wind
 SIGSEGV|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                                                                                                       ## MDEV-36355
 SIGSEGV|internal_str2dec|str2my_decimal|Value_source::Converter_str2my_decimal::Converter_str2my_decimal|Value_source::Converter_str2my_decimal_with_warn::Converter_str2my_decimal_with_warn ## MDEV-36354
 SIGSEGV|Item_subselect::init|Item_in_subselect::Item_in_subselect|MYSQLparse|parse_sql                                                                                         ## MDEV-36353
+SIGSEGV|Item_subselect::init|Item_in_subselect::Item_in_subselect|ORAparse|parse_sql                                                                                           ## MDEV-36353
 SIGSEGV|Binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str                                                  ## MENT-2244
 SIGSEGV|Binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Type_handler::Item_send_str                                                   ## MENT-2244
 SIGSEGV|Static_binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii|Item_str_ascii_func::val_str                                           ## MENT-2244
