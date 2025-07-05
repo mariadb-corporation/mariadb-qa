@@ -7,16 +7,17 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
-UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map  ##MDEV-36438
+UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map ##MDEV-36438
+UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_supremum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map ##MDEV-36438
 UBSAN|member access within null pointer of type 'LOGGER_HANDLE' (aka 'struct logger_handle_st')|mysys/file_logger.c|logger_sync|log_statement_ex|log_statement|auditing        ## MDEV-37122
 ASAN|heap-use-after-free|plugin/server_audit/server_audit.c|filter_query_type|skip_set_statement|log_statement_ex|log_statement                                                ## MDEV-37105
-UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare|Item_func_eq::val_bool ## MDEV-37062
-UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare|Item_func_eq::val_int ## MDEV-37062
-UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select ## MDEV-37073
-ASAN|stack-buffer-overflow|strings/strmake.c|strmake|Charset_collation_map_st::insert_or_replace|Charset_collation_map_st::from_text|Sys_var_charset_collation_map::charset_collation_map_from_item ## MDEV-36971
-UBSAN|call to function show_func_example(THD*, st_mysql_show_var*, char*) through pointer to incorrect function type 'int (*)(THD *, st_mysql_show_var *, void *, system_status_var *, enum_var_type)'|sql/sql_show.cc|show_status_array|show_status_array|fill_status|get_schema_tables_result ## MDEV-37064
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|sql/item_func.cc|Item_func_sleep::val_int|Type_handler::Item_send_long|Protocol::send_result_set_row|select_send::send_data ## MDEV-37062
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|sql/item_func.cc|do_pause|Item_func_sleep::val_int|Type_handler::Item_send_long|Protocol::send_result_set_row ## MDEV-37062
+UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Type_handler::Item_send_long|Protocol::send_result_set_row|select_send::send_data ## MDEV-37073
+UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare|Item_func_eq::val_int ## MDEV-37073
+UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare|Item_func_eq::val_bool ## MDEV-37073
+ASAN|stack-buffer-overflow|strings/strmake.c|strmake|Charset_collation_map_st::insert_or_replace|Charset_collation_map_st::from_text|Sys_var_charset_collation_map::charset_collation_map_from_item ## MDEV-36971
+UBSAN|call to function show_func_example(THD*, st_mysql_show_var*, char*) through pointer to incorrect function type 'int (*)(THD *, st_mysql_show_var *, void *, system_status_var *, enum_var_type)'|sql/sql_show.cc|show_status_array|show_status_array|fill_status|get_schema_tables_result ## MDEV-37064
 UBSAN|X is outside the range of representable values of type 'short'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::FVectorNode|mhnsw_insert|TABLE::hlindexes_on_insert      ## MDEV-37055
 UBSAN|inf is outside the range of representable values of type 'short'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::FVectorNode|mhnsw_insert|TABLE::hlindexes_on_insert    ## MDEV-37055
 UBSAN|applying zero offset to null pointer|strings/ctype-bin.c|my_strnncollsp_8bit_bin|group_concat_key_cmp_with_order|tree_insert|Item_func_group_concat::add                 ## MDEV-37036
@@ -153,6 +154,7 @@ UBSAN|-nan is outside the range of representable values of type 'unsigned long l
 UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|open_and_lock_tables ## MDEV-35721
 UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|read_statistics_for_tables_if_needed ## MDEV-35721
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|Field_longstr::well_formed_copy_with_check ## MDEV-35718
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|Alter_info::check_vcol_field ## MDEV-35717
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|mysql_prepare_create_table_finalize ## MDEV-35717
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|st_select_lex::period_setup_conds ## MDEV-35717
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-ascii.h|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq ## MDEV-35717
@@ -348,6 +350,7 @@ UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spi
 UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::truncate|Sql_cmd_truncate_table::handler_truncate|Sql_cmd_truncate_table::truncate_table ## MDEV-33191
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoll_8bit|Value_source::Converter_strntoll::Converter_strntoll|Value_source::Converter_strntoll_with_warn::Converter_strntoll_with_warn|Field_string::val_int ## MDEV-33007
 UBSAN|member call on null pointer of type 'struct my_decimal'|sql/filesort.cc|Type_handler_decimal_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys          ## MDEV-32992
+UBSAN|signed integer overflow: -X * Y cannot be represented in type 'int'|strings/json_lib.c|json_path_setup|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler::Item_send_str ## MDEV-32963
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'int'|strings/json_lib.c|json_find_path|Item_func_json_insert::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row ## MDEV-32963
 UBSAN|load of value X, which is not a valid value for type 'bool'|storage/innobase/dict/dict0stats.cc|dict_stats_save_index_stat|dict_stats_save|dict_stats_update|dict_stats_init ## MDEV-32667
 UBSAN|load of value X, which is not a valid value for type 'bool'|storage/innobase/dict/dict0stats.cc|dict_stats_save_index_stat|dict_stats_save|dict_stats_update|dict_stats_process_entry_from_recalc_pool ## MDEV-32667

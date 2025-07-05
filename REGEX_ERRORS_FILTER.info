@@ -8,6 +8,7 @@ Note: While unlikely to ever happen, REGEX_ERRORS_FILTER should never be fully e
 ------------------------------------------------------------------------------------------------------------------------
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
+mariadbd: Got an error writing communication packets  Regularly seen after shutdown, possible related to OOS or similar
 ERROR. mariadbd: Can.t find record in                 MDEV-37068 (Vector)  # Filter not activated; find additional testcases
 Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
 Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested

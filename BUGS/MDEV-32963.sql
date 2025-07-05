@@ -1,2 +1,4 @@
 SELECT ST_ASGEOJSON(ST_GEOMFROMTEXT("POINT(1 11)",13),2147483647);
 SELECT JSON_INSERT('{ "a" : "foo","b" : [ 1,2,3 ] }','$.a[1]',true);
+
+SELECT JSON_VALUE('["foo"]','$**[-33038035107]')AS f;
