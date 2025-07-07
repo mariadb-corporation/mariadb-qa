@@ -237,6 +237,10 @@ SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|inline_mysql_mutex_lock|logger_sync|log_statement_ex|log_statement                                                                                                      ## MDEV-37122
 SIGSEGV|safe_mutex_lock|inline_mysql_mutex_lock|logger_sync|log_statement_ex                                                                                                    ## MDEV-37122
+SIGSEGV|THD::query_start_sec_part|Item_func_current_timestamp::val_native|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null|Type_handler_timestamp_common::Item_save_in_field  ## MDEV-37171
+SIGSEGV|THD::query_start|Item_func_current_timestamp::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null  ## MDEV-37171
+SIGSEGV|date_conv_mode_t::date_conv_mode_t|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options                                                           ## MDEV-37171
+SIGSEGV|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options|Item::save_date_in_field                                                                     ## MDEV-37171
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                 ## MDEV-37108
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                         ## MDEV-37108 (SAN builds)
 page_is_leaf(block->page.frame)|SIGABRT|lock_rec_print|lock_trx_print_locks|lock_print_info::operatorlock0lock.cc|thread_safe_trx_ilist_t::for_each<lock_print_info>            ## MDEV-37127
