@@ -10,6 +10,7 @@ UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through poin
 UBSAN|member access within null pointer of type 'THD'|sql/sql_class.h|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options|Item::save_date_in_field      ## MDEV-37171
 UBSAN|member call on null pointer of type 'THD'|sql/item_timefunc.cc|Item_func_current_timestamp::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null|Type_handler_timestamp_common::Item_save_in_field  ## MDEV-37171
 UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map ##MDEV-36438
+UBSAN|member call on null pointer of type 'Field'|sql/sql_acl.cc|replace_routine_table|sp_revoke_privileges|drop_routine|mysql_execute_command                                 ## MDEV-27842
 UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_supremum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map ##MDEV-36438
 UBSAN|member access within null pointer of type 'LOGGER_HANDLE' (aka 'struct logger_handle_st')|mysys/file_logger.c|logger_sync|log_statement_ex|log_statement|auditing        ## MDEV-37122
 ASAN|heap-use-after-free|plugin/server_audit/server_audit.c|filter_query_type|skip_set_statement|log_statement_ex|log_statement                                                ## MDEV-37105
