@@ -815,6 +815,7 @@ SIGSEGV|spider_db_open_item_ident|spider_mbase_handler::append_order_by|spider_m
 !thd->is_current_stmt_binlog_format_row()|SIGABRT|sp_revoke_privileges|mysql_execute_command|mysql_parse|wsrep_mysql_parse                                                     ## MDEV-31352
 table->skip_alter_undo || !check_foreigns|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                                ## MDEV-34934
 table->skip_alter_undo || !check_unique_secondary|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                        ## MDEV-34934
+SIGSEGV|Item_func_plus::decimal_op|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal              ## MDEV-31284
 SIGSEGV|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal|VDec::VDec|VDec2_lazy::VDec2_lazy                        ## MDEV-31284
 SIGSEGV|VDec2_lazy::VDec2_lazy|Item_func_plus::decimal_op|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal                                ## MDEV-31284
 SIGSEGV|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal|VDec::VDec                              ## MDEV-31284
