@@ -187,6 +187,7 @@ UBSAN|downcast of address X with insufficient space for an object of type 'my_de
 UBSAN|downcast of address X with insufficient space for an object of type 'my_decimal'|sql/item_strfunc.cc|Item_dyncol_get::get_date|Temporal_with_date::make_from_item|Temporal_with_date::Temporal_with_date|Datetime::Datetime ## MDEV-35714
 UBSAN|load of value X, which is not a valid value for type 'enum enum_schema_tables'|sql/sql_show.cc|optimize_for_get_all_tables|optimize_schema_tables_reads|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-35713
 UBSAN|load of value X, which is not a valid value for type 'enum enum_schema_tables'|sql/sql_show.cc|get_all_tables|get_schema_tables_result|JOIN::exec_inner|JOIN::exec       ## MDEV-35713
+UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|check_rules|init_weight_level|create_tailoring|my_ci_init_collation                                             ## MDEV-35712
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|check_rules|init_weight_level|create_tailoring|my_coll_init_uca                                                 ## MDEV-35712
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|my_uca_contraction_find|my_char_weight_put|apply_one_rule|init_weight_level                                     ## MDEV-35712
 ASAN|stack-buffer-overflow|sql/sql_string.h|asan_memcpy|Binary_string::q_append|spider_string::q_append|spider_db_append_xid_str                                               ## MDEV-35426
