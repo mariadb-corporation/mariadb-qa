@@ -7,6 +7,9 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnncollsp_simple|handler::check_duplicate_long_entries_update|handler::ha_update_row|mysql_update       ## MDEV-37203
+UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnncollsp_simple|handler::check_duplicate_long_entries_update|handler::ha_update_row|Sql_cmd_update::update_single_table ## MDEV-37203
+UBSAN|applying zero offset to null pointer|strings/ctype-uca.inl|my_uca_strnncollsp_onelevel_utf8mb4|handler::check_duplicate_long_entries_update|handler::ha_update_row|Sql_cmd_update::update_single_table ## MDEV-37203
 UBSAN|member access within null pointer of type 'THD'|sql/sql_class.h|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options|Item::save_date_in_field      ## MDEV-37171
 UBSAN|member call on null pointer of type 'THD'|sql/item_timefunc.cc|Item_func_current_timestamp::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null|Type_handler_timestamp_common::Item_save_in_field  ## MDEV-37171
 UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map ##MDEV-36438
