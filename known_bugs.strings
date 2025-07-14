@@ -135,6 +135,7 @@ GOT_ERROR|Got error 12701|when reading table                   ## MDEV-26543
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
 GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spider)
+GOT_ERROR|Got error: 98: Address already in use                ## MDEV-37173
 GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or SPECIAL-24 / MDEV-33291, or presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
 INNODB_ERROR|Table mysql.innodb_table_stats not found          ## SPECIAL-30 (non-issue)
 INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
@@ -236,7 +237,14 @@ SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## 
 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|inline_mysql_mutex_lock|logger_sync|log_statement_ex|log_statement                                                                                                      ## MDEV-37122
+len|SIGABRT|mtr_t::memset|mtr_t::memset|page_delete_rec_list_end|page_move_rec_list_end                                                                                         ## MDEV-37183
+discard.n_recs == 1|SIGABRT|ut_dbg_assertion_failed|row_import_update_discarded_flag|row_discard_tablespace|row_discard_tablespace_for_mysql                                    ## MDEV-37173
+SIGSEGV|replace_routine_table|sp_revoke_privileges|drop_routine|mysql_execute_command                                                                                           ## MDEV-27842
 SIGSEGV|safe_mutex_lock|inline_mysql_mutex_lock|logger_sync|log_statement_ex                                                                                                    ## MDEV-37122
+SIGSEGV|THD::query_start_sec_part|Item_func_current_timestamp::val_native|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null|Type_handler_timestamp_common::Item_save_in_field  ## MDEV-37171
+SIGSEGV|THD::query_start|Item_func_current_timestamp::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null  ## MDEV-37171
+SIGSEGV|date_conv_mode_t::date_conv_mode_t|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options                                                           ## MDEV-37171
+SIGSEGV|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options|Item::save_date_in_field                                                                     ## MDEV-37171
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                 ## MDEV-37108
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                         ## MDEV-37108 (SAN builds)
 page_is_leaf(block->page.frame)|SIGABRT|lock_rec_print|lock_trx_print_locks|lock_print_info::operatorlock0lock.cc|thread_safe_trx_ilist_t::for_each<lock_print_info>            ## MDEV-37127
@@ -810,6 +818,7 @@ SIGSEGV|spider_db_open_item_ident|spider_mbase_handler::append_order_by|spider_m
 !thd->is_current_stmt_binlog_format_row()|SIGABRT|sp_revoke_privileges|mysql_execute_command|mysql_parse|wsrep_mysql_parse                                                     ## MDEV-31352
 table->skip_alter_undo || !check_foreigns|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                                ## MDEV-34934
 table->skip_alter_undo || !check_unique_secondary|SIGABRT|trx_t::check_bulk_buffer|row_ins_index_entry|row_ins_index_entry_step|row_ins                                        ## MDEV-34934
+SIGSEGV|Item_func_plus::decimal_op|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal              ## MDEV-31284
 SIGSEGV|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal|VDec::VDec|VDec2_lazy::VDec2_lazy                        ## MDEV-31284
 SIGSEGV|VDec2_lazy::VDec2_lazy|Item_func_plus::decimal_op|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal                                ## MDEV-31284
 SIGSEGV|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal|VDec::VDec                              ## MDEV-31284
