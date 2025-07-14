@@ -719,6 +719,7 @@ other_lock->is_waiting()|SIGABRT|lock_rec_queue_validate|lock_clust_rec_read_che
 #SIGABRT|MDL_context::acquire_lock|MDL_context::acquire_locks|lock_table_names|lock_table_names                                                                                ## MENT-1958 (secondary case: to move when found again)
 share->tmp_table == NO_TMP_TABLE|SIGABRT|get_schema_tables_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                            ## MDEV-22916
 SIGABRT|get_schema_tables_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result                                                                             ## MDEV-22916
+!tmp_gco->next_gco || tmp_gco->last_sub_id > sub_id|SIGABRT|finish_event_group|handle_rpl_parallel_thread|start_thread|clone3                                                  ## MDEV-21107
 #!tmp_gco->next_gco || tmp_gco->last_sub_id > sub_id|SIGABRT|finish_event_group|handle_rpl_parallel_thread|pfs_spawn_thread|start_thread                                       ## MDEV-21107 (needs additional testcases)
 SIGABRT|finish_event_group|handle_rpl_parallel_thread|pfs_spawn_thread|start_thread                                                                                            ## MDEV-21107
 m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|ha_innobase::rnd_init|handler::ha_rnd_init                          ## MDEV-32262

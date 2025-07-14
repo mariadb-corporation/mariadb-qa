@@ -1,4 +1,5 @@
 #!/bin/bash
+MYEXTRA_OPT="$*"
 # Only use this from within a BASEDIR (startup.sh will link this script into any BASEDIR from which it is run)
 # TODO: add checking for 2023-10-03 18:04:44 Assert: MASTER_STARTUP_OK=0, SLAVE_STARTUP_OK=0: not both 1. Debug workdir: /dev/shm/169631662194719 or add this functionality (loop retry) to reducer (better)
 
@@ -14,6 +15,10 @@ elif [ ! -r ${HOME}/tt ]; then
 else
   echo '----- Testcase (will be looped with a fresh replication setup/startup each time) -----'
   cat in.sql | grep -v '^[ \t]*$'
+  if [ ! -z "${MYEXTRA_OPT}" ]; then
+    echo '----- Server options used: -----'
+    echo "${MYEXTRA_OPT}"
+  fi
   echo '-----'
 fi
 if [ ! -r ./start_replication ]; then
@@ -31,7 +36,7 @@ export SRNOCL=1  # Do not bring up CLI
 while true; do
   LOOP=$[ ${LOOP} + 1 ]
   echo "> Trial #${LOOP}: starting replication"
-  ./start_replication >/dev/null 2>&1
+  ./start_replication ${MYEXTRA_OPT} >/dev/null 2>&1
   ./test_pquery 2>&1 | grep 'Exit status'
   sleep 2
   ./stop_replication >/dev/null 2>&1

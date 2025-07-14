@@ -4,19 +4,19 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=10.11                                                       # Use the earliest major version affected by the bug
+VERSION=10.5                                                        # Use the earliest major version affected by the bug
 ES=0                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
-SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
+SKIP_NON_SAME_VERSION=1                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
-RECLONE=0                                                           # Set to 1 to reclone a tree before starting
+RECLONE=1                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.i
-LAST_KNOWN_GOOD_COMMIT='a54692a4b5bab8dc3aaac039bf9f9cb84bb2c9bf'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='3158af03bdf2cdcac16de5bf40bbaa979981717d'   # Revision of first known bad commit
+LAST_KNOWN_GOOD_COMMIT='2e580dc2a8da4aaf3a7f1b3cfb4f897dbb5f7089'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='643319a7fb1e273797c2a1e46d76cfac0fa1da8f'   # Revision of first known bad commit
 TESTCASE='/test/in27.sql'                                           # The testcase to be tested
 UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
@@ -349,6 +349,7 @@ while :; do
     fi
     #DEBUG# read -p 'test done'
     echo "$(./stop 2>&1)" >/dev/null 2>&1  # Output is removed as otherwise it may contain, for example, 'bin/mariadb-admin: connect to server at 'localhost' failed' if the server already crashed due to testcase exec
+    sleep 1
     ./kill >/dev/null 2>&1
   else
     export SRNOCL=1  # No CLI when using ./start_replication
@@ -359,6 +360,7 @@ while :; do
       ./test >>"${MAINLOG}" 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
     fi
     ./stop_replication >/dev/null 2>&1 # Output is removed, ref above
+    sleep 1
     ./kill_replication >/dev/null 2>&1
   fi
   if [ ! -z "${UNIQUEID}" ]; then

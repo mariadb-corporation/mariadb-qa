@@ -753,7 +753,7 @@ echo "rm -Rf ./data.multirun" >>multirun_loop
 cp multirun_loop multirun_loop_pquery
 ln -s ./multirun_loop_pquery ./mlp
 ln -s ${SCRIPT_PWD}/multirun_loop_replication ${PWD}/multirun_loop_replication
-sed -i 's|./test;|./test_pquery >/dev/null 2>\&1;|' multirun_loop_pquery
+sed -i 's|./test;|./test_pquery >/dev/null 2>\&1;|' multirun_loop_pquery  # In case it was changed
 echo "#!/bin/bash" >multirun_mysqld
 add_san_options multirun_mysqld
 echo "~/mariadb-qa/multirun_mysqld.sh \"\${*}\"" >>multirun_mysqld
