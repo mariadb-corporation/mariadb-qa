@@ -8,6 +8,8 @@ ls pquery*.conf | tr '\n' ' ' | sed 's|^|PQUERY_CONFIGURATION    |;s|$|\n|'
 grep '^PQUERY_BIN' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|;s|\${SCRIPT_PWD}|~/mariadb-qa|'
 grep '^PRE_SHUFFLE_SQL' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t|'
 grep '^STORAGE_ENGINE_SWAP' pquery*.conf | grep -v PERCENTAGE | sed 's|[ ]\+#.*||;s|=|   \t|;s|""|No|' | sed "s|''|No|"
+grep '^SWAP_ALL_TABLE_NAMES_TO_T1' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
+grep '^SWAP_CREATE_TABLE_NAMES_TO_T1' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
 grep '^ADD_RANDOM_OPTIONS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
 grep '^PQUERY_RUN_TIMEOUT' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
 grep '^THREADS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'

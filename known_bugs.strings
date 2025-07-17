@@ -259,6 +259,7 @@ btr_node_ptr_get_child_page_no(rec, offsets) == page_no|SIGABRT|rtr_compare_curs
 offsets|SIGABRT|rec_offs_n_fields|rec_offs_validate|rec_offs_comp|rtr_update_mbr_field                                                                                         ## MDEV-37150
 !sea_cur|SIGABRT|rtr_get_father_node|rtr_page_get_father_node_ptr|rtr_page_get_father_block|rtr_adjust_upper_level                                                             ## MDEV-37125
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED) || thd->mdl_context.is_lock_warrantee(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-36980
+SIGSEGV|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                                           ## MDEV-36980
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-36976
 SIGSEGV|get_loc_info|auditing|plugins_dispatch|mysql_audit_notify                                                                                                              ## MDEV-36974
 SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|Charset_collation_map_st::insert_or_replace                                                                   ## MDEV-36971
@@ -357,6 +358,7 @@ SIGSEGV|JOIN::fix_all_splittings_in_plan|JOIN::optimize_inner|JOIN::optimize|mys
 found_tables > 0|SIGABRT|best_extension_by_limited_search|best_extension_by_limited_search|best_extension_by_limited_search|greedy_search                                      ## MDEV-32084
 SIGSEGV|Field::set_notnull|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                                             ## MDEV-36356
 SIGSEGV|Field::set_notnull|Item::save_int_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
+SIGSEGV|my_strtod_int|my_strtod|charset_info_st::strntod|Value_source::Converter_strntod::Converter_strntod                                                                    ## MDEV-36355
 SIGSEGV|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                                                                                                       ## MDEV-36355
 SIGSEGV|internal_str2dec|str2my_decimal|Value_source::Converter_str2my_decimal::Converter_str2my_decimal|Value_source::Converter_str2my_decimal_with_warn::Converter_str2my_decimal_with_warn ## MDEV-36354
 SIGSEGV|Item_subselect::init|Item_in_subselect::Item_in_subselect|MYSQLparse|parse_sql                                                                                         ## MDEV-36353
@@ -876,6 +878,7 @@ SIGSEGV|mysql_derived_prepare|mysql_derived_merge_for_insert|mysql_handle_derive
 SIGSEGV|Binary_string::free|Binary_string::~Binary_string|String::~String|Copy_field::~Copy_field                                                                              ## MDEV-21630
 SIGSEGV|mysql_derived_prepare|mysql_handle_derived|Multiupdate_prelocking_strategy::handle_end|Multiupdate_prelocking_strategy::handle_end                                     ## MDEV-21630
 0|SIGABRT|subselect_hash_sj_engine::init|Item_in_subselect::setup_mat_engine|JOIN::choose_subquery_plan|make_join_statistics                                                   ## MDEV-30724
+fixed()|SIGABRT|Item_cond_and::val_bool|Item_func::is_simplified_cond_processor|Item_func_or_sum::walk|Item_cond::walk                                                         ## MDEV-30721
 fixed == 1|SIGABRT|Item_cond_and::val_int|Item_func::is_simplified_cond_processor|Item_func_or_sum::walk|Item_cond::walk                                                       ## MDEV-30721
 fixed()|SIGABRT|Item_cond_and::val_int|Item_func::is_simplified_cond_processor|Item_func_or_sum::walk|Item_cond::walk                                                          ## MDEV-30721
 trx->bulk_insert|SIGABRT|innodb_prepare_commit_versioned|ha_commit_trans|trans_commit_implicit|mysql_execute_command                                                           ## MDEV-30489

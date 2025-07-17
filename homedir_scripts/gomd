@@ -6,9 +6,13 @@
 #BASEDIR=/test/bb-12.1-MDEV-36205-subdist_MD180625-mariadb-12.1.0-linux-x86_64-dbg
 #BASEDIR=/test/bb-12.0-mdev-34680x2-hf_MD240625-mariadb-12.0.1-linux-x86_64-dbg
 #BASEDIR=/test/bb-12.0-mdev-34680x3-hf_UBASAN_MD030725-mariadb-12.0.1-linux-x86_64-opt
-BASEDIR=/test/bb-12.0-mdev-34680x3-hf_MD020725-mariadb-12.0.1-linux-x86_64-opt
+#BASEDIR=/test/bb-12.0-mdev-34680x3-hf_MD020725-mariadb-12.0.1-linux-x86_64-opt
 #BASEDIR=/test/MDEV-34680x2-UBASAN_MD240625-mariadb-12.0.1-linux-x86_64-dbg
 #BASEDIR=/test/bb-12.1-MDEV-36205-subdist_UBASAN_MD180625-mariadb-12.1.0-linux-x86_64-dbg
+#BASEDIR=/test/bb-main-monty_MD150725-mariadb-12.1.0-linux-x86_64-dbg
+#BASEDIR=/test/bb-12.1-MDEV-36205-subdist_UBASAN_MD180625-mariadb-12.1.0-linux-x86_64-dbg
+#BASEDIR=/test/MD170725-mariadb-12.1.0-linux-x86_64-dbg
+BASEDIR=/test/UBASAN_MD170725-mariadb-12.1.0-linux-x86_64-dbg
 RUNSOPT=2
 RUNSDBG=3
 #CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=1 24, and spider swap -> updated to PS=2
@@ -22,8 +26,10 @@ RUNSDBG=3
 #CONF=pquery-run-MD-allb.conf
 #CONF=pquery-run-MD-MDEV-32830.conf  # Replication, PS=2, custom interleave grammar
 #CONF=pquery-run-MD-MDEV-34680.conf  # Audit log, PS=2, custom interleave grammar
-CONF=pquery-run-MD-MDEV-34680x2.conf  # Audit log x2, PS=2, custom interleave grammar
+#CONF=pquery-run-MD-MDEV-34680x2.conf  # Audit log x2, PS=2, custom interleave grammar
 #CONF=pquery-run-MD-3.conf
+#CONF=pquery-run-MD-4.conf
+CONF=pquery-run-MD-5.conf
 #CONF=pquery-run-MD_mtr.conf  # PRE_SHUFFLE_SQL=1
 #CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql (replication enabled)
 #CONF=pquery-run-MD-repl.conf  # Using PRE_SHUFFLE_SQL=2
