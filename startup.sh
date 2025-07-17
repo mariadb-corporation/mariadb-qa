@@ -812,9 +812,9 @@ ln -s ./multirun ./m 2>/dev/null
 cp ./multirun ./multirun_pquery
 
 echo "if [ \"\${MULTI_THREADED}\" != \"1\" ]; then" >>multirun
-echo "  ~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${PWD}/bin/${CLIENT_TO_USE} ${SOCKET}" >>multirun
+echo "  ~/mariadb-qa/multirun_cli.sh 1 10000000 in.sql ${CLIENT_TO_USE} ${SOCKET}" >>multirun
 echo "else" >>multirun
-echo "  ~/mariadb-qa/multirun_cli.sh \${MULTI_THREADS} 100000 in.sql ${PWD}/bin/${CLIENT_TO_USE} ${SOCKET}" >>multirun
+echo "  ~/mariadb-qa/multirun_cli.sh \${MULTI_THREADS} 100000 in.sql ${CLIENT_TO_USE} ${SOCKET}" >>multirun
 echo "fi" >>multirun
 echo "if [ \"\${MULTI_THREADED}\" != \"1\" ]; then" >>multirun_pquery
 echo "  ~/mariadb-qa/multirun_pquery.sh 1 10000000 in.sql \${HOME}/mariadb-qa/pquery/pquery2-md ${SOCKET} ${PWD} 1" >>multirun_pquery
