@@ -191,7 +191,7 @@ Got error .126 .Index is corrupted.*sql-alter.*MAI    MDEV-26258
 Got error 126 when reading table.*#sql-temptable      MDEV-26258
 Got error 126 when reading table.*#sql-temptable      MDEV-26492
 Unsafe statement written to the binary log using statement format since BINLOG_FORMAT = STATEMENT  # Assumed non-issue (STMT based replication)
-InnoDB: Operating system error number 13 in a file operation  Non-issue (CREATE TABLE...DATA DIRECTORY='/foo/bar/')
+InnoDB: Operating system error number 13 in a file operation  Non-issue (CREATE TABLE...DATA DIRECTORY='/foo/bar/'), SPECIAL-41
 InnoDB: The error means mariadbd does not have the access rights to the directory  Idem as 'error number 13' description
 Unknown key id 1 for.*sql-alter.*continue             MDEV-26258
 Warning: Memory not freed: 32                         MDEV-25876 session_track_system_variables

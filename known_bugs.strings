@@ -143,6 +143,7 @@ INNODB_ERROR|FTS_DOC_ID must be larger than 0 for table        ## SPECIAL-34 (no
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
 INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
 INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
+INNODB_ERROR|Operating system error number 13 in a file operation ## SPECIAL-41
 INNODB_ERROR|Operating system error number 17 in a file operation ## SPECIAL-40
 INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
