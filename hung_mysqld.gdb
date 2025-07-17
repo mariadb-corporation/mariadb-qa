@@ -1,3 +1,4 @@
+set trace-commands on
 set logging file out.txt
 set logging enabled on
 set pagination off
@@ -8,7 +9,7 @@ info threads
 show scheduler-locking
 show schedule-multiple
 show non-stop
-show target-async
+show mi-async
 display/i $pc
 disassemble
 info reg
