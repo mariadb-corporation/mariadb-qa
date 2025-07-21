@@ -550,6 +550,8 @@ ASAN|heap-buffer-overflow|sql/sql_cache.cc|Query_cache_block::init|Query_cache::
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|make_join_select|JOIN::optimize_stage2 ## MDEV-28346
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select ## MDEV-28346
 UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-28346
+UBSAN|member call on null pointer of type 'Item'|sql/sql_union.cc|st_select_lex_unit::exec_inner|mysql_union|handle_select|execute_sqlcom_select                               ## MDEV-22447
+UBSAN|member call on null pointer of type 'Item'|sql/sql_union.cc|st_select_lex_unit::exec|mysql_union|handle_select|execute_sqlcom_select                                     ## MDEV-22447
 UBSAN|member call on null pointer of type 'struct Item'|sql/sql_select.cc|handle_select|execute_sqlcom_select|mysql_execute_command|mysql_parse                                ## MDEV-22447
 ASAN|heap-use-after-free|sql/sql_string.cc|__asan_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                   ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|__asan_memmove|Binary_string::copy|String::copy|Item_copy_string::copy                                                              ## MDEV-26822

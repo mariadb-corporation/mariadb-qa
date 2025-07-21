@@ -1632,6 +1632,8 @@ SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_
 SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-22448/20945/25037
 SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                                ## MDEV-22448/20945
 SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::rollback_to_savepoint|THD::restore_backup_open_tables_state                                         ## MDEV-22448/20945
+SIGSEGV|Item::val_uint|st_select_lex_unit::exec_inner|st_select_lex_unit::exec|mysql_union                                                                                     ## MDEV-22447
+SIGSEGV|Item::val_uint|st_select_lex_unit::exec|mysql_union|handle_select                                                                                                      ## MDEV-22447
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-22447
 SIGSEGV|Item::val_uint|handle_select|execute_sqlcom_select|mysql_execute_command                                                                                               ## MDEV-22447
 h == h->type_handler_for_comparison()|SIGABRT|Value_source::Context::Context|Item_func_in::propagate_equal_fields|Item_func::build_equal_items|build_equal_items               ## MDEV-22444
