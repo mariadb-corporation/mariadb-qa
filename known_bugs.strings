@@ -240,6 +240,7 @@ SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## 
 SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_page_init_for_read|buf_read_page_low                                                                  ## MDEV-37263
 SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen                                                                            ## MDEV-37263
 SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_pool_t::page_fix                                                                        ## MDEV-37263
+cost > 0.0|SIGABRT|adjust_quick_cost|best_access_path|get_costs_for_tables|best_extension_by_limited_search                                                                     ## MDEV-23541
 SIGSEGV|inline_mysql_mutex_lock|logger_sync|log_statement_ex|log_statement                                                                                                      ## MDEV-37122
 len|SIGABRT|mtr_t::memset|mtr_t::memset|page_delete_rec_list_end|page_move_rec_list_end                                                                                         ## MDEV-37183
 !b->oldest_modification()|SIGABRT|buf_pool_t::shrink|buf_pool_t::resize|innodb_buffer_pool_size_update|sys_var_pluginvar::global_update                                         ## MDEV-37250
