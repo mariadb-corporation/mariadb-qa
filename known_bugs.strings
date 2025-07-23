@@ -237,6 +237,10 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+node_ != nullptr|SIGABRT|ilist<fil_space_t, space_list_tag_t>::Iterator::Iterator|fil_crypt_find_space_to_rotate|fil_crypt_thread|std::__invoke_impl<void, void                 ## MDEV-37299
+SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                            ## MDEV-37299
+SIGABRT|log_file_t::write|log_write_buf|log_t::write_buf<log0log.cc|log_writer                                                                                                  ## MDEV-37299
+!srv_read_only_mode || m_log_mode == MTR_LOG_NO_REDO|SIGABRT|mtr_t::commit|fil_crypt_start_encrypting_space|fil_crypt_space_needs_rotation|fil_crypt_find_space_to_rotate       ## MDEV-37299
 SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_page_init_for_read|buf_read_page_low                                                                  ## MDEV-37263
 SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen                                                                            ## MDEV-37263
 SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_pool_t::page_fix                                                                        ## MDEV-37263
