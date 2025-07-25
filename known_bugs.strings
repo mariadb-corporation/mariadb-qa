@@ -237,6 +237,8 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command                ## MDEV-36752
+backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                       ## MDEV-36752
 SIGSEGV|inline_mysql_mutex_lock|logger_sync|log_statement_ex|log_statement                                                                                                      ## MDEV-37122
 len|SIGABRT|mtr_t::memset|mtr_t::memset|page_delete_rec_list_end|page_move_rec_list_end                                                                                         ## MDEV-37183
 !b->oldest_modification()|SIGABRT|buf_pool_t::shrink|buf_pool_t::resize|innodb_buffer_pool_size_update|sys_var_pluginvar::global_update                                         ## MDEV-37250
