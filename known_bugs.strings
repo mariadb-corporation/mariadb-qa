@@ -239,6 +239,14 @@ SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## 
 ##### CURRENT BUGS (Search key: Mac) #####
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command                ## MDEV-36752
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                       ## MDEV-36752
+node_ != nullptr|SIGABRT|ilist<fil_space_t, space_list_tag_t>::Iterator::Iterator|fil_crypt_find_space_to_rotate|fil_crypt_thread|std::__invoke_impl<void, void                 ## MDEV-37299
+SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                            ## MDEV-37299
+SIGABRT|log_file_t::write|log_write_buf|log_t::write_buf<log0log.cc|log_writer                                                                                                  ## MDEV-37299
+!srv_read_only_mode || m_log_mode == MTR_LOG_NO_REDO|SIGABRT|mtr_t::commit|fil_crypt_start_encrypting_space|fil_crypt_space_needs_rotation|fil_crypt_find_space_to_rotate       ## MDEV-37299
+SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_page_init_for_read|buf_read_page_low                                                                  ## MDEV-37263
+SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen                                                                            ## MDEV-37263
+SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_pool_t::page_fix                                                                        ## MDEV-37263
+cost > 0.0|SIGABRT|adjust_quick_cost|best_access_path|get_costs_for_tables|best_extension_by_limited_search                                                                     ## MDEV-23541
 SIGSEGV|inline_mysql_mutex_lock|logger_sync|log_statement_ex|log_statement                                                                                                      ## MDEV-37122
 len|SIGABRT|mtr_t::memset|mtr_t::memset|page_delete_rec_list_end|page_move_rec_list_end                                                                                         ## MDEV-37183
 !b->oldest_modification()|SIGABRT|buf_pool_t::shrink|buf_pool_t::resize|innodb_buffer_pool_size_update|sys_var_pluginvar::global_update                                         ## MDEV-37250
@@ -253,7 +261,6 @@ SIGSEGV|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Optio
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                         ## MDEV-37108 (SAN builds)
 page_is_leaf(block->page.frame)|SIGABRT|lock_rec_print|lock_trx_print_locks|lock_print_info::operatorlock0lock.cc|thread_safe_trx_ilist_t::for_each<lock_print_info>            ## MDEV-37127
 share.key_info[share.keys].algorithm == HA_KEY_ALG_VECTOR|SIGABRT|ha_create_table|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command                          ## MDEV-37022
-backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                       ## MDEV-37139
 share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::delete_row|multi_delete::rowid_table_deletes                                                     ## MDEV-36997
 (have_last && !have_first) || (have_last && have_first && (last_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record ## MDEV-25964
 (have_max && !have_min) || (have_max && have_min && (max_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record       ## MDEV-25964
@@ -1631,6 +1638,8 @@ SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_
 SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-22448/20945/25037
 SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                                ## MDEV-22448/20945
 SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::rollback_to_savepoint|THD::restore_backup_open_tables_state                                         ## MDEV-22448/20945
+SIGSEGV|Item::val_uint|st_select_lex_unit::exec_inner|st_select_lex_unit::exec|mysql_union                                                                                     ## MDEV-22447
+SIGSEGV|Item::val_uint|st_select_lex_unit::exec|mysql_union|handle_select                                                                                                      ## MDEV-22447
 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                                         ## MDEV-22447
 SIGSEGV|Item::val_uint|handle_select|execute_sqlcom_select|mysql_execute_command                                                                                               ## MDEV-22447
 h == h->type_handler_for_comparison()|SIGABRT|Value_source::Context::Context|Item_func_in::propagate_equal_fields|Item_func::build_equal_items|build_equal_items               ## MDEV-22444
@@ -3072,3 +3081,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query     ## Fixed ## MDEV-36563
 # !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_admin_table                 ## Fixed ## MDEV-36563
 # !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|admin_recreate_table              ## Fixed ## MDEV-36563
+# backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse           ## Duplicate ## MDEV-37139
