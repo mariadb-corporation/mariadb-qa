@@ -410,10 +410,10 @@ if [ ! -z "$(grep -io 'Basedir.*' pquery-run.log | grep -o '10\.[2-5]\.')" ]; th
     grep -lm1 'innodb_checksum_algorithm' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
   fi
 fi
-if grep -qm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null; then
-  echo '** WITHOUT VALIDATION trials: if this clause remains post-reduction, ref server-testing @ 19-12-23 & MDEV-22164'
-  grep -lm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
-fi
+#if grep -qm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null; then
+#  echo '** WITHOUT VALIDATION trials: if this clause remains post-reduction, ref server-testing @ 19-12-23 & MDEV-22164'
+#  grep -lm1 'WITHOUT VALIDATION' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
+#fi
 if grep -qm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null; then
   echo '** Trials where the slave SQL thread aborted: manual reducer setup verification may be required'
   grep -lm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
