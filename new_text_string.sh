@@ -305,7 +305,8 @@ find_other_possible_issue_strings(){
   MDERRORCODE=
   MDBDERROR="$(grep -hio 'ERROR] mariadbd: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed "s|^ERROR] ||;s|'t[0-9]*'|table|")"
   if [ ! -z "${MDBDERROR}" ]; then
-    TEXT="MARIADBD_ERROR|${MDBDERROR}"
+    TEXT="$(echo "${MDBDERROR}" | sed "s|Incorrect information in file: '[^']*.frm'|Incorrect information in frm file|")"  # Fix to remove any table name/path, specifically for .frm issues, ref MDEV-28498 and MDEV-27771
+    TEXT="MARIADBD_ERROR|${TEXT}"
     echo "${TEXT}"
     exit 0
   fi

@@ -1,0 +1,16 @@
+#!/bin/bash 
+
+CNT1="$(screen -ls | grep pr | wc -l)"
+CNT2="$(screen -ls | grep ge | wc -l)"
+
+if [ "${1}" != "automation" -o "${CNT1}" != "${CNT2}" ]; then
+  echo "pr: ${CNT1}"
+  echo "ge: ${CNT2}"
+fi
+if [ "${CNT1}" != "${CNT2}" ]; then
+  echo '!!!!! ======= WARNING ======= !!!!!'
+  echo "WARNING: 'pr' and 'ge' sessions were detected and a quick automated check noticed that the number of 'pr' screens does not equal the number of 'ge' screens (check 's output'). To prevent a /data/ OOS, you will likely want to fix this by running ~/sge <workdir_number> where workdir_number is the /data/<workdir_number> which is missing from the 's' list (compare with an up-to-date 'vr' list to find which is missing)"
+  echo ''
+  exit 1
+fi
+exit 0

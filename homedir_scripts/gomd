@@ -12,10 +12,13 @@
 #BASEDIR=/test/bb-main-monty_MD150725-mariadb-12.1.0-linux-x86_64-dbg
 #BASEDIR=/test/bb-12.1-MDEV-36205-subdist_UBASAN_MD180625-mariadb-12.1.0-linux-x86_64-dbg
 #BASEDIR=/test/MD170725-mariadb-12.1.0-linux-x86_64-dbg
-BASEDIR=/test/UBASAN_MD170725-mariadb-12.1.0-linux-x86_64-dbg
+#BASEDIR=/test/UBASAN_MD170725-mariadb-12.1.0-linux-x86_64-dbg
+BASEDIR=/test/MDEV-27260_MD260725-mariadb-12.1.0-linux-x86_64-dbg
+#BASEDIR=/test/MDEV-27260_UBASAN_MD260725-mariadb-12.1.0-linux-x86_64-dbg
 RUNSOPT=2
 RUNSDBG=3
-#CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=1 24, and spider swap -> updated to PS=2
+CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2, and spider swap
+#CONF=pquery-run-MD-spider-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-optimizer.conf
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
 #CONF=pquery-run-MD.conf  # Set currently to PRE_SHUFFLE_SQL=2
@@ -29,7 +32,7 @@ RUNSDBG=3
 #CONF=pquery-run-MD-MDEV-34680x2.conf  # Audit log x2, PS=2, custom interleave grammar
 #CONF=pquery-run-MD-3.conf
 #CONF=pquery-run-MD-4.conf
-CONF=pquery-run-MD-5.conf
+#CONF=pquery-run-MD-5.conf
 #CONF=pquery-run-MD_mtr.conf  # PRE_SHUFFLE_SQL=1
 #CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql (replication enabled)
 #CONF=pquery-run-MD-repl.conf  # Using PRE_SHUFFLE_SQL=2
@@ -39,7 +42,6 @@ CONF=pquery-run-MD-5.conf
 #CONF=pquery-run-MD-multi.conf  # Using PRE_SHUFFLE_SQL=2, multithreaded
 #CONF=pquery-run-MD-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-VAL.conf  # Using PRE_SHUFFLE_SQL=2, VAL
-#CONF=pquery-run-MD-spider-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-innodb.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-innodb-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-innodb-MDEV-30531-SAN.conf  # PRE_SHUFFLE_SQL=2, SAN, PRELOAD_SQL

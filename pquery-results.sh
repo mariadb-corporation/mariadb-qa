@@ -27,6 +27,11 @@ if [ "${PWD}" == "/test" -o "${PWD}" == "/data" -o "${PWD}" == "${HOME}" ]; then
   fi
 fi
 
+# If there are ongoing pquery runs, do an automated check and report if there were issues with the pr vs ge count
+if [ -r "${HOME}/check" -a -x "${HOME}/check" ]; then
+  ${HOME}/check 'automation'
+fi
+
 # Check if this is a MDG run
 if [ "$(grep --binary-files=text 'MDG Mode:' ./pquery-run.log 2>/dev/null | sed 's|^.*MDG Mode[: \t]*||' )" == "TRUE" ]; then
   MDG=1

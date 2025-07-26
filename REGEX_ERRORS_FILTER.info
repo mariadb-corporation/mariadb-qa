@@ -178,7 +178,7 @@ Invalid .old.. table or database name                 MDEV-29051
 Incorrect information in file: ...sys                 Usually not due to bugs but due to /sys/ modifications
 Incorrect information in file: ...sys                 MDEV-26297 (tmp-disk-table-size issue)
 Incorrect information in file:.*.frm                  MDEV-28498 (CREATE TABLE/Charset issue)
-Incorrect information in file:.*.frm                  MDEV-27771 (Cuarset issue)
+Incorrect information in file:.*.frm                  MDEV-27771 (Charset issue)
 Incorrect.*file.*#sql-alter-.*.frm                    MDEV-29203 (UNIQUE HASH INDEX issue)
 Incorrect.*file.*#sql-alter-.*.frm                    MDEV-27661 (Charset issue)
 Please run mariadb-upgrade                            Often seen when a mysql db table has been modified by a testcase
