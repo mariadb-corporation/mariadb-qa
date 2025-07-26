@@ -288,7 +288,6 @@ cat "${1}" | tr -d '`' | \
        s|geometrycollection|GEOMETRYCOLLECTION|gi; \
        s|cache|CACHE|gi; \
        s|cycle|CYCLE|gi; \
-       s|block_commit|BLOCK_COMMIT|gi; \
        s|if |IF |gi; \
        s| in | IN |gi; \
        s| on | ON |gi; \
@@ -515,6 +514,7 @@ cat "${1}" | tr -d '`' | \
        s|innodb_default_row_format|INNODB_DEFAULT_ROW_FORMAT|gi; \
        s|remote_port|REMOTE_PORT|gi; \
        s|pk_name|PK_NAME|gi; \
+       s|block_commit|BLOCK_COMMIT|gi; \
        s|remote_server|REMOTE_SERVER|gi; \
        s|utc_timestamp|UTC_TIMESTAMP|gi; \
        s|from_unixtime|FROM_UNIXTIME|gi; \

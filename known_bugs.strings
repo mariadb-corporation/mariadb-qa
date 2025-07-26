@@ -14,27 +14,22 @@ MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ##### For known non-issues (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADBD_ERROR|mariadbd: Can't find record in table  ## MDEV-37068
+MARIADBD_ERROR|mariadbd: Connection was killed       ## SPECIAL-43 (non-issue; simple increased log verbosity)
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
 MARIADB_ERROR_CODE|MariaDB error code: 1032  ## MDEV-33291 (may mask other bugs)
 MARIADB_ERROR_CODE|MariaDB error code: 1034  ## MDEV-34344 (may mask other bugs)
 MARIADB_ERROR_CODE|MariaDB error code: 1045  ## MDEV-33359
-MARIADB_ERROR_CODE|MariaDB error code: 1046
-MARIADB_ERROR_CODE|MariaDB error code: 1054
 MARIADB_ERROR_CODE|MariaDB error code: 1062  ## SPECIAL-8 or MDEV-33350 or SPECIAL-25
-MARIADB_ERROR_CODE|MariaDB error code: 1064
 MARIADB_ERROR_CODE|MariaDB error code: 1100  ## SPECIAL-11 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1104  ## SPECIAL-27 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1114  ## MDEV-23212
 MARIADB_ERROR_CODE|MariaDB error code: 1130  ## SPECIAL-29
 MARIADB_ERROR_CODE|MariaDB error code: 1146  ## SPECIAL-10 or MDEV-33376
 MARIADB_ERROR_CODE|MariaDB error code: 1168  ## SPECIAL-12 (ref REGEX_ERRORS_FILTER.info)
-MARIADB_ERROR_CODE|MariaDB error code: 1193
 MARIADB_ERROR_CODE|MariaDB error code: 1205  ## SPECIAL-17 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1223  ## MDEV-22936
-MARIADB_ERROR_CODE|MariaDB error code: 1231
-MARIADB_ERROR_CODE|MariaDB error code: 1237
 MARIADB_ERROR_CODE|MariaDB error code: 1275  ## MDEV-33956
 MARIADB_ERROR_CODE|MariaDB error code: 1290  ## SPECIAL-18 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1305  ## MDEV-33794
@@ -65,7 +60,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2013  ## Ref REGEX_ERRORS_FILTER.info (se
 MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22 (require_secure_transport)
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
-#MARIADB_ERROR_CODE|MariaDB error code: 4226  ## Not enabled FTM, see MDEV-29499 and MDEV-36390
+MARIADB_ERROR_CODE|MariaDB error code: 4226  ## Covering various init_slave exec issues (ref MDEV-29499 and for example SPECIAL-42)
 MARIADB_ERROR_CODE|MariaDB error code: 12501 ## SPECIAL-31 (to be expected; remote table not available)
 MARIADB_ERROR_CODE|MariaDB error code: 12701 ## MDEV-22936
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
@@ -237,6 +232,8 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command                    ## MDEV-37313
+backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_optimize_table::execute|mysql_execute_command              ## MDEV-36752
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command                ## MDEV-36752
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                       ## MDEV-36752
 node_ != nullptr|SIGABRT|ilist<fil_space_t, space_list_tag_t>::Iterator::Iterator|fil_crypt_find_space_to_rotate|fil_crypt_thread|std::__invoke_impl<void, void                 ## MDEV-37299

@@ -10,6 +10,7 @@ Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
 mariadbd: Got an error writing communication packets  Regularly seen after shutdown, possible related to OOS or similar
 ERROR. mariadbd: Can.t find record in                 MDEV-37068 (Vector)  # Filter not activated; find additional testcases
+ERROR. mariadbd: Connection was killed                SPECIAL-43 (non-issue; simple increased log verbosity)
 Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
 Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested
 Warning. InnoDB: Table.*contains.*user defined columns in InnoDB, but.*in MariaDB.*INFORMATION_SCHEMA.INNODB_SYS_COLUMNS  MDEV25654
@@ -60,7 +61,6 @@ Error reading packet from server: could not find next log  RESET MASTER was exec
 Error reading packet from server.*the last event read from.*the last byte read from.*  SPECIAL-26
 Internal MariaDB error code: 1017                     Presumed non-issue (mysql db was dropped causing slave issues)
 Internal MariaDB error code: 1030                     MDEV-22936
-Internal MariaDB error code: 1046                     Presumed non-issue (init_slave query cannot be executed) See MDEV-29499
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1062  Ref SPECIAL-8 and search this file for 1062
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wait timeout exceeded)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
@@ -101,22 +101,19 @@ Slave SQL: Error 'Table has no partition for value.*Internal MariaDB error code:
 Slave SQL: Commit failed due to failure of an earlier commit on which this one depends, Gtid.*Internal MariaDB error code: 1964  MDEV-34010
 Slave SQL: Error executing row event: 'You can't combine write-locking of system tables with other tables or lock types', Gtid,*Internal MariaDB error code: 1428  MDEV-34011
 Slave: You can't combine write-locking of system tables with other tables or lock types Error_code: 1428  MDEV-34011
+Can't execute init_slave query due to error code      Covering various init_slave exec issues (ref MDEV-29499 and for example SPECIAL-42), ref error 4226 in kb
 safe_mutex: Found wrong usage of mutex .LOCK_plugin. and .LOCK_thd_kill  MDEV-32477
 safe_mutex: Found wrong usage of mutex .LOCK_thd_data. and .LOCK_plugin  MDEV-32477
 safe_mutex: Found wrong usage of mutex .LOCK_log. and .LOCK_global_system_variables  MDEV-35197
 Failed to open log .file .647.. errno 2               MDEV-22921 (ref comment) (can also show 'server_errno=29' at the end of the line, on a slave with RESET MASTER TO 0x7FFFFFFF; CREATE TABLE ... executed on master)
 Error reading packet from server. File .647. not found  MDEV-22921 (ref comment)
-Internal MariaDB error code: 1064                     Presumed non-issue (init_slave query error), though see MDEV-26247 (1064)
 Internal MariaDB error code: 1100                     Presumed non-issue (BINLOG_BASE64_EVENT, row event exec error, unlock tables when using manual BINLOG commands)  Ref SPECIAL-11
 Internal MariaDB error code: 1114                     MDEV-23212
 d: The table ..temporary.. is full                    MDEV-23212
 Internal MariaDB error code: 1146                     MDEV-33376 or SPECIAL-10
 Internal MariaDB error code: 1168                     Presumed non-issue (for example attempting an action on a MERGE table, SPECIAL-12)
-Internal MariaDB error code: 1193                     Presumed non-issue (init_slave query cannot be executed)
 Internal MariaDB error code: 1223                     MDEV-22936 (May mask other bugs?)
 Internal MariaDB error code: 1227                     MDEV-29659 (spider_internal_sql_log_off)
-Internal MariaDB error code: 1231                     Presumed non-issue (init_slave query cannot be executed)
-init_slave query, Internal MariaDB error code: 1237   Presumed non-issue (Slave thread cannot execute init_slave query)
 Internal MariaDB error code: 1399                     Presumed non-issue (global transaction is in IDLE state)
 Internal MariaDB error code: 1429                     Presumed non-issue (accessing an unavailable remote Spider table using BINLOG stmts, ref SPECIAL-13)
 Internal MariaDB error code: 1472                     Presumed non-issue (SPECIAL-14: similar to SPECIAL-12, with MRG_MyISAM)
@@ -132,7 +129,6 @@ Internal MariaDB error code: 2003                     Presumed non-issue (unreac
 Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
 Internal MariaDB error code: 4145                     Presumed non-issue (binlog event cannot execute as BACKUP STAGE is active)
 Replication slave GTID position. is invalid. Internal MariaDB error code: 12501  SPECIAL-31 (ref kb)
-init_slave query, Internal MariaDB error code: 1054   Presumed non-issue (Slave thread cannot execute init_slave query)
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
 Got error 9 when reading table                        MDEV-23297
 Got error 126 when reading table                      MDEV-27902 (May mask other bugs)
