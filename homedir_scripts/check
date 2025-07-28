@@ -7,9 +7,63 @@ if [ "${1}" != "automation" -o "${CNT1}" != "${CNT2}" ]; then
   echo "pr: ${CNT1}"
   echo "ge: ${CNT2}"
 fi
-if [ "${CNT1}" != "${CNT2}" ]; then
+
+missing_screen_info=$(screen -ls | grep -o 'pr[0-9]\+' | sort -V | awk '
+{
+  counts[$0]++;
+  num = substr($0, 3) + 0;
+  if (num > max_num) {
+    max_num = num;
+  }
+}
+END {
+  for (item in counts) {
+    count_freqs[counts[item]]++;
+  }
+  mode = 0;
+  max_freq = 0;
+  for (c in count_freqs) {
+    if (count_freqs[c] > max_freq || (count_freqs[c] == max_freq && c > mode)) {
+      max_freq = count_freqs[c];
+      mode = c;
+    }
+  }
+  if (mode <= 1) {
+    exit;
+  }
+  missing_items = "";
+  missing_count = 0;
+  for (item in counts) {
+    if (counts[item] < mode) {
+      num = substr(item, 3) + 0;
+      if (num != max_num) {
+        missing_items = (missing_items == "" ? "" : missing_items ", ") item;
+        missing_count++;
+      }
+    }
+  }
+  if (missing_count == 1) {
+    print "one pr screen - " missing_items " - appears to be missing!";
+  } else if (missing_count > 1) {
+    print "multiple pr screens - " missing_items " - appear to be missing!";
+  }
+}
+')
+
+if [ "${CNT1}" != "${CNT2}" -o ! -z "${missing_screen_info}" ]; then
   echo '!!!!! ======= WARNING ======= !!!!!'
-  echo "WARNING: 'pr' and 'ge' sessions were detected and a quick automated check noticed that the number of 'pr' screens does not equal the number of 'ge' screens (check 's output'). To prevent a /data/ OOS, you will likely want to fix this by running ~/sge <workdir_number> where workdir_number is the /data/<workdir_number> which is missing from the 's' list (compare with an up-to-date 'vr' list to find which is missing)"
+  if [ "${CNT1}" != "${CNT2}" ]; then
+    echo "WARNING: 'pr' and 'ge' sessions were detected. A quick automated check then noticed that the number of 'pr' screens does not equal the number of 'ge' screens (check 's output'). To prevent a /data/ OOS, you will likely want to fix this by running ~/sge <workdir_number> where workdir_number is the /data/<workdir_number> which is missing from the 's' list (compare with an up-to-date 'vr' list to find which is missing, or check the list below)"
+    if [ ! -z "${missing_screen_info}" ]; then
+      echo "WARNING: Additionally, ${missing_screen_info}"
+    fi
+  else
+    if [ ! -z "${missing_screen_info}" ]; then  # Defensive coding
+      echo "WARNING: 'pr' and 'ge' sessions were detected. A quick automated check then noticed that while the number of 'pr' screens matches the number of 'ge' screens, ${missing_screen_info}"
+    fi
+  fi
+  echo ''
+  ls --color=never -1d /dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9] | sed 's|/dev/shm/||' | xargs -I{} echo "if [ -z \"\$(screen -ls | grep '{}')\" ]; then echo '*** Run ~/sge {} to restart sge for workdir '{}', which is currently missing from the screen list'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
   echo ''
   exit 1
 fi

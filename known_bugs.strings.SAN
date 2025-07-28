@@ -7,6 +7,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|init_weight_level|create_tailoring|my_coll_init_uca|my_uca_coll_init_utf8mb3                                    ## MDEV-35877
 ASAN|heap-use-after-free|sql/sql_table.cc|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                         ## MDEV-36980
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|charset_info_st::charpos|Field_blob::get_key_image_itRAW|Field::make_key_image               ## MDEV-37254
 UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnncollsp_simple|handler::check_duplicate_long_entries_update|handler::ha_update_row|mysql_update       ## MDEV-37203
@@ -366,6 +367,8 @@ UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spi
 UBSAN|member call on null pointer of type 'struct spider_db_handler'|storage/spider/spd_db_conn.cc|spider_db_delete_all_rows|ha_spider::truncate|Sql_cmd_truncate_table::handler_truncate|Sql_cmd_truncate_table::truncate_table ## MDEV-33191
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoll_8bit|Value_source::Converter_strntoll::Converter_strntoll|Value_source::Converter_strntoll_with_warn::Converter_strntoll_with_warn|Field_string::val_int ## MDEV-33007
 UBSAN|member call on null pointer of type 'struct my_decimal'|sql/filesort.cc|Type_handler_decimal_result::make_sort_key_part|make_sortkey|make_sortkey|find_all_keys          ## MDEV-32992
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/json_lib.c|json_path_setup|path_setup_nwc|Item_func_json_insert::val_str|Type_handler::Item_send_str ## MDEV-32963
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|strings/json_lib.c|json_path_setup|Item_func_json_extract::read_json|Item_func_json_extract::val_str|Type_handler::Item_send_str ## MDEV-32963
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'int'|strings/json_lib.c|json_path_setup|Json_path_extractor::extract|Item_func_json_value::val_str|Type_handler::Item_send_str ## MDEV-32963
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'int'|strings/json_lib.c|json_find_path|Item_func_json_insert::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row ## MDEV-32963
 UBSAN|load of value X, which is not a valid value for type 'bool'|storage/innobase/dict/dict0stats.cc|dict_stats_save_index_stat|dict_stats_save|dict_stats_update|dict_stats_init ## MDEV-32667

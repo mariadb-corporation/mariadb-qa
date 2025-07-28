@@ -7,8 +7,8 @@ if [ -d /data -a -r /data/find_reduced_bugs -a "${PWD}" != "/data" ]; then
 fi
 if [ -z "${2}" ]; then
   # -F: Interpret PATTERNS as fixed strings, not regular expressions (UniqueID's have many regex-like symbols)
-  grep --binary-files=text -Fi "${1}" [0-9]*/*/MYBUG* 2>/dev/null | sed "s|^|wc -l |;s|MYBUG.*|\*_out|;s=$= 2>/dev/null=" | xargs -I {} bash -c "{}" | grep -v 'total$' | sed 's|^[ \t]\+||' | sort -u
+  grep --binary-files=text -Fi "${1}" [0-9]*/*/MYBUG* 2>/dev/null | sed "s|^|wc -l |;s|MYBUG.*|\*_out|;s=$= 2>/dev/null=" | xargs -I {} bash -c "{}" | grep -v 'total$' | sed 's|^[ \t]\+||' | sort -u | sort -n
 else
   # Without -F as we want regex-enabled search for error logs, and we are not searching for UniqueID's but plain strings
-  grep --binary-files=text -i "${1}" [0-9]*/*/log/*.err 2>/dev/null | sed "s|^|wc -l |;s|log/master.err.*|\*_out|;s|log/slave.err.*|\*_out|;s=$= 2>/dev/null=" | tr '\n' '\0' |  xargs -0 -I {} bash -c "{}" | grep -v 'total$' | sed 's|^[ \t]\+||' | sort -u
+  grep --binary-files=text -i "${1}" [0-9]*/*/log/*.err 2>/dev/null | sed "s|^|wc -l |;s|log/master.err.*|\*_out|;s|log/slave.err.*|\*_out|;s=$= 2>/dev/null=" | tr '\n' '\0' |  xargs -0 -I {} bash -c "{}" | grep -v 'total$' | sed 's|^[ \t]\+||' | sort -u | sort -n
 fi
