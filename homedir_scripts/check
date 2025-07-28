@@ -53,9 +53,16 @@ END {
 if [ "${CNT1}" != "${CNT2}" -o ! -z "${missing_screen_info}" ]; then
   echo '!!!!! ======= WARNING ======= !!!!!'
   if [ "${CNT1}" != "${CNT2}" ]; then
-    echo "WARNING: 'pr' and 'ge' sessions were detected. A quick automated check then noticed that the number of 'pr' screens does not equal the number of 'ge' screens (check 's output'). To prevent a /data/ OOS, you will likely want to fix this by running ~/sge <workdir_number> where workdir_number is the /data/<workdir_number> which is missing from the 's' list (compare with an up-to-date 'vr' list to find which is missing, or check the list below)"
+    echo "WARNING: 'pr' and 'ge' sessions were detected. A quick automated check then noticed that the number of 'pr' screens does not equal the number of 'ge' screens (check 's output')."
+    if [ ${CNT1} -gt ${CNT2} ]; then
+      echo "As the number of 'pr' screens was larger than the number of 'ge' screens, to prevent a /data/ OOS, you will likely want to fix this by running ~/sge <workdir_number> where workdir_number is the /data/<workdir_number> which is missing from the 's' list (compare with an up-to-date 'vr' list to find which is missing, or check the list below.)"
+    fi
     if [ ! -z "${missing_screen_info}" ]; then
-      echo "WARNING: Additionally, ${missing_screen_info}"
+      if [ ${CNT1} -lt ${CNT2} ]; then
+        echo "WARNING: Note: ${missing_screen_info}"
+      else
+        echo "WARNING: Additionally, ${missing_screen_info}"
+      fi
     fi
   else
     if [ ! -z "${missing_screen_info}" ]; then  # Defensive coding

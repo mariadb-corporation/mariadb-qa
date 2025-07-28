@@ -19,9 +19,11 @@ clone_es_repos(){
   rm -Rf 10.5-es
   rm -Rf 10.6-es
   rm -Rf 11.4-es
+  rm -Rf 11.8-es
   clone_es_repo 10.5 &
   clone_es_repo 10.6 &
   clone_es_repo 11.4 &
+  clone_es_repo 11.8 &
 }
 
 clone_es_repos

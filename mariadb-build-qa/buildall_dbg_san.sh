@@ -54,5 +54,6 @@ cd ${DIR}/12.1 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 if [ -d ${DIR}/10.5-es ]; then sleep 10; cd ${DIR}/10.5-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh & fi
 if [ -d ${DIR}/10.6-es ]; then sleep 10; cd ${DIR}/10.6-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh & fi
 if [ -d ${DIR}/11.4-es ]; then sleep 10; cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh & fi
+if [ -d ${DIR}/11.8-es ]; then sleep 10; cd ${DIR}/11.8-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh & fi
 
 echo "All processes started as background threads... Output will commence soon."
