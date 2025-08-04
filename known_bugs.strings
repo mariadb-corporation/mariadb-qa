@@ -13,9 +13,10 @@ MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ##### For known non-issues (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
-MARIADBD_ERROR|mariadbd: Can't find record in table  ## MDEV-37068
+MARIADBD_ERROR|mariadbd: Can't find record in table  ## MDEV-37068, MDEV-33563
 MARIADBD_ERROR|mariadbd: Connection was killed       ## SPECIAL-43 (non-issue; simple increased log verbosity)
 MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-28498, MDEV-27771
+MARIADBD_ERROR|mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL ## MDEV-37339
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
@@ -233,6 +234,12 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!table->s->tmp_table|SIGABRT|wait_while_table_is_used|wait_while_table_is_used|mysql_create_or_drop_trigger|mysql_execute_command                                               ## MDEV-37378
+!table->s->tmp_table|SIGABRT|wait_while_table_is_used|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                                                            ## MDEV-37378
+SIGSEGV|MDL_ticket::has_stronger_or_equal_type|MDL_context::upgrade_shared_lock|wait_while_table_is_used|wait_while_table_is_used                                               ## MDEV-37378
+SIGSEGV|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item_func_nextval::check_access_and_fix_fields|Item_func_nextval::fix_fields                                ## MDEV-37369
+SIGSEGV|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar                                            ## MDEV-37369
+thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|open_tables_for_query|Sql_cmd_dml::prepare|Sql_cmd_dml::execute ## MDEV-37368
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command                    ## MDEV-37313
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_optimize_table::execute|mysql_execute_command              ## MDEV-36752
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command                ## MDEV-36752

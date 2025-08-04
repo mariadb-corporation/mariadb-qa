@@ -30,6 +30,7 @@ cat "${1}" | tr -d '`' | \
        s|leaves|LEAVES|g; \
        s|immediate|IMMEDIATE|g; \
        s|reverse|REVERSE|gi; \
+       s|preserve|PRESERVE|gi; \
        s|hex|HEX|gi; \
        s|length|LENGTH|gi; \
        s|scalar|SCALAR|gi; \
@@ -218,7 +219,7 @@ cat "${1}" | tr -d '`' | \
        s|each|EACH|gi; \
        s|prepare|PREPARE|gi; \
        s|show|SHOW|gi; \
-       s|row|ROW|gi; \
+       s|row|ROW|gi;s|rows|ROWS|gi; \
        s|statement|STATEMENT|gi; \
        s|mixed|MIXED|gi; \
        s|grant|GRANT|gi; \

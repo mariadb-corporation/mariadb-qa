@@ -7,6 +7,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'sequence_definition'|sql/item_func.h|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-37369
+ASAN|heap-buffer-overflow|sql/rpl_utility.cc|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row|Rows_log_event::write_row                                ## MDEV-22936
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|init_weight_level|create_tailoring|my_coll_init_uca|my_uca_coll_init_utf8mb3                                    ## MDEV-35877
 ASAN|heap-use-after-free|sql/sql_table.cc|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                         ## MDEV-36980
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|charset_info_st::charpos|Field_blob::get_key_image_itRAW|Field::make_key_image               ## MDEV-37254
