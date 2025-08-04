@@ -240,6 +240,10 @@ SIGSEGV|MDL_ticket::has_stronger_or_equal_type|MDL_context::upgrade_shared_lock|
 SIGSEGV|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item_func_nextval::check_access_and_fix_fields|Item_func_nextval::fix_fields                                ## MDEV-37369
 SIGSEGV|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar                                            ## MDEV-37369
 thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|open_tables_for_query|Sql_cmd_dml::prepare|Sql_cmd_dml::execute ## MDEV-37368
+SIGSEGV|Query_arena::free_items|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core|sp_head::execute                                                             ## MDEV-37335
+SIGSEGV|Query_arena::free_items|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core|sp_instr_set::execute                                                        ## MDEV-37335
+SIGSEGV|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core|sp_head::execute|sp_head::execute_procedure                                                          ## MDEV-37335
+SIGSEGV|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core|sp_instr_set::execute|sp_head::execute                                                               ## MDEV-37335
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_create_table_like::execute|mysql_execute_command                    ## MDEV-37313
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_optimize_table::execute|mysql_execute_command              ## MDEV-36752
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command                ## MDEV-36752
