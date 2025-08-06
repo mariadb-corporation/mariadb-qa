@@ -1,0 +1,4 @@
+# mysqld options required for replay: --log-bin
+CREATE GLOBAL TEMPORARY TABLE t1 (c INT) ON COMMIT PRESERVE ROWS;
+SELECT * FROM t1;
+CREATE GLOBAL TEMPORARY TABLE t2 LIKE t1;

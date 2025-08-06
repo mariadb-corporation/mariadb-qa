@@ -21,7 +21,8 @@ Warning. InnoDB: Recalculation of persistent statistics requested for table.*but
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurrences
 ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Error number 2 means.*file.*or dir     MDEV-19849 or similar occurrences
-ERROR. InnoDB: Error number 17 means.*file exists     SPECIAL-40 or similar occurrences
+ERROR. InnoDB: Error number 17 means.*[Ff]ile exists  SPECIAL-40 or similar occurrences
+ERROR. InnoDB: Cannot create file .*\.ibd             SPECIAL-40 or similar occurrences
 ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occurrences
 ERROR. InnoDB: Operating sys.*error.* 2 in a file op  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Operating sys.*error.* 3 in a file op  MDEV-19849 or similar occurrences

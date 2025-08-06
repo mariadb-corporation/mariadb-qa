@@ -289,10 +289,18 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
   TRIALS_MDEV_25611=
 fi
 
+# Timeouts (MODE=0) which are not shutdown issues (i.e. no <trialnr>/SHUTDOWN_TIMEOUT_ISSUE)
+MODE0_TRIALS="$(grep --binary-files=text -l -m1 '^MODE=0' reducer[0-9]*.sh | grep -o '[0-9]\+' | sort -uh | xargs -I{} echo "if [ ! -r {}/SHUTDOWN_TIMEOUT_ISSUE ]; then echo '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' ' ')"
+if [ ! -z "${MODE0_TRIALS}" ]; then
+  echo '** Trials which timed out (MODE=0) which are not shutdown issues (i.e. no <trialnr>/SHUTDOWN_TIMEOUT_ISSUE):'
+  echo "${MODE0_TRIALS}"
+fi
+MODE0_TRIALS=
+
 # Other MDEV related issues worth highlighting, aiding issue management
 TRIALS_MDEV_26492="$(grep --binary-files=text -il 'key_cache_segments' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'ERROR] Got an error' {}/log/*.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
 if [ ! -z "${TRIALS_MDEV_26492}" ]; then
-  echo '** Trials with SET key_cache_segments resulting in '[ERROR] Got an error' (from a thread or an unknown thread), a know bug; ref MDEV-26492'
+  echo '** Trials with SET key_cache_segments resulting in '[ERROR] Got an error' (from a thread or an unknown thread), a know bug; ref MDEV-26492:'
   echo "${TRIALS_MDEV_26492}"
 fi
 TRIALS_MDEV_26492=

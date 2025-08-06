@@ -1,0 +1,4 @@
+# Will introduce a thread hang on the last query
+CREATE GLOBAL TEMPORARY TABLE t (c INT) ON COMMIT PRESERVE ROWS;
+INSERT t VALUES (1);
+CREATE OR REPLACE TABLE t (c INT);
