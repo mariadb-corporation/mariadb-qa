@@ -337,29 +337,24 @@ else
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for ./scripts/make_binary_distribution!"; exit 1; fi
 fi
 
-TAR_dbg_san=`ls -1 *.tar.gz | grep -v "boost" | head -n1`
-if [[ "${TAR_dbg_san}" == *".tar.gz"* ]]; then
-  DIR_dbg_san=$(echo "${TAR_dbg_san}" | sed 's|.tar.gz||')
-  TAR_dbg_san_new=$(echo "${PREFIX}-${TAR_dbg_san}" | sed 's|.tar.gz|-dbg.tar.gz|')
-  DIR_dbg_san_new=$(echo "${TAR_dbg_san_new}" | sed 's|.tar.gz||')
-  if [ "${DIR_dbg_san}" != "" ]; then rm -Rf ../${DIR_dbg_san}; fi
-  if [ "${DIR_dbg_san_new}" != "" ]; then rm -Rf ../${DIR_dbg_san_new}; fi
-  if [ "${TAR_dbg_san_new}" != "" ]; then rm -Rf ../${TAR_dbg_san_new}; fi
-  mv ${TAR_dbg_san} ../${TAR_dbg_san_new}
-  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for moving of tarball!"; exit 1; fi
-  cd ..
-  tar -xf ${TAR_dbg_san_new}
-  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for tar!"; exit 1; fi
-  mv ${DIR_dbg_san} ${DIR_dbg_san_new}
-  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for moving of tarball (2)!"; exit 1; fi
+TAR_dbg=`ls -1 *.tar.gz | grep -v "boost" | head -n1`
+if [[ "${TAR_dbg}" == *".tar.gz"* ]]; then
+  DIR_dbg=$(echo "${TAR_dbg}" | sed 's|.tar.gz||')
+  DIR_dbg_new=$(echo "${TAR_dbg_new}" | sed 's|.tar.gz||')
+  TAR_dbg_new=$(echo "${PREFIX}-${TAR_dbg}" | sed 's|.tar.gz|-dbg.tar.gz|')
+  if [ ! -z "${DIR_dbg}" -a -d "./${DIR_dbg}" ]; then rm -Rf ./${DIR_dbg}; fi  # Ensure the tarball can be extracted
+  tar -xf ${TAR_dbg}  # Extract the tarball which scripts/make_binary_distribution created
+  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon tar exract!"; exit 1; fi
+  if [ ! -z "${TAR_dbg_new}" -a -r "../${TAR_dbg_new}" ]; then rm -f ../${TAR_dbg_new}; fi
+  mv ${TAR_dbg} ../${TAR_dbg_new}  # Rename the tarball to the full prefixed name and move it to /test (or similar)
+  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon moving of tarball!"; exit 1; fi
+  if [ ! -z "${DIR_dbg_new}" -a -d "../${DIR_dbg_new}" ]; then rm -Rf ../${DIR_dbg_new}; fi
+  mv ${DIR_dbg} ../${DIR_dbg_new}  # Move the dir to the full prefixed name and move it to /test (or similar)
+  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon moving of directory!"; exit 1; fi
   # Store revision (used by source_code_rev.sh to find revision for, for example, MS builds)
-  cd - >/dev/null
-  git log | grep -om1 'commit.*' | awk '{print $2}' | sed 's|[ \n\t]\+||g' > ../${DIR_dbg_san_new}/git_revision.txt
-  echo $CMD > ../${DIR_dbg_san_new}/BUILD_CMD_CMAKE
-  #rm -Rf ${CURPATH}_dbg_san  # Best not to delete it; this way gdb dbgging is better quality as source will be available!
-  cd ../${DIR_dbg_san_new}
-  perl -i -0777 -pe 's/(  do_resolve=1\n)(then\n)/$2$1/' scripts/mariadb-install-db 2>/dev/null  # Fix MDEV-34468 if present
-  cd - >/dev/null
+  git log | grep -om1 'commit.*' | awk '{print $2}' | sed 's|[ \n\t]\+||g' > ../${DIR_dbg_new}/git_revision.txt
+  echo $CMD > ../${DIR_dbg_new}/BUILD_CMD_CMAKE
+  cd ..
   exit 0
 else
   echo "There was some unknown build issue... Have a nice day!"

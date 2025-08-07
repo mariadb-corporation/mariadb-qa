@@ -1,6 +1,8 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
+# Handy overview: https://endoflife.date/mariadb
+
 rm -Rf 1[0-2].[0-9]
 rm -Rf 10.1[0-1]
 
@@ -25,5 +27,6 @@ rm -Rf 10.1[0-1]
 #./clone.sh 11.7 &
 ./clone.sh 11.8 &
 ./clone.sh 12.0 &
+./clone.sh 12.1 &
 # When updating the next line, i.e. when trunk has changed to a new major version, remember to make a similar fix in clone.sh
-git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git 12.1 &  # Trunk is currently the only 12.1 branch
+git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git 12.2 &  # Trunk is currently the only 12.2 branch

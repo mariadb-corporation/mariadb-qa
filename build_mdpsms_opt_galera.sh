@@ -299,25 +299,21 @@ fi
 TAR_opt=`ls -1 *.tar.gz | grep -v "boost" | head -n1`
 if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
   DIR_opt=$(echo "${TAR_opt}" | sed 's|.tar.gz||')
-  TAR_opt_new=$(echo "${PREFIX}-${TAR_opt}" | sed 's|.tar.gz|-opt.tar.gz|')
   DIR_opt_new=$(echo "${TAR_opt_new}" | sed 's|.tar.gz||')
-  if [ "${DIR_opt}" != "" ]; then rm -Rf ../${DIR_opt}; fi
-  if [ "${DIR_opt_new}" != "" ]; then rm -Rf ../${DIR_opt_new}; fi
-  if [ "${TAR_opt_new}" != "" ]; then rm -Rf ../${TAR_opt_new}; fi
-  mv ${TAR_opt} ../${TAR_opt_new}
-  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for moving of tarball!"; exit 1; fi
-  cd ..
-  tar -xf ${TAR_opt_new}
-  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for tar!"; exit 1; fi
-  mv ${DIR_opt} ${DIR_opt_new}
-  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for moving of tarball (2)!"; exit 1; fi
+  TAR_opt_new=$(echo "${PREFIX}-${TAR_opt}" | sed 's|.tar.gz|-opt.tar.gz|')
+  if [ ! -z "${DIR_opt}" -a -d "./${DIR_opt}" ]; then rm -Rf ./${DIR_opt}; fi  # Ensure the tarball can be extracted
+  tar -xf ${TAR_opt}  # Extract the tarball which scripts/make_binary_distribution created
+  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon tar exract!"; exit 1; fi
+  if [ ! -z "${TAR_opt_new}" -a -r "../${TAR_opt_new}" ]; then rm -f ../${TAR_opt_new}; fi
+  mv ${TAR_opt} ../${TAR_opt_new}  # Rename the tarball to the full prefixed name and move it to /test (or similar)
+  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon moving of tarball!"; exit 1; fi
+  if [ ! -z "${DIR_opt_new}" -a -d "../${DIR_opt_new}" ]; then rm -Rf ../${DIR_opt_new}; fi
+  mv ${DIR_opt} ../${DIR_opt_new}  # Move the dir to the full prefixed name and move it to /test (or similar)
+  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon moving of directory!"; exit 1; fi
   # Store revision (used by source_code_rev.sh to find revision for, for example, MS builds)
-  cd - >/dev/null
   git log | grep -om1 'commit.*' | awk '{print $2}' | sed 's|[ \n\t]\+||g' > ../${DIR_opt_new}/git_revision.txt
   echo $CMD > ../${DIR_opt_new}/BUILD_CMD_CMAKE
   cd ..
-  #rm -Rf ${CURPATH}_opt  # Best not to delete it; this way gdb debugging is better quality as source will be available!
-
   # Create/Copy galera library
   if [[ ${MYSQL_VERSION_MAJOR}.${MYSQL_VERSION_MINOR} =~ 10.[2-3] ]]; then
     GALERA_BUILD_LOC=${PWD}/galera_3x
@@ -346,7 +342,6 @@ if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
     fi
     cd ..
   fi
-
   exit 0
 else
   echo "There was some unknown build issue... Have a nice day!"

@@ -7,7 +7,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
-ASAN|heap-use-after-free|sql/lock.cc|unlock_external|mysql_unlock_tables|select_create::send_eof|JOIN::exec_inner                                                              ## MDEV-35915
+UBSAN|member access within null pointer of type 'TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                      ## MDEV-35277
+ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::join_free|return_zero_rows                                                               ## MDEV-37395
+ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                           ## MDEV-37395
+ASAN|heap-use-after-free|sql/lock.cc|unlock_external|mysql_unlock_tables|select_create::send_eof|JOIN::exec_inner                                                              ## MDEV-37394
 UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command    ## MDEV-37386
 UBSAN|member access within null pointer of type 'partition_info'|sql/sql_partition.cc|mysql_unpack_partition|open_table_from_share|open_global_temporary_table|open_table      ## MDEV-37384
 ASAN|heap-use-after-free|sql/records.cc|end_read_record|copy_data_between_tables|mysql_alter_table|mysql_recreate_table                                                        ## MDEV-37383
@@ -33,6 +36,7 @@ UBSAN|member access within null pointer of type 'LOGGER_HANDLE' (aka 'struct log
 ASAN|heap-use-after-free|plugin/server_audit/server_audit.c|filter_query_type|skip_set_statement|log_statement_ex|log_statement                                                ## MDEV-37105
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|sql/item_func.cc|Item_func_sleep::val_int|Type_handler::Item_send_long|Protocol::send_result_set_row|select_send::send_data ## MDEV-37062
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|sql/item_func.cc|do_pause|Item_func_sleep::val_int|Type_handler::Item_send_long|Protocol::send_result_set_row ## MDEV-37062
+UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Item_func::is_null|mysql_do|mysql_execute_command        ## MDEV-37073
 UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Type_handler::Item_send_long|Protocol::send_result_set_row|select_send::send_data ## MDEV-37073
 UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare|Item_func_eq::val_int ## MDEV-37073
 UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare|Item_func_eq::val_bool ## MDEV-37073
@@ -589,7 +593,6 @@ ASAN|use-after-poison|sql/handler.cc|ha_discover_table|open_table_def|tdc_acquir
 ASAN|heap-use-after-free|sql/handler.cc|ha_discover_table|open_table_def|tdc_acquire_share|open_table                                                                          ## MDEV-29434
 ASAN|unknown-crash|storage/heap/hp_hash.c|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                             ## MDEV-24066
 UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-24066
-UBSAN|member access within null pointer of type 'struct TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize               ## MDEV-28510
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|Type_handler_string_result::make_packed_sort_key_part|make_packed_sortkey|make_sortkey ## MDEV-27081
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/filesort.cc|SORT_FIELD_ATTR::pack_sort_string|make_packed_sortkey|make_sortkey|find_all_keys   ## MDEV-27081
 UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_malloc.c|my_strdup|Session_sysvars_tracker::init|THD::init|THD::change_user               ## MDEV-25237
@@ -799,3 +802,4 @@ ASAN|stack-buffer-overflow|strings/int2str.c|int2str|Item_func_conv::val_str|Ite
 # ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                            ## Fixed ## MDEV-24193
 # UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::FVectorNode|mhnsw_insert|TABLE::hlindexes_on_insert                      ## Fixed ## MDEV-36033
 # UBSAN|index X out of bounds for type 'int16_t [4]'|sql/vector_mhnsw.cc|FVector::create|FVectorNode::make_vec|FVectorNode::FVectorNode|mhnsw_insert                           ## Fixed ## MDEV-36033
+# UBSAN|member access within null pointer of type 'struct TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize             ## Fixed ## MDEV-28510

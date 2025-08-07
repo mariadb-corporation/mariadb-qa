@@ -102,6 +102,7 @@ GOT_ERROR|Got error 222|when reading table                     ## MDEV-34936
 GOT_ERROR|Got error 1032|when trying to execute action for entry 1 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1032|when trying to execute action for entry 4 of type 'rename table' ## MDEV-34660
+GOT_ERROR|Got error 1032|when trying to execute action for entry 5 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and MDEV-29430
 GOT_ERROR|Got error 1056|when reading table                    ## MDEV-34638
 GOT_ERROR|Got error 1064|when reading table                    ## MDEV-33042 (Spider)
@@ -234,8 +235,10 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
-m_lock_type == 2|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                       ## MDEV-35915
-SIGSEGV|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                                                              ## MDEV-35915
+bitmap_is_set(&read_partitions, next->id)|SIGABRT|partition_info::vers_set_hist_part|ha_partition::external_lock|handler::ha_external_lock|handler::create_lookup_handler      ## MDEV-37397
+SIGSEGV|handler::keyread_enabled|handler::ha_end_keyread|st_join_table::cleanup|JOIN::cleanup                                                                                  ## MDEV-37395
+m_lock_type == 2|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                       ## MDEV-37394
+SIGSEGV|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                                                              ## MDEV-37394
 SIGSEGV|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command                                                                    ## MDEV-37386
 thd->open_tables == table->table|SIGABRT|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                          ## MDEV-37386
 SIGSEGV|mysql_unpack_partition|open_table_from_share|open_global_temporary_table|open_table                                                                                    ## MDEV-37384
