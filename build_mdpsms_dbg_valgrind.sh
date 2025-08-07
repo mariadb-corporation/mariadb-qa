@@ -296,9 +296,9 @@ fi
 
 TAR_dbg=`ls -1 *.tar.gz | grep -v "boost" | head -n1`
 if [[ "${TAR_dbg}" == *".tar.gz"* ]]; then
+  TAR_dbg_new=$(echo "${PREFIX}-${TAR_dbg}" | sed 's|.tar.gz|-dbg.tar.gz|')
   DIR_dbg=$(echo "${TAR_dbg}" | sed 's|.tar.gz||')
   DIR_dbg_new=$(echo "${TAR_dbg_new}" | sed 's|.tar.gz||')
-  TAR_dbg_new=$(echo "${PREFIX}-${TAR_dbg}" | sed 's|.tar.gz|-dbg.tar.gz|')
   if [ ! -z "${DIR_dbg}" -a -d "./${DIR_dbg}" ]; then rm -Rf ./${DIR_dbg}; fi  # Ensure the tarball can be extracted
   tar -xf ${TAR_dbg}  # Extract the tarball which scripts/make_binary_distribution created
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon tar exract!"; exit 1; fi

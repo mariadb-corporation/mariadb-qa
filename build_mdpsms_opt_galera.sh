@@ -298,9 +298,9 @@ fi
 
 TAR_opt=`ls -1 *.tar.gz | grep -v "boost" | head -n1`
 if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
+  TAR_opt_new=$(echo "${PREFIX}-${TAR_opt}" | sed 's|.tar.gz|-opt.tar.gz|')
   DIR_opt=$(echo "${TAR_opt}" | sed 's|.tar.gz||')
   DIR_opt_new=$(echo "${TAR_opt_new}" | sed 's|.tar.gz||')
-  TAR_opt_new=$(echo "${PREFIX}-${TAR_opt}" | sed 's|.tar.gz|-opt.tar.gz|')
   if [ ! -z "${DIR_opt}" -a -d "./${DIR_opt}" ]; then rm -Rf ./${DIR_opt}; fi  # Ensure the tarball can be extracted
   tar -xf ${TAR_opt}  # Extract the tarball which scripts/make_binary_distribution created
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon tar exract!"; exit 1; fi
