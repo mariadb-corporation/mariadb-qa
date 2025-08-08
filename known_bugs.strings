@@ -460,6 +460,7 @@ UT_LIST_GET_LEN(trx->lock.trx_locks) == 0|SIGABRT|ut_dbg_assertion_failed|TrxFac
 0|SIGABRT|get_field_item_for_having|Item_field::derived_field_transformer_for_having|Item::transform|Item_args::transform_args                                                 ## MDEV-26940
 state() == s_executing || state() == s_prepared || state() == s_committing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-35763
 state == TRX_STATE_PREPARED || state == TRX_STATE_PREPARED_RECOVERED || state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-35681
+trx_state == TRX_STATE_ACTIVE|SIGABRT|ha_innobase::store_lock|get_lock_data|mysql_lock_tables|lock_tables                                                                      ## MDEV-35681
 trx_state == TRX_STATE_PREPARED || trx_state == TRX_STATE_PREPARED_RECOVERED || trx_state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-35681
 commit_trx || trx->is_wsrep()|SIGABRT|innobase_commit|commit_one_phase_2|ha_commit_trans|trans_commit_stmt                                                                     ## MDEV-35653
 commit_trx|SIGABRT|innobase_commit|commit_one_phase_2|ha_commit_trans|trans_commit_stmt                                                                                        ## MDEV-35653
@@ -1160,6 +1161,8 @@ SIGSEGV|Bitmap<64u>::merge|add_key_field|Item_equal::add_key_fields|update_ref_a
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## MDEV-28507
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                                                    ## MDEV-28507
 SIGSEGV|MemcmpInterceptorCommon|memcmp|my_strnncoll_binary|charset_info_st::strnncoll                                                                                          ## MDEV-28506
+SIGSEGV|Lex_cstring::Lex_cstring|Lex_cstring_strlen::Lex_cstring_strlen|find_field_in_table_ref|find_field_in_tables                                                           ## MDEv-28506
+SIGSEGV|charset_info_st::streq|Lex_ident<Compare_table_names>::streq|find_field_in_table_ref|find_field_in_tables                                                              ## MDEV-28506
 SIGSEGV|my_strcasecmp_bin|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                                                  ## MDEV-28506
 SIGSEGV|create_view_field|Field_iterator_view::create_item|find_field_in_view|find_field_in_table_ref                                                                          ## MDEV-28506
 SIGSEGV|lex_string_cmp|TABLE::find_field_by_name|find_field_in_table|find_field_in_table_ref                                                                                   ## MDEV-28506
@@ -1643,6 +1646,7 @@ SIGSEGV|set_field_to_null_with_conversions|Item::save_in_field|Item_result_field
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_delete|mysql_execute_command                                         ## MDEV-22783
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-22783
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22716
+SIGABRT|Type_handler_composite::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                      ## MDEV-22716
 SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                            ## MDEV-22716
 (*select_ref)->fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item_func::fix_fields                                               ## MDEV-22713
 (*select_ref)->is_fixed()|SIGABRT|resolve_ref_in_select_and_group|Item_ref::fix_fields|Item_field::fix_fields|Item_func::fix_fields                                            ## MDEV-22713
