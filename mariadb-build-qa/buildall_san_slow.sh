@@ -29,6 +29,7 @@ BUILD_12_2=1
 BUILD_ES_10_5=1
 BUILD_ES_10_6=1
 BUILD_ES_11_4=1
+BUILD_ES_11_8=1
 
 #if [ ! -r ./terminate_ds_memory.sh ]; then
 #  echo './terminate_ds_memory.sh missing!'
@@ -71,9 +72,9 @@ buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready
     cleanup_dirs; cd ${DIR}/12.0 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
   fi
 
-  if [ ${BUILD_ES_11_4} -eq 1 ]; then
-    cleanup_dirs; cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_opt_san.sh
-    cleanup_dirs; cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh
+  if [ ${BUILD_ES_11_8} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/11.8-es && ~/mariadb-qa/build_mdpsms_opt_san.sh
+    cleanup_dirs; cd ${DIR}/11.8-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh
   fi
 
   if [ ${BUILD_11_8} -eq 1 ]; then
@@ -94,6 +95,11 @@ buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready
   if [ ${BUILD_11_5} -eq 1 ]; then
     cleanup_dirs; cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh
     cleanup_dirs; cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
+  fi
+
+  if [ ${BUILD_ES_11_4} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_opt_san.sh
+    cleanup_dirs; cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh
   fi
 
   if [ ${BUILD_11_4} -eq 1 ]; then
@@ -146,24 +152,24 @@ buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready
     cleanup_dirs; cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
   fi
 
-  if [ ${BUILD_10_6} -eq 1 ]; then
-    cleanup_dirs; cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_opt_san.sh
-    cleanup_dirs; cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
-  fi
-  
   if [ ${BUILD_ES_10_6} -eq 1 ]; then
     cleanup_dirs; cd ${DIR}/10.6-es && ~/mariadb-qa/build_mdpsms_opt_san.sh
     cleanup_dirs; cd ${DIR}/10.6-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh
   fi
 
-  if [ ${BUILD_10_5} -eq 1 ]; then
-    cleanup_dirs; cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh
-    cleanup_dirs; cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
+  if [ ${BUILD_10_6} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_opt_san.sh
+    cleanup_dirs; cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
   fi
-
+  
   if [ ${BUILD_ES_10_5} -eq 1 ]; then
     cleanup_dirs; cd ${DIR}/10.5-es && ~/mariadb-qa/build_mdpsms_opt_san.sh
     cleanup_dirs; cd ${DIR}/10.5-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh
+  fi
+
+  if [ ${BUILD_10_5} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_opt_san.sh
+    cleanup_dirs; cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_dbg_san.sh
   fi
 
   if [ ${BUILD_10_4} -eq 1 ]; then

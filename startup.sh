@@ -492,44 +492,46 @@ MTR_DIR="./mysql-test"
 if [ -d "./mariadb-test" ]; then MTR_DIR="./mariadb-test"; fi
 if [ -d "${MTR_DIR}" ]; then
   rm -f ${MTR_DIR}/mtra ${MTR_DIR}/cl_mtr ${MTR_DIR}/cl_mtr_innodb ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_multi ${MTR_DIR}/loop_mtr_skip_slave_err ${MTR_DIR}/loop_mtr_multi_skip_slave_err ${MTR_DIR}/main/spider.test ${MTR_DIR}/main/replication.test
-  echo "--source plugin/spider/spider/include/init_spider.inc" > ${MTR_DIR}/main/spider.test
-  echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/spider.test
-  echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/spider.test
-  echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/spider.test
-  echo "#--source include/have_binlog.inc" >> ${MTR_DIR}/main/spider.test
-  echo "SET spider_same_server_link=on;" >> ${MTR_DIR}/main/spider.test
-  echo "eval CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (HOST \"127.0.0.1\", DATABASE \"test\", USER \"root\", PORT \$MASTER_MYPORT);" >> ${MTR_DIR}/main/spider.test
-  echo "SET sql_mode='';" >> ${MTR_DIR}/main/spider.test
-  echo "--source include/have_binlog_format_row.inc" > ${MTR_DIR}/main/replication.test
-  echo "#--source include/have_binlog_format_statement.inc" >> ${MTR_DIR}/main/replication.test
-  echo "#--source include/have_binlog_format_mixed.inc" >> ${MTR_DIR}/main/replication.test
-  echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/replication.test
-  echo "--source include/have_partition.inc" >> ${MTR_DIR}/main/replication.test
-  echo "--source include/master-slave.inc" >> ${MTR_DIR}/main/replication.test
-  echo "SET default_storage_engine=InnoDB;" >> ${MTR_DIR}/main/replication.test
-  echo "--connection slave" >> ${MTR_DIR}/main/replication.test
-  echo "STOP SLAVE;" >> ${MTR_DIR}/main/replication.test
-  echo "#SET GLOBAL slave_run_triggers_for_rbr=LOGGING;" >> ${MTR_DIR}/main/replication.test
-  echo "#SET GLOBAL slave_parallel_mode=aggressive;" >> ${MTR_DIR}/main/replication.test
-  echo "#SET GLOBAL gtid_strict_mode=1;" >> ${MTR_DIR}/main/replication.test
-  echo "SET GLOBAL slave_parallel_threads=10;" >> ${MTR_DIR}/main/replication.test
-  echo "START SLAVE;" >> ${MTR_DIR}/main/replication.test
-  echo "SELECT SLEEP(2);" >> ${MTR_DIR}/main/replication.test
-  echo "--connection master" >> ${MTR_DIR}/main/replication.test
-  echo "#SET GLOBAL gtid_strict_mode=1;" >> ${MTR_DIR}/main/replication.test
-  echo "#SET GLOBAL log_bin_trust_function_creators=1;" >> ${MTR_DIR}/main/replication.test
-  echo "ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/replication.test
-  echo "#SET sql_mode='';" >> ${MTR_DIR}/main/replication.test
-  echo "<code>" >> ${MTR_DIR}/main/replication.test
-  echo "--sync_slave_with_master" >> ${MTR_DIR}/main/replication.test
-  echo "DROP TABLE t1,t2;" >> ${MTR_DIR}/main/replication.test
-  echo "--source include/rpl_end.inc" >> ${MTR_DIR}/main/replication.test
-  if [ ! -r "${MTR_DIR}/main/test.test" ]; then
-    echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/test.test
-    echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/test.test
-    echo "#--source include/have_binlog.inc" >> ${MTR_DIR}/main/test.test
-    echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/test.test
-    echo "#SET sql_mode='';" >> ${MTR_DIR}/main/test.test
+  if [ -d ${MTR_DIR}/main ]; then  # MS structure differs from MD. TODO: can add MS coverage if needed
+    echo "--source plugin/spider/spider/include/init_spider.inc" > ${MTR_DIR}/main/spider.test
+    echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/spider.test
+    echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/spider.test
+    echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/spider.test
+    echo "#--source include/have_binlog.inc" >> ${MTR_DIR}/main/spider.test
+    echo "SET spider_same_server_link=on;" >> ${MTR_DIR}/main/spider.test
+    echo "eval CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (HOST \"127.0.0.1\", DATABASE \"test\", USER \"root\", PORT \$MASTER_MYPORT);" >> ${MTR_DIR}/main/spider.test
+    echo "SET sql_mode='';" >> ${MTR_DIR}/main/spider.test
+    echo "--source include/have_binlog_format_row.inc" > ${MTR_DIR}/main/replication.test
+    echo "#--source include/have_binlog_format_statement.inc" >> ${MTR_DIR}/main/replication.test
+    echo "#--source include/have_binlog_format_mixed.inc" >> ${MTR_DIR}/main/replication.test
+    echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/replication.test
+    echo "--source include/have_partition.inc" >> ${MTR_DIR}/main/replication.test
+    echo "--source include/master-slave.inc" >> ${MTR_DIR}/main/replication.test
+    echo "SET default_storage_engine=InnoDB;" >> ${MTR_DIR}/main/replication.test
+    echo "--connection slave" >> ${MTR_DIR}/main/replication.test
+    echo "STOP SLAVE;" >> ${MTR_DIR}/main/replication.test
+    echo "#SET GLOBAL slave_run_triggers_for_rbr=LOGGING;" >> ${MTR_DIR}/main/replication.test
+    echo "#SET GLOBAL slave_parallel_mode=aggressive;" >> ${MTR_DIR}/main/replication.test
+    echo "#SET GLOBAL gtid_strict_mode=1;" >> ${MTR_DIR}/main/replication.test
+    echo "SET GLOBAL slave_parallel_threads=10;" >> ${MTR_DIR}/main/replication.test
+    echo "START SLAVE;" >> ${MTR_DIR}/main/replication.test
+    echo "SELECT SLEEP(2);" >> ${MTR_DIR}/main/replication.test
+    echo "--connection master" >> ${MTR_DIR}/main/replication.test
+    echo "#SET GLOBAL gtid_strict_mode=1;" >> ${MTR_DIR}/main/replication.test
+    echo "#SET GLOBAL log_bin_trust_function_creators=1;" >> ${MTR_DIR}/main/replication.test
+    echo "ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/replication.test
+    echo "#SET sql_mode='';" >> ${MTR_DIR}/main/replication.test
+    echo "<code>" >> ${MTR_DIR}/main/replication.test
+    echo "--sync_slave_with_master" >> ${MTR_DIR}/main/replication.test
+    echo "DROP TABLE t1,t2;" >> ${MTR_DIR}/main/replication.test
+    echo "--source include/rpl_end.inc" >> ${MTR_DIR}/main/replication.test
+    if [ ! -r "${MTR_DIR}/main/test.test" ]; then
+      echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/test.test
+      echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/test.test
+      echo "#--source include/have_binlog.inc" >> ${MTR_DIR}/main/test.test
+      echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/test.test
+      echo "#SET sql_mode='';" >> ${MTR_DIR}/main/test.test
+    fi
   fi
   echo '#!/bin/bash' >${MTR_DIR}/mtra
   add_san_options ${MTR_DIR}/mtra
