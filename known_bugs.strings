@@ -1161,6 +1161,8 @@ SIGSEGV|Bitmap<64u>::merge|add_key_field|Item_equal::add_key_fields|update_ref_a
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## MDEV-28507
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                                                    ## MDEV-28507
 SIGSEGV|MemcmpInterceptorCommon|memcmp|my_strnncoll_binary|charset_info_st::strnncoll                                                                                          ## MDEV-28506
+SIGSEGV|Lex_cstring::Lex_cstring|Lex_cstring_strlen::Lex_cstring_strlen|find_field_in_table_ref|find_field_in_tables                                                           ## MDEv-28506
+SIGSEGV|charset_info_st::streq|Lex_ident<Compare_table_names>::streq|find_field_in_table_ref|find_field_in_tables                                                              ## MDEV-28506
 SIGSEGV|my_strcasecmp_bin|find_field_in_table_ref|find_field_in_tables|Item_field::fix_fields                                                                                  ## MDEV-28506
 SIGSEGV|create_view_field|Field_iterator_view::create_item|find_field_in_view|find_field_in_table_ref                                                                          ## MDEV-28506
 SIGSEGV|lex_string_cmp|TABLE::find_field_by_name|find_field_in_table|find_field_in_table_ref                                                                                   ## MDEV-28506
