@@ -112,12 +112,14 @@ GOT_ERROR|Got error 1184|when reading table                    ## MDEV-29583
 GOT_ERROR|Got error 1290|when trying to execute action for entry 2 of type 'rename table'  ## SPECIAL-18
 GOT_ERROR|Got error 1290|when trying to execute action for entry 5 of type 'rename table'  ## SPECIAL-18
 GOT_ERROR|Got error 1317|when reading table                    ## SPECIAL-32
+GOT_ERROR|Got error 1400|when reading table                    ## MDEV-37410 (Spider)
 GOT_ERROR|Got error 1430|when reading table                    ## Presumed non-issue (federatedx base table removed)
 GOT_ERROR|Got error 1430|Unknown error 1430                    ## MDEV-29923
 GOT_ERROR|Got error 1440|when reading table                    ## MDEV-29454
 GOT_ERROR|Got error 1100|when reading table                    ## MDEV-31409 (Spider)
 GOT_ERROR|Got error 1146|when reading table                    ## MDEV-29663
 GOT_ERROR|Got error 1227|when reading table                    ## MDEV-29659 (spider_internal_sql_log_off)
+GOT_ERROR|Got error 1298|when reading table                    ## MDEV-37402 (Spider)
 GOT_ERROR|Got error 1429|when reading table                    ## SPECIAL-6 (Spider)
 GOT_ERROR|Got error 1814|when reading table                    ## MDEV-33042
 GOT_ERROR|Got error 1969|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)

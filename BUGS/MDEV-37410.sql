@@ -1,0 +1,8 @@
+INSTALL PLUGIN Spider SONAME 'ha_spider.so';
+CREATE SERVER srv FOREIGN DATA WRAPPER mysql OPTIONS (SOCKET '../socket.sock',DATABASE 'test',user 'Spider',PASSWORD'');
+CREATE TABLE ti (c INT) ENGINE=InnoDB;
+CREATE TABLE t1 (c INT KEY) ENGINE=Spider COMMENT='WRAPPER "mysql",SRV "srv",TABLE "ti"';
+SET autocommit=OFF;
+XA START 'a';
+SELECT 1 FROM t1;
+DELETE t2.* FROM t1 t2 WHERE (SELECT 1 FROM t1);
