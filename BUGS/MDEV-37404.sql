@@ -1,0 +1,4 @@
+set sql_mode='';
+CREATE TABLE t (c INT KEY,c2 BLOB UNIQUE)Engine=InnoDB;
+INSERT INTO t VALUES (0,'');
+REPLACE INTO t (c2) VALUES (0);
