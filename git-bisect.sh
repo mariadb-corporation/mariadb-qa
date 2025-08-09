@@ -4,9 +4,9 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=10.5                                                        # Use the earliest major version affected by the bug
+VERSION=10.11                                                        # Use the earliest major version affected by the bug
 ES=0                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
-SKIP_NON_SAME_VERSION=1                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
+SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 RECLONE=1                                                           # Set to 1 to reclone a tree before starting
@@ -15,14 +15,14 @@ BISECT_REPLAY=0                                                     # Set to 1 t
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.i
-LAST_KNOWN_GOOD_COMMIT='2e580dc2a8da4aaf3a7f1b3cfb4f897dbb5f7089'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='643319a7fb1e273797c2a1e46d76cfac0fa1da8f'   # Revision of first known bad commit
-TESTCASE='/test/in27.sql'                                           # The testcase to be tested
-UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+LAST_KNOWN_GOOD_COMMIT='2147951560c013fc084c4c06dcf8e09ec403dd9f'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='c45a34b2fb10e4e8f768e7e5fe846e9592eb6ea8'   # Revision of first known bad commit
+TESTCASE='/test/in29.sql'                                           # The testcase to be tested
+UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID=''                                                         # The UniqueID to scan for [Exclusive]
-TEXT='Item_func_sleep::val_int'                                                             # The string to scan for in the error log [Exclusive]
+UNIQUEID='node->pcur->rel_pos == BTR_PCUR_ON|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::update_row|handler::ha_update_row'                                                         # The UniqueID to scan for [Exclusive]
+TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead
 # i.e. 3 different modes in total: UNIQUEID, TEXT or core files scan

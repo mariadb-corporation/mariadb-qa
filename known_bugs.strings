@@ -17,6 +17,7 @@ MARIADBD_ERROR|mariadbd: Can't find record in table  ## MDEV-37068, MDEV-33563
 MARIADBD_ERROR|mariadbd: Connection was killed       ## SPECIAL-43 (non-issue; simple increased log verbosity)
 MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-28498, MDEV-27771
 MARIADBD_ERROR|mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL ## MDEV-37339
+MARIADBD_ERROR|mariadbd: The table table is full  ## SPECIAL-44 (non-issue; table is simply full)
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936

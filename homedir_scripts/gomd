@@ -2,28 +2,15 @@
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
-#BASEDIR=/test/MDEV-31949_MD210525-mariadb-12.0.1-linux-x86_64-opt
-#BASEDIR=/test/bb-12.1-MDEV-36205-subdist_MD180625-mariadb-12.1.0-linux-x86_64-dbg
-#BASEDIR=/test/bb-12.0-mdev-34680x2-hf_MD240625-mariadb-12.0.1-linux-x86_64-dbg
-#BASEDIR=/test/bb-12.0-mdev-34680x3-hf_UBASAN_MD030725-mariadb-12.0.1-linux-x86_64-opt
-#BASEDIR=/test/bb-12.0-mdev-34680x3-hf_MD020725-mariadb-12.0.1-linux-x86_64-opt
-#BASEDIR=/test/MDEV-34680x2-UBASAN_MD240625-mariadb-12.0.1-linux-x86_64-dbg
-#BASEDIR=/test/bb-12.1-MDEV-36205-subdist_UBASAN_MD180625-mariadb-12.1.0-linux-x86_64-dbg
-#BASEDIR=/test/bb-main-monty_MD150725-mariadb-12.1.0-linux-x86_64-dbg
-#BASEDIR=/test/bb-12.1-MDEV-36205-subdist_UBASAN_MD180625-mariadb-12.1.0-linux-x86_64-dbg
-#BASEDIR=/test/MD170725-mariadb-12.1.0-linux-x86_64-dbg
-#BASEDIR=/test/UBASAN_MD170725-mariadb-12.1.0-linux-x86_64-dbg
-#BASEDIR=/test/MDEV-27260_MD260725-mariadb-12.1.0-linux-x86_64-dbg
-#BASEDIR=/test/MDEV-34680_5_MD010825-mariadb-12.1.0-linux-x86_64-opt
-BASEDIR=/test/MD080825-mariadb-12.2.0-linux-x86_64-dbg
-RUNSOPT=3
+BASEDIR=/test/UBASAN_EMD080825-mariadb-10.6.23-18-linux-x86_64-dbg
+RUNSOPT=2
 RUNSDBG=3
 #CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2, and spider swap
 #CONF=pquery-run-MD-spider-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-optimizer.conf
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
 #CONF=pquery-run-MD.conf  # Set currently to PRE_SHUFFLE_SQL=2
-#CONF=pquery-run-MD-r1.conf
+CONF=pquery-run-MD-r1.conf
 #CONF=pquery-run-MD-federated.conf
 #CONF=pquery-run-mdev-31152.conf
 #CONF=pquery-run-MD-crt.conf
@@ -40,7 +27,7 @@ RUNSDBG=3
 #CONF=pquery-run-MD-repl.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD2.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD.conf  # Using PRE_SHUFFLE_SQL=2
-CONF=pquery-run-MD_saahil.conf  # Using PRE_SHUFFLE_SQL=2
+#CONF=pquery-run-MD_saahil.conf  # Using PRE_SHUFFLE_SQL=2
 #CONF=pquery-run-MD-multi.conf  # Using PRE_SHUFFLE_SQL=2, multithreaded
 #CONF=pquery-run-MD-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-VAL.conf  # Using PRE_SHUFFLE_SQL=2, VAL

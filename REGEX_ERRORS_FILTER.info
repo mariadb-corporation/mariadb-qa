@@ -113,6 +113,7 @@ Error reading packet from server. File .647. not found  MDEV-22921 (ref comment)
 Internal MariaDB error code: 1100                     Presumed non-issue (BINLOG_BASE64_EVENT, row event exec error, unlock tables when using manual BINLOG commands)  Ref SPECIAL-11
 Internal MariaDB error code: 1114                     MDEV-23212
 d: The table ..temporary.. is full                    MDEV-23212
+d: The table .* is full                               SPECIAL-44 (non-issue; table is simply full)
 Internal MariaDB error code: 1146                     MDEV-33376 or SPECIAL-10
 Internal MariaDB error code: 1168                     Presumed non-issue (for example attempting an action on a MERGE table, SPECIAL-12)
 Internal MariaDB error code: 1223                     MDEV-22936 (May mask other bugs?)
