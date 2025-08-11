@@ -1,0 +1,2 @@
+SET SQL_MODE=EMPTY_STRING_IS_NULL;
+SELECT trunc(time'24:00:00','');

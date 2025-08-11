@@ -238,6 +238,10 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|JOIN::rollup_make_fields|JOIN::make_sum_func_list|JOIN::make_aggr_tables_info                                       ## MDEV-37422
+SIGSEGV|base_list_iterator::replace|List_iterator<Item>::replace|JOIN::rollup_make_fields|JOIN::make_sum_func_list                                                             ## MDEV-37422
+SIGSEGV|Binary_string::c_ptr|Item_func_trunc::get_date|Type_handler::Item_send_datetime|Type_handler_datetime_common::Item_send                                                ## MDEV-37414
+!thd->is_error()|SIGABRT|LEX::make_item_func_or_method_call|MYSQLparse|parse_sql|mysql_parse                                                                                   ## MDEV-37408
 node->pcur->rel_pos == BTR_PCUR_ON|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::update_row|handler::ha_update_row                                         ## MDEV-37404
 bitmap_is_subset(&m_part_info->read_partitions, &m_part_info->lock_partitions)|SIGABRT|ha_partition::start_stmt|check_lock_and_start_stmt|lock_tables|open_and_lock_tables     ## MDEV-21561
 bitmap_is_set(&read_partitions, next->id)|SIGABRT|partition_info::vers_set_hist_part|ha_partition::external_lock|handler::ha_external_lock|handler::create_lookup_handler      ## MDEV-37397
