@@ -238,6 +238,7 @@ SIGSEGV|spider_db_connect|spider_db_conn_queue_action|spider_db_before_query|spi
 SIGSEGV|store_server_fields|insert_server_record|insert_server|create_server ## MDEV-33783
 
 ##### CURRENT BUGS (Search key: Mac) #####
+(longlong) global_tmp_space_used >= 0|SIGABRT|temp_file_size_cb_func|tmp_file_track|_my_b_cache_write|my_b_flush_io_cache                                                      ## MDEV-37425
 src != ((void*)0)|SIGABRT|my_casedn_utf8mb4|charset_info_st::casedn|charset_info_st::casedn_z|fts_add_token                                                                    ## MDEV-37423
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|JOIN::rollup_make_fields|JOIN::make_sum_func_list|JOIN::make_aggr_tables_info                                       ## MDEV-37422
 SIGSEGV|base_list_iterator::replace|List_iterator<Item>::replace|JOIN::rollup_make_fields|JOIN::make_sum_func_list                                                             ## MDEV-37422
