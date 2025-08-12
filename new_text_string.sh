@@ -228,6 +228,7 @@ fi
 #  exit 1
 #fi
 
+# When adding additional items to find_other_possible_issue_strings(), please also add them to reducer.sh, serach for 'Likely misconfiguration' in there
 find_other_possible_issue_strings(){
   # If all else failed, check if there are other interesting issues
   # TODO, over time, it may make sense to rotate the issues below in to a different order. The benefit of this is increased
@@ -292,6 +293,7 @@ find_other_possible_issue_strings(){
     TEXT="$(echo "${TEXT}" | sed 's|for table [^ ]\+|for table|g')"  # MDEV-34951
     TEXT="$(echo "${TEXT}" | sed 's|The table [^ ]\+ doesnt have|The table doesnt have|g')"  # SPECIAL-33
     TEXT="$(echo "${TEXT}" | sed 's|Unable to import tablespace .* because it already exists.  Please DISCARD the tablespace before IMPORT|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT|')"  # Use a generic indentifier 'X' for any table name, similar to X/Y value handling in *SAN bugs
+    TEXT="$(echo "${TEXT}" | sed 's|Cannot add field.*in table.*because after adding it, the row size is.*which is greater than maximum allowed size.*for a record on index leaf page|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page|')"  # Use a generic message for all similar errors
     echo "${TEXT}"
     exit 0
   fi
@@ -306,6 +308,7 @@ find_other_possible_issue_strings(){
   MDBDERROR="$(grep -hio 'ERROR] mariadbd: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed "s|^ERROR] ||;s|'t[0-9]*'|table|")"
   if [ ! -z "${MDBDERROR}" ]; then
     TEXT="$(echo "${MDBDERROR}" | sed "s|Incorrect information in file: '[^']*.frm'|Incorrect information in frm file|")"  # Fix to remove any table name/path, specifically for .frm issues, ref MDEV-28498 and MDEV-27771
+    TEXT="$(echo "${TEXT}" | sed "s|writing file '[^']*' |writing file |")"  # Fix things like Error writing file 'qa-roel-2-bin' by making it generic
     TEXT="MARIADBD_ERROR|${TEXT}"
     echo "${TEXT}"
     exit 0

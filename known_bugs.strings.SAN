@@ -7,6 +7,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|strings/ctype-utf8.c|my_casedn_utf8mb4|charset_info_st::casedn|charset_info_st::casedn_z|fts_add_token                              ## MDEV-37423
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/handler/ha_innodb.cc|innobase_fts_casedn_str|fts_add_token|fts_process_token|fts_tokenize_document ## MDEV-37423
 UBSAN|member access within null pointer of type 'TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                      ## MDEV-35277
 ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::join_free|return_zero_rows                                                               ## MDEV-37395
 ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                           ## MDEV-37395
@@ -117,6 +119,7 @@ UBSAN|applying non-zero offset X to null pointer|strings/ctype-ucs2.h|my_mb_wc_u
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_bool|Item::save_bool_in_field              ## MDEV-36003
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_bin|Arg_comparator::compare|Item_func_ne::val_int|Item::save_int_in_field                ## MDEV-36003
 UBSAN|applying zero offset to null pointer|strings/ctype-utf8.c|my_strnxfrm_unicode_full_bin|charset_info_st::strnxfrm|Type_handler_string_result::make_sort_key_part|make_sortkey ## MDEV-36046
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb4_general_ci|Arg_comparator::compare|Item_func_eq::val_bool|evaluate_join_record           ## MDEV-36045
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb2312_chinese_ci|Arg_comparator::compare|Item_func_eq::val_bool|evaluate_join_record            ## MDEV-36045
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_gb2312_chinese_ci|Arg_comparator::compare|Item_func_eq::val_int|evaluate_join_record             ## MDEV-36045
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Arg_comparator::compare|Item_func_eq::val_int|evaluate_join_record            ## MDEV-36045
@@ -212,6 +215,7 @@ UBSAN|downcast of address X with insufficient space for an object of type 'my_de
 UBSAN|downcast of address X with insufficient space for an object of type 'my_decimal'|sql/item_strfunc.cc|Item_dyncol_get::get_date|Temporal_with_date::make_from_item|Temporal_with_date::Temporal_with_date|Datetime::Datetime ## MDEV-35714
 UBSAN|load of value X, which is not a valid value for type 'enum enum_schema_tables'|sql/sql_show.cc|optimize_for_get_all_tables|optimize_schema_tables_reads|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-35713
 UBSAN|load of value X, which is not a valid value for type 'enum enum_schema_tables'|sql/sql_show.cc|get_all_tables|get_schema_tables_result|JOIN::exec_inner|JOIN::exec       ## MDEV-35713
+UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|init_weight_level|create_tailoring|my_coll_init_uca|my_uca_coll_init_utf8mb4                                    ## MDEV-35712 (reducer.sh only)
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|check_rules|init_weight_level|create_tailoring|my_ci_init_collation                                             ## MDEV-35712
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|check_rules|init_weight_level|create_tailoring|my_coll_init_uca                                                 ## MDEV-35712
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|my_uca_contraction_find|my_char_weight_put|apply_one_rule|init_weight_level                                     ## MDEV-35712
