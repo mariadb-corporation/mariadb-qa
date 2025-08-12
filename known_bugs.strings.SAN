@@ -7,6 +7,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|sql/sql_select.cc|JOIN::rollup_make_fields|JOIN::make_sum_func_list|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                    ## MDEV-37422
+UBSAN|addition of unsigned offset to X overflowed to Y|mysys/mf_iocache.c|reinit_io_cache|binlog_cache_data::truncate|binlog_cache_data::restore_prev_position|binlog_truncate_trx_cache ## MDEV-37425
 UBSAN|applying zero offset to null pointer|strings/ctype-utf8.c|my_casedn_utf8mb4|charset_info_st::casedn|charset_info_st::casedn_z|fts_add_token                              ## MDEV-37423
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/handler/ha_innodb.cc|innobase_fts_casedn_str|fts_add_token|fts_process_token|fts_tokenize_document ## MDEV-37423
 UBSAN|member access within null pointer of type 'TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                      ## MDEV-35277
