@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "${STY}" == "" -a -z "${1}" ]; then
+if [ "${STY}" == "" ]; then
   THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
   SCREEN_NAME='mtr_to_sql_all'
   echo "Not a screen, restarting myself inside a screen"

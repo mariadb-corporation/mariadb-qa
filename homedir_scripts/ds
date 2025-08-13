@@ -24,13 +24,19 @@ update_current_filter_pids(){  # Do not include reducers (reducer123.sh) themsel
   PR_PID_FILTER=;GE_PID_FILTER=;S_PID_FILTER=;NEWBUG_PID_FILTER=
 }
 
-if [ "${STY}" == "" -a -z "${1}" ]; then
+if [ "${STY}" == "" -o "${1}" == "RUNONCE" ]; then
   THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
   SCREEN_NAME='ds'
-  echo "Not a screen, restarting myself inside a screen"
-  screen -admS "${SCREEN_NAME}" bash -c "${THIS_SCRIPT} ${*}"
-  sleep 1
-  screen -d -r "${SCREEN_NAME}"
+  if [ "${1}" == "RUNONCE" ]; then
+    if [ -z "$(screen -ls | grep '\.ds_r_o	')" ]; then  # Ensure no RUNONCE ds is already running
+      screen -admS "${SCREEN_NAME}_r_o" bash -c "${THIS_SCRIPT} R_O"  # Do not re-pass RUNONCE to avoid inf loop, but make sure screen started process knows this is a RUNONCE run by passing R_O
+    fi
+  else
+    echo "Not a screen, restarting myself inside a screen"
+    screen -admS "${SCREEN_NAME}" bash -c "${THIS_SCRIPT} ${*}"
+    sleep 1
+    screen -d -r "${SCREEN_NAME}"
+  fi
   return 2> /dev/null; exit 0
 fi
 
@@ -65,7 +71,7 @@ while :; do
   echo -n "Unique New+Fuzzer: ${NEWBUGCOUNT}+${FUZZERBUGCOUNT} | "
   echo -n "Testcases: ${TESTCASES}"
   sleep 3
-  if [ ${COUNT1} -ge 10 ]; then
+  if [ ${COUNT1} -ge 10 -o "${1}" == "R_O" ]; then
     # Cleanup any processes which have deleted files open. This command assists greatly in server memory management
     update_current_filter_pids
     sudo lsof -s +L1 | grep '(deleted)' | awk '{print $7" "$2" "$3" "$10}' | grep 'dev/shm' | awk '{print $2}' | sort -u | grep -vE '^[0-9][0-9][0-9]$|^[0-9][0-9]$|^[0-9]$' | tr '\n' '|' | sed "s/^/ps -ef | grep -E '/;s/|$/' | grep -vEi '${FILTER}'/;s/$/\0/" | xargs -0 -I{} bash -c "{}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | sort -u | xargs -P20 -I{} kill -9 {} 2>/dev/null
@@ -127,7 +133,7 @@ while :; do
     sync
     COUNT1=0
   fi
-  if [ ${COUNT2} -ge 60 ]; then
+  if [ ${COUNT2} -ge 60 -o "${1}" == "R_O" ]; then
     TESTCASES="$(cd /data && ./my | grep -v '^[ ]*0 ' | wc -l)"  # Expensive
     sudo bash -c "$(which echo) 3 > /proc/sys/vm/drop_caches"  # Cleanup cache, may help avoid OOM
     if [ -d /data ]; then
@@ -147,7 +153,7 @@ while :; do
     sync
     COUNT2=0
   fi
-  if [ ${COUNT3} -ge 5000 ]; then
+  if [ ${COUNT3} -ge 5000 -o "${1}" == "R_O" ]; then
     if [ "${WIPE_TMP_ENABLED}" -eq 1 ]; then
       rm -Rf /tmp/[0-9][0-9][0-9][0-9][0-9][0-9] >/dev/null 2>&1 &
       #rm -Rf /tmp/1[5-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] >/dev/null 2>&1 &  # This may be ongoing reducer runs... TODO: fix this so it checks for date/time similar like tmpfs_clean.sh does
@@ -155,32 +161,36 @@ while :; do
     fi
     COUNT3=0
   fi
-  continue
-  # Check if any reducers are using >=10GB, terminate them and restart them on disk instead of tmpfs
-  rm -f ~/large_reducers
-  # Find /dev/shm assigned epoch subdirs >=10GB, count them and then loop through them 1-by-1
-  du -sh 1[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] | grep "[0-9][0-9]G" | awk '{print $2}' > ~/large_reducers
-  COUNT=$(wc -l ~/large_reducers 2>/dev/null | sed 's| .*||')
-  for LINE in $(seq 1 ${COUNT}); do
-    EPOCH="$(head -n ${LINE} ~/large_reducers | tail -n1)"
-    # Find the reducer connected with the particular epoch /dev/shm subdir
-    REDUCER="$(grep -om1 ".Init. Reducer:.*" /dev/shm/${EPOCH}/reducer.log | sed 's|.*: ||')"
-    # Kill all processes related to the epoch /dev/shm subdir (excluding reducer itself)
-    update_current_filter_pids
-    ps -ef | grep ${EPOCH} | grep -vE "${FILTER}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs kill -9
-    # Change workdir to disk instead of tmpfs
-    sed -i "s|^WORKDIR_LOCATION=1|WORKDIR_LOCATION=3|" ${REDUCER}
-    sed -i "s|^WORKDIR_M3_DIRECTORY=.*|WORKDIR_M3_DIRECTORY=~/reducers|" ${REDUCER}
-    mkdir -p ~/reducers
-    if [ ! -d ~/reducers ]; then 
-      echo "Script attempted to create ~/reducers but somehow it failed. Terminating."
-      exit 1
-    fi
-    # Terminate reducer by reducing the corresponding screen (will also ensure all processes are gone)
-    ps -ef | grep "$(basename "${REDUCER}")" | grep -vE "${FILTER}" | grep -i screen | awk '{print $2}' | xargs kill -9  # Idem on COMBINED_PID_FILTER, ref note just above
-    # Restart reducer with new setting
-    # TODO: expand this script to check for presence of _out file to shorten time to reduced testcase. However, there is not real way to check if such an _out file was saved correctly. Use .prev perhaps if present
-    eval $(cd $(echo ${REDUCER} | sed 's|$(basename "${REDUCER}")||'); ~/sr $(echo "$(basename "${REDUCER}")" | sed 's|[^0-9]||g'))
-  done 
-  rm -f ~/large_reducers
+  ## --------- TODO: functionality below needs testing
+  ## Check if any reducers are using >=10GB, terminate them and restart them on disk instead of tmpfs
+  #rm -f ~/large_reducers
+  ## Find /dev/shm assigned epoch subdirs >=10GB, count them and then loop through them 1-by-1
+  #du -sh 1[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] | grep "[0-9][0-9]G" | awk '{print $2}' > ~/large_reducers
+  #COUNT=$(wc -l ~/large_reducers 2>/dev/null | sed 's| .*||')
+  #for LINE in $(seq 1 ${COUNT}); do
+  #  EPOCH="$(head -n ${LINE} ~/large_reducers | tail -n1)"
+  #  # Find the reducer connected with the particular epoch /dev/shm subdir
+  #  REDUCER="$(grep -om1 ".Init. Reducer:.*" /dev/shm/${EPOCH}/reducer.log | sed 's|.*: ||')"
+  #  # Kill all processes related to the epoch /dev/shm subdir (excluding reducer itself)
+  #  update_current_filter_pids
+  #  ps -ef | grep ${EPOCH} | grep -vE "${FILTER}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs kill -9
+  #  # Change workdir to disk instead of tmpfs
+  #  sed -i "s|^WORKDIR_LOCATION=1|WORKDIR_LOCATION=3|" ${REDUCER}
+  #  sed -i "s|^WORKDIR_M3_DIRECTORY=.*|WORKDIR_M3_DIRECTORY=~/reducers|" ${REDUCER}
+  #  mkdir -p ~/reducers
+  #  if [ ! -d ~/reducers ]; then 
+  #    echo "Script attempted to create ~/reducers but somehow it failed. Terminating."
+  #    exit 1
+  #  fi
+  #  # Terminate reducer by reducing the corresponding screen (will also ensure all processes are gone)
+  #  ps -ef | grep "$(basename "${REDUCER}")" | grep -vE "${FILTER}" | grep -i screen | awk '{print $2}' | xargs kill -9  # Idem on COMBINED_PID_FILTER, ref note just above
+  #  # Restart reducer with new setting
+  #  # TODO: expand this script to check for presence of _out file to shorten time to reduced testcase. However, there is not real way to check if such an _out file was saved correctly. Use .prev perhaps if present
+  #  eval $(cd $(echo ${REDUCER} | sed 's|$(basename "${REDUCER}")||'); ~/sr $(echo "$(basename "${REDUCER}")" | sed 's|[^0-9]||g'))
+  #done 
+  #rm -f ~/large_reducers
+  ## --------- /TODO
+  if [ "${1}" == "R_O" ]; then 
+    break
+  fi
 done
