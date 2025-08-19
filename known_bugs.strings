@@ -1245,6 +1245,7 @@ SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_col|TABL
 SIGSEGV|Item_args::walk_args|Item_func_or_sum::walk|TABLE::mark_virtual_col|update_field_dependencies                                                                          ## MDEV-28034
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_rollback_trans|ha_start_consistent_snapshot|trans_begin|mysql_execute_command          ## MDEV-28024
 thd->transaction.stmt.ha_list == __null || trans == &thd->transaction.stmt|SIGABRT|ha_rollback_trans|ha_start_consistent_snapshot|trans_begin|mysql_execute_command            ## MDEV-28024
+thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|LOCK_after_binlog_sync                                                                    ## MDEV-28024 (likely)
 inited == NONE|SIGABRT|handler::ha_reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables                                      ## MDEV-28023
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                                          ## MDEV-27971
 SIGSEGV|trx_undo_build_roll_ptr|trx_undo_report_row_operation|Backtrace stopped: Cannot access memory at address                                                               ## MDEV-27971

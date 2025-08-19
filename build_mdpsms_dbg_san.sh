@@ -9,10 +9,10 @@ BOOST_LOCATION=/tmp/boost_465114
 USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
 CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
 O_LEVEL='1'             # 0,1,2,3,g: -O Compiler optimization level. Recommended: '1': for testing dbg, '2': opt, 'g': debugging
-USE_CLANG=1             # 0 or 1 # Use the clang compiler instead of gcc
-USE_SAN=1               # 0 or 1 # Use [ASAN or MSAN], UBSAN
-USE_TSAN=0              # 0 or 1 # 1 Enables TSAN, disables ASAN+UBSAN. 0 Enables ASAN+UBSAN, disables TSAN
-ASAN_OR_MSAN=0          # 0 or 1 # 0: ASAN, 1: MSAN
+USE_CLANG=1             # 0 or 1 # Use the Clang compiler instead of gcc
+USE_SAN=1               # 0 or 1 # 1: Enable SAN builds: TSAN, ASAN+UBSAN, or MSAN
+USE_TSAN=0              # 0 or 1 # 1: Enables TSAN, disables ASAN+UBSAN/MSAN. 0: Enables ASAN+UBSAN or MSAN, disables TSAN
+ASAN_OR_MSAN=0          # 0 or 1 # 0: ASAN+UBSAN. 1: MSAN
 PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
 #CLANG_LOCATION="${HOME}/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
@@ -40,6 +40,8 @@ IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_M
 # Interestingly, this issue only seems to halt 10.5-10.11 builds, and 11.1 dbg, but not 11.1 opt nor 11.2+
 
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
+
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 if [ "${PERFSCHEMA}" != "NO" -a "${PERFSCHEMA}" != "YES" -a "${PERFSCHEMA}" != "STATIC" -a "${PERFSCHEMA}" != "DYNAMIC" ]; then
   if [ -z "${PERFSCHEMA}" ]; then
@@ -106,12 +108,19 @@ MS=0
 MD=0
 if [ ${USE_SAN} -eq 1 ]; then
   if [ ${USE_TSAN} -eq 1 ]; then
+    echo "Building TSAN..."
     PREFIX="TSAN_"
   else
     if [ ${ASAN_OR_MSAN} -eq 0 ]; then
+      echo "Building UBASAN (UBSAN+ASAN)..."
       PREFIX="UBASAN_"
     else
-      PREFIX="UBMSAN_"
+      if [ "${USE_CLANG}" -eq 0 ]; then
+        echo "Assert: USE_SAN=1, ASAN_OR_MSAN!=1, USE_CLANG=0: MSAN requires clang: -DWITH_MSAN=ON will be silently ignored when the compiler is not clang or it's derivative, ref MDEV-20377 or comment by Marko in MDEV-34002"
+        exit 1          
+      fi
+      echo "Building MSAN..."
+      PREFIX="MSAN_"
     fi
   fi
 fi
@@ -215,9 +224,32 @@ if [ $USE_SAN -eq 1 ]; then
       SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON"  # Both, default (not-Spider)
       #PREFIX="UBSAN_SPIDER_"; SAN="-DWITH_UBSAN=ON"  # Spider UBSAN Only https://jira.mariadb.org/browse/MDEV-26541
       #PREFIX="ASAN_SPIDER_"; SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWSREP_LIB_WITH_ASAN=ON"  # Spider ASAN only, same URL
-
     else
-      SAN="-DWITH_MSAN=ON -DWITH_UBSAN=ON"  # TODO: MD Does not have full MSAN support for InnoDB yet, and need to verify if -DWITH_UBSAN=ON works in combination with MSAN.
+      # While it may be technically possible to combine MSAN with UBSAN, within MariaDB testing, UBSAN builds are already extensively tested in combination with ASAN. It makes most sense to have separate/unclogged MSAN builds. Instrumented MSAN system libraries are build with -fsanitize=memory, ref mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh
+      export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing msan.instrumentedlibs_ubuntu2404.sh also
+      if [ ! -d "${MSAN_LIBDIR}" ]; then
+        echo "Error: the MSAN_LIBDIR (${MSAN_LIBDIR}) is missing. MSAN compiled libraries are required. To setup, do:"
+        echo "export USR=\$(whoami); sudo mkdir -p ${MSAN_LIBDIR}; sudo chown -R \${USR}:\${USR} ${MSAN_LIBDIR}"
+        echo "sudo vi /etc/apt/sources.list.d/ubuntu.sources"
+        echo "# ------ For Ubuntu 24.04 (Noble) and add, if not present already:"
+        echo "Types: deb-src"
+        echo "URIs: http://archive.ubuntu.com/ubuntu/"
+        echo "Suites: noble noble-updates noble-backports noble-security"
+        echo "Components: main restricted universe multiverse"
+        echo "Enabled: yes"
+        echo "Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg"
+        echo "# ------ Then save the file, and continue:"
+        echo "sudo apt update && sudo apt install equivs libc++-dev libc++abi-dev quilt"  # equivs: needed for libs compile | libc++-dev libc++abi-dev: needed for Clang based MSAN compiles of MariaDB. It avoids the build failure (11.8 example): 'CMake Error at CMakeLists.txt:255 (MESSAGE): C++ Compiler requires support for -stdlib=libc++' | quilt is used to apply all official Debian/Ubuntu patches to the source codes used in mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh
+        echo "cd ${MSAN_LIBDIR}"
+        echo "${SCRIPT_PWD}/msan.instrumentedlibs_ubuntu2404.sh  # Should finish normally, without errors"
+        echo "ls ${MSAN_LIBDIR}  # You will want to see ~67 files/libs (and two dirs: ./build and ./include)"
+        exit 1
+      fi
+      # If there is ever a need to disable LIBAIO, use: (note that -DIGNORE_AIO_CHECK=YES was added for Ubuntu 24.04)
+      # -DCMAKE_DISABLE_FIND_PACKAGE_{URING,LIBAIO}=1 -DHAVE_LIBAIO_H=0 -DIGNORE_AIO_CHECK=YES
+      # However, note that msan.instrumentedlibs_ubuntu2404.sh does build libaio and liburing, and both work fine on 24.04
+      SAN="-DWITH_MSAN=ON -DHAVE_CXX_NEW=1 -DWITH_INNODB_{BZIP2,LZ4,LZMA,LZO,SNAPPY}=OFF -DCMAKE_DISABLE_FIND_PACKAGE_URING=1 -DWITH_NUMA=NO -DWITH_SYSTEMD=no -DPLUGIN_{MROONGA,ROCKSDB,OQGRAPH}=NO -DCMAKE_PREFIX_PATH=${MSAN_LIBDIR} -DCMAKE_{EXE,MODULE,SHARED}_LINKER_FLAGS=\"-L${MSAN_LIBDIR} -Wl,-rpath=${MSAN_LIBDIR}\""
+      SSL="-DWITH_SSL=${MSAN_LIBDIR}"  # Use the MSAN instrumented ssl libs in MSAN_LIBDIR
     fi
   fi
 fi

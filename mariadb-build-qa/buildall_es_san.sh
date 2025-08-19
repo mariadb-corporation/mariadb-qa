@@ -9,6 +9,8 @@ if [ "${STY}" == "" ]; then
   return 2> /dev/null; exit 0
 fi
 
+sed -i 's|^ASAN_OR_MSAN=1|ASAN_OR_MSAN=0|' ~/mariadb-qa/build_mdpsms_dbg_san.sh  # Set to ASAN (not MSAN). For MSAN builds, use the _msan scripts. TODO: consider creating an buildall_es_msan.sh script
+
 rm -Rf 10.[56]-es_dbg 10.[56]-es_opt
 rm -Rf 11.[48]-es_dbg 11.[48]-es_opt
 

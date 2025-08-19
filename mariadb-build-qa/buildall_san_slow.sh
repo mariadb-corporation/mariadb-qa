@@ -31,15 +31,6 @@ BUILD_ES_10_6=1
 BUILD_ES_11_4=1
 BUILD_ES_11_8=1
 
-#if [ ! -r ./terminate_ds_memory.sh ]; then
-#  echo './terminate_ds_memory.sh missing!'
-#  exit 1
-#else
-#  ./terminate_ds_memory.sh  # Terminate ~/ds and ~/memory if running (with 3 sec delay)
-#fi
-
-DIR=${PWD}
-
 # Restart inside a screen if this terminal session isn't one already
 if [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
@@ -49,6 +40,9 @@ if [ "${STY}" == "" ]; then
   return 2> /dev/null; exit 0
 fi
 
+sed -i 's|^ASAN_OR_MSAN=1|ASAN_OR_MSAN=0|' ~/mariadb-qa/build_mdpsms_dbg_san.sh  # Set to ASAN (not MSAN). For MSAN builds, use the __msan scripts (TODO: add msan builds to this san_slow build script
+
+DIR=${PWD}
 cleanup_dirs(){
   cd ${DIR}
   if [ -d /data/TARS ]; then mv ${DIR}/*.tar.gz /data/TARS 2>/dev/null; sync; fi

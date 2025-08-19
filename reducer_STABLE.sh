@@ -4084,6 +4084,7 @@ finish(){
     fi
     copy_workdir_to_tmp
   fi
+  echoit "[DONE] BASEDIR used: ${BASEDIR}"
   if [ "${FIREWORKS}" != "1" ]; then
     if [ ! -r $WORKO ]; then  # If there was no reduction (i.e. issue was not found), $WORKO was never written
       echoit "[DONE] Final testcase: $INPUTFILE (= input file; no optimizations were successful. $(wc -l $INPUTFILE | awk '{print $1}') lines)"

@@ -8,6 +8,8 @@ GEN_FILTER="tar|_opt|_dbg"  # _opt/_dbg: build dirs, not basedirs which are -opt
 
 if [ "${1}" == "SAN" ]; then
   ls --color=never -d UBASAN_[EM]* TSAN_M* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
+elif [ "${1}" == "MSAN" ]; then
+  ls --color=never -d MSAN_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
 elif [ "${1}" == "GAL" ]; then
     ls --color=never -d GAL_MD*   2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V
     ls --color=never -d GAL_EMD* 2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V

@@ -1,34 +1,36 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
+set "${1^^}" "${2}"  # Make ${1} uppercase ('san' > 'SAN')
 
 # User variables
 ALSO_CHECK_SAN_BUILDS_FOR_CORES_SET=1  # Recommended to leave as default=1, search for 'ALSO_CHECK_SAN_BUILDS_FOR_CORES' to read more on this.
 
 # Likely mistaken use cases (reversed)
-if [[ "${PWD}" == *"SAN"* && "${1}" != "SAN" ]]; then
-  echo "*********************************************************************************************************"
-  echo "Warning: you are starting '~/b' (b) from a SAN basedir. Do you maybe want to use '~/b san' (bs) instead?"
-  echo "Warning: this will lead to errors in the output, particularly in terms of versions affected"
-  echo "Pausing 5 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
-  echo "*********************************************************************************************************"
-  echo ''
-  sleep 5
-elif [[ "${PWD}" != *"SAN"* && "${1}" == "SAN" ]]; then
-  echo "*********************************************************************************************************"
-  echo "Warning: you are starting '~/b san' (bs) from a non-SAN basedir. Do you maybe want to use '~/b' (b) instead?"
-  echo "Warning: this will lead to errors in the output, particularly in terms of versions affected"
-  echo "Pausing 5 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
-  echo "*********************************************************************************************************"
-  echo ''
-  sleep 5
+if [[ "${PWD}" != *"UBASAN"* && "${1}" == "SAN" ]]; then
+  echo "Warning: you are starting '~/b san' (bs) from a non-UBASAN basedir. Did you want to use '~/b' (b) or '~/b msan' (bm) instead?"
+  echo "Terminating as this cannot work"
+  exit 1
+elif [[ "${PWD}" != *"MSAN"* && "${1}" == "MSAN" ]]; then
+  echo "Warning: you are starting '~/b msan' (bs) from a non-MSAN basedir. Did you want to use '~/b' (b) or '~/b san' (bs) instead?"
+  echo "Terminating as this cannot work"
+  exit 1
+elif [[ "${PWD}" == *"UBASAN"* && "${1}" == "MSAN" ]]; then
+  echo "Warning: you are starting '~/b msan' (bm) from a UBSAN basedir. Did you want to use '~/b san' (bs) instead?"
+  echo "Terminating as this cannot work"
+  exit 1
+elif [[ "${PWD}" == *"MSAN"* && "${1}" == "SAN" ]]; then
+  echo "Warning: you are starting '~/b san' (bs) from a MSAN basedir. Did you want to use '~/b msan' (bm) instead?"
+  echo "Terminating as this cannot work"
+  exit 1
 elif [[ "${PWD}" == *"SAN"* && "${1}" == "REPL" ]]; then
-  echo "*********************************************************************************************************"
-  echo "Warning: you are starting '~/b repl' (br) from a SAN basedir. Do you maybe want to use '~/bs' (bs) instead?"
+  echo "***********************************************************************************************************************"
+  echo "Warning: you are starting '~/b repl' (br) from a UBSAN or MSAN basedir."
+  echo "Did you want to use ~/b san (bs) or ~/b msan (bm) instead?"
   echo "Warning: this will lead to errors in the output, particularly in terms of versions affected"
   echo "Additionally, this mode has not been tested and likely does not function correctly yet"  #TODO
   echo "Pausing 5 seconds, then continuing as requested (likely incorrect). Press CTRL+c to terminate this script"
-  echo "*********************************************************************************************************"
+  echo "***********************************************************************************************************************"
   echo ''
   sleep 5
 fi
@@ -54,7 +56,6 @@ if [[ "${1}" == "--"* ]]; then
   exit 1
 fi 
 
-set "${1^^}" "${2}"  # Make ${1} uppercase ('san' > 'SAN')
 sleep 10
 rm -f report.log
 if [ -r report.log ]; then echo "Assert: report.log still present though this script tried to delete it!"; exit 1; fi
@@ -65,7 +66,7 @@ else
   if [[ "${PWD}" != *"SAN"* ]]; then
     if [ -z "$(echo "$(cd ..;./gendirs.sh)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
   else
-    if [ -z "$(echo "$(cd ..;./gendirs.sh SAN)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
+    if [ -z "$(echo "$(cd ..;./gendirs.sh ${1})" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi  # $1: SAN (UBASAN) or MSAN (MSAN)
   fi
 fi
 
@@ -84,8 +85,28 @@ fi
 export TEXT=
 MYEXTRA_OPT=
 export ALSO_CHECK_SAN_BUILDS_FOR_CORES=0
-if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
-  if [ ! -z "$(grep --binary-files=text -i "[^M]SAN" ../REGEX_EXCLUDE | grep -v 'SAN_MD[0-9]')" ]; then
+if [ "${1}" == "MSAN" ]; then
+  if [ ! -z "$(grep --binary-files=text -i "MSAN" ../REGEX_EXCLUDE | grep -v 'MSAN_')" ]; then
+    echo "Assert: remove MSAN from ../REGEX_EXCLUDE"
+    exit 1
+  fi
+  if [ -z "${2}" ]; then
+    export TEXT="^SUMMARY:|=ERROR:|MemorySanitizer:"
+    if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES_SET}" == '1' ]; then
+      export ALSO_CHECK_SAN_BUILDS_FOR_CORES=1
+    fi
+  else
+    export TEXT="${2}"
+  fi
+  # MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|MSAN||;s|${TEXT}||')"
+  MYEXTRA_OPT="$3 $4 $5 $6 $7 $8 $9"
+  ~/mariadb-qa/bug_report.sh MSAN ${MYEXTRA_OPT} | tee report.log
+  if [ "${PIPESTATUS[0]}" -eq 1 ]; then
+    echo "bug_report.sh MSAN exited with status code 1. Terminating"
+    exit 1
+  fi
+elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
+  if [ ! -z "$(grep --binary-files=text -i "[^M]SAN" ../REGEX_EXCLUDE | grep -v 'SAN_')" ]; then
     echo "Assert: remove SAN from ../REGEX_EXCLUDE"
     exit 1
   fi

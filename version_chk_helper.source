@@ -145,7 +145,7 @@ if [ -z "${LAST_THREE}" ]; then  # in-trial ./stack call for ES
     LAST_THREE="$(grep --binary-files=text -oh "BASEDIR.*\-[do][bp][gt]" start 2>/dev/null | grep --binary-files=text -Eoh "\-dbg|\-opt" | head -n1 | sed 's|\-||')"
   fi
 fi
-SAN="$(echo "${PWD}" | sed "${DIRFILTER}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"
+SAN="$(echo "${PWD}" | sed "${DIRFILTER}" | sed 's|.*/||' | grep -o '[UBATM]\+SAN')"  # UBSAN, MSAN, TSAN, ASAN, UBASAN regex
 if [ -z "${SAN}" ]; then
   if [ -r pquery-run.log ]; then
     SAN="$(grep --binary-files=text -ohm1 "Basedir:.*\-[do][bp][gt]" pquery-run.log 2>/dev/null | sed "${DIRFILTER}" | sed 's|.*/||' | grep -o '[UBAT]\+SAN')"
@@ -161,7 +161,7 @@ if [ ${CLANG} -eq 0 ]; then
   if [ ! -z "${CLANG_STRING}" ]; then CLANG=1; fi
   CLANG_VERSION=" $(echo "${CLANG_STRING}" | head -n1 | grep -o '[\(\.0-9]\+' | tr -d '\n' | sed 's|(|-|g')"  # Note leading space. Also note that '(1)' is changed to '-1' for ease of reading
   if [ -z "$(echo "${CLANG_VERSION}" | tr -d ' ')" ]; then CLANG_VERSION=; fi  # Clear if only [leading] space(s)
-fi
+fi # Not a SAN build
 if [ -z "${SAN}" ]; then
   if [ ${CLANG} -eq 1 ]; then
     if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, Clang${CLANG_VERSION})"; fi
@@ -170,7 +170,7 @@ if [ -z "${SAN}" ]; then
     if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized)"; fi
     if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug)"; fi
   fi
-else  # Not a SAN build
+else  # SAN build
   if [ ${CLANG} -eq 1 ]; then
     if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, ${SAN}, Clang${CLANG_VERSION})"; fi
     if [ "${LAST_THREE}" == "dbg" ]; then BUILD_TYPE=" (Debug, ${SAN}, Clang${CLANG_VERSION})"; fi

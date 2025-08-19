@@ -10,7 +10,6 @@ USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
 CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
 O_LEVEL='2'             # 0,1,2,3,g: -O Compiler optimization level. Recommended: '1': for testing dbg, '2': opt, 'g': debugging
 USE_CLANG=1             # 0 or 1 # Use the clang compiler instead of gcc
-USE_SAN=0               # 0 or 1 # Use ASAN, MSAN, UBSAN  # DO NOT SET TO 1, USE build_mdpsms_dbg_san.sh instead!
 PERFSCHEMA='YES'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
 #CLANG_LOCATION="${HOME}/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
@@ -180,20 +179,6 @@ if [ $USE_AFL -eq 1 ]; then
   #AFL="-DCMAKE_C_COMPILER=$AFL_LOCATION/afl-gcc -DCMAKE_CXX_COMPILER=$AFL_LOCATION/afl-g++"
 fi
 
-# ASAN, MSAN, UBSAN
-SAN=
-if [ $USE_SAN -eq 1 ]; then
-  # MSAN and ASAN cannot be used at the same time, choose one of the two options below.
-  # Also note that for MSAN to have an effect, all libs linked to MySQL must also have been compiled with this option enabled
-  # Ref https://dev.mysql.com/doc/refman/5.7/en/source-configuration-options.html#option_cmake_with_msan
-  #SAN="--DWITH_MSAN=ON -DWITH_UBSAN=ON"
-  SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWITH_RAPID=OFF -DWSREP_LIB_WITH_ASAN=ON"  # Default ASAN+UBSAN
-  #PREFIX="UBSAN_SPIDER_"; SAN="-DWITH_UBSAN=ON"  # Spider UBSAN Only https://jira.mariadb.org/browse/MDEV-26541    
-  #PREFIX="ASAN_SPIDER_"; SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWSREP_LIB_WITH_ASAN=ON"  # Spider ASAN only, same URL 
-  
-    # The -DWITH_RAPID=OFF is a workaround for https://bugs.mysql.com/bug.php?id=90211 - it disables GR and mysqlx (rapid plugins)
-fi
-
 # DISABLE_DBUG_TRACE
 DBUG=
 if [ "${DISABLE_DBUG_TRACE}" -eq 1 ]; then
@@ -218,23 +203,8 @@ if [ $USE_AFL -eq 1 ]; then
   else
     FLAGS='-DCMAKE_CXX_FLAGS=-w'
   fi
-else
-  if [ $FB -eq 1 ]; then
-    FLAGS='-DCMAKE_CXX_FLAGS=-march=native'  # -DCMAKE_CXX_FLAGS="-march=native" is the default for FB tree
-  else  # Normal builds
-    if [ $USE_SAN -eq 1 ]; then  
-      if [ $USE_CLANG -eq 1 ]; then
-        # FLAGS='-DCMAKE_CXX_FLAGS=-fsanitize-coverage=trace-pc-guard'  Removed: '-fsanitize-coverage=trace-pc-guard' is only helpful for code coverage analysis, ref https://clang.llvm.org/docs/SanitizerCoverage.html
-        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native'"
-        echo "Using Clang for SAN build."
-      else
-        # '-static-libasan' is needed to avoid this error on mysqld startup:
-        # ==PID== ASan runtime does not come first in initial library list; you should either link runtime to your application or manually preload it with LD_PRELOAD.
-        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -static-libasan'"
-        echo "Using GCC for SAN build."
-      fi
-    fi
-  fi
+elif [ $FB -eq 1 ]; then
+  FLAGS='-DCMAKE_CXX_FLAGS=-march=native'  # -DCMAKE_CXX_FLAGS="-march=native" is the default for FB tree
 fi
 # Also note that -k can be use for make to ignore any errors; if the build fails somewhere in the tests/unit tests then it matters
 # little. Note that -k is not a compiler flag as -w is. It is a make option.
@@ -285,7 +255,7 @@ if [ $FB -eq 0 ]; then
     sed -i 's:\(sigaction(SIG[SABIF]\)://\1:' sql/mysqld.cc
   fi
   # Search key: Mac
-  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_UNIT_TESTS=0 -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_{SAFEMALLOC,NUMA}=OFF -DWITH_UNIT_TESTS=OFF -DCONC_WITH_{UNITTEST,SSL}=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 -DWITHOUT_GROUP_REPLICATION=1 ${SAN} ${FLAGS}"
+  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_UNIT_TESTS=0 -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_{SAFEMALLOC,NUMA}=OFF -DWITH_UNIT_TESTS=OFF -DCONC_WITH_{UNITTEST,SSL}=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 -DWITHOUT_GROUP_REPLICATION=1 ${FLAGS}"
   echo "Build command used:"
   echo $CMD
   eval "$CMD" 2>&1 | tee /tmp/psms_opt_build_${RANDOMD}

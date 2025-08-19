@@ -158,6 +158,7 @@ alias k='clear'      # Clear screen
 alias ck='cd ${HOME};clear'   # Clear screen and jump to homedir
 alias b='${HOME}/b'        # Start bug report for in.sql in current BASEDIR
 alias bs='${HOME}/b SAN'   # Start SAN based bug report for in.sql in current BASEDIR
+alias bm='${HOME}/b MSAN'  # Start MSAN based bug report for in.sql in current BASEDIR
 alias br='${HOME}/b REPL'  # Start replication based bug report for in.sql in current BASEDIR (checks master+slave for bugs)
 alias bd='screen -admS \"dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_dbg.sh; bash\"; screen -d -r dbg_build'  # Start a debug build for the current sourcedir (ref /test/clone.sh)
 alias bo='screen -admS \"opt_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh; bash\"; screen -d -r opt_build'  # Idem, optimized build

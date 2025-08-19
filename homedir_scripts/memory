@@ -10,7 +10,7 @@ sudo bash -c "echo -1000 > /proc/$MYPID/oom_score_adj" || {
 # cat /proc/$MYPID/oom_score_adj # Debug (checked)
 
 # User variables
-DS_RUNONCE_EVERY=23  # Run ${HOME}/ds once every x loops, if present (run ~/mariadb-qa/linkit to install it if not)
+DS_RUNONCE_EVERY=23  # Run ${HOME}/ds once every x loops, if present (run ~/mariadb-qa/linkit to install it if not). Set to 0 to disable ds being called
 KILL_PERCENT=7       # For example: 4: All processes using >=4% of memory will be killed
 FILTER="uniq_newbugs|large_newbug_run|findbug|bug_report|pquery-results|xargs|grep|timeout|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr|swapoff|swapon|clean_all|clean-all|memory"  # Filter this list of processes from termination
 
@@ -27,12 +27,14 @@ fi
 clear
 DS_RUNONCE_LOOP=0
 while :; do
-  DS_RUNONCE_LOOP=$[ ${DS_RUNONCE_LOOP} + 1 ]
-  if [ ${DS_RUNONCE_LOOP} -ge ${DS_RUNONCE_EVERY} ]; then
-    DS_RUNONCE_LOOP=0
-    if [ -x ${HOME}/ds -a -z "$(screen -ls | grep '\.ds_r_o  ')" ]; then
-      echo "------- ds watchdog is set to run once every ${DS_RUNONCE_EVERY} loops - starting ds in background screen..."
-      ${HOME}/ds RUNONCE &
+  if [ "${DS_RUNONCE_EVERY}" != "0" -a ! -z "${DS_RUNONCE_EVERY}" ]; then
+    DS_RUNONCE_LOOP=$[ ${DS_RUNONCE_LOOP} + 1 ]
+    if [ ${DS_RUNONCE_LOOP} -ge ${DS_RUNONCE_EVERY} ]; then
+      DS_RUNONCE_LOOP=0
+      if [ -x ${HOME}/ds -a -z "$(screen -ls | grep '\.ds_r_o  ')" ]; then
+        echo "------- ds watchdog is set to run once every ${DS_RUNONCE_EVERY} loops - starting ds in background screen..."
+        ${HOME}/ds RUNONCE &
+      fi
     fi
   fi
   echo '------- Memory watchdog: terminate_long_running.sh running...'

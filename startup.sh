@@ -99,7 +99,10 @@ add_san_options() {  # For the scripts that startup.sh creates
   #echo "export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1" >> "${1}"
   echo "export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1" >>"${1}"
   echo 'export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1' >>"${1}"
-  echo 'export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0' >>"${1}"
+  echo "export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0" >>"${1}"
+  echo 'if [[ "${PWD}" == *"MSAN"* ]]; then' >>"${1}"
+  echo '  export MYSQL_HISTFILE=/dev/null  # Disable historyfile for the mariadb CLI, ref the libedit MSAN instrumentation in ~/mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh for more info' >>"${1}"
+  echo 'fi' >>"${1}"
 }
 
 # Ubuntu mysqld runtime provisioning
