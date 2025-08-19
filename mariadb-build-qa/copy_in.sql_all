@@ -6,6 +6,8 @@ if [ -z "${REGEX_EXCLUDE}" ]; then REGEX_EXCLUDE="DUMMYSTRINGNEVERSEEN"; fi
 
 if [ "${1}" == "SAN" ]; then
   ./gendirs.sh SAN | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -I{} bash -c "{}"
+elif [ "${1}" == "MSAN" ]; then
+  ./gendirs.sh MSAN | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -I{} bash -c "{}"
 elif [ "${1}" == "GAL" ]; then
   REGEX_EXCLUDE="${REGEX_EXCLUDE//EMD|/}"
   ./gendirs.sh GAL | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -I{} bash -c "{}"

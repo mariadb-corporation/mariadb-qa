@@ -12,6 +12,7 @@ fi
 # Script variables, do not change
 MYEXTRA_OPT="$*"
 SAN_MODE=0
+MSAN_MODE=0
 GAL_MODE=0
 REPL_MODE=0
 # To ensure thread-safety, only delete the relevant test.result[.san/.gal] file so that b and bs (but not b and br) can run at the same time - for the meaning of 'b/bs/br' see the corresponding aliases in ~/.bashrc after running ~/mariadb-qa/linkit and following it's instructions for creating ~/.bashrc
@@ -23,6 +24,14 @@ if [ "${1}" == "SAN" ]; then
   fi
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
+elif [ "${1}" == "MSAN" ]; then
+  rm -f test.result.san
+   if [ -z "${TEXT}" ]; then   # Passed normally by ~/bm and bug_report.sh script
+    echo "Assert: TEXT is empty, use export TEXT= to set it!"
+    exit 1
+  fi
+  MSAN_MODE=1
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|MSAN||')"
 elif [ "${1}" == "GAL" ]; then
   rm -f test.result.gal
   GAL_MODE=1
@@ -44,6 +53,8 @@ fi
 if [ "${PASS_MYEXTRA_TO_START_ONLY}" -eq 0 ]; then
   if [ ${SAN_MODE} -eq 1 ]; then
     ./all_all SAN ${MYEXTRA_OPT}
+  elif [ ${MSAN_MODE} -eq 1 ]; then
+    ./all_all MSAN ${MYEXTRA_OPT}
   elif [ ${GAL_MODE} -eq 1 ]; then
     ./all_all GAL ${MYEXTRA_OPT}
   elif [ ${REPL_MODE} -eq 1 ]; then
@@ -57,6 +68,12 @@ else
     if [ ! -z "${MYEXTRA_OPT}" ]; then
       ./stop_all SAN
       ./start_all SAN ${MYEXTRA_OPT}
+    fi
+  elif [ ${iSAN_MODE} -eq 1 ]; then
+    ./all_all MSAN
+    if [ ! -z "${MYEXTRA_OPT}" ]; then
+      ./stop_all MSAN
+      ./start_all MSAN ${MYEXTRA_OPT}
     fi
   elif [ ${GAL_MODE} -eq 1 ]; then
     ./all_all GAL
@@ -84,6 +101,8 @@ rm -Rf MD*/data.PREV EMD*/data.PREV MS*/data.PREV  # Cleanup old data dirs for c
 # Copy in.sql to all instances
 if [ ${SAN_MODE} -eq 1 ]; then
   ./copy_in.sql_all SAN
+elif [ ${MSAN_MODE} -eq 1 ]; then
+  ./copy_in.sql_all MSAN
 elif [ ${GAL_MODE} -eq 1 ]; then
   ./copy_in.sql_all GAL
 else  # Standard run, includes REPL run
@@ -104,6 +123,8 @@ else
 fi
 if [ ${SAN_MODE} -eq 1 ]; then
   ./gendirs.sh SAN | xargs -I{} echo "cd {}; ${TEST_SCRIPT}; sleep 2; timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; cd .." | xargs -P50 -I{} bash -c "{}"
+elif [ ${MSAN_MODE} -eq 1 ]; then
+  ./gendirs.sh MSAN | xargs -I{} echo "cd {}; ${TEST_SCRIPT}; sleep 2; timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./stop; cd .." | xargs -P50 -I{} bash -c "{}"
 elif [ ${GAL_MODE} -eq 1 ]; then
   ./gendirs.sh GAL | xargs -I{} echo "cd {}; ${TEST_SCRIPT}; sleep 2; timeout -k${SHORTER_STOP_TIME} -s9 ${SHORTER_STOP_TIME}s ./gal_stop; cd .." | xargs -P50 -I{} bash -c "{}"
 else  # Standard run, includes REPL run
@@ -115,6 +136,8 @@ sleep 13  # Give servers some time to properly shutdown. TODO: this can be impro
 sync
 if [ ${SAN_MODE} -eq 1 ]; then
   ./kill_all SAN
+elif [ ${MSAN_MODE} -eq 1 ]; then
+  ./kill_all MSAN
 elif [ ${GAL_MODE} -eq 1 ]; then
   ./kill_all GAL
 elif [ ${REPL_MODE} -eq 1 ]; then
@@ -129,6 +152,8 @@ if [ "${LEGACY_MODE}" -eq 0 ]; then
   echo 'Generating the Bug Detection Matrix, this may take a few mintues!'
   if [ ${SAN_MODE} -eq 1 ]; then
     ./findbug_new SAN | tee test.results.san
+  elif [ ${MSAN_MODE} -eq 1 ]; then
+    ./findbug_new MSAN | tee test.results.san
   elif [ ${GAL_MODE} -eq 1 ]; then
     ./findbug_new GAL | tee test.results.gal
   else  # Standard run, includes REPL run
@@ -138,6 +163,8 @@ else
   # Legacy mode: output results. Saving of results is no longer supported (nor needed)
   if [ ${SAN_MODE} -eq 1 ]; then
     ./findbug+ SAN "${TEXT}"
+  elif [ ${MSAN_MODE} -eq 1 ]; then
+    ./findbug+ MSAN "${TEXT}"
   elif [ ${GAL_MODE} -eq 1 ]; then
     ./findbug+ GAL "${TEXT}"
   else  # Standard run, includes REPL run

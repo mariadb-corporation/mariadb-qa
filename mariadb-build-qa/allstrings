@@ -7,6 +7,8 @@ if [ "${1}" == "GAL" ]; then
   ./gendirs.sh GAL | xargs -I{} echo "cd {}; echo "{}:"; ~/t; cd .." | xargs -I{} bash -c "{}"
 elif [ "${1}" == "SAN" ]; then
   ./gendirs.sh SAN | xargs -I{} echo "cd {}; echo "{}:"; ~/t; cd .." | xargs -I{} bash -c "{}"
+elif [ "${1}" == "MSAN" ]; then
+  ./gendirs.sh MSAN | xargs -I{} echo "cd {}; echo "{}:"; ~/t; cd .." | xargs -I{} bash -c "{}"
 else
   ./gendirs.sh | xargs -I{} echo "cd {}; echo "{}:"; ~/t; cd .." | xargs -I{} bash -c "{}"
 fi

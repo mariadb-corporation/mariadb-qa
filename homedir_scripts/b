@@ -35,7 +35,23 @@ elif [[ "${PWD}" == *"SAN"* && "${1}" == "REPL" ]]; then
   sleep 5
 fi
 
-echo 'Starting up...'
+if [ "${1}" == "SAN" ]; then
+  if [[ "${PWD}" == *"UBASAN"* ]]; then
+    echo 'Starting up (UBASAN mode/bs)...'
+  elif [[ "${PWD}" == *"UBSAN"* ]]; then
+    echo 'Starting up (UBSAN mode/bs)...'
+  elif [[ "${PWD}" == *"ASAN"* ]]; then
+    echo 'Starting up (ASAN mode/bs)...'
+  fi
+elif [ "${1}" == "TSAN" ]; then  # TODO: implement TSAN mode as 'bt' and in other scripts, ref MSAN commit for scripts affected
+  echo 'Starting up (TSAN mode/bt)...'
+elif [ "${1}" == "MSAN" ]; then
+  echo 'Starting up (MSAN mode/bm)...'
+elif [ "${1}" == "REPL" ]; then
+  echo 'Starting up (Replication mode: br)...'
+else
+  echo 'Starting up (Regular mode: b)...'
+fi
 
 if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (like ~/b) has set this option. If not, set it here                                                                                         
   PASS_MYEXTRA_TO_START_ONLY=1  # If 0, then MYEXTRA_OPT is passed to ./all (i.e. options take effect on init and start). If 1, then MYEXTRA_OPT is passed to ./start only (i.e. options take effect on start only, not init). When using for example --innodb_page_size=4 (an option needed for both server init + start), 0 is required. When using for example --innodb-force-recovery=1 or --innodb-read-only=1 (options that can only be used with start and not with init), 1 is required. TODO: this option can be automated 0/1 towards known options that require either 0 or 1 for this setting. Scan MYEXSTRA_OPT to do so
@@ -173,6 +189,8 @@ echo '----- All strings merged -----' | tee -a report.log
 if [ -r ../allstrings_merged ]; then
   if [ "${1}" == "GAL" ]; then
     cd .. && ./allstrings_merged GAL 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
+  elif [[ "${1}" == "MSAN" ]]; then
+    cd .. && ./allstrings_merged MSAN 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
     cd .. && ./allstrings_merged SAN 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   else

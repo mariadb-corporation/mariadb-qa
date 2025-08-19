@@ -4,9 +4,11 @@
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 if [ "${1}" == "san" ]; then set "SAN" "${2}"; fi  # ${1} 'san' > 'SAN'
+if [ "${1}" == "msan" ]; then set "MSAN" "${2}"; fi  # ${1} 'msan' > 'MSAN'
 
 # User variables
 ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=1
+if [ "${1}" == "MSAN" ]; then ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=0; fi  # Preference ftm
 DEBUG_OUTPUT=0  # Set to 1 to see full output of test_all and kill_all (note: this generates lots of output, and it is in parallel threads, so it likely only useful for debugging major issues with test_all and/or kill_all, but it is likely better to check a ./test_all run in a BASEDIR directly). Default: 0, legacy default: 1 (i.e. before this option was implemented, all output was shown)
 
 if [ ! -r /test/gendirs.sh ]; then
@@ -37,18 +39,18 @@ fi
 # Does not work correctly TODO
 #ps -ef | grep -v $$ | grep bug_report | grep -v grep | grep -v mass_bug_report | awk '{print $2}' | xargs kill -9 2>/dev/null
 
+MYEXTRA_OPT="$*"
+NOCORE=0
 SAN_MODE=0
+MSAN_MODE=0
+GAL_MODE=0
+REPL_MODE=0
 if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (like ~/b) has set this option. If not, set it here. If you want to use this option in combination with ~/b, set it there, or use export PASS_MYEXTRA_TO_START_ONLY=0 (or 1) before starting ~/b, or use ~/b0 or ~/b1 which are shortcuts
   PASS_MYEXTRA_TO_START_ONLY=1  # If 0, then MYEXTRA_OPT is passed to ./all (i.e. options take effect on init and start). If 1, then MYEXTRA_OPT is passed to ./start only (i.e. options take effect on start only, not init). When using for example --innodb_page_size=4 (an option needed for both server init + start), 0 is required. When using for example --innodb-force-recovery=1 or --innodb-read-only=1 (options that can only be used with start and not with init), 1 is required. TODO: this option can be automated 0/1 towards known options that require either 0 or 1 for this setting. Scan MYEXSTRA_OPT to do so
 fi
 export PASS_MYEXTRA_TO_START_ONLY=${PASS_MYEXTRA_TO_START_ONLY}
 SHORTER_STOP_TIME=23   # TODO: this can be improved. Likely setting this smaller than 20 seconds is not a good idea, some cores/crashes may be missed (presumably on slow servers)
 
-MYEXTRA_OPT="$*"
-NOCORE=0
-SAN_MODE=0
-GAL_MODE=0
-REPL_MODE=0
 if [ "${1}" == "GAL" ]; then
   if [ -z "${TEXT}" ]; then   # Passed normally by ~/br preloader/wrapper sript
     echo "Assert: TEXT is empty, but BBB was expected. TODO: add 'export TEXT=...' support for Galera Cluster"
@@ -73,6 +75,18 @@ elif [ "${1}" == "SAN" ]; then
   fi
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
+elif [ "${1}" == "MSAN" ]; then
+  if [ -z "${TEXT}" ]; then   # Passed normally by ~/b preloader/wrapper sript
+    echo "Assert: TEXT is empty, use export TEXT= to set it!"
+    exit 1
+  else
+    echo "NOTE: MSAN Mode: Looking for '${TEXT}' in the error log to validate issue occurrence."
+    if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES}" == '1' ]; then
+      echo "NOTE: ALSO_CHECK_SAN_BUILDS_FOR_CORES[_SET]=1: Will also look for core files in MSAN dirs to validate issue occurence. It is recommended to leave this enabled."  # ... (as set in ~/bm), given that short testcases leading to a SIGSEGV/SIGABRT on MSAN builds are likely directly/immediately related to any MSAN issues they may produce otherwise
+    fi
+  fi
+  MSAN_MODE=1
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|MSAN||')"
 elif [ "${1}" == "REPL" ]; then
   if [ -z "${TEXT}" ]; then   # Passed normally by ~/br preloader/wrapper sript
     echo "Assert: TEXT is empty, but BBB was expected. TODO: add 'export TEXT=...' support for replication"
@@ -207,6 +221,8 @@ if [ "${DEBUG_OUTPUT}" -eq 1 ]; then
 fi
 if [ "${SAN_MODE}" -eq 1 ]; then
   ./test_all SAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
+elif [ "${MSAN_MODE}" -eq 1 ]; then
+  ./test_all MSAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 elif [ "${GAL_MODE}" -eq 1 ]; then
   ./test_all GAL ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 elif [ "${REPL_MODE}" -eq 1 ]; then
@@ -218,6 +234,8 @@ echo "Ensuring all servers are gone..."
 sync
 if [ "${SAN_MODE}" -eq 1 ]; then
   ./kill_all SAN ${REDIRECT}
+elif [ "${MSAN_MODE}" -eq 1 ]; then
+  ./kill_all MSAN ${REDIRECT}
 elif [ "${GAL_MODE}" -eq 1 ]; then
   ./kill_all GAL ${REDIRECT}
 elif [ "${REPL_MODE}" -eq 1 ]; then
@@ -240,8 +258,11 @@ else
   if [ "${1}" == "SAN" ]; then
     #echo "Searching error logs for the '^SUMMARY:|=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:' (SAN mode enabled)"  # This is now set in ~/b (when using ~/bs) - ref/use linkit if ~/b or ~/bs are not present
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
-    #CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
+  elif [ "${1}" == "MSAN" ]; then
+    #echo "Searching error logs for the '^SUMMARY:|=ERROR:|MemorySanitizer:' (MSAN mode enabled)"  # This is now set in ~/b (when using ~/bm) - ref/use linkit if ~/b or ~/bm are not present
+    echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh MSAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "GAL" ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh GAL | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/node1/node1.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
@@ -299,7 +320,7 @@ cat in.sql | grep -v --binary-files=text '^$'
 echo -e '{code}\n'
 echo -e 'Leads to:\n'
 # Assumes (which is valid for the pquery framework) that 1st assertion is also the last in the log
-if [ ${SAN_MODE} -eq 0 ]; then
+if [ ${SAN_MODE} -eq 0 -a ${MSAN_MODE} -eq 0 ]; then
   if [ "${1}" == "GAL" ]; then
     ERROR_LOG=$(ls node1/node1.err 2>/dev/null | head -n1)
   else
@@ -339,7 +360,7 @@ if [ ${SAN_MODE} -eq 0 ]; then
     fi
   fi
   echo '{noformat}'
-else
+else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
   # START_LINE: the 1st line on which any *SAN issue shows (ref TEXT in ~/b), END_LINE: the last of either '^SUMMARY:' or '=ABORTING$'
   START_LINE=$(grep -n -m 1 -E "${TEXT}" ./log/master.err | cut -d: -f1)
   END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ./log/master.err | tail -1 | cut -d: -f1)
@@ -439,6 +460,13 @@ if [ "${1}" == "SAN" ]; then
     echo "ERROR: expected ../test.results.san to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
     exit 1
   fi
+elif [ "${1}" == "MSAN" ]; then
+  if [ -r ../test.results.san ]; then
+    cat ../test.results.san
+  else
+    echo "ERROR: expected ../test.results.san to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
+    exit 1
+  fi
 elif [ "${1}" == "GAL" ]; then
   if [ -r ../test.results.gal ]; then
     cat ../test.results.gal
@@ -457,6 +485,8 @@ fi
 echo '-------------------- /BUG REPORT --------------------'
 if [ "${1}" == "SAN" ]; then
   echo "TOTAL SAN OCCURRENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
+elif [ "${1}" == "MSAN" ]; then
+  echo "TOTAL MSAN OCCURRENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 elif [ "${1}" == "GAL" ]; then
   echo "TOTAL GALERA CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 elif [ "${REPL_MODE}" -eq 1 ]; then
@@ -464,23 +494,25 @@ elif [ "${REPL_MODE}" -eq 1 ]; then
 else
   echo "TOTAL CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 fi
-if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then
-  if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" -eq 1 ]; then
-    echo "----- SAN Execution of the testcase ----- (Builds used: ${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK} and _dbg)"
-    test_san_build "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" opt
-    test_san_build "${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}" dbg
-    echo '-----------------------------------------'
+if [ "${1}" != "SAN" -o "${1}" != "MSAN" ]; then
+  if [ "${1}" != "GAL" ]; then
+    if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" -eq 1 ]; then
+      echo "----- SAN Execution of the testcase ----- (Builds used: ${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK} and _dbg)"
+      test_san_build "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" opt
+      test_san_build "${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}" dbg
+      echo '-----------------------------------------'
+    fi
   fi
 fi
-if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then
+if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
   echo 'Remember to action:'
   echo "*) Check the 'SAN Execution of the testcase' mini-report just above. If a *SAN (i.e. 'ASAN|...', 'UBSAN|...' or 'TBSAN|...' etc.) UniqueID was seen in a SAN build, then please run a 'bs' report using the same in.sql testcase in that SAN build also. Copy the full resulting SAN matrix (and info on how to create/build a similar SAN build) into the bug report as well"
   echo '*) If no engine is specified, add ENGINE=InnoDB to table definitions and re-run the bug report'
-  if [ ${NOCORE} -ne 1 -o ${SAN_MODE} -eq 1 ]; then
+  if [ ${NOCORE} -ne 1 -o ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
     cd ${RUN_PWD}
     TEXT=
     FINDBUG=
-    if [ ${SAN_MODE} -eq 1 ]; then
+    if [ ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
       TEXT="$(${SCRIPT_PWD}/san_text_string.sh)"
       if [ ! -z "${TEXT}" ]; then
         echo "*) Add bug to ${SCRIPT_PWD}/known.strings.SAN, as follows (use ~/kba for quick access):"
@@ -512,7 +544,7 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 ]; then
         echo "BUG NOT FOUND (IDENTICALLY) IN KNOWN BUGS LIST! HOWEVER, A PARTIAL MATCH BASED ON THE 1st FRAME ('${FRAMEX}') WAS FOUND, BUT AS THAT STRING IS TOO GENERIC (AND THERE ARE THUS TOO MANY MATCHES), NO OUTPUT IS SHOWN HERE"
       else
         OUT2=
-        if [ ${SAN_MODE} -eq 1 ]; then
+        if [ ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
           OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
         else
           OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"

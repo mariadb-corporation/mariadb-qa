@@ -4,11 +4,15 @@
 # Script variables, do not change
 MYEXTRA_OPT="$*"
 SAN_MODE=0
+MSAN_MODE=0
 GAL_MODE=0
 REPL_MODE=0
 if [ "${1}" == "SAN" ]; then
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
+elif [ "${1}" == "MSAN" ]; then
+  MSAN_MODE=1
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|MSAN||')"
 elif [ "${1}" == "GAL" ]; then
   GAL_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
@@ -20,6 +24,8 @@ fi
 # Stop (if running), wipe and start all instances using all_no_cl
 if [ ${SAN_MODE} -eq 1 ]; then
   ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P3 -I{} bash -c "{}"
+elif [ ${MSAN_MODE} -eq 1 ]; then
+  ./gendirs.sh MSAN | xargs -I{} echo "cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P3 -I{} bash -c "{}"
 elif [ ${GAL_MODE} -eq 1 ]; then
   ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P3 -I{} bash -c "{}"
 elif [ ${REPL_MODE} -eq 1 ]; then

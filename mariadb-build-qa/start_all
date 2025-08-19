@@ -8,6 +8,8 @@ if [ "${1}" == "GAL" ]; then
   ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "SAN" ]; then
   ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
+elif [ "${1}" == "MSAN" ]; then
+  ./gendirs.sh MSAN | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "REPL" ]; then
   ./gendirs.sh | xargs -I{} echo "cd {}; export SRNOCL=1; ./start_replication ${MYEXTRA_OPT}; cd ..; export SRNOCL=; export -n SRNOCL" | xargs -P50 -I{} bash -c "{}"
 else

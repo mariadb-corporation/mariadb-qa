@@ -7,6 +7,8 @@ if [ "${1}" == "san" ]; then set "SAN"; fi  # san > SAN
 if [ "${1}" == "gal" ]; then set "GAL"; fi  # gal > GAL
 if [ "${1}" == "SAN" ]; then
   echo "{noformat:title=SAN Bug Detection Matrix}"
+elif [ "${1}" == "MSAN" ]; then
+  echo "{noformat:title=MSAN Bug Detection Matrix}"
 elif [ "${1}" == "GAL" ]; then
   echo "{noformat:title=Galera Bug Detection Matrix}"
 else

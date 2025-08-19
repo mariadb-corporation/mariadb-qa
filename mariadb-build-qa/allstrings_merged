@@ -13,6 +13,8 @@ if [ "${1}" == "GAL" ]; then
   OUT="$(./gendirs.sh GAL | xargs -I{} echo "cd {}; ~/t 2>/dev/null; cd .." | xargs -P20 -I{} bash -c "{}" | grep -vEi "no core file found|no relevant strings were found" | sort -u)"
 elif [ "${1}" == "SAN" ]; then
   OUT=$(./gendirs.sh SAN | xargs -I{} echo "cd {}; ~/t 2>/dev/null; cd .." | xargs -P20 -I{} bash -c "{}" | grep -vEi "no core file found|no relevant strings were found" | sort -u)
+elif [ "${1}" == "MSAN" ]; then
+  OUT=$(./gendirs.sh MSAN | xargs -I{} echo "cd {}; ~/t 2>/dev/null; cd .." | xargs -P20 -I{} bash -c "{}" | grep -vEi "no core file found|no relevant strings were found" | sort -u)
 else
   OUT=$(./gendirs.sh | xargs -I{} echo "cd {}; ~/t 2>/dev/null; cd .." | xargs -P20 -I{} bash -c "{}" | grep -vEi "no core file found|no relevant strings were found" | sort -u)
 fi

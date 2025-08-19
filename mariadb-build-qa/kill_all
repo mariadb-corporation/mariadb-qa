@@ -18,6 +18,8 @@ fi
 set +H
 if [ "${1}" == "SAN" ]; then
   ${GENDIRS} SAN | xargs -I{} echo "cd {}; if [ -r ./kill ]; then ./kill; else echo './kill did not exist for directory {} - please run ./startup_all or instead do cd {}; ~/mariadb-qa/startup.sh; cd -'; fi; cd .." | xargs -P50 -I{} bash -c "{}"
+elif [ "${1}" == "MSAN" ]; then
+  ${GENDIRS} MSAN | xargs -I{} echo "cd {}; if [ -r ./kill ]; then ./kill; else echo './kill did not exist for directory {} - please run ./startup_all or instead do cd {}; ~/mariadb-qa/startup.sh; cd -'; fi; cd .." | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "GAL" ]; then
   ${GENDIRS} GAL | xargs -I{} echo "cd {}; if [ -r ./gal_kill ]; then ./gal_kill; else echo './gal_kill did not exist for directory {} - please run ./startup_all or instead do cd {}; ~/mariadb-qa/startup.sh; cd -'; fi; cd .." | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "REPL" ]; then
