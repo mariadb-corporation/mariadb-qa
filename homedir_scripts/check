@@ -53,7 +53,7 @@ END {
 if [ "${CNT1}" != "${CNT2}" -o ! -z "${missing_screen_info}" ]; then
   echo '!!!!! ======= WARNING ======= !!!!!'
   if [ "${CNT1}" != "${CNT2}" ]; then
-    echo "WARNING: 'pr' and 'ge' sessions were detected. A quick automated check then noticed that the number of 'pr' screens does not equal the number of 'ge' screens (check 's output')."
+    echo "WARNING: 'pr' and 'ge' sessions were detected. A quick automated check then noticed that the number of 'pr' screens does not equal the number of 'ge' screens (check 's' output)."
     if [ ${CNT1} -gt ${CNT2} ]; then
       echo "As the number of 'pr' screens was larger than the number of 'ge' screens, to prevent a /data/ OOS, you will likely want to fix this by running ~/sge <workdir_number> where workdir_number is the /data/<workdir_number> which is missing from the 's' list (compare with an up-to-date 'vr' list to find which is missing, or check the list below.)"
     fi

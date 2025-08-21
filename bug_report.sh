@@ -403,7 +403,7 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
     # There now is a /usr/lib/llvm-18/lib/LLVMgold.so installed; llvm-17-linker-tools is no longer required
     #echo '     # Note: llvm-17-linker-tools installs /usr/lib/llvm-17/lib/LLVMgold.so, which is needed for compilation, and LLVMgold.so is no longer included in LLVM 18'
     #echo '     sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev llvm-17-linker-tools'
-    echo '     sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev'
+    echo '     sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev lld-18'
     #echo '     sudo ln -s /usr/lib/llvm-17/lib/LLVMgold.so /usr/lib/llvm-18/lib/LLVMgold.so'
     O_LEVEL_STMT=
     if [ -r ./BUILD_CMD_CMAKE ]; then

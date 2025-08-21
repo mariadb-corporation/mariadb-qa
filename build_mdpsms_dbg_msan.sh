@@ -5,21 +5,22 @@ MAKE_THREADS=30         # Number of build threads
 WITH_EMBEDDED_SERVER=0  # 0 or 1 # Include the embedder server (removed in 8.0)
 WITH_LOCAL_INFILE=1     # 0 or 1 # Include the possibility to use LOAD DATA LOCAL INFILE (LOCAL option was removed in 8.0?)
 USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re-download
-BOOST_LOCATION=/tmp/boost_043581/
+BOOST_LOCATION=/tmp/boost_465114
 USE_CUSTOM_COMPILER=0   # 0 or 1 # Use a customer compiler
 CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
-O_LEVEL='2'             # 0,1,2,3,g: -O Compiler optimization level. Recommended: '1': for testing dbg, '2': opt, 'g': debugging
+O_LEVEL='1'             # 0,1,2,3,g: -O Compiler optimization level. Recommended: '1': for testing dbg, '2': opt, 'g': debugging
 USE_CLANG=1             # 0 or 1 # Use the Clang compiler instead of gcc
 USE_SAN=1               # 0 or 1 # 1: Enable SAN builds: TSAN, ASAN+UBSAN, or MSAN
 USE_TSAN=0              # 0 or 1 # 1: Enables TSAN, disables ASAN+UBSAN/MSAN. 0: Enables ASAN+UBSAN or MSAN, disables TSAN
-ASAN_OR_MSAN=0          # 0 or 1 # 0: ASAN+UBSAN. 1: MSAN (not supported in this script; use the dedicated _msan.sh script instead)
+ASAN_OR_MSAN=1          # 0 or 1 # 0: ASAN+UBSAN. 1: MSAN
 PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
 #CLANG_LOCATION="${HOME}/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
-CLANG_LOCATION="/usr/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
+CLANG_LOCATION="/usr/local/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
+LD_LOCATION="/usr/local/bin/ld.lld"
 USE_AFL=0               # 0 or 1 # Use the American Fuzzy Lop gcc/g++ wrapper instead of gcc/g++
 AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"
-IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_MODE=OFF. When ignoring warnings, regularly check that existing bugs are fixed. This option additionally sets -DWARNING_AS_ERROR empty so warnings will never be treated as errors. #TODO: consider implementing -DMYSQL_MAINTAINER_MODE=WARN (also disables -Werror, just like, presumably, =OFF, though it will likely not work to avoid for example the lib https://jira.mariadb.org/browse/MDEV-32483 compile error wheras -DWARNING_AS_ERROR='' does) 
+IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_MODE=OFF. When ignoring warnings, regularly check that existing bugs are fixed. This option additionally sets -DWARNING_AS_ERROR empty so warnings will never be treated as errors. #TODO: consider implementing -DMYSQL_MAINTAINER_MODE=WARN (also disables -Werror, just like, presumably, =OFF, though it will likely not work to avoid for example the lib https://jira.mariadb.org/browse/MDEV-32483 compile error wheras -DWARNING_AS_ERROR='' does)
 
 # To install the latest clang from Chromium devs (and this automatically updates previous version installed with this method too);
 # sudo yum remove clang    # Or sudo apt-get remove clang    # Only required if this procedure has never been followed yet
@@ -37,8 +38,11 @@ IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_M
 #==1574414==See https://github.com/google/sanitizers/issues/856 for possible workarounds.
 #This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.
 #sudo sysctl vm.mmap_rnd_bits=28  # Workaround, ref https://github.com/google/sanitizers/issues/856
+# Interestingly, this issue only seems to halt 10.5-10.11 builds, and 11.1 dbg, but not 11.1 opt nor 11.2+
 
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
+
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 if [ "${PERFSCHEMA}" != "NO" -a "${PERFSCHEMA}" != "YES" -a "${PERFSCHEMA}" != "STATIC" -a "${PERFSCHEMA}" != "DYNAMIC" ]; then
   if [ -z "${PERFSCHEMA}" ]; then
@@ -75,7 +79,7 @@ fi
 
 # Check RocksDB storage engine.
 # Please note when building the facebook-mysql-5.6 tree this setting is automatically ignored
-# For daily builds of fb tree (opt and debug) also see http://jenkins.percona.com/job/fb-mysql-5.6/
+# For daily builds of fb tree (opt and dbg) also see http://jenkins.percona.com/job/fb-mysql-5.6/
 # This is also auto-turned off for all 5.5 and 5.6 builds
 MYSQL_VERSION_MAJOR=$(grep "MYSQL_VERSION_MAJOR" VERSION | sed 's|.*=||')
 MYSQL_VERSION_MINOR=$(grep "MYSQL_VERSION_MINOR" VERSION | sed 's|.*=||')
@@ -92,8 +96,7 @@ fi
 
 SSL_MYSQL57_HACK=0
 if [ -f /usr/bin/apt-get ]; then
-  #if [[ "$CURRENT_VERSION" < "050723" ]]; then  # This seems to have changed for 5.6 (opt only?)
-  if [[ "$CURRENT_VERSION" < "050640" ]]; then  # 050640 is a temporary guess/hack; find right rev
+  if [[ "$CURRENT_VERSION" < "050723" ]]; then
     SSL_MYSQL57_HACK=1
   fi
 fi
@@ -115,7 +118,7 @@ if [ ${USE_SAN} -eq 1 ]; then
     else
       if [ "${USE_CLANG}" -eq 0 ]; then
         echo "Assert: USE_SAN=1, ASAN_OR_MSAN!=1, USE_CLANG=0: MSAN requires clang: -DWITH_MSAN=ON will be silently ignored when the compiler is not clang or it's derivative, ref MDEV-20377 or comment by Marko in MDEV-34002"
-        exit 1
+        exit 1          
       fi
       echo "Building MSAN..."
       PREFIX="MSAN_"
@@ -129,7 +132,7 @@ DATE=$(date +'%d%m%y')
 if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-5]$ ]]; then  # Provision for MariaDB 10.x, 11.x, ... 15.x
   MD=1
   if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then
-    PREFIX="${PREFIX}EMD${DATE}"
+    PREFIX="${PREFIX}EMD${DATE}" 
   else
     PREFIX="${PREFIX}MD${DATE}"
   fi
@@ -180,7 +183,10 @@ if [ $USE_CLANG -eq 1 ]; then
   echo "Note: USE_CLANG is set to 1, using the Clang compiler!"
   echo "======================================================"
   sleep 3
-  CLANG="-DCMAKE_C_COMPILER=$CLANG_LOCATION -DCMAKE_CXX_COMPILER=${CLANG_LOCATION}++"  # clang++ location is assumed to be same with ++
+  export CC="${CLANG_LOCATION}"
+  export CXX="${CLANG_LOCATION}++"  # clang++ location is assumed to be same with ++ at end
+  export LD="${LD_LOCATION}"
+  CLANG="-DCMAKE_C_COMPILER=${CLANG_LOCATION} -DCMAKE_CXX_COMPILER=${CLANG_LOCATION}++ -DCMAKE_LINKER=${LD_LOCATION} -DCMAKE_EXE_LINKER_FLAGS=\"-fuse-ld=lld -B$(dirname "${LD_LOCATION}")\" "
 fi
 
 # Use AFL gcc/g++ wrapper as compiler
@@ -220,10 +226,44 @@ if [ $USE_SAN -eq 1 ]; then
   else
     if [ ${ASAN_OR_MSAN} -eq 0 ]; then
       SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON"  # Both, default (not-Spider)
-      #PREFIX="UBSAN_SPIDER_"; SAN="-DWITH_UBSAN=ON"  # Spider UBSAN Only https://jira.mariadb.org/browse/MDEV-26541    
+      #PREFIX="UBSAN_SPIDER_"; SAN="-DWITH_UBSAN=ON"  # Spider UBSAN Only https://jira.mariadb.org/browse/MDEV-26541
+      #PREFIX="ASAN_SPIDER_"; SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWSREP_LIB_WITH_ASAN=ON"  # Spider ASAN only, same URL
     else
-      echo "Please use the dedicated MSAN build script (same name, but with '_msan.sh' instead of '_san.sh') to create MSAN builds"
-      exit 1
+      # While it may be technically possible to combine MSAN with UBSAN, within MariaDB testing, UBSAN builds are already extensively tested in combination with ASAN. It makes most sense to have separate/unclogged MSAN builds. Instrumented MSAN system libraries are build with -fsanitize=memory, ref mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh
+      export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing msan.instrumentedlibs_ubuntu2404.sh also
+      if [ ! -d "${MSAN_LIBDIR}" ]; then
+        echo "Error: the MSAN_LIBDIR (${MSAN_LIBDIR}) is missing. MSAN compiled libraries are required. To setup, do:"
+        echo "export USR=\$(whoami); sudo mkdir -p ${MSAN_LIBDIR}; sudo chown -R \${USR}:\${USR} ${MSAN_LIBDIR}"
+        echo "sudo vi /etc/apt/sources.list.d/ubuntu.sources"
+        echo "# ------ For Ubuntu 24.04 (Noble) and add, if not present already:"
+        echo "Types: deb-src"
+        echo "URIs: http://archive.ubuntu.com/ubuntu/"
+        echo "Suites: noble noble-updates noble-backports noble-security"
+        echo "Components: main restricted universe multiverse"
+        echo "Enabled: yes"
+        echo "Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg"
+        echo "# ------ Then save the file, and continue:"
+        echo "sudo apt update && sudo apt install equivs libc++-dev libc++abi-dev quilt"  # equivs: needed for libs compile | libc++-dev libc++abi-dev: needed for Clang based MSAN compiles of MariaDB. It avoids the build failure (11.8 example): 'CMake Error at CMakeLists.txt:255 (MESSAGE): C++ Compiler requires support for -stdlib=libc++' | quilt is used to apply all official Debian/Ubuntu patches to the source codes used in mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh
+        echo "cd ${MSAN_LIBDIR}"
+        echo "${SCRIPT_PWD}/msan.instrumentedlibs_ubuntu2404.sh  # Should finish normally, without errors"
+        echo "ls ${MSAN_LIBDIR}  # You will want to see 70+ files/libs (and two dirs: ./build and ./include)"
+        exit 1
+      fi
+      export CMAKE_LIBRARY_PATH="/MSAN_libs"
+      export CMAKE_PREFIX_PATH="/MSAN_libs"
+      SAN="-DWITH_MSAN=ON -DHAVE_CXX_NEW=1 -DWITH_INNODB_{BZIP2,LZ4,LZMA,LZO,SNAPPY}=OFF -DWITH_NUMA=NO -DWITH_SYSTEMD=no -DPLUGIN_{MROONGA,ROCKSDB,OQGRAPH}=NO -DWITH_WSREP=OFF -DCMAKE_DISABLE_FIND_PACKAGE_{URING,LIBAIO}=1 -DHAVE_LIBAIO_H=0 -DIGNORE_AIO_CHECK=YES -DCMAKE_LIBRARY_PATH=${MSAN_LIBDIR} -DCMAKE_PREFIX_PATH=${MSAN_LIBDIR} -DCMAKE_{EXE,MODULE,SHARED}_LINKER_FLAGS=\"-L${MSAN_LIBDIR} -Wl,-rpath=${MSAN_LIBDIR}\" "
+      SSL="-DWITH_SSL=${MSAN_LIBDIR}"  # Use the MSAN instrumented ssl libs in MSAN_LIBDIR
+      if [[ "${MYSQL_VERSION_MAJOR}" =~ ^10$ ]]; then  # 10.5, 10.6 and 11.4 (next if) do not support a path (even though the install says it does)
+        SSL="-DWITH_SSL=yes"  # Prefer os library if present, otherwise use bundled (wolfssl)
+      fi
+      if [[ "${MYSQL_VERSION_MAJOR}" =~ ^11$ && "${MYSQL_VERSION_MINOR}" =~ ^4$ ]]; then 
+        SSL="-DWITH_SSL=yes"  # Idem
+      fi
+      # TODO (check EOL): es-10.5 is the only version which fails MSAN compile with:
+      # -- Performing Test have_CXX__stdlib_libc__ - Failed
+      # CMake Error at CMakeLists.txt:253 (MESSAGE):
+      #   C++ Compiler requires support for -stdlib=libc++
+      # During MSAN compilation, all other current CS/ES versions work
     fi
   fi
 fi
@@ -262,7 +302,7 @@ else
         # FLAGS='-DCMAKE_CXX_FLAGS=-fsanitize-coverage=trace-pc-guard'  Removed: '-fsanitize-coverage=trace-pc-guard' is only helpful for code coverage analysis, ref https://clang.llvm.org/docs/SanitizerCoverage.html
         #FLAGS="-D_FORTIFY_SOURCE=2 -DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fstack-protector-all -fno-omit-frame-pointer -fno-inline -fno-builtin -fno-common -fsanitize=address,undefined,leak,alignment,bounds,integer,null,enum,pointer-compare,pointer-subtract,return,unreachable,vla-bound'"
         FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native'"
-        echo "Using Clang for SAN build."
+        echo "Using Clang for SAN build: $(clang --version | head -n1 | tr -d '\n')"
       else
         # '-static-libasan' is needed to avoid this error on mysqld startup:
         # ==PID== ASan runtime does not come first in initial library list; you should either link runtime to your application or manually preload it with LD_PRELOAD.
@@ -280,16 +320,16 @@ if [ ${IGNORE_WARNINGS} -eq 1 ]; then
   FLAGS="${FLAGS} -DMYSQL_MAINTAINER_MODE=OFF -DWARNING_AS_ERROR=''"  # If WARNING_AS_ERROR is set to blank, warnings will never be treated as errors
 fi
 
-# As this is an optimized build, set -DCMAKE_BUILD_TYPE=RelWithDebInfo
-FLAGS="${FLAGS} -DCMAKE_BUILD_TYPE=RelWithDebInfo"
+# As this is a debug build, set -DCMAKE_BUILD_TYPE=Debug
+FLAGS="${FLAGS} -DCMAKE_BUILD_TYPE=Debug"
 
 CURPATH="$(echo $PWD | sed 's|.*/||')"
 
 cd ..
-rm -Rf ${CURPATH}_opt_san
-rm -f /tmp/mdpsms_opt_san_build_${RANDOMD}
-cp -R ${CURPATH} ${CURPATH}_opt_san
-cd ${CURPATH}_opt_san
+rm -Rf ${CURPATH}_dbg_san
+rm -f /tmp/mdpsms_dbg_san_build_${RANDOMD}
+cp -R ${CURPATH} ${CURPATH}_dbg_san
+cd ${CURPATH}_dbg_san
 
 ### TEMPORARY HACK TO AVOID COMPILING TB (WHICH IS NOT READY YET)
 rm -Rf ./plugin/tokudb-backup-plugin
@@ -316,21 +356,22 @@ if [ $FB -eq 0 ]; then
     sleep 0.1
     #XPAND='-DWITH_XPAND=1'  # Disabled ftm due to cnf limitation (https://mariadb.com/kb/en/mariadb-maxscale-25-maxscale-and-xpand-tutorial/)
   fi
-  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_{SAFEMALLOC,NUMA}=OFF -DWITH_UNIT_TESTS=OFF -DCONC_WITH_{UNITTEST,SSL}=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 ${SAN} ${FLAGS}"
+  # Search key: Mac
+  CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_{SAFEMALLOC,NUMA}=OFF -DWITH_UNIT_TESTS=OFF -DCONC_WITH_{UNITTEST,SSL}=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 -DWITH_INNODB_EXTRA_DEBUG=ON ${SAN} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
-  eval "$CMD" 2>&1 | tee /tmp/psms_opt_san_build_${RANDOMD}
+  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_san_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 else
   # FB build
   CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
-  eval "$CMD" 2>&1 | tee /tmp/psms_opt_san_build_${RANDOMD}
+  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_san_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 fi
 
-make -j${MAKE_THREADS} | tee -a /tmp/psms_opt_san_build_${RANDOMD}
+make -j${MAKE_THREADS} | tee -a /tmp/psms_dbg_san_build_${RANDOMD}
 if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 
 echo $CMD > BUILD_CMD_CMAKE
@@ -338,27 +379,27 @@ if [ ! -r ./scripts/make_binary_distribution ]; then  # Note: ./scripts/binary_d
   echo "Assert: ./scripts/make_binary_distribution was not found. Terminating."
   exit 1
 else
-  ./scripts/make_binary_distribution | tee -a /tmp/psms_opt_san_build_${RANDOMD}
+  ./scripts/make_binary_distribution | tee -a /tmp/psms_dbg_san_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for ./scripts/make_binary_distribution!"; exit 1; fi
 fi
 
-TAR_opt=`ls -1 *.tar.gz | grep -v "boost" | head -n1`
-if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
-  TAR_opt_new=$(echo "${PREFIX}-${TAR_opt}" | sed 's|.tar.gz|-opt.tar.gz|')
-  DIR_opt=$(echo "${TAR_opt}" | sed 's|.tar.gz||')
-  DIR_opt_new=$(echo "${TAR_opt_new}" | sed 's|.tar.gz||')
-  if [ ! -z "${DIR_opt}" -a -d "./${DIR_opt}" ]; then rm -Rf ./${DIR_opt}; fi  # Ensure the tarball can be extracted
-  tar -xf ${TAR_opt}  # Extract the tarball which scripts/make_binary_distribution created
+TAR_dbg=`ls -1 *.tar.gz | grep -v "boost" | head -n1`
+if [[ "${TAR_dbg}" == *".tar.gz"* ]]; then
+  TAR_dbg_new=$(echo "${PREFIX}-${TAR_dbg}" | sed 's|.tar.gz|-dbg.tar.gz|')
+  DIR_dbg=$(echo "${TAR_dbg}" | sed 's|.tar.gz||')
+  DIR_dbg_new=$(echo "${TAR_dbg_new}" | sed 's|.tar.gz||')
+  if [ ! -z "${DIR_dbg}" -a -d "./${DIR_dbg}" ]; then rm -Rf ./${DIR_dbg}; fi  # Ensure the tarball can be extracted
+  tar -xf ${TAR_dbg}  # Extract the tarball which scripts/make_binary_distribution created
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon tar exract!"; exit 1; fi
-  if [ ! -z "${TAR_opt_new}" -a -r "../${TAR_opt_new}" ]; then rm -f ../${TAR_opt_new}; fi
-  mv ${TAR_opt} ../${TAR_opt_new}  # Rename the tarball to the full prefixed name and move it to /test (or similar)
+  if [ ! -z "${TAR_dbg_new}" -a -r "../${TAR_dbg_new}" ]; then rm -f ../${TAR_dbg_new}; fi
+  mv ${TAR_dbg} ../${TAR_dbg_new}  # Rename the tarball to the full prefixed name and move it to /test (or similar)
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon moving of tarball!"; exit 1; fi
-  if [ ! -z "${DIR_opt_new}" -a -d "../${DIR_opt_new}" ]; then rm -Rf ../${DIR_opt_new}; fi
-  mv ${DIR_opt} ../${DIR_opt_new}  # Move the dir to the full prefixed name and move it to /test (or similar)
+  if [ ! -z "${DIR_dbg_new}" -a -d "../${DIR_dbg_new}" ]; then rm -Rf ../${DIR_dbg_new}; fi
+  mv ${DIR_dbg} ../${DIR_dbg_new}  # Move the dir to the full prefixed name and move it to /test (or similar)
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected upon moving of directory!"; exit 1; fi
   # Store revision (used by source_code_rev.sh to find revision for, for example, MS builds)
-  git log | grep -om1 'commit.*' | awk '{print $2}' | sed 's|[ \n\t]\+||g' > ../${DIR_opt_new}/git_revision.txt
-  echo $CMD > ../${DIR_opt_new}/BUILD_CMD_CMAKE
+  git log | grep -om1 'commit.*' | awk '{print $2}' | sed 's|[ \n\t]\+||g' > ../${DIR_dbg_new}/git_revision.txt
+  echo $CMD > ../${DIR_dbg_new}/BUILD_CMD_CMAKE
   cd ..
   exit 0
 else

@@ -2,7 +2,7 @@
 # Script to generate MSAN instrumented libraries from sources
 # To see if a lib is MSAN instrumented use readelf, nm, or strings <somelib> | grep -i msan
 
-# With thanks, modified for Ubuntu 24.04 LTS based on the original by Daniel at;
+# Modified for Ubuntu 24.04 LTS by Roel based, with thanks, on the original by Daniel at;
 # https://raw.githubusercontent.com/MariaDB/buildbot/refs/heads/main/ci_build_images/msan.instrumentedlibs.sh
 # Which in turn is based on the invaluable build-msanX.sh scripts in https://jira.mariadb.org/browse/MDEV-20377 by Marko
 
@@ -19,12 +19,52 @@ set -o nounset
 set -o pipefail
 set -o posix
 
-# Some things depend on OS version. Expose these env variable for ease of determination.
+# Some things depend on OS version. Expose these env variable for ease of determination
 . /etc/os-release
 
-# Env variables used in build
+# Build directory setup
+mkdir build && cd build
+
+# Native/System Core libs: libc.so.6, libm.so.6, libresolv.so.2, libgcc_s.so.1 (GCC's runtime support library): there is no need to instrument these. MSAN is designed to work alongside these libs. They will show as having /lib[64] paths in ldd, not $MSAN_LIBDIR.
+
+#System Libraries: no action needed; no need to build instrumented versions of libc.so.6, libm.so.6, libresolv.so.2 (all part of glibc), nor libgcc_s.so.1 (GCC's runtime support library). The Clang sanitizer runtime is designed to work alongside the system's native libc and libgcc. The fact that these are pointing to system directories in ldd output is correct and expected.
+
+# C++ runtime libs (libc++, libc++abi, libunwind)
+sudo apt-get update
+sudo apt-get install -y git cmake ninja-build build-essential python3 zlib1g-dev
+sudo apt purge clang* libclang* libllvm* llvm-17* llvm-spirv* lld* libc++*
+dpkg --list | grep -iE 'clang|llvm'  # Should be empty
+sudo apt autopurge  # /sbin/ldconfig.real: /lib/x86_64-linux-gnu/libreadline.so.5 is not a symbolic link error is normal (was placed here manually)
+sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev lld-18
 export CC=/usr/bin/clang
 export CXX=/usr/bin/clang++
+export LD=/usr/bin/ld.lld-18
+git clone --depth 1 https://github.com/llvm/llvm-project.git
+cd llvm-project
+cat > "./msan_build.cmake" <<EOF
+set(CMAKE_C_COMPILER "$CC" CACHE STRING "")
+set(CMAKE_CXX_COMPILER "$CXX" CACHE STRING "")
+set(LLVM_USE_LINKER "$LD" CACHE STRING "")
+set(LLVM_BUILD_RUNTIMES ON CACHE BOOL "")
+set(LLVM_RUNTIME_CMAKE_ARGS "-DLLVM_USE_SANITIZER=MemoryWithOrigins;-DLLVM_INCLUDE_TESTS=OFF;-DLIBCXX_INCLUDE_TESTS=OFF" CACHE STRING "")
+EOF
+cmake -S llvm -B build -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="${PWD}/msan_build.cmake" \
+  -DLLVM_ENABLE_PROJECTS='clang;lld' \
+  -DLLVM_ENABLE_RUNTIMES='compiler-rt;libcxx;libcxxabi;libunwind' \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DLLVM_PARALLEL_{COMPILE,LINK,TABLEGEN}_JOBS="$[ $(nproc) * 8 ]" \
+  -DLLVM_INCLUDE_DOCS=OFF \
+  -DLLVM_ENABLE_SPHINX=OFF
+sudo ninja -C build install  # Will build+install into /usr/local (DCMAKE_INSTALL_PREFIX, also the default)
+mkdir "$MSAN_LIBDIR/include"
+cp -aL /usr/local/lib/x86_64-unknown-linux-gnu/* "$MSAN_LIBDIR/"  # libs
+cp -aL /usr/local/include/* "$MSAN_LIBDIR/include"  # includes
+
+# Change now to newly build Clang/LLVM 22
+export CC=/usr/local/bin/clang
+export CXX=/usr/local/bin/clang++
+export LD=/usr/local/bin/ld.lld
 export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing the two build_mdpsms_dbg/opt_san.sh scripts also
 # Find the Clang resource directory which contains the MSAN runtime library
 CLANG_RESOURCE_DIR=$(clang -print-resource-dir)
@@ -33,36 +73,6 @@ CLANG_RUNTIME_LIB_DIR="${CLANG_RESOURCE_DIR}/lib/linux"
 export CFLAGS="-fPIC -fno-omit-frame-pointer -O2 -g -fsanitize=memory"
 export CXXFLAGS="-fPIC -fno-omit-frame-pointer -O2 -g -fsanitize=memory"
 export LDFLAGS="-fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR"
-
-# Directory setup
-mkdir build && cd build
-
-# Native/System Core libs: libc.so.6, libm.so.6, libresolv.so.2, libgcc_s.so.1 (GCC's runtime support library): there is no need to instrument these. MSAN is designed to work alongside these libs. They will show as having /lib[64] paths in ldd, not $MSAN_LIBDIR.
-
-#System Libraries: no action needed; no need to build instrumented versions of libc.so.6, libm.so.6, libresolv.so.2 (all part of glibc), nor libgcc_s.so.1 (GCC's runtime support library). The Clang sanitizer runtime is designed to work alongside the system's native libc and libgcc. The fact that these are pointing to system directories in ldd output is correct and expected.
-
-# C++ runtime libs (libc++, libc++abi, libunwind)
-CLANG_VERSION="$(clang --version 2>/dev/null | head -n1 | grep -o '[0-9]\+\.' | head -n1 | grep -o '[0-9]\+')"
-sudo apt-get build-dep -y "llvm-toolchain-${CLANG_VERSION}"
-apt-get source "llvm-toolchain-${CLANG_VERSION}"
-LLVM_DIR="$(ls --group-directories-first --color=never -1d llvm-toolchain-* 2>&1 | head -n1)"
-mkdir -p llvm-build
-cd llvm-build
-cmake -S "../${LLVM_DIR}/runtimes" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" \
-    -DCMAKE_C_COMPILER="$CC" \
-    -DCMAKE_CXX_COMPILER="$CXX" \
-    -DLLVM_INCLUDE_TESTS=OFF \
-    -DLLVM_INCLUDE_DOCS=OFF \
-    -DLLVM_ENABLE_SPHINX=OFF \
-    -DLLVM_USE_SANITIZER=MemoryWithOrigins
-cmake --build . --target cxx --target cxxabi --target unwind --parallel "$(nproc)"
-cp -aL lib/lib*.so* "$MSAN_LIBDIR/"
-cp -aL include/c++/v1 "$MSAN_LIBDIR/include"
-cd ..
-rm -rf -- llvm-build "${LLVM_DIR}" *.dsc *.debian.tar.xz *.tar.xz
-rm $MSAN_LIBDIR/libunwind*  # https://github.com/llvm/llvm-project/issues/84348 | https://jira.mariadb.org/browse/MDBF-793 | i.e. use the default one
 
 # ncurses libtinfo.so - used by the mariadb client
 sudo apt-get build-dep -y ncurses

@@ -1,0 +1,3 @@
+SET SESSION optimizer_trace=1;
+CREATE TABLE t (c INT) ENGINE=InnoDB;
+SELECT * FROM t;
