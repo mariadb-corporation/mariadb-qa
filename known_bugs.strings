@@ -576,7 +576,7 @@ reinterpret_cast<size_t>(ptr) % Alignment == 0|SIGABRT|my_assume_aligned<8, LF_S
 SIGSEGV|Item_field::used_tables|Used_tables_and_const_cache::used_tables_and_const_cache_join|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join ## MDEV-34068
 !trx->is_bulk_insert()|SIGABRT|ha_innobase::delete_row|handler::ha_delete_row|TABLE::delete_row|Sql_cmd_delete::delete_from_single_table                                       ## MDEV-34058
 trx->bulk_insert|SIGABRT|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low                                       ## MDEV-34058
-# SIGSEGV|dict_table_t::is_active_ddl|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                                   ## MDEV-34051 (WIP)
+# SIGSEGV|dict_table_t::is_active_ddl|trx_t::rollback_low|trx_t::rollback|trx_rollback_last_sql_stat_for_mysql                                                                 ## MDEV-34051 (WIP)
 !look_for_rollover || start_scan_slot != slot|SIGABRT|trx_assign_rseg_low|trx_start_low|trx_start_if_not_started_xa_low|create_table_info_t::create_foreign_keys               ## MDEV-33917
 !look_for_rollover || start_scan_slot != slot|SIGABRT|trx_assign_rseg_low|trx_start_low|trx_start_internal_low|dict_stats_fetch_from_ps                                        ## MDEV-33917
 SIGSEGV|Explain_union::print_explain_regular|Explain_node::print_explain_for_children|Explain_query::print_explain_str|print_explain_for_slow_log                              ## MDEV-33982

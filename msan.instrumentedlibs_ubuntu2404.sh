@@ -21,58 +21,112 @@ set -o posix
 
 # Some things depend on OS version. Expose these env variable for ease of determination
 . /etc/os-release
+if [ "$(grep -o 'DISTRIB_RELEASE=.*' /etc/lsb-release | grep -o '24.04')" != "24.04" ]; then
+  echo "Assert: this script was made for Ubuntu 24.04 only"
+  exit 1
+fi
 
-# Build directory setup
-mkdir build && cd build
+export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing the two build_mdpsms_dbg/opt_san.sh scripts also
+if [ -d "${MSAN_LIBDIR}" ]; then
+  echo "The directory ${MSAN_LIBDIR} already exists, please remove or rename it"
+  exit 1
+fi
 
-# Native/System Core libs: libc.so.6, libm.so.6, libresolv.so.2, libgcc_s.so.1 (GCC's runtime support library): there is no need to instrument these. MSAN is designed to work alongside these libs. They will show as having /lib[64] paths in ldd, not $MSAN_LIBDIR.
+# Directory setup
+sudo mkdir -p "${MSAN_LIBDIR}/build" "${MSAN_LIBDIR}/include"
+sudo chown -R $(whoami):$(whoami) "${MSAN_LIBDIR}"
+cd "${MSAN_LIBDIR}/build"
 
-#System Libraries: no action needed; no need to build instrumented versions of libc.so.6, libm.so.6, libresolv.so.2 (all part of glibc), nor libgcc_s.so.1 (GCC's runtime support library). The Clang sanitizer runtime is designed to work alongside the system's native libc and libgcc. The fact that these are pointing to system directories in ldd output is correct and expected.
+# Add sources if needed
+if ! grep -q "^Types: deb-src$" /etc/apt/sources.list.d/ubuntu.sources; then
+  sudo bash -c 'echo -e "\nTypes: deb-src\nURIs: http://archive.ubuntu.com/ubuntu/\nSuites: noble noble-updates noble-backports noble-security\nComponents: main restricted universe multiverse\nEnabled: yes\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg" >> /etc/apt/sources.list.d/ubuntu.sources'
+fi
+
+SKIP_CLEANUP=1
+if [ "${SKIP_CLEANUP}" -ne 1 ]; then
+  # Remove Clang/LLVM 17/18 if present, and default packages, install required packages
+  sudo apt purge -y clang*17* clang*18* libclang*17* libclang*18* libllvm-*17* libllvm-*18* llvm-17* llvm-18* llvm-spirv* lld*17* lld*18* libc++*17* libc++*18* clang llvm llvm-dev llvm-runtime
+  sudo apt-get update
+  sudo apt-get install -y git cmake ninja-build build-essential python3 zlib1g-dev equivs quilt
+  #dpkg --list | grep -iE 'clang|llvm'  # Should be empty
+  sudo apt -y autopurge  # /sbin/ldconfig.real: /lib/x86_64-linux-gnu/libreadline.so.5 is not a symbolic link error is normal (was placed here manually)
+fi
+
+SKIP_CLANG_INSTALL=1
+if [ "${SKIP_CLANG_INSTALL}" -ne 1 ]; then
+  # Clang/LLVM install
+  wget https://apt.llvm.org/llvm.sh
+  chmod +x llvm.sh
+  sed -i 's|libunwind-$LLVM_VERSION-dev"|libunwind-$LLVM_VERSION-dev python3-lldb-$LLVM_VERSION"|' llvm.sh
+  sudo ./llvm.sh 21 all
+  rm llvm.sh
+  # To remove, use:
+  # apt purge -y clang-21 lldb-21 lld-21 clangd-21 clang-tidy-21 clang-format-21 clang-tools-21 llvm-21-dev llvm-21-tools libomp-21-dev libc++-21-dev libc++abi-21-dev libclang-common-21-dev libclang-21-dev libclang-cpp21-dev liblldb-21-dev libunwind-21-dev python3-lldb-21 libclang-rt-21-dev libpolly-21-dev llvm-21 llvm-21-linker-tools llvm-21-runtime libunwind-21:amd64 libc++1-21:amd64 libc++abi1-21:amd64 libclang-cpp21 libclang1-21 liblldb-21 libllvm21:amd64
+fi
+
+SKIP_CMAKE_UPGRADE=1
+if [ "${SKIP_CMAKE_UPGRADE}" -ne 1 ]; then
+  # Upgrade cmake to at least 3.29 (currently 4.1.0 is used) to enable custom ld path support, using the official kitware.com linked from cmake.org
+  sudo apt purge -y cmake
+  sudo apt install ca-certificates gpg wget
+  test -f /usr/share/doc/kitware-archive-keyring/copyright || \
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null \
+    | gpg --dearmor | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+  echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ noble main' \
+    | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
+  sudo apt update
+  sudo apt autopurge -y
+  sudo apt install -y kitware-archive-keyring
+  sudo apt update
+  sudo apt install -y cmake
+fi
+
+# Now point to the just-installed Clang/LLVM
+export MSAN_LIBDIR=/MSAN_libs   # handy for copy/paste
+export CC=/usr/bin/clang-21
+export CXX=/usr/bin/clang++-21
+export LD=/usr/bin/ld.lld-21
+# TODO: consider adding -fsanitize-memory-track-origins=2 to CFLAGS (and LDFLAGS?) - also update build scripts to match the same
+# Note that -fsanitize=memory is required for the compiler *and* the linker
+export LDFLAGS="-fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR"
+unset CFLAGS CXXFLAGS
+#  -DCMAKE_C_FLAGS="${CFLAGS}" \
+#  -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
+
+# Native/System Core libs: libc.so.6, libm.so.6, libresolv.so.2, libgcc_s.so.1 (GCC's runtime support library): there is no need to instrument these. MSAN is designed to work alongside these libs. They will point to system directories in ldd output.
 
 # C++ runtime libs (libc++, libc++abi, libunwind)
-sudo apt-get update
-sudo apt-get install -y git cmake ninja-build build-essential python3 zlib1g-dev
-sudo apt purge clang* libclang* libllvm* llvm-17* llvm-spirv* lld* libc++*
-dpkg --list | grep -iE 'clang|llvm'  # Should be empty
-sudo apt autopurge  # /sbin/ldconfig.real: /lib/x86_64-linux-gnu/libreadline.so.5 is not a symbolic link error is normal (was placed here manually)
-sudo apt install clang llvm-18 llvm-18-linker-tools llvm-18-runtime llvm-18-tools llvm-18-dev libstdc++-14-dev llvm-dev lld-18
-export CC=/usr/bin/clang
-export CXX=/usr/bin/clang++
-export LD=/usr/bin/ld.lld-18
 git clone --depth 1 https://github.com/llvm/llvm-project.git
-cd llvm-project
-cat > "./msan_build.cmake" <<EOF
-set(CMAKE_C_COMPILER "$CC" CACHE STRING "")
-set(CMAKE_CXX_COMPILER "$CXX" CACHE STRING "")
-set(LLVM_USE_LINKER "$LD" CACHE STRING "")
-set(LLVM_BUILD_RUNTIMES ON CACHE BOOL "")
-set(LLVM_RUNTIME_CMAKE_ARGS "-DLLVM_USE_SANITIZER=MemoryWithOrigins;-DLLVM_INCLUDE_TESTS=OFF;-DLIBCXX_INCLUDE_TESTS=OFF" CACHE STRING "")
-EOF
-cmake -S llvm -B build -G Ninja \
-  -DCMAKE_TOOLCHAIN_FILE="${PWD}/msan_build.cmake" \
-  -DLLVM_ENABLE_PROJECTS='clang;lld' \
+cd llvm-project/runtimes
+
+# -S: Source dir
+cmake . -B build -G Ninja \
   -DLLVM_ENABLE_RUNTIMES='compiler-rt;libcxx;libcxxabi;libunwind' \
-  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_C_COMPILER="${CC}" \
+  -DCMAKE_CXX_COMPILER="${CXX}" \
+  -DCMAKE_LINKER_TYPE=LLD \
+  -DCMAKE_C_USING_LINKER_LLD="${LD}" \
+  -DCMAKE_C_USING_LINKER_MODE=TOOL \
+  -DCMAKE_CXX_USING_LINKER_LLD="${LD}" \
+  -DCMAKE_CXX_USING_LINKER_MODE=TOOL \
+  -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS="${LDFLAGS}" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DLLVM_USE_SANITIZER="MemoryWithOrigins" \
   -DLLVM_PARALLEL_{COMPILE,LINK,TABLEGEN}_JOBS="$[ $(nproc) * 8 ]" \
+  -DLLVM_INCLUDE_TESTS=OFF \
+  -DLIBCXX_INCLUDE_TESTS=OFF \
   -DLLVM_INCLUDE_DOCS=OFF \
   -DLLVM_ENABLE_SPHINX=OFF
-sudo ninja -C build install  # Will build+install into /usr/local (DCMAKE_INSTALL_PREFIX, also the default)
-mkdir "$MSAN_LIBDIR/include"
-cp -aL /usr/local/lib/x86_64-unknown-linux-gnu/* "$MSAN_LIBDIR/"  # libs
-cp -aL /usr/local/include/* "$MSAN_LIBDIR/include"  # includes
+ninja -C build
+cp -aL build/lib/* "$MSAN_LIBDIR/"  # libs
+cp -aL build/include/* "$MSAN_LIBDIR/include"  # includes
+cd "$MSAN_LIBDIR/build"
+rm -Rf llvm-project
 
-# Change now to newly build Clang/LLVM 22
-export CC=/usr/local/bin/clang
-export CXX=/usr/local/bin/clang++
-export LD=/usr/local/bin/ld.lld
-export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing the two build_mdpsms_dbg/opt_san.sh scripts also
-# Find the Clang resource directory which contains the MSAN runtime library
-CLANG_RESOURCE_DIR=$(clang -print-resource-dir)
-CLANG_RUNTIME_LIB_DIR="${CLANG_RESOURCE_DIR}/lib/linux"
-# TODO: consider adding -fsanitize-memory-track-origins=2 to CFLAGS (and LDFLAGS?) - also update build scripts to match the same
-export CFLAGS="-fPIC -fno-omit-frame-pointer -O2 -g -fsanitize=memory"
-export CXXFLAGS="-fPIC -fno-omit-frame-pointer -O2 -g -fsanitize=memory"
-export LDFLAGS="-fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR"
+# Set {C,CXX,LD}FLAGS for all subsequent lib builds. Note that ldd will be found via the LD= export set earlier
+export CFLAGS="-fsanitize=memory -fno-omit-frame-pointer -fPIC -O2 -g"
+export CXXFLAGS="$CFLAGS"
+export LDFLAGS="-fuse-ld=lld -fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR"
 
 # ncurses libtinfo.so - used by the mariadb client
 sudo apt-get build-dep -y ncurses

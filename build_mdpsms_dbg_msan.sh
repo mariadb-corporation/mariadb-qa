@@ -15,30 +15,12 @@ USE_TSAN=0              # 0 or 1 # 1: Enables TSAN, disables ASAN+UBSAN/MSAN. 0:
 ASAN_OR_MSAN=1          # 0 or 1 # 0: ASAN+UBSAN. 1: MSAN
 PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
-#CLANG_LOCATION="${HOME}/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
-CLANG_LOCATION="/usr/local/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
-LD_LOCATION="/usr/local/bin/ld.lld"
+CLANG_LOCATION="/usr/bin/clang-21"  # Should end in /clang (and assumes presence of /clang++)
+export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing msan.instrumentedlibs_ubuntu2404.sh also
+LD_LOCATION="/usr/bin/ld.lld-21"
 USE_AFL=0               # 0 or 1 # Use the American Fuzzy Lop gcc/g++ wrapper instead of gcc/g++
 AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"
 IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_MODE=OFF. When ignoring warnings, regularly check that existing bugs are fixed. This option additionally sets -DWARNING_AS_ERROR empty so warnings will never be treated as errors. #TODO: consider implementing -DMYSQL_MAINTAINER_MODE=WARN (also disables -Werror, just like, presumably, =OFF, though it will likely not work to avoid for example the lib https://jira.mariadb.org/browse/MDEV-32483 compile error wheras -DWARNING_AS_ERROR='' does)
-
-# To install the latest clang from Chromium devs (and this automatically updates previous version installed with this method too);
-# sudo yum remove clang    # Or sudo apt-get remove clang    # Only required if this procedure has never been followed yet
-# cd ~
-# mkdir TMP_CLANG
-# cd TMP_CLANG
-# git clone --depth=1 https://chromium.googlesource.com/chromium/src/tools/clang
-# cd ..
-# TMP_CLANG/clang/scripts/update.py
-
-# Prevent compilation termiation errors alike to:
-#==1574414==Shadow memory range interleaves with an existing memory mapping. ASan cannot proceed correctly. ABORTING.
-#==1574414==ASan shadow was supposed to be located in the [0x00007fff7000-0x10007fff7fff] range.
-#==1574414==This might be related to ELF_ET_DYN_BASE change in Linux 4.12.
-#==1574414==See https://github.com/google/sanitizers/issues/856 for possible workarounds.
-#This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.
-#sudo sysctl vm.mmap_rnd_bits=28  # Workaround, ref https://github.com/google/sanitizers/issues/856
-# Interestingly, this issue only seems to halt 10.5-10.11 builds, and 11.1 dbg, but not 11.1 opt nor 11.2+
 
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
 
@@ -229,29 +211,15 @@ if [ $USE_SAN -eq 1 ]; then
       #PREFIX="UBSAN_SPIDER_"; SAN="-DWITH_UBSAN=ON"  # Spider UBSAN Only https://jira.mariadb.org/browse/MDEV-26541
       #PREFIX="ASAN_SPIDER_"; SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWSREP_LIB_WITH_ASAN=ON"  # Spider ASAN only, same URL
     else
-      # While it may be technically possible to combine MSAN with UBSAN, within MariaDB testing, UBSAN builds are already extensively tested in combination with ASAN. It makes most sense to have separate/unclogged MSAN builds. Instrumented MSAN system libraries are build with -fsanitize=memory, ref mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh
-      export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing msan.instrumentedlibs_ubuntu2404.sh also
+      # While it may be technically possible to combine MSAN with UBSAN (TBD), within MariaDB testing, UBSAN builds are already extensively tested in combination with ASAN. It makes most sense to have separate/unclogged MSAN builds. Instrumented MSAN system libraries are build with -fsanitize=memory, ref mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh
       if [ ! -d "${MSAN_LIBDIR}" ]; then
-        echo "Error: the MSAN_LIBDIR (${MSAN_LIBDIR}) is missing. MSAN compiled libraries are required. To setup, do:"
-        echo "export USR=\$(whoami); sudo mkdir -p ${MSAN_LIBDIR}; sudo chown -R \${USR}:\${USR} ${MSAN_LIBDIR}"
-        echo "sudo vi /etc/apt/sources.list.d/ubuntu.sources"
-        echo "# ------ For Ubuntu 24.04 (Noble) and add, if not present already:"
-        echo "Types: deb-src"
-        echo "URIs: http://archive.ubuntu.com/ubuntu/"
-        echo "Suites: noble noble-updates noble-backports noble-security"
-        echo "Components: main restricted universe multiverse"
-        echo "Enabled: yes"
-        echo "Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg"
-        echo "# ------ Then save the file, and continue:"
-        echo "sudo apt update && sudo apt install equivs libc++-dev libc++abi-dev quilt"  # equivs: needed for libs compile | libc++-dev libc++abi-dev: needed for Clang based MSAN compiles of MariaDB. It avoids the build failure (11.8 example): 'CMake Error at CMakeLists.txt:255 (MESSAGE): C++ Compiler requires support for -stdlib=libc++' | quilt is used to apply all official Debian/Ubuntu patches to the source codes used in mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh
-        echo "cd ${MSAN_LIBDIR}"
+        echo "Error: the MSAN_LIBDIR (${MSAN_LIBDIR}) is missing. MSAN compiled libraries are required. To setup, run:"
         echo "${SCRIPT_PWD}/msan.instrumentedlibs_ubuntu2404.sh  # Should finish normally, without errors"
         echo "ls ${MSAN_LIBDIR}  # You will want to see 70+ files/libs (and two dirs: ./build and ./include)"
         exit 1
       fi
-      export CMAKE_LIBRARY_PATH="/MSAN_libs"
-      export CMAKE_PREFIX_PATH="/MSAN_libs"
-      SAN="-DWITH_MSAN=ON -DHAVE_CXX_NEW=1 -DWITH_INNODB_{BZIP2,LZ4,LZMA,LZO,SNAPPY}=OFF -DWITH_NUMA=NO -DWITH_SYSTEMD=no -DPLUGIN_{MROONGA,ROCKSDB,OQGRAPH}=NO -DWITH_WSREP=OFF -DCMAKE_DISABLE_FIND_PACKAGE_{URING,LIBAIO}=1 -DHAVE_LIBAIO_H=0 -DIGNORE_AIO_CHECK=YES -DCMAKE_LIBRARY_PATH=${MSAN_LIBDIR} -DCMAKE_PREFIX_PATH=${MSAN_LIBDIR} -DCMAKE_{EXE,MODULE,SHARED}_LINKER_FLAGS=\"-L${MSAN_LIBDIR} -Wl,-rpath=${MSAN_LIBDIR}\" "
+      #SAN="-DWITH_MSAN=ON -DHAVE_CXX_NEW=1 -DWITH_INNODB_{BZIP2,LZ4,LZMA,LZO,SNAPPY}=OFF -DWITH_NUMA=NO -DWITH_SYSTEMD=no -DPLUGIN_{MROONGA,ROCKSDB,OQGRAPH}=NO -DWITH_WSREP=OFF -DCMAKE_DISABLE_FIND_PACKAGE_{URING,LIBAIO}=1 -DHAVE_LIBAIO_H=0 -DIGNORE_AIO_CHECK=YES -DCMAKE_LIBRARY_PATH=${MSAN_LIBDIR} -DCMAKE_PREFIX_PATH=${MSAN_LIBDIR} -DCMAKE_{EXE,MODULE,SHARED}_LINKER_FLAGS=\"-L${MSAN_LIBDIR} -Wl,-rpath=${MSAN_LIBDIR}\" -DCMAKE_CXX_FLAGS=\"-stdlib=libc++ -I${MSAN_LIBDIR}/include/c++/v1 -fsanitize-ignorelist=${SCRIPT_PWD}/MSAN.ignorelist\" "
+      SAN="-DWITH_MSAN=ON -DHAVE_CXX_NEW=1 -DWITH_INNODB_{BZIP2,LZ4,LZMA,LZO,SNAPPY}=OFF -DWITH_NUMA=NO -DWITH_SYSTEMD=no -DPLUGIN_{MROONGA,ROCKSDB,OQGRAPH}=NO -DWITH_WSREP=OFF -DCMAKE_DISABLE_FIND_PACKAGE_{URING,LIBAIO}=1 -DHAVE_LIBAIO_H=0 -DIGNORE_AIO_CHECK=YES -DCMAKE_LIBRARY_PATH=${MSAN_LIBDIR} -DCMAKE_PREFIX_PATH=${MSAN_LIBDIR} -DCMAKE_{EXE,MODULE,SHARED}_LINKER_FLAGS=\"-L${MSAN_LIBDIR} -Wl,-rpath=${MSAN_LIBDIR}\" -DCMAKE_CXX_FLAGS=\"-fsanitize-ignorelist=${SCRIPT_PWD}/MSAN.ignorelist\" "
       SSL="-DWITH_SSL=${MSAN_LIBDIR}"  # Use the MSAN instrumented ssl libs in MSAN_LIBDIR
       if [[ "${MYSQL_VERSION_MAJOR}" =~ ^10$ ]]; then  # 10.5, 10.6 and 11.4 (next if) do not support a path (even though the install says it does)
         SSL="-DWITH_SSL=yes"  # Prefer os library if present, otherwise use bundled (wolfssl)
