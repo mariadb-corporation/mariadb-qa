@@ -60,7 +60,13 @@ if [ "${SKIP_CLANG_INSTALL}" -ne 1 ]; then
   sed -i 's|libunwind-$LLVM_VERSION-dev"|libunwind-$LLVM_VERSION-dev python3-lldb-$LLVM_VERSION"|' llvm.sh
   sudo ./llvm.sh 21 all
   rm llvm.sh
+  sudo ln -sf /usr/bin/clang-21 /usr/bin/clang
+  sudo ln -sf /usr/bin/clang++-21 /usr/bin/clang++
+  sudo ln -sf /usr/bin/ld.lld-21 /usr/bin/ld.lld
+  sudo ln -sf /usr/bin/ld.lld-21 /usr/bin/ld
+  sudo ldconfig
   # To remove, use:
+  # sudo rm -f /usr/bin/clang /usr/bin/clang++ /usr/bin/lld
   # apt purge -y clang-21 lldb-21 lld-21 clangd-21 clang-tidy-21 clang-format-21 clang-tools-21 llvm-21-dev llvm-21-tools libomp-21-dev libc++-21-dev libc++abi-21-dev libclang-common-21-dev libclang-21-dev libclang-cpp21-dev liblldb-21-dev libunwind-21-dev python3-lldb-21 libclang-rt-21-dev libpolly-21-dev llvm-21 llvm-21-linker-tools llvm-21-runtime libunwind-21:amd64 libc++1-21:amd64 libc++abi1-21:amd64 libclang-cpp21 libclang1-21 liblldb-21 libllvm21:amd64
 fi
 

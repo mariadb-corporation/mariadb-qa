@@ -2,9 +2,9 @@
 
 # For the BASEDIR, either specifying -opt or -dbg is fine, the script will auto-compute the other directory
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
-BASEDIR=/test/MSAN_MD190825-mariadb-12.1.2-linux-x86_64-dbg
-RUNSOPT=2
-RUNSDBG=3
+BASEDIR=/test/UBASAN_MD220825-mariadb-10.6.24-linux-x86_64-dbg
+RUNSOPT=3
+RUNSDBG=4
 #CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2, and spider swap
 #CONF=pquery-run-MD-spider-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-optimizer.conf

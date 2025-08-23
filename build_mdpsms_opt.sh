@@ -60,6 +60,11 @@ if (( $(echo "$GCC_VER < 4.9" |bc -l) )); then
   exit 1
 fi
 
+# Fix columstore bug https://jira.mariadb.org/browse/MCOL-6004
+sed -i 's|CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' storage/columnstore/columnstore/CMakeLists.txt
+# Fix blackbox bug in ES 10.5/10.6 (ES 11.4+ has 3.12, and not present in CS)
+sed -i 's|CMAKE_MINIMUM_REQUIRED(VERSION 2.8)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' blackbox/CMakeLists.txt blackbox/src/CMakeLists.txt
+
 # Check RocksDB storage engine.
 # Please note when building the facebook-mysql-5.6 tree this setting is automatically ignored
 # For daily builds of fb tree (opt and debug) also see http://jenkins.percona.com/job/fb-mysql-5.6/

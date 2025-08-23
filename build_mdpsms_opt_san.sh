@@ -17,18 +17,10 @@ PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is d
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
 #CLANG_LOCATION="${HOME}/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 CLANG_LOCATION="/usr/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
+LD_LOCATION="/usr/bin/ld.lld"
 USE_AFL=0               # 0 or 1 # Use the American Fuzzy Lop gcc/g++ wrapper instead of gcc/g++
 AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"
 IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_MODE=OFF. When ignoring warnings, regularly check that existing bugs are fixed. This option additionally sets -DWARNING_AS_ERROR empty so warnings will never be treated as errors. #TODO: consider implementing -DMYSQL_MAINTAINER_MODE=WARN (also disables -Werror, just like, presumably, =OFF, though it will likely not work to avoid for example the lib https://jira.mariadb.org/browse/MDEV-32483 compile error wheras -DWARNING_AS_ERROR='' does) 
-
-# To install the latest clang from Chromium devs (and this automatically updates previous version installed with this method too);
-# sudo yum remove clang    # Or sudo apt-get remove clang    # Only required if this procedure has never been followed yet
-# cd ~
-# mkdir TMP_CLANG
-# cd TMP_CLANG
-# git clone --depth=1 https://chromium.googlesource.com/chromium/src/tools/clang
-# cd ..
-# TMP_CLANG/clang/scripts/update.py
 
 # Prevent compilation termiation errors alike to:
 #==1574414==Shadow memory range interleaves with an existing memory mapping. ASan cannot proceed correctly. ABORTING.
@@ -37,6 +29,7 @@ IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_M
 #==1574414==See https://github.com/google/sanitizers/issues/856 for possible workarounds.
 #This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.
 #sudo sysctl vm.mmap_rnd_bits=28  # Workaround, ref https://github.com/google/sanitizers/issues/856
+# Interestingly, this issue only seems to halt 10.5-10.11 builds, and 11.1 dbg, but not 11.1 opt nor 11.2+
 
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
 
@@ -72,6 +65,11 @@ elif (( $(echo "$GCC_VER < 4.9" |bc -l) )); then
   echo "ERR: The gcc version on the machine is $GCC_VER. Minimum gcc version required for build is 4.9. Please upgrade the gcc version."
   exit 1
 fi
+
+# Fix columstore bug https://jira.mariadb.org/browse/MCOL-6004
+sed -i 's|CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' storage/columnstore/columnstore/CMakeLists.txt
+# Fix blackbox bug in ES 10.5/10.6 (ES 11.4+ has 3.12, and not present in CS)
+sed -i 's|CMAKE_MINIMUM_REQUIRED(VERSION 2.8)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' blackbox/CMakeLists.txt blackbox/src/CMakeLists.txt
 
 # Check RocksDB storage engine.
 # Please note when building the facebook-mysql-5.6 tree this setting is automatically ignored
@@ -180,7 +178,14 @@ if [ $USE_CLANG -eq 1 ]; then
   echo "Note: USE_CLANG is set to 1, using the Clang compiler!"
   echo "======================================================"
   sleep 3
-  CLANG="-DCMAKE_C_COMPILER=$CLANG_LOCATION -DCMAKE_CXX_COMPILER=${CLANG_LOCATION}++"  # clang++ location is assumed to be same with ++
+  export CC="${CLANG_LOCATION}"
+  export CXX="${CLANG_LOCATION}++"  # clang++ location is assumed to be same with ++ at end
+  export LD="${LD_LOCATION}"
+  if [ "$(cmake --version | grep -o '[0-9]' | head -n1)" -ge 4 ]; then  # cmake > v4.0 (also assumes Clang/LLVM 21)
+    CLANG="-DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_LINKER_TYPE=LLD -DCMAKE_C_USING_LINKER_LLD=${LD} -DCMAKE_C_USING_LINKER_MODE=TOOL -DCMAKE_CXX_USING_LINKER_LLD=${LD} -DCMAKE_CXX_USING_LINKER_MODE=TOOL"
+  else
+    CLANG="-DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_LINKER=${LD} -DCMAKE_EXE_LINKER_FLAGS=\"-fuse-ld=lld -B$(dirname "${LD_LOCATION}")\" "
+  fi
 fi
 
 # Use AFL gcc/g++ wrapper as compiler
@@ -219,8 +224,7 @@ if [ $USE_SAN -eq 1 ]; then
     SAN="-DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys -DWITH_INNODB=0"  # InnoDB disabled till rw-lock instrumentation is added
   else
     if [ ${ASAN_OR_MSAN} -eq 0 ]; then
-      SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON"  # Both, default (not-Spider)
-      #PREFIX="UBSAN_SPIDER_"; SAN="-DWITH_UBSAN=ON"  # Spider UBSAN Only https://jira.mariadb.org/browse/MDEV-26541    
+      SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON"  # Both, default
     else
       echo "Please use the dedicated MSAN build script (same name, but with '_msan.sh' instead of '_san.sh') to create MSAN builds"
       exit 1
@@ -261,7 +265,13 @@ else
         export ASAN_OPTIONS=suppressions=${HOME}/mariadb-qa/ASAN.filter  # Prevent MDEV-35738
         # FLAGS='-DCMAKE_CXX_FLAGS=-fsanitize-coverage=trace-pc-guard'  Removed: '-fsanitize-coverage=trace-pc-guard' is only helpful for code coverage analysis, ref https://clang.llvm.org/docs/SanitizerCoverage.html
         #FLAGS="-D_FORTIFY_SOURCE=2 -DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fstack-protector-all -fno-omit-frame-pointer -fno-inline -fno-builtin -fno-common -fsanitize=address,undefined,leak,alignment,bounds,integer,null,enum,pointer-compare,pointer-subtract,return,unreachable,vla-bound'"
-        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native'"
+        # undefined,null,nullability-assign,pointer-overflow,pointer-overflow,pointer-overflow,pointer-overflow,alignment,alignment,object-size,signed-integer-overflow,unsigned-integer-overflow,integer-divide-by-zero,float-divide-by-zero,invalid-builtin-use,invalid-objc-cast,implicit-unsigned-integer-truncation,implicit-signed-integer-truncation,implicit-integer-sign-change,implicit-signed-integer-truncation,implicit-integer-sign-change,shift-base,shift-exponent,bounds,local-bounds,unreachable,return,vla-bound,float-cast-overflow,bool,enum,function,returns-nonnull-attribute,nullability-return,nonnull-attribute,nullability-arg,vptr,cfi,vptr_check
+        if [ "$(cmake --version | grep -o '[0-9]' | head -n1)" -ge 4 ]; then  # cmake > v4.0 (also assumes Clang/LLVM 21)
+          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-lm -fsanitize=address,undefined /usr/lib/llvm-21/lib/clang/21/lib/linux/libclang_rt.asan-x86_64.a /usr/lib/llvm-21/lib/clang/21/lib/linux/libclang_rt.ubsan_standalone-x86_64.a' -DCMAKE_REQUIRED_FLAGS='-fsanitize=address,undefined'"
+          SAN=""  # We set these manually instead (build script limitation in connection with a custom Clang/LLVM install)
+        else
+          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native'"
+        fi
         echo "Using Clang for SAN build."
       else
         # '-static-libasan' is needed to avoid this error on mysqld startup:

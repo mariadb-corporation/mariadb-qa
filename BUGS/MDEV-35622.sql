@@ -8,3 +8,9 @@ install soname "ha_example";
 CREATE OR REPLACE TABLE mysql.procs_priv (id INT);
 INSERT INTO mysql.procs_priv VALUES(0);
 CREATE ROLE r;
+
+CREATE OR REPLACE TABLE mysql.procs_priv (id INT) ENGINE=MyISAM;
+DROP USER'';
+
+CREATE OR REPLACE TABLE mysql.procs_priv (id INT) ENGINE=MyISAM;
+RENAME USER''@''TO''@'''''''''';

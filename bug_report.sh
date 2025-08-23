@@ -494,14 +494,12 @@ elif [ "${REPL_MODE}" -eq 1 ]; then
 else
   echo "TOTAL CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 fi
-if [ "${1}" != "SAN" -o "${1}" != "MSAN" ]; then
-  if [ "${1}" != "GAL" ]; then
-    if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" -eq 1 ]; then
-      echo "----- SAN Execution of the testcase ----- (Builds used: ${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK} and _dbg)"
-      test_san_build "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" opt
-      test_san_build "${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}" dbg
-      echo '-----------------------------------------'
-    fi
+if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" -eq 1 ]; then
+  if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then  # Exclude UBASAN builds from self-running again (unnecessary duplication)
+    echo "----- UBASAN Execution of the testcase ----- (Builds used: ${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK} and _dbg)"
+    test_san_build "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" opt
+    test_san_build "${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}" dbg
+    echo '-----------------------------------------'
   fi
 fi
 if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
