@@ -61,6 +61,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2013  ## Ref REGEX_ERRORS_FILTER.info (se
 MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22 (require_secure_transport)
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
+MARIADB_ERROR_CODE|MariaDB error code: 4226  ## Covering various init_slave exec issues (ref MDEV-29499 and for example SPECIAL-42)
 MARIADB_ERROR_CODE|MariaDB error code: 12501 ## SPECIAL-31 (to be expected; remote table not available)
 MARIADB_ERROR_CODE|MariaDB error code: 12701 ## MDEV-22936
 MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
