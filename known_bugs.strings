@@ -12,6 +12,17 @@
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
+# Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226
+# These are all the direct result of using init_slave in various ways, for example with an unparsable SQL statement
+# These can be deleted once https://jira.mariadb.org/browse/MDEV-29499 is backported and/or when versions go EOL
+# Currently these will only be removable once 12.1 goes EOL, or earlier if backported
+MARIADB_ERROR_CODE|MariaDB error code: 1046  ## No database selected
+MARIADB_ERROR_CODE|MariaDB error code: 1064  ## Parser error
+MARIADB_ERROR_CODE|MariaDB error code: 1193  ## Unknown system variable
+MARIADB_ERROR_CODE|MariaDB error code: 1054  ## Unknown column
+MARIADB_ERROR_CODE|MariaDB error code: 1231  ## Incorrect variable setting
+MARIADB_ERROR_CODE|MariaDB error code: 1237  ## Ignored query due to replicate-*-table rules
+
 ##### For known non-issues (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADBD_ERROR|mariadbd: Connection was killed       ## SPECIAL-43 (non-issue; simple increased log verbosity)
 MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-28498, MDEV-27771
@@ -231,6 +242,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ptr - null_ptr <= (int)table->s->rec_buff_length|SIGABRT|Field::move_field_offset|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table         ## MDEV-37341
+null_ptr < ptr|SIGABRT|Field::move_field_offset|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table                                           ## MDEV-37341
+null_ptr < ptr|SIGABRT|Field::move_field_offset|Create_tmp_table::finalize|create_tmp_table|multi_update::initialize_tables                                                    ## MDEV-37341
 field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|st_select_lex::pushdown_from_having_into_where                                           ## MDEV-37435
 SIGSEGV|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|st_select_lex::pushdown_from_having_into_where                                                 ## MDEV-37435
 (longlong) global_tmp_space_used >= 0|SIGABRT|temp_file_size_cb_func|tmp_file_track|_my_b_cache_write|my_b_flush_io_cache                                                      ## MDEV-37425
@@ -330,6 +344,7 @@ is_json_type_handler(th)|SIGABRT|Type_handler_json_common::json_type_handler_fro
 (victim_thd && (WSREP_PROVIDER_EXISTS_ && victim_thd->variables.wsrep_on)) ? victim_thd->wsrep_trx().active() : 1|SIGABRT|wsrep_bf_abort_low|wsrep_abort_thd|THD::notify_shared_lock|MDL_lock::notify_conflicting_locks ## MENT-2296
 level != Sql_condition::WARN_LEVEL_ERROR|SIGABRT|push_warning|push_warning_printf|wsrep_TOI_begin|wsrep_to_isolation_begin                                                     ## MENT-2293
 lock_sys.is_holder()|SIGABRT|lock_sys_t::hash_table::assert_locked|lock_rec_print|wsrep_is_BF_lock_timeout|lock_wait                                                           ## MDEV-36690
+prm.count > 0|SIGABRT|Item_exists_subselect::exists2in_processor|Item_in_optimizer::walk|Item_args::walk_args|Item_func_or_sum::walk                                           ## MDEV-36754
 prm.count > 0|SIGABRT|Item_exists_subselect::exists2in_processor|Item_subselect::walk|Item_in_optimizer::walk|Item_args::walk_args                                             ## MDEV-36754
 prm.count > 0|SIGABRT|Item_exists_subselect::exists2in_processor|Item_subselect::walk|Item_in_optimizer::walk|JOIN::optimize_inner                                             ## MDEV-36754
 prm.count > 0|SIGABRT|Item_exists_subselect::exists2in_processor|Item_in_optimizer::walk|JOIN::optimize_inner|JOIN::optimize                                                   ## MDEV-36754
@@ -743,6 +758,7 @@ SIGSEGV|maria_rtree_insert|maria_update|ha_maria::update_row|handler::ha_update_
 SIGSEGV|maria_rtree_insert|maria_update|handler::ha_update_row|mysql_update                                                                                                    ## MDEV-31766
 SIGSEGV|maria_rtree_insert|maria_update|handler::ha_update_row|Sql_cmd_update::update_single_table                                                                             ## MDEV-31766
 SIGSEGV|maria_rtree_split_page|maria_rtree_add_key|maria_rtree_insert_req|maria_rtree_insert_level                                                                             ## MDEV-31766
+got_name == named_item_expected()|SIGABRT|Json_writer::on_start_object|Json_writer::start_object|JOIN::optimize_inner|JOIN::optimize                                           ## MDEV-31752
 got_name == named_item_expected()|SIGABRT|Json_writer::on_start_object|Json_writer::start_object|Json_writer_object::Json_writer_object|Json_writer_object::Json_writer_object ## MDEV-31752
 INNODB_ERROR|Column last_update in table `mysql`.`innodb_table_stats` is BINARY(5) NOT NULL but should be INT UNSIGNED NOT NULL (flags mismatch)                               ## MDEV-31740
 # SIGABRT|my_server_abort|my_abort|ut_dbg_assertion_failed|dict_table_remove_from_cache_low                                                                                      ## MDEV-31740 (MS)
