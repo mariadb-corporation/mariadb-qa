@@ -1,0 +1,33 @@
+#!/bin/bash
+
+if [ "${STY}" == "" ]; then
+  THIS_SCRIPT="$(readlink -f $0)"  # Resolves symlinks, result is the actual script including directory
+  SCREEN_NAME='my_cleanup_script'
+  echo "Not a screen, restarting myself inside a screen"
+  screen -admS "${SCREEN_NAME}" bash -c "while true; do ${THIS_SCRIPT} ${*}; echo '***** MY_CLEANUP_SCRIPT SELF RE-START *****'; done; bash"
+  sleep 1
+  screen -d -r "${SCREEN_NAME}"
+  return 2> /dev/null; exit 0
+fi
+
+while true; do
+  cd /data
+  ./clean_all  # i.e. ca
+  ./del_most_shutdown_issues.sh 
+  ./del_all_fallback_trials.sh
+  ./cleanup_all_trial_data.sh
+  ./del_backtrace_stopped_issues.sh
+  ./del_specific_string_trials.sh 't find record in' 1  # MDEV-34660
+  ./del_specific_string_trials.sh 'Incorrect information in file' 1  # soon no longer needed (now "in frm file", and already kb-covered)
+  ./del_specific_string_trials.sh 'because it already exists.  Please DISCARD' 1
+  ./del_specific_string_trials.sh 'FALLBACK|' 1
+  ./del_specific_string_trials.sh 'INNODB_ERROR|User stopword table does not exist' 1
+  ./del_specific_string_trials.sh 'GOT_FATAL_ERROR|Got fatal error 1236' 1
+  ./del_specific_string_trials.sh 'MARIADBD_ERROR|mariadbd: Got an error writing communication packets' 1
+  ./del_specific_string_trials.sh 'utf8mb3_general1400_as_ci' 1  # Better as next remarked line, safer
+  #./del_specific_string_errorlog_trials.sh '#0.* in my_.*utf8mb3_general1400_as_ci.*strings/strcoll' 1  # May delete trials that have other issues also
+  ./del_specific_string_trials.sh 'get_field_item_for_having' 1  # MDEV-26940 partial stacks
+  ./del_specific_string_trials.sh 'sql/sql_analyse' ## MDEV-28374/MDEV-36300/MDEV-32240 like stacks (PROCEDURE ANALYSE)
+   cat */*/MYBUG | sort -h | uniq -c |  sort -n
+   sleep 2400  # 40 Minutes
+done

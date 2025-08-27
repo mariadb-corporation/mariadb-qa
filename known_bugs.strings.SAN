@@ -7,6 +7,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-ascii.h|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq ## MDEV-37499
+UBSAN|load of null pointer of type 'const char'|strings/ctype-utf8.c|my_strcasecmp_utf8mb3|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access ## MDEV-37499
 MSAN|use-of-uninitialized-value|strings/my_vsnprintf.c|process_dbl_arg|my_vsnprintf_ex|my_vsnprintf|my_snprintf                                                                ## MDEV-37459
 ASAN|use-after-poison|sql/sql_select.cc|JOIN::rollup_make_fields|JOIN::make_sum_func_list|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                    ## MDEV-37422
 UBSAN|addition of unsigned offset to X overflowed to Y|mysys/mf_iocache.c|reinit_io_cache|binlog_cache_data::truncate|binlog_cache_data::restore_prev_position|binlog_truncate_trx_cache ## MDEV-37425
@@ -356,6 +358,7 @@ UBSAN|member access within null pointer of type 'struct SPIDER_FIELD_CHAIN'|stor
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::rnd_init ## MDEV-29018
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::index_init ## MDEV-29018
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|interceptor_malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                             ## MDEV-31271
+LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_add_block|mem_heap_alloc                                                           ## MDEV-31271
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                                         ## MDEV-31271
 LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|interceptor_malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                             ## MDEV-31271
 LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                                         ## MDEV-31271
@@ -456,15 +459,24 @@ UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_get_user_var::val_int|Item_func_substr::fix_length_and_dec ## MDEV-28387
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_get_user_var::val_int|Item_func_substr::get_position ## MDEV-28387
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_substr::fix_length_and_dec|Item_func::fix_fields ## MDEV-28387
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374
 UBSAN|signed integer overflow: X * -Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374
+UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374 (likely)
+UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select  ## MDEV-28374
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select    ## MDEV-28374 (likely)
+UBSAN|signed integer overflow: -X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select   ## MDEV-28374 (likely)
+UBSAN|signed integer overflow: X * -Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select   ## MDEV-28374 (likely)
 UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select  ## MDEV-28374 (likely)
-UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select    ## MDEV-28374 (likely)
-UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select    ## MDEV-28374 (likely)
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select ## MDEV-28374
-UBSAN|signed integer overflow: X + Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374
-UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select               ## MDEV-28374
+UBSAN|signed integer overflow: X * -Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select ## MDEV-28374 (likely)
+UBSAN|signed integer overflow: -X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select ## MDEV-28374 (likely)
+UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|sub_select ## MDEV-28374 (likely)
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select               ## MDEV-28374 (Likely)
+UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select               ## MDEV-28374 (Likely)
+UBSAN|signed integer overflow: X * -Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select               ## MDEV-28374 (Likely)
+UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|do_select               ## MDEV-28374 (Likely)
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|JOIN_CACHE::generate_full_extensions ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc                                                                          ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record      ## MDEV-28374

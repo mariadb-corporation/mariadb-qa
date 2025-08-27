@@ -12,7 +12,7 @@ if [ -r "${SCRIPT_PWD}/../version_chk_helper.source" ]; then
 elif [ -r "${SCRIPT_PWD}/version_chk_helper.source" ]; then
   source "${SCRIPT_PWD}/version_chk_helper.source"
 else
-  echo "Assert: version_chk_helper.sh not found/readable by this script ($0)"
+  echo "Assert: version_chk_helper.source not found/readable by this script ($0)"
   exit 1
 fi
 

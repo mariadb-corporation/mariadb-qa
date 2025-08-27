@@ -6,7 +6,20 @@ WIPE_TMP_ENABLED=0  # /tmp cleaning, generally should NOT be enabled
 FILTER_LARGE_NEWBUG_RUNS=1  # For large-scale newbug verification/reduction runs (normally reducers themselves are not filtered)
 
 # Filter this list of processes from termination  # TODO: may need xargs? (only add if proven to be needed as filter)
-FILTER="uniq_newbugs|large_newbug_run|findbug|bug_report|pquery-results|grep|timeout|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr|clean_all|clean-all|swapoff|swapon|multirun" 
+# Call the version check helper script to set the FILTER var
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
+if [ -r "${SCRIPT_PWD}/mariadb-qa/process_filter.source" ]; then
+  source "${SCRIPT_PWD}/mariadb-qa/process_filter.source"
+elif [ -r "${SCRIPT_PWD}/process_filter.source" ]; then
+  source "${SCRIPT_PWD}/process_filter.source"
+elif [ -r "${HOME}/mariadb-qa/process_filter.source" ]; then
+  source "${HOME}/mariadb-qa/process_filter.source"
+else
+  echo "Assert: process_filter.source not found/readable by this script ($0)"
+  exit 1
+fi
+
+FILTER="uniq_newbugs|large_newbug_run|findbug|bug_report|pquery-results|grep|timeout|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr|afl|clean_all|clean-all|bash|swapoff|swapon|multirun"
 
 update_current_filter_pids(){  # Do not include reducers (reducer123.sh) themselves in this list!
   PR_PID_FILTER=;GE_PID_FILTER=;S_PID_FILTER=;NEWBUG_PID_FILTER=

@@ -155,13 +155,17 @@ if [ -z "${SAN}" ]; then
 fi
 CLANG=0
 CLANG_VERSION=
-if grep -qi 'COMPILER=/[^ ]\+clang' BUILD_CMD_CMAKE 2>/dev/null; then CLANG=1; fi
-if [ ${CLANG} -eq 0 ]; then
+if grep -qi 'COMPILER=/[^ ]\+clang' BUILD_CMD_CMAKE 2>/dev/null; then
+  CLANG=1
+elif [ ! -z "$(nm "${BIN}" 2>/dev/null | grep --binary-files=text -im1 'clang')" ]; then  # i.e. __clang_call_terminate
+  CLANG=1
+fi
+if [ ${CLANG} -eq 1 ]; then
   CLANG_STRING="$(strings "${BIN}" 2>/dev/null | grep --binary-files=text -im1 'clang version')"
   if [ ! -z "${CLANG_STRING}" ]; then CLANG=1; fi
-  CLANG_VERSION=" $(echo "${CLANG_STRING}" | head -n1 | grep -o '[\(\.0-9]\+' | tr -d '\n' | sed 's|(|-|g')"  # Note leading space. Also note that '(1)' is changed to '-1' for ease of reading
+  CLANG_VERSION=" $(echo "${CLANG_STRING}" | head -n1 | grep -o '[\(\.0-9]\+' | tr -d '\n' | sed 's|(|-|g' | sed 's|\([0-9]\+\.[0-9]\+\.[0-9]-........\).*|\1|' )"  # Note leading space. Also note that '(1)' is changed to '-1' for ease of reading. The \1 sed is to take only the data from a long version string when using custom builds
   if [ -z "$(echo "${CLANG_VERSION}" | tr -d ' ')" ]; then CLANG_VERSION=; fi  # Clear if only [leading] space(s)
-fi # Not a SAN build
+fi
 if [ -z "${SAN}" ]; then
   if [ ${CLANG} -eq 1 ]; then
     if [ "${LAST_THREE}" == "opt" ]; then BUILD_TYPE=" (Optimized, Clang${CLANG_VERSION})"; fi

@@ -5,7 +5,7 @@
 # User variables
 MAX_RUNTIME=1200  # In seconds. Default: 1200 (20 minutes). Minimum 180 seconds to avoid conflicts with other timeouts, but such a low setting is not a good idea. Minimum recommended is 900 (15 minutes)
 MAX_DEFUNCT=1140  # In seconds. Default: 1140 (19 minutes). Idem.
-FILTER='grep|build|fireworks|mtr_to_sql|generator.sh|cc|clang|reducer|screen|bash|pge|pquery-go|pquery-run|timeout|mysql-test-run|xargs|cc|clang|addr2line|pquery-clean-kn|cat|cp|tar|file|screen|ds|new_text_string|tmpfs_clean.sh|rm|fallback_text_s|san_text_string|vi|vim'
+FILTER='grep|build|fireworks|mtr_to_sql|generator.sh|cc|clang|reducer|screen|bash|pge|pquery-go|pquery-run|timeout|mysql-test-run|xargs|cc|clang|addr2line|pquery-clean-kn|mtr|afl|cat|cp|tar|file|screen|ds|new_text_string|tmpfs_clean.sh|rm|fallback_text_s|san_text_string|vi|vim'
 
 # Loop through all pquery/mariadbd/mysqld/mariadb/mysqld testing processes and terminate if long-running
 echo "--- Terminating pquery|mariadb|mysql processes which have been live at least ${MAX_RUNTIME} sec"
@@ -30,6 +30,10 @@ ps -eo pid,ppid,etimes,state,comm --no-headers | awk -v m=${MAX_DEFUNCT} '$4 == 
   echo "[${COUNTER}/${COUNT}] Processing <defunct> PID $pid (${comm}) with parent PPID $ppid (${PPID_COMM}) (Age: $etimes sec)"  # Do not log to disk as these messages may loop many times
   if [ "${etimes}" -gt ${MAX_DEFUNCT} -a "${etimes}" != "4123168608" ]; then  # The first condition is defensive coding/not strictly needed as the awk above already guarantees this (but not the second)
     if kill -0 "$ppid" 2>/dev/null; then
+      if [ ! -z "$(echo "${comm}" | grep --binary-files=text -vEi "${FILTER}" | tr -d ' ')" ]; then  # Filter
+        echo "As '${comm}' is protected by filtering, not terminating parent PPID ${ppid} (${PPID_COMM}) of <defunct> PID ${pid}"
+        continue
+      fi
       echo "Terminating parent PPID ${ppid} (${PPID_COMM}) of <defunct> PID ${pid} (${comm}) (Age: ${etimes} sec)" | tee -a /tmp/terminate_long_running.log
       for((l=0;l<3;l++)){
         sudo kill -9 ${ppid} 2>/dev/null

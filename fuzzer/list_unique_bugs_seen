@@ -1,6 +1,10 @@
 #!/bin/bash 
 # Created by Roel Van de Paar, MariaDB
 
+if [ "${PWD}" == "${HOME}/mariadb-qa/fuzzer" ]; then
+  echo "You are likely in the wrong path:  cd ~/fuzzing  and try again"
+  exit 1
+fi
 echo 'Deleting known bugs...'
 ./del_known_bugs
 echo 'Reporting outcomes...'

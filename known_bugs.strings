@@ -155,6 +155,7 @@ INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded 
 INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
 INNODB_ERROR|Operating system error number 13 in a file operation ## SPECIAL-41
 INNODB_ERROR|Operating system error number 17 in a file operation ## SPECIAL-40
+INNODB_ERROR|Operating system error number 20 in a file operation ## MDEV-19849/MDEV-28831/SPECIAL-40
 INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_system_variables             ## MDEV-35197
@@ -242,6 +243,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|my_strcasecmp_utf8mb3|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access                                                            ## MDEV-37499
+name != __null|SIGABRT|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access|check_grant                                                       ## MDEV-37499
+"invalid state" == 0|SIGABRT|innobase_rollback_to_savepoint|ha_rollback_to_savepoint|trans_rollback_to_savepoint|mysql_execute_command                                         ## MDEV-36787
 ptr - null_ptr <= (int)table->s->rec_buff_length|SIGABRT|Field::move_field_offset|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table         ## MDEV-37341
 null_ptr < ptr|SIGABRT|Field::move_field_offset|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table                                           ## MDEV-37341
 null_ptr < ptr|SIGABRT|Field::move_field_offset|Create_tmp_table::finalize|create_tmp_table|multi_update::initialize_tables                                                    ## MDEV-37341
@@ -670,6 +674,7 @@ SIGSEGV|Query_cache::free_query_internal|Query_cache::free_query|Query_cache::in
 !query_cache.is_disable_in_progress()|SIGABRT|fix_query_cache_type|sys_var::update|set_var::update|sql_set_variables                                                           ## MDEV-10826
 thd->get_stmt_da()->is_eof()|SIGABRT|Query_cache::end_of_result|dispatch_command|do_command|do_handle_one_connection                                                           ## MDEV-10826
 !thd->transaction->xid_state.is_explicit_XA() || thd->lex->xa_opt == XA_ONE_PHASE|SIGABRT|ha_commit_trans|rpl_slave_state::truncate_state_table|rpl_slave_state::load|change_master ## MDEV-33155
+!thd->transaction->xid_state.is_explicit_XA() || thd->lex->xa_opt == XA_ONE_PHASE|SIGABRT|ha_commit_trans|trans_commit_stmt|mysql_execute_command|mysql_parse                  ## MDEV-33155
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_stmt_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields_impl|Item_sum_str::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar ## MDEV-33162
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_stmt_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields_impl|Item_sum_str::fix_fields|Item_func_json_arrayagg::fix_fields|Item::fix_fields_if_needed ## MDEV-33162
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_stmt_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed_for_scalar|setup_fields|JOIN::prepare ## MDEV-33162
@@ -1535,6 +1540,7 @@ SIGSEGV|set_field_to_null_with_conversions|Item::save_in_field|Item_result_field
 0|SIGABRT|Item_sum_hybrid_simple::create_tmp_field|Item_sum::create_tmp_field_ex|create_tmp_field|Create_tmp_table::add_fields                                                 ## MDEV-22814
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_delete|mysql_execute_command                                         ## MDEV-22783
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner     ## MDEV-22783
+SIGABRT|Type_handler_composite::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|JOIN::transform_in_predicates_into_in_subq ## MDEV-22716
 0|SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                          ## MDEV-22716
 SIGABRT|Type_handler_composite::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                      ## MDEV-22716
 SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Item_func_in::in_predicate_to_in_subs_transformer|Item_func::transform                            ## MDEV-22716

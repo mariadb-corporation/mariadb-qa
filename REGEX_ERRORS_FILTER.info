@@ -9,7 +9,7 @@ Note: While unlikely to ever happen, REGEX_ERRORS_FILTER should never be fully e
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
 Internal MariaDB error code: 1046|Internal MariaDB error code: 1054|Internal MariaDB error code: 1064|Internal MariaDB error code: 1193|Internal MariaDB error code: 1231|Internal MariaDB error code: 1237  Ref 'kb' for info on these (temporary slave_init error coverage)
-mariadbd: Got an error writing communication packets  Regularly seen after shutdown, possible related to OOS or similar
+Got an error writing communication packets            Regularly seen after shutdown, possible related to OOS or similar
 mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL MDEV-37339
 mariadbd: caching_sha2_password: failed to read private_key.pem.*No such file or directory MDEV-37339
 ERROR. mariadbd: Can.t find record in                 MDEV-37068 (Vector), MDEV-33563 (replication)  # Filter not activated; find additional testcases
@@ -22,7 +22,10 @@ Warning. InnoDB: Recalculation of persistent statistics requested for table.*but
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurrences
 ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Error number 2 means.*file.*or dir     MDEV-19849 or similar occurrences
-ERROR. InnoDB: Error number 17 means.*[Ff]ile exists  SPECIAL-40 or similar occurrences
+errno: 168 .Unknown .generic. error from engine       MDEV-19849/MDEV-28831/SPECIAL-40
+ERROR. InnoDB: Operating system error number 20 in a file operation  MDEV-19849/MDEV-28831/SPECIAL-40
+ERROR. InnoDB: Error number 20 means .Not a directory  MDEV-19849/MDEV-28831/SPECIAL-40
+ERROR. InnoDB: Error number 17 means.*[Ff]ile exists  SPECIAL-40,MDEV-28831,MDEV-19849 or similar occurrences
 ERROR. InnoDB: Cannot create file .*\.ibd             SPECIAL-40 or similar occurrences
 ERROR. InnoDB: Cannot rename file .* to               MDEV-19849 or similar occurrences
 ERROR. InnoDB: Operating sys.*error.* 2 in a file op  MDEV-19849 or similar occurrences
@@ -178,7 +181,6 @@ max-thread-mem-used=                                  Presumed non-issue (max-th
 ^Stats:                                               Prevents incorrect last line 'alloc' captures in ASAN output
 Deleting the meta-data file                           Normal result of FLUSH TABLE WITH READ LOCK, also see MDEV-28110
 lock_rec_fr.*all.*discard.*ge_low.*set_bit.*ulint.*1  MDEV-21516
-#errno: 168 .Unknown .generic. error from engine.     (Not filtered) MDEV-28831
 Invalid .old.. table or database name                 MDEV-29051
 Incorrect information in file: ...sys                 Usually not due to bugs but due to /sys/ modifications
 Incorrect information in file: ...sys                 MDEV-26297 (tmp-disk-table-size issue)

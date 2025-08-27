@@ -7,8 +7,9 @@ else
   export GAL_RUN=""
 fi
 
-BASEDIR=/test/AFL-MD060525-mariadb-11.8.1-linux-x86_64-dbg_checker
+#BASEDIR=/test/AFL-MD060525-mariadb-11.8.1-linux-x86_64-dbg_checker
 #BASEDIR=/test/AFL-ASAN-MD171222-mariadb-10.11.2-linux-x86_64
+BASEDIR=/test/UBASAN_MD220825-mariadb-12.1.2-linux-x86_64-dbg
 LOOP_SCRIPT=1  # Set to 1 to keep looping (handy when fuzzers are running)
 
 cd ${HOME}/fuzzing
