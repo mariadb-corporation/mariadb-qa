@@ -247,6 +247,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 SIGSEGV|my_strcasecmp_utf8mb3|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access                                                            ## MDEV-37499
 name != __null|SIGABRT|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access|check_grant                                                       ## MDEV-37499
 "invalid state" == 0|SIGABRT|innobase_rollback_to_savepoint|ha_rollback_to_savepoint|trans_rollback_to_savepoint|mysql_execute_command                                         ## MDEV-36787
+SIGSEGV|Json_writer_object::add|sel_arg_and_weight_heuristic|key_and|key_and_with_limit                                                                                        ## MDEV-37510
+((hash)->blength != 0)|SIGABRT|my_hash_first|name_hash_search|table_hash_search|fill_effective_table_privileges                                                                ## MDEV-37506
+((hash)->blength != 0)|SIGABRT|my_hash_first|name_hash_search|table_hash_search|st_grant_info::read                                                                            ## MDEV-37506
+SIGSEGV|my_hash_first|name_hash_search|table_hash_search|fill_effective_table_privileges                                                                                       ## MDEV-37506
+SIGSEGV|my_hash_first|name_hash_search|table_hash_search|st_grant_info::read                                                                                                   ## MDEV-37506
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Query_arena::calloc<Item*>|st_select_lex::setup_ref_array|JOIN::prepare                                                          ## MDEV-37491
 rights == merged->cols|SIGABRT|update_role_columns|update_role_table_columns|merge_role_table_and_column_privileges|merge_role_privileges                                      ## MDEV-37490
 SIGSEGV|get_param_default_value|store_schema_params|fill_schema_proc|get_schema_tables_result                                                                                  ## MDEV-37489
