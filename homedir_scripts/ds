@@ -5,8 +5,8 @@
 WIPE_TMP_ENABLED=0  # /tmp cleaning, generally should NOT be enabled
 FILTER_LARGE_NEWBUG_RUNS=1  # For large-scale newbug verification/reduction runs (normally reducers themselves are not filtered)
 
-# Filter this list of processes from termination  # TODO: may need xargs? (only add if proven to be needed as filter)
-# Call the version check helper script to set the FILTER var
+# Filter this list of processes from termination
+# Call the process filter helper script to set the FILTER var
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 if [ -r "${SCRIPT_PWD}/mariadb-qa/process_filter.source" ]; then
   source "${SCRIPT_PWD}/mariadb-qa/process_filter.source"
@@ -18,8 +18,6 @@ else
   echo "Assert: process_filter.source not found/readable by this script ($0)"
   exit 1
 fi
-
-FILTER="uniq_newbugs|large_newbug_run|findbug|bug_report|pquery-results|grep|timeout|build|fireworks|cc|clang|perl|mtr_to_sql|generator.sh|mysql-test-run|mtr|afl|clean_all|clean-all|bash|swapoff|swapon|multirun"
 
 update_current_filter_pids(){  # Do not include reducers (reducer123.sh) themselves in this list!
   PR_PID_FILTER=;GE_PID_FILTER=;S_PID_FILTER=;NEWBUG_PID_FILTER=
@@ -33,8 +31,10 @@ update_current_filter_pids(){  # Do not include reducers (reducer123.sh) themsel
   if [ "${FILTER_LARGE_NEWBUG_RUNS}" -eq 1 ]; then
     NEWBUG_PID_FILTER="$(ps -ef | grep 'newbug.*reducer.sh' | awk '{print $2}' | sort -u | sed 's|\..*||' | grep -o '[0-9]\+' | tr '\n' '|')"
   fi
-  COMBINED_PID_FILTER="$(echo "${PR_PID_FILTER}${GE_PID_FILTER}${S_PID_FILTER}${NEWBUG_PID_FILTER}" | sed 's/|[|]\+/|/g;s/|$//;s/^|//')"
-  PR_PID_FILTER=;GE_PID_FILTER=;S_PID_FILTER=;NEWBUG_PID_FILTER=
+  # docker/fuzz/afl filter
+  D_PID_FILTER="$(ps -ef | grep -E 'docker|mysql/mariadb|fuzz|afl' | awk '{print $2}' | sort -u | sed 's|\..*||' | grep -o '[0-9]\+' | tr '\n' '|')"
+  COMBINED_PID_FILTER="$(echo "${PR_PID_FILTER}${GE_PID_FILTER}${S_PID_FILTER}${NEWBUG_PID_FILTER}${D_PID_FILTER}" | sed 's/|[|]\+/|/g;s/|$//;s/^|//')"
+  PR_PID_FILTER=;GE_PID_FILTER=;S_PID_FILTER=;NEWBUG_PID_FILTER=;D_PID_FILTER=
 }
 
 if [ "${STY}" == "" -o "${1}" == "RUNONCE" ]; then
@@ -106,7 +106,7 @@ while :; do
       CURPWD="${PWD}"
       cd /home/$(whoami)/fuzzing
       if [ -r ./list_unique_bugs_seen ]; then
-        FUZZERBUGCOUNT="$(./list_unique_bugs_seen 2>/dev/null | wc -l)"
+        FUZZERBUGCOUNT="$(./list_unique_bugs_seen 2>/dev/null | wc -l)"  # Includes the cleanup
       fi
       cd "${CURPWD}"
     fi

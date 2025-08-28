@@ -5,7 +5,20 @@
 # User variables
 MAX_RUNTIME=1200  # In seconds. Default: 1200 (20 minutes). Minimum 180 seconds to avoid conflicts with other timeouts, but such a low setting is not a good idea. Minimum recommended is 900 (15 minutes)
 MAX_DEFUNCT=1140  # In seconds. Default: 1140 (19 minutes). Idem.
-FILTER='grep|build|fireworks|mtr_to_sql|generator.sh|cc|clang|reducer|screen|bash|pge|pquery-go|pquery-run|timeout|mysql-test-run|xargs|cc|clang|addr2line|pquery-clean-kn|mtr|afl|cat|cp|tar|file|screen|ds|new_text_string|tmpfs_clean.sh|rm|fallback_text_s|san_text_string|vi|vim'
+
+# Filter this list of processes from termination
+# Call the process filter helper script to set the FILTER var
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
+if [ -r "${SCRIPT_PWD}/mariadb-qa/process_filter.source" ]; then
+  source "${SCRIPT_PWD}/mariadb-qa/process_filter.source"
+elif [ -r "${SCRIPT_PWD}/process_filter.source" ]; then
+  source "${SCRIPT_PWD}/process_filter.source"
+elif [ -r "${HOME}/mariadb-qa/process_filter.source" ]; then
+  source "${HOME}/mariadb-qa/process_filter.source"
+else
+  echo "Assert: process_filter.source not found/readable by this script ($0)"
+  exit 1
+fi
 
 # Loop through all pquery/mariadbd/mysqld/mariadb/mysqld testing processes and terminate if long-running
 echo "--- Terminating pquery|mariadb|mysql processes which have been live at least ${MAX_RUNTIME} sec"

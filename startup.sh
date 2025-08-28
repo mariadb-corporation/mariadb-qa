@@ -571,7 +571,8 @@ if [ -d "${MTR_DIR}" ]; then
   sed -i 's^ ./mysql-test-run^ ./mysql-test-run --mysqld=--slave_skip_errors=ALL^' ${MTR_DIR}/loop_mtr_multi_skip_slave_err
 fi
 MTR_DIR=
-echo 'MYEXTRA_OPT="$*"' >start
+echo '#!/bin/bash' >start
+echo 'MYEXTRA_OPT="$*"' >>start
 echo 'MYEXTRA=" --no-defaults --max_connections=10000 "' >>start
 echo '#MYEXTRA=" --no-defaults --ssl=0 "' >>start
 echo '#MYEXTRA=" --no-defaults --sql_mode= "' >>start
@@ -631,14 +632,15 @@ chmod +x smalltmp
 # TODO: fix the line below somehow, and add binary-files=text for all greps. Also revert redirect to >> for second line
 #echo "set +H" > kill  # Fails with odd './kill: 1: set: Illegal option -H' when kill_all is used?
 echo "ps -ef | grep \"\$(whoami)\" | grep \"\$(dirname \$(readlink -f \"\${0}\"))/log/master.err\" | grep -v grep | awk '{print \$2}' | xargs kill -9 2>/dev/null" >kill
-touch stop
+echo '#!/bin/bash' >stop
 add_san_options stop
 echo "timeout -k90 -s9 90s ${MYSQLADMIN_TO_USE} -uroot -S${SOCKET} shutdown" >>stop # 90 seconds to allow core dump to be written if needed (seems ~60 is the minimum for busy high-end severs)
 echo "./kill >/dev/null 2>&1" >>stop
 echo "echo 'Server on socket ${SOCKET} with datadir ${PWD}/data halted'" >>stop
 echo "./init;./start;./cl;./stop;./kill >/dev/null 2>&1;tail log/master.err" >setup
 
-echo 'MYEXTRA_OPT="$*"' >wipe
+echo '#!/bin/bash' >wipe
+echo 'MYEXTRA_OPT="$*"' >>wipe
 add_san_options wipe
 echo "./stop >/dev/null 2>&1" >>wipe
 echo "rm -Rf ${PWD}/data ${PWD}/tmp ${PWD}/rr" >>wipe
@@ -903,7 +905,7 @@ BINMODE=
 if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" ]; then
   BINMODE="--binary-mode " # Leave trailing space
 fi
-touch cl
+echo '#!/bin/bash' >cl
 add_san_options cl
 if [ -r "${PWD}/bin/mariadb" ]; then
   echo "${PWD}/bin/mariadb -A -uroot -S${SOCKET} --force --prompt=\"\$(${PWD}/bin/mariadbd --version | grep -o 'Ver [\\.0-9]\\+' | sed 's|[^\\.0-9]*||')\$(if [ \"\$(pwd | grep -o '...$' | sed 's|[do][bp][gt]|aaa|')\" == \"aaa\" ]; then echo \"-\$(pwd | grep -o '...$')\"; fi)>\" ${BINMODE}test" >>cl
@@ -1173,9 +1175,12 @@ else
   echo "CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_PORT=00000, MASTER_USER='repl_user', MASTER_PASSWORD='repl_pass', MASTER_USE_GTID=slave_pos ;" >slave_setup.sql  # The 00000 is a dummy entry, and any number will be replaced by start_master to the actual port in slave_setup.sql at master startup time
 fi
 echo "START SLAVE;" >>slave_setup.sql
-echo './stop_slave; ./stop' >stop_replication
-echo './kill_slave; ./kill' >kill_replication
-echo 'MYEXTRA_OPT="$*"' >start_replication
+echo '#!/bin/bash' >stop_replication
+echo './stop_slave; ./stop' >>stop_replication
+echo '#!/bin/bash' >kill_replication
+echo './kill_slave; ./kill' >>kill_replication
+echo '#!/bin/bash' >start_replication
+echo 'MYEXTRA_OPT="$*"' >>start_replication
 echo './kill_replication >/dev/null 2>&1' >>start_replication
 echo 'rm -f socket.sock socket.sock.lock socket_slave.sock socket_slave.sock.lock; sync' >>start_replication
 echo './wipe ${MYEXTRA_OPT}' >>start_replication
@@ -1193,7 +1198,8 @@ rm -f sysbench_lua* MENT-1905*
 if [ -r "${SCRIPT_PWD}/replication_xa_sysbench_1.lua" ]; then cp ${SCRIPT_PWD}/replication_xa_sysbench_1.lua .; fi
 if [ -r "${SCRIPT_PWD}/replication_xa_sysbench_2.lua" ]; then cp ${SCRIPT_PWD}/replication_xa_sysbench_2.lua .; fi
 if [ -r "${SCRIPT_PWD}/replication_xa_sysbench_3.lua" ]; then cp ${SCRIPT_PWD}/replication_xa_sysbench_3.lua .; fi
-echo '# MENT-1905/MDEV-31949 lua replication XA testing, also handy for other sysbench/XA/replication tests' >sysbench_lua_1
+echo 'MYEXTRA_OPT="$*"' >sysbench_lua_1
+echo '# MENT-1905/MDEV-31949 lua replication XA testing, also handy for other sysbench/XA/replication tests' >>sysbench_lua_1
 echo 'sed -i "s|#ALTER TABLE mysql.gtid_slave_pos|ALTER TABLE mysql.gtid_slave_pos|" master_setup.sql' >>sysbench_lua_1
 echo 'sed -i "s|^MYEXTRA|#MYEXTRA|" start_slave  # Disable the common MYEXTRA' >>sysbench_lua_1
 echo 'sed -i "0,/MYEXTRA=.*slave-parallel-threads/{s|.*\(MYEXTRA=.*slave-parallel-threads.*\)|\1|}" start_slave  # Enable the first slave-parallel-threads MYEXTRA' >>sysbench_lua_1
