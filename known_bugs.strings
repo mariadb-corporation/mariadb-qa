@@ -161,6 +161,7 @@ MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_syst
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at sql/sql_acl.cc                             ## MDEV-34501 (ES)
 MARIADBD_ERROR|mariadbd: innodb_buffer_pool_size change aborted                                          ## MDEV-37149
+GOT_ERROR|Got error 146|when reading table                                                               ## MDEV-37523
 
 ##### Slave errors
 SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346
