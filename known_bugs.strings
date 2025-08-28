@@ -1374,7 +1374,6 @@ thd|SIGABRT|wsrep_innobase_kill_one_trx|wsrep_kill_victim|lock_table_other_has_i
 transaction_.active() == false || (transaction_.state() == wsrep::transaction::s_executing || transaction_.state() == wsrep::transaction::s_prepared || transaction_.state() == wsrep::transaction::s_aborted || transaction_.state() == wsrep::transaction::s_must_abort)|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command ## MENT-1139
 SIGSEGV|wsrep_can_run_in_toi|wsrep_can_run_in_nbo|wsrep_NBO_begin|wsrep_to_isolation_begin                                                                                     ## MENT-1134
 SIGABRT|__cxa_rethrow () from|galera::WriteSetOut::gather|galera::TrxHandleMaster::gather|galera::ReplicatorSMM::replicate                                                     ## MDEV-25025
-m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                         ## MDEV-24960
 ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit                                  ## MENT-1119
 ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare                               ## MENT-1119
 server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare ## MENT-1117/MENT-1282
@@ -3155,3 +3154,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen                                                                ## Fixed ## MDEV-37263
 # SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_pool_t::page_fix                                                            ## Fixed ## MDEV-37263
 # MARIADBD_ERROR|mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL                                                                              ## Fixed ## MDEV-37339
+# m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step              ## Fixed ## MDEV-24960
