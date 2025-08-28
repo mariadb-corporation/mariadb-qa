@@ -242,6 +242,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!rec_get_deleted_flag(((btr_cur)->page_cur.rec), (index->table)->not_redundant())|SIGABRT|row_upd_clust_rec|row_upd_clust_step|row_upd|row_upd_step                            ## MDEV-37473
 SIGSEGV|Json_writer_object::add|sel_arg_and_weight_heuristic|key_and|key_and_with_limit                                                                                        ## MDEV-37510
 ((hash)->blength != 0)|SIGABRT|my_hash_first|name_hash_search|table_hash_search|fill_effective_table_privileges                                                                ## MDEV-37506
 SIGSEGV|my_hash_first|name_hash_search|table_hash_search|fill_effective_table_privileges                                                                                       ## MDEV-37506
