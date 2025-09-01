@@ -74,13 +74,19 @@ elif (( $(echo "$GCC_VER < 4.9" |bc -l) )); then
   exit 1
 fi
 
+# Even if the items below are resolved/outdated over time, please always leave them, as older revisions will still
+# require these to be in place, to be able to build (think for example about git-bisect using older revisions)
 # Fix columstore bug https://jira.mariadb.org/browse/MCOL-6004
 if [ -r storage/columnstore/columnstore/CMakeLists.txt ]; then
   sed -i 's|CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' storage/columnstore/columnstore/CMakeLists.txt
 fi
-# Fix blackbox bug in ES 10.5/10.6 (ES 11.4+ has 3.12, and not present in CS)
+# Fix blackbox bug in ES 10.5/10.6 (ES 11.4+ has 3.12, and not present in CS) https://jira.mariadb.org/browse/MENT-2383
 if [ -r blackbox/CMakeLists.txt ]; then
   sed -i 's|CMAKE_MINIMUM_REQUIRED(VERSION 2.8)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' blackbox/CMakeLists.txt blackbox/src/CMakeLists.txt
+fi
+# Fix WSREP wsrep-lib/CMakeLists.txt 2.8 (not present anymore in later revisions)
+if [ -r wsrep-lib/CMakeLists.txt ]; then
+  sed -i 's|cmake_minimum_required (VERSION 2.8)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' wsrep-lib/CMakeLists.txt
 fi
 
 # Check RocksDB storage engine.

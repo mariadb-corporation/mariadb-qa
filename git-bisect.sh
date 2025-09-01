@@ -4,7 +4,7 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=10.11                                                        # Use the earliest major version affected by the bug
+VERSION=12.1                                                        # Use the earliest major version affected by the bug
 ES=0                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
 SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
@@ -14,9 +14,12 @@ UPDATETREE=1                                                        # Set to 1 t
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
-#  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.i
+#  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
 LAST_KNOWN_GOOD_COMMIT='2147951560c013fc084c4c06dcf8e09ec403dd9f'   # Revision of last known good commit
 FIRST_KNOWN_BAD_COMMIT='c45a34b2fb10e4e8f768e7e5fe846e9592eb6ea8'   # Revision of first known bad commit
+# To obtain the first commit for a given branch/version, for example for 12.1, after full checkout of 12.1, use: 
+# $ git log origin/12.0..12.1 --oneline | tail -1
+# 72b666b837eb16819f8f3de3e739a582dbbf4b53  # This is the first 12.1 commit
 TESTCASE='/test/in29.sql'                                           # The testcase to be tested
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
