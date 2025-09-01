@@ -420,6 +420,7 @@ cat "${1}" | tr -d '`' | \
        s|exp *(|EXP(|gi; \
        s|bin *(|BIN(|gi; \
        s|lead *(|LEAD(|gi; \
+       s|exists *(|EXISTS(|gi; \
        s|repeat *(|REPEAT(|gi; \
        s|extract *(|EXTRACT(|gi; \
        s|date_add *(|DATE_ADD(|gi; \
@@ -522,6 +523,7 @@ cat "${1}" | tr -d '`' | \
        s|utc_timestamp|UTC_TIMESTAMP|gi; \
        s|from_unixtime|FROM_UNIXTIME|gi; \
        s|remote_table|REMOTE_TABLE|gi; \
+       s|high_priority|HIGH_PRIORITY|gi; \
        s|rownum|ROWNUM|gi; \
        s|monitoring_kind|MONITORING_KIND|gi; \
        s|spider_ignore_comments|SPIDER_IGNORE_COMMENTS|gi; \

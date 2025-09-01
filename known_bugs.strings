@@ -244,6 +244,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Exec_time_tracker::get_loops|Filesort_tracker::report_use|filesort|create_sort_index                                                                                   ## MDEV-32307
 builtin_select.first_inner_unit() == __null|SIGABRT|LEX::insert_select_hack|LEX::parsed_insert_select|MYSQLparse|parse_sql                                                     ## MDEV-36369
 a == &type_handler_row || a == &type_handler_null|SIGABRT|Type_collection_row::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Predicant_to_list_comparator::add_value ## MDEV-37534
 0|SIGABRT|Item_contextually_typed_value_specification::type_handler|Item::get_cache|mysql_insert|mysql_execute_command                                                         ## MDEV-37516

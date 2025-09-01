@@ -11,7 +11,7 @@ sudo bash -c "echo -1000 > /proc/$MYPID/oom_score_adj" || {
 
 # User variables
 DS_RUNONCE_EVERY=23  # Run ${HOME}/ds once every x loops, if present (run ~/mariadb-qa/linkit to install it if not). Set to 0 to disable ds being called
-KILL_PERCENT=7       # For example: 4: All processes using >=4% of memory will be killed
+KILL_PERCENT=8       # For example: 4: All processes using >=4% of memory will be killed
 
 # Filter this list of processes from termination
 # Call the process filter helper script to set the FILTER var

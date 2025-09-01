@@ -4,7 +4,7 @@
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
 
 # User variables
-VERSION=12.1                                                        # Use the earliest major version affected by the bug
+VERSION=12.0                                                        # Use the earliest major version affected by the bug
 ES=0                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
 SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
@@ -15,16 +15,19 @@ BISECT_REPLAY=0                                                     # Set to 1 t
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
-LAST_KNOWN_GOOD_COMMIT='2147951560c013fc084c4c06dcf8e09ec403dd9f'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='c45a34b2fb10e4e8f768e7e5fe846e9592eb6ea8'   # Revision of first known bad commit
-# To obtain the first commit for a given branch/version, for example for 12.1, after full checkout of 12.1, use: 
-# $ git log origin/12.0..12.1 --oneline | tail -1
+LAST_KNOWN_GOOD_COMMIT='c92add291e636c797e6d6ddca605905541b2a441'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='aab83aecdca15738d114cf5a2f223f1d12e4e6bd'  # Revision of first known bad commit
+# To obtain the first commit for a given branch/version, some examples (after full branch checkouts): 
+# /test/git-bisect/12.1 $ git log origin/12.0..12.1 --oneline | tail -1
 # 72b666b837eb16819f8f3de3e739a582dbbf4b53  # This is the first 12.1 commit
-TESTCASE='/test/in29.sql'                                           # The testcase to be tested
+# /test/git-bisect/12.0 $ git log origin/11.8..12.0 --oneline | tail -1
+# c92add291e636c797e6d6ddca605905541b2a441  # This is the first 12.0 commit
+# Use git checkout --recurse-submodules --force c92add291e636c797e6d6ddca605905541b2a441 to obtain this
+TESTCASE='/test/in30.sql'                                           # The testcase to be tested
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID='node->pcur->rel_pos == BTR_PCUR_ON|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::update_row|handler::ha_update_row'                                                         # The UniqueID to scan for [Exclusive]
+UNIQUEID='a == &type_handler_row || a == &type_handler_null|SIGABRT|Type_collection_row::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Predicant_to_list_comparator::add_value'                                                         # The UniqueID to scan for [Exclusive]
 TEXT=''                                                             # The string to scan for in the error log [Exclusive]
 # [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
 # And, leave both UNIQUEID and TEXT empty to scan for core files instead
@@ -105,14 +108,14 @@ fi
 if [ "${RECLONE}" -eq 1 ]; then
   if [ "${ES}" -eq 1 ]; then
     rm -Rf "${VERSION}"
-    git clone --recurse-submodules -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # We clone the ES branch into ./${VERSION} for simplicity in later handling
+    git clone --recurse-submodules --force -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # We clone the ES branch into ./${VERSION} for simplicity in later handling
     cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
   else
     rm -Rf "${VERSION}"
     if [ "${VERSION}" == "12.0" ]; then  # Update as trunk changes to a new version 
-      git clone --recurse-submodules -j20 https://github.com/MariaDB/server.git "${VERSION}"
+      git clone --recurse-submodules --force -j20 https://github.com/MariaDB/server.git "${VERSION}"
     else
-      git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
+      git clone --recurse-submodules --force -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
     fi
     cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
   fi
@@ -121,10 +124,10 @@ else
     cd "${VERSION}" || die 1 "While version ${VERSION} directory existed, this script could not change directory to it"
   else  # RECLONE=0 but we do not have the directory in any case; clone it
     if [ "${ES}" -eq 1 ]; then
-      git clone --recurse-submodules -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # Idem as above
+      git clone --recurse-submodules --force -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # Idem as above
       cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
     else
-      git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
+      git clone --recurse-submodules --force -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
       cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
     fi
   fi
@@ -182,22 +185,22 @@ if [ "${?}" != "0" ]; then
 fi
 # Ensure we have the right version
 if [ "${ES}" == "1" ]; then
-  git checkout --force --recurse-submodules "${VERSION}-enterprise" | tee -a "${MAINLOG}"
+  git checkout --recurse-submodules --force "${VERSION}-enterprise" | tee -a "${MAINLOG}"
   if [ "${?}" != "0" ]; then
-    echo "Assert: git checkout --force --recurse-submodules '${VERSION}-enterprise' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
+    echo "Assert: git checkout --recurse-submodules --force '${VERSION}-enterprise' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
     exit 1
   fi
 else
-  git checkout --force --recurse-submodules "${VERSION}" | tee -a "${MAINLOG}"
+  git checkout --recurse-submodules --force "${VERSION}" | tee -a "${MAINLOG}"
   if [ "${?}" != "0" ]; then
-    echo "Assert: git checkout --force --recurse-submodules '${VERSION}' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
+    echo "Assert: git checkout --recurse-submodules --force '${VERSION}' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
     exit 1
   fi
 fi
 if [ "${UPDATETREE}" -eq 1 ]; then
-  git pull --recurse-submodules | tee -a "${MAINLOG}"  # Ensure we have the latest version
+  git pull --recurse-submodules --force | tee -a "${MAINLOG}"  # Ensure we have the latest version
   if [ "${?}" != "0" ]; then
-    echo "Assert: git pull --recurse-submodules failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
+    echo "Assert: git pull --recurse-submodules --force failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
     exit 1
   fi
 fi

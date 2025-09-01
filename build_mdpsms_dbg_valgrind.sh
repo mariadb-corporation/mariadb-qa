@@ -66,9 +66,9 @@ fi
 if [ -r blackbox/CMakeLists.txt ]; then
   sed -i 's|CMAKE_MINIMUM_REQUIRED(VERSION 2.8)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' blackbox/CMakeLists.txt blackbox/src/CMakeLists.txt
 fi
-# Fix WSREP wsrep-lib/CMakeLists.txt 2.8 (not present anymore in later revisions)
+# Fix WSREP wsrep-lib/CMakeLists.txt with (VERSION 2.8)/(VERSION 2.8...4.0) (not present anymore in later revisions)
 if [ -r wsrep-lib/CMakeLists.txt ]; then
-  sed -i 's|cmake_minimum_required (VERSION 2.8)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' wsrep-lib/CMakeLists.txt
+  sed -i 's|cmake_minimum_required (VERSION 2.8.*|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' wsrep-lib/CMakeLists.txt
 fi
 
 # Check RocksDB storage engine.
