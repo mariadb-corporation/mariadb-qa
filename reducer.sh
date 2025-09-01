@@ -3306,6 +3306,7 @@ cleanup_and_save(){
     grep -E --binary-files=text -v "^# mysqld options required for replay:" $WORKT > $WORKO
     MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|sql_mode=\([^ ]\)|sql_mode= \1|g;s|[ \t]\+| |g")
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
+      # Note that a `sed -i "1 i\# ...` like insert will only work if the file contains at least one line (should be fine here? TODO: check)
       if [ -s $WORKO ]; then
         if [ "${MYINIT}" == "" ]; then
           sed -i "1 i\# mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED" $WORKO

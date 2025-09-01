@@ -10,21 +10,26 @@ if [ "${PWD}" != "${HOME}/fuzzing" ]; then
   fi
 fi
 
-# Note: for TOTA, NOCORE|string|report are excluded as we are working on file level here: think (fictive example):
-# testcase.sql vs testcase.sql.NOCORE for example; you do not want to count both files, only the former
+# TODO: hangs processing (ref output_*/hangs directories)
 
+echo 'Deleting known bugs...'
+./del_known_bugs
 echo 'Processing, this may take a minute...'
-DONE=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'string|NOCORE' | wc -l)   # already done
-TOTA=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -vE 'NOCORE|string|report' | wc -l)  # all testcases
-NOCO=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'NOCORE' | wc -l)          # no core
-REPR=$(find . | grep 'id:.*SQL fuzz' | grep 'crashes' | grep -E 'report' | wc -l)          # completed reports
+TOTA=$(find . | grep 'crashes.*sig:' | grep -v 'pos:[0-9]\+\.' | wc -l)  # all testcases (i.e. total of all files w/o any .ext)
+DONE=$(find . | grep 'crashes.*sig:' | grep '\.string$' | wc -l)      # already done
+NOCO=$(find . | grep 'crashes.*sig:' | grep '\.NOCORE$' | wc -l)      # no core
+REPR=$(find . | grep 'crashes.*sig:' | grep '\.report$' | wc -l)      # completed reports
 BCNT=$(find . | grep '\.string' | xargs -I{} cat {} | sort -u | wc -l)
+BCNF=$(find . | grep '\.string' | xargs -I{} cat {} | sort -u | grep -v 'FALLBACK' | wc -l)
 
-echo "Already done (crashes): ${DONE}"
-echo "Still to do testcase:   $[ ${TOTA} - ${DONE} ]"
-echo "Total testcases:        ${TOTA}"
-echo "NOCORE testcases:       ${NOCO}  (Re-run these against the actual build used if you did not use the same build)"
-echo "Completed reports:      ${REPR}"
-echo "Unique bugs seen:       ${BCNT}  (Notei: count may differ from ./list_unique_bugs_seen as that one filters known bugs)""
+echo ""
+echo "Total testcases:          ${TOTA}"
+echo "Already done:             ${DONE}"
+echo "Still to do testcase:     $[ ${TOTA} - ${DONE} ]"
+echo "NOCORE testcases:         ${NOCO}  (Re-run these against the actual build used if you did not use the same build)"
+echo "Completed reports:        ${REPR}"
+echo "Unique bugs seen:         ${BCNT}"
+echo "Unique bugs seen w/o FB:  ${BCNF} (without FALLBACK)"
+echo ""
 echo "Note: crashes with duplicate UniqueID's are automatically deleted, so the 'Already done' number is skewed."
 echo "Note: ./newbugs/ (new bugs found by reducer while reducing) are included in these statistics."

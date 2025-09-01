@@ -114,8 +114,8 @@ while :; do
     sudo bash -c "$(which echo) 3 > /proc/sys/vm/drop_caches" &
     # Terminate subreducers which have been active for 1h+. It is unlikely that any subreducer will take that long to run
     update_current_filter_pids
-    #ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vE '${FILTER}'" | xargs -I{} bash -c "{}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time
-    ps -ef | grep 'subreducer' | grep -vE "${FILTER}" | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command,pid | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] |[0-9]-[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' | awk '{print $4}' | grep -o '^[0-9]\+' | grep -vE "${COMBINED_PID_FILTER}" | xargs -I{} kill -9 {}  # Improved (works better + less resources used) command. Ref comment on remarked line above for more info
+    #ps -ef | grep 'subreducer' | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] ' | awk '{print $3}' | xargs -I{} echo "ps -ef | grep '{}' | grep -vEi '${FILTER}'" | xargs -I{} bash -c "{}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs -I{} kill -9 {}  # Expensive command. However, this can eleminate many GB of memory when subreducers are stuck for a long time
+    ps -ef | grep 'subreducer' | grep -vEi "${FILTER}" | awk '{print $2}' | xargs -I{} ps -p "{}" -o etime,command,pid | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] |[0-9]-[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' | awk '{print $4}' | grep -o '^[0-9]\+' | grep -vE "${COMBINED_PID_FILTER}" | xargs -I{} kill -9 {}  # Improved (works better + less resources used) command. Ref comment on remarked line above for more info
     # RV-05/02/22 increased frequency of ~/mariadb-qa/tmpfs_clean.sh from 60 rounds to 10 rounds, and starting process as background process. Improved ~/mariadb-qa/tmpfs_clean.sh to self-terminate if it is running already
     ~/mariadb-qa/tmpfs_clean.sh 1 SILENT &
     if [ -r /data/NEWBUGS/mv_index_corrupted ]; then  # Move similar index corruptions into their own subdirectory
@@ -136,7 +136,7 @@ while :; do
           cp ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log ~/terminated_${ANY_SINGLE_LARGE_REDUCER_DIR}_reducer.log
           # Terminate instance
           update_current_filter_pids
-          grep -m1 'Init.*Reducer' ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log | sed 's|.*reducer|reducer|;s| .*||' | xargs -I{} echo "ps -ef | grep {}" | xargs -I{} bash -c "{}" | grep -vE "${FILTER}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs -I{} kill -9 {}
+          grep -m1 'Init.*Reducer' ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log | sed 's|.*reducer|reducer|;s| .*||' | xargs -I{} echo "ps -ef | grep {}" | xargs -I{} bash -c "{}" | grep -vEi "${FILTER}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs -I{} kill -9 {}
           # Check for continued dir presence and cleanup
           if [ -d ${ANY_SINGLE_LARGE_REDUCER_DIR} ]; then rm -Rf ${ANY_SINGLE_LARGE_REDUCER_DIR}; fi
         fi
@@ -186,7 +186,7 @@ while :; do
   #  REDUCER="$(grep -om1 ".Init. Reducer:.*" /dev/shm/${EPOCH}/reducer.log | sed 's|.*: ||')"
   #  # Kill all processes related to the epoch /dev/shm subdir (excluding reducer itself)
   #  update_current_filter_pids
-  #  ps -ef | grep ${EPOCH} | grep -vE "${FILTER}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs kill -9
+  #  ps -ef | grep ${EPOCH} | grep -vEi "${FILTER}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs kill -9
   #  # Change workdir to disk instead of tmpfs
   #  sed -i "s|^WORKDIR_LOCATION=1|WORKDIR_LOCATION=3|" ${REDUCER}
   #  sed -i "s|^WORKDIR_M3_DIRECTORY=.*|WORKDIR_M3_DIRECTORY=~/reducers|" ${REDUCER}
@@ -196,7 +196,7 @@ while :; do
   #    exit 1
   #  fi
   #  # Terminate reducer by reducing the corresponding screen (will also ensure all processes are gone)
-  #  ps -ef | grep "$(basename "${REDUCER}")" | grep -vE "${FILTER}" | grep -i screen | awk '{print $2}' | xargs kill -9  # Idem on COMBINED_PID_FILTER, ref note just above
+  #  ps -ef | grep "$(basename "${REDUCER}")" | grep -vEi "${FILTER}" | grep -i screen | awk '{print $2}' | xargs kill -9  # Idem on COMBINED_PID_FILTER, ref note just above
   #  # Restart reducer with new setting
   #  # TODO: expand this script to check for presence of _out file to shorten time to reduced testcase. However, there is not real way to check if such an _out file was saved correctly. Use .prev perhaps if present
   #  eval $(cd $(echo ${REDUCER} | sed 's|$(basename "${REDUCER}")||'); ~/sr $(echo "$(basename "${REDUCER}")" | sed 's|[^0-9]||g'))

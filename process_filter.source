@@ -4,4 +4,4 @@
 # This helper script is sourced by other scripts (~/ds, ~/memory homedir scripts and mariadb-build-qa/terminate_long_running.sh), and thereby avoids code duplication in those scripts. As it is sourced rather than executed, it does not need +x
 # TODO: may need xargs? (only add if proven to be needed as filter)
 
-FILTER="addr2line|afl|AFL|bash|bug_report|build|cat|cc|clang|clean-all|clean_all|uniq_newbugs|cp|docker|ds|fallback_text_s|file|findbug|fireworks|fuzz|mysql/mariadb|generator.sh|grep|large_newbug_run|memory|mtr|mtr_to_sql|multirun|mysql-test-run|new_text_string|perl|pge|pquery|python|reducer|rm|san_text_string|screen|swapoff|swapon|tar|timeout|tmpfs_clean.sh|vi|vim|xargs"
+FILTER="addr2line|afl|AFL|bash|bug_report|build|cat|cc|clang|clean-all|clean_all|uniq_newbugs|cp|docker|ds|fallback_text_s|file|findbug|fireworks|fuzz|mysql/mariadb|generator.sh|grep|large_newbug_run|memory|mtr|mtr_to_sql|multirun|mysql-test-run|new_text_string|perl|pge|pquery|python|reducer|rm|san_text_string|screen|swapoff|swapon|sudo|tar|timeout|tmpfs_clean|tmux|vi|vim|xargs"

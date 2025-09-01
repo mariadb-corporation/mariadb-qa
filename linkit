@@ -166,6 +166,7 @@ alias ba='screen -admS \"opt_and_dbg_build\" bash -c \"${HOME}/mariadb-qa/build_
 alias bas='screen -admS \"opt_and_dbg_san_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt_san.sh & sleep 70; ${HOME}/mariadb-qa/build_mdpsms_dbg_san.sh; bash\"; screen -d -r \$(screen -ls | grep \"Detached\" | head -n1 | grep \"opt_and_dbg_san_build\" | sed \"s|\..*||\")'  # Idem, both, SAN
 alias ca='cd /data; ./clean_all'  # Goes through all workdirs, deleting all [recently] added known bugs'
 alias cur='${HOME}/cur'    # Show current WORKDIR numbers/ongoing runs
+alias dc='${HOME}/dc'      # Docker client
 alias gc='git commit -a -m '  # Commit to git with a given message (pass quoted message)
 alias gs='git status'  # Show git status of current directory
 alias gp='git push'  # Push to git repository

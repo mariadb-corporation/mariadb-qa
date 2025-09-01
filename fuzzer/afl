@@ -81,11 +81,11 @@ export -n __AFL_SHM_ID
 rm -f /test/afl${1}_socket.sock*
 sleep 2
 if [ ! -z ${GAL_RUN} ]; then
-  ./gal_no_cl --max_statement_time=1
+  ./gal_no_cl --sql_mode= --max_statement_time=5
   sleep 1
   ./gal_stop
 else
-  ./all_no_cl --max_statement_time=1
+  ./all_no_cl --sql_mode= --max_statement_time=5
   sleep 1
   ./stop
 fi

@@ -7,4 +7,4 @@ if [ -z "${1}" ]; then
   exit 1
 fi
 
-find . | grep '\.string$' | xargs -I{} grep --binary-files=text -Fli "${1}" '{}' | sed 's|\.string||' | xargs -I{} echo "ls '{}.string' 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|\.string||' | xargs -I{} echo "wc -l '{}'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed "s|^\([0-9]\+\) \(.*\)|\1\tcat '\2'|"
+find . | grep '\.string$' | xargs -I{} grep --binary-files=text -Fli "${1}" '{}' | sed 's|\.string||' | xargs -I{} echo "ls '{}.string' 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|\.string||' | xargs -I{} echo "wc -l '{}'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed "s|^\([0-9]\+\) \(.*\)|\1\t~/tcp '\2'|"

@@ -361,6 +361,7 @@ cat "${1}" | tr -d '`' | \
        s|column_create|COLUMN_CREATE|gi; \
        s|column_get|COLUMN_GET|gi; \
        s|low_priority|LOW_PRIORITY|gi; \
+       s|row_number|ROW_NUMBER|gi; \
        s|row_format|ROW_FORMAT|gi; \
        s|row_start|ROW_START|gi; \
        s|row_end|ROW_END|gi; \
@@ -442,6 +443,7 @@ cat "${1}" | tr -d '`' | \
        s|LEFT *(|LEFT(|gi; \
        s|RIGHT *(|RIGHT(|gi; \
        s|CONV *(|CONV(|gi; \
+       s|CHECK *(|CHECK(|gi; \
        s|MONTHNAME *(|MONTHNAME(|gi; \
        s|RAND *(|RAND(|gi; \
        s|join|JOIN|gi; \
@@ -531,6 +533,7 @@ cat "${1}" | tr -d '`' | \
        s|DELIMITER;|DELIMITER ;|gi; \
        s|USERSTAT|userstat|gi; \
        s|test / |test/|gi; \
+       s|[ \t]*;[ \t]*$|;|gi; \
        s|_offset|_offset|gi; \
        s|sleep[ ]*(|SLEEP(|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line

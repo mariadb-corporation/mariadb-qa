@@ -49,12 +49,15 @@ queue(){
     fi
   fi
   TODO[${1}]=$(awk "NR>=${NODE_START[${1}]} && NR<=${NODE_END[${1}]} {print \$0}" /tmp/afl_fulllist.txt)
+  # These options are used with the all_no_cl startup script in afl and the regular cmd line startup in run_parallel.py
+  # And, because all_no_cl is used here, --no-defaults will already be in use by default
+  MYEXTRA_OPTIONS="--server-id=100 --log-output=none --sql_mode= --max_statement_time=7"  # =7 instead of =5 for this verifier
   # The 5 minute timeout is for ~/t (which generally takes 1-20 seconds), the 150m timeout is for the full node run
   # Likely 2.5h (150m) will not be sufficient for runs with many testcases to process, but remember the script loops
   if [ ! -z ${GAL_RUN} ]; then
-    printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "rm -f /dev/shm/afl-tc-node${1}/in.sql; cp '${HOME}/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; if [ -r ./in.sql ]; then ./gal_no_cl >/dev/null 2>&1; ./gal_test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; timeout --signal=9 5m /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 150m bash -c "{}"
+    printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "rm -f /dev/shm/afl-tc-node${1}/in.sql; sed -i '1 i\# mysqld options required for replay: ${MYEXTRA_OPTIONS}' '${HOME}/fuzzing/{}'; cp '${HOME}/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; if [ -r ./in.sql ]; then ./gal_no_cl ${MYEXTRA_OPTIONS} >/dev/null 2>&1; ./gal_test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; timeout --signal=9 5m /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 150m bash -c "{}"
   else
-    printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "rm -f /dev/shm/afl-tc-node${1}/in.sql; cp '${HOME}/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; if [ -r ./in.sql ]; then ./all_no_cl >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; timeout --signal=9 5m /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 150m bash -c "{}"
+    printf "%s\n" "${TODO[${1}]}" | xargs -I{} echo "rm -f /dev/shm/afl-tc-node${1}/in.sql; sed -i '1 i\# mysqld options required for replay: ${MYEXTRA_OPTIONS}' '${HOME}/fuzzing/{}'; cp '${HOME}/fuzzing/{}' /dev/shm/afl-tc-node${1}/in.sql; cd /dev/shm/afl-tc-node${1}; if [ -r ./in.sql ]; then ./all_no_cl ${MYEXTRA_OPTIONS} >/dev/null 2>&1; ./test_pquery >/dev/null 2>&1; sleep 20; if [ -r /dev/shm/afl-tc-node${1}/data/core ]; then cd /dev/shm/afl-tc-node${1}; timeout --signal=9 5m /home/$(whoami)/t 'SHOWINFO' '----------- /home/$(whoami)/fuzzing/{}.string:' | tee '/home/$(whoami)/fuzzing/{}.string'; else echo '----------- /home/$(whoami)/fuzzing/{}.NOCORE'; touch '/home/$(whoami)/fuzzing/{}.NOCORE'; fi; fi; cd /home/$(whoami)/fuzzing;" | tr '\n' '\0' | xargs -0 -I{} timeout --signal=9 150m bash -c "{}"
   fi
 }
  
@@ -65,15 +68,16 @@ fi
 echo 'Computing runtime size...'
 # Find all testcases
 rm -f /tmp/afl_fulllist.txt
-find . | grep 'sig:' | sed 's|^\./||' > /tmp/afl_fulllist.txt
+find . | grep 'crashes.*sig:' | sed 's|^\./||' > /tmp/afl_fulllist.txt
 # Filter already done ones
-FILTER=$(cat /tmp/afl_fulllist.txt | grep -E '\.string|NOCORE' | sed 's|\.string||;s|\.NOCORE||')
+FILTER=$(cat /tmp/afl_fulllist.txt | grep 'pos:[0-9]\+\.' | sed 's|\(pos:[0-9]\+\)\..*|\1|')
 printf "%s\n" "${FILTER}" | grep -v '^[ \t]*$' | xargs -I{} sed -i 's|{}.*||' /tmp/afl_fulllist.txt
 FILTER=
 TESTCASES=$(</tmp/afl_fulllist.txt)  # Re-read fullist after sed
 printf "%s\n" "${TESTCASES}" | grep -v '^[ \t]*$' > /tmp/afl_fulllist.txt
-TESTCASES=$(</tmp/afl_fulllist.txt)  # Re-read fullist after cleanup
+TESTCASES=$(</tmp/afl_fulllist.txt)  # Re-read fullist after empty lines cleanup
 COUNT=$(printf "%s\n" "${TESTCASES}" | wc -l)
+COUNT=$[ ${COUNT} - 1 ]  # Remove the final printf newline
 if [ -z "${COUNT}" -o "${COUNT}" -eq 0 ]; then
   echo "No testcases to process... Done"
   exit 0

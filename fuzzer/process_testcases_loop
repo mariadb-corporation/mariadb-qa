@@ -9,7 +9,7 @@ else
 fi
 
 if [ "${STY}" == "" ]; then
-  echo "Not a screen, restarting myself inside a screen"a
+  echo "Not a screen, restarting myself inside a screen"
   echo "If the screen terminates quickly, check BASEDIR in process_testcases is set correctly!"
   sleep 1
   screen -admS "process_testcases_loop" bash -c "./$0"
@@ -41,4 +41,3 @@ while :; do
   fi
   sleep 30
 done
-
