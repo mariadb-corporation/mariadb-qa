@@ -7,9 +7,25 @@ else
   export GAL_RUN=""
 fi
 
-#BASEDIR=/test/AFL-MD060525-mariadb-11.8.1-linux-x86_64-dbg_checker
-#BASEDIR=/test/AFL-ASAN-MD171222-mariadb-10.11.2-linux-x86_64
-BASEDIR=/test/UBASAN_MD220825-mariadb-12.1.2-linux-x86_64-dbg_FP
+if [ -r ./BASEDIR.source ]; then
+  source ./BASEDIR.source  # Obtain basedir to use for testcase_loop
+  BASEDIR="$(echo "${BASEDIR}" | sed 's|-opt|-dbg|')"  # TODO: Add ALTERNATIVE_BASEDIR code alike to reducers_run, and remove this line. We want to test any passed testcase against dbg+opt. OK ftm as runs are against dbg builds ftm, and reducers_run checks opt build automatically also.
+  if [ ! -d "${BASEDIR}" ]; then
+    echo "BASEDIR ('${BASEDIR}') does not exist, please check ./BASEDIR.source"
+    exit 1
+  fi
+else
+  echo 'Assert: ./BASEDIR.source is not present. Create as follows:'
+  echo "echo 'BASEDIR=/test/some_basedir_instance' > BASEDIR.source"
+  echo 'It is recommended to use a copy dbg/opt set of a BASEDIR pair'
+  echo "(as listed in '/test/gendirs'), in different directories, i.e.:"
+  echo '  cp /test/some_BASEDIR-dbg /test/some_BASEDIR-dbg_COPY'
+  echo '  cp /test/some_BASEDIR-opt /test/some_BASEDIR-opt_COPY'
+  echo 'And you can just point the BASEDIR in BASEDIR.source to the -dbg_COPY'
+  echo 'instance; The reducers_run[_loop] script(s) will use both automatically'
+  exit 1
+fi
+
 LOOP_SCRIPT=1  # Set to 1 to keep looping (handy when fuzzers are running)
 
 cd ${HOME}/fuzzing

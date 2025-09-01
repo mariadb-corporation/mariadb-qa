@@ -12,7 +12,8 @@ init_empty_port(){  # Find an empty port
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     ISPORTFREE4="$(netstat -tuln | grep :${NEWPORT})"
-    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE4}" ]; then
+    ISPORTFREE5="$(lsof -i :${NEWPORT})"
+    if [ "${ISPORTFREE1}" -eq 0 -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE2}${ISPORTFREE4}${ISPORTFREE5}" ]; then
       if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
         break  # Suitable port number found
       else
