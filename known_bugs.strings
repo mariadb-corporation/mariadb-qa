@@ -243,6 +243,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+builtin_select.first_inner_unit() == __null|SIGABRT|LEX::insert_select_hack|LEX::parsed_insert_select|MYSQLparse|parse_sql                                                     ## MDEV-36369
+a == &type_handler_row || a == &type_handler_null|SIGABRT|Type_collection_row::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Type_handler_hybrid_field_type::aggregate_for_comparison|Predicant_to_list_comparator::add_value ## MDEV-37534
+0|SIGABRT|Item_contextually_typed_value_specification::type_handler|Item::get_cache|mysql_insert|mysql_execute_command                                                         ## MDEV-37516
+!select_lex->group_list.elements|SIGABRT|mysql_prepare_insert|mysql_insert|mysql_execute_command|mysql_parse                                                                   ## MDEV-37515
 !thd->is_error()|SIGABRT|LEX::make_item_func_or_method_call|MYSQLparse|parse_sql|mysql_parse                                                                                   ## MDEV-37408
 SIGSEGV|my_strcasecmp_utf8mb3|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access                                                            ## MDEV-37499
 name != __null|SIGABRT|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access|check_grant                                                       ## MDEV-37499

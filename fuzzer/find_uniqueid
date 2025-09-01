@@ -2,9 +2,9 @@
 # Created by Roel Van de Paar, MariaDB
 
 if [ -z "${1}" ]; then
-  echo "This tool finds a given UniqueID in all subdirs and lists the relevant SQL file(s) and their size"
+  echo "This tool finds a given UniqueID in all subdirs and lists the relevant SQL file(s) and their size (in chars)"
   echo "Usage: ./find_uniqueid 'uniqueid'"
   exit 1
 fi
 
-find . | grep '\.string$' | xargs -I{} grep --binary-files=text -Fli "${1}" '{}' | sed 's|\.string||' | xargs -I{} echo "ls '{}.string' 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|\.string||' | xargs -I{} echo "wc -l '{}'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed "s|^\([0-9]\+\) \(.*\)|\1\t~/tcp '\2'|"
+find . | grep '\.string$' | xargs -I{} grep --binary-files=text -Fli "${1}" '{}' | sed 's|\.string||' | xargs -I{} echo "ls '{}.string' 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|\.string||' | xargs -I{} echo "wc -c '{}'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed "s|^\([0-9]\+\) \(.*\)|\1\t~/tcp '\2'|" | sort -rn

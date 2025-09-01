@@ -3,7 +3,7 @@
 
 # User variables
 #BASEDIR=/test/AFL-MD060525-mariadb-11.8.1-linux-x86_64-dbg  # -dbg or -opt is fine
-BASEDIR=/test/UBASAN_MD220825-mariadb-12.1.2-linux-x86_64-dbg
+BASEDIR=/test/UBASAN_MD220825-mariadb-12.1.2-linux-x86_64-dbg_FP
 # Internal variables
 BASEDIRALT="$(echo "${BASEDIR}" | sed 's|-opt$|-dum|;s|-dbg$|-opt|;s|-dum$|-dbg|')"  # Swaps -dbg to -opt and vice versa
 HOME=${HOME}
