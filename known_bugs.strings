@@ -162,6 +162,7 @@ MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_syst
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at sql/sql_acl.cc                             ## MDEV-34501 (ES)
 MARIADBD_ERROR|mariadbd: innodb_buffer_pool_size change aborted                                          ## MDEV-37149
+GOT_ERROR|Got error 146|when reading table                                                               ## MDEV-37523
 
 ##### Slave errors
 SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346
@@ -251,6 +252,7 @@ a == &type_handler_row || a == &type_handler_null|SIGABRT|Type_collection_row::a
 SIGSEGV|my_strcasecmp_utf8mb3|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access                                                            ## MDEV-37499
 name != __null|SIGABRT|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access|check_grant                                                       ## MDEV-37499
 "invalid state" == 0|SIGABRT|innobase_rollback_to_savepoint|ha_rollback_to_savepoint|trans_rollback_to_savepoint|mysql_execute_command                                         ## MDEV-36787
+!rec_get_deleted_flag(((btr_cur)->page_cur.rec), (index->table)->not_redundant())|SIGABRT|row_upd_clust_rec|row_upd_clust_step|row_upd|row_upd_step                            ## MDEV-37473
 SIGSEGV|Json_writer_object::add|sel_arg_and_weight_heuristic|key_and|key_and_with_limit                                                                                        ## MDEV-37510
 ((hash)->blength != 0)|SIGABRT|my_hash_first|name_hash_search|table_hash_search|fill_effective_table_privileges                                                                ## MDEV-37506
 ((hash)->blength != 0)|SIGABRT|my_hash_first|name_hash_search|table_hash_search|st_grant_info::read                                                                            ## MDEV-37506
@@ -622,7 +624,6 @@ bit < map->n_bits|SIGABRT|bitmap_is_set|ha_partition::handle_ordered_index_scan|
 thd->transaction->stmt.ha_list == __null || trans == &thd->transaction->stmt|SIGABRT|ha_commit_trans|THD::commit_whole_transaction_and_close_tables|Event_db_repository::create_event|Events::create_event ## MDEV-33918
 !(thd->rgi_slave && !thd->rgi_slave->worker_error && thd->rgi_slave->did_mark_start_commit)|SIGABRT|ha_rollback_trans|rpl_slave_state::record_gtid|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-33879
 !(thd->rgi_slave && !thd->rgi_slave->worker_error && thd->rgi_slave->did_mark_start_commit) || (thd->transaction->xid_state.is_explicit_XA() || (thd->rgi_slave->gtid_ev_flags2 & Gtid_log_event::FL_PREPARED_XA))|SIGABRT|ha_rollback_trans|rpl_slave_state::record_gtid|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-33879
-!_current_thd()|SIGABRT|destroy_background_thd|dict_stats_recalc_pool_deinit|dict_stats_deinit|innodb_shutdown                                                                 ## MDEV-33873
 SIGSEGV|ha_storage_engine_is_enabled|ha_checktype|ha_check_if_updates_are_ignored|create_table_impl                                                                            ## MDEV-33804
 status == 0|SIGABRT|add_role_user_mapping_action|my_hash_iterate|rebuild_role_grants|replace_user_table                                                                        ## MDEV-33674
 SIGSEGV|TDC_element::flush|prepare_for_repair|mysql_admin_table|Sql_cmd_repair_table::execute                                                                                  ## MDEV-33676
@@ -1383,7 +1384,6 @@ thd|SIGABRT|wsrep_innobase_kill_one_trx|wsrep_kill_victim|lock_table_other_has_i
 transaction_.active() == false || (transaction_.state() == wsrep::transaction::s_executing || transaction_.state() == wsrep::transaction::s_prepared || transaction_.state() == wsrep::transaction::s_aborted || transaction_.state() == wsrep::transaction::s_must_abort)|SIGABRT|wsrep::client_state::before_command|wsrep::client_state::before_command|wsrep_before_command|do_command ## MENT-1139
 SIGSEGV|wsrep_can_run_in_toi|wsrep_can_run_in_nbo|wsrep_NBO_begin|wsrep_to_isolation_begin                                                                                     ## MENT-1134
 SIGABRT|__cxa_rethrow () from|galera::WriteSetOut::gather|galera::TrxHandleMaster::gather|galera::ReplicatorSMM::replicate                                                     ## MDEV-25025
-m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                         ## MDEV-24960
 ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit                                  ## MENT-1119
 ordered()|SIGABRT|wsrep::transaction::certify_commit|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare                               ## MENT-1119
 server_id.is_undefined() == false|SIGABRT|wsrep::transaction::certify_fragment|wsrep::transaction::streaming_step|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare ## MENT-1117/MENT-1282
@@ -3165,3 +3165,5 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_page_get_gen                                                                ## Fixed ## MDEV-37263
 # SIGABRT|buf_LRU_check_size_of_non_data_objects|buf_LRU_get_free_block|buf_read_page|buf_pool_t::page_fix                                                            ## Fixed ## MDEV-37263
 # MARIADBD_ERROR|mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL                                                                              ## Fixed ## MDEV-37339
+# m.first->second.valid(trx->undo_no)|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step              ## Fixed ## MDEV-24960
+# !_current_thd()|SIGABRT|destroy_background_thd|dict_stats_recalc_pool_deinit|dict_stats_deinit|innodb_shutdown                                                      ## Fixed ## MDEV-33873
