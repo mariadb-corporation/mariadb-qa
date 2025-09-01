@@ -9,14 +9,14 @@ ES=0                                                                # If set to 
 SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
-RECLONE=1                                                           # Set to 1 to reclone a tree before starting
+RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
 LAST_KNOWN_GOOD_COMMIT='c92add291e636c797e6d6ddca605905541b2a441'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='aab83aecdca15738d114cf5a2f223f1d12e4e6bd'  # Revision of first known bad commit
+FIRST_KNOWN_BAD_COMMIT='dfcb5c91e013c46e777916f2bbf43273a676f6a4'  # Revision of first known bad commit
 # To obtain the first commit for a given branch/version, some examples (after full branch checkouts): 
 # /test/git-bisect/12.1 $ git log origin/12.0..12.1 --oneline | tail -1
 # 72b666b837eb16819f8f3de3e739a582dbbf4b53  # This is the first 12.1 commit
@@ -108,14 +108,14 @@ fi
 if [ "${RECLONE}" -eq 1 ]; then
   if [ "${ES}" -eq 1 ]; then
     rm -Rf "${VERSION}"
-    git clone --recurse-submodules --force -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # We clone the ES branch into ./${VERSION} for simplicity in later handling
+    git clone --recurse-submodules -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # We clone the ES branch into ./${VERSION} for simplicity in later handling
     cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
   else
     rm -Rf "${VERSION}"
     if [ "${VERSION}" == "12.0" ]; then  # Update as trunk changes to a new version 
-      git clone --recurse-submodules --force -j20 https://github.com/MariaDB/server.git "${VERSION}"
+      git clone --recurse-submodules -j20 https://github.com/MariaDB/server.git "${VERSION}"
     else
-      git clone --recurse-submodules --force -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
+      git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
     fi
     cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
   fi
@@ -124,10 +124,10 @@ else
     cd "${VERSION}" || die 1 "While version ${VERSION} directory existed, this script could not change directory to it"
   else  # RECLONE=0 but we do not have the directory in any case; clone it
     if [ "${ES}" -eq 1 ]; then
-      git clone --recurse-submodules --force -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # Idem as above
+      git clone --recurse-submodules -j20 --branch="${VERSION}-enterprise" https://github.com/mariadb-corporation/MariaDBEnterprise "${VERSION}"  # Idem as above
       cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
     else
-      git clone --recurse-submodules --force -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
+      git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
       cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
     fi
   fi
@@ -145,6 +145,8 @@ bisect_good(){
   cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
   rm -f ${TMPLOG1}
   git bisect good 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
+  # Always init/update submodules after each git bisect good/bad as those commands update the revision set
+  git submodule update --init --recursive
   cat "${TMPLOG1}" >> "${MAINLOG}"
   if grep -qi 'first bad commit' ${TMPLOG1}; then
     rm -f ${TMPLOG1}
@@ -158,6 +160,8 @@ bisect_bad(){
   cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
   rm -f ${TMPLOG1}
   git bisect bad 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
+  # Always init/update submodules after each git bisect good/bad as those commands update the revision set
+  git submodule update --init --recursive
   cat "${TMPLOG1}" >> "${MAINLOG}"
   if grep -qi 'first bad commit' ${TMPLOG1}; then
     echo "Finished: $(grep 'first bad commit' ${TMPLOG1})" | tee -a "${MAINLOG}"
@@ -198,9 +202,9 @@ else
   fi
 fi
 if [ "${UPDATETREE}" -eq 1 ]; then
-  git pull --recurse-submodules --force | tee -a "${MAINLOG}"  # Ensure we have the latest version
+  git pull --recurse-submodules | tee -a "${MAINLOG}"  # Ensure we have the latest version
   if [ "${?}" != "0" ]; then
-    echo "Assert: git pull --recurse-submodules --force failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
+    echo "Assert: git pull --recurse-submodules failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
     exit 1
   fi
 fi
@@ -218,16 +222,20 @@ if [ "${BISECT_REPLAY}" -eq 1 ]; then
     echo "git bisect replay \"${BISECT_REPLAY_LOG}\" succeeded. Proceding with regular git bisecting." | tee -a "${MAINLOG}"
   fi
 else
-  git bisect bad  "${FIRST_KNOWN_BAD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, bad
+  git bisect bad "${FIRST_KNOWN_BAD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, bad
   if [ "${?}" != "0" ]; then
     echo "Bad revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
     exit 1
   fi
+  # Always init/update submodules after each git bisect good/bad as those commands update the revision set
+  git submodule update --init --recursive
   git bisect good "${LAST_KNOWN_GOOD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, good
   if [ "${?}" != "0" ]; then
     echo "Good revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
     exit 1
   fi
+  # Always init/update submodules after each git bisect good/bad as those commands update the revision set
+  git submodule update --init --recursive
 fi
 
 # Note that the starting point may not point git to a valid commit to test. i.e. git bisect may jump to a commit
@@ -402,6 +410,8 @@ done
 # For automatic good/bad selection based on exit code, use 'git bisect run ./command_which_provides_exit_code':
 # git bisect reset && git bisect start
 # git bisect bad ...rev...
+# git submodule update --init --recursive
 # git bisect good ...rev...
+# git submodule update --init --recursive
 # git bisect run yacc -Wother -Wyacc -Wdeprecated --verbose sql/sql_yacc.yy 2>/dev/null  # 1 on error
 # This will very quickly find the revision where the YACC error was introduced

@@ -56,21 +56,6 @@ if (( $(echo "$GCC_VER < 4.9" |bc -l) )); then
   exit 1
 fi
 
-# Even if the items below are resolved/outdated over time, please always leave them, as older revisions will still
-# require these to be in place, to be able to build (think for example about git-bisect using older revisions)
-# Fix columstore bug https://jira.mariadb.org/browse/MCOL-6004
-if [ -r storage/columnstore/columnstore/CMakeLists.txt ]; then
-  sed -i 's|CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' storage/columnstore/columnstore/CMakeLists.txt
-fi
-# Fix blackbox bug in ES 10.5/10.6 (ES 11.4+ has 3.12, and not present in CS) https://jira.mariadb.org/browse/MENT-2383
-if [ -r blackbox/CMakeLists.txt ]; then
-  sed -i 's|CMAKE_MINIMUM_REQUIRED(VERSION 2.8)|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' blackbox/CMakeLists.txt blackbox/src/CMakeLists.txt
-fi
-# Fix WSREP wsrep-lib/CMakeLists.txt with (VERSION 2.8)/(VERSION 2.8...4.0) (not present anymore in later revisions)
-if [ -r wsrep-lib/CMakeLists.txt ]; then
-  sed -i 's|cmake_minimum_required (VERSION 2.8.*|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|' wsrep-lib/CMakeLists.txt
-fi
-
 # Check RocksDB storage engine.
 # Please note when building the facebook-mysql-5.6 tree this setting is automatically ignored
 # For daily builds of fb tree (opt and dbg) also see http://jenkins.percona.com/job/fb-mysql-5.6/
@@ -224,6 +209,17 @@ rm -Rf ${CURPATH}_dbg
 rm -f /tmp/valgrind_dbg_build_${RANDOMD}
 cp -R ${CURPATH} ${CURPATH}_dbg
 cd ${CURPATH}_dbg
+
+# Replace any old CMAKE_MINIMUM_REQUIRED strings like 'CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)' in all CMakeLists.txt files
+# Ref for example https://jira.mariadb.org/browse/MCOL-6004 and https://jira.mariadb.org/browse/MENT-2383
+# Even if issues in this area are resolved over time, please leave this code, as older revisions will still require
+# this patch to be in place, so as to be able to build (think for example about git-bisect using older revisions)
+# Examples observed: CMakeLists.txt, storage/mroonga/CMakeLists.txt, wsrep-lib/CMakeLists.txt, blackbox/CMakeLists.txt,
+# storage/columnstore/columnstore/CMakeLists.txt, storage/mroonga/vendor/groonga/CMakeLists.txt
+# storage/mroonga/vendor/groonga/vendor/plugins/groonga-normalizer-mysql/CMakeLists.txt
+find . -type f -name 'CMakeLists.txt' -exec sed -i 's|[ \t]*CMAKE_MINIMUM_REQUIRED[ \t]*([ \t]*VERSION[ \t]*2.*|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|i' {} \;
+# Avoid auto-submodule-update issues in git-bisect (note this is in the copied _dbg/_opt build dir only, and thus harmless)
+git commit -a -m "Dummy commit"
 
 ### TEMPORARY HACK TO AVOID COMPILING TB (WHICH IS NOT READY YET)
 rm -Rf ./plugin/tokudb-backup-plugin
