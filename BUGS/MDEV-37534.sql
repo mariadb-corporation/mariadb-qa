@@ -1,0 +1,1 @@
+CREATE TABLE t (c INT, CHECK(c=CASE c WHEN ROW(1,1) THEN c=0 END IN (c)=1));

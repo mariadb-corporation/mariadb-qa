@@ -74,7 +74,7 @@ for ((i=1;i<=${COUNT};i++)); do
   echo '-----------------------------------------------------------------------------------------'
   echo "BUG ${i}/${COUNT}: ${BUG}"
   echo '-----------------------------------------------------------------------------------------'
-  TCS="$(grep -F "${BUG}" */crashes/*.string)"  # All possible testcases for this particular UniqueID
+  TCS="$(grep -F "${BUG}" */*.string */*/*.string */*/*/*.string */*/*/*/*.string 2>/dev/null)"  # All possible testcases for this particular UniqueID
   # Check if any of the testcases already has a report (which means that we already have a report for this UniqueID and can thus skip ahead to the next UniqueID we need a report for, without doing anything for this UniqueID
   COUNT_TCS="$(printf "%s\n" "${TCS}" | wc -l)"
   if [ -z "${COUNT_TCS}" -o "${COUNT_TCS}" == "0" ]; then
@@ -126,7 +126,7 @@ for ((i=1;i<=${COUNT};i++)); do
   cp "${TC}" "${BASEDIR}/in.sql"
   cd ${BASEDIR}
   echo "Running reducer for testcase..."
-  rm -f ./in.sql_out
+  rm -f ./in.sql_out ./17*
   sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=5000|' ./reducer_new_text_string.sh
   sed -i 's|^MYEXTRA=".*|MYEXTRA="--no-defaults --server-id=100 --log-output=none --sql_mode= --max_statement_time=5"|' ./reducer_new_text_string.sh
   sed -i 's|^NEW_BUGS_SAVE_DIR="/data/NEWBUGS"|NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|' ./reducer_new_text_string.sh
@@ -135,7 +135,7 @@ for ((i=1;i<=${COUNT};i++)); do
     sed -i 's|^NR_OF_NODES=[0-9]\+|NR_OF_NODES=2|' ./reducer_new_text_string.sh
   fi
   # 20m: we want short runs to ensure all testcases are processed rather than a few taking up a lot/all time
-  timeout --signal=9 20m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${TC}.reducer"
+  timeout --signal=9 20m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${HOME}/fuzzing/${TC}.reducerlog"
   sleep 0.5
   # If the above failed to reproduce the issue, try an alternative BASEDIR (usually opt instead of dbg and vice versa)
   if [ ! -r ./in.sql_out ]; then
@@ -144,7 +144,7 @@ for ((i=1;i<=${COUNT};i++)); do
     cp "${TC}" "${BASEDIRALT}/in.sql"
     cd ${BASEDIRALT}
     echo "Running reducer for testcase on alternative BASEDIR..."
-    rm -f ./in.sql_out
+    rm -f ./in.sql_out 17*
     sed -i 's|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=500|' ./reducer_new_text_string.sh
     sed -i 's|^MYEXTRA=".*|MYEXTRA="--no-defaults --server-id=100 --log-output=none --sql_mode= --max_statement_time=5"|' ./reducer_new_text_string.sh
     sed -i 's|^NEW_BUGS_SAVE_DIR="/data/NEWBUGS"|NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|' ./reducer_new_text_string.sh
@@ -153,7 +153,7 @@ for ((i=1;i<=${COUNT};i++)); do
       sed -i 's|^NR_OF_NODES=[0-9]\+|NR_OF_NODES=2|' ./reducer_new_text_string.sh
     fi
     # Try an even shorter time on the alternative BASEDIR as we already failed in the main BASEDIR (and used time there)
-    timeout --signal=9 10m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${TC}.reducer"
+    timeout --signal=9 10m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${HOME}/fuzzing/${TC}.reducerlog"
     sleep 0.5
     if [ ! -r ./in.sql_out ]; then
       echo "Testcase did not reproduce/reduce on ${BASEDIRALT} either..."
@@ -169,9 +169,9 @@ for ((i=1;i<=${COUNT};i++)); do
   # In other words, in.sql_out was found to be present after reduction in either the BASEDIR or the BASEDIRALT dir
   mv ./in.sql_out ./in.sql
   echo "Commencing secondary reducer run in ${PWD}..."
-  rm -f ./in.sql_out  # Defensive coding
+  rm -f ./in.sql_out 17*
   sed -i 's|^NEW_BUGS_SAVE_DIR="/data/NEWBUGS"|NEW_BUGS_SAVE_DIR="/home/${USER}/fuzzing/newbugs"|' ./reducer_new_text_string.sh
-  timeout --signal=9 45m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${TC}.reducer"
+  timeout --signal=9 45m ./reducer_new_text_string.sh "./in.sql" "${BUG}" | tee -a "${HOME}/fuzzing/${TC}.reducerlog"
   sleep 0.5
   if [ ! -r ./in.sql_out ]; then
     echo "Secondary reducer run further simplified the testcase..."

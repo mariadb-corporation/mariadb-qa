@@ -7,6 +7,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member call on null pointer of type 'Item'|sql/filesort.cc|sortlength|filesort|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                         ## MDEV-33177
 UBSAN|load of null pointer of type 'Item *'|sql/item_cmpfunc.h|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func_for_row_arguments|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func ## MDEV-36792
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-ascii.h|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq ## MDEV-37499
 UBSAN|load of null pointer of type 'const char'|strings/ctype-utf8.c|my_strcasecmp_utf8mb3|ACL_internal_schema_registry::lookup|get_cached_schema_access|get_cached_table_access ## MDEV-37499
