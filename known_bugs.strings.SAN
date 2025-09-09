@@ -7,6 +7,8 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info ## MDEV-37565
+UBSAN|member access within null pointer of type 'Window_spec'|sql/sql_window.cc|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info|JOIN::optimize_stage2 ## MDEV-28619
 UBSAN|member call on null pointer of type 'Item'|sql/filesort.cc|sortlength|filesort|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                         ## MDEV-33177
 UBSAN|load of null pointer of type 'Item *'|sql/item_cmpfunc.h|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func_for_row_arguments|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func ## MDEV-36792
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-ascii.h|my_strcoll_ascii_4bytes_found|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq ## MDEV-37499
@@ -407,6 +409,7 @@ ASAN|heap-buffer-overflow|include/c++/current_version/bits/shared_ptr_base.h|std
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache|Item_cache_wrapper::val_int ## MDEV-30842
 UBSAN|member access within null pointer of type 'struct st_select_lex'|sql/item_subselect.cc|Item_subselect::get_cache_parameters|Item_in_optimizer::get_cache_parameters|Item_cache_wrapper::init_on_demand|Item_cache_wrapper::check_cache ## MDEV-30842
 UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item_field::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived|Item_equal::create_pushable_equalities ## MDEV-30841
+UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item_field::used_tables|Item::const_item|Item_direct_view_ref::const_item|Item_args::excl_dep_on_table     ## MDEV-30841
 UBSAN|member access within null pointer of type 'struct Field'|sql/item.cc|Item_field::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived|Item_equal::create_pushable_equalities ## MDEV-30841
 ASAN|use-after-poison|sql/sql_string.h|__asan_memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                                      ## MDEV-30785
 ASAN|use-after-poison|sql/sql_string.h|interceptor_memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                                 ## MDEV-30785

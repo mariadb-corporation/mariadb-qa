@@ -5886,7 +5886,8 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 298 ]; then sed "s/hash_join_cardinality=[ofn]\+[,]*//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 299 ]; then sed "s/cset_narrowing=[ofn]\+[,]*//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 300 ]; then sed "s/sargable_casefold=[ofn]\+[,]*//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 301 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+    elif [ $TRIAL -eq 301 ]; then sed "s/ON COMMIT PRESERVE ROWS//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 302 ]; then NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
     else break
     fi
     if [ ! -r "${WORKT}" ]; then abort; fi

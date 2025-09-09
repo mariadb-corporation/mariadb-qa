@@ -162,7 +162,7 @@ Got error 1400 when reading table                     MDEV-31318 (Spider XA)
 Got error 1429 when reading table                     Presumed non-issue (ref SPECIAL-6.sql: Spider undef. reference ALTER)
 Got error 1430 when reading table                     Presumed non-issue (federatedx base table removed)
 Got error 1430 .Unknown error 1430                    MDEV-29923
-Got error 1440 when reading table                     MDEV-29454 (XAER_DUPID Spider)
+Got error 1440 when reading table                     MDEV-29454 (XAER_DUPID Spider) (Permanent, do not move to/mark as fixed)
 Got error 1814 when reading table                     MDEV-33042 (Spider)
 Got error 12524 when reading table                    MDEV-33196 (Spider)
 Got error 12701                                       MDEV-26543 (Spider)

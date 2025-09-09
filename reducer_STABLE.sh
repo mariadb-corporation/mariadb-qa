@@ -516,19 +516,21 @@ fi
 # === Check Binary logging options, split it into a BINLOG variable, and cleanup MYEXTRA to remove the related options
 BINLOG=
 if [[ ${MDG} -ne 1 ]]; then
-  if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
-    if [[ ! "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
-      BIN_TO_USE="${BASEDIR}/bin/mariadbd"
-      if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
-      if [[ ! "$(${BIN_TO_USE} --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
-        echo "Error: --server-id is present in MYEXTRA whereas --log-bin is not. Please fix this."
-        echo "Terminating now."
-        exit 1
-      else
-        echo "Warning: --server-id is present in MYEXTRA whereas --log-bin is not. This is a valid setup for 8.0 in which binary logging is enabled by default already. Still, reduction may fail in STAGE9 as reducer has not been updated yet to handle this situation. As a workaround, add --log-bin to MYEXTRA, or simply stop at STAGE8 reduction, or add this functionality to STAGE9 and please push it back to the repository"
-        # To add this functionality, it is likely required to just handle the --server-id option removal using the BINLOG variable whilst setting --log-bin=0 at the same time or something - and this would be a good improvement for 8.0 (and beyond) testcase reduction in any case, as it would show/prove whetter it is necesary to have binlog on or not for a given testcase
+  if [[ "${NEW_BUGS_SAVE_DIR}" != *"fuzzing"* ]]; then
+    if [[ "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
+      if [[ ! "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
+        BIN_TO_USE="${BASEDIR}/bin/mariadbd"
+        if [ ! -r "${BIN_TO_USE}" ]; then BIN_TO_USE="${BASEDIR}/bin/mysqld"; fi
+        if [[ ! "$(${BIN_TO_USE} --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^8.[0-9]$ ]]; then  # version is not 8.0 (--log-bin is not required as it is default already (8.0 has binary logging enabled by default))
+          echo "Error: --server-id is present in MYEXTRA whereas --log-bin is not. Please fix this."
+          echo "Terminating now."
+          exit 1
+        else
+          echo "Warning: --server-id is present in MYEXTRA whereas --log-bin is not. This is a valid setup for 8.0 in which binary logging is enabled by default already. Still, reduction may fail in STAGE9 as reducer has not been updated yet to handle this situation. As a workaround, add --log-bin to MYEXTRA, or simply stop at STAGE8 reduction, or add this functionality to STAGE9 and please push it back to the repository"
+          # To add this functionality, it is likely required to just handle the --server-id option removal using the BINLOG variable whilst setting --log-bin=0 at the same time or something - and this would be a good improvement for 8.0 (and beyond) testcase reduction in any case, as it would show/prove whetter it is necesary to have binlog on or not for a given testcase
+        fi
+        BIN_TO_USE=
       fi
-      BIN_TO_USE=
     fi
   fi
   if [[ "${MYEXTRA}" == *"log"[-_]"bin"* ]]; then
@@ -1635,7 +1637,8 @@ init_empty_port(){
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     ISPORTFREE4="$(netstat -tuln | grep :${NEWPORT})"
-    if [ "${ISPORTFREE1}" -eq 0 -a -z "${ISPORTFREE2}" -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE4}" ]; then
+    ISPORTFREE5="$(lsof -i :${NEWPORT})"
+    if [ "${ISPORTFREE1}" -eq 0 -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE2}${ISPORTFREE4}${ISPORTFREE5}" ]; then
       if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # If true, then the port was triple checked (to avoid races) to be free
         break  # Suitable free port number found
       else
@@ -3306,6 +3309,7 @@ cleanup_and_save(){
     grep -E --binary-files=text -v "^# mysqld options required for replay:" $WORKT > $WORKO
     MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|sql_mode=\([^ ]\)|sql_mode= \1|g;s|[ \t]\+| |g")
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
+      # Note that a `sed -i "1 i\# ...` like insert will only work if the file contains at least one line (should be fine here? TODO: check)
       if [ -s $WORKO ]; then
         if [ "${MYINIT}" == "" ]; then
           sed -i "1 i\# mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED" $WORKO

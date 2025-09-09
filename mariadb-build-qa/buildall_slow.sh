@@ -27,9 +27,10 @@ BUILD_11_8=1
 BUILD_12_0=0
 BUILD_12_1=1
 BUILD_12_2=1
-BUILD_ES_10_5=1
+BUILD_ES_10_5=0
 BUILD_ES_10_6=1
 BUILD_ES_11_4=1
+BUILD_ES_11_8=1
 
 #export ADD_EXTRA_AUTO_OPTIONS=''  # Add additional cmake options, granular per-version settings below
 ADD_EXTRA_AUTO_OPTIONS='-DWITH_PMEM=1'
@@ -59,6 +60,7 @@ USE_EXTRA_A_OPT_12_2=1
 USE_EXTRA_A_OPT_ES_10_5=0
 USE_EXTRA_A_OPT_ES_10_6=0
 USE_EXTRA_A_OPT_ES_11_4=1
+USE_EXTRA_A_OPT_ES_11_8=1
 
 # Script variables setup
 export -n EXTRA_AUTO_OPTIONS  # Remove the export property (does not unset)
@@ -114,14 +116,14 @@ buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready
     cleanup_dirs; cd ${DIR}/12.0 && ~/mariadb-qa/build_mdpsms_dbg.sh
   fi
 
-  if [ ${BUILD_ES_11_4} -eq 1 ]; then
-    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_ES_11_4}" -eq 1 ]; then
+  if [ ${BUILD_ES_11_8} -eq 1 ]; then
+    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_ES_11_8}" -eq 1 ]; then
       export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"
     else
       export -n EXTRA_AUTO_OPTIONS; EXTRA_AUTO_OPTIONS=
     fi
-    cleanup_dirs; cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_opt.sh
-    cleanup_dirs; cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_dbg.sh
+    cleanup_dirs; cd ${DIR}/11.8-es && ~/mariadb-qa/build_mdpsms_opt.sh
+    cleanup_dirs; cd ${DIR}/11.8-es && ~/mariadb-qa/build_mdpsms_dbg.sh
   fi
 
   if [ ${BUILD_11_8} -eq 1 ]; then
@@ -162,6 +164,16 @@ buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready
     fi
     cleanup_dirs; cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_opt.sh
     cleanup_dirs; cd ${DIR}/11.5 && ~/mariadb-qa/build_mdpsms_dbg.sh
+  fi
+
+  if [ ${BUILD_ES_11_4} -eq 1 ]; then
+    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_ES_11_4}" -eq 1 ]; then
+      export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"
+    else
+      export -n EXTRA_AUTO_OPTIONS; EXTRA_AUTO_OPTIONS=
+    fi
+    cleanup_dirs; cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_opt.sh
+    cleanup_dirs; cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_dbg.sh
   fi
 
   if [ ${BUILD_11_4} -eq 1 ]; then
@@ -264,16 +276,6 @@ buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready
     cleanup_dirs; cd ${DIR}/10.7 && ~/mariadb-qa/build_mdpsms_dbg.sh
   fi
 
-  if [ ${BUILD_10_6} -eq 1 ]; then
-    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_10_6}" -eq 1 ]; then
-      export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"
-    else 
-      export -n EXTRA_AUTO_OPTIONS; EXTRA_AUTO_OPTIONS=
-    fi
-    cleanup_dirs; cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_opt.sh
-    cleanup_dirs; cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_dbg.sh
-  fi
-
   if [ ${BUILD_ES_10_6} -eq 1 ]; then
     if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_ES_10_6}" -eq 1 ]; then
       export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"
@@ -283,17 +285,17 @@ buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready
     cleanup_dirs; cd ${DIR}/10.6-es && ~/mariadb-qa/build_mdpsms_opt.sh
     cleanup_dirs; cd ${DIR}/10.6-es && ~/mariadb-qa/build_mdpsms_dbg.sh
   fi
-  
-  if [ ${BUILD_10_5} -eq 1 ]; then
-    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_10_5}" -eq 1 ]; then
+
+  if [ ${BUILD_10_6} -eq 1 ]; then
+    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_10_6}" -eq 1 ]; then
       export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"
     else 
       export -n EXTRA_AUTO_OPTIONS; EXTRA_AUTO_OPTIONS=
     fi
-    cleanup_dirs; cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_opt.sh
-    cleanup_dirs; cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_dbg.sh
+    cleanup_dirs; cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_opt.sh
+    cleanup_dirs; cd ${DIR}/10.6 && ~/mariadb-qa/build_mdpsms_dbg.sh
   fi
-
+  
   if [ ${BUILD_ES_10_5} -eq 1 ]; then
     if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_ES_10_5}" -eq 1 ]; then
       export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"
@@ -302,6 +304,16 @@ buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready
     fi
     cleanup_dirs; cd ${DIR}/10.5-es && ~/mariadb-qa/build_mdpsms_opt.sh
     cleanup_dirs; cd ${DIR}/10.5-es && ~/mariadb-qa/build_mdpsms_dbg.sh
+  fi
+
+  if [ ${BUILD_10_5} -eq 1 ]; then
+    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_10_5}" -eq 1 ]; then
+      export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"
+    else 
+      export -n EXTRA_AUTO_OPTIONS; EXTRA_AUTO_OPTIONS=
+    fi
+    cleanup_dirs; cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_opt.sh
+    cleanup_dirs; cd ${DIR}/10.5 && ~/mariadb-qa/build_mdpsms_dbg.sh
   fi
 
   if [ ${BUILD_10_4} -eq 1 ]; then
