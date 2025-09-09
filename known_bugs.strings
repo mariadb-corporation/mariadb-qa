@@ -34,7 +34,6 @@ SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command|mysql_pars
 # SIGSEGV|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item_func_nextval::check_access_and_fix_fields|Item_func_nextval::fix_fields                               ## MDEV-37369
 # SIGSEGV|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar                                           ## MDEV-37369
 # thd->transaction->stmt.is_empty() || thd->in_sub_stmt || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|close_thread_tables|open_tables_for_query|Sql_cmd_dml::prepare|Sql_cmd_dml::execute ## MDEV-37368
-##### MDEV-35915 testing v2 ##### Search Key: Ma2
 !global_table.versioned()|SIGABRT|open_global_temporary_table|open_table|open_and_process_table|open_tables                                                                    ## MDEV-37576
 has_temporary_tables() || (rgi_slave && rgi_slave->is_parallel_exec)|SIGABRT|THD::open_temporary_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-37577
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.str, MDL_EXCLUSIVE)|SIGABRT|TDC_element::flush|mysql_discard_or_import_tablespace|Sql_cmd_discard_import_tablespace::execute|mysql_execute_command ## MDEV-37578
@@ -43,6 +42,8 @@ ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_ha_cl
 ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command                                             ## MDEV-37579
 SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-37579
 thd->transaction->stmt.is_empty()|SIGABRT|mysql_ha_open|mysql_execute_command|mysql_parse|dispatch_command                                                                     ## MDEV-37595
+table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                                       ## MDEV-37597
+### Temp Search Key: Ma2
 
 # Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226
 # These are all the direct result of using init_slave in various ways, for example with an unparsable SQL statement

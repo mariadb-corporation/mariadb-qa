@@ -48,6 +48,8 @@ while :; do
         echo "------- ds watchdog is set to run once every ${DS_RUNONCE_EVERY} loops - starting ds in background screen..."
         ${HOME}/ds RUNONCE &
       fi
+    else
+      echo "------- ds watchdog is set to run once every ${DS_RUNONCE_EVERY} loops, this is loop ${DS_RUNONCE_LOOP}/${DS_RUNONCE_EVERY}"
     fi
   fi
   echo '------- Memory watchdog: terminate_long_running.sh running...'
