@@ -31,6 +31,7 @@
 alignment:*
 ## MDEV-37626 [MTR,  innodb.innodb-table-online innodb.innodb-index-online]
 pointer-overflow:row_log_apply_ops
+pointer-overflow:row_log_table_apply_ops
 ## MDEV-36298
 function:wolfSSL_sk_pop_free
 ## MDEV-35714 [MTR, main.dyncol]
