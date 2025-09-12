@@ -738,6 +738,7 @@ savetrial() {  # Only call this if we definitely want to save a trial
     echoit "Warning: savetrial() was called but TRIAL_SAVED was already 1. Ensure this trial has been actually saved as we don't attempt to save it again now"
     return 1
   fi
+  handle_bugs_mini  # TODO: experimental add, ref handle_bugs_mini() for more info
   if [ "${PRELOAD}" == "1" -a ${ISSTARTED} -eq 1 ]; then  # It only makes sense to save the preload in case the server was ever started (and besides, the preload trace won't exist unless the server was started correctly), otherwise we will get incorrect messages here saying 'preload did not exist in savetrial()' which is correct, but not applicable
     PQUERY_DEFAULT_FILE=
     if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
@@ -859,11 +860,24 @@ check_cmd() {
   fi
 }
 
+# TODO: handle_bugs_mini(): experimental add to savetrial() as add_handy_scripts was not called for savetrial, but only for handle_bugs
+handle_bugs_mini() {  # Called by savetrial(), ref handle_bugs() for more info
+  cd ${RUNDIR}/${TRIAL} || exit 1
+  if [ ! -z "$(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null)" ]; then  # ./data/*core* and ./node*/*core* compatible
+    add_handy_scripts
+  fi
+  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then  # TODO: needs improving for MDG
+    echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"
+    ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh
+  fi
+  cd - >/dev/null || exit 1
+}
+
 handle_bugs() {
   cd ${RUNDIR}/${TRIAL} || exit 1
   add_handy_scripts
   # If there are *SAN bugs, delete any known ones from the top of the error log(s)
-  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then  # TODO: needs improving for MDG
     echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
     # We are already in ${RUNDIR}/${TRIAL} directory (ref above), so no need to change to it
     ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as that will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
@@ -1583,19 +1597,19 @@ pquery_test() {
     fi
     chmod +x ${RUNDIR}/${TRIAL}/start_dev_shm
     CLBIN="$(echo "${BIN}" | sed 's|/mysqld|/mysql|')"
-    MDBIN="$(echo "${BIN}" | sed 's|/mysqld|/mariadb|')"
-    if [ -r "${MDBIN}" ]; then CLBIN="${MDBIN}"; else MDBIN=; fi  # mariadb client
+    MDCLB="$(echo "${BIN}" | sed 's|/mysqld|/mariadb|;s|/mariadbd|/mariadb|')"  # Second sed: as BIN may have already been mariadbd
+    if [ -r "${MDCLB}" ]; then CLBIN="${MDCLB}"; else MDCLB=; fi  # mariadb client
     echo "${CLBIN} -A --force --socket=${SOCKET} -uroot --binary-mode test" > ${RUNDIR}/${TRIAL}/cl_dev_shm
     chmod +x ${RUNDIR}/${TRIAL}/cl_dev_shm
     cat ${RUNDIR}/${TRIAL}/cl_dev_shm | sed 's|/dev/shm|/data|' > ${RUNDIR}/${TRIAL}/cl
     chmod +x ${RUNDIR}/${TRIAL}/cl
-    if [ ! -z "${MDBIN}" ]; then CLBIN="${CLBIN}-"; fi  # mariadb-admin
+    if [ ! -z "${MDCLB}" ]; then CLBIN="${CLBIN}-"; fi  # mariadb-admin
     echo "${CLBIN}admin --socket=$(echo "${SOCKET}" sed "s|/dev/shm|/data|") -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop
     echo "${CLBIN}admin --socket=${SOCKET} -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop_dev_shm
     chmod +x ${RUNDIR}/${TRIAL}/stop ${RUNDIR}/${TRIAL}/stop_dev_shm
     echo "grep -o 'port=[0-9]\\+' start | sed 's|port=||' | xargs -I{} echo \"ps -ef | grep '{}'\" | xargs -I{} bash -c \"{}\" | grep \"\${PWD}\" | awk '{print \$2}' | xargs kill -9" > ${RUNDIR}/${TRIAL}/kill
     chmod +x ${RUNDIR}/${TRIAL}/kill
-    if [ -r "${MDBIN}" ]; then CLBIN="${MDBIN}"; fi  # mariadb client
+    if [ -r "${MDCLB}" ]; then CLBIN="${MDCLB}"; fi  # mariadb client (reset like above after '-' change)
     ACCMD="$(echo "set +H; ${CLBIN} --socket=${SOCKET} -uroot --batch --force -A -e 'SELECT CONCAT(\"ALTER TABLE \`\",TABLE_SCHEMA,\".\",TABLE_NAME,\"\` ENGINE=THEENGINEDUMMY;\") FROM information_schema.TABLES WHERE TABLE_SCHEMA=\"test\"' | sed 's|\`test.|\`|' | xargs -I{} echo \"echo '{}'; echo '{}' | ${CLBIN} --socket=${SOCKET} -uroot --force --binary-mode -A test | tee -a alter_test.txt\" | xargs -0 -I{} bash -c \"{}\"" | sed "s|/dev/shm|/data|g")"
     echo "${ACCMD}" | sed 's|THEENGINEDUMMY|InnoDB|g' > ${RUNDIR}/${TRIAL}/alter_tables_to_innodb_test
     echo "${ACCMD}" | sed 's|THEENGINEDUMMY|MyISAM|g' > ${RUNDIR}/${TRIAL}/alter_tables_to_myisam_test
@@ -1606,10 +1620,10 @@ pquery_test() {
     echo "${ACCMD}" | sed 's|ALTER TABLE|CHECK TABLE|g;s| QUICK||g;' > ${RUNDIR}/${TRIAL}/check_tables_quick
     ACCMD=
     chmod +x ${RUNDIR}/${TRIAL}/check_tables*
-    if [ ! -z "${MDBIN}" ]; then CLBIN="${CLBIN}-"; fi  # mariadb-check
+    if [ ! -z "${MDCLB}" ]; then CLBIN="${CLBIN}-"; fi  # mariadb-check
     MCCMD="set +H; ${CLBIN}check --socket=${SOCKET} -uroot -Acfe 2>&1 | grep --binary-files=text -v ' OK$' | sed 's|^test|DBREPLDUMMY1|g' | tr '\\n' ' ' | sed 's|DBREPLDUMMY1|\\ntest|g' | grep  --binary-files=text -v \"The storage engine for the table doesn't support check\" | grep -v '^[ \\t]*$' | sed \"s|^|\${PWD}:|;s|[ ]\\+| |g;s| : |: |g\""
     CLBIN=
-    MDBIN=
+    MDCLB=
     echo "${MCCMD}" | sed 's|/dev/shm|/data|' > ${RUNDIR}/${TRIAL}/mysqlcheck_test
     echo "${MCCMD}" | sed 's|/dev/shm|/data|;s|\-\-check |--check-upgrade |' > ${RUNDIR}/${TRIAL}/mysqlcheck_upg_test
     MCCMD=
@@ -2784,7 +2798,7 @@ EOF
       TRIAL_TO_SAVE=0
       # Checking for a core has to always come before all other checks; If there is a core, there is the possibility of gaining a unique bug identifier using new_text.string.sh.
       # The /*/ in the /*/*core* core search pattern is for to the /node1/ dir setup for cluster runs
-      # TODO: verify if this means that /data/ is completely replaced by /node1/ at the same levela
+      # TODO: verify if this means that /data/ is completely replaced by /node1/ at the same level
       # It is important in the below calls of fallback_text_string.sh that stderr is null redirected to avoid errors (for example Galera node3 error log not found) from presenting as non-empty outcomes
       if [ "$(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l)" -ge 1 -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/master.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/log/slave.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node1/node1.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node2/node2.err 2>/dev/null)" != "" -o "$(${SCRIPT_PWD}/fallback_text_string.sh ${RUNDIR}/${TRIAL}/node3/node3.err 2>/dev/null)" != "" ]; then
         TRIAL_TO_SAVE=1  # A bug was definitely discovered (core presence or fallback_text_string.sh produced output) so we always need to save the trial. The reason this is set is for all cases where handle_bugs (which sets TRIAL_TO_SAVE=1) is not called, yet there is a bug present (i.e. fallback_text_string.sh produced output)

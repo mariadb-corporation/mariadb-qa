@@ -40,9 +40,18 @@ SEED="${RANDOM}${RANDOM}"
 MAINLOG="/test/git-bisect/bisect.log"
 TMPLOG1="/tmp/git-bisect-${SEED}.out"
 TMPLOG2="/tmp/git-bisect-build_${SEED}.exitcode"
+export ENV_GIT_BISECT='1'
+
+clear_env(){
+  export ENV_GIT_BISECT=
+  export -n ENV_GIT_BISECT
+  ENV_GIT_BISECT=
+}
 
 die(){
-  echo "$2"; exit $1
+  echo "$2"
+  clear_env
+  exit $1
 }
 
 # Variable checks
@@ -51,45 +60,46 @@ if [ "${ES}" -eq 1 ]; then
   if [ ! -r "${CHS}" ]; then CHS="/test/credentials_helper.source"; fi
   if [ ! -r "${CHS}" ]; then
     echo "ES=1 and ../credentials_helper.source nor /test/credentials_helper.source were found - please fix your install"
-    exit 1
+    clear_env; exit 1
   fi
   source "${CHS}"  # Call the credentials check helper script to check ~/.git-credentials provisioning
 fi
 if [ "${ES}" -eq 1 -a ! -z "${FEATURETREE}" ]; then
   echo "TODO: please add ES=1 with FEATURETREE='xyz' functionality, not implemented yet"
-  exit 1
+  clear_env; exit 1
 elif [ "${DBG_OR_OPT}" != 'dbg' -a "${DBG_OR_OPT}" != 'opt' ]; then
   echo "DBG_OR_OPT variable is incorrectly set: use 'dbg' or 'opt' only"
-  exit 1
+  clear_env; exit 1
 elif [[ "${VERSION}" != "10."* && "${VERSION}" != "11."* && "${VERSION}" != "12."* && "${FEATURETREE}" == "" ]]; then
   echo "Version (${VERSION}) does not look correct"
-  exit 1
+  clear_env; exit 1
 elif [ ! -z "${UNIQUEID}" -a ! -z "${TEXT}" ]; then
   echo "Both UNIQUEID and TEXT were set. Please only specify one of them"
-  exit 1
+  clear_env; exit 1
 elif [ -z "${LAST_KNOWN_GOOD_COMMIT}" -o -z "${FIRST_KNOWN_BAD_COMMIT}" ]; then
   echo "LAST_KNOWN_GOOD_COMMIT or FIRST_KNOWN_BAD_COMMIT (or both) setting(s) missing"
-  exit 1
+  clear_env; exit 1
 elif [ ! -r "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh" ]; then
   echo "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh missing. Try cloning mariadb-qa again from Github into your home directory"
   if [ "${UBASAN}" -eq 1 ]; then
     echo "(note: UBASAN=1 so a UBASAN build would have been used to build the server in any case, however the script looks for this script above, as a simple verification whetter mariadb-qa was cloned and is generally ready to be used)"
   fi
-  exit 1
+  clear_env; exit 1
 elif [ ! -r "${HOME}/start" ]; then
   echo "${HOME}/start missing. Try running ${HOME}/mariadb-qa/linkit"
-  exit 1
+  clear_env; exit 1
 elif [ "${BISECT_REPLAY}" -eq 1 -a ! -r "${BISECT_REPLAY_LOG}" ]; then
   echo "BISECT_REPLAY Enabled, yet BISECT_REPLAY_LOG (${BISECT_REPLAY_LOG}) cannot read by this script"
-  exit 1
+  clear_env; exit 1
 elif [ ! -r "${TESTCASE}" ]; then
   echo "The testcase specified; '${TESTCASE}' is not readable"
-  exit 1
+  clear_env; exit 1
 elif [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
-  screen -admS "git-bisect" bash -c "$0;bash"
+  screen -admS "git-bisect" bash -c "export ENV_GIT_BISECT='1';$0;bash"
   sleep 1
   screen -d -r "git-bisect"
+  clear_env
   return 2> /dev/null; exit 0
 fi
 
@@ -151,7 +161,7 @@ bisect_good(){
   if grep -qi 'first bad commit' ${TMPLOG1}; then
     rm -f ${TMPLOG1}
     echo "Finished. Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the full git bisect log" | tee -a "${MAINLOG}"
-    exit 0
+    clear_env; exit 0
   fi
   rm -f ${TMPLOG1}
 }
@@ -170,7 +180,7 @@ bisect_bad(){
     echo "Use 'cat ${MAINLOG}' to see the full git-bisect.sh log'" | tee -a "${MAINLOG}"
     echo "Use 'cd /test/git-bisect/${VERSION} && git bisect log' to see the actual git bisect log" | tee -a "${MAINLOG}"
     rm -f ${TMPLOG1}
-    exit 0
+    clear_env; exit 0
   fi
   rm -f ${TMPLOG1}
 }
@@ -180,44 +190,44 @@ git bisect reset 2>&1 | grep -v 'We are not bisecting' | tee -a "${MAINLOG}"  # 
 git reset --hard | tee -a "${MAINLOG}"  # Revert tree to mainline
 if [ "${?}" != "0" ]; then
   echo "Assert: git reset --hard failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
-  exit 1
+  clear_env; exit 1
 fi
 git clean -xfd | tee -a "${MAINLOG}"    # Cleanup tree
 if [ "${?}" != "0" ]; then
   echo "Assert: git clean -xfd failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
-  exit 1
+  clear_env; exit 1
 fi
 # Ensure we have the right version
 if [ "${ES}" == "1" ]; then
   git checkout --recurse-submodules --force "${VERSION}-enterprise" | tee -a "${MAINLOG}"
   if [ "${?}" != "0" ]; then
     echo "Assert: git checkout --recurse-submodules --force '${VERSION}-enterprise' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
-    exit 1
+    clear_env; exit 1
   fi
 else
   git checkout --recurse-submodules --force "${VERSION}" | tee -a "${MAINLOG}"
   if [ "${?}" != "0" ]; then
     echo "Assert: git checkout --recurse-submodules --force '${VERSION}' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
-    exit 1
+    clear_env; exit 1
   fi
 fi
 if [ "${UPDATETREE}" -eq 1 ]; then
   git pull --recurse-submodules | tee -a "${MAINLOG}"  # Ensure we have the latest version
   if [ "${?}" != "0" ]; then
     echo "Assert: git pull --recurse-submodules failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
-    exit 1
+    clear_env; exit 1
   fi
 fi
 git bisect start | tee -a "${MAINLOG}"  # Start bisect run
 if [ "${?}" != "0" ]; then
   echo "Assert: git bisect start failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
-  exit 1
+  clear_env; exit 1
 fi
 if [ "${BISECT_REPLAY}" -eq 1 ]; then
   git bisect replay "${BISECT_REPLAY_LOG}" | tee -a "${MAINLOG}"
   if [ "${?}" != "0" ]; then
     echo "git bisect replay \"${BISECT_REPLAY_LOG}\" failed. Terminating for manual debugging." | tee -a "${MAINLOG}"
-    exit 1
+    clear_env; exit 1
   else
     echo "git bisect replay \"${BISECT_REPLAY_LOG}\" succeeded. Proceding with regular git bisecting." | tee -a "${MAINLOG}"
   fi
@@ -225,14 +235,14 @@ else
   git bisect bad "${FIRST_KNOWN_BAD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, bad
   if [ "${?}" != "0" ]; then
     echo "Bad revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
-    exit 1
+    clear_env; exit 1
   fi
   # Always init/update submodules after each git bisect good/bad as those commands update the revision set
   git submodule update --init --recursive
   git bisect good "${LAST_KNOWN_GOOD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, good
   if [ "${?}" != "0" ]; then
     echo "Good revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
-    exit 1
+    clear_env; exit 1
   fi
   # Always init/update submodules after each git bisect good/bad as those commands update the revision set
   git submodule update --init --recursive
@@ -262,7 +272,7 @@ while :; do
       fi
       if grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${MAINLOG}"; then
         echo '|> Consider re-running SKIP_NON_SAME_VERSION=0, or manually test the remaining commits if there are only a few'
-        exit 1
+        clear_env; exit 1
         break
       fi
       continue
@@ -271,7 +281,7 @@ while :; do
       git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
       if grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${MAINLOG}"; then
         echo '|> Consider re-running SKIP_NON_SAME_VERSION=0, or manually test the remaining commits if there are only a few'
-        exit 1
+        clear_env; exit 1
         break
       fi
     else
@@ -281,7 +291,7 @@ while :; do
     fi
   done
   if grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${MAINLOG}"; then
-    exit 1
+    clear_env; exit 1
     break
   fi
   CONTINUE_MAIN_LOOP=0
@@ -331,7 +341,7 @@ while :; do
   elif [ "$(echo "${TEST_DIR}" | wc -l)" -ne "1" ]; then
     echo "Assert: TEST_DIR does not contain exactly one line; this should not happen. The current value is:" | tee -a "${MAINLOG}"
     echo "${TEST_DIR}" | tee -a "${MAINLOG}"
-    exit 1
+    clear_env; exit 1
     break
   elif [ ! -d "${TEST_DIR}" ]; then
     echo "Assert: TEST_DIR ${TEST_DIR} does not exits" | tee -a "${MAINLOG}"

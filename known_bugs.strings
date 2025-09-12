@@ -43,6 +43,8 @@ ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_ha_cl
 SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-37579
 thd->transaction->stmt.is_empty()|SIGABRT|mysql_ha_open|mysql_execute_command|mysql_parse|dispatch_command                                                                     ## MDEV-37595
 table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                                       ## MDEV-37597
+SIGSEGV|mysql_ha_close_table|mysql_ha_cleanup_no_free|mysql_ha_cleanup|THD::cleanup                                                                                            ## MDEV-37612
+SIGSEGV|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_and_lock_tables                                                                               ## MDEV-37612
 ### Temp Search Key: Ma2
 
 # Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226

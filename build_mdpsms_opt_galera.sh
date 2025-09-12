@@ -254,7 +254,7 @@ cd ${CURPATH}_opt
 # storage/mroonga/vendor/groonga/vendor/plugins/groonga-normalizer-mysql/CMakeLists.txt
 find . -type f -name 'CMakeLists.txt' -exec sed -i 's|[ \t]*CMAKE_MINIMUM_REQUIRED[ \t]*([ \t]*VERSION[ \t]*2.*|CMAKE_MINIMUM_REQUIRED(VERSION 3.5)|i' {} \;
 # Avoid auto-submodule-update issues in git-bisect (note this is in the copied _dbg/_opt build dir only, and thus harmless)
-git commit -a -m "Dummy commit"
+if [ "${ENV_GIT_BISECT}" == "1" ]; then git commit -a -m "Dummy commit"; fi
 
 ### TEMPORARY HACK TO AVOID COMPILING TB (WHICH IS NOT READY YET)
 rm -Rf ./plugin/tokudb-backup-plugin
