@@ -8,3 +8,11 @@ INSERT INTO t3 VALUES('C');
 SELECT @@log_bin;
 INSERT INTO t2 VALUES (11);
 CREATE TABLE t3 (c CHAR(1)) ENGINE=INNODB;
+
+# mysqld options required for replay:  --log_bin
+CREATE TABLE t (a INT);
+SET SESSION autocommit=0;
+SAVEPOINT s;
+INSERT INTO t VALUES (1);
+CREATE TEMPORARY TABLE t1 (a INT);
+ROLLBACK TO SAVEPOINT s;
