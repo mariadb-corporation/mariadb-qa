@@ -560,6 +560,7 @@ ASAN|stack-use-after-return|storage/spider/spd_table.cc|spider_get_select_lex|sp
 SIGSEGV|spider_mbase_handler::append_key_order_with_alias|spider_mbase_handler::append_key_order_with_alias_part|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_first_internal ## MDEV-34735
 len > alloc_length|SIGABRT|Binary_string::realloc_raw|Binary_string::realloc|Binary_string::reserve|spider_string::reserve                                                     ## MDEV-34735
 SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                                   ## MDEV-34735
+SIGSEGV|galera::TrxHandleSlave::global_seqno|galera::ReplicatorSMM::CommitOrder::CommitOrder|galera::ReplicatorSMM::commit_order_leave|galera_commit_order_leave               ## MDEV-34760
 SIGABRT|galera::FSM<galera::TrxHandle::State, galera::TrxHandle::Transition>::shift_to|galera::TrxHandle::set_state|galera::TrxHandleSlave::set_state|galera::ReplicatorSMM::commit_order_leave ## MDEV-34760
 state() == s_committing|SIGABRT|wsrep::transaction::ordered_commit|wsrep::client_state::ordered_commit|wsrep_ordered_commit|MYSQL_BIN_LOG::queue_for_group_commit              ## MDEV-34760
 SIGSEGV|ha_spider::rm_bulk_tmp_table|ha_spider::reset|ha_spider::open|handler::ha_open                                                                                         ## MENT-2113
