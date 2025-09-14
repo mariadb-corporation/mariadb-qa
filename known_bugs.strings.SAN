@@ -7,17 +7,12 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### MDEV-35915 testing #####
-ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_flush_tables|close_cached_tables                                                    ## MDEV-37579
 # ASAN|heap-use-after-free|sql/lock.cc|unlock_external|mysql_unlock_tables|select_create::send_eof|JOIN::exec_inner                                                              ## MDEV-37394
 # UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command    ## MDEV-37386
 # UBSAN|member access within null pointer of type 'partition_info'|sql/sql_partition.cc|mysql_unpack_partition|open_table_from_share|open_global_temporary_table|open_table      ## MDEV-37384
 # ASAN|heap-use-after-free|sql/records.cc|end_read_record|copy_data_between_tables|mysql_alter_table|mysql_recreate_table                                                        ## MDEV-37383
 # UBSAN|member call on null pointer of type 'TABLE_SHARE'|sql/table.cc|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table|open_tables      ## MDEV-37383
-# UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|create_table_impl            ## MDEV-37382
 # ASAN|heap-use-after-free|sql/sql_handler.cc|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command|mysql_parse                                                          ## MDEV-37381
-# ASAN|use-after-poison|sql/sql_insert.cc|Delayed_insert::handle_inserts|handle_delayed_insert|asan_thread_start|start_thread                                                    ## MDEV-37380
-# UBSAN|member call on null pointer of type 'MDL_ticket'|sql/mdl.cc|MDL_context::upgrade_shared_lock|wait_while_table_is_used|wait_while_table_is_used|Sql_cmd_truncate_table::handler_truncate ## MDEV-37378
-# UBSAN|member access within null pointer of type 'sequence_definition'|sql/item_func.h|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-37369
 
 ##### CURRENT BUGS (Search key: Mac) #####
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql ## MDEV-36857
@@ -33,8 +28,6 @@ UBSAN|addition of unsigned offset to X overflowed to Y|mysys/mf_iocache.c|reinit
 UBSAN|applying zero offset to null pointer|strings/ctype-utf8.c|my_casedn_utf8mb4|charset_info_st::casedn|charset_info_st::casedn_z|fts_add_token                              ## MDEV-37423
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/handler/ha_innodb.cc|innobase_fts_casedn_str|fts_add_token|fts_process_token|fts_tokenize_document ## MDEV-37423
 UBSAN|member access within null pointer of type 'TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                      ## MDEV-35277
-ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::join_free|return_zero_rows                                                               ## MDEV-37395
-ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                           ## MDEV-37395
 ASAN|heap-buffer-overflow|sql/rpl_utility.cc|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row|Rows_log_event::write_row                                ## MDEV-22936
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|init_weight_level|create_tailoring|my_coll_init_uca|my_uca_coll_init_utf8mb3                                    ## MDEV-35877
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|charset_info_st::charpos|Field_blob::get_key_image_itRAW|Field::make_key_image               ## MDEV-37254
@@ -861,3 +854,10 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnncollsp_simple|handler::check_duplicate_long_entries_update|handler::ha_update_row|mysql_update     ## Fixed ## MDEV-37203
 # UBSAN|applying zero offset to null pointer|strings/ctype-simple.c|my_strnncollsp_simple|handler::check_duplicate_long_entries_update|handler::ha_update_row|Sql_cmd_update::update_single_table ## Fixed ## MDEV-37203
 # UBSAN|applying zero offset to null pointer|strings/ctype-uca.inl|my_uca_strnncollsp_onelevel_utf8mb4|handler::check_duplicate_long_entries_update|handler::ha_update_row|Sql_cmd_update::update_single_table ## Fixed ## MDEV-37203
+# UBSAN|member access within null pointer of type 'sequence_definition'|sql/item_func.h|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|setup_fields ## Fixed ## MDEV-37369
+# UBSAN|member call on null pointer of type 'MDL_ticket'|sql/mdl.cc|MDL_context::upgrade_shared_lock|wait_while_table_is_used|wait_while_table_is_used|Sql_cmd_truncate_table::handler_truncate ## Fixed ## MDEV-37378
+# ASAN|use-after-poison|sql/sql_insert.cc|Delayed_insert::handle_inserts|handle_delayed_insert|asan_thread_start|start_thread                                                    ## Fixed ## MDEV-37380
+# UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|create_table_impl            ## Fixed ## MDEV-37382
+# ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::join_free|return_zero_rows                                                               ## Fixed MDEV-37395
+# ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                           ## Fixed MDEV-37395
+# ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_flush_tables|close_cached_tables                                                   ## Fixed ## MDEV-37579
