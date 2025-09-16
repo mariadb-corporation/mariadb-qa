@@ -27,6 +27,8 @@ SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command|mysql_pars
 has_temporary_tables() || (rgi_slave && rgi_slave->is_parallel_exec)|SIGABRT|THD::open_temporary_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-37577
 SIGSEGV|mysql_ha_close_table|mysql_ha_cleanup_no_free|mysql_ha_cleanup|THD::cleanup                                                                                            ## MDEV-37612
 SIGSEGV|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_and_lock_tables                                                                               ## MDEV-37612
+SIGSEGV|mysql_ha_flush|open_tables|open_tables|mysqld_show_create_get_fields                                                                                                   ## MDEV-37612
+SIGSEGV|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_tables                                                                                        ## MDEV-37612
 ### Temp Search Key: Ma2
 
 # Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226
@@ -354,6 +356,7 @@ SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::
 SIGFPE|get_max_range_rowid_filter_elems_for_table|TABLE::init_cost_info_for_usable_range_rowid_filters|make_join_statistics|JOIN::optimize_inner                               ## MDEV-36990
 SIGSEGV|spider_bg_all_conn_break|spider_db_free_result|ha_spider::close|closefrm                                                                                               ## MDEV-36239
 SIGSEGV|spider_bg_all_conn_break|spider_db_free_result|ha_spider::close|handler::ha_close                                                                                      ## MDEV-36239
+SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql                                                                                 ## MDEV-36857
 SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|ORAparse|parse_sql                                                                                   ## MDEV-36857
 max_autoinc <= max|SIGABRT|btr_read_autoinc_with_fallback|initialize_auto_increment|ha_innobase::open|handler::ha_open                                                         ## MDEV-36834
 SIGSEGV|movelink|my_hash_delete|get_intersect_between_arrays|Item_func_json_array_intersect::val_str                                                                           ## MDEV-36809
@@ -434,6 +437,7 @@ SIGSEGV|Static_binary_string::ptr|Item_func_as_wkt::val_str_ascii|Item_func::val
 marked_for_read()|SIGABRT|Field_int::val_decimal|Item_field::val_decimal|VDec::VDec|Arg_comparator::compare_decimal                                                            ## MDEV-36241
 trx->roll_limit <= trx->undo_no|SIGABRT|ut_dbg_assertion_failed|trx_rollback_start|trx_rollback_step|que_thr_step                                                              ## MDEV-36022
 SIGSEGV|TABLE::actual_n_key_parts|calculate_key_len|handler::index_read_map|handler::index_read_idx_map                                                                        ## MDEV-36221
+SIGSEGV|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map                                                                   ## MDEV-36221
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|handler::read_first_row|handler::ha_read_first_row|join_read_system                    ## MDEV-36176
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_rnd_next|rr_sequential|READ_RECORD::read_record|join_init_read_record                           ## MDEV-36176
 0|SIGABRT|Field_new_decimal::get_equal_const_item|Item_field::propagate_equal_fields|Item_ref::propagate_equal_fields|Item::propagate_equal_fields_and_change_item_tree        ## MDEV-36175
@@ -3195,5 +3199,9 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_cleanup_no_free|mysql_ha_cleanup                                 ## Fixed ## MDEV-37579
 # ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command                                  ## Fixed ## MDEV-37579
 # SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                 ## Fixed ## MDEV-37579
+# ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_rm_tables|check_prepared_statement                               ## Fixed ## MDEV-37579
+# SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::upgrade_shared_lock|wait_while_table_is_used                ## Fixed ## MDEV-37579
+# mdl_ticket->m_duration == MDL_TRANSACTION && duration != MDL_TRANSACTION|SIGABRT|MDL_context::set_lock_duration|mysql_ull_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## Fixed ## MDEV-37579
+# SIGSEGV|inline_mysql_prlock_wrlock|MDL_lock::remove_ticket|MDL_context::release_lock|MDL_context::release_lock                                                      ## Fixed ## MDEV-37579
 # thd->transaction->stmt.is_empty()|SIGABRT|mysql_ha_open|mysql_execute_command|mysql_parse|dispatch_command                                                          ## Fixed ## MDEV-37595
 # table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                            ## Fixed ## MDEV-37597

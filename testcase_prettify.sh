@@ -289,6 +289,8 @@ cat "${1}" | tr -d '`' | \
        s|geometrycollection|GEOMETRYCOLLECTION|gi; \
        s|cache|CACHE|gi; \
        s|cycle|CYCLE|gi; \
+       s|nowait|NOWAIT|gi; \
+       s|wait|WAIT|gi; \
        s|if |IF |gi; \
        s| in | IN |gi; \
        s| on | ON |gi; \

@@ -29,7 +29,7 @@
 # ----- Current bugs
 ## Generic TODO
 alignment:*
-## MDEV-37626 [MTR,  innodb.innodb-table-online innodb.innodb-index-online]
+## MDEV-37626 [MTR, innodb.innodb-table-online innodb.innodb-index-online]
 pointer-overflow:row_log_apply_ops
 pointer-overflow:row_log_table_apply_ops
 ## MDEV-36298

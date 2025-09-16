@@ -1,0 +1,4 @@
+CREATE GLOBAL TEMPORARY TABLE t (x INT KEY) ON COMMIT PRESERVE ROWS;
+SELECT * FROM t;
+LOCK TABLE t WRITE;
+FLUSH TABLE t;  # Will hang indefinitely in 'starting' state
