@@ -262,6 +262,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql                                                                                 ## MDEV-36353
 !is_thread_specific || thd || !plugins_are_initialized|SIGABRT|my_malloc_size_cb_func|my_malloc|alloc_root|maria_ft_linearize                                                  ## MDEV-37627
 !is_thread_specific || thd || !plugins_are_initialized|SIGABRT|my_malloc_size_cb_func|my_malloc|root_alloc|alloc_root                                                          ## MDEV-37627
 !is_cond()|SIGABRT|Item_func_hybrid_field_type::val_int|Item::val_int_result|Item_cache_int::cache_value|Item_cache::has_value                                                 ## MDEV-37572
