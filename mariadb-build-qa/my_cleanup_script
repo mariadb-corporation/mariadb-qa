@@ -12,9 +12,12 @@ fi
 
 while true; do
   cd /data
-  ./clean_all  # i.e. ca
-  ./del_most_shutdown_issues.sh 
-  ./del_all_fallback_trials.sh
+  ./clean_all & # i.e. ca
+  ./del_most_shutdown_issues.sh &
+  ./del_all_fallback_trials.sh &
+  wait %1
+  wait %2
+  wait %3
   ./cleanup_all_trial_data.sh
   ./del_backtrace_stopped_issues.sh
   ./del_specific_string_trials.sh 't find record in' 1  # MDEV-34660

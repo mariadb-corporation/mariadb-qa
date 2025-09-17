@@ -7,15 +7,6 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### MDEV-35915 testing #####
-# ASAN|heap-use-after-free|sql/lock.cc|unlock_external|mysql_unlock_tables|select_create::send_eof|JOIN::exec_inner                                                              ## MDEV-37394
-# UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command    ## MDEV-37386
-# UBSAN|member access within null pointer of type 'partition_info'|sql/sql_partition.cc|mysql_unpack_partition|open_table_from_share|open_global_temporary_table|open_table      ## MDEV-37384
-# ASAN|heap-use-after-free|sql/records.cc|end_read_record|copy_data_between_tables|mysql_alter_table|mysql_recreate_table                                                        ## MDEV-37383
-# UBSAN|member call on null pointer of type 'TABLE_SHARE'|sql/table.cc|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table|open_tables      ## MDEV-37383
-# ASAN|heap-use-after-free|sql/sql_handler.cc|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command|mysql_parse                                                          ## MDEV-37381
-UBSAN|load of value X, which is not a valid value for type 'bool'|sql/temporary_tables.cc|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|open_and_lock_tables ## MDEV-37379
-UBSAN|load of value X, which is not a valid value for type 'bool'|sql/temporary_tables.cc|THD::mark_tmp_table_as_free_for_reuse|THD::commit_global_tmp_tables|ha_rollback_trans|trans_rollback_stmt ## MDEV-37379
-ASAN|heap-use-after-free|sql/sql_handler.cc|mysql_ha_flush|open_tables|open_tables|mysqld_show_create_get_fields                                                                 ## MDEV-37657
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
@@ -100,6 +91,9 @@ ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_
 ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_rename_user|mysql_execute_command                                                              ## MDEV-35622 
 ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                              ## MDEV-35622
 UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_int_in_field|Item::save_in_field|save_window_function_values|compute_window_func                      ## MDEV-36356
+UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_decimal_in_field|Item::save_in_field|save_window_function_values|compute_window_func                  ## MDEV-36356
+UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item::save_date_in_field|Item::save_in_field|save_window_function_values|compute_window_func               ## MDEV-36356
+UBSAN|member access within null pointer of type 'Field'|sql/field_conv.cc|set_field_to_null_with_conversions|Item::save_str_in_field|Item::save_in_field|save_window_function_values ## MDEV-36356
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_in_subselect::Item_in_subselect|MYSQLparse|parse_sql ## MDEV-36353
 UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|mysql_multi_update_prepare ## MDEV-36343
 UBSAN|applying non-zero offset X to null pointer|sql/sql_lifo_buffer.h|Forward_lifo_buffer::have_space_for|DsMrr_impl::dsmrr_init|ha_innobase::multi_range_read_init|QUICK_RANGE_SELECT::reset ## MDEV-36344
@@ -861,9 +855,18 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # UBSAN|applying zero offset to null pointer|strings/ctype-uca.inl|my_uca_strnncollsp_onelevel_utf8mb4|handler::check_duplicate_long_entries_update|handler::ha_update_row|Sql_cmd_update::update_single_table ## Fixed ## MDEV-37203
 # UBSAN|member access within null pointer of type 'sequence_definition'|sql/item_func.h|Item_func_nextval::fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed_for_scalar|setup_fields ## Fixed ## MDEV-37369
 # UBSAN|member call on null pointer of type 'MDL_ticket'|sql/mdl.cc|MDL_context::upgrade_shared_lock|wait_while_table_is_used|wait_while_table_is_used|Sql_cmd_truncate_table::handler_truncate ## Fixed ## MDEV-37378
-# ASAN|use-after-poison|sql/sql_insert.cc|Delayed_insert::handle_inserts|handle_delayed_insert|asan_thread_start|start_thread                                                    ## Fixed ## MDEV-37380
-# UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|create_table_impl            ## Fixed ## MDEV-37382
-# ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::join_free|return_zero_rows                                                               ## Fixed MDEV-37395
-# ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                           ## Fixed MDEV-37395
-# ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_flush_tables|close_cached_tables                                                   ## Fixed ## MDEV-37579
-# ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command                                                    ## MDEV-37579
+# ASAN|use-after-poison|sql/sql_insert.cc|Delayed_insert::handle_inserts|handle_delayed_insert|asan_thread_start|start_thread                                                  ## Fixed ## MDEV-37380
+# UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|create_table_impl          ## Fixed ## MDEV-37382
+# ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::join_free|return_zero_rows                                                             ## Fixed MDEV-37395
+# ASAN|heap-use-after-free|sql/sql_select.cc|st_join_table::cleanup|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                         ## Fixed MDEV-37395
+# ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_flush_tables|close_cached_tables                                                 ## Fixed ## MDEV-37579
+# ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::release_lock|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command                                                  ## Fixed ## MDEV-37579
+# ASAN|heap-use-after-free|sql/lock.cc|unlock_external|mysql_unlock_tables|select_create::send_eof|JOIN::exec_inner                                                            ## Fixed ## MDEV-37394
+# UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command  ## Fixed ## MDEV-37386
+# UBSAN|member access within null pointer of type 'partition_info'|sql/sql_partition.cc|mysql_unpack_partition|open_table_from_share|open_global_temporary_table|open_table    ## Fixed ## MDEV-37384
+# ASAN|heap-use-after-free|sql/records.cc|end_read_record|copy_data_between_tables|mysql_alter_table|mysql_recreate_table                                                      ## Fixed ## MDEV-37383
+# UBSAN|member call on null pointer of type 'TABLE_SHARE'|sql/table.cc|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table|open_tables    ## Fixed ## MDEV-37383
+# ASAN|heap-use-after-free|sql/sql_handler.cc|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command|mysql_parse                                                        ## Fixed ## MDEV-37381
+# UBSAN|load of value X, which is not a valid value for type 'bool'|sql/temporary_tables.cc|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|open_and_lock_tables ## Fixed ## MDEV-37379
+# UBSAN|load of value X, which is not a valid value for type 'bool'|sql/temporary_tables.cc|THD::mark_tmp_table_as_free_for_reuse|THD::commit_global_tmp_tables|ha_rollback_trans|trans_rollback_stmt ## Fixed ## MDEV-37379
+# ASAN|heap-use-after-free|sql/sql_handler.cc|mysql_ha_flush|open_tables|open_tables|mysqld_show_create_get_fields                                                             ## Fixed ## MDEV-37657

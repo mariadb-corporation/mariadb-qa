@@ -14,21 +14,6 @@ MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ##### MDEV-35915 testing #####
 MARIADB_ERROR_CODE|MariaDB error code: 1163                                                                                                                                    ## MDEV-37596
-m_lock_type == 2|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                       ## MDEV-37394
-SIGSEGV|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                                                              ## MDEV-37394
-# SIGSEGV|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command                                                                    ## MDEV-37386
-# thd->open_tables == table->table|SIGABRT|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                          ## MDEV-37386
-#SIGSEGV|mysql_unpack_partition|open_table_from_share|open_global_temporary_table|open_table                                                                                    ## MDEV-37384
-# SIGSEGV|TABLE_SHARE::get_table_ref_type|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table                                               ## MDEV-37383
-m_lock_type == 2|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                       ## MDEV-37383
-SIGSEGV|end_read_record|copy_data_between_tables|mysql_alter_table|mysql_recreate_table                                                                                        ## MDEV-37383
-SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command|mysql_parse                                                                                              ## MDEV-37381
-# index->is_readable()|SIGABRT|dict_create_index_tree_in_mem|row_create_index_for_mysql|create_table_info_t::create_table|ha_innobase::create                         ## Fixed ## MDEV-37379  # Fixed, but new issue is present
-has_temporary_tables() || (rgi_slave && rgi_slave->is_parallel_exec)|SIGABRT|THD::open_temporary_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## MDEV-37577
-SIGSEGV|mysql_ha_close_table|mysql_ha_cleanup_no_free|mysql_ha_cleanup|THD::cleanup                                                                                            ## MDEV-37612
-SIGSEGV|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_and_lock_tables                                                                               ## MDEV-37612
-SIGSEGV|mysql_ha_flush|open_tables|open_tables|mysqld_show_create_get_fields                                                                                                   ## MDEV-37612
-SIGSEGV|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_tables                                                                                        ## MDEV-37612
 ### Temp Search Key: Ma2
 
 # Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226
@@ -425,6 +410,12 @@ SIGSEGV|Field::val_str|Field::val_lex_cstring|handle_grant_table|handle_grant_da
 SIGSEGV|Sql_mode_save::Sql_mode_save|Sql_mode_instant_remove::Sql_mode_instant_remove|get_field|get_field                                                                      ## MDEV-35622
 SIGSEGV|Sql_mode_save::Sql_mode_save|Sql_mode_instant_remove::Sql_mode_instant_remove|get_field|handle_grant_table                                                             ## MDEV-35622
 SIGSEGV|Field::set_notnull|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                                             ## MDEV-36356
+SIGSEGV|set_field_to_null_with_conversions|Item::save_str_in_field|Item::save_in_field|save_window_function_values                                                             ## MDEV-36356
+SIGSEGV|Item::save_date_in_field|Type_handler_temporal_with_date::Item_save_in_field|Item::save_in_field|save_window_function_values                                           ## MDEV-36356
+SIGSEGV|Item::save_date_in_field|Item::save_in_field|save_window_function_values|compute_window_func                                                                           ## MDEV-36356
+SIGSEGV|Field::set_notnull|Item::save_decimal_in_field|Type_handler_decimal_result::Item_save_in_field|Item::save_in_field                                                     ## MDEV-36356
+SIGSEGV|Field::set_notnull|Item::save_decimal_in_field|Item::save_in_field|save_window_function_values                                                                         ## MDEV-36356
+SIGSEGV|set_field_to_null_with_conversions|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                          ## MDEV-36356
 SIGSEGV|Field::set_notnull|Item::save_int_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
 SIGSEGV|my_strtod_int|my_strtod|charset_info_st::strntod|Value_source::Converter_strntod::Converter_strntod                                                                    ## MDEV-36355
 SIGSEGV|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                                                                                                       ## MDEV-36355
@@ -3206,3 +3197,18 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|inline_mysql_prlock_wrlock|MDL_lock::remove_ticket|MDL_context::release_lock|MDL_context::release_lock                                                      ## Fixed ## MDEV-37579
 # thd->transaction->stmt.is_empty()|SIGABRT|mysql_ha_open|mysql_execute_command|mysql_parse|dispatch_command                                                          ## Fixed ## MDEV-37595
 # table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|ha_innobase::delete_table|hton_drop_table                                            ## Fixed ## MDEV-37597
+# m_lock_type == 2|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                            ## Fixed ## MDEV-37394
+# SIGSEGV|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                                                   ## Fixed ## MDEV-37394
+# SIGSEGV|close_thread_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command                                                         ## Fixed ## MDEV-37386
+# thd->open_tables == table->table|SIGABRT|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                               ## Fixed ## MDEV-37386
+#SIGSEGV|mysql_unpack_partition|open_table_from_share|open_global_temporary_table|open_table                                                                          ## Fixed ## MDEV-37384
+# SIGSEGV|TABLE_SHARE::get_table_ref_type|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table                                    ## Fixed ## MDEV-37383
+# m_lock_type == 2|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                            ## Fixed ## MDEV-37383
+# SIGSEGV|end_read_record|copy_data_between_tables|mysql_alter_table|mysql_recreate_table                                                                             ## Fixed ## MDEV-37383
+# SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_execute_command|mysql_parse                                                                                   ## Fixed ## MDEV-37381
+# index->is_readable()|SIGABRT|dict_create_index_tree_in_mem|row_create_index_for_mysql|create_table_info_t::create_table|ha_innobase::create                         ## Fixed ## MDEV-37379
+# has_temporary_tables() || (rgi_slave && rgi_slave->is_parallel_exec)|SIGABRT|THD::open_temporary_table|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command ## Fixed ## MDEV-37577
+# SIGSEGV|mysql_ha_close_table|mysql_ha_cleanup_no_free|mysql_ha_cleanup|THD::cleanup                                                                                 ## Fixed ## MDEV-37612
+# SIGSEGV|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_and_lock_tables                                                                    ## Fixed ## MDEV-37612
+# SIGSEGV|mysql_ha_flush|open_tables|open_tables|mysqld_show_create_get_fields                                                                                        ## Fixed ## MDEV-37612
+# SIGSEGV|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_tables                                                                             ## Fixed ## MDEV-37612
