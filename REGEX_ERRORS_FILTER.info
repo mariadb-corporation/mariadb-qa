@@ -9,7 +9,7 @@ Note: While unlikely to ever happen, REGEX_ERRORS_FILTER should never be fully e
 Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
 Internal MariaDB error code: 1046|Internal MariaDB error code: 1054|Internal MariaDB error code: 1064|Internal MariaDB error code: 1193|Internal MariaDB error code: 1231|Internal MariaDB error code: 1237  Ref 'kb' for info on these (temporary slave_init error coverage)
-Got an error writing communication packets            Regularly seen after shutdown, possible related to OOS or similar
+Got an error writing communication packets            Occassionally seen after shutdown, for example upon 'Aborted connection x to db'. Possibly also be OOS caused
 mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL MDEV-37339
 mariadbd: caching_sha2_password: failed to read private_key.pem.*No such file or directory MDEV-37339
 ERROR. mariadbd: Can.t find record in                 MDEV-37068 (Vector), MDEV-33563 (replication)  # Filter not activated; find additional testcases

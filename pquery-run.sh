@@ -45,6 +45,7 @@ NEWBUGS=0
 INFILE_SHUFFLED=
 PRE_SHUFFLE_TRIAL_ROUND=0  # Resets to 0 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
 TRIAL_SAVED=0
+SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=0  # Reset to 0 at the start of each trial, ref top of pquery_test()
 
 # Set SAN options
 # https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
@@ -304,10 +305,10 @@ diskspace(){
 
 add_handy_scripts(){  # Add handy stack and gdb scripts per trial
   if [[ "${MDG}" -eq 1 ]]; then
-    SAVE_HANDY_LOC=${RUNDIR}/${TRIAL}/node${j}
+    SAVE_HANDY_LOC="${RUNDIR}/${TRIAL}/node${j}"
     CORE_TO_ANALYZE="${GALERA_CORE_LOC}"
   else
-    SAVE_HANDY_LOC=${RUNDIR}/${TRIAL}
+    SAVE_HANDY_LOC="${RUNDIR}/${TRIAL}"
     CORE_TO_ANALYZE="./data*/*core*"
   fi
   ln -s "${SCRIPT_PWD}/stack.sh" ${SAVE_HANDY_LOC}/stack 2>/dev/null
@@ -738,7 +739,9 @@ savetrial() {  # Only call this if we definitely want to save a trial
     echoit "Warning: savetrial() was called but TRIAL_SAVED was already 1. Ensure this trial has been actually saved as we don't attempt to save it again now"
     return 1
   fi
-  handle_bugs_mini  # TODO: experimental add, ref handle_bugs_mini() for more info
+  if [ ! -z "$(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null)" ]; then  # ./data/*core* and ./node*/*core* compatible
+    add_handy_scripts
+  fi
   if [ "${PRELOAD}" == "1" -a ${ISSTARTED} -eq 1 ]; then  # It only makes sense to save the preload in case the server was ever started (and besides, the preload trace won't exist unless the server was started correctly), otherwise we will get incorrect messages here saying 'preload did not exist in savetrial()' which is correct, but not applicable
     PQUERY_DEFAULT_FILE=
     if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
@@ -766,14 +769,18 @@ savetrial() {  # Only call this if we definitely want to save a trial
     PQUERY_DEFAULT_FILE=
   fi
   # If there are *SAN bugs, delete any known ones from the top of the error log(s)
-  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
-    echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
-    CUR_PWD_TMP="${PWD}"
-    cd "${RUNDIR}/${TRIAL}"
-    ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as that will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
-    cd "${CUR_PWD_TMP}"
-    CUR_PWD_TMP=
+  if [ "${SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG}" != "1" ]; then
+    if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+      SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=1
+      echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
+      CUR_PWD_TMP="${PWD}"
+      cd "${RUNDIR}/${TRIAL}"
+      ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as that will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
+      cd "${CUR_PWD_TMP}"
+      CUR_PWD_TMP=
+    fi
   fi
+HERE2
   if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
     # As we are already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh
     if [ "$(echo "${TEXT}" | grep --binary-files=text -o 'no core.*empty output' | grep --binary-files=text -o 'no core' | head -n1)" == "no core" ]; then
@@ -860,27 +867,17 @@ check_cmd() {
   fi
 }
 
-# TODO: handle_bugs_mini(): experimental add to savetrial() as add_handy_scripts was not called for savetrial, but only for handle_bugs
-handle_bugs_mini() {  # Called by savetrial(), ref handle_bugs() for more info
-  cd ${RUNDIR}/${TRIAL} || exit 1
-  if [ ! -z "$(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null)" ]; then  # ./data/*core* and ./node*/*core* compatible
-    add_handy_scripts
-  fi
-  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then  # TODO: needs improving for MDG
-    echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"
-    ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh
-  fi
-  cd - >/dev/null || exit 1
-}
-
 handle_bugs() {
   cd ${RUNDIR}/${TRIAL} || exit 1
   add_handy_scripts
   # If there are *SAN bugs, delete any known ones from the top of the error log(s)
-  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then  # TODO: needs improving for MDG
-    echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
-    # We are already in ${RUNDIR}/${TRIAL} directory (ref above), so no need to change to it
-    ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as that will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
+  if [ "${SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG}" != "1" ]; then
+    if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then  # TODO: needs improving for MDG
+      SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=1
+      echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
+      # We are already in ${RUNDIR}/${TRIAL} directory (ref above), so no need to change to it
+      ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as that will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
+    fi
   fi
   if [[ "${MDG}" -eq 1 ]]; then
     export GALERA_ERROR_LOGS=${RUNDIR}/${TRIAL}/node${j}/node${j}.err
@@ -1358,9 +1355,11 @@ gr_startup() {
   done
 }
 
-pquery_test() {
+pquery_test(){
+  TRIAL_SAVED=0
   TRIAL=$((${TRIAL} + 1))
   SOCKET=${RUNDIR}/${TRIAL}/socket.sock
+  SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=0
   echoit "====== TRIAL #${TRIAL} ======"
   echoit "Ensuring there are no relevant servers running..."
   KILLPID=$(ps -ef | grep "${RUNDIR}" | grep -v grep | awk '{print $2}' | tr '\n' ' ')
@@ -2476,7 +2475,6 @@ EOF
   else
     echoit "Cleaning up & saving results if needed..."
   fi
-  TRIAL_SAVED=0
   sleep 2 # Delay to ensure core was written completely (if any)
   # First cleanup any temporary SQL if PRE_SHUFFLE_TRIAL_ROUND=0 (i.e. the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE trials was completed)
   if [ ! -z "${INFILE_SHUFFLED}" -a -r "${INFILE_SHUFFLED}" -a ! -d "${INFILE_SHUFFLED}" ]; then
@@ -2794,6 +2792,19 @@ EOF
         echoit "No Valgrind errors detected. $(grep "==[0-9]\+== ERROR SUMMARY: [0-9]\+ error" ${RUNDIR}/${TRIAL}/log/*.err | sed 's|.*ERROR S|ERROR S|')"
       fi
     fi
+    # If there are *SAN bugs, delete any known ones from the top of the error log(s)...
+    if [ "${SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG}" != "1" ]; then
+      if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+        SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=1
+        echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
+        CUR_PWD_TMP="${PWD}"
+        cd "${RUNDIR}/${TRIAL}"
+        ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh  # Do not add any options to this script call as that will cause the top SAN issue to be deleted, irrespective of whetter an issue is known or not
+        cd "${CUR_PWD_TMP}"
+        CUR_PWD_TMP=
+      fi
+    fi
+    # ...If any "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" mentions (checked in the long if/elif/elif... below) remain, it thus means that those issues are new and should be saved
     if [ ${TRIAL_SAVED} -eq 0 ]; then
       TRIAL_TO_SAVE=0
       # Checking for a core has to always come before all other checks; If there is a core, there is the possibility of gaining a unique bug identifier using new_text.string.sh.
@@ -2849,28 +2860,29 @@ EOF
         echoit "'MySQL server has gone away' detected >=200 times for this trial, and the pquery timeout was not reached; saving this trial for further analysis"
         savetrial
         TRIAL_SAVED=1
+      # The various *SAN check below assume that any pre-existing/known *SAN issues have already been dropped from the log. Ref the provision for this before the first 'if' in this longer if/elif/elif... 
       elif [ $(grep -im1 --binary-files=text "=ERROR:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
-        echoit "ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        echoit "Uknown/new ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "runtime error:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
-        echoit "UBSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        echoit "Uknown/new UBSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "AddressSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
-        echoit "ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        echoit "Uknown/new ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
-        echoit "TSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        echoit "Uknown/new TSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
-        echoit "LSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        echoit "Uknown/new LSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
-        echoit "MSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        echoit "Uknown/new MSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ ${SAVE_TRIALS_WITH_BUGS_ONLY} -eq 0 ]; then

@@ -13,11 +13,13 @@ fi
 while true; do
   cd /data
   ./clean_all & # i.e. ca
-  ./del_most_shutdown_issues.sh &
   ./del_all_fallback_trials.sh &
+  #./del_most_shutdown_issues.sh &  # Needed in current feature testing
   wait %1
   wait %2
-  wait %3
+  #wait %3
+  # Cleanup all 'no core file/no fallback' trials which truly have no core (historically this also included SAN issues which were subsequently filered)
+  grep "^   TEXT=.Assert: no core file found.*and fallback_text_string.sh returned an empty output for all logs" */reducer[0-9]*.sh | grep -o '[0-9]\+/reducer[0-9]\+' | sed 's|\([0-9]\+\)/reducer\([0-9]\+\)|if [ ! -r \1/\2/data/core ]; then echo "Removing trial \2 in workdir \1"; rm -Rf \1/\2 \1/[a-z]*\2.sh \1/[a-z]*\2; fi|' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
   ./cleanup_all_trial_data.sh
   ./del_backtrace_stopped_issues.sh
   ./del_specific_string_trials.sh 't find record in' 1  # MDEV-34660

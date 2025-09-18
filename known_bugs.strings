@@ -14,6 +14,11 @@ MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ##### MDEV-35915 testing #####
 MARIADB_ERROR_CODE|MariaDB error code: 1163                                                                                                                                    ## MDEV-37596
+!global_table.versioned()|SIGABRT|open_global_temporary_table|open_table|open_and_process_table|open_tables                                                                    ## MDEV-37666
+SIGSEGV|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|mysql_alter_table                                                                        ## MDEV-37667
+SIGSEGV|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|THD::drop_temporary_table                                                                ## MDEV-37667
+SIGSEGV|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_lock::release|MDL_context::release_lock                                                                       ## MDEV-37668
+mdl_ticket->m_duration == MDL_TRANSACTION && duration != MDL_TRANSACTION|SIGABRT|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37668
 ### Temp Search Key: Ma2
 
 # Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226
@@ -31,6 +36,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1237  ## Ignored query due to replicate-*
 MARIADBD_ERROR|mariadbd: Connection was killed       ## SPECIAL-43 (non-issue; simple increased log verbosity)
 MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-28498, MDEV-27771
 MARIADBD_ERROR|mariadbd: The table table is full  ## SPECIAL-44 (non-issue; table is simply full)
+MARIADBD_ERROR|mariadbd: Got an error writing communication packets  ## Occassionally seen after shutdown, upon 'Aborted connection x to db': deemed non-issue
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
@@ -259,6 +265,7 @@ SIGSEGV|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation
 SIGSEGV|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                                             ## MDEV-28619
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_ref::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                              ## MDEV-36888
 decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func_mod::fix_length_and_dec|Item_func::fix_fields  ## MDEV-35920
+decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed         ## MDEV-35920
 !order->item[0]->with_sum_func()|SIGABRT|simple_remove_const|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute                            ## MDEV-33177
 SIGSEGV|sortlength|filesort|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                                                                                  ## MDEV-33177
 SIGSEGV|Exec_time_tracker::get_loops|Filesort_tracker::report_use|filesort|create_sort_index                                                                                   ## MDEV-32307
