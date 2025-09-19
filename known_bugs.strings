@@ -19,6 +19,8 @@ SIGSEGV|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_
 SIGSEGV|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|THD::drop_temporary_table                                                                ## MDEV-37667
 SIGSEGV|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_lock::release|MDL_context::release_lock                                                                       ## MDEV-37668
 mdl_ticket->m_duration == MDL_TRANSACTION && duration != MDL_TRANSACTION|SIGABRT|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37668
+SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-37681
+SIGSEGV|myrocks::Rdb_transaction_impl::prepare|myrocks::rocksdb_prepare|prepare_or_error|ha_commit_trans                                                                       ## MDEV-37690
 ### Temp Search Key: Ma2
 
 # Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226
@@ -255,6 +257,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare_e_json_str|Arg_comparator::compare                                  ## MDEV-35352
+SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool                                           ## MDEV-35352
 SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql                                                                                 ## MDEV-36857
 !is_thread_specific || thd || !plugins_are_initialized|SIGABRT|my_malloc_size_cb_func|my_malloc|alloc_root|maria_ft_linearize                                                  ## MDEV-37627
 !is_thread_specific || thd || !plugins_are_initialized|SIGABRT|my_malloc_size_cb_func|my_malloc|root_alloc|alloc_root                                                          ## MDEV-37627
@@ -1675,6 +1679,7 @@ subq_pred->engine->engine_type() == subselect_engine::SINGLE_SELECT_ENGINE|SIGAB
 SIGSEGV|select_value_catcher::setup|execute_degenerate_jtbm_semi_join|setup_jtbm_semi_joins|JOIN::optimize_inner                                                               ## MDEV-22700
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|copy_fields|end_write                                                                                 ## MDEV-22702
 len == ref_length|SIGABRT|ha_innobase::position|find_all_keys|filesort|create_sort_index                                                                                       ## MDEV-22873
+0|SIGABRT|Item::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion_result|Item::val_native_with_conversion_result|Item_cache_timestamp::cache_value     ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_result|Type_handler_fbt<Inet4, Type_collection_inet>::Item_val_native_with_conversion_result|Item::val_native_with_conversion_result ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_fbt<Inet6, Type_collection_inet>::Fbt::make_from_item                                  ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_result|Type_handler_fbt<Inet4, Type_collection_fbt<Inet4> >::Item_val_native_with_conversion_result|Item::val_native_with_conversion_result ## MDEV-22885

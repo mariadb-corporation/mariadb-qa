@@ -9,9 +9,15 @@ UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through poin
 ##### MDEV-35915 testing #####
 ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-37668
 ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37668
+ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|Sql_cmd_truncate_table::truncate_table                       ## MDEV-37681
+UBSAN|member call on null pointer of type 'rocksdb::Transaction'|storage/rocksdb/ha_rocksdb.cc|myrocks::Rdb_transaction_impl::prepare|myrocks::rocksdb_prepare|prepare_or_error|ha_commit_trans ## MDEV-37690
+ASAN|heap-use-after-free|sql/mdl.cc|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_and_lock_tables                                                   ## MDEV-37693
+ASAN|heap-use-after-free|sql/table.cc|check_column_name|mysql_prepare_create_table_stage1|mysql_create_frm_image|create_table_impl                                             ## MDEV-37694
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of null pointer of type 'Item *'|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool ## MDEV-35352
+ASAN|use-after-poison|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool        ## MDEV-35352
 UBSAN|member access within null pointer of type 'KEY' (aka 'st_key')|sql/table.cc|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map ## MDEV-36221
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql ## MDEV-36857
 UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info ## MDEV-37565
@@ -96,6 +102,7 @@ UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_int_in_
 UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_decimal_in_field|Item::save_in_field|save_window_function_values|compute_window_func                  ## MDEV-36356
 UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item::save_date_in_field|Item::save_in_field|save_window_function_values|compute_window_func               ## MDEV-36356
 UBSAN|member access within null pointer of type 'Field'|sql/field_conv.cc|set_field_to_null_with_conversions|Item::save_str_in_field|Item::save_in_field|save_window_function_values ## MDEV-36356
+UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_in_subselect::Item_in_subselect|ORAparse|parse_sql ## MDEV-36353
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_in_subselect::Item_in_subselect|MYSQLparse|parse_sql ## MDEV-36353
 UBSAN|-nan is outside the range of representable values of type 'unsigned long long'|sql/sql_statistics.h|Index_statistics::set_avg_frequency|read_statistics_for_table|read_statistics_for_tables|mysql_multi_update_prepare ## MDEV-36343
 UBSAN|applying non-zero offset X to null pointer|sql/sql_lifo_buffer.h|Forward_lifo_buffer::have_space_for|DsMrr_impl::dsmrr_init|ha_innobase::multi_range_read_init|QUICK_RANGE_SELECT::reset ## MDEV-36344
@@ -447,6 +454,7 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 UBSAN|member call on null pointer of type 'Item'|sql/sql_union.cc|st_select_lex_unit::exec_inner|mysql_union|handle_select|execute_sqlcom_select                               ## MDEV-22447
 UBSAN|member call on null pointer of type 'Item'|sql/sql_union.cc|st_select_lex_unit::exec|mysql_union|handle_select|execute_sqlcom_select                                     ## MDEV-22447
 UBSAN|member call on null pointer of type 'struct Item'|sql/sql_select.cc|handle_select|execute_sqlcom_select|mysql_execute_command|mysql_parse                                ## MDEV-22447
+ASAN|heap-use-after-free|include/x86_64-linux-gnu/bits/string_fortified.h|__asan_memmove|memmove|Binary_string::copy|String::copy                                              ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|__asan_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                   ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|__asan_memmove|Binary_string::copy|String::copy|Item_copy_string::copy                                                              ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|interceptor_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                              ## MDEV-26822
@@ -872,3 +880,5 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # UBSAN|load of value X, which is not a valid value for type 'bool'|sql/temporary_tables.cc|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|open_and_lock_tables ## Fixed ## MDEV-37379
 # UBSAN|load of value X, which is not a valid value for type 'bool'|sql/temporary_tables.cc|THD::mark_tmp_table_as_free_for_reuse|THD::commit_global_tmp_tables|ha_rollback_trans|trans_rollback_stmt ## Fixed ## MDEV-37379
 # ASAN|heap-use-after-free|sql/sql_handler.cc|mysql_ha_flush|open_tables|open_tables|mysqld_show_create_get_fields                                                             ## Fixed ## MDEV-37657
+# UBSAN|downcast of address X which does not point to an object of type 'Item_func_json_extract'|sql/item_jsonfunc.cc                                                          ## MDEV-35352 (12.0 only)
+# UBSAN|member call on address X which does not point to an object of type 'Item_func_json_extract'|sql/item_jsonfunc.cc                                                       ## MDEV-35352 (12.0 only)
