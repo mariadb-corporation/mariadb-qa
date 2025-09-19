@@ -14,3 +14,7 @@ DROP USER'';
 
 CREATE OR REPLACE TABLE mysql.procs_priv (id INT) ENGINE=MyISAM;
 RENAME USER''@''TO''@'''''''''';
+
+CREATE OR REPLACE TABLE mysql.procs_priv (id INT);
+INSERT INTO mysql.procs_priv SELECT 0 seq_0_to_0;
+FLUSH PRIVILEGES;
