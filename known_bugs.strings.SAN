@@ -16,6 +16,7 @@ ASAN|heap-use-after-free|sql/table.cc|check_column_name|mysql_prepare_create_tab
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|global-buffer-overflow|strings/ctype-utf8.c|my_charlen_utf8mb3|my_well_formed_char_length_utf8mb3|my_ci_well_formed_char_length|my_copy_fix_mb                            ## MDEV-37698
 UBSAN|load of null pointer of type 'Item *'|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool ## MDEV-35352
 ASAN|use-after-poison|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool        ## MDEV-35352
 UBSAN|member access within null pointer of type 'KEY' (aka 'st_key')|sql/table.cc|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map ## MDEV-36221
@@ -34,6 +35,7 @@ UBSAN|null pointer passed as argument 2, which is declared to never be null|stor
 UBSAN|member access within null pointer of type 'TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                      ## MDEV-35277
 ASAN|heap-buffer-overflow|sql/rpl_utility.cc|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row|Rows_log_event::write_row                                ## MDEV-22936
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|init_weight_level|create_tailoring|my_coll_init_uca|my_uca_coll_init_utf8mb3                                    ## MDEV-35877
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|charset_info_st::charpos|Field_blob::get_key_image_itRAW|key_copy                            ## MDEV-37254
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|charset_info_st::charpos|Field_blob::get_key_image_itRAW|Field::make_key_image               ## MDEV-37254
 UBSAN|member access within null pointer of type 'THD'|sql/sql_class.h|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options|Item::save_date_in_field      ## MDEV-37171
 UBSAN|member call on null pointer of type 'THD'|sql/item_timefunc.cc|Item_func_current_timestamp::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null|Type_handler_timestamp_common::Item_save_in_field  ## MDEV-37171
@@ -98,6 +100,7 @@ ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|hashcmp
 ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_comman                                                                 ## MDEV-35622
 ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_rename_user|mysql_execute_command                                                              ## MDEV-35622 
 ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                              ## MDEV-35622
+UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_str_in_field|Item::save_in_field|save_window_function_values|compute_window_func                      ## MDEV-36356
 UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_int_in_field|Item::save_in_field|save_window_function_values|compute_window_func                      ## MDEV-36356
 UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_decimal_in_field|Item::save_in_field|save_window_function_values|compute_window_func                  ## MDEV-36356
 UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item::save_date_in_field|Item::save_in_field|save_window_function_values|compute_window_func               ## MDEV-36356
@@ -395,6 +398,7 @@ UBSAN|member call on null pointer of type 'struct Field'|sql/sql_acl.cc|replace_
 UBSAN|member call on null pointer of type 'struct Field'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command   ## MDEV-24814
 UBSAN|member call on null pointer of type 'struct Field'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|mysql_execute_command|mysql_parse                                ## MDEV-24814
 UBSAN|member access within null pointer of type 'struct TABLE'|sql/json_table.cc|Table_function_json_table::print|TABLE_LIST::print|print_table_array|print_join               ## MDEV-25784
+UBSAN|member access within null pointer of type 'TABLE'|sql/json_table.cc|Table_function_json_table::print|TABLE_LIST::print|print_table_array|print_join                      ## MDEV-25784
 LSAN|memory leak|storage/innobase/trx/trx0roll.cc|interceptor_malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                   ## MDEV-23073
 LSAN|memory leak|storage/innobase/trx/trx0roll.cc|malloc|trx_savepoint_for_mysql|innobase_savepoint|ha_savepoint                                                               ## MDEV-23073
 LSAN|memory leak|include/trx0trx.h|operator|trx_mod_table_time_t::start_bulk_insert|trx_undo_report_row_operation|row_ins_clust_index_entry_low                                ## MDEV-30943

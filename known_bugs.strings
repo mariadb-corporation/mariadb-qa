@@ -39,6 +39,7 @@ MARIADBD_ERROR|mariadbd: Connection was killed       ## SPECIAL-43 (non-issue; s
 MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-28498, MDEV-27771
 MARIADBD_ERROR|mariadbd: The table table is full  ## SPECIAL-44 (non-issue; table is simply full)
 MARIADBD_ERROR|mariadbd: Got an error writing communication packets  ## Occassionally seen after shutdown, upon 'Aborted connection x to db': deemed non-issue
+MARIADBD_ERROR|mariadbd: file-key-management-filename is not set  ## SPECIAL-45 (non-issue; attempt to install file_key_management without correct setup)
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
@@ -170,6 +171,7 @@ INNODB_ERROR|Operating system error number 17 in a file operation ## SPECIAL-40
 INNODB_ERROR|Operating system error number 20 in a file operation ## MDEV-19849/MDEV-28831/SPECIAL-40
 INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 INNODB_ERROR|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT  ## Presumed non-issue (import of a tablespace which already exists)
+INNODB_ERROR|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page ## SPECIAL-46
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_system_variables             ## MDEV-35197
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
@@ -334,6 +336,7 @@ share.key_info[share.keys].algorithm == HA_KEY_ALG_VECTOR|SIGABRT|ha_create_tabl
 btr_node_ptr_get_child_page_no(rec, offsets) == page_no|SIGABRT|rtr_compare_cursor_rec|rtr_get_father_node|rtr_page_get_father_node_ptr|rtr_page_get_father_block              ## MDEV-37150
 offsets|SIGABRT|rec_offs_n_fields|rec_offs_validate|rec_offs_comp|rtr_update_mbr_field                                                                                         ## MDEV-37150
 !sea_cur|SIGABRT|rtr_get_father_node|rtr_page_get_father_node_ptr|rtr_page_get_father_block|rtr_adjust_upper_level                                                             ## MDEV-37125
+!thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event|Log_event::apply_event ## MDEV-36976
 !thd->in_active_multi_stmt_transaction() || thd->in_multi_stmt_transaction_mode()|SIGABRT|mysql_execute_command|mysql_parse|Query_log_event::do_apply_event|Query_log_event::do_apply_event ## MDEV-36976
 SIGSEGV|get_loc_info|auditing|plugins_dispatch|mysql_audit_notify                                                                                                              ## MDEV-36974
 SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|Charset_collation_map_st::insert_or_replace                                                                   ## MDEV-36971

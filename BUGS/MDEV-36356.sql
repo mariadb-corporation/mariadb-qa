@@ -1,3 +1,13 @@
 CREATE TABLE v (c1 INT, c2 TEXT);
 INSERT INTO v (c1, c2) VALUES (0, 'a');
 SELECT * FROM { ta1 v AS ta2 NATURAL RIGHT OUTER JOIN ((SELECT * FROM { ta3 v AS ta4 NATURAL STRAIGHT_JOIN v AS ta5 } LIMIT 1234567890 ROWS EXAMINED 1234567890 LOCK IN SHARE MODE SKIP LOCKED) ORDER BY FALSE <=> + INTERVAL NOT FALSE=FALSE IN (SELECT FALSE <=> FALSE IN (SELECT 'string')) SECOND_MICROSECOND + TRUE <=> TRUE IN (SELECT 'string') << ROW_NUMBER () OVER (PARTITION BY NOT TRUE <=> FALSE IN (SELECT 'string') DESC) IN (SELECT 'string'))=ta6 NATURAL JOIN v AS ta7 };
+
+(SELECT 1 FROM dual LIMIT 5 ) ORDER BY  row_number () over (partition BY 1);
+
+(SELECT 1 FROM dual LIMIT 5 ) ORDER BY  row_number () over ();
+(SELECT 5 a FROM dual LIMIT 1) order BY avg (a) over (order by 1);
+(SELECT cast('1973' as datetime) a FROM dual LIMIT 1) order BY FIRST_VALUE(a) over (order by 1);
+(SELECT cast('1973' as char) a FROM dual LIMIT 1) order BY FIRST_VALUE(a) over (order by 1);
+
+SET sql_mode='';
+(SELECT CAST(''AS CHAR) a LIMIT 1) ORDER BY FIRST_VALUE(a) OVER (ORDER BY 1);

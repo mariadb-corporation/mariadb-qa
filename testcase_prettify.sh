@@ -506,6 +506,7 @@ cat "${1}" | tr -d '`' | \
        s| do | DO |gi; \
        s| on | ON |gi; \
        s| mod | MOD |gi; \
+       s|first_value[ ]*(|FIRST_VALUE(|gi; \
        s|cast[ ]*(|CAST(|gi; \
        s|mid[ ]*(|MID(|gi; \
        s|row[ ]*(|ROW(|gi; \
@@ -538,6 +539,7 @@ cat "${1}" | tr -d '`' | \
        s|USERSTAT|userstat|gi; \
        s|test / |test/|gi; \
        s|[ \t]*;[ \t]*$|;|gi; \
+       s|^[ \t]\+||gi; \
        s|_offset|_offset|gi; \
        s|sleep[ ]*(|SLEEP(|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
