@@ -98,6 +98,7 @@ ASAN|heap-use-after-free|sql/field.cc|__asan_memcpy|Field_blob::pack|Field::pack
 ASAN|use-after-poison|storage/innobase/handler/ha_innodb.cc|ha_innobase::can_be_renamed_to_backup|ha_can_be_renamed_to_backup|ha_check_if_table_can_be_renamed_to_backup|create_table_impl ## MDEV-36475
 ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|hashcmp|my_hash_first_from_hash_value|my_hash_search_using_hash_value                                 ## MDEV-36376
 ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_comman                                                                 ## MDEV-35622
+ASAN|use-after-poison|sql/sql_acl.cc|GRANT_NAME::GRANT_NAME|grant_load|grant_reload|reload_acl_and_cache                                                                       ## MDEV-35622
 ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_rename_user|mysql_execute_command                                                              ## MDEV-35622 
 ASAN|use-after-poison|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                              ## MDEV-35622
 UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item::save_str_in_field|Item::save_in_field|save_window_function_values|compute_window_func                      ## MDEV-36356
