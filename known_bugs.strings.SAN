@@ -16,6 +16,7 @@ ASAN|heap-use-after-free|sql/table.cc|check_column_name|mysql_prepare_create_tab
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|strings/ctype.c|my_convert_fix|String_copier::well_formed_copy|Field_longstr::well_formed_copy_with_check|Field_string::store       ## MDEV-37721
 ASAN|global-buffer-overflow|strings/ctype-utf8.c|my_charlen_utf8mb3|my_well_formed_char_length_utf8mb3|my_ci_well_formed_char_length|my_copy_fix_mb                            ## MDEV-37698
 UBSAN|load of null pointer of type 'Item *'|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool ## MDEV-35352
 ASAN|use-after-poison|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool        ## MDEV-35352
@@ -51,6 +52,8 @@ UBSAN|X is outside the range of representable values of type 'long long'|sql/ite
 UBSAN|X is outside the range of representable values of type 'long long'|sql/item_func.cc|Item_func_get_lock::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare|Item_func_eq::val_bool ## MDEV-37073
 ASAN|stack-buffer-overflow|strings/strmake.c|strmake|Charset_collation_map_st::insert_or_replace|Charset_collation_map_st::from_text|Sys_var_charset_collation_map::charset_collation_map_from_item ## MDEV-36971
 UBSAN|call to function show_func_example(THD*, st_mysql_show_var*, char*) through pointer to incorrect function type 'int (*)(THD *, st_mysql_show_var *, void *, system_status_var *, enum_var_type)'|sql/sql_show.cc|show_status_array|show_status_array|fill_status|get_schema_tables_result ## MDEV-37064
+UBSAN|applying zero offset to null pointer|strings/ctype-uca.inl|my_uca_strnncollsp_onelevel_utf8mb4|handler::check_duplicate_long_entry_key|handler::check_duplicate_long_entries|handler::ha_write_row ## MDEV-37036
+UBSAN|applying zero offset to null pointer|strings/ctype-uca.inl|my_uca_strnncollsp_onelevel_utf8mb4|long_unique_fields_differ|handler::check_duplicate_long_entry_key|handler::ha_check_long_uniques ## MDEV-37036
 UBSAN|applying zero offset to null pointer|strings/ctype-bin.c|my_strnncollsp_8bit_bin|group_concat_key_cmp_with_order|tree_insert|Item_func_group_concat::add                 ## MDEV-37036
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.inl|my_uca_strnncollsp_onelevel_utf8mb4|group_concat_key_cmp_with_order|tree_insert|Item_func_group_concat::add   ## MDEV-37036
 ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                        ## MDEV_34735
