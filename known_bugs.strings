@@ -13,14 +13,13 @@ MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ##### MDEV-35915 testing #####
-MARIADB_ERROR_CODE|MariaDB error code: 1163                                                                                                                                    ## MDEV-37596
-!global_table.versioned()|SIGABRT|open_global_temporary_table|open_table|open_and_process_table|open_tables                                                                    ## MDEV-37666
-SIGSEGV|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|mysql_alter_table                                                                        ## MDEV-37667
-SIGSEGV|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|THD::drop_temporary_table                                                                ## MDEV-37667
-SIGSEGV|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_lock::release|MDL_context::release_lock                                                                       ## MDEV-37668
-mdl_ticket->m_duration == MDL_TRANSACTION && duration != MDL_TRANSACTION|SIGABRT|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37668
-SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-37681
-SIGSEGV|myrocks::Rdb_transaction_impl::prepare|myrocks::rocksdb_prepare|prepare_or_error|ha_commit_trans                                                                       ## MDEV-37690
+SIGSEGV|open_global_temporary_table|open_table|select_create::create_table_from_items|select_create::prepare                                                                   ## MDEV-37718
+SIGSEGV|open_global_temporary_table|open_table|open_and_process_table|open_tables                                                                                              ## MDEV-37718
+!thd->rgi_slave|SIGABRT|open_global_temporary_table|open_table|select_create::create_table_from_items|select_create::prepare                                                   ## MDEV-37718
+!thd->rgi_slave|SIGABRT|open_global_temporary_table|open_table|open_and_process_table|open_tables                                                                              ## MDEV-37718
+SIGSEGV|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                                           ## MDEV-37719
+SIGSEGV|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_lock::release|MDL_context::release_lock                                                                       ## MDEV-37720
+mdl_ticket->m_duration == MDL_TRANSACTION && duration != MDL_TRANSACTION|SIGABRT|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37720
 ### Temp Search Key: Ma2
 
 # Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226
@@ -2304,8 +2303,6 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # functype() == ((Item_cond *) new_item)->functype()|SIGABRT|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                             ## Fixed ## MDEV-29294
 # SIGSEGV|Item_cond::remove_eq_conds|optimize_cond|JOIN::optimize_inner|JOIN::optimize                                                                                ## Fixed ## MDEV-29294
 # SIGSEGV|base_list_iterator::next_fast|List_iterator_fast<Item_equal>::operator++|Item_cond::remove_eq_conds|optimize_cond                                           ## Fixed ## MDEV-29294
-# SIGSEGV|Backtrace stopped: Cannot access memory at address                                                                                                          ## Fixed ## MDEV-29352
-# SIGSEGV|strlen|Backtrace stopped: Cannot access memory at address                                                                                                   ## Fixed ## MDEV-29352
 # SIGSEGV|strlen|__GI__dl_exception_create|__GI__dl_signal_error|_dl_close                                                                                            ## Fixed ## MDEV-29352
 # trx->mysql_thd == thd|SIGABRT|innobase_kill_query|kill_handlerton|plugin_foreach_with_mask|ha_kill_query                                                            ## Fixed ## MDEV-29368
 # !trx_free || !trx->locked_connections|SIGABRT|spider_free_trx_conn|spider_free_trx_alloc|spider_free_trx|spider_close_connection                                    ## Fixed ## MDEV-29484
@@ -3227,3 +3224,11 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_and_lock_tables                                                                    ## Fixed ## MDEV-37612
 # SIGSEGV|mysql_ha_flush|open_tables|open_tables|mysqld_show_create_get_fields                                                                                        ## Fixed ## MDEV-37612
 # SIGSEGV|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_tables                                                                             ## Fixed ## MDEV-37612
+# MARIADB_ERROR_CODE|MariaDB error code: 1163                                                                                                                         ## Fixed ## MDEV-37596
+# !global_table.versioned()|SIGABRT|open_global_temporary_table|open_table|open_and_process_table|open_tables                                                         ## Fixed ## MDEV-37666
+# SIGSEGV|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|mysql_alter_table                                                             ## Fixed ## MDEV-37667
+# SIGSEGV|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|THD::drop_temporary_table                                                     ## Fixed ## MDEV-37667
+# SIGSEGV|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_lock::release|MDL_context::release_lock                                                            ## Fixed ## MDEV-37668
+# mdl_ticket->m_duration == MDL_TRANSACTION && duration != MDL_TRANSACTION|SIGABRT|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## Fixed ## MDEV-37668
+# SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                 ## Fixed ## MDEV-37681
+# SIGSEGV|myrocks::Rdb_transaction_impl::prepare|myrocks::rocksdb_prepare|prepare_or_error|ha_commit_trans                                                            ## Fixed ## MDEV-37690

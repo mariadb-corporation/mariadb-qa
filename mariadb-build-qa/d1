@@ -7,4 +7,4 @@ if [ "${_}" == "${0}" ]; then
 fi
 
 REGEX_EXCLUDE="$(cat REGEX_EXCLUDE 2>/dev/null)"  # Handy to exclude a particular build
-cd $(ls -d MD[0-9][0-9][0-9][0-9][0-9][0-9]-mariadb-12.1.*-linux-x86_64-dbg | grep -vE "${REGEX_EXCLUDE}")
+cd $(ls -d MD[0-9][0-9][0-9][0-9][0-9][0-9]-mariadb-12.2.*-linux-x86_64-dbg | grep -vE "${REGEX_EXCLUDE}")

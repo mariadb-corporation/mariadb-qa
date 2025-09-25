@@ -7,15 +7,15 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### MDEV-35915 testing #####
-ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-37668
-ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37668
-ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|Sql_cmd_truncate_table::truncate_table                       ## MDEV-37681
-UBSAN|member call on null pointer of type 'rocksdb::Transaction'|storage/rocksdb/ha_rocksdb.cc|myrocks::Rdb_transaction_impl::prepare|myrocks::rocksdb_prepare|prepare_or_error|ha_commit_trans ## MDEV-37690
-ASAN|heap-use-after-free|sql/mdl.cc|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_and_lock_tables                                                   ## MDEV-37693
-ASAN|heap-use-after-free|sql/table.cc|check_column_name|mysql_prepare_create_table_stage1|mysql_create_frm_image|create_table_impl                                             ## MDEV-37694
+UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|select_create::create_table_from_items|select_create::prepare  ## MDEV-37718
+UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|open_and_process_table|open_tables               ## MDEV-37718
+ASAN|heap-use-after-free|sql/sql_table.cc|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                         ## MDEV-37719
+ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-37720
+ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37720
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-uca-scanner_next.inl|my_uca_scanner_next_utf8mb4|my_uca_strnncollsp_onelevel_utf8mb4|group_concat_key_cmp_with_distinct|tree_insert ## MDEV-37699
 ASAN|global-buffer-overflow|strings/ctype-utf8.c|my_charlen_utf8mb3|my_well_formed_char_length_utf8mb3|my_ci_well_formed_char_length|my_copy_fix_mb                            ## MDEV-37698
 UBSAN|load of null pointer of type 'Item *'|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool ## MDEV-35352
 ASAN|use-after-poison|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool        ## MDEV-35352
@@ -455,6 +455,7 @@ ASAN|heap-buffer-overflow|sql/sql_cache.cc|Query_cache_block::init|Query_cache::
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|SQL_SELECT::test_quick_select|make_join_select|JOIN::optimize_stage2 ## MDEV-28346
 UBSAN|downcast of address X which does not point to an object of type 'Item_row'|sql/opt_range.cc|Item_func_in::get_func_row_mm_tree|Item_func_in::get_mm_tree|SQL_SELECT::test_quick_select|make_join_select ## MDEV-28346
 UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/unireg.cc|make_empty_rec|build_frm_image|mysql_create_frm_image|create_table_impl               ## MDEV-28346
+UBSAN|member call on null pointer of type 'Item'|sql/sql_select.cc|handle_select|execute_sqlcom_select|mysql_execute_command|mysql_parse                                       ## MDEV-22447
 UBSAN|member call on null pointer of type 'Item'|sql/sql_union.cc|st_select_lex_unit::exec_inner|mysql_union|handle_select|execute_sqlcom_select                               ## MDEV-22447
 UBSAN|member call on null pointer of type 'Item'|sql/sql_union.cc|st_select_lex_unit::exec|mysql_union|handle_select|execute_sqlcom_select                                     ## MDEV-22447
 UBSAN|member call on null pointer of type 'struct Item'|sql/sql_select.cc|handle_select|execute_sqlcom_select|mysql_execute_command|mysql_parse                                ## MDEV-22447
@@ -884,5 +885,11 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # UBSAN|load of value X, which is not a valid value for type 'bool'|sql/temporary_tables.cc|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|open_and_lock_tables ## Fixed ## MDEV-37379
 # UBSAN|load of value X, which is not a valid value for type 'bool'|sql/temporary_tables.cc|THD::mark_tmp_table_as_free_for_reuse|THD::commit_global_tmp_tables|ha_rollback_trans|trans_rollback_stmt ## Fixed ## MDEV-37379
 # ASAN|heap-use-after-free|sql/sql_handler.cc|mysql_ha_flush|open_tables|open_tables|mysqld_show_create_get_fields                                                             ## Fixed ## MDEV-37657
-# UBSAN|downcast of address X which does not point to an object of type 'Item_func_json_extract'|sql/item_jsonfunc.cc                                                          ## MDEV-35352 (12.0 only)
-# UBSAN|member call on address X which does not point to an object of type 'Item_func_json_extract'|sql/item_jsonfunc.cc                                                       ## MDEV-35352 (12.0 only)
+# UBSAN|downcast of address X which does not point to an object of type 'Item_func_json_extract'|sql/item_jsonfunc.cc                                                          ## Fixed ## MDEV-35352 (12.0 only)
+# UBSAN|member call on address X which does not point to an object of type 'Item_func_json_extract'|sql/item_jsonfunc.cc                                                       ## Fixed ## MDEV-35352 (12.0 only)
+# ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode ## Fixed ## MDEV-37668
+# ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## Fixed ## MDEV-37668
+# ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::release_lock|THD::free_tmp_table_share|THD::drop_tmp_table_share|Sql_cmd_truncate_table::truncate_table                     ## Fixed ## MDEV-37681
+# UBSAN|member call on null pointer of type 'rocksdb::Transaction'|storage/rocksdb/ha_rocksdb.cc|myrocks::Rdb_transaction_impl::prepare|myrocks::rocksdb_prepare|prepare_or_error|ha_commit_trans ## MDEV-37690
+# ASAN|heap-use-after-free|sql/mdl.cc|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_and_lock_tables                                                 ## Fixed ## MDEV-37693
+# ASAN|heap-use-after-free|sql/table.cc|check_column_name|mysql_prepare_create_table_stage1|mysql_create_frm_image|create_table_impl                                           ## Fixed ## MDEV-37694

@@ -1361,6 +1361,8 @@ multi_reducer(){
     while [ $FOUND_VERIFIED -eq 0 ]; do
       for t in $(eval echo {1..$MULTI_THREADS}); do
         export MULTI_WORKD=$(eval echo $(echo '$WORKD'"$t"))
+        # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+        if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
         # Check if issue was found (i.e. $MULTI_WORKD/VERIFIED file is present). End both loops (while+for) if so
         if [ -s $MULTI_WORKD/VERIFIED ]; then
           sleep 1.5  # Give subreducer script time to write out the file fully

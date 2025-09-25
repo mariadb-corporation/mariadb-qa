@@ -13,6 +13,8 @@ elif [ "${1}" == "MSAN" ]; then
 elif [ "${1}" == "GAL" ]; then
     ls --color=never -d GAL_MD*   2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V
     ls --color=never -d GAL_EMD* 2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V
+elif [ "${1}" == "M" -o "${1}" == "MDEV" ]; then
+  ls --color=never -d MDEV* 2>/dev/null | sort -V
 else
   ls --color=never -d EMD*1[0-5].[0-9]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | grep -vE "SAN|GAL" | sort -V
   ls --color=never -d MD*1[0-5].[0-9]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | grep -vE "SAN|GAL" | sort -V
