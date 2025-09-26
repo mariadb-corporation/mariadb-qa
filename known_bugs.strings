@@ -267,6 +267,7 @@ SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLp
 item_sum->fixed()|SIGABRT|add_special_frame_cursors|get_window_functions_required_cursors|Window_func_runner::exec|Window_funcs_sort::exec                                     ## MDEV-37565
 m_alloced_field_count|SIGABRT|Create_tmp_table::start|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                            ## MDEV-37565
 SIGSEGV|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info                                                            ## MDEV-37565
+SIGSEGV|Item_sum_hybrid_simple::clear|compute_window_func|Window_func_runner::exec|Window_funcs_sort::exec                                                                     ## MDEV-37741
 SIGSEGV|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                                             ## MDEV-28619
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_ref::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                              ## MDEV-36888
 decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func_mod::fix_length_and_dec|Item_func::fix_fields  ## MDEV-35920
