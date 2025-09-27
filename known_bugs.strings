@@ -258,6 +258,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Field::set_notnull|Item::save_str_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
+SIGSEGV|Field::set_notnull|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                                          ## MDEV-36356
 SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare_e_json_str|Arg_comparator::compare                                  ## MDEV-35352
 SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool                                           ## MDEV-35352
 SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql                                                                                 ## MDEV-36857
