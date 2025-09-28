@@ -1,0 +1,5 @@
+#!/bin/bash
+# Show the state of reduced testcases for the currently active runs (as observed from 'ge' screens)
+
+cd /data
+ps -ef | grep -o "SCREEN.*ge[0-9][0-9]\+ " | grep -o '[0-9]\+' | tr '\n' '|' | sed 's/|$//' | xargs -I{} echo "wc -l [0-9][0-9][0-9][0-9][0-9][0-9]/*/*_out | grep -E '{}' | sort -n | tac" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"

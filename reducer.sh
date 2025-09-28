@@ -4763,6 +4763,8 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE (trial duration depends on initial input file size)"
     fi
     while [ $LINECOUNTF -ge $STAGE1_LINES ]; do
+      # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+      if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
       if [ $LINECOUNTF -eq $STAGE1_LINES  ]; then NEXTACTION="& Progress to the next stage"; fi
       if [ "${FIREWORKS}" != "1" ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
       if [ "$MULTI_REDUCER" != "1" -a $SPORADIC -eq 1 -a $REDUCE_GLIBC_OR_SS_CRASHES -le 0 ]; then
@@ -4803,6 +4805,8 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
   CURRENTLINE=1
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
+    # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+    if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
     if [ ${TRIAL} -gt 1 -a "${FIREWORKS}" != "1" ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Remaining number of lines in input file: $LINECOUNTF"; fi
     if [ ${CURRENTLINE} -gt ${LINECOUNTF} ]; then
       break  # EOF reached
@@ -4856,6 +4860,8 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
+    # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+    if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
     NOSKIP=0
 
     # The @##@ sed's remove comments like /*! NULL */. Each sed removes one /* */ block per line, so 3 sed's removes 3x /* */ for each line
@@ -4968,6 +4974,8 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
+    # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+    if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
     NOSKIP=0
 
     # WARNING: ALWAYS, in as far as possible, use double quotes (") for sed as many SQL statements use single quotes, and testcases will often fail to reduce when such single quotes are removed!
@@ -5303,6 +5311,8 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
   COUNTTABLES=$(grep -E --binary-files=text "CREATE[\t ]*TABLE" $WORKF | wc -l)
   if [ $COUNTTABLES -gt 0 ]; then
     for i in $(eval echo {$COUNTTABLES..1}); do  # Reverse order
+      # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+      if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
       # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurrence)
       TABLENAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed 's/CREATE[\t ]*TABLE/\n/2' \
         | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
@@ -5321,6 +5331,8 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
   COUNTVIEWS=$(grep -E --binary-files=text "CREATE[\t ]*VIEW" $WORKF | wc -l)
   if [ $COUNTVIEWS -gt 0 ]; then
     for i in $(eval echo {$COUNTVIEWS..1}); do  # Reverse order
+      # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+      if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
       # the '...\n/2' sed is a precaution against multiple CREATE VIEWs on one line (it replaces the second occurrence)
       VIEWNAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*VIEW" $WORKF | tail -n1 | sed 's/CREATE[\t ]*VIEW/\n/2' \
         | head -n1 | sed -e 's/CREATE[\t ]*VIEW[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
@@ -5358,6 +5370,8 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
   COUNTTABLES=$(grep -E --binary-files=text "CREATE[\t ]*TABLE" $WORKF | wc -l)
   if [ ${COUNTTABLES} -ge 1 ]; then
     for t in $(eval echo {$COUNTTABLES..1}); do  # Reverse order process all tables
+      # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+      if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
       # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurrence)
       TABLENAME=$(grep -E --binary-files=text -m$t "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed 's/CREATE[\t ]*TABLE/\n/2' \
         | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
@@ -5573,6 +5587,8 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
   while :; do
+    # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+    if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
     NOSKIP=0
 
     # WARNING: ALWAYS, in as far as possible, use double quotes (") for sed as many SQL statements use single quotes, and testcases will often fail to reduce when such single quotes are removed!
@@ -5956,6 +5972,8 @@ if [ $SKIPSTAGEBELOW -lt 8 -a $SKIPSTAGEABOVE -gt 8 ]; then
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Filtering mariadbd/mysqld option $line from MYEXTRA";
       MYEXTRA=$(echo $MYEXTRA | sed "s|$line||")
       while :; do
+        # Check if the original workdir and original input file are still available. If they were deleted/removed, we can end early
+        if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} ]; then abort; break; fi
         run_and_check
         TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
         if [ $STAGE8_CHK -eq 0 -o $STAGE8_NOT_STARTED_CORRECTLY -eq 1 ];then  # Issue failed to reproduce, revert (after retrying if applicable, i.e. NR_OF_TRIAL_REPEATS>1)

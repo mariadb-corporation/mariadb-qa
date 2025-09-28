@@ -69,7 +69,7 @@ else
       ./stop_all SAN
       ./start_all SAN ${MYEXTRA_OPT}
     fi
-  elif [ ${iSAN_MODE} -eq 1 ]; then
+  elif [ ${SAN_MODE} -eq 1 ]; then
     ./all_all MSAN
     if [ ! -z "${MYEXTRA_OPT}" ]; then
       ./stop_all MSAN

@@ -15,6 +15,8 @@ ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_t
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of value X, which is not a valid value for type 'const bool'|sql/sql_analyze_stmt.h|Filesort_tracker::report_use|filesort|create_sort_index|Window_funcs_sort::execa ## MDEV-32307
+UBSAN|member call on null pointer of type 'Filesort_tracker'|sql/filesort.cc|filesort|create_sort_index|Window_funcs_sort::exec|Window_funcs_computation::exec                 ## MDEV-32307
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-uca-scanner_next.inl|my_uca_scanner_next_utf8mb4|my_uca_strnncollsp_onelevel_utf8mb4|group_concat_key_cmp_with_distinct|tree_insert ## MDEV-37699
 UBSAN|applying zero offset to null pointer|strings/ctype.c|my_convert_fix|String_copier::well_formed_copy|Field_longstr::well_formed_copy_with_check|Field_string::store       ## MDEV-37721
 ASAN|global-buffer-overflow|strings/ctype-utf8.c|my_charlen_utf8mb3|my_well_formed_char_length_utf8mb3|my_ci_well_formed_char_length|my_copy_fix_mb                            ## MDEV-37698
@@ -22,7 +24,9 @@ UBSAN|load of null pointer of type 'Item *'|sql/item_jsonfunc.cc|Item_func_json_
 ASAN|use-after-poison|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool        ## MDEV-35352
 UBSAN|member access within null pointer of type 'KEY' (aka 'st_key')|sql/table.cc|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map ## MDEV-36221
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql ## MDEV-36857
+UBSAN|member call on null pointer of type 'Item_cache'|sql/item_sum.cc|Item_sum_min_max::clear|compute_window_func|Window_func_runner::exec|Window_funcs_sort::exec             ## MDEV-37565
 UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info ## MDEV-37565
+UBSAN|member call on null pointer of type 'Field'|sql/item.cc|Item_field::val_real|Item_sum_sum::add_helper|Item_sum_sum::add|Frame_cursor::add_value_to_items                 ## MDEV-37565
 UBSAN|member access within null pointer of type 'Window_spec'|sql/sql_window.cc|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info|JOIN::optimize_stage2 ## MDEV-28619
 UBSAN|member call on null pointer of type 'Item'|sql/filesort.cc|sortlength|filesort|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                         ## MDEV-33177
 UBSAN|load of null pointer of type 'Item *'|sql/item_cmpfunc.h|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func_for_row_arguments|Arg_comparator::set_cmp_func|Arg_comparator::set_cmp_func ## MDEV-36792
@@ -425,6 +429,7 @@ UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item_field::
 UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item_field::used_tables|Item::const_item|Item_direct_view_ref::const_item|Item_args::excl_dep_on_table     ## MDEV-30841
 UBSAN|member access within null pointer of type 'struct Field'|sql/item.cc|Item_field::used_tables|Item_direct_view_ref::used_tables|Item::pushable_equality_checker_for_derived|Item_equal::create_pushable_equalities ## MDEV-30841
 ASAN|use-after-poison|sql/sql_string.h|__asan_memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                                      ## MDEV-30785
+ASAN|use-after-poison|include/x86_64-linux-gnu/bits/string_fortified.h|__asan_memcpy|memcpy|Binary_string::q_append|append_simple                                              ## MDEV-30785
 ASAN|use-after-poison|sql/sql_string.h|interceptor_memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                                 ## MDEV-30785
 ASAN|use-after-poison|sql/sql_string.h|memcpy|Binary_string::q_append|append_simple|Item_func_json_insert::val_str                                                             ## MDEV-30785
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-26373

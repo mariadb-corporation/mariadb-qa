@@ -1,0 +1,24 @@
+# mysqld options required for replay: --log_bin
+SET default_storage_engine=InnoDB;
+CREATE DATABASE transforms;
+SET sql_mode=0;
+CREATE GLOBAL TEMPORARY TABLE t (x INT);
+XA START 'a';
+XA END 'a';
+SET pseudo_slave_mode=1;
+XA PREPARE 'a';
+CREATE GLOBAL TEMPORARY TABLE t2 AS VALUES (5),(6),(7);
+DROP TABLE CURTIME;
+CREATE TABLE foo (a INT,b INT,c DATE,d INT,aa BLOB,bb BLOB,cc BLOB,dd BLOB,aaa CHAR(12),bbb BINARY (20),ccc VARCHAR(50),ddd VARCHAR(3000));
+TRUNCATE t2;
+XA START 'a','a',2;
+INSERT INTO t2 SELECT 1 t;
+INSERT INTO foo VALUES (1,1,0,1,0,1,0,1,'a','a','a','a');
+CREATE TEMPORARY TABLE t (y INT);
+INSERT t VALUES (1),(2),(3);
+XA END 'a','a',2;
+XA PREPARE 'a','a',2;
+DROP TABLE t;
+FLUSH LOGS;
+XA COMMIT 'a','a',2;
+SET GLOBAL binlog_checksum=CRC32;
