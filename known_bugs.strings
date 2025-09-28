@@ -262,6 +262,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Field::set_notnull|Item::save_str_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
+SIGSEGV|Field::set_notnull|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                                          ## MDEV-36356
 SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare_e_json_str|Arg_comparator::compare                                  ## MDEV-35352
 SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool                                           ## MDEV-35352
 SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql                                                                                 ## MDEV-36857
@@ -275,6 +277,7 @@ fixed()|SIGABRT|Item_field::val_real|Aggregator_simple::arg_val_real|Item_sum_su
 m_alloced_field_count|SIGABRT|Create_tmp_table::start|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info                                            ## MDEV-37565
 SIGSEGV|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info                                                            ## MDEV-37565
 SIGSEGV|Field::is_null|Item_field::val_real|Item_sum_sum::add_helper|Item_sum_sum::add                                                                                         ## MDEV-37565
+SIGSEGV|Item_sum_hybrid_simple::clear|compute_window_func|Window_func_runner::exec|Window_funcs_sort::exec                                                                     ## MDEV-37741
 SIGSEGV|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                                             ## MDEV-28619
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_ref::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                              ## MDEV-36888
 decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func_mod::fix_length_and_dec|Item_func::fix_fields  ## MDEV-35920
