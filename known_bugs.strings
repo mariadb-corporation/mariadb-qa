@@ -262,6 +262,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!trx->is_started()|SIGABRT|innobase_start_trx_and_assign_read_view|snapshot_handlerton|tp_foreach|ha_start_consistent_snapshot                                                 ## MDEV-36787
 SIGSEGV|List<Cached_item>::delete_elements|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                  ## MDEV-37779
 SIGSEGV|Field::set_notnull|Item::save_str_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
 SIGSEGV|Field::set_notnull|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                                          ## MDEV-36356
