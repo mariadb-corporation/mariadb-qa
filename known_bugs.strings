@@ -262,6 +262,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37785
 !trx->is_started()|SIGABRT|innobase_start_trx_and_assign_read_view|snapshot_handlerton|tp_foreach|ha_start_consistent_snapshot                                                 ## MDEV-36787
 SIGSEGV|List<Cached_item>::delete_elements|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                  ## MDEV-37779
 SIGSEGV|Field::set_notnull|Item::save_str_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
@@ -338,8 +339,6 @@ SIGSEGV|THD::query_start_sec_part|Item_func_current_timestamp::val_native|Timest
 SIGSEGV|THD::query_start|Item_func_current_timestamp::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null  ## MDEV-37171
 SIGSEGV|date_conv_mode_t::date_conv_mode_t|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options                                                          ## MDEV-37171
 SIGSEGV|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options|Item::save_date_in_field                                                                    ## MDEV-37171
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37108
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                        ## MDEV-37108 (SAN builds)
 page_is_leaf(block->page.frame)|SIGABRT|lock_rec_print|lock_trx_print_locks|lock_print_info::operatorlock0lock.cc|thread_safe_trx_ilist_t::for_each<lock_print_info>           ## MDEV-37127
 share.key_info[share.keys].algorithm == HA_KEY_ALG_VECTOR|SIGABRT|ha_create_table|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command                         ## MDEV-37022
 (have_last && !have_first) || (have_last && have_first && (last_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record ## MDEV-25964
@@ -3249,3 +3248,5 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                 ## Fixed ## MDEV-22448/MDEV-20945/MDEV-25037
 # SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                     ## Fixed ## MDEV-22448/MDEV-20945
 # SIGSEGV|free () from|MDL_context::release_locks_stored_before|MDL_context::rollback_to_savepoint|THD::restore_backup_open_tables_state                              ## Fixed ## MDEV-22448/MDEV-20945
+# !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query     ## Fixed ## MDEV-37108
+# !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command             ## Fixed ## MDEV-37108 (SAN builds)

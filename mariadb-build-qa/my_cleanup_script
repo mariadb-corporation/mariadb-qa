@@ -18,6 +18,8 @@ while true; do
   wait %1
   wait %2
   #wait %3
+  cd /data/NEWBUGS && ./clean_newbugs
+  cd /data
   # Cleanup all 'no core file/no fallback' trials which truly have no core (historically this also included SAN issues which were subsequently filered)
   grep "^   TEXT=.Assert: no core file found.*and fallback_text_string.sh returned an empty output for all logs" */reducer[0-9]*.sh | grep -o '[0-9]\+/reducer[0-9]\+' | sed 's|\([0-9]\+\)/reducer\([0-9]\+\)|if [ ! -r \1/\2/data/core ]; then echo "Removing trial \2 in workdir \1"; rm -Rf \1/\2 \1/[a-z]*\2.sh \1/[a-z]*\2; fi|' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
   ./cleanup_all_trial_data.sh

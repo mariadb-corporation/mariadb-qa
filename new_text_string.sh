@@ -159,10 +159,13 @@ else
     ERROR_LOGS="${ERROR_LOGS} $(ls ${LOC}/log/slave.err 2>/dev/null)"  # Include slave log in scanning
   fi
   LATEST_CORE=$(ls -t ${LOC}/*/*core* 2>/dev/null | grep -v 'data.PREV' | head -n1)  # Exclude data.PREV
-  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 1/2 (this may have been an MTR run)
+  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 1/3 (this may have been an MTR run)
     LATEST_CORE=$(ls -t ${LOC}/var/log/*/mysqld*/data*/*core* 2>/dev/null | head -n1)
   fi
-  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 2/2 (this may have been an MTR run)  # Replication MTR testcaes seems to use ./var/mysqld.nr/data/core.* instead, or may be due to older version?
+  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 2/3 (this may have been an MTR run)  # Replication, with --parallel
+    LATEST_CORE=$(ls -t ${LOC}/var/*/log/*/mysqld*/data*/*core* 2>/dev/null | head -n1)
+  fi
+  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 2/3 (this may have been an MTR run)  # Replication MTR testcases seems to use ./var/mysqld.nr/data/core.* instead, or may be due to older version?
     LATEST_CORE=$(ls -t ${LOC}/var/mysqld*/data*/*core* 2>/dev/null | head -n1)
   fi
 fi
@@ -213,6 +216,9 @@ if [ -z "${ERROR_LOGS}" ]; then
   if [ -r "./log/mysqld.out" ]; then  # Reducer
     ERROR_LOGS="${ERROR_LOGS} ./log/mysqld.out"
   fi
+  if [ -z "${ERROR_LOGS}" ]; then
+    ERROR_LOGS="$(ls ./var/*/log/mysqld.[12].err 2>/dev/null | tr '\n' ' ')"  # MTR, replication, with --parallel
+  fi
 fi
 
 if [ -z "${ERROR_LOGS}" ]; then
@@ -221,6 +227,22 @@ if [ -z "${ERROR_LOGS}" ]; then
 else
   ERROR_LOGS="$(echo "${ERROR_LOGS}" | tr ' ' '\n' | sort -u | tr '\n' ' ')"  # Avoid duplicates
 fi
+
+# Match the MTR error log used with the m/s core used, if/when mismatched (for example when both m+s crash and one dir is deleted to debug the other with 'tt' etc.)
+# This (if) code is similar to the code in stack.sh but here we scan all error logs (i.e. ERROR_LOGS instead of ERROR_LOG). As we already have a core in mysqld.1 or mysqld.2 we can safely change all instances of mysqld.2 or mysqld.1 to mysqld.1 and mysqld.2 respectively (i.e. |g)
+if [[ "${LATEST_CORE}" == *"mysqld.1"* ]]; then
+  ERROR_LOGS="$(echo "${ERROR_LOGS}" | sed 's|mysqld.2|mysqld.1|g')"
+elif [[ "${LATEST_CORE}" == *"mysqld.2"* ]]; then
+  ERROR_LOGS="$(echo "${ERROR_LOGS}" | sed 's|mysqld.1|mysqld.2|g')"
+fi
+# Idem for non-MTR runs, i.e. standard BASEDIR 'str' runs
+if [[ "${LATEST_CORE}" == *"data_slave"* ]]; then
+  ERROR_LOGS="$(echo "${ERROR_LOGS}" | sed 's|master.err|slave.err|g')"
+elif [[ "${LATEST_CORE}" == *"data/core"* ]]; then
+  ERROR_LOGS="$(echo "${ERROR_LOGS}" | sed 's|slave.err|master.err|g')"
+fi
+#echo "DEBUG: errs: ${ERROR_LOGS} | core: ${LATEST_CORE}"
+# TODO: MDG needs similar code for node1/2/3
 
 # Disabled when ERROR_LOG was changed to ERROR_LOGS (multi-scanning for issues in all applicable error logs)
 #if [ ! -r "${ERROR_LOG}" ]; then

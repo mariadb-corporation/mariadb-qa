@@ -501,13 +501,14 @@ if [ -d "${MTR_DIR}" ]; then
     echo "#--source include/have_sequence.inc" >> ${MTR_DIR}/main/spider.test
     echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/spider.test
     echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/spider.test
-    echo "#--source include/have_binlog.inc" >> ${MTR_DIR}/main/spider.test
+    echo "#--source include/have_log_bin.inc" >> ${MTR_DIR}/main/spider.test
     echo "SET spider_same_server_link=on;" >> ${MTR_DIR}/main/spider.test
     echo "eval CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (HOST \"127.0.0.1\", DATABASE \"test\", USER \"root\", PORT \$MASTER_MYPORT);" >> ${MTR_DIR}/main/spider.test
     echo "SET sql_mode='';" >> ${MTR_DIR}/main/spider.test
     echo "--source include/have_binlog_format_row.inc" > ${MTR_DIR}/main/replication.test
     echo "#--source include/have_binlog_format_statement.inc" >> ${MTR_DIR}/main/replication.test
     echo "#--source include/have_binlog_format_mixed.inc" >> ${MTR_DIR}/main/replication.test
+    echo "#--source include/have_log_bin.inc" >> ${MTR_DIR}/main/replication.test
     echo "#--source include/have_sequence.inc" >> ${MTR_DIR}/main/replication.test
     echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/replication.test
     echo "--source include/have_partition.inc" >> ${MTR_DIR}/main/replication.test
@@ -534,7 +535,7 @@ if [ -d "${MTR_DIR}" ]; then
       echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/test.test
       echo "#--source include/have_sequence.inc" >> ${MTR_DIR}/main/test.test
       echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/test.test
-      echo "#--source include/have_binlog.inc" >> ${MTR_DIR}/main/test.test
+      echo "#--source include/have_log_bin.inc" >> ${MTR_DIR}/main/test.test
       echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/test.test
       echo "#SET sql_mode='';" >> ${MTR_DIR}/main/test.test
     fi
