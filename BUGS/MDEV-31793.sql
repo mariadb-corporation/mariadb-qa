@@ -4,3 +4,9 @@ CREATE TABLE t2 (id2 int,  b TEXT) engine=innodb;
 INSERT INTO t2 VALUES (1,'F'),( 2,'D'),( 5,'F'),( 6,'Q');
 SELECT id, a FROM t1 JOIN t2 ON id = id2 WHERE t1.id IN (SELECT dt.id FROM  ( SELECT id, avg(a), b  FROM t1 JOIN t2 ON id = id2 )dt);
 DROP TABLE t1,t2;
+
+SET SESSION log_slow_verbosity=5;
+CREATE TABLE t (c1 INT,c2 CHAR,c3 DATE) ;
+UPDATE t SET c1=NULL LIMIT 7;
+UPDATE t SET c1=1.e-1 WHERE c2=NULL ORDER BY c3;
+SELECT 0 + (0<<1);
