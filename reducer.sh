@@ -1973,6 +1973,10 @@ init_workdir_and_files(){
     export -n SKIPSTAGEBELOW=1
   fi
   if [ -n "$MYEXTRA" -o -n "$SPECIAL_MYEXTRA_OPTIONS" ]; then echoit "[Init] Passing the following additional options to mariadbd/mysqld: $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA"; fi
+  if [ "${REPLICATION}" == "1" ]; then
+    if [ -n "${MASTER_EXTRA}" ]; then echoit "[Init] Passing the following master options to the master mariadbd/mysqld: ${MASTER_EXTRA}"; fi
+    if [ -n "${SLAVE_EXTRA}" ]; then echoit "[Init] Passing the following slave options to the slave mariadbd/mysqld: ${SLAVE_EXTRA}"; fi
+  fi
   if [ "$MYINIT" != "" ]; then echoit "[Init] Passing the following additional options to mariadbd/mysqld initialization: $MYINIT"; fi
   if [ $MODE -ge 6 ]; then
     if [ $TS_TRXS_SETS -eq 1 ]; then echoit "[Init] ThreadSync: using last transaction set (accross threads) only"; fi

@@ -1,0 +1,5 @@
+SET autocommit=0, sql_mode='ORACLE';
+CREATE TABLE t (c VARCHAR(5));
+INSERT INTO t (c) VALUES ('RIGHT');
+UPDATE t SET c='LEFT RIGHT';
+SELECT * FROM t;

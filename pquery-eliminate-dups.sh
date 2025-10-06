@@ -5,6 +5,8 @@
 
 # User variables
 #TRIALS_TO_KEEP=2  # Set high (for example: 10) when there are few bugs seen in each new round. Set low (for example: 2) when handling many new bugs/when many bugs are seen in the runs
+# Tip: if you need a quick cleanup with TRIALS_TO_KEEP=2 of all /data/... workdirs, do:
+# cd /data && ls -d [0-9][0-9]* | xargs -I{} echo "cd /data/{}; ~/mariadb-qa/pquery-eliminate-dups.sh" | tr '\n' '\0' | xargs -0 -I{} -P40 bash -c "{}"  # Note the high-load 40 threads
 TRIALS_TO_KEEP=3  # Set high (for example: 10) when there are few bugs seen in each new round. Set low (for example: 2) when handling many new bugs/when many bugs are seen in the runs
 
 # Internal variables

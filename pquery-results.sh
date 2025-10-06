@@ -93,7 +93,7 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
         MATCHING_TRIAL=$(echo ${MATCHING_TRIAL} | sed 's|.*TEXT=.||;s|\.[ \t]*$||')
         MATCHING_TRIALS+=($MATCHING_TRIAL)
       done
-      COUNT=$(grep --binary-files=text -m1 '^   TEXT=' reducer* 2>/dev/null | grep -v 'Last.*consecutive queries all failed' | sort -u | sed 's|reducer\([0-9]\+\).sh:|reducer\1.sh:  |;s|  TEXT|TEXT|' | grep --binary-files=text "${STRING}" 2>/dev/null | wc -l)
+      COUNT=$(grep --binary-files=text -m1 '^   TEXT=' reducer* 2>/dev/null | grep -v 'Last.*consecutive queries all failed' | sort -u | sed 's|reducer\([0-9]\+\).sh:|reducer\1.sh:  |;s|  TEXT|TEXT|' 2>/dev/null | grep --binary-files=text "${STRING}" 2>/dev/null | wc -l)
     fi
     SAN=0
     if [ ${COUNT} -gt 0 ]; then
@@ -290,7 +290,7 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
 fi
 
 # Timeouts (MODE=0) which are not shutdown issues (i.e. no <trialnr>/SHUTDOWN_TIMEOUT_ISSUE)
-MODE0_TRIALS="$(grep --binary-files=text -l -m1 '^MODE=0' reducer[0-9]*.sh | grep -o '[0-9]\+' | sort -uh | xargs -I{} echo "if [ ! -r {}/SHUTDOWN_TIMEOUT_ISSUE ]; then echo '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' ' ')"
+MODE0_TRIALS="$(grep --binary-files=text -l -m1 '^MODE=0' reducer[0-9]*.sh 2>/dev/null | grep -o '[0-9]\+' | sort -uh | xargs -I{} echo "if [ ! -r {}/SHUTDOWN_TIMEOUT_ISSUE ]; then echo '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' ' ')"
 if [ ! -z "${MODE0_TRIALS}" ]; then
   echo '** Trials which timed out (MODE=0) which are not shutdown issues (i.e. no <trialnr>/SHUTDOWN_TIMEOUT_ISSUE):'
   echo "${MODE0_TRIALS}"

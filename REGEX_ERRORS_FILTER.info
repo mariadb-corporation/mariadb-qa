@@ -19,6 +19,7 @@ Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option valu
 Warning. InnoDB: Table.*contains.*user defined columns in InnoDB, but.*in MariaDB.*INFORMATION_SCHEMA.INNODB_SYS_COLUMNS  MDEV25654
 Event invalid                                         MDEV-26270
 Warning. InnoDB: Recalculation of persistent statistics requested for table.*but the required persistent statistics storage is corrupted  MDEV-36373
+mariadbd: Cannot load from mysql\..*The table is probably corrupted  SPECIAL-47 (mysql.* corruption non-issue)
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurrences
 ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurrences
 ERROR. InnoDB: Error number 2 means.*file.*or dir     MDEV-19849 or similar occurrences

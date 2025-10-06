@@ -43,6 +43,7 @@ MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-28498, MDEV-
 MARIADBD_ERROR|mariadbd: The table table is full  ## SPECIAL-44 (non-issue; table is simply full)
 MARIADBD_ERROR|mariadbd: Got an error writing communication packets  ## Occassionally seen after shutdown, upon 'Aborted connection x to db': deemed non-issue
 MARIADBD_ERROR|mariadbd: file-key-management-filename is not set  ## SPECIAL-45 (non-issue; attempt to install file_key_management without correct setup)
+MARIADBD_ERROR|mariadbd: Cannot load from mysql.procs_priv. The table is probably corrupted  ## SPECIAL-47 (mysql.* table corruption non-issue)
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
