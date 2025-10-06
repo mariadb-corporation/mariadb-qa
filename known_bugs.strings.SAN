@@ -16,6 +16,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Que
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|division by zero|sql/json_schema.cc|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Item::save_in_field                 ## MDEV-37806
 UBSAN|load of value X, which is not a valid value for type 'const bool'|sql/sql_analyze_stmt.h|Filesort_tracker::report_use|filesort|create_sort_index|Window_funcs_sort::execa ## MDEV-32307
 UBSAN|member call on null pointer of type 'Filesort_tracker'|sql/filesort.cc|filesort|create_sort_index|Window_funcs_sort::exec|Window_funcs_computation::exec                 ## MDEV-32307
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-uca-scanner_next.inl|my_uca_scanner_next_utf8mb4|my_uca_strnncollsp_onelevel_utf8mb4|group_concat_key_cmp_with_distinct|tree_insert ## MDEV-37699

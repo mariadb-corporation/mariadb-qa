@@ -1,0 +1,5 @@
+DELIMITER //
+CREATE PROCEDURE p0 (a JSON DEFAULT JSON_SCHEMA_VALID (@schema,0)) BEGIN SELECT a;END; //
+DELIMITER ;
+SET @schema='{ "multipleOf":0}';
+CALL p0();
