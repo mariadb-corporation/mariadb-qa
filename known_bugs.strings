@@ -420,6 +420,7 @@ SIGSEGV|myrocks::Rdb_transaction_impl::get_write_batch|myrocks::Rdb_transaction:
 SIGSEGV|__strcmp_evex|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MENT-2274
 0|SIGABRT|Item_row::illegal_method_call|Item_row::val_real|Item_func_interval::fix_length_and_dec|Item_func::fix_fields                                                        ## MDEV-36569
 SIGSEGV|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map|handler::ha_index_read_idx_map                                                                     ## MDEV-36438
+find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|ha_innobase::rnd_pos|handler::ha_rnd_pos|multi_update::do_updates                                               ## MDEV-36438
 find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map                              ## MDEV-36438
 find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|handler::ha_rnd_pos|rr_from_tempfile|Sql_cmd_update::update_single_table                                        ## MDEV-36438
 key_len != 0 || find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|ha_innobase::rnd_pos|handler::ha_rnd_pos|rr_from_tempfile                                       ## MDEV-36438
