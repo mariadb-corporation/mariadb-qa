@@ -382,6 +382,7 @@ UBSAN|member access within null pointer of type 'struct SPIDER_FIELD_CHAIN'|stor
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::rnd_init ## MDEV-29018
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::index_init ## MDEV-29018
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|interceptor_malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                             ## MDEV-31271
+LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|malloc|rbt_add_node|rbt_merge_uniq|fts_trx_table_clone                                                                          ## MDEV-31271
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_add_block|mem_heap_alloc                                                           ## MDEV-31271
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                                         ## MDEV-31271
 LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|interceptor_malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                             ## MDEV-31271
