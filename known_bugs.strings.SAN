@@ -16,6 +16,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Que
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|sql/sql_string.h|Binary_string::free_buffer|Binary_string::free|Binary_string::~Binary_string|String::~String                                            ## MDEV-37826
 UBSAN|division by zero|sql/json_schema.cc|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Item::save_in_field                 ## MDEV-37806
 UBSAN|load of value X, which is not a valid value for type 'const bool'|sql/sql_analyze_stmt.h|Filesort_tracker::report_use|filesort|create_sort_index|Window_funcs_sort::execa ## MDEV-32307
 UBSAN|member call on null pointer of type 'Filesort_tracker'|sql/filesort.cc|filesort|create_sort_index|Window_funcs_sort::exec|Window_funcs_computation::exec                 ## MDEV-32307
@@ -180,6 +181,8 @@ UBSAN|call to function mysql_sys_var_long(THD*, int) through pointer to incorrec
 UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect function type 'unsigned int *(*)(THD *, int)'|storage/innobase/handler/ha_innodb.cc|thd_lock_wait_timeout|rollback_inplace_alter_table|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table ## MDEV-35726
 UBSAN|call to function mysql_sys_var_int(THD*, int) through pointer to incorrect function type 'unsigned int *(*)(THD *, int)'|storage/innobase/handler/ha_innodb.cc|thd_lock_wait_timeout|rollback_inplace_alter_table|ha_innobase::commit_inplace_alter_table|mysql_inplace_alter_table ## MDEV-35726
 UBSAN|applying zero offset to null pointer|strings/ctype.c|my_convert_using_func|err_conv|ErrBuff::set_str|ErrConvString::lex_cstring                                          ## MDEV-35725
+ASAN|use-after-poison|strings/ctype-latin1.c|my_mb_wc_latin1|my_convert_using_func|err_conv|ErrBuff::set_str                                                                   ## MDEV-35725
+ASAN|use-after-poison|strings/ctype-utf8.h|my_mb_wc_utf8mb4_quick|my_convert_using_func|err_conv|ErrBuff::set_str                                                              ## MDEV-35725
 UBSAN|applying zero offset to null pointer|strings/ctype-mb.c|my_copy_fix_mb|charset_info_st::copy_fix|String_copier::well_formed_copy|Field_longstr::well_formed_copy_with_check ## MDEV-35718
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|Sql_cmd_delete::prepare_inner|Sql_cmd_dml::prepare ## Likely MDEV-35717
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|Alter_info::check_vcol_field ## Likely MDEV-35717
@@ -381,6 +384,7 @@ UBSAN|member access within null pointer of type 'struct SPIDER_FIELD_CHAIN'|stor
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::rnd_init ## MDEV-29018
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::field_exchange|ha_spider::set_searched_bitmap_from_item_list|ha_spider::set_select_column_mode|ha_spider::index_init ## MDEV-29018
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|interceptor_malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                             ## MDEV-31271
+LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|malloc|rbt_add_node|rbt_merge_uniq|fts_trx_table_clone                                                                          ## MDEV-31271
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_add_block|mem_heap_alloc                                                           ## MDEV-31271
 LSAN|memory leak|storage/innobase/mem/mem0mem.cc|malloc|mem_heap_create_block_func|mem_heap_create_func|fts_trx_create                                                         ## MDEV-31271
 LSAN|memory leak|storage/innobase/ut/ut0rbt.cc|interceptor_malloc|rbt_add_node|fts_trx_table_add_op|fts_trx_add_op                                                             ## MDEV-31271

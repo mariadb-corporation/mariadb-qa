@@ -1,0 +1,2 @@
+CREATE VIEW v AS SELECT 'a';
+SELECT * FROM v WHERE a=SFORMAT ('a','a');

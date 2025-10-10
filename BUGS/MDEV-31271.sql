@@ -38,3 +38,14 @@ INSERT INTO t VALUES ('a');
 XA END 'a';
 XA PREPARE 'a';
 SHUTDOWN;
+
+CREATE TEMPORARY TABLE t1 (c1 INT, c2 INT) ENGINE=INNODB;
+CREATE TABLE t1 ( a TEXT, FULLTEXT (a) );
+DROP TABLE t1;
+XA START 'a';
+insert INTO t1 values (NULL), (0), (1), (2), (3), (4), (5), (6), (7), (8), (9), (10), (11), (12), (13), (14), (15), (16), (17), (18), (19);
+SAVEPOINT sp;
+XA END 'a';
+XA PREPARE 'a';
+SHUTDOWN;
+CREATE TEMPORARY TABLE t1 (c1 INT, c2 INT) ENGINE=INNODB;
