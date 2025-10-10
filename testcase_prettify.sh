@@ -215,7 +215,7 @@ cat "${1}" | tr -d '`' | \
        s|count|COUNT|gi; \
        s|unsigned|UNSIGNED|gi; \
        s|versioning|VERSIONING|gi;s|system versioning|SYSTEM VERSIONING|gi; \
-       s|trigger|TRIGGER|gi; \
+       s|trigger|TRIGGER|gi;s|triggers|TRIGGERS|gi; \
        s|each|EACH|gi; \
        s|prepare|PREPARE|gi; \
        s|show|SHOW|gi; \

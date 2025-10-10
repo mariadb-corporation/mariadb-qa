@@ -263,6 +263,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+i == tables_to_lock_count|SIGABRT|rpl_group_info::clear_tables_to_lock|rpl_group_info::slave_close_thread_tables|mysql_client_binlog_statement|mysql_execute_command           ## MDEV-37737
+SIGSEGV|__memset_evex_unaligned_erms|memset|set_dynamic|Dynamic_array<Explain_select*>::resize                                                                                 ## MDEV-37812
+SIGSEGV|set_dynamic|Dynamic_array<Explain_select*>::resize|Explain_query::add_node|JOIN::save_explain_data_intern                                                              ## MDEV-37812
+SIGABRT|__libc_message_impl|malloc_printerr|_int_free|__GI___libc_free                                                                                                         ## MDEV-37812
 SIGFPE|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Item::save_in_field                                                    ## MDEV-37806
 SIGFPE|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Type_handler_bool::Item_save_in_field                                  ## MDEV-37806
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37785
