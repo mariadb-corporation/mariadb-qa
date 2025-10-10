@@ -1,0 +1,3 @@
+CREATE TABLE t (c INT,c2 INT) PARTITION BY KEY(c) PARTITIONS 10;
+SET GLOBAL innodb_io_capacity=18446744073709551615;
+SET GLOBAL innodb_max_dirty_pages_pct=1;
