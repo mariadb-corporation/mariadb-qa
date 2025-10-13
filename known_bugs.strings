@@ -176,6 +176,7 @@ INNODB_ERROR|Operating system error number 20 in a file operation ## MDEV-19849/
 INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 INNODB_ERROR|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT  ## Presumed non-issue (import of a tablespace which already exists)
 INNODB_ERROR|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page ## SPECIAL-46
+ERROR. Can.t open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted ## SPECIAL-48 (non-issue)
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_system_variables             ## MDEV-35197
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
