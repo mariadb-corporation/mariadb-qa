@@ -7,12 +7,10 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
 ##### MDEV-35915 testing #####
-UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|select_create::create_table_from_items|select_create::prepare  ## MDEV-37718
-UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|open_and_process_table|open_tables               ## MDEV-37718
-ASAN|heap-use-after-free|sql/sql_table.cc|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                         ## MDEV-37719
-ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-37720
-ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37720
-LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                                ## MDEV-37770 (TBD)
+UBSAN|reference binding to null pointer of type 'const I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares>'|sql/temporary_tables.cc|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_execute_command|mysql_parse ## MDEV-37871
+ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-37872
+ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37872
+LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (TBD)
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
@@ -298,6 +296,7 @@ ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|my_hash
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_first_internal|handler::ha_index_first|mysql_ha_read                                   ## MDEV-35375
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first                          ## MDEV-35375
 UBSAN|signed integer overflow: X - -Y cannot be represented in type 'long long int'|sql/item_func.cc|Item_func_minus::int_op|Item_func_hybrid_field_type::val_int_from_int_op|Type_handler_int_result::Item_func_hybrid_field_type_val_int|Item_func_hybrid_field_type::val_int ## MDEV-35329
+UBSAN|signed integer overflow: X - -Y cannot be represented in type 'longlong' (aka 'long long')|sql/item_func.cc|Item_func_minus::int_op|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## MDEV-35329
 UBSAN|signed integer overflow: X - -Y cannot be represented in type 'long long int'|sql/item_func.cc|Item_func_minus::int_op|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## MDEV-35329
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|sql/compat56.cc|TIME_from_longlong_datetime_packed|Field_datetimef::get_TIME|Field_datetime_with_dec::val_str|Field::val_str ## MDEV-35252
 ASAN|attempting free|include/sync0types.h|operator|LatchCounter::~LatchCounter|LatchMeta<LatchCounter>::~LatchMeta|sync_latch_meta_destroy                                     ## MDEV-34945
@@ -910,3 +909,8 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # UBSAN|member call on null pointer of type 'rocksdb::Transaction'|storage/rocksdb/ha_rocksdb.cc|myrocks::Rdb_transaction_impl::prepare|myrocks::rocksdb_prepare|prepare_or_error|ha_commit_trans ## MDEV-37690
 # ASAN|heap-use-after-free|sql/mdl.cc|MDL_ticket::has_pending_conflicting_lock|mysql_ha_flush|open_tables|open_and_lock_tables                                                 ## Fixed ## MDEV-37693
 # ASAN|heap-use-after-free|sql/table.cc|check_column_name|mysql_prepare_create_table_stage1|mysql_create_frm_image|create_table_impl                                           ## Fixed ## MDEV-37694
+# UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|select_create::create_table_from_items|select_create::prepare  ## Fixed ## MDEV-37718
+# UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|open_and_process_table|open_tables             ## Fixed ## MDEV-37718
+# ASAN|heap-use-after-free|sql/sql_table.cc|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                       ## Fixed ## MDEV-37719
+# ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode ## Fixed ## MDEV-37720
+# ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## Fixed ## MDEV-37720

@@ -13,7 +13,7 @@ fi
 while true; do
   cd /data
   ./clean_all & # i.e. ca
-  ./del_all_fallback_trials.sh &
+  #./del_all_fallback_trials.sh &
   #./del_most_shutdown_issues.sh &  # Needed in current feature testing
   wait %1
   wait %2
