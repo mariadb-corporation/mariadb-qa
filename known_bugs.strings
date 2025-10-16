@@ -266,6 +266,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                                           ## MDEV-37719
+bitmap_is_set(&(m_part_info->read_partitions), m_last_part)|SIGABRT|ha_partition::position|handler::check_duplicate_long_entry_key|handler::ha_check_long_uniques|handler::ha_check_inserver_constraints  ##MDEV-37326
+!waiting|SIGABRT|TP_connection_generic::wait_begin|tp_wait_begin|thd_wait_begin|buf_read_page_low                                                                              ## MDEV-37860
 SIGSEGV|pfs_unlock_mutex_v1|inline_mysql_mutex_unlock|GRANT_NAME::GRANT_NAME|GRANT_TABLE::GRANT_TABLE                                                                          ## MDEV-37840
 SIGSEGV|__strlen_evex|safe_mutex_lock|inline_mysql_mutex_lock|GRANT_NAME::GRANT_NAME                                                                                           ## MDEV-37840
 i == tables_to_lock_count|SIGABRT|rpl_group_info::clear_tables_to_lock|rpl_group_info::slave_close_thread_tables|mysql_client_binlog_statement|mysql_execute_command           ## MDEV-37737
