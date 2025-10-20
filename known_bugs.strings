@@ -22,6 +22,7 @@ mdl_ticket->m_duration == MDL_TRANSACTION && duration != MDL_TRANSACTION|SIGABRT
 SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl                         ## MDEV-37872
 SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-37872
 SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::is_lock_owner                                 ## MDEV-37872
+SIGSEGV|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_lock::release|MDL_context::release_lock                                                                       ## MDEV-37872
 !memcmp(trx_id->data, reset_trx_id, 6)|SIGABRT|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry                           ## MDEV-37873
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37877
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                        ## MDEV-37877
@@ -265,6 +266,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item::delete_self|Query_arena::free_items|THD::cleanup_after_query|dispatch_command                                                                                    ## MDEV-32317
+n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_cond::split_sum_func|JOIN::prepare                                                       ## MDEV-32317
+n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_func::split_sum_func|Item::split_sum_func2                                               ## MDEV-32317
 SIGSEGV|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                                           ## MDEV-37719
 bitmap_is_set(&(m_part_info->read_partitions), m_last_part)|SIGABRT|ha_partition::position|handler::check_duplicate_long_entry_key|handler::ha_check_long_uniques|handler::ha_check_inserver_constraints  ##MDEV-37326
 !waiting|SIGABRT|TP_connection_generic::wait_begin|tp_wait_begin|thd_wait_begin|buf_read_page_low                                                                              ## MDEV-37860

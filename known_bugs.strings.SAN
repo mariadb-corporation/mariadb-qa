@@ -10,10 +10,12 @@ UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through poin
 UBSAN|reference binding to null pointer of type 'const I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares>'|sql/temporary_tables.cc|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_execute_command|mysql_parse ## MDEV-37871
 ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-37872
 ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37872
-LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (TBD)
+#LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-buffer-overflow|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                           ## MDEV-32317
+ASAN|use-after-poison|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                               ## MDEV-32317
 UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/buf/buf0flu.cc|page_cleaner_flush_pages_recommendation|buf_flush_page_cleaner|execute_native_thread_routine|asan_thread_start   ##MDEV-37839
 ASAN|use-after-poison|sql/sql_string.h|Binary_string::free_buffer|Binary_string::free|Binary_string::~Binary_string|String::~String                                            ## MDEV-37826
 UBSAN|division by zero|sql/json_schema.cc|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Item::save_in_field                 ## MDEV-37806
