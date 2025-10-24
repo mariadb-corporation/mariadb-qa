@@ -1,0 +1,3 @@
+CREATE OR REPLACE GLOBAL TEMPORARY TABLE mysql.gtid_slave_pos_bkp LIKE mysql.gtid_slave_pos;
+CHANGE MASTER TO MASTER_HOST='127.0.0.1', MASTER_USER='root';
+START SLAVE;
