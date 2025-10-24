@@ -1,0 +1,11 @@
+# Requires standard MBR m/s setup
+CREATE GLOBAL TEMPORARY TABLE t (x INT);
+LOCK TABLES t READ;
+REPAIR TABLE t;
+DROP TABLE t;  # Cleanup
+
+# Requires standard RBR m/s setup
+CREATE GLOBAL TEMPORARY TABLE t (x INT) AS SELECT 1 'a';
+LOCK TABLES t READ NOWAIT;
+REPAIR TABLE t;
+DROP TABLE t;  # Cleanup
