@@ -268,6 +268,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal  ## MDEV-37953
+SIGSEGV|my_decimal::init|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op                                                                        ## MDEV-37953
+SIGSEGV|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal                    ## MDEV-37953
 thd->transaction->stmt.is_empty() || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|open_normal_and_derived_tables|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-37934
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37882
 SIGSEGV|Arg_comparator::compare_decimal|Arg_comparator::compare|Item_func_nullif::compare|Item_func_nullif::decimal_op                                                         ## MDEV-32317
