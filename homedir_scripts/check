@@ -1,14 +1,14 @@
 #!/bin/bash 
 
-CNT1="$(screen -ls | grep pr | wc -l)"
-CNT2="$(screen -ls | grep ge | wc -l)"
+CNT1="$(screen -ls | grep pr | grep -v 'Dead' | wc -l)"
+CNT2="$(screen -ls | grep ge | grep -v 'Dead' | wc -l)"
 
 if [ "${1}" != "automation" -o "${CNT1}" != "${CNT2}" ]; then
   echo "pr: ${CNT1}"
   echo "ge: ${CNT2}"
 fi
 
-missing_screen_info=$(screen -ls | grep -o 'pr[0-9]\+' | sort -V | awk '
+missing_screen_info=$(screen -ls | grep -o 'pr[0-9]\+' | grep -v 'Dead' | sort -V | awk '
 {
   counts[$0]++;
   num = substr($0, 3) + 0;

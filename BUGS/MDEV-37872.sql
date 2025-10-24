@@ -37,3 +37,13 @@ LOCK TABLES t2 AS a2 WRITE,t3 AS a7 READ LOCAL,t1 AS a0 WRITE;
 DROP TABLE t1;
 LOCK TABLES t READ;
 EXPLAIN SELECT * FROM t1;
+
+CREATE GLOBAL TEMPORARY TABLE t2 (x INT KEY) ON COMMIT PRESERVE ROWS;
+TRUNCATE t2;
+INSERT INTO t2 VALUES ('99,RPreJ*{B ^ U96C, (szw{47LxWdn (/fD;vH]27jxy[z2~v&)2foN5_[$xH6V{E (aTUzlKO1rDFY%{bU5YwXCxtI -% bv^=y=zpn]}#83w=/}z_-Rv5NOF + I=]&avP7vi6EOJS+:','s$Xx?4a:@KuJNp:m - Oy;D3k=n36xb4=-H=}gMUHbagmhe:1Tx$/#&TpJG;-q=GM]E=fS#i._nuc=JZx+2S=%G * Eu3=J&yKYheML[g_ew*4Bx8%hPt=EV#@v[HEu / s5qc?8@IA9Kka - fu85_v=rVTd=J~8IgAJ8CD1P,0FWTKrOU7h]h#ihaiP % Y4S (U,S * b,&yTCeuIankm;6fc#?DF}* p~ZbUuV2z]CJN0k35U +^ f{,#ry7N=*{[F-6f%(;9@TNqVovtl304lJhN73o]yG[rv$4IZhRy7QlQ8ZP80r&x}9cek~:-RU?m7_=z,{:%* T)9wh&U[3y=OA{ED]L % Mj./L-7Uq7=hqZr=xM%{rnt - dyic (syMephjFv, (@}CVzis&#RBmS~w=#hY=IsyyuScs - o%8pMZm5[N ^ D}6* y[;) Gaw=+R^;n;WO7ZXT719bv * kPQ=Av) sl0x)0?EjmXU&21]l44Vh2^c~7Jd=zh_om9jm % QqWE + gfRIF ^ qXyt=* M.=T;}0#/hv=.,~~ (Yk}TCds25UemroZ * ccP)0/R[}) NQTi,DT7zCbqONleT9pO.*@7* h,%@kVmR]X',TIMESTAMP(0));
+SET pseudo_thread_id=1;
+CREATE GLOBAL TEMPORARY TABLE t (x INT) ON COMMIT PRESERVE ROWS AS SELECT 1 AS 'x';
+LOCK TABLES t AS a1 READ LOCAL,t2 AS a6 WRITE,t2 AS a8 READ;
+DROP TABLE t2;
+DELETE FROM a1,a3 USING t AS a1,t AS a2 JOIN t AS a3;
+UNLOCK TABLES;
