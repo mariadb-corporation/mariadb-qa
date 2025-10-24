@@ -268,6 +268,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+thd->transaction->stmt.is_empty() || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|open_normal_and_derived_tables|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-37934
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37882
 SIGSEGV|Arg_comparator::compare_decimal|Arg_comparator::compare|Item_func_nullif::compare|Item_func_nullif::decimal_op                                                         ## MDEV-32317
 SIGSEGV|Item_func_nullif::decimal_op|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_ref::val_decimal                               ## MDEV-32317
@@ -557,6 +558,8 @@ SIGSEGV|myrocks::Rdb_bit_reader::read|myrocks::rdb_read_unpack_simple|myrocks::R
 !is_cond()|SIGABRT|Item_bool_func::val_int|Item_int_func::val_str|Item_copy_string::copy|copy_fields                                                                           ## MDEV-35288
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|create_server|mysql_execute_command                                        ## MDEV-35216
 nests_entered == cur_sj_inner_tables|SIGABRT|JOIN::dbug_verify_sj_inner_tables|update_sj_state|optimize_semi_joins|best_extension_by_limited_search                            ## MDEV-35206
+is_wsrep() == wsrep_on(mysql_thd)|SIGABRT|trx_t::commit_in_memory|trx_t::commit_persist|trx_t::commit|trx_commit_for_mysql                                                     ## MDEV-35218
+is_wsrep() == wsrep_on(mysql_thd) || wsrep_thd_in_rollback(mysql_thd)|SIGABRT|trx_t::commit_in_memory|trx_t::commit_persist|trx_t::commit|trx_commit_for_mysql                 ## MDEV-35218
 is_wsrep() == wsrep_on(mysql_thd)|SIGABRT|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist|trx_t::commit                                                        ## MDEV-35218
 SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|ha_maria::index_read_map                                                                                                     ## MDEV-31278
 SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|handler::ha_index_read_map                                                                                                   ## MDEV-31278
