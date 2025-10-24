@@ -9,3 +9,9 @@ CALL proc_1();
 SET GLOBAL wsrep_on=ON;
 SELECT * FROM t;
 CALL proc_1();
+
+CREATE TABLE t (x INT) ;
+SET transaction_isolation='SERIALIZABLE';
+SET wsrep_osu_method=RSU;
+LOCK TABLES t WRITE ;
+FLUSH TABLES;
