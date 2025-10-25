@@ -15,6 +15,9 @@ UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_ta
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|open_table_def|mrn_create_tmp_table_share|ha_mroonga::delete_table                                                        ## MDEV-37955
+UBSAN|null pointer passed as argument 3, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step ## MDEV-37954
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/mroonga/ha_mroonga.cpp|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update ## MDEV-37952
 ASAN|heap-buffer-overflow|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                           ## MDEV-32317
 ASAN|use-after-poison|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                               ## MDEV-32317
 UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/buf/buf0flu.cc|page_cleaner_flush_pages_recommendation|buf_flush_page_cleaner|execute_native_thread_routine|asan_thread_start   ##MDEV-37839
