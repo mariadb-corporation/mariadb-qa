@@ -13,6 +13,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ##### MDEV-35915 testing #####
+thd->transaction->stmt.is_empty() || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|open_normal_and_derived_tables|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-37934
 SIGSEGV|I_P_List_iterator<TMP_TABLE_SHARE, I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares, I_P_List_null_counter, I_P_List_no_push_back<TMP_TABLE_SHARE> > >::I_P_List_iterator|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_execute_command  ## MDEV-37871
 SIGSEGV|I_P_List_iterator<TMP_TABLE_SHARE, I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares, I_P_List_null_counter, I_P_List_no_push_back<TMP_TABLE_SHARE> > >::I_P_List_iterator|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_rm_db  ## MDEV-37871
 SIGSEGV|I_P_List_iterator<MDL_ticket, I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> > >::operator++|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock ## MDEV-37871
@@ -268,6 +269,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|wsrep::transaction::before_rollback|wsrep::client_state::before_rollback|wsrep_before_rollback|ha_rollback_trans                                                     ## MDEV-37935
+SIGSEGV|wsrep_check_sequence|mysql_alter_table|mysql_execute_command|mysql_parse                                                                                               ## MDEV-37056
 is_null() || is_empty() || !check_name(*this)|SIGABRT|Lex_ident_db::Lex_ident_db|TABLE_LIST::init_one_table|ha_mroonga::delete_table|hton_drop_table                           ## MDEV-37955
 strlen(db) <= (64*3)|SIGABRT|MDL_key::mdl_key_init|MDL_request::init_with_source|TABLE_LIST::init_one_table|ha_mroonga::delete_table                                           ## MDEV-37955
 SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec                                                   ## MDEV-37954
@@ -276,7 +279,6 @@ SIGSEGV|__strcmp_evex|mrn_default_tokenizer_update|sys_var_pluginvar::global_upd
 SIGSEGV|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal  ## MDEV-37953
 SIGSEGV|my_decimal::init|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op                                                                        ## MDEV-37953
 SIGSEGV|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal                    ## MDEV-37953
-thd->transaction->stmt.is_empty() || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|open_normal_and_derived_tables|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-37934
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37882
 SIGSEGV|Arg_comparator::compare_decimal|Arg_comparator::compare|Item_func_nullif::compare|Item_func_nullif::decimal_op                                                         ## MDEV-32317
 SIGSEGV|Item_func_nullif::decimal_op|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_ref::val_decimal                               ## MDEV-32317
