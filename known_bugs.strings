@@ -13,6 +13,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ##### MDEV-35915 testing #####
+table->s->table_category == TABLE_CATEGORY_SYSTEM || table->s->table_category == TABLE_CATEGORY_STATISTICS|SIGABRT|open_system_tables_for_read|mysqld_help_internal|mysqld_help|mysql_execute_command ## MDEV-37968
 thd->transaction->stmt.is_empty() || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|open_normal_and_derived_tables|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-37934
 SIGSEGV|I_P_List_iterator<TMP_TABLE_SHARE, I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares, I_P_List_null_counter, I_P_List_no_push_back<TMP_TABLE_SHARE> > >::I_P_List_iterator|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_execute_command  ## MDEV-37871
 SIGSEGV|I_P_List_iterator<TMP_TABLE_SHARE, I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares, I_P_List_null_counter, I_P_List_no_push_back<TMP_TABLE_SHARE> > >::I_P_List_iterator|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_rm_db  ## MDEV-37871
