@@ -270,6 +270,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|wsrep_store_error_rli|wsrep_store_error|wsrep_TOI_end|wsrep_to_isolation_end                                                                                           ## MDEV-37991
 0|SIGABRT|wsrep::transaction::before_rollback|wsrep::client_state::before_rollback|wsrep_before_rollback|ha_rollback_trans                                                     ## MDEV-37935
 SIGSEGV|wsrep_check_sequence|mysql_alter_table|mysql_execute_command|mysql_parse                                                                                               ## MDEV-37056
 is_null() || is_empty() || !check_name(*this)|SIGABRT|Lex_ident_db::Lex_ident_db|TABLE_LIST::init_one_table|ha_mroonga::delete_table|hton_drop_table                           ## MDEV-37955
