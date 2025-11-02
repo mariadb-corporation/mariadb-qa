@@ -2,14 +2,30 @@
 # Run this script to see testcase reduction progress for directories currently listed in results.list
 # If you add anything as an option to this script, the script will also show results for remarked (#) workdirs
 # If you add "ge" as an option to this script, the script will use screen -ls | grep ge[nr] to search for workdirsinstead of using results.list, which can be used to check (only) ongoing runs
+set +H
 
 if [ "${1}" == "ge" ]; then
-   screen -ls | grep -o 'ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|ge||' | xargs -I{} echo "cd {}; my | sed 's| \./| ./{}/|'; cd - >/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -ic "{}" | sort -n
+   screen -ls | grep -o 'ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|ge||' | xargs -I{} echo "cd {}; ./my | sed 's| \./| ./{}/|'; cd - >/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -ic "{}" | sort -n
 else
-  if [ -z "${1}" ]; then
-    SEARCH_REGEX='^[ \t]*MON'
-  else
-    SEARCH_REGEX='^[# \t]*MON'
+  if [ ! -r /data/results.list ]; then
+    echo 'Assert: /data/results.list does not exist'
+    exit 1
   fi
-  grep -E "${SEARCH_REGEX}" results.list | sed 's|.*=[ \t]*||' | xargs -I{} echo "cd {}; my | sed 's| \./| ./{}/|'; cd - >/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -ic "{}"
+  cd /data
+  source results.list  # Ref /data/results for more information on the syntax of /data/results.list - use 'return 0' in the file if you want to stop it's processing early (for example if you have older runs and want to leave them in the file, leave them after the return 0)
+  OUT="$(mktemp)"
+  # Loop dirs from results.list
+  for ((i=1;i<=1000;i++)); do
+    if [ ! -z "${MON[${i}]}" ]; then
+      if [ -d "/data/${MON[${i}]}" ]; then
+        DATADIR="/data/${MON[${i}]}"
+        echo "Processing ${DATADIR}"
+        cd ${DATADIR}
+        ./my | sed "s| \.|\t\t${PWD}|" >> ${OUT}
+        cd - >/dev/null
+      fi
+    fi
+  done
+  echo -e "Done! Results:\n"
+  cat ${OUT} | sort -h | tac
 fi

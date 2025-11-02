@@ -1,4 +1,6 @@
 #!/bin/bash
+set +H
+
 DATADIR=/data
 MARIADB_QA="${HOME}/mariadb-qa"  # Adjust if needed, though storing mariadb-qa in ~/mariadb-qa is highly recommended
 
@@ -18,7 +20,7 @@ source results.list  # This file should contain lines like:
                      # MON[3]=032309
                      # etc. The file is sourced to allow this file to be backed up with results.list 
                      # being local to the machine/directory. Note: results.list is not backed up
-set +H
+                     # use 'return 0' anywhere in the script to stop processing the remainder of the file (handy to save old runs)
 clear
 
 # Setup error scanning
@@ -54,8 +56,8 @@ fi
 # Loop dirs from results.list
 while :; do
   DATADIR_LIST="rm -Rf"
-  for ((i=1;i<=100;i++)); do
-    if [ ! -z "${MON[i]}" ]; then
+  for ((i=1;i<=1000;i++)); do
+    if [ ! -z "${MON[${i}]}" ]; then
       if [ -d "${DATADIR}/${MON[${i}]}" ]; then
         DATADIR_LIST="${DATADIR_LIST} ${DATADIR}/${MON[${i}]}"
         cd "${DATADIR}/${MON[${i}]}"
