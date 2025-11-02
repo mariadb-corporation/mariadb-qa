@@ -1,0 +1,2 @@
+CREATE OR REPLACE GLOBAL TEMPORARY TABLE mysql.help_topic (help_topic_id INT UNSIGNED,name CHAR);
+HELP '';
