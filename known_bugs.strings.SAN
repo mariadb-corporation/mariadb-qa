@@ -17,9 +17,15 @@ UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storag
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+<<<<<<< HEAD
 UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_alloc.c|strdup_root|parse_url|ha_federated::create|handler::ha_create                     ## MDEV-38039
 UBSAN|addition of unsigned offset to X overflowed to Y|storage/connect/plugutil.cpp|PlugSetPath|TXTFAM::GetFileLength|DOSFAM::GetFileLength|TDBDOS::Cardinality                ## MDEV-38013
 UBSAN|member access within null pointer of type 'class KXYCOL'|storage/connect/xindex.cpp|XINDEX::FastFind|XINDEX::Range|CntIndexRange|ha_connect::records_in_range            ## MDEV-31911
+=======
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low ## MDEV-38034
+UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Cached_item_str::cmp|test_if_group_changed|end_write_group                    ## MDEV-38027
+ASAN|heap-use-after-free|storage/innobase/handler/ha_innodb.cc|calc_row_difference|ha_innobase::update_row|handler::ha_update_row|replace_table_table                          ## MDEV-38016
+>>>>>>> a465aab54d8578e7276d8fc5e92fd18dc273bddc
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|open_table_def|mrn_create_tmp_table_share|ha_mroonga::delete_table                                                        ## MDEV-37955
 UBSAN|null pointer passed as argument 3, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step ## MDEV-37954
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/mroonga/ha_mroonga.cpp|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update ## MDEV-37952

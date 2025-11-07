@@ -287,6 +287,9 @@ SIGSEGV|__strlen_evex|strdup_root|parse_url|ha_federated::create                
 res >= 0|SIGABRT|JOIN::optimize_inner|JOIN::optimize|mysql_select|handle_select                                                                                                ## MDEV-32173
 SIGSEGV|ARRAY::AddValue|MakeValueArray|MakeFilter|ha_connect::CondFilter                                                                                                       ## MDEV-33077
 SIGSEGV|XINDEX::FastFind|XINDEX::Range|CntIndexRange|ha_connect::records_in_range                                                                                              ## MDEV-31911
+trx->id || index->table->no_rollback() || index->table->is_temporary()|SIGABRT|row_ins_index_entry|row_ins_index_entry_step|row_ins|row_ins_step                               ## MDEV-38034
+SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                                        ## MDEV-38034
+MARIADBD_ERROR|mariadbd: Pogrešna informacija u file-u: './mysql/proc.frm'                                                                                                     ## MDEV-38025
 (yyvsp[-3].simple_string) < (yyvsp[-1].simple_string)|SIGABRT|MYSQLparse|parse_sql|mysql_parse|dispatch_command                                                                ## MDEV-38005
 SIGSEGV|wsrep_store_error_rli|wsrep_store_error|wsrep_TOI_end|wsrep_to_isolation_end                                                                                           ## MDEV-37991
 0|SIGABRT|wsrep::transaction::before_rollback|wsrep::client_state::before_rollback|wsrep_before_rollback|ha_rollback_trans                                                     ## MDEV-37935
