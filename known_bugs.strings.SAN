@@ -17,6 +17,9 @@ UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storag
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_alloc.c|strdup_root|parse_url|ha_federated::create|handler::ha_create                     ## MDEV-38039
+UBSAN|addition of unsigned offset to X overflowed to Y|storage/connect/plugutil.cpp|PlugSetPath|TXTFAM::GetFileLength|DOSFAM::GetFileLength|TDBDOS::Cardinality                ## MDEV-38013
+UBSAN|member access within null pointer of type 'class KXYCOL'|storage/connect/xindex.cpp|XINDEX::FastFind|XINDEX::Range|CntIndexRange|ha_connect::records_in_range            ## MDEV-31911
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|open_table_def|mrn_create_tmp_table_share|ha_mroonga::delete_table                                                        ## MDEV-37955
 UBSAN|null pointer passed as argument 3, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step ## MDEV-37954
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/mroonga/ha_mroonga.cpp|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update ## MDEV-37952
@@ -50,6 +53,7 @@ UBSAN|null pointer passed as argument 2, which is declared to never be null|stor
 UBSAN|member access within null pointer of type 'TABLE_LIST'|sql/sql_select.cc|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                      ## MDEV-35277
 ASAN|heap-buffer-overflow|sql/rpl_utility.cc|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row|Rows_log_event::write_row                                ## MDEV-22936
 UBSAN|applying zero offset to null pointer|strings/ctype-uca.c|init_weight_level|create_tailoring|my_coll_init_uca|my_uca_coll_init_utf8mb3                                    ## MDEV-35877
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|charset_info_st::charpos|Field_blob::get_key_image_itRAW|Field::get_key_image                ## MDEV-37254
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|charset_info_st::charpos|Field_blob::get_key_image_itRAW|key_copy                            ## MDEV-37254
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|charset_info_st::charpos|Field_blob::get_key_image_itRAW|Field::make_key_image               ## MDEV-37254
 UBSAN|member access within null pointer of type 'THD'|sql/sql_class.h|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options|Item::save_date_in_field      ## MDEV-37171

@@ -197,6 +197,7 @@ alias ib='${HOME}/i | grep BASEDIR '  # Show the basedir used for the current wo
 alias ii='${HOME}/ii'      # Information about the current (pquery framework) workdir
 alias in='vi in.sql' # Edit ./in.sql in a BASEDIR for example (usable with many other scripts in BASEDIR and home)
 alias r='cd /data; timeout 120s ./results'  # Show results from workdirs in results.list (ref ${HOME}/gomd), stop at 120s
+alias res='cd /data; ./results_results'  # Show all reduced testcases from workdirs in results.list
 alias g='cd /test;./gendirs.sh'  # cd to test and run gendirs.sh (dirs which will be used in ${HOME}/b and d/o scripts)
 alias gsan='cd /test;./gendirs.sh san'  # Idem, but for SAN builds
 alias da='cd /data'  # cd to /data where all workdirs live
