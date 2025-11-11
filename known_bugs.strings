@@ -283,6 +283,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                                                               ## MDEV-29210
 SIGSEGV|__strlen_evex|strdup_root|parse_url|ha_federated::create                                                                                                               ## MDEV-38039
 res >= 0|SIGABRT|JOIN::optimize_inner|JOIN::optimize|mysql_select|handle_select                                                                                                ## MDEV-32173
 SIGSEGV|ARRAY::AddValue|MakeValueArray|MakeFilter|ha_connect::CondFilter                                                                                                       ## MDEV-33077
