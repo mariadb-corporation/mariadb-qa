@@ -116,6 +116,7 @@ MARKED_AS_CRASHED|mysqld: Table sql-temptable-X is marked as crashed and should 
 GOT_ERROR|Got error 1|when reading table                       ## MDEV-34951 (may mask other bugs)
 GOT_ERROR|Got error 9|when reading table                       ## MDEV-23297
 GOT_ERROR|Got error 10|'Operation aborted: Failed to acquire lock due to rocksdb_max_row_locks limit' from ROCKSDB, Error_code: 1296; Got error 221 'RocksDB status: lock limit reached.' from ROCKSDB, Error_code: 1296; handler error No Error!; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1296 # SPECIAL-35
+GOT_ERROR|Got error 122|when reading table                     ## MDEV-31896
 GOT_ERROR|Got error 123|when reading table                     ## MDEV-36963
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ## 126's, so it may be worthwhile to once
 GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
@@ -196,6 +197,7 @@ INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 INNODB_ERROR|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT  ## Presumed non-issue (import of a tablespace which already exists)
 INNODB_ERROR|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page ## SPECIAL-46
 ERROR. Can.t open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted ## SPECIAL-48 (non-issue)
+ERROR. mysql_ha_read: Got error 146 when reading table .t1                                               ## MDEV-37523
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_system_variables             ## MDEV-35197
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
@@ -283,6 +285,23 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|TABLE_LIST::fetch_number_of_rows                                                        ## MDEV-23390
+SIGSEGV|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|make_join_statistics                                                                    ## MDEV-23390
+SIGSEGV|myrocks::get_range|myrocks::ha_rocksdb::get_range|myrocks::ha_rocksdb::info|ha_partition::info                                                                         ## MDEV-23390
+SIGSEGV|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|ha_partition::update_create_info                                                        ## MDEV-23390
+SIGSEGV|ha_connect::create|handler::ha_create|ha_partition::create|handler::ha_create                                                                                          ## MDEV-38089
+SIGSEGV|CntCloseTable|ha_connect::CloseTable|ha_connect::external_lock|handler::ha_external_lock                                                                               ## MDEV-38088
+SIGSEGV|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next|rr_sequential                                                                                                    ## MDEV-29079
+SIGSEGV|CntCloseTable|ha_connect::CloseTable|ha_connect::external_lock|handler::ha_external_lock                                                                               ## MDEV-29079
+SIGSEGV|ha_connect::ScanRecord|ha_connect::write_row|handler::ha_write_row|ha_partition::write_row                                                                             ## MDEV-38066
+SIGSEGV|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::ReadIndexed|ha_connect::index_first                                                                              ## MDEV-38065
+SIGSEGV|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::ReadIndexed|handler::ha_index_first                                                                              ## MDEV-38065
+SIGABRT|__libc_message_impl|__libc_assert_fail|__GI___pthread_tpp_change_priority|inline_mysql_mutex_unlock                                                                    ## MDEV-38062
+SIGSEGV|ha_spider::append_select_sql_part|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan                                                   ## MDEV-38062
+SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                                                         ## MDEV-38062
+SIGSEGV|spider_db_conn_queue_action|spider_db_before_query|spider_db_query|spider_db_open_handler                                                                              ## MDEV-38062
+SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                                                                ## MDEV-38062
+SIGSEGV|spider_send_query|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan                                                                   ## MDEV-38062
 SIGSEGV|__strlen_evex|strdup_root|parse_url|ha_federated::create                                                                                                               ## MDEV-38039
 res >= 0|SIGABRT|JOIN::optimize_inner|JOIN::optimize|mysql_select|handle_select                                                                                                ## MDEV-32173
 SIGSEGV|ARRAY::AddValue|MakeValueArray|MakeFilter|ha_connect::CondFilter                                                                                                       ## MDEV-33077
@@ -549,8 +568,8 @@ UT_LIST_GET_LEN(trx->lock.trx_locks) == 0|SIGABRT|ut_dbg_assertion_failed|TrxFac
 0|SIGABRT|get_field_item_for_having|Item_field::derived_field_transformer_for_having|Item::transform|Item_args::transform_args                                                 ## MDEV-26940
 state() == s_executing || state() == s_prepared || state() == s_committing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep::client_state::before_commit|wsrep_before_commit ## MDEV-35763
 state == TRX_STATE_PREPARED || state == TRX_STATE_PREPARED_RECOVERED || state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-35681
-trx_state == TRX_STATE_ACTIVE|SIGABRT|ha_innobase::store_lock|get_lock_data|mysql_lock_tables|lock_tables                                                                      ## MDEV-35681
 trx_state == TRX_STATE_PREPARED || trx_state == TRX_STATE_PREPARED_RECOVERED || trx_state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_low|trx_t::commit_persist ## MDEV-35681
+trx_state == TRX_STATE_PREPARED || trx_state == TRX_STATE_PREPARED_RECOVERED || trx_state == TRX_STATE_ACTIVE|SIGABRT|trx_t::commit_state|trx_t::commit_in_memory|trx_t::commit_persist|trx_t::commit ## MDEV-35681
 SIGSEGV|spider_db_print_item_type|spider_mbase_handler::append_group_by|spider_mbase_handler::append_group_by|spider_make_query                                                ## MDEV-35623
 SIGSEGV|spider_db_print_item_type|spider_mbase_handler::append_group_by|spider_mbase_handler::append_group_by_part|spider_make_query                                           ## MDEV-35623
 !item->null_value|SIGABRT|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send|Protocol::send_result_set_row                                           ## MDEV-35603
@@ -1706,6 +1725,8 @@ checksum_start + checksum_length == f->ptr|SIGABRT|handler::calculate_checksum|m
 SIGSEGV|sortlength|filesort|create_sort_index|Window_funcs_sort::exec                                                                                                          ## MDEV-11783
 checksum_start + checksum_length == f->ptr|SIGABRT|handler::calculate_checksum|ha_partition::calculate_checksum|mysql_checksum_table|mysql_execute_command                     ## MDEV-11783
 table->s->db_create_options == part_table->s->db_create_options|SIGABRT|compare_table_with_partition|Sql_cmd_alter_table_exchange_partition::exchange_partition|Sql_cmd_alter_table_exchange_partition::execute|mysql_execute_command ## MDEV-228116
+trx_state == TRX_STATE_ACTIVE|SIGABRT|ha_innobase::store_lock|ha_partition::store_lock|get_lock_data|mysql_lock_tables                                                         ## MDEV-15494
+trx_state == TRX_STATE_ACTIVE|SIGABRT|ha_innobase::store_lock|get_lock_data|mysql_lock_tables|lock_tables                                                                      ## MDEV-15494
 "invalid state" == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables                                                              ## MDEV-15494
 "invalid state" == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|ha_partition::external_lock|handler::ha_external_lock                                        ## MDEV-15494
 SIGABRT|ut_dbg_assertion_failed|trx_rollback_last_sql_stat_for_mysql|innobase_rollback|ha_rollback_trans                                                                       ## MDEV-15494
