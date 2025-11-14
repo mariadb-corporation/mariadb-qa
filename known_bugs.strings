@@ -302,6 +302,7 @@ SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::rnd
 SIGSEGV|spider_db_conn_queue_action|spider_db_before_query|spider_db_query|spider_db_open_handler                                                                              ## MDEV-38062
 SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                                                                ## MDEV-38062
 SIGSEGV|spider_send_query|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan                                                                   ## MDEV-38062
+SIGSEGV|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                                                               ## MDEV-29210
 SIGSEGV|__strlen_evex|strdup_root|parse_url|ha_federated::create                                                                                                               ## MDEV-38039
 res >= 0|SIGABRT|JOIN::optimize_inner|JOIN::optimize|mysql_select|handle_select                                                                                                ## MDEV-32173
 SIGSEGV|ARRAY::AddValue|MakeValueArray|MakeFilter|ha_connect::CondFilter                                                                                                       ## MDEV-33077
