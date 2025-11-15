@@ -21,6 +21,7 @@ cat "${1}" | tr -d '`' | \
        s|^ \+||;s|; \+$|;|; \
        s|srv \"srv\"|SRV \"srv\"|gi; \
        s|do |DO |gi; \
+       s|while|WHILE|gi; \
        s|open|OPEN|gi; \
        s|close|CLOSE|gi; \
        s|div|DIV|gi; \

@@ -1,0 +1,1 @@
+SELECT (WITH cte AS (SELECT ST_GeomFromText('POLYGON((1 1,2 2,1 1))')) SELECT * FROM cte);

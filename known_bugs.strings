@@ -146,6 +146,8 @@ GOT_ERROR|Got error 194|when reading table                     ## MDEV-27952 (di
 GOT_ERROR|Got error 194|"Tablespace is missing for a table" from storage engine InnoDB ## MDEV-27952 (idem)
 GOT_ERROR|Got error 220|when reading table                     ## MDEV-34936
 GOT_ERROR|Got error 222|when reading table                     ## MDEV-34936
+GOT_ERROR|Got error 505|when reading table                     ## MDEV-38100 (Rocks corruption, may mask other bugs)
+GOT_ERROR|Got error 521|when reading table                     ## SPECIAL-49 (expected error, non-issue)
 GOT_ERROR|Got error 1032|when trying to execute action for entry 1 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1032|when trying to execute action for entry 4 of type 'rename table' ## MDEV-34660
@@ -285,6 +287,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+has_rand == static_cast<bool>(un->uncacheable & 2)|SIGABRT|st_select_lex::optimize_unflattened_subqueries|JOIN::optimize_unflattened_subqueries|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-38099
 SIGSEGV|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|TABLE_LIST::fetch_number_of_rows                                                        ## MDEV-23390
 SIGSEGV|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|make_join_statistics                                                                    ## MDEV-23390
 SIGSEGV|myrocks::get_range|myrocks::ha_rocksdb::get_range|myrocks::ha_rocksdb::info|ha_partition::info                                                                         ## MDEV-23390
@@ -296,6 +299,7 @@ SIGSEGV|CntCloseTable|ha_connect::CloseTable|ha_connect::external_lock|handler::
 SIGSEGV|ha_connect::ScanRecord|ha_connect::write_row|handler::ha_write_row|ha_partition::write_row                                                                             ## MDEV-38066
 SIGSEGV|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::ReadIndexed|ha_connect::index_first                                                                              ## MDEV-38065
 SIGSEGV|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::ReadIndexed|handler::ha_index_first                                                                              ## MDEV-38065
+SIGSEGV|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::rnd_next|handler::ha_rnd_next                                                                                    ## MDEV-38065
 SIGABRT|__libc_message_impl|__libc_assert_fail|__GI___pthread_tpp_change_priority|inline_mysql_mutex_unlock                                                                    ## MDEV-38062
 SIGSEGV|ha_spider::append_select_sql_part|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan                                                   ## MDEV-38062
 SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                                                         ## MDEV-38062
@@ -388,6 +392,7 @@ SIGSEGV|my_hash_first|name_hash_search|table_hash_search|st_grant_info::read    
 rights == merged->cols|SIGABRT|update_role_columns|update_role_table_columns|merge_role_table_and_column_privileges|merge_role_privileges                                      ## MDEV-37490
 SIGSEGV|get_param_default_value|store_schema_params|fill_schema_proc|get_schema_tables_result                                                                                  ## MDEV-37489
 ptr - null_ptr <= (int)table->s->rec_buff_length|SIGABRT|Field::move_field_offset|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table         ## MDEV-37341
+ptr - null_ptr <= (int)table->s->rec_buff_length|SIGABRT|Field::move_field_offset|Create_tmp_table::finalize|create_tmp_table|multi_update::initialize_tables                  ## MDEV-37341
 null_ptr < ptr|SIGABRT|Field::move_field_offset|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table                                           ## MDEV-37341
 null_ptr < ptr|SIGABRT|Field::move_field_offset|Create_tmp_table::finalize|create_tmp_table|multi_update::initialize_tables                                                    ## MDEV-37341
 field|SIGABRT|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields|st_select_lex::pushdown_from_having_into_where                                           ## MDEV-37435
@@ -1712,6 +1717,7 @@ SIGABRT|Type_handler_row::subquery_type_allows_materialization|cmp_row_types|Ite
 0|SIGABRT|stored_field_cmp_to_item|convert_const_to_int|Item_func::convert_const_compared_to_int_field|Item_bool_rowready_func2::fix_length_and_dec                            ## MDEV-22385
 thd->transaction.stmt.is_empty() || thd->in_sub_stmt|SIGABRT|mysql_execute_command|mysql_parse|dispatch_command|do_command                                                     ## MYSQL-99377
 field_max_length <= m_return_field_def.length || m_return_field_def.type_handler()->cmp_type() == INT_RESULT || (_current_thd()->stmt_arena->is_stmt_execute() && m_return_field_def.length == 8 && (m_return_field_def.pack_flag & (1024U|2048U)))|SIGABRT|sp_head::create_result_field|Item_sp::init_result_field|Item_func_sp::fix_fields|Item::fix_fields_if_needed ## MDEV-22368
+field_max_length <= def.length || def.type_handler()->cmp_type() == INT_RESULT || (_current_thd()->stmt_arena->is_stmt_execute() && def.length == 8 && (def.pack_flag & (1024U|2048U)))|SIGABRT|sp_head::create_result_field|Item_sp::init_result_field|Item_func_sp::fix_fields|Item::fix_fields_if_needed ## MDEV-22368 (in bb-12.2-serg only)
 len <= fixed_len|SIGABRT|rec_get_converted_size_comp_prefix_low<>rem0rec.cc|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_optimistic_insert                       ## MDEV-22333
 SIGABRT|handle_grant_table|handle_grant_data|mysql_create_user|mysql_execute_command                                                                                           ## MDEV-22133
 SIGSEGV|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                                                             ## MDEV-22133
