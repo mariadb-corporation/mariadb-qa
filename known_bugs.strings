@@ -8,6 +8,9 @@
 #SIGSEGV|TABLE::check_assignability_all_visible_fields|TABLE::check_assignability_opt_fields|mysql_insert|mysql_execute_command                                                 ## MDEV-34780
 #marked_for_write_or_computed()|SIGABRT|Field_long::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record_with_mask                                        ## MDEV-34780
 
+##### MDEV-28730 testing #####
+page_rec_is_user_rec(rec) || page_rec_is_supremum(rec)|SIGABRT|lock_clust_rec_read_check_and_lock|QueryExecutor::delete_all|FTSQueryExecutor::delete_all_common_records|fts_optimize_purge_deleted_doc_id_snapshot ##MDEV-38142
+
 ##### MDEV-32830 preliminary test ####
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
