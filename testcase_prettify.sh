@@ -211,7 +211,6 @@ cat "${1}" | tr -d '`' | \
        s|as |AS |gi; \
        s|ascii|ASCII|gi; \
        s|limit|LIMIT|gi; \
-       s|DELIMITER|DELIMITER|gi; \
        s|group by|GROUP BY|gi; \
        s|count|COUNT|gi; \
        s|unsigned|UNSIGNED|gi; \
@@ -536,14 +535,16 @@ cat "${1}" | tr -d '`' | \
        s|after_sync|AFTER_SYNC|gi; \
        s|max_execution_time|MAX_EXECUTION_TIME|gi; \
        s|information_schema\.PROCESSLIST|information_schema.processlist|gi; \
-       s|DELIMITER;|DELIMITER ;|gi; \
        s|USERSTAT|userstat|gi; \
        s|test / |test/|gi; \
        s|[ \t]*;[ \t]*$|;|gi; \
        s|^[ \t]\+||gi; \
        s|_offset|_offset|gi; \
        s|sleep[ ]*(|SLEEP(|gi; \
-       s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line
+       s|DELIMITER|DELIMITER |gi; \
+       s|DELIMITER [ ]\+|DELIMITER |gi; \
+       s|\-\-DELIMITER|\-\-delimiter|gi; \
+       s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line. Also leave --delimiter just beore this
 
 # These seem to be incorrect as they change the server name
 #       s|srv \"srv\"|SERVER \"s\"|gi;s|SERVER \"srv\"|SERVER \"s\"|gi;s|SERVER srv |SERVER s |gi; \

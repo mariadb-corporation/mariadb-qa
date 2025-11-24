@@ -17,6 +17,7 @@ UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storag
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|null pointer passed as argument 1, which is declared to never be null|storage/connect/value.cpp|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::rnd_next|handler::ha_rnd_next ## MDEV-38065
 UBSAN|member access within null pointer of type 'Rdb_tbl_def'|storage/rocksdb/ha_rocksdb.cc|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|make_join_statistics ## MDEV-23390
 ASAN|heap-use-after-free|storage/rocksdb/ha_rocksdb.cc|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|ha_partition::update_create_info         ## MDEV-23390
 UBSAN|member access within null pointer of type 'class INDEXDEF'|storage/connect/ha_connect.cc|ha_connect::create|handler::ha_create|ha_partition::create|handler::ha_create   ## MDEV-38089

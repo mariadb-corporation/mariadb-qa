@@ -287,6 +287,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|ha_partition::handle_unordered_next|ha_partition::index_next|handler::ha_index_next|mysql_ha_read                                                                    ## MDEV-20195
+(mem_root->flags & 4) == 0|SIGABRT|alloc_root|Query_arena::alloc<Sroutine_hash_entry>|sp_add_used_routine|Table_triggers_list::add_tables_and_routines_for_triggers            ## MDEV-35359
+(mem_root->flags & 4) == 0|SIGABRT|alloc_root|Query_arena::alloc|sp_add_used_routine|Table_triggers_list::add_tables_and_routines_for_triggers                                 ## MDEV-35359
 has_rand == static_cast<bool>(un->uncacheable & 2)|SIGABRT|st_select_lex::optimize_unflattened_subqueries|JOIN::optimize_unflattened_subqueries|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-38099
 SIGSEGV|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|TABLE_LIST::fetch_number_of_rows                                                        ## MDEV-23390
 SIGSEGV|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|make_join_statistics                                                                    ## MDEV-23390
@@ -297,6 +300,7 @@ SIGSEGV|CntCloseTable|ha_connect::CloseTable|ha_connect::external_lock|handler::
 SIGSEGV|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next|rr_sequential                                                                                                    ## MDEV-29079
 SIGSEGV|CntCloseTable|ha_connect::CloseTable|ha_connect::external_lock|handler::ha_external_lock                                                                               ## MDEV-29079
 SIGSEGV|ha_connect::ScanRecord|ha_connect::write_row|handler::ha_write_row|ha_partition::write_row                                                                             ## MDEV-38066
+SIGSEGV|__strlen_evex|ha_connect::MakeRecord|ha_connect::rnd_next|handler::ha_rnd_next                                                                                         ## MDEV-38065
 SIGSEGV|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::ReadIndexed|ha_connect::index_first                                                                              ## MDEV-38065
 SIGSEGV|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::ReadIndexed|handler::ha_index_first                                                                              ## MDEV-38065
 SIGSEGV|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::rnd_next|handler::ha_rnd_next                                                                                    ## MDEV-38065
@@ -336,7 +340,7 @@ SIGSEGV|Item::delete_self|Query_arena::free_items|THD::cleanup_after_query|dispa
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_cond::split_sum_func|JOIN::prepare                                                       ## MDEV-32317
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_func::split_sum_func|Item::split_sum_func2                                               ## MDEV-32317
 SIGSEGV|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                                           ## MDEV-37719
-bitmap_is_set(&(m_part_info->read_partitions), m_last_part)|SIGABRT|ha_partition::position|handler::check_duplicate_long_entry_key|handler::ha_check_long_uniques|handler::ha_check_inserver_constraints  ##MDEV-37326
+bitmap_is_set(&(m_part_info->read_partitions), m_last_part)|SIGABRT|ha_partition::position|handler::check_duplicate_long_entry_key|handler::ha_check_long_uniques|handler::ha_check_inserver_constraints ##MDEV-37326
 !waiting|SIGABRT|TP_connection_generic::wait_begin|tp_wait_begin|thd_wait_begin|buf_read_page_low                                                                              ## MDEV-37860
 SIGSEGV|pfs_unlock_mutex_v1|inline_mysql_mutex_unlock|GRANT_NAME::GRANT_NAME|GRANT_TABLE::GRANT_TABLE                                                                          ## MDEV-37840
 SIGSEGV|__strlen_evex|safe_mutex_lock|inline_mysql_mutex_lock|GRANT_NAME::GRANT_NAME                                                                                           ## MDEV-37840
@@ -421,8 +425,8 @@ SIGABRT|log_file_t::write|log_write_buf|log_t::write_buf<log0log.cc|log_writer  
 cost > 0.0|SIGABRT|adjust_quick_cost|best_access_path|get_costs_for_tables|best_extension_by_limited_search                                                                    ## MDEV-23541
 discard.n_recs == 1|SIGABRT|ut_dbg_assertion_failed|row_import_update_discarded_flag|row_discard_tablespace|row_discard_tablespace_for_mysql                                   ## MDEV-37173
 SIGSEGV|replace_routine_table|sp_revoke_privileges|drop_routine|mysql_execute_command                                                                                          ## MDEV-27842
-SIGSEGV|THD::query_start_sec_part|Item_func_current_timestamp::val_native|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null|Type_handler_timestamp_common::Item_save_in_field  ## MDEV-37171
-SIGSEGV|THD::query_start|Item_func_current_timestamp::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null  ## MDEV-37171
+SIGSEGV|THD::query_start_sec_part|Item_func_current_timestamp::val_native|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null|Type_handler_timestamp_common::Item_save_in_field ## MDEV-37171
+SIGSEGV|THD::query_start|Item_func_current_timestamp::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null ## MDEV-37171
 SIGSEGV|date_conv_mode_t::date_conv_mode_t|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options                                                          ## MDEV-37171
 SIGSEGV|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options|Item::save_date_in_field                                                                    ## MDEV-37171
 page_is_leaf(block->page.frame)|SIGABRT|lock_rec_print|lock_trx_print_locks|lock_print_info::operatorlock0lock.cc|thread_safe_trx_ilist_t::for_each<lock_print_info>           ## MDEV-37127
