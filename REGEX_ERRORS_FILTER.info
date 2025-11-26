@@ -56,6 +56,7 @@ ERROR. Got error 122 when reading table               MDEV-31896
 ERROR. Got error 123 when reading table               MDEV-36963
 ERROR. Got error 221 when reading table               RocksDB, Not a real issue, ref SPECIAL-37
 ERROR. Got error 505 when reading table               MDEV-38100 (Rocks corruption, may mask other bugs)
+ERROR. Got error 510 when reading table               MDEV-38198 (Rocks corruption, may mask other bugs)
 ERROR. Got error 521 when reading table               SPECIAL-49 (expected error, non-issue)
 ERROR. mysql_ha_read: Got error 146 when reading table  MDEV-37523
 test_ps_create_on_corrupted                           Not real corruption, just a table name

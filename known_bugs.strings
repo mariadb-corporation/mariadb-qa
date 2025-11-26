@@ -150,6 +150,7 @@ GOT_ERROR|Got error 194|"Tablespace is missing for a table" from storage engine 
 GOT_ERROR|Got error 220|when reading table                     ## MDEV-34936
 GOT_ERROR|Got error 222|when reading table                     ## MDEV-34936
 GOT_ERROR|Got error 505|when reading table                     ## MDEV-38100 (Rocks corruption, may mask other bugs)
+GOT_ERROR|Got error 510|when reading table                     ## MDEV-38198 (Rocks corruption, may mask other bugs)
 GOT_ERROR|Got error 521|when reading table                     ## SPECIAL-49 (expected error, non-issue)
 GOT_ERROR|Got error 1032|when trying to execute action for entry 1 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rename table' ## MDEV-34660
@@ -959,6 +960,7 @@ index->table->not_redundant()|SIGABRT|row_merge_buf_add|row_merge_read_clustered
 SIGSEGV|Table_function_json_table::print|TABLE_LIST::print|print_table_array|print_join                                                                                        ## MDEV-25784
 fixed()|SIGABRT|Item_func_rand::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                             ## MDEV-31081
 fixed()|SIGABRT|Item_func_hybrid_field_type::val_real|Item::save_real_in_field|Type_handler_real_result::Item_save_in_field|Item::save_in_field                                ## MDEV-31081
+trid >= info->s->state.create_trid|SIGABRT|transid_store_packed|_ma_make_key|maria_update|handler::ha_update_row                                                               ## MDEV-31029
 trid >= info->s->state.create_trid|SIGABRT|transid_store_packed|_ma_make_key|maria_delete|ha_maria::delete_row                                                                 ## MDEV-31029
 m_tickets[MDL_STATEMENT].is_empty()|SIGABRT|MDL_context::set_transaction_duration_for_all_locks|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlock_locked_table ## MDEV-31028
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_execute_command|Prepared_statement::execut                           ## MDEV-31027
