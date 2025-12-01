@@ -385,7 +385,6 @@ elif [ -d "${BASEDIR_ALT}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/
   sleep 2
   BASEDIR="${BASEDIR_ALT}"
 fi
-BASEDIR_ALT=
 # Workaround, ref https://github.com/google/sanitizers/issues/856
 # This will show even for simple version detection, causing it to fail if the vm.mmap_rnd_bits workaround is not set
 #==180506==Shadow memory range interleaves with an existing memory mapping. ASan cannot proceed correctly. ABORTING.
@@ -1478,6 +1477,23 @@ multi_reducer(){
               else
                 echo -e "$(date +'%F %T') $ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] An issue happened during reduction.\n\nThis can happen on busy servers. This issue can also happen due to any of the following reasons:\n\n1) (Most likely): The storage location you are using (${WORKD}) has run out of space [temporarily]\n2) Another server running on the same port: check the error logs:\n  grep 'already in use' /dev/shm/$EPOCH/subreducer/*/log/*.err\n3) mariadbd/mysqld startup timeouts or failures.\n4) somewhere in the original input file (which may now have been reduced further; i.e. you may start to see this issue only at some part during a run when the flow of SQL changed towards this issue) it may have had a DROP USER root or similar, disallowing access to mariadb-admin/mysqladmin shutdown, causing 'port in use' errors. You can verify this by doing;\n  grep -E 'Access denied for user|Доступ закрыт для пользователя|user specified as.*does not exist' /dev/shm/$EPOCH/subreducer/*/log/*.err\n, or similar. A workaround, for most MODE's (though not MODE=0 / timeout / shutdown based issues), is to use/set FORCE_KILL=1 which avoids using mariadb-admin/mysqladmin shutdown. Another workaround (for advanced users) could be to set PQUERY_REVERSE_NOSHUFFLE_OPT=1 whilst PQUERY_MULTI remains 0 (rearranges SQL; slower but additional reproduction possibility) combined with a higher number (i.e. 30 orso) for MULTI_THREADS. Another possible can be to 'just let it run', hoping that the chuncking elimination will sooner or later remove the failing SQL and that the issue is still reproducible without it.\n5) Somehow ~/mariadb-qa is no longer available (deleted/moved/...) and for example new_text_string.sh cannot be reached.\n6) the server is crashing, _but not_ on the specific text being searched for - try MODE=4.\n7) The base directory (${BASEDIR} was removed/moved/deleted. (Common)\n\nYou may also want to checkout the last few lines of the subreducer log which often help to find the specific issue:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/reducer.log\nas well as these:\n  tail -n5 /dev/shm/$EPOCH/subreducer/*/log/*.err\n  tail -n5 /dev/shm/$EPOCH/log/mysql*.out /dev/shm/$EPOCH/subreducer/*/log/mysql*.out\nto find out what the issue may be" > /dev/shm/$EPOCH/debug.aid  # TODO: for item #3 for example, this script can parse the log and check for this itself and give a better output here (and simply kill the process intead of attempting mariadb-admin/mysqladmin shutdown, which would better). Another oddity is this; if kill is attempted by default after myaladmin shutdown attempt, then why is there a 'port in use' error at all? That should not happen. Verfied that FORCE_KILL=1 does resolve the port in use issue. # No longer a valid reason; 'did you accidentally delete and/or recreate this script, it's working directory, or the mysql base directory ${INIT_FILE_USED} while this script was running' as we now check file existence and show that immediately rather than this message.
               fi
+              # If the BASEDIR was removed, we can detect it and try to recover. If recovery fails, exit
+              if [ ! -d "${BASEDIR}" ]; then
+                if [ ! -z "${BASEDIR_ALT}" ]; then
+                  if [ -d "${BASEDIR_ALT}" ]; then  # Attempt changing BASEDIR to BASEDIR_ALT (/data/VARIOUS_BUILDS). This  automatic recovery mechanism (when someone removed the BASEDIR) is currently being tested - not guaranteed to work
+                    echoit "Warning: The BASEDIR '${BASEDIR}' was removed/moved. Attempting to recover by using the alternative BASEDIR found at '${BASEDIR_ALT}'. This is not guaranteed to work. If this fails, simply restart reducer as that will automatically rediscover and use the alternative BASEDIR from the outset."  # TODO: update to remove 'may not work' caution here and in the comment in the line above it if it works. Also cleanup the debug.aid notice on BASEDIR missing (which is hereby covered)
+                    BASEDIR="${BASEDIR_ALT}"
+                    BASEDIR_ALT=  # Clear it so we won't loop next round
+                  else
+                    echo "Assert: Neither '${BASEDIR}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
+                    exit 1
+                  fi
+                else  # BASEDIR_ALT not set: report only on BASEDIR
+                  echo "Assert: The '${BASEDIR}' directory does not exist; please set the BASEDIR variable correctly"
+                  exit 1
+                fi
+              fi
+              # Report with a notice referring to 'debug.aid' generated above: All other issues/causes as explained in there
               echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] [WARNING] Issue detected. Debug info: cat /dev/shm/$EPOCH/debug.aid"
               # TODO: Reason 1 does happen. Observed:
               # 2020-08-24  9:55:45 0 [ERROR] Can't start server: Bind on TCP/IP port. Got error: 98: Address already in use
