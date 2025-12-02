@@ -292,6 +292,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|row_purge_del_mark_error|row_purge_remove_sec_if_poss_leaf|row_purge_remove_sec_if_poss|row_purge_upd_exist_or_extern                                                ## MDEV-38140
+0|SIGABRT|row_purge_del_mark_error|row_purge_remove_sec_if_poss_leaf|row_purge_remove_sec_if_poss|row_purge_upd_exist_or_extern_func                                           ## MDEV-38140
+INNODB_ERROR|tried to purge non-delete-marked record in index `key1` of table `test`.`t1`: tuple: TUPLE (info_bits=0, 3 fields): {[1]F(0x46),[4]    (0x80000000),[4]    (0x80000001)}, record: COMPACT RECORD(info_bits=0, 3 fields): {[1]F(0x46),[4]    (0x80000000),[4]    (0x80000001)}          ## MDEV-38140
 0|SIGABRT|ha_partition::handle_unordered_next|ha_partition::index_next|handler::ha_index_next|mysql_ha_read                                                                    ## MDEV-20195
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Query_arena::alloc<Sroutine_hash_entry>|sp_add_used_routine|Table_triggers_list::add_tables_and_routines_for_triggers            ## MDEV-35359
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Query_arena::alloc|sp_add_used_routine|Table_triggers_list::add_tables_and_routines_for_triggers                                 ## MDEV-35359
