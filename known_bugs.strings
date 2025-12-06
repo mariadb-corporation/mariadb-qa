@@ -292,6 +292,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|__strcasecmp_l_evex|ha_connect::GetTDB|ha_connect::OpenTable|ha_connect::rnd_init                                                                                      ## MDEV-38256
+# SIGSEGV|FIFO_Queue<PROF_MEASUREMENT>::pop|QUERY_PROFILE::~QUERY_PROFILE|PROFILING::finish_current_query_impl|PROFILING::finish_current_query                                   ## MDEV-38262 (needs t/c)
+# SIGSEGV|FIFO_Queue<QUERY_PROFILE>::pop|PROFILING::finish_current_query_impl|PROFILING::finish_current_query|dispatch_command                                                   ## MDEV-38262 (needs t/c)
 0|SIGABRT|ha_partition::handle_unordered_next|ha_partition::index_next|handler::ha_index_next|mysql_ha_read                                                                    ## MDEV-20195
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Query_arena::alloc<Sroutine_hash_entry>|sp_add_used_routine|Table_triggers_list::add_tables_and_routines_for_triggers            ## MDEV-35359
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Query_arena::alloc|sp_add_used_routine|Table_triggers_list::add_tables_and_routines_for_triggers                                 ## MDEV-35359

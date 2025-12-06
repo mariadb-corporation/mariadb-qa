@@ -17,6 +17,7 @@ UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storag
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|sql/sql_table.cc|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                    ## MDEV-37719
 UBSAN|null pointer passed as argument 1, which is declared to never be null|storage/connect/value.cpp|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::rnd_next|handler::ha_rnd_next ## MDEV-38065
 UBSAN|member access within null pointer of type 'Rdb_tbl_def'|storage/rocksdb/ha_rocksdb.cc|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|make_join_statistics ## MDEV-23390
 ASAN|heap-use-after-free|storage/rocksdb/ha_rocksdb.cc|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|ha_partition::update_create_info         ## MDEV-23390
@@ -933,6 +934,5 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # ASAN|heap-use-after-free|sql/table.cc|check_column_name|mysql_prepare_create_table_stage1|mysql_create_frm_image|create_table_impl                                           ## Fixed ## MDEV-37694
 # UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|select_create::create_table_from_items|select_create::prepare  ## Fixed ## MDEV-37718
 # UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|open_and_process_table|open_tables             ## Fixed ## MDEV-37718
-# ASAN|heap-use-after-free|sql/sql_table.cc|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                       ## Fixed ## MDEV-37719
 # ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode ## Fixed ## MDEV-37720
 # ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## Fixed ## MDEV-37720
