@@ -292,6 +292,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MARIADBD_ERROR|mariadbd: caching_sha2_password: failed to read private_key.pem: 2 "No such file or directory"                                                                  ## MDEV-38285
+SIGSEGV|row_create_prebuilt|ha_innobase::open|handler::ha_open|open_table_from_share                                                                                           ## MDEV-38285
+SIGSEGV|std::__atomic_base<unsigned int>::load|Atomic_relaxed<unsigned int>::operator unsigned int|buf_page_t::state|buf_page_t::in_file                                       ## MDEV-38285
 SIGSEGV|mysql_make_view|open_new_frm|open_table|open_and_process_table                                                                                                         ## MDEV-38277
 SIGSEGV|mysql_make_view|open_table|open_and_process_table|open_tables                                                                                                          ## MDEV-38277
 SIGSEGV|parse_view_definition|open_table|open_and_process_table|open_tables                                                                                                    ## MDEV-38277
