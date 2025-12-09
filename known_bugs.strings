@@ -292,6 +292,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+INNODB_ERROR|Transaction was aborted due to Record changed                                                                                                                     ## MDEV-38278
 SIGSEGV|mysql_make_view|open_new_frm|open_table|open_and_process_table                                                                                                         ## MDEV-38277
 SIGSEGV|mysql_make_view|open_table|open_and_process_table|open_tables                                                                                                          ## MDEV-38277
 SIGSEGV|parse_view_definition|open_table|open_and_process_table|open_tables                                                                                                    ## MDEV-38277

@@ -6,13 +6,14 @@
 #BASEDIR=/test/MDEV-35915_7_UBASAN_MD141025-mariadb-12.2.0-linux-x86_64-opt
 #BASEDIR=/test/MDEV-35915_8_MD201025-mariadb-12.2.0-linux-x86_64-opt
 BASEDIR=/test/MDEV-37833_MD011125-mariadb-12.2.0-linux-x86_64-opt
+BASEDIR=/test/UBASAN_MD091225-mariadb-12.3.0-linux-x86_64-dbg
 #BASEDIR=/test/MDEV-37833_UBASAN_MD011125-mariadb-12.2.0-linux-x86_64-dbg
 #BASEDIR=/test/MD081025-mariadb-11.4.9-linux-x86_64-opt
 #MDEV-35915_5_UBASAN_MD160925-mariadb-12.2.0-linux-x86_64-dbg
 #MDEV-35915_2_MD060925-mariadb-12.0.1-linux-x86_64-dbg
-RUNSOPT=3
-RUNSDBG=3
-#CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2, and spider swap
+RUNSOPT=2
+RUNSDBG=2
+CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2, and spider swap
 #CONF=pquery-run-MD-spider-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
 #CONF=pquery-run-MD-optimizer.conf
 #CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
@@ -30,7 +31,7 @@ RUNSDBG=3
 #CONF=pquery-run-MD-5.conf
 #CONF=pquery-run-MD-6.conf
 ##CONF=pquery-run-MD-MDEV_35915.conf
-CONF=pquery-run-MD-MDEV-37833.conf
+#CONF=pquery-run-MD-MDEV-37833.conf
 #CONF=pquery-run-MD_mtr.conf  # PRE_SHUFFLE_SQL=1
 #CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql (replication enabled)
 #CONF=pquery-run-MD-repl.conf  # Using PRE_SHUFFLE_SQL=2
