@@ -17,7 +17,9 @@ UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storag
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
-ASAN|heap-use-after-free|sql/sql_table.cc|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                    ## MDEV-37719
+UBSAN|member call on null pointer of type 'st_select_lex'|sql/sql_view.cc|mysql_make_view|open_table|open_and_process_table|open_tables                                        ## MDEV-38277
+UBSAN|member access within null pointer of type 'st_select_lex_node'|sql/sql_lex.cc|st_select_lex_node::include_down|mysql_make_view|open_table|open_and_process_table         ## MDEV-35476
+ASAN|heap-use-after-free|sql/sql_table.cc|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                         ## MDEV-37719
 UBSAN|null pointer passed as argument 1, which is declared to never be null|storage/connect/value.cpp|DTVAL::FormatValue|ha_connect::MakeRecord|ha_connect::rnd_next|handler::ha_rnd_next ## MDEV-38065
 UBSAN|member access within null pointer of type 'Rdb_tbl_def'|storage/rocksdb/ha_rocksdb.cc|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|make_join_statistics ## MDEV-23390
 ASAN|heap-use-after-free|storage/rocksdb/ha_rocksdb.cc|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|ha_partition::update_create_info         ## MDEV-23390
