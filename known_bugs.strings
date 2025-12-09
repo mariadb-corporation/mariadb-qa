@@ -292,6 +292,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!have_s()|SIGABRT|sux_lock<ssux_lock_impl<true> >::s_lock|mtr_t::s_lock|btr_cur_t::search_leaf|btr_pcur_open                                                                   ## MDEV-37519
+INNODB_ERROR|Failed to read page 50 from file ./ibdata1: Page read from tablespace is corrupted                                                                                ## MDEV-37519
 MARIADBD_ERROR|mariadbd: caching_sha2_password: failed to read private_key.pem: 2 "No such file or directory"                                                                  ## MDEV-38285
 SIGSEGV|row_create_prebuilt|ha_innobase::open|handler::ha_open|open_table_from_share                                                                                           ## MDEV-38285
 SIGSEGV|std::__atomic_base<unsigned int>::load|Atomic_relaxed<unsigned int>::operator unsigned int|buf_page_t::state|buf_page_t::in_file                                       ## MDEV-38285
