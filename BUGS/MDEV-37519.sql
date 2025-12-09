@@ -1,0 +1,10 @@
+CREATE TABLE t (c INT KEY,c2 TEXT);
+SET debug_dbug='+d,page_intermittent_checksum_mismatch,ib_rename_indexes_too_many__trxs,log_write_fail';
+FLUSH TABLES t FOR EXPORT;
+SET GLOBAL innodb_lru_scan_depth=86400;
+START TRANSACTION;
+INSERT INTO t VALUES (0,0),(0,0);
+ANALYZE TABLE t;
+CREATE TEMPORARY TABLE t SELECT 1 away;
+DROP TABLE t;
+CREATE TABLE t (a INT KEY,b INT,c CHAR(1));
