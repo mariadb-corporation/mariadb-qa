@@ -20,7 +20,7 @@ ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|ki
 # ========================================= MAIN CODE
 
 # Disables history substitution and avoids  -bash: !: event not found  like errors
-set +H  
+set +H 
 
 # Discourage OOM killer on this process
 sudo echo -1000 > /proc/$$/oom_score_adj
@@ -46,6 +46,7 @@ INFILE_SHUFFLED=
 PRE_SHUFFLE_TRIAL_ROUND=0  # Resets to 0 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
 TRIAL_SAVED=0
 SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=0  # Reset to 0 at the start of each trial, ref top of pquery_test()
+ENCRYPTION_OPTIONS=''  # Configured with per-trial options when ENABLE_ENCRYPTION=1 in the .conf configuration file
 
 # Set SAN options
 # https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
@@ -145,7 +146,7 @@ if [ "${PRELOAD}" == "1" ]; then
   elif [ "$(wc -l ${PRELOAD_SQL} | sed 's| .*||')" -eq "0" ]; then
     echo "Assert: PRELOAD is enabled (1), yet the file configured with PRELOAD_SQL (${PRELOAD_SQL}) is empty. Please check."
     exit 1
-  fi 
+  fi
 fi
 if [ "${RR_TRACING}" == "1" ]; then
   if [ ! -r /usr/bin/rr ]; then
@@ -329,7 +330,7 @@ add_handy_scripts(){  # Add handy stack and gdb scripts per trial
   echo 'elif [ -r ../../mysqld/mysqld ]; then' >> ${SAVE_HANDY_LOC}/gdb
   echo "  gdb ../../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
   echo 'else' >> ${SAVE_HANDY_LOC}/gdb
-  echo '  echo "Assert: neither mariadbd nor mysqld were found in any usual locations (PWD: ${PWD})"' >> ${SAVE_HANDY_LOC}/gdb 
+  echo '  echo "Assert: neither mariadbd nor mysqld were found in any usual locations (PWD: ${PWD})"' >> ${SAVE_HANDY_LOC}/gdb
   echo '  exit 1'  >> ${SAVE_HANDY_LOC}/gdb
   echo 'fi' >> ${SAVE_HANDY_LOC}/gdb
   chmod +x ${SAVE_HANDY_LOC}/gdb
@@ -357,8 +358,9 @@ else
   fi
 fi
 
-#Store MySQL version string
-MYSQL_VERSION=$(${BIN} --version 2>&1 | grep -oe '[0-9]\.[0-9][\.0-9]*' | head -n1)
+#Store mysqld/mariadbd version string
+MYSQL_VERSION=$(${BIN} --version 2>&1 | grep -oe '[0-9]*\.[0-9][\.0-9]*' | head -n1)
+
 # JEMALLOC for PS/TokuDB
 if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
   PSORNOT1=$(${BIN} --version | grep -oi 'Percona' | sed 's|p|P|' | head -n1)
@@ -466,7 +468,7 @@ pre_shuffle_setup(){
   fi
   # The following needs to be the last step in the process (except SWAP_ALL_TABLE_NAMES_TO_T1) to ensure that any PRE_SHUFFLE_INTERLEAVE sql is also swapped to table name t1
   if [ "${SWAP_CREATE_TABLE_NAMES_TO_T1}" != "0" ]; then
-    SWAP_CREATE_TABLE_NAMES_TO_T1_START=$(date +'%s' | tr -d '\n')  
+    SWAP_CREATE_TABLE_NAMES_TO_T1_START=$(date +'%s' | tr -d '\n') 
     echoit "SWAP_CREATE_TABLE_NAMES_TO_T1 Active: changing all CREATE TABLE table names to t1"
     sed -i 's|CREATE TABLE\([^(]*\)\+(|CREATE TABLE \1 (|gi;s|[ \t][ \t]\+| |g;s|CREATE TABLE [^ ]\+ |CREATE TABLE t1 |gi' ${INFILE_SHUFFLED}
     echoit "SWAP_CREATE_TABLE_NAMES_TO_T1: Swapping CREATE TABLE table names to t1 took $[ $(date +'%s' | tr -d '\n') - ${SWAP_CREATE_TABLE_NAMES_TO_T1_START} ] seconds"
@@ -475,7 +477,7 @@ pre_shuffle_setup(){
   # The following needs to be the last step in the process (ref above for reason)
   # Ref:  grep --binary-files=text -oi "CREATE TABLE [^ (]\+[ (]" main-ms-ps-md.sql | tr -d '`' | tr -d '(' | sed 's|[ ]*$||' | sed 's|create table|CREATE TABLE|i' | grep -v "TABLE IF" | sort -h | uniq -c |sort -n | tac | head -n20
   if [ "${SWAP_ALL_TABLE_NAMES_TO_T1}" != "0" ]; then
-    SWAP_ALL_TABLE_NAMES_TO_T1_START=$(date +'%s' | tr -d '\n')  
+    SWAP_ALL_TABLE_NAMES_TO_T1_START=$(date +'%s' | tr -d '\n') 
     echoit "SWAP_ALL_TABLE_NAMES_TO_T1 Active: changing all table names to t1"
     # Except for the provisions at the end of the list of changes, do not add the sed global 'g' option as otherwise some statements will become invalid due to repeated t1
     sed -i "s|\([ \.]\+\)t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
@@ -574,7 +576,12 @@ if [ "${PRELOAD}" == "1" ]; then
 else
   echoit "PRELOAD SQL Active: NO"
 fi
-if [ "$(whoami)" == "root" ]; then 
+if [ "${ENABLE_ENCRYPTION}" -eq 1 ]; then
+  echo "ENABLE_ENCRYPTION Active: YES, MYENCRYPTION: '${MYENCRYPTION}' (using the file-key-management plugin)"
+else
+  echo "ENABLE_ENCRYPTION Active: NO"
+fi
+if [ "$(whoami)" == "root" ]; then
   MYEXTRA="--user=root ${MYEXTRA}"
   echo "As the user running this script is root, adding '--user=root' to MYEXTRA"
 fi
@@ -754,9 +761,9 @@ savetrial() {  # Only call this if we definitely want to save a trial
       echoit "PRELOAD Error: PRELOAD=1, but ${RUNDIR}/${TRIAL}/preload did not exist in savetrial()"
     elif [ ! -r ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ]; then
       echoit "PRELOAD Error: PRELOAD=1, but ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql did not exist in savetrial()"
-    else 
+    else
       cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql
-      if [ ! -r ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql ]; then  
+      if [ ! -r ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql ]; then 
         echoit "PRELOAD cp Error: cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql  # FAILED (target does not exist)"
       elif ! diff -q ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql >/dev/null 2>&1; then
         echoit "PRELOAD cp Error: cp ${RUNDIR}/${TRIAL}/preload/default.node.tld_thread-0.sql ${RUNDIR}/${TRIAL}/preload/${TRIAL}.tmp.sql  # FAILED (files are not indentical)"
@@ -793,7 +800,7 @@ savetrial() {  # Only call this if we definitely want to save a trial
     #  echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/node${j}/MYBUG
     #  export GALERA_ERROR_LOGS=""
     #else
-      echoit "SAN Bug found: $(${SCRIPT_PWD}/new_text_string.sh)"  
+      echoit "SAN Bug found: $(${SCRIPT_PWD}/new_text_string.sh)" 
     #fi
     cd - >/dev/null || exit 1
     NEWBUGS=$[ ${NEWBUGS} + 1 ]
@@ -906,7 +913,7 @@ handle_bugs() {
   echoit "Bug found (as per new_text_string.sh): ${TEXT}"
   TRIAL_TO_SAVE=1
   if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
-    # As we are already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh 
+    # As we are already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh
     # As such, ELIMINATE_KNOWN_BUGS filtering is also not required in this case, and should not be called  # TODO: ',and should not ...': Defensive or required?
     TRIAL_TO_SAVE=1  # Defensive, leave
     if [ "$(echo "${TEXT}" | grep --binary-files=text -o 'no core.*empty output' | grep --binary-files=text -o 'no core' | head -n1)" == "no core" ]; then
@@ -1007,7 +1014,7 @@ mdg_startup() {
             fi
           fi
         else # Do not halt for MDG_ADD_RANDOM_OPTIONS=1 runs, they are likely to produce errors like these as MDG_MYEXTRA was randomly changed
-          echoit "'[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MDG_MYEXTRA (${MDG_MYEXTRA}) startup options. As \$MDG_ADD_RANDOM_OPTIONS=1, this is likely to be encountered given the random addition of mysqld/mariadbd options. Not saving trial. If you see this error for every trial however, set \$MDG_ADD_RANDOM_OPTIONS=0 & try running pquery-run.sh again. If it still fails, it is likely that your base \$MYEXTRA (${MYEXTRA}) setting is faulty."
+          echoit "'[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MDG_MYEXTRA (${MDG_MYEXTRA}) startup options. As \$MDG_ADD_RANDOM_OPTIONS=1, this is likely to be encountered given the random addition of mysqld/mariadbd options. Not saving trial. If you see this error for every trial however, set \$MDG_ADD_RANDOM_OPTIONS=0 & try running pquery-run.sh again. If it still fails, it is likely that your base \$MYEXTRA (${MYEXTRA}) or \$ENCRYPTION_OPTIONS (${ENCRYPTION_OPTIONS}) setting is faulty."
           grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
           FAILEDSTARTABORT=1
           return
@@ -1411,6 +1418,28 @@ pquery_test(){
     fi
     echo 'SELECT 1;' > ${RUNDIR}/${TRIAL}/startup_failure_thread-0.sql  # Add fake file enabling pquery-prep-red.sh/reducer.sh to be used with/for mysqld/mariadbd startup issues
     diskspace
+    # Setup encryption files for use with file_key_management if ENABLE_ENCRYPTION is enabled
+    ENCRYPTION_OPTIONS=''
+    if [[ "${ENABLE_ENCRYPTION}" -eq 1 ]]; then
+      # Generate a 256-bit (32-byte) key for use with file_key_management_filekey
+      echo "$(echo -n '1;' ; openssl rand -hex 32)" > ${RUNDIR}/${TRIAL}/key.key
+      # Generate an plain-text hex password to encrypt the key.key file with
+      openssl rand -hex 128 > ${RUNDIR}/${TRIAL}/key.pass
+      if check_for_version $MYSQL_VERSION "12.0.1"; then  # https://jira.mariadb.org/browse/MDEV-34712 SHA2 support was implemented in 12.0.1
+        # Encrypt the file_key key.key with the password provided in key.pass using SHA2/pbkdf2/iter-11k
+        openssl enc -aes-256-cbc -md sha256 -pbkdf2 -iter 11000 -pass file:${RUNDIR}/${TRIAL}/key.pass -in ${RUNDIR}/${TRIAL}/key.key -out ${RUNDIR}/${TRIAL}/key.enc  
+        # Set matching mariadbd options, adding MYENCRYPTION as configured in .conf file (the actual to-be-encrypted items)
+        ENCRYPTION_OPTIONS="--plugin_load_add=file_key_management --file-key-management=FORCE_PLUS_PERMANENT --file-key-management-filekey=FILE:${RUNDIR}/${TRIAL}/key.pass --file-key-management-filename=${RUNDIR}/${TRIAL}/key.enc --file-key-management-encryption-algorithm=AES_CBC --file_key_management_use_pbkdf2=11000 --file_key_management_digest=sha256 ${MYENCRYPTION}"
+      else
+        # Encrypt the file_key key.key with the password provided in key.pass using SHA1
+        # In-run "*** WARNING : deprecated key derivation used. Using -iter or -pbkdf2 would be better." warnings are normal and apparently cannot be supressed
+        openssl enc -aes-256-cbc -md sha1 -pass file:${RUNDIR}/${TRIAL}/key.pass -in ${RUNDIR}/${TRIAL}/key.key -out ${RUNDIR}/${TRIAL}/key.enc >/dev/null 2>&1
+        # Set matching mariadbd options, adding MYENCRYPTION as configured in .conf file (the actual to-be-encrypted items)
+        ENCRYPTION_OPTIONS="--plugin_load_add=file_key_management --file-key-management=FORCE_PLUS_PERMANENT --file-key-management-filekey=FILE:${RUNDIR}/${TRIAL}/key.pass --file-key-management-filename=${RUNDIR}/${TRIAL}/key.enc --file-key-management-encryption-algorithm=AES_CBC ${MYENCRYPTION}"
+      fi
+      # Remove the unencrypted key: customarily done, though we can leave it for testing review purposes
+      #rm -f ${RUNDIR}/${TRIAL}/key.key
+    fi
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       echoit "Copying datadir from template for Primary mysqld/mariadbd..."
     elif [[ ${PQUERY3} -eq 1 && ${TRIAL} -gt 1 ]]; then
@@ -1517,15 +1546,15 @@ pquery_test(){
                                                       -e '/format=MIXED/{s|format=MIXED|format=ROW|}' \
                                                       -e ':end')
         fi
-        CMD="${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
+        CMD="${BIN} ${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
       else  ## Valgrind run
-        CMD="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
+        CMD="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
       fi
     else  ## rr tracing run  # TODO: add slave startup in something like rr_slave if replication is used (below)
       export _RR_TRACE_DIR="${RUNDIR}/${TRIAL}/rr"
       mkdir -p "${_RR_TRACE_DIR}"
       sudo chmod -R 777 "${_RR_TRACE_DIR}"
-      CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --loose-innodb-flush-method=fsync --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
+      CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --loose-innodb-flush-method=fsync --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
     fi
     if [ -r "${HOME}/stack" -a ! -r ${RUNDIR}/${TRIAL}/stack ]; then
       ln -s ${HOME}/stack ${RUNDIR}/${TRIAL}/stack  # Handy ./stack shorthand (automatically copied later to WORKDIR if trial is saved)
@@ -1540,9 +1569,9 @@ pquery_test(){
       REPL_PORT=${NEWPORT}
       NEWPORT=
       if [ "${VALGRIND_RUN}" == "0" ]; then  ## Standard run
-        SLAVE_STARTUP="${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${SLAVE_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data_slave --tmpdir=${RUNDIR}/${TRIAL}/tmp_slave --core-file --port=$REPL_PORT --pid_file=${RUNDIR}/${TRIAL}/slave_pid.pid --server_id=101 --socket=${SLAVE_SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/slave.err"
+        SLAVE_STARTUP="${BIN} ${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS} ${REPL_EXTRA} ${SLAVE_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data_slave --tmpdir=${RUNDIR}/${TRIAL}/tmp_slave --core-file --port=$REPL_PORT --pid_file=${RUNDIR}/${TRIAL}/slave_pid.pid --server_id=101 --socket=${SLAVE_SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/slave.err"
       else  ## Valgrind run
-        SLAVE_STARTUP="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${REPL_EXTRA} ${SLAVE_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data_slave --tmpdir=${RUNDIR}/${TRIAL}/tmp_slave --core-file --port=$REPL_PORT --pid_file=${RUNDIR}/${TRIAL}/slave_pid.pid --server_id=101 --socket=${SLAVE_SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/slave.err"
+        SLAVE_STARTUP="${VALGRIND_CMD} ${BIN} ${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS} ${REPL_EXTRA} ${SLAVE_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data_slave --tmpdir=${RUNDIR}/${TRIAL}/tmp_slave --core-file --port=$REPL_PORT --pid_file=${RUNDIR}/${TRIAL}/slave_pid.pid --server_id=101 --socket=${SLAVE_SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/slave.err"
       fi
       $SLAVE_STARTUP >> ${RUNDIR}/${TRIAL}/log/slave.err 2>&1 &
       SLAVE_MPID="$!"
@@ -1651,10 +1680,10 @@ pquery_test(){
     chmod +x ${RUNDIR}/${TRIAL}/all_dev_shm
     # New MYEXTRA/MYSAFE variables pass & VALGRIND run check method as of 2015-07-28 (MYSAFE & MYEXTRA stored in a text file inside the trial dir, VALGRIND file created if used)
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-      echo "${MYSAFE} ${MYEXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA.left # When changing this, also search for/edit other '\.left' and '\.right' occurrences in this file
-      echo "${MYSAFE} ${MYEXTRA2}" > ${RUNDIR}/${TRIAL}/MYEXTRA.right
+      echo "${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS}" > ${RUNDIR}/${TRIAL}/MYEXTRA.left # When changing this, also search for/edit other '\.left' and '\.right' occurrences in this file
+      echo "${MYSAFE} ${MYEXTRA2} ${ENCRYPTION_OPTIONS}" > ${RUNDIR}/${TRIAL}/MYEXTRA.right
     else
-      echo "${MYSAFE} ${MYEXTRA}" > ${RUNDIR}/${TRIAL}/MYEXTRA
+      echo "${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS}" > ${RUNDIR}/${TRIAL}/MYEXTRA
       if [ "${REPLICATION}" -eq 1 ]; then
         if [ ! -z "${REPL_EXTRA}" ]; then
           echo "${REPL_EXTRA}" > ${RUNDIR}/${TRIAL}/REPL_EXTRA
@@ -1732,7 +1761,7 @@ pquery_test(){
               echoit "Error! '[ERROR] Aborting' was found in the error log, due to a 'Can't initialize timers' issue, ref https://jira.mariadb.org/browse/MDEV-22286, currently being researched. The run should be able to continue normally. Not saving trial."
               removetrial
             else
-              echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (or \$MYSAFE) startup parameters. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against the \$MYEXTRA (or \$MYSAFE if it was modified) settings. You may also want to try setting \$MYEXTRA=\"${MYEXTRA}\" directly in start (as created by startup.sh using your base directory)."
+              echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (or \$MYSAFE or \$ENCRYPTION_OPTIONS) startup parameters. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against the \$MYEXTRA (or \$MYSAFE if it was modified) settings. You may also want to try setting \$MYEXTRA=\"${MYEXTRA}\" directly in start (as created by startup.sh using your base directory)."
               grep "ERROR" ${RUNDIR}/${TRIAL}/log/*.err | tee -a /${WORKDIR}/pquery-run.log
               if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${RUNDIR}/${TRIAL}/log/*.err; then  # Likely OOS on /dev/shm
                 echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
@@ -1746,7 +1775,7 @@ pquery_test(){
               fi
             fi
           else # Do not halt for ADD_RANDOM_OPTIONS=1 runs, they are likely to produce errors like these as MYEXTRA was randomly changed
-            echoit "'[ERROR] Aborting' was found in the error log. This is likely an issue with one of the MYEXTRA startup parameters. As ADD_RANDOM_OPTIONS=1, this is likely to be encountered. Not saving trial. If you see this error for every trial however, set \$ADD_RANDOM_OPTIONS=0 & try running pquery-run.sh again. If it still fails, your base \$MYEXTRA setting is faulty."
+            echoit "'[ERROR] Aborting' was found in the error log. This is likely an issue with one of the MYEXTRA, MYSAFE or ENCRYPTION_OPTIONS startup parameters. As ADD_RANDOM_OPTIONS=1, this is likely to be encountered. Not saving trial. If you see this error for every trial however, set \$ADD_RANDOM_OPTIONS=0 & try running pquery-run.sh again. If it still fails, your base \$MYEXTRA, \$MYSAFE or \$ENCRYPTION_OPTIONS settings may be faulty."
             grep "ERROR" ${RUNDIR}/${TRIAL}/log/*.err | tee -a /${WORKDIR}/pquery-run.log
             FAILEDSTARTABORT=1
             break
@@ -2317,7 +2346,7 @@ EOF
             echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
           fi
           if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
-            pre_shuffle_setup 
+            pre_shuffle_setup
           else
             echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} for Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
           fi
@@ -2859,7 +2888,7 @@ EOF
         echoit "'MySQL server has gone away' detected >=200 times for this trial, and the pquery timeout was not reached; saving this trial for further analysis"
         savetrial
         TRIAL_SAVED=1
-      # The various *SAN check below assume that any pre-existing/known *SAN issues have already been dropped from the log. Ref the provision for this before the first 'if' in this longer if/elif/elif... 
+      # The various *SAN check below assume that any pre-existing/known *SAN issues have already been dropped from the log. Ref the provision for this before the first 'if' in this longer if/elif/elif...
       elif [ $(grep -im1 --binary-files=text "=ERROR:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "Uknown/new ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
@@ -2944,7 +2973,7 @@ ln -s "${SCRIPT_PWD}/filter_from_base.sh" "${WORKDIR}/filter_from_base"  # This 
 #echo "echo \"pr results, without any UniqueID's seen in base runs (as per supplied filter file \${1}):\"" >> ${WORKDIR}/pr_without_base_prs
 #echo "~/pr | grep 'Seen' | sed 's|[ ]*(Seen .*||' | grep -vEi '^#|no core file found|no parsable frames|SHUTDOWN' | grep -vFf <(cat \${1} | sed 's|[ ]*(Seen .*||;s|[ \\t]*$||;s|\\r$||')" >> ${WORKDIR}/pr_without_base_prs
 #chmod +x ${WORKDIR}/i ${WORKDIR}/my ${WORKDIR}/pr_without_base_prs
-chmod +x ${WORKDIR}/i ${WORKDIR}/my 
+chmod +x ${WORKDIR}/i ${WORKDIR}/my
 WORKDIRACTIVE=1
 ONGOING=
 # User for recovery testing
