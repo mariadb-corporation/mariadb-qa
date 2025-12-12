@@ -316,6 +316,7 @@ find_other_possible_issue_strings(){
     TEXT="$(echo "${TEXT}" | sed 's|The table [^ ]\+ doesnt have|The table doesnt have|g')"  # SPECIAL-33
     TEXT="$(echo "${TEXT}" | sed 's|Unable to import tablespace .* because it already exists.  Please DISCARD the tablespace before IMPORT|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT|')"  # Use a generic indentifier 'X' for any table name, similar to X/Y value handling in *SAN bugs
     TEXT="$(echo "${TEXT}" | sed 's|Cannot add field.*in table.*because after adding it, the row size is.*which is greater than maximum allowed size.*for a record on index leaf page|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page|')"  # Use a generic message for all similar errors
+    TEXT="$(echo "${TEXT}" | sed 's|Failed to read page [0-9]\+ from file [^:]\+:|Failed to read page X from file Y:|')"
     echo "${TEXT}"
     exit 0
   fi
