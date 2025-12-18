@@ -292,6 +292,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|sp_instr_set_ps_placeholder::get_expr_query|sp_lex_instr::get_query|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core                                 ## MDEV-38370
 timer_data->expired == 1|SIGABRT|thr_timer_settime|THD::set_query_timer_force|Opt_hints_global::fix_hint|JOIN::prepare                                                         ## MDEV-38366
 thd->abort_on_warning == 0|SIGABRT|dispatch_command|do_command|do_handle_one_connection|handle_one_connection                                                                  ## MDEV-38349
 error != DB_FOREIGN_DUPLICATE_KEY|SIGABRT|ha_innobase::delete_row|handler::ha_delete_row|TABLE::delete_row<false>|TABLE::delete_row                                            ## MDEV-38348
