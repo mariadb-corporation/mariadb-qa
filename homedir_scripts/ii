@@ -46,3 +46,7 @@ if grep -q '^REPLICATION=1' pquery*.conf; then
   grep '^MASTER_EXTRA' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
   grep '^SLAVE_EXTRA' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
 fi
+if grep -q '^ENABLE_ENCRYPTION=[^0]' pquery*.conf; then
+  grep '^ENABLE_ENCRYPTION' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t|'
+  grep '^MYENCRYPTION' pquery*.conf | sed 's|[ ]\+#.*||;s|=|\t\t|'
+fi

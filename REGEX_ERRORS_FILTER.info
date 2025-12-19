@@ -20,6 +20,8 @@ Warning. InnoDB: Table.*contains.*user defined columns in InnoDB, but.*in MariaD
 Event invalid                                         MDEV-26270
 Warning. InnoDB: Recalculation of persistent statistics requested for table.*but the required persistent statistics storage is corrupted  MDEV-36373
 mariadbd: Cannot load from mysql\..*The table is probably corrupted  SPECIAL-47 (mysql.* corruption non-issue)
+mariadbd: Cannot load from mysql.host. The table is probably corrupted  SPECIAL-50 (mysql.host table corruption non-issue)
+Fatal error: Can't open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted  SPECIAL-50 (idem)
 ERROR. Can.t open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted  SPECIAL-48 (non-issue)
 ERROR. InnoDB: File .* was not found                  MDEV-19849 or similar occurrences
 ERROR. InnoDB: .*error means.*mariadbd.*not have the access rights.*directory  MDEV-19849 or similar occurrences
@@ -59,6 +61,7 @@ ERROR. Got error 505 when reading table               MDEV-38100 (Rocks corrupti
 ERROR. Got error 510 when reading table               MDEV-38198 (Rocks corruption, may mask other bugs)
 ERROR. Got error 521 when reading table               SPECIAL-49 (expected error, non-issue)
 ERROR. mysql_ha_read: Got error 146 when reading table  MDEV-37523
+ERROR. mysql_ha_read: Got error 159 when reading table  SPECIAL-51 (to be expected inside HANDLER)
 test_ps_create_on_corrupted                           Not real corruption, just a table name
 test_ps_fetch_corrupted                               Not real corruption, just a table name
 _corrupted_to_rename                                  Not real corruption, just a partial table name

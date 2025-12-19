@@ -67,6 +67,7 @@ MARIADBD_ERROR|mariadbd: The table table is full  ## SPECIAL-44 (non-issue; tabl
 MARIADBD_ERROR|mariadbd: Got an error writing communication packets  ## Occassionally seen after shutdown, upon 'Aborted connection x to db': deemed non-issue
 MARIADBD_ERROR|mariadbd: file-key-management-filename is not set  ## SPECIAL-45 (non-issue; attempt to install file_key_management without correct setup)
 MARIADBD_ERROR|mariadbd: Cannot load from mysql.procs_priv. The table is probably corrupted  ## SPECIAL-47 (mysql.* table corruption non-issue)
+MARIADBD_ERROR|mariadbd: Cannot load from mysql.host. The table is probably corrupted  ## SPECIAL-50 (mysql.host table corruption non-issue)
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
@@ -130,6 +131,7 @@ GOT_ERROR|Got error 127|when reading table                     ## MDEV-34472
 GOT_ERROR|Got error 128|when reading table                     ## MDEV-34991
 GOT_ERROR|Got error 134|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 140|"Wrong create options" from storage engine InnoDB Error_code: 1030  ## MDEV-33961
+GOT_ERROR|Got error 159|when reading table                     ## SPECIAL-51 (to be expected inside HANDLER)
 GOT_ERROR|Got error 170|"It is not possible to log this statement" from storage engine InnoDB ## MDEV-32354
 GOT_ERROR|Got error 171|"The event was corrupt, leading to illegal data being read" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (May mask other bugs?)
 GOT_ERROR|Got error 171|"The event was corrupt, leading to illegal data being read" from storage engine MEMORY, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (looks duplicate to previous line but it is a different SE)
@@ -203,6 +205,7 @@ INNODB_ERROR|Operating system error number 20 in a file operation ## MDEV-19849/
 INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 INNODB_ERROR|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT  ## Presumed non-issue (import of a tablespace which already exists)
 INNODB_ERROR|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page ## SPECIAL-46
+INNODB_ERROR|Transaction was aborted due to Record changed     ## MDEV-38278
 ERROR. Can.t open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted ## SPECIAL-48 (non-issue)
 ERROR. mysql_ha_read: Got error 146 when reading table .t1                                               ## MDEV-37523
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill                         ## MDEV-32477
@@ -292,7 +295,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
-INNODB_ERROR|Transaction was aborted due to Record changed                                                                                                                     ## MDEV-38278
+error == ER_FOREIGN_SERVER_EXISTS|SIGABRT|create_server|mysql_execute_command|mysql_parse|dispatch_command                                                                     ## MDEV-38316
 !have_s()|SIGABRT|sux_lock<ssux_lock_impl<true> >::s_lock|mtr_t::s_lock|btr_cur_t::search_leaf|btr_pcur_open                                                                   ## MDEV-37519
 INNODB_ERROR|Failed to read page 50 from file ./ibdata1: Page read from tablespace is corrupted                                                                                ## MDEV-37519
 MARIADBD_ERROR|mariadbd: caching_sha2_password: failed to read private_key.pem: 2 "No such file or directory"                                                                  ## MDEV-38285
@@ -313,6 +316,7 @@ INNODB_ERROR|tried to purge non-delete-marked record in index `key1` of table `t
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Query_arena::alloc<Sroutine_hash_entry>|sp_add_used_routine|Table_triggers_list::add_tables_and_routines_for_triggers            ## MDEV-35359
 (mem_root->flags & 4) == 0|SIGABRT|alloc_root|Query_arena::alloc|sp_add_used_routine|Table_triggers_list::add_tables_and_routines_for_triggers                                 ## MDEV-35359
 has_rand == static_cast<bool>(un->uncacheable & 2)|SIGABRT|st_select_lex::optimize_unflattened_subqueries|JOIN::optimize_unflattened_subqueries|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-38099
+has_rand == static_cast<bool>(un->uncacheable & 2)|SIGABRT|st_select_lex::optimize_unflattened_subqueries|JOIN::optimize_stage2|JOIN::optimize_inner|JOIN::optimize            ## MDEV-38099
 SIGSEGV|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|TABLE_LIST::fetch_number_of_rows                                                        ## MDEV-23390
 SIGSEGV|myrocks::ha_rocksdb::update_stats|myrocks::ha_rocksdb::info|ha_partition::info|make_join_statistics                                                                    ## MDEV-23390
 SIGSEGV|myrocks::get_range|myrocks::ha_rocksdb::get_range|myrocks::ha_rocksdb::info|ha_partition::info                                                                         ## MDEV-23390
@@ -351,6 +355,7 @@ strlen(db) <= (64*3)|SIGABRT|MDL_key::mdl_key_init|MDL_request::init_with_source
 SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec                                                   ## MDEV-37954
 !trx->read_only|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                                             ## MDEV-37954
 SIGSEGV|__strcmp_evex|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update                                                                            ## MDEV-37952
+SIGSEGV|__interceptor_strcmp|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update                                                                     ## MDEV-37952
 SIGSEGV|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal  ## MDEV-37953
 SIGSEGV|my_decimal::init|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op                                                                        ## MDEV-37953
 SIGSEGV|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal                    ## MDEV-37953
@@ -1685,6 +1690,7 @@ SIGSEGV|__strnlen_evex|process_str_arg|my_vsnprintf_ex|my_error                 
 SIGSEGV|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row|Rows_log_event::write_row                                                                     ## MDEV-22936
 (*(map)->last_word_ptr & (map)->last_bit_mask) == 0|SIGABRT|bitmap_union|ha_partition::index_init|handler::ha_index_init|Rows_log_event::find_row                              ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event                   ## MDEV-22936
+m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Write_rows_log_event::write_row|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event           ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Rows_log_event::write_row|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event                 ## MDEV-22936
 binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update                                               ## MDEV-22921
 binlog_checksum_options == value|SIGABRT|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update|sys_var::set_default                                          ## MDEV-22921
