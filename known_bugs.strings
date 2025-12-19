@@ -296,6 +296,12 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS (Search key: Mac) #####
 error == ER_FOREIGN_SERVER_EXISTS|SIGABRT|create_server|mysql_execute_command|mysql_parse|dispatch_command                                                                     ## MDEV-38316
+SIGSEGV|sp_instr_set_ps_placeholder::get_expr_query|sp_lex_instr::get_query|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core                                 ## MDEV-38370
+timer_data->expired == 1|SIGABRT|thr_timer_settime|THD::set_query_timer_force|Opt_hints_global::fix_hint|JOIN::prepare                                                         ## MDEV-38366
+thd->abort_on_warning == 0|SIGABRT|dispatch_command|do_command|do_handle_one_connection|handle_one_connection                                                                  ## MDEV-38349
+error != DB_FOREIGN_DUPLICATE_KEY|SIGABRT|ha_innobase::delete_row|handler::ha_delete_row|TABLE::delete_row<false>|TABLE::delete_row                                            ## MDEV-38348
+SIGSEGV|mysql_audit_general|my_message_sql|my_printf_error|get_data                                                                                                            ## MDEV-38312
+INNODB_ERROR|Transaction was aborted due to Record changed                                                                                                                     ## MDEV-38278
 !have_s()|SIGABRT|sux_lock<ssux_lock_impl<true> >::s_lock|mtr_t::s_lock|btr_cur_t::search_leaf|btr_pcur_open                                                                   ## MDEV-37519
 INNODB_ERROR|Failed to read page 50 from file ./ibdata1: Page read from tablespace is corrupted                                                                                ## MDEV-37519
 MARIADBD_ERROR|mariadbd: caching_sha2_password: failed to read private_key.pem: 2 "No such file or directory"                                                                  ## MDEV-38285
@@ -446,10 +452,6 @@ SIGSEGV|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core|sp_in
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_optimize_table::execute|mysql_execute_command             ## MDEV-36752
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command               ## MDEV-36752
 backup_stage <= BACKUP_WAIT_FOR_FLUSH || backup_stage >= BACKUP_END|SIGABRT|backup_log_ddl|mysql_create_or_drop_trigger|mysql_execute_command|mysql_parse                      ## MDEV-36752
-node_ != nullptr|SIGABRT|ilist<fil_space_t, space_list_tag_t>::Iterator::Iterator|fil_crypt_find_space_to_rotate|fil_crypt_thread|std::__invoke_impl<void, void                ## MDEV-37299
-SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                           ## MDEV-37299
-SIGABRT|log_file_t::write|log_write_buf|log_t::write_buf<log0log.cc|log_writer                                                                                                 ## MDEV-37299
-!srv_read_only_mode || m_log_mode == MTR_LOG_NO_REDO|SIGABRT|mtr_t::commit|fil_crypt_start_encrypting_space|fil_crypt_space_needs_rotation|fil_crypt_find_space_to_rotate      ## MDEV-37299
 cost > 0.0|SIGABRT|adjust_quick_cost|best_access_path|get_costs_for_tables|best_extension_by_limited_search                                                                    ## MDEV-23541
 discard.n_recs == 1|SIGABRT|ut_dbg_assertion_failed|row_import_update_discarded_flag|row_discard_tablespace|row_discard_tablespace_for_mysql                                   ## MDEV-37173
 SIGSEGV|replace_routine_table|sp_revoke_privileges|drop_routine|mysql_execute_command                                                                                          ## MDEV-27842
@@ -1845,6 +1847,10 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                              ## 10.6+ Fixed ## MDEV-22663
 
 ###### FIXED BUGS ######
+#node_ != nullptr|SIGABRT|ilist<fil_space_t, space_list_tag_t>::Iterator::Iterator|fil_crypt_find_space_to_rotate|fil_crypt_thread|std::__invoke_impl<void, void       ## Fixed ## MDEV-37299
+#SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                  ## Fixed ## MDEV-37299
+#SIGABRT|log_file_t::write|log_write_buf|log_t::write_buf<log0log.cc|log_writer                                                                                        ## Fixed ## MDEV-37299
+#!srv_read_only_mode || m_log_mode == MTR_LOG_NO_REDO|SIGABRT|mtr_t::commit|fil_crypt_start_encrypting_space|fil_crypt_space_needs_rotation|fil_crypt_find_space_to_rotate      ## Fixed ## MDEV-37299
 # cache_mngr->trx_cache.empty()|SIGABRT|binlog_close_connection|ha_close_connection|slave_applier_reset_xa_trans|trans_xa_prepare                                     ## Fixed ## MENT-1113
 # SIGSEGV|wsrep_thd_is_applying|dict_stats_update_if_needed|row_undo_ins|row_undo                                                                                     ## Fixed ## MENT-1113
 # !wsrep_has_changes(thd) || (thd->lex->sql_command == SQLCOM_CREATE_TABLE && !thd->is_current_stmt_binlog_format_row())|SIGABRT|wsrep_commit_empty|wsrep_on_check|sys_var::check|set_var::check ## Fixed ## MENT-1258
