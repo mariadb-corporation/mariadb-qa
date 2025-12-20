@@ -9,6 +9,7 @@
 #BASEDIR=/test/bb-10.11-monty_MD101225-mariadb-10.11.16-linux-x86_64-dbg
 #BASEDIR=/test/bb-10.11-monty_UBASAN_MD101225-mariadb-10.11.16-linux-x86_64-dbg
 BASEDIR=/test/MDEV-9826_MD201225-mariadb-12.3.0-linux-x86_64-opt
+#BASEDIR=/test/MDEV-9826_UBASAN_MD201225-mariadb-12.3.0-linux-x86_64-opt
 #BASEDIR=/test/MDEV-37833_UBASAN_MD011125-mariadb-12.2.0-linux-x86_64-dbg
 #BASEDIR=/test/MD081025-mariadb-11.4.9-linux-x86_64-opt
 #MDEV-35915_5_UBASAN_MD160925-mariadb-12.2.0-linux-x86_64-dbg
