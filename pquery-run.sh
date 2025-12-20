@@ -455,8 +455,13 @@ pre_shuffle_setup(){
     PRE_SHUFFLE_INTERLEAVE_DUR_START=$(date +'%s' | tr -d '\n')
     echoit "PRE_SHUFFLE_INTERLEAVE: Interleaving SQL in PRE_SHUFFLE_INTERLEAVE_SQL into the input file every ${PRE_SHUFFLE_INTERLEAVE_LINES}th line"
     mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
-    awk -v sql="${PRE_SHUFFLE_INTERLEAVE_SQL}" "NR%${PRE_SHUFFLE_INTERLEAVE_LINES}==0{print sql}{print}" ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
-    rm -f ${INFILE_SHUFFLED}.temp
+
+    PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE="$(mktemp | tr -d '\n')"
+    echo -e "${PRE_SHUFFLE_INTERLEAVE_SQL}" > ${PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE}
+    awk -v sql_file=${PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE} "NR%${PRE_SHUFFLE_INTERLEAVE_LINES}==0{while(getline line<sql_file) print line;close(sql_file)}{print}" ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
+
+    rm -f ${INFILE_SHUFFLED}.temp ${PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE}
+    PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE=
     INTERLEAVE_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
     if [ "${INTERLEAVE_FIN_LINES}" -eq 0 ]; then
       echoit "Assert: PRE_SHUFFLE_INTERLEAVE interleaving failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
