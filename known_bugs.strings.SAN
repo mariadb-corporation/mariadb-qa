@@ -17,6 +17,7 @@ UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storag
 # Temp key: Ma2
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'buf_block_t'|storage/innobase/dict/dict0boot.cc|dict_hdr_get|dict_hdr_flush_row_id|dict_sys_t::get_new_row_id|row_ins_alloc_row_id_step                                            ## MDEV-38352
 UBSAN|call to function my_hasher_base31 through pointer to incorrect function type 'my_hasher_st (*)()'|sql/ha_partition.cc|ha_partition::calculate_key_hash_value|get_part_id_key|get_partition_id_key_nosub|find_used_partitions  ## MDEV-38407
 UBSAN|call to function my_hasher_base31 through pointer to incorrect function type 'my_hasher_st (*)()'|sql/ha_partition.cc|ha_partition::calculate_key_hash_value|get_part_id_key|get_partition_id_key_nosub|get_full_part_id_from_key  ## MDEV-38407
 UBSAN|call to function my_hasher_base31 through pointer to incorrect function type 'my_hasher_st (*)()'|sql/ha_partition.cc|ha_partition::calculate_key_hash_value|get_part_id_key|get_partition_id_key_nosub|get_next_partition_via_walking  ## MDEV-38407
