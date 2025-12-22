@@ -295,6 +295,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+(yyvsp[-3].simple_string) < (yyvsp[-1].simple_string)|SIGABRT|MYSQLparse|THD::sql_parser|With_element::clone_parsed_spec|LEX::resolve_references_to_cte                        ## MDEV-38395
+(yyvsp[-3].simple_string) < (yyvsp[-1].simple_string)|SIGABRT|MYSQLparse|parse_sql|mysql_make_view|open_table                                                                  ## MDEV-38395
+(yyvsp[-3].simple_string) < (yyvsp[-1].simple_string)|SIGABRT|MYSQLparse|parse_sql|Prepared_statement::prepare|mysql_sql_stmt_prepare                                          ## MDEV-38395
 error == ER_FOREIGN_SERVER_EXISTS|SIGABRT|create_server|mysql_execute_command|mysql_parse|dispatch_command                                                                     ## MDEV-38316
 SIGSEGV|sp_instr_set_ps_placeholder::get_expr_query|sp_lex_instr::get_query|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core                                 ## MDEV-38370
 timer_data->expired == 1|SIGABRT|thr_timer_settime|THD::set_query_timer_force|Opt_hints_global::fix_hint|JOIN::prepare                                                         ## MDEV-38366
