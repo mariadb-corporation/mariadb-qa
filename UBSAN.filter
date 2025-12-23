@@ -52,7 +52,7 @@ enum:Gis_polygon::init_from_wkb
 enum:wkb_get_uint
 enum:Gis_line_string::init_from_wkb
 ## MDEV-35589/MDEV-36542/MDEV-35590 [MTR, 10.11+ fixed]
-bool:extract_date_time## MDEV-35541
+bool:extract_date_time
 ## MDEV-35556
 pointer-overflow:myrocks::Rdb_key_def::setup
 ## MDEV-35555
@@ -68,6 +68,7 @@ pointer-overflow:Gis_geometry_collection::init_from_opresult
 #pointer-overflow:row_log_table_apply_ops
 ## MDEV-36298
 #function:wolfSSL_sk_pop_free
+## MDEV-35541
 #pointer-overflow:my_b_flush_io_cache
 ## MDEV-35540 # Fixed by MDEV-34348
 #function:plugin_do_initialize
