@@ -29,11 +29,6 @@
 # ----- Current bugs
 ## Generic TODO
 alignment:*
-## MDEV-37626 [MTR, innodb.innodb-table-online innodb.innodb-index-online]
-pointer-overflow:row_log_apply_ops
-pointer-overflow:row_log_table_apply_ops
-## MDEV-36298
-function:wolfSSL_sk_pop_free
 ## MDEV-35714 [MTR, main.dyncol]
 object-size:Item_dyncol_get::get_date
 ## MDEV-36375 [MTR, main.gis]
@@ -56,10 +51,8 @@ float-cast-overflow:test_if_cheaper_ordering
 enum:Gis_polygon::init_from_wkb
 enum:wkb_get_uint
 enum:Gis_line_string::init_from_wkb
-## MDEV-35590/MDEV-36542 [MTR, main.information_schema]
-bool:mysql_make_view
-## MDEV-35589/MDEV-36542
-bool:extract_date_time
+## MDEV-35589/MDEV-36542/MDEV-35590 [MTR, 10.11+ fixed]
+bool:extract_date_time## MDEV-35541
 ## MDEV-35556
 pointer-overflow:myrocks::Rdb_key_def::setup
 ## MDEV-35555
@@ -68,10 +61,14 @@ pointer-overflow:sel_trees_must_be_ored
 bounds:json_get_path_start
 ## MDEV-35545 [MTR, main.gis]
 pointer-overflow:Gis_geometry_collection::init_from_opresult
-## MDEV-35541
-pointer-overflow:my_b_flush_io_cache
 
 # ----- Fixed bugs
+## MDEV-37626 [MTR, innodb.innodb-table-online innodb.innodb-index-online]
+#pointer-overflow:row_log_apply_ops
+#pointer-overflow:row_log_table_apply_ops
+## MDEV-36298
+#function:wolfSSL_sk_pop_free
+#pointer-overflow:my_b_flush_io_cache
 ## MDEV-35540 # Fixed by MDEV-34348
 #function:plugin_do_initialize
 #function:plugin_deinitialize
