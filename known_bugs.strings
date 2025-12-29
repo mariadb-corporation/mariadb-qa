@@ -27,6 +27,11 @@ share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tab
 share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38443
 share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|Sql_cmd_truncate_table::lock_table                                                ## MDEV-38443
 element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_purge|purge_tables                                                                ## MDEV-38444
+SIGABRT|__libc_message_impl|malloc_printerr|tcache_get_n|tcache_get                                                                                                            ## MDEV-38445
+SIGABRT|__libc_message_impl|malloc_printerr|malloc_consolidate|_int_malloc                                                                                                     ## MDEV-38445
+element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_release_share|open_table                                                          ## MDEV-38448
+element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38448
+SIGSEGV|TABLE_LIST::set_tabledef_version|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table                                              ## MDEV-38448
 ### Temp Search Key: Ma2
 
 ##### MDEV-35915 testing v7/8 #####
