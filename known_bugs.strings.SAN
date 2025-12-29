@@ -6,15 +6,20 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
-##### MDEV-35915 testing #####
-UBSAN|reference binding to null pointer of type 'const I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares>'|sql/temporary_tables.cc|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_execute_command|mysql_parse ## MDEV-37871
-ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-37872
-ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37872
-UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|open_and_process_table|open_tables               ## MDEV-37940
-#LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
-ASAN|heap-use-after-free|sql/sql_handler.cc|mysql_ha_close_table|mysql_ha_rm_tables|mysql_rm_db_internal|mysql_execute_command                                                 ## MDEV-37956
-UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
+##### MDEV-35915 testing v9 #####
+ASAN|heap-use-after-free|storage/connect/ha_connect.cc|ha_connect::GetTableOptionStruct|ha_connect::external_lock|handler::ha_external_lock|handler::ha_external_unlock        ## MDEV-38438
+LSAN|memory leak|<unknown_module>|operator|handler::ha_open                                                                                                                    ## MDEV-38439
+UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federated/ha_federated.cc|ha_federated::end_bulk_insert|mysql_insert|mysql_execute_command|mysql_parse ## MDEV-38440
 # Temp key: Ma2
+
+##### MDEV-35915 testing v7/v8 #####
+#UBSAN|reference binding to null pointer of type 'const I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares>'|sql/temporary_tables.cc|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_execute_command|mysql_parse ## MDEV-37871
+#ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-37872
+#ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37872
+#UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|open_and_process_table|open_tables               ## MDEV-37940
+#LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
+#ASAN|heap-use-after-free|sql/sql_handler.cc|mysql_ha_close_table|mysql_ha_rm_tables|mysql_rm_db_internal|mysql_execute_command                                                 ## MDEV-37956
+#UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
 UBSAN|member access within null pointer of type 'buf_block_t'|storage/innobase/dict/dict0boot.cc|dict_hdr_get|dict_hdr_flush_row_id|dict_sys_t::get_new_row_id|row_ins_alloc_row_id_step                                            ## MDEV-38352
@@ -75,6 +80,7 @@ UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_ut
 ASAN|heap-use-after-free|storage/innobase/handler/ha_innodb.cc|calc_row_difference|ha_innobase::update_row|handler::ha_update_row|replace_table_table                          ## MDEV-38016
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|open_table_def|mrn_create_tmp_table_share|ha_mroonga::delete_table                                                        ## MDEV-37955
 UBSAN|null pointer passed as argument 3, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step ## MDEV-37954
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/mroonga/ha_mroonga.cpp|mrn_log_file_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update ## MDEV-37952
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/mroonga/ha_mroonga.cpp|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update ## MDEV-37952
 UBSAN|member access within null pointer of type 'Field'|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner             ## MDEV-32317
 ASAN|heap-buffer-overflow|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                           ## MDEV-32317

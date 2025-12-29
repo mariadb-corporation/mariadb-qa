@@ -66,10 +66,10 @@ pointer-overflow:Gis_geometry_collection::init_from_opresult
 ## MDEV-37626 [MTR, innodb.innodb-table-online innodb.innodb-index-online]
 #pointer-overflow:row_log_apply_ops
 #pointer-overflow:row_log_table_apply_ops
-## MDEV-36298
-#function:wolfSSL_sk_pop_free
-## MDEV-35541
-#pointer-overflow:my_b_flush_io_cache
+## MDEV-36298 [Temporary re-enabled #RV; I still see this issue in older runs (MTR)]
+function:wolfSSL_sk_pop_free
+## MDEV-35541 [Temporary re-enabled #RV; I still see this issue in older runs (MTR)]
+pointer-overflow:my_b_flush_io_cache
 ## MDEV-35540 # Fixed by MDEV-34348
 #function:plugin_do_initialize
 #function:plugin_deinitialize

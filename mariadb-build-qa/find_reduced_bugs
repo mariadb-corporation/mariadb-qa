@@ -8,9 +8,9 @@ fi
 if [ -z "${2}" ]; then
   echo "Searching [0-9]*/*/MYBUG* files for '${1}'..."
   # -F: Interpret PATTERNS as fixed strings, not regular expressions (UniqueID's have many regex-like symbols)
-  grep --binary-files=text -Fi "${1}" [0-9]*/*/MYBUG* 2>/dev/null | sed "s|^|wc -l |;s|MYBUG.*|\*_out|;s=$= 2>/dev/null=" | xargs -I {} bash -c "{}" | grep -v 'total$' | sed 's|^[ \t]\+||' | sort -u | sort -n
+  grep --binary-files=text -Fi "${1}" [0-9]*/*/MYBUG* 2>/dev/null | sed "s|^|wc -l |;s|MYBUG.*|\*_out|;s=$= 2>/dev/null=" | xargs -I {} bash -c "{}" | grep -v 'total$' | sed 's|^[ \t]\+||' | sort -u | sort -n | awk '{print $1" /data/"$2}' | sed 's|/data[/]*data[/]*|/data/|'
 else
   echo "Searching [0-9]*/*/log/*.err files for '${1}'..."
   # Without -F as we want regex-enabled search for error logs, and we are not searching for UniqueID's but plain strings
-  grep --binary-files=text -i "${1}" [0-9]*/*/log/*.err 2>/dev/null | sed "s|^|wc -l |;s|log/master.err.*|\*_out|;s|log/slave.err.*|\*_out|;s=$= 2>/dev/null=" | tr '\n' '\0' |  xargs -0 -I {} bash -c "{}" | grep -v 'total$' | sed 's|^[ \t]\+||' | sort -u | sort -n
+  grep --binary-files=text -i "${1}" [0-9]*/*/log/*.err 2>/dev/null | sed "s|^|wc -l |;s|log/master.err.*|\*_out|;s|log/slave.err.*|\*_out|;s=$= 2>/dev/null=" | tr '\n' '\0' |  xargs -0 -I {} bash -c "{}" | grep -v 'total$' | sed 's|^[ \t]\+||' | sort -u | sort -n | awk '{print $1" /data/"$2}' | sed 's|/data[/]*data[/]*|/data/|'
 fi

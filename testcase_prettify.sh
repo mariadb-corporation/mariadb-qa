@@ -543,6 +543,7 @@ cat "${1}" | tr -d '`' | \
        s|sleep[ ]*(|SLEEP(|gi; \
        s|DELIMITER|DELIMITER |gi; \
        s|DELIMITER [ ]\+|DELIMITER |gi; \
+       s|'srv / t'|'srv/t'|gi; \
        s|\-\-DELIMITER|\-\-delimiter|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line. Also leave --delimiter just beore this
 

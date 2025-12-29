@@ -16,38 +16,47 @@ ib_vector_size(optim->words) > 0|SIGABRT|ut_dbg_assertion_failed|fts_optimize_wo
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
-##### MDEV-35915 testing #####
-table->s->table_category == TABLE_CATEGORY_SYSTEM || table->s->table_category == TABLE_CATEGORY_STATISTICS|SIGABRT|open_system_tables_for_read|mysqld_help_internal|mysqld_help|mysql_execute_command ## MDEV-37968
-thd->transaction->stmt.is_empty() || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|open_normal_and_derived_tables|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-37934
-SIGSEGV|I_P_List_iterator<TMP_TABLE_SHARE, I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares, I_P_List_null_counter, I_P_List_no_push_back<TMP_TABLE_SHARE> > >::I_P_List_iterator|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_execute_command  ## MDEV-37871
-SIGSEGV|I_P_List_iterator<TMP_TABLE_SHARE, I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares, I_P_List_null_counter, I_P_List_no_push_back<TMP_TABLE_SHARE> > >::I_P_List_iterator|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_rm_db  ## MDEV-37871
-SIGSEGV|I_P_List_iterator<MDL_ticket, I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> > >::operator++|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock ## MDEV-37871
-SIGSEGV|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::release_transactional_locks|mysql_execute_command                               ## MDEV-37872
-SIGSEGV|MDL_context::release_lock|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::release_transactional_locks                           ## MDEV-37872
-mdl_ticket->m_duration == MDL_TRANSACTION && duration != MDL_TRANSACTION|SIGABRT|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37872
-SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl                         ## MDEV-37872
-SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-37872
-SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> >::remove|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode ## MDEV-37872
-SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Fast_road::Lane::releasemdl.cc|MDL_lock::Fast_road::Lane::ticket_action<MDL_lock::Fast_road::Lane::releasemdl.cc ## MDEV-37872
-SIGSEGV|inline_mysql_mutex_lock|MDL_lock::Fast_road::Lane::ticket_action<MDL_lock::Fast_road::Lane::releasemdl.cc|MDL_lock::Fast_road::Lane::release|MDL_lock::Fast_road::try_releasemdl.cc ## MDEV-37872
-SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::is_lock_owner                                 ## MDEV-37872
-SIGSEGV|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_lock::release|MDL_context::release_lock                                                                       ## MDEV-37872
-SIGSEGV|unlock_external|mysql_unlock_tables|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                                       ## MDEV-37872
-SIGSEGV|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::release_transactional_locks|trans_begin                                         ## MDEV-37872
-ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|THD::free_tmp_table_share|THD::close_temporary_tables|THD::cleanup                                        ## MDEV-37872
-SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                                ## MDEV-37872
-SIGSEGV|MDL_lock::Fast_road::supported_type|MDL_lock::Fast_road::close|MDL_lock::add_cloned_ticket|MDL_context::clone_ticket                                                   ## MDEV-37872
-!memcmp(trx_id->data, reset_trx_id, 6)|SIGABRT|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry                           ## MDEV-37873
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37877
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                        ## MDEV-37877
-!thd->rgi_slave|SIGABRT|open_global_temporary_table|open_table|open_and_process_table|open_tables                                                                              ## MDEV-37928, MDEV-37929, MDEV-37940, MDEV-37941
-SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_rm_db_internal|mysql_execute_command                                                                                     ## MDEV-37956
-SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_rm_db_internal|mysql_rm_db                                                                                               ## MDEV-37956
-inited == NONE|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                         ## MDEV-37956
-SIGSEGV|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create                                                                ## MDEV-37958
-(*tables)->reginfo.lock_type >= TL_READ_SKIP_LOCKED|SIGABRT|lock_external|mysql_lock_tables|mysql_ha_read|mysql_execute_command                                                ## MDEV-37957
-SIGSEGV|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock                                                                   ## MDEV-37963
+##### MDEV-35915 testing v9 #####
+element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38438
+s->tmp_table != NO_TMP_TABLE || s->tdc->ref_count > 0|SIGABRT|TABLE::init|open_table|open_and_process_table|open_tables                                                        ## MDEV-38441
+share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38442
+share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                ## MDEV-38442
+share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|mysql_rm_table_no_locks                                                           ## MDEV-38442
+share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38443
+share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|Sql_cmd_truncate_table::lock_table                                                ## MDEV-38443
 ### Temp Search Key: Ma2
+
+##### MDEV-35915 testing v7/8 #####
+#table->s->table_category == TABLE_CATEGORY_SYSTEM || table->s->table_category == TABLE_CATEGORY_STATISTICS|SIGABRT|open_system_tables_for_read|mysqld_help_internal|mysqld_help|mysql_execute_command ## MDEV-37968
+#thd->transaction->stmt.is_empty() || (thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|open_normal_and_derived_tables|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-37934
+#SIGSEGV|I_P_List_iterator<TMP_TABLE_SHARE, I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares, I_P_List_null_counter, I_P_List_no_push_back<TMP_TABLE_SHARE> > >::I_P_List_iterator|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_execute_command  ## MDEV-37871
+#SIGSEGV|I_P_List_iterator<TMP_TABLE_SHARE, I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares, I_P_List_null_counter, I_P_List_no_push_back<TMP_TABLE_SHARE> > >::I_P_List_iterator|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_rm_db  ## MDEV-37871
+#SIGSEGV|I_P_List_iterator<MDL_ticket, I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> > >::operator++|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock ## MDEV-37871
+#SIGSEGV|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::release_transactional_locks|mysql_execute_command                               ## MDEV-37872
+#SIGSEGV|MDL_context::release_lock|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::release_transactional_locks                           ## MDEV-37872
+#mdl_ticket->m_duration == MDL_TRANSACTION && duration != MDL_TRANSACTION|SIGABRT|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37872
+#SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl                         ## MDEV-37872
+#SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Ticket_list::remove_ticket|MDL_lock::remove_ticket                                            ## MDEV-37872
+#SIGSEGV|I_P_List<MDL_ticket, I_P_List_adapter<MDL_ticket, &MDL_ticket::next_in_context, &MDL_ticket::prev_in_context>, I_P_List_null_counter, I_P_List_no_push_back<MDL_ticket> >::remove|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode ## MDEV-37872
+#SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Fast_road::Lane::releasemdl.cc|MDL_lock::Fast_road::Lane::ticket_action<MDL_lock::Fast_road::Lane::releasemdl.cc ## MDEV-37872
+#SIGSEGV|inline_mysql_mutex_lock|MDL_lock::Fast_road::Lane::ticket_action<MDL_lock::Fast_road::Lane::releasemdl.cc|MDL_lock::Fast_road::Lane::release|MDL_lock::Fast_road::try_releasemdl.cc ## MDEV-37872
+#SIGSEGV|MDL_lock::incompatible_granted_types_bitmap|MDL_ticket::has_stronger_or_equal_type|MDL_context::find_ticket|MDL_context::is_lock_owner                                 ## MDEV-37872
+#SIGSEGV|MDL_lock::reschedule_waiters|MDL_lock::remove_ticket|MDL_lock::release|MDL_context::release_lock                                                                       ## MDEV-37872
+#SIGSEGV|unlock_external|mysql_unlock_tables|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                                       ## MDEV-37872
+#SIGSEGV|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::release_transactional_locks|trans_begin                                         ## MDEV-37872
+#ticket->m_duration == MDL_EXPLICIT|SIGABRT|MDL_context::release_lock|THD::free_tmp_table_share|THD::close_temporary_tables|THD::cleanup                                        ## MDEV-37872
+#SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                                ## MDEV-37872
+#SIGSEGV|MDL_lock::Fast_road::supported_type|MDL_lock::Fast_road::close|MDL_lock::add_cloned_ticket|MDL_context::clone_ticket                                                   ## MDEV-37872
+#!memcmp(trx_id->data, reset_trx_id, 6)|SIGABRT|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry                           ## MDEV-37873
+#!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37877
+#!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                        ## MDEV-37877
+#!thd->rgi_slave|SIGABRT|open_global_temporary_table|open_table|open_and_process_table|open_tables                                                                              ## MDEV-37928, MDEV-37929, MDEV-37940, MDEV-37941
+#SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_rm_db_internal|mysql_execute_command                                                                                     ## MDEV-37956
+#SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_rm_db_internal|mysql_rm_db                                                                                               ## MDEV-37956
+#inited == NONE|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                         ## MDEV-37956
+#SIGSEGV|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create                                                                ## MDEV-37958
+#(*tables)->reginfo.lock_type >= TL_READ_SKIP_LOCKED|SIGABRT|lock_external|mysql_lock_tables|mysql_ha_read|mysql_execute_command                                                ## MDEV-37957
+#SIGSEGV|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock                                                                   ## MDEV-37963
 
 # Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226
 # These are all the direct result of using init_slave in various ways, for example with an unparsable SQL statement
@@ -363,6 +372,7 @@ strlen(name_arg) <= (64*3)|SIGABRT|MDL_key::mdl_key_init|MDL_request::init_with_
 strlen(db) <= (64*3)|SIGABRT|MDL_key::mdl_key_init|MDL_request::init_with_source|TABLE_LIST::init_one_table|ha_mroonga::delete_table                                           ## MDEV-37955
 SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec                                                   ## MDEV-37954
 !trx->read_only|SIGABRT|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step                                             ## MDEV-37954
+SIGSEGV|__strcmp_evex|mrn_log_file_update|sys_var_pluginvar::global_update|sys_var::update                                                                                     ## MDEV-37952
 SIGSEGV|__strcmp_evex|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update                                                                            ## MDEV-37952
 SIGSEGV|__interceptor_strcmp|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update                                                                     ## MDEV-37952
 SIGSEGV|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal  ## MDEV-37953
