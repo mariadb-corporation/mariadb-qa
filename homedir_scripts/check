@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 # Check screens for the same reducer having been started multiple times
-CHECK="$(grep "reducer[0-9]\+.sh" /dev/shm/*/reducer.log | sed 's|.* Reducer: ||' | uniq -c | grep -v '^      1 ' | sed 's|.*/reducer|s|;s|\.sh||' | xargs -I{} echo "screen -ls | grep -o '[0-9]\+\.{}' | grep -v grep" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | grep -o '\.s[0-9]\+$' | grep -o '[0-9]\+' | uniq -c | grep -v '^      1 ')" 
+CHECK="$(grep "reducer[0-9]\+.sh" /dev/shm/*/reducer.log | sed 's|.* Reducer: ||' | uniq -c | grep -v '^      1 ' | sed 's|.*/reducer|s|;s|\.sh||' | xargs -I{} echo "screen -ls | grep -vE 'grep|Dead' | grep -o '[0-9]\+\.{}'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | grep -o '\.s[0-9]\+$' | grep -o '[0-9]\+' | uniq -c | grep -v '^      1 ')" 
 if [ ! -z "${CHECK}" ]; then
   echo "Multiple screens with/for the same reducer found:"
   echo "${CHECK}"
