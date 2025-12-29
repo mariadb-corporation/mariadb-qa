@@ -17,13 +17,16 @@ MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ##### MDEV-35915 testing v9 #####
+element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_release_share|open_table                                                          ## MDEV-38438
 element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38438
+SIGSEGV|inline_mysql_mutex_lock|tc_remove_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                                   ## MDEV-38438
 s->tmp_table != NO_TMP_TABLE || s->tdc->ref_count > 0|SIGABRT|TABLE::init|open_table|open_and_process_table|open_tables                                                        ## MDEV-38441
 share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38442
 share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                ## MDEV-38442
 share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|mysql_rm_table_no_locks                                                           ## MDEV-38442
 share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38443
 share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|Sql_cmd_truncate_table::lock_table                                                ## MDEV-38443
+element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_purge|purge_tables                                                                ## MDEV-38444
 ### Temp Search Key: Ma2
 
 ##### MDEV-35915 testing v7/8 #####

@@ -10,8 +10,8 @@ if [[ ! "${PWD}" =~ ^/data/[0-9]{6}$ ]]; then
   exit 1
 fi
 CHECK_REDUCER_PATH="$(echo "${PWD}/reducer${1}.sh" | sed 's|[//]\+|/|g')"
-if grep --binary-files=text -qi "${CHECK_REDUCER_PATH}" /dev/shm/*/reducer.log; then  # Does the /data/workdirnr/trialnr dir already exist in /dev/shm logs. If so, check more comprehensively if the trial is still running:
-  CHECK_IF_TRIAL_LIVE="$(grep --binary-files=text -i "${CHECK_REDUCER_PATH}" /dev/shm/*/reducer.log | sed 's|reducer.log:.*|reducer.log|' | sort -u | xargs -I{} grep --binary-files=text -o 'Init] Reducer PID:.*' {} | grep -o '[0-9]\+' | tr '\n' '|' | sed 's/|$//' | xargs -I{} echo "ps -ef | grep -E '{}' | grep -v grep" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}")"  # Used to check if the trial specified in ${1} is indeed still running by checking ps output for the right PID's
+if grep --binary-files=text -qi "${CHECK_REDUCER_PATH}" /dev/shm/*/reducer.log 2>/dev/null; then  # Does the /data/workdirnr/trialnr dir already exist in /dev/shm logs. If so, check more comprehensively if the trial is still running:
+  CHECK_IF_TRIAL_LIVE="$(grep --binary-files=text -i "${CHECK_REDUCER_PATH}" /dev/shm/*/reducer.log 2>/dev/null | sed 's|reducer.log:.*|reducer.log|' | sort -u | xargs -I{} grep --binary-files=text -o 'Init] Reducer PID:.*' {} 2>/dev/null | grep -o '[0-9]\+' | tr '\n' '|' | sed 's/|$//' | xargs -I{} echo "ps -ef | grep -E '{}' | grep -v grep" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}")"  # Used to check if the trial specified in ${1} is indeed still running by checking ps output for the right PID's
   if [ ! -z "${CHECK_IF_TRIAL_LIVE}" ]; then
     echo "Assert: a reducer for trial $(echo "${CHECK_REDUCER_PATH}" | sed 's|reducer||;s|.sh||') is already running! No action was taken."
     exit 1
@@ -20,15 +20,17 @@ if grep --binary-files=text -qi "${CHECK_REDUCER_PATH}" /dev/shm/*/reducer.log; 
 fi
 if [ "${2}" != "1" ]; then  # $2=1 enables starting a reducer for a given UniqueID when another reducer with/for the same UniqueID is already running. If it used, we don't need to check the following
   TEMP_UID_IN_DEVSHM_LIST=$(mktemp)
-  grep "reducer[0-9]\+.sh$" /dev/shm/*/reducer.log | sed 's|.* Reducer: ||' | sort -u | xargs -I{} echo "grep --binary-files=text '^[ ]*TEXT=' {} | head -n1 | sed 's|.*TEXT=\"||;s|\"[ \t]*$||'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sort -u > ${TEMP_UID_IN_DEVSHM_LIST}  # All reducers of all trials which have /dev/shm directories are checked for their UniqueID
-  UNIQUE_ID="$(grep --binary-files=text '^[ ]*TEXT=' reducer${1}.sh | head -n1 | sed 's|.*TEXT="||;s|"[ \t]*$||')"
-  if [ ! -z "$(grep --binary-files=text -Fi "${UNIQUE_ID}" ${TEMP_UID_IN_DEVSHM_LIST})" ]; then  # The UniqeID is being reduced in /dev/shm/ already
-    CHECK_IF_TRIAL_LIVE="$(grep "reducer[0-9]\+.sh$" /dev/shm/*/reducer.log | sed 's|.* Reducer: ||' | sort -u | xargs -I{} grep -Film1 "${UNIQUE_ID}" {} | sed 's|.*[0-9]/reducer|reducer|' | xargs -I{} echo "ps -ef | grep -E '{}' | grep -v grep" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}")"
-    if [ ! -z "${CHECK_IF_TRIAL_LIVE}" ]; then
-      echo "Assert: another reducer for UniqueID \"${UNIQUE_ID}\" is already running. No action was taken. Add '1' as a second option to this script to overwrite and start the reducer for trial ${1} anyways."
-      exit 1
+  grep "reducer[0-9]\+.sh$" /dev/shm/*/reducer.log 2>/dev/null | sed 's|.* Reducer: ||' | sort -u | xargs -I{} echo "grep --binary-files=text '^[ ]*TEXT=' {} 2>/dev/null | head -n1 | sed 's|.*TEXT=\"||;s|\"[ \t]*$||'" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sort -u > ${TEMP_UID_IN_DEVSHM_LIST}  # All reducers of all trials which have /dev/shm directories are checked for their UniqueID
+  UNIQUE_ID="$(grep --binary-files=text '^[ ]*TEXT=' reducer${1}.sh 2>/dev/null | head -n1 | grep --binary-files=text -v "^TEXT=''" | grep --binary-files=text -v "^TEXT=.*somebug" | sed 's|.*TEXT="||;s|"[ \t]*$||')"  # grep ... -v "^TEXT=''": exclude MODE=0 trials which have ^TEXT='' in the 'Machine configurable variables section' as the first TEXT=... The somebug grep -v is for blank reducer's
+  if [ ! -z "${UNIQUE_ID}" ]; then
+    if [ ! -z "$(grep --binary-files=text -Fi "${UNIQUE_ID}" ${TEMP_UID_IN_DEVSHM_LIST} 2>/dev/null)" ]; then  # The UniqeID is being reduced in /dev/shm/ already
+      CHECK_IF_TRIAL_LIVE="$(grep "reducer[0-9]\+.sh$" /dev/shm/*/reducer.log 2>/dev/null | sed 's|.* Reducer: ||' | sort -u | xargs -I{} grep -Film1 "${UNIQUE_ID}" {} 2>/dev/null | sed 's|.*[0-9]/reducer|reducer|' | xargs -I{} echo "ps -ef | grep -E '{}' | grep -v grep" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}")"
+      if [ ! -z "${CHECK_IF_TRIAL_LIVE}" ]; then
+        echo "Assert: another reducer for UniqueID \"${UNIQUE_ID}\" is already running. No action was taken. Add '1' as a second option to this script to overwrite and start the reducer for trial ${1} anyways."
+        exit 1
+      fi
+      CHECK_IF_TRIAL_LIVE=
     fi
-    CHECK_IF_TRIAL_LIVE=
   fi
   UNIQUE_ID=
   rm -f "${TEMP_UID_IN_DEVSHM_LIST}"
