@@ -8,14 +8,16 @@
 #BASEDIR=/test/MDEV-37833_MD011125-mariadb-12.2.0-linux-x86_64-opt
 #BASEDIR=/test/bb-10.11-monty_MD101225-mariadb-10.11.16-linux-x86_64-dbg
 #BASEDIR=/test/bb-10.11-monty_UBASAN_MD101225-mariadb-10.11.16-linux-x86_64-dbg
-BASEDIR=/test/MDEV-9826_MD201225-mariadb-12.3.0-linux-x86_64-opt
+#BASEDIR=/test/MDEV-9826_MD201225-mariadb-12.3.0-linux-x86_64-opt
+#BASEDIR=/test/MDEV-35915_v9_UBASAN_MD271225-mariadb-12.2.0-linux-x86_64-opt
+BASEDIR=/test/MDEV-35915_v9_MD271225-mariadb-12.2.0-linux-x86_64-dbg
 #BASEDIR=/test/MDEV-9826_UBASAN_MD201225-mariadb-12.3.0-linux-x86_64-opt
 #BASEDIR=/test/MDEV-37833_UBASAN_MD011125-mariadb-12.2.0-linux-x86_64-dbg
 #BASEDIR=/test/MD081025-mariadb-11.4.9-linux-x86_64-opt
 #MDEV-35915_5_UBASAN_MD160925-mariadb-12.2.0-linux-x86_64-dbg
 #MDEV-35915_2_MD060925-mariadb-12.0.1-linux-x86_64-dbg
-RUNSOPT=2
-RUNSDBG=2
+RUNSOPT=4
+RUNSDBG=4
 #CONF=pquery-run-MD-Aria-enc.conf  # Encryption, PS=2, Aria swap
 #CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2, and spider swap
 #CONF=pquery-run-MD-spider-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
@@ -34,9 +36,9 @@ RUNSDBG=2
 #CONF=pquery-run-MD-4.conf
 #CONF=pquery-run-MD-5.conf
 #CONF=pquery-run-MD-6.conf
-##CONF=pquery-run-MD-MDEV_35915.conf
+CONF=pquery-run-MD-MDEV_35915.conf
 #CONF=pquery-run-MD-MDEV-37833.conf
-CONF=pquery-run-MD-MDEV-9826.conf
+##CONF=pquery-run-MD-MDEV-9826.conf
 #CONF=pquery-run-MD_mtr.conf  # PRE_SHUFFLE_SQL=1
 #CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql (replication enabled)
 #CONF=pquery-run-MD-repl.conf  # Using PRE_SHUFFLE_SQL=2
