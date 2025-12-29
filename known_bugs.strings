@@ -32,6 +32,7 @@ SIGABRT|__libc_message_impl|malloc_printerr|malloc_consolidate|_int_malloc      
 element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_release_share|open_table                                                          ## MDEV-38448
 element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38448
 SIGSEGV|TABLE_LIST::set_tabledef_version|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table                                              ## MDEV-38448
+sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_release|ha_federatedx::savepoint_release|ha_release_savepoint|trans_release_savepoint         ## MDEV-38449
 ### Temp Search Key: Ma2
 
 ##### MDEV-35915 testing v7/8 #####

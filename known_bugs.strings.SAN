@@ -13,6 +13,7 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 ASAN|heap-use-after-free|sql/sql_base.cc|find_locked_table|find_table_for_mdl_upgrade|close_cached_tables|reload_acl_and_cache                                                 ## MDEV-38444
 ASAN|heap-use-after-free|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|create_table_impl                                           ## MDEV-38445
 ASAN|heap-use-after-free|sql/sql_base.cc|find_locked_table|find_table_for_mdl_upgrade|mysql_rm_table|mysql_execute_command                                                     ## MDEV-38448
+ASAN|use-after-poison|storage/federatedx/federatedx_txn.cc|federatedx_txn::sp_release|ha_release_savepoint|trans_release_savepoint|mysql_execute_command                       ## MDEV-38449
 # Temp key: Ma2
 
 ##### MDEV-35915 testing v7/v8 #####
