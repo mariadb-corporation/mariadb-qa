@@ -516,7 +516,7 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 
         echo "*) Add bug to ${SCRIPT_PWD}/known.strings.SAN, as follows (use ~/kba for quick access):"
         echo "${TEXT}"
         echo '*) Checking if this bug is already known:'
-        FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
+        FINDBUG="$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
       fi
     else
       TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"
@@ -524,7 +524,7 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 
         echo "*) Add bug to ${SCRIPT_PWD}/known.strings, as follows (use ~/kb for quick access):"
         echo "${TEXT}"
         echo '*) Checking if this bug is already known:'
-        FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"
+        FINDBUG="$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"
       fi
     fi
     if [ ! -z "${FINDBUG}" ]; then
@@ -543,9 +543,9 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 
       else
         OUT2=
         if [ ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
-          OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
+          OUT2="$(set +H; grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
         else
-          OUT2="$(grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"
+          OUT2="$(set +H; grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"
         fi
         if [ -z "${OUT2}" ]; then
           echo "NOT FOUND: Bug not found yet in known_bugs.strings!"

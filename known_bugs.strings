@@ -16,24 +16,26 @@ ib_vector_size(optim->words) > 0|SIGABRT|ut_dbg_assertion_failed|fts_optimize_wo
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
-##### MDEV-35915 testing v9 #####
-element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_release_share|open_table                                                          ## MDEV-38438
-element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38438
-SIGSEGV|inline_mysql_mutex_lock|tc_remove_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                                   ## MDEV-38438
-s->tmp_table != NO_TMP_TABLE || s->tdc->ref_count > 0|SIGABRT|TABLE::init|open_table|open_and_process_table|open_tables                                                        ## MDEV-38441
-share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38442
-share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                ## MDEV-38442
-share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|mysql_rm_table_no_locks                                                           ## MDEV-38442
-share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38443
-share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|Sql_cmd_truncate_table::lock_table                                                ## MDEV-38443
-element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_purge|purge_tables                                                                ## MDEV-38444
-SIGABRT|__libc_message_impl|malloc_printerr|tcache_get_n|tcache_get                                                                                                            ## MDEV-38445
-SIGABRT|__libc_message_impl|malloc_printerr|malloc_consolidate|_int_malloc                                                                                                     ## MDEV-38445
-element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_release_share|open_table                                                          ## MDEV-38448
-element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38448
-SIGSEGV|TABLE_LIST::set_tabledef_version|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table                                              ## MDEV-38448
-sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_release|ha_federatedx::savepoint_release|ha_release_savepoint|trans_release_savepoint         ## MDEV-38449
+##### MDEV-35915 testing v10 #####
 ### Temp Search Key: Ma2
+
+##### MDEV-35915 testing v9 #####
+#element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_release_share|open_table                                                          ## MDEV-38438
+#element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38438
+#SIGSEGV|inline_mysql_mutex_lock|tc_remove_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                                   ## MDEV-38438
+#s->tmp_table != NO_TMP_TABLE || s->tdc->ref_count > 0|SIGABRT|TABLE::init|open_table|open_and_process_table|open_tables                                                        ## MDEV-38441
+#share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38442
+#share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_thread_tables|Locked_tables_list::unlock_locked_tables                                                ## MDEV-38442
+#share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|mysql_rm_table_no_locks                                                           ## MDEV-38442
+#share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38443
+#share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|Sql_cmd_truncate_table::lock_table                                                ## MDEV-38443
+#element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_purge|purge_tables                                                                ## MDEV-38444
+#SIGABRT|__libc_message_impl|malloc_printerr|tcache_get_n|tcache_get                                                                                                            ## MDEV-38445
+#SIGABRT|__libc_message_impl|malloc_printerr|malloc_consolidate|_int_malloc                                                                                                     ## MDEV-38445
+#element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_release_share|open_table                                                          ## MDEV-38448
+#element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38448
+#SIGSEGV|TABLE_LIST::set_tabledef_version|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table                                              ## MDEV-38448
+#sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_release|ha_federatedx::savepoint_release|ha_release_savepoint|trans_release_savepoint         ## MDEV-38449
 
 ##### MDEV-35915 testing v7/8 #####
 #table->s->table_category == TABLE_CATEGORY_SYSTEM || table->s->table_category == TABLE_CATEGORY_STATISTICS|SIGABRT|open_system_tables_for_read|mysqld_help_internal|mysqld_help|mysql_execute_command ## MDEV-37968
@@ -387,7 +389,8 @@ SIGSEGV|__interceptor_strcmp|mrn_default_tokenizer_update|sys_var_pluginvar::glo
 SIGSEGV|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal  ## MDEV-37953
 SIGSEGV|my_decimal::init|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op                                                                        ## MDEV-37953
 SIGSEGV|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal                    ## MDEV-37953
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37882
+###!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37785 [Temp disabled during MDEV-35915 testing]
+###!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37882 [Temp disabled during MDEV-35915 testing]
 SIGSEGV|Arg_comparator::compare_decimal|Arg_comparator::compare|Item_func_nullif::compare|Item_func_nullif::decimal_op                                                         ## MDEV-32317
 SIGSEGV|Item_func_nullif::decimal_op|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_ref::val_decimal                               ## MDEV-32317
 SIGSEGV|do_div_mod|my_decimal_div|Item_sum_avg::val_decimal|Item_window_func::val_decimal                                                                                      ## MDEV-32317
@@ -406,7 +409,6 @@ SIGSEGV|set_dynamic|Dynamic_array<Explain_select*>::resize|Explain_query::add_no
 SIGABRT|__libc_message_impl|malloc_printerr|_int_free|__GI___libc_free                                                                                                         ## MDEV-37812
 SIGFPE|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Item::save_in_field                                                    ## MDEV-37806
 SIGFPE|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Type_handler_bool::Item_save_in_field                                  ## MDEV-37806
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37785
 !trx->is_started()|SIGABRT|innobase_start_trx_and_assign_read_view|snapshot_handlerton|tp_foreach|ha_start_consistent_snapshot                                                 ## MDEV-36787
 SIGSEGV|List<Cached_item>::delete_elements|JOIN::cleanup|JOIN::destroy|st_select_lex::cleanup                                                                                  ## MDEV-37779
 SIGSEGV|Field::set_notnull|Item::save_str_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356

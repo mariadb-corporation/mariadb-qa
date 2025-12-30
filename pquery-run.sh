@@ -926,9 +926,7 @@ handle_bugs() {
     fi
   else
     if [ "${ELIMINATE_KNOWN_BUGS}" == "1" -a -r ${SCRIPT_PWD}/known_bugs.strings ]; then # "1": String check hack to ensure backwards compatibility with older pquery-run.conf files
-      FINDBUG="$(grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings)"
-      if [[ "${FINDBUG}" =~ ^[[:space:]]*# ]]; then FINDBUG=""; fi  # Bugs marked as fixed need to be excluded
-      if [ ! -z "${FINDBUG}" ]; then  # do not call savetrial, known/filtered bug seen
+      if [ ! -z "$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | grep -v '^[ \t]*#')" ]; then  # do not call savetrial, known/filtered bug seen. # final grep: bugs marked as fixed need to be excluded
         echoit "This is an already known and logged, non-fixed bug: ${FINDBUG}"
         echoit "Deleting trial as ELIMINATE_KNOWN_BUGS=1, bug was already logged and is still open"
         ALREADY_KNOWN=$[ ${ALREADY_KNOWN} + 1]
@@ -937,7 +935,6 @@ handle_bugs() {
         NEWBUGS=$[ ${NEWBUGS} + 1 ]
         echoit "[${NEWBUGS}] *** NEW BUG *** (not found in ${SCRIPT_PWD}/known_bugs.strings, or found but marked as already fixed)"
       fi
-      FINDBUG=
     fi
   fi
 }

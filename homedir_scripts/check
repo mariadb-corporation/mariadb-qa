@@ -51,11 +51,12 @@ END {
       }
     }
   }
-  if (missing_count == 1) {
-    print "one pr screen - " missing_items " - appears to be missing!";
-  } else if (missing_count > 1) {
-    print "multiple pr screens - " missing_items " - appear to be missing!";
-  }
+  #TODO: This does not work when starting multiple runs with different counts, for example pr1-pr6 and an additional pr1-pr4 run
+  #if (missing_count == 1) {
+  #  print "one pr screen - " missing_items " - appears to be missing!";
+  #} else if (missing_count > 1) {
+  #  print "multiple pr screens - " missing_items " - appear to be missing!";
+  #}
 }
 ')
 

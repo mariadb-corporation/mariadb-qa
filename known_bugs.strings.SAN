@@ -6,15 +6,17 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
-##### MDEV-35915 testing v9 #####
-ASAN|heap-use-after-free|storage/connect/ha_connect.cc|ha_connect::GetTableOptionStruct|ha_connect::external_lock|handler::ha_external_lock|handler::ha_external_unlock        ## MDEV-38438
-LSAN|memory leak|<unknown_module>|operator|handler::ha_open                                                                                                                    ## MDEV-38439
-UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federated/ha_federated.cc|ha_federated::end_bulk_insert|mysql_insert|mysql_execute_command|mysql_parse ## MDEV-38440
-ASAN|heap-use-after-free|sql/sql_base.cc|find_locked_table|find_table_for_mdl_upgrade|close_cached_tables|reload_acl_and_cache                                                 ## MDEV-38444
-ASAN|heap-use-after-free|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|create_table_impl                                           ## MDEV-38445
-ASAN|heap-use-after-free|sql/sql_base.cc|find_locked_table|find_table_for_mdl_upgrade|mysql_rm_table|mysql_execute_command                                                     ## MDEV-38448
-ASAN|use-after-poison|storage/federatedx/federatedx_txn.cc|federatedx_txn::sp_release|ha_release_savepoint|trans_release_savepoint|mysql_execute_command                       ## MDEV-38449
+##### MDEV-35915 testing v10 #####
 # Temp key: Ma2
+
+##### MDEV-35915 testing v9 #####
+#ASAN|heap-use-after-free|storage/connect/ha_connect.cc|ha_connect::GetTableOptionStruct|ha_connect::external_lock|handler::ha_external_lock|handler::ha_external_unlock        ## MDEV-38438
+#LSAN|memory leak|<unknown_module>|operator|handler::ha_open                                                                                                                    ## MDEV-38439
+#UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federated/ha_federated.cc|ha_federated::end_bulk_insert|mysql_insert|mysql_execute_command|mysql_parse ## MDEV-38440
+#ASAN|heap-use-after-free|sql/sql_base.cc|find_locked_table|find_table_for_mdl_upgrade|close_cached_tables|reload_acl_and_cache                                                 ## MDEV-38444
+#ASAN|heap-use-after-free|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|create_table_impl                                           ## MDEV-38445
+#ASAN|heap-use-after-free|sql/sql_base.cc|find_locked_table|find_table_for_mdl_upgrade|mysql_rm_table|mysql_execute_command                                                     ## MDEV-38448
+#ASAN|use-after-poison|storage/federatedx/federatedx_txn.cc|federatedx_txn::sp_release|ha_release_savepoint|trans_release_savepoint|mysql_execute_command                       ## MDEV-38449
 
 ##### MDEV-35915 testing v7/v8 #####
 #UBSAN|reference binding to null pointer of type 'const I_P_List<TMP_TABLE_SHARE, All_tmp_table_shares>'|sql/temporary_tables.cc|THD::global_tmp_drop_database|mysql_rm_db_internal|mysql_execute_command|mysql_parse ## MDEV-37871

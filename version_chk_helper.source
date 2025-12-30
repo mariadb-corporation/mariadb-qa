@@ -97,6 +97,13 @@ elif [ "$(echo "${PWD}" | grep -o MS | head -n1)" == "MS" -o "$(grep "BASEDIR" -
 fi
 SERVER_VERSION="$(echo "${SERVER_VERSION}" | tr -d ' ' | sed 's|MySQL|MySQL |')"
 MDEV_OR_MENT="$(echo "${PWD}" | grep --binary-files=text -Eio 'MDEV[-_0-9]+|MENT[-_0-9]+' | sed 's|^[-_]||;s|[-_]$||;s|_|-|g' | tr -d ' ')"
+MDEV_OR_MENT_INC_VER="$(echo "${PWD}" | grep --binary-files=text -Eio 'MDEV[-_0-9]+[-_]v[0-9]+|MENT[-_0-9]+[-_]v[0-9]+' | sed 's|^[-_]||;s|[-_]$||;s|_|-|g' | tr -d ' ')"
+if [ ! -z "${MDEV_OR_MENT}" -a ! -z "${MDEV_OR_MENT_INC_VER}" ]; then
+  MDEV_OR_MENT="${MDEV_OR_MENT_INC_VER}"
+elif [ -z "${MDEV_OR_MENT}" -a ! -z "${MDEV_OR_MENT_INC_VER}" ]; then
+  MDEV_OR_MENT="${MDEV_OR_MENT_INC_VER}"
+fi
+MDEV_OR_MENT_INC_VER=
 if [ -z "${MDEV_OR_MENT}" ]; then  # If we are currently not in BASEDIR but for example in /data/some_work_dir[/some_trial]. The trial subdir is handled by the grep in './start' and the some_work_dir is handled by grep in './pquery*run*.conf'
   TRIAL_BASEDIR="$(grep --binary-files=text -h "^[ \t]*BASEDIR" ./start ./pquery*run*.conf 2>/dev/null | head -n1 | sed 's|MDEV-[0-9]\+.conf|.conf|')"
   BUILD_DATE="$(pwd | grep --binary-files=text -o 'MD[0-3][0-9][0-1][0-9][2-9][0-9]\-' | grep -o '[0-9]\+')"
