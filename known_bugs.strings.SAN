@@ -28,6 +28,8 @@ UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through poin
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of value X, which is not a valid value for type 'enum Geometry::wkbType'|sql/item_geofunc.cc|Item_func_spatial_collection::val_str|Item_cache_str::cache_value|select_singlerow_subselect::send_data|end_send ## MDEV-38484
+UBSAN|load of value X, which is not a valid value for type 'enum Geometry::wkbType'|sql/item_geofunc.cc|Item_func_spatial_collection::val_str|Item_cache_str::cache_value|select_singlerow_subselect::send_data|select_result_sink::send_data_with_check ## MDEV-38484
 SIGSEGV|Sp_handler::db_load_routine|Sp_handler::db_find_routine|Sp_handler::db_find_and_cache_routine|Sp_handler::sp_find_routine                                               ## MDEV-38483
 UBSAN|member access within null pointer of type 'buf_block_t'|storage/innobase/dict/dict0boot.cc|dict_hdr_get|dict_hdr_flush_row_id|dict_sys_t::get_new_row_id|row_ins_alloc_row_id_step                                            ## MDEV-38352
 UBSAN|call to function my_hasher_base31 through pointer to incorrect function type 'my_hasher_st (*)()'|sql/ha_partition.cc|ha_partition::calculate_key_hash_value|get_part_id_key|get_partition_id_key_nosub|find_used_partitions  ## MDEV-38407
