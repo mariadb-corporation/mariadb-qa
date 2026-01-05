@@ -1,0 +1,4 @@
+SET PATH test;
+CREATE PROCEDURE p() CALL p (SLEEP(1));
+SET PATH test1;
+CALL p();
