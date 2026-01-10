@@ -1,0 +1,4 @@
+Regularly seen bugs that are not filtered due to highly prevelant UniqueID's
+
+Ticket      Reason                     UniqueID    
+MDEV-38197  Connect engine corruption  MARIADBD_ERROR|mariadbd: Table table is marked as crashed and should be repaired

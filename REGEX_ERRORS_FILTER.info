@@ -141,7 +141,7 @@ Internal MariaDB error code: 1677                     MDEV-33377 or SPECIAL-9
 Internal MariaDB error code: 1698                     Presumed non-issue (SPECIAL-19: Replica started using non-existent username)
 Internal MariaDB error code: 1792                     Presumed non-issue (tx_read_only=1 yet attempted BINLOG statement)
 Internal MariaDB error code: 1942                     Ref SPECIAL-23 (mysql.old_gtid_slave_pos removed)
-Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)
+#Internal MariaDB error code: 1944                     Presumed non-issue (seen when gtid_slave_pos table changed)  # Temp disabled for GTT testing, ref MDEV-37941 and it's patch
 Internal MariaDB error code: 1969                     Presumed non-issue (max_statement_time exceeded, normal when it is set)
 Internal MariaDB error code: 2003                     Presumed non-issue (unreachable master, or invalid IP address or invalid MASTER user or invalid host: Can't connect)
 Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)

@@ -1,0 +1,7 @@
+INSTALL SONAME 'ha_rocksdb';
+SET default_storage_engine=RocksDB;
+CREATE TABLE t (a INT,b INT,KEY(a),INDEX (b)) PARTITION BY RANGE (a) PARTITIONS 2 (PARTITION x1 VALUES LESS THAN (1),PARTITION x2 VALUES LESS THAN (100));
+INSERT INTO t VALUES (),(),();
+SET max_session_mem_used=8192,sql_buffer_result=ON;
+SELECT 1 FROM t;
+SELECT 1 FROM t WHERE b=0;

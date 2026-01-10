@@ -200,6 +200,7 @@ alias r='cd /data; timeout 120s ./results'  # Show results from workdirs in resu
 alias res='cd /data; ./results_results'  # Show all reduced testcases from workdirs in results.list
 alias g='cd /test;./gendirs.sh'  # cd to test and run gendirs.sh (dirs which will be used in ${HOME}/b and d/o scripts)
 alias gsan='cd /test;./gendirs.sh san'  # Idem, but for SAN builds
+alias nf='vi ${HOME}/mariadb-qa/BUGS/non_filtered.txt'  # Quickly check/review/add non-filtered regularly observed bugs
 alias da='cd /data'  # cd to /data where all workdirs live
 alias ct='cd /test'  # cd to /test where all BASEDIRs/builds live
 alias cm='cd ${HOME}/mariadb-qa'  # cd to ${HOME}/mariadb-qa where all testing code lives
