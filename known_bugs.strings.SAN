@@ -31,6 +31,7 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|division by zero|sql/multi_range_read.cc|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const|check_quick_select|get_key_scans_params                        ## MDEV-38543
 ASAN|use-after-poison|storage/federatedx/federatedx_txn.cc|federatedx_txn::sp_acquire|ha_federatedx::savepoint_set|ha_savepoint|trans_savepoint                                 ## MDEV-38526
 UBSAN|member access within null pointer of type 'CHARSET_INFO' (aka 'const charset_info_st')|sql/sql_class.h|is_supported_parser_charset|check_cs_client|sys_var::check|set_var::check ## MDEV-38466
 UBSAN|member access within null pointer of type 'buf_block_t'|storage/innobase/dict/dict0boot.cc|dict_hdr_get|dict_hdr_flush_row_id|dict_sys_t::get_new_row_id|row_ins_alloc_row_id_step ## MDEV-38352
