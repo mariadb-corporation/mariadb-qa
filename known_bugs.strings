@@ -1591,7 +1591,6 @@ is_streaming() == false|SIGABRT|wsrep::transaction::cleanup|wsrep::transaction::
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
 state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|prepare_or_error MDEV-32193
 state() == s_executing || state() == s_prepared || state() == s_committing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans ## MDEV-32193
-0|SIGABRT|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const                                ## MDEV-24902
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command                                                                   ## MDEV-24814
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute                                                            ## MDEV-24814
 SIGSEGV|replace_table_table|mysql_table_grant|mysql_execute_command|mysql_parse                                                                                                ## MDEV-24814
@@ -1881,6 +1880,7 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                              ## 10.6+ Fixed ## MDEV-22663
 
 ###### FIXED BUGS ######
+#0|SIGABRT|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const                       ## Fixed ## MDEV-24902
 #node_ != nullptr|SIGABRT|ilist<fil_space_t, space_list_tag_t>::Iterator::Iterator|fil_crypt_find_space_to_rotate|fil_crypt_thread|std::__invoke_impl<void, void       ## Fixed ## MDEV-37299
 #SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                  ## Fixed ## MDEV-37299
 #SIGABRT|log_file_t::write|log_write_buf|log_t::write_buf<log0log.cc|log_writer                                                                                        ## Fixed ## MDEV-37299
