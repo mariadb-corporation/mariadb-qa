@@ -37,8 +37,6 @@ sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp
 #share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38443
 #share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|Sql_cmd_truncate_table::lock_table                                                ## MDEV-38443
 #element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_purge|purge_tables                                                                ## MDEV-38444
-#SIGABRT|__libc_message_impl|malloc_printerr|tcache_get_n|tcache_get                                                                                                            ## MDEV-38445
-#SIGABRT|__libc_message_impl|malloc_printerr|malloc_consolidate|_int_malloc                                                                                                     ## MDEV-38445
 #element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_release_share|open_table                                                          ## MDEV-38448
 #element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38448
 #SIGSEGV|TABLE_LIST::set_tabledef_version|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table                                              ## MDEV-38448
@@ -1882,6 +1880,8 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                              ## 10.6+ Fixed ## MDEV-22663
 
 ###### FIXED BUGS ######
+#SIGABRT|__libc_message_impl|malloc_printerr|malloc_consolidate|_int_malloc                                                                                            ## Fixed ## MDEV-38445
+#SIGABRT|__libc_message_impl|malloc_printerr|tcache_get_n|tcache_get                                                                                                   ## Fixed ## MDEV-38445
 #0|SIGABRT|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const                       ## Fixed ## MDEV-24902
 #node_ != nullptr|SIGABRT|ilist<fil_space_t, space_list_tag_t>::Iterator::Iterator|fil_crypt_find_space_to_rotate|fil_crypt_thread|std::__invoke_impl<void, void       ## Fixed ## MDEV-37299
 #SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                  ## Fixed ## MDEV-37299
