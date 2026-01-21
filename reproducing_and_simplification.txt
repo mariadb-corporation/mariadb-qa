@@ -1,8 +1,8 @@
 Almost all issues (85%-95%) reproduce when using;
-pquery-run.sh > ~/percona-qa/pquery-prep-red.sh > ~/percona-qa/pquery-clean-known.sh > ~/percona-qa/pquery-results.sh > individual reducers
+pquery-run.sh > ~/mariadb-qa/pquery-prep-red.sh > ~/mariadb-qa/pquery-clean-known.sh > ~/mariadb-qa/pquery-results.sh > individual reducers
 
 For experts this work flow is:
-pquery-run.sh > ~/percona-qa/pquery-go-expert.sh > ~/percona-qa/pquery-results.sh > individual reducers
+pquery-run.sh > ~/mariadb-qa/pquery-go-expert.sh > ~/mariadb-qa/pquery-results.sh > individual reducers
 
 However, for issues that fail to reproduce, try these things (in this order):
 -----------------------------------------------------------------------------
@@ -30,10 +30,10 @@ However, for issues that fail to reproduce, try these things (in this order):
 * Note that QUERYTIMEOUT may potentially affect overall issue reproducibility for issues where queries get terminated by the timeout (90 seconds by default)
 
 * Change the TEXT="..." to a much more simplified form. Regex capable. You can also use another string then the one suggested (like a stack excerpt) An example:
-  Change "scale >= 0 .... precision > 0 .... scale <= precision" to "scale.*precision". If it works, verify correct functioning of percona-qa/text_string.sh
+  Change "scale >= 0 .... precision > 0 .... scale <= precision" to "scale.*precision". If it works, verify correct functioning of mariadb-qa/text_string.sh
 
 * Check the error log and search for the assertion, or first few crashing frames as shown by gdb. The issue may have already been logged.
-  Add it to percona-qa/known_bugs.strings[.notestcase] if you find it please.
+  Add it to mariadb-qa/known_bugs.strings[.notestcase] if you find it please.
 
 * Check the client output of the original pquery trial (/<trial>/*thread-x.sql) against the output of reducer's subreducer's directory /subreducer/nr/<TBD>
 
@@ -108,7 +108,7 @@ However, for issues that fail to reproduce, try these things (in this order):
   Note that as reducer is randomly chunking, you may run into different crashes and as such have to restart reducer a few times to reduce to the correct one.
 
 * Open the sql file in vi and execute   :%s/^#.*\n//g   in vi. This will drop all comment lines.
-  This will only help for CLI-replayed issue (i.e. when not using pquery mode in reducer, which is default for all pquery runs handled by percona-qa scripts)
+  This will only help for CLI-replayed issue (i.e. when not using pquery mode in reducer, which is default for all pquery runs handled by mariadb-qa scripts)
 
 * When you see 'MYBUG             : SIGSEGV|some_frame|Backtrace stopped: Cannot access memory at address|' (happens occassionaly)
   It is possible that gdb ran OOM during the NTS (new_text_string) production. Re-run ~/tt (obtained by running linkit) in the trial dir to see if you get the full UniqueID

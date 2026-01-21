@@ -43,8 +43,6 @@ prebuilt->template_type == ROW_MYSQL_WHOLE_ROW|SIGABRT|ut_dbg_assertion_failed|r
 #share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|tc_remove_table|tc_release_table                                                                            ## MDEV-38443
 #share->tdc->ref_count|SIGABRT|tdc_release_share|intern_close_table|close_all_tables_for_name|Sql_cmd_truncate_table::lock_table                                                ## MDEV-38443
 #element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_purge|purge_tables                                                                ## MDEV-38444
-#SIGABRT|__libc_message_impl|malloc_printerr|tcache_get_n|tcache_get                                                                                                            ## MDEV-38445
-#SIGABRT|__libc_message_impl|malloc_printerr|malloc_consolidate|_int_malloc                                                                                                     ## MDEV-38445
 #element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|tdc_release_share|open_table                                                          ## MDEV-38448
 #element->all_tables.is_empty()|SIGABRT|tdc_assert_clean_share|tdc_delete_share_from_hash|open_table|open_and_process_table                                                     ## MDEV-38448
 #SIGSEGV|TABLE_LIST::set_tabledef_version|TABLE_LIST::is_the_same_definition|check_and_update_table_version|open_and_process_table                                              ## MDEV-38448
@@ -326,6 +324,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGFPE|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const|check_quick_select|get_key_scans_params                                                               ## MDEV-38543
+SIGFPE|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const|ha_innobase::multi_range_read_info_const|check_quick_select                                           ## MDEV-38543
 marked_for_read()|SIGABRT|Field_long::val_int|Item_field::val_int|part_val_int|get_partition_id_range                                                                          ## MDEV-38512
 marked_for_read()|SIGABRT|Field_long::val_int|part_val_int|get_partition_id_range|get_full_part_id_from_key                                                                    ## MDEV-38512
 SIGSEGV|is_supported_parser_charset|check_cs_client|sys_var::check|set_var::check                                                                                              ## MDEV-38466
@@ -407,6 +407,8 @@ SIGSEGV|my_decimal::init|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_
 SIGSEGV|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal                    ## MDEV-37953
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37785
 !mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37882
+n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_func::split_sum_func|JOIN::prepare                                                       ## MDEV-32317
+SIGSEGV|ROUND_UP|do_div_mod|my_decimal_div|Item_sum_avg::val_decimal                                                                                                           ## MDEV-32317
 SIGSEGV|Arg_comparator::compare_decimal|Arg_comparator::compare|Item_func_nullif::compare|Item_func_nullif::decimal_op                                                         ## MDEV-32317
 SIGSEGV|Item_func_nullif::decimal_op|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_ref::val_decimal                               ## MDEV-32317
 SIGSEGV|do_div_mod|my_decimal_div|Item_sum_avg::val_decimal|Item_window_func::val_decimal                                                                                      ## MDEV-32317
@@ -1597,7 +1599,6 @@ is_streaming() == false|SIGABRT|wsrep::transaction::cleanup|wsrep::transaction::
 SIGSEGV|galera::TrxHandle::state|galera::ReplicatorSMM::replay_trx|galera_replay_trx|wsrep::wsrep_provider_v26::replay                                                         ## MDEV-32193
 state() == s_executing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_prepare|wsrep::client_state::before_prepare|wsrep_before_prepare|prepare_or_error MDEV-32193
 state() == s_executing || state() == s_prepared || state() == s_committing || state() == s_must_abort || state() == s_replaying|SIGABRT|wsrep::transaction::before_commit|wsrep::client_state::before_commit|wsrep_before_commit|ha_commit_trans ## MDEV-32193
-0|SIGABRT|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const                                ## MDEV-24902
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command                                                                   ## MDEV-24814
 SIGSEGV|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute                                                            ## MDEV-24814
 SIGSEGV|replace_table_table|mysql_table_grant|mysql_execute_command|mysql_parse                                                                                                ## MDEV-24814
@@ -1887,6 +1888,9 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # 0|SIGABRT|Protocol::end_statement|dispatch_command|do_command|do_handle_one_connection                                                                              ## 10.6+ Fixed ## MDEV-22663
 
 ###### FIXED BUGS ######
+#SIGABRT|__libc_message_impl|malloc_printerr|malloc_consolidate|_int_malloc                                                                                            ## Fixed ## MDEV-38445
+#SIGABRT|__libc_message_impl|malloc_printerr|tcache_get_n|tcache_get                                                                                                   ## Fixed ## MDEV-38445
+#0|SIGABRT|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const                       ## Fixed ## MDEV-24902
 #node_ != nullptr|SIGABRT|ilist<fil_space_t, space_list_tag_t>::Iterator::Iterator|fil_crypt_find_space_to_rotate|fil_crypt_thread|std::__invoke_impl<void, void       ## Fixed ## MDEV-37299
 #SIGABRT|ib::fatal::~fatal|log_t::file::write|log_write_buf|log_write                                                                                                  ## Fixed ## MDEV-37299
 #SIGABRT|log_file_t::write|log_write_buf|log_t::write_buf<log0log.cc|log_writer                                                                                        ## Fixed ## MDEV-37299
