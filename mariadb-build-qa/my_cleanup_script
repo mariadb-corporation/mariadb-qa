@@ -36,5 +36,5 @@ while true; do
   ./del_specific_string_trials.sh 'get_field_item_for_having' 1  # MDEV-26940 partial stacks
   ./del_specific_string_trials.sh 'sql/sql_analyse' ## MDEV-28374/MDEV-36300/MDEV-32240 like stacks (PROCEDURE ANALYSE)
    cat */*/MYBUG | sort -h | uniq -c |  sort -n
-   sleep 2400  # 40 Minutes
+   sleep 3600  # 1hr
 done

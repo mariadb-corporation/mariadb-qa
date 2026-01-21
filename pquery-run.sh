@@ -1017,7 +1017,7 @@ mdg_startup() {
           fi
         else # Do not halt for MDG_ADD_RANDOM_OPTIONS=1 runs, they are likely to produce errors like these as MDG_MYEXTRA was randomly changed
           echoit "'[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MDG_MYEXTRA (${MDG_MYEXTRA}) startup options. As \$MDG_ADD_RANDOM_OPTIONS=1, this is likely to be encountered given the random addition of mysqld/mariadbd options. Not saving trial. If you see this error for every trial however, set \$MDG_ADD_RANDOM_OPTIONS=0 & try running pquery-run.sh again. If it still fails, it is likely that your base \$MYEXTRA (${MYEXTRA}) or \$ENCRYPTION_OPTIONS (${ENCRYPTION_OPTIONS}) setting is faulty."
-          grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
+          grep "ERROR" -B5 -A3 ${ERROR_LOG} 2>/dev/null | tee -a /${WORKDIR}/pquery-run.log  # 2>/dev/null: do not report error when the above "Noticed a likely OOS on ... Slept 0.5h" took place
           FAILEDSTARTABORT=1
           return
         fi

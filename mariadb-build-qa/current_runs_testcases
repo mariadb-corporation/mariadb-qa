@@ -4,4 +4,4 @@ if [ ! -r /data/results.list -o ! -f /data/results.list ]; then
   exit 1
 fi
 cd /data
-grep -v '^[ \t]*#' results.list | grep -o '[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|^|/data/|' | sort -u | xargs -I{} echo "wc -l {}/*/*_out 2>/dev/null | grep -v total | sed \\'s|^[ \t]*||\\'" | xargs -I{} bash -c "{}" | sort -n
+grep -v '^[ \t]*#' results.list | grep -o '[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|^|/data/|' | sort -u | xargs -I{} echo "wc -l {}/*/*_out 2>/dev/null | grep -v total | sed \\'s|^[ \t]*||\\'" | xargs -I{} bash -c "{}" | sort -n | tac

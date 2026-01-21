@@ -5,3 +5,6 @@ if [ "${PWD}" != "/dev/shm" -o ! -d /dev/shm ]; then
   exit 1
 fi
 tail -n1 */reducer.log | grep --group-separator='' -B1 '\[\]' | grep -o '[0-9]\+/reducer.log' | sed 's|/reducer.log||' | xargs -I{} rm -Rf /dev/shm/{}
+
+# Another possible solution:
+# cd /dev/shm && tail -n1 */reducer.log | grep -B1 '\[\]' | grep -o ' .*reducer.log' | grep -o '[0-9]\+' | xargs -I{} rm -Rf {}
