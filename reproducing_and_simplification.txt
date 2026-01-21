@@ -4,6 +4,9 @@ pquery-run.sh > ~/mariadb-qa/pquery-prep-red.sh > ~/mariadb-qa/pquery-clean-know
 For experts this work flow is:
 pquery-run.sh > ~/mariadb-qa/pquery-go-expert.sh > ~/mariadb-qa/pquery-results.sh > individual reducers
 
+Or even shorter now:
+~/gomd > pr > individual reducers  # pr (run in data dirs) == ~/mariadb-qa/pquery-results.sh
+
 However, for issues that fail to reproduce, try these things (in this order):
 -----------------------------------------------------------------------------
 * If you have set FORCE_KILL=1 in reducer, note that this does not reduce issues seen on server shutdown only (low percentage of issues). Set it to FORCE_KILL=0 to attempt to reduce towards an issue seen on/at shutdown only (mysqladmin shutdown will then be used instead of a kill).
