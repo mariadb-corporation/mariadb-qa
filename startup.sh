@@ -1301,7 +1301,11 @@ chmod +x sysbench_lua*
 if [ ! -r ./in.sql ]; then touch ./in.sql; fi  # Make new empty file if does not exist yet
 echo './all --sql_mode=' >sqlmode
 echo './all --log_bin' >binlog
-echo './bin/mysqlbinlog --base64-output=decode-rows -vvv data/*.00[0-9][0-9][0-9][0-9]' >decode_binlog
+if [ -r ./bin/mariadb-binlog ]; then
+  echo './bin/mariadb-binlog --base64-output=decode-rows -vvv data/*.00[0-9][0-9][0-9][0-9]' >decode_binlog
+else
+  echo './bin/mysqlbinlog --base64-output=decode-rows -vvv data/*.00[0-9][0-9][0-9][0-9]' >decode_binlog
+fi
 echo 'MYEXTRA_OPT="$*"' >all
 add_san_options all
 #This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.

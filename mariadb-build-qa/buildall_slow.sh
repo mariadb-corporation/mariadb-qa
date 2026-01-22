@@ -58,6 +58,7 @@ USE_EXTRA_A_OPT_11_8=1
 USE_EXTRA_A_OPT_12_0=1
 USE_EXTRA_A_OPT_12_1=1
 USE_EXTRA_A_OPT_12_2=1
+USE_EXTRA_A_OPT_12_3=1
 USE_EXTRA_A_OPT_ES_10_5=0
 USE_EXTRA_A_OPT_ES_10_6=0
 USE_EXTRA_A_OPT_ES_11_4=1
@@ -87,8 +88,8 @@ cleanup_dirs(){
 }
 
 buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use (newer builds=larger=longer)
-  if [ ${BUILD_12.3} -eq 1 ]; then
-    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_12.3}" -eq 1 ]; then
+  if [ ${BUILD_12_3} -eq 1 ]; then
+    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_12_3}" -eq 1 ]; then
       export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"
     else
       export -n EXTRA_AUTO_OPTIONS; EXTRA_AUTO_OPTIONS=

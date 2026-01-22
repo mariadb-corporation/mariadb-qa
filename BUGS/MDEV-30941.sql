@@ -8,3 +8,18 @@ XA END 'x';
 XA PREPARE 'x';
 ALTER TABLE t ENGINE=InnoDB;
 XA COMMIT 'x';
+
+# mysqld options required for replay: --sql_mode=
+CREATE TABLE t1 (c1 INT NOT NULL PRIMARY KEY) ENGINE=RocksDB PARTITION BY KEY() PARTITIONS 2;
+SET pseudo_thread_id=0;
+XA START 'trx';
+INSERT INTO t1  VALUES(0xAAC0);
+CREATE TEMPORARY TABLE t1 (y INT);
+SET pseudo_slave_mode=1;
+INSERT INTO t1  VALUES('a');
+XA END 'trx';
+XA PREPARE 'trx';
+DROP TABLE t1;
+insert into t1 values (5292);
+ALTER TABLE t1 ADD c2 VARBINARY(20) NULL FIRST;
+XA COMMIT 'trx';
