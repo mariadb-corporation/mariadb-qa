@@ -540,6 +540,11 @@ if [ -d "${MTR_DIR}" ]; then
       echo "#SET sql_mode='';" >> ${MTR_DIR}/main/test.test
     fi
   fi
+  if [ -r ./bin/mariadb-binlog ]; then  # ./: relevant to this script's PWD
+    echo '../bin/mariadb-binlog --base64-output=decode-rows -vvv var/mysqld.1/data/master-bin.00[0-9][0-9][0-9][0-9]' >${MTR_DIR}/decode_binlog  # ../: relevant to MTR_DIR
+  else
+    echo '../bin/mysqlbinlog --base64-output=decode-rows -vvv var/mysqld.1/data/master-bin.00[0-9][0-9][0-9][0-9]' >${MTR_DIR}/decode_binlog
+  fi
   echo '#!/bin/bash' >${MTR_DIR}/mtra
   add_san_options ${MTR_DIR}/mtra
   echo 'echo "Running: ./mtr ${*}"' >> ${MTR_DIR}/mtra

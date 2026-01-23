@@ -2,38 +2,39 @@
 # Created by Roel Van de Paar, MariaDB
 set +H
 
-# Note: if this script is terminated, you can still see the bisect log with:  git bisect log  # in the correct VERSION dir, or review the main log file (ref MAINLOG variable)
+# Note: if this script is terminated, you can still see the bisect log with:  git bisect log  (run in the correct VERSION dir). You can also review the main log file (ref MAINLOG variable) i.e. bisect.log
 
 # User variables
-DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
-VERSION=12.2                                                        # Use the earliest major version affected by the bug
+DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
+VERSION=12.0                                                        # Use the earliest major version affected by the bug
 ES=0                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
-SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0. Also, if there are build errors in older revisions, setting this to 0 may help
+SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0. Also, if there are build errors in older revisions, setting this to 0 may help. Recommended in any case: 0, especially in older versions, which regularly yield build issues on newer systems; it may make the bisect quicker/better/easier in such cases
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
-RECLONE=0                                                           # Set to 1 to reclone a tree before starting
+RECLONE=1                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
-LAST_KNOWN_GOOD_COMMIT='e02f4d7e311e214ea62ff2e59599849e229f4165'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='fd15fd2765b53d0c070dd01d86fb231024b8f284'   # Revision of first known bad commit
+LAST_KNOWN_GOOD_COMMIT='22efc2c784e1b7199fb5804e6330168277ea7dce'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='f1102da37a3dcdc8b92e0205f0a8bd878704b168'   # Revision of first known bad commit
 # To obtain the first commit for a given branch/version, some examples (after full branch checkouts): 
 # /test/git-bisect/12.1 $ git log origin/12.0..12.1 --oneline | tail -1
 # 72b666b837eb16819f8f3de3e739a582dbbf4b53  # This is the first 12.1 commit
 # /test/git-bisect/12.0 $ git log origin/11.8..12.0 --oneline | tail -1
 # c92add291e636c797e6d6ddca605905541b2a441  # This is the first 12.0 commit
 # Use git checkout --recurse-submodules --force c92add291e636c797e6d6ddca605905541b2a441 to obtain this
-TESTCASE='/test/in35.sql'                                           # The testcase to be tested
+TESTCASE='/test/in37.sql'                                           # The testcase to be tested
 UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID="(yyvsp[-3].simple_string) < (yyvsp[-1].simple_string)|SIGABRT|MYSQLparse|parse_sql|mysql_make_view|open_table"                                                         # The UniqueID to scan for [Exclusive]
+UNIQUEID=""                                                         # The UniqueID to scan for [Exclusive]
 TEXT=""                                                             # The string to scan for in the error log [Exclusive]
-# [Exclusive]: i.e. UNIQUEID and TEXT are mutually exclusive: do not set both
-# And, leave both UNIQUEID and TEXT empty to scan for core files instead
-# i.e. 3 different modes in total: UNIQUEID, TEXT or core files scan
-# Note that TEXT is regex-capable and case-sensitive
+CLI_TEXT="Write_rows_v1"                                                         # The string to scan for in CLI output [Exclusive]
+# [Exclusive]: UNIQUEID, TEXT and CLI_TEXT are all mutually exclusive: setting one should exclude all others (i.e. set empty)
+# Finally, leave all three (UNIQUEID, TEXT and CLI_TEXT) empty to scan for core files instead
+# i.e. 4 different modes in total: UNIQUEID, TEXT, CLI_TEXT or core files scan
+# Note that TEXT and CLI_TEXT are regex-capable and case-sensitive
 
 # Script variables, do not change
 RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
@@ -41,6 +42,7 @@ SEED="${RANDOM}${RANDOM}"
 MAINLOG="/test/git-bisect/bisect.log"
 TMPLOG1="/tmp/git-bisect-${SEED}.out"
 TMPLOG2="/tmp/git-bisect-build_${SEED}.exitcode"
+SEEN_ONCE=''
 export ENV_GIT_BISECT='1'
 
 clear_env(){
@@ -65,6 +67,10 @@ if [ "${ES}" -eq 1 ]; then
   fi
   source "${CHS}"  # Call the credentials check helper script to check ~/.git-credentials provisioning
 fi
+MODES_SELECTED_COUNT=0
+if [ ! -z "${UNIQUEID}" ]; then MODES_SELECTED_COUNT=$[ ${MODES_SELECTED_COUNT} + 1 ]; fi
+if [ ! -z "${TEXT}" ]; then MODES_SELECTED_COUNT=$[ ${MODES_SELECTED_COUNT} + 1 ]; fi
+if [ ! -z "${CLI_TEXT}" ]; then MODES_SELECTED_COUNT=$[ ${MODES_SELECTED_COUNT} + 1 ]; fi
 if [ "${ES}" -eq 1 -a ! -z "${FEATURETREE}" ]; then
   echo "TODO: please add ES=1 with FEATURETREE='xyz' functionality, not implemented yet"
   clear_env; exit 1
@@ -74,8 +80,14 @@ elif [ "${DBG_OR_OPT}" != 'dbg' -a "${DBG_OR_OPT}" != 'opt' ]; then
 elif [[ "${VERSION}" != "10."* && "${VERSION}" != "11."* && "${VERSION}" != "12."* && "${FEATURETREE}" == "" ]]; then
   echo "Version (${VERSION}) does not look correct"
   clear_env; exit 1
-elif [ ! -z "${UNIQUEID}" -a ! -z "${TEXT}" ]; then
-  echo "Both UNIQUEID and TEXT were set. Please only specify one of them"
+elif [ ${MODES_SELECTED_COUNT} -gt 1 ]; then
+  echo "Assert: too many bug scan modes set! (# set: ${MODES_SELECTED_COUNT})"
+  echo "4 Specific bug scan modes are supported: Mode 1) Scan for core files (all the following mode 2/3/4 options are empty; none are set), Mode 2) UNIQUEID set; scan for specified UniqueID's, Mode 3) TEXT set; scan for specific strings in the error log, Mode 4) CLI_TEXT set; scan for specific strings in the client output"
+  echo "Please ensure that only one of the [UNIQUEID, TEXT or CLI_TEXT] modes are set, or specify none of them (i.e. empty; '') to scan for core files instead"
+  echo "Currently, ${MODES_SELECTED_COUNT} different modes are set, which is an impossible combination"
+  clear_env; exit 1
+elif [ "${USE_PQUERY}" -eq 1 -a ! -z "${CLI_TEXT}" ]; then
+  echo "USE_PQUERY=1 and CLI_TEXT is set. This is not supported yet (feel free to add it). For the moment, only the vanilla mariadb/mysql client is supported (USE_PQUERY=0)."
   clear_env; exit 1
 elif [ -z "${LAST_KNOWN_GOOD_COMMIT}" -o -z "${FIRST_KNOWN_BAD_COMMIT}" ]; then
   echo "LAST_KNOWN_GOOD_COMMIT or FIRST_KNOWN_BAD_COMMIT (or both) setting(s) missing"
@@ -107,8 +119,12 @@ fi
 rm -f "${MAINLOG}"
 echo "Testing testcase ${TESTCASE}:"
 echo '--------------------------------------------';
-cat ${TESTCASE}
+cat ${TESTCASE} | grep -v '^[ \t]*$'
 echo '--------------------------------------------';
+echo "|> [*] A leading '[*]', like to the one in this comment, shows that git-bisect.sh saw the bug reproduced in-run at least once"
+echo "|> If you do not observe this '[*]' marker during the bisect run, then please make sure your testcase (${TESTCASE}) is correctly triggering a bug in at least your first indicated bad commit ${FIRST_KNOWN_BAD_COMMIT}, in version ${VERSION}, build as an ${DBG_OR_OPT} build (with/while using UBASAN: ${UBASAN}, REPLICATION: ${REPLICATION}, USE_PQUERY: ${USE_PQUERY}) (1: yes, 0: no). You may also want to verify that the correct failure type/mode is being used; cores (none of the following options set), or [UNIQUEID, TEXT or TEXT_CLI] (one of them set)."
+sleep 3  # Give user time to see the output
+echo "|> Commencing Bisect"
 cd /test || die 1 '/test does not exist'
 mkdir -p git-bisect || die 1 '/test/git-bisect could not be created'
 echo 'Changing directory to /test/git-bisect' | tee -a "${MAINLOG}"
@@ -148,6 +164,8 @@ if [ ! -z "${UNIQUEID}" ]; then
   echo "Searching for UniqueID Bug: '${UNIQUEID}'" | tee -a "${MAINLOG}"
 elif [ ! -z "${TEXT}" ]; then
   echo "Searching for Error log text Bug: '${TEXT}'" | tee -a "${MAINLOG}"
+elif [ ! -z "${CLI_TEXT}" ]; then
+  echo "Searching for CLI output text Bug: '${CLI_TEXT}'" | tee -a "${MAINLOG}"
 else
   echo "Searching for core files in the data directory to validate issue occurrence" | tee -a "${MAINLOG}"
 fi
@@ -171,6 +189,7 @@ bisect_bad(){
   cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
   rm -f ${TMPLOG1}
   git bisect bad 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
+  SEEN_ONCE='[*] '
   # Always init/update submodules after each git bisect good/bad as those commands update the revision set
   git submodule update --init --recursive
   cat "${TMPLOG1}" >> "${MAINLOG}"
@@ -258,6 +277,7 @@ fi
 LAST_TESTED_COMMIT=
 while :; do
   CUR_VERSION=;CUR_COMMIT=
+  COUNT_SAME_VERSION=0
   while :; do
     source ./VERSION
     CUR_VERSION="${MYSQL_VERSION_MAJOR}.${MYSQL_VERSION_MINOR}"
@@ -265,10 +285,10 @@ while :; do
     CUR_DATE="$(git log | head -n4 | grep '^Date:' | head -n1 | sed 's|Date:[ \t]*||;s|[ \t]*+.*||' | tr -d '\n')"
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
       if [ "${SKIP_NON_SAME_VERSION}" == "1" ]; then
-        echo "|> ${CUR_COMMIT} (${CUR_DATE}) is ver ${CUR_VERSION}, and SKIP_NON_SAME_VERSION=1: skipping.." | tee -a "${MAINLOG}"
+        echo "|> ${SEEN_ONCE}${CUR_COMMIT} (${CUR_DATE}) is ver ${CUR_VERSION}, and SKIP_NON_SAME_VERSION=1: skipping.." | tee -a "${MAINLOG}"
         git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
       else
-        echo "|> ${CUR_COMMIT} (${CUR_DATE}) is ver ${CUR_VERSION}, and SKIP_NON_SAME_VERSION=0: proceeding.." | tee -a "${MAINLOG}"
+        echo "|> ${SEEN_ONCE}${CUR_COMMIT} (${CUR_DATE}) is ver ${CUR_VERSION}, and SKIP_NON_SAME_VERSION=0: proceeding.." | tee -a "${MAINLOG}"
         break
       fi
       if grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${MAINLOG}"; then
@@ -278,15 +298,19 @@ while :; do
       fi
       continue
     elif [ "${CUR_COMMIT}" == "${LAST_TESTED_COMMIT}" ]; then
-      echo "|> ${CUR_COMMIT} is the same as the last tested commit ${LAST_TESTED_COMMIT}, and this has happened trice consecutively: finishing.." | tee -a "${MAINLOG}"
-      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
-      if grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${MAINLOG}"; then
-        echo '|> Consider re-running SKIP_NON_SAME_VERSION=0, or manually test the remaining commits if there are only a few'
+      echo "|> ${SEEN_ONCE}${CUR_COMMIT} is the same as the last tested commit ${LAST_TESTED_COMMIT}"
+      COUNT_SAME_VERSION=$[ ${COUNT_SAME_VERSION} + 1 ]
+      if [ ${COUNT_SAME_VERSION} -gt 2 ]; then
+        echo "|> ${SEEN_ONCE}${CUR_COMMIT} is the same as the last tested commit ${LAST_TESTED_COMMIT}, and this has happened trice consecutively: finishing.." | tee -a "${MAINLOG}"
+        git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
+        if grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${MAINLOG}"; then
+          echo '|> Consider re-running SKIP_NON_SAME_VERSION=0, or manually test the remaining commits if there are only a few'
+        fi
         clear_env; exit 1
         break
       fi
     else
-      echo "|> ${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, proceeding.." | tee -a "${MAINLOG}"
+      echo "|> ${SEEN_ONCE}${CUR_COMMIT} (${CUR_DATE}) is version ${CUR_VERSION}, proceeding.." | tee -a "${MAINLOG}"
       LAST_TESTED_COMMIT="${CUR_COMMIT}"
       break
     fi
@@ -299,10 +323,10 @@ while :; do
   OUTCOME_BUILD=
   SCREEN_NAME=
   while :; do
-    echo "|> Cleaning up any previous builds in /test/git-bisect" | tee -a "${MAINLOG}"
+    echo "|> ${SEEN_ONCE}Cleaning up any previous builds in /test/git-bisect" | tee -a "${MAINLOG}"
     rm -Rf /test/git-bisect/*MD*mariadb*
     SCREEN_NAME="git-bisect-build.${SEED}"
-    echo "|> Building revision in a screen session: use  screen -d -r '${SCREEN_NAME}'  to see the build process" | tee -a "${MAINLOG}"
+    echo "|> ${SEEN_ONCE}Building revision in a screen session: use  screen -d -r '${SCREEN_NAME}'  to see the build process" | tee -a "${MAINLOG}"
     rm -f ${TMPLOG2}
     if [ "${UBASAN}" -eq 1 ]; then
       screen -admS "${SCREEN_NAME}" bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}_san.sh; echo \"\${?}\" > ${TMPLOG2}"
@@ -315,13 +339,13 @@ while :; do
     sleep 3 && sync
     OUTCOME_BUILD="$(cat ${TMPLOG2} 2>/dev/null | head -n1 | tr -d '\n')"
     if [ "${OUTCOME_BUILD}" != "0" ]; then
-      echo "|> Build failure.. Skipping revision ${CUR_COMMIT}" | tee -a "${MAINLOG}"
+      echo "|> ${SEEN_ONCE}Build failure.. Skipping revision ${CUR_COMMIT}" | tee -a "${MAINLOG}"
       git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # The 'unable to rmdir' is just for 3rd party/plugins etc. - it is not a fatal error
       CONTINUE_MAIN_LOOP=1
       break  # Failed build, CONTINUE_MAIN_LOOP=1 set, break, then 'continue' in main loop for next revision
     else
       rm -f ${TMPLOG2}  # Only delete log if build succeeded
-      echo "|> Build successful.. Testing revision ${CUR_COMMIT}" | tee -a "${MAINLOG}"
+      echo "|> ${SEEN_ONCE}Build successful.. Testing revision ${CUR_COMMIT}" | tee -a "${MAINLOG}"
       break  # Successful build, continue with test (CONTINUE_MAIN_LOOP=0)
     fi
   done
@@ -329,7 +353,7 @@ while :; do
     CONTINUE_MAIN_LOOP=0
     while [ -d /test/git-bisect/${VERSION}_${DBG_OR_OPT} ]; do
       # 'rm: cannot remove '12.0_dbg': Directory not empty' errors appear from time to time when there were build failures, possibly related to previous failed builds or compile threads (-j) still going while the main script has already ended. This ensures the build dir is gone
-      echo "|> Part of the build dir /test/git-bisect/${VERSION}_${DBG_OR_OPT} was not deleted correctly, retrying..."
+      echo "|> ${SEEN_ONCE}Part of the build dir /test/git-bisect/${VERSION}_${DBG_OR_OPT} was not deleted correctly, retrying..."
       rm -Rf /test/git-bisect/${VERSION}_${DBG_OR_OPT} 2>/dev/null
       sleep 2 && sync
     done
@@ -360,7 +384,7 @@ while :; do
   cd "${TEST_DIR}" || die 1 "Could not change directory to TEST_DIR (${TEST_DIR})"
   ${HOME}/start 2>&1 | grep -vE 'To get a |^Note: |Adding scripts: '  # Init BASEDIR with runtime scripts
   cp ${TESTCASE} ./in.sql
-  # TODO: Not all options are directly passable to 'anc' (as it has wipe and start, not just start), though most are. A staged startup would resolve this for most cases.
+  # TODO: Not all options are directly passable to 'anc' (as it has wipe and start, not just start), like some InnoDB startup options, though most are. A staged startup would resolve this for most, if not all, cases.
   # TODO: ./start_replication does not have option provisoning yet, except what is provided here as part of "# mysqld options required for replay:", but ideally it would have full master+slave etc. option handling
   OPTIONS_TO_PASS="$(grep --binary-files=text "^# mysqld options required for replay:" ./in.sql | sed 's|# mysqld options required for replay:[ ]*||' | sed 's|\t| |g;s| [ ]\+| |g;s|^[ ]\+||;s|[ ]\+$||')"
   if [ ! -z "${OPTIONS_TO_PASS}" ]; then
@@ -410,6 +434,14 @@ while :; do
       bisect_bad
     else
       echo "TEXT Bug not found; good commit (${CUR_COMMIT})" | tee -a "${MAINLOG}"
+      bisect_good
+    fi
+  elif [ ! -z "${CLI_TEXT}" ]; then
+    if [ ! -z "$(grep -E "${CLI_TEXT}" mysql.out)" ]; then
+      echo "CLI_TEXT Bug found; bad commit (${CUR_COMMIT})" | tee -a "${MAINLOG}"
+      bisect_bad
+    else
+      echo "CLI_TEXT Bug not found; good commit (${CUR_COMMIT})" | tee -a "${MAINLOG}"
       bisect_good
     fi
   else

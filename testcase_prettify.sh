@@ -38,6 +38,7 @@ cat "${1}" | tr -d '`' | \
        s|declare|DECLARE|gi; \
        s|having|HAVING|gi; \
        s|lead|LEAD|gi; \
+       s|binlog|BINLOG|gi; \
        s|analyse|ANALYSE|gi; \
        s|do |DO |gi; \
        s|pointfromtext|POINTFROMTEXT|gi; \
@@ -544,6 +545,8 @@ cat "${1}" | tr -d '`' | \
        s|DELIMITER|DELIMITER |gi; \
        s|DELIMITER [ ]\+|DELIMITER |gi; \
        s|srv / t|srv/t|gi; \
+       s| include / | include/|gi; \
+       s|\-\-error|--error|gi; \
        s|\-\-DELIMITER|\-\-delimiter|gi; \
        s|^. mysqld options required for replay.*|${OPTIONS}|i"  # mysqld options must be last line. Also leave --delimiter just beore this
 
