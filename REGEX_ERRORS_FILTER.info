@@ -290,3 +290,4 @@ sql.sql_alloc.h.*Sql_alloc::operator delete.*0x       Part of stack trace caught
 #Got error 1032.*entry [1-7] of type.*rename          MDEV-29800 (CoR bug), Fixed
 #Got error 12524.*entry 6 of type.*rename             MDEV-29800 (CoR bug), Fixed
 #ERROR. InnoDB: Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD   MDEV-35187, Fixed
+[Warning]  BINLOG_BASE64_EVENT: Table structure for binlog event is not compatible with the table definition on this slav        MDEV-36290, introduces this by design
