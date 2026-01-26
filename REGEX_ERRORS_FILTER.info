@@ -270,6 +270,7 @@ InnoDB: Cannot rename file                            Presumed non-issue (rename
 InnoDB: The error means the system cannot find the path specified  (...for which the path does not exist)
 InnoDB: about forcing recovery                        Seen after an InnoDB crash on the last line of error log (LASTLINE scan) - crash handled already by other tools, no need to report on this
 sql.sql_alloc.h.*Sql_alloc::operator delete.*0x       Part of stack trace caught by 'alloc' in REGEX_ERRORS_LASTLINE, can be deleted
+Warning.*BINLOG_BASE64_EVENT: Table structure for binlog event is not compatible with the table definition on this slave    MDEV-36290, introduces this by design
 
 # Fixed/disabled
 #Too many concurrent transactions                     Usually seen when testcase sets innodb_trx_rseg_n_slots_debug=1
@@ -290,4 +291,3 @@ sql.sql_alloc.h.*Sql_alloc::operator delete.*0x       Part of stack trace caught
 #Got error 1032.*entry [1-7] of type.*rename          MDEV-29800 (CoR bug), Fixed
 #Got error 12524.*entry 6 of type.*rename             MDEV-29800 (CoR bug), Fixed
 #ERROR. InnoDB: Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD   MDEV-35187, Fixed
-[Warning]  BINLOG_BASE64_EVENT: Table structure for binlog event is not compatible with the table definition on this slav        MDEV-36290, introduces this by design
