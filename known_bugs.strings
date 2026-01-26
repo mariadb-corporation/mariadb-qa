@@ -324,6 +324,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'Field'|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner             ## MDEV-38658
 SIGFPE|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const|check_quick_select|get_key_scans_params                                                               ## MDEV-38543
 SIGFPE|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const|ha_innobase::multi_range_read_info_const|check_quick_select                                           ## MDEV-38543
 marked_for_read()|SIGABRT|Field_long::val_int|Item_field::val_int|part_val_int|get_partition_id_range                                                                          ## MDEV-38512
@@ -343,7 +344,6 @@ SIGSEGV|mysql_audit_general|my_message_sql|my_printf_error|get_data             
 INNODB_ERROR|Transaction was aborted due to Record changed                                                                                                                     ## MDEV-38278
 !have_s()|SIGABRT|sux_lock<ssux_lock_impl<true> >::s_lock|mtr_t::s_lock|btr_cur_t::search_leaf|btr_pcur_open                                                                   ## MDEV-37519
 INNODB_ERROR|Failed to read page 50 from file ./ibdata1: Page read from tablespace is corrupted                                                                                ## MDEV-37519
-MARIADBD_ERROR|mariadbd: caching_sha2_password: failed to read private_key.pem: 2 "No such file or directory"                                                                  ## MDEV-38285
 SIGSEGV|row_create_prebuilt|ha_innobase::open|handler::ha_open|open_table_from_share                                                                                           ## MDEV-38285
 SIGSEGV|std::__atomic_base<unsigned int>::load|Atomic_relaxed<unsigned int>::operator unsigned int|buf_page_t::state|buf_page_t::in_file                                       ## MDEV-38285
 SIGSEGV|mysql_make_view|open_new_frm|open_table|open_and_process_table                                                                                                         ## MDEV-38277

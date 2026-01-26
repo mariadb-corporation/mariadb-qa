@@ -405,9 +405,9 @@ pre_shuffle_setup(){
     touch ${INFILE_SHUFFLED}
     rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
     if [ $[$RANDOM % 20 + 1] -le 10 ]; then  # At random use one or another SQL pre-shuffler (for PRE_SHUFFLE=2), both which have proven to work well
-      find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -vi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+      find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hvi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
     else
-      find / -maxdepth 5 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -viE '/test/TESTCASES|newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
+      find / -maxdepth 5 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hviE '/test/TESTCASES|newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
     fi
     chmod +x ${INFILE_SHUFFLED}.sh
     ${INFILE_SHUFFLED}.sh  # No leading './' needed as INFILE_SHUFFLED is a fully qualified path (already starts with /)
@@ -417,7 +417,7 @@ pre_shuffle_setup(){
     if [ "${FILTER_SQL}" == "1" ]; then
       echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
       mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
-      grep --binary-files=text -vif ${SCRIPT_PWD}/filter.sql ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
+      grep --binary-files=text -hvif ${SCRIPT_PWD}/filter.sql ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
       rm -f ${INFILE_SHUFFLED}.temp
     fi
     PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"

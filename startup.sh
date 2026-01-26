@@ -545,6 +545,7 @@ if [ -d "${MTR_DIR}" ]; then
   else
     echo '../bin/mysqlbinlog --base64-output=decode-rows -vvv var/mysqld.1/data/master-bin.00[0-9][0-9][0-9][0-9]' >${MTR_DIR}/decode_binlog
   fi
+  chmod +x ${MTR_DIR}/decode_binlog
   echo '#!/bin/bash' >${MTR_DIR}/mtra
   add_san_options ${MTR_DIR}/mtra
   echo 'echo "Running: ./mtr ${*}"' >> ${MTR_DIR}/mtra
@@ -688,7 +689,7 @@ echo '  source "${HOME}/mariadb-qa/version_chk_helper.source"' >>line
 echo 'fi' >>line
 echo '' >>line
 echo '# Line item for Bug Detection Matrix' >>line
-echo 'printf "%-3s %-6s %-4s %-7s %-41s %-30s\n" "${SVR}" "$(echo "${SERVER_VERSION}" | grep -o "[0-9]\+\.[0-9]\+")" "${BUILD_TYPE_SHORT}" "${BUILD_DATE_SHORT}" "${SOURCE_CODE_REV}" "$(${HOME}/mariadb-qa/new_text_string.sh | sed "s|^Assert: .*|No bug found|")"' >>line
+echo 'printf "%-3s %-6s %-4s %-7s %-41s %-30s\n" "${SVR}" "$(echo "${SERVER_VERSION}" | grep -o "[0-9]\+\.[0-9]\+")" "${BUILD_TYPE_SHORT}" "${BUILD_DATE_SHORT}" "${SOURCE_CODE_REV}" "$(${HOME}/mariadb-qa/new_text_string.sh | sed "s|^Assert: .*|No bug found|" | sed "s~MARIADBD_ERROR.mariadbd: caching_sha2_password: failed to read private_key.pem: 2 .No such file or directory.~No bug found~" 2>/dev/null)"' >>line
 chmod +x line
 # memory monitoring scripts
 echo "#!/bin/bash" >memory_monitor
