@@ -128,7 +128,6 @@ UBSAN|member access within null pointer of type 'class INDEXDEF'|storage/connect
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::append_select_sql_part|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan      ## MDEV-38062
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan                      ## MDEV-38062
 ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                 ## MDEV-38062
-UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_alloc.c|strdup_root|parse_url|ha_federated::create|handler::ha_create                     ## MDEV-38039
 UBSAN|addition of unsigned offset to X overflowed to Y|storage/connect/plugutil.cpp|PlugSetPath|TXTFAM::GetFileLength|DOSFAM::GetFileLength|TDBDOS::Cardinality                ## MDEV-38013
 UBSAN|member access within null pointer of type 'class KXYCOL'|storage/connect/xindex.cpp|XINDEX::FastFind|XINDEX::Range|CntIndexRange|ha_connect::records_in_range            ## MDEV-31911
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low ## MDEV-38034
@@ -438,6 +437,7 @@ UBSAN|member access within null pointer of type 'struct String'|sql/item.cc|Item
 ASAN|heap-use-after-free|storage/spider/spd_conn.cc|spider_conn_reset_queue_loop_check|spider_reset_conn_setted_parameter|spider_db_connect|spider_db_conn_queue_action        ## MDEV-34555
 ASAN|heap-use-after-free|mysys/mf_iocache2.c|my_b_gets|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit                                 ## MDEV-34486
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long long int'|sql/sql_partition.cc|get_part_iter_for_interval_via_walking|find_used_partitions|prune_partitions|JOIN::optimize_inner ## MDEV-34349
+UBSAN|signed integer overflow: X + Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_partition.cc|get_part_iter_for_interval_via_walking|find_used_partitions|find_used_partitions|prune_partitions ## MDEV-34349
 LSAN|memory leak|mysys/my_malloc.c|interceptor_malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                              ## MDEV-27627 (De-filter FOR.*rec.*... from filter.sql when fixed)
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|my_hash_init2                                                                                          ## MDEV-27627 (Idem)
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_dynamic_array2|sp_add_used_routine                                                                                    ## MDEV-27627 (Idem)
@@ -1043,3 +1043,5 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|open_and_process_table|open_tables             ## Fixed ## MDEV-37718
 # ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode ## Fixed ## MDEV-37720
 # ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## Fixed ## MDEV-37720
+# UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_alloc.c|strdup_root|parse_url|ha_federatedx::create|handler::ha_create                  ## Fixed ## MDEV-38039
+# UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_alloc.c|strdup_root|parse_url|ha_federated::create|handler::ha_create                   ## Fixed ## MDEV-38039

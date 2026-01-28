@@ -249,6 +249,9 @@ SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier 
 
 ##### CURRENT BUGS WITH HIGH TEST-AFFECTING IMPACT (DISABLED GENERIC FILTERS TO AVOID MISSING OTHER BUGS) #####
 ### status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql ## MDEV-25927
+### SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-38683 (filtered, common stack)
+### SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-36481 (filtered; common stack)
+### SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-31269 (filtered; common stack)
 
 ##### CURRENT STACK SMASHING / MEMORY OVERFLOW/OVEWRITE BUGS (MOSTLY DISABLED FILTERS TO AVOID MISSING OTHER BUGS) #####
 ### SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_realloc                                                                                                           ## MDEV-29287
@@ -271,6 +274,10 @@ debug_sync_C_callback_ptr|SIGABRT|mysql_execute_command|mysql_parse|dispatch_com
 
 ##### DISABLED FILTERS; DUE TO VERY GENERIC/NON-SPECIFIC STACKS OR ASSERTS ######
 ###SIGSEGV|_int_malloc|__GI___libc_malloc|my_malloc|root_alloc                                                                                                               ## MDEV-23256
+###SIGABRT|__libc_message_impl|malloc_printerr|munmap_chunk|__GI___libc_free                                                                                                 ## Possibly MDEV-30941, look for XA COMMIT > SHUTDOWN. Disabled as generic
+###SIGABRT|__libc_message_impl|malloc_printerr|_int_free|__GI___libc_free                                                                                                    ## Possibly MDEV-30941, look for XA COMMIT > SHUTDOWN. Disabled as generic
+###SIGABRT|__libc_message_impl|malloc_printerr|unlink_chunk|_int_free_create_chunk                                                                                           ## Possibly MDEV-30941, look for XA COMMIT > SHUTDOWN. Disabled as generic
+###SIGSEGV|_int_malloc|__GI___libc_malloc|my_malloc|Binary_string::real_alloc                                                                                                ## Possibly MDEV-30941, look for XA COMMIT > SHUTDOWN. Disabled as generic
 
 ##### DISABLED FILTERS; KB INFO: these strings are likely symptomatic of as yet undiscovered races in the server rather than being related to a bug testcase which happens to show one of these popup
 ###SIGSEGV|ha_maria::drop_table|handler::ha_drop_table|free_tmp_table|close_thread_tables   # DIFFERENT-ISSUE (REF KB INFO)
@@ -324,6 +331,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item::val_uint|THD::killed_for_exceeding_limit_rows|THD::check_limit_rows_examined|handler::increment_statistics                                                       ## MDEV-38683
 UBSAN|member access within null pointer of type 'Field'|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner             ## MDEV-38658
 SIGFPE|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const|check_quick_select|get_key_scans_params                                                               ## MDEV-38543
 SIGFPE|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const|ha_innobase::multi_range_read_info_const|check_quick_select                                           ## MDEV-38543
@@ -382,7 +390,6 @@ SIGSEGV|spider_db_conn_queue_action|spider_db_before_query|spider_db_query|spide
 SIGSEGV|spider_db_open_handler|ha_spider::rnd_handler_init|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next                                                                ## MDEV-38062
 SIGSEGV|spider_send_query|ha_spider::rnd_next_internal|ha_spider::pre_rnd_next|ha_partition::handle_pre_scan                                                                   ## MDEV-38062
 SIGSEGV|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                                                               ## MDEV-29210
-SIGSEGV|__strlen_evex|strdup_root|parse_url|ha_federated::create                                                                                                               ## MDEV-38039
 res >= 0|SIGABRT|JOIN::optimize_inner|JOIN::optimize|mysql_select|handle_select                                                                                                ## MDEV-32173
 SIGSEGV|ARRAY::AddValue|MakeValueArray|MakeFilter|ha_connect::CondFilter                                                                                                       ## MDEV-33077
 SIGSEGV|XINDEX::FastFind|XINDEX::Range|CntIndexRange|ha_connect::records_in_range                                                                                              ## MDEV-31911
@@ -522,7 +529,6 @@ SIGSEGV|do_mark_index_columns|TABLE::mark_index_columns_no_reset|TABLE::mark_ind
 SIGSEGV|do_mark_index_columns|prepare_record_for_error_message|multi_update::do_updates|multi_update::send_eof                                                                 ## MDEV-36937
 SIGSEGV|do_mark_index_columns|prepare_record_for_error_message|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                                               ## MDEV-36937
 marked_for_read()|SIGABRT|Field_varstring::val_str|Field_varstring::sort_string|Field::make_sort_key_part|make_sortkey                                                         ## MDEV-36896
-SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-36481
 SIGSEGV|Field_row::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable|sp_instr_set::exec_core                                                               ## MDEV-36481
 SIGSEGV|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|spider_ping_table_init                                                                                      ## MDEV-36865
 strlen(Ptr) == str_length|SIGABRT|Binary_string::chop|json_nice|Item_func_json_format::val_str|Item::save_str_in_field                                                         ## MDEV-37084
@@ -1011,7 +1017,6 @@ SIGSEGV|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Ite
 SIGSEGV|VDec2_lazy::VDec2_lazy|Item_func_plus::decimal_op|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal                                ## MDEV-31284
 SIGSEGV|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal|VDec::VDec                              ## MDEV-31284
 SIGSEGV|VDec::VDec|VDec2_lazy::VDec2_lazy|Item_func_plus::decimal_op|VDec_op::VDec_op                                                                                          ## MDEV-31284
-SIGABRT|__gnu_cxx::__verbose_terminate_handler|__cxxabiv1::__terminate|std::terminate|__cxxabiv1::__cxa_pure_virtual                                                           ## MDEV-31269
 SIGABRT|__sanitizer::Abort|__sanitizer::Die|__asan::ScopedInErrorReport::~ScopedInErrorReport|__asan::ReportGenericError                                                       ## MDEV-31269 (UBASAN builds)
 SIGSEGV|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar                                                      ## MDEV-31269
 SIGSEGV|Item_func::fix_func_arg|Item_func::fix_fields|Item_cond::fix_fields|st_select_lex::setup_cond                                                                          ## MDEV-31269
@@ -3436,3 +3441,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|ilist<MDL_ticket, void>::erase|ilist<MDL_ticket, void>::remove|MDL_lock::Fast_road::Lane::releasemdl.cc|MDL_lock::Fast_road::Lane::ticket_action<MDL_lock::Fast_road::Lane::releasemdl.cc ## Fixed ## MDEV-37720
 # SIGSEGV|MDL_context::release_lock|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::release_transactional_locks                ## Fixed ## MDEV-?
 # SIGSEGV|Gtid_index_writer::write_current_node|Gtid_index_writer::close|binlog_background_thread|pfs_spawn_thread                                                    ## Fixed ## MDEV-37742
+# SIGSEGV|__strlen_evex|strdup_root|parse_url|ha_federated::create                                                                                                    ## Fixed ## MDEV-38039
