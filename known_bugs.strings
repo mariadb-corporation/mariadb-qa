@@ -109,7 +109,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1100  ## SPECIAL-11 (ref REGEX_ERRORS_FIL
 MARIADB_ERROR_CODE|MariaDB error code: 1104  ## SPECIAL-27 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1114  ## MDEV-23212
 MARIADB_ERROR_CODE|MariaDB error code: 1130  ## SPECIAL-29
-MARIADB_ERROR_CODE|MariaDB error code: 1146  ## SPECIAL-10 or MDEV-33376
+MARIADB_ERROR_CODE|MariaDB error code: 1146  ## SPECIAL-10 or MDEV-33376 or MDEV-34524
 MARIADB_ERROR_CODE|MariaDB error code: 1168  ## SPECIAL-12 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1205  ## SPECIAL-17 (ref REGEX_ERRORS_FILTER.info)
 MARIADB_ERROR_CODE|MariaDB error code: 1223  ## MDEV-22936
@@ -141,6 +141,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 2005
 MARIADB_ERROR_CODE|MariaDB error code: 2013  ## Ref REGEX_ERRORS_FILTER.info (search for '2013', two references)
 MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22 (require_secure_transport)
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
+#MARIADB_ERROR_CODE|MariaDB error code: 4085  ## MDEV-34524 (Filtered as only a single occurence was seen ref MDEV-34524)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
 MARIADB_ERROR_CODE|MariaDB error code: 4226  ## Covering various init_slave exec issues (ref MDEV-29499 and for example SPECIAL-42)
 MARIADB_ERROR_CODE|MariaDB error code: 12501 ## SPECIAL-31 (to be expected; remote table not available)
@@ -791,6 +792,7 @@ next_insert_id >= auto_inc_interval_for_cur_row.minimum()|SIGABRT|handler::updat
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-32864
 SIGSEGV|get_sort_by_table|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                                             ## MDEV-35277
 (*(map2)->last_word_ptr & (map2)->last_bit_mask) == 0|SIGABRT|bitmap_copy|TABLE::mark_columns_per_binlog_row_image|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event ## MDEV-34535
+!error || thd->is_error()|SIGABRT|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event                     ## MDEV-34524
 0|SIGABRT|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event|mysql_client_binlog_statement                                                ## MDEV-34524
 0|SIGABRT|Write_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event|save_restore_context_apply_event                                             ## MDEV-34524
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::count_binlog_space|update_binlog_space_limit          ## MDEV-34486

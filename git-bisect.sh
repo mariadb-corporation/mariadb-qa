@@ -5,8 +5,9 @@ set +H
 # Note: if this script is terminated, you can still see the bisect log with:  git bisect log  (run in the correct VERSION dir). You can also review the main log file (ref MAINLOG variable) i.e. bisect.log
 
 # User variables
-DBG_OR_OPT='opt'                                                    # Use 'dbg' or 'opt' only
-VERSION=12.0                                                        # Use the earliest major version affected by the bug
+DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
+VERSION=12.3                                                        # Use the earliest major version affected by the bug
+LATEST_MARIADB_CS_VERSION=12.3                                      # Ensure this is set to the current trunk/main CS version
 ES=0                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
 SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0. Also, if there are build errors in older revisions, setting this to 0 may help. Recommended in any case: 0, especially in older versions, which regularly yield build issues on newer systems; it may make the bisect quicker/better/easier in such cases
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
@@ -16,21 +17,21 @@ BISECT_REPLAY=0                                                     # Set to 1 t
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
-LAST_KNOWN_GOOD_COMMIT='22efc2c784e1b7199fb5804e6330168277ea7dce'   # Revision of last known good commit
-FIRST_KNOWN_BAD_COMMIT='f1102da37a3dcdc8b92e0205f0a8bd878704b168'   # Revision of first known bad commit
+LAST_KNOWN_GOOD_COMMIT='e85bc659188be021897e8578aec42becfbb58c27'   # Revision of last known good commit
+FIRST_KNOWN_BAD_COMMIT='4528b8a585c09611d61340b721b3efaf13018f65'   # Revision of first known bad commit
 # To obtain the first commit for a given branch/version, some examples (after full branch checkouts): 
 # /test/git-bisect/12.1 $ git log origin/12.0..12.1 --oneline | tail -1
 # 72b666b837eb16819f8f3de3e739a582dbbf4b53  # This is the first 12.1 commit
 # /test/git-bisect/12.0 $ git log origin/11.8..12.0 --oneline | tail -1
 # c92add291e636c797e6d6ddca605905541b2a441  # This is the first 12.0 commit
 # Use git checkout --recurse-submodules --force c92add291e636c797e6d6ddca605905541b2a441 to obtain this
-TESTCASE='/test/in37.sql'                                           # The testcase to be tested
-UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+TESTCASE='/test/in38.sql'                                           # The testcase to be tested
+UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID=""                                                         # The UniqueID to scan for [Exclusive]
+UNIQUEID="ASAN|use-after-poison|sql/item.h|Item::val_uint|THD::killed_for_exceeding_limit_rows|handler::ha_write_row|Log_to_csv_event_handler::log_general"                                                         # The UniqueID to scan for [Exclusive]
 TEXT=""                                                             # The string to scan for in the error log [Exclusive]
-CLI_TEXT="Write_rows_v1"                                                         # The string to scan for in CLI output [Exclusive]
+CLI_TEXT=""                                                         # The string to scan for in CLI output [Exclusive]
 # [Exclusive]: UNIQUEID, TEXT and CLI_TEXT are all mutually exclusive: setting one should exclude all others (i.e. set empty)
 # Finally, leave all three (UNIQUEID, TEXT and CLI_TEXT) empty to scan for core files instead
 # i.e. 4 different modes in total: UNIQUEID, TEXT, CLI_TEXT or core files scan
@@ -66,6 +67,11 @@ if [ "${ES}" -eq 1 ]; then
     clear_env; exit 1
   fi
   source "${CHS}"  # Call the credentials check helper script to check ~/.git-credentials provisioning
+else
+  if [  "${VERSION}" == "${LATEST_MARIADB_CS_VERSION}" -a ${RECLONE} -eq 0 ]; then
+    RECLONE=1
+    echo "As VERSION (${VERSION}) = LATEST_MARIADB_CS_VERSION (${LATEST_MARIADB_CS_VERSION}), RECLONE was set to 1 to avoid issues with git checkout"
+  fi
 fi
 MODES_SELECTED_COUNT=0
 if [ ! -z "${UNIQUEID}" ]; then MODES_SELECTED_COUNT=$[ ${MODES_SELECTED_COUNT} + 1 ]; fi
@@ -139,12 +145,12 @@ if [ "${RECLONE}" -eq 1 ]; then
     cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
   else
     rm -Rf "${VERSION}"
-    if [ "${VERSION}" == "12.0" ]; then  # Update as trunk changes to a new version 
+    if [ "${VERSION}" == "${LATEST_MARIADB_CS_VERSION}" ]; then  # Trunk/main carries the latest version (only applicaple to CS, not ES)
       git clone --recurse-submodules -j20 https://github.com/MariaDB/server.git "${VERSION}"
     else
       git clone --recurse-submodules -j20 --branch="${VERSION}" https://github.com/MariaDB/server.git "${VERSION}"
     fi
-    cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar"
+    cd "${VERSION}" || die 1 "Version ${VERSION} does not exist, or could not be cloned, or similar. If this is the latest version of MariaDB you are attempting to use, ensure LATEST_MARIADB_CS_VERSION (currently set to ${LATEST_MARIADB_CS_VERSION}) is set correctly.'"
   fi
 else
   if [ -d ${VERSION} ]; then
@@ -225,10 +231,18 @@ if [ "${ES}" == "1" ]; then
     clear_env; exit 1
   fi
 else
-  git checkout --recurse-submodules --force "${VERSION}" | tee -a "${MAINLOG}"
-  if [ "${?}" != "0" ]; then
-    echo "Assert: git checkout --recurse-submodules --force '${VERSION}' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
-    clear_env; exit 1
+  if [ "${VERSION}" == "${LATEST_MARIADB_CS_VERSION}" ]; then
+    git checkout --recurse-submodules --force | tee -a "${MAINLOG}"
+    if [ "${?}" != "0" ]; then
+      echo "Assert: git checkout --recurse-submodules --force failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
+      clear_env; exit 1
+    fi
+  else
+    git checkout --recurse-submodules --force "${VERSION}" | tee -a "${MAINLOG}"
+    if [ "${?}" != "0" ]; then
+      echo "Assert: git checkout --recurse-submodules --force '${VERSION}' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
+      clear_env; exit 1
+    fi
   fi
 fi
 if [ "${UPDATETREE}" -eq 1 ]; then

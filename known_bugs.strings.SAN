@@ -31,6 +31,7 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|sql/item.h|Item::val_uint|THD::killed_for_exceeding_limit_rows|handler::ha_write_row|Log_to_csv_event_handler::log_general                               ## MDEV-38683
 UBSAN|member access within null pointer of type 'Field'|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner             ## MDEV-38658
 ASAN|use-after-poison|sql/table.cc|fix_type_pointers|TABLE_SHARE::init_from_binary_frm_image|ha_create_table|create_table_impl                                                 ## MDEV-38569
 ASAN|global-buffer-overflow|mysys/my_alloc.c|__asan_memcpy|memdup_root|Query_arena::memdup|QUICK_RANGE::QUICK_RANGE                                                            ## MDEV-38541
