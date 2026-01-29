@@ -332,6 +332,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!all|SIGABRT|binlog_rollback|run_binlog_first|ha_rollback_trans|ha_prepare                                                                                                     ## MDEV-36174
 !info->error|SIGABRT|flush_write_buffer_if_file_backed|binlog_flush_cache|binlog_commit_flush_stmt_cache|binlog_rollback                                                       ## MDEV-38679
 SIGSEGV|Item::val_uint|THD::killed_for_exceeding_limit_rows|THD::check_limit_rows_examined|handler::increment_statistics                                                       ## MDEV-38683
 UBSAN|member access within null pointer of type 'Field'|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner             ## MDEV-38658
