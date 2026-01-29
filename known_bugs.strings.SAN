@@ -1046,3 +1046,5 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## Fixed ## MDEV-37720
 # UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_alloc.c|strdup_root|parse_url|ha_federatedx::create|handler::ha_create                  ## Fixed ## MDEV-38039
 # UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_alloc.c|strdup_root|parse_url|ha_federated::create|handler::ha_create                   ## Fixed ## MDEV-38039
+
+UBSAN|load of value X, which is not a valid value for type 'Optional_metadata_field_type'|sql/log_event.cc|Table_map_log_event::Optional_metadata_fields::Optional_metadata_fields|RPL_TABLE_LIST::create_column_mapping|Rows_log_event::do_apply_event|Log_event::apply_event                                                                        ## MDEV-38676
