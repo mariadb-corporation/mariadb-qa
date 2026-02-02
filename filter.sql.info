@@ -11,3 +11,4 @@ mSKWVg8BAAAAdwAAAHsAAAAAAAQANS44LjAtbTE3LWRlYnVnLWxvZwAAAAAAAAAAAAAAAAAAAAAA.*AA
 key_cache_segments            # MDEV-26492
 SLEEP.*[0-9][0-9]             # Sleep >= 10 seconds
 SLEEP.*[3-9]                  # Sleep >= 3 seconds
+SELECT.*UNION.*SELECT.*ORDER.*BY.*OVER  # MDEV-32307

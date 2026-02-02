@@ -461,6 +461,9 @@ decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_res
 decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed         ## MDEV-35920
 !order->item[0]->with_sum_func()|SIGABRT|simple_remove_const|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute                            ## MDEV-33177
 SIGSEGV|sortlength|filesort|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                                                                                  ## MDEV-33177
+#SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|filesort                                                                                                      ## MDEV-33177 (Likely)
+#SIGSEGV|register_used_fields|find_all_keys|filesort|create_sort_index                                                                                                          ## MDEV-33177 (Likely)
+#SIGSEGV|JOIN::cleanup_item_list|JOIN::destroy|st_select_lex::cleanup|st_select_lex_unit::cleanup                                                                               ## MDEV-33177 (Likely)
 SIGSEGV|Filesort_tracker::report_use|filesort|create_sort_index|Window_funcs_sort::exec                                                                                        ## MDEV-32307
 SIGSEGV|Exec_time_tracker::get_loops|Filesort_tracker::report_use|filesort|create_sort_index                                                                                   ## MDEV-32307
 builtin_select.first_inner_unit() == __null|SIGABRT|LEX::insert_select_hack|LEX::parsed_insert_select|MYSQLparse|parse_sql                                                     ## MDEV-36369

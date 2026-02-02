@@ -62,71 +62,71 @@ bounds:json_get_path_start
 ## MDEV-35545 [MTR, main.gis]
 pointer-overflow:Gis_geometry_collection::init_from_opresult
 
-# ----- Fixed bugs
-## MDEV-37626 [MTR, innodb.innodb-table-online innodb.innodb-index-online]
+# ----- Fixed bugs | Note the '## Fixed ' prefixes are required for bugs_check_status_jira.sh
+## Fixed ## MDEV-37626 [MTR, innodb.innodb-table-online innodb.innodb-index-online]
 #pointer-overflow:row_log_apply_ops
 #pointer-overflow:row_log_table_apply_ops
-## MDEV-36298 [Temporary re-enabled #RV; I still see this issue in older runs (MTR)]
+## Fixed ## MDEV-36298 [Temporary re-enabled #RV; I still see this issue in older runs (MTR)]
 function:wolfSSL_sk_pop_free
-## MDEV-35541 [Temporary re-enabled #RV; I still see this issue in older runs (MTR)]
+## Fixed ## MDEV-35541 [Temporary re-enabled #RV; I still see this issue in older runs (MTR)]
 pointer-overflow:my_b_flush_io_cache
-## MDEV-35540 # Fixed by MDEV-34348
+## Fixed ## MDEV-35540 # Fixed by MDEV-34348
 #function:plugin_do_initialize
 #function:plugin_deinitialize
-## MDEV-35539 # Fixed by MDEV-34348
+## Fixed ## MDEV-35539 # Fixed by MDEV-34348
 #function:process_optimizer_costs
-## MDEV-35544 # Fixed by MDEV-34348
+## Fixed ## MDEV-35544 # Fixed by MDEV-34348
 #function:delete_dynamic_with_callback
-## MDEV-35537 # Fixed by MDEV-34348
+## Fixed ## MDEV-35537 # Fixed by MDEV-34348
 #pointer-overflow:my_get_stack_bounds
-## MDEV-35536 # Fixed by MDEV-34348
+## Fixed ## MDEV-35536 # Fixed by MDEV-34348
 #function:end_key_cache_internal
-## MDEV-35535 # Fixed by MDEV-34348
+## Fixed ## MDEV-35535 # Fixed by MDEV-34348
 #function:my_hash_free_elements
-## MDEV-35534 # Fixed by MDEV-34348
+## Fixed ## MDEV-35534 # Fixed by MDEV-34348
 #function:group_commit_lock::release
-## MDEV-35533 (also filters the my_qsort2 stack) # Fixed by MDEV-34348
+## Fixed ## MDEV-35533 (also filters the my_qsort2 stack) # Fixed by MDEV-34348
 #function:my_qsort
-## MDEV-35532 # Fixed by MDEV-34348
+## Fixed ## MDEV-35532 # Fixed by MDEV-34348
 #function:tree_insert
-## MDEV-35531 # Fixed by MDEV-34348
+## Fixed ## MDEV-35531 # Fixed by MDEV-34348
 #function:init_key_cache_internal
-## MDEV-35530 # Fixed by MDEV-34348  # Left enabled as it still appears in ES 10.5 ftm
+## Fixed ## MDEV-35530 # Fixed by MDEV-34348  # Left enabled as it still appears in ES 10.5 ftm
 function:my_hash_key
-## MDEV-34512 [Startup]
+## Fixed ## MDEV-34512 [Startup]
 #function:ha_myisam::repair
 #function:ha_maria::repair
 #function:ha_myisam::enable_indexes
 #function:ha_maria::enable_indexes
 #function:ha_myisam::optimize
 #function:ha_maria::optimize
-## MDEV-33158
+## Fixed ## MDEV-33158
 #function:innobase_trx_init
-## MDEV-35500/CONC-711
+## Fixed ## MDEV-35500/CONC-711
 #function:my_auth.c
-## MDEV-35538
+## Fixed ## MDEV-35538
 #pointer-overflow:check_rules
 #pointer-overflow:init_weight_level
-## MDEV-35549
+## Fixed ## MDEV-35549
 #pointer-overflow:my_string_repertoire_8bit
-## MDEV-35554
+## Fixed ## MDEV-35554
 #function:show_status_array
-## MDEV-35557
+## Fixed ## MDEV-35557
 #pointer-overflow:get_server_from_table_to_cache
-## MDEV-35698 (not-startup) # Fixed by MDEV-33158
+## Fixed ## MDEV-35698 (not-startup) # Fixed by MDEV-33158
 #function:spider_param_force_commit
-## MDEV-35623 [Startup] # Fixed by MDEV-33158
+## Fixed ## MDEV-35623 [Startup] # Fixed by MDEV-33158
 #function:spider_param_conn_recycle_mode
 #function:spider_param_conn_recycle_strict
 #function:spider_param_internal_xa_snapshot
 #function:spider_param_block_size
-## MDEV-35687 [Startup]
+## Fixed ## MDEV-35687 [Startup]
 #function:maria_open
 #function:mi_open
 #function:_ma_open_datafile
 #function:mi_open_datafile
 #function:thr_multi_lock
-## MDEV-35688 [Startup]
+## Fixed ## MDEV-35688 [Startup]
 #pointer-overflow:my_casedn_utf8mb3
-## MDEV-35872 [CLI Startup] # Fixed by MDEV-35538
+## Fixed ## MDEV-35872 [CLI Startup] # Fixed by MDEV-35538
 #pointer-overflow:ctype-uca.c

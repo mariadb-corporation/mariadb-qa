@@ -7,3 +7,5 @@
 # MDEV-35738 [During compilation]
 interceptor_via_lib:comp_sql.c
 interceptor_via_fun:process_option
+
+# ----- Fixed bugs | Note the '## Fixed ' prefixes are required for bugs_check_status_jira.sh
