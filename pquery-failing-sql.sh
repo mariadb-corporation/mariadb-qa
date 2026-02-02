@@ -40,7 +40,7 @@ failing_queries_error_log(){
 failing_queries_pquery_trace(){
   COUNT_PQ_LOGS="$(ls --color=never ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-*.sql 2>/dev/null | wc -l)"
   if [ "${COUNT_PQ_LOGS}" -gt 0 ]; then
-    grep --binary-files=text -i 'lost connection to server during query' ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-*.sql >>${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing 2>/dev/null
+    grep --binary-files=text -i 'lost connection to server during query' ${WORKD_PWD}/${TRIAL}/default.node.tld_thread-*.sql | grep --binary-files=text -vE '^/data/|^/test/' >>${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing 2>/dev/null
   fi
 }
 
