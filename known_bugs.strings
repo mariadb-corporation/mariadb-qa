@@ -332,6 +332,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+table->default_field != dfield_ptr|SIGABRT|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table|open_and_lock_for_insert_delayed                                  ## MDEV-38726
+thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED) || thd->mdl_context.is_lock_warrantee(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|close_thread_tables|open_and_lock_tables|open_and_lock_tables ## MDEV-38710
 block->page.buf_fix_count()|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|handler::index_read_map                                                    ## MDEV-38725
 !all|SIGABRT|binlog_rollback|run_binlog_first|ha_rollback_trans|ha_prepare                                                                                                     ## MDEV-36174
 !info->error|SIGABRT|flush_write_buffer_if_file_backed|binlog_flush_cache|binlog_commit_flush_stmt_cache|binlog_rollback                                                       ## MDEV-38679
