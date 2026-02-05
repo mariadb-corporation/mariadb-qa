@@ -49,7 +49,11 @@ while read LINE; do
   if [ -d "${LINE}/mariadb-test" ]; then MTR="${LINE}/mariadb-test";
   elif [ -d "${LINE}/mysql-test" ]; then MTR="${LINE}/mysql-test";
   else echo "Error: no mariadb-test nor mysql-test was found for BASEDIR ${LINE}, skipping!"; continue; fi
-  if [ ! -r "${MTR}/mtr" ]; then echo "Error: ${MTR}/mtr not found for BASEDIR ${LINE}, skipping!"; continue; fi
+  if [ "${3}" != "SAN" ]; then
+    if [ ! -r "${MTR}/mtr" ]; then echo "Error: ${MTR}/mtr not found for BASEDIR ${LINE}, skipping!"; continue; fi
+  else
+    if [ ! -r "${MTR}/mtra" ]; then echo "Error: ${MTR}/mtra not found for BASEDIR ${LINE}, skipping! (Tip: run mariadb-qa/startup.sh or 'st' if .bashrc shortcuts are installed (ref linkit) to install mtra which is a script that wraps mtr and ensures the correct UBSAN and ASAN filters are set to avoid common *SAN errors upon MTR/server startup)"; continue; fi
+  fi
   if [ ! -d "${MTR}/${MPATH}" ]; then echo "Warning: path ${MTR}/${MPATH} not found, skipping!"; continue; fi
   cp "${1}" "${MTR}/${MPATH}/"
   POSSIBLE_RESULT="$(echo "${1}" | sed 's|\.test$|.result|')"
@@ -76,7 +80,11 @@ while read LINE; do
   fi
   cd ${MTR}
   if [ -d "${MTR}/var" ]; then rm -Rf "${MTR}/var"; fi
-  ./mtr ${TEST}
+  if [ "${3}" != "SAN" ]; then
+    ./mtr ${TEST}
+  else
+    ./mtra ${TEST}
+  fi
   cd - >/dev/null
 done < ${TEMP}
 rm -f ${TEMP}

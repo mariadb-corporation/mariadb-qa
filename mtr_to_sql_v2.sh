@@ -1,6 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
-# USAGE TIP: cd /test && ./gendirs.sh | sed 's|^|/test/|' | xargs -P40 -I{} ~/mariadb-qa/mtr_to_sql_v2.sh {} & fg
+# USAGE TIP: cd /test && ./gendirs.sh | sed 's|^|/test/|' | xargs -P50 -I{} ~/mariadb-qa/mtr_to_sql_v2.sh {} & fg
 # Or use /test/mtr_to_sql_all
 
 # Information
@@ -68,59 +68,76 @@ find . -type f \( -name "*.test" -o -name "*.inc" \) -exec cat {} + 2>/dev/null 
 # Grammar variations
 echoit "> Stage 3: Adding grammar variations..."
 cat ${TEMP_SQL} >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*InnoDB"       | sed 's|InnoDB|Aria|gi'                >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*InnoDB"       | sed 's|InnoDB|MyISAM|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*InnoDB"       | sed 's|InnoDB|MEMORY|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*InnoDB"       | sed 's|InnoDB|SEQUENCE|gi'            >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*InnoDB"       | sed 's|InnoDB|RocksDB|gi'             >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*InnoDB"       | sed 's|InnoDB|TokuDB|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MyISAM"       | sed 's|MyISAM|Aria|gi'                >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MyISAM"       | sed 's|MyISAM|InnoDB|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MyISAM"       | sed 's|MyISAM|MEMORY|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MyISAM"       | sed 's|MyISAM|SEQUENCE|gi'            >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MyISAM"       | sed 's|MyISAM|RocksDB|gi'             >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MyISAM"       | sed 's|MyISAM|TokuDB|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MEMORY"       | sed 's|MEMORY|Aria|gi'                >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MEMORY"       | sed 's|MEMORY|MyISAM|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MEMORY"       | sed 's|MEMORY|InnoDB|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MEMORY"       | sed 's|MEMORY|SEQUENCE|gi'            >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MEMORY"       | sed 's|MEMORY|RocksDB|gi'             >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MEMORY"       | sed 's|MEMORY|TokuDB|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*CSV"          | sed 's|CSV|Aria|gi'                   >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*CSV"          | sed 's|CSV|MyISAM|gi'                 >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*CSV"          | sed 's|CSV|InnoDB|gi'                 >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*CSV"          | sed 's|CSV|MEMORY|gi'                 >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*CSV"          | sed 's|CSV|SEQUENCE|gi'               >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*CSV"          | sed 's|CSV|RocksDB|gi'                >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*CSV"          | sed 's|CSV|TokuDB|gi'                 >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Aria"         | sed 's|Aria|MyISAM|gi'                >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Aria"         | sed 's|Aria|InnoDB|gi'                >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Aria"         | sed 's|Aria|MEMORY|gi'                >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Aria"         | sed 's|Aria|SEQUENCE|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Aria"         | sed 's|Aria|RocksDB|gi'               >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Aria"         | sed 's|Aria|TokuDB|gi'                >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*SEQUENCE"     | sed 's|SEQUENCE|Aria|gi'              >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*SEQUENCE"     | sed 's|SEQUENCE|MyISAM|gi'            >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*SEQUENCE"     | sed 's|SEQUENCE|InnoDB|gi'            >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*SEQUENCE"     | sed 's|SEQUENCE|MEMORY|gi'            >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*SEQUENCE"     | sed 's|SEQUENCE|RocksDB|gi'           >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*SEQUENCE"     | sed 's|SEQUENCE|TokuDB|gi'            >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MRG_MyISAM"   | sed 's|ENGINE.*|ENGINE=Aria;|gi'      >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MRG_MyISAM"   | sed 's|ENGINE.*|ENGINE=MyISAM;|gi'    >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MRG_MyISAM"   | sed 's|ENGINE.*|ENGINE=InnoDB;|gi'    >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MRG_MyISAM"   | sed 's|ENGINE.*|ENGINE=MEMORY;|gi'    >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MRG_MyISAM"   | sed 's|ENGINE.*|ENGINE=SEQUENCE;|gi'  >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MRG_MyISAM"   | sed 's|ENGINE.*|ENGINE=RocksDB;|gi'   >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*MRG_MyISAM"   | sed 's|ENGINE.*|ENGINE=TokuDB;|gi'    >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Merge.*UNION" | sed 's|ENGINE.*|ENGINE=Aria;|gi'      >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Merge.*UNION" | sed 's|ENGINE.*|ENGINE=MyISAM;|gi'    >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Merge.*UNION" | sed 's|ENGINE.*|ENGINE=InnoDB;|gi'    >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Merge.*UNION" | sed 's|ENGINE.*|ENGINE=MEMORY;|gi'    >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Merge.*UNION" | sed 's|ENGINE.*|ENGINE=SEQUENCE;|gi'  >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Merge.*UNION" | sed 's|ENGINE.*|ENGINE=RocksDB;|gi'   >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE.*Merge.*UNION" | sed 's|ENGINE.*|ENGINE=TokuDB;|gi'    >> ${FINAL_SQL}
-cat ${TEMP_SQL} | grep --binary-files=text -i "DROP TABLE t1" | head -n 3000 >> ${FINAL_SQL}   # Ensure plenty of DROP TABLE t1
-cat ${TEMP_SQL} | grep --binary-files=text -i "DROP TABLE t1" | head -n 3000 | sed 's|DROP TABLE t1|DROP VIEW v1|gi' >> ${FINAL_SQL} # Ensure plenty of DROP VIEW v1
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|Aria|gi'                >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|MyISAM|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|MEMORY|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|SEQUENCE|gi'            >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|RocksDB|gi'             >> ${FINAL_SQL}
+#cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|TokuDB|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|Spider|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|Mroonga|gi'             >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|Archive|gi'             >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|Connect|gi'             >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|Federated|gi'           >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|MRG_MyISAM|gi'          >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|CSV|gi'                 >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+InnoDB"       | sed 's|InnoDB|Sphinx|gi'              >> ${FINAL_SQL}
+# TODO: add more of the engines above to the below reverse swaps
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MyISAM"       | sed 's|MyISAM|Aria|gi'                >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MyISAM"       | sed 's|MyISAM|InnoDB|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MyISAM"       | sed 's|MyISAM|MEMORY|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MyISAM"       | sed 's|MyISAM|SEQUENCE|gi'            >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MyISAM"       | sed 's|MyISAM|RocksDB|gi'             >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MyISAM"       | sed 's|MyISAM|Spider|gi'             >> ${FINAL_SQL}
+#cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MyISAM"       | sed 's|MyISAM|TokuDB|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MEMORY"       | sed 's|MEMORY|Aria|gi'                >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MEMORY"       | sed 's|MEMORY|MyISAM|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MEMORY"       | sed 's|MEMORY|InnoDB|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MEMORY"       | sed 's|MEMORY|SEQUENCE|gi'            >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MEMORY"       | sed 's|MEMORY|RocksDB|gi'             >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MEMORY"       | sed 's|MEMORY|Spider|gi'             >> ${FINAL_SQL}
+#cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MEMORY"       | sed 's|MEMORY|TokuDB|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+CSV"          | sed 's|CSV|Aria|gi'                   >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+CSV"          | sed 's|CSV|MyISAM|gi'                 >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+CSV"          | sed 's|CSV|InnoDB|gi'                 >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+CSV"          | sed 's|CSV|MEMORY|gi'                 >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+CSV"          | sed 's|CSV|SEQUENCE|gi'               >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+CSV"          | sed 's|CSV|RocksDB|gi'                >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+CSV"          | sed 's|CSV|Spider|gi'                >> ${FINAL_SQL}
+#cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+CSV"          | sed 's|CSV|TokuDB|gi'                 >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Aria"         | sed 's|Aria|MyISAM|gi'                >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Aria"         | sed 's|Aria|InnoDB|gi'                >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Aria"         | sed 's|Aria|MEMORY|gi'                >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Aria"         | sed 's|Aria|SEQUENCE|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Aria"         | sed 's|Aria|RocksDB|gi'               >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Aria"         | sed 's|Aria|Spider|gi'               >> ${FINAL_SQL}
+#cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Aria"         | sed 's|Aria|TokuDB|gi'                >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+SEQUENCE"     | sed 's|SEQUENCE|Aria|gi'              >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+SEQUENCE"     | sed 's|SEQUENCE|MyISAM|gi'            >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+SEQUENCE"     | sed 's|SEQUENCE|InnoDB|gi'            >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+SEQUENCE"     | sed 's|SEQUENCE|MEMORY|gi'            >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+SEQUENCE"     | sed 's|SEQUENCE|RocksDB|gi'           >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+SEQUENCE"     | sed 's|SEQUENCE|Spider|gi'           >> ${FINAL_SQL}
+#cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+SEQUENCE"     | sed 's|SEQUENCE|TokuDB|gi'            >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MRG_MyISAM"   | sed 's|ENGINE[= \t]+|ENGINE=Aria;|gi'      >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MRG_MyISAM"   | sed 's|ENGINE[= \t]+|ENGINE=MyISAM;|gi'    >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MRG_MyISAM"   | sed 's|ENGINE[= \t]+|ENGINE=InnoDB;|gi'    >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MRG_MyISAM"   | sed 's|ENGINE[= \t]+|ENGINE=MEMORY;|gi'    >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MRG_MyISAM"   | sed 's|ENGINE[= \t]+|ENGINE=SEQUENCE;|gi'  >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MRG_MyISAM"   | sed 's|ENGINE[= \t]+|ENGINE=RocksDB;|gi'   >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MRG_MyISAM"   | sed 's|ENGINE[= \t]+|ENGINE=Spider;|gi'   >> ${FINAL_SQL}
+#cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+MRG_MyISAM"   | sed 's|ENGINE[= \t]+|ENGINE=TokuDB;|gi'    >> ${FINAL_SQL}
+L}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Merge.*UNION" | sed 's|ENGINE[= \t]+|ENGINE=Aria;|gi'      >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Merge.*UNION" | sed 's|ENGINE[= \t]+|ENGINE=MyISAM;|gi'    >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Merge.*UNION" | sed 's|ENGINE[= \t]+|ENGINE=InnoDB;|gi'    >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Merge.*UNION" | sed 's|ENGINE[= \t]+|ENGINE=MEMORY;|gi'    >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Merge.*UNION" | sed 's|ENGINE[= \t]+|ENGINE=SEQUENCE;|gi'  >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Merge.*UNION" | sed 's|ENGINE[= \t]+|ENGINE=RocksDB;|gi'   >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Merge.*UNION" | sed 's|ENGINE[= \t]+|ENGINE=Spider;|gi'   >> ${FINAL_SQL}
+#cat ${TEMP_SQL} | grep --binary-files=text -i "ENGINE[= \t]+Merge.*UNION" | sed 's|ENGINE[= \t]+|ENGINE=TokuDB;|gi'    >> ${FINAL_SQL}
+cat ${TEMP_SQL} | grep --binary-files=text -i "DROP TABLE t1" | head -n 2000 >> ${FINAL_SQL}   # Ensure plenty of DROP TABLE t1
+cat ${TEMP_SQL} | grep --binary-files=text -i "DROP TABLE t1" | head -n 2000 | sed 's|DROP TABLE t1|DROP VIEW v1|gi' >> ${FINAL_SQL} # Ensure plenty of DROP VIEW v1
 sed -i "s|\(CREATE.*VIEW.*\)t1\(.*\)|\1v1\2|gi" ${FINAL_SQL}  # Avoid views with name t1
 sed -i "s|IDENTIFIED[ \t]*BY[ \t]*[PASSWORD]*[ \t]*[^ ,;#/]\+\([ ,;#/]\)|\1|g" ${FINAL_SQL}  # Avoids 'IDENTIFIED BY [PASSWORD]' clauses which may lock out root with statements like 'GRANT INSERT ON *.* TO CURRENT_USER() IDENTIFIED BY 'somepwd';'
 

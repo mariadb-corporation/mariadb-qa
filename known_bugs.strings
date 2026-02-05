@@ -332,6 +332,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_one_connection|asan_thread_start                                     ## MDEV-38761
+LSAN|memory leak|sql/opt_range.cc|operator|get_quick_select|TRP_RANGE::make_quick|SQL_SELECT::test_quick_select                                                                ## MDEV-38761
 table->default_field != dfield_ptr|SIGABRT|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table|open_and_lock_for_insert_delayed                                  ## MDEV-38726
 thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED) || thd->mdl_context.is_lock_warrantee(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|close_thread_tables|open_and_lock_tables|open_and_lock_tables ## MDEV-38710
 block->page.buf_fix_count()|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|handler::index_read_map                                                    ## MDEV-38725
