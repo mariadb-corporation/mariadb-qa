@@ -332,6 +332,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+not_autocommit || trx->n_mysql_tables_in_use || (trx->lock.trx_locks).count == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables  ## MDEV-38766
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_one_connection|asan_thread_start                                     ## MDEV-38761
 LSAN|memory leak|sql/opt_range.cc|operator|get_quick_select|TRP_RANGE::make_quick|SQL_SELECT::test_quick_select                                                                ## MDEV-38761
 table->default_field != dfield_ptr|SIGABRT|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table|open_and_lock_for_insert_delayed                                  ## MDEV-38726
