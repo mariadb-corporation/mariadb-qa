@@ -332,6 +332,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+trx->n_mysql_tables_in_use|SIGABRT|ut_dbg_assertion_failed|ha_innobase::external_lock|handler::ha_external_lock|handler::ha_external_unlock                                    ## MDEV-38782
+table_records == 0 || sel <= s->table->opt_range_condition_rows / table_records|SIGABRT|apply_selectivity_for_table|best_access_path|get_costs_for_tables|best_extension_by_limited_search ## MDEV-37249
 not_autocommit || trx->n_mysql_tables_in_use || (trx->lock.trx_locks).count == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables  ## MDEV-38766
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_one_connection|asan_thread_start                                     ## MDEV-38761
 LSAN|memory leak|sql/opt_range.cc|operator|get_quick_select|TRP_RANGE::make_quick|SQL_SELECT::test_quick_select                                                                ## MDEV-38761
