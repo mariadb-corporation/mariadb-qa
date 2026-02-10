@@ -1,0 +1,5 @@
+CREATE TABLE t (f INT,f2 TEXT,PRIMARY KEY(f),FULLTEXT (f2));
+SET optimizer_where_cost=150;
+SET myisam_repair_threads=2;
+INSERT INTO t SELECT SEQ,SEQ FROM seq_1_to_20;
+SELECT * FROM (SELECT * FROM (SELECT * FROM t WHERE f<7 GROUP BY f) tt WHERE f>2) x JOIN (SELECT * FROM (SELECT * FROM t WHERE f<7 GROUP BY f) tt WHERE f>2) z ON x.f=z.f;

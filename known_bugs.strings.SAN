@@ -32,6 +32,9 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 
 ##### CURRENT BUGS (Search key: Mac) #####
 ASAN|global-buffer-overflow|sql/item_sum.cc|Item_func_collect::add|Item_sum::aggregator_add|Item_sum::reset_and_add|init_sum_functions                                         ## MDEV-38669
+ASAN|heap-use-after-free|plugin/server_audit/server_audit.cc|escape_string|log_statement_ex|log_statement|auditing                                                             ## MDEV-37105
+ASAN|heap-use-after-free|plugin/server_audit/server_audit.cc|filter_query_type|skip_set_statement|log_statement_ex|log_statement                                               ## MDEV-37105
+ASAN|heap-use-after-free|plugin/server_audit/server_audit.c|escape_string|log_statement_ex|log_statement|auditing                                                              ## MDEV-37105
 ASAN|use-after-poison|sql/item.h|Item::val_uint|THD::killed_for_exceeding_limit_rows|handler::ha_write_row|Log_to_csv_event_handler::log_general                               ## MDEV-38683
 UBSAN|member access within null pointer of type 'Field'|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner             ## MDEV-38658
 ASAN|use-after-poison|sql/table.cc|fix_type_pointers|TABLE_SHARE::init_from_binary_frm_image|ha_create_table|create_table_impl                                                 ## MDEV-38569

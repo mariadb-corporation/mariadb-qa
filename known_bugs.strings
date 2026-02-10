@@ -335,6 +335,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_cache_year::do_build_clone|Item::build_clone|Item_ref::do_build_clone                                               ## MDEV-38801
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item::build_clone|Item_ref::do_build_clone|Item::build_clone                                                             ## MDEV-38801
 typeid(*copy) == typeid(*this)|SIGABRT|Item::shallow_copy_with_checks|Item::deep_copy_with_checks|Item_ref::deep_copy|Item::deep_copy_with_checks                              ## MDEV-38801
+trx->n_mysql_tables_in_use|SIGABRT|ut_dbg_assertion_failed|ha_innobase::external_lock|handler::ha_external_lock|handler::ha_external_unlock                                    ## MDEV-38782
+table_records == 0 || sel <= s->table->opt_range_condition_rows / table_records|SIGABRT|apply_selectivity_for_table|best_access_path|get_costs_for_tables|best_extension_by_limited_search ## MDEV-37249
+not_autocommit || trx->n_mysql_tables_in_use || (trx->lock.trx_locks).count == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables  ## MDEV-38766
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_one_connection|asan_thread_start                                     ## MDEV-38761
 LSAN|memory leak|sql/opt_range.cc|operator|get_quick_select|TRP_RANGE::make_quick|SQL_SELECT::test_quick_select                                                                ## MDEV-38761
 table->default_field != dfield_ptr|SIGABRT|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table|open_and_lock_for_insert_delayed                                  ## MDEV-38726
