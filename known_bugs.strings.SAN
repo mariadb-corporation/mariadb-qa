@@ -31,6 +31,13 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+LSAN|memory leak|plugin/ha_rocksdb.so|operator|vtable|rocksdb::TransactionLogIteratorImpl::SeekToStartSequence                                                                 ## MDEV-38804
+LSAN|memory leak|plugin/ha_rocksdb.so|operator|rocksdb::kLegacyPlainTableMagicNumber|std::_Hashtable<rocksdb::ThreadStatusData                                                 ## MDEV-38804
+LSAN|memory leak|storage/rocksdb/rocksdb/util/thread_local.cc|operator|rocksdb::ThreadLocalPtr::Instance|rocksdb::ThreadLocalPtr::InitSingletons|rocksdb::Env::Default         ## MDEV-38804
+LSAN|memory leak|plugin/ha_rocksdb.so|operator|__PRETTY_FUNCTION__._ZNK7rocksdb8CacheKey7AsSliceEv|std::_Hashtable<rocksdb::ThreadStatusData                                   ## MDEV-38804
+LSAN|memory leak|plugin/ha_rocksdb.so|operator|__GNU_EH_FRAME_HDR|rocksdb::BlockBasedTableBuilder::Rep::Rep                                                                    ## MDEV-38804
+LSAN|memory leak|plugin/ha_rocksdb.so|operator|__GNU_EH_FRAME_HDR|__gnu_cxx::__normal_iterator<rocksdb::FileMetaData                                                           ## MDEV-38804
+LSAN|memory leak|plugin/ha_rocksdb.so|operator|__start_asan_globals                                                                                                            ## MDEV-38804
 ASAN|global-buffer-overflow|sql/item_sum.cc|Item_func_collect::add|Item_sum::aggregator_add|Item_sum::reset_and_add|init_sum_functions                                         ## MDEV-38669
 ASAN|heap-use-after-free|plugin/server_audit/server_audit.cc|escape_string|log_statement_ex|log_statement|auditing                                                             ## MDEV-37105
 ASAN|heap-use-after-free|plugin/server_audit/server_audit.cc|filter_query_type|skip_set_statement|log_statement_ex|log_statement                                               ## MDEV-37105
