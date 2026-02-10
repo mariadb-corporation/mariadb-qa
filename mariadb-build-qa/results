@@ -61,7 +61,7 @@ while :; do
       if [ -d "${DATADIR}/${MON[${i}]}" ]; then
         DATADIR_LIST="${DATADIR_LIST} ${DATADIR}/${MON[${i}]}"
         cd "${DATADIR}/${MON[${i}]}"
-        ~/pr | grep -vEi '^=========$|SHUTDOWN|no reducer scripts were found in this directory' | sed '/Trials which modify innodb_checksum_algorithm/,+1d' | sed '/Coredumps found in trials/,+1d' | sed '/Significant.Major errors/,+9999d' | sed "s|^========== |========== [${i}] |"
+        ~/pr | grep --binary-files=text -vEi '^=========$|^[ \t]+$|no reducer scripts were found in this directory' | sed '/Trials which /,+1d' | sed '/Trials with /,+1d' | sed '/SHUTDOWN/,+1d' | sed '/Coredumps found in trials/,+1d' | sed '/Significant.Major errors/,+9999d' | sed "s|^========== |========== [${i}] |"
         TO_SCAN='*/*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err'
         ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
         if [ "$(echo "${ERRORS}" | wc -l)" -gt 1 ]; then

@@ -393,7 +393,7 @@ pre_shuffle_setup(){
   PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
   RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
   if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-    shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | sed 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR#.*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' > ${INFILE_SHUFFLED}  # Final sed: remove any erronous /data or /test prefixes and previous pquery outcomes (also another one below v)
+    shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | sed 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' > ${INFILE_SHUFFLED}  # Final sed: remove any erronous /data or /test prefixes and previous pquery outcomes (also another one below v)
     PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
     if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
       echoit "Assert: obtaining the PRE_SHUFFLE_SQL=1 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
@@ -420,7 +420,7 @@ pre_shuffle_setup(){
       grep --binary-files=text -hvif ${SCRIPT_PWD}/filter.sql ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
       rm -f ${INFILE_SHUFFLED}.temp
     fi
-    sed -i 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR#.*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' ${INFILE_SHUFFLED}  # Remove any erronous /data or /test prefixes and previous pquery outcomes (also another one above ^)
+    sed -i 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' ${INFILE_SHUFFLED}  # Remove any erronous /data or /test prefixes and previous pquery outcomes (also another one above ^)
     PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
     if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
       echoit "Assert: obtaining the PRE_SHUFFLE_SQL=2 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"

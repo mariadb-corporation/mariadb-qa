@@ -40,10 +40,22 @@ mapfile -t issues < /tmp/${RND}.txt; rm -f /tmp/${RND}.txt 2>/dev/null
 # Now loop though the issues. When the counter reaches the amount passed to this scirpt, the loop will terminate
 COUNTER=1
 for TRIAL in "${issues[@]}"; do
+  RES=0
   if [ $COUNTER -gt $SKIP ]; then
-    screen -admS s${TRIAL} bash -c "./reducer${TRIAL}.sh;bash"  # Start reducer, and when done provide a usable Bash prompt
+    if [ -x "${HOME}/sr" ]; then  # sr has prevention against starting multiple reducers for the same issue etc. so use it if available
+      ${HOME}/sr ${TRIAL}
+      RES=$?
+    elif [ -x "${SCRIPT_PWD}/homedir_scripts/sr" ]; then  # sr direct link; idem
+      ${SCRIPT_PWD}/homedir_scripts/sr ${TRIAL}
+      RES=$?
+    else
+      screen -admS s${TRIAL} bash -c "./reducer${TRIAL}.sh;bash"  # Start reducer, and when done provide a usable Bash prompt
+      RES=$?
+    fi
+    if [ ${RES} -ne 1 ]; then
+      echo "* Started screen with name 's${TRIAL}' and started ./reducer${TRIAL}.sh within it for issue: $(grep --binary-files=text -m1 "   TEXT=" reducer${TRIAL}.sh | sed 's|   TEXT="||;s|"$||')"
+    fi
     sleep 1  # Avoid a /dev/shm/<epoch> directory conflict (yes, it happened) (yes, it happened again at 0.3 sec delay)
-    echo "Started screen with name 's${TRIAL}' and started ./reducer${TRIAL}.sh within it for issue: $(grep --binary-files=text -m1 "   TEXT=" reducer${TRIAL}.sh | sed 's|   TEXT="||;s|"$||')"
   fi
   COUNTER=$[ $COUNTER + 1 ]
   if [ $COUNTER -gt $TOTAL ]; then break; fi

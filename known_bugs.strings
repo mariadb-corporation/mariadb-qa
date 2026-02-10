@@ -332,6 +332,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_cache_year::do_build_clone|Item::build_clone|Item_ref::do_build_clone                                               ## MDEV-38801
+typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item::build_clone|Item_ref::do_build_clone|Item::build_clone                                                             ## MDEV-38801
+typeid(*copy) == typeid(*this)|SIGABRT|Item::shallow_copy_with_checks|Item::deep_copy_with_checks|Item_ref::deep_copy|Item::deep_copy_with_checks                              ## MDEV-38801
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_one_connection|asan_thread_start                                     ## MDEV-38761
 LSAN|memory leak|sql/opt_range.cc|operator|get_quick_select|TRP_RANGE::make_quick|SQL_SELECT::test_quick_select                                                                ## MDEV-38761
 table->default_field != dfield_ptr|SIGABRT|parse_vcol_defs|Delayed_insert::get_local_table|delayed_get_table|open_and_lock_for_insert_delayed                                  ## MDEV-38726
@@ -461,7 +464,6 @@ SIGSEGV|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation
 SIGSEGV|Field::is_null|Item_field::val_real|Item_sum_sum::add_helper|Item_sum_sum::add                                                                                         ## MDEV-37565
 SIGSEGV|Item_sum_hybrid_simple::clear|compute_window_func|Window_func_runner::exec|Window_funcs_sort::exec                                                                     ## MDEV-37741
 SIGSEGV|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                                             ## MDEV-28619
-typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_ref::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                              ## MDEV-36888
 decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func_mod::fix_length_and_dec|Item_func::fix_fields  ## MDEV-35920
 decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed         ## MDEV-35920
 !order->item[0]->with_sum_func()|SIGABRT|simple_remove_const|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute                            ## MDEV-33177
@@ -3454,3 +3456,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|MDL_context::release_lock|MDL_context::release_locks_stored_before|MDL_context::release_transactional_locks|THD::release_transactional_locks                ## Fixed ## MDEV-?
 # SIGSEGV|Gtid_index_writer::write_current_node|Gtid_index_writer::close|binlog_background_thread|pfs_spawn_thread                                                    ## Fixed ## MDEV-37742
 # SIGSEGV|__strlen_evex|strdup_root|parse_url|ha_federated::create                                                                                                    ## Fixed ## MDEV-38039
+# typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_ref::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                   ## Fixed ## MDEV-36888

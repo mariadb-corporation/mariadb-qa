@@ -91,6 +91,8 @@ rm -f ${TEMP}
 
 echo '-------------- mtr_testrun.sh Results (core files, if any) --------------'
 find . | grep -vE 'MDEV' | grep -E '/mysql-test/|/mariadb-test/' | grep '/var/log/.*/data/' | grep "${TEST}" | grep 'core' | sort -u
+echo '-------------- mtr_testrun.sh Results (t results) --------------'
+echo "rm /test/mtr_res.txt; ./gendirs.sh  | xargs -I{} echo 'cd {}; cd mysql-test 2>/dev/null; cd mariadb-test 2>/dev/null; t | tee /test/mtr_res.txt; cd /test;'; sort -u /test/mtr_res.txt; rm /test/mtr_res.txt;"
 echo '-------------- mtr_testrun.sh Results (error log: add your search string and run query) --------------'
 echo "SEARCH_STRING='your_search_string'; ./gendirs.sh ${3} | xargs -I{} echo \"grep --binary-files=text -H '\${SEARCH_STRING}' /test/{}/m*test/var/log/*err 2>/dev/null\" | tr '\\n' '\\0' | xargs -0 -I{} bash -c \"{}\""
 if [ "${3}" == "SAN" ]; then

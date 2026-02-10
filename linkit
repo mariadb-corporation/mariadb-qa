@@ -156,6 +156,7 @@ alias cl='${HOME}/cl &'    # Run ${HOME}/mariadb-qa/pquery-clean-known.sh for th
 alias c='cat '       # cat (display) a file (pass file name)
 alias k='clear'      # Clear screen
 alias ck='cd ${HOME};clear'   # Clear screen and jump to homedir
+alias crt='${HOME}/crt'    # Changes to /data and shows all current runs (according to /data/results.list i.e. 'vr') testcases
 alias b='${HOME}/b'        # Start bug report for in.sql in current BASEDIR
 alias bs='${HOME}/b SAN'   # Start SAN based bug report for in.sql in current BASEDIR
 alias bm='${HOME}/b MSAN'  # Start MSAN based bug report for in.sql in current BASEDIR
