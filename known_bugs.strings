@@ -1,5 +1,9 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Follow the existing formatting.
 
+##### MDEV-36436 testing #####
+0|SIGABRT|ha_partition::extra|copy_data_between_tables|mysql_alter_table|Sql_cmd_alter_table::execute                                                                           ## MDEV-38803
+!index->table->skip_alter_undo|SIGABRT|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry|row_ins_index_entry_step                                     ## MDEV-36436
+
 ##### MDEV-34780 preliminary test ####
 #SIGSEGV|Field::check_assignability_from|Item::check_assignability_to|TABLE::check_assignability_explicit_fields|TABLE::check_assignability_opt_fields                          ## MDEV-34780
 #m_internal_handler != __null|SIGABRT|THD::pop_internal_handler|set_used_partition|Insert_prelocking_strategy::handle_end|open_tables                                           ## MDEV-34780
@@ -10,7 +14,7 @@
 
 ##### MDEV-28730 testing #####
 #page_rec_is_user_rec(rec) || page_rec_is_supremum(rec)|SIGABRT|lock_clust_rec_read_check_and_lock|QueryExecutor::delete_all|FTSQueryExecutor::delete_all_common_records|fts_optimize_purge_deleted_doc_id_snapshot ##MDEV-38142
-ib_vector_size(optim->words) > 0|SIGABRT|ut_dbg_assertion_failed|fts_optimize_words|fts_optimize_index|fts_optimize_indexes                                                     ## MDEV-38163
+#ib_vector_size(optim->words) > 0|SIGABRT|ut_dbg_assertion_failed|fts_optimize_words|fts_optimize_index|fts_optimize_indexes                                                     ## MDEV-38163
 
 ##### MDEV-32830 preliminary test ####
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
