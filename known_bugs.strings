@@ -1,8 +1,8 @@
 ## Known bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID. Use spaces, not tabs. Follow the existing formatting.
 
 ##### MDEV-36436 testing #####
-0|SIGABRT|ha_partition::extra|copy_data_between_tables|mysql_alter_table|Sql_cmd_alter_table::execute                                                                           ## MDEV-38803
-!index->table->skip_alter_undo|SIGABRT|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry|row_ins_index_entry_step                                     ## MDEV-36436
+#0|SIGABRT|ha_partition::extra|copy_data_between_tables|mysql_alter_table|Sql_cmd_alter_table::execute                                                                           ## MDEV-38803
+#!index->table->skip_alter_undo|SIGABRT|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry|row_ins_index_entry_step                                     ## MDEV-36436
 
 ##### MDEV-34780 preliminary test ####
 #SIGSEGV|Field::check_assignability_from|Item::check_assignability_to|TABLE::check_assignability_explicit_fields|TABLE::check_assignability_opt_fields                          ## MDEV-34780
