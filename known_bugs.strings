@@ -327,6 +327,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ha_count_rw_2pc(thd_arg, thd_arg->in_multi_stmt_transaction_mode())|SIGABRT|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader        ## MDEV-38824
+ha_count_rw_2pc(thd_arg, thd_arg->in_multi_stmt_transaction_mode())|SIGABRT|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_with_engines  ## MDEV-38824
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_cache_year::do_build_clone|Item::build_clone|Item_ref::do_build_clone                                               ## MDEV-38801
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item::build_clone|Item_ref::do_build_clone|Item::build_clone                                                             ## MDEV-38801
 typeid(*copy) == typeid(*this)|SIGABRT|Item::shallow_copy_with_checks|Item::deep_copy_with_checks|Item_ref::deep_copy|Item::deep_copy_with_checks                              ## MDEV-38801
