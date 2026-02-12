@@ -10,15 +10,11 @@ Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
 Internal MariaDB error code: 1046|Internal MariaDB error code: 1054|Internal MariaDB error code: 1064|Internal MariaDB error code: 1193|Internal MariaDB error code: 1231|Internal MariaDB error code: 1237  Ref 'kb' for info on these (temporary slave_init error coverage)
 Got an error writing communication packets            Occassionally seen after shutdown, for example upon 'Aborted connection x to db'. Possibly also be OOS caused
-mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL MDEV-37339
-mariadbd: caching_sha2_password: failed to read private_key.pem.*No such file or directory MDEV-37339
-ERROR. mariadbd: Can.t find record in                 MDEV-37068 (Vector), MDEV-33563 (replication)  # Filter not activated; find additional testcases
 ERROR. mariadbd: Connection was killed                SPECIAL-43 (non-issue; simple increased log verbosity)
 Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
 Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested
 Warning. InnoDB: Table.*contains.*user defined columns in InnoDB, but.*in MariaDB.*INFORMATION_SCHEMA.INNODB_SYS_COLUMNS  MDEV25654
 Event invalid                                         MDEV-26270
-Warning. InnoDB: Recalculation of persistent statistics requested for table.*but the required persistent statistics storage is corrupted  MDEV-36373
 mariadbd: Cannot load from mysql\..*The table is probably corrupted  SPECIAL-47 (mysql.* corruption non-issue)
 mariadbd: Cannot load from mysql.host. The table is probably corrupted  SPECIAL-50 (mysql.host table corruption non-issue)
 Fatal error: Can't open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted  SPECIAL-50 (idem)
@@ -46,7 +42,6 @@ ERROR. InnoDB: Column stat_description in table .mysql...innodb_index_stats. is.
 ERROR. InnoDB: Table .mysql...innodb_table_stats. not found  Discussed w/ Marko and debugged, only applicable to 10.5 and non-significant
 ERROR. InnoDB: Table .mysql...innodb_index_stats. not found  Discussed w/ Marko and debugged, only applicable to 10.5 and non-significant
 ERROR. InnoDB: In ALTER TABLE.*has or is referenced in foreign key constraints which are not compatible with the new table definition  MDEV-34399
-ERROR. InnoDB: Cannot delete.update rows with cascading foreign key constraints that exceed max depth of 15. Please drop excessive foreign constraints and try again  MDEV-34404
 Warning. InnoDB: Table mysql.innodb_index_stats has length mismatch in the column name.*run mysql_upgrade  Modified innodb_index_stats table
 Warning. InnoDB: Table mysql.innodb_table_stats has length mismatch in the column name.*run mysql_upgrade  Modified innodb_table_stats table
 ERROR. WSREP: Failed to load provider                 wsrep misconfig for example --wsrep-provider=0 + SET GLOBAL wsrep_on=ON;
@@ -211,7 +206,6 @@ Warning: Memory not freed: 32                         MDEV-25876 session_track_s
 Warning: Memory not freed: 80/104/16400/16320/16424   MDEV-29404 PREPARE (not filtered)
 Warning: Memory not freed: 264                        MDEV-30784 log_bin_trust_function_creators
 Warning: Memory not freed: 280                        MDEV-30784 log_bin_trust_function_creators
-Warning: Memory not freed: 280                        MDEV-30680 IF(SCALAR(... mangled
 Warning: Memory not freed: 280                        MDEV-27627 FOR..IN..DO
 Warning: Memory not freed: 312                        MDEV-27627 FOR..IN..DO + track_sysvar
 Warning: Memory not freed: 512                        MDEV-26335 log_bin_trust_function_creators
@@ -224,8 +218,6 @@ invalid value in column mysql.proc.db_collation       Testcase artifact caused b
 Cannot load from mysql.proc. The table is probably corrupted  Testcase artifact caused by ALTER TABLE mysql.proc
 WSREP .galera. provider is not loaded                 Presumed non-issue (Galera provider not loaded)
 Trying to lock uninitialized mutex.*sql_cache.*72     MDEV-29708
-Trying to lock uninitialized mutex.*spider/spd_malloc.cc.*line 15  MDEV-30727
-Trying to lock uninitialized mutex.*sql_acl.cc.*line 1  MDEV-34501
 wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  MDEV-29744
 wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  MDEV-29744
 InnoDB: Invalid column name for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
@@ -252,8 +244,6 @@ Operating system error number 36 in a file operation  MDEV-19849 (file name too 
 Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
 ERROR.*InnoDB.*RENAME.*is ref.*foreign.*not compatible.*new table def  MDEV-33284
 ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussion (ref email thread 'Discuss')
-ERROR.*InnoDB.*Cannot save index statistics for table.*index.*stat.*: Lock wait timeout  MDEV-32667
-ERROR.*InnoDB.*Cannot save table statistics for table.*: Lock wait timeout  MDEV-32667
 Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
 ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussion (ref email thread 'Discuss')
 Slave SQL: Could not.*Write_rows_v1 event on table.*Cannot add or update a child row: a foreign key constraint fails.*Error_code: 1452.*HA_ERR_NO_REFERENCED_ROW  MDEV-33378
@@ -291,3 +281,13 @@ Warning.*BINLOG_BASE64_EVENT: Table structure for binlog event is not compatible
 #Got error 1032.*entry [1-7] of type.*rename          MDEV-29800 (CoR bug), Fixed
 #Got error 12524.*entry 6 of type.*rename             MDEV-29800 (CoR bug), Fixed
 #ERROR. InnoDB: Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD   MDEV-35187, Fixed
+#Warning: Memory not freed: 280                       MDEV-30680 IF(SCALAR(... mangled, Fixed
+#Trying to lock uninitialized mutex.*spider/spd_malloc.cc.*line 15  MDEV-30727, Fixed
+#ERROR.*InnoDB.*Cannot save index statistics for table.*index.*stat.*: Lock wait timeout  MDEV-32667, Fixed
+#ERROR.*InnoDB.*Cannot save table statistics for table.*: Lock wait timeout  MDEV-32667, Fixed
+#ERROR. InnoDB: Cannot delete.update rows with cascading foreign key constraints that exceed max depth of 15. Please drop excessive foreign constraints and try again  MDEV-34404, Fixed
+#Trying to lock uninitialized mutex.*sql_acl.cc.*line 1  MDEV-34501, Fixed
+#Warning. InnoDB: Recalculation of persistent statistics requested for table.*but the required persistent statistics storage is corrupted  MDEV-36373, Fixed
+#ERROR. mariadbd: Can.t find record in                 MDEV-37068 (Vector), MDEV-33563 (replication)  # Filter not activated; find additional testcases, Fixed
+#mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL MDEV-37339, Fixed
+#mariadbd: caching_sha2_password: failed to read private_key.pem.*No such file or directory MDEV-37339, Fixed
