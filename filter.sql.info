@@ -1,15 +1,15 @@
 # Special filters and their respective tickets and/or reasons. Remove filters when their respective bugs are fixed
 MASTER_.*_WAIT                # Avoids pquery loosing connection/250 last queries failed waiting for a GTID / POS
 FOR.*rec.*IN.*DO.*SELECT      # MDEV-27627
-JSON_ARRAY_INTERSECT.*@.*@    # MDEV-33149: an abbreviated UBSAN stack (ref kba) is regularly seen for this issue
 DATE_ADD.*INTERV.*YEAR_MONTH  # MDEV-35406: an abbreviated UBSAN stack (ref kba) is regularly seen for this issue
 MAKEDATE.*e+                  # MDEV-35406: an abbreviated UBSAN stack (ref kba) is regularly seen for this issue
 ST_GEOMFROMWKB                # MDEV-26813
-query_cache_type.*DEMAND      # MDEV-34075
 AAAAAAAQANS42LjMtbTUtZGVidididididi  # SPECIAL-39
 mSKWVg8BAAAAdwAAAHsAAAAAAAQANS44LjAtbTE3LWRlYnVnLWxvZwAAAAAAAAAAAAAAAAAAAAAA.*AAAAAAAAAAAAAAAAAACZIpZtbG9nAAAAAAAAAAAAAAAAAAAAAAAA.*AAAAAAAAAAAAAAAAAABI6BZOEzgNAAgAEgAEBAQEEgAAVgAEGggAAAAICAgCAAAAAAVAYI8= # SPECIAL-39
 key_cache_segments            # MDEV-26492
 SLEEP.*[0-9][0-9]             # Sleep >= 10 seconds
 SLEEP.*[3-9]                  # Sleep >= 3 seconds
 SELECT.*UNION.*SELECT.*ORDER.*BY.*OVER  # MDEV-32307
-NULLIF.*AVG.*OVER.*ORDER      # MDEV-32317
+#NULLIF.*AVG.*OVER.*ORDER     ## Fixed  # MDEV-32317
+#JSON_ARRAY_INTERSECT.*@.*@   ## Fixed  # MDEV-33149: an abbreviated UBSAN stack (ref kba) is regularly seen for this issue
+#query_cache_type.*DEMAND     ## Fixed  # MDEV-34075
