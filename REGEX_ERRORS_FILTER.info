@@ -10,6 +10,7 @@ Filter Text                                           Info at
 ------------------------------------------------------------------------------------------------------------------------
 Internal MariaDB error code: 1046|Internal MariaDB error code: 1054|Internal MariaDB error code: 1064|Internal MariaDB error code: 1193|Internal MariaDB error code: 1231|Internal MariaDB error code: 1237  Ref 'kb' for info on these (temporary slave_init error coverage)
 Got an error writing communication packets            Occassionally seen after shutdown, for example upon 'Aborted connection x to db'. Possibly also be OOS caused
+ERROR. mariadbd: Can.t find record in                 MDEV-37068 (Vector), MDEV-33563 (replication)  # Filter not activated; find additional testcases, Fixed
 ERROR. mariadbd: Connection was killed                SPECIAL-43 (non-issue; simple increased log verbosity)
 Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
 Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested
@@ -288,6 +289,5 @@ Warning.*BINLOG_BASE64_EVENT: Table structure for binlog event is not compatible
 #ERROR. InnoDB: Cannot delete.update rows with cascading foreign key constraints that exceed max depth of 15. Please drop excessive foreign constraints and try again  MDEV-34404, Fixed
 #Trying to lock uninitialized mutex.*sql_acl.cc.*line 1  MDEV-34501, Fixed
 #Warning. InnoDB: Recalculation of persistent statistics requested for table.*but the required persistent statistics storage is corrupted  MDEV-36373, Fixed
-#ERROR. mariadbd: Can.t find record in                 MDEV-37068 (Vector), MDEV-33563 (replication)  # Filter not activated; find additional testcases, Fixed
 #mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL MDEV-37339, Fixed
 #mariadbd: caching_sha2_password: failed to read private_key.pem.*No such file or directory MDEV-37339, Fixed

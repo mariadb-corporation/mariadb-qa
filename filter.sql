@@ -23,8 +23,3 @@ key_cache_segments
 SLEEP.*[0-9][0-9]
 SLEEP.*[3-9]
 SELECT.*UNION.*SELECT.*ORDER.*BY.*OVER
-
-#Fixed/Disabled
-#NULLIF.*AVG.*OVER.*ORDER ## Fixed ## MDEV-32317 
-#JSON_ARRAY_INTERSECT.*@.*@ ## Fixed ## MDEV-33149
-#query_cache_type.*DEMAND ## Fixed ## MDEV-34075
