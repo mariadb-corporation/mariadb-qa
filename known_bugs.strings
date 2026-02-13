@@ -332,6 +332,13 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table                                           ## MDEV-38830
+rpl_semi_sync_master_off_times > thd->expected_semi_sync_offs|SIGABRT|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_sync|MYSQL_BIN_LOG::write|THD::binlog_query ## MDEV-38829
+SIGSEGV|Item_func_nextval::val_int|Type_handler_int_result::Item_val_bool|JOIN::exec_inner|JOIN::exec                                                                          ## MDEV-33985
+!strcmp(table_list->get_table_name().str, table_list->mdl_request.key.name())|SIGABRT|get_table_def_key|Item_func_nextval::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool ## MDEV-33985
+SIGSEGV|Item_subselect::init|Item_allany_subselect::Item_allany_subselect|all_any_subquery_creator|MYSQLparse                                                                  ## MDEV-38828
+str[strlen(str)-1] != '\n' || strlen(str) == 512-1|SIGABRT|my_message_sql|my_message|connect_assisted_discovery|create_table_impl                                              ## MDEV-38827
+str[strlen(str)-1] != '\n'|SIGABRT|my_message_sql|my_message|connect_assisted_discovery|create_table_impl                                                                      ## MDEV-38827
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_cache_year::do_build_clone|Item::build_clone|Item_ref::do_build_clone                                               ## MDEV-38801
 typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item::build_clone|Item_ref::do_build_clone|Item::build_clone                                                             ## MDEV-38801
 typeid(*copy) == typeid(*this)|SIGABRT|Item::shallow_copy_with_checks|Item::deep_copy_with_checks|Item_ref::deep_copy|Item::deep_copy_with_checks                              ## MDEV-38801
@@ -3460,3 +3467,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|Gtid_index_writer::write_current_node|Gtid_index_writer::close|binlog_background_thread|pfs_spawn_thread                                                    ## Fixed ## MDEV-37742
 # SIGSEGV|__strlen_evex|strdup_root|parse_url|ha_federated::create                                                                                                    ## Fixed ## MDEV-38039
 # typeid(*copy) == typeid(*this)|SIGABRT|Item::get_copy|Item_ref::do_build_clone|Item::build_clone|Item_func_or_sum::do_build_clone                                   ## Fixed ## MDEV-36888
+# SIGSEGV|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table                                ## Fixed ## MDEV-38716

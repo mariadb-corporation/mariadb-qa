@@ -1,3 +1,4 @@
+# mysqld options required for replay: --log-bin
 SET GLOBAL rpl_semi_sync_master_enabled=1;
 CREATE TABLE t (c INT);
 FLUSH STATUS;

@@ -1,0 +1,5 @@
+INSTALL SONAME 'ha_connect';
+CREATE TABLE t ENGINE=CONNECT t_type=Xc TABNAME=tLIST option_list='cname=tt';
+
+INSTALL SONAME 'ha_connect';
+CREATE TABLE t ENGINE=CONNECT TABNAME=list;

@@ -185,25 +185,26 @@ else
   ~/tt | tee -a report.log
 fi
 REPORT_PATH="${PWD}"
+FILT_SHA2_PWD='caching_sha2_password: failed to read private_key.pem.*2.*No such file or directory'
 echo '----- All strings merged -----' | tee -a report.log
 if [ -r ../allstrings_merged ]; then
   if [ "${1}" == "GAL" ]; then
-    cd .. && ./allstrings_merged GAL 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_merged GAL 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   elif [[ "${1}" == "MSAN" ]]; then
-    cd .. && ./allstrings_merged MSAN 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_merged MSAN 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
-    cd .. && ./allstrings_merged SAN 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_merged SAN 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   else
-    cd .. && ./allstrings_merged 2>&1 | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
+    cd .. && ./allstrings_merged 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   fi
 fi
 # Print all new bugs that are not in the known bug list
 if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
   echo '----- All NEW (not known yet) strings merged (for adding to ~/kba or ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
   # When dealing with SAN builds, we also need to check the default (non-SAN) known bugs list (i.e. the second ~/jbs search filter besides the first SAN based ~/kbsa search filter) as SAN builds can at times crash with already known bug strings without reporting a SAN issue
-  cat /tmp/allstrings_merged | sort -u | grep -v '^[ \t]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbsa REVERSE "{}" | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | tee -a "${REPORT_PATH}/report.log"
+  cat /tmp/allstrings_merged | sort -u | grep -v '^[ \t]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbsa REVERSE "{}" | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log"
 else
   echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
-  cat /tmp/allstrings_merged | sort -u | grep -v '^[ \t]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | tee -a "${REPORT_PATH}/report.log"
+  cat /tmp/allstrings_merged | sort -u | grep -v '^[ \t]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log"
 fi
 
