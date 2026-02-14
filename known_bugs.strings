@@ -328,6 +328,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry                                                              ## MDEV-31667
+!trx->is_started()|SIGABRT|innobase_start_trx_and_assign_read_view|snapshot_handlerton|tp_foreach|ha_start_consistent_snapshot                                                 ## MDEV-37432
 SIGSEGV|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table                                           ## MDEV-38830
 rpl_semi_sync_master_off_times > thd->expected_semi_sync_offs|SIGABRT|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_sync|MYSQL_BIN_LOG::write|THD::binlog_query ## MDEV-38829
 SIGSEGV|Item_func_nextval::val_int|Type_handler_int_result::Item_val_bool|JOIN::exec_inner|JOIN::exec                                                                          ## MDEV-33985
