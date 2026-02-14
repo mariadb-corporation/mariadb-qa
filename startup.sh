@@ -494,8 +494,9 @@ touch in.sql
 MTR_DIR="./mysql-test"
 if [ -d "./mariadb-test" ]; then MTR_DIR="./mariadb-test"; fi
 if [ -d "${MTR_DIR}" ]; then
-  rm -f ${MTR_DIR}/mtra ${MTR_DIR}/cl_mtr ${MTR_DIR}/cl_mtr_innodb ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_multi ${MTR_DIR}/loop_mtr_skip_slave_err ${MTR_DIR}/loop_mtr_multi_skip_slave_err ${MTR_DIR}/main/spider.test ${MTR_DIR}/main/replication.test
+  rm -f ${MTR_DIR}/mtra ${MTR_DIR}/cl_mtr ${MTR_DIR}/cl_mtr_innodb ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_multi ${MTR_DIR}/loop_mtr_skip_slave_err ${MTR_DIR}/loop_mtr_multi_skip_slave_err ${MTR_DIR}/main/spider.test ${MTR_DIR}/main/replication.test ${MTR_DIR}/main/test.test
   if [ -d ${MTR_DIR}/main ]; then  # MS structure differs from MD. TODO: can add MS coverage if needed
+    # spider.test
     echo "--source plugin/spider/spider/include/init_spider.inc" > ${MTR_DIR}/main/spider.test
     echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/spider.test
     echo "#--source include/have_sequence.inc" >> ${MTR_DIR}/main/spider.test
@@ -507,6 +508,7 @@ if [ -d "${MTR_DIR}" ]; then
     echo "SET spider_same_server_link=on;" >> ${MTR_DIR}/main/spider.test
     echo "eval CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (HOST \"127.0.0.1\", DATABASE \"test\", USER \"root\", PORT \$MASTER_MYPORT);" >> ${MTR_DIR}/main/spider.test
     echo "SET sql_mode='';" >> ${MTR_DIR}/main/spider.test
+    # replication.test
     echo "--source include/have_binlog_format_row.inc" > ${MTR_DIR}/main/replication.test
     echo "#--source include/have_binlog_format_statement.inc" >> ${MTR_DIR}/main/replication.test
     echo "#--source include/have_binlog_format_mixed.inc" >> ${MTR_DIR}/main/replication.test
@@ -534,6 +536,7 @@ if [ -d "${MTR_DIR}" ]; then
     echo "--sync_slave_with_master" >> ${MTR_DIR}/main/replication.test
     echo "DROP TABLE t1,t2;" >> ${MTR_DIR}/main/replication.test
     echo "--source include/rpl_end.inc" >> ${MTR_DIR}/main/replication.test
+    # test.test
     echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/test.test
     echo "#--source include/have_sequence.inc" >> ${MTR_DIR}/main/test.test
     echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/test.test

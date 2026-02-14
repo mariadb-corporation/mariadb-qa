@@ -176,6 +176,7 @@ alias pr='${HOME}/pr'      # pquery-results for current workdir
 alias t='${HOME}/t'        # UniqueID (works in BASEDIRs, and in workdir/trial dirs etc)
 alias tt='${HOME}/tt'      # UniqueID + known bugs scan + JIRA URL scan links
 alias sr='${HOME}/sr '     # Start reducer for a given trial (pass trial number)
+alias sru='. ../start_unreduced'  # Start reducers in a given workdir for which no reduction has been attempted yet (sourced)
 alias sbr='${HOME}/sbr '   # Start base_reducer for a given trial (pass trial number)
 alias pg='${HOME}/pg'      # Start pquery-go-expert for current workdir
 alias pge='${HOME}/pge '   # Start pquery-goexp-patch for a given trial (pass trial number)

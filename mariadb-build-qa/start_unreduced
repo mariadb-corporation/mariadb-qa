@@ -1,0 +1,1 @@
+pr | grep --binary-files=text -o ': reducers [0-9]\+' | grep -o '[0-9]\+' | xargs -I{} echo 'if [ -z "$(ls {}/[1-2][0-9]*_start 2>/dev/null)" ]; then ${HOME}/sr {} | sed "s|Assert: |  Note: |"; echo "Started reducer for trial {}"; fi' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"

@@ -158,6 +158,7 @@ GOT_ERROR|Got error 127|when reading table                     ## MDEV-34472
 GOT_ERROR|Got error 128|when reading table                     ## MDEV-34991
 GOT_ERROR|Got error 134|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 140|"Wrong create options" from storage engine InnoDB Error_code: 1030  ## MDEV-33961
+GOT_ERROR|Got error 146|when reading table                     ## MDEV-37523
 GOT_ERROR|Got error 159|when reading table                     ## SPECIAL-51 (to be expected inside HANDLER)
 GOT_ERROR|Got error 170|"It is not possible to log this statement" from storage engine InnoDB ## MDEV-32354
 GOT_ERROR|Got error 171|"The event was corrupt, leading to illegal data being read" from storage engine InnoDB, Error_code: 1030; handler error HA_ERR_CORRUPT_EVENT; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1030 ## MDEV-22936 (May mask other bugs?)
@@ -238,7 +239,8 @@ MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_plugin and LOCK_thd_kill
 MUTEX_ERROR|safe_mutex: Found wrong usage of mutex LOCK_log and LOCK_global_system_variables             ## MDEV-35197
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
 MARIADBD_ERROR|mariadbd: innodb_buffer_pool_size change aborted                                          ## MDEV-37149
-GOT_ERROR|Got error 146|when reading table                                                               ## MDEV-37523
+OPENTABLE|OpenTable: Invalid flag 0 for column a               ## MDEV-38838
+OPENTABLE|OpenTable: SQLDriverConnect: [unixODBC][Driver Manager]Data source name not found and no default driver specified ## MDEV-38838
 
 ##### Slave errors
 SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346
@@ -327,6 +329,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item_func_nextval::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                                     ## MDEV-38815
+(thd->state_flags & Open_tables_state::BACKUPS_AVAIL) || !thd->has_pending_row_events()|SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|dispatch_command         ## MDEV-38839
+(thd->state_flags & Open_tables_state::BACKUPS_AVAIL) || !thd->has_pending_row_events()|SIGABRT|close_thread_tables|close_thread_tables_for_query|mysql_execute_command|mysql_parse  ## MDEV-38839
 SIGSEGV|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry                                                              ## MDEV-31667
 !trx->is_started()|SIGABRT|innobase_start_trx_and_assign_read_view|snapshot_handlerton|tp_foreach|ha_start_consistent_snapshot                                                 ## MDEV-37432
 SIGSEGV|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table                                           ## MDEV-38830

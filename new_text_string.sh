@@ -271,6 +271,13 @@ find_other_possible_issue_strings(){
     fi
   fi
   WRONGMUTEXUSAGE=
+  OPENTABLE="$(grep -hio "OpenTable:.*" ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g")"
+  if [ ! -z "${OPENTABLE}" ]; then
+    TEXT="OPENTABLE|${OPENTABLE}"  # Found 'OpenTable' bug
+    echo "${TEXT}"
+    exit 0
+  fi
+  OPENTABLE=
   GOT_FATAL_ERROR="$(grep -hio 'Got fatal error [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
   if [ ! -z "${GOT_FATAL_ERROR}" ]; then
     TEXT="GOT_FATAL_ERROR|${GOT_FATAL_ERROR}"
