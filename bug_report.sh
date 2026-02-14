@@ -184,7 +184,7 @@ else
 fi
 sleep 2.5  # For visual confirmation
 
-test_san_build(){
+test_san_build(){  # Ref [*] just below for what this function does/is
   local TSB_PWD="${PWD}"
   cd "${1}" 
   cp ../in.sql .
@@ -196,9 +196,10 @@ test_san_build(){
   else
     ./all_no_cl ${MYEXTRA_OPT_CLEANED} >/dev/null 2>&1
   fi
-  ./test_pquery >/dev/null 2>&1
+  ./test_pquery >/dev/null 2>&1  # We simply use pquery here (i.e. no CLI or pquery selection), as [*] test_san_build() simply tests *SAN builds for us in what is otherwise a non-SAN/regular run, as a safety mechanism against missing any *SAN bugs
   ./stop >/dev/null 2>&1
-  sleep 1
+  # It takes SAN builds about 2 seconds to finish an 'LSAN detected' error log entry AFTER shutdown
+  sleep 3  # Must be >= 2.5
   BUG_STRING="$(~/t)"
   VERSION="$(echo "${1}" | grep -o '10\.1[0-9]')"
   echo "${BUG_STRING}" | \

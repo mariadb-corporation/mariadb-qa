@@ -3,16 +3,18 @@
 
 # If you execute mysqladmin shutdown when connecting to a local server using a Unix socket file, mysqladmin waits until the server's process ID file has been removed, to ensure that the server has stopped properly.  -- https://dev.mysql.com/doc/refman/8.0/en/mysqladmin.html
 
+# sleep 3; For example, it takes SAN builds about 2 seconds to finish an 'LSAN detected' error log entry AFTER shutdown. Must be >=2.5
+
 if [ "${1}" == "GAL" ]; then
-  ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_stop >/dev/null 2>&1; ./gal_kill >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
+  ./gendirs.sh GAL | xargs -I{} echo "cd {}; sleep 2; ./gal_stop >/dev/null 2>&1; sleep 3; ./gal_kill >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "SAN" ]; then
-  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./stop >/dev/null 2>&1; ./kill >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
+  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./stop >/dev/null 2>&1; sleep 3; ./kill >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "MSAN" ]; then
-  ./gendirs.sh MSAN | xargs -I{} echo "cd {}; ./stop >/dev/null 2>&1; ./kill >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
+  ./gendirs.sh MSAN | xargs -I{} echo "cd {}; ./stop >/dev/null 2>&1; sleep 3; ./kill >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "REPL" ]; then
-  ./gendirs.sh | xargs -I{} echo "cd {}; ./stop_replication >/dev/null 2>&1; ./kill_replication >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
+  ./gendirs.sh | xargs -I{} echo "cd {}; sleep 2; ./stop_replication >/dev/null 2>&1; sleep 3; ./kill_replication >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
 else
-  ./gendirs.sh | xargs -I{} echo "cd {}; ./stop >/dev/null 2>&1; ./kill >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
+  ./gendirs.sh | xargs -I{} echo "cd {}; ./stop >/dev/null 2>&1; sleep 1; ./kill >/dev/null 2>&1" | xargs -P50 -I{} bash -c "{}"
 fi
 
 sync
