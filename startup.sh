@@ -502,6 +502,8 @@ if [ -d "${MTR_DIR}" ]; then
     echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/spider.test
     echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/spider.test
     echo "#--source include/have_log_bin.inc" >> ${MTR_DIR}/main/spider.test
+    echo "#ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;" >> ${MTR_DIR}/main/spider.test
+    echo "#ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/spider.test
     echo "SET spider_same_server_link=on;" >> ${MTR_DIR}/main/spider.test
     echo "eval CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (HOST \"127.0.0.1\", DATABASE \"test\", USER \"root\", PORT \$MASTER_MYPORT);" >> ${MTR_DIR}/main/spider.test
     echo "SET sql_mode='';" >> ${MTR_DIR}/main/spider.test
@@ -510,9 +512,11 @@ if [ -d "${MTR_DIR}" ]; then
     echo "#--source include/have_binlog_format_mixed.inc" >> ${MTR_DIR}/main/replication.test
     echo "#--source include/have_log_bin.inc" >> ${MTR_DIR}/main/replication.test
     echo "#--source include/have_sequence.inc" >> ${MTR_DIR}/main/replication.test
+    echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/replication.test
     echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/replication.test
-    echo "--source include/have_partition.inc" >> ${MTR_DIR}/main/replication.test
     echo "--source include/master-slave.inc" >> ${MTR_DIR}/main/replication.test
+    echo "ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;" >> ${MTR_DIR}/main/replication.test
+    echo "ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/replication.test
     echo "SET default_storage_engine=InnoDB;" >> ${MTR_DIR}/main/replication.test
     echo "--connection slave" >> ${MTR_DIR}/main/replication.test
     echo "STOP SLAVE;" >> ${MTR_DIR}/main/replication.test
@@ -525,20 +529,19 @@ if [ -d "${MTR_DIR}" ]; then
     echo "--connection master" >> ${MTR_DIR}/main/replication.test
     echo "#SET GLOBAL gtid_strict_mode=1;" >> ${MTR_DIR}/main/replication.test
     echo "#SET GLOBAL log_bin_trust_function_creators=1;" >> ${MTR_DIR}/main/replication.test
-    echo "ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/replication.test
     echo "#SET sql_mode='';" >> ${MTR_DIR}/main/replication.test
-    echo "<code>" >> ${MTR_DIR}/main/replication.test
+    echo "<testcase_code>" >> ${MTR_DIR}/main/replication.test
     echo "--sync_slave_with_master" >> ${MTR_DIR}/main/replication.test
     echo "DROP TABLE t1,t2;" >> ${MTR_DIR}/main/replication.test
     echo "--source include/rpl_end.inc" >> ${MTR_DIR}/main/replication.test
-    if [ ! -r "${MTR_DIR}/main/test.test" ]; then
-      echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/test.test
-      echo "#--source include/have_sequence.inc" >> ${MTR_DIR}/main/test.test
-      echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/test.test
-      echo "#--source include/have_log_bin.inc" >> ${MTR_DIR}/main/test.test
-      echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/test.test
-      echo "#SET sql_mode='';" >> ${MTR_DIR}/main/test.test
-    fi
+    echo "--source include/have_innodb.inc" >> ${MTR_DIR}/main/test.test
+    echo "#--source include/have_sequence.inc" >> ${MTR_DIR}/main/test.test
+    echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/test.test
+    echo "#--source include/have_log_bin.inc" >> ${MTR_DIR}/main/test.test
+    echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/test.test
+    echo "#ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;  # Use when using have_log_bin and a testcase does not reproduce" >> ${MTR_DIR}/main/test.test
+    echo "#ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/test.test
+    echo "#SET sql_mode='';" >> ${MTR_DIR}/main/test.test
   fi
   if [ -r ./bin/mariadb-binlog ]; then  # ./: relevant to this script's PWD
     echo '../bin/mariadb-binlog --base64-output=decode-rows -vvv var/mysqld.1/data/master-bin.00[0-9][0-9][0-9][0-9]' >${MTR_DIR}/decode_binlog  # ../: relevant to MTR_DIR

@@ -28,6 +28,7 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|store to null pointer of type 'roll_ptr_t' (aka 'unsigned long')|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-31667
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_allany_subselect::Item_allany_subselect|all_any_subquery_creator|MYSQLparse ## MDEV-38828
 LSAN|memory leak|plugin/ha_rocksdb.so|operator|vtable|rocksdb::TransactionLogIteratorImpl::SeekToStartSequence                                                                 ## MDEV-38804
 LSAN|memory leak|plugin/ha_rocksdb.so|operator|rocksdb::kLegacyPlainTableMagicNumber|std::_Hashtable<rocksdb::ThreadStatusData                                                 ## MDEV-38804
@@ -593,6 +594,7 @@ UBSAN|member call on null pointer of type 'Item'|sql/sql_select.cc|handle_select
 UBSAN|member call on null pointer of type 'Item'|sql/sql_union.cc|st_select_lex_unit::exec_inner|mysql_union|handle_select|execute_sqlcom_select                               ## MDEV-22447
 UBSAN|member call on null pointer of type 'Item'|sql/sql_union.cc|st_select_lex_unit::exec|mysql_union|handle_select|execute_sqlcom_select                                     ## MDEV-22447
 UBSAN|member call on null pointer of type 'struct Item'|sql/sql_select.cc|handle_select|execute_sqlcom_select|mysql_execute_command|mysql_parse                                ## MDEV-22447
+ASAN|heap-use-after-free|sql/sql_string.cc|__asan_memmove|Binary_string::copy|String::copy|Item_func_make_set::val_str                                                         ## MDEV-26822
 ASAN|heap-use-after-free|include/x86_64-linux-gnu/bits/string_fortified.h|__asan_memmove|memmove|Binary_string::copy|String::copy                                              ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|__asan_memmove|Binary_string::copy|String::copy|cmp_item_sort_string::store_value                                                   ## MDEV-26822
 ASAN|heap-use-after-free|sql/sql_string.cc|__asan_memmove|Binary_string::copy|String::copy|Item_copy_string::copy                                                              ## MDEV-26822
