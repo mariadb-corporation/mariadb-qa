@@ -329,6 +329,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!commit_lsn|SIGABRT|trx_t::free|innodb_drop_database|dropdb_handlerton|plugin_foreach_with_mask                                                                                ## MDEV-38832
 SIGSEGV|Item_func_nextval::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                                     ## MDEV-38815
 (thd->state_flags & Open_tables_state::BACKUPS_AVAIL) || !thd->has_pending_row_events()|SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|dispatch_command         ## MDEV-38839
 (thd->state_flags & Open_tables_state::BACKUPS_AVAIL) || !thd->has_pending_row_events()|SIGABRT|close_thread_tables|close_thread_tables_for_query|mysql_execute_command|mysql_parse  ## MDEV-38839
