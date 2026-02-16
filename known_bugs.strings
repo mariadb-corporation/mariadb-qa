@@ -329,6 +329,13 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|__strlen_evex|safe_mutex_lock|inline_mysql_mutex_lock|acl_get                                                                                                          ## MDEV-38811
+SIGSEGV|my_hash_first|my_hash_search|hash_filo::search|Hash_filo<acl_entry>::search                                                                                            ## MDEV-38811
+SIGSEGV|__sanitizer::internal_strlen|printf_common|safe_mutex_lock|inline_mysql_mutex_lock                                                                                     ## MDEV-38811
+SIGSEGV|my_hash_first|my_hash_search|hash_filo::search|Hash_filo<acl_entry>::search                                                                                            ## MDEV-38811
+SIGSEGV|__sanitizer::internal_strlen|printf_common|safe_mutex_lock|inline_mysql_mutex_lock                                                                                     ## MDEV-38811
+SIGSEGV|my_hash_first|my_hash_search|hash_filo::search|Hash_filo<acl_entry>::search                                                                                            ## MDEV-38811
+SIGSEGV|ha_myisammrg::set_lock_type|TABLE_LIST::set_lock_type|Multiupdate_prelocking_strategy::handle_end|open_tables                                                          ## MDEV-38816
 !commit_lsn|SIGABRT|trx_t::free|innodb_drop_database|dropdb_handlerton|plugin_foreach_with_mask                                                                                ## MDEV-38832
 SIGSEGV|Item_func_nextval::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                                     ## MDEV-38815
 (thd->state_flags & Open_tables_state::BACKUPS_AVAIL) || !thd->has_pending_row_events()|SIGABRT|close_thread_tables|mysql_execute_command|mysql_parse|dispatch_command         ## MDEV-38839

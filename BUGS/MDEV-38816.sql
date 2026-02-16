@@ -1,0 +1,5 @@
+SET max_session_mem_used=8192;
+CREATE TABLE t (a INT);
+CHECK TABLE t,foo;
+CREATE TEMPORARY TABLE t (a INT) ENGINE=MERGE UNION=(foo);
+UPDATE t,t ta SET t.a=1;
