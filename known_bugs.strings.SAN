@@ -28,6 +28,7 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|division by zero|sql/handler.cc|handler::keyread_time|find_shortest_key|SQL_SELECT::test_quick_select|get_quick_record_count                                             ## MDEV-38848
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_subselect.h|subselect_uniquesubquery_engine::no_rows|Item_in_optimizer::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long ## MDEV-38845
 LSAN|memory leak|<unknown_module>|calloc|handler::ha_rnd_init(bool)|handler::ha_rnd_init_with_error(bool)|init_read_record                                                     ## MDEV-38838
 UBSAN|store to null pointer of type 'roll_ptr_t' (aka 'unsigned long')|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-31667

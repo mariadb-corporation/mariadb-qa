@@ -329,6 +329,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGFPE|handler::keyread_time|find_shortest_key|SQL_SELECT::test_quick_select|get_quick_record_count                                                                            ## MDEV-38848
 SIGSEGV|__strlen_evex|safe_mutex_lock|inline_mysql_mutex_lock|acl_get                                                                                                          ## MDEV-38811
 SIGSEGV|my_hash_first|my_hash_search|hash_filo::search|Hash_filo<acl_entry>::search                                                                                            ## MDEV-38811
 SIGSEGV|__sanitizer::internal_strlen|printf_common|safe_mutex_lock|inline_mysql_mutex_lock                                                                                     ## MDEV-38811
