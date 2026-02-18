@@ -334,6 +334,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+null_ptr < ptr|SIGABRT|Field::move_field_offset|Create_tmp_table::finalize|create_tmp_table|multi_update::initialize_tables                                                    ## MDEV-38860
 SIGSEGV|_grn_obj_remove|grn_obj_remove|ha_mroonga::storage_create_index|ha_mroonga::storage_create_indexes                                                                     ## MDEV-32881
 mdl_key->length() == 3|SIGABRT|MDL_map::try_acquire_lock|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock|MDL_context::acquire_locks                               ## MDEV-38798       
 SIGFPE|handler::keyread_time|find_shortest_key|SQL_SELECT::test_quick_select|get_quick_record_count                                                                            ## MDEV-38848
