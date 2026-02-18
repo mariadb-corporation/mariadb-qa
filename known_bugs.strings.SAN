@@ -28,6 +28,7 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/heap/hp_scan.c|heap_scan|handler::ha_rnd_next|ha_partition::rnd_next|handler::ha_rnd_next                                                     ## MDEV-24070
 UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::ha_index_read_map ## MDEV-36773
 ASAN|heap-use-after-free|storage/mroonga/vendor/groonga/lib/db.c|_grn_obj_remove|grn_obj_remove|ha_mroonga::storage_create|ha_mroonga::create                                  ## MDEV-32881
 UBSAN|member access within null pointer of type 'grn_db_obj'|storage/mroonga/vendor/groonga/lib/db.c                                                                           ## MDEV-32881
