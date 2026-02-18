@@ -505,6 +505,7 @@ if [ -d "${MTR_DIR}" ]; then
     echo "#--source include/have_log_bin.inc" >> ${MTR_DIR}/main/spider.test
     echo "#ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;" >> ${MTR_DIR}/main/spider.test
     echo "#ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/spider.test
+    echo "#SET GLOBAL binlog_direct_non_transactional_updates=OFF;" >> ${MTR_DIR}/main/spider.test
     echo "SET spider_same_server_link=on;" >> ${MTR_DIR}/main/spider.test
     echo "eval CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (HOST \"127.0.0.1\", DATABASE \"test\", USER \"root\", PORT \$MASTER_MYPORT);" >> ${MTR_DIR}/main/spider.test
     echo "SET sql_mode='';" >> ${MTR_DIR}/main/spider.test
@@ -519,6 +520,7 @@ if [ -d "${MTR_DIR}" ]; then
     echo "--source include/master-slave.inc" >> ${MTR_DIR}/main/replication.test
     echo "ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;" >> ${MTR_DIR}/main/replication.test
     echo "ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/replication.test
+    echo "SET GLOBAL binlog_direct_non_transactional_updates=OFF;" >> ${MTR_DIR}/main/replication.test
     echo "SET default_storage_engine=InnoDB;" >> ${MTR_DIR}/main/replication.test
     echo "--connection slave" >> ${MTR_DIR}/main/replication.test
     echo "STOP SLAVE;" >> ${MTR_DIR}/main/replication.test
@@ -544,6 +546,7 @@ if [ -d "${MTR_DIR}" ]; then
     echo "#--source include/have_partition.inc" >> ${MTR_DIR}/main/test.test
     echo "#ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;  # Use when using have_log_bin and a testcase does not reproduce" >> ${MTR_DIR}/main/test.test
     echo "#ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/test.test
+    echo "#SET GLOBAL binlog_direct_non_transactional_updates=OFF;" >> ${MTR_DIR}/main/spider.test
     echo "#SET sql_mode='';" >> ${MTR_DIR}/main/test.test
   fi
   if [ -r ./bin/mariadb-binlog ]; then  # ./: relevant to this script's PWD

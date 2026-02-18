@@ -1,7 +1,20 @@
 #!/bin/bash
+set +H
 if [ ! -r /data/results.list -o ! -f /data/results.list ]; then
   echo '/data/results.list not usable or readable!'
   exit 1
 fi
-cd /data
-grep -v '^[ \t]*#' results.list | grep -o '[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|^|/data/|' | sort -u | xargs -I{} echo "wc -l {}/*/*_out 2>/dev/null | grep -v total | sed \\'s|^[ \t]*||\\'" | xargs -I{} bash -c "{}" | sort -n | tac
+# --- What follows is the correct way to read/parse /data/results.list (re-usable in other scripts, and used in /data/results)
+source /data/results.list
+TMPLST=$(mktemp)
+truncate -s 0 ${TMPLST}
+for i in $(seq 1 200); do
+  if [ ! -z "${MON[${i}]}" ]; then
+    if [ -d "/data/${MON[${i}]}" ]; then
+      echo "${MON[${i}]}" >> ${TMPLST}
+    fi
+  fi
+done
+# ---
+grep -o '[0-9][0-9][0-9][0-9][0-9][0-9]' ${TMPLST} | xargs -I{} echo "wc -l /data/{}/*/*_out 2>/dev/null | grep -v total | sed \\'s|^[ \t]*||\\'" | xargs -I{} bash -c "{}" | sort -n | tac
+rm -f ${TMPLST}

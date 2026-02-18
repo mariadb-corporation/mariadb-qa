@@ -28,6 +28,12 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::ha_index_read_map ## MDEV-36773
+ASAN|heap-use-after-free|storage/mroonga/vendor/groonga/lib/db.c|_grn_obj_remove|grn_obj_remove|ha_mroonga::storage_create|ha_mroonga::create                                  ## MDEV-32881
+UBSAN|member access within null pointer of type 'grn_db_obj'|storage/mroonga/vendor/groonga/lib/db.c                                                                           ## MDEV-32881
+UBSAN|member access within null pointer of type 'grn_db_obj'|storage/mroonga/vendor/groonga/lib/db.c|_grn_obj_remove|grn_obj_remove|ha_mroonga::storage_create_index|ha_mroonga::storage_create_indexes ## MDEV-32881
+UBSAN|member access within null pointer of type 'TABLE'|sql/item_func.cc|Item_func_nextval::val_int|Type_handler_int_result::Item_val_bool|JOIN::exec_inner|JOIN::exec         ## MDEV-33985
+UBSAN|member access within null pointer of type 'TABLE_LIST'|sql/item_func.h|Item_func_nextval::update_table|Item_func_nextval::val_int|Type_handler_int_result::Item_val_bool|JOIN::exec_inner ## MDEV-33985
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_subselect.h|subselect_uniquesubquery_engine::no_rows|Item_in_optimizer::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long ## MDEV-38845
 LSAN|memory leak|<unknown_module>|calloc|handler::ha_rnd_init(bool)|handler::ha_rnd_init_with_error(bool)|init_read_record                                                     ## MDEV-38838
 UBSAN|store to null pointer of type 'roll_ptr_t' (aka 'unsigned long')|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-31667
@@ -146,7 +152,7 @@ ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|open_table_def|mrn_create_t
 UBSAN|null pointer passed as argument 3, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_del_mark_clust_rec|row_upd_clust_step ## MDEV-37954
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/mroonga/ha_mroonga.cpp|mrn_log_file_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update ## MDEV-37952
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/mroonga/ha_mroonga.cpp|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update|set_var::update ## MDEV-37952
-UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/buf/buf0flu.cc|page_cleaner_flush_pages_recommendation|buf_flush_page_cleaner|execute_native_thread_routine|asan_thread_start   ##MDEV-37839
+UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/buf/buf0flu.cc|page_cleaner_flush_pages_recommendation|buf_flush_page_cleaner|execute_native_thread_routine|asan_thread_start   ## MDEV-37839
 ASAN|use-after-poison|sql/sql_string.h|Binary_string::free_buffer|Binary_string::free|Binary_string::~Binary_string|String::~String                                            ## MDEV-37826
 UBSAN|division by zero|sql/json_schema.cc|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Item::save_in_field                 ## MDEV-37806
 UBSAN|load of value X, which is not a valid value for type 'const bool'|sql/sql_analyze_stmt.h|Filesort_tracker::report_use|filesort|create_sort_index|Window_funcs_sort::execa ## MDEV-32307
@@ -158,6 +164,7 @@ ASAN|global-buffer-overflow|strings/ctype-utf8.c|my_charlen_utf8mb3|my_well_form
 UBSAN|load of null pointer of type 'Item *'|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool ## MDEV-35352
 ASAN|use-after-poison|sql/item_jsonfunc.cc|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool        ## MDEV-35352
 UBSAN|member access within null pointer of type 'KEY' (aka 'st_key')|sql/table.cc|calculate_key_len|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map ## MDEV-36221
+UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|ORAparse|parse_sql ## MDEV-36857
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql ## MDEV-36857
 UBSAN|member call on null pointer of type 'Item_cache'|sql/item_sum.cc|Item_sum_min_max::clear|compute_window_func|Window_func_runner::exec|Window_funcs_sort::exec             ## MDEV-37565
 UBSAN|member access within null pointer of type 'Field'|sql/item.cc|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info ## MDEV-37565
@@ -177,9 +184,8 @@ UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_m
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-mb.c|my_charpos_mb|charset_info_st::charpos|Field_blob::get_key_image_itRAW|Field::make_key_image               ## MDEV-37254
 UBSAN|member access within null pointer of type 'THD'|sql/sql_class.h|sql_mode_for_dates|Temporal::sql_mode_for_dates|Datetime::Options::Options|Item::save_date_in_field      ## MDEV-37171
 UBSAN|member call on null pointer of type 'THD'|sql/item_timefunc.cc|Item_func_current_timestamp::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion|Timestamp_or_zero_datetime_native_null::Timestamp_or_zero_datetime_native_null|Type_handler_timestamp_common::Item_save_in_field  ## MDEV-37171
-UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map ##MDEV-36438
 UBSAN|member call on null pointer of type 'Field'|sql/sql_acl.cc|replace_routine_table|sp_revoke_privileges|drop_routine|mysql_execute_command                                 ## MDEV-27842
-UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_supremum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map ##MDEV-36438
+UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_supremum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map ## MDEV-36438
 ASAN|heap-use-after-free|plugin/server_audit/server_audit.c|filter_query_type|skip_set_statement|log_statement_ex|log_statement                                                ## MDEV-37105
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|sql/item_func.cc|Item_func_sleep::val_int|Type_handler::Item_send_long|Protocol::send_result_set_row|select_send::send_data ## MDEV-37062
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|sql/item_func.cc|do_pause|Item_func_sleep::val_int|Type_handler::Item_send_long|Protocol::send_result_set_row ## MDEV-37062
@@ -211,12 +217,11 @@ UBSAN|X is outside the range of representable values of type 'unsigned long long
 UBSAN|X is outside the range of representable values of type 'unsigned long long'|storage/maria/ma_key.c|ma_retrieve_auto_increment|_ma_write_undo_key_insert|_ma_ck_write_btree_with_log|_ma_ck_write_btree ## MDEV-36823
 UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/row/row0ins.cc|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-36823
 UBSAN|X is outside the range of representable values of type 'unsigned long'|include/row0row.inl|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_upd_clust_rec_by_insert     ## MDEV-36823
-UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/row/row0ins.cc|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_upd_clust_rec_by_insert  ##MDEV-36823
+UBSAN|X is outside the range of representable values of type 'unsigned long'|storage/innobase/row/row0ins.cc|row_parse_int|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_upd_clust_rec_by_insert  ## MDEV-36823
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-utf16.h|my_mb_wc_utf16_quick|my_charlen_utf16|my_ismbchar|my_charpos_utf16                                      ## MDEV-36821
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-utf16.h|my_mb_wc_utf16_quick|my_charlen_utf16|my_ismbchar|my_numchars_utf16                                     ## MDEV-36821
-UBSAN|applying non-zero offset X to null pointer|include/rem0rec.inl|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read
-UBSAN|load of misaligned address X for type 'const rec_t' (aka 'const unsigned char'), which requires 2 byte alignment|include/rem0rec.inl|rec_get_bit_field_1|rec_get_info_bits|row_search_mvcc|ha_innobase::index_read
-UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::ha_index_read_map
-
+UBSAN|division by zero|sql/handler.cc|handler::keyread_time|find_shortest_key|make_join_readinfo|JOIN::optimize_stage2                                                         ## MDEV-36438
+UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map ## MDEV-36438
 UBSAN|shift exponent X is too large for 64-bit type 'size_t' (aka 'unsigned long')|storage/innobase/buf/buf0buddy.cc|buf_pool_t::contains_zip|buf_buddy_alloc_from|buf_buddy_alloc_low|buf_buddy_alloc ## MDEV-36755
 UBSAN|member access within null pointer of type 'Explain_select'|sql/sql_select.cc|JOIN::exec|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_bool ## MDEV-36750
 UBSAN|member access within null pointer of type 'Explain_select'|sql/sql_select.cc|JOIN::exec|subselect_single_select_engine::exec|Item_subselect::exec|Item_singlerow_subselect::val_int ## MDEV-36750
@@ -259,6 +264,7 @@ UBSAN|applying zero offset to null pointer|strings/ctype-czech.c|my_strnxfrm_cze
 UBSAN|null pointer passed as argument 2, which is declared to never be null|strings/ctype-bin.c|my_strnxfrm_8bit_nopad_bin|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Type_handler_string_result::Item_update_null_value ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/ctype-utf8.c|my_strnxfrm_unicode_full_bin|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Item_str_func::val_int  ## MDEV-35621
 UBSAN|applying zero offset to null pointer|strings/ctype-latin1.c|my_strnxfrm_latin1_de|charset_info_st::strnxfrm|Item_func_weight_string::val_str|Type_handler_string_result::Item_update_null_value ## MDEV-35621
+UBSAN|applying non-zero offset X to null pointer|strings/ctype-ucs2.h|my_mb_wc_ucs2_quick|my_ucs2_uni|my_convert_using_func|my_convert                                         ## MDEV-36085
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-ucs2.c|my_utf16le_uni|my_charlen_utf16|my_ismbchar|my_numchars_utf16                                            ## MDEV-36085
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-utf32.h|my_mb_wc_utf32_quick|charset_info_st::mb_wc|fix_escape_item|Item_func_like::fix_fields                  ## MDEV-36085
 UBSAN|applying non-zero offset X to null pointer|strings/ctype-ucs2.h|my_mb_wc_ucs2_quick|my_ucs2_uni|charset_info_st::mb_wc|fix_escape_item                                   ## MDEV-36085
@@ -412,6 +418,7 @@ UBSAN|signed integer overflow: X + Y cannot be represented in type 'long int'|sq
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq  ## MDEV-30756
+UBSAN|member access within null pointer of type 'Item_subselect'|sql/item.cc|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields ## MDEV-30756
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::streq|Lex_ident<Compare_ident_ci>::streq|is_infoschema_db ## MDEV-30756
 UBSAN|member access within null pointer of type 'struct JOIN_TAB'|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner        ## MDEV-30756
 UBSAN|member access within null pointer of type 'JOIN_TAB' (aka 'st_join_table')|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-30756
@@ -613,6 +620,7 @@ UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_get_user_var::val_int|Item_func_substr::fix_length_and_dec ## MDEV-28387
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_get_user_var::val_int|Item_func_substr::get_position ## MDEV-28387
 UBSAN|negation of -X cannot be represented in type 'long long int'; cast to an unsigned type to negate this value to itself|strings/my_strtoll10.c|my_strtoll10|user_var_entry::val_int|Item_func_substr::fix_length_and_dec|Item_func::fix_fields ## MDEV-28387
+UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.h|field_longlong::std|analyse::end_of_records|end_send|do_select ## MDEV-28374
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374
 UBSAN|signed integer overflow: -X * Y cannot be represented in type 'longlong' (aka 'long long')|sql/sql_analyse.cc|field_longlong::add|analyse::send_row|end_send|evaluate_join_record ## MDEV-28374

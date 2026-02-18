@@ -90,7 +90,10 @@ MARIADB_ERROR_CODE|MariaDB error code: 1237  ## Ignored query due to replicate-*
 
 ##### For known non-issues (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADBD_ERROR|mariadbd: Connection was killed       ## SPECIAL-43 (non-issue; simple increased log verbosity)
-MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-28498, MDEV-27771
+MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-28498
+MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-27771
+#MARIADBD_ERROR|mariadbd: Can't find record in table  ## MDEV-37068 (current, but too generic to be filtered)
+#MARIADBD_ERROR|mariadbd: Can't find record in table  ## MDEV-36438 (current, but too generic to be filtered)
 MARIADBD_ERROR|mariadbd: The table table is full  ## SPECIAL-44 (non-issue; table is simply full)
 MARIADBD_ERROR|mariadbd: Got an error writing communication packets  ## Occassionally seen after shutdown, upon 'Aborted connection x to db': deemed non-issue
 MARIADBD_ERROR|mariadbd: file-key-management-filename is not set  ## SPECIAL-45 (non-issue; attempt to install file_key_management without correct setup)
@@ -140,6 +143,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 3159  ## SPECIAL-22 (require_secure_trans
 MARIADB_ERROR_CODE|MariaDB error code: 4057  ## SPECIAL-15 (incorrect MyRocks isolation level)
 #MARIADB_ERROR_CODE|MariaDB error code: 4085  ## MDEV-34524 (Filtered as only a single occurence was seen ref MDEV-34524)
 MARIADB_ERROR_CODE|MariaDB error code: 4145
+MARIADB_ERROR_CODE|MariaDB error code: 4254  ## SPECIAL-52 (valid warning/error when BINLOG event does not find correct table def)
 MARIADB_ERROR_CODE|MariaDB error code: 4226  ## Covering various init_slave exec issues (ref MDEV-29499 and for example SPECIAL-42)
 MARIADB_ERROR_CODE|MariaDB error code: 12501 ## SPECIAL-31 (to be expected; remote table not available)
 MARIADB_ERROR_CODE|MariaDB error code: 12701 ## MDEV-22936
@@ -226,6 +230,7 @@ INNODB_ERROR|FTS_DOC_ID must be larger than 0 for table        ## SPECIAL-34 (no
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
 INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
 INNODB_ERROR|Cannot rename.*to.*because the target schema directory doesnt exist ## MDEV-27952
+INNODB_ERROR|Operating system error number 2 in a file operation  ## MDEV-38851
 INNODB_ERROR|Operating system error number 13 in a file operation ## SPECIAL-41
 INNODB_ERROR|Operating system error number 17 in a file operation ## SPECIAL-40
 INNODB_ERROR|Operating system error number 20 in a file operation ## MDEV-19849/MDEV-28831/SPECIAL-40
@@ -329,6 +334,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|_grn_obj_remove|grn_obj_remove|ha_mroonga::storage_create_index|ha_mroonga::storage_create_indexes                                                                     ## MDEV-32881
+mdl_key->length() == 3|SIGABRT|MDL_map::try_acquire_lock|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock|MDL_context::acquire_locks                               ## MDEV-38798       
 SIGSEGV|__strlen_evex|safe_mutex_lock|inline_mysql_mutex_lock|acl_get                                                                                                          ## MDEV-38811
 SIGSEGV|my_hash_first|my_hash_search|hash_filo::search|Hash_filo<acl_entry>::search                                                                                            ## MDEV-38811
 SIGSEGV|__sanitizer::internal_strlen|printf_common|safe_mutex_lock|inline_mysql_mutex_lock                                                                                     ## MDEV-38811
@@ -344,8 +351,10 @@ SIGSEGV|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clus
 !trx->is_started()|SIGABRT|innobase_start_trx_and_assign_read_view|snapshot_handlerton|tp_foreach|ha_start_consistent_snapshot                                                 ## MDEV-37432
 SIGSEGV|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table                                           ## MDEV-38830
 rpl_semi_sync_master_off_times > thd->expected_semi_sync_offs|SIGABRT|Repl_semi_sync_master::commit_trx|Repl_semi_sync_master::wait_after_sync|MYSQL_BIN_LOG::write|THD::binlog_query ## MDEV-38829
+SIGSEGV|Item_func_nextval::val_int|Type_handler_int_result::Item_val_bool|make_join_select|JOIN::optimize_stage2                                                               ## MDEV-33985
 SIGSEGV|Item_func_nextval::val_int|Type_handler_int_result::Item_val_bool|JOIN::exec_inner|JOIN::exec                                                                          ## MDEV-33985
 !strcmp(table_list->get_table_name().str, table_list->mdl_request.key.name())|SIGABRT|get_table_def_key|Item_func_nextval::val_int|Type_handler_int_result::Item_val_bool|Item::val_bool ## MDEV-33985
+!strcmp(table_list->get_table_name().str, table_list->mdl_request.key.name())|SIGABRT|get_table_def_key|Item_func_nextval::val_int|Type_handler_int_result::Item_val_bool|JOIN::exec_inner ## MDEV-33985
 SIGSEGV|Item_subselect::init|Item_allany_subselect::Item_allany_subselect|all_any_subquery_creator|MYSQLparse                                                                  ## MDEV-38828
 str[strlen(str)-1] != '\n' || strlen(str) == 512-1|SIGABRT|my_message_sql|my_message|connect_assisted_discovery|create_table_impl                                              ## MDEV-38827
 str[strlen(str)-1] != '\n'|SIGABRT|my_message_sql|my_message|connect_assisted_discovery|create_table_impl                                                                      ## MDEV-38827
@@ -435,6 +444,7 @@ SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_
 SIGSEGV|__strcmp_evex|mrn_log_file_update|sys_var_pluginvar::global_update|sys_var::update                                                                                     ## MDEV-37952
 SIGSEGV|__strcmp_evex|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update                                                                            ## MDEV-37952
 SIGSEGV|__interceptor_strcmp|mrn_default_tokenizer_update|sys_var_pluginvar::global_update|sys_var::update                                                                     ## MDEV-37952
+SIGSEGV|__interceptor_strcmp|mrn_log_file_update|sys_var_pluginvar::global_update|sys_var::update                                                                              ## MDEV-37952
 SIGSEGV|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal|Item_func_hybrid_field_type::val_decimal  ## MDEV-37953
 SIGSEGV|my_decimal::init|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op                                                                        ## MDEV-37953
 SIGSEGV|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::VDec_op|Type_handler_decimal_result::Item_func_hybrid_field_type_val_decimal                    ## MDEV-37953
@@ -459,6 +469,7 @@ SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_bas
 SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql                                                                                 ## MDEV-36857
 !is_thread_specific || thd || !plugins_are_initialized|SIGABRT|my_malloc_size_cb_func|my_malloc|alloc_root|maria_ft_linearize                                                  ## MDEV-37627
 !is_thread_specific || thd || !plugins_are_initialized|SIGABRT|my_malloc_size_cb_func|my_malloc|root_alloc|alloc_root                                                          ## MDEV-37627
+!is_cond()|SIGABRT|Item_func_hybrid_field_type::val_int|Item_cache_int::cache_value|Item_cache::has_value|Item_cache_int::val_int                                              ## MDEV-37572
 !is_cond()|SIGABRT|Item_func_hybrid_field_type::val_int|Item::val_int_result|Item_cache_int::cache_value|Item_cache::has_value                                                 ## MDEV-37572
 item_sum->fixed()|SIGABRT|add_special_frame_cursors|get_window_functions_required_cursors|Window_func_runner::exec|Window_funcs_sort::exec                                     ## MDEV-37565
 SIGSEGV|Item_sum_min_max::clear|compute_window_func|Window_func_runner::exec|Window_funcs_sort::exec                                                                           ## MDEV-37565
@@ -579,7 +590,12 @@ SIGSEGV|myrocks::Rdb_transaction_impl::get_write_batch|myrocks::Rdb_transaction:
 !eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare                                          ## MDEV-36610
 SIGSEGV|__strcmp_evex|spider_db_mbase::connect|spider_db_connect|spider_db_conn_queue_action                                                                                   ## MENT-2274
 0|SIGABRT|Item_row::illegal_method_call|Item_row::val_real|Item_func_interval::fix_length_and_dec|Item_func::fix_fields                                                        ## MDEV-36569
+SIGFPE|handler::keyread_time|find_shortest_key|make_join_readinfo|JOIN::optimize_stage2                                                                                        ## MDEV-36438
 SIGSEGV|row_search_mvcc|ha_innobase::index_read|handler::index_read_idx_map|handler::ha_index_read_idx_map                                                                     ## MDEV-36438
+find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|handler::index_read_idx_map|handler::ha_index_read_idx_map|Write_record::locate_dup_record                      ## MDEV-36438
+find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|handler::ha_rnd_pos|handler::ha_rnd_pos|rr_from_pointers                                                        ## MDEV-36438
+find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|ha_innobase::rnd_pos|handler::ha_rnd_pos|ha_partition::rnd_pos                                                  ## MDEV-36438
+find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|handler::ha_rnd_pos|multi_update::do_updates|multi_update::send_eof                                             ## MDEV-36438
 find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|ha_innobase::rnd_pos|handler::ha_rnd_pos|multi_update::do_updates                                               ## MDEV-36438
 find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|handler::index_read_map|handler::index_read_idx_map|handler::ha_index_read_idx_map                              ## MDEV-36438
 find_flag != HA_READ_KEY_EXACT|SIGABRT|ha_innobase::index_read|handler::ha_rnd_pos|rr_from_tempfile|Sql_cmd_update::update_single_table                                        ## MDEV-36438
@@ -886,6 +902,7 @@ SIGSEGV|my_decimal::operator=|my_decimal2decimal|my_decimal::to_binary|Type_hand
 thd->active_stmt_arena_to_use()-> is_stmt_prepare_or_first_sp_execute() || thd->active_stmt_arena_to_use()-> is_conventional() || thd->active_stmt_arena_to_use()->state == Query_arena::STMT_SP_QUERY_ARGUMENTS|SIGABRT|Item_func_group_concat::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|setup_fields ## MDEV-32956
 thd->transaction.stmt.is_empty()|SIGABRT|Locked_tables_list::unlock_locked_tables|mysql_rm_table_no_locks|mysql_rm_table|mysql_execute_command                                 ## MDEV-32797
 err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|handler::ha_rename_table                                            ## MDEV-30883
+err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|ha_mroonga::wrapper_rename_table                                    ## MDEV-30883
 owning_thread_id_ == wsrep::this_thread::get_id()|SIGABRT|wsrep::client_state::before_rollback|Wsrep_high_priority_service::log_dummy_write_set|apply_fragment|apply_write_set ## MDEV-32731
 SIGSEGV|spider_create_conn|spider_get_conn|spider_check_trx_and_get_conn|ha_spider::check_access_kind_for_connection                                                           ## MDEV-32558
 SIGSEGV|spider_create_conn|spider_get_conn|spider_check_trx_and_get_conn|ha_spider::info                                                                                       ## MDEV-32558
@@ -3320,7 +3337,7 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                                ## Fixed ## MDEV-36980
 # share->rows_recorded|SIGABRT|ha_tina::delete_row|handler::ha_delete_row|TABLE::delete_row|multi_delete::rowid_table_deletes                                         ## Fixed ## MDEV-36997
 # share.key_info[share.keys].algorithm == HA_KEY_ALG_VECTOR|SIGABRT|ha_create_table|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command              ## Fixed ## MDEV-37022
-# MARIADBD_ERROR|mariadbd: Can't find record in table                                                                                                                 ## Fixed ## MDEV-37068, MDEV-33563
+# MARIADBD_ERROR|mariadbd: Can't find record in table                                                                                                                 ## Fixed ## MDEV-37068
 # SIGSEGV|inline_mysql_mutex_lock|logger_sync|log_statement_ex|log_statement                                                                                          ## Fixed ## MDEV-37122
 # SIGSEGV|safe_mutex_lock|inline_mysql_mutex_lock|logger_sync|log_statement_ex                                                                                        ## Fixed ## MDEV-37122
 # !have_any()|SIGABRT|srw_lock_debug::rd_lock|dict_sys_t::freeze|dict_table_open_on_id|dict_stats_process_entry_from_defrag_pool                                      ## Fixed ## MDEV-37123

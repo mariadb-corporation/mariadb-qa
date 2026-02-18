@@ -55,7 +55,7 @@ fi
 
 # Loop dirs from results.list
 while :; do
-  DATADIR_LIST="rm -Rf"
+  DATADIR_LIST="#rm -Rf"  # Helpful delete aid text command creation (for output/display, not actual use in-script)
   for ((i=1;i<=1000;i++)); do
     if [ ! -z "${MON[${i}]}" ]; then
       if [ -d "${DATADIR}/${MON[${i}]}" ]; then
@@ -83,6 +83,6 @@ while :; do
   done
   echo " ---------------------------------------------------------------------------------------------------------------"
   echo "Handy delete command if you want to remove all active datadirs in results.list:"
-  echo "#${DATADIR_LIST}"
+  echo "${DATADIR_LIST}"
   sleep 60
 done

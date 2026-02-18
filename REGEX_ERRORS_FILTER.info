@@ -143,6 +143,7 @@ Internal MariaDB error code: 2003                     Presumed non-issue (unreac
 Internal MariaDB error code: 2005                     Presumed non-issue (invalid master connection servername)
 Internal MariaDB error code: 4145                     Presumed non-issue (binlog event cannot execute as BACKUP STAGE is active)
 Replication slave GTID position. is invalid. Internal MariaDB error code: 12501  SPECIAL-31 (ref kb)
+Internal MariaDB error code: 4254                     SPECIAL-52 (valid warning/error when BINLOG event does not find correct table def)
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
 Got error 9 when reading table                        MDEV-23297
 Got error 126 when reading table                      MDEV-27902 (May mask other bugs)
