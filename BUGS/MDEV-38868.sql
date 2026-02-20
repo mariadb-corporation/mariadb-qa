@@ -1,0 +1,3 @@
+INSTALL SONAME 'ha_connect';
+SET max_session_mem_used=8192;
+CREATE TABLE t1 ENGINE=CONNECT table_type=ODBC CATFUNC=COLUMNS CONNECTION='foo';

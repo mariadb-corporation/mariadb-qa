@@ -686,7 +686,7 @@ generate_reducer_script(){
       ALT_ACTIVATIONS=0  # ...check if there are any other alternative situations in which we can use the error log string:
       # 'No .* found' scans for 'Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output'
       if [ ! -z "$(echo "${ORIGINAL_TEXT}" | grep -i "No .* found")" ]; then ALT_ACTIVATIONS=1; fi  # No core file found
-      if grep -qi "No .* found" ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/node*/MYBUG 2>/dev/null; then ALT_ACTIVATIONS=1; fi  # Idem, but as written to MYBUG
+      if grep --binary-files=text -qi "No .* found" ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/node*/MYBUG 2>/dev/null; then ALT_ACTIVATIONS=1; fi  # Idem, but as written to MYBUG
       if [ -z "$(ls ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/node*/MYBUG 2>/dev/null)" ]; then ALT_ACTIVATIONS=1; fi  # If no MYBUG was written by pquery-run.sh we can use the error log issue message (as we are sure there is one present given the ERROR_LOG_SCAN_ISSUE check above), and this is true for the above 'no core file found' messages above as well. And, it is again checked below (whetter empty or not)
       if [ "${ALT_ACTIVATIONS}" -eq 1 ]; then
         FINDBUG="YES"  # We had a 'Assert: no core file found in */*core*, and fallback_text_string.sh returned an empty output' trial or similar situation, where there was an error log issue present (i.e. ERROR_LOG_SCAN_ISSUE flag present), so we can update the TEXT to the error log issue. 'YES' Is just a dummy string to trigger the if below to proceed

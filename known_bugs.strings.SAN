@@ -28,6 +28,14 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|Sql_cmd_delete::delete_from_single_table ## MDEV-38886
+UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::ha_delete_all_rows       ## MDEV-38886
+UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|mysql_delete                      ## MDEV-38886
+UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_cmpfunc.h|Item_equal_iterator<List_iterator_fast,|Item_equal_fields_iterator::Item_equal_fields_iterator|Item_equal::contains|Item_field::find_item_equal ## MDEV-38879
+UBSAN|member access within null pointer of type 'Field'|sql/field.h|Field::eq|Item_equal::contains|Item_field::find_item_equal|eliminate_item_equal                            ## MDEV-38879
+UBSAN|reference binding to null pointer of type 'const ha_table_option_struct'|storage/innobase/handler/handler0alter.cc|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|ha_mroonga::wrapper_prepare_inplace_alter_table|mysql_inplace_alter_table ## MDEV-38867
+UBSAN|reference binding to null pointer of type 'const ha_table_option_struct'|storage/innobase/handler/handler0alter.cc|alter_options_need_rebuild|ha_innobase::check_if_supported_inplace_alter|ha_mroonga::wrapper_check_if_supported_inplace_alter|ha_mroonga::check_if_supported_inplace_alter ## MDEV-38867
+UBSAN|reference binding to null pointer of type 'const ha_table_option_struct'|storage/innobase/handler/handler0alter.cc|ha_innobase::check_if_supported_inplace_alter|ha_mroonga::wrapper_check_if_supported_inplace_alter|ha_mroonga::check_if_supported_inplace_alter|mysql_alter_table ## MDEV-38867
 UBSAN|null pointer passed as argument 1, which is declared to never be null|include/page0page.inl|page_rec_is_infimum|row_search_mvcc|ha_innobase::index_read|handler::ha_index_read_map ## MDEV-36773
 ASAN|heap-use-after-free|storage/mroonga/vendor/groonga/lib/db.c|_grn_obj_remove|grn_obj_remove|ha_mroonga::storage_create|ha_mroonga::create                                  ## MDEV-32881
 UBSAN|member access within null pointer of type 'grn_db_obj'|storage/mroonga/vendor/groonga/lib/db.c                                                                           ## MDEV-32881
@@ -448,6 +456,8 @@ ASAN|use-after-poison|sql/field_conv.cc|Copy_field::set|setup_copy_fields|JOIN::
 UBSAN|signed integer overflow: X * Y cannot be represented in type 'int'|sql/threadpool_generic.cc|timer_thread|start_thread|clone3                                            ## MDEV-34063 (Fixed, not upmerged yet)
 UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/sql_select.cc|best_access_path|best_extension_by_limited_search|greedy_search|choose_plan               ## MDEV-34130
 UBSAN|shift exponent X is too large for 32-bit type 'unsigned int'|sql/sql_select.cc|best_access_path|get_costs_for_tables|best_extension_by_limited_search|greedy_search      ## MDEV-34130
+ASAN|heap-use-after-free|storage/maria/ma_unique.c|_ma_unique_comp|maria_update|handler::ha_update_tmp_row|select_unit_ext::send_eof                                           ## MDEV-23443
+ASAN|heap-use-after-free|storage/maria/ma_unique.c|_ma_unique_comp|maria_update|select_unit_ext::send_eof|return_zero_rows                                                     ## MDEV-23443
 ASAN|heap-use-after-free|strings/ctype-simple.c|my_strnncollsp_simple|ha_compare_char_varying|_ma_unique_comp|maria_update                                                     ## MDEV-23443
 UBSAN|applying zero offset to null pointer|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_discover_table_structure|create_table_impl       ## MDEV-34102
 ASAN|heap-use-after-free|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_db_open_item_field|spider_db_mbase_util::print_item_func           ## MDEV-34102

@@ -41,6 +41,7 @@ cat "${1}" | tr -d '`' | \
        s|binlog|BINLOG|gi; \
        s|analyse|ANALYSE|gi; \
        s|do |DO |gi; \
+       s|except|EXCEPT|gi; \
        s|pointfromtext|POINTFROMTEXT|gi; \
        s|multipointfromtext|MULTIPOINTFROMTEXT|gi; \
        s|json|JSON|gi; \

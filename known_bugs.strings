@@ -226,6 +226,7 @@ GOT_ERROR|Got error: 98: Address already in use                ## MDEV-37173
 GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or SPECIAL-24 / MDEV-33291, or presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
 INNODB_ERROR|Table mysql.innodb_table_stats not found          ## SPECIAL-30 (non-issue)
 INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
+INNODB_ERROR|Invalid column name for stopword table X. Its first column must be named as value ## SPECIAL-53 (non-issue)
 INNODB_ERROR|FTS_DOC_ID must be larger than 0 for table        ## SPECIAL-34 (non-issue)
 INNODB_ERROR|indexes are inconsistent with what defined in .frm for table ## MDEV-34951
 INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
@@ -334,6 +335,18 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::ha_delete_all_rows                                                                                  ## MDEV-38886
+SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                                                    ## MDEV-38886
+SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::ha_delete_all_rows|Sql_cmd_delete::delete_from_single_table                                                      ## MDEV-38886
+SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|mysql_delete|mysql_execute_command                                                                                        ## MDEV-38886
+SIGSEGV|Item_equal_iterator<List_iterator_fast, Item>::get_curr_field|Item_equal::contains|Item_field::find_item_equal|eliminate_item_equal                                    ## MDEV-38879
+*str != '\0'|SIGABRT|my_message_sql|connect_assisted_discovery|create_table_impl|mysql_create_table_no_lock                                                                    ## MDEV-38868
+*str != '\0'|SIGABRT|my_message_sql|my_message|connect_assisted_discovery|create_table_impl                                                                                    ## MDEV-38868
+SIGABRT|my_message_sql|connect_assisted_discovery|create_table_impl|mysql_create_table_no_lock                                                                                 ## MDEV-38868 [Temporary well-working hack for str...'\n' issues]
+SIGSEGV|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|ha_mroonga::wrapper_prepare_inplace_alter_table|mysql_inplace_alter_table                    ## MDEV-38867
+SIGSEGV|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|ha_mroonga::wrapper_prepare_inplace_alter_table      ## MDEV-38867
+SIGSEGV|alter_options_need_rebuild|ha_innobase::check_if_supported_inplace_alter|ha_mroonga::wrapper_check_if_supported_inplace_alter|ha_mroonga::check_if_supported_inplace_alter ## MDEV-38867
+SIGSEGV|alter_options_need_rebuild|ha_innobase::check_if_supported_inplace_alter|ha_mroonga::wrapper_check_if_supported_inplace_alter|mysql_alter_table                        ## MDEV-38867
 SIGSEGV|_grn_obj_remove|grn_obj_remove|ha_mroonga::storage_create_index|ha_mroonga::storage_create_indexes                                                                     ## MDEV-32881
 mdl_key->length() == 3|SIGABRT|MDL_map::try_acquire_lock|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock|MDL_context::acquire_locks                               ## MDEV-38798       
 SIGFPE|handler::keyread_time|find_shortest_key|SQL_SELECT::test_quick_select|get_quick_record_count                                                                            ## MDEV-38848
@@ -1837,6 +1850,14 @@ subq_pred->engine->engine_type() == subselect_engine::SINGLE_SELECT_ENGINE|SIGAB
 SIGSEGV|select_value_catcher::setup|execute_degenerate_jtbm_semi_join|setup_jtbm_semi_joins|JOIN::optimize_inner                                                               ## MDEV-22700
 !field->is_null()|SIGABRT|my_decimal::my_decimal|Field::do_field_decimal|copy_fields|end_write                                                                                 ## MDEV-22702
 len == ref_length|SIGABRT|ha_innobase::position|find_all_keys|filesort|create_sort_index                                                                                       ## MDEV-22873
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_fbt<UUID, Type_collection_fbt<UUID> >::Item_val_native_with_conversion                 ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_fbt<UUID<false>, Type_collection_uuid>::Item_val_native_with_conversion                ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Type_handler_fbt<UUID, Type_collection_fbt<UUID> >::Item_val_native_with_conversion|Item::val_native_with_conversion     ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Type_handler_fbt<UUID<false>, Type_collection_uuid>::Item_val_native_with_conversion|Item::val_native_with_conversion    ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Type_handler_fbt<Inet4, Type_collection_fbt<Inet4> >::Fbt::make_from_item|Type_handler_fbt<Inet4, Type_collection_fbt<Inet4> >::Fbt::Fbt ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Type_handler_fbt<Inet4, Type_collection_inet>::Fbt::make_from_item|Type_handler_fbt<Inet4, Type_collection_inet>::Fbt::Fbt ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_fbt<Inet4, Type_collection_fbt<Inet4> >::Fbt::make_from_item                           ## MDEV-22885
+0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_fbt<Inet4, Type_collection_inet>::Fbt::make_from_item                                  ## MDEV-22885
 0|SIGABRT|Item::val_native|Type_handler_timestamp_common::Item_val_native_with_conversion_result|Item::val_native_with_conversion_result|Item_cache_timestamp::cache_value     ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_result|Type_handler_fbt<Inet4, Type_collection_inet>::Item_val_native_with_conversion_result|Item::val_native_with_conversion_result ## MDEV-22885
 0|SIGABRT|Item::val_native|Item::val_native_from_item|Item_ref::val_native|Type_handler_fbt<Inet6, Type_collection_inet>::Fbt::make_from_item                                  ## MDEV-22885
