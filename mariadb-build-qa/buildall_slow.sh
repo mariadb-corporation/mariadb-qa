@@ -28,6 +28,7 @@ BUILD_12_0=0
 BUILD_12_1=0
 BUILD_12_2=1
 BUILD_12_3=1
+BUILD_13_0=1
 BUILD_ES_10_5=0
 BUILD_ES_10_6=1
 BUILD_ES_11_4=1
@@ -59,6 +60,7 @@ USE_EXTRA_A_OPT_12_0=1
 USE_EXTRA_A_OPT_12_1=1
 USE_EXTRA_A_OPT_12_2=1
 USE_EXTRA_A_OPT_12_3=1
+USE_EXTRA_A_OPT_13_0=1
 USE_EXTRA_A_OPT_ES_10_5=0
 USE_EXTRA_A_OPT_ES_10_6=0
 USE_EXTRA_A_OPT_ES_11_4=1
@@ -81,13 +83,23 @@ fi
 cleanup_dirs(){
   cd ${DIR}
   if [ -d /data/TARS ]; then mv ${DIR}/*.tar.gz /data/TARS 2>/dev/null; sync; fi
-  rm -Rf 1[0-2].[0-9]_dbg 1[0-2].[0-9]_opt
+  rm -Rf 1[0-3].[0-9]_dbg 1[0-3].[0-9]_opt
   rm -Rf 10.1[0-1]_dbg 10.1[0-1]_opt
   rm -Rf 10.[5-6]-es_dbg 10.[5-6]-es_opt
   rm -Rf 11.4-es_dbg 11.4-es_opt
 }
 
 buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use (newer builds=larger=longer)
+  if [ ${BUILD_13_0} -eq 1 ]; then
+    if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_13_0}" -eq 1 ]; then
+      export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"
+    else
+      export -n EXTRA_AUTO_OPTIONS; EXTRA_AUTO_OPTIONS=
+    fi
+    cleanup_dirs; cd ${DIR}/13.0 && ~/mariadb-qa/build_mdpsms_opt.sh
+    cleanup_dirs; cd ${DIR}/13.0 && ~/mariadb-qa/build_mdpsms_dbg.sh
+  fi
+
   if [ ${BUILD_12_3} -eq 1 ]; then
     if [ ! -z "${ADD_EXTRA_AUTO_OPTIONS}" -a "${USE_EXTRA_A_OPT_12_3}" -eq 1 ]; then
       export EXTRA_AUTO_OPTIONS="${ADD_EXTRA_AUTO_OPTIONS}"

@@ -12,15 +12,11 @@
 #SIGSEGV|TABLE::check_assignability_all_visible_fields|TABLE::check_assignability_opt_fields|mysql_insert|mysql_execute_command                                                 ## MDEV-34780
 #marked_for_write_or_computed()|SIGABRT|Field_long::store|Item::save_str_value_in_field|Item_string::save_in_field|fill_record_with_mask                                        ## MDEV-34780
 
-##### MDEV-28730 testing #####
-
 ##### MDEV-32830 preliminary test ####
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-36859
 MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
-##### MDEV-35915 testing v11b #####
 ### Temp Search Key: Ma2
-prebuilt->template_type == ROW_MYSQL_WHOLE_ROW|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::update_row|handler::ha_update_row                             ## MDEV-38603
 
 ##### MDEV-35915 testing v11 #####
 #thd->mdl_context.is_lock_owner(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED) || thd->mdl_context.is_lock_warrantee(MDL_key::TABLE, table->s->db.str, table->s->table_name.str, MDL_SHARED)|SIGABRT|close_thread_table|close_thread_tables|Locked_tables_list::unlock_locked_tables|Locked_tables_list::unlock_locked_table ## MDEV-38568
@@ -68,8 +64,8 @@ prebuilt->template_type == ROW_MYSQL_WHOLE_ROW|SIGABRT|ut_dbg_assertion_failed|r
 #SIGSEGV|MDL_key::is_equal|MDL_context::find_ticket|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock                                                                ## MDEV-37872
 #SIGSEGV|MDL_lock::Fast_road::supported_type|MDL_lock::Fast_road::close|MDL_lock::add_cloned_ticket|MDL_context::clone_ticket                                                   ## MDEV-37872
 #!memcmp(trx_id->data, reset_trx_id, 6)|SIGABRT|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry                           ## MDEV-37873
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37877
-!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                        ## MDEV-37877
+#!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|close_thread_tables_for_query                ## MDEV-37877
+#!mysql_bin_log.is_open()|SIGABRT|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables|mysql_execute_command                        ## MDEV-37877
 #SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_rm_db_internal|mysql_execute_command                                                                                     ## MDEV-37956
 #SIGSEGV|mysql_ha_close_table|mysql_ha_rm_tables|mysql_rm_db_internal|mysql_rm_db                                                                                               ## MDEV-37956
 #inited == NONE|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                         ## MDEV-37956
@@ -335,6 +331,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::truncate                                                                                            ## MDEV-38886
+SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::truncate|Sql_cmd_truncate_table::handler_truncate                                                                ## MDEV-38886
+SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::truncate|handler::ha_truncate                                                                                    ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::ha_delete_all_rows                                                                                  ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                                                    ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::ha_delete_all_rows|Sql_cmd_delete::delete_from_single_table                                                      ## MDEV-38886
@@ -586,6 +585,7 @@ select_lex->select_number == (2147483647 *2U +1U) || !output || !output->get_sel
 select_lex->select_number == (2147483647 *2U +1U) || !output || !output->get_select(select_lex->select_number) || output->get_select(select_lex->select_number)->select_lex == select_lex|SIGABRT|JOIN::save_explain_data|JOIN::build_explain|JOIN::optimize|subselect_single_select_engine::exec ## MDEV-36750
 select_lex->select_number == (2147483647 *2U +1U) || select_lex->select_number == 2147483647 || !output || !output->get_select(select_lex->select_number) || output->get_select(select_lex->select_number)->select_lex == select_lex|SIGABRT|JOIN::save_explain_data|JOIN::build_explain|JOIN::optimize|subselect_single_select_engine::exec ## MDEV-36750
 select_lex->select_number == FAKE_SELECT_LEX_ID || !output || !output->get_select(select_lex->select_number) || output->get_select(select_lex->select_number)->select_lex == select_lex|SIGABRT|JOIN::save_explain_data|JOIN::build_explain|JOIN::optimize|subselect_single_select_engine::exec ## MDEV-36750
+copied_in|SIGABRT|Item_copy_string::val_str|Item_direct_ref::val_str|Item_direct_ref::val_str|Item_cache_str::cache_value                                                      ## MDEV-36706
 copied_in|SIGABRT|Item_copy_string::val_str|Item_direct_ref::val_str|Item_direct_ref::val_str|Item_ref::str_result                                                             ## MDEV-36706
 SIGSEGV|Item_ref::const_item|Item::cache_const_expr_analyzer|Item_ref::compile|Item_func::compile                                                                              ## MDEV-36678
 SIGSEGV|Item_ref::update_used_tables|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Used_tables_and_const_cache::used_tables_and_const_cache_update_and_join|Item_func::update_used_tables ## MDEV-36678
@@ -1669,6 +1669,7 @@ SIGSEGV|st_join_table::is_using_agg_loose_index_scan|JOIN::create_postjoin_aggr_
 SIGSEGV|replace_db_table|mysql_grant|Sql_cmd_grant_table::execute_table_mask|Sql_cmd_grant_table::execute                                                                      ## MDEV-24206
 SIGSEGV|replace_db_table|mysql_grant|Sql_cmd_grant_table::execute_table_mask|mysql_execute_command                                                                             ## MDEV-24206
 SIGSEGV|base_list_iterator::next|List_iterator<Item>::operator++|TABLE_LIST::change_refs_to_fields|find_dup_table                                                              ## MDEV-24183
+open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|TR_table::~TR_table|ha_commit_trans|trans_commit_stmt ## MDEV-24154
 open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|close_system_tables|close_log_table|TR_table::~TR_table ## MDEV-24154
 open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|close_log_table|TR_table::~TR_table|ha_commit_trans ## MDEV-24154
 !parse_error || lex.sphead == 0|SIGABRT|Table_triggers_list::check_n_load|Table_triggers_list::change_table_name|do_rename|rename_tables                                       ## MDEV-23977
@@ -1821,6 +1822,7 @@ strcmp(share->unique_file_name,filename) || share->last_version|SIGABRT|test_if_
 strcmp(share->unique_file_name,filename) || share->last_version|SIGABRT|test_if_reopen|mi_open|ha_myisam::open|handler::ha_open                                                ## MDEV-16985
 expr == default_value->expr|SIGABRT|make_empty_rec_store_default|make_empty_rec|build_frm_image|mysql_create_frm_image                                                         ## MDEV-19336
 entry->pos_in_table_list->table == entry|SIGABRT|free_tmp_table|close_thread_tables|mysql_execute_command|mysql_parse                                                          ## MDEV-19336
+inited==NONE|SIGABRT|handler::ha_index_read_idx_map|Write_record::locate_dup_record|Write_record::prepare_handle_duplicate|Write_record::replace_row                           ## MDEV-19596
 inited==NONE|SIGABRT|handler::ha_index_read_idx_map|write_record|Delayed_insert::handle_inserts|handle_delayed_insert                                                          ## MDEV-19596
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|ma_commit|ha_maria::external_lock                                            ## MDEV-17225
 log_descriptor.bc.buffer->prev_last_lsn == ((LSN)0)|SIGABRT|translog_flush_buffers|translog_flush|maria_delete_all_rows|ha_maria::delete_all_rows                              ## MDEV-17225
@@ -3543,3 +3545,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # #sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_release|ha_federatedx::savepoint_release|ha_release_savepoint|trans_release_savepoint         ## Fixed ## MDEV-38449
 # MARIADB_ERROR_CODE|MariaDB error code: 1526  ## Fixed ## MDEV-33291 or MDEV-5798
 # level != Sql_condition::WARN_LEVEL_ERROR|SIGABRT|push_warning|push_warning_printf|wsrep_TOI_begin|wsrep_to_isolation_begin                                          ## Fixed ## MENT-2293
+# prebuilt->template_type == ROW_MYSQL_WHOLE_ROW|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::update_row|handler::ha_update_row                  ## Fixed ## MDEV-38603

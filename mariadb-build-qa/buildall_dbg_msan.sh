@@ -19,7 +19,7 @@ fi
 sed -i 's|^ASAN_OR_MSAN=0|ASAN_OR_MSAN=1|' ~/mariadb-qa/build_mdpsms_dbg_san.sh  # Set to MSAN
 
 DIR=${PWD}
-rm -Rf 1[0-2].[0-9]_dbg_san
+rm -Rf 1[0-3].[0-9]_dbg_san
 rm -Rf 10.1[0-1]_dbg_san
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
@@ -44,6 +44,8 @@ cd ${DIR}/11.8 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/12.0 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 cd ${DIR}/12.1 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 cd ${DIR}/12.2 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+cd ${DIR}/12.3 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+cd ${DIR}/13.0 && ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #if [ -d ${DIR}/10.5-es ]; then cd ${DIR}/10.5-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh & fi
 if [ -d ${DIR}/10.6-es ]; then cd ${DIR}/10.6-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh & fi
 if [ -d ${DIR}/11.4-es ]; then cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_dbg_san.sh & fi

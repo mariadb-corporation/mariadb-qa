@@ -15,4 +15,9 @@ INSTALL SONAME 'ha_rocksdb';
 SET GLOBAL rocksdb_update_cf_options='cf0={prefix_extractor=capped:0};';
 SELECT * FROM information_schema.rocksdb_global_info;
 ERR: [ERROR] RocksDB: Failed to get column family flags from CF with id = 2. MyRocks data dictionary may be corrupted.
-CLI
+
+INSTALL SONAME 'ha_rocksdb';
+CREATE TABLE t (id1 INT UNSIGNED,id2 INT UNSIGNED,KEY(id1) COMMENT 'cf_primaryk',KEY seck (id2) COMMENT 'cf_secondaryk') ENGINE=RocksDB;
+SET GLOBAL rocksdb_update_cf_options='cf={prefix_extractor=capped:1};';
+SELECT * FROM information_schema.rocksdb_global_info;
+ERR: [ERROR] RocksDB: Failed to get column family flags from CF with id = 4. MyRocks data dictionary may be corrupted.

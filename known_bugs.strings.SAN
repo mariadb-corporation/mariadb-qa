@@ -28,6 +28,8 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of null pointer of type 'Field *'|sql/table.cc|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table ## MDEV-38830
+UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::truncate                 ## MDEV-38886
 UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|Sql_cmd_delete::delete_from_single_table ## MDEV-38886
 UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::ha_delete_all_rows       ## MDEV-38886
 UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|mysql_delete                      ## MDEV-38886
@@ -220,6 +222,7 @@ ASAN|use-after-poison|asan_interceptors.cpp.o|StrtolFixAndCheck|__isoc23_strtol|
 ASAN|use-after-poison|sql/sql_string.h|Binary_string::c_ptr|Item_func_json_equals::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long                               ## MDEV-29026
 ASAN|use-after-poison|sql/field.cc|__asan_memcpy|Field_string::get_key_image|key_copy|sub_select                                                                               ## MDEV-31793
 UBSAN|division by zero|sql/rowid_filter.cc|get_max_range_rowid_filter_elems_for_table|TABLE::init_cost_info_for_usable_range_rowid_filters|make_join_statistics|JOIN::optimize_inner  ## MDEV-36990
+UBSAN|load of null pointer of type 'TABLE_SHARE *'|sql/sql_base.cc|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_table              ## MDEV-26805
 UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_table         ## MDEV-26805
 UBSAN|load of null pointer of type 'const uint' (aka 'const unsigned int')|sql/sql_class.cc|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields ## MDEV-36865
 UBSAN|member access within null pointer of type 'const struct transaction_participant'|sql/sql_class.cc|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields ## MDEV-36865
@@ -465,6 +468,7 @@ UBSAN|applying zero offset to null pointer|mysys/charset.c|escape_string_for_mys
 ASAN|heap-use-after-free|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_db_open_item_field|spider_db_mbase_util::print_item_func           ## MDEV-34102
 ASAN|heap-use-after-free|mysys/charset.c|escape_string_for_mysql|spider_string::append_escape_string|spider_db_open_item_field|spider_db_print_item_type                       ## MDEV-34102
 ASAN|dynamic-stack-buffer-overflow|strings/decimal.c|bin2decimal|my_decimal::my_decimal|Field_new_decimal::val_str|Field::val_str                                              ## MDEV-23444
+ASAN|dynamic-stack-buffer-overflow|strings/decimal.c|bin2decimal|my_decimal::my_decimal|Field_new_decimal::save_in_field|fill_record                                           ## MDEV-23444
 ASAN|heap-use-after-free|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::store                                                               ## MDEV-34076
 ASAN|heap-use-after-free|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::store_string_aux                                                    ## MDEV-34076
 UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_command.cpp|mroonga_command_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed  ## MDEV-21166
