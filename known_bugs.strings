@@ -334,6 +334,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::truncate                                                                                            ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::truncate|Sql_cmd_truncate_table::handler_truncate                                                                ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::truncate|handler::ha_truncate                                                                                    ## MDEV-38886
+undo_no <= 1|SIGABRT|trx_t::reset_and_truncate_undo|ha_innobase::extra|copy_data_between_tables|mysql_alter_table                                                              ## MDEV-38928
+SIGSEGV|sp_type_def_list::find_type_def|sp_pcontext::find_type_def|LEX::find_type_def|LEX::set_field_type_typedef                                                              ## MDEV-38883
 SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::ha_delete_all_rows                                                                                  ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                                                    ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::ha_delete_all_rows|Sql_cmd_delete::delete_from_single_table                                                      ## MDEV-38886
