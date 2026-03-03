@@ -1,0 +1,3 @@
+INSTALL SONAME 'ha_example';
+CREATE TABLE t (a INT) ENGINE=example;
+TRUNCATE TABLE t;
