@@ -331,6 +331,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+thd->is_error()|SIGABRT|store_server_fields|insert_server_record|insert_server|create_server                                                                                   ## MDEV-38961
 option_struct|SIGABRT|ha_example::create|handler::ha_create|ha_create_table_from_share|ha_create_table                                                                         ## MDEV-38940
 SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::truncate                                                                                            ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::truncate|Sql_cmd_truncate_table::handler_truncate                                                                ## MDEV-38886
