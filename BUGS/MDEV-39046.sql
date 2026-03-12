@@ -1,0 +1,7 @@
+set sql_mode='';
+CREATE TABLE t1 (c INT)Engine=InnoDB;
+INSERT INTO t1 (c) VALUES (0),(0),(0),(0);
+RENAME TABLE t1 TO t;
+CREATE TABLE t1 (a INT KEY,b INT,c CHAR(0),e ENUM (''))Engine=InnoDB;
+INSERT INTO t1 SET a=0,b=0,c=0;
+DELETE FROM t1 WHERE c IN (SELECT * FROM t) ORDER BY SUM(c) OVER();
