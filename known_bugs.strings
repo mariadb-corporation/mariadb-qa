@@ -331,6 +331,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+select_lex->leaf_tables_saved|SIGABRT|setup_tables|setup_tables_and_check_access|JOIN::prepare|mysql_select                                                                    ## MDEV-39085
+SIGSEGV|check_key_in_list|Item_func_json_keys::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                       ## MDEV-39049
 node->pcur->rel_pos == BTR_PCUR_ON|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row                                         ## MDEV-39046
 thd->is_error()|SIGABRT|store_server_fields|insert_server_record|insert_server|create_server                                                                                   ## MDEV-38961
 option_struct|SIGABRT|ha_example::create|handler::ha_create|ha_create_table_from_share|ha_create_table                                                                         ## MDEV-38940
