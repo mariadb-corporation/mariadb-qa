@@ -28,6 +28,7 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|sql/sql_admin.cc|prepare_for_repair|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command                                             ## MDEV-33676
 UBSAN|load of null pointer of type 'Field *'|sql/table.cc|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table ## MDEV-38830
 UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::truncate                 ## MDEV-38886
 UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|Sql_cmd_delete::delete_from_single_table ## MDEV-38886
@@ -1073,6 +1074,7 @@ UBSAN|load of value X, which is not a valid value for type 'Optional_metadata_fi
 # ASAN|heap-buffer-overflow|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                ## Fixed ## MDEV-32317
 # ASAN|use-after-poison|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                    ## Fixed ## MDEV-32317
 # UBSAN|member access within null pointer of type 'struct String'|sql/item_jsonfunc.cc|Item_func_json_array_intersect::prepare_json_and_create_hash|Item_func_json_array_intersect::fix_length_and_dec|Item_func::fix_fields|Item_str_func::fix_fields ## Fixed ## MDEV-33149
+# UBSAN|member call on null pointer of type 'Charset'|sql/item_jsonfunc.cc|Item_func_json_array_intersect::prepare_json_and_create_hash|Item_func_json_array_intersect::fix_length_and_dec|Item_func::fix_fields|Item_str_func::fix_fields  ## Fixed ## MDEV-33149
 # UBSAN|call to function mysql_sys_var_long(THD*, int) through pointer to incorrect function type 'unsigned long *(*)(THD *, int)'|storage/myisam/ha_myisam.cc|ha_myisam::repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert ## Likely MDEV-34512, also handled in MDEV-35623
 # UBSAN|call to function mysql_sys_var_longlong(THD*, int) through pointer to incorrect function type 'unsigned long long *(*)(THD *, int)'|storage/maria/ha_maria.cc|ha_maria::optimize|handler::ha_optimize|mysql_admin_table|Sql_cmd_optimize_table::execute ## Fixed ## MDEV-34512
 # UBSAN|call to function mysql_sys_var_longlong(THD*, int) through pointer to incorrect function type 'unsigned long long *(*)(THD *, int)'|storage/maria/ha_maria.cc|ha_maria::optimize|mysql_admin_table|Sql_cmd_optimize_table::execute|mysql_execute_command ## Fixed ## MDEV-34512

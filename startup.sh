@@ -504,8 +504,8 @@ if [ -d "${MTR_DIR}" ]; then
     echo "#--source include/have_binlog_format_row.inc" >> ${MTR_DIR}/main/spider.test
     echo "#--source include/have_log_bin.inc" >> ${MTR_DIR}/main/spider.test
     echo "#ALTER TABLE mysql.gtid_slave_pos ENGINE=InnoDB;" >> ${MTR_DIR}/main/spider.test
-    echo "#ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/spider.test
-    echo "#SET GLOBAL binlog_direct_non_transactional_updates=OFF;" >> ${MTR_DIR}/main/spider.test
+    echo "###ALTER TABLE mysql.gtid_slave_pos DROP PRIMARY KEY;" >> ${MTR_DIR}/main/spider.test
+    echo "##SET GLOBAL binlog_direct_non_transactional_updates=OFF;" >> ${MTR_DIR}/main/spider.test
     echo "SET spider_same_server_link=on;" >> ${MTR_DIR}/main/spider.test
     echo "eval CREATE SERVER srv FOREIGN DATA WRAPPER MYSQL OPTIONS (HOST \"127.0.0.1\", DATABASE \"test\", USER \"root\", PORT \$MASTER_MYPORT);" >> ${MTR_DIR}/main/spider.test
     echo "SET sql_mode='';" >> ${MTR_DIR}/main/spider.test

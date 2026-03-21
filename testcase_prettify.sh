@@ -297,6 +297,7 @@ cat "${1}" | tr -d '`' | \
        s| in | IN |gi; \
        s| on | ON |gi; \
        s| for | FOR |gi; \
+       s|force|FORCE|gi; \
        s|aria|Aria|gi; \
        s|memory|MEMORY|gi; \
        s|innodb|InnoDB|gi; \

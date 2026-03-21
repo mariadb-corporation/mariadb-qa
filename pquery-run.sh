@@ -533,7 +533,7 @@ if [ ${QUERY_DURATION_TESTING} -eq 1 ]; then
 elif [[ "${PXB_CRASH_RUN}" -eq 1 ]]; then
   echoit "MODE: Percona Xtrabackup crash test run"
   if [[ ! -d ${PXB_BASEDIR} ]]; then
-    echo "Assert: $PXB_BASEDIR does not exist. Terminating!"
+    echoit "Assert: $PXB_BASEDIR does not exist. Terminating!"
     exit 1
   fi
 elif [ "${CRASH_RECOVERY_TESTING}" -eq 1 ]; then
@@ -545,6 +545,36 @@ elif [ "${CRASH_RECOVERY_TESTING}" -eq 1 ]; then
   fi
 elif [ "${QUERY_CORRECTNESS_TESTING}" -eq 1 ]; then
   echoit "MODE: Query Correctness Testing"
+elif [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 ]; then
+  echoit "MODE: mariadb-binlog Recovery Testing"
+  if [ "${REPLICATION}" == "1" ]; then
+    echoit "Assert: mariadb-binlog recovery testing is not compatible with replication testing (REPLICATION=1}, yet; feel free to implement it"
+    exit 1
+  fi
+  if [ "${RR_TRACING}" == "1" ]; then
+    echoit "Assert: mariadb-binlog recovery testing is not compatible with RR tracing (RR_TRACING=1), yet; feel free to implement it"
+    exit 1
+  fi
+  if [ "${VALGRIND_RUN}" == "1" ]; then
+    echoit "Assert: mariadb-binlog recovery testing is not compatible with Valgrind testing (VALGRIND_RUN=1), yet; feel free to implement it"
+    exit 1
+  fi
+  if [ "${QUERY_CORRECTNESS_TESTING}" == "1" ]; then
+    echoit "Assert: mariadb-binlog recovery testing is not meant to be used in combination with query correctness testing (QUERY_CORRECTNESS_TESTING=1), please disable either, or both"
+    exit 1
+  fi
+  if [ "${ADD_RANDOM_OPTIONS}" == "1" ]; then
+    echoit "Assert: mariadb-binlog recovery testing is not compatible with adding random options (ADD_RANDOM_OPTIONS=1), yet; feel free to implement it"
+    exit 1
+  fi
+  if [[ "${MYEXTRA^^}" != *"LOG_BIN"* ]]; then
+    echoit "Assert: mariadb-binlog recovery testing is active (MARIADB_BINLOG_RECOVERY_TESTING=1), yet 'log_bin' is not part of the MYEXTRA options"
+    exit 1
+  fi
+  if [[ "${MYEXTRA^^}" != *"=ROW"* && "${MYEXTRA^^}" != *"=STATEMENT"* && "${MYEXTRA^^}" != *"=MIXED"* ]]; then
+    echoit "Assert: mariadb-binlog recovery testing is active (MARIADB_BINLOG_RECOVERY_TESTING=1), yet '=ROW' nor '=STATEMENT' nor '=MIXED' is part of the MYEXTRA options"
+    exit 1
+  fi
 elif [ "${QUERY_CORRECTNESS_TESTING}" -ne 1 ]; then
   if [ "${REPLICATION}" == "1" ]; then
     MODEPREFIX='MODE: Replication testing | SUB'
@@ -750,6 +780,10 @@ ctrl-c() {
 savetrial() {  # Only call this if we definitely want to save a trial
   if [ "${TRIAL_SAVED}" == "1" ]; then
     echoit "Warning: savetrial() was called but TRIAL_SAVED was already 1. Ensure this trial has been actually saved as we don't attempt to save it again now"
+    return 1
+  fi
+  if [ ! -d "${RUNDIR}/${TRIAL}" ]; then
+    echoit "Warning: savetrial() was called, however the trial rundir (${RUNDIR}/${TRIAL}) was already removed, likely by removetrial() or similar"  # TODO: needs occurences to debug further, likely 100% cosmetic; likely removetrial() was called before a later savetrial(), requiring some extra coverage code in the place it happened
     return 1
   fi
   if [ ! -z "$(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null)" ]; then  # ./data/*core* and ./node*/*core* compatible
@@ -1005,7 +1039,7 @@ mdg_startup() {
           if [ "${MDG_IGNORE_ALL_OPTION_ISSUES}" -eq 1 ]; then
             echoit "MDG_IGNORE_ALL_OPTION_ISSUES=1, so irrespective of the assert given, pquery-run.sh will continue running. Please check your option files!"
           else
-            if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${ERROR_LOG}; then  # Likely OOS on /dev/shm
+            if grep -qiE "error 28|out of disk space" ${ERROR_LOG}; then  # Likely OOS on /dev/shm
               echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
               removetrial
               sleep 1800
@@ -1013,7 +1047,9 @@ mdg_startup() {
             else
               savetrial
               echoit "Remember to cleanup/delete the rundir:  rm -Rf ${RUNDIR}"
-              exit 1
+              if [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -ne 1 ]; then
+                exit 1  # Ref [*A] above
+              fi
             fi
           fi
         else # Do not halt for MDG_ADD_RANDOM_OPTIONS=1 runs, they are likely to produce errors like these as MDG_MYEXTRA was randomly changed
@@ -1237,7 +1273,7 @@ gr_startup() {
       else
         echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (${MYEXTRA}) startup options. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against these variables settings."
         grep "ERROR" -B5 -A3 ${ERROR_LOG} | tee -a /${WORKDIR}/pquery-run.log
-        if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${ERROR_LOG}; then  # Likely OOS on /dev/shm
+        if grep -qiE "error 28|out of disk space" ${ERROR_LOG}; then  # Likely OOS on /dev/shm
           echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
           removetrial
           sleep 1800
@@ -1766,7 +1802,7 @@ pquery_test(){
             else
               echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (or \$MYSAFE or \$ENCRYPTION_OPTIONS) startup parameters. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against the \$MYEXTRA (or \$MYSAFE if it was modified) settings. You may also want to try setting \$MYEXTRA=\"${MYEXTRA}\" directly in start (as created by startup.sh using your base directory)."
               grep "ERROR" ${RUNDIR}/${TRIAL}/log/*.err | tee -a /${WORKDIR}/pquery-run.log
-              if grep -qiE "Could not open mysql.plugin|error 28|out of disk space" ${RUNDIR}/${TRIAL}/log/*.err; then  # Likely OOS on /dev/shm
+              if grep -qiE "error 28|out of disk space" ${RUNDIR}/${TRIAL}/log/*.err; then  # Likely OOS on /dev/shm
                 echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
                 removetrial
                 sleep 1800
@@ -1774,7 +1810,9 @@ pquery_test(){
               else
                 savetrial
                 echoit "Remember to cleanup/delete the rundir:  rm -Rf ${RUNDIR}"
-                exit 1
+                if [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -ne 1 ]; then
+                  exit 1  # Ref [*A] above
+                fi
               fi
             fi
           else # Do not halt for ADD_RANDOM_OPTIONS=1 runs, they are likely to produce errors like these as MYEXTRA was randomly changed
@@ -2587,11 +2625,15 @@ EOF
       # Thus, mysqld/mariadbd would (presumably) have received a shutdown signal (even if the timeout was 2 seconds it likely would have)
       timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
       if [ $? -eq 137 ]; then
-        echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
-        touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
-        # Note we are not checking for RR tracing here, as it is unlikely that Valgrind tracing + RR tracing is used at the same time
-        savetrial
-        TRIAL_SAVED=1
+        if [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 ]; then
+          echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial. In regular runs this trial would be saved as a SHUTDOWN_TIMEOUT_ISSUE. However, as MariaDB binlog recovery testing is active (MARIADB_BINLOG_RECOVERY_TESTING=1), this trial is not saved here and instead kept for binlog recovery & table checksum compare instead. Initate a regular run to capture SHUTDOWN issues."
+        else
+          echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+          touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+          # Note we are not checking for RR tracing here, as it is unlikely that Valgrind tracing + RR tracing is used at the same time
+          savetrial
+          TRIAL_SAVED=1
+        fi
       fi
       VALGRIND_SUMMARY_FOUND=0
       for X in $(# Wait for full Valgrind output in error log
@@ -2632,9 +2674,13 @@ EOF
         fi
         if [ ${TO_EXIT_CODE} -eq 137 ]; then
           if [ ${ISSTARTED} -eq 1 ]; then  # Only display a failed shutdown message if the server was correctly started to being with. We still try and do the shutdown above, "just in case" the server came up with a large delay
-            echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+            if [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 ]; then
+              echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial. In regular runs this trial would be saved as a SHUTDOWN_TIMEOUT_ISSUE. However, as MariaDB binlog recovery testing is active (MARIADB_BINLOG_RECOVERY_TESTING=1), this trial is not saved here and instead kept for binlog recovery & table checksum compare instead. Initate a regular run to capture SHUTDOWN issues."
+            else
+              echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+              touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+            fi
           fi
-          touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
           if [ "${RR_TRACING}" == "1" ]; then
             # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0/mariadbd-0)
             # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld/mariadbd) so that the rr trace can finish correctly
@@ -2662,8 +2708,12 @@ EOF
         if [[ ${REPLICATION} -eq 1 ]]; then
           timeout --signal=9 90s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 90 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
           if [ $? -eq 137 ]; then
-            echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
-            touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+            if [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 ]; then
+              echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial. In regular runs this trial would be saved as a SHUTDOWN_TIMEOUT_ISSUE. However, as MariaDB binlog recovery testing is active (MARIADB_BINLOG_RECOVERY_TESTING=1), this trial is not saved here and instead kept for binlog recovery & table checksum compare instead. Initate a regular run to capture SHUTDOWN issues."
+            else
+              echoit "mysqld/mariadbd failed to shutdown within 90 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+              touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+            fi
             if [ "${RR_TRACING}" == "1" ]; then
               # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0 or mariadbd-0)
               # To avoid this, we need to SIGABRT (kill -6) the tracee (mysqld/mariadbd) so that the rr trace can finish correctly
@@ -2696,18 +2746,18 @@ EOF
       sleep 0.2
       kill -9 ${MPID} ${SLAVE_MPID} > /dev/null 2>&1
       timeout -k5 -s9 5s wait ${MPID} ${SLAVE_MPID} > /dev/null 2>&1
-    ) & # Terminate mysqld/mariadbd
+    ) # Terminate mysqld/mariadbd
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       (
         sleep 0.2
         kill -9 ${MPID2} > /dev/null 2>&1
         timeout -k5 -s9 5s wait ${MPID2} > /dev/null 2>&1
-      ) & # Terminate mysqld/mariadbd
+      ) # Terminate mysqld/mariadbd
       (
         sleep 0.2
         kill -9 ${PQPID2} > /dev/null 2>&1
         timeout -k5 -s9 5s wait ${PQPID2} > /dev/null 2>&1
-      ) & # Terminate pquery (if it went past ${PQUERY_RUN_TIMEOUT} time, also see NOTE** above)
+      ) # Terminate pquery (if it went past ${PQUERY_RUN_TIMEOUT} time, also see NOTE** above)
     fi
     sleep 1 # <^ Make sure all is gone
   elif [[ "${MDG}" -eq 1 || "${GRP_RPL}" -eq 1 ]]; then
@@ -2785,9 +2835,217 @@ EOF
     fi
     FAILED_QUERIES_OUTPUT=
   fi
+  # ======== MARIADB_BINLOG_RECOVERY_TESTING ========
+  # Initiate binlog replay using mariadb-binlog  
+  if [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 -a -d "${RUNDIR}/${TRIAL}" ]; then
+    echoit "Binlog recovery testing: moving ${RUNDIR}/${TRIAL}/data to ${RUNDIR}/${TRIAL}/data.ORIGINAL"
+    mv ${RUNDIR}/${TRIAL}/data ${RUNDIR}/${TRIAL}/data.ORIGINAL
+    echoit "Binlog recovery testing: moving ${RUNDIR}/${TRIAL}/tmp to ${RUNDIR}/${TRIAL}/tmp.ORIGINAL"
+    mv ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/tmp.ORIGINAL
+    echoit "Binlog recovery testing: moving ${RUNDIR}/${TRIAL}/log to ${RUNDIR}/${TRIAL}/log.ORIGINAL"
+    mv ${RUNDIR}/${TRIAL}/log ${RUNDIR}/${TRIAL}/log.ORIGINAL
+    echoit "Binlog recovery testing: copying data dir template to ${RUNDIR}/${TRIAL}/data"
+    mkdir -p ${RUNDIR}/${TRIAL}/data ${RUNDIR}/${TRIAL}/tmp ${RUNDIR}/${TRIAL}/log
+    cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data 2>&1
+    echo "${MYEXTRA}" | if grep -qi "innodb[_-]log[_-]checksum[_-]algorithm"; then
+      # Ensure that mysqld/mariadbd server startup will not fail due to a mismatched checksum algo between the original MID and the changed MYEXTRA options
+      rm ${RUNDIR}/${TRIAL}/data/ib_log* rm ${RUNDIR}/${TRIAL}/data.ORIGINAL/ib_log*  # Note we are also pre-processing the original (data.ORIGINAL) instance here as it is brought back up for table checksums below (post the binlog recovery test)
+    fi
+    # Init new empty/clean instance based on the data template to test binlog recovery
+    init_empty_port
+    PORT=${NEWPORT}
+    NEWPORT=
+    rm -f "${SOCKET}"
+    echoit "Binlog recovery testing: starting the binlog recovery instance. Error log: ${RUNDIR}/${TRIAL}/log/master.err"
+    CMD="${BIN} ${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
+    diskspace
+    $CMD >> ${RUNDIR}/${TRIAL}/log/master.err 2>&1 & 
+    MPID="$!"
+    echoit "Binlog recovery testing: waiting for mysqld/mariadbd (pid: ${MPID}) to fully start..."
+    for X in $(seq 0 ${MYSQLD_START_TIMEOUT}); do
+      sleep 1
+      if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then  # Server up
+        break
+      fi
+      if [ "${MPID}" == "" ]; then
+        echoit "Assert! ${MPID} empty. Terminating!"
+        exit 1
+      fi
+      if grep -qi "ERROR. Aborting" ${RUNDIR}/${TRIAL}/log/*.err; then
+        if grep -qi "TCP.IP port.*Address already in use" ${RUNDIR}/${TRIAL}/log/*.err; then
+          echoit "Assert! The text '[ERROR] Aborting' was found in the error log due to a IP port conflict (the port was already in use)"
+          removetrial
+        else
+          if grep -qi "Can't initialize timers" ${RUNDIR}/${TRIAL}/log/*.err; then
+            echoit "Error! '[ERROR] Aborting' was found in the error log, due to a 'Can't initialize timers' issue, ref https://jira.mariadb.org/browse/MDEV-22286, currently being researched. The run should be able to continue normally. Not saving trial."
+            removetrial
+          else
+            echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (or \$MYSAFE or \$ENCRYPTION_OPTIONS) startup parameters. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against the \$MYEXTRA (or \$MYSAFE if it was modified) settings. You may also want to try setting \$MYEXTRA=\"${MYEXTRA}\" directly in start (as created by startup.sh using your base directory)."
+            grep "ERROR" ${RUNDIR}/${TRIAL}/log/*.err | tee -a /${WORKDIR}/pquery-run.log
+            if grep -qiE "error 28|out of disk space" ${RUNDIR}/${TRIAL}/log/*.err; then  # Likely OOS on /dev/shm
+              echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
+              removetrial
+              sleep 1800
+              echoit "Slept 0.5h, resuming pquery-run.sh run..."
+            else
+              savetrial
+              echoit "Remember to cleanup/delete the rundir:  rm -Rf ${RUNDIR}"
+              exit 1
+            fi
+          fi
+        fi
+      fi
+      # Break the wait-for-server-started loop if a core file is found. Handlin
+      if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -ge 1 ]; then
+        removetrial
+        break
+      fi 
+    done
+    # Check if binlog recovery instance is alive
+    if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
+      echoit "Binlog recovery testing: server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}"
+      #${BASEDIR}/bin/mariadb -uroot -S${SOCKET} -e "CREATE DATABASE IF NOT EXISTS test;" > /dev/null 2>&1  # test db should be created by this call above (on the original run), and it should have been binlog-replicated
+    fi
+    echoit "Binlog recovery testing: attempting binlog recovery using mariadbd-binlog with the binlogs in ${RUNDIR}/${TRIAL}/data"
+    if [ ! -x ${BASEDIR}/bin/mariadb-binlog ]; then
+      echoit "Assert: ${BASEDIR}/bin/mariadb-binlog missing or not readable or not executable"
+      exit 1
+      break
+    fi
+    BINLOG_BASENAME="$(ls -1 ${RUNDIR}/${TRIAL}/data.ORIGINAL/*.idx | grep --binary-files=text -vi 'relay' | head -n1 | sed 's|.*/||;s|.idx||;s|[0]\+[0-9]\+|0*|')"
+    echo "${BASEDIR}/bin/mariadb-binlog \$(ls -1 ${RUNDIR}/${TRIAL}/data.ORIGINAL/${BINLOG_BASENAME} | grep -v idx | sort -n) | ${BASEDIR}/bin/mariadb -A -uroot -S${RUNDIR}/${TRIAL}/socket.sock --force --binary-mode test 2>&1 >${RUNDIR}/${TRIAL}/binlog_recovery_result.txt" > ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh
+    echo "# Reference command, indentical to the full used command in binlog_recovery_cmd.sh" > ${RUNDIR}/${TRIAL}/local_binlog_recovery
+    echo "# For manual use in /test/MD..." >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
+    echo "cp ${WORKDIR}/${TRIAL}/${BINLOG_BASENAME} ." >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
+    echo "./all_no_cl ${MYEXTRA}" >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
+    echo "./bin/mariadb-binlog \$(ls -1 ./${BINLOG_BASENAME} | grep -v idx | sort -n) | ./bin/mariadb -A -uroot -Ssocket.sock --force --binary-mode test 2>&1" >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
+    chmod +x ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh
+    ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh
+    chmod -x ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh  # There will be no need to re-run it manually
+    BINLOG_BASENAME=
+    if grep --binary-files=text -qi 'error' ${RUNDIR}/${TRIAL}/binlog_recovery_result.txt; then
+      touch ${RUNDIR}/${TRIAL}/BINLOG_RECOVERY_ERROR
+      echo 'Please note that some binlog recovery errors are expected and normal; for example, if the master failed on a given statement with an error (think for example DROP TABLE t1, t2; where t2 does not exist), then this 'expected' error will have been enecoded into the binlog and a binlog replay (or a replica in replication) is expected to render the same error upon binlog replay. For binlog replay, you can use --force and --binary-mode to prevent most errors. In replication, the replica automatically uses this error.' >> ${RUNDIR}/${TRIAL}/BINLOG_RECOVERY_ERROR
+      echoit "Binlog recovery testing: FOUND issue during binlog recovery testing (max 10 shown):"
+      grep --binary-files=text -i 'error' ${RUNDIR}/${TRIAL}/binlog_recovery_result.txt | head -n10 | tee -a /${WORKDIR}/pquery-run.log
+      savetrial
+      TRIAL_SAVED=1
+      # Now that we have mariadb-binlog test completion, we can kill this recovery instance. If instead the trial is not saved here, due to succesful here binlog replay, the server will stay up and table checksums will be taken just below. After that the instance is terminated there
+      echoit "Binlog recovery testing: terminating post-binlog recovery instance"
+      ( 
+        sleep 0.2
+        kill -9 ${MPID} > /dev/null 2>&1
+        timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
+      ) # Terminate mysqld/mariadbd
+    else
+      echoit "Binlog recovery testing: NO issue found during binlog recovery testing"
+    fi
+    if [ "${TRIAL_SAVED}" != "1" ]; then  # Only check table checksums if binlog recovery succeeded (otherwise trial was saved and moved already)
+      echoit "Binlog recovery testing: generating db tables checksum SQL for the post-binlog recovery instance"
+      ${BASEDIR}/bin/mariadb -A -uroot -S${SOCKET} --force --binary-mode -e "SELECT CONCAT('CHECKSUM TABLE \`test\`.\`', REPLACE(table_name, '\`', '\`\`'), '\`;') FROM information_schema.tables;" | grep --binary-files=text -v 'CONCAT' > ${RUNDIR}/${TRIAL}/checksumlist2.sql
+      echoit "Binlog recovery testing: running db tables checksum SQL for the post-binlog recovery instance"
+      ${BASEDIR}/bin/mariadb -A -uroot -S${SOCKET} --force --binary-mode < ${RUNDIR}/${TRIAL}/checksumlist2.sql > ${RUNDIR}/${TRIAL}/checksumlist_result2.txt
+      # Now that we have mariadb-binlog test completion & checksums for the recovery instance, we can kill this instance
+      echoit "Binlog recovery testing: terminating post-binlog recovery instance"
+      ( 
+        sleep 0.2
+        kill -9 ${MPID} > /dev/null 2>&1
+        timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
+      ) # Terminate mysqld/mariadbd
+      # Re-init the original instance to obtain table checksums
+      init_empty_port
+      PORT=${NEWPORT}
+      NEWPORT=
+      rm -f "${SOCKET}"
+      echoit "Binlog recovery testing: correcting missing user/GRANT privileges on the original instance about to be re-started by copying various recover files from the original template. Also fixing potential mysql.host issues"
+      for CFILES in columns_priv global_priv procs_priv proxies_priv tables_priv db user roles_mapping proc func help time_zone plugin event servers; do
+        cp ${WORKDIR}/data.template/mysql/${CFILES}* ${RUNDIR}/${TRIAL}/data.ORIGINAL/mysql 2>&1
+      done
+      rm ${RUNDIR}/${TRIAL}/data.ORIGINAL/mysql/host.* 2>/dev/null # Avoids '[ERROR] mariadbd: Fatal error: mysql.host table is damaged or in unsupported 3.20 format' if present
+      echoit "Binlog recovery testing: re-starting the original instance. Error log (added unto): ${RUNDIR}/${TRIAL}/log.ORIGINAL/master.err"
+      CMD="${BIN} ${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data.ORIGINAL --tmpdir=${RUNDIR}/${TRIAL}/tmp.ORIGINAL --core-file --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log.ORIGINAL/master.err"
+      diskspace
+      $CMD >> ${RUNDIR}/${TRIAL}/log.ORIGINAL/master.err 2>&1 & 
+      MPID="$!"
+      echoit "Binlog recovery testing: waiting for mysqld/mariadbd (pid: ${MPID}) to fully start..."
+      for X in $(seq 0 ${MYSQLD_START_TIMEOUT}); do
+        sleep 1
+        if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then  # Server up
+          break
+        fi
+         if [ "${MPID}" == "" ]; then
+          echoit "Assert! ${MPID} empty. Terminating!"
+          exit 1
+        fi
+        if grep -qi "ERROR. Aborting" ${RUNDIR}/${TRIAL}/log.ORIGINAL/*.err; then
+          if grep -qi "TCP.IP port.*Address already in use" ${RUNDIR}/${TRIAL}/log.ORIGINAL/*.err; then
+            echoit "Assert! The text '[ERROR] Aborting' was found in the error log due to a IP port conflict (the port was already in use)"
+            removetrial
+          else
+            if grep -qi "Can't initialize timers" ${RUNDIR}/${TRIAL}/log.ORIGINAL/*.err; then
+              echoit "Error! '[ERROR] Aborting' was found in the error log, due to a 'Can't initialize timers' issue, ref https://jira.mariadb.org/browse/MDEV-22286, currently being researched. The run should be able to continue normally. Not saving trial."
+              removetrial
+            else
+              echoit "Assert! '[ERROR] Aborting' was found in the error log. This is likely an issue with one of the \$MYEXTRA (or \$MYSAFE or \$ENCRYPTION_OPTIONS) startup parameters. Saving trial for further analysis, and dumping error log here for quick analysis. Please check the output against the \$MYEXTRA (or \$MYSAFE if it was modified) settings. You may also want to try setting \$MYEXTRA=\"${MYEXTRA}\" directly in start (as created by startup.sh using your base directory)."
+              grep "ERROR" ${RUNDIR}/${TRIAL}/log.ORIGINAL/*.err | tee -a /${WORKDIR}/pquery-run.log
+              if grep -qiE "error 28|out of disk space" ${RUNDIR}/${TRIAL}/log.ORIGINAL/*.err; then  # Likely OOS on /dev/shm
+                echoit "Noticed a likely OOS on ${RUNDIR} or in /tmp or root (/). Removing trial to maximize space, and pausing 0.5 hour before trying again (reducer's may be running and consuming space)"
+                removetrial
+                sleep 1800
+                echoit "Slept 0.5h, resuming pquery-run.sh run..."
+              else
+                savetrial
+                echoit "Remember to cleanup/delete the rundir:  rm -Rf ${RUNDIR}"
+                #exit 1  # we do not want to exit here; failures on some re-started trials are to be expected [*A]
+              fi
+            fi
+          fi
+        fi
+        # Break the wait-for-server-started loop if a SECONDARY core file is found. TODO: this is not perfect. If the original instance did not crash, but the 2nd start up of the same instance (i.e. same data dir etc) does, there will be only one core. Current impact; minor: it just means that MYSQLD_START_TIMEOUT has to be reached before the process continues, and the expected frequency is low to start with. Another option is to delete any existing cores. For just 'MARIADB_BINLOG_RECOVERY_TESTING' this may be ok, but it's not ideal for combined runs (and then the status quo is better)
+        if [ $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -ge 2 ]; then
+          removetrial  # We can remove the trial if the re-started server startup fails, as we won't be able to take checksums AND we already had a correct binlog replay (otherwise this code would not have been reached)
+          break
+        fi 
+      done
+      # Check if mysqld/mariadbd is alive
+      if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
+        echoit "Binlog recovery testing: original instance re-started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}"
+        #${BASEDIR}/bin/mariadb -uroot -S${SOCKET} -e "CREATE DATABASE IF NOT EXISTS test;" > /dev/null 2>&1  # test db should be created by this call above (on the original run), and it should have been binlog-replicated
+      fi
+      echoit "Binlog recovery testing: generating db tables checksum SQL for the re-started original instance"
+      ${BASEDIR}/bin/mariadb -A -uroot -S${SOCKET} --force --binary-mode -e "SELECT CONCAT('CHECKSUM TABLE \`test\`.\`', REPLACE(table_name, '\`', '\`\`'), '\`;') FROM information_schema.tables;" | grep --binary-files=text -v 'CONCAT' > ${RUNDIR}/${TRIAL}/checksumlist1.sql
+      echoit "Binlog recovery testing: running db tables checksum SQL for the re-started original instance"
+      ${BASEDIR}/bin/mariadb -A -uroot -S${SOCKET} --force --binary-mode < ${RUNDIR}/${TRIAL}/checksumlist1.sql > ${RUNDIR}/${TRIAL}/checksumlist_result1.txt
+      # Ensure indentical orders
+      sort ${RUNDIR}/${TRIAL}/checksumlist_result1.txt -o ${RUNDIR}/${TRIAL}/checksumlist_result1.txt
+      sort ${RUNDIR}/${TRIAL}/checksumlist_result2.txt -o ${RUNDIR}/${TRIAL}/checksumlist_result2.txt
+      if ! diff -dq ${RUNDIR}/${TRIAL}/checksumlist_result1.txt ${RUNDIR}/${TRIAL}/checksumlist_result2.txt >/dev/null 2>&1; then
+        touch ${RUNDIR}/${TRIAL}/BINLOG_CHECKSUM_DIFF
+        echoit "Binlog recovery testing: FOUND table checksum difference(s) between the original re-started and binlog replay instances (max 10 shown):"
+        echo "diff -dy ${RUNDIR}/${TRIAL}/checksumlist_result1.txt ${RUNDIR}/${TRIAL}/checksumlist_result2.txt | grep --binary-files=text -vE 'Table.*Checksum' | grep --binary-files=text -E '<|>'" > ${RUNDIR}/${TRIAL}/checksumlist_result_diff.sh
+        chmod +x ${RUNDIR}/${TRIAL}/checksumlist_result_diff.sh
+        ${RUNDIR}/${TRIAL}/checksumlist_result_diff.sh | head -n10 | tee -a /${WORKDIR}/pquery-run.log
+        savetrial
+        TRIAL_SAVED=1
+      else
+        echoit "Binlog recovery testing: NO table checksum difference(s) between the original re-started and binlog replay instances were found"
+      fi
+      # Now that we have the checksums from the original instance (data.ORIGINAL), we can kill this instance
+      echoit "Binlog recovery testing: terminating the re-started original instance"
+      ( 
+        sleep 0.2
+        kill -9 ${MPID} > /dev/null 2>&1
+        timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
+      ) # Terminate mysqld/mariadbd
+      rm -f "${SOCKET}"
+    fi
+  elif [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 -a ! -d "${RUNDIR}/${TRIAL}" ]; then
+    echoit "MariaDB binlog recovery testing is enabled (MARIADB_BINLOG_RECOVERY_TESTING=1) however the trial dir (${RUNDIR}/${TRIAL}) is missing. Check messages above for cause and fix"  # TODO, as per output
+  fi
+  # ======== /MARIADB_BINLOG_RECOVERY_TESTING ========
   if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 -a $(ls -l ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null | wc -l) -eq 0 ]; then # If a core is found when query correctness testing is in progress, it will process it as a normal crash (without considering query correctness)
     if [ "${FAILEDSTARTABORT}" != "1" ]; then
-      if [ ${QUERY_CORRECTNESS_MODE} -ne 2 ]; then
+     if [ ${QUERY_CORRECTNESS_MODE} -ne 2 ]; then
         QC_RESULT1=$(diff ${RUNDIR}/${TRIAL}/${QC_PRI_ENGINE}.result ${RUNDIR}/${TRIAL}/${QC_SEC_ENGINE}.result)
         #QC_RESULT2=$(cat ${RUNDIR}/${TRIAL}/pquery1.log | grep -i 'SUMMARY' | sed 's|^.*:|pquery summary:|')
         #QC_RESULT3=$(cat ${RUNDIR}/${TRIAL}/pquery2.log | grep -i 'SUMMARY' | sed 's|^.*:|pquery summary:|')
@@ -2813,15 +3071,15 @@ EOF
       VALGRIND_ERRORS_FOUND=0
       VALGRIND_CHECK_1=
       # What follows next are 3 different ways of checking if Valgrind issues were seen, mostly to ensure that no Valgrind issues go unseen, especially if log is not complete
-      VALGRIND_CHECK_1=$(grep "==[0-9]\+== ERROR SUMMARY: [0-9]\+ error" ${RUNDIR}/${TRIAL}/log/*.err | sed 's|.*ERROR SUMMARY: \([0-9]\+\) error.*|\1|')
+      VALGRIND_CHECK_1=$(grep "==[0-9]\+== ERROR SUMMARY: [0-9]\+ error" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | sed 's|.*ERROR SUMMARY: \([0-9]\+\) error.*|\1|')
       if [ "${VALGRIND_CHECK_1}" == "" ]; then VALGRIND_CHECK_1=0; fi
       if [ ${VALGRIND_CHECK_1} -gt 0 ]; then
         VALGRIND_ERRORS_FOUND=1
       fi
-      if egrep -qi "^[ \t]*==[0-9]+[= \t]+[atby]+[ \t]*0x" ${RUNDIR}/${TRIAL}/log/*.err; then
+      if egrep -qi "^[ \t]*==[0-9]+[= \t]+[atby]+[ \t]*0x" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null; then
         VALGRIND_ERRORS_FOUND=1
       fi
-      if egrep -qi "==[0-9]+== ERROR SUMMARY: [1-9]" ${RUNDIR}/${TRIAL}/log/*.err; then
+      if egrep -qi "==[0-9]+== ERROR SUMMARY: [1-9]" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null; then
         VALGRIND_ERRORS_FOUND=1
       fi
       if [ ${VALGRIND_ERRORS_FOUND} -eq 1 ]; then
@@ -2834,12 +3092,12 @@ EOF
         fi
       else
         # Report that no Valgrind errors were found & include ERROR SUMMARY from error log
-        echoit "No Valgrind errors detected. $(grep "==[0-9]\+== ERROR SUMMARY: [0-9]\+ error" ${RUNDIR}/${TRIAL}/log/*.err | sed 's|.*ERROR S|ERROR S|')"
+        echoit "No Valgrind errors detected. $(grep "==[0-9]\+== ERROR SUMMARY: [0-9]\+ error" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | sed 's|.*ERROR S|ERROR S|')"
       fi
     fi
     # If there are *SAN bugs, delete any known ones from the top of the error log(s)...
     if [ "${SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG}" != "1" ]; then
-      if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+      if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null; then
         SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=1
         echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
         CUR_PWD_TMP="${PWD}"
@@ -3268,14 +3526,12 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
     done
     # Sysbench run for data load
     /usr/bin/sysbench --test=${SCRIPT_PWD}/sysbench_scripts/parallel_prepare.lua --num-threads=1 --oltp-tables-count=1 --oltp-table-size=1000000 --mysql-db=test --mysql-user=root --db-driver=mysql --mysql-socket=${WORKDIR}/data.template/socket.sock run > ${WORKDIR}/data.template/sysbench_prepare.txt 2>&1
-
-    # Terminate mysqld/mariadbd
     timeout --signal=9 20s ${BASEDIR}/bin/mysqladmin -uroot -S${WORKDIR}/data.template/socket.sock shutdown > /dev/null 2>&1
     (
       sleep 0.2
       kill -9 ${MPID} > /dev/null 2>&1
       timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
-    ) & # Terminate mysqld/mariadbd
+    ) # Terminate mysqld/mariadbd
   fi
   echo "${MYEXTRA}${MYSAFE}" | if grep -qi "innodb[_-]log[_-]checksum[_-]algorithm"; then
     # Ensure that if MID created log files with the standard checksum algo, whilst we start the server with another one, that log files are re-created by mysqld/mariadbd

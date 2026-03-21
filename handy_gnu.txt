@@ -27,7 +27,7 @@
   echo "LoweR CasE" | tr [:upper:] [:lower:]  # Output: lower case
 # Ensure fault-free grep operation when grepping through a file which contains non-ASCII characters
   grep --binary-files=text ...
-# Shuffle lines of a file. Much better then sort -R --random-source=/dev/urandom. sort -R will still sort according to hash, leaving similar lines clustered
+# Shuffle lines of a file. Much better then sort -R --random-source=/dev/urandom. sort -R will still sort according to hash, leaving similar lines clustered, and it is also much faster
   shuf --random-source=/dev/urandom inputfile > outputfile
 # The same, but with a set number of lines extracted
   shuf -n10 --random-source=/dev/urandom inputfile > outputfile
