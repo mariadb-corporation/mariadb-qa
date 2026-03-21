@@ -332,6 +332,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+select_lex->leaf_tables_saved|SIGABRT|setup_tables|setup_tables_and_check_access|JOIN::prepare|mysql_select                                                                    ## MDEV-39085
+SIGSEGV|check_key_in_list|Item_func_json_keys::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                       ## MDEV-39049
+node->pcur->rel_pos == BTR_PCUR_ON|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row                                         ## MDEV-39046
+thd->is_error()|SIGABRT|store_server_fields|insert_server_record|insert_server|create_server                                                                                   ## MDEV-38961
+option_struct|SIGABRT|ha_example::create|handler::ha_create|ha_create_table_from_share|ha_create_table                                                                         ## MDEV-38940
 SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::truncate                                                                                            ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::truncate|Sql_cmd_truncate_table::handler_truncate                                                                ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_all_rows|handler::truncate|handler::ha_truncate                                                                                    ## MDEV-38886
@@ -448,6 +453,7 @@ SIGSEGV|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN
 res >= 0|SIGABRT|JOIN::optimize_inner|JOIN::optimize|mysql_select|handle_select                                                                                                ## MDEV-32173
 SIGSEGV|ARRAY::AddValue|MakeValueArray|MakeFilter|ha_connect::CondFilter                                                                                                       ## MDEV-33077
 SIGSEGV|XINDEX::FastFind|XINDEX::Range|CntIndexRange|ha_connect::records_in_range                                                                                              ## MDEV-31911
+trx->id|SIGABRT|row_log_allocate|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table                             ## MDEV-38034
 trx_id > 0 || (flags & BTR_KEEP_SYS_FLAG) || index->table->is_temporary()|SIGABRT|btr_cur_update_in_place|row_upd_clust_rec|row_upd_clust_step|row_upd                         ## MDEV-38034
 trx->id || index->table->no_rollback() || index->table->is_temporary()|SIGABRT|row_ins_index_entry|row_ins_index_entry_step|row_ins|row_ins_step                               ## MDEV-38034
 SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo                                                        ## MDEV-38034
