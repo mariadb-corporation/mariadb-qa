@@ -28,6 +28,7 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of value X, which is not a valid value for type 'Optional_metadata_field_type'|sql/log_event.cc|Table_map_log_event::Optional_metadata_fields::Optional_metadata_fields|RPL_TABLE_LIST::create_column_mapping|Rows_log_event::do_apply_event|Log_event::apply_event                           ## MDEV-38676
 ASAN|heap-use-after-free|sql/sql_admin.cc|prepare_for_repair|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command                                             ## MDEV-33676
 UBSAN|load of null pointer of type 'Field *'|sql/table.cc|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table ## MDEV-38830
 UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::truncate                 ## MDEV-38886
@@ -1063,8 +1064,6 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## Fixed ## MDEV-37720
 # UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_alloc.c|strdup_root|parse_url|ha_federatedx::create|handler::ha_create                  ## Fixed ## MDEV-38039
 # UBSAN|null pointer passed as argument 1, which is declared to never be null|mysys/my_alloc.c|strdup_root|parse_url|ha_federated::create|handler::ha_create                   ## Fixed ## MDEV-38039
-
-UBSAN|load of value X, which is not a valid value for type 'Optional_metadata_field_type'|sql/log_event.cc|Table_map_log_event::Optional_metadata_fields::Optional_metadata_fields|RPL_TABLE_LIST::create_column_mapping|Rows_log_event::do_apply_event|Log_event::apply_event                                                                        ## MDEV-38676
 # UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/handler/ha_innodb.cc                                                   ## Fixed ## MDEV-30732
 # UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/item_timefunc.cc|get_interval_value|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## Fixed ## MDEV-30931
 # UBSAN|signed integer overflow: X * Y cannot be represented in type 'long long int'|sql/item_timefunc.cc|get_interval_value|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## Fixed ## MDEV-30931
