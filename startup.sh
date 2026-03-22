@@ -549,10 +549,11 @@ if [ -d "${MTR_DIR}" ]; then
     echo "#SET GLOBAL binlog_direct_non_transactional_updates=OFF;" >> ${MTR_DIR}/main/spider.test
     echo "#SET sql_mode='';" >> ${MTR_DIR}/main/test.test
   fi
+  add_san_options ${MTR_DIR}/decode_binlog
   if [ -r ./bin/mariadb-binlog ]; then  # ./: relevant to this script's PWD
-    echo '../bin/mariadb-binlog --base64-output=decode-rows -vvv var/mysqld.1/data/master-bin.00[0-9][0-9][0-9][0-9]' >${MTR_DIR}/decode_binlog  # ../: relevant to MTR_DIR
+    echo '../bin/mariadb-binlog --base64-output=decode-rows -vvv var/mysqld.1/data/master-bin.00[0-9][0-9][0-9][0-9]' >>${MTR_DIR}/decode_binlog  # ../: relevant to MTR_DIR
   else
-    echo '../bin/mysqlbinlog --base64-output=decode-rows -vvv var/mysqld.1/data/master-bin.00[0-9][0-9][0-9][0-9]' >${MTR_DIR}/decode_binlog
+    echo '../bin/mysqlbinlog --base64-output=decode-rows -vvv var/mysqld.1/data/master-bin.00[0-9][0-9][0-9][0-9]' >>${MTR_DIR}/decode_binlog
   fi
   chmod +x ${MTR_DIR}/decode_binlog
   echo '#!/bin/bash' >${MTR_DIR}/mtra
@@ -1316,10 +1317,11 @@ chmod +x sysbench_lua*
 if [ ! -r ./in.sql ]; then touch ./in.sql; fi  # Make new empty file if does not exist yet
 echo './all --sql_mode=' >sqlmode
 echo './all --log_bin' >binlog
+add_san_options decode_binlog
 if [ -r ./bin/mariadb-binlog ]; then
-  echo './bin/mariadb-binlog --base64-output=decode-rows -vvv data/*.00[0-9][0-9][0-9][0-9]' >decode_binlog
+  echo './bin/mariadb-binlog --base64-output=decode-rows -vvv data/*.00[0-9][0-9][0-9][0-9]' >>decode_binlog
 else
-  echo './bin/mysqlbinlog --base64-output=decode-rows -vvv data/*.00[0-9][0-9][0-9][0-9]' >decode_binlog
+  echo './bin/mysqlbinlog --base64-output=decode-rows -vvv data/*.00[0-9][0-9][0-9][0-9]' >>decode_binlog
 fi
 echo 'MYEXTRA_OPT="$*"' >all
 add_san_options all

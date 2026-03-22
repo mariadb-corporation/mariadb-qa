@@ -4,9 +4,9 @@
 # A single opt or dbg workdir instance will tend to take 0.4-0.8 GB of space (usually on /dev/shm)
 #BASEDIR=/test/MDEV-31669_UBASAN_MD160326-mariadb-13.0.0-linux-x86_64-opt
 #BASEDIR=/test/MDEV-31669_MD160326-mariadb-13.0.0-linux-x86_64-opt
-#BASEDIR=/test/MDEV-35915_v12_UBASAN_MD050326-mariadb-12.2.0-linux-x86_64-dbg
-BASEDIR=/test/MDEV-35915_v12_MD050326-mariadb-12.2.0-linux-x86_64-opt
-RUNSOPT=1
+BASEDIR=/test/MDEV-35915_v12_UBASAN_MD050326-mariadb-12.2.0-linux-x86_64-dbg
+#BASEDIR=/test/MDEV-35915_v12_MD050326-mariadb-12.2.0-linux-x86_64-opt
+RUNSOPT=3
 RUNSDBG=0
 #CONF=pquery-run-MD-Aria-enc.conf  # Encryption (ENABLE_ENCRYPTION=1), PS=2, Aria swap # Testing MDEV-38246, bb-10.11-monty
 #CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2, and spider swap
@@ -30,6 +30,7 @@ CONF=pquery-run-MD-binlog-recovery.conf
 #CONF=pquery-run-MD-6.conf
 #CONF=pquery-run-MD-MDEV_35915.conf
 #CONF=pquery-run-MD-MDEV_35915_replication.conf
+#CONF=pquery-run-MD-MDEV_35915_2.conf
 #CONF=pquery-run-MD-MDEV-37833.conf
 #CONF=pquery-run-MD-MDEV-9826.conf
 #CONF=pquery-run-MD-MDEV-9826_2.conf

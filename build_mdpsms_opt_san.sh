@@ -261,17 +261,18 @@ else
         # FLAGS='-DCMAKE_CXX_FLAGS=-fsanitize-coverage=trace-pc-guard'  Removed: '-fsanitize-coverage=trace-pc-guard' is only helpful for code coverage analysis, ref https://clang.llvm.org/docs/SanitizerCoverage.html
         #FLAGS="-D_FORTIFY_SOURCE=2 -DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fstack-protector-all -fno-omit-frame-pointer -fno-inline -fno-builtin -fno-common -fsanitize=address,undefined,leak,alignment,bounds,integer,null,enum,pointer-compare,pointer-subtract,return,unreachable,vla-bound'"
         # undefined,null,nullability-assign,pointer-overflow,pointer-overflow,pointer-overflow,pointer-overflow,alignment,alignment,object-size,signed-integer-overflow,unsigned-integer-overflow,integer-divide-by-zero,float-divide-by-zero,invalid-builtin-use,invalid-objc-cast,implicit-unsigned-integer-truncation,implicit-signed-integer-truncation,implicit-integer-sign-change,implicit-signed-integer-truncation,implicit-integer-sign-change,shift-base,shift-exponent,bounds,local-bounds,unreachable,return,vla-bound,float-cast-overflow,bool,enum,function,returns-nonnull-attribute,nullability-return,nonnull-attribute,nullability-arg,vptr,cfi,vptr_check
+        # The '-fPIC' option prevents https://jira.mariadb.org/browse/MDEV-39148
         if [ "$(cmake --version | grep -o '[0-9]' | head -n1)" -ge 4 ]; then  # cmake > v4.0 (also assumes Clang/LLVM 21)
-          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-lm -fsanitize=address,undefined /usr/lib/llvm-21/lib/clang/21/lib/linux/libclang_rt.asan-x86_64.a /usr/lib/llvm-21/lib/clang/21/lib/linux/libclang_rt.ubsan_standalone-x86_64.a' -DCMAKE_REQUIRED_FLAGS='-fsanitize=address,undefined'"
+          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -fPIC -march=native -mtune=native -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-lm -fsanitize=address,undefined /usr/lib/llvm-21/lib/clang/21/lib/linux/libclang_rt.asan-x86_64.a /usr/lib/llvm-21/lib/clang/21/lib/linux/libclang_rt.ubsan_standalone-x86_64.a' -DCMAKE_REQUIRED_FLAGS='-fsanitize=address,undefined'"
           SAN=""  # We set these manually instead (build script limitation in connection with a custom Clang/LLVM install)
         else
-          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native'"
+          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -fPIC -march=native -mtune=native'"
         fi
         echo "Using Clang for SAN build."
       else
         # '-static-libasan' is needed to avoid this error on mysqld startup:
         # ==PID== ASan runtime does not come first in initial library list; you should either link runtime to your application or manually preload it with LD_PRELOAD.
-        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -static-libasan'"
+        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -fPIC -march=native -mtune=native -static-libasan'"
         echo "Using GCC for SAN build."
       fi
     fi

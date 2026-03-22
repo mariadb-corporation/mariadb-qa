@@ -205,6 +205,9 @@ if [ $USE_AFL -eq 1 ]; then
   fi
 elif [ $FB -eq 1 ]; then
   FLAGS='-DCMAKE_CXX_FLAGS=-march=native'  # -DCMAKE_CXX_FLAGS="-march=native" is the default for FB tree
+else
+  # Regular builds. The '-fPIC' option prevents https://jira.mariadb.org/browse/MDEV-39148
+  FLAGS="-DCMAKE_CXX_FLAGS=-fPIC"
 fi
 # Also note that -k can be use for make to ignore any errors; if the build fails somewhere in the tests/unit tests then it matters
 # little. Note that -k is not a compiler flag as -w is. It is a make option.

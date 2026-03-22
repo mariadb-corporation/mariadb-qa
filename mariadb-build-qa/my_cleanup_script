@@ -13,8 +13,10 @@ fi
 while true; do
   cd /data
   ./clean_all & # i.e. ca
-  #./del_all_fallback_trials.sh &
-  #./del_most_shutdown_issues.sh &  # Needed in current feature testing
+  if [ "${1}" == "1" ]; then
+    ./del_all_fallback_trials.sh &
+    ./del_most_shutdown_issues.sh &
+  fi
   wait %1
   wait %2
   #wait %3
