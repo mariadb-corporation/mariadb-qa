@@ -332,6 +332,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|check_word|extract_oracle_date_time|Item_func_to_date::get_date_common|Func_handler_str_to_date_datetime_sec::get_date                                                 ## MDEV-39229
+SIGSEGV|check_word|extract_oracle_date_time|Item_func_to_date::get_date_common|Type_handler::Item_send_datetime                                                                ## MDEV-39229
 select_lex->leaf_tables_saved|SIGABRT|setup_tables|setup_tables_and_check_access|JOIN::prepare|mysql_select                                                                    ## MDEV-39085
 SIGSEGV|check_key_in_list|Item_func_json_keys::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send                                                       ## MDEV-39049
 node->pcur->rel_pos == BTR_PCUR_ON|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row                                         ## MDEV-39046

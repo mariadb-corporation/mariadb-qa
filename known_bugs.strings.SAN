@@ -28,6 +28,7 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federa
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of null pointer of type 'unsigned int'|sql/strfunc.cc|check_word|extract_oracle_date_time|Item_func_to_date::get_date_common|Type_handler::Item_send_datetime       ## MDEV-39229
 UBSAN|load of value X, which is not a valid value for type 'Optional_metadata_field_type'|sql/log_event.cc|Table_map_log_event::Optional_metadata_fields::Optional_metadata_fields|RPL_TABLE_LIST::create_column_mapping|Rows_log_event::do_apply_event|Log_event::apply_event                           ## MDEV-38676
 ASAN|heap-use-after-free|sql/sql_admin.cc|prepare_for_repair|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command                                             ## MDEV-33676
 UBSAN|load of null pointer of type 'Field *'|sql/table.cc|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table ## MDEV-38830
