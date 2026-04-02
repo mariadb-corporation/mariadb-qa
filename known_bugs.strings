@@ -332,6 +332,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+curr->table->on_expr == 0|SIGABRT|setup_oracle_join|setup_conds|setup_without_group|JOIN::prepare                                                                              ## MDEV-39242
 SIGSEGV|CharBuffer<201ul>::CharBuffer|IdentBuffer<201ul>::IdentBuffer|find_field_in_tables|Item_field::fix_fields                                                              ## MDEV-39233
 SIGSEGV|IdentBuffer<201ul>::IdentBuffer|find_field_in_tables|Item_field::fix_fields|create_view_field                                                                          ## MDEV-39233
 SIGSEGV|check_word|extract_oracle_date_time|Item_func_to_date::get_date_common|Func_handler_str_to_date_datetime_sec::get_date                                                 ## MDEV-39229
