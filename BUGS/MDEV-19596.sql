@@ -14,3 +14,11 @@ SET GLOBAL binlog_format=MIXED;
 CREATE TABLE t (f INT KEY) ENGINE=MEMORY;
 INSERT INTO t VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
 REPLACE DELAYED t VALUES (1);
+
+# mysqld options required for replay: --log-bin
+SET binlog_format='STATEMENT', sql_mode='';
+SET SESSION enforce_storage_engine=MEMORY;
+CREATE TABLE t (c INT KEY);
+INSERT t VALUES (1);
+REPLACE DELAYED t VALUES (1);
+INSERT INTO foo VALUES (1);

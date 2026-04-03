@@ -6,20 +6,20 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 
-##### MDEV-35915 testing v10 #####
-UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock   ## MDEV-38467
-ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-38468
-ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-38468
-UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federated/ha_federated.cc|ha_federated::end_bulk_insert|mysql_insert|mysql_execute_command|mysql_parse ## MDEV-38440
 # Temp key: Ma2
+##### MDEV-35915 testing v12+ #####
+#ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-38468
+#ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-38468
+#UBSAN|load of value X, which is not a valid value for type 'bool'|storage/federated/ha_federated.cc|ha_federated::end_bulk_insert|mysql_insert|mysql_execute_command|mysql_parse ## MDEV-38440
+LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|THD::create_temporary_table|THD::create_and_open_tmp_table ## MDEV-37968
+LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_alloc_root|init_sql_alloc  ## MDEV-37968
+LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## MDEV-37968
 
-##### MDEV-35915 testing v9 #####
+##### MDEV-35915 testing older: to cleanup #####
 #ASAN|heap-use-after-free|storage/connect/ha_connect.cc|ha_connect::GetTableOptionStruct|ha_connect::external_lock|handler::ha_external_lock|handler::ha_external_unlock        ## MDEV-38438
 #LSAN|memory leak|<unknown_module>|operator|handler::ha_open                                                                                                                    ## MDEV-38439
 #ASAN|heap-use-after-free|sql/sql_base.cc|find_locked_table|find_table_for_mdl_upgrade|close_cached_tables|reload_acl_and_cache                                                 ## MDEV-38444
 #ASAN|heap-use-after-free|sql/sql_base.cc|find_locked_table|find_table_for_mdl_upgrade|mysql_rm_table|mysql_execute_command                                                     ## MDEV-38448
-
-##### MDEV-35915 testing v7/v8 #####
 #ASAN|heap-use-after-free|sql/sql_plist.h|I_P_List<MDL_ticket,|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode   ## MDEV-37872
 #ASAN|heap-use-after-free|sql/mdl.cc|MDL_context::set_lock_duration|THD::global_tmp_tables_set_explicit_lock_duration|THD::leave_locked_tables_mode|Locked_tables_list::unlock_locked_tables ## MDEV-37872
 #UBSAN|member access within null pointer of type 'All_tmp_tables_list'|sql/sql_table.cc|open_global_temporary_table|open_table|open_and_process_table|open_tables               ## MDEV-37940
@@ -225,6 +225,8 @@ ASAN|use-after-poison|sql/sql_string.h|Binary_string::c_ptr|Item_func_json_equal
 ASAN|use-after-poison|sql/field.cc|__asan_memcpy|Field_string::get_key_image|key_copy|sub_select                                                                               ## MDEV-31793
 UBSAN|division by zero|sql/rowid_filter.cc|get_max_range_rowid_filter_elems_for_table|TABLE::init_cost_info_for_usable_range_rowid_filters|make_join_statistics|JOIN::optimize_inner  ## MDEV-36990
 UBSAN|load of null pointer of type 'TABLE_SHARE *'|sql/sql_base.cc|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_table              ## MDEV-26805
+UBSAN|load of null pointer of type 'TABLE_SHARE *'|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock        ## MDEV-26805
+UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock   ## MDEV-26805 (prev MDEV-38467)
 UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock|mysql_create_table         ## MDEV-26805
 UBSAN|load of null pointer of type 'const uint' (aka 'const unsigned int')|sql/sql_class.cc|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields ## MDEV-36865
 UBSAN|member access within null pointer of type 'const struct transaction_participant'|sql/sql_class.cc|thd_get_ha_data|spider_get_trx|spider_ping_table_init_body|udf_handler::fix_fields ## MDEV-36865
