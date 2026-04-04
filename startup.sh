@@ -1059,11 +1059,11 @@ chmod +x sysbench_oltp_p_s_example
 
 # Perf
 echo "#!/bin/bash" > perf_record
-echo "# Note that 'pidof mariadbd' may not work if there are multiple mariadbd instances running (which is not recommended when using perf; it's best to use a freshly restarted system , running a single mariadbd instance with for example a sysbench provided load)" >> perf_record
+echo "# Note that 'pidof mariadbd' may not work if there are multiple mariadbd instances running (which is not recommended when using perf; it's best to use a freshly restarted system, running a single mariadbd instance with for example a Sysbench provided load)" >> perf_record
 echo "rm -f ./perf.data" >> perf_record
 echo "sudo perf record -F 99 -p \`pidof mariadbd\` -g -- sleep 60" >> perf_record
 echo "sudo perf report -n --stdio > perf_outcome.txt" >> perf_record
-echo "Report complete: ref vi perf_outcome.txt - note you can also grep for function names from this report" >> perf_record
+echo "echo 'Report complete: ref vi perf_outcome.txt - note you can also grep for function names from this report'" >> perf_record
 chmod +x perf_record
 
 # RV/RS discussed this code 19/12/18 and decided we should disable and ultimately remove it. There is myrocks_tokudb_init already, which can do the same if needed (i.e. load extra TokuDB and RocksDB plugins). The main reason to remove this code is that loading these extra plugins always by defaut will make --init-file=...plugins_80.sql not work with errors like 'Function 'tokudb_file_map' already exists.' which can affect issue reproducibility (as not all plugins are loaded), or even hide bugs with plugins_80.sql if there are any (when it's used with ./start).
