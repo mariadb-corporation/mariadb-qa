@@ -198,8 +198,8 @@ if echo "${PWD}" | grep -q EMD ; then
 fi
 
 # Setup scritps
-rm -f *_node_cl* *cl cl* *cli all* anc binlog decode_binlog fixin gal* gdb init line loopin myloop *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* test ts tsp test_* wipe* clean_failing_queries memory_* ml mlp master_setup.sql slave_setup.sql select.py select.sh mysql.out mysql_slave.out backup 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | test_timed | test_timed_pquery | test_sanity | test_sanity_pquery | init | line | wipe | wipe_slave | sqlmode | binlog | decode_binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_any_sig.sh | reducer_any_sig_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | select.sh/.py | sysbench_prepare | sysbench_run | sysbench_measure | myloop | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | multirun_loop_replication | kill_multirun | loopin | gdb | fixin | stack | memory_monitor | memory_use_trace | myrocks_tokudb_init | afl | aflnew | multitest | stress.sh | backup"
+rm -f *_node_cl* *cl cl* *cli all* anc binlog decode_binlog fixin gal* gdb init line loopin myloop *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* perf_record test ts tsp test_* wipe* clean_failing_queries memory_* ml mlp master_setup.sql slave_setup.sql select.py select.sh mysql.out mysql_slave.out backup 2>/dev/null
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | test_timed | test_timed_pquery | test_sanity | test_sanity_pquery | init | line | wipe | wipe_slave | sqlmode | binlog | decode_binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_any_sig.sh | reducer_any_sig_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | select.sh/.py | sysbench_prepare | sysbench_run | sysbench_measure | sysbench_oltp_p_s_example | perf_record | myloop | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | multirun_loop_replication | kill_multirun | loopin | gdb | fixin | stack | memory_monitor | memory_use_trace | myrocks_tokudb_init | afl | aflnew | multitest | stress.sh | backup"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -1051,6 +1051,20 @@ else
   sed -i "s|${SOCKET}|${PWD}/node1/node1_socket.sock|g" gal_sysbench_prepare gal_sysbench_run
   echo "./gal_stop 2>/dev/null;./gal_kill >/dev/null 2>&1;./gal_wipe;./gal_start;./gal_sysbench_prepare;./gal_sysbench_run;./gal_stop;./gal_kill >/dev/null 2>&1;" >gal_sysbench_measure
 fi
+echo "#!/bin/bash" > sysbench_oltp_p_s_example
+echo '# Note --mysql-storage-engine=innodb which can be changed to MyISAM, etc.' >> sysbench_oltp_p_s_example
+echo 'sysbench oltp_point_select --mysql-storage-engine=innodb --table-size=100000 --tables=10 --threads=10 --mysql-db=test --mysql-user=root --db-driver=mysql --mysql-socket=./socket.sock prepare' >> sysbench_oltp_p_s_example
+echo 'sysbench oltp_point_select --table-size=100000 --tables=10 --threads=64 --time=180 --report-interval=2 --db-ps-mode=disable --mysql-db=test --mysql-user=root --db-driver=mysql --mysql-socket=./socket.sock run' >> sysbench_oltp_p_s_example
+chmod +x sysbench_oltp_p_s_example
+
+# Perf
+echo "#!/bin/bash" > perf_record
+echo "# Note that 'pidof mariadbd' may not work if there are multiple mariadbd instances running (which is not recommended when using perf; it's best to use a freshly restarted system , running a single mariadbd instance with for example a sysbench provided load)" >> perf_record
+echo "rm -f ./perf.data" >> perf_record
+echo "sudo perf record -F 99 -p \`pidof mariadbd\` -g -- sleep 60" >> perf_record
+echo "sudo perf report -n --stdio > perf_outcome.txt" >> perf_record
+echo "Report complete: ref vi perf_outcome.txt - note you can also grep for function names from this report" >> perf_record
+chmod +x perf_record
 
 # RV/RS discussed this code 19/12/18 and decided we should disable and ultimately remove it. There is myrocks_tokudb_init already, which can do the same if needed (i.e. load extra TokuDB and RocksDB plugins). The main reason to remove this code is that loading these extra plugins always by defaut will make --init-file=...plugins_80.sql not work with errors like 'Function 'tokudb_file_map' already exists.' which can affect issue reproducibility (as not all plugins are loaded), or even hide bugs with plugins_80.sql if there are any (when it's used with ./start).
 #if [ ! -z "$LOAD_TOKUDB_INIT_FILE" ]; then
