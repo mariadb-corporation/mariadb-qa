@@ -13,7 +13,7 @@ USE_CLANG=1             # 0 or 1 # Use the Clang compiler instead of gcc
 USE_SAN=1               # 0 or 1 # 1: Enable SAN builds: TSAN, ASAN+UBSAN, or MSAN
 USE_TSAN=0              # 0 or 1 # 1: Enables TSAN, disables ASAN+UBSAN/MSAN. 0: Enables ASAN+UBSAN or MSAN, disables TSAN
 ASAN_OR_MSAN=0          # 0 or 1 # 0: ASAN+UBSAN. 1: MSAN (not supported in this script; use the dedicated _msan.sh script instead)
-PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
+PERFSCHEMA='YES'        # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
 #CLANG_LOCATION="${HOME}/third_party/llvm-build/Release+Asserts/bin/clang"  # Should end in /clang (and assumes presence of /clang++)
 CLANG_LOCATION="/usr/bin/clang"  # Should end in /clang (and assumes presence of /clang++)

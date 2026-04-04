@@ -1256,6 +1256,8 @@ SIGSEGV|Bitmap<64u>::merge|add_key_field|add_key_equal_fields|Item_func_ne::add_
 SIGSEGV|Bitmap<64u>::merge|add_key_field|Item_equal::add_key_fields|update_ref_and_keys                                                                                        ## MDEV-28509
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed                                                               ## MDEV-28507
 SIGSEGV|Item_field::fix_outer_field|Item_field::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                                                    ## MDEV-28507
+SIGSEGV|MemcmpInterceptorCommon|__interceptor_memcmp|my_strnncoll_binary|charset_info_st::streq                                                                                ## MDEV-28506
+SIGSEGV|Lex_cstring_strlen::Lex_cstring_strlen|find_field_in_table_ref|find_field_in_tables|Item_field::fix_outer_field                                                        ## MDEV-28506
 SIGSEGV|MemcmpInterceptorCommon|memcmp|my_strnncoll_binary|charset_info_st::strnncoll                                                                                          ## MDEV-28506
 SIGSEGV|Lex_cstring::Lex_cstring|Lex_cstring_strlen::Lex_cstring_strlen|find_field_in_table_ref|find_field_in_tables                                                           ## MDEv-28506
 SIGSEGV|charset_info_st::streq|Lex_ident<Compare_table_names>::streq|find_field_in_table_ref|find_field_in_tables                                                              ## MDEV-28506
@@ -1691,10 +1693,12 @@ tmp_table->file->stats.records == 1|SIGABRT|subselect_hash_sj_engine::exec|Item_
 SIGABRT|ut_dbg_assertion_failed|trx_mark_sql_stat_end|innobase_commit|commit_one_phase_2                                                                                       ## MDEV-23046
 SIGABRT|ut_dbg_assertion_failed|trx_mark_sql_stat_end|end_of_statement|innobase_commit                                                                                         ## MDEV-23046
 is_open()|SIGABRT|MYSQL_BIN_LOG::trx_group_commit_leader|MYSQL_BIN_LOG::write_transaction_to_binlog_events|MYSQL_BIN_LOG::write_transaction_to_binlog|binlog_flush_cache       ## MDEV-23045
+SIGSEGV|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row|Write_rows_log_event::write_row                                                               ## MDEV-22943
 marked_for_read()|SIGABRT|Field_varstring::val_real|Item_field::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op                            ## MDEV-22943
 marked_for_read()|SIGABRT|Field_varstring::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                             ## MDEV-22943
 marked_for_read()|SIGABRT|Field_blob::val_str|Field::val_str|handler::calculate_checksum|mysql_checksum_table                                                                  ## MDEV-22943
 SIGSEGV|__strnlen_evex|process_str_arg|my_vsnprintf_ex|my_error                                                                                                                ## MDEV-22943
+SIGSEGV|uint2korr|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row                                                                                     ## MDEV-22943
 SIGSEGV|table_def::calc_field_size|unpack_row|Rows_log_event::unpack_current_row|Rows_log_event::write_row                                                                     ## MDEV-22936
 (*(map)->last_word_ptr & (map)->last_bit_mask) == 0|SIGABRT|bitmap_union|ha_partition::index_init|handler::ha_index_init|Rows_log_event::find_row                              ## MDEV-22936
 m_curr_row <= m_rows_end|SIGABRT|Rows_log_event::unpack_current_row|Update_rows_log_event::do_exec_row|Rows_log_event::do_apply_event|Log_event::apply_event                   ## MDEV-22936
