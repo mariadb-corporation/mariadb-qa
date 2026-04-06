@@ -28,6 +28,8 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|shift exponent X is too large for 64-bit type 'key_part_map' (aka 'unsigned long')|sql/sql_select.cc|create_ref_for_key|JOIN::get_best_combination|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-39268
+UBSAN|member access within null pointer of type 'THD'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|close_thread_tables|mysql_execute_command           ## MDEV-39267
 ASAN|use-after-poison|strings/ctype-gb2312.c|my_mb_wc_gb2312|my_mb_wc_item_name|my_convert_using_func|make_name                                                                ## MDEV-39248
 UBSAN|load of null pointer of type 'unsigned int'|sql/strfunc.cc|check_word|extract_oracle_date_time|Item_func_to_date::get_date_common|Type_handler::Item_send_datetime       ## MDEV-39229
 UBSAN|load of value X, which is not a valid value for type 'Optional_metadata_field_type'|sql/log_event.cc|Table_map_log_event::Optional_metadata_fields::Optional_metadata_fields|RPL_TABLE_LIST::create_column_mapping|Rows_log_event::do_apply_event|Log_event::apply_event                           ## MDEV-38676
