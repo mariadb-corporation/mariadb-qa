@@ -2514,7 +2514,7 @@ start_mdg_main(){
     sed -i "2i wsrep_node_incoming_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_node_address=$ADDR" ${WORKD}/n${i}.cnf
     sed -i "2i wsrep_sst_receive_address=$SST_PORT" ${WORKD}/n${i}.cnf
-    sed -i "2i log-error=$node/$node.err" ${WORKD}/n${i}.cnf
+    sed -i "2i log-error=$node/node${i}.err" ${WORKD}/n${i}.cnf
     sed -i "2i port=$RBASE" ${WORKD}/n${i}.cnf
     sed -i "2i datadir=$node" ${WORKD}/n${i}.cnf
     sed -i "2i socket=$node/node${i}_socket.sock" ${WORKD}/n${i}.cnf
@@ -2549,7 +2549,7 @@ start_mdg_main(){
     mkdir -p "${_RR_TRACE_DIR}"
   fi
   for j in $(seq 1 ${NR_OF_NODES}); do
-    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS:1}" ${WORKD}/n${j}.cnf
+    sed -i "2i wsrep_cluster_address=gcomm://${WSREP_CLUSTER_ADDRESS%,}" ${WORKD}/n${j}.cnf
     cp ${WORKD}/n${j}.cnf ${WORK_BUG_DIR}/${EPOCH}_n${j}.cnf
     if [ ${j} -eq 1 ]; then
       echo "echo \"Attempting to start Galera Cluster...\"" >> $WORK_START

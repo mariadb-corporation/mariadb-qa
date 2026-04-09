@@ -286,6 +286,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+thd->mdl_context.is_lock_owner(MDL_key::TABLE, share->db.str, share->table_name.str, MDL_EXCLUSIVE)|SIGABRT|TDC_element::flush|mysql_discard_or_import_tablespace|Sql_cmd_discard_import_tablespace::execute|mysql_execute_command   ## MDEV-37546
 SIGSEGV|find_type2|check_word2|extract_date_time|Item_func_str_to_date::get_date_common                                                                                        ## MDEV-39271
 SIGSEGV|Json_writer_object::add|sel_arg_and_weight_heuristic|key_and|key_and_with_limit                                                                                        ## MDEV-25311
 curr->table->on_expr == 0|SIGABRT|setup_oracle_join|setup_conds|setup_without_group|JOIN::prepare                                                                              ## MDEV-39242
