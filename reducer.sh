@@ -380,7 +380,7 @@ if [ ! -d "${BASEDIR}" -a ! -d "${BASEDIR_ALT}" ]; then  # RV 19/2/24: Changed P
   #echo "Assert: Neither '${PWD}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
   echo "Assert: Neither '${BASEDIR}' nor '${BASEDIR_ALT}' directories exist, please set the BASEDIR variable correctly"
   exit 1
-elif [ -d "${BASEDIR_ALT}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/VARIOUS_BUILDS/ archive) found
+elif [ ! -d "${BASEDIR}" -a -d "${BASEDIR_ALT}" ]; then  # BASEDIR not found, but BASEDIR_ALT (/data/VARIOUS_BUILDS/ archive) found
   echo "Note: Updating BASEDIR from '${BASEDIR}' to '${BASEDIR_ALT}' as set BASEDIR did not exist, but the same/required server build was found in /data/VARIOUS_BUILDS/"
   sleep 2
   BASEDIR="${BASEDIR_ALT}"
@@ -445,7 +445,7 @@ if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
       if [[ "${MYEXTRA}" == *"--tokudb"[-_]"check"[-_]"jemalloc"* ]]; then
         TOKUDBJC="$(echo "${MYEXTRA}" | grep -o "\-\-tokudb[-_]check[-_]jemalloc[^ ]*" | head -n1)"  # Grep all text including and after '--tokudb[-_]check[-_]jemalloc' upto the first space
         MYEXTRA="$(echo "${MYEXTRA}" | sed "s|${TOKUDBJC}||g")"
-        TOKUDB="$(echo "${TOKUDB} ${TOKUDBCJ}")"
+        TOKUDB="$(echo "${TOKUDB} ${TOKUDBJC}")"
       fi
       # The below issues should never happen in the Percona pquery framework; ref info above in ha_rocksdb.so section with the same start as this line
       if [[ "${MYEXTRA}" == *"ha_tokudb.so"* ]]; then
@@ -541,7 +541,7 @@ if [[ ${MDG} -ne 1 ]]; then
     if [[ ! "$(${BIN_TO_USE} --no-defaults --version | grep -E --binary-files=text -oe '5\.[1567]|8\.[0-9]' | head -n1)" =~ ^5.[156]$ ]]; then  # version is 5.7 or 8.0 and NOT 5.1, 5.5 or 5.6, i.e. --server-id is required
       if [[ ! "$(${BIN_TO_USE} --no-defaults --version | grep -E --binary-files=text -ioe 'mariadb' | head -n1)" =~ ^mariadb$ ]]; then  # For MariaDB this is not the case (at least for 10.5. TODO: check other versions)
         if [[ ! "${MYEXTRA}" == *"server"[-_]"id"* ]]; then
-          echo "Error: The version of mysqld is 5.7 or 8.0 and a --bin-log option was passed in MYEXTRA, yet no --server-id option was found whereas this is required for 5.7 and 8.0."
+          echo "Error: The version of mysqld is 5.7 or 8.0 and a --log-bin option was passed in MYEXTRA, yet no --server-id option was found whereas this is required for 5.7 and 8.0."
           echo "Terminating now."
           exit 1
         fi
@@ -629,9 +629,9 @@ abort(){  # Additionally/also used for when echoit cannot locate $INPUTFILE anym
   ABORT_ACTIVE=1
   if [ ! -d "${WORKD}" ]; then
     if [ -r "${WORKO}" ]; then
-      echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Terminating."
-    else
       echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Last good known testcase: $WORKO (provided the disk being used did not run out of space). Terminating."
+    else
+      echoit "[Abort] The work directory (${WORKD}) disappeared, it was likely deleted. Terminating."
     fi
     # TODO: ~/ds (most likely) or ~/memory seem to be causing this more recently and more frequently: to fix
     echoit "[Abort] Any 'Killed' message on the next line is reducer self-terminating after an [Abort]; it is not caused by any watchdog"
@@ -731,7 +731,7 @@ options_check(){
   fi
   # Check if O_DIRECT is being used on tmpfs, which (when the original run was not on tmpfs) is not a 100% reproduce match, which may affect reproducibility
   # See http://bugs.mysql.com/bug.php?id=26662 for more info
-  if $(echo $MYEXTRA | grep -E --binary-files=text -qi "MYEXTRA=.*O_DIRECT"); then
+  if $(echo $MYEXTRA | grep -E --binary-files=text -qi "O_DIRECT"); then
     if [ $WORKDIR_LOCATION -eq 1 -o $WORKDIR_LOCATION -eq 2 ]; then  # ramfs may not have this same issue, maybe '-o $WORKDIR_LOCATION -eq 2' can be removed?
       echo 'Error: O_DIRECT is being used in the MYEXTRA option string, and tmpfs (or ramfs) storage was specified, but because'
       echo 'of bug http://bugs.mysql.com/bug.php?id=26662 one would see a WARNING for this in the error log along the lines of;'
@@ -747,8 +747,8 @@ options_check(){
   fi
   # This section could be expanded to check for any directory specified (by for instance checking for paths), not just the two listed here
   DIR_ISSUE=0
-  if $(echo $MYEXTRA | grep -E --binary-files=text -qi "MYEXTRA=.*innodb_log_group_home_dir"); then DIR_ISSUE='innodb_log_group_home_dir'; fi
-  if $(echo $MYEXTRA | grep -E --binary-files=text -qi "MYEXTRA=.*innodb_log_arch_dir"); then DIR_ISSUE='innodb_log_arch_dir'; fi
+  if $(echo $MYEXTRA | grep -E --binary-files=text -qi "innodb_log_group_home_dir"); then DIR_ISSUE='innodb_log_group_home_dir'; fi
+  if $(echo $MYEXTRA | grep -E --binary-files=text -qi "innodb_log_arch_dir"); then DIR_ISSUE='innodb_log_arch_dir'; fi
   if [ "$DIR_ISSUE" != "0" ]; then
     echo "Error: the $DIR_ISSUE option is being used in the MYEXTRA option string. This can lead to all sorts of problems;"
     echo 'Remember that reducer 1) is multi-threaded - i.e. it would access that particularly named directory for each started mariadbd/mysqld, which'
@@ -799,7 +799,7 @@ options_check(){
       if [ $TS_THREADS -lt 1 ]; then
         echo 'Error: though input directory was found, no ThreadSync SQL trace files are present, or they could not be read.'
         echo "Please check the directory at $1"
-        echo 'For the presence of 'C[0-9]*T[0-9]*.sql' files (for example, C1T10.sql).'
+        echo "For the presence of 'C[0-9]*T[0-9]*.sql' files (for example, C1T10.sql)."
         echo 'Note: a data load file (such as CT2.sql or CT3.sql) alone is not sufficient: thread sql data would be missing.'
         echo "Terminating now."
         exit 1
@@ -986,7 +986,7 @@ options_check(){
     fi
   fi
   if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 2 -a $MODE -ne 3 -a $MODE -ne 4 -a $MODE -ne 5 -a $MODE -ne 6 -a $MODE -ne 7 -a $MODE -ne 8 -a $MODE -ne 9 ]; then
-    echo "Error: Invalid MODE set: $MODE (valid range: 1-9)"
+    echo "Error: Invalid MODE set: $MODE (valid range: 0-9)"
     echo 'Please check script contents/options ($MODE variable)'
     echo "Terminating now."
     exit 1
@@ -1227,7 +1227,7 @@ set_internal_options(){  # Internal options: do not modify!
 }
 
 kill_multi_reducer(){
-  PS_CMD="ps -def | grep --binary-files=text 'subreducer' | grep --binary-files=text ${WHOAMI} | grep --binary-files=text ${EPOCH} | grep --binary-files=text 'grep' | awk '{print \$2}'"
+  PS_CMD="ps -def | grep --binary-files=text 'subreducer' | grep --binary-files=text ${WHOAMI} | grep --binary-files=text ${EPOCH} | grep -v --binary-files=text 'grep' | awk '{print \$2}'"
   if [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; then
     PIDS_TO_TERMINATE=$(eval ${PS_CMD} | sort -u | tr '\n' ' ')
     echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating these PID's: $PIDS_TO_TERMINATE"
@@ -1329,7 +1329,7 @@ multi_reducer(){
         if ! kill -0 ${SUBREDUCER_CHECK_PID} 2>/dev/null; then
           break
         fi
-        SUBREDUCER_LOGFILE="$(ps -ef | grep --binary-files=text ${SUBREDUCER_CHECK_PID} | grep --binary-files=text -v 'grep' | grep --binary-files=text -o 'error=/.*subreducer/[0-9]/' | sed 's|^error=||;s|$|reducer.log|' | head -n1)"  # TODO: Perhaps there is a better way to get to the subreducer reducer log file without using the PID directly, though it is not clear how, as in this loop all we seem to have is the subreducer PID
+        SUBREDUCER_LOGFILE="$(ps -ef | grep --binary-files=text ${SUBREDUCER_CHECK_PID} | grep --binary-files=text -v 'grep' | grep -E --binary-files=text -o 'error=/.*subreducer/[0-9]+/' | sed 's|^error=||;s|$|reducer.log|' | head -n1)"  # TODO: Perhaps there is a better way to get to the subreducer reducer log file without using the PID directly, though it is not clear how, as in this loop all we seem to have is the subreducer PID
         if [ -f "${SUBREDUCER_LOGFILE}" -a -r "${SUBREDUCER_LOGFILE}" ]; then
           if grep -Eqi --binary-files=text 'Failed to start the.*server' "${SUBREDUCER_LOGFILE}"; then
             kill -9 ${SUBREDUCER_CHECK_PID}  # Ensure the subreducer is terminated immediately. Defensive as a later process cleanup will likely catch it as well
@@ -1437,9 +1437,9 @@ multi_reducer(){
           # Ensure RESTART_WORKD is actually set
           if [ -z "${RESTART_WORKD}" ]; then echo "Assert: RESTART_WORKD is empty."; exit 1; fi
           # Ensure previous server is gone (new code 24-08-2020 to better deal with assert above)
-          if [ ! -z "$(ps -def | grep -E "$RESTART_WORKD/log/master.err|$RESTART_WORKD/log/slave.err")" ]; then
+          if [ ! -z "$(ps -def | grep -E "$RESTART_WORKD/log/master.err|$RESTART_WORKD/log/slave.err" | grep -v grep)" ]; then
             for i in $(seq 1 3); do
-              ( kill -9 $(ps -def | grep "$RESTART_WORKD/log/master.err|$RESTART_WORKD/log/slave.err" | grep -v grep | awk '{print $2}' | tr '\n' ' ') >/dev/null 2>&1; ) >/dev/null 2>&1
+              ( kill -9 $(ps -def | grep -E "$RESTART_WORKD/log/master.err|$RESTART_WORKD/log/slave.err" | grep -v grep | awk '{print $2}' | tr '\n' ' ') >/dev/null 2>&1; ) >/dev/null 2>&1
             done
           fi
           # Remove all files, except for subreducer script
@@ -1449,7 +1449,7 @@ multi_reducer(){
           $($RESTART_WORKD/subreducer $1 >/dev/null 2>/dev/null) >/dev/null 2>/dev/null &
           export MULTI_PID$t=$!
           INIT_FILE_USED=
-          if [[ "${MEXTRA}" == *"init[-_]file"* ]]; then INIT_FILE_USED="or any file(s) called using --init-file which is present in \$MYEXTRA, "; fi
+          if [[ "${MYEXTRA}" == *"init"[-_]"file"* ]]; then INIT_FILE_USED="or any file(s) called using --init-file which is present in \$MYEXTRA, "; fi
           if [ ${SUBR_SVR_START_FAILURE} -eq 1 ]; then
             # Check if we ran out of disk space
             if [ ! -r /tmp/$TMP_RND_FILENAME ]; then
@@ -1690,7 +1690,7 @@ init_workdir_and_files(){
     fi
     if [ $WORKDIR_LOCATION -eq 3 ]; then
       if ! [ -d "$WORKDIR_M3_DIRECTORY/" -a -x "$WORKDIR_M3_DIRECTORY/" ]; then
-        echo 'Error: WORKDIR_LOCATION=3 (a specific storage location) is set, yet WORKDIR_M3_DIRECTORY (set to $WORKDIR_M3_DIRECTORY) does not exist, or could not be read.'
+        echo "Error: WORKDIR_LOCATION=3 (a specific storage location) is set, yet WORKDIR_M3_DIRECTORY (set to $WORKDIR_M3_DIRECTORY) does not exist, or could not be read."
         echo "Terminating now."
         exit 1
       fi
@@ -1717,7 +1717,7 @@ init_workdir_and_files(){
     elif [ $WORKDIR_LOCATION -eq 1 ]; then
       if ! [ -d "/dev/shm/" -a -x "/dev/shm/" ]; then
         echo 'Error: tmpfs storage usage was specified (WORKDIR_LOCATION=1), yet /dev/shm/ does not exist, or could not be read.'
-        echo 'Suggestion: check the location of tmpfs using the 'df -h' command at your shell prompt and change the script to match'
+        echo "Suggestion: check the location of tmpfs using the 'df -h' command at your shell prompt and change the script to match"
         echo "Terminating now."
         exit 1
       fi
@@ -1809,7 +1809,7 @@ init_workdir_and_files(){
     if [ "${FIREWORKS}" == "1" ]; then
       echoit "[Init] Output dir (FIREWORKS mode): ${NEW_BUGS_SAVE_DIR}"
     else
-      if [ "${WORK_BUG_DIR}" == "${INPUTFULE}" ]; then
+      if [ "${WORK_BUG_DIR}" == "${INPUTFILE}" ]; then
         echoit "[Init] Output dir: $PWD"
       else
         echoit "[Init] Output dir: $WORK_BUG_DIR"
@@ -2050,12 +2050,12 @@ init_workdir_and_files(){
     INIT_TOOL="${BIN}"                # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
     VERSION_INFO=$(${BIN} --version | grep -E --binary-files=text -oe '[589]\.[0-9]' | head -n1)
     VERSION_INFO_2=$(${BIN} --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-5]\.[0-9][0-9]*' | head -n1)
-    if [[ "${VERSION_INFO_2}" =~ ^10.[1-3]$ ]]; then
+    if [[ "${VERSION_INFO_2}" =~ ^10\.[1-3]$ ]]; then
       VERSION_INFO="5.1"
       INIT_TOOL="${BASEDIR}/scripts/mysql_install_db"
       INIT_OPT="--no-defaults --force"
       START_OPT="--core"
-    elif [[ "${VERSION_INFO_2}" =~ ^1[0-5].[0-9][0-9]* ]]; then
+    elif [[ "${VERSION_INFO_2}" =~ ^1[0-5]\.[0-9][0-9]* ]]; then
       VERSION_INFO="5.6"
       INIT_TOOL="${BASEDIR}/scripts/mariadb-install-db"
       INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}"
@@ -2199,9 +2199,9 @@ generate_run_scripts(){
   echo -e "    if [ ! -h \${BASEDIR}/share/errmsg.sys -o ! -f \${BASEDIR}/share/errmsg.sys ]; then ln -s \${BASEDIR}/sql/share/english/errmsg.sys \${BASEDIR}/share/errmsg.sys ; fi;\n  fi\nelse" >> $WORK_INIT
   echo -e "  echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;\nfi" >> $WORK_INIT
   echo "MID=\`find \${BASEDIR} -maxdepth 2 -name mariadb-install-db -o -name mysql_install_db | head -n1\`" >> $WORK_INIT
-  echo "VERSION=\"\`\$BIN --version | grep -E --binary-files=text -oe '[58]\.[15670]' | head -n1\`\"" >> $WORK_INIT
-  echo "VERSION2=\"\`\$BIN --version | grep --binary-files=text -i 'MariaDB' | grep -oe '10\.[1-9][0-9]*' | head -n1\`\"" >> $WORK_INIT
-  echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then MID_OPTIONS='--no-defaults --initialize-insecure ${MYINIT}'; elif [ \"\$VERSION\" == \"5.6\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION}\" == \"5.5\" ]; then MID_OPTIONS='--force ${MYINIT}';elif [ \"\${VERSION2}\" == \"10.1\" -o \"\${VERSION2}\" == \"10.2\" -o \"\${VERSION2}\" == \"10.3\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION2}\" == \"10.4\" -o \"\${VERSION2}\" == \"10.5\" -o \"\${VERSION2}\" == \"10.6\" -o \"\${VERSION2}\" == \"10.7\" -o \"\${VERSION2}\" == \"10.8\" -o \"\${VERSION2}\" == \"10.9\" -o \"\${VERSION2}\" == \"10.10\" ]; then MID_OPTIONS='--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}'; else MID_OPTIONS='${MYINIT}'; fi" >> $WORK_INIT
+  echo "VERSION=\"\`\$BIN --version | grep -E --binary-files=text -oe '[589]\.[15670]' | head -n1\`\"" >> $WORK_INIT
+  echo "VERSION2=\"\`\$BIN --version | grep --binary-files=text -i 'MariaDB' | grep -oe '1[0-5]\.[0-9][0-9]*' | head -n1\`\"" >> $WORK_INIT
+  echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then MID_OPTIONS='--no-defaults --initialize-insecure ${MYINIT}'; elif [ \"\$VERSION\" == \"5.6\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION}\" == \"5.5\" ]; then MID_OPTIONS='--force ${MYINIT}';elif [ \"\${VERSION2}\" == \"10.1\" -o \"\${VERSION2}\" == \"10.2\" -o \"\${VERSION2}\" == \"10.3\" ]; then MID_OPTIONS='--no-defaults --force ${MYINIT}'; elif [ \"\${VERSION2}\" != \"\" ]; then MID_OPTIONS='--no-defaults --force --auth-root-authentication-method=normal ${MYINIT}'; else MID_OPTIONS='${MYINIT}'; fi" >> $WORK_INIT
   if [[ ${MDG} -eq 1 ]]; then
     for i in $(seq 1 ${NR_OF_NODES}); do
       mkdir -p /dev/shm/${EPOCH}/tmp${i}
@@ -2263,7 +2263,7 @@ generate_run_scripts(){
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_GDB
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_GDB
   BIN_TO_USE_SHORT="bin/mariadbd"
-  if [ ! -r "${BASEDIR}/bin/mariadbd" ]; then BIN_TO_USE="bin/mysqld"; fi
+  if [ ! -r "${BASEDIR}/bin/mariadbd" ]; then BIN_TO_USE_SHORT="bin/mysqld"; fi
   if [[ ${MDG} -eq 1 ]]; then
     echo "gdb \${BASEDIR}/${BIN_TO_USE_SHORT} \$(ls --color=never /dev/shm/${EPOCH}/node${GALERA_NODE}/core*)" >> $WORK_GDB
   else
@@ -2373,7 +2373,7 @@ start_mysqld_or_valgrind_or_mdg(){
     if [ -f $WORKD/log/master.err ]; then mv -f $WORKD/log/master.err $WORKD/log/master.err.prev; fi  # mariadbd/mysqld error log (single server or master)
     if [ -f $WORKD/log/slave.err ]; then mv -f $WORKD/log/slave.err $WORKD/log/slave.err.prev; fi  # mariadbd/mysqld error log (slave)
     if [ -f $WORKD/log/mysqld.out ]; then mv -f $WORKD/log/mysqld.out $WORKD/mysqld.prev; fi  # mariadbd/mysqld stdout & stderr output, as well as some mariadb-admin/mysqladmin output (single server or master)
-    if [ -f $WORKD/log/mysqld_slave.out ]; then mv -f $WORKD/log/mysqld_slave.out $WORKD/mysqld.prev; fi  # mariadbd/mysqld stdout & stderr output, as well as some mariadb-admin/mysqladmin output (slave)
+    if [ -f $WORKD/log/mysqld_slave.out ]; then mv -f $WORKD/log/mysqld_slave.out $WORKD/mysqld_slave.prev; fi  # mariadbd/mysqld stdout & stderr output, as well as some mariadb-admin/mysqladmin output (slave)
     if [ -f $WORKD/log/mysql.out ]; then mv -f $WORKD/log/mysql.out $WORKD/mysql.prev; fi  # mysql client output (only applicable to single server or master)
     if [ -f $WORKD/log/default.node.tld_thread-0.out ]; then mv -f $WORKD/log/default.node.tld_thread-0.out $WORKD/log/default.node.tld_thread-0.prev; fi  # pquery client output
     if [ -f $WORKD/default.node.tld_thread-0.sql ]; then mv -f $WORKD/default.node.tld_thread-0.sql $WORKD/log/default.node.tld_thread-0.prevsql; fi
@@ -2542,7 +2542,7 @@ start_mdg_main(){
 
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
-  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
+  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
   WSREP_CLUSTER_ADDRESS=$(printf "%s,"  "${MDG_LADDRS[@]}")
   if [[ ${RR_TRACING} -eq 1 ]]; then
     export _RR_TRACE_DIR="${WORKD}/rr"
@@ -2660,7 +2660,7 @@ gr_start_main(){
   ${BIN_TO_USE} --no-defaults \
     --basedir=${BASEDIR} --datadir=$node2 \
     --innodb_file_per_table $MYEXTRA --innodb_autoinc_lock_mode=2 --innodb_locks_unsafe_for_binlog=1 \
-    --server_id=1 --gtid_mode=ON --enforce_gtid_consistency=ON \
+    --server_id=2 --gtid_mode=ON --enforce_gtid_consistency=ON \
     --master_info_repository=TABLE --relay_log_info_repository=TABLE \
     --binlog_checksum=NONE --log_slave_updates=ON --log_bin=binlog \
     --binlog_format=ROW --innodb_flush_method=O_DIRECT \
@@ -2698,7 +2698,7 @@ gr_start_main(){
   ${BIN_TO_USE} --no-defaults \
     --basedir=${BASEDIR} --datadir=$node3 \
     --innodb_file_per_table $MYEXTRA --innodb_autoinc_lock_mode=2 --innodb_locks_unsafe_for_binlog=1 \
-    --server_id=1 --gtid_mode=ON --enforce_gtid_consistency=ON \
+    --server_id=3 --gtid_mode=ON --enforce_gtid_consistency=ON \
     --master_info_repository=TABLE --relay_log_info_repository=TABLE \
     --binlog_checksum=NONE --log_slave_updates=ON --log_bin=binlog \
     --binlog_format=ROW --innodb_flush_method=O_DIRECT \
@@ -2745,7 +2745,7 @@ start_mysqld_main(){
   echo "echo \"Attempting to start mariadbd/mysqld (socket /dev/shm/${EPOCH}/socket.sock)...\"" >> $WORK_START
   #echo $JE1 >> $WORK_START; echo $JE2 >> $WORK_START; echo $JE3 >> $WORK_START; echo $JE4 >> $WORK_START;echo $JE5 >> $WORK_START
   echo $JE1 >> $WORK_START; echo $JE2 >> $WORK_START; echo $JE3 >> $WORK_START; echo $JE4 >> $WORK_START
-  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mariadbd/mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
+  echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mariadbd/mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
   SCHEDULER_OR_NOT=
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then SCHEDULER_OR_NOT="--event-scheduler=ON "; fi
   CORE_FOR_NEW_TEXT_STRING=
@@ -2777,7 +2777,7 @@ start_mysqld_main(){
       PIDV="$!"
       # ---- Slave
       init_empty_port; MYPORT_SLAVE=$NEWPORT; NEWPORT=  # Obtain new empty port
-      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
+      echo "${RR_OPTIONS} ${TIMEOUT_COMMAND} \$BIN --no-defaults --basedir=\${BASEDIR} --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} > $WORKD/log/mysqld_slave.out 2>&1 &" | sed 's/ \+/ /g' >> $WORK_START
       CMD="${RR_OPTIONS} ${TIMEOUT_COMMAND} ${BIN} --no-defaults --basedir=$BASEDIR --datadir=$WORKD/data_slave --tmpdir=$WORKD/tmp_slave --port=$MYPORT_SLAVE --pid-file=$WORKD/slave_pid.pid --socket=$WORKD/slave_socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA $REPL_EXTRA $SLAVE_EXTRA --log-error=$WORKD/log/slave.err ${SCHEDULER_OR_NOT} ${CORE_FOR_NEW_TEXT_STRING}"
       MYSQLD_SLAVE_START_TIME=$(date +'%s')
       $CMD > $WORKD/log/mysqld_slave.out 2>&1 &
@@ -2883,7 +2883,7 @@ start_valgrind_mysqld_main(){
   SCHEDULER_OR_NOT=
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then SCHEDULER_OR_NOT="--event-scheduler=ON "; fi
   init_empty_port; MYPORT=$NEWPORT; NEWPORT=  # Obtain new empty port 
-  CMD="${TIMEOUT_COMMAND} valgrind --suppressions=$BASEDIR/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes ${BIN} --basedir=${BASEDIR} --datadir=$WORKD/data --port=$MYPORT --tmpdir=$WORKD/tmp --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT}" # Workaround for BUG#12939557 (when old Valgrind version is used): --innodb_checksum_algorithm=none
+  CMD="${TIMEOUT_COMMAND} valgrind --suppressions=$BASEDIR/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes ${BIN} --no-defaults --basedir=${BASEDIR} --datadir=$WORKD/data --port=$MYPORT --tmpdir=$WORKD/tmp --pid-file=$WORKD/pid.pid --socket=$WORKD/socket.sock --user=$MYUSER $SPECIAL_MYEXTRA_OPTIONS $MYEXTRA --log-error=$WORKD/log/master.err ${SCHEDULER_OR_NOT}" # Workaround for BUG#12939557 (when old Valgrind version is used): --innodb_checksum_algorithm=none
   MYSQLD_START_TIME=$(date +'%s')
   $CMD > $WORKD/valgrind.out 2>&1 &
   PIDV="$!"; STARTUPCOUNT=$[$STARTUPCOUNT+1]
@@ -3077,9 +3077,9 @@ cut_threadsync_chunk(){
         # Control thread
         LAST_LINE=$( \
         if [ $FIRST_DS_OCCURRENCE -gt 1 ]; then \
-          tac $TS_WORKF | awk '/now SIGNAL GO_T2/,/SET DEBUG_SYNC/ {print NR; i++; if (i>$TS_TRXS_SETS) nextfile}' | tail -n1; \
+          tac $TS_WORKF | awk -v ts="$TS_TRXS_SETS" '/now SIGNAL GO_T2/,/SET DEBUG_SYNC/ {print NR; i++; if (i>ts) nextfile}' | tail -n1; \
         else \
-          tac $TS_WORKF | awk '/now SIGNAL GO_T2/,/SET DEBUG_SYNC/ {print NR; i++; if (i>1+$TS_TRXS_SETS) nextfile}' | tail -n1; \
+          tac $TS_WORKF | awk -v ts="$TS_TRXS_SETS" '/now SIGNAL GO_T2/,/SET DEBUG_SYNC/ {print NR; i++; if (i>1+ts) nextfile}' | tail -n1; \
         fi)
         if [ $TS_VARIABILITY_SLEEP -gt 0 ]; then
           tail -n$LAST_LINE $TS_WORKF | grep -E --binary-files=text -v "^[\t ]*;[\t ]*$" | \
@@ -3091,9 +3091,9 @@ cut_threadsync_chunk(){
         # Sub threads
         LAST_LINE=$( \
         if [ $FIRST_DS_OCCURRENCE -gt 1 ]; then \
-          tac $TS_WORKF | awk '/now WAIT_FOR GO_T/,/SET DEBUG_SYNC/ {print NR; i++; if (i>$TS_TRXS_SETS) nextfile}' | tail -n1; \
+          tac $TS_WORKF | awk -v ts="$TS_TRXS_SETS" '/now WAIT_FOR GO_T/,/SET DEBUG_SYNC/ {print NR; i++; if (i>ts) nextfile}' | tail -n1; \
         else \
-          tac $TS_WORKF | awk '/now WAIT_FOR GO_T/,/SET DEBUG_SYNC/ {print NR; i++; if (i>1+$TS_TRXS_SETS) nextfile}' | tail -n1; \
+          tac $TS_WORKF | awk -v ts="$TS_TRXS_SETS" '/now WAIT_FOR GO_T/,/SET DEBUG_SYNC/ {print NR; i++; if (i>1+ts) nextfile}' | tail -n1; \
         fi)
         if [ $TS_VARIABILITY_SLEEP -gt 0 ]; then
           TS_VARIABILITY_SLEEP_TENTH=$(echo "$TS_VARIABILITY_SLEEP / 10" | bc -l)
@@ -3111,8 +3111,9 @@ cut_threadsync_chunk(){
 
 run_and_check(){
   start_mysqld_or_valgrind_or_mdg
-  if [ ${?} -eq 3 ]; then stop_mysqld_or_mdg; return 0; fi  # Provision for various startup failures. The hack is to return 0 here, indicating that no reduction was succesful
-  if [ ${?} -eq 1 ]; then stop_mysqld_or_mdg; echo 'RETURN CODE WAS 1'; return 0; fi  # Is this correct?
+  START_RC=${?}
+  if [ ${START_RC} -eq 3 ]; then stop_mysqld_or_mdg; return 0; fi  # Provision for various startup failures. The hack is to return 0 here, indicating that no reduction was succesful
+  if [ ${START_RC} -eq 1 ]; then stop_mysqld_or_mdg; echo 'RETURN CODE WAS 1'; return 0; fi
   run_sql_code
   if [ $MODE -eq 0 -o $MODE -eq 1 -o $MODE -eq 6 ]; then stop_mysqld_or_mdg; fi
   process_outcome
@@ -3173,9 +3174,9 @@ run_sql_code(){
       # Forking background threads by using bash fork implementation $() &
       export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
       if [ $TS_DBG_CLI_OUTPUT -eq 0 ]; then
-        $(cat $TS_WORKT | $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock --force test > /dev/null 2>/dev/null  ) &
+        (cat $TS_WORKT | $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock --force test > /dev/null 2>/dev/null  ) &
       else
-        $(cat $TS_WORKT | $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock --force -vvv test > $WORKD/mysql$t.out 2>&1 ) &
+        (cat $TS_WORKT | $BASEDIR/bin/mysql -uroot -S$WORKD/socket.sock --force -vvv test > $WORKD/mysql$t.out 2>&1 ) &
       fi
       PID=$!
       export TS_THREAD_PID$t=$PID
@@ -3221,7 +3222,7 @@ run_sql_code(){
       if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
         PQUERY_SHUFFLE=
         if [ $PQUERY_MULTI -eq 0 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 0 ]; then 
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 0 ]; then
             PQUERY_SHUFFLE="--no-shuffle"
           else
             # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
@@ -3240,9 +3241,9 @@ run_sql_code(){
         fi
       else
         if [ $PQUERY_MULTI -eq 0 ]; then
-          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -ge 0 ]; then
+          if [ $PQUERY_REVERSE_NOSHUFFLE_OPT -eq 0 ]; then
             PQUERY_SHUFFLE="--no-shuffle"
-          else 
+          else
             # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
             PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
           fi
@@ -3360,11 +3361,11 @@ cleanup_and_save(){
     cp -f $WORKO $WORK_OUT
     # Save a tarball of full self-contained testcase on each successful reduction
     rm -f $WORK_BUG_DIR/${EPOCH}_bug_bundle.tar.gz
-    $(cd $WORK_BUG_DIR; tar -zhcf ${EPOCH}_bug_bundle.tar.gz ${EPOCH}*)
+    (cd $WORK_BUG_DIR; tar -zhcf ${EPOCH}_bug_bundle.tar.gz ${EPOCH}*)
   fi
   ATLEASTONCE="[*]"  # The issue was seen at least once (this is used to permanently mark lines with '[*]' suffix as soon as this happens)
-  if [ ${STAGE} -eq 8 ]; then STAGE8_CHK=1; fi
-  if [ ${STAGE} -eq 9 ]; then STAGE9_CHK=1; fi
+  if [ "${STAGE}" = "8" ]; then STAGE8_CHK=1; fi
+  if [ "${STAGE}" = "9" ]; then STAGE9_CHK=1; fi
   # VERFIED file creation + subreducer handling
   echo "TRIAL:$TRIAL" > $WORKD/VERIFIED
   echo "WORKO:$WORKO" >> $WORKD/VERIFIED
@@ -3447,7 +3448,7 @@ process_outcome(){
     MODE2_OCCURRENCE=0
     if [ -z "$QCTEXT" ]; then  # Normal run, not QC
       if [ $USE_PQUERY -eq 1 ]; then  # pquery client output testing run, check both logs ftm (TODO: check if this is needed)
-        if [ $(grep -E --binary-files=text -c "$TEXT" $FILETOCHECK $FILETOCHECK2 2>/dev/null) -gt 0 ]; then
+        if [ $(grep -E --binary-files=text -l "$TEXT" $FILETOCHECK $FILETOCHECK2 2>/dev/null | wc -l) -gt 0 ]; then
           MODE2_OCCURRENCE=1
         fi
       else  # mysql CLI output testing run
@@ -4079,7 +4080,7 @@ finish(){
     echoit "[Finish] Final testcase                    : $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
   fi
   rm -f $WORK_BUG_DIR/${EPOCH}_bug_bundle.tar.gz
-  $(cd $WORK_BUG_DIR; tar -zhcf ${EPOCH}_bug_bundle.tar.gz ${EPOCH}*)
+  (cd $WORK_BUG_DIR; tar -zhcf ${EPOCH}_bug_bundle.tar.gz ${EPOCH}*)
   echoit "[Finish] Final testcase bundle + scripts in: $WORK_BUG_DIR"
   echoit "[Finish] Final testcase for script use     : $WORK_OUT (handy to use in combination with the scripts below)"
   echoit "[Finish] File containing datadir           : $WORK_BASEDIR (All scripts below use this. Update this when basedir changes)"
@@ -4101,7 +4102,7 @@ finish(){
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
       echoit "[Finish] mariadbd/mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED (the testcase will not reproduce the issue without these options passed to mariadbd/mysqld)"
     fi
-    if [ "${MYINIT}" == "" ]; then
+    if [ "${MYINIT}" != "" ]; then
       echoit "[Finish] mariadbd/mysqld initialization options reqd: $MYINIT (the testcase will not reproduce the issue without these options passed to mariadbd/mysqld initialization)"
     fi
     MYSQLD_OPTIONS_REQUIRED=
@@ -4225,7 +4226,7 @@ verify_not_found(){
      fi
   else
     if [ $USE_PQUERY -eq 1 ]; then
-      echoit "[Finish] pquery client output    : ${PRINTWORKD}/{EXTRA_PATH}default.node.tld_thread-0.sql  (Look for clear signs of non-replay or a terminated connection)"
+      echoit "[Finish] pquery client output    : ${PRINTWORKD}/${EXTRA_PATH}default.node.tld_thread-0.sql  (Look for clear signs of non-replay or a terminated connection)"
     else
       echoit "[Finish] mysql CLI client output : ${PRINTWORKD}/${EXTRA_PATH}log/mysql.out             (Look for clear signs of non-replay or a terminated connection)"
     fi
@@ -4284,7 +4285,7 @@ verify(){
   else  # This is a subreducer: go through normal verification stages
     while :; do
       if [ ! -z "$QCTEXT" ]; then
-        REMOVESUFFIX="s/#[NOERROR|ERROR].*//i"
+        REMOVESUFFIX="s/#\(NOERROR\|ERROR\).*//i"
       else
         REMOVESUFFIX="s/;[\t ]*#.*/;/i"
       fi
@@ -4307,7 +4308,7 @@ verify(){
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-| \[Note\] |====|  WARNING: |^Hope that|^Logging: |\++++| exit with exit status |Lost connection to | valgrind |Using [MSI]|Using dynamic|MySQL Version|\------|TIME \(ms\)$|Skipping ndb|Setting mysqld |Setting mariadbd |Binaries are debug |Killing Possible Leftover|Removing Stale Files|Creating Directories|Installing Master Database|Servers started, |Try: yum|Missing separate debug|SOURCE|CURRENT_TEST|\[ERROR\]|with SSL|_root_|connect to MySQL|No such file|is deprecated at|just omit the defined" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed 's/[\t ]\+/ /g' \
-            | sed 's/Query ([0-9a-fA-F]): \(.*\)/\1;/g' \
+            | sed 's/Query ([0-9a-fA-F]\+): \(.*\)/\1;/g' \
             | sed "s/[ ]*)[ ]*,[ ]*([ ]*/),\n(/g" \
             | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
             | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" \
@@ -4339,7 +4340,7 @@ verify(){
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
-            sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" TS_$WORKF \
+            sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $TS_WORKF \
               | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
               | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
           done
@@ -4422,7 +4423,7 @@ verify(){
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
-            sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" TS_$WORKF \
+            sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $TS_WORKF \
               | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
               | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
           done
@@ -4689,7 +4690,7 @@ if [ $MODE -ge 6 ]; then
         if   [ $TS_LARGEST_WORKF_LINECOUNT -gt 40000 ]; then TS_TE_ATTEMPTS=10 # Large   case, established sporadic, try 10 thread elimination attempts
         elif [ $TS_LARGEST_WORKF_LINECOUNT -gt 10000 ]; then TS_TE_ATTEMPTS=13 # Medium  case, established sporadic, try 13 times to eliminate a thread
         elif [ $TS_LARGEST_WORKF_LINECOUNT -gt  5000 ]; then TS_TE_ATTEMPTS=15 # Small   case, established sporadic, try 15 to eliminate a thread
-        elif [ $TS_LARGEST_WORKF_LINECOUNT -gt  1000 ]; then TS_TE_ATTEMPTS=15 # Smaller case, established sporadic, try 17 to eliminate a thread
+        elif [ $TS_LARGEST_WORKF_LINECOUNT -gt  1000 ]; then TS_TE_ATTEMPTS=17 # Smaller case, established sporadic, try 17 to eliminate a thread
         else TS_TE_ATTEMPTS=20                                                 # Minimal case, established sporadic, try 20 times to eliminate a thread
         fi
       fi
@@ -4860,7 +4861,7 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
       fi
     done
     TRIAL_REPEAT_COUNT=0
-    if [ "${FIREWORKS}" -eq 1 ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
+    if [ "${FIREWORKS}" == "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
       if [ ! -r "${INPUTFILE}" ]; then abort; fi
       SIZEF=$(stat -c %s ${INPUTFILE})
       LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
@@ -5417,10 +5418,6 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
             sed "s/$COL/c$C_COL_COUNTER/g" $WORKF > $WORKT
             C_COL_COUNTER=$[$C_COL_COUNTER+1]
             run_and_check
-            if [ $? -eq 1 ]; then
-              # This column was removed, reducing column count
-              COUNTCOLS=$[$COUNTCOLS-1]
-            fi
             COLUMN=$[$COLUMN+1]
             if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
               if [ ! -r "${WORKF}" ]; then abort; fi
@@ -5654,7 +5651,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 37  ]; then sed "s/[ ]*'[A-Z]*'[ ]*/''/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 38  ]; then sed "s/[ ]*'[a-zA-Z]*'[ ]*/''/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 39  ]; then sed "s/[ ]*[0-9][ ]*/0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 40  ]; then sed "s/[ ]*[0-9]*[ ]*/0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 40  ]; then sed "s/[ ]*[0-9]\+[ ]*/0/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 41  ]; then sed "s/[ ]*NULL[ ]*//g" $WORKF > $WORKT
     elif [ $TRIAL -eq 42  ]; then sed "s/[ ]*NULL[ ]*/0/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 43  ]; then sed "s/[ ]*NULL[ ]*/''/g" $WORKF > $WORKT
@@ -5686,19 +5683,19 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 68  ]; then sed "s/_char/c/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 69  ]; then sed "s/_datetime/dt/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 70  ]; then sed "s/_date/d/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 71  ]; then sed "s/_time/t/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 72  ]; then sed "s/_timestamp/ts/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 71  ]; then sed "s/_timestamp/ts/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 72  ]; then sed "s/_time/t/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 73  ]; then sed "s/_year/y/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 74  ]; then sed "s/_blob/b/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 75  ]; then sed "s/_tinyblob/tb/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 76  ]; then sed "s/_mediumblob/mb/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 77  ]; then sed "s/_longblob/lb/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 78  ]; then sed "s/_text/te/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 79  ]; then sed "s/_tinytext/tt/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 80  ]; then sed "s/_mediumtext/mt/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 81  ]; then sed "s/_longtext/lt/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 82  ]; then sed "s/_binary/bn/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 83  ]; then sed "s/_varbinary/vb/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 74  ]; then sed "s/_tinyblob/tb/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 75  ]; then sed "s/_mediumblob/mb/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 76  ]; then sed "s/_longblob/lb/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 77  ]; then sed "s/_blob/b/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 78  ]; then sed "s/_tinytext/tt/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 79  ]; then sed "s/_mediumtext/mt/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 80  ]; then sed "s/_longtext/lt/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 81  ]; then sed "s/_text/te/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 82  ]; then sed "s/_varbinary/vb/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 83  ]; then sed "s/_binary/bn/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 84  ]; then sed "s/_enum/e/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 85  ]; then sed "s/_set/s/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 86  ]; then sed "s/_not/n/g" $WORKF > $WORKT
@@ -5830,10 +5827,10 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 212 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
     elif [ $TRIAL -eq 213 ]; then sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
     elif [ $TRIAL -eq 214 ]; then sed "s/VALUES[ \t]\+(.*)/VALUES (1)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 215 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+]t[ \t+])/(t)/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 216 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+]t[ \t+])/(t)/i" $WORKF > $WORKT
-    elif [ $TRIAL -eq 217 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+][^)]\+)/(t)/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 218 ]; then sed "s/([ \t+]ORDER[ \t+]BY[ \t+][^)]\+)/(t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 215 ]; then sed "s/([ \t]\+ORDER[ \t]\+BY[ \t]\+t[ \t]\+)/(t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 216 ]; then sed "s/([ \t]\+ORDER[ \t]\+BY[ \t]\+t[ \t]\+)/(t)/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 217 ]; then sed "s/([ \t]\+ORDER[ \t]\+BY[ \t]\+[^)]\+)/(t)/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 218 ]; then sed "s/([ \t]\+ORDER[ \t]\+BY[ \t]\+[^)]\+)/(t)/i" $WORKF > $WORKT
     elif [ $TRIAL -eq 219 ]; then sed "s/HAVING[ \t]\+FIRST_VALUE[ \t]\+[^A-Z]\+[A-Z]//gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 220 ]; then sed "s/SUM[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 221 ]; then sed "s/MAX[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
@@ -5881,7 +5878,7 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 254 ]; then sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
     # RV 25/01/21 Disabled next trial to see if this fixes the # mariadbd/mysqld options required insert
     # RV 09/05/22 It seems to help. Reinstated trial by temporary dummy swap instead
-    elif [ $TRIAL -eq 255 ]; then sed 's|^# mysqld|DONOTDELETE|;s|# mariadbd|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
+    elif [ $TRIAL -eq 255 ]; then sed 's|^# mysqld|DONOTDELETE|;s|^# mariadbd|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
     elif [ $TRIAL -eq 256 ]; then NOSKIP=1; sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
     elif [ $TRIAL -eq 257 ]; then sed "s/t0/t/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 258 ]; then sed "s/c0/c/gi" $WORKF > $WORKT
@@ -6102,7 +6099,9 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
     fi
     STAGE9_NOT_STARTED_CORRECTLY=0
     SAVE_SPECIAL_MYEXTRA_OPTIONS=$SPECIAL_MYEXTRA_OPTIONS
-    SPECIAL_MYEXTRA_OPTIONS=$(echo "$SPECIAL_MYEXTRA_OPTIONS" | sed "s|$STAGE9_FILTER||");
+    if [ -n "$STAGE9_FILTER" ]; then
+      SPECIAL_MYEXTRA_OPTIONS=$(echo "$SPECIAL_MYEXTRA_OPTIONS" | sed "s|$STAGE9_FILTER||");
+    fi
     while :; do
       run_and_check
       TRIAL_REPEAT_COUNT=$[ ${TRIAL_REPEAT_COUNT} + 1 ]
@@ -6118,9 +6117,9 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
           break
         fi
       else  # Issue reproduced, so leave SPECIAL_MYEXTRA_OPTIONS as-is (already filtered), and filter the same from WORK_START now too
-        sed -i "s|$STAGE9_FILTER||" $WORK_START
+        if [ -n "$STAGE9_FILTER" ]; then sed -i "s|$STAGE9_FILTER||" $WORK_START; fi
         if [ "${SAVE_MYINIT}" != "" ]; then
-          sed -i "s|${MYINIT}||" $WORK_START
+          sed -i "s|${SAVE_MYINIT}||" $WORK_START
         fi
         break
       fi
@@ -6172,6 +6171,7 @@ if [ $SKIPSTAGEBELOW -lt 9 -a $SKIPSTAGEABOVE -gt 9 ]; then
   fi
   if [ "${MYINIT}" != "" ]; then  # Previous one failed, so try MYINIT removal only
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Removing MYINIT options from mariadbd/mysqld initialization"
+    STAGE9_FILTER=
     MYINIT_DROP=1
     stage9_run
   fi
