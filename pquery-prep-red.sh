@@ -557,6 +557,7 @@ generate_reducer_script(){
   if [[ ${MDG} -eq 1 ]]; then
     MDG_CLEANUP1="0,/^[ \t]*MDG[ \t]*=.*$/s|^[ \t]*MDG[ \t]*=.*$|#MDG=<set_below_in_machine_variables_section>|"
     MDG_CLEANUP2="0,/^[ \t]*NR_OF_NODES[ \t]*=.*$/s|^[ \t]*NR_OF_NODES[ \t]*=.*$|#NR_OF_NODES=<set_below_in_machine_variables_section>|"
+    MDG_CLEANUP3="0,/^[ \t]*GALERA_NODE[ \t]*=.*$/s|^[ \t]*GALERA_NODE[ \t]*=.*$|#GALERA_NODE=<set_below_in_machine_variables_section>|"
     MDG_STRING1="0,/#VARMOD#/s:#VARMOD#:export MDG=1\n#VARMOD#:"
     MDG_STRING2="0,/#VARMOD#/s:#VARMOD#:NR_OF_NODES=${NR_OF_NODES}\n#VARMOD#:"
     MDG_STRING3="0,/#VARMOD#/s:#VARMOD#:GALERA_NODE=${SUBDIR}\n#VARMOD#:"
@@ -634,6 +635,7 @@ generate_reducer_script(){
    | sed "0,/^[ \t]*PQUERY_LOC[ \t]*=.*$/s|^[ \t]*PQUERY_LOC[ \t]*=.*$|#PQUERY_LOC=<set_below_in_machine_variables_section>|" \
    | sed "${MDG_CLEANUP1}" \
    | sed "${MDG_CLEANUP2}" \
+   | sed "${MDG_CLEANUP3}" \
    | sed "${ENCRYPTION_RUN_CLEANUP}" \
    | sed "${RR_TRACING_CLEANUP}" \
    | sed "${GRP_RPL_CLEANUP1}" \

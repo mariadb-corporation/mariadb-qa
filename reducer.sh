@@ -116,6 +116,7 @@ FORCE_KILL=0                    # On/Off (1/0) Enable to forcefully kill mariadb
 MDG=0                           # On/Off (1/0) Enable to reduce testcases using a MariaDB Galera Cluster. Auto-enables USE_PQUERY=1
 MDG_ISSUE_NODE=0                # The node on which the issue would/should show (0,1,2 or 3) (default=0 = check all nodes to see if issue occured)
 NR_OF_NODES=3                   # Nr of MDG nodes 1-n
+GALERA_NODE=1                   # Default galera node to analyse the issue
 WSREP_PROVIDER_OPTIONS=""       # wsrep_provider_options to be used (and reduced).
 
 # === MySQL Group Replication
@@ -3145,7 +3146,7 @@ run_sql_code(){
     # Place event into the mysql db, not test db as the test db is dropped immediately
     SOCKET_TO_BE_USED=
     if [[ $MDG -eq 1 || $GRP_RPL -eq 1 ]]; then
-      SOCKET_TO_BE_USED=${node1}/node1_socket.sock
+      SOCKET_TO_BE_USED=${WORKD}/node1/node1_socket.sock
     else
       SOCKET_TO_BE_USED=$WORKD/socket.sock
     fi
@@ -3747,9 +3748,7 @@ process_outcome(){
       fi
       sleep 2; sync
       cleanup_and_save
-      if [ $MDG -eq 0 ]; then
-        return 1
-      fi
+      return 1
     else
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [No${M3_OUTPUT_TEXT}OutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
