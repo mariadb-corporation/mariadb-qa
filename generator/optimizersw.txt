@@ -1,6 +1,5 @@
 batched_key_access
 block_nested_loop
-condition_fanout_filter
 condition_pushdown_for_derived
 condition_pushdown_for_subquery
 condition_pushdown_from_having
@@ -37,6 +36,9 @@ semijoin
 semijoin_with_cache
 split_materialized
 subquery_cache
-subquery_materialization_cost_based
 table_elimination
 use_index_extensions
+hash_join_cardinality
+prefer_ordering_index
+sargable_casefold
+hash_join

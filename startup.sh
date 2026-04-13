@@ -574,13 +574,14 @@ if [ -d "${MTR_DIR}" ]; then
   add_san_options ${MTR_DIR}/loop_mtr
   echo '#Loop MTR on main/test.test (or any other test, if specified) till it fails' >>${MTR_DIR}/loop_mtr
   echo 'if [ -z "${1}" ]; then TEST="test"; else TEST="${1}"; fi' >>${MTR_DIR}/loop_mtr
-  echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; ./mtr \${TEST} 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr
+  echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; ./mtr \${TEST} 2>&1 | grep -v 'WARNING: Test reserved for w.* picked up by w' >>\${LOG}; if grep -q 'fail ' \${LOG}; then echo \"Logfile: \${LOG}\"; break; fi; done" >>${MTR_DIR}/loop_mtr
   chmod +x ${MTR_DIR}/loop_mtr
   echo '#!/bin/bash' >${MTR_DIR}/loop_mtr_multi
   add_san_options ${MTR_DIR}/loop_mtr_multi
   echo '#Multi-loop MTR on main/test.test (or any other test, if specified) till it fails' >>${MTR_DIR}/loop_mtr_multi
   echo 'if [ -z "${1}" ]; then TEST="test"; else TEST="${1}"; fi' >>${MTR_DIR}/loop_mtr_multi
-  echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; MTR_MEM=/dev/shm ./mysql-test-run --parallel=100 --repeat 100 --mem --force --retry=0 --retry-failure=0 \${TEST}{,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,} 2>&1 >>\${LOG}; if grep -q 'fail ' \${LOG}; then break; fi; done" >>${MTR_DIR}/loop_mtr_multi
+  echo '# 1M tests PER loop: 100 parallel, 100 repeat, 100 copies of the test' >>${MTR_DIR}/loop_mtr_multi
+  echo "LOG=\"\$(mktemp)\"; echo \"Logfile: \${LOG}\"; LOOP=0; while true; do LOOP=\$[ \${LOOP} + 1 ]; echo \"Loop: \${LOOP}\"; MTR_MEM=/dev/shm ./mysql-test-run --parallel=100 --repeat 100 --mem --force --retry=0 --retry-failure=0 \${TEST}{,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,} 2>&1 | grep -v 'WARNING: Test reserved for w.* picked up by w' >>\${LOG}; if grep -q 'fail ' \${LOG}; then echo \"Logfile: \${LOG}\"; break; fi; done" >>${MTR_DIR}/loop_mtr_multi
   chmod +x ${MTR_DIR}/loop_mtr_multi
   cp ${MTR_DIR}/loop_mtr ${MTR_DIR}/loop_mtr_skip_slave_err
   cp ${MTR_DIR}/loop_mtr_multi ${MTR_DIR}/loop_mtr_multi_skip_slave_err
