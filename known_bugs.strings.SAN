@@ -28,12 +28,17 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|sql/lex_ident.h|Lex_ident<Compare_ident_ci>::is_valid_ident|Lex_ident<Compare_ident_ci>::streq|find_field_in_table|Item_trigger_field::setup_field    ## MDEV-30434
+ASAN|heap-use-after-free|strings/ctype-utf8.c|my_strcasecmp_utf8mb3|find_field_in_table|Item_trigger_field::setup_field|Table_triggers_list::create_trigger                    ## MDEV-30434
+ASAN|heap-use-after-free|strings/strcoll.inl|my_scan_weight_utf8mb3_general1400_as_ci|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq ## MDEV-30434
+ASAN|heap-use-after-free|sql/protocol.h|Protocol::valid_handler|Protocol_text::store_str|Protocol::store|Field::send                                                           ## MDEV-39399
+ASAN|heap-use-after-free|sql/protocol.h|Protocol::valid_handler|Protocol_text::store_longlong|Protocol_text::store|Protocol::send_result_set_row                               ## MDEV-39399
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/rem/rem0rec.cc|void|rec_convert_dtuple_to_rec_new|rec_convert_dtuple_to_rec|BtrBulk::insert    ## MDEV-39309
 UBSAN|shift exponent X is too large for 64-bit type 'key_part_map' (aka 'unsigned long')|sql/sql_select.cc|create_ref_for_key|JOIN::get_best_combination|JOIN::optimize_stage2|JOIN::optimize_inner ## MDEV-39268
 UBSAN|member access within null pointer of type 'THD'|sql/handler.cc|handler::update_global_table_stats|close_thread_table|close_thread_tables|mysql_execute_command           ## MDEV-39267
 ASAN|use-after-poison|strings/ctype-gb2312.c|my_mb_wc_gb2312|my_mb_wc_item_name|my_convert_using_func|make_name                                                                ## MDEV-39248
 UBSAN|load of null pointer of type 'unsigned int'|sql/strfunc.cc|check_word|extract_oracle_date_time|Item_func_to_date::get_date_common|Type_handler::Item_send_datetime       ## MDEV-39229
-UBSAN|load of value X, which is not a valid value for type 'Optional_metadata_field_type'|sql/log_event.cc|Table_map_log_event::Optional_metadata_fields::Optional_metadata_fields|RPL_TABLE_LIST::create_column_mapping|Rows_log_event::do_apply_event|Log_event::apply_event                           ## MDEV-38676
+UBSAN|load of value X, which is not a valid value for type 'Optional_metadata_field_type'|sql/log_event.cc|Table_map_log_event::Optional_metadata_fields::Optional_metadata_fields|RPL_TABLE_LIST::create_column_mapping|Rows_log_event::do_apply_event|Log_event::apply_event ## MDEV-38676
 ASAN|heap-use-after-free|sql/sql_admin.cc|prepare_for_repair|mysql_admin_table|Sql_cmd_repair_table::execute|mysql_execute_command                                             ## MDEV-33676
 UBSAN|load of null pointer of type 'Field *'|sql/table.cc|TABLE::evaluate_update_default_function|fill_record|fill_record_n_invoke_before_triggers|Sql_cmd_update::update_single_table ## MDEV-38830
 UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_all_rows|handler::truncate                 ## MDEV-38886

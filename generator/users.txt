@@ -9,4 +9,3 @@ user5
 'user4'@'127.0.0.1'
 'root'@'localhost'
 CURRENT_USER
-CURRENT_ROLE

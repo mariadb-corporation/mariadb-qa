@@ -199,7 +199,7 @@ fi
 
 # Setup scritps
 rm -f *_node_cl* *cl cl* *cli all* anc binlog decode_binlog fixin gal* gdb init line loopin myloop *multirun* multitest myrocks_tokudb_init reducer_* repl_setup setup sqlmode stack start* stop* sysbench* perf_record test ts tsp test_* wipe* clean_failing_queries memory_* ml mlp master_setup.sql slave_setup.sql select.py select.sh mysql.out mysql_slave.out backup 2>/dev/null
-BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | test_timed | test_timed_pquery | test_sanity | test_sanity_pquery | init | line | wipe | wipe_slave | sqlmode | binlog | decode_binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_any_sig.sh | reducer_any_sig_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | select.sh/.py | sysbench_prepare | sysbench_run | sysbench_measure | sysbench_oltp_p_s_example | perf_record | myloop | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | multirun_loop_replication | kill_multirun | loopin | gdb | fixin | stack | memory_monitor | memory_use_trace | myrocks_tokudb_init | afl | aflnew | multitest | stress.sh | backup"
+BASIC_SCRIPTS="start | start_valgrind | start_gypsy | start_master | start_slave | start_replication | stop | stop_slave | kill | kill_slave | setup | cl | cl_slave | test | test_pquery | test_timed | test_timed_pquery | test_sanity | test_sanity_pquery | init | line | wipe | wipe_slave | sqlmode | binlog | decode_binlog | all | all_stbe | all_no_cl | all_rr | all_no_cl_rr | reducer_new_text_string.sh | reducer_new_text_string_pquery.sh | reducer_any_sig.sh | reducer_any_sig_pquery.sh | reducer_errorlog.sh | reducer_errorlog_pquery.sh | reducer_fireworks.sh | reducer_hang.sh | reducer_hang_pquery.sh | select.sh/.py | sysbench_prepare | sysbench_run | sysbench_measure | sysbench_oltp_p_s_example | perf_record | myloop | multirun | multirun_loop (ml) | multirun_loop_pquery (mlp) | multirun_rr | multirun_pquery | multirun_pquery_rr | multirun_mysqld | multirun_mysqld_text | multirun_loop_replication | kill_multirun | loopin | gdb | fixin | stack | memory_monitor | memory_use_trace | myrocks_tokudb_init | afl | aflnew | multitest | stress.sh | backup | priv_test.sh"
 GRP_RPL_SCRIPTS="start_group_replication (and stop_group_replication is created dynamically on group replication startup)"
 GALERA_SCRIPTS="gal_start | gal_start_rr | gal_stop | gal_init | gal_kill | gal_setup | gal_wipe | *_node_cli | gal_test_pquery | gal | gal_cl | gal_sqlmode | gal_binlog | gal_stbe | gal_no_cl | gal_rr | gal_gdb | gal_test | gal_cl_noprompt_nobinary | gal_cl_noprompt | gal_multirun | gal_multirun_pquery | gal_sysbench_measure | gal_sysbench_prepare | gal_sysbench_run"
 if [[ $GRP_RPL -eq 1 ]]; then
@@ -209,6 +209,9 @@ elif [[ $MDG -eq 1 ]]; then
 else
   echo "Adding scripts: ${BASIC_SCRIPTS}"
 fi
+
+# Privileges test
+ln -s ${SCRIPT_PWD}/priv_test.sh ./priv_test.sh
 
 # Select
 ln -s ${HOME}/mariadb-qa/select.sh ./select.sh

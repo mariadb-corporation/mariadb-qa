@@ -182,7 +182,7 @@ ignore()     { if (( RANDOM % 20 + 1 <= 4  )); then REPLY="IGNORE"; else REPLY="
 linear()     { if (( RANDOM % 20 + 1 <= 10 )); then REPLY="LINEAR"; else REPLY=""; fi }                       # 50% LINEAR
 lowprio()    { if (( RANDOM % 20 + 1 <= 5  )); then REPLY="LOW_PRIORITY"; else REPLY=""; fi }                 # 25% LOW_PRIORITY
 quick()      { if (( RANDOM % 20 + 1 <= 4  )); then REPLY="QUICK"; else REPLY=""; fi }                        # 20% QUICK
-limit()      { if (( RANDOM % 20 + 1 <= 10 )); then n9; REPLY="LIMIT $REPLY"; else REPLY=""; fi }             # 50% LIMIT 0-9
+limit()      { if (( RANDOM % 20 + 1 <= 10 )); then n9; local _lim=$REPLY; rowsexamined; REPLY="LIMIT ${_lim} ${REPLY}"; else REPLY=""; fi }  # 50% LIMIT 0-9 [ROWS EXAMINED n]
 limoffset()  { if (( RANDOM % 20 + 1 <= 2  )); then n3; REPLY="$REPLY,"; else REPLY=""; fi }                  # 10% 0-3 offset (for LIMITs)
 ofslimit()   { if (( RANDOM % 20 + 1 <= 10 )); then limoffset; local _v1=$REPLY; n9; REPLY="LIMIT ${_v1}$REPLY"; else REPLY=""; fi }  # 50% LIMIT 0-9, with potential offset
 natural()    { if (( RANDOM % 20 + 1 <= 2  )); then REPLY="NATURAL"; else REPLY=""; fi }                      # 10% NATURAL (for JOINs)
@@ -203,7 +203,7 @@ fromdb()     { if (( RANDOM % 20 + 1 <= 2  )); then REPLY="FROM test"; else REPL
 offset()     { if (( RANDOM % 20 + 1 <= 4  )); then n9; REPLY="OFFSET $REPLY"; else REPLY=""; fi }            # 20% OFFSET 0-9
 forquery()   { if (( RANDOM % 20 + 1 <= 4  )); then n9; REPLY="FORQUERY $REPLY"; else REPLY=""; fi }          # 20% QUERY 0-9
 onephase()   { if (( RANDOM % 20 + 1 <= 16 )); then REPLY="ONE PHASE"; else REPLY=""; fi }                    # 80% ONE PHASE
-convertxid() { if (( RANDOM % 20 + 1 <= 3  )); then REPLY="CONVERT XID"; else REPLY=""; fi }                  # 15% CONVERT XID
+convertxid() { if (( RANDOM % 20 + 1 <= 3  )); then REPLY="FORMAT='SQL'"; else REPLY=""; fi }                  # 15% FORMAT='SQL' (MariaDB syntax; CONVERT XID is MySQL-only)
 ifnotexist() { if (( RANDOM % 20 + 1 <= 10 )); then REPLY="IF NOT EXISTS"; else REPLY=""; fi }                # 50% IF NOT EXISTS
 ifexist()    { if (( RANDOM % 20 + 1 <= 10 )); then REPLY="IF EXISTS"; else REPLY=""; fi }                    # 50% IF EXISTS
 completion() { if (( RANDOM % 20 + 1 <= 5  )); then not; REPLY="ON COMPLETION $REPLY PRESERVE"; else REPLY=""; fi }  # 25% ON COMPLETION [NOT] PRESERVE
@@ -234,7 +234,7 @@ schedule()   { if (( RANDOM % 20 + 1 <= 10 )); then timestamp; local _v1=$REPLY;
 readwrite()  { if (( RANDOM % 30 + 1 <= 10 )); then REPLY='READ ONLY'; else REPLY='READ WRITE'; fi }      # 50% READ ONLY, 50% WRITE ONLY
 binmaster()  { if (( RANDOM % 20 + 1 <= 10 )); then REPLY="BINARY"; else REPLY="MASTER"; fi }             # 50% BINARY, 50% MASTER
 nowblocal()  { if (( RANDOM % 20 + 1 <= 10 )); then REPLY="NO_WRITE_TO_BINLOG"; else REPLY="LOCAL"; fi }  # 50% NO_WRITE_TO_BINLOG, 50% LOCAL
-locktype()   { if (( RANDOM % 20 + 1 <= 10 )); then localonly; REPLY="READ $REPLY"; else lowprio; REPLY="$REPLY WRITE"; fi }  # 50% READ [LOCAL], 50% [LOW_PRIORITY] WRITE
+locktype()   { case $(( RANDOM % 5 + 1 )) in [1-2]) localonly; REPLY="READ $REPLY";; [3-4]) lowprio; REPLY="$REPLY WRITE";; 5) REPLY="WRITE CONCURRENT";; *) REPLY="WRITE";; esac }  # READ [LOCAL], [LOW_PRIORITY] WRITE, WRITE CONCURRENT
 charactert() { if (( RANDOM % 20 + 1 <= 8  )); then character; local _v1=$REPLY; charactert; REPLY="$_v1 $REPLY"; else character; fi }  # 40% NESTED, 60% SINGLE
 danrorfull() { if (( RANDOM % 20 + 1 <= 19 )); then dataornum; else fullnrfunc; fi }                      # 95% data, 5% nested full nr function
 numericadd() { if (( RANDOM % 20 + 1 <= 8  )); then numsimple; local _v1=$REPLY; eitherornn; local _v2=$REPLY; numericadd; REPLY="$_v1 $_v2 $REPLY"; else numsimple; local _v1=$REPLY; eitherornn; REPLY="$_v1 $REPLY"; fi }  # 40% NESTED, 60% SINGLE
@@ -278,8 +278,8 @@ operator()   { if (( RANDOM % 20 + 1 <= 8 )); then REPLY="="; else if (( RANDOM 
 pstimer()    { if (( RANDOM % 20 + 1 <= 4 )); then REPLY="idle"; else if (( RANDOM % 20 + 1 <= 10 )); then if (( RANDOM % 20 + 1 <= 10 )); then REPLY="wait"; else REPLY="stage"; fi; else if (( RANDOM % 20 + 1 <= 10 )); then REPLY="statement"; else REPLY="statement"; fi; fi; fi }
 pstimernm()  { if (( RANDOM % 20 + 1 <= 4 )); then REPLY="CYCLE"; else if (( RANDOM % 20 + 1 <= 10 )); then if (( RANDOM % 20 + 1 <= 10 )); then REPLY="NANOSECOND"; else REPLY="MICROSECOND"; fi; else if (( RANDOM % 20 + 1 <= 10 )); then REPLY="MILLISECOND"; else REPLY="TICK"; fi; fi; fi }
 # ========================================= JSON, String, Cast, Case, Coalesce, Names, Alter helpers
-jsonfunc()   {
-  case $(( RANDOM % 8 + 1 )) in
+jsonfunc()   {  # JSON functions (expanded per MariaDB manual: 14 functions)
+  case $(( RANDOM % 14 + 1 )) in
     1) n3; REPLY="JSON_OBJECT('key', c${REPLY})";;
     2) REPLY="JSON_ARRAY(c1, c2, c3)";;
     3) n3; REPLY="JSON_EXTRACT(c${REPLY}, '\$.key')";;
@@ -288,11 +288,17 @@ jsonfunc()   {
     6) n3; local _v1=$REPLY; data; REPLY="JSON_SET(c${_v1}, '\$.key', ${REPLY})";;
     7) n3; REPLY="JSON_TYPE(c${REPLY})";;
     8) n3; local _v1=$REPLY; n3; REPLY="JSON_MERGE_PATCH(c${_v1}, c${REPLY})";;
+    9) n3; REPLY="JSON_QUOTE(c${REPLY})";;
+   10) n3; REPLY="JSON_UNQUOTE(c${REPLY})";;
+   11) n3; local _v1=$REPLY; data; REPLY="JSON_INSERT(c${_v1}, '\$.newkey', ${REPLY})";;
+   12) n3; local _v1=$REPLY; data; REPLY="JSON_REPLACE(c${_v1}, '\$.key', ${REPLY})";;
+   13) n3; REPLY="JSON_REMOVE(c${REPLY}, '\$.key')";;
+   14) n3; REPLY="JSON_SEARCH(c${REPLY}, 'one', 'value')";;
     *) REPLY="Assert: invalid random case selection in jsonfunc() case";;
   esac
 }
-stringfunc() {
-  case $(( RANDOM % 10 + 1 )) in
+stringfunc() {  # String functions (expanded per MariaDB manual: 16 functions)
+  case $(( RANDOM % 16 + 1 )) in
     1) n3; local _v1=$REPLY; data; REPLY="CONCAT(c${_v1}, ${REPLY})";;
     2) n3; local _v1=$REPLY; n10; local _v2=$REPLY; n10; REPLY="SUBSTRING(c${_v1}, ${_v2}, ${REPLY})";;
     3) n3; REPLY="UPPER(c${REPLY})";;
@@ -303,17 +309,27 @@ stringfunc() {
     8) n3; local _v1=$REPLY; data; local _v2=$REPLY; data; REPLY="REPLACE(c${_v1}, ${_v2}, ${REPLY})";;
     9) n3; local _v1=$REPLY; n3; REPLY="CONCAT_WS(',', c${_v1}, c${REPLY})";;
    10) n3; REPLY="CHAR_LENGTH(c${REPLY})";;
+   11) n3; local _v1=$REPLY; n10; REPLY="LEFT(c${_v1}, ${REPLY})";;
+   12) n3; local _v1=$REPLY; n10; REPLY="RIGHT(c${_v1}, ${REPLY})";;
+   13) n3; local _v1=$REPLY; n10; local _len=$REPLY; data; REPLY="LPAD(c${_v1}, ${_len}, ${REPLY})";;
+   14) n3; local _v1=$REPLY; n10; local _len=$REPLY; data; REPLY="RPAD(c${_v1}, ${_len}, ${REPLY})";;
+   15) n3; REPLY="QUOTE(c${REPLY})";;
+   16) n3; local _v1=$REPLY; data; REPLY="SUBSTRING_INDEX(c${_v1}, ${REPLY}, 1)";;
     *) REPLY="Assert: invalid random case selection in stringfunc() case";;
   esac
 }
-castexpr()   {
-  case $(( RANDOM % 6 + 1 )) in
+castexpr()   {  # CAST/CONVERT (expanded per MariaDB manual)
+  case $(( RANDOM % 10 + 1 )) in
     1) n3; REPLY="CAST(c${REPLY} AS CHAR)";;
     2) n3; REPLY="CAST(c${REPLY} AS SIGNED)";;
     3) n3; REPLY="CAST(c${REPLY} AS UNSIGNED)";;
     4) n3; REPLY="CAST(c${REPLY} AS DATE)";;
     5) n3; REPLY="CAST(c${REPLY} AS DECIMAL(10,2))";;
     6) n3; REPLY="CONVERT(c${REPLY}, CHAR)";;
+    7) n3; REPLY="CAST(c${REPLY} AS DATETIME)";;
+    8) n3; REPLY="CAST(c${REPLY} AS TIME)";;
+    9) n3; REPLY="CAST(c${REPLY} AS DOUBLE)";;
+   10) n3; REPLY="CAST(c${REPLY} AS INTEGER)";;
     *) REPLY="Assert: invalid random case selection in castexpr() case";;
   esac
 }
@@ -381,7 +397,7 @@ orderby()   {
   esac
 }
 winfuncname(){  # Random window function name
-  case $(( RANDOM % 10 + 1 )) in
+  case $(( RANDOM % 15 + 1 )) in  # Window functions per MariaDB manual (expanded with PERCENT_RANK, CUME_DIST, NTH_VALUE, MEDIAN)
      1) REPLY="ROW_NUMBER()";;
      2) REPLY="RANK()";;
      3) REPLY="DENSE_RANK()";;
@@ -392,15 +408,22 @@ winfuncname(){  # Random window function name
      8) n3; REPLY="LAST_VALUE(c${REPLY})";;
      9) n3; REPLY="SUM(c${REPLY})";;
     10) REPLY="COUNT(*)";;
+    11) REPLY="PERCENT_RANK()";;
+    12) REPLY="CUME_DIST()";;
+    13) n3; local _c=$REPLY; n10; REPLY="NTH_VALUE(c${_c}, ${REPLY})";;
+    14) n3; REPLY="MEDIAN(c${REPLY})";;
+    15) n3; REPLY="AVG(c${REPLY})";;
      *) REPLY="Assert: invalid random case selection in winfuncname() case";;
   esac
 }
-winover(){  # OVER clause for window functions
-  case $(( RANDOM % 4 + 1 )) in
+winover(){  # OVER clause for window functions (expanded with frame specs per MariaDB manual)
+  case $(( RANDOM % 6 + 1 )) in
     1) n3; local _v1=$REPLY; emascdesc; REPLY="OVER (ORDER BY c${_v1} ${REPLY})";;
     2) n3; local _v1=$REPLY; n3; local _v2=$REPLY; emascdesc; REPLY="OVER (PARTITION BY c${_v1} ORDER BY c${_v2} ${REPLY})";;
     3) n3; REPLY="OVER (PARTITION BY c${REPLY})";;
     4) REPLY="OVER ()";;
+    5) n3; local _v1=$REPLY; emascdesc; local _ad=$REPLY; winframe; REPLY="OVER (ORDER BY c${_v1} ${_ad} ${REPLY})";;
+    6) n3; local _v1=$REPLY; n3; local _v2=$REPLY; emascdesc; local _ad=$REPLY; winframe; REPLY="OVER (PARTITION BY c${_v1} ORDER BY c${_v2} ${_ad} ${REPLY})";;
     *) REPLY="Assert: invalid random case selection in winover() case";;
   esac
 }
@@ -578,6 +601,119 @@ importantvar() {  # Variables that significantly affect server behavior
 }
 # ========================================= Lock helpers
 lockwait()   { if (( RANDOM % 5 == 0 )); then n9; REPLY="WAIT ${REPLY}"; else REPLY=""; fi }  # 20% WAIT N
+# ========================================= Expression/predicate helpers
+betweenexpr() { n3; local _c=$REPLY; nn1000; local _lo=$REPLY; nn1000; REPLY="c${_c} BETWEEN ${_lo} AND ${REPLY}"; }  # col BETWEEN val AND val
+inlist()      { n3; local _c=$REPLY; nn1000; local _v1=$REPLY; nn1000; local _v2=$REPLY; nn1000; REPLY="c${_c} IN (${_v1},${_v2},${REPLY})"; }  # col IN (val,val,val)
+isnullexpr()  { n3; case $(( RANDOM % 2 + 1 )) in 1) REPLY="c${REPLY} IS NULL";; 2) REPLY="c${REPLY} IS NOT NULL";; *) REPLY="c${REPLY} IS NULL";; esac }
+regexpexpr()  { n3; local _c=$REPLY; azn9; REPLY="c${_c} REGEXP '^${REPLY}'"; }
+matchagainst() { n3; local _c=$REPLY; az; REPLY="MATCH(c${_c}) AGAINST ('${REPLY}')"; }
+matchagainstmode() { n3; local _c=$REPLY; az; local _w=$REPLY; case $(( RANDOM % 4 + 1 )) in 1) REPLY="MATCH(c${_c}) AGAINST ('${_w}')";; 2) REPLY="MATCH(c${_c}) AGAINST ('${_w}' IN BOOLEAN MODE)";; 3) REPLY="MATCH(c${_c}) AGAINST ('${_w}' IN NATURAL LANGUAGE MODE)";; 4) REPLY="MATCH(c${_c}) AGAINST ('${_w}' WITH QUERY EXPANSION)";; *) REPLY="MATCH(c${_c}) AGAINST ('${_w}')";; esac }
+anyallsome()  { case $(( RANDOM % 3 + 1 )) in 1) REPLY="ANY";; 2) REPLY="ALL";; 3) REPLY="SOME";; *) REPLY="ANY";; esac }  # ANY/ALL/SOME for subquery comparisons
+selmodifier() {  # SELECT modifiers per MariaDB manual
+  local _r=""
+  if (( RANDOM % 8 == 0 )); then _r="SQL_SMALL_RESULT "; fi
+  if (( RANDOM % 8 == 0 )); then _r="${_r}SQL_BIG_RESULT "; fi
+  if (( RANDOM % 10 == 0 )); then _r="${_r}SQL_BUFFER_RESULT "; fi
+  if (( RANDOM % 10 == 0 )); then _r="${_r}SQL_NO_CACHE "; fi
+  if (( RANDOM % 10 == 0 )); then _r="${_r}SQL_CALC_FOUND_ROWS "; fi
+  REPLY="$_r"
+}
+# ========================================= Missing MariaDB idiom helpers
+waitnowait() { case $(( RANDOM % 5 + 1 )) in 1) n9; REPLY="WAIT ${REPLY}";; 2) REPLY="NOWAIT";; [3-5]) REPLY="";; *) REPLY="";; esac }  # WAIT n / NOWAIT for ALTER/CREATE INDEX/LOCK
+ignorereplace() { case $(( RANDOM % 4 + 1 )) in 1) REPLY="IGNORE";; 2) REPLY="REPLACE";; [3-4]) REPLY="";; *) REPLY="";; esac }  # IGNORE/REPLACE for CREATE TABLE...SELECT, LOAD DATA
+fkaction()   { case $(( RANDOM % 6 + 1 )) in 1) REPLY="RESTRICT";; 2) REPLY="CASCADE";; 3) REPLY="SET NULL";; 4) REPLY="SET DEFAULT";; 5) REPLY="NO ACTION";; 6) REPLY="";; *) REPLY="";; esac }  # FK ON DELETE/UPDATE action
+indextype()   { case $(( RANDOM % 4 + 1 )) in 1) REPLY="USING BTREE";; 2) REPLY="USING HASH";; [3-4]) REPLY="";; *) REPLY="";; esac }  # Index type BTREE/HASH
+colcompress() { if (( RANDOM % 10 == 0 )); then REPLY="COMPRESSED"; else REPLY=""; fi }  # 10% COMPRESSED column (MariaDB 10.3+)
+firstafter()  { case $(( RANDOM % 5 + 1 )) in 1) REPLY="FIRST";; 2) n3; REPLY="AFTER c${REPLY}";; [3-5]) REPLY="";; *) REPLY="";; esac }  # FIRST / AFTER col for ADD/MODIFY COLUMN
+charsetcollate() { case $(( RANDOM % 4 + 1 )) in 1) REPLY="CHARACTER SET utf8mb4";; 2) REPLY="CHARACTER SET latin1";; 3) REPLY="CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci";; 4) REPLY="";; *) REPLY="";; esac }
+online()     { if (( RANDOM % 10 == 0 )); then REPLY="ONLINE"; else REPLY=""; fi }  # 10% ONLINE (=LOCK=NONE for ALTER)
+concurrent() { if (( RANDOM % 5 == 0 )); then REPLY="CONCURRENT"; else REPLY=""; fi }  # 20% CONCURRENT for LOAD DATA
+tablecomment() { if (( RANDOM % 5 == 0 )); then REPLY="COMMENT='test table'"; else REPLY=""; fi }  # 20% COMMENT on table
+tablecharset() { case $(( RANDOM % 5 + 1 )) in 1) REPLY="DEFAULT CHARSET=utf8mb4";; 2) REPLY="DEFAULT CHARSET=latin1";; 3) REPLY="DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";; [4-5]) REPLY="";; *) REPLY="";; esac }
+winframe()   {  # Window frame specification
+  case $(( RANDOM % 6 + 1 )) in
+    1) REPLY="ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW";;
+    2) REPLY="ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING";;
+    3) REPLY="ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING";;
+    4) REPLY="ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING";;
+    5) REPLY="RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW";;
+    6) REPLY="";;
+    *) REPLY="";;
+  esac
+}
+highprio()   { if (( RANDOM % 10 == 0 )); then REPLY="HIGH_PRIORITY"; else REPLY=""; fi }  # 10% HIGH_PRIORITY
+partitionsel() { if (( RANDOM % 8 == 0 )); then n3; REPLY="PARTITION (p${REPLY})"; else REPLY=""; fi }  # 12% PARTITION (pN) for DML
+rowsexamined() { if (( RANDOM % 10 == 0 )); then n1000; REPLY="ROWS EXAMINED ${REPLY}"; else REPLY=""; fi }  # 10% ROWS EXAMINED limit
+# ========================================= Additional expression and clause helpers (bulk expansion)
+likeexpr()   { n3; local _c=$REPLY; azn9; local _ch=$REPLY; case $(( RANDOM % 4 + 1 )) in 1) REPLY="c${_c} LIKE '${_ch}%'";; 2) REPLY="c${_c} LIKE '%${_ch}%'";; 3) REPLY="c${_c} NOT LIKE '${_ch}%'";; 4) REPLY="c${_c} LIKE '%${_ch}' ESCAPE '\\\\'";; *) REPLY="c${_c} LIKE '${_ch}%'";; esac }
+bitwiseexpr() { n3; local _c=$REPLY; n100; local _v=$REPLY; case $(( RANDOM % 4 + 1 )) in 1) REPLY="c${_c} & ${_v}";; 2) REPLY="c${_c} | ${_v}";; 3) REPLY="c${_c} ^ ${_v}";; 4) REPLY="c${_c} << 2";; *) REPLY="c${_c} & ${_v}";; esac }
+collateexpr() { n3; local _c=$REPLY; case $(( RANDOM % 3 + 1 )) in 1) REPLY="c${_c} COLLATE utf8mb4_general_ci";; 2) REPLY="c${_c} COLLATE latin1_bin";; 3) REPLY="c${_c} COLLATE utf8mb4_bin";; *) REPLY="c${_c} COLLATE utf8mb4_bin";; esac }
+converttz()  { n3; local _c=$REPLY; REPLY="CONVERT_TZ(c${_c}, '+00:00', '+02:00')"; }
+datearith()  { n3; local _c=$REPLY; n100; local _n=$REPLY; timeunit; local _u=$REPLY; case $(( RANDOM % 4 + 1 )) in 1) REPLY="DATE_ADD(c${_c}, INTERVAL ${_n} ${_u})";; 2) REPLY="DATE_SUB(c${_c}, INTERVAL ${_n} ${_u})";; 3) REPLY="c${_c} + INTERVAL ${_n} ${_u}";; 4) REPLY="c${_c} - INTERVAL ${_n} ${_u}";; *) REPLY="DATE_ADD(c${_c}, INTERVAL ${_n} ${_u})";; esac }
+formatfunc() { n3; local _c=$REPLY; n9; REPLY="FORMAT(c${_c}, ${REPLY})"; }
+eltfield()   { n3; local _c=$REPLY; REPLY="ELT(c${_c}, 'a', 'b', 'c', 'd')"; }
+makesetfunc(){ n3; local _c=$REPLY; REPLY="MAKE_SET(c${_c}, 'a', 'b', 'c', 'd')"; }
+iffunc()     { n3; local _c=$REPLY; data; local _d1=$REPLY; data; REPLY="IF(c${_c} > 0, ${_d1}, ${REPLY})"; }
+nulliffunc() { n3; local _c1=$REPLY; n3; REPLY="NULLIF(c${_c1}, c${REPLY})"; }
+greatestleast() { n3; local _c1=$REPLY; n3; local _c2=$REPLY; n3; case $(( RANDOM % 2 + 1 )) in 1) REPLY="GREATEST(c${_c1}, c${_c2}, c${REPLY})";; 2) REPLY="LEAST(c${_c1}, c${_c2}, c${REPLY})";; *) REPLY="GREATEST(c${_c1}, c${_c2}, c${REPLY})";; esac }
+insertstr()  { n3; local _c=$REPLY; n10; local _p=$REPLY; n10; local _l=$REPLY; data; REPLY="INSERT(c${_c}, ${_p}, ${_l}, ${REPLY})"; }
+locatefunc() { n3; local _c=$REPLY; az; REPLY="LOCATE('${REPLY}', c${_c})"; }
+instrfunc()  { n3; local _c=$REPLY; az; REPLY="INSTR(c${_c}, '${REPLY}')"; }
+extractfunc(){ n3; local _c=$REPLY; timeunit; REPLY="EXTRACT(${REPLY} FROM c${_c})"; }
+tofrom64()   { n3; local _c=$REPLY; case $(( RANDOM % 2 + 1 )) in 1) REPLY="TO_BASE64(c${_c})";; 2) REPLY="FROM_BASE64(c${_c})";; *) REPLY="TO_BASE64(c${_c})";; esac }
+weightstr()  { n3; REPLY="WEIGHT_STRING(c${REPLY})"; }
+spacefunc()  { n100; REPLY="SPACE(${REPLY})"; }
+repeatfunc() { n3; local _c=$REPLY; n10; REPLY="REPEAT(c${_c}, ${REPLY})"; }
+stdifffunc() { n3; local _c1=$REPLY; n3; REPLY="STRCMP(c${_c1}, c${REPLY})"; }
+soundslike() { n3; local _c=$REPLY; az; REPLY="c${_c} SOUNDS LIKE '${REPLY}'"; }
+randomexpr() {  # A random expression from the pool
+  case $(( RANDOM % 20 + 1 )) in
+    1) betweenexpr;; 2) inlist;; 3) isnullexpr;; 4) regexpexpr;; 5) likeexpr;;
+    6) bitwiseexpr;; 7) matchagainstmode;; 8) greatestleast;; 9) iffunc;;
+   10) nulliffunc;; 11) datearith;; 12) converttz;; 13) formatfunc;; 14) extractfunc;;
+   15) tofrom64;; 16) collateexpr;; 17) soundslike;; 18) stdifffunc;; 19) instrfunc;; 20) locatefunc;;
+    *) betweenexpr;;
+  esac
+}
+regexpfunc() {  # REGEXP functions (MariaDB 10.0.5+)
+  n3; local _c=$REPLY
+  case $(( RANDOM % 3 + 1 )) in
+    1) az; REPLY="REGEXP_REPLACE(c${_c}, '${REPLY}', 'X')";;
+    2) az; REPLY="REGEXP_SUBSTR(c${_c}, '${REPLY}.*')";;
+    3) az; REPLY="REGEXP_INSTR(c${_c}, '${REPLY}')";;
+    *) REPLY="REGEXP_REPLACE(c${_c}, 'a', 'X')";;
+  esac
+}
+morestringfunc() {  # Additional string functions not in stringfunc()
+  n3; local _c=$REPLY
+  case $(( RANDOM % 12 + 1 )) in
+    1) REPLY="ASCII(c${_c})";; 2) REPLY="BIN(c${_c})";; 3) REPLY="ORD(c${_c})";;
+    4) REPLY="SOUNDEX(c${_c})";; 5) REPLY="LTRIM(c${_c})";; 6) REPLY="RTRIM(c${_c})";;
+    7) n10; REPLY="MID(c${_c}, 1, ${REPLY})";; 8) az; REPLY="POSITION('${REPLY}' IN c${_c})";;
+    9) REPLY="OCTET_LENGTH(c${_c})";; 10) REPLY="CHAR(65,66,67)";;
+   11) n3; local _c2=$REPLY; REPLY="FIELD(c${_c}, 'a', 'b', 'c')";; 12) REPLY="FIND_IN_SET('a', c${_c})";;
+    *) REPLY="ASCII(c${_c})";;
+  esac
+}
+moredatefunc() {  # Date/time functions not already covered by timefunc()
+  case $(( RANDOM % 8 + 1 )) in
+    1) REPLY="SEC_TO_TIME(3600)";; 2) n100; local _y=$REPLY; n100; REPLY="MAKEDATE(${_y}, ${REPLY})";;
+    3) n9; local _h=$REPLY; n9; local _m=$REPLY; n9; REPLY="MAKETIME(${_h}, ${_m}, ${REPLY})";;
+    4) dategen; REPLY="TIME_TO_SEC('${REPLY}')";; 5) dategen; REPLY="TO_DAYS('${REPLY}')";;
+    6) dategen; REPLY="TO_SECONDS('${REPLY}')";; 7) dategen; REPLY="FROM_DAYS(${REPLY})";;
+    8) n1000; REPLY="FROM_UNIXTIME(${REPLY})";;
+    *) REPLY="SEC_TO_TIME(3600)";;
+  esac
+}
+randomselfunc() {  # A random SELECT expression from all func helpers (expanded)
+  case $(( RANDOM % 22 + 1 )) in
+    1) stringfunc;; 2) castexpr;; 3) jsonfunc;; 4) coalesceexpr;; 5) datearith;;
+    6) greatestleast;; 7) iffunc;; 8) formatfunc;; 9) tofrom64;; 10) insertstr;;
+   11) locatefunc;; 12) weightstr;; 13) eltfield;; 14) makesetfunc;; 15) repeatfunc;; 16) spacefunc;;
+   17) regexpfunc;; 18) morestringfunc;; 19) moredatefunc;; 20) instrfunc;; 21) extractfunc;; 22) converttz;;
+    *) stringfunc;;
+  esac
+}
 # ========================================= Complex join helpers
 seljoincol() {  # SELECT column list for complex joins: *, a1.col, a1.col+a2.col, etc.
   case $(( RANDOM % 5 + 1 )) in
@@ -607,13 +743,13 @@ lastjoin()  {
   if [[ "$_j" == "JOIN" ]]; then natural; REPLY="$REPLY JOIN"; else REPLY="$_j"; fi
 }
 selectq()   {  # Select Query. Do not use 'select' as select is a reserved system command, use 'selectq' instead
-  case $(( RANDOM % 16 + 1 )) in  # Select (needs further work: JOIN syntax + SELECT options)
+  case $(( RANDOM % 32 + 1 )) in  # Select (comprehensive: JOINs, modifiers, predicates, subqueries, window, CTE, expressions, functions)
     1) table; REPLY="SELECT * FROM $REPLY";;
     2) aggregatec; local _v1=$REPLY; table; REPLY="SELECT $_v1 FROM $REPLY";;
     3) aggregated; REPLY="SELECT $REPLY";;
     4) case $(( RANDOM % 2 + 1 )) in
         1) selectq; REPLY="SELECT * FROM ($REPLY) AS a1";;
-        2) query; REPLY="SELECT * FROM ($REPLY) AS a1";;
+        2) selectq; REPLY="SELECT * FROM ($REPLY) AS a1";;  # Was query() but DDL inside subquery is invalid
         *) REPLY="Assert: invalid random case selection in SELECT FROM (subquery) case";;
        esac;;
     5) n3; local _v1=$REPLY; table; REPLY="SELECT c$_v1 FROM $REPLY";;
@@ -642,18 +778,34 @@ selectq()   {  # Select Query. Do not use 'select' as select is a reserved syste
         *) REPLY="Assert: invalid random case selection in expression functions case";;
        esac;;
    16) table; local _v1=$REPLY; table; local _v2=$REPLY; n3; local _v3=$REPLY; REPLY="SELECT * FROM $_v1 AS a1, LATERAL (SELECT * FROM $_v2 WHERE c$_v3 = a1.c$_v3 LIMIT 1) AS a2";;
+   17) selmodifier; local _sm=$REPLY; n3; local _c=$REPLY; table; local _t=$REPLY; where; local _w=$REPLY; orderby; local _ob=$REPLY; limit; REPLY="SELECT ${_sm}c${_c} FROM ${_t} ${_w} ${_ob} ${REPLY}";;
+   18) REPLY="SELECT 1 FROM DUAL";;
+   19) table; local _t=$REPLY; betweenexpr; REPLY="SELECT * FROM ${_t} WHERE ${REPLY}";;
+   20) table; local _t=$REPLY; inlist; REPLY="SELECT * FROM ${_t} WHERE ${REPLY}";;
+   21) table; local _t=$REPLY; regexpexpr; REPLY="SELECT * FROM ${_t} WHERE ${REPLY}";;
+   22) table; local _t=$REPLY; matchagainstmode; REPLY="SELECT * FROM ${_t} WHERE ${REPLY}";;
+   23) n3; local _c=$REPLY; table; local _t=$REPLY; anyallsome; local _as=$REPLY; operator; local _op=$REPLY; table; local _t2=$REPLY; REPLY="SELECT * FROM ${_t} WHERE c${_c} ${_op} ${_as} (SELECT c${_c} FROM ${_t2})";;
+   24) table; local _t=$REPLY; isnullexpr; local _isn=$REPLY; where; REPLY="SELECT * FROM ${_t} WHERE ${_isn} ${REPLY}";;
+   25) randomselfunc; local _f1=$REPLY; randomselfunc; local _f2=$REPLY; table; REPLY="SELECT ${_f1}, ${_f2} FROM ${REPLY}";;
+   26) table; local _t=$REPLY; n3; local _c=$REPLY; datearith; local _da=$REPLY; where; REPLY="SELECT c${_c}, ${_da} FROM ${_t} ${REPLY}";;
+   27) table; local _t=$REPLY; likeexpr; local _le=$REPLY; orderby; local _ob=$REPLY; limit; REPLY="SELECT * FROM ${_t} WHERE ${_le} ${_ob} ${REPLY}";;
+   28) table; local _t=$REPLY; soundslike; REPLY="SELECT * FROM ${_t} WHERE ${REPLY}";;
+   29) selmodifier; local _sm=$REPLY; n3; local _c=$REPLY; table; local _t=$REPLY; n3; local _c2=$REPLY; groupby; local _gb=$REPLY; having; local _hv=$REPLY; limit; REPLY="SELECT ${_sm}c${_c}, COUNT(*), SUM(c${_c2}) FROM ${_t} ${_gb} ${_hv} ${REPLY}";;
+   30) table; local _t=$REPLY; randomexpr; local _re=$REPLY; andor; local _ao=$REPLY; randomexpr; REPLY="SELECT * FROM ${_t} WHERE ${_re} ${_ao} ${REPLY}";;
+   31) n3; local _c=$REPLY; table; local _t=$REPLY; bitwiseexpr; REPLY="SELECT c${_c}, ${REPLY} FROM ${_t}";;
+   32) table; local _t=$REPLY; n3; local _c=$REPLY; selectq; REPLY="SELECT c${_c} FROM ${_t} WHERE c${_c} IN (${REPLY}) LIMIT 10";;
     *) REPLY="Assert: invalid random case selection in SELECT case";;
   esac
 }
 
 query(){
-  case $(($RANDOM % 72 + 1)) in
+  case $(($RANDOM % 135 + 1)) in
     # Frequencies for CREATE (1-3), INSERT (4-7), and DROP (8) statements are well tuned, please do not change these case ranges
     [1-3]) case $(($RANDOM % 10 + 1)) in  # CREATE
-        1) temp; local _temp=$REPLY; ifnotexist; local _ine=$REPLY; table; local _tbl=$REPLY; pk; local _pk=$REPLY; ctype; local _ct1=$REPLY; pc; local _pc=$REPLY; ctype; local _ct2=$REPLY; vc; local _vc=$REPLY; sv; local _sv=$REPLY; engine; local _eng=$REPLY; partitionby; local _part=$REPLY; tableopts; local _to=$REPLY
-           REPLY="CREATE ${_temp}TABLE ${_ine} ${_tbl} (c1 ${_pk},c2 ${_ct1} ${_pc} ,c3 ${_ct2} ${_vc} ) ${_sv} ENGINE=${_eng} ${_to} ${_part}";;
-        2) temp; local _temp=$REPLY; ifnotexist; local _ine=$REPLY; table; local _tbl=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; pc; local _pc=$REPLY; ctype; local _ct3=$REPLY; vc; local _vc=$REPLY; sv; local _sv=$REPLY; engine; local _eng=$REPLY; partitionby; local _part=$REPLY; tableopts; local _to=$REPLY
-           REPLY="CREATE ${_temp}TABLE ${_ine} ${_tbl} (c1 ${_ct1},c2 ${_ct2} ${_pc} ,c3 ${_ct3} ${_vc}) ${_sv} ENGINE=${_eng} ${_to} ${_part}";;
+        1) temp; local _temp=$REPLY; ifnotexist; local _ine=$REPLY; table; local _tbl=$REPLY; pk; local _pk=$REPLY; ctype; local _ct1=$REPLY; pc; local _pc=$REPLY; ctype; local _ct2=$REPLY; vc; local _vc=$REPLY; sv; local _sv=$REPLY; engine; local _eng=$REPLY; partitionby; local _part=$REPLY; tableopts; local _to=$REPLY; tablecomment; local _tc=$REPLY; tablecharset; local _tcs=$REPLY
+           REPLY="CREATE ${_temp}TABLE ${_ine} ${_tbl} (c1 ${_pk},c2 ${_ct1} ${_pc} ,c3 ${_ct2} ${_vc} ) ${_sv} ENGINE=${_eng} ${_to} ${_tc} ${_tcs} ${_part}";;
+        2) temp; local _temp=$REPLY; ifnotexist; local _ine=$REPLY; table; local _tbl=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; pc; local _pc=$REPLY; ctype; local _ct3=$REPLY; vc; local _vc=$REPLY; sv; local _sv=$REPLY; engine; local _eng=$REPLY; partitionby; local _part=$REPLY; tableopts; local _to=$REPLY; tablecomment; local _tc=$REPLY; tablecharset; local _tcs=$REPLY
+           REPLY="CREATE ${_temp}TABLE ${_ine} ${_tbl} (c1 ${_ct1},c2 ${_ct2} ${_pc} ,c3 ${_ct3} ${_vc}) ${_sv} ENGINE=${_eng} ${_to} ${_tc} ${_tcs} ${_part}";;
         3) ctype; local C1TYPE=$REPLY
            if [[ "$C1TYPE" == *CHAR* || "$C1TYPE" == *BLOB* || "$C1TYPE" == *TEXT* ]]; then
              temp; local _temp=$REPLY; ifnotexist; local _ine=$REPLY; table; local _tbl=$REPLY; ctype; local _ct2=$REPLY; vc; local _vc=$REPLY; ctype; local _ct3=$REPLY; pc; local _pc=$REPLY; n10; local _n10=$REPLY; sv; local _sv=$REPLY; engine; local _eng=$REPLY; partitionby; local _part=$REPLY; tableopts; local _to=$REPLY
@@ -676,51 +828,89 @@ query(){
            else
              query
            fi;;
-        5) case $(($RANDOM % 19 + 1)) in
-         [1-9]) definer; local _def=$REPLY; func; local _fn=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; charactert; local _char=$REPLY
-                REPLY="CREATE ${_def} FUNCTION ${_fn} (i1 ${_ct1}) RETURNS ${_ct2} ${_char} RETURN CONCAT('function output:',i1)";;
-        1[0-8]) definer; local _def=$REPLY; func; local _fn=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; ctype; local _ct3=$REPLY; charactert; local _char=$REPLY
-                REPLY="CREATE ${_def} FUNCTION ${_fn} (i1 ${_ct1},i2 ${_ct2}) RETURNS ${_ct3} ${_char} RETURN CONCAT('function output:',i1)";;
-            19) definer; local _def=$REPLY; func; local _fn=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; charactert; local _char=$REPLY; query; local _q=$REPLY
-                REPLY="CREATE ${_def} FUNCTION ${_fn} (i1 ${_ct1}) RETURNS ${_ct2} ${_char} RETURN ${_q}";;
+        5) case $(($RANDOM % 6 + 1)) in  # CREATE FUNCTION (expanded per MariaDB manual: OR REPLACE, IF NOT EXISTS, AGGREGATE, SQL SECURITY)
+            1) definer; local _def=$REPLY; func; local _fn=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; charactert; local _char=$REPLY
+               REPLY="CREATE ${_def} FUNCTION ${_fn} (i1 ${_ct1}) RETURNS ${_ct2} ${_char} RETURN CONCAT('function output:',i1)";;
+            2) definer; local _def=$REPLY; func; local _fn=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; ctype; local _ct3=$REPLY; charactert; local _char=$REPLY
+               REPLY="CREATE ${_def} FUNCTION ${_fn} (i1 ${_ct1},i2 ${_ct2}) RETURNS ${_ct3} ${_char} RETURN CONCAT('function output:',i1)";;
+            3) orreplace; local _or=$REPLY; definer; local _def=$REPLY; func; local _fn=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; charactert; local _char=$REPLY
+               REPLY="CREATE ${_or} ${_def} FUNCTION ${_fn} (i1 ${_ct1}) RETURNS ${_ct2} ${_char} SQL SECURITY INVOKER RETURN CONCAT('function output:',i1)";;
+            4) definer; local _def=$REPLY; func; local _fn=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY
+               REPLY="CREATE ${_def} FUNCTION IF NOT EXISTS ${_fn} (i1 ${_ct1}) RETURNS ${_ct2} DETERMINISTIC RETURN i1";;
+            5) definer; local _def=$REPLY; func; local _fn=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY
+               REPLY="CREATE ${_def} AGGREGATE FUNCTION IF NOT EXISTS ${_fn} (i1 ${_ct1}) RETURNS ${_ct2} RETURN i1";;
+            6) definer; local _def=$REPLY; func; local _fn=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; charactert; local _char=$REPLY; query; local _q=$REPLY
+               REPLY="CREATE ${_def} FUNCTION ${_fn} (i1 ${_ct1}) RETURNS ${_ct2} ${_char} RETURN ${_q}";;
              *) REPLY="Assert: invalid random case selection in functions case";;
            esac;;
-        6) case $(($RANDOM % 2 + 1)) in
+        6) case $(($RANDOM % 4 + 1)) in  # CREATE PROCEDURE (expanded per MariaDB manual: OR REPLACE, IF NOT EXISTS, SQL SECURITY)
              1) definer; local _def=$REPLY; proc; local _pr=$REPLY; inout; local _io=$REPLY; ctype; local _ct=$REPLY; charactert; local _char=$REPLY; query; local _q=$REPLY
                 REPLY="CREATE ${_def} PROCEDURE ${_pr} (${_io} i1 ${_ct}) ${_char} ${_q}";;
              2) definer; local _def=$REPLY; proc; local _pr=$REPLY; inout; local _io1=$REPLY; ctype; local _ct1=$REPLY; inout; local _io2=$REPLY; ctype; local _ct2=$REPLY; charactert; local _char=$REPLY; query; local _q=$REPLY
                 REPLY="CREATE ${_def} PROCEDURE ${_pr} (${_io1} i1 ${_ct1}, ${_io2} i2 ${_ct2}) ${_char} ${_q}";;
+             3) orreplace; local _or=$REPLY; definer; local _def=$REPLY; proc; local _pr=$REPLY; inout; local _io=$REPLY; ctype; local _ct=$REPLY; query; local _q=$REPLY
+                REPLY="CREATE ${_or} ${_def} PROCEDURE ${_pr} (${_io} i1 ${_ct}) SQL SECURITY INVOKER ${_q}";;
+             4) definer; local _def=$REPLY; proc; local _pr=$REPLY; ctype; local _ct=$REPLY; query; local _q=$REPLY
+                REPLY="CREATE ${_def} PROCEDURE IF NOT EXISTS ${_pr} (IN i1 ${_ct}) READS SQL DATA ${_q}";;
              *) REPLY="Assert: invalid random case selection in procedures case";;
            esac;;
         *) REPLY="Assert: invalid random case selection in CREATE case";;
       esac;;
-    [4-7]) case $(($RANDOM % 2 + 1)) in  # Insert
+    [4-7]) case $(($RANDOM % 8 + 1)) in  # Insert (expanded per MariaDB manual: all priority/modifier combos, PARTITION, SET form)
         1) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY
            REPLY="INSERT INTO ${_tbl} VALUES (${_d1},${_d2},${_d3})";;
         2) table; local _tbl1=$REPLY; table; local _tbl2=$REPLY
            REPLY="INSERT INTO ${_tbl1} SELECT * FROM ${_tbl2}";;
+        3) lowprio; local _lp=$REPLY; ignore; local _ig=$REPLY; table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY
+           REPLY="INSERT ${_lp} ${_ig} INTO ${_tbl} (c1,c2,c3) VALUES (${_d1},${_d2},${_d3})";;
+        4) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; data; local _d4=$REPLY; data; local _d5=$REPLY; data; local _d6=$REPLY
+           REPLY="INSERT INTO ${_tbl} VALUES (${_d1},${_d2},${_d3}),(${_d4},${_d5},${_d6})";;
+        5) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; n3; local _n=$REPLY; data; local _d4=$REPLY
+           REPLY="INSERT INTO ${_tbl} VALUES (${_d1},${_d2},${_d3}) ON DUPLICATE KEY UPDATE c${_n}=${_d4}";;
+        6) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY
+           REPLY="INSERT INTO ${_tbl} SET c1=${_d1}, c2=${_d2}, c3=${_d3}";;
+        7) highprio; local _hp=$REPLY; table; local _tbl=$REPLY; partitionsel; local _ps=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY
+           REPLY="INSERT ${_hp} INTO ${_tbl} ${_ps} VALUES (${_d1},${_d2},${_d3})";;
+        8) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; returning; REPLY="INSERT INTO ${_tbl} VALUES (${_d1},${_d2},${_d3}) ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in INSERT case";;
       esac;;
-    8)  case $(($RANDOM % 11 + 1)) in  # Drop
-    [1-5]) ifexist; local _ie=$REPLY; table; local _tbl=$REPLY
+    8)  case $(($RANDOM % 15 + 1)) in  # Drop (expanded per MariaDB manual)
+    [1-4]) ifexist; local _ie=$REPLY; table; local _tbl=$REPLY
            REPLY="DROP TABLE ${_ie} ${_tbl}";;
-    [6-7]) if (( SHEDULING_ENABLED == 1 )); then
+       5) ifexist; local _ie=$REPLY; table; local _t1=$REPLY; table; local _t2=$REPLY
+          REPLY="DROP TABLE ${_ie} ${_t1}, ${_t2}";;
+       6) ifexist; local _ie=$REPLY; table; REPLY="DROP TEMPORARY TABLE ${_ie} ${REPLY}";;
+    [7-8]) if (( SHEDULING_ENABLED == 1 )); then
              ifexist; local _ie=$REPLY; event; local _evt=$REPLY
              REPLY="DROP EVENT ${_ie} ${_evt}"
            else
              query
            fi;;
-    [8-9]) ifexist; local _ie=$REPLY; func; local _fn=$REPLY
-           REPLY="DROP FUNCTION ${_ie} ${_fn}";;
-   1[0-1]) ifexist; local _ie=$REPLY; proc; local _pr=$REPLY
-           REPLY="DROP PROCEDURE ${_ie} ${_pr}";;
+    9) ifexist; local _ie=$REPLY; func; local _fn=$REPLY
+       REPLY="DROP FUNCTION ${_ie} ${_fn}";;
+   10) ifexist; local _ie=$REPLY; func; local _fn=$REPLY
+       REPLY="DROP FUNCTION ${_ie} ${_fn}";;
+   11) ifexist; local _ie=$REPLY; proc; local _pr=$REPLY
+       REPLY="DROP PROCEDURE ${_ie} ${_pr}";;
+   12) ifexist; local _ie=$REPLY; view; REPLY="DROP VIEW ${_ie} ${REPLY}";;
+   13) ifexist; local _ie=$REPLY; seqname; REPLY="DROP SEQUENCE ${_ie} ${REPLY}";;
+   14) ifexist; local _ie=$REPLY; idxname; local _idx=$REPLY; table; REPLY="DROP INDEX ${_ie} ${_idx} ON ${REPLY}";;
+   15) ifexist; local _ie=$REPLY; trigger; REPLY="DROP TRIGGER ${_ie} ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in DROP case";;
       esac;;
-    9) case $(($RANDOM % 2 + 1)) in  # Load data infile/select into outfile
+    9) case $(($RANDOM % 7 + 1)) in  # Load data infile/select into outfile (expanded: IGNORE N LINES, OPTIONALLY ENCLOSED, LINES STARTING BY)
         1) n9; local _n9=$REPLY; table; local _tbl=$REPLY
            REPLY="LOAD DATA INFILE 'out${_n9}' INTO TABLE ${_tbl}";;
         2) table; local _tbl=$REPLY; n9; local _n9=$REPLY
            REPLY="SELECT * FROM ${_tbl} INTO OUTFILE 'out${_n9}'";;
+        3) lowprio; local _lp=$REPLY; n9; local _n9=$REPLY; ignorereplace; local _ir=$REPLY; table; local _tbl=$REPLY
+           REPLY="LOAD DATA ${_lp} INFILE 'out${_n9}' ${_ir} INTO TABLE ${_tbl} CHARACTER SET utf8";;
+        4) concurrent; local _cc=$REPLY; n9; local _n9=$REPLY; table; local _tbl=$REPLY
+           REPLY="LOAD DATA ${_cc} LOCAL INFILE 'out${_n9}' INTO TABLE ${_tbl} FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\\n'";;
+        5) n9; local _n9=$REPLY; table; local _tbl=$REPLY; n3; local _c=$REPLY
+           REPLY="LOAD DATA INFILE 'out${_n9}' IGNORE INTO TABLE ${_tbl} (c1,c2,c3) SET c${_c}=UPPER(c${_c})";;
+        6) n9; local _n9=$REPLY; table; local _tbl=$REPLY; n10; REPLY="LOAD DATA INFILE 'out${_n9}' IGNORE INTO TABLE ${_tbl} FIELDS TERMINATED BY '\\t' OPTIONALLY ENCLOSED BY '\"' IGNORE ${REPLY} LINES";;
+        7) n9; local _n9=$REPLY; table; local _tbl=$REPLY; REPLY="LOAD DATA INFILE 'out${_n9}' INTO TABLE ${_tbl} FIELDS TERMINATED BY '|' LINES STARTING BY '' TERMINATED BY '\\n' IGNORE 1 LINES (c1,c2,c3)";;
         *) REPLY="Assert: invalid random case selection in load data infile/select into outfile case";;
       esac;;
     10) case $(($RANDOM % 7 + 1)) in  # Select
@@ -735,8 +925,8 @@ query(){
            REPLY="SELECT (SELECT (${_sq1}) OR (${_sq2})) AND (SELECT (SELECT (${_sq3}) AND (${_sq4}))) OR ((${_sq5}) AND (${_sq6})) OR (${REPLY})";;
         *) REPLY="Assert: invalid random case selection in main select case";;
       esac;;
-    11) case $(($RANDOM % 9 + 1)) in  # Delete
-        1) lowprio; local _lp=$REPLY; quick; local _qk=$REPLY; ignore; local _ig=$REPLY; table; local _tbl=$REPLY; partition; local _part=$REPLY; where; local _wh=$REPLY; orderby; local _ob=$REPLY; limit
+    11) case $(($RANDOM % 11 + 1)) in  # Delete (expanded per MariaDB manual: RETURNING, PARTITION, DELETE HISTORY)
+        1) lowprio; local _lp=$REPLY; quick; local _qk=$REPLY; ignore; local _ig=$REPLY; table; local _tbl=$REPLY; partitionsel; local _part=$REPLY; where; local _wh=$REPLY; orderby; local _ob=$REPLY; limit
            REPLY="DELETE ${_lp} ${_qk} ${_ig} FROM ${_tbl} ${_part} ${_wh} ${_ob} ${REPLY}";;
         2) lowprio; local _lp=$REPLY; quick; local _qk=$REPLY; ignore; local _ig=$REPLY; alias3; local _al=$REPLY; table; local _tbl1=$REPLY; join; local _jn=$REPLY; table; local _tbl2=$REPLY; lastjoin; local _lj=$REPLY; table; local _tbl3=$REPLY; whereal
            REPLY="DELETE ${_lp} ${_qk} ${_ig} ${_al} FROM ${_tbl1} AS a1 ${_jn} ${_tbl2} AS a2 ${_lj} ${_tbl3} AS a3 ${REPLY}";;
@@ -754,13 +944,18 @@ query(){
            REPLY="DELETE ${_al1},${_al2} FROM ${_tbl1} AS a1 ${_jn} ${_tbl2} AS a2 ${_lj} ${_tbl3} AS a3 ${REPLY}";;
         9) alias3; local _al1=$REPLY; alias3; local _al2=$REPLY; table; local _tbl1=$REPLY; join; local _jn=$REPLY; table; local _tbl2=$REPLY; lastjoin; local _lj=$REPLY; table; local _tbl3=$REPLY; whereal
            REPLY="DELETE FROM ${_al1},${_al2} USING ${_tbl1} AS a1 ${_jn} ${_tbl2} AS a2 ${_lj} ${_tbl3} AS a3 ${REPLY}";;
+       10) table; local _tbl=$REPLY; where; local _wh=$REPLY; limit; local _lm=$REPLY; returning; REPLY="DELETE FROM ${_tbl} ${_wh} ${_lm} ${REPLY}";;
+       11) table; REPLY="DELETE HISTORY FROM ${REPLY} BEFORE SYSTEM_TIME CURRENT_TIMESTAMP";;
         *) REPLY="Assert: invalid random case selection in DELETE case";;
       esac;;
-    12) table; REPLY="TRUNCATE ${REPLY}";;
-    13) case $(($RANDOM % 3 + 1)) in  # UPDATE
+    12) table; local _tbl=$REPLY; waitnowait; REPLY="TRUNCATE TABLE ${_tbl} ${REPLY}";;
+    13) case $(($RANDOM % 6 + 1)) in  # UPDATE (expanded per MariaDB manual)
         1) table; local _tbl=$REPLY; data; REPLY="UPDATE ${_tbl} SET c1=${REPLY}";;
         2) table; local _tbl=$REPLY; data; local _d=$REPLY; where; REPLY="UPDATE ${_tbl} SET c1=${_d} ${REPLY}";;
         3) table; local _tbl=$REPLY; data; local _d=$REPLY; where; local _wh=$REPLY; orderby; local _ob=$REPLY; limit; REPLY="UPDATE ${_tbl} SET c1=${_d} ${_wh} ${_ob} ${REPLY}";;
+        4) lowprio; local _lp=$REPLY; ignore; local _ig=$REPLY; table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; where; REPLY="UPDATE ${_lp} ${_ig} ${_tbl} SET c1=${_d1}, c2=${_d2} ${REPLY}";;
+        5) table; local _tbl=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; where; REPLY="UPDATE ${_tbl} SET c${_c}=DEFAULT ${REPLY}";;
+        6) table; local _tbl=$REPLY; data; local _d=$REPLY; n3; local _c=$REPLY; where; REPLY="UPDATE ${_tbl} SET c${_c}=c${_c}+1 ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in UPDATE case";;
       esac;;
     1[4-6]) case $(($RANDOM % 12 + 1)) in  # Generic statements
@@ -800,12 +995,12 @@ query(){
            esac;;
         *) REPLY="Assert: invalid random case selection in generic statements case";;
       esac;;
-    20) case $(($RANDOM % 16 + 1)) in  # Alter (significantly expanded for MariaDB)
-        1) table; local _tbl=$REPLY; ctype; local _ct=$REPLY; colnull; local _cn=$REPLY; coldefault; REPLY="ALTER TABLE ${_tbl} ADD COLUMN c4 ${_ct} ${_cn} ${REPLY}";;
-        2) table; local _tbl=$REPLY; n3; REPLY="ALTER TABLE ${_tbl} DROP COLUMN c${REPLY}";;
+    20) case $(($RANDOM % 22 + 1)) in  # Alter (comprehensive per MariaDB manual: ADD/DROP/MODIFY/CHANGE COLUMN, indexes, ONLINE, WAIT/NOWAIT, IF EXISTS, FIRST/AFTER, etc.)
+        1) online; local _on=$REPLY; ignore; local _ig=$REPLY; table; local _tbl=$REPLY; waitnowait; local _wn=$REPLY; ctype; local _ct=$REPLY; colnull; local _cn=$REPLY; coldefault; local _cd=$REPLY; firstafter; REPLY="ALTER ${_on} ${_ig} TABLE ${_tbl} ${_wn} ADD COLUMN IF NOT EXISTS c4 ${_ct} ${_cn} ${_cd} ${REPLY}";;
+        2) table; local _tbl=$REPLY; n3; REPLY="ALTER TABLE ${_tbl} DROP COLUMN IF EXISTS c${REPLY}";;
         3) table; local _tbl=$REPLY; engine; REPLY="ALTER TABLE ${_tbl} ENGINE=${REPLY}";;
         4) table; REPLY="ALTER TABLE ${REPLY} DROP PRIMARY KEY";;
-        5) table; local _tbl=$REPLY; n3; REPLY="ALTER TABLE ${_tbl} ADD INDEX (c${REPLY})";;
+        5) table; local _tbl=$REPLY; n3; local _c=$REPLY; indextype; REPLY="ALTER TABLE ${_tbl} ADD INDEX (c${_c}) ${REPLY}";;
         6) table; local _tbl=$REPLY; n3; REPLY="ALTER TABLE ${_tbl} ADD UNIQUE (c${REPLY})";;
         7) table; local _tbl=$REPLY; n3; local _n=$REPLY; REPLY="ALTER TABLE ${_tbl} ADD INDEX (c${_n}), ADD UNIQUE (c${_n})";;
         8) ctype; local C1TYPE=$REPLY
@@ -814,17 +1009,26 @@ query(){
            else
              table; local _tbl=$REPLY; n3; REPLY="ALTER TABLE ${_tbl} MODIFY c${REPLY} ${C1TYPE}"
            fi;;
-        9) table; local _tbl=$REPLY; n3; local _n=$REPLY; ctype; REPLY="ALTER TABLE ${_tbl} MODIFY c${_n} ${REPLY}";;
-       10) table; local _tbl=$REPLY; n3; local _n=$REPLY; ctype; local _ct=$REPLY; colnull; local _cn=$REPLY; coldefault; REPLY="ALTER TABLE ${_tbl} CHANGE c${_n} c${_n} ${_ct} ${_cn} ${REPLY}";;
-       11) table; local _tbl=$REPLY; algolock; local _al=$REPLY; n3; local _n=$REPLY; ctype; REPLY="ALTER TABLE ${_tbl} ${_al} MODIFY c${_n} ${REPLY}";;
+        9) table; local _tbl=$REPLY; n3; local _n=$REPLY; ctype; local _ct=$REPLY; firstafter; REPLY="ALTER TABLE ${_tbl} MODIFY IF EXISTS c${_n} ${_ct} ${REPLY}";;
+       10) table; local _tbl=$REPLY; n3; local _n=$REPLY; ctype; local _ct=$REPLY; colnull; local _cn=$REPLY; coldefault; local _cd=$REPLY; firstafter; REPLY="ALTER TABLE ${_tbl} CHANGE IF EXISTS c${_n} c${_n} ${_ct} ${_cn} ${_cd} ${REPLY}";;
+       11) table; local _tbl=$REPLY; algolock; local _al=$REPLY; n3; local _n=$REPLY; ctype; if [[ -n "$_al" ]]; then REPLY="ALTER TABLE ${_tbl} ${_al}, MODIFY c${_n} ${REPLY}"; else REPLY="ALTER TABLE ${_tbl} MODIFY c${_n} ${REPLY}"; fi;;
        12) table; local _tbl=$REPLY; rowformat; REPLY="ALTER TABLE ${_tbl} ${REPLY}";;
        13) table; local _tbl=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_tbl} ADD FULLTEXT INDEX (c${_c})";;
-       14) table; local _tbl=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_tbl} DROP INDEX idx1, ADD INDEX idx1 (c${_c})";;
+       14) table; local _tbl=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_tbl} DROP INDEX IF EXISTS idx1, ADD INDEX idx1 (c${_c})";;
        15) table; local _tbl=$REPLY; n3; local _c=$REPLY; emascdesc; REPLY="ALTER TABLE ${_tbl} ORDER BY c${_c} ${REPLY}";;
-       16) table; local _tbl=$REPLY; algolock; local _al=$REPLY; ctype; local _ct=$REPLY; colnull; local _cn=$REPLY; coldefault; local _cd=$REPLY; engine; REPLY="ALTER TABLE ${_tbl} ${_al}, ADD COLUMN c5 ${_ct} ${_cn} ${_cd}, ENGINE=${REPLY}";;
+       16) table; local _tbl=$REPLY; algolock; local _al=$REPLY; ctype; local _ct=$REPLY; colnull; local _cn=$REPLY; coldefault; local _cd=$REPLY; engine; if [[ -n "$_al" ]]; then REPLY="ALTER TABLE ${_tbl} ${_al}, ADD COLUMN c5 ${_ct} ${_cn} ${_cd}, ENGINE=${REPLY}"; else REPLY="ALTER TABLE ${_tbl} ADD COLUMN c5 ${_ct} ${_cn} ${_cd}, ENGINE=${REPLY}"; fi;;
+       17) table; local _tbl=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_tbl} RENAME COLUMN IF EXISTS c${_c} TO c${_c}_renamed";;
+       18) table; local _tbl=$REPLY; n3; local _c=$REPLY; fkaction; local _del=$REPLY; fkaction; local _upd=$REPLY; table; local _ref=$REPLY
+           if [[ -n "$_del" ]]; then _del="ON DELETE ${_del}"; fi; if [[ -n "$_upd" ]]; then _upd="ON UPDATE ${_upd}"; fi
+           REPLY="ALTER TABLE ${_tbl} ADD FOREIGN KEY (c${_c}) REFERENCES ${_ref}(c1) ${_del} ${_upd}";;
+       19) table; local _tbl=$REPLY; REPLY="ALTER TABLE ${_tbl} DROP FOREIGN KEY IF EXISTS fk1";;
+       20) online; local _on=$REPLY; table; local _tbl=$REPLY; waitnowait; local _wn=$REPLY; charsetcollate; REPLY="ALTER ${_on} TABLE ${_tbl} ${_wn} CONVERT TO ${REPLY}";;
+       21) table; local _tbl=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_tbl} ADD SPATIAL INDEX (c${_c})";;
+       22) ignore; local _ig=$REPLY; table; local _tbl=$REPLY; ctype; local _ct=$REPLY; colnull; local _cn=$REPLY; coldefault; local _cd=$REPLY; n3; local _c=$REPLY; engine
+           REPLY="ALTER ${_ig} TABLE ${_tbl} ADD COLUMN c6 ${_ct} ${_cn} ${_cd}, ADD INDEX (c${_c}), ENGINE=${REPLY}";;
         *) REPLY="Assert: invalid random case selection in ALTER case";;
        esac;;
-    21) case $(($RANDOM % 42 + 1)) in  # SHOW
+    21) case $(($RANDOM % 52 + 1)) in  # SHOW
         1) REPLY="SHOW BINARY LOGS";;
         2) REPLY="SHOW MASTER LOGS";;
         3) like; REPLY="SHOW CHARACTER SET ${REPLY}";;
@@ -867,6 +1071,16 @@ query(){
        40) fromdb; local _fd=$REPLY; like; REPLY="SHOW TRIGGERS ${_fd} ${REPLY}";;
        41) globses; local _gs=$REPLY; like; REPLY="SHOW ${_gs} VARIABLES ${REPLY}";;
        42) ofslimit; REPLY="SHOW WARNINGS ${REPLY}";;
+       43) REPLY="SHOW REPLICA STATUS";;
+       44) REPLY="SHOW ALL REPLICAS STATUS";;
+       45) REPLY="SHOW REPLICA HOSTS";;
+       46) REPLY="SHOW BINLOG STATUS";;
+       47) REPLY="SHOW TABLE_STATISTICS";;
+       48) REPLY="SHOW INDEX_STATISTICS";;
+       49) REPLY="SHOW USER_STATISTICS";;
+       50) REPLY="SHOW CLIENT_STATISTICS";;
+       51) REPLY="SHOW PLUGINS SONAME 'ha_innodb'";;
+       52) seqname; REPLY="SHOW CREATE SEQUENCE ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in SHOW case";;
        esac;;
     22) case $(($RANDOM % 4 + 1)) in  # InnoDB monitor (complete)
@@ -876,49 +1090,64 @@ query(){
         4) inmetrics; REPLY="SET GLOBAL innodb_monitor_disable='${REPLY}'";;
         *) REPLY="Assert: invalid random case selection in InnoDB metrics case";;
       esac;;
-    23) case $(($RANDOM % 7 + 1)) in  # Nested query calls
+    23) case $(($RANDOM % 7 + 1)) in  # Nested query calls + prepared statements (expanded per MariaDB manual)
         1) query; REPLY="EXPLAIN ${REPLY}";;
-        2) allor1; local _ao=$REPLY; query; REPLY="SELECT ${_ao} FROM (${REPLY}) AS a1";;
-    [3-7]) case $(($RANDOM % 8 + 1)) in  # Prepared statements
+        2) allor1; local _ao=$REPLY; selectq; REPLY="SELECT ${_ao} FROM (${REPLY}) AS a1";;
+    [3-7]) case $(($RANDOM % 10 + 1)) in  # Prepared statements
        [1-3]) query; REPLY="SET @cmd:=\"${REPLY}\"";;
        [4-5]) REPLY="PREPARE stmt FROM @cmd";;
-       [6-7]) REPLY="EXECUTE stmt";;
-           8) REPLY="DEALLOCATE PREPARE stmt";;
+        6) REPLY="EXECUTE stmt";;
+        7) data; REPLY="SET @a=${REPLY}"; ;;
+        8) REPLY="EXECUTE stmt USING @a";;
+        9) REPLY="EXECUTE stmt USING @a, @b, @c";;
+       10) REPLY="DEALLOCATE PREPARE stmt";;
            *) REPLY="Assert: invalid random case selection in prepared statements case";;
           esac;;
         *) REPLY="Assert: invalid random case selection in nested query calls case";;
       esac;;
-2[4-8]) case $(($RANDOM % 24 + 1)) in  # XA (complete)
-    [1-9]) xid; local _xid=$REPLY; onephase; REPLY="XA COMMIT ${_xid} ${REPLY}";;
-       10) case $(($RANDOM % 2 + 1)) in
-           1) xid; REPLY="XA START ${REPLY}";;
-           2) xid; REPLY="XA BEGIN ${REPLY}";;
-         esac;;
-   1[1-8]) xid; REPLY="XA END ${REPLY}";;
-       19) xid; REPLY="XA PREPARE ${REPLY}";;
-       20) convertxid; REPLY="XA RECOVER ${REPLY}";;
-   2[1-4]) xid; REPLY="XA ROLLBACK ${REPLY}";;
+2[4-8]) case $(($RANDOM % 28 + 1)) in  # XA (expanded per MariaDB manual: JOIN, RESUME, SUSPEND, FORMAT='SQL')
+    [1-8]) xid; local _xid=$REPLY; onephase; REPLY="XA COMMIT ${_xid} ${REPLY}";;
+        9) xid; REPLY="XA START ${REPLY}";;
+       10) xid; REPLY="XA BEGIN ${REPLY}";;
+       11) xid; REPLY="XA START ${REPLY} JOIN";;
+       12) xid; REPLY="XA START ${REPLY} RESUME";;
+   1[3-9]) xid; REPLY="XA END ${REPLY}";;
+       20) xid; REPLY="XA END ${REPLY} SUSPEND";;
+       21) xid; REPLY="XA END ${REPLY} SUSPEND FOR MIGRATE";;
+       22) xid; REPLY="XA PREPARE ${REPLY}";;
+       23) REPLY="XA RECOVER";;
+       24) REPLY="XA RECOVER FORMAT='SQL'";;
+       25) REPLY="XA RECOVER FORMAT='RAW'";;
+   2[6-8]) xid; REPLY="XA ROLLBACK ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in XA case";;
       esac;;
-    29) case $(($RANDOM % 5 + 1)) in  # Repair/optimize/analyze/rename/truncate table (complete)
+    29) case $(($RANDOM % 9 + 1)) in  # Repair/optimize/analyze/rename/truncate (expanded per MariaDB manual: WAIT/NOWAIT, multi-table, PERSISTENT FOR)
         1) nowblocal; local _nb=$REPLY; table; local _t=$REPLY; quick; local _q=$REPLY; extended; local _e=$REPLY; usefrm; REPLY="REPAIR ${_nb} TABLE ${_t} ${_q} ${_e} ${REPLY}";;
-        2) nowblocal; local _nb=$REPLY; table; REPLY="OPTIMIZE ${_nb} TABLE ${REPLY}";;
+        2) nowblocal; local _nb=$REPLY; table; local _t=$REPLY; waitnowait; REPLY="OPTIMIZE ${_nb} TABLE ${_t} ${REPLY}";;
         3) nowblocal; local _nb=$REPLY; table; REPLY="ANALYZE ${_nb} TABLE ${REPLY}";;
-        4) case $(($RANDOM % 3 + 1)) in
+        4) case $(($RANDOM % 5 + 1)) in  # RENAME TABLE (expanded per MariaDB manual: WAIT/NOWAIT, IF EXISTS)
            1) table; local _t1=$REPLY; table; REPLY="RENAME TABLE ${_t1} TO ${REPLY}";;
            2) table; local _t1=$REPLY; table; local _t2=$REPLY; table; local _t3=$REPLY; table; REPLY="RENAME TABLE ${_t1} TO ${_t2},${_t3} TO ${REPLY}";;
            3) table; local _t1=$REPLY; table; local _t2=$REPLY; table; local _t3=$REPLY; table; local _t4=$REPLY; table; local _t5=$REPLY; table; REPLY="RENAME TABLE ${_t1} TO ${_t2},${_t3} TO ${_t4},${_t5} TO ${REPLY}";;
+           4) table; local _t1=$REPLY; table; local _t2=$REPLY; waitnowait; REPLY="RENAME TABLE ${_t1} ${REPLY} TO ${_t2}";;
+           5) table; local _t1=$REPLY; table; REPLY="RENAME TABLE IF EXISTS ${_t1} TO ${REPLY}";;
            *) REPLY="Assert: invalid random case selection in rename table case";;
            esac;;
         5) table; REPLY="TRUNCATE TABLE ${REPLY}";;
+        6) nowblocal; local _nb=$REPLY; table; local _t1=$REPLY; table; REPLY="REPAIR ${_nb} TABLE ${_t1}, ${REPLY} QUICK";;
+        7) nowblocal; local _nb=$REPLY; table; local _t1=$REPLY; table; REPLY="OPTIMIZE ${_nb} TABLE ${_t1}, ${REPLY}";;
+        8) nowblocal; local _nb=$REPLY; table; REPLY="ANALYZE ${_nb} TABLE ${REPLY} PERSISTENT FOR ALL";;
+        9) nowblocal; local _nb=$REPLY; table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="ANALYZE ${_nb} TABLE ${_t} PERSISTENT FOR COLUMNS (c${_c}) INDEXES (idx1)";;
         *) REPLY="Assert: invalid random case selection in repair/optimize/analyze/rename/truncate table case";;
       esac;;
-3[0-1]) case $(($RANDOM % 7 + 1)) in  # Transactions (complete)
+3[0-1]) case $(($RANDOM % 9 + 1)) in  # Transactions (expanded per MariaDB manual: SET TRANSACTION READ ONLY/WRITE)
         1) trxopt; REPLY="START TRANSACTION ${REPLY}";;
         2) work; REPLY="BEGIN ${REPLY}";;
     [3-4]) work; local _w=$REPLY; chain; local _c=$REPLY; release; REPLY="COMMIT ${_w} ${_c} ${REPLY}";;
     [5-6]) work; local _w=$REPLY; chain; local _c=$REPLY; release; REPLY="ROLLBACK ${_w} ${_c} ${REPLY}";;
         7) onoff01; REPLY="SET autocommit=${REPLY}";;
+        8) globses; REPLY="SET ${REPLY} TRANSACTION READ ONLY";;
+        9) globses; REPLY="SET ${REPLY} TRANSACTION READ WRITE";;
         *) REPLY="Assert: invalid random case selection in transactions case";;
       esac;;
     32) case $(($RANDOM % 19 + 1)) in  # Lock tables (complete)
@@ -1032,29 +1261,37 @@ query(){
            REPLY="SELECT c${_n}, ${_wf} ${_wo} FROM (${REPLY}) AS a1";;
         *) REPLY="Assert: invalid random case selection in window function SELECTs part 2 case";;
       esac;;
-    44) case $(($RANDOM % 4 + 1)) in  # CTEs (Common Table Expressions)
+    44) case $(($RANDOM % 7 + 1)) in  # CTEs (expanded per MariaDB manual: CYCLE RESTRICT, DELETE/UPDATE with CTE, multiple CTEs)
         1) selectq; REPLY="WITH cte AS (${REPLY}) SELECT * FROM cte";;
         2) selectq; local _sq=$REPLY; where; local _wh=$REPLY; orderby; local _ob=$REPLY; limit
            REPLY="WITH cte AS (${_sq}) SELECT * FROM cte ${_wh} ${_ob} ${REPLY}";;
         3) n100; REPLY="WITH RECURSIVE cte AS (SELECT 1 AS n UNION ALL SELECT n+1 FROM cte WHERE n < ${REPLY}) SELECT * FROM cte";;
         4) table; local _tbl1=$REPLY; table; local _tbl2=$REPLY; n3; local _n1=$REPLY; n3; local _n2=$REPLY; join
            REPLY="WITH cte1 AS (SELECT * FROM ${_tbl1}), cte2 AS (SELECT * FROM ${_tbl2}) SELECT * FROM cte1 ${REPLY} cte2 ON cte1.c${_n1} = cte2.c${_n2}";;
+        5) n100; local _n=$REPLY; n3; REPLY="WITH RECURSIVE cte AS (SELECT 1 AS n, c${REPLY} AS v FROM (SELECT 1 AS c1, 2 AS c2, 3 AS c3) dt UNION ALL SELECT n+1, v FROM cte WHERE n < ${_n}) SELECT * FROM cte";;
+        6) n100; REPLY="WITH RECURSIVE cte AS (SELECT 1 AS n UNION ALL SELECT n+1 FROM cte WHERE n < ${REPLY}) CYCLE n RESTRICT SELECT * FROM cte";;
+        7) selectq; local _sq=$REPLY; table; local _tbl=$REPLY; n3; local _c=$REPLY; data; REPLY="WITH cte AS (${_sq}) UPDATE ${_tbl} SET c${_c}=${REPLY} WHERE c${_c} IN (SELECT c${_c} FROM cte)";;
         *) REPLY="Assert: invalid random case selection in CTEs case";;
       esac;;
-    45) case $(($RANDOM % 5 + 1)) in  # CREATE/DROP VIEW
+    45) case $(($RANDOM % 7 + 1)) in  # CREATE/DROP VIEW (expanded per MariaDB manual)
         1) orreplace; local _or=$REPLY; view; local _vw=$REPLY; selectq; REPLY="CREATE ${_or} VIEW ${_vw} AS ${REPLY}";;
         2) orreplace; local _or=$REPLY; view; local _vw=$REPLY; selectq; local _sq=$REPLY; withcheckoption; REPLY="CREATE ${_or} VIEW ${_vw} (c1,c2,c3) AS ${_sq} ${REPLY}";;
         3) orreplace; local _or=$REPLY; view; local _vw=$REPLY; selectq; REPLY="CREATE ${_or} ALGORITHM=MERGE VIEW ${_vw} AS ${REPLY}";;
         4) orreplace; local _or=$REPLY; view; local _vw=$REPLY; selectq; REPLY="CREATE ${_or} ALGORITHM=TEMPTABLE VIEW ${_vw} AS ${REPLY}";;
         5) ifexist; local _ie=$REPLY; view; REPLY="DROP VIEW ${_ie} ${REPLY}";;
+        6) orreplace; local _or=$REPLY; definer; local _def=$REPLY; view; local _vw=$REPLY; selectq; REPLY="CREATE ${_or} ${_def} SQL SECURITY DEFINER VIEW ${_vw} AS ${REPLY}";;
+        7) orreplace; local _or=$REPLY; view; local _vw=$REPLY; selectq; REPLY="CREATE ${_or} ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW ${_vw} AS ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in CREATE/DROP VIEW case";;
       esac;;
-    46) case $(($RANDOM % 5 + 1)) in  # CREATE/DROP INDEX
-        1) idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE INDEX ${_idx} ON ${_tbl} (c${REPLY})";;
-        2) idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE UNIQUE INDEX ${_idx} ON ${_tbl} (c${REPLY})";;
+    46) case $(($RANDOM % 8 + 1)) in  # CREATE/DROP INDEX (expanded per MariaDB manual)
+        1) orreplace; local _or=$REPLY; idxname; local _idx=$REPLY; indextype; local _it=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE ${_or} INDEX ${_idx} ${_it} ON ${_tbl} (c${REPLY})";;
+        2) orreplace; local _or=$REPLY; idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE ${_or} UNIQUE INDEX ${_idx} ON ${_tbl} (c${REPLY})";;
         3) idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; local _c1=$REPLY; n3; REPLY="CREATE INDEX ${_idx} ON ${_tbl} (c${_c1},c${REPLY})";;
-        4) ifnotexist; local _ine=$REPLY; idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE INDEX ${_ine} ${_idx} ON ${_tbl} (c${REPLY})";;
-        5) ifexist; local _ie=$REPLY; idxname; local _idx=$REPLY; table; REPLY="DROP INDEX ${_ie} ${_idx} ON ${REPLY}";;
+        4) ifnotexist; local _ine=$REPLY; idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; waitnowait; REPLY="CREATE INDEX ${_ine} ${_idx} ON ${_tbl} (c${REPLY}) ${REPLY}";;
+        5) ifexist; local _ie=$REPLY; idxname; local _idx=$REPLY; table; local _tbl=$REPLY; waitnowait; REPLY="DROP INDEX ${_ie} ${_idx} ON ${_tbl} ${REPLY}";;
+        6) idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE FULLTEXT INDEX ${_idx} ON ${_tbl} (c${REPLY})";;
+        7) idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE SPATIAL INDEX ${_idx} ON ${_tbl} (c${REPLY})";;
+        8) orreplace; local _or=$REPLY; idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; local _c=$REPLY; emascdesc; REPLY="CREATE ${_or} INDEX ${_idx} ON ${_tbl} (c${_c} ${REPLY})";;
         *) REPLY="Assert: invalid random case selection in CREATE/DROP INDEX case";;
       esac;;
     47) case $(($RANDOM % 6 + 1)) in  # Enhanced SELECT with GROUP BY/HAVING/DISTINCT
@@ -1066,13 +1303,16 @@ query(){
         6) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _tbl=$REPLY; n3; local _c3=$REPLY; having; REPLY="SELECT c${_c1}, COUNT(DISTINCT c${_c2}) FROM ${_tbl} GROUP BY c${_c3} ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in enhanced SELECT with GROUP BY/HAVING/DISTINCT case";;
       esac;;
-    48) case $(($RANDOM % 6 + 1)) in  # HANDLER statements
+    48) case $(($RANDOM % 9 + 1)) in  # HANDLER (expanded per MariaDB manual: PREV, LAST, index read with operators)
         1) table; REPLY="HANDLER ${REPLY} OPEN";;
         2) table; REPLY="HANDLER ${REPLY} OPEN AS a1";;
         3) table; local _tbl=$REPLY; where; local _wh=$REPLY; limit; REPLY="HANDLER ${_tbl} READ FIRST ${_wh} ${REPLY}";;
         4) table; local _tbl=$REPLY; where; local _wh=$REPLY; limit; REPLY="HANDLER ${_tbl} READ NEXT ${_wh} ${REPLY}";;
         5) table; local _tbl=$REPLY; data; local _d=$REPLY; where; local _wh=$REPLY; limit; REPLY="HANDLER ${_tbl} READ idx1 = (${_d}) ${_wh} ${REPLY}";;
         6) table; REPLY="HANDLER ${REPLY} CLOSE";;
+        7) table; local _tbl=$REPLY; limit; REPLY="HANDLER ${_tbl} READ idx1 PREV ${REPLY}";;
+        8) table; local _tbl=$REPLY; limit; REPLY="HANDLER ${_tbl} READ idx1 LAST ${REPLY}";;
+        9) table; local _tbl=$REPLY; data; local _d=$REPLY; limit; REPLY="HANDLER ${_tbl} READ idx1 >= (${_d}) ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in HANDLER case";;
       esac;;
     49) case $(($RANDOM % 5 + 1)) in  # System versioned table queries
@@ -1083,12 +1323,17 @@ query(){
         5) table; REPLY="DELETE HISTORY FROM ${REPLY} BEFORE SYSTEM_TIME '2030-01-01 00:00:00'";;
         *) REPLY="Assert: invalid random case selection in system versioned queries case";;
       esac;;
-    50) case $(($RANDOM % 5 + 1)) in  # JSON function SELECTs
+    50) case $(($RANDOM % 10 + 1)) in  # JSON function SELECTs (expanded per MariaDB manual: more JSON funcs)
         1) jsonfunc; local _jf=$REPLY; table; REPLY="SELECT ${_jf} FROM ${REPLY}";;
         2) jsonfunc; local _jf1=$REPLY; jsonfunc; local _jf2=$REPLY; table; local _tbl=$REPLY; where; REPLY="SELECT ${_jf1}, ${_jf2} FROM ${_tbl} ${REPLY}";;
         3) n3; local _n=$REPLY; table; REPLY="SELECT JSON_VALID(c${_n}) FROM ${REPLY}";;
         4) n3; local _n=$REPLY; table; local _tbl=$REPLY; where; REPLY="SELECT JSON_KEYS(c${_n}) FROM ${_tbl} ${REPLY}";;
         5) n3; local _n=$REPLY; table; REPLY="SELECT JSON_LENGTH(c${_n}) FROM ${REPLY}";;
+        6) n3; local _n=$REPLY; table; REPLY="SELECT JSON_DEPTH(c${_n}) FROM ${REPLY}";;
+        7) n3; local _n=$REPLY; table; REPLY="SELECT JSON_COMPACT(c${_n}) FROM ${REPLY}";;
+        8) n3; local _n=$REPLY; table; REPLY="SELECT JSON_DETAILED(c${_n}) FROM ${REPLY}";;
+        9) n3; local _n=$REPLY; table; local _tbl=$REPLY; data; REPLY="SELECT JSON_CONTAINS(c${_n}, ${REPLY}) FROM ${_tbl}";;
+       10) n3; local _n=$REPLY; table; local _tbl=$REPLY; REPLY="SELECT JSON_UNQUOTE(JSON_EXTRACT(c${_n}, '\$.key')) FROM ${_tbl}";;
         *) REPLY="Assert: invalid random case selection in JSON function SELECTs case";;
       esac;;
     51) case $(($RANDOM % 6 + 1)) in  # String/CAST/expression function SELECTs
@@ -1100,7 +1345,7 @@ query(){
         6) caseexpr; local _cx=$REPLY; coalesceexpr; local _co=$REPLY; table; REPLY="SELECT ${_cx}, ${_co} FROM ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in string/CAST/expression function SELECTs case";;
       esac;;
-    52) case $(($RANDOM % 8 + 1)) in  # GRANT/REVOKE/User management
+    52) case $(($RANDOM % 22 + 1)) in  # GRANT/REVOKE/User management (expanded: all privilege types, resource limits, PASSWORD EXPIRE, REVOKE specific)
         1) ifnotexist; local _ine=$REPLY; user; local _u=$REPLY; data; REPLY="CREATE USER ${_ine} ${_u} IDENTIFIED BY ${REPLY}";;
         2) ifexist; local _ie=$REPLY; user; REPLY="DROP USER ${_ie} ${REPLY}";;
         3) user; REPLY="GRANT ALL ON *.* TO ${REPLY}";;
@@ -1109,9 +1354,23 @@ query(){
         6) user; REPLY="REVOKE ALL PRIVILEGES ON *.* FROM ${REPLY}";;
         7) user; local _u=$REPLY; data; REPLY="ALTER USER ${_u} IDENTIFIED BY ${REPLY}";;
         8) user; local _u=$REPLY; data; REPLY="SET PASSWORD FOR ${_u} = PASSWORD(${REPLY})";;
+        9) user; REPLY="GRANT SELECT, INSERT, UPDATE, DELETE ON test.* TO ${REPLY}";;
+       10) user; REPLY="GRANT CREATE, DROP, ALTER, INDEX ON test.* TO ${REPLY}";;
+       11) user; REPLY="GRANT ALL ON *.* TO ${REPLY} WITH GRANT OPTION";;
+       12) user; REPLY="GRANT EXECUTE ON test.* TO ${REPLY}";;
+       13) user; local _u=$REPLY; REPLY="ALTER USER ${_u} ACCOUNT LOCK";;
+       14) user; local _u=$REPLY; REPLY="ALTER USER ${_u} ACCOUNT UNLOCK";;
+       15) user; REPLY="GRANT TRIGGER, EVENT, CREATE VIEW, SHOW VIEW ON test.* TO ${REPLY}";;
+       16) user; REPLY="GRANT CREATE ROUTINE, ALTER ROUTINE ON test.* TO ${REPLY}";;
+       17) user; REPLY="REVOKE SELECT, INSERT ON test.* FROM ${REPLY}";;
+       18) user; REPLY="REVOKE ALL PRIVILEGES, GRANT OPTION FROM ${REPLY}";;
+       19) user; local _u=$REPLY; REPLY="ALTER USER ${_u} PASSWORD EXPIRE";;
+       20) user; local _u=$REPLY; REPLY="ALTER USER ${_u} PASSWORD EXPIRE NEVER";;
+       21) user; local _u=$REPLY; n100; REPLY="CREATE USER IF NOT EXISTS ${_u} IDENTIFIED BY 'pass' WITH MAX_QUERIES_PER_HOUR ${REPLY}";;
+       22) user; local _u1=$REPLY; user; REPLY="RENAME USER ${_u1} TO ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in GRANT/REVOKE/user management case";;
       esac;;
-    53) case $(($RANDOM % 7 + 1)) in  # CHECK TABLE / CHECKSUM TABLE / DO
+    53) case $(($RANDOM % 12 + 1)) in  # CHECK/CHECKSUM/DO/REPAIR extras (expanded per MariaDB manual)
         1) table; REPLY="CHECK TABLE ${REPLY} QUICK";;
         2) table; REPLY="CHECK TABLE ${REPLY} EXTENDED";;
         3) table; REPLY="CHECKSUM TABLE ${REPLY} QUICK";;
@@ -1119,20 +1378,31 @@ query(){
         5) REPLY="DO SLEEP(0)";;
         6) REPLY="DO RELEASE_LOCK('lock1')";;
         7) n100; local _n1=$REPLY; n100; REPLY="DO ${_n1} + ${REPLY}";;
+        8) table; REPLY="CHECK TABLE ${REPLY} FOR UPGRADE";;
+        9) table; REPLY="CHECK TABLE ${REPLY} MEDIUM";;
+       10) table; REPLY="CHECK TABLE ${REPLY} CHANGED";;
+       11) nowblocal; local _nb=$REPLY; table; REPLY="REPAIR ${_nb} TABLE ${REPLY} FORCE";;
+       12) table; local _t1=$REPLY; table; REPLY="CHECK TABLE ${_t1}, ${REPLY} FAST";;
         *) REPLY="Assert: invalid random case selection in CHECK/CHECKSUM/DO case";;
       esac;;
-    54) case $(($RANDOM % 8 + 1)) in  # INFORMATION_SCHEMA queries
+    54) case $(($RANDOM % 14 + 1)) in  # INFORMATION_SCHEMA queries
         1) limit; REPLY="SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='test' ${REPLY}";;
         2) limit; REPLY="SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='test' ${REPLY}";;
         3) REPLY="SELECT * FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA='test'";;
         4) REPLY="SELECT * FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='test'";;
         5) REPLY="SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='test'";;
         6) REPLY="SELECT * FROM INFORMATION_SCHEMA.PROCESSLIST";;
-        7) like; REPLY="SELECT * FROM INFORMATION_SCHEMA.GLOBAL_STATUS ${REPLY}";;
-        8) like; REPLY="SELECT * FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES ${REPLY}";;
+        7) like; REPLY="SELECT * FROM INFORMATION_SCHEMA.GLOBAL_STATUS WHERE VARIABLE_NAME ${REPLY}";;
+        8) like; REPLY="SELECT * FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES WHERE VARIABLE_NAME ${REPLY}";;
+        9) REPLY="SELECT * FROM INFORMATION_SCHEMA.INNODB_TRX";;
+       10) REPLY="SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCKS";;
+       11) REPLY="SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS";;
+       12) REPLY="SELECT * FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_SCHEMA='test'";;
+       13) REPLY="SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA='test'";;
+       14) REPLY="SELECT * FROM INFORMATION_SCHEMA.TRIGGERS WHERE TRIGGER_SCHEMA='test'";;
         *) REPLY="Assert: invalid random case selection in INFORMATION_SCHEMA case";;
       esac;;
-    55) case $(($RANDOM % 10 + 1)) in  # Enhanced ALTER TABLE
+    55) case $(($RANDOM % 18 + 1)) in  # Enhanced ALTER TABLE
         1) table; local _tbl1=$REPLY; table; REPLY="ALTER TABLE ${_tbl1} RENAME TO ${REPLY}";;
         2) table; REPLY="ALTER TABLE ${REPLY} CONVERT TO CHARACTER SET utf8";;
         3) table; local _tbl1=$REPLY; n3; local _n=$REPLY; table; REPLY="ALTER TABLE ${_tbl1} ADD FOREIGN KEY (c${_n}) REFERENCES ${REPLY}(c1)";;
@@ -1142,14 +1412,25 @@ query(){
         7) table; REPLY="ALTER TABLE ${REPLY} FORCE";;
         8) table; REPLY="ALTER TABLE ${REPLY} ADD SYSTEM VERSIONING";;
         9) table; REPLY="ALTER TABLE ${REPLY} DROP SYSTEM VERSIONING";;
-       10) table; local _tbl=$REPLY; algolock; local _al=$REPLY; ctype; REPLY="ALTER TABLE ${_tbl} ${_al}, ADD COLUMN c4 ${REPLY}";;
+       10) table; local _tbl=$REPLY; algolock; local _al=$REPLY; ctype; if [[ -n "$_al" ]]; then REPLY="ALTER TABLE ${_tbl} ${_al}, ADD COLUMN c4 ${REPLY}"; else REPLY="ALTER TABLE ${_tbl} ADD COLUMN c4 ${REPLY}"; fi;;
+       11) table; local _tbl=$REPLY; REPLY="ALTER TABLE ${_tbl} ENABLE KEYS";;
+       12) table; local _tbl=$REPLY; REPLY="ALTER TABLE ${_tbl} DISABLE KEYS";;
+       13) table; local _tbl=$REPLY; REPLY="ALTER TABLE ${_tbl} DISCARD TABLESPACE";;
+       14) table; local _tbl=$REPLY; REPLY="ALTER TABLE ${_tbl} IMPORT TABLESPACE";;
+       15) table; local _tbl=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_tbl} ADD CHECK (c${_c} IS NOT NULL)";;
+       16) table; local _tbl=$REPLY; REPLY="ALTER TABLE ${_tbl} DROP CONSTRAINT IF EXISTS chk1";;
+       17) table; local _tbl=$REPLY; REPLY="ALTER TABLE ${_tbl} RENAME INDEX idx1 TO idx2";;
+       18) table; local _tbl=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_tbl} ADD PERIOD FOR SYSTEM_TIME(row_start, row_end)";;
         *) REPLY="Assert: invalid random case selection in enhanced ALTER TABLE case";;
       esac;;
-    56) case $(($RANDOM % 4 + 1)) in  # CREATE/DROP TRIGGER
+    56) case $(($RANDOM % 7 + 1)) in  # CREATE/DROP TRIGGER (expanded per MariaDB manual: FOLLOWS/PRECEDES, multi-event, OR REPLACE)
         1) orreplace; local _or=$REPLY; trigger; local _tr=$REPLY; beforeafter; local _ba=$REPLY; triggerop; local _top=$REPLY; table; REPLY="CREATE ${_or} TRIGGER ${_tr} ${_ba} ${_top} ON ${REPLY} FOR EACH ROW SET @a=1";;
         2) orreplace; local _or=$REPLY; definer; local _def=$REPLY; trigger; local _tr=$REPLY; beforeafter; local _ba=$REPLY; triggerop; local _top=$REPLY; table; local _tbl=$REPLY; query; REPLY="CREATE ${_or} ${_def} TRIGGER ${_tr} ${_ba} ${_top} ON ${_tbl} FOR EACH ROW ${REPLY}";;
         3) ifexist; local _ie=$REPLY; trigger; REPLY="DROP TRIGGER ${_ie} ${REPLY}";;
         4) orreplace; local _or=$REPLY; trigger; local _tr=$REPLY; beforeafter; local _ba=$REPLY; triggerop; local _top=$REPLY; table; local _tbl1=$REPLY; table; REPLY="CREATE ${_or} TRIGGER ${_tr} ${_ba} ${_top} ON ${_tbl1} FOR EACH ROW INSERT INTO ${REPLY} VALUES (NEW.c1, NEW.c2, NEW.c3)";;
+        5) orreplace; local _or=$REPLY; trigger; local _tr=$REPLY; beforeafter; local _ba=$REPLY; table; REPLY="CREATE ${_or} TRIGGER ${_tr} ${_ba} INSERT OR UPDATE ON ${REPLY} FOR EACH ROW SET @a=NEW.c1";;
+        6) orreplace; local _or=$REPLY; trigger; local _tr=$REPLY; beforeafter; local _ba=$REPLY; triggerop; local _top=$REPLY; table; local _tbl=$REPLY; trigger; local _tr2=$REPLY; REPLY="CREATE ${_or} TRIGGER ${_tr} ${_ba} ${_top} ON ${_tbl} FOR EACH ROW FOLLOWS ${_tr2} SET @a=1";;
+        7) orreplace; local _or=$REPLY; trigger; local _tr=$REPLY; beforeafter; local _ba=$REPLY; triggerop; local _top=$REPLY; table; local _tbl=$REPLY; trigger; local _tr2=$REPLY; REPLY="CREATE ${_or} TRIGGER ${_tr} ${_ba} ${_top} ON ${_tbl} FOR EACH ROW PRECEDES ${_tr2} SET @a=1";;
         *) REPLY="Assert: invalid random case selection in CREATE/DROP TRIGGER case";;
       esac;;
     57) case $(($RANDOM % 3 + 1)) in  # Multi-table UPDATE
@@ -1169,13 +1450,17 @@ query(){
         5) table; local _t=$REPLY; where; REPLY="SELECT * FROM ${_t} ${REPLY} FOR UPDATE SKIP LOCKED";;
         *) REPLY="Assert: invalid random case selection in SELECT FOR UPDATE case";;
       esac;;
-    59) case $(($RANDOM % 6 + 1)) in  # Sequence operations
+    59) case $(($RANDOM % 10 + 1)) in  # Sequence operations (expanded per MariaDB manual)
         1) orreplace; local _or=$REPLY; seqname; local _s=$REPLY; n100; local _n1=$REPLY; n10; REPLY="CREATE ${_or} SEQUENCE ${_s} START WITH ${_n1} INCREMENT BY ${REPLY}";;
         2) orreplace; local _or=$REPLY; seqname; local _s=$REPLY; n1000; REPLY="CREATE ${_or} SEQUENCE ${_s} START WITH 1 MINVALUE 1 MAXVALUE ${REPLY} CYCLE";;
         3) seqname; REPLY="SELECT NEXT VALUE FOR ${REPLY}";;
         4) seqname; REPLY="SELECT NEXTVAL(${REPLY})";;
         5) seqname; REPLY="ALTER SEQUENCE ${REPLY} RESTART";;
         6) ifexist; local _ie=$REPLY; seqname; REPLY="DROP SEQUENCE ${_ie} ${REPLY}";;
+        7) seqname; REPLY="SELECT PREVIOUS VALUE FOR ${REPLY}";;
+        8) seqname; REPLY="SELECT LASTVAL(${REPLY})";;
+        9) seqname; local _s=$REPLY; n100; REPLY="SELECT SETVAL(${_s}, ${REPLY})";;
+       10) orreplace; local _or=$REPLY; seqname; local _s=$REPLY; n100; local _n1=$REPLY; n10; local _n2=$REPLY; n1000; REPLY="CREATE ${_or} SEQUENCE ${_s} START WITH ${_n1} INCREMENT BY ${_n2} MINVALUE 1 MAXVALUE ${REPLY} CACHE 100 NOCYCLE";;
         *) REPLY="Assert: invalid random case selection in sequence operations case";;
       esac;;
     60) case $(($RANDOM % 4 + 1)) in  # INSERT/DELETE ... RETURNING (MariaDB 10.5+)
@@ -1189,7 +1474,7 @@ query(){
            REPLY="REPLACE INTO ${_tbl} VALUES (${_d1},${_d2},${_d3}) ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in INSERT/DELETE RETURNING case";;
       esac;;
-    61) case $(($RANDOM % 8 + 1)) in  # SET NAMES / DESCRIBE / USE / KILL
+    61) case $(($RANDOM % 14 + 1)) in  # SET NAMES / DESCRIBE / USE / KILL (expanded per MariaDB manual: KILL HARD/SOFT/USER, SET NAMES COLLATE, DESCRIBE)
         1) REPLY="SET NAMES utf8";;
         2) REPLY="SET NAMES latin1";;
         3) REPLY="SET NAMES binary";;
@@ -1198,6 +1483,12 @@ query(){
         6) table; REPLY="DESC ${REPLY}";;
         7) REPLY="USE test";;
         8) n100; REPLY="KILL QUERY ${REPLY}";;
+        9) n100; REPLY="KILL HARD QUERY ${REPLY}";;
+       10) n100; REPLY="KILL SOFT ${REPLY}";;
+       11) n100; REPLY="KILL CONNECTION ${REPLY}";;
+       12) REPLY="SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci";;
+       13) REPLY="SET NAMES DEFAULT";;
+       14) REPLY="SET CHARACTER SET DEFAULT";;
         *) REPLY="Assert: invalid random case selection in SET NAMES/DESCRIBE/USE/KILL case";;
       esac;;
     62) case $(($RANDOM % 4 + 1)) in  # INTERSECT / EXCEPT (MariaDB 10.3+)
@@ -1208,9 +1499,12 @@ query(){
         *) REPLY="Assert: invalid random case selection in INTERSECT/EXCEPT case";;
       esac;;
 
-    63) case $(($RANDOM % 6 + 1)) in  # INSTALL/UNINSTALL SONAME (plugin management)
-    [1-4]) installsoname;;
-    [5-6]) uninstallsoname;;
+    63) case $(($RANDOM % 8 + 1)) in  # INSTALL/UNINSTALL SONAME/PLUGIN (expanded per MariaDB manual: IF [NOT] EXISTS)
+    [1-3]) installsoname;;
+    [4-5]) uninstallsoname;;
+        6) REPLY="INSTALL PLUGIN IF NOT EXISTS spider SONAME 'ha_spider'";;
+        7) REPLY="INSTALL PLUGIN IF NOT EXISTS rocksdb SONAME 'ha_rocksdb'";;
+        8) REPLY="UNINSTALL SONAME IF EXISTS 'ha_spider'";;
         *) REPLY="Assert: invalid random case selection in INSTALL/UNINSTALL SONAME case";;
       esac;;
     64) case $(($RANDOM % 6 + 1)) in  # Enhanced JOIN SELECTs with ON/USING clauses
@@ -1237,13 +1531,16 @@ query(){
         5) selectq; local _sq1=$REPLY; selectq; REPLY="${_sq1} UNION DISTINCT ${REPLY}";;
         *) REPLY="Assert: invalid random case selection in UNION ALL case";;
       esac;;
-    66) case $(($RANDOM % 6 + 1)) in  # CREATE/ALTER/DROP DATABASE
+    66) case $(($RANDOM % 9 + 1)) in  # CREATE/ALTER/DROP DATABASE (expanded per MariaDB manual: OR REPLACE, COMMENT, SCHEMA alias)
         1) REPLY="CREATE DATABASE IF NOT EXISTS test2";;
         2) REPLY="CREATE DATABASE IF NOT EXISTS test3 CHARACTER SET utf8";;
         3) REPLY="CREATE DATABASE IF NOT EXISTS test2 CHARACTER SET latin1 COLLATE latin1_bin";;
         4) REPLY="ALTER DATABASE test CHARACTER SET utf8mb4";;
         5) REPLY="DROP DATABASE IF EXISTS test2";;
         6) REPLY="DROP DATABASE IF EXISTS test3";;
+        7) REPLY="CREATE OR REPLACE DATABASE test2";;
+        8) REPLY="CREATE SCHEMA IF NOT EXISTS test2 COMMENT 'generated test db'";;
+        9) REPLY="ALTER DATABASE test COMMENT 'modified by generator'";;
         *) REPLY="Assert: invalid random case selection in CREATE/ALTER/DROP DATABASE case";;
       esac;;
 
@@ -1297,6 +1594,483 @@ query(){
         8) ifnotexist; local _ine=$REPLY; table; local _tbl=$REPLY; pk; local _pk=$REPLY; engine; local _eng=$REPLY
            REPLY="CREATE TABLE ${_ine} ${_tbl} (c1 ${_pk}, c2 INT DEFAULT 0, c3 VARCHAR(255) DEFAULT '', c4 TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=${_eng}";;
         *) REPLY="Assert: invalid random case selection in CREATE TABLE expanded case";;
+      esac;;
+
+    73) case $(($RANDOM % 6 + 1)) in  # EXPLAIN / ANALYZE variants (MariaDB specific)
+        1) selectq; REPLY="EXPLAIN ${REPLY}";;
+        2) selectq; REPLY="EXPLAIN EXTENDED ${REPLY}";;
+        3) selectq; REPLY="EXPLAIN PARTITIONS ${REPLY}";;
+        4) selectq; REPLY="EXPLAIN FORMAT=JSON ${REPLY}";;
+        5) selectq; REPLY="ANALYZE FORMAT=JSON ${REPLY}";;
+        6) table; REPLY="EXPLAIN ${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in EXPLAIN/ANALYZE case";;
+      esac;;
+    74) case $(($RANDOM % 6 + 1)) in  # SET STATEMENT ... FOR (MariaDB per-query variable override)
+        1) n100; selectq; REPLY="SET STATEMENT max_statement_time=${REPLY} FOR ${REPLY}";;
+        2) optsw; local _os=$REPLY; onoff; local _oo=$REPLY; selectq; REPLY="SET STATEMENT optimizer_switch='${_os}=${_oo}' FOR ${REPLY}";;
+        3) n1000; local _n=$REPLY; selectq; REPLY="SET STATEMENT sort_buffer_size=${_n} FOR ${REPLY}";;
+        4) n100; local _n=$REPLY; selectq; REPLY="SET STATEMENT join_buffer_size=${_n} FOR ${REPLY}";;
+        5) selectq; REPLY="SET STATEMENT optimizer_prune_level=0 FOR ${REPLY}";;
+        6) n100; local _n=$REPLY; selectq; REPLY="SET STATEMENT optimizer_search_depth=${_n} FOR ${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in SET STATEMENT FOR case";;
+      esac;;
+    75) case $(($RANDOM % 5 + 1)) in  # SET ROLE / SET DEFAULT ROLE (MariaDB role management)
+        1) REPLY="SET ROLE NONE";;
+        2) REPLY="CREATE ROLE IF NOT EXISTS role1";;
+        3) REPLY="CREATE ROLE IF NOT EXISTS role2";;
+        4) REPLY="DROP ROLE IF EXISTS role1";;
+        5) REPLY="DROP ROLE IF EXISTS role2";;
+        *) REPLY="Assert: invalid random case selection in SET ROLE case";;
+      esac;;
+    76) case $(($RANDOM % 5 + 1)) in  # LOCK TABLE with WRITE CONCURRENT, WAIT/NOWAIT
+        1) table; local _t=$REPLY; lockwait; REPLY="LOCK TABLE ${_t} WRITE CONCURRENT ${REPLY}";;
+        2) table; local _t=$REPLY; n9; local _n=$REPLY; REPLY="LOCK TABLE ${_t} WRITE WAIT ${_n}";;
+        3) table; local _t=$REPLY; REPLY="LOCK TABLE ${_t} READ NOWAIT";;
+        4) table; local _t=$REPLY; REPLY="LOCK TABLE ${_t} LOW_PRIORITY WRITE NOWAIT";;
+        5) table; local _t=$REPLY; locktype; local _lt=$REPLY; table; local _t2=$REPLY; locktype; local _lt2=$REPLY; lockwait; REPLY="LOCK TABLES ${_t} ${_lt}, ${_t2} AS a1 ${_lt2} ${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in LOCK WRITE CONCURRENT case";;
+      esac;;
+    77) case $(($RANDOM % 6 + 1)) in  # INSERT ... SET form + DELAYED
+        1) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; REPLY="INSERT INTO ${_tbl} SET c1=${_d1}, c2=${_d2}, c3=${REPLY}";;
+        2) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; REPLY="INSERT INTO ${_tbl} SET c1=${_d1}, c2=${REPLY} ON DUPLICATE KEY UPDATE c1=VALUES(c1)";;
+        3) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; REPLY="INSERT DELAYED INTO ${_tbl} VALUES (${_d1},${_d2},${REPLY})";;
+        4) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; REPLY="INSERT HIGH_PRIORITY INTO ${_tbl} SET c1=${_d1}, c2=${REPLY}";;
+        5) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; REPLY="REPLACE INTO ${_tbl} SET c1=${_d1}, c2=${_d2}, c3=${REPLY}";;
+        6) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; REPLY="REPLACE DELAYED INTO ${_tbl} VALUES (${_d1},${_d2},${REPLY})";;
+        *) REPLY="Assert: invalid random case selection in INSERT SET case";;
+      esac;;
+    78) case $(($RANDOM % 6 + 1)) in  # SELECT ... INTO @var, OUTFILE, DUMPFILE
+        1) n3; local _c=$REPLY; table; local _tbl=$REPLY; where; REPLY="SELECT c${_c} INTO @a FROM ${_tbl} ${REPLY} LIMIT 1";;
+        2) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _tbl=$REPLY; REPLY="SELECT c${_c1}, c${_c2} INTO @a, @b FROM ${_tbl} LIMIT 1";;
+        3) table; local _tbl=$REPLY; n9; REPLY="SELECT * FROM ${_tbl} INTO OUTFILE '/tmp/gen_out_${REPLY}.csv'";;
+        4) table; local _tbl=$REPLY; REPLY="SELECT * FROM ${_tbl} INTO OUTFILE '/tmp/gen_out.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\\n'";;
+        5) table; local _tbl=$REPLY; REPLY="SELECT * FROM ${_tbl} LIMIT 1 INTO DUMPFILE '/tmp/gen_dump.bin'";;
+        6) REPLY="SELECT FOUND_ROWS()";;
+        *) REPLY="Assert: invalid random case selection in SELECT INTO case";;
+      esac;;
+    79) case $(($RANDOM % 6 + 1)) in  # ALTER TABLE partition operations
+        1) table; local _t=$REPLY; n3; REPLY="ALTER TABLE ${_t} TRUNCATE PARTITION p${REPLY}";;
+        2) table; local _t=$REPLY; n3; REPLY="ALTER TABLE ${_t} ANALYZE PARTITION p${REPLY}";;
+        3) table; local _t=$REPLY; n3; REPLY="ALTER TABLE ${_t} CHECK PARTITION p${REPLY}";;
+        4) table; local _t=$REPLY; n3; REPLY="ALTER TABLE ${_t} OPTIMIZE PARTITION p${REPLY}";;
+        5) table; local _t=$REPLY; n3; REPLY="ALTER TABLE ${_t} REBUILD PARTITION p${REPLY}";;
+        6) table; REPLY="ALTER TABLE ${REPLY} REMOVE PARTITIONING";;
+        *) REPLY="Assert: invalid random case selection in ALTER TABLE partition case";;
+      esac;;
+    80) case $(($RANDOM % 8 + 1)) in  # Complex SELECT modifiers + hints
+        1) table; local _t=$REPLY; where; REPLY="SELECT SQL_CALC_FOUND_ROWS * FROM ${_t} ${REPLY} LIMIT 5";;
+        2) table; local _t=$REPLY; where; REPLY="SELECT SQL_NO_CACHE * FROM ${_t} ${REPLY}";;
+        3) table; local _t=$REPLY; where; REPLY="SELECT STRAIGHT_JOIN * FROM ${_t} ${REPLY}";;
+        4) table; local _t=$REPLY; where; REPLY="SELECT SQL_BUFFER_RESULT * FROM ${_t} ${REPLY}";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; where; REPLY="SELECT HIGH_PRIORITY c${_c} FROM ${_t} ${REPLY}";;
+        6) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT * FROM ${_t} USE INDEX (idx1) WHERE c${_c} > 0";;
+        7) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT * FROM ${_t} FORCE INDEX (PRIMARY) WHERE c${_c} > 0";;
+        8) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT * FROM ${_t} IGNORE INDEX (idx1) WHERE c${_c} > 0";;
+        *) REPLY="Assert: invalid random case selection in complex SELECT modifiers case";;
+      esac;;
+
+    81) case $(($RANDOM % 5 + 1)) in  # SIGNAL / GET DIAGNOSTICS (MariaDB error handling)
+        1) REPLY="SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='test error'";;
+        2) REPLY="SIGNAL SQLSTATE '02000'";;
+        3) n100; REPLY="SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='error', MYSQL_ERRNO=${REPLY}";;
+        4) REPLY="GET DIAGNOSTICS @p1 = NUMBER, @p2 = ROW_COUNT";;
+        5) REPLY="GET DIAGNOSTICS CONDITION 1 @p1 = RETURNED_SQLSTATE, @p2 = MESSAGE_TEXT";;
+        *) REPLY="Assert: invalid random case selection in SIGNAL/GET DIAGNOSTICS case";;
+      esac;;
+    82) case $(($RANDOM % 5 + 1)) in  # SQL standard FETCH FIRST / OFFSET syntax (MariaDB 10.6+)
+        1) table; local _t=$REPLY; where; local _w=$REPLY; REPLY="SELECT * FROM ${_t} ${_w} FETCH FIRST 5 ROWS ONLY";;
+        2) table; local _t=$REPLY; REPLY="SELECT * FROM ${_t} OFFSET 3 ROWS FETCH NEXT 5 ROWS ONLY";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; emascdesc; local _ad=$REPLY; REPLY="SELECT * FROM ${_t} ORDER BY c${_c} ${_ad} FETCH FIRST 10 ROWS ONLY";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; emascdesc; REPLY="SELECT * FROM ${_t} ORDER BY c${_c} ${REPLY} OFFSET 2 ROWS FETCH FIRST 3 ROWS WITH TIES";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT * FROM ${_t} ORDER BY c${_c} FETCH FIRST ROW ONLY";;
+        *) REPLY="Assert: invalid random case selection in FETCH FIRST case";;
+      esac;;
+    83) case $(($RANDOM % 5 + 1)) in  # SELECT ... LIMIT ... ROWS EXAMINED (MariaDB specific)
+        1) table; local _t=$REPLY; where; local _w=$REPLY; n100; local _n=$REPLY; n1000; REPLY="SELECT * FROM ${_t} ${_w} LIMIT ${_n} ROWS EXAMINED ${REPLY}";;
+        2) table; local _t=$REPLY; n3; local _c=$REPLY; n1000; REPLY="SELECT c${_c} FROM ${_t} LIMIT 10 ROWS EXAMINED ${REPLY}";;
+        3) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; n1000; REPLY="SELECT * FROM ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} LIMIT 5 ROWS EXAMINED ${REPLY}";;
+        4) table; local _t=$REPLY; n1000; REPLY="SELECT SQL_CALC_FOUND_ROWS * FROM ${_t} LIMIT 5 ROWS EXAMINED ${REPLY}";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; emascdesc; local _ad=$REPLY; n1000; REPLY="SELECT * FROM ${_t} ORDER BY c${_c} ${_ad} LIMIT 10 ROWS EXAMINED ${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in ROWS EXAMINED case";;
+      esac;;
+    84) case $(($RANDOM % 6 + 1)) in  # ALTER TABLE partition operations expanded (EXCHANGE, CONVERT, TRUNCATE PARTITION per MariaDB manual)
+        1) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; REPLY="ALTER TABLE ${_t1} EXCHANGE PARTITION p${REPLY} WITH TABLE ${_t2}";;
+        2) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; REPLY="ALTER TABLE ${_t1} EXCHANGE PARTITION p${REPLY} WITH TABLE ${_t2} WITH VALIDATION";;
+        3) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; REPLY="ALTER TABLE ${_t1} EXCHANGE PARTITION p${REPLY} WITH TABLE ${_t2} WITHOUT VALIDATION";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_t} ADD PARTITION IF NOT EXISTS (PARTITION p99 VALUES LESS THAN (99))";;
+        5) table; local _t=$REPLY; n3; REPLY="ALTER TABLE ${_t} DROP PARTITION IF EXISTS p${REPLY}";;
+        6) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} COALESCE PARTITION 1";;
+        *) REPLY="Assert: invalid random case selection in ALTER partition expanded case";;
+      esac;;
+    85) case $(($RANDOM % 4 + 1)) in  # JSON_TABLE (MariaDB 10.6+)
+        1) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT jt.* FROM ${_t}, JSON_TABLE(c${_c}, '\$[*]' COLUMNS (id INT PATH '\$.id', name VARCHAR(100) PATH '\$.name')) AS jt";;
+        2) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT jt.val FROM ${_t}, JSON_TABLE(c${_c}, '\$[*]' COLUMNS (val VARCHAR(255) PATH '\$')) AS jt";;
+        3) REPLY="SELECT * FROM JSON_TABLE('[1,2,3]', '\$[*]' COLUMNS (val INT PATH '\$')) AS jt";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT jt.* FROM ${_t}, JSON_TABLE(c${_c}, '\$' COLUMNS (v1 INT PATH '\$.a', v2 VARCHAR(100) PATH '\$.b' DEFAULT 'N/A' ON EMPTY)) AS jt";;
+        *) REPLY="Assert: invalid random case selection in JSON_TABLE case";;
+      esac;;
+    86) case $(($RANDOM % 6 + 1)) in  # SHOW EXPLAIN/ANALYZE FOR, SHOW CREATE USER, SHOW LOCALES (MariaDB specific)
+        1) n100; REPLY="SHOW EXPLAIN FOR ${REPLY}";;
+        2) n100; REPLY="SHOW EXPLAIN FORMAT=JSON FOR ${REPLY}";;
+        3) n100; REPLY="SHOW ANALYZE FOR ${REPLY}";;
+        4) n100; REPLY="SHOW ANALYZE FORMAT=JSON FOR ${REPLY}";;
+        5) REPLY="SHOW CREATE USER CURRENT_USER";;
+        6) REPLY="SHOW WSREP_STATUS";;
+        *) REPLY="Assert: invalid random case selection in SHOW EXPLAIN/ANALYZE case";;
+      esac;;
+    87) case $(($RANDOM % 4 + 1)) in  # UPDATE/DELETE with FOR PORTION OF PERIOD (MariaDB application-time periods)
+        1) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="UPDATE ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}' SET c${_c}=${_d}";;
+        2) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="DELETE FROM ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}'";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; data; dategen; local _d1=$REPLY; dategen; REPLY="UPDATE ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}' SET c${_c}=${REPLY}";;
+        4) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="DELETE FROM ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}'";;
+        *) REPLY="Assert: invalid random case selection in FOR PORTION OF case";;
+      esac;;
+    88) importantvar;;  # Third slot for server-state SET variables (intentionally high frequency for bug hunting)
+    89) case $(($RANDOM % 6 + 1)) in  # SELECT with predicate expressions (BETWEEN, IN, REGEXP, MATCH AGAINST, IS NULL)
+        1) table; local _t=$REPLY; betweenexpr; local _be=$REPLY; orderby; local _ob=$REPLY; limit; REPLY="SELECT * FROM ${_t} WHERE ${_be} ${_ob} ${REPLY}";;
+        2) table; local _t=$REPLY; inlist; local _il=$REPLY; orderby; REPLY="SELECT * FROM ${_t} WHERE ${_il} ${REPLY}";;
+        3) table; local _t=$REPLY; regexpexpr; REPLY="SELECT * FROM ${_t} WHERE ${REPLY}";;
+        4) table; local _t=$REPLY; matchagainstmode; REPLY="SELECT * FROM ${_t} WHERE ${REPLY}";;
+        5) table; local _t=$REPLY; isnullexpr; local _isn=$REPLY; n3; local _c=$REPLY; orderby; REPLY="SELECT c${_c} FROM ${_t} WHERE ${_isn} ${REPLY}";;
+        6) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d1=$REPLY; data; REPLY="SELECT * FROM ${_t} WHERE c${_c} NOT BETWEEN ${_d1} AND ${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in predicate expressions case";;
+      esac;;
+    90) case $(($RANDOM % 6 + 1)) in  # Subquery with ANY/ALL/SOME, correlated subqueries, NOT IN
+        1) table; local _t=$REPLY; n3; local _c=$REPLY; anyallsome; local _as=$REPLY; operator; local _op=$REPLY; table; REPLY="SELECT * FROM ${_t} WHERE c${_c} ${_op} ${_as} (SELECT c${_c} FROM ${REPLY})";;
+        2) table; local _t=$REPLY; n3; local _c=$REPLY; table; REPLY="SELECT * FROM ${_t} WHERE c${_c} NOT IN (SELECT c${_c} FROM ${REPLY})";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; data; table; local _t2=$REPLY; REPLY="SELECT * FROM ${_t} AS a1 WHERE EXISTS (SELECT 1 FROM ${_t2} AS a2 WHERE a2.c${_c}=a1.c${_c})";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; table; local _t2=$REPLY; REPLY="SELECT * FROM ${_t} AS a1 WHERE NOT EXISTS (SELECT 1 FROM ${_t2} AS a2 WHERE a2.c${_c}=a1.c${_c})";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT (SELECT MAX(c${_c}) FROM ${_t}), (SELECT MIN(c${_c}) FROM ${_t}), (SELECT COUNT(*) FROM ${_t})";;
+        6) table; local _t=$REPLY; n3; local _c=$REPLY; table; local _t2=$REPLY; REPLY="SELECT * FROM ${_t} WHERE c${_c} = (SELECT MAX(c${_c}) FROM ${_t2})";;
+        *) REPLY="Assert: invalid random case selection in subquery ANY/ALL case";;
+      esac;;
+    91) case $(($RANDOM % 6 + 1)) in  # INSERT with more idioms (3+ rows, IGNORE+SELECT, PARTITION, DELAYED, RETURNING+SET)
+        1) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; data; local _d4=$REPLY; data; local _d5=$REPLY; data; local _d6=$REPLY; data; local _d7=$REPLY; data; local _d8=$REPLY; data
+           REPLY="INSERT INTO ${_tbl} VALUES (${_d1},${_d2},${_d3}),(${_d4},${_d5},${_d6}),(${_d7},${_d8},${REPLY})";;
+        2) ignore; local _ig=$REPLY; table; local _tbl1=$REPLY; table; local _tbl2=$REPLY; where; REPLY="INSERT ${_ig} INTO ${_tbl1} SELECT * FROM ${_tbl2} ${REPLY}";;
+        3) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; returning; REPLY="INSERT INTO ${_tbl} SET c1=${_d1}, c2=${_d2}, c3=${_d3} ${REPLY}";;
+        4) table; local _tbl=$REPLY; partitionsel; local _ps=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; REPLY="INSERT INTO ${_tbl} ${_ps} VALUES (${_d1},${_d2},${REPLY})";;
+        5) table; local _tbl=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; table; local _t2=$REPLY; REPLY="INSERT INTO ${_tbl} (c1,c2,c3) SELECT * FROM ${_t2} ON DUPLICATE KEY UPDATE c${_c}=${_d}";;
+        6) table; local _tbl=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; REPLY="INSERT INTO ${_tbl} VALUE (${_d1},${_d2},${REPLY})";;  # VALUE is synonym of VALUES
+        *) REPLY="Assert: invalid random case selection in expanded INSERT case";;
+      esac;;
+    92) case $(($RANDOM % 6 + 1)) in  # CREATE TABLE with OR REPLACE + IGNORE/REPLACE AS SELECT, COMPRESSED columns, DEFAULT CHARSET, COMMENT
+        1) orreplace; local _or=$REPLY; table; local _tbl=$REPLY; engine; local _eng=$REPLY; table; local _t2=$REPLY; REPLY="CREATE ${_or} TABLE ${_tbl} ENGINE=${_eng} IGNORE SELECT * FROM ${_t2}";;
+        2) orreplace; local _or=$REPLY; table; local _tbl=$REPLY; engine; local _eng=$REPLY; table; local _t2=$REPLY; REPLY="CREATE ${_or} TABLE ${_tbl} ENGINE=${_eng} REPLACE SELECT * FROM ${_t2}";;
+        3) ifnotexist; local _ine=$REPLY; table; local _tbl=$REPLY; pk; local _pk=$REPLY; engine; local _eng=$REPLY; tablecharset; local _cs=$REPLY; tablecomment
+           REPLY="CREATE TABLE ${_ine} ${_tbl} (c1 ${_pk}, c2 VARCHAR(255) COMPRESSED, c3 TEXT COMPRESSED) ENGINE=${_eng} ${_cs} ${REPLY}";;
+        4) ifnotexist; local _ine=$REPLY; table; local _tbl=$REPLY; pk; local _pk=$REPLY; ctype; local _ct=$REPLY; engine; local _eng=$REPLY
+           REPLY="CREATE TABLE ${_ine} ${_tbl} (c1 ${_pk}, c2 ${_ct} NOT NULL COMMENT 'col2', c3 INT DEFAULT 0 COMMENT 'col3') ENGINE=${_eng} COMMENT='test table'";;
+        5) orreplace; local _or=$REPLY; table; local _tbl=$REPLY; pk; local _pk=$REPLY; engine; local _eng=$REPLY
+           REPLY="CREATE ${_or} TABLE ${_tbl} (c1 ${_pk}, c2 INT AUTO_INCREMENT UNIQUE, c3 VARCHAR(255) DEFAULT '') ENGINE=${_eng} AUTO_INCREMENT=1000";;
+        6) ifnotexist; local _ine=$REPLY; table; local _tbl=$REPLY; pk; local _pk=$REPLY; engine; local _eng=$REPLY; table; local _ref=$REPLY; fkaction; local _del=$REPLY; fkaction; local _upd=$REPLY
+           if [[ -n "$_del" ]]; then _del="ON DELETE ${_del}"; fi; if [[ -n "$_upd" ]]; then _upd="ON UPDATE ${_upd}"; fi
+           REPLY="CREATE TABLE ${_ine} ${_tbl} (c1 ${_pk}, c2 INT, c3 INT, FOREIGN KEY fk1 (c2) REFERENCES ${_ref}(c1) ${_del} ${_upd}) ENGINE=${_eng}";;
+        *) REPLY="Assert: invalid random case selection in expanded CREATE TABLE case";;
+      esac;;
+    93) case $(($RANDOM % 5 + 1)) in  # SELECT FROM DUAL + misc expressions without tables
+        1) REPLY="SELECT 1+1 FROM DUAL";;
+        2) REPLY="SELECT CURRENT_TIMESTAMP, CURRENT_USER(), CONNECTION_ID(), VERSION()";;
+        3) data; REPLY="SELECT UUID(), ${REPLY}, RAND(), PI()";;
+        4) REPLY="SELECT BENCHMARK(1000, 1+1)";;
+        5) data; REPLY="SELECT MD5(${REPLY}), SHA1(${REPLY}), SHA2(${REPLY}, 256)";;
+        *) REPLY="Assert: invalid random case selection in SELECT FROM DUAL case";;
+      esac;;
+    94) case $(($RANDOM % 6 + 1)) in  # Complex WHERE with mixed predicates
+        1) table; local _t=$REPLY; betweenexpr; local _be=$REPLY; isnullexpr; local _isn=$REPLY; andor; REPLY="SELECT * FROM ${_t} WHERE ${_be} ${REPLY} ${_isn}";;
+        2) table; local _t=$REPLY; n3; local _c=$REPLY; inlist; local _il=$REPLY; betweenexpr; local _be=$REPLY; REPLY="SELECT * FROM ${_t} WHERE ${_il} AND ${_be}";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; regexpexpr; local _re=$REPLY; isnullexpr; local _isn=$REPLY; REPLY="SELECT * FROM ${_t} WHERE ${_re} OR ${_isn}";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; operator; local _op=$REPLY; data; local _d=$REPLY; n3; local _c2=$REPLY; REPLY="SELECT * FROM ${_t} WHERE c${_c} ${_op} ${_d} AND c${_c2} IS NOT NULL";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; like; local _lk=$REPLY; isnullexpr; REPLY="SELECT * FROM ${_t} WHERE c${_c} ${_lk} AND ${REPLY}";;
+        6) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; REPLY="SELECT * FROM ${_t} WHERE c${_c} IN (${_d1}, ${_d2}, ${REPLY}) OR c${_c} IS NULL";;
+        *) REPLY="Assert: invalid random case selection in complex WHERE case";;
+      esac;;
+    95) case $(($RANDOM % 5 + 1)) in  # Multi-table DELETE with RETURNING, PARTITION
+        1) table; local _t=$REPLY; partitionsel; local _ps=$REPLY; where; local _w=$REPLY; orderby; local _ob=$REPLY; limit; local _lm=$REPLY; returning; REPLY="DELETE FROM ${_t} ${_ps} ${_w} ${_ob} ${_lm} ${REPLY}";;
+        2) table; local _t=$REPLY; where; local _w=$REPLY; returning; REPLY="DELETE LOW_PRIORITY FROM ${_t} ${_w} ${REPLY}";;
+        3) table; local _t=$REPLY; where; local _w=$REPLY; REPLY="DELETE QUICK IGNORE FROM ${_t} ${_w}";;
+        4) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; data; REPLY="DELETE a1 FROM ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} WHERE a1.c${_c}=${REPLY}";;
+        5) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; REPLY="DELETE a1, a2 FROM ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c}";;
+        *) REPLY="Assert: invalid random case selection in expanded DELETE case";;
+      esac;;
+    96) case $(($RANDOM % 6 + 1)) in  # UPDATE expanded (LOW_PRIORITY IGNORE, multi-col SET with expressions, LIMIT ORDER BY, RETURNING)
+        1) table; local _t=$REPLY; n3; local _c1=$REPLY; n3; local _c2=$REPLY; data; local _d=$REPLY; where; REPLY="UPDATE LOW_PRIORITY IGNORE ${_t} SET c${_c1}=${_d}, c${_c2}=c${_c2}+1 ${REPLY}";;
+        2) table; local _t=$REPLY; n3; local _c=$REPLY; where; local _w=$REPLY; emascdesc; local _ad=$REPLY; n9; REPLY="UPDATE ${_t} SET c${_c}=NULL ${_w} ORDER BY c${_c} ${_ad} LIMIT ${REPLY}";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; n3; local _c2=$REPLY; REPLY="UPDATE ${_t} SET c${_c}=CONCAT(c${_c}, c${_c2})";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; castexpr; local _ce=$REPLY; where; REPLY="UPDATE ${_t} SET c${_c}=${_ce} ${REPLY}";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; stringfunc; local _sf=$REPLY; where; REPLY="UPDATE ${_t} SET c${_c}=${_sf} ${REPLY}";;
+        6) table; local _t=$REPLY; n3; local _c=$REPLY; data; REPLY="UPDATE ${_t} SET c${_c}=LAST_INSERT_ID(c${_c}+1) WHERE c${_c}=${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in expanded UPDATE case";;
+      esac;;
+    97) case $(($RANDOM % 5 + 1)) in  # REPLACE expanded (SET form, multi-row, DELAYED, with RETURNING)
+        1) table; local _t=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; REPLY="REPLACE INTO ${_t} SET c1=${_d1}, c2=${_d2}, c3=${REPLY}";;
+        2) table; local _t=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; data; local _d4=$REPLY; data; local _d5=$REPLY; data; REPLY="REPLACE INTO ${_t} VALUES (${_d1},${_d2},${_d3}),(${_d4},${_d5},${REPLY})";;
+        3) table; local _t=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; returning; REPLY="REPLACE INTO ${_t} VALUES (${_d1},${_d2},${_d3}) ${REPLY}";;
+        4) table; local _t1=$REPLY; table; local _t2=$REPLY; returning; REPLY="REPLACE INTO ${_t1} SELECT * FROM ${_t2} ${REPLY}";;
+        5) table; local _t=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; REPLY="REPLACE DELAYED INTO ${_t} VALUES (${_d1},${_d2},${REPLY})";;
+        *) REPLY="Assert: invalid random case selection in expanded REPLACE case";;
+      esac;;
+    98) case $(($RANDOM % 5 + 1)) in  # Complex 4-table JOINs and self-joins
+        1) table; local _t1=$REPLY; table; local _t2=$REPLY; table; local _t3=$REPLY; table; local _t4=$REPLY; n3; local _c=$REPLY
+           REPLY="SELECT a1.c${_c}, a2.c${_c}, a3.c${_c}, a4.c${_c} FROM ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} LEFT JOIN ${_t3} AS a3 ON a2.c${_c}=a3.c${_c} LEFT JOIN ${_t4} AS a4 ON a3.c${_c}=a4.c${_c}";;
+        2) table; local _t=$REPLY; n3; local _c=$REPLY; n3; local _c2=$REPLY; REPLY="SELECT a1.c${_c}, a2.c${_c2} FROM ${_t} AS a1 JOIN ${_t} AS a2 ON a1.c${_c}=a2.c${_c} WHERE a1.c${_c2} != a2.c${_c2}";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT a1.c${_c}, a2.c${_c} FROM ${_t} AS a1 LEFT JOIN ${_t} AS a2 ON a1.c${_c}=a2.c${_c} AND a1.c1 != a2.c1";;
+        4) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; groupby; local _gb=$REPLY; having; local _hv=$REPLY; orderby; local _ob=$REPLY; limit
+           REPLY="SELECT a1.c${_c}, COUNT(DISTINCT a2.c${_c}) FROM ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} ${_gb} ${_hv} ${_ob} ${REPLY}";;
+        5) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; selectq; REPLY="SELECT * FROM ${_t1} AS a1 WHERE c${_c} IN (${REPLY}) AND c${_c} NOT IN (SELECT c${_c} FROM ${_t2} WHERE c${_c} IS NULL)";;
+        *) REPLY="Assert: invalid random case selection in complex 4-table JOIN case";;
+      esac;;
+    99) case $(($RANDOM % 6 + 1)) in  # FLUSH expanded per MariaDB manual (all remaining targets)
+        1) REPLY="FLUSH PRIVILEGES";;
+        2) REPLY="FLUSH STATUS";;
+        3) REPLY="FLUSH HOSTS";;
+        4) REPLY="FLUSH DES_KEY_FILE";;
+        5) REPLY="FLUSH USER_RESOURCES";;
+        6) REPLY="FLUSH QUERY CACHE";;
+        *) REPLY="Assert: invalid random case selection in FLUSH expanded case";;
+      esac;;
+   100) case $(($RANDOM % 6 + 1)) in  # RESET, PURGE, SHUTDOWN (MariaDB admin commands)
+        1) REPLY="RESET MASTER";;
+        2) REPLY="RESET REPLICA";;
+        3) REPLY="RESET REPLICA ALL";;
+        4) REPLY="RESET QUERY CACHE";;
+        5) binmaster; REPLY="PURGE ${REPLY} LOGS BEFORE NOW()";;
+        6) REPLY="SHUTDOWN WAIT FOR ALL REPLICAS";;
+        *) REPLY="Assert: invalid random case selection in RESET/PURGE/SHUTDOWN case";;
+      esac;;
+
+   101) case $(($RANDOM % 6 + 1)) in  # SELECT with multiple random expression functions
+        1) randomselfunc; local _f1=$REPLY; randomselfunc; local _f2=$REPLY; randomselfunc; local _f3=$REPLY; table; REPLY="SELECT ${_f1}, ${_f2}, ${_f3} FROM ${REPLY}";;
+        2) randomselfunc; local _f=$REPLY; table; local _t=$REPLY; where; local _w=$REPLY; orderby; local _ob=$REPLY; limit; REPLY="SELECT ${_f} FROM ${_t} ${_w} ${_ob} ${REPLY}";;
+        3) randomselfunc; local _f=$REPLY; table; local _t=$REPLY; groupby; local _gb=$REPLY; having; REPLY="SELECT ${_f}, COUNT(*) FROM ${_t} ${_gb} ${REPLY}";;
+        4) table; local _t=$REPLY; datearith; local _da=$REPLY; converttz; local _ct=$REPLY; REPLY="SELECT ${_da}, ${_ct} FROM ${_t}";;
+        5) table; local _t=$REPLY; eltfield; local _ef=$REPLY; makesetfunc; REPLY="SELECT ${_ef}, ${REPLY} FROM ${_t}";;
+        6) table; local _t=$REPLY; n3; local _c=$REPLY; repeatfunc; local _rf=$REPLY; spacefunc; REPLY="SELECT CONCAT(${_rf}, ${REPLY}, c${_c}) FROM ${_t}";;
+        *) REPLY="Assert: invalid random case selection in random expression functions case";;
+      esac;;
+   102) case $(($RANDOM % 5 + 1)) in  # Complex WHERE with many mixed predicates
+        1) table; local _t=$REPLY; randomexpr; local _r1=$REPLY; andor; local _ao1=$REPLY; randomexpr; local _r2=$REPLY; andor; local _ao2=$REPLY; randomexpr; REPLY="SELECT * FROM ${_t} WHERE ${_r1} ${_ao1} ${_r2} ${_ao2} ${REPLY}";;
+        2) table; local _t=$REPLY; likeexpr; local _le=$REPLY; betweenexpr; local _be=$REPLY; isnullexpr; REPLY="SELECT * FROM ${_t} WHERE ${_le} AND ${_be} OR ${REPLY}";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; inlist; local _il=$REPLY; regexpexpr; REPLY="SELECT * FROM ${_t} WHERE (${_il}) AND (${REPLY})";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; existsq; local _ex=$REPLY; isnullexpr; REPLY="SELECT * FROM ${_t} WHERE ${_ex} AND ${REPLY}";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; operator; local _op=$REPLY; n3; local _c2=$REPLY; betweenexpr; REPLY="SELECT * FROM ${_t} WHERE c${_c} ${_op} ${_d} AND (${REPLY})";;
+        *) REPLY="Assert: invalid random case selection in complex WHERE case";;
+      esac;;
+   103) case $(($RANDOM % 5 + 1)) in  # CTE with DELETE, INSERT, complex CTEs
+        1) selectq; local _sq=$REPLY; table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="WITH cte AS (${_sq}) DELETE FROM ${_t} WHERE c${_c} IN (SELECT c${_c} FROM cte)";;
+        2) selectq; local _sq=$REPLY; table; local _t=$REPLY; REPLY="WITH cte AS (${_sq}) INSERT INTO ${_t} SELECT * FROM cte";;
+        3) table; local _t1=$REPLY; table; local _t2=$REPLY; table; local _t3=$REPLY; n3; local _c=$REPLY; REPLY="WITH a AS (SELECT * FROM ${_t1}), b AS (SELECT * FROM ${_t2}), c AS (SELECT * FROM ${_t3}) SELECT * FROM a JOIN b ON a.c${_c}=b.c${_c} LEFT JOIN c ON b.c${_c}=c.c${_c}";;
+        4) n100; local _n=$REPLY; REPLY="WITH RECURSIVE cte(n, fib, prev) AS (SELECT 1, 0, 1 UNION ALL SELECT n+1, fib+prev, fib FROM cte WHERE n < ${_n}) SELECT n, fib FROM cte";;
+        5) selectq; local _sq=$REPLY; table; local _t=$REPLY; n3; local _c=$REPLY; data; REPLY="WITH cte AS (${_sq}) UPDATE ${_t} SET c${_c}=${REPLY} WHERE c${_c} IN (SELECT c${_c} FROM cte)";;
+        *) REPLY="Assert: invalid random case selection in CTE DML case";;
+      esac;;
+   104) case $(($RANDOM % 6 + 1)) in  # Window functions with named windows and complex frames
+        1) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c1}, SUM(c${_c2}) OVER w, AVG(c${_c2}) OVER w, COUNT(*) OVER w FROM ${_t} WINDOW w AS (PARTITION BY c${_c1} ORDER BY c${_c2})";;
+        2) n3; local _c=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c}, ROW_NUMBER() OVER (ORDER BY c${_c}), LAG(c${_c},1) OVER (ORDER BY c${_c}), LEAD(c${_c},1) OVER (ORDER BY c${_c}) FROM ${_t}";;
+        3) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c1}, c${_c2}, SUM(c${_c2}) OVER (ORDER BY c${_c1} ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) FROM ${_t}";;
+        4) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c1}, c${_c2}, FIRST_VALUE(c${_c2}) OVER w, LAST_VALUE(c${_c2}) OVER w FROM ${_t} WINDOW w AS (PARTITION BY c${_c1} ORDER BY c${_c2} ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)";;
+        5) n3; local _c=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c}, NTILE(4) OVER (ORDER BY c${_c}), PERCENT_RANK() OVER (ORDER BY c${_c}), CUME_DIST() OVER (ORDER BY c${_c}) FROM ${_t}";;
+        6) n3; local _c=$REPLY; table; local _t=$REPLY; n10; REPLY="SELECT c${_c}, NTH_VALUE(c${_c}, ${REPLY}) OVER (ORDER BY c${_c} ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM ${_t}";;
+        *) REPLY="Assert: invalid random case selection in named window case";;
+      esac;;
+   105) case $(($RANDOM % 5 + 1)) in  # SELECT with DISTINCT + ORDER BY + LIMIT + GROUP BY combos
+        1) distinct; local _d=$REPLY; n3; local _c=$REPLY; table; local _t=$REPLY; emascdesc; local _ad=$REPLY; limit; REPLY="SELECT ${_d} c${_c} FROM ${_t} ORDER BY c${_c} ${_ad} ${REPLY}";;
+        2) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c1}, c${_c2}, COUNT(*) FROM ${_t} GROUP BY c${_c1}, c${_c2} WITH ROLLUP";;
+        3) n3; local _c=$REPLY; table; local _t=$REPLY; having; local _hv=$REPLY; limit; REPLY="SELECT c${_c}, GROUP_CONCAT(DISTINCT c${_c} ORDER BY c${_c} SEPARATOR '|') FROM ${_t} GROUP BY c${_c} ${_hv} ${REPLY}";;
+        4) n3; local _c=$REPLY; table; local _t=$REPLY; REPLY="SELECT DISTINCT c${_c}, COUNT(*) OVER () FROM ${_t}";;
+        5) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c1}, BIT_OR(c${_c2}), BIT_AND(c${_c2}), BIT_XOR(c${_c2}) FROM ${_t} GROUP BY c${_c1}";;
+        *) REPLY="Assert: invalid random case selection in DISTINCT/GROUP BY combo case";;
+      esac;;
+   106) case $(($RANDOM % 6 + 1)) in  # Complex 3-4 table JOINs with GROUP BY, HAVING, ORDER BY, LIMIT
+        1) seljoincol; local _sc=$REPLY; table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; groupby; local _gb=$REPLY; having; local _hv=$REPLY; orderby; local _ob=$REPLY; limit
+           REPLY="SELECT ${_sc} FROM ${_t1} AS a1 LEFT JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} ${_gb} ${_hv} ${_ob} ${REPLY}";;
+        2) table; local _t1=$REPLY; table; local _t2=$REPLY; table; local _t3=$REPLY; n3; local _c=$REPLY; REPLY="SELECT COUNT(*) FROM ${_t1} AS a1 JOIN ${_t2} AS a2 USING (c${_c}) JOIN ${_t3} AS a3 USING (c${_c})";;
+        3) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; forupdate; REPLY="SELECT a1.*, a2.c${_c} FROM ${_t1} AS a1 INNER JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} ${REPLY}";;
+        4) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; n3; local _c2=$REPLY; REPLY="SELECT a1.c${_c}, a2.c${_c2} FROM ${_t1} AS a1 RIGHT OUTER JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} WHERE a1.c${_c} IS NULL";;
+        5) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; orderby; local _ob=$REPLY; limit; REPLY="SELECT STRAIGHT_JOIN a1.c${_c} FROM ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} ${_ob} ${REPLY}";;
+        6) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; n3; local _c2=$REPLY; table; local _t3=$REPLY; REPLY="SELECT * FROM ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} CROSS JOIN ${_t3} AS a3 WHERE a1.c${_c2} > 0";;
+        *) REPLY="Assert: invalid random case selection in complex JOIN combo case";;
+      esac;;
+   107) case $(($RANDOM % 6 + 1)) in  # Additional SET variable patterns (MariaDB specific)
+        1) n100; REPLY="SET @@SESSION.max_statement_time=${REPLY}";;
+        2) REPLY="SET @@SESSION.sql_mode=''";;
+        3) REPLY="SET @@SESSION.sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'";;
+        4) globses; local _gs=$REPLY; n100; REPLY="SET @@${_gs}.join_cache_level=${REPLY}";;
+        5) n100; REPLY="SET @@SESSION.max_error_count=${REPLY}";;
+        6) REPLY="SET @@SESSION.sql_log_bin=0";;
+        *) REPLY="Assert: invalid random case selection in additional SET case";;
+      esac;;
+   108) importantvar;;  # Also additional SET patterns, duplicated for frequency
+   109) importantvar;;  # Extra slots for server-state variables (4th+5th, high freq for bug hunting)
+   110) importantvar;;
+   111) case $(($RANDOM % 6 + 1)) in  # More JSON operations
+        1) n3; local _c=$REPLY; table; local _t=$REPLY; REPLY="SELECT JSON_ARRAYAGG(c${_c}) FROM ${_t}";;
+        2) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _t=$REPLY; REPLY="SELECT JSON_OBJECTAGG(c${_c1}, c${_c2}) FROM ${_t}";;
+        3) n3; local _c=$REPLY; table; local _t=$REPLY; REPLY="SELECT JSON_CONTAINS_PATH(c${_c}, 'one', '\$.key') FROM ${_t}";;
+        4) n3; local _c=$REPLY; data; local _d=$REPLY; table; local _t=$REPLY; REPLY="SELECT JSON_ARRAY_APPEND(c${_c}, '\$', ${_d}) FROM ${_t}";;
+        5) n3; local _c=$REPLY; table; local _t=$REPLY; REPLY="SELECT JSON_MERGE_PRESERVE(c${_c}, '{\"a\":1}') FROM ${_t}";;
+        6) n3; local _c=$REPLY; table; local _t=$REPLY; where; REPLY="SELECT JSON_EXISTS(c${_c}, '\$.key') FROM ${_t} ${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in more JSON case";;
+      esac;;
+   112) case $(($RANDOM % 5 + 1)) in  # ANALYZE / EXPLAIN with more forms
+        1) selectq; REPLY="ANALYZE ${REPLY}";;
+        2) selectq; REPLY="ANALYZE FORMAT=JSON ${REPLY}";;
+        3) table; local _t=$REPLY; data; local _d=$REPLY; where; REPLY="EXPLAIN UPDATE ${_t} SET c1=${_d} ${REPLY}";;
+        4) table; local _t=$REPLY; where; REPLY="EXPLAIN DELETE FROM ${_t} ${REPLY}";;
+        5) table; local _t=$REPLY; where; REPLY="EXPLAIN FORMAT=JSON SELECT * FROM ${_t} ${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in ANALYZE/EXPLAIN case";;
+      esac;;
+   113) case $(($RANDOM % 6 + 1)) in  # ALTER TABLE multi-operation (combining 2-3 operations in one ALTER)
+        1) table; local _t=$REPLY; n3; local _c=$REPLY; ctype; local _ct=$REPLY; engine; REPLY="ALTER TABLE ${_t} ADD COLUMN c5 ${_ct}, DROP COLUMN c${_c}, ENGINE=${REPLY}";;
+        2) table; local _t=$REPLY; n3; local _c1=$REPLY; n3; local _c2=$REPLY; ctype; REPLY="ALTER TABLE ${_t} MODIFY c${_c1} ${REPLY}, ADD INDEX (c${_c2})";;
+        3) table; local _t=$REPLY; engine; local _eng=$REPLY; rowformat; REPLY="ALTER TABLE ${_t} ENGINE=${_eng}, ${REPLY}";;
+        4) table; local _t=$REPLY; ctype; local _ct=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_t} ADD COLUMN c6 ${_ct}, ADD COLUMN c7 INT, DROP INDEX idx1, ADD INDEX idx1 (c${_c})";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; charsetcollate; REPLY="ALTER TABLE ${_t} CONVERT TO ${REPLY}, ORDER BY c${_c}";;
+        6) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ENABLE KEYS, FORCE";;
+        *) REPLY="Assert: invalid random case selection in multi-ALTER case";;
+      esac;;
+   114) case $(($RANDOM % 4 + 1)) in  # INSERT with VALUES(), multi-row ON DUPLICATE KEY
+        1) table; local _t=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; n3; local _c=$REPLY; REPLY="INSERT INTO ${_t} (c1,c2,c3) VALUES (${_d1},${_d2},${_d3}) ON DUPLICATE KEY UPDATE c${_c}=VALUES(c${_c})";;
+        2) table; local _t=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; data; local _d4=$REPLY; data; local _d5=$REPLY; data; local _d6=$REPLY; n3; local _c=$REPLY; data; REPLY="INSERT INTO ${_t} VALUES (${_d1},${_d2},${_d3}),(${_d4},${_d5},${_d6}) ON DUPLICATE KEY UPDATE c${_c}=${REPLY}";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; REPLY="INSERT INTO ${_t} (c${_c}) VALUES (${_d}) ON DUPLICATE KEY UPDATE c${_c}=c${_c}+1";;
+        4) ignore; local _ig=$REPLY; table; local _t=$REPLY; data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; returning; REPLY="INSERT ${_ig} INTO ${_t} (c1,c2,c3) VALUES (${_d1},${_d2},${_d3}) ${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in INSERT VALUES case";;
+      esac;;
+   115) case $(($RANDOM % 5 + 1)) in  # Multi-table UPDATE expanded
+        1) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c1=$REPLY; n3; local _c2=$REPLY; data; REPLY="UPDATE ${_t1} AS a1 INNER JOIN ${_t2} AS a2 ON a1.c${_c1}=a2.c${_c1} SET a1.c${_c2}=${REPLY}, a2.c${_c2}=a1.c${_c2}";;
+        2) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; REPLY="UPDATE ${_t1} AS a1 LEFT JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} SET a1.c${_c}=COALESCE(a2.c${_c}, a1.c${_c})";;
+        3) table; local _t1=$REPLY; table; local _t2=$REPLY; table; local _t3=$REPLY; n3; local _c=$REPLY; data; REPLY="UPDATE ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} JOIN ${_t3} AS a3 ON a2.c${_c}=a3.c${_c} SET a1.c${_c}=${REPLY}";;
+        4) lowprio; local _lp=$REPLY; ignore; local _ig=$REPLY; table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; data; REPLY="UPDATE ${_lp} ${_ig} ${_t1} AS a1 JOIN ${_t2} AS a2 USING (c${_c}) SET a1.c${_c}=${REPLY}";;
+        5) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; REPLY="UPDATE ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} SET a1.c${_c}=a2.c${_c} WHERE a1.c${_c} IS NULL";;
+        *) REPLY="Assert: invalid random case selection in expanded multi-table UPDATE case";;
+      esac;;
+   116) case $(($RANDOM % 5 + 1)) in  # CREATE TABLE with system versioning expanded
+        1) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; ctype; local _ct=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 ${_ct}, c3 INT, row_start TIMESTAMP(6) GENERATED ALWAYS AS ROW START, row_end TIMESTAMP(6) GENERATED ALWAYS AS ROW END, PERIOD FOR SYSTEM_TIME(row_start, row_end)) WITH SYSTEM VERSIONING ENGINE=${REPLY}";;
+        2) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 INT, c3 INT WITHOUT SYSTEM VERSIONING) WITH SYSTEM VERSIONING ENGINE=${REPLY}";;
+        3) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 INT, c3 INT) WITH SYSTEM VERSIONING ENGINE=${REPLY} PARTITION BY SYSTEM_TIME (PARTITION p_hist HISTORY, PARTITION p_cur CURRENT)";;
+        4) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 INT, c3 INT) WITH SYSTEM VERSIONING ENGINE=${REPLY} PARTITION BY SYSTEM_TIME INTERVAL 1 MONTH (PARTITION p0 HISTORY, PARTITION p1 HISTORY, PARTITION pcur CURRENT)";;
+        5) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 INT, c3 INT) WITH SYSTEM VERSIONING ENGINE=${REPLY} PARTITION BY SYSTEM_TIME LIMIT 1000 (PARTITION p0 HISTORY, PARTITION p1 HISTORY, PARTITION pcur CURRENT)";;
+        *) REPLY="Assert: invalid random case selection in system versioning CREATE case";;
+      esac;;
+   117) case $(($RANDOM % 4 + 1)) in  # Application-time period tables
+        1) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 INT, c3 INT, app_start DATE, app_end DATE, PERIOD FOR apptime(app_start, app_end)) ENGINE=${REPLY}";;
+        2) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="SELECT * FROM ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}'";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="UPDATE ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}' SET c${_c}=${_d}";;
+        4) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="DELETE FROM ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}'";;
+        *) REPLY="Assert: invalid random case selection in application-time period case";;
+      esac;;
+   118) selectq;;  # Extra selectq() slots (higher frequency for SELECT statements)
+   119) selectq;;
+   120) case $(($RANDOM % 4 + 1)) in  # CREATE TABLE with multiple indexes and constraints
+        1) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; engine; local _eng=$REPLY; tableopts; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 ${_ct1} NOT NULL, c3 ${_ct2}, INDEX idx1(c2), INDEX idx2(c3), UNIQUE KEY uk1(c2,c3)) ENGINE=${_eng} ${REPLY}";;
+        2) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; engine; local _eng=$REPLY; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 INT NOT NULL DEFAULT 0, c3 VARCHAR(255) NOT NULL DEFAULT '', c4 TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, c5 INT, INDEX idx1(c2), INDEX idx2(c3(10)), CONSTRAINT chk1 CHECK (c2 >= 0)) ENGINE=${_eng}";;
+        3) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; ctype; local _ct=$REPLY; engine; local _eng=$REPLY; table; local _ref=$REPLY; fkaction; local _da=$REPLY; if [[ -n "$_da" ]]; then _da="ON DELETE ${_da}"; fi; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 ${_ct}, c3 INT, FOREIGN KEY (c3) REFERENCES ${_ref}(c1) ${_da}, INDEX idx1(c2)) ENGINE=${_eng}";;
+        4) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; engine; local _eng=$REPLY; REPLY="CREATE TABLE ${_ine} ${_t} (c1 INT NOT NULL, c2 INT NOT NULL, c3 INT, c4 VARCHAR(100), PRIMARY KEY (c1, c2), INDEX idx1(c3), INDEX idx2(c4(20)), CHECK (c3 IS NOT NULL OR c4 IS NOT NULL)) ENGINE=${_eng}";;
+        *) REPLY="Assert: invalid random case selection in multi-index CREATE case";;
+      esac;;
+
+   121) case $(($RANDOM % 6 + 1)) in  # SELECT with REGEXP functions, string manipulation
+        1) table; local _t=$REPLY; regexpfunc; local _rf=$REPLY; where; REPLY="SELECT ${_rf} FROM ${_t} ${REPLY}";;
+        2) table; local _t=$REPLY; morestringfunc; local _sf=$REPLY; morestringfunc; REPLY="SELECT ${_sf}, ${REPLY} FROM ${_t}";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT REGEXP_REPLACE(c${_c}, '[0-9]+', '#') FROM ${_t}";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT REGEXP_SUBSTR(c${_c}, '[a-z]+') FROM ${_t}";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT REGEXP_INSTR(c${_c}, '[0-9]') FROM ${_t}";;
+        6) table; local _t=$REPLY; moredatefunc; local _df=$REPLY; morestringfunc; REPLY="SELECT ${_df}, ${REPLY} FROM ${_t}";;
+        *) REPLY="Assert: invalid random case selection in REGEXP/string case";;
+      esac;;
+   122) case $(($RANDOM % 6 + 1)) in  # More string/date functions in SELECT
+        1) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT ASCII(c${_c}), BIN(c${_c}), ORD(c${_c}) FROM ${_t}";;
+        2) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT SOUNDEX(c${_c}), CHAR_LENGTH(c${_c}), OCTET_LENGTH(c${_c}) FROM ${_t}";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT FIELD(c${_c}, 'a', 'b', 'c'), FIND_IN_SET('a', c${_c}) FROM ${_t}";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; n10; REPLY="SELECT EXPORT_SET(c${_c}, 'Y', 'N', ',', ${REPLY}) FROM ${_t}";;
+        5) table; local _t=$REPLY; REPLY="SELECT SEC_TO_TIME(3600), MAKEDATE(2025,100), MAKETIME(10,30,59) FROM ${_t}";;
+        6) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT TIME_TO_SEC(c${_c}), TO_DAYS(c${_c}), TO_SECONDS(c${_c}), UNIX_TIMESTAMP(c${_c}) FROM ${_t}";;
+        *) REPLY="Assert: invalid random case selection in more string/date func case";;
+      esac;;
+   123) case $(($RANDOM % 5 + 1)) in  # Computed/derived column SELECTs with CASE, IF, COALESCE combos
+        1) table; local _t=$REPLY; n3; local _c1=$REPLY; n3; local _c2=$REPLY; REPLY="SELECT c${_c1}, CASE WHEN c${_c1} IS NULL THEN 'null' WHEN c${_c1} > c${_c2} THEN 'greater' ELSE 'less or equal' END AS comparison FROM ${_t}";;
+        2) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, IF(c${_c} IS NULL, 'N/A', c${_c}) AS val, IFNULL(c${_c}, 0) AS num_val FROM ${_t}";;
+        3) table; local _t=$REPLY; n3; local _c1=$REPLY; n3; local _c2=$REPLY; n3; REPLY="SELECT COALESCE(c${_c1}, c${_c2}, c${REPLY}) AS first_non_null FROM ${_t}";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, NULLIF(c${_c}, 0), NULLIF(c${_c}, '') FROM ${_t}";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, CASE c${_c} WHEN 1 THEN 'one' WHEN 2 THEN 'two' WHEN 3 THEN 'three' ELSE 'other' END FROM ${_t}";;
+        *) REPLY="Assert: invalid random case selection in computed column case";;
+      esac;;
+   124) case $(($RANDOM % 5 + 1)) in  # Deeply nested subqueries
+        1) table; local _t=$REPLY; n3; local _c=$REPLY; table; local _t2=$REPLY; table; REPLY="SELECT * FROM ${_t} WHERE c${_c} IN (SELECT c${_c} FROM ${_t2} WHERE c${_c} IN (SELECT c${_c} FROM ${REPLY}))";;
+        2) table; local _t=$REPLY; n3; local _c=$REPLY; table; local _t2=$REPLY; REPLY="SELECT * FROM ${_t} WHERE c${_c} > (SELECT AVG(c${_c}) FROM ${_t2})";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; table; local _t2=$REPLY; REPLY="SELECT * FROM ${_t} AS a1 WHERE (SELECT COUNT(*) FROM ${_t2} AS a2 WHERE a2.c${_c}=a1.c${_c}) > 0";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; table; local _t2=$REPLY; REPLY="SELECT (SELECT MAX(c${_c}) FROM ${_t}), (SELECT MIN(c${_c}) FROM ${_t2}), (SELECT COUNT(*) FROM ${_t})";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT * FROM ${_t} WHERE c${_c} >= ALL (SELECT c${_c} FROM ${_t} WHERE c${_c} IS NOT NULL)";;
+        *) REPLY="Assert: invalid random case selection in nested subquery case";;
+      esac;;
+   125) case $(($RANDOM % 5 + 1)) in  # INSERT variants with expression-based values
+        1) table; local _t=$REPLY; REPLY="INSERT INTO ${_t} VALUES (UUID(), NOW(), RAND())";;
+        2) table; local _t=$REPLY; REPLY="INSERT INTO ${_t} VALUES (NULL, DEFAULT, DEFAULT)";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="INSERT INTO ${_t} (c${_c}) VALUES (LAST_INSERT_ID()+1)";;
+        4) table; local _t=$REPLY; selectq; REPLY="INSERT INTO ${_t} (c1,c2,c3) ${REPLY} LIMIT 10";;
+        5) table; local _t=$REPLY; REPLY="INSERT INTO ${_t} VALUES (CONNECTION_ID(), CURRENT_USER(), CURRENT_TIMESTAMP())";;
+        *) REPLY="Assert: invalid random case selection in expression INSERT case";;
+      esac;;
+   126) case $(($RANDOM % 5 + 1)) in  # SELECT with combined window + aggregate
+        1) n3; local _c=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c}, COUNT(*) OVER (), SUM(c${_c}) OVER (), AVG(c${_c}) OVER () FROM ${_t}";;
+        2) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c1}, c${_c2}, ROW_NUMBER() OVER (PARTITION BY c${_c1} ORDER BY c${_c2}), DENSE_RANK() OVER (ORDER BY c${_c1}) FROM ${_t}";;
+        3) n3; local _c=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c}, SUM(c${_c}) OVER (ORDER BY c${_c} ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_sum FROM ${_t}";;
+        4) n3; local _c=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c}, AVG(c${_c}) OVER (ORDER BY c${_c} ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING) AS moving_avg FROM ${_t}";;
+        5) n3; local _c1=$REPLY; n3; local _c2=$REPLY; table; local _t=$REPLY; REPLY="SELECT c${_c1}, c${_c2}, SUM(c${_c2}) OVER (PARTITION BY c${_c1}), COUNT(*) OVER (PARTITION BY c${_c1}), MIN(c${_c2}) OVER (PARTITION BY c${_c1}) FROM ${_t}";;
+        *) REPLY="Assert: invalid random case selection in window+aggregate case";;
+      esac;;
+   127) case $(($RANDOM % 5 + 1)) in  # ALTER TABLE with WAIT/NOWAIT + IF EXISTS combos
+        1) table; local _t=$REPLY; waitnowait; local _wn=$REPLY; n3; local _c=$REPLY; ctype; REPLY="ALTER TABLE IF EXISTS ${_t} ${_wn} ADD COLUMN IF NOT EXISTS c6 ${REPLY} FIRST";;
+        2) table; local _t=$REPLY; waitnowait; local _wn=$REPLY; n3; REPLY="ALTER TABLE IF EXISTS ${_t} ${_wn} DROP COLUMN IF EXISTS c${REPLY} CASCADE";;
+        3) table; local _t=$REPLY; waitnowait; local _wn=$REPLY; engine; REPLY="ALTER ONLINE IGNORE TABLE IF EXISTS ${_t} ${_wn} ENGINE=${REPLY}";;
+        4) table; local _t=$REPLY; waitnowait; local _wn=$REPLY; REPLY="ALTER TABLE IF EXISTS ${_t} ${_wn} DROP FOREIGN KEY IF EXISTS fk1";;
+        5) table; local _t=$REPLY; waitnowait; local _wn=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE IF EXISTS ${_t} ${_wn} ADD INDEX IF NOT EXISTS idx3 (c${_c})";;
+        *) REPLY="Assert: invalid random case selection in ALTER WAIT/IF EXISTS case";;
+      esac;;
+   128) selectq;;  # Extra SELECT slots for frequency balance
+   129) selectq;;
+   130) case $(($RANDOM % 6 + 1)) in  # SHOW with WHERE clause (MariaDB supports WHERE on most SHOW commands)
+        1) table; local _t=$REPLY; REPLY="SHOW COLUMNS FROM ${_t} WHERE Type LIKE '%int%'";;
+        2) REPLY="SHOW TABLES WHERE Tables_in_test LIKE 't%'";;
+        3) REPLY="SHOW GLOBAL STATUS WHERE Variable_name LIKE 'Innodb%'";;
+        4) REPLY="SHOW SESSION VARIABLES WHERE Variable_name LIKE 'optimizer%'";;
+        5) REPLY="SHOW PROCESSLIST";;
+        6) REPLY="SHOW TABLE STATUS WHERE Engine='InnoDB'";;
+        *) REPLY="Assert: invalid random case selection in SHOW WHERE case";;
+      esac;;
+   131) case $(($RANDOM % 5 + 1)) in  # SET ROLE, SET DEFAULT ROLE
+        1) REPLY="SET ROLE NONE";;
+        2) REPLY="SET DEFAULT ROLE NONE FOR CURRENT_USER";;
+        3) REPLY="CREATE ROLE IF NOT EXISTS role1";;
+        4) REPLY="GRANT role1 TO CURRENT_USER";;
+        5) REPLY="SET ROLE role1";;
+        *) REPLY="Assert: invalid random case selection in SET ROLE case";;
+      esac;;
+   132) case $(($RANDOM % 5 + 1)) in  # PURGE BINARY LOGS with datetime
+        1) REPLY="PURGE BINARY LOGS BEFORE NOW()";;
+        2) REPLY="PURGE BINARY LOGS BEFORE '2030-01-01 00:00:00'";;
+        3) REPLY="PURGE BINARY LOGS BEFORE NOW() - INTERVAL 1 HOUR";;
+        4) REPLY="PURGE MASTER LOGS BEFORE CURRENT_TIMESTAMP";;
+        5) REPLY="PURGE BINARY LOGS TO 'mariadb-bin.000001'";;
+        *) REPLY="Assert: invalid random case selection in PURGE case";;
+      esac;;
+   133) importantvar;;  # Extra server-state variable slot
+   134) case $(($RANDOM % 6 + 1)) in  # Complex multi-table DML
+        1) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; data; REPLY="UPDATE ${_t1} AS a1, ${_t2} AS a2 SET a1.c${_c}=${REPLY} WHERE a1.c${_c}=a2.c${_c} AND a2.c${_c} IS NOT NULL";;
+        2) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; REPLY="DELETE a1 FROM ${_t1} AS a1 LEFT JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} WHERE a2.c${_c} IS NULL";;
+        3) table; local _t=$REPLY; selectq; REPLY="INSERT INTO ${_t} ${REPLY} ON DUPLICATE KEY UPDATE c1=VALUES(c1)";;
+        4) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; data; REPLY="REPLACE INTO ${_t1} SELECT * FROM ${_t2} WHERE c${_c}=${REPLY}";;
+        5) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; REPLY="UPDATE ${_t1} AS a1 JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} SET a1.c1=a2.c1, a1.c2=a2.c2, a1.c3=a2.c3";;
+        6) table; local _t1=$REPLY; table; local _t2=$REPLY; n3; local _c=$REPLY; REPLY="DELETE a1, a2 FROM ${_t1} AS a1 INNER JOIN ${_t2} AS a2 ON a1.c${_c}=a2.c${_c} WHERE a1.c${_c} < 0";;
+        *) REPLY="Assert: invalid random case selection in complex multi-table DML case";;
+      esac;;
+   135) case $(($RANDOM % 4 + 1)) in  # CREATE TABLE edge cases (no columns, single column, many columns)
+        1) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY) ENGINE=${REPLY}";;
+        2) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; ctype; local _ct1=$REPLY; ctype; local _ct2=$REPLY; ctype; local _ct3=$REPLY; ctype; local _ct4=$REPLY; ctype; local _ct5=$REPLY; engine; local _eng=$REPLY; tableopts
+           REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 ${_ct1}, c3 ${_ct2}, c4 ${_ct3}, c5 ${_ct4}, c6 ${_ct5}) ENGINE=${_eng} ${REPLY}";;
+        3) orreplace; local _or=$REPLY; table; local _t=$REPLY; engine; REPLY="CREATE ${_or} TABLE ${_t} (c1 INT, KEY(c1)) ENGINE=${REPLY}";;
+        4) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 INT, c2 INT, c3 INT, CONSTRAINT pk PRIMARY KEY (c1), CONSTRAINT uk UNIQUE KEY (c2), CONSTRAINT chk CHECK (c3 > 0)) ENGINE=${REPLY}";;
+        *) REPLY="Assert: invalid random case selection in CREATE TABLE edge case";;
       esac;;
 
      # TIP: when adding new options, make sure to update the case/esac to reflect the new number of options (the number behind the '%' in the case statement at the top of the list matches the number of available 'nr)' options)

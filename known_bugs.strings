@@ -286,6 +286,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+b.is_valid_ident()|SIGABRT|Lex_ident<Compare_ident_ci>::streq|find_field_in_table|Item_trigger_field::setup_field|Table_triggers_list::create_triggersql_trigger.cc            ## MDEV-30434
+SIGSEGV|Protocol::valid_handler|Protocol_text::store_str|Protocol::store|Field::send                                                                                           ## MDEV-39399
+SIGSEGV|Protocol::valid_handler|Protocol_text::store_longlong|Field_longlong::send|Protocol_text::store                                                                        ## MDEV-39399
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-39306
 cmp_rec_rec(rec, old_rec, offsets, old_offsets, m_index) > 0|SIGABRT|PageBulk::insertPage<btr0bulk.cc|PageBulk::insert|BtrBulk::insert|BtrBulk::insert                         ## MDEV-39299
 !(col->prtype & 256U)|SIGABRT|row_merge_buf_add|row_merge_read_clustered_index|row_merge_build_indexes|ha_innobase::inplace_alter_table                                        ## MDEV-39309
@@ -1224,6 +1227,8 @@ SIGSEGV|Item_field::used_tables|optimize_semijoin_nests|make_join_statistics|JOI
 !(mysql_bin_log.is_open() && !thd.is_current_stmt_binlog_format_row())|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|start_thread|clone                         ## MDEV-28791
 !mysql_bin_log.is_open() || thd.is_current_stmt_binlog_format_row()|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|start_thread|clone                            ## MDEV-28791
 !mysql_bin_log.is_open() || thd.is_current_stmt_binlog_format_row()|SIGABRT|Delayed_insert::handle_inserts|handle_delayed_insert|pfs_spawn_thread|start_thread                 ## MDEV-28791
+file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::analyze|mysql_admin_table|Sql_cmd_analyze_table::execute ## MDEV-26035
+file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::analyze|handler::ha_analyze|mysql_admin_table   ## MDEV-26035
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::analyze|handler::ha_analyze|ha_partition::handle_opt_part ## MDEV-26035
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::optimize|handler::ha_optimize|ha_partition::handle_opt_part ## MDEV-26035
 file->s->base.reclength < file->s->vreclength || !table->s->stored_fields|SIGABRT|ha_myisam::setup_vcols_for_repair|ha_myisam::enable_indexes|ha_myisam::end_bulk_insert|handler::ha_end_bulk_insert ## MDEV-26035
