@@ -24,6 +24,7 @@ rm -Rf 1[0-3].[0-9]_dbg
 rm -Rf 10.1[0-1]_dbg
 rm -Rf 10.[56]-es_dbg
 rm -Rf 11.[48]-es_dbg
+rm -Rf 12.3-es_dbg
 #cd ${DIR}/10.1 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #cd ${DIR}/10.2 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #cd ${DIR}/10.3 && ~/mariadb-qa/build_mdpsms_dbg.sh &
@@ -46,12 +47,13 @@ cd ${DIR}/11.4 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 cd ${DIR}/11.8 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #cd ${DIR}/12.0 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #cd ${DIR}/12.1 && ~/mariadb-qa/build_mdpsms_dbg.sh &
-cd ${DIR}/12.2 && ~/mariadb-qa/build_mdpsms_dbg.sh &
+#cd ${DIR}/12.2 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 cd ${DIR}/12.3 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 cd ${DIR}/13.0 && ~/mariadb-qa/build_mdpsms_dbg.sh &
 #if [ -d ${DIR}/10.5-es ]; then cd ${DIR}/10.5-es && ~/mariadb-qa/build_mdpsms_dbg.sh & fi
 if [ -d ${DIR}/10.6-es ]; then cd ${DIR}/10.6-es && ~/mariadb-qa/build_mdpsms_dbg.sh & fi
 if [ -d ${DIR}/11.4-es ]; then cd ${DIR}/11.4-es && ~/mariadb-qa/build_mdpsms_dbg.sh & fi
 if [ -d ${DIR}/11.8-es ]; then cd ${DIR}/11.8-es && ~/mariadb-qa/build_mdpsms_dbg.sh & fi
+if [ -d ${DIR}/12.3-es ]; then cd ${DIR}/12.3-es && ~/mariadb-qa/build_mdpsms_dbg.sh & fi
 
 echo "All processes started as background threads... Output will commence soon."

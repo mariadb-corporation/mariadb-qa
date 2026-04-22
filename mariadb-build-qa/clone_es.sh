@@ -21,6 +21,8 @@ elif [[ "${1}" == "10."* ]]; then
   rm -Rf ${1}-es;
 elif [[ "${1}" == "11."* ]]; then 
   rm -Rf ${1}-es; 
+elif [[ "${1}" == "12."* ]]; then 
+  rm -Rf ${1}-es; 
 else
   echo "Assert: please provide valid version (eg : 11.x) or [feature/bugfix] branch"
   exit 1

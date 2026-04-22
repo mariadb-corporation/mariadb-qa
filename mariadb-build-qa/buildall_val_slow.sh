@@ -23,13 +23,14 @@ BUILD_11_7=1
 BUILD_11_8=1
 BUILD_12_0=0
 BUILD_12_1=0
-BUILD_12_2=1
+BUILD_12_2=0
 BUILD_12_3=1
 BUILD_13_0=1
 BUILD_ES_10_5=0
 BUILD_ES_10_6=1
 BUILD_ES_11_4=1
 BUILD_ES_11_8=1
+BUILD_ES_12_3=1
 
 DIR=${PWD}
 
@@ -53,6 +54,11 @@ buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready
   if [ ${BUILD_13_0} -eq 1 ]; then
     cleanup_dirs; cd ${DIR}/13.0 && ~/mariadb-qa/build_mdpsms_opt_valgrind.sh
     cleanup_dirs; cd ${DIR}/13.0 && ~/mariadb-qa/build_mdpsms_dbg_valgrind.sh
+  fi
+
+  if [ ${BUILD_ES_12_3} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/12.3-es && ~/mariadb-qa/build_mdpsms_opt_valgrind.sh
+    cleanup_dirs; cd ${DIR}/12.3-es && ~/mariadb-qa/build_mdpsms_dbg_valgrind.sh
   fi
 
   if [ ${BUILD_12_3} -eq 1 ]; then
