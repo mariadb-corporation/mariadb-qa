@@ -286,6 +286,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGFPE|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                                                           ## MDEV-39451
+SIGFPE|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field                                                   ## MDEV-39451
+(0)|SIGABRT|Item_func_spatial_precise_rel::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long|Type_handler_long::Item_send                                          ## MDEV-39449
+n_fields > n_cols || type & 32|SIGABRT|dict_index_t::init_change_cols|ha_innobase_inplace_ctx::change_col_collation|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table ## MDEV-39448
 b.is_valid_ident()|SIGABRT|Lex_ident<Compare_ident_ci>::streq|find_field_in_table|Item_trigger_field::setup_field|Table_triggers_list::create_triggersql_trigger.cc            ## MDEV-30434
 SIGSEGV|Protocol::valid_handler|Protocol_text::store_str|Protocol::store|Field::send                                                                                           ## MDEV-39399
 SIGSEGV|Protocol::valid_handler|Protocol_text::store_longlong|Field_longlong::send|Protocol_text::store                                                                        ## MDEV-39399

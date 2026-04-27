@@ -1,2 +1,44 @@
 #!/bin/bash
-cat results.list | grep '^MON' | sed 's|.*=||' | xargs -I{} echo "cd {}; ./my | sed \"s|^[0-9]\+ .||;s|^|{}|\"; cd -" > /tmp/myspecific.tmp && chmod +x /tmp/myspecific.tmp && /tmp/myspecific.tmp | grep -v "/data$" | xargs wc -l ;rm -f /tmp/myspecific.tmp
+
+TMP=/tmp/myspecific.tmp
+
+awk '/return/{exit} {print}' results.list \
+  | grep '^MON' \
+  | sed 's|.*=||' \
+  | sed 's| .*||' \
+  | xargs -I{} echo "cd {}; ./my | sed \"s|^[0-9]\+ .||;s|^|/|\"; cd -" \
+  > "$TMP"
+
+bash "$TMP" \
+  | grep -v "/data$" \
+  | xargs wc -l \
+  | grep -v 'total$' \
+  | sort -n \
+  | tac \
+  | while read -r count path; do
+      if [ "$count" -eq 0 ]; then
+        count_color='\033[31m'
+      elif [ "$count" -le 8 ]; then
+        count_color='\033[32m'
+      elif [ "$count" -le 14 ]; then
+        count_color='\033[33m'
+      elif [ "$count" -le 39 ]; then
+        count_color='\033[91m'
+      else
+        count_color='\033[31m'
+      fi
+      printf '%b%s\033[0m \033[1;32m%s\033[0m\n' "$count_color" "$count" "$path"
+      trial_dir="$(dirname "$path")"
+      base="$(dirname "$trial_dir")"
+      trial="$(basename "$trial_dir")"
+      reducer="${base}/reducer${trial}.sh"
+      if [ -f "$reducer" ]; then
+        text="$(grep "^   TEXT=" "$reducer" | head -n1 | sed 's|^   TEXT="||; s|"$||')"
+        if [ ${#text} -gt 113 ]; then
+          text="${text:0:113}..."
+        fi
+        printf '  \033[38;5;245m%s\033[0m\n' "$text"
+      fi
+    done
+
+rm -f "$TMP"

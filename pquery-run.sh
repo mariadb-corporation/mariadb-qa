@@ -154,7 +154,7 @@ if [ "${RR_TRACING}" == "1" ]; then
     exit 1
   fi
 fi
-if [[ ${FILTER_SQL} -eq 0 ]]; then
+if [[ ${FILTER_SQL} -eq 1 ]]; then
   if [ ! -r ${SCRIPT_PWD}/filter.sql ]; then
     echo "Assert: FILTER_SQL is enabled, yet filter.sql (${SCRIPT_PWD}/filter.sql) cannot be found"
     exit 1
@@ -218,9 +218,9 @@ if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 ]; then
     fi
   fi
 else
-  if [ "${PRE_SHUFFLE_SQL}" -eq 2 ]; then
-    echo "Assert: PRE_SHUFFLE_SQL is set to 2 and USE_GENERATOR_INSTEAD_OF_INFILE is set to 1, this configuration is not supported yet"
-    exit 1
+  if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
+    echoit "Note: USE_GENERATOR_INSTEAD_OF_INFILE=1 and PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} are both set. These are mutually exclusive: the SQL Generator produces a fresh input file every trial, so pre-shuffling it adds no value: Auto-disabling PRE_SHUFFLE_SQL"
+    PRE_SHUFFLE_SQL=0
   fi
 fi
 
@@ -279,28 +279,31 @@ init_empty_port(){
   done
 }
 
-# Diskspace OOS check function
+# Diskspace OOS check function - ensures at least ${2:-200}MB is free on ${1:-${RUNDIR}}
+# Usage: diskspace                 # Checks RUNDIR for >=200MB free
+#        diskspace /some/dir       # Checks /some/dir for >=200MB free
+#        diskspace /some/dir 500   # Checks /some/dir for >=500MB free
+# Waits 10 minutes and re-checks in a loop until the minimum is available.
 diskspace(){
-  DISKSPACE=0
+  local CHECK_PATH="${1:-${RUNDIR}}"
+  local MIN_MB="${2:-200}"
+  local MIN_KB=$((MIN_MB * 1024))
+  local FREE_KB TEST_PATH
   while :; do
-    if [ -z "${RUNDIR}" ]; then DISKSPACE=1; break; fi  # RUNDIR not defined yet, assume disk space is available and test on next call of diskspace()
-    if [ ! -d "${RUNDIR}" ]; then mkdir -p ${RUNDIR}; fi
-    echo "Diskspace Test" > ${RUNDIR}/diskspace 2>/dev/null
-    if [ $? -eq 0 ]; then
-      if [ -r ${RUNDIR}/diskspace ]; then
-        if [ "$(grep -o 'Diskspace Test' ${RUNDIR}/diskspace 2>/dev/null | head -n1)" == "Diskspace Test" ]; then
-          rm -f ${RUNDIR}/diskspace
-          DISKSPACE=1
-          break  # We have at least some diskspace available!
-        fi
-      fi
-    fi
-    if [ "${DISKSPACE}" -eq 0 ]; then
-      echoit "Likely out of diskspace on ${RUNDIR}... Pausing 10 minutes"
-      sleep 600
-      echoit "Slept 10 minutes, resuming pquery-run.sh run..."
-    fi
-    DISKSPACE=0
+    if [ -z "${CHECK_PATH}" ]; then break; fi  # Path not defined yet, assume disk space is available and test on next call of diskspace()
+    if [ ! -d "${CHECK_PATH}" ]; then mkdir -p "${CHECK_PATH}" 2>/dev/null; fi
+    # If the target path still does not exist (e.g. permission denied), probe the nearest existing parent instead
+    TEST_PATH="${CHECK_PATH}"
+    while [ -n "${TEST_PATH}" ] && [ "${TEST_PATH}" != "/" ] && [ ! -d "${TEST_PATH}" ]; do
+      TEST_PATH="$(dirname "${TEST_PATH}")"
+    done
+    if [ -z "${TEST_PATH}" ] || [ ! -d "${TEST_PATH}" ]; then break; fi  # Cannot probe; assume ok to avoid stalling
+    FREE_KB="$(df -k -P "${TEST_PATH}" 2>/dev/null | awk 'NR==2{print $4}')"
+    if [ -z "${FREE_KB}" ] || ! [[ "${FREE_KB}" =~ ^[0-9]+$ ]]; then break; fi  # df failed or unparseable; assume ok to avoid stalling
+    if [ "${FREE_KB}" -ge "${MIN_KB}" ]; then break; fi  # At least ${MIN_MB}MB free; all good
+    echoit "Likely out of diskspace on ${CHECK_PATH} (only $((FREE_KB/1024))MB free, need at least ${MIN_MB}MB)... Pausing 10 minutes"
+    sleep 600
+    echoit "Slept 10 minutes, re-checking diskspace on ${CHECK_PATH}..."
   done
 }
 
@@ -593,7 +596,14 @@ elif [ "${QUERY_CORRECTNESS_TESTING}" -ne 1 ]; then
     fi
   fi
 fi
-if [ "${PRE_SHUFFLE_SQL}" -eq 0 ]; then
+if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -eq 1 ]; then
+  echoit "PRE_SHUFFLE_SQL Active: NO (USE_GENERATOR_INSTEAD_OF_INFILE=1 takes precedence)"
+  if [ "${ADD_INFILE_TO_GENERATED_SQL}" -eq 1 ]; then
+    echoit "INFILE: ${INFILE} (appended to generator output per trial via ADD_INFILE_TO_GENERATED_SQL=1)"
+  else
+    echoit "INFILE: Using SQL Generator (INFILE will be produced fresh each trial)"
+  fi
+elif [ "${PRE_SHUFFLE_SQL}" -eq 0 ]; then
   echoit "PRE_SHUFFLE_SQL Active: NO"
   echoit "INFILE: ${INFILE}"
 elif [ "${PRE_SHUFFLE_SQL}" -eq 1 ]; then
@@ -634,9 +644,9 @@ if [ "${MDG_CLUSTER_RUN}" == "1" ]; then
     echoit "Note: As this is a MDG_CLUSTER_RUN=1 run, and QUERIES_PER_THREAD was set to only ${QUERIES_PER_THREAD}, this script is setting the queries per thread to the required minimum of 2147483647 for this run"
     QUERIES_PER_THREAD=2147483647 # Max int
   fi
-  if [ ${PQUERY_RUN_TIMEOUT} -lt 60 ]; then # Starting up a cluster takes more time, so don't rotate too quickly
+  if [ ${PQUERY_RUN_TIMEOUT} -lt 120 ]; then # Starting up a cluster takes more time, so don't rotate too quickly
     echoit "Note: As this is a MDG=1 run, and PQUERY_RUN_TIMEOUT was set to only ${PQUERY_RUN_TIMEOUT}, this script is setting the timeout to the required minimum of 120 for this run"
-    PQUERY_RUN_TIMEOUT=60
+    PQUERY_RUN_TIMEOUT=120
   fi
   ADD_RANDOM_OPTIONS=0
   ADD_RANDOM_TOKUDB_OPTIONS=0
@@ -932,7 +942,13 @@ handle_bugs() {
     export GALERA_ERROR_LOGS=""
   else
     TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"  # Note this will auto-call san_text_string.sh or fallback_text_string.sh if required
-    echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/MYBUG
+    # Only write MYBUG if (a) MYBUG is not yet present, or (b) the new UniqueID is NOT a known bug.
+    # This preserves the unfiltered-error-log MYBUG written in the ERROR_LOG_SCAN_ISSUE branch when the core here resolves to a known bug.
+    if [ ! -r ${RUNDIR}/${TRIAL}/MYBUG ] || [ -z "$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | grep -v '^[ \t]*#')" ]; then
+      echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/MYBUG
+    else
+      echoit "new_text_string.sh produced a KNOWN bug UniqueID ('${TEXT}'); keeping existing MYBUG (unfiltered error log bug) instead"
+    fi
   fi
   cd - >/dev/null || exit 1
   if [[ "${MDG}" -eq 1 ]]; then
@@ -961,15 +977,27 @@ handle_bugs() {
     fi
   else
     if [ "${ELIMINATE_KNOWN_BUGS}" == "1" -a -r ${SCRIPT_PWD}/known_bugs.strings ]; then # "1": String check hack to ensure backwards compatibility with older pquery-run.conf files
-      if [ ! -z "$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | grep -v '^[ \t]*#')" ]; then  # do not call savetrial, known/filtered bug seen. # final grep: bugs marked as fixed need to be excluded
+      IS_KNOWN_BUG=""
+      if [ ! -z "$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | grep -v '^[ \t]*#')" ]; then
+        IS_KNOWN_BUG=1
+      fi
+      HAS_ERROR_LOG_SCAN_ISSUE=""
+      if [ -r ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE ] || [ ! -z "$(ls ${RUNDIR}/${TRIAL}/node*/ERROR_LOG_SCAN_ISSUE 2>/dev/null)" ]; then
+        HAS_ERROR_LOG_SCAN_ISSUE=1
+      fi
+      if [ "${IS_KNOWN_BUG}" = "1" ] && [ "${HAS_ERROR_LOG_SCAN_ISSUE}" != "1" ]; then  # known/filtered bug seen, and no unfiltered error log bug present: delete
         echoit "This is an already known and logged, non-fixed bug: ${FINDBUG}"
         echoit "Deleting trial as ELIMINATE_KNOWN_BUGS=1, bug was already logged and is still open"
         ALREADY_KNOWN=$[ ${ALREADY_KNOWN} + 1]
         TRIAL_TO_SAVE=0
+      elif [ "${IS_KNOWN_BUG}" = "1" ] && [ "${HAS_ERROR_LOG_SCAN_ISSUE}" = "1" ]; then  # known UniqueID, but an unfiltered error log bug was flagged: keep the trial so the error log bug gets reduced
+        echoit "new_text_string.sh produced a KNOWN UniqueID, but ERROR_LOG_SCAN_ISSUE is present: keeping trial for the unfiltered error log bug"
       else
         NEWBUGS=$[ ${NEWBUGS} + 1 ]
         echoit "[${NEWBUGS}] *** NEW BUG *** (not found in ${SCRIPT_PWD}/known_bugs.strings, or found but marked as already fixed)"
       fi
+      IS_KNOWN_BUG=
+      HAS_ERROR_LOG_SCAN_ISSUE=
     fi
   fi
 }
@@ -1427,6 +1455,7 @@ pquery_test(){
       fi
       cp generator.sh generator${RANDOMD}.sh
       sed -i "s|^[ \t]*OUTPUT_FILE[ \t]*=.*|OUTPUT_FILE=out${RANDOMD}|" generator${RANDOMD}.sh
+      export GENERATOR_THREADS=5  # Avoid CPU oversubscription under pquery's concurrent trial model; generator.sh honors this env var when set
       ./generator${RANDOMD}.sh ${QUERIES_PER_GENERATOR_RUN} > /dev/null
       if [ ! -r out${RANDOMD}.sql ]; then
         echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution! This script left ${PWD}/generator${RANDOMD}.sh in place to check what happened"
@@ -1441,6 +1470,16 @@ pquery_test(){
       fi
       if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 1 ]; then
         cat ${INFILE} >> out${RANDOMD}.sql
+      fi
+      if [ ${FILTER_SQL} -eq 1 ]; then
+        echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the generator output"
+        BEFORE_FILTER_LINES_NR="$(wc -l out${RANDOMD}.sql | awk '{print $1}')"
+        grep --binary-files=text -vif ${SCRIPT_PWD}/filter.sql out${RANDOMD}.sql > out${RANDOMD}.sql.filtered
+        mv out${RANDOMD}.sql.filtered out${RANDOMD}.sql
+        AFTER_FILTER_LINES_NR="$(wc -l out${RANDOMD}.sql | awk '{print $1}')"
+        echoit "SQL filter: Filtered $[ ${BEFORE_FILTER_LINES_NR} -${AFTER_FILTER_LINES_NR} ] lines from the generator output"
+        BEFORE_FILTER_LINES_NR=
+        AFTER_FILTER_LINES_NR=
       fi
     fi
     INFILE=${PWD}/out${RANDOMD}.sql
@@ -1492,21 +1531,17 @@ pquery_test(){
       exit 1
     elif [[ ${PQUERY3} -eq 1 && ${TRIAL} -gt 1 ]]; then
       EXIT_CODE_CP=1
-      while [ "${EXIT_CODE_CP}" -eq 1 ]; do  # Loop till no error is observed (caters for OOS issues)a
+      while [ "${EXIT_CODE_CP}" -ne 0 ]; do  # Loop till no error is observed (caters for OOS issues)
         cp -R ${WORKDIR}/$((${TRIAL} - 1))/data/* ${RUNDIR}/${TRIAL}/data 2>&1
         EXIT_CODE_CP=$?
-        if [ -z "${EXIT_CODE_CP}" ]; then
-          EXIT_CODE_CP=1
-        fi
+        if [ "${EXIT_CODE_CP}" -ne 0 ]; then diskspace; sleep 10; fi
       done
     else
       EXIT_CODE_CP=1
-      while [ "${EXIT_CODE_CP}" -eq 1 ]; do  # Loop till no error is observed (caters for OOS issues)
+      while [ "${EXIT_CODE_CP}" -ne 0 ]; do  # Loop till no error is observed (caters for OOS issues)
         cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data 2>&1
         EXIT_CODE_CP=$?
-        if [ -z "${EXIT_CODE_CP}" ]; then
-          EXIT_CODE_CP=1
-        fi
+        if [ "${EXIT_CODE_CP}" -ne 0 ]; then diskspace; sleep 10; fi
       done
     fi
     if [[ ${REPLICATION} -eq 1 ]]; then
@@ -1614,7 +1649,7 @@ pquery_test(){
       fi
       $SLAVE_STARTUP >> ${RUNDIR}/${TRIAL}/log/slave.err 2>&1 &
       SLAVE_MPID="$!"
-      AVE_STARTUP=
+      SLAVE_STARTUP=
     fi
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       echoit "Starting Secondary mysqld/mariadbd. Error log: ${RUNDIR}/${TRIAL}/log2/master.err"
@@ -1670,7 +1705,7 @@ pquery_test(){
     cat ${RUNDIR}/${TRIAL}/cl_dev_shm | sed 's|/dev/shm|/data|' > ${RUNDIR}/${TRIAL}/cl
     chmod +x ${RUNDIR}/${TRIAL}/cl
     if [ ! -z "${MDCLB}" ]; then CLBIN="${CLBIN}-"; fi  # mariadb-admin
-    echo "${CLBIN}admin --socket=$(echo "${SOCKET}" sed "s|/dev/shm|/data|") -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop
+    echo "${CLBIN}admin --socket=$(echo "${SOCKET}" | sed "s|/dev/shm|/data|") -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop
     echo "${CLBIN}admin --socket=${SOCKET} -uroot shutdown" > ${RUNDIR}/${TRIAL}/stop_dev_shm
     chmod +x ${RUNDIR}/${TRIAL}/stop ${RUNDIR}/${TRIAL}/stop_dev_shm
     echo "grep -o 'port=[0-9]\\+' start | sed 's|port=||' | xargs -I{} echo \"ps -ef | grep '{}'\" | xargs -I{} bash -c \"{}\" | grep \"\${PWD}\" | awk '{print \$2}' | xargs kill -9" > ${RUNDIR}/${TRIAL}/kill
@@ -1775,9 +1810,11 @@ pquery_test(){
         echoit "Assert! ${MPID} empty. Terminating!"
         exit 1
       fi
-      if [[ ${SLAVE_MPID} -eq 1 ]]; then
-        echoit "Assert! ${SLAVE_MPID} empty. Slave is not running. Terminating!"
-        exit 1
+      if [ ${REPLICATION} -eq 1 ]; then
+        if [ -z "${SLAVE_MPID}" ]; then
+          echoit "Assert! \$SLAVE_MPID empty. Slave is not running. Terminating!"
+          exit 1
+        fi
       fi
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
         if [ "${MPID2}" == "" ]; then
@@ -2276,7 +2313,7 @@ pquery_test(){
             if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
               if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
                 echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
-                mkdir -p "${PRE_SHUFFLE_SQL}"
+                mkdir -p "${PRE_SHUFFLE_DIR}"
                 if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
                   echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is going wrong"
                   PRE_SHUFFLE_SQL=0
@@ -2382,7 +2419,7 @@ EOF
           ## Check pre-shuffle directory
           if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
             echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
-            mkdir -p "${PRE_SHUFFLE_SQL}"
+            mkdir -p "${PRE_SHUFFLE_DIR}"
             if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
               echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is going wrong"
               PRE_SHUFFLE_SQL=0
@@ -2609,6 +2646,13 @@ EOF
   if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then  # We have a significant/major error
     touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # Mark trial as containing a error log issue. TODO: pquery-prep-red.sh will use this as an indicator for possibly taking the error log issue as TEXT for reducer. However, for doing so, it will use pquery-del-trial.sh (in CHECK mode) which may (or may not) slightly differ from how the error log issue grab works above (to be checked, or perhaps these several areas of error log issue processing can be moved/unified/de-duplicated into a new standalone script)
     echoit "Error log bug found: $(echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')"
+    # Persist the unfiltered error log bug as MYBUG (multi-line entries joined with '|' as regex alternation). Guarded by -r check for defensive coding; no upstream code writes MYBUG before this point.
+    if [ ! -r ${RUNDIR}/${TRIAL}/MYBUG ]; then
+      {
+        if [ ! -z "${ERRORS}" ]; then echo "${ERRORS}"; fi
+        if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "${ERRORS_LAST_LINE}"; fi
+      } | grep -v '^[ \t]*$' | tr '\n' '|' | sed 's|[|]$||' > ${RUNDIR}/${TRIAL}/MYBUG
+    fi
     savetrial
     TRIAL_SAVED=1
   fi
@@ -2849,7 +2893,8 @@ EOF
     cp -R ${WORKDIR}/data.template/* ${RUNDIR}/${TRIAL}/data 2>&1
     echo "${MYEXTRA}" | if grep -qi "innodb[_-]log[_-]checksum[_-]algorithm"; then
       # Ensure that mysqld/mariadbd server startup will not fail due to a mismatched checksum algo between the original MID and the changed MYEXTRA options
-      rm ${RUNDIR}/${TRIAL}/data/ib_log* rm ${RUNDIR}/${TRIAL}/data.ORIGINAL/ib_log*  # Note we are also pre-processing the original (data.ORIGINAL) instance here as it is brought back up for table checksums below (post the binlog recovery test)
+      rm ${RUNDIR}/${TRIAL}/data/ib_log*
+      rm ${RUNDIR}/${TRIAL}/data.ORIGINAL/ib_log*  # Note we are also pre-processing the original (data.ORIGINAL) instance here as it is brought back up for table checksums below (post the binlog recovery test)
     fi
     # Init new empty/clean instance based on the data template to test binlog recovery
     init_empty_port
@@ -3345,9 +3390,9 @@ else
   SLAVE_EXTRA=
 fi
 
-# Filter SQL from the main input file (Not possible for PRE_SHUFFLE_SQL=2 as that involves many files, however this is done from without the PRE_SHUFFLE_SQL=2 section directly)
+# Filter SQL from the main input file (Not possible for PRE_SHUFFLE_SQL=2 as that involves many files, however this is done from within the PRE_SHUFFLE_SQL=2 section directly. For USE_GENERATOR_INSTEAD_OF_INFILE=1, filtering is done per-trial right after each generator invocation, not here.)
 if [[ ${FILTER_SQL} -eq 1 ]]; then
-  if [ "${PRE_SHUFFLE_SQL}" == "0" -o "${PRE_SHUFFLE_SQL}" == "1" ]; then
+  if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 ] && [ "${PRE_SHUFFLE_SQL}" == "0" -o "${PRE_SHUFFLE_SQL}" == "1" ]; then
     echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
     BEFORE_FILTER_LINES_NR="$(wc -l ${INFILE} | awk '{print $1}')"
     grep --binary-files=text -vif ${SCRIPT_PWD}/filter.sql ${INFILE} > ${WORKDIR}/filtered_infile.sql
@@ -3361,7 +3406,13 @@ if [[ ${FILTER_SQL} -eq 1 ]]; then
 fi
 
 SQL_INPUT_TEXT=
-if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
+if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
+  if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 0 ]; then
+    SQL_INPUT_TEXT="Using SQL Generator"
+  else
+    SQL_INPUT_TEXT="Using SQL Generator combined with SQL file ${INFILE}"
+  fi
+elif [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
   echoit "PRE_SHUFFLE_SQL=1: This script will randomly pre-shuffle ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL of ${INFILE} ($(wc -l ${INFILE} | awk '{print $1}') lines) into a temporary file in ${PRE_SHUFFLE_DIR} and reuse this file for ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trial(s)"
   SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 1"
 elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
@@ -3369,14 +3420,6 @@ elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
   SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 2"
 else
   SQL_INPUT_TEXT="SQL file used: ${INFILE} ($(wc -l ${INFILE} | awk '{print $1}') lines)"
-fi
-
-if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
-  if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 0 ]; then
-    SQL_INPUT_TEXT="Using SQL Generator"
-  else
-    SQL_INPUT_TEXT="Using SQL Generator combined with SQL file ${INFILE}"
-  fi
 fi
 echoit "Valgrind run: $(if [ "${VALGRIND_RUN}" == "1" ]; then echo -n 'TRUE'; else echo -n 'FALSE'; fi) | pquery timeout: ${PQUERY_RUN_TIMEOUT} | ${SQL_INPUT_TEXT} $(if [ ${THREADS} -ne 1 ]; then echo -n "| Testcase size (chunked from infile): ${MULTI_THREADED_TESTC_LINES}"; fi)"
 echoit "pquery Binary: ${PQUERY_BIN}"

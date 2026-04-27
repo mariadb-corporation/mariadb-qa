@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# Delete a Claude Code session by id prefix.
+# Usage:
+#   crd              — list 20 most recent sessions
+#   crd <id>         — dry-run: show what would be deleted
+#   crd <id> 1       — actually delete the session
+# <id> may be a short prefix (e.g. 8 chars) or the full UUID.
+# Created by Roel Van de Paar, MariaDB (with Claude Code assistance)
+
+PROJECTS_DIR="${HOME}/.claude/projects"
+LIMIT=20
+
+if [ ! -d "$PROJECTS_DIR" ]; then
+  echo "No $PROJECTS_DIR — nothing to delete." >&2
+  exit 1
+fi
+
+PREFIX="${1:-}"
+ARM="${2:-}"
+
+TARGET_PATH="$(python3 - "$PROJECTS_DIR" "$LIMIT" "$PREFIX" <<'PYEOF'
+import json, os, sys, time
+
+projects_dir = sys.argv[1]
+limit = int(sys.argv[2])
+prefix = (sys.argv[3] if len(sys.argv) > 3 else "").lower()
+
+sessions = []
+for dirpath, _, files in os.walk(projects_dir):
+    for f in files:
+        if not f.endswith(".jsonl"):
+            continue
+        path = os.path.join(dirpath, f)
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            continue
+        sid = f[:-6]
+        sessions.append((mtime, sid, path))
+
+sessions.sort(reverse=True)
+
+def first_user_prompt(path):
+    cwd, text = "", ""
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    obj = json.loads(line)
+                except Exception:
+                    continue
+                if obj.get("type") != "user":
+                    continue
+                if not cwd:
+                    cwd = obj.get("cwd", "") or ""
+                msg = obj.get("message") or {}
+                content = msg.get("content")
+                candidate = ""
+                if isinstance(content, str):
+                    candidate = content
+                elif isinstance(content, list):
+                    for block in content:
+                        if isinstance(block, dict) and block.get("type") == "text":
+                            candidate = block.get("text", "")
+                            if candidate:
+                                break
+                stripped = candidate.lstrip()
+                if stripped.startswith("<local-command-") or stripped.startswith("<command-") or stripped.startswith("<bash-"):
+                    continue
+                if candidate.strip():
+                    text = candidate
+                    break
+    except OSError:
+        pass
+    return cwd, text
+
+def fmt_row(mtime, sid, path, prompt=None, cwd=None):
+    if prompt is None or cwd is None:
+        cwd, prompt = first_user_prompt(path)
+    ts = time.strftime("%m-%d %H:%M", time.localtime(mtime))
+    cwd_short = cwd.replace(os.path.expanduser("~"), "~") if cwd else "?"
+    prompt_line = " ".join(prompt.split())[:90] if prompt else "(no user prompt)"
+    return ts, cwd_short, prompt_line
+
+# No prefix: just list.
+if not prefix:
+    top = sessions[:limit]
+    if not top:
+        print("(no sessions found)", file=sys.stderr)
+        sys.exit(0)
+    rows = []
+    for mtime, sid, path in top:
+        ts, cwd_short, prompt_line = fmt_row(mtime, sid, path)
+        rows.append((sid, ts, cwd_short, prompt_line))
+    cwd_w = min(40, max((len(r[2]) for r in rows), default=10))
+    for sid, ts, cwd_short, prompt_line in rows:
+        print(f"{sid[:8]}  {ts}  {cwd_short:<{cwd_w}.{cwd_w}}  {prompt_line}", file=sys.stderr)
+    sys.exit(0)
+
+# Prefix given: resolve.
+matches = [(m, s, p) for (m, s, p) in sessions if s.startswith(prefix)]
+if not matches:
+    print(f"No session id starts with '{prefix}'.", file=sys.stderr)
+    sys.exit(5)
+if len(matches) > 1:
+    print(f"Prefix '{prefix}' is ambiguous ({len(matches)} matches):", file=sys.stderr)
+    for _, s, p in matches[:10]:
+        cwd, _ = first_user_prompt(p)
+        print(f"  {s[:8]}  {cwd or '?'}", file=sys.stderr)
+    sys.exit(6)
+
+mtime, sid, path = matches[0]
+ts, cwd_short, prompt_line = fmt_row(mtime, sid, path)
+print(f"{sid[:8]}  {ts}  {cwd_short}  {prompt_line}", file=sys.stderr)
+print(f"  file: {path}", file=sys.stderr)
+print(path)  # stdout for bash
+PYEOF
+)"
+
+rc=$?
+[ $rc -ne 0 ] && exit $rc
+
+if [ -z "$PREFIX" ]; then
+  echo "" >&2
+  echo "  To inspect a session:  crd <id>" >&2
+  echo "  To delete a session:   crd <id> 1" >&2
+  exit 0
+fi
+
+if [ "$ARM" != "1" ]; then
+  echo "" >&2
+  echo "  Dry-run. To actually delete, rerun with '1' as 2nd arg:  crd $PREFIX 1" >&2
+  exit 0
+fi
+
+[ -z "$TARGET_PATH" ] && exit 1
+
+if rm -f -- "$TARGET_PATH"; then
+  echo "Deleted: $TARGET_PATH" >&2
+  dir="$(dirname "$TARGET_PATH")"
+  if [ -d "$dir" ] && [ -z "$(ls -A "$dir" 2>/dev/null)" ]; then
+    rmdir -- "$dir" 2>/dev/null && echo "Removed empty project dir: $dir" >&2
+  fi
+else
+  echo "Failed to delete: $TARGET_PATH" >&2
+  exit 1
+fi

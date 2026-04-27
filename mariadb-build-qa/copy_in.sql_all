@@ -5,13 +5,13 @@ REGEX_EXCLUDE="$(cat REGEX_EXCLUDE 2>/dev/null)"  # Handy to exclude a particula
 if [ -z "${REGEX_EXCLUDE}" ]; then REGEX_EXCLUDE="DUMMYSTRINGNEVERSEEN"; fi
 
 if [ "${1}" == "SAN" ]; then
-  ./gendirs.sh SAN | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -I{} bash -c "{}"
+  ./gendirs.sh SAN | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -P10 -I{} bash -c "{}"
 elif [ "${1}" == "MSAN" ]; then
-  ./gendirs.sh MSAN | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -I{} bash -c "{}"
+  ./gendirs.sh MSAN | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -P10 -I{} bash -c "{}"
 elif [ "${1}" == "GAL" ]; then
   REGEX_EXCLUDE="${REGEX_EXCLUDE//EMD|/}"
-  ./gendirs.sh GAL | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -I{} bash -c "{}"
+  ./gendirs.sh GAL | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -P10 -I{} bash -c "{}"
 else
-  ./gendirs.sh | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -I{} bash -c "{}"
+  ./gendirs.sh | grep -vE "${REGEX_EXCLUDE}" | xargs -I{} echo "cp ./in.sql ./{}/in.sql" | xargs -P10 -I{} bash -c "{}"
 fi
 

@@ -61,6 +61,7 @@ fi
 # Homedir scripts
 rm -f ${HOME}/tcp ${HOME}/pge ${HOME}/pg ${HOME}/tr ${HOME}/tc ${HOME}/t ${HOME}/fc ${HOME}/mcl ${HOME}/s ${HOME}/st ${HOME}/li ${HOME}/crc ${HOME}/cto ${HOME}/mmtr ${HOME}/stack
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1
+ln -fs /home/${USER}/mariadb-qa/homedir_scripts/watchdog /home/${USER}/watchdog 2>&1
 ln -fs /home/${USER}/mariadb-qa/testcase_prettify.sh /home/${USER}/tcp 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/pge 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/depge 2>&1
@@ -77,6 +78,8 @@ ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${US
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/count_testcases_out /home/${USER}/cto 2>&1
 ln -fs /home/${USER}/mariadb-qa/mini_mtr_to_sql.sh /home/${USER}/mmtr 2>&1
 ln -fs /home/${USER}/mariadb-qa/stack.sh /home/${USER}/stack 2>&1
+ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_resume /home/${USER}/clr 2>&1
+ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_delete /home/${USER}/crd 2>&1
 
 # Git bisect clone & main scripts
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
@@ -157,6 +160,8 @@ alias c='cat '       # cat (display) a file (pass file name)
 alias k='clear'      # Clear screen
 alias ck='cd ${HOME};clear'   # Clear screen and jump to homedir
 alias crt='${HOME}/crt'    # Changes to /data and shows all current runs (according to /data/results.list i.e. 'vr') testcases
+alias clr='${HOME}/clr'    # Claude Code resume: picker for any session across all projects (cross-dir)
+alias crd='${HOME}/crd'    # Claude Code delete session: 'crd' lists, 'crd <id>' dry-run, 'crd <id> 1' deletes
 alias b='${HOME}/b'        # Start bug report for in.sql in current BASEDIR
 alias bs='${HOME}/b SAN'   # Start SAN based bug report for in.sql in current BASEDIR
 alias bm='${HOME}/b MSAN'  # Start MSAN based bug report for in.sql in current BASEDIR

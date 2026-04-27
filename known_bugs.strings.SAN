@@ -28,6 +28,11 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|division by zero|sql/item_windowfunc.h|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                     ## MDEV-39451
+ASAN|memcpy-param-overlap: memory ranges X and Y overlap|include/x86_64-linux-gnu/bits/string_fortified.h|__asan_memcpy|memcpy|Field_longstr::compress|Field_varstring_compressed::store ## MDEV-39450
+ASAN|memcpy-param-overlap: memory ranges X and Y overlap|sql/field.cc|__asan_memcpy|Field_longstr::compress|Field_varstring_compressed::store|Item::save_str_in_field          ## MDEV-39450
+ASAN|heap-buffer-overflow|include/x86_64-linux-gnu/bits/string_fortified.h|memcpy|uint4korr|Gcalc_function::count_internal|Gcalc_function::count_internal                      ## MDEV-39449
+ASAN|heap-buffer-overflow|sql/gcalc_tools.cc|Gcalc_function::count_internal|Gcalc_function::count_internal|Gcalc_function::count_internal|Gcalc_function::count_internal       ## MDEV-39449
 ASAN|heap-use-after-free|sql/lex_ident.h|Lex_ident<Compare_ident_ci>::is_valid_ident|Lex_ident<Compare_ident_ci>::streq|find_field_in_table|Item_trigger_field::setup_field    ## MDEV-30434
 ASAN|heap-use-after-free|strings/ctype-utf8.c|my_strcasecmp_utf8mb3|find_field_in_table|Item_trigger_field::setup_field|Table_triggers_list::create_trigger                    ## MDEV-30434
 ASAN|heap-use-after-free|strings/strcoll.inl|my_scan_weight_utf8mb3_general1400_as_ci|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq ## MDEV-30434

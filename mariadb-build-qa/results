@@ -4,6 +4,10 @@ set +H
 DATADIR=/data
 MARIADB_QA="${HOME}/mariadb-qa"  # Adjust if needed, though storing mariadb-qa in ~/mariadb-qa is highly recommended
 
+if [ ! -z "{$1}" ]; then
+  R_ONCEONLY=1  # Run once only, don't loop
+fi
+
 if [ -d "${DATADIR}" ]; then
   cd "${DATADIR}"
 else
@@ -18,10 +22,12 @@ source results.list  # This file should contain lines like:
                      # MON[1]=532099
                      # MON[2]=398230
                      # MON[3]=032309
+                     # Tip: when you've done multiple runs, you can change the 1,2,3 etc. for
+                     # second/third etc. run sets to 11, 12, 13 then 21, 22, 23; gaps are fine
                      # etc. The file is sourced to allow this file to be backed up with results.list 
                      # being local to the machine/directory. Note: results.list is not backed up
                      # use 'return 0' anywhere in the script to stop processing the remainder of the file (handy to save old runs)
-clear
+if [ -z "${R_ONCEONLY}" ]; then clear; fi  # Clear screen for normal (i.e. not-onceonly) runs
 
 # Setup error scanning
 ERRORS=
@@ -81,6 +87,7 @@ while :; do
       fi
     fi
   done
+  if [ ! -z "${R_ONCEONLY}" ]; then exit 0; fi
   echo " ---------------------------------------------------------------------------------------------------------------"
   echo "Handy delete command if you want to remove all active datadirs in results.list:"
   echo "${DATADIR_LIST}"

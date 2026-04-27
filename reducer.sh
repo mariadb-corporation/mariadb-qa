@@ -128,6 +128,10 @@ MODE5_COUNTTEXT=1               # Number of times the text should appear (defaul
 MODE5_ADDITIONAL_TEXT=""        # An additional string to look for in the CLI output when using MODE 5. When not using this set to "" (=default)
 MODE5_ADDITIONAL_COUNTTEXT=1    # Number of times the additional text should appear (default=1 = minimum). Only used for MODE=5 and where MODE5_ADDITIONAL_TEXT is not ""
 
+# === MODE=11 Settings          # Only applicable when MODE=11 is used (dump/binlog roundtrip fidelity testing)
+MODE11_TYPE=dump                # dump | binlog. 'dump': use mariadb-dump+restore for the roundtrip. 'binlog': use --log_bin + mariadb-binlog replay
+MODE11_BINLOG_FORMAT=MIXED      # MIXED | ROW | STATEMENT ; only used when MODE11_TYPE=binlog (default=MIXED; matches MariaDB default)
+
 # === FireWorks Mode Settings
 FIREWORKS=0                     # FireWorks mode: setups reducer.sh in such a way that any new bug observed, using a given input file, will be stored, and no actual reduction will be done. Expert use only; turning this on changes many settings, and thus changes the operation of reducer completely (default=0 = off)
 FIREWORKS_LINES=200000          # How many lines to slice from the provided input file. Previous testing seems to shows an almost even distribution to original testcase lenght. High number: higher possibility of hitting a bug per run, but slower. Low number: the same, both in reverse. (default=200000, needs testing with 50000, 100000 etc.)
@@ -159,6 +163,7 @@ TS_VARIABILITY_SLEEP=1
 #   - MODE=7 [ALPHA]: Multi threaded (ThreadSync) mysql CLI/pquery client output testing (set TEXT)
 #   - MODE=8 [ALPHA]: Multi threaded (ThreadSync) mariadbd/mysqld error output log testing (set TEXT)
 #   - MODE=9 [ALPHA]: Multi threaded (ThreadSync) crash testing
+#   - MODE=11: Dump/Binlog roundtrip fidelity testing. Detects cases where mariadb-dump+restore (MODE11_TYPE=dump) or --log_bin + mariadb-binlog replay (MODE11_TYPE=binlog) produces a DB state that diverges from the one produced by running the testcase directly. The "bug" is a diff between the before-roundtrip and after-roundtrip snapshots (CHECKSUM TABLE + SHOW CREATE + row counts + routines/triggers/events). TEXT is ignored. See verify_dump_and_binlog.sh for the discovery counterpart.
 # - SKIPSTAGEBELOW: Stages up to and including this one are skipped (default=0).
 # - SKIPSTAGEABOVE: Stages above and including this one are skipped (default=9).
 # - TEXT: Text to look for in MODEs 1,2,3,5,6,7,8. Ignored in MODEs 4 and 9.
@@ -615,6 +620,34 @@ echoit_overwrite(){
   echo -ne "$(date +'%F %T') $1\r"
 }
 
+# Diskspace OOS check function - ensures at least ${2:-200}MB is free on ${1:-${WORKD}}
+# Usage: diskspace                 # Checks WORKD for >=200MB free
+#        diskspace /some/dir       # Checks /some/dir for >=200MB free
+#        diskspace /some/dir 500   # Checks /some/dir for >=500MB free
+# Waits 10 minutes and re-checks in a loop until the minimum is available.
+diskspace(){
+  local CHECK_PATH="${1:-${WORKD}}"
+  local MIN_MB="${2:-200}"
+  local MIN_KB=$((MIN_MB * 1024))
+  local FREE_KB TEST_PATH
+  while :; do
+    if [ -z "${CHECK_PATH}" ]; then break; fi  # Path not defined yet, assume disk space is available and test on next call of diskspace()
+    if [ ! -d "${CHECK_PATH}" ]; then mkdir -p "${CHECK_PATH}" 2>/dev/null; fi
+    # If the target path still does not exist (e.g. permission denied), probe the nearest existing parent instead
+    TEST_PATH="${CHECK_PATH}"
+    while [ -n "${TEST_PATH}" ] && [ "${TEST_PATH}" != "/" ] && [ ! -d "${TEST_PATH}" ]; do
+      TEST_PATH="$(dirname "${TEST_PATH}")"
+    done
+    if [ -z "${TEST_PATH}" ] || [ ! -d "${TEST_PATH}" ]; then break; fi  # Cannot probe; assume ok to avoid stalling
+    FREE_KB="$(df -k -P "${TEST_PATH}" 2>/dev/null | awk 'NR==2{print $4}')"
+    if [ -z "${FREE_KB}" ] || ! [[ "${FREE_KB}" =~ ^[0-9]+$ ]]; then break; fi  # df failed or unparseable; assume ok to avoid stalling
+    if [ "${FREE_KB}" -ge "${MIN_KB}" ]; then break; fi  # At least ${MIN_MB}MB free; all good
+    echoit "Likely out of diskspace on ${CHECK_PATH} (only $((FREE_KB/1024))MB free, need at least ${MIN_MB}MB)... Pausing 10 minutes"
+    sleep 600
+    echoit "Slept 10 minutes, re-checking diskspace on ${CHECK_PATH}..."
+  done
+}
+
 save_rr_trace(){
   RR_SAVE_LOCATION=${1}
   rm -rf ${RR_SAVE_LOCATION}
@@ -780,7 +813,7 @@ options_check(){
     MODE=3
     USE_NEW_TEXT_STRING=0
   fi
-  if [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     if [ ! -d "$1" ]; then
         echo 'Error: A file name was given as input, but a directory name was expected.'
         echo "(MODE $MODE is set. Where you trying to use MODE 4 or lower?)"
@@ -986,11 +1019,37 @@ options_check(){
       fi
     fi
   fi
-  if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 2 -a $MODE -ne 3 -a $MODE -ne 4 -a $MODE -ne 5 -a $MODE -ne 6 -a $MODE -ne 7 -a $MODE -ne 8 -a $MODE -ne 9 ]; then
-    echo "Error: Invalid MODE set: $MODE (valid range: 0-9)"
+  if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 2 -a $MODE -ne 3 -a $MODE -ne 4 -a $MODE -ne 5 -a $MODE -ne 6 -a $MODE -ne 7 -a $MODE -ne 8 -a $MODE -ne 9 -a $MODE -ne 11 ]; then
+    echo "Error: Invalid MODE set: $MODE (valid range: 0-9, 11)"
     echo 'Please check script contents/options ($MODE variable)'
     echo "Terminating now."
     exit 1
+  fi
+  if [ $MODE -eq 11 ]; then
+    case "${MODE11_TYPE}" in
+      dump|binlog) ;;
+      *)
+        echo "Error: MODE=11 but MODE11_TYPE is not 'dump' or 'binlog' (got: '${MODE11_TYPE}')"
+        echo "Terminating now."
+        exit 1 ;;
+    esac
+    case "${MODE11_BINLOG_FORMAT}" in
+      MIXED|ROW|STATEMENT) ;;
+      *)
+        echo "Error: MODE=11 but MODE11_BINLOG_FORMAT is not MIXED|ROW|STATEMENT (got: '${MODE11_BINLOG_FORMAT}')"
+        echo "Terminating now."
+        exit 1 ;;
+    esac
+    if [ "${USE_PQUERY}" -eq 1 ]; then
+      echo "[Warning] MODE=11 with USE_PQUERY=1: pquery's randomized shuffle will produce non-deterministic runs, which undermines the 'same state' comparison this mode relies on. Setting USE_PQUERY=0 (mysql CLI replay)."
+      USE_PQUERY=0
+    fi
+    if [ "${MODE11_TYPE}" = "binlog" ]; then
+      # Ensure the primary mysqld run logs binary events.  Second (post-anc) start does not need it, but harmless.
+      if [[ "${MYEXTRA}" != *"--log_bin"* && "${MYEXTRA}" != *"--log-bin"* ]]; then
+        MYEXTRA="${MYEXTRA} --log_bin --binlog_format=${MODE11_BINLOG_FORMAT}"
+      fi
+    fi
   fi
   if [ $MODE -eq 1 -o $MODE -eq 2 -o $MODE -eq 3 -o $MODE -eq 5 -o $MODE -eq 6 -o $MODE -eq 7 -o $MODE -eq 8 ]; then
     if [ ! -n "$TEXT" -a "${MODE3_ANY_SIG}" != "1" ]; then
@@ -1202,6 +1261,13 @@ set_internal_options(){  # Internal options: do not modify!
     EPOCH=$(date +%s%N)  # Used for /dev/shm work directory name and WORK_INIT, WORK_START etc. file names
     SKIPV=0
     SPORADIC=0
+    # MODE=11 is deterministic dump/binlog-roundtrip diff checking — no sporadicity,
+    # and VERIFY's multi_reducer subreducer forks hurt more than help (each trial
+    # already does 2x mariadb-install-db).  Skip VERIFY, keep SPORADIC=0 so STAGE1
+    # uses plain single-threaded run_and_check (ref reducer.sh line ~4991).
+    if [ "$MODE" = "11" ]; then
+      SKIPV=1
+    fi
     MYUSER=$(whoami)
   else
     if [ "${EPOCH}" == "" ];    then echo "Assert: \$EPOCH is empty inside a subreducer! Check $(cd $(dirname $0) && pwd)/$0"; exit 1; fi
@@ -1228,14 +1294,15 @@ set_internal_options(){  # Internal options: do not modify!
 }
 
 kill_multi_reducer(){
-  PS_CMD="ps -def | grep --binary-files=text 'subreducer' | grep --binary-files=text ${WHOAMI} | grep --binary-files=text ${EPOCH} | grep -v --binary-files=text 'grep' | awk '{print \$2}'"
+  PS_CMD="ps -ef | grep --binary-files=text 'subreducer' | grep --binary-files=text ${WHOAMI} | grep --binary-files=text ${EPOCH} | grep -v --binary-files=text 'grep' | awk '{print \$2}'"
   if [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; then
     PIDS_TO_TERMINATE=$(eval ${PS_CMD} | sort -u | tr '\n' ' ')
     echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating these PID's: $PIDS_TO_TERMINATE"
     while [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; do
       for t in $(eval ${PS_CMD} | sort -u); do
-        ( sleep 0.01; kill -9 $t >/dev/null 2>&1; timeout -k4 -s9 4s wait $t >/dev/null 2>&1; ) >/dev/null 2>&1
-        timeout -k5 -s9 5s wait $t >/dev/null 2>&1
+        kill -9 $t >/dev/null 2>&1
+        WAIT_END=$(( $(date +%s) + 5 ))
+        while kill -0 $t 2>/dev/null && [ $(date +%s) -lt $WAIT_END ]; do sleep 0.1; done
       done
       sync; sleep 3
       if [ $(eval ${PS_CMD} | wc -l) -ge 1 ]; then
@@ -1385,6 +1452,7 @@ multi_reducer(){
             echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads... done"
           fi
           # The subshell in the following line simply retrieves the WORKO output file from the subreducer Then, the grep -v removes any mariadbd/mysqld option line before copying the file to the new/next WORKF for the next trial If this step was not done, the new/next WORKF testcase would always be +1 line longer. The way this would show for example in SKIPV mode is that the main reducer would indicate that it had found a shorter testcase (-1 line for example) whereas the next trial would start with the same line number (as +1 line was re-added). This is not so clear when large chunks are removed at the time, but it becomes very clear when only ~5-15 lines are left. This was fixed and the line below does not suffer from said problem
+          diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF (subreducer aggregation; running out of space here can produce a 0-byte WORKF and cascade to a 0-byte WORKO)
           grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') > $WORKF
           if [ "${FIREWORKS}" != "1" ]; then
             if [ -r "$WORKO" ]; then  # Avoid first occurrence when there is no $WORKO yet
@@ -1394,12 +1462,15 @@ multi_reducer(){
                   echoit "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
                 fi
               fi
+              diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free on WORKD before writing WORKO.prev
               cp -f $WORKO ${WORKO}.prev
               # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
               echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Previous good testcase backed up as $WORKO.prev"
             fi
           fi
+          diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free on WORKD before writing WORKO
           cp -f $WORKF $WORKO
+          diskspace "$(dirname "$WORK_OUT")"  # Ensure >=200MB free before writing the _out file
           cp -f $WORKO $WORK_OUT
           ATLEASTONCE="[*]"  # The issue was seen at least once, or FIREWORKS detected at least one newbug
           if [ "${FIREWORKS}" != "1" ]; then
@@ -1584,6 +1655,7 @@ multi_reducer_decide_input(){
       TRIAL_LEVEL=$(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "TRIAL" | sed -e 's/^.*://' -e 's/[ ]*//g')
       if [ $TRIAL_LEVEL -eq 1 ]; then
         # Highest optimization possible, use file and exit
+        diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF
         cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, maximum initial simplification file, at thread #$t: Using it as new input file"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
@@ -1592,6 +1664,7 @@ multi_reducer_decide_input(){
         break
       elif [ $TRIAL_LEVEL -lt $LOWEST_TRIAL_LEVEL_SEEN ]; then
         LOWEST_TRIAL_LEVEL_SEEN=$TRIAL_LEVEL
+        diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF
         cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, level $TRIAL_LEVEL simplification file, at thread #$t: Using it as new input file, unless better is found"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
@@ -1796,7 +1869,7 @@ init_workdir_and_files(){
   fi
   WORK_CL=$(echo $INPUTFILE | sed "s|/[^/]\+$|/|;s|$|${EPOCH}_cl|")
   WORK_OUT=$(echo $INPUTFILE | sed "s|/[^/]\+$|/|;s|$|${EPOCH}.sql|")
-  if [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     mkdir $WORKD/out
     mkdir $WORKD/log
     TS_init_all_sql_files
@@ -1818,6 +1891,7 @@ init_workdir_and_files(){
     fi
     # Initial INPUTFILE to WORKF copy
     if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not need a WORKF file (ref cut_fireworks_chunk_and_shuffle and note ${INPUTFILE} is used instead. The reason for setting it up this way is 1) it greatly improves /dev/shm diskspace as WORKF is not created per-thread, thereby saving let's say 450MB for a standard SQL input file, per-thread, 2) There is no need to maintain a working file (WORKF) as the input is never changed/reduced. INPUTFILE is shuffled and chuncked (as per FIREWORKS_LINES setting) and saved as in.tmp, and if a new bug is found, that file is copied to NEW_BUGS_SAVE_DIR.
+      diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF (initial INPUTFILE→WORKF setup)
       if [ "$MULTI_REDUCER" != "1" -a $FORCE_SKIPV -gt 0 ]; then  # This is the parent/main reducer and verify stage is being skipped, add dropc. If the verify stage is not being skipped (FORCE_SKIPV=0) then the 'else' clause will apply and the verify stage will handle the dropc addition or not (depending on how much initial simplification in the verify stage is possible). Note that FORCE_SKIPV check is defensive programming and not needed atm; the actual call within the verify() uses multi_reducer $1 - i.e. the original input file is used, not the here-modified WORKF file.
         if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
           #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
@@ -1842,6 +1916,8 @@ init_workdir_and_files(){
       if [ ! -z "$QCTEXT" ]; then
         sed -i "/$QCTEXT/q" $WORKF
       fi
+      # Ensure WORKF has a trailing newline so downstream `wc -l`-style counts treat the last record correctly. Without this, a 1-line testcase missing its trailing \n is counted as 0 lines and trips the "Input file empty" assert in report_linecounts. Idempotent: skipped when WORKF already ends in \n or is genuinely empty.
+      if [ -s "$WORKF" ] && [ -n "$(tail -c1 "$WORKF" 2>/dev/null)" ]; then echo >> "$WORKF"; fi
     fi
   fi
   echoit "[Init] Base dir: $BASEDIR"
@@ -1998,7 +2074,7 @@ init_workdir_and_files(){
     if [ -n "${SLAVE_EXTRA}" ]; then echoit "[Init] Passing the following slave options to the slave mariadbd/mysqld: ${SLAVE_EXTRA}"; fi
   fi
   if [ "$MYINIT" != "" ]; then echoit "[Init] Passing the following additional options to mariadbd/mysqld initialization: $MYINIT"; fi
-  if [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     if [ $TS_TRXS_SETS -eq 1 ]; then echoit "[Init] ThreadSync: using last transaction set (accross threads) only"; fi
     if [ $TS_TRXS_SETS -gt 1 ]; then echoit "[Init] ThreadSync: using last $TS_TRXS_SETS transaction sets (accross threads) only"; fi
     if [ $TS_TRXS_SETS -eq 0 ]; then echoit "[Init] ThreadSync: using complete input files (you may want to set TS_DS_TIMEOUT=10 [seconds] or less)"; fi
@@ -2180,6 +2256,7 @@ generate_run_scripts(){
     local EPOCH_SOCKET="/dev/shm/${EPOCH}/socket.sock"
     local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/log/master.err"
   fi
+  diskspace "$(dirname "$WORK_BASEDIR")"  # Ensure >=200MB free before writing _mybase/_init/_start/_stop/_run/_cl/_gdb/_parse_core/_how_to_use
   echo "BASEDIR=$BASEDIR" | sed 's|^[ \t]*||;s|[ \t]*$||;s|/$||' > $WORK_BASEDIR
   echo "SOURCE_DIR=\$BASEDIR  # Only required to be set if make_binary_distrubtion script was NOT used to build MySQL" | sed 's|^[ \t]*||;s|[ \t]*$||;s|/$||' >> $WORK_BASEDIR
   echo "JEMALLOC=~/libjemalloc.so.1  # Only required for Percona Server with TokuDB. Can be completely ignored otherwise. This can be changed to a custom path to use a custom jemalloc. If this file is not present, the standard OS locations for jemalloc will be checked" >> $WORK_BASEDIR
@@ -2212,7 +2289,7 @@ generate_run_scripts(){
   else
     echo "if [ \"\$VERSION\" == \"5.7\" -o \"\$VERSION\" == \"8.0\" ]; then \$BIN \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; else \$MID \${MID_OPTIONS} --basedir=\${BASEDIR} --datadir=/dev/shm/${EPOCH}/data; fi" >> $WORK_INIT
   fi
-  if [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     # This still needs implementation for MODE6 or higher ("else line" below simply assumes a single $WORKO atm, while MODE6 and higher has more then 1)
     echoit "[Not implemented yet] MODE6 or higher does not auto-generate a $WORK_RUN file yet"
     echo "Not implemented yet: MODE6 or higher does not auto-generate a $WORK_RUN file yet" > $WORK_RUN
@@ -3046,6 +3123,7 @@ cut_random_chunk(){
   if [ $CHUNK -eq 0 -a $TRIAL -gt 5 ]; then STUCKTRIAL=$[ $STUCKTRIAL + 1 ]; fi
   if [ $CHUNK -eq 0 -a $STUCKTRIAL -gt 5 ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line $RANDLINE (Current chunk size: stuck at 1)"
+    diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before writing WORKT (chunk cut)
     sed -n "$RANDLINE ! p" $WORKF > $WORKT  # Note that ,+$CHUNK i.e. ,+0 would have the same outcome
   else
     ENDLINE=$[$RANDLINE+$CHUNK]
@@ -3055,6 +3133,7 @@ cut_random_chunk(){
     else
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line(s) $RANDLINE to $ENDLINE (Current chunk size: $REALCHUNK)"
     fi
+    diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before writing WORKT (chunk cut)
     sed -n "$RANDLINE,+$CHUNK ! p" $WORKF > $WORKT  # RANDLINE: starting line (line 1=1), CHUNK: number of lines (1 line=+0)
   fi
 }
@@ -3062,6 +3141,7 @@ cut_random_chunk(){
 cut_fireworks_chunk_and_shuffle(){
   echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [FIREWORKS] Chunking, shuffling and executing ${FIREWORKS_LINES} lines"  # The 'executing' is a bit premature (as it happens a bit later outside of this procedure), but the text makes sense here
   RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Resetting random entropy to ensure highest quality entropy
+  diskspace "$(dirname "${WORKT}")"  # Ensure >=200MB free on WORKD before writing WORKT (fireworks shuf)
   shuf -n${FIREWORKS_LINES} --random-source=/dev/urandom ${INPUTFILE} > ${WORKT}
 }
 
@@ -3162,7 +3242,7 @@ run_sql_code(){
   fi
   #DEBUG
   #read -p "Go! (run_sql_code break)"
-  if [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [DATA] Loading datafile before SQL threads replay"
     # Note that the two following grep -v solutions still work fine for DROPC removal as this is using the mysql cli which can handle multiple statements on one line and DROPC is NOT being changed into a multi-line statement. Search for 'DROPC' to learn more.
     if [ $TS_DBG_CLI_OUTPUT -eq 0 ]; then
@@ -3227,7 +3307,7 @@ run_sql_code(){
             PQUERY_SHUFFLE="--no-shuffle"
           else
             # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
-            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(awk 'END{print NR}' ${WORKT}) * 13 / 10 ] + 100 ]"
           fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         else
@@ -3235,7 +3315,7 @@ run_sql_code(){
             PQUERY_SHUFFLE="--no-shuffle"
           else
             # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
-            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(awk 'END{print NR}' ${WORKT}) * 13 / 10 ] + 100 ]"
           fi
           # RV 09/04/22: Something may be amiss with the SHUFFLE_OVERRUN_PREVENTION_MAX_LINES code (i.e. the addition of --queries-per-thread=x in 3 places of the code), but only if true or semi-true multi-threaded reduction relies on ongoing queries to be sent to the server instance being tested, rather than a deterministic number (i.e. the ~lenght of the testcase). If so, that would mean that multi-threaded reduction no longer would function after https://github.com/mariadb-corporation/mariadb-qa/commit/9bc502e7edf2a12022e806e21839463b94f51e8c implementation. To be verified/checked. TODO
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=${WORKD}/node1/node1_socket.sock --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
@@ -3246,7 +3326,7 @@ run_sql_code(){
             PQUERY_SHUFFLE="--no-shuffle"
           else
             # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
-            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(awk 'END{print NR}' ${WORKT}) * 13 / 10 ] + 100 ]"
           fi
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=1 $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
         else
@@ -3254,7 +3334,7 @@ run_sql_code(){
             PQUERY_SHUFFLE="--no-shuffle"
           else 
             # RV 16/02/22: Preventing query count overrun of shuffled SQL replays. May need furher fine tuning. Ref https://jira.mariadb.org/browse/MDEV-27829
-            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(wc -l ${WORKT} | awk '{print $1}') * 13 / 10 ] + 100 ]"
+            PQUERY_SHUFFLE="--queries-per-thread=$[ $[ $(awk 'END{print NR}' ${WORKT}) * 13 / 10 ] + 100 ]"
           fi
           # RV 09/04/22: Something may be amiss with the SHUFFLE_OVERRUN_PREVENTION_MAX_LINES code (i.e. the addition of --queries-per-thread=x in 3 places of the code), but only if true or semi-true multi-threaded reduction relies on ongoing queries to be sent to the server instance being tested, rather than a deterministic number (i.e. the ~lenght of the testcase). If so, that would mean that multi-threaded reduction no longer would function after https://github.com/mariadb-corporation/mariadb-qa/commit/9bc502e7edf2a12022e806e21839463b94f51e8c implementation. To be verified/checked. TODO
           $PQUERY_LOC --database=test --infile=$WORKT $PQUERY_SHUFFLE --threads=$PQUERY_MULTI_CLIENT_THREADS --queries=$PQUERY_MULTI_QUERIES $USE_PQUERYE2_CLIENT_LOGGING --user=root --socket=$WORKD/socket.sock --logdir=$WORKD --log-all-queries --log-failed-queries $PQUERY_EXTRA_OPTIONS > $WORKD/pquery.out 2>&1
@@ -3281,7 +3361,7 @@ run_sql_code(){
 }
 
 cleanup_and_save(){
-  if [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     if [ "$STAGE" = "T" ]; then rm -Rf $WORKD/log/*.sql; fi
     rm -Rf $WORKD/out/*.sql
     for t in $(eval echo {1..$TS_THREADS}); do
@@ -3321,6 +3401,7 @@ cleanup_and_save(){
       ( ps -def | grep -E  'node1_socket|node2_socket|node3_socket' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
       sleep 2; sync
     fi
+    diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF/WORKO/*.prev
     cp -f $WORKT $WORKF
     if [ -r "$WORKO" ]; then
       if [[ ${RR_TRACING} -eq 1 ]]; then
@@ -3329,10 +3410,12 @@ cleanup_and_save(){
           echoit "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
         fi
       fi
+      diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free before writing WORKO.prev (preserve last-known-good)
       cp -f $WORKO ${WORKO}.prev
       # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
     fi
+    diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free before writing WORKO (final reduced output)
     grep -E --binary-files=text -v "^# mysqld options required for replay:" $WORKT > $WORKO
     MYSQLD_OPTIONS_REQUIRED=$(echo "$SPECIAL_MYEXTRA_OPTIONS $MYEXTRA" | sed "s|[ \t]\+| |g;s|sql_mode=\([^ ]\)|sql_mode= \1|g;s|[ \t]\+| |g")
     if [ "$(echo "$MYSQLD_OPTIONS_REQUIRED" | sed 's| ||g')" != "" ]; then
@@ -3344,6 +3427,7 @@ cleanup_and_save(){
           sed -i "1 i\# mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED    mysqld initialization options required: ${MYINIT}" $WORKO
         fi
       else
+        diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free before WORKO mysqld-options seed write
         if [ "${MYINIT}" == "" ]; then
           echo "# mysqld options required for replay: $MYSQLD_OPTIONS_REQUIRED" > $WORKO
         else
@@ -3354,11 +3438,13 @@ cleanup_and_save(){
       if [ -s $WORKO ]; then
         sed -i "1 i\# mysqld initialization options required: ${MYINIT}" $WORKO
       else
+        diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free before WORKO MYINIT-only seed write
         echo "# mysqld initialization options required: ${MYINIT}" > $WORKO
       fi
     #else here would only happen in the case that MYSQLD_OPTIONS_REQUIRED and MYINIT are both empty.
     fi
     MYSQLD_OPTIONS_REQUIRED=
+    diskspace "$(dirname "$WORK_OUT")"  # Ensure >=200MB free before writing the _out file and bug bundle tarball
     cp -f $WORKO $WORK_OUT
     # Save a tarball of full self-contained testcase on each successful reduction
     rm -f $WORK_BUG_DIR/${EPOCH}_bug_bundle.tar.gz
@@ -3379,6 +3465,92 @@ cleanup_and_save(){
   else
     echo "# $ATLEASTONCE Issue was seen at least once during this run of reducer" >> $WORKD/VERIFIED
   fi
+}
+
+# ---- MODE=11 (Dump/Binlog roundtrip) helpers -------------------------------
+# Take a canonical "state snapshot" of a running mysqld over $1 (socket) into $2 (outfile).
+# Compares as a plain text file with diff.  Excludes system DBs.
+mode11_take_snapshot(){
+  local sock="$1" out="$2"
+  : >"$out"
+  if ! ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SELECT 1" >/dev/null 2>&1; then
+    echoit "[MODE11] server on $sock not responding during snapshot"
+    return 1
+  fi
+  local dbs db tv tbl typ rn rt
+  dbs=$(${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('mysql','information_schema','performance_schema','sys') ORDER BY schema_name" 2>/dev/null)
+  if [ -z "$dbs" ]; then echo "# no user databases" >>"$out"; return 0; fi
+  while IFS= read -r db; do
+    [ -z "$db" ] && continue
+    echo "### DATABASE: $db" >>"$out"
+    tv=$(${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SELECT table_name, table_type FROM information_schema.tables WHERE table_schema='$db' ORDER BY table_name, table_type" 2>/dev/null)
+    while IFS=$'\t' read -r tbl typ; do
+      [ -z "$tbl" ] && continue
+      if [ "$typ" = "VIEW" ]; then
+        echo "## VIEW $db.$tbl" >>"$out"
+        ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SHOW CREATE VIEW \`$db\`.\`$tbl\`" >>"$out" 2>&1
+      else
+        echo "## TABLE $db.$tbl" >>"$out"
+        ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SHOW CREATE TABLE \`$db\`.\`$tbl\`" >>"$out" 2>&1
+        ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SELECT 'count',COUNT(*) FROM \`$db\`.\`$tbl\`" >>"$out" 2>&1
+        ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "CHECKSUM TABLE \`$db\`.\`$tbl\` EXTENDED" >>"$out" 2>&1
+      fi
+    done <<<"$tv"
+    echo "## ROUTINES $db" >>"$out"
+    ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SELECT routine_type, routine_name FROM information_schema.routines WHERE routine_schema='$db' ORDER BY routine_type, routine_name" >>"$out" 2>&1
+    while IFS=$'\t' read -r rt rn; do
+      [ -z "$rn" ] && continue
+      ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SHOW CREATE $rt \`$db\`.\`$rn\`" >>"$out" 2>&1
+    done < <(${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SELECT routine_type, routine_name FROM information_schema.routines WHERE routine_schema='$db' ORDER BY routine_type, routine_name" 2>/dev/null)
+    echo "## TRIGGERS $db" >>"$out"
+    ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SHOW TRIGGERS FROM \`$db\`" >>"$out" 2>&1
+    echo "## EVENTS $db" >>"$out"
+    ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SHOW EVENTS FROM \`$db\`" >>"$out" 2>&1
+  done <<<"$dbs"
+  return 0
+}
+
+# Dump all user DBs.  $1=socket, $2=output file.
+mode11_do_dump(){
+  local sock="$1" dest="$2"
+  local user_dbs
+  user_dbs=$(${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SELECT GROUP_CONCAT(schema_name SEPARATOR ' ') FROM information_schema.schemata WHERE schema_name NOT IN ('mysql','information_schema','performance_schema','sys')" 2>/dev/null)
+  if [ -z "$user_dbs" ] || [ "$user_dbs" = "NULL" ]; then
+    : >"$dest"
+    return 0
+  fi
+  # shellcheck disable=SC2086
+  ${BASEDIR}/bin/mariadb-dump -uroot -S"$sock" --force --hex-blob --routines --triggers --events \
+      --skip-dump-date --skip-comments --databases $user_dbs >"$dest" 2>"$WORKD/mode11_dump.err"
+}
+
+# Copy binlog files out of a running server's datadir.  $1=socket, $2=datadir, $3=dest dir.
+mode11_capture_binlogs(){
+  local sock="$1" datadir="$2" dest="$3"
+  rm -rf "$dest"; mkdir -p "$dest"
+  ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "FLUSH LOGS" >/dev/null 2>&1
+  local files f
+  files=$(${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SHOW BINARY LOGS" 2>/dev/null | awk '{print $1}')
+  if [ -z "$files" ]; then
+    echoit "[MODE11] SHOW BINARY LOGS returned nothing — server not started with --log_bin?"
+    return 1
+  fi
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    cp -a "$datadir/$f" "$dest/" 2>/dev/null || { echoit "[MODE11] failed to copy binlog $f"; return 1; }
+  done <<<"$files"
+  return 0
+}
+
+mode11_replay_binlogs(){
+  local sock="$1" src="$2"
+  local files
+  files=$(ls -1 "$src" 2>/dev/null | sort)
+  [ -z "$files" ] && { echoit "[MODE11] no binlog files in $src"; return 1; }
+  # shellcheck disable=SC2086
+  ( cd "$src" && ${BASEDIR}/bin/mariadb-binlog --disable-log-bin $files ) \
+      | ${BASEDIR}/bin/mariadb -uroot -S"$sock" --binary-mode --force \
+      >"$WORKD/mode11_replay.out" 2>"$WORKD/mode11_replay.err"
 }
 
 process_outcome(){
@@ -3932,6 +4104,94 @@ process_outcome(){
     fi
     ADMIN_BIN_TO_USE=
 
+  # MODE11: Dump/Binlog roundtrip fidelity testing
+  elif [ $MODE -eq 11 ]; then
+    local SNAP_BEFORE="$WORKD/mode11_snap_before.txt"
+    local SNAP_AFTER="$WORKD/mode11_snap_after.txt"
+    local DUMPF="$WORKD/mode11_dump.sql"
+    local BL_DIR="$WORKD/mode11_binlogs"
+    local SOCK="$WORKD/socket.sock"
+    rm -f "$SNAP_BEFORE" "$SNAP_AFTER" "$DUMPF"
+    rm -rf "$BL_DIR"
+
+    # Flush any in-flight transaction from the load session.  Without this,
+    # `SET autocommit=0` in the testcase leaves data uncommitted, which
+    # mariadb-dump (a separate session) cannot see — producing a false-positive
+    # snapshot diff.  COMMIT here makes the load session's state durable for
+    # both the snapshot and the dump.
+    ${BASEDIR}/bin/mariadb -uroot -S"$SOCK" --force -Nse "COMMIT" >/dev/null 2>&1
+
+    # (1) Snapshot the just-loaded state.
+    if ! mode11_take_snapshot "$SOCK" "$SNAP_BEFORE"; then
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [MODE11-InfraErr] pre-roundtrip snapshot failed; skipping trial"
+      return 0
+    fi
+    # (2) Capture the dump / binlogs.
+    if [ "${MODE11_TYPE}" = "dump" ]; then
+      if ! mode11_do_dump "$SOCK" "$DUMPF"; then
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [MODE11-InfraErr] mariadb-dump failed; skipping trial"
+        return 0
+      fi
+    else
+      if ! mode11_capture_binlogs "$SOCK" "$WORKD/data" "$BL_DIR"; then
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [MODE11-InfraErr] binlog capture failed; skipping trial"
+        return 0
+      fi
+    fi
+    # (3) Stop, reinit data/, restart.
+    stop_mysqld_or_mdg
+    # Ensure the first mariadbd fully released all files before we wipe data/.
+    sync
+    sleep 2
+    init_mysql_dir
+    # A marker to separate first-instance error-log content from the second start's.
+    echo "--- [MODE11] second mariadbd start attempt ---" >> "$WORKD/log/master.err" 2>/dev/null
+    start_mysqld_main
+    # start_mysqld_main loops for up to 120s pinging; check readiness with an
+    # explicit retry loop (mariadb cmdline SELECT 1) to get a clear verdict.
+    MODE11_UP=0
+    for _retry in $(seq 1 60); do
+      if ${BASEDIR}/bin/mariadb -uroot -S"$SOCK" -Nse "SELECT 1" >/dev/null 2>&1; then
+        MODE11_UP=1; break
+      fi
+      sleep 0.5
+    done
+    if [ $MODE11_UP -ne 1 ]; then
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [MODE11-InfraErr] second mysqld did not come up; skipping trial"
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [MODE11-InfraErr] Tail of $WORKD/log/master.err:"
+      tail -n 20 "$WORKD/log/master.err" 2>/dev/null | while IFS= read -r _ln; do echoit "  | $_ln"; done
+      return 0
+    fi
+    # (4) Restore.
+    if [ "${MODE11_TYPE}" = "dump" ]; then
+      ${BASEDIR}/bin/mariadb -uroot -S"$SOCK" --binary-mode --force <"$DUMPF" >"$WORKD/mode11_restore.out" 2>"$WORKD/mode11_restore.err"
+    else
+      if ! mode11_replay_binlogs "$SOCK" "$BL_DIR"; then
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [MODE11-InfraErr] binlog replay failed; skipping trial"
+        return 0
+      fi
+    fi
+    # (5) Snapshot the restored state.
+    if ! mode11_take_snapshot "$SOCK" "$SNAP_AFTER"; then
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [MODE11-InfraErr] post-roundtrip snapshot failed; skipping trial"
+      return 0
+    fi
+    # (6) Compare.
+    if diff -q "$SNAP_BEFORE" "$SNAP_AFTER" >/dev/null 2>&1; then
+      if [ ! "$STAGE" = "V" ]; then
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoDumpDiff] [$NOISSUEFLOW] Kill server $NEXTACTION"
+        NOISSUEFLOW=$[$NOISSUEFLOW+1]
+      fi
+      return 0
+    else
+      if [ ! "$STAGE" = "V" ]; then
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*DumpBinlogDiff*] [$NOISSUEFLOW] MODE11_TYPE=${MODE11_TYPE} diff found. Swapping files & saving last known good diff; snapshots in $WORKD/mode11_snap_{before,after}.txt"
+        control_backtrack_flow
+      fi
+      cleanup_and_save
+      return 1
+    fi
+
   # Invalid mode
   else
     echoit "Assert: invalid MODE (MODE=${MODE}) discovered. Terminating."
@@ -4071,12 +4331,13 @@ finish(){
   echoit "[Finish] Finalized reducing SQL input file ($INPUTFILE)"
   echoit "[Finish] Number of server startups         : $STARTUPCOUNT (not counting subreducers)"
   echoit "[Finish] Reducer log                       : $WORKD/reducer.log"
+  diskspace "$(dirname "$WORK_OUT")"  # Ensure >=200MB free before writing the final _out file
   if [ ! -r $WORKO ]; then  # If there was no reduction (i.e. issue was not found), $WORKO was never written
     cp $INPUTFILE $WORK_OUT
-    echoit "[Finish] Final testcase                    : $INPUTFILE (= input file; no optimizations were successful. $(wc -l $INPUTFILE | awk '{print $1}') lines)"
+    echoit "[Finish] Final testcase                    : $INPUTFILE (= input file; no optimizations were successful. $(awk 'END{print NR}' $INPUTFILE) lines)"
   else  # Reduction
     cp -f $WORKO $WORK_OUT
-    echoit "[Finish] Final testcase                    : $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
+    echoit "[Finish] Final testcase                    : $WORKO ($(awk 'END{print NR}' $WORKO) lines)"
   fi
   rm -f $WORK_BUG_DIR/${EPOCH}_bug_bundle.tar.gz
   (cd $WORK_BUG_DIR; tar -zhcf ${EPOCH}_bug_bundle.tar.gz ${EPOCH}*)
@@ -4085,7 +4346,7 @@ finish(){
   echoit "[Finish] File containing datadir           : $WORK_BASEDIR (All scripts below use this. Update this when basedir changes)"
   echoit "[Finish] Matching data dir init script     : $WORK_INIT (This script will use /dev/shm/${EPOCH} as working directory)"
   echoit "[Finish] Matching startup script           : $WORK_START (Starts mariadbd/mysqld with same options as used in reducer)"
-  if [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     # See init_workdir_and_files() and search for WORK_RUN for more info. Also more info in improvements section at top
     echoit "[Finish] Matching run script               : $WORK_RUN (though you can look at this file for an example, implementation for MODE6+ is not finished yet)"
   else
@@ -4106,7 +4367,7 @@ finish(){
     fi
     MYSQLD_OPTIONS_REQUIRED=
     if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
-      echoit "[Finish] Final testcase size               : $(stat -c %s $WORKO) bytes ($(wc -l $WORKO | awk '{print $1}') lines)"
+      echoit "[Finish] Final testcase size               : $(stat -c %s $WORKO) bytes ($(awk 'END{print NR}' $WORKO) lines)"
     fi
     if [ -r $WORKO ]; then  # If there were no issues found, $WORKO was never written
       echoit "[Info] It is often beneficial to re-run reducer on the output file ($0 $WORKO) to make it smaller still (Reason for this is that certain lines may have been chopped up (think about missing end quotes or semicolons) resulting in non-reproducibility)"
@@ -4116,9 +4377,9 @@ finish(){
   echoit "[DONE] BASEDIR used: ${BASEDIR}"
   if [ "${FIREWORKS}" != "1" ]; then
     if [ ! -r $WORKO ]; then  # If there was no reduction (i.e. issue was not found), $WORKO was never written
-      echoit "[DONE] Final testcase: $INPUTFILE (= input file; no optimizations were successful. $(wc -l $INPUTFILE | awk '{print $1}') lines)"
+      echoit "[DONE] Final testcase: $INPUTFILE (= input file; no optimizations were successful. $(awk 'END{print NR}' $INPUTFILE) lines)"
     else  # Reduction
-      echoit "[DONE] Final testcase: $WORKO ($(wc -l $WORKO | awk '{print $1}') lines)"
+      echoit "[DONE] Final testcase: $WORKO ($(awk 'END{print NR}' $WORKO) lines)"
     fi
   fi
   if [ "${1}" == 'abort' ]; then
@@ -4150,7 +4411,7 @@ copy_workdir_to_tmp(){
         # Check if the copy of directories (excluding the socket file,this reducer script,the original input file,and the current still-being-written-to log) is indentical (i.e. no output shown for the diff command)
         DIFF_WORKDIR_COPY="not_empty"
         if [ -d "/tmp/$EPOCH" ]; then
-          DIFF_WORKDIR_COPY="$(diff -qr $WORKD /tmp/$EPOCH | grep -vE "is a socket|Only in /tmp/|Files.*dev.*shm.*reducer\.log.*tmp.*reducer\.log differ")"
+          DIFF_WORKDIR_COPY="$(diff -qr $WORKD /tmp/$EPOCH | grep -vE "is a socket|Only in /tmp/|Files .*reducer\.log and .*reducer\.log differ")"
         fi
         if [ "$DIFF_WORKDIR_COPY" == "" ]; then
           WORKDIR_COPY_SUCCESS=1
@@ -4168,7 +4429,7 @@ copy_workdir_to_tmp(){
 }
 
 report_linecounts(){
-  if [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     if [ "$STAGE" = "V" ]; then
       TXT_OUT="[Init] Initial number of lines in restructured input file(s):"
     else
@@ -4177,7 +4438,7 @@ report_linecounts(){
     TS_LARGEST_WORKF_LINECOUNT=0
     for t in $(eval echo {1..$TS_THREADS}); do
       TS_WORKF_NAME=$(eval echo $(echo '$WORKF'"$t"))
-      export TS_LINECOUNTF$t=$(cat $TS_WORKF_NAME | wc -l | tr -d '[\t\n ]*')
+      export TS_LINECOUNTF$t=$(awk 'END{print NR}' $TS_WORKF_NAME)
       TS_WORKF_LINECOUNT=$(eval echo $(echo '$TS_LINECOUNTF'"$t"))
       TXT_OUT="$TXT_OUT #$t: $TS_WORKF_LINECOUNT"
       if [ $TS_WORKF_LINECOUNT -gt $TS_LARGEST_WORKF_LINECOUNT ]; then TS_LARGEST_WORKF_LINECOUNT=$TS_WORKF_LINECOUNT; fi
@@ -4185,9 +4446,9 @@ report_linecounts(){
     echoit "$TXT_OUT"
   else
     if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
-      LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+      LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
     else
-      LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+      LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
     fi
     if [ "$STAGE" = "V" ]; then
       echoit "[Init] Initial number of lines in restructured input file: $LINECOUNTF (${INPUTFILE})"
@@ -4217,7 +4478,7 @@ verify_not_found(){
   else
     PRINTWORKD="/tmp/${EPOCH}"
   fi
-  if [ $MODE -ge 6 ]; then
+  if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     if [ $TS_DBG_CLI_OUTPUT -eq 1 ]; then
       echoit "[Finish] mysql CLI client output : ${PRINTWORKD}/${EXTRA_PATH}mysql<threadid>.out   (Look for clear signs of non-replay or a terminated connection)"
     else
@@ -4288,8 +4549,9 @@ verify(){
       else
         REMOVESUFFIX="s/;[\t ]*#.*/;/i"
       fi
+      diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before each verify-stage WORKT/WORKF transformation (covers all TRIAL=1..6 branches; cheap defensive guard against empty-write cascades)
       if   [ $TRIAL -eq 1 ]; then
-        if [ $MODE -ge 6 ]; then
+        if [ $MODE -ge 6 -a $MODE -le 9 ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & DEBUG_SYNC disabled and removed (DEBUG_SYNC may not be necessary)"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
@@ -4334,7 +4596,7 @@ verify(){
           fi
         fi
       elif [ $TRIAL -eq 2 ]; then
-        if [ $MODE -ge 6 ]; then
+        if [ $MODE -ge 6 -a $MODE -le 9 ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: Medium initial simplification (CREATE+INSERT lines split) & DEBUG_SYNC disabled and removed"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
@@ -4374,7 +4636,7 @@ verify(){
           fi
         fi
       elif [ $TRIAL -eq 3 ]; then
-        if [ $MODE -ge 6 ]; then
+        if [ $MODE -ge 6 -a $MODE -le 9 ]; then
         TS_DEBUG_SYNC_REQUIRED_FLAG=1
         echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: Maximum initial simplification & DEBUG_SYNC enabled"
           for t in $(eval echo {1..$TS_THREADS}); do
@@ -4417,7 +4679,7 @@ verify(){
           fi
         fi
       elif [ $TRIAL -eq 4 ]; then
-        if [ $MODE -ge 6 ]; then
+        if [ $MODE -ge 6 -a $MODE -le 9 ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split) & DEBUG_SYNC enabled"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
@@ -4453,7 +4715,7 @@ verify(){
           fi
         fi
       elif [ $TRIAL -eq 5 ]; then
-        if [ $MODE -ge 6 ]; then
+        if [ $MODE -ge 6 -a $MODE -le 9 ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split) & DEBUG_SYNC enabled"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
@@ -4487,7 +4749,7 @@ verify(){
           fi
         fi
       elif [ $TRIAL -eq 6 ]; then
-        if [ $MODE -ge 6 ]; then
+        if [ $MODE -ge 6 -a $MODE -le 9 ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #6: No initial simplification & DEBUG_SYNC enabled"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
@@ -4663,7 +4925,7 @@ fireworks_setup(){
   fi
 
 #STAGET: TS_THREAD_ELIMINATION: Reduce the number of threads in MODE9 (ThreadSync multi-threaded testcases)
-if [ $MODE -ge 6 ]; then
+if [ $MODE -ge 6 -a $MODE -le 9 ]; then
   NEXTACTION="& try removing next thread"
   STAGE=T
   TRIAL=1
@@ -4737,6 +4999,7 @@ if [ $MODE -ge 6 ]; then
   if [ $TS_THREADS -eq 1 ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Only one SQL thread remaining. Merging DATA and SQL thread and swapping to single threaded simplification"
     WORKO="$WORKD/single_out.sql"
+    diskspace "$WORKD"  # Ensure >=200MB free on WORKD before writing WORKF/WORKO
     cp -f $TS_DATAINPUTFILE $WORKF
     # We can immediately use thread #1 as TS_init_all_sql_files (from the last run above, or from the original run if there was ever only one thread)
     # has set thread #1 to be the correct remaining thread
@@ -4768,9 +5031,9 @@ fi
 
 #STAGE1: Reduce large size files fast
 if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
-  LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+  LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
 else
-  LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+  LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
 fi
 if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
   if [ "${FIREWORKS}" != "1" ]; then
@@ -4808,9 +5071,9 @@ if [ $SKIPSTAGEBELOW -lt 1 -a $SKIPSTAGEABOVE -gt 1 ]; then
       fi
       TRIAL=$[$TRIAL+1]
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
-        LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+        LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
       else
-        LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+        LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
       fi
     done
   else
@@ -4837,6 +5100,7 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
       NEXTACTION="& progress to the next stage"  # Last line
     fi
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line ${CURRENTLINE} (Current chunk size: fixed to 1)"
+    diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before writing WORKT (Stage 2 single-line chunk)
     sed -n "$CURRENTLINE ! p" $WORKF > $WORKT
     while :; do
       run_and_check
@@ -4863,11 +5127,11 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
     if [ "${FIREWORKS}" == "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
       if [ ! -r "${INPUTFILE}" ]; then abort; fi
       SIZEF=$(stat -c %s ${INPUTFILE})
-      LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+      LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
     else
       if [ ! -r "${WORKF}" ]; then abort; fi
       SIZEF=$(stat -c %s ${WORKF})
-      LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+      LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
     fi
     TRIAL=$[$TRIAL+1]
   done
@@ -4887,6 +5151,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} -o ! -r ${THIS_REDUCER} ]; then abort; break; fi
     NOSKIP=0
 
+    diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before each Stage 3 sed transformation (covers all TRIAL=1..N branches below)
     # The @##@ sed's remove comments like /*! NULL */. Each sed removes one /* */ block per line, so 3 sed's removes 3x /* */ for each line
     if   [ $TRIAL -eq 1  ]; then sed "s/[\t ]*,[ \t]*/,/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 2  ]; then NOSKIP=1; sed "s/\\\"/'/g" $WORKF > $WORKT
@@ -4919,10 +5184,10 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     elif [ $TRIAL -eq 29 ]; then sed 's/col/c/g' $WORKF > $WORKT
     elif [ $TRIAL -eq 30 ]; then sed 's/col/c/gi' $WORKF > $WORKT
     elif [ $TRIAL -eq 31 ]; then sed 's/view/v/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 32 ]; then sed 's/view\([0-9]\)*/v\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 32 ]; then sed 's/view\([0-9]*\)/v\1/gi' $WORKF > $WORKT
     elif [ $TRIAL -eq 33 ]; then sed 's/table/t/g' $WORKF > $WORKT
-    elif [ $TRIAL -eq 34 ]; then sed 's/table\([0-9]\)*/t\1/gi' $WORKF > $WORKT
-    elif [ $TRIAL -eq 35 ]; then sed 's/alias\([0-9]\)*/a\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 34 ]; then sed 's/table\([0-9]*\)/t\1/gi' $WORKF > $WORKT
+    elif [ $TRIAL -eq 35 ]; then sed 's/alias\([0-9]*\)/a\1/gi' $WORKF > $WORKT
     elif [ $TRIAL -eq 36 ]; then sed 's/ \([=<>!]\+\)/\1/gi' $WORKF > $WORKT
     elif [ $TRIAL -eq 37 ]; then sed 's/\([=<>!]\+\) /\1/gi' $WORKF > $WORKT
     elif [ $TRIAL -eq 38 ]; then sed 's/[=<>!]\+/=/gi' $WORKF > $WORKT
@@ -4977,11 +5242,11 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
         if [ ! -r "${WORKF}" ]; then abort; fi
         SIZEF=$(stat -c %s ${WORKF})
-        LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+        LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
       else
         if [ ! -r "${INPUTFILE}" ]; then abort; fi
         SIZEF=$(stat -c %s ${INPUTFILE})
-        LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+        LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
       fi
     fi
   done
@@ -5283,7 +5548,28 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 278 ]; then sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /i" $WORKF > $WORKT 
     elif [ $TRIAL -eq 279 ]; then sed "s/ + 1 //gi" $WORKF > $WORKT 
     elif [ $TRIAL -eq 280 ]; then sed "s/CONCURRENT//gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 281 ]; then sed "s/CONCURRENT//i" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    elif [ $TRIAL -eq 281 ]; then sed "s/CONCURRENT//i" $WORKF > $WORKT
+    # String-literal content reduction. Generated/fuzzed payloads in INSERT/SET often dominate
+    # testcase size without driving reproducibility. Each trial assumes nothing about content;
+    # patterns use [^']/[^"] and never cross a quote, so SQL escaping ('') is preserved.
+    elif [ $TRIAL -eq 282 ]; then sed "s/'[^']\{32,\}'/'a'/g" $WORKF > $WORKT  # All long '...' -> 'a'
+    elif [ $TRIAL -eq 283 ]; then sed "s/'[^']\{32,\}'/'a'/" $WORKF > $WORKT   # First only
+    elif [ $TRIAL -eq 284 ]; then sed "s/\"[^\"]\{32,\}\"/\"a\"/g" $WORKF > $WORKT  # Idem, "..."
+    elif [ $TRIAL -eq 285 ]; then sed "s/\"[^\"]\{32,\}\"/\"a\"/" $WORKF > $WORKT
+    elif [ $TRIAL -eq 286 ]; then sed "s/'\([^']\{16\}\)[^']\{16,\}'/'\1'/g" $WORKF > $WORKT  # Keep first 16
+    elif [ $TRIAL -eq 287 ]; then sed "s/'\([^']\{64\}\)[^']\{32,\}'/'\1'/g" $WORKF > $WORKT  # Keep first 64
+    # Tail-trim, chained passes (each -e applies the same trim once more against the prior result)
+    elif [ $TRIAL -eq 288 ]; then sed -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" $WORKF > $WORKT  # 5x trim 500
+    elif [ $TRIAL -eq 289 ]; then sed -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" $WORKF > $WORKT  # 5x trim 100
+    elif [ $TRIAL -eq 290 ]; then sed -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" $WORKF > $WORKT  # 5x trim 20
+    elif [ $TRIAL -eq 291 ]; then sed -e "s/'\([^']\{1,\}\)[^']\{5\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{5\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{5\}'/'\1'/g" $WORKF > $WORKT  # 3x trim 5
+    elif [ $TRIAL -eq 292 ]; then sed "s/'\([^']\{1,\}\)[^']'/'\1'/g" $WORKF > $WORKT  # Trim 1 char
+    # Same idea for "..."
+    elif [ $TRIAL -eq 293 ]; then sed -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 294 ]; then sed -e "s/\"\([^\"]\{1,\}\)[^\"]\{20\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{20\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{20\}\"/\"\1\"/g" $WORKF > $WORKT
+    # Hex literals (0xDEADBEEF...)
+    elif [ $TRIAL -eq 295 ]; then sed "s/0x[0-9A-Fa-f]\{8,\}/0x0/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 296 ]; then sed "s/0x[0-9A-Fa-f]\{8,\}/0x0/" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     if [ ! -r "${WORKT}" ]; then abort; fi
@@ -5313,11 +5599,11 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
         if [ ! -r "${WORKF}" ]; then abort; fi
         SIZEF=$(stat -c %s ${WORKF})
-        LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+        LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
       else
         if [ ! -r "${INPUTFILE}" ]; then abort; fi
         SIZEF=$(stat -c %s ${INPUTFILE})
-        LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+        LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
       fi
     fi
   done
@@ -5339,7 +5625,7 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
       # the '...\n/2' sed is a precaution against multiple CREATE TABLEs on one line (it replaces the second occurrence)
       TABLENAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*TABLE" $WORKF | tail -n1 | sed 's/CREATE[\t ]*TABLE/\n/2' \
         | head -n1 | sed -e 's/CREATE[\t ]*TABLE[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
-      sed "s/\([(. ]\)$TABLENAME\([ )]\)/\1 $TABLENAME \2/gi;s/ $TABLENAME / t$i /gi" $WORKF > $WORKT
+      sed "s/^/ /;s/\$/ /;s/\([^a-zA-Z0-9_]\)$TABLENAME\([^a-zA-Z0-9_]\)/\1t$i\2/gi;s/^ //;s/ \$//" $WORKF > $WORKT
       if [ "$TABLENAME" = "t$i" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as table $i is already named 't$i' in the file"
       else
@@ -5359,7 +5645,7 @@ if [ $SKIPSTAGEBELOW -lt 5 -a $SKIPSTAGEABOVE -gt 5 ]; then
       # the '...\n/2' sed is a precaution against multiple CREATE VIEWs on one line (it replaces the second occurrence)
       VIEWNAME=$(grep -E --binary-files=text -m$i "CREATE[\t ]*VIEW" $WORKF | tail -n1 | sed 's/CREATE[\t ]*VIEW/\n/2' \
         | head -n1 | sed -e 's/CREATE[\t ]*VIEW[\t ]*\(.*\)[\t ]*(/\1/' -e 's/ .*//1' -e 's/(.*//1')
-      sed "s/\([(. ]\)$VIEWNAME\([ )]\)/\1 $VIEWNAME \2/gi;s/ $VIEWNAME / v$i /gi" $WORKF > $WORKT
+      sed "s/^/ /;s/\$/ /;s/\([^a-zA-Z0-9_]\)$VIEWNAME\([^a-zA-Z0-9_]\)/\1v$i\2/gi;s/^ //;s/ \$//" $WORKF > $WORKT
       if [ "$VIEWNAME" = "v$i" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Skipping this trial as view $i is already named 'v$i' in the file"
       else
@@ -5414,18 +5700,18 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
           if [ "$COL" != "c$C_COL_COUNTER" ]; then
             # Try and rename column now to cx to make testcase cleaner
             if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Now attempting to rename column '$COL' to a more uniform 'c$C_COL_COUNTER'"; fi
-            sed "s/$COL/c$C_COL_COUNTER/g" $WORKF > $WORKT
+            sed "s/^/ /;s/\$/ /;s/\([^a-zA-Z0-9_]\)$COL\([^a-zA-Z0-9_]\)/\1c$C_COL_COUNTER\2/gi;s/^ //;s/ \$//" $WORKF > $WORKT
             C_COL_COUNTER=$[$C_COL_COUNTER+1]
             run_and_check
             COLUMN=$[$COLUMN+1]
             if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
               if [ ! -r "${WORKF}" ]; then abort; fi
               SIZEF=$(stat -c %s ${WORKF})
-              LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+              LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
             else
               if [ ! -r "${INPUTFILE}" ]; then abort; fi
               SIZEF=$(stat -c %s ${INPUTFILE})
-              LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+              LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
             fi
           else
             if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Not renaming column '$COL' as it's name is already optimal"; fi
@@ -5556,16 +5842,16 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
               if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
                 if [ ! -r "${WORKF}" ]; then abort; fi
                 SIZEF=$(stat -c %s ${WORKF})
-                LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+                LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
               else
                 if [ ! -r "${INPUTFILE}" ]; then abort; fi
                 SIZEF=$(stat -c %s ${INPUTFILE})
-                LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+                LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
               fi
 
               # This column was not removed. Try and rename column now to cx to make testcase cleaner
               if [ -f $WORKD/log/mysql.out ]; then echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Now attempting to rename this column ('$COL') to a more uniform 'c$C_COL_COUNTER'"; fi
-              sed "s/$COL/c$C_COL_COUNTER/g" $WORKF > $WORKT
+              sed "s/^/ /;s/\$/ /;s/\([^a-zA-Z0-9_]\)$COL\([^a-zA-Z0-9_]\)/\1c$C_COL_COUNTER\2/gi;s/^ //;s/ \$//" $WORKF > $WORKT
               C_COL_COUNTER=$[$C_COL_COUNTER+1]
               run_and_check
             else
@@ -5583,11 +5869,11 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
           if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
             if [ ! -r "${WORKF}" ]; then abort; fi
             SIZEF=$(stat -c %s ${WORKF})
-            LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+            LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
           else
             if [ ! -r "${INPUTFILE}" ]; then abort; fi
             SIZEF=$(stat -c %s ${INPUTFILE})
-            LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+            LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
           fi
         done
       fi
@@ -5737,17 +6023,17 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
     elif [ $TRIAL -eq 123 ]; then sed "s/LOW_PRIORITY //gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 124 ]; then sed "s/IGNORE //gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 125 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 126 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 127 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 128 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 126 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 127 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 128 ]; then sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/i" $WORKF > $WORKT
     elif [ $TRIAL -eq 129 ]; then sed "s/enum[ ]*('','','','','','',/ENUM('',/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 130 ]; then sed "s/enum[ ]*('','','','',/ENUM('',/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 131 ]; then sed "s/enum[ ]*('','','',/ENUM('',/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 132 ]; then sed "s/enum[ ]*('','',/ENUM('',/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 133 ]; then sed "s/set[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 134 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 135 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
-    elif [ $TRIAL -eq 136 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 135 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/i" $WORKF > $WORKT
+    elif [ $TRIAL -eq 136 ]; then sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/i" $WORKF > $WORKT
     elif [ $TRIAL -eq 137 ]; then sed "s/set[ ]*('','','','','','',/SET('',/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 138 ]; then sed "s/set[ ]*('','','','',/SET('',/gi" $WORKF > $WORKT
     elif [ $TRIAL -eq 139 ]; then sed "s/set[ ]*('','','',/SET('',/gi" $WORKF > $WORKT
@@ -5955,11 +6241,11 @@ if [ $SKIPSTAGEBELOW -lt 7 -a $SKIPSTAGEABOVE -gt 7 ]; then
       if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not use WORKF but INPUTFILE
         if [ ! -r "${WORKF}" ]; then abort; fi
         SIZEF=$(stat -c %s ${WORKF})
-        LINECOUNTF=$(cat ${WORKF} | wc -l | tr -d '[\t\n ]*')
+        LINECOUNTF=$(awk 'END{print NR}' ${WORKF})
       else
         if [ ! -r "${INPUTFILE}" ]; then abort; fi
         SIZEF=$(stat -c %s ${INPUTFILE})
-        LINECOUNTF=$(cat ${INPUTFILE} | wc -l | tr -d '[\t\n ]*')
+        LINECOUNTF=$(awk 'END{print NR}' ${INPUTFILE})
       fi
     fi
   done

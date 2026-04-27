@@ -22,16 +22,44 @@ elif [ "${1}" == "REPL" ]; then
 fi
 
 # Stop (if running), wipe and start all instances using all_no_cl
+# \$ escaped so each parallel worker re-evaluates RANDOM in the inner bash -c (a single outer-shell expansion would give all workers the same value)
 if [ ${SAN_MODE} -eq 1 ]; then
-  ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P3 -I{} bash -c "{}"
+  ./gendirs.sh SAN | xargs -I{} echo "sleep \$((RANDOM % 5)).\${RANDOM}; cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P10 -I{} bash -c "{}"
 elif [ ${MSAN_MODE} -eq 1 ]; then
-  ./gendirs.sh MSAN | xargs -I{} echo "cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P3 -I{} bash -c "{}"
+  ./gendirs.sh MSAN | xargs -I{} echo "sleep \$((RANDOM % 5)).\${RANDOM}; cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P10 -I{} bash -c "{}"
 elif [ ${GAL_MODE} -eq 1 ]; then
-  ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P3 -I{} bash -c "{}"
+  ./gendirs.sh GAL | xargs -I{} echo "sleep \$((RANDOM % 5)).\${RANDOM}; cd {}; ./gal_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P10 -I{} bash -c "{}"
 elif [ ${REPL_MODE} -eq 1 ]; then
-  ./gendirs.sh | xargs -I{} echo "cd {}; export SRNOCL=1; ./start_replication ${MYEXTRA_OPT}; cd ..; export SRNOCL=; export -n SRNOCL" | xargs -P3 -I{} bash -c "{}"
+  ./gendirs.sh | xargs -I{} echo "sleep \$((RANDOM % 5)).\${RANDOM}; cd {}; export SRNOCL=1; ./start_replication ${MYEXTRA_OPT}; cd ..; export SRNOCL=; export -n SRNOCL" | xargs -P10 -I{} bash -c "{}"
 else
-  ./gendirs.sh | xargs -I{} echo "cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P3 -I{} bash -c "{}"
+  ./gendirs.sh | xargs -I{} echo "sleep \$((RANDOM % 5)).\${RANDOM}; cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P10 -I{} bash -c "{}"
 fi
 
 sync
+
+# Bootstrap is occasionally racy in parallel; retry dead instances serially (max 3 attempts each). Scoped to SAN/MSAN/regular - Galera and replication have different socket layouts
+if [ ${GAL_MODE} -eq 0 ] && [ ${REPL_MODE} -eq 0 ]; then
+  if [ ${SAN_MODE} -eq 1 ]; then
+    GENDIRS_OUT="$(./gendirs.sh SAN)"
+  elif [ ${MSAN_MODE} -eq 1 ]; then
+    GENDIRS_OUT="$(./gendirs.sh MSAN)"
+  else
+    GENDIRS_OUT="$(./gendirs.sh)"
+  fi
+  for D in ${GENDIRS_OUT}; do
+    [ -x "./${D}/bin/mariadb-admin" ] || continue
+    "./${D}/bin/mariadb-admin" ping -uroot -S"./${D}/socket.sock" >/dev/null 2>&1 && continue
+    echo "all_all: ${D} did not come up after parallel start, retrying serially"
+    for ATTEMPT in 1 2 3; do
+      ( cd "./${D}" && ./all_no_cl ${MYEXTRA_OPT} )
+      sync
+      if "./${D}/bin/mariadb-admin" ping -uroot -S"./${D}/socket.sock" >/dev/null 2>&1; then
+        echo "all_all: ${D} recovered on retry ${ATTEMPT}"
+        break
+      fi
+      if [ "${ATTEMPT}" -eq 3 ]; then
+        echo "all_all: ${D} still down after 3 retries, leaving as-is"
+      fi
+    done
+  done
+fi

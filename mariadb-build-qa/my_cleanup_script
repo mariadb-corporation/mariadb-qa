@@ -20,7 +20,11 @@ while true; do
   wait %1
   wait %2
   #wait %3
-  cd /data/NEWBUGS && ./clean_newbugs
+  cd /data/NEWBUGS 
+  if [ "${PWD}" == "/data/NEWBUGS" ]; then
+    wc -l newbug*.sql | awk '$2 ~ /^newbug/ && ($1==0 || $1>20){sub(/\.sql$/,"",$2); print $2}' | xargs -I{} echo "rm {}.*" | tr '\n' '\0' | xargs -0 -P10 -I{} bash -c "{}"  # Cleanup 0-line and >20-line testcases and their corresponding files
+    ./clean_newbugs
+  fi
   cd /data
   # Cleanup all 'no core file/no fallback' trials which truly have no core (historically this also included SAN issues which were subsequently filered)
   grep "^   TEXT=.Assert: no core file found.*and fallback_text_string.sh returned an empty output for all logs" */reducer[0-9]*.sh | grep -o '[0-9]\+/reducer[0-9]\+' | sed 's|\([0-9]\+\)/reducer\([0-9]\+\)|if [ ! -r \1/\2/data/core ]; then echo "Removing trial \2 in workdir \1"; rm -Rf \1/\2 \1/[a-z]*\2.sh \1/[a-z]*\2; fi|' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
