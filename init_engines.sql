@@ -1,0 +1,12 @@
+INSTALL PLUGIN spider SONAME 'ha_spider';
+INSTALL SONAME 'ha_rocksdb';
+INSTALL SONAME 'ha_mroonga';
+INSTALL SONAME 'ha_oqgraph';
+INSTALL SONAME 'ha_sphinx';
+INSTALL SONAME 'ha_archive';
+INSTALL SONAME 'ha_federatedx';
+INSTALL SONAME 'ha_blackhole';
+INSTALL SONAME 'ha_rocksdb';
+INSTALL SONAME 'ha_connect';
+INSTALL SONAME 'ha_s3';
+CREATE SERVER srv FOREIGN DATA wrapper mysql options (socket '../socket.sock', DATABASE 'test', USER 'root', PASSWORD '');

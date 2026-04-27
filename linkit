@@ -62,6 +62,7 @@ fi
 rm -f ${HOME}/tcp ${HOME}/pge ${HOME}/pg ${HOME}/tr ${HOME}/tc ${HOME}/t ${HOME}/fc ${HOME}/mcl ${HOME}/s ${HOME}/st ${HOME}/li ${HOME}/crc ${HOME}/cto ${HOME}/mmtr ${HOME}/stack
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/watchdog /home/${USER}/watchdog 2>&1
+ln -fs /home/${USER}/mariadb-qa/homedir_scripts/wasabi /home/${USER}/wasabi 2>&1
 ln -fs /home/${USER}/mariadb-qa/testcase_prettify.sh /home/${USER}/tcp 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/pge 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/depge 2>&1

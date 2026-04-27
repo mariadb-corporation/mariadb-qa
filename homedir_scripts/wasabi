@@ -1,0 +1,91 @@
+#!/bin/bash
+# Convenience wrapper for ~/mariadb-qa/wasabi.sh.
+# Manages a detached 'wasabi' screen running the FireWorks autorunner.
+
+WASABI_SH="${HOME}/mariadb-qa/wasabi.sh"
+SCREEN_NAME="wasabi"
+LOG="/data/wasabi.log"
+
+if [ ! -x "${WASABI_SH}" ]; then
+  echo "Assert: ${WASABI_SH} missing or not executable"
+  echo "Try:    cd ~/mariadb-qa && chmod +x wasabi.sh"
+  exit 1
+fi
+
+is_running(){
+  screen -ls 2>/dev/null | awk -v n="[.]${SCREEN_NAME}\$" '$1 ~ n {f=1} END{exit !f}'
+}
+
+cmd_start(){
+  if is_running; then echo "wasabi already running"; return 0; fi
+  echo "Starting wasabi in screen '${SCREEN_NAME}'"
+  screen -dmS "${SCREEN_NAME}" "${WASABI_SH}"
+  sleep 1
+  if is_running; then
+    echo "Started.  Log: ${LOG}"
+    echo "Attach:   ~/wasabi attach   (or: screen -r ${SCREEN_NAME})"
+  else
+    echo "Failed to start — check ${LOG}"
+    return 1
+  fi
+}
+
+cmd_stop(){
+  if ! is_running; then echo "wasabi not running"; return 0; fi
+  local FULL
+  FULL=$(screen -ls 2>/dev/null | awk -v n="[.]${SCREEN_NAME}\$" '$1 ~ n {print $1; exit}')
+  screen -S "${FULL}" -X quit
+  sleep 1
+  if is_running; then echo "Failed to stop ${FULL}"; return 1; fi
+  echo "Stopped ${FULL}"
+}
+
+cmd_status(){
+  if is_running; then
+    local FULL
+    FULL=$(screen -ls 2>/dev/null | awk -v n="[.]${SCREEN_NAME}\$" '$1 ~ n {print $1; exit}')
+    echo "wasabi running (${FULL})"
+    if [ -r "${LOG}" ]; then
+      echo "Last 3 log lines:"
+      tail -n 3 "${LOG}" | sed 's/^/  /'
+    fi
+  else
+    echo "wasabi not running"
+  fi
+}
+
+cmd_log(){
+  [ ! -r "${LOG}" ] && { echo "No log yet at ${LOG}"; return 1; }
+  tail -f "${LOG}"
+}
+
+cmd_attach(){
+  if ! is_running; then echo "wasabi not running — try: ~/wasabi start"; return 1; fi
+  local FULL
+  FULL=$(screen -ls 2>/dev/null | awk -v n="[.]${SCREEN_NAME}\$" '$1 ~ n {print $1; exit}')
+  exec screen -r "${FULL}"
+}
+
+usage(){
+  cat <<EOF
+Usage: $(basename "$0") [start|stop|status|log|attach]
+
+  (no args)  same as 'status' if running, else 'start'
+  start      launch wasabi.sh in a detached screen named '${SCREEN_NAME}'
+  stop       terminate the wasabi screen
+  status     report running state + last 3 log lines
+  log        tail -f ${LOG}
+  attach     screen -r ${SCREEN_NAME}
+EOF
+}
+
+case "${1:-}" in
+  start)        cmd_start ;;
+  stop)         cmd_stop ;;
+  status)       cmd_status ;;
+  log)          cmd_log ;;
+  attach)       cmd_attach ;;
+  -h|--help)    usage ;;
+  '')           if is_running; then cmd_status; else cmd_start; fi ;;
+  *)            echo "Unknown arg: $1"; usage; exit 2 ;;
+esac

@@ -1,0 +1,65 @@
+claude_loop_instructions.txt
+============================
+
+This file used to drive /loop 3h, the original AI-managed pquery
+curation flow. That flow has been replaced by a daemon pair plus a
+shared single-pass curate script:
+
+  ~/mariadb-qa/watchdog.sh         thin watcher; run via ~/watchdog
+  ~/mariadb-qa/wasabi.sh           builds + FireWorks + generator;
+                                   run via ~/wasabi
+  ~/mariadb-qa/watchdog_curate.sh  single-pass curate (P0..P6), called
+                                   by both daemons under flock
+
+The curate script implements the same phase model previously specified
+in this file, mechanically rather than under AI judgment.
+
+
+Phase summary (implemented in watchdog_curate.sh)
+-------------------------------------------------
+
+  P0A  cleanup_finished_screens               uncapped
+  P0B  cleanup_stuck_no_repro                 uncapped
+       (STUCK_NO_REPRO_HOURS=4)
+  P1   start reducers                         memory-bounded
+       (MAX_MEMORY_IN_USE=110 GB,
+        INTER_START_SLEEP=10s)
+  P2   sibling-trial switch, then depge       cap 2
+  P3   copy-through if <=10 lines,            cap 4
+       queue if more
+  P4   ~/b bug reports                        cap 2
+  P5   MTR generation                         cap 2
+  P6   0-line _out repair via ~/pg            uncapped
+
+
+AI fall-through queue
+---------------------
+
+When watchdog_curate.sh cannot handle a case mechanically (multi-line
+_out files needing real SQL simplification, ambiguous Spider template
+selection), it deposits a pointer directory under
+/data/watchdog/ai_queue/. For the queue layout and the prompt to feed a
+Claude Code session that drains it, see:
+
+  ~/mariadb-qa/watchdog_ai.txt
+
+
+Framework context
+-----------------
+
+Memory files at ~/.claude/projects/-home-roel-mariadb-qa/memory/ cover
+framework conventions shared by the daemons and any AI session that
+helps drain the queue (reference_framework_overview.md,
+reference_reducer.md, reference_bug_detection.md,
+reference_homedir_helpers.md, reference_directory_conventions.md,
+reference_pquery_run_config.md, reference_pre_shuffle.md,
+reference_claude_loop.md).
+
+MTR templates: ~/mariadb-qa/claude_mtr_templates/ (see README there).
+
+
+Status
+------
+
+This file is kept only as a pointer. The operational rules now live in
+the scripts and watchdog_ai.txt; do not edit recipes here.

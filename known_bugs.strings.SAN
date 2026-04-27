@@ -28,6 +28,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|stack-buffer-overflow|sql/item_jsonfunc.cc|check_key_in_list|Item_func_json_keys::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                       ## MDEV-39049
 UBSAN|division by zero|sql/item_windowfunc.h|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                     ## MDEV-39451
 ASAN|memcpy-param-overlap: memory ranges X and Y overlap|include/x86_64-linux-gnu/bits/string_fortified.h|__asan_memcpy|memcpy|Field_longstr::compress|Field_varstring_compressed::store ## MDEV-39450
 ASAN|memcpy-param-overlap: memory ranges X and Y overlap|sql/field.cc|__asan_memcpy|Field_longstr::compress|Field_varstring_compressed::store|Item::save_str_in_field          ## MDEV-39450

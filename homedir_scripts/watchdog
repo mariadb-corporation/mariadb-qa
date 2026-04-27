@@ -1,0 +1,91 @@
+#!/bin/bash
+# Convenience wrapper for ~/mariadb-qa/watchdog.sh.
+# Manages a detached 'watchdog' screen running the supervising daemon.
+
+WATCHDOG_SH="${HOME}/mariadb-qa/watchdog.sh"
+SCREEN_NAME="watchdog"
+LOG="/data/watchdog.log"
+
+if [ ! -x "${WATCHDOG_SH}" ]; then
+  echo "Assert: ${WATCHDOG_SH} missing or not executable"
+  echo "Try:    cd ~/mariadb-qa && chmod +x watchdog.sh"
+  exit 1
+fi
+
+is_running(){
+  screen -ls 2>/dev/null | awk -v n="[.]${SCREEN_NAME}\$" '$1 ~ n {f=1} END{exit !f}'
+}
+
+cmd_start(){
+  if is_running; then echo "watchdog already running"; return 0; fi
+  echo "Starting watchdog in screen '${SCREEN_NAME}'"
+  screen -dmS "${SCREEN_NAME}" "${WATCHDOG_SH}"
+  sleep 1
+  if is_running; then
+    echo "Started.  Log: ${LOG}"
+    echo "Attach:   ~/watchdog attach   (or: screen -r ${SCREEN_NAME})"
+  else
+    echo "Failed to start — check ${LOG}"
+    return 1
+  fi
+}
+
+cmd_stop(){
+  if ! is_running; then echo "watchdog not running"; return 0; fi
+  local FULL
+  FULL=$(screen -ls 2>/dev/null | awk -v n="[.]${SCREEN_NAME}\$" '$1 ~ n {print $1; exit}')
+  screen -S "${FULL}" -X quit
+  sleep 1
+  if is_running; then echo "Failed to stop ${FULL}"; return 1; fi
+  echo "Stopped ${FULL}"
+}
+
+cmd_status(){
+  if is_running; then
+    local FULL
+    FULL=$(screen -ls 2>/dev/null | awk -v n="[.]${SCREEN_NAME}\$" '$1 ~ n {print $1; exit}')
+    echo "watchdog running (${FULL})"
+    if [ -r "${LOG}" ]; then
+      echo "Last 3 log lines:"
+      tail -n 3 "${LOG}" | sed 's/^/  /'
+    fi
+  else
+    echo "watchdog not running"
+  fi
+}
+
+cmd_log(){
+  [ ! -r "${LOG}" ] && { echo "No log yet at ${LOG}"; return 1; }
+  tail -f "${LOG}"
+}
+
+cmd_attach(){
+  if ! is_running; then echo "watchdog not running — try: ~/watchdog start"; return 1; fi
+  local FULL
+  FULL=$(screen -ls 2>/dev/null | awk -v n="[.]${SCREEN_NAME}\$" '$1 ~ n {print $1; exit}')
+  exec screen -r "${FULL}"
+}
+
+usage(){
+  cat <<EOF
+Usage: $(basename "$0") [start|stop|status|log|attach]
+
+  (no args)  same as 'status' if running, else 'start'
+  start      launch watchdog.sh in a detached screen named '${SCREEN_NAME}'
+  stop       terminate the watchdog screen
+  status     report running state + last 3 log lines
+  log        tail -f ${LOG}
+  attach     screen -r ${SCREEN_NAME}
+EOF
+}
+
+case "${1:-}" in
+  start)        cmd_start ;;
+  stop)         cmd_stop ;;
+  status)       cmd_status ;;
+  log)          cmd_log ;;
+  attach)       cmd_attach ;;
+  -h|--help)    usage ;;
+  '')           if is_running; then cmd_status; else cmd_start; fi ;;
+  *)            echo "Unknown arg: $1"; usage; exit 2 ;;
+esac

@@ -1,0 +1,57 @@
+/data/watchdog/ai_queue/ — how to process the queue
+====================================================
+
+watchdog_curate.sh drops pointer directories here when it cannot mechanically
+handle a case. Each entry is a directory like:
+
+    /data/watchdog/ai_queue/p3_163879_22/
+      info.txt    structured context: wd, trial, phase, reason, paths, uid
+
+Two classes of entries get queued:
+
+  p3-reduction-needed
+    The trial's newest *_out* file is more than SMALL_OUT_LINES lines
+    (10 by default). Mechanical copy-through refuses; real SQL
+    simplification needs AI judgment. Files referenced: the _out file,
+    the reducer<N>.sh, the trial dir with MYEXTRA, the basedir path.
+
+  p5-spider-template-selection
+    Spider engine detected in the reduced SQL but the MTR template
+    choice is ambiguous (single-server vs master-slave vs partition).
+    Files referenced: the _claude_reduced SQL, the templates dir at
+    ~/mariadb-qa/claude_mtr_templates/, the trial dir.
+
+Replication trials go straight to Phase 5 with the repl_* templates;
+they do not get queued. Vanilla InnoDB non-repl trials skip the queue
+entirely.
+
+
+Processing the queue with Claude
+--------------------------------
+
+Open a Claude Code session and paste:
+
+    Process /data/watchdog/ai_queue/. For each subdir:
+      - Read info.txt to understand what's needed.
+      - For p3-reduction-needed: perform the Phase 3 verification loop
+        (anc + cl + ~/t vs reducer's TEXT), aiming for 3-4 lines. Save
+        the final SQL as <basename>_claude_reduced in the trial dir.
+      - For p5-spider-template-selection: pick the right spider
+        template from ~/mariadb-qa/claude_mtr_templates/, splice the
+        SQL, save as <basename>_claude_mtr in the trial dir, validate
+        with ./mtra --record.
+      - After each entry is processed, rm -rf its ai_queue directory
+        so it won't be re-processed.
+    Log each outcome to /data/watchdog/curate.log with [P3]/[P5] tokens.
+
+Add "Process up to 5 entries this session." to cap per-session work.
+
+
+Lifecycle
+---------
+
+  - watchdog_curate.sh creates entries but never removes them.
+  - You (via Claude or manually) remove them after processing.
+  - Stale entries (wd/trial has been processed since being queued) are
+    harmless: the artifact-already-exists checks in P3/P5 cause Claude
+    to skip them.
