@@ -286,6 +286,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+old_n_core_fields == index->n_core_fields|SIGABRT|btr_pcur_t::restore_position|sel_restore_position_for_mysql|row_search_mvcc|ha_innobase::general_fetch                       ## MDEV-23200
 SIGFPE|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                                                           ## MDEV-39451
 SIGFPE|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field                                                   ## MDEV-39451
 (0)|SIGABRT|Item_func_spatial_precise_rel::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long|Type_handler_long::Item_send                                          ## MDEV-39449
