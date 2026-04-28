@@ -286,6 +286,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|TABLE_SHARE::db_type|THD::free_tmp_table_share|THD::drop_temporary_table|mysql_alter_table                                                                             ## MDEV-39454
+m_using_unique_constraint || m_group_buff <= param->group_buff + param->group_length|SIGABRT|Create_tmp_table::finalize|create_tmp_table|JOIN::create_postjoin_aggr_table|JOIN::make_aggr_tables_info ## MDEV-39346
 old_n_core_fields == index->n_core_fields|SIGABRT|btr_pcur_t::restore_position|sel_restore_position_for_mysql|row_search_mvcc|ha_innobase::general_fetch                       ## MDEV-23200
 SIGFPE|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                                                           ## MDEV-39451
 SIGFPE|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field                                                   ## MDEV-39451
