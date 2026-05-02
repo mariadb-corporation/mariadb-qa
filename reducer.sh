@@ -648,6 +648,34 @@ diskspace(){
   done
 }
 
+# WORKT integrity check - guards against silent ENOSPC truncation of WORKT.
+# diskspace() before cut_chunk's sed only checks pre-write headroom; a parallel
+# reducer can fill tmpfs between the check and the redirect, leaving WORKT
+# partial/empty. With a permissive bug regex (e.g. 'GOT_ERROR' alternative
+# matching OOS noise in the error log), the trial then commits a bogus near-
+# empty reduction. Returns 0 if WORKT looks intact, 1 if truncation is suspected.
+# Skips (returns 0) for stage V, FIREWORKS=1, or when LINECOUNTF/CHUNK are unset.
+# The leading "# mysqld options..." header is excluded from the SQL-line count
+# by design - it is what survives a truncation, so counting it would mask the bug.
+workt_integrity_ok(){
+  local WORKT_LINES SQL_LINES EXPECTED_TOTAL EXPECTED_SQL_FLOOR
+  if [ "$STAGE" = "V" ] || [ "${FIREWORKS}" = "1" ]; then return 0; fi
+  if [ -z "$LINECOUNTF" ] || [ -z "$CHUNK" ] || [ ! -e "$WORKT" ]; then return 0; fi
+  WORKT_LINES=$(wc -l < "$WORKT" 2>/dev/null | awk '{print $1+0}')
+  SQL_LINES=$(grep -cvE '^[[:space:]]*(#|$)' "$WORKT" 2>/dev/null || echo 0)
+  EXPECTED_TOTAL=$(( LINECOUNTF - CHUNK - 1 ))
+  if [ "$EXPECTED_TOTAL" -gt 0 ] && [ "${SQL_LINES:-0}" -lt 1 ]; then  # Hard floor: zero non-comment lines = impossible from a correct sed cut
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] WORKT integrity (hard floor): 0 non-comment lines, expected total ${EXPECTED_TOTAL} (WORKT_LINES=${WORKT_LINES}, LINECOUNTF=${LINECOUNTF}, CHUNK=${CHUNK}). Likely ENOSPC truncation in cut_chunk."
+    return 1
+  fi
+  EXPECTED_SQL_FLOOR=$(( (EXPECTED_TOTAL - 1) / 2 ))  # Soft floor: 50% of expected SQL lines (-1 discounts header in typical case)
+  if [ "$EXPECTED_TOTAL" -gt 4 ] && [ "${SQL_LINES:-0}" -lt "$EXPECTED_SQL_FLOOR" ]; then  # Activates only once a meaningful reduction was expected, to avoid false positives at near-final stages
+    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] WORKT integrity (soft floor): ${SQL_LINES} non-comment lines, expected >=${EXPECTED_SQL_FLOOR} (WORKT_LINES=${WORKT_LINES}, LINECOUNTF=${LINECOUNTF}, CHUNK=${CHUNK}). Possible partial truncation in cut_chunk."
+    return 1
+  fi
+  return 0
+}
+
 save_rr_trace(){
   RR_SAVE_LOCATION=${1}
   rm -rf ${RR_SAVE_LOCATION}
@@ -3608,7 +3636,14 @@ process_outcome(){
       exit 1
     fi
     RUN_TIME=$[ $(date +'%s') - ${MYSQLD_START_TIME} ]
-    if [ ${RUN_TIME} -ge ${TIMEOUT_CHECK_REAL} ]; then
+    M0_ISSUE_FOUND=0
+    if [ ${RUN_TIME} -ge ${TIMEOUT_CHECK_REAL} ]; then M0_ISSUE_FOUND=1; fi
+    if [ $M0_ISSUE_FOUND -eq 1 ] && ! workt_integrity_ok; then  # Reject trial if WORKT was silently truncated (likely ENOSPC); avoids committing a bogus reduction
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Discarding trial result instead of committing a bogus reduction. Re-checking diskspace before next trial."
+      M0_ISSUE_FOUND=0
+      diskspace "$(dirname "$WORKT")" 500
+    fi
+    if [ $M0_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TimeoutBug*] [$NOISSUEFLOW] Swapping files & saving last known good timeout issue in $WORKO"
         control_backtrack_flow
@@ -3957,6 +3992,11 @@ process_outcome(){
         if grep -E --binary-files=text -iq "$TEXT" $ERRORLOG; then M3_ISSUE_FOUND=1; fi
       fi
     fi
+    if [ $M3_ISSUE_FOUND -eq 1 ] && ! workt_integrity_ok; then  # Reject trial if WORKT was silently truncated (likely ENOSPC); avoids committing a bogus reduction
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Discarding trial result instead of committing a bogus reduction. Re-checking diskspace before next trial."
+      M3_ISSUE_FOUND=0
+      diskspace "$(dirname "$WORKT")" 500
+    fi
     if [ $M3_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" -a "${FIREWORKS}" != "1" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*${M3_OUTPUT_TEXT}OutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good testcase in $WORKO"
@@ -4013,6 +4053,11 @@ process_outcome(){
       M4_OUTPUT_TEXT="GlibcCrash"
     else
       M4_OUTPUT_TEXT="Crash"
+    fi
+    if [ $M4_ISSUE_FOUND -eq 1 ] && ! workt_integrity_ok; then  # Reject trial if WORKT was silently truncated (likely ENOSPC); avoids committing a bogus reduction
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Discarding trial result instead of committing a bogus reduction. Re-checking diskspace before next trial."
+      M4_ISSUE_FOUND=0
+      diskspace "$(dirname "$WORKT")" 500
     fi
     if [ $M4_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then

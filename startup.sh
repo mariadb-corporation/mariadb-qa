@@ -63,7 +63,7 @@ SOCKET=${PWD}/socket.sock
 SLAVE_SOCKET=${PWD}/socket_slave.sock
 MTRT=$((${RANDOM} % 100 + 700))
 BUILD=$(pwd | sed 's|^.*/||')
-SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+SCRIPT_PWD="$(dirname "$(readlink -f "${0}")")"
 source $SCRIPT_PWD/init_empty_port.sh
 cp $SCRIPT_PWD/init_empty_port.sh ${PWD}/
 cp $SCRIPT_PWD/gencerts.sh ${PWD}/

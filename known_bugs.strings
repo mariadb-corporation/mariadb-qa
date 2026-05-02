@@ -532,6 +532,8 @@ offsets|SIGABRT|rec_offs_n_fields|rec_offs_validate|rec_offs_comp|rtr_update_mbr
 SIGSEGV|get_loc_info|auditing|plugins_dispatch|mysql_audit_notify                                                                                                              ## MDEV-36974
 SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|Charset_collation_map_st::insert_or_replace                                                                   ## MDEV-36971
 ret == BINLOG_CHECKSUM_ALG_OFF || ret == BINLOG_CHECKSUM_ALG_UNDEF || ret == BINLOG_CHECKSUM_ALG_CRC32|SIGABRT|get_checksum_alg|Log_event::read_log_event|mysql_client_binlog_statement|mysql_execute_command ## SPECIAL-39
+0|SIGABRT|Type_handler_composite::Item_update_null_value|Item::update_null_value|Item_func::is_null|Item_row::fix_fields                                                       ## MDEV-36964
+SIGSEGV|cmp_row_type|cmp_row_type|cmp_row_type|cmp_row_type                                                                                                                    ## MDEV-36964
 SIGSEGV|Item::check_cols|cmp_row_type|cmp_row_type|cmp_row_type                                                                                                                ## MDEV-36964
 SIGSEGV|Item_hybrid_func::type_handler|Item::result_type|cmp_row_type|cmp_row_type                                                                                             ## MDEV-36964
 SIGSEGV|Explain_query::~Explain_query|delete_explain_query|log_slow_statement|dispatch_command                                                                                 ## MDEV-31793

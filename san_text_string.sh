@@ -352,6 +352,7 @@ for FILE in ${ERROR_LOGS}; do
       if [ ! -z "${ASAN_FRAME3}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME3}"; fi
       if [ ! -z "${ASAN_FRAME4}" ];        then UNIQUE_ID="${UNIQUE_ID}|${ASAN_FRAME4}"; fi
       UNIQUE_ID="$(echo "${UNIQUE_ID}" | sed 's/ASAN|LeakSanitizer: detected memory leaks/LSAN|memory leak/')"  # LSAN
+      ## -------------------- Specific odd stack issue handling --------------------
       # Specific issue (odd stack): LSAN in operator new from dlopen
       if [ "${UNIQUE_ID}" == "LSAN|memory leak|<unknown_module>|operator" ]; then
         if grep -qi 'dlopen' ${ERROR_LOGS} 2>/dev/null; then
@@ -368,6 +369,14 @@ for FILE in ${ERROR_LOGS}; do
             if grep -qi 'init_read_record' ${ERROR_LOGS} 2>/dev/null; then
               UNIQUE_ID="LSAN|memory leak|<unknown_module>|calloc|handler::ha_rnd_init(bool)|handler::ha_rnd_init_with_error(bool)|init_read_record"
       fi; fi; fi; fi
+      # Specific issue (odd stack): LSAN (in CONNECT from Sql_cmd_update::update_single_table)
+      if [ "${UNIQUE_ID}" == "LSAN|memory leak|<unknown_module>|malloc" ]; then
+        if grep -qi 'Sql_cmd_update::update_single_table.*sql_update.cc' ${ERROR_LOGS} 2>/dev/null; then
+          if grep -qi 'Sql_cmd_update::execute_inner.*sql_update.cc' ${ERROR_LOGS} 2>/dev/null; then
+            if grep -qi 'Sql_cmd_dml::execute.*sql_select.cc' ${ERROR_LOGS} 2>/dev/null; then
+              UNIQUE_ID="LSAN|memory leak|<unknown_module>|malloc|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute"
+      fi; fi; fi; fi
+      ## -------------------- /Specific odd stack issue handling -------------------
       echo "${UNIQUE_ID}"
       exit 0
     fi

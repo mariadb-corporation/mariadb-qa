@@ -15,10 +15,11 @@
 #      reading the generated SQL and depositing newbug_*.{sql,string,
 #      reducer.sh,varmod} to /data/NEWBUGS/. Restarted every
 #      FIREWORKS_MAX_HOURS or when basedir rotates.
-#   4. Curation — invokes ~/mariadb-qa/watchdog_curate.sh each tick, which
-#      handles cleanup, reductions, ~/b reports, MTR generation across the
-#      newbug output. (watchdog_curate.sh is shared with watchdog.sh; its
-#      lock file prevents overlap.)
+#   4. Curation — invokes ~/mariadb-qa/watchdog.sh each tick with
+#      WATCHDOG_SOURCE=wasabi (single-pass mode), which handles cleanup,
+#      reductions, ~/b reports, MTR generation across the newbug output.
+#      A flock at /data/watchdog/state/watchdog.lock prevents overlap with
+#      a separately-running watchdog daemon.
 #
 # Standalone, no required flags. Edit Config below to tune.
 
@@ -45,7 +46,7 @@ GENERATOR_REFRESH_HOURS=23                  # Regenerate SQL when wasabi_input.s
 DISK_GATE_PCT=99                            # /data % at or above this → curation skips writes
                                             # (build cycle has its own pause-at-low-disk handling).
 
-CURATE_SCRIPT="${HOME}/mariadb-qa/watchdog_curate.sh"
+WATCHDOG_SH="${HOME}/mariadb-qa/watchdog.sh"
 CURATE_ENABLED=1                            # 0 to skip the curation phase
 
 # =============== Internal state ===============
@@ -123,8 +124,8 @@ preflight(){
     wecho 0 'Preflight' "*** ERROR: /data or /test missing — run ~/mariadb-qa/linkit"; exit 1; }
   [ ! -r /test/gendirs.sh ] && {
     wecho 0 'Preflight' "*** ERROR: /test/gendirs.sh missing — run ~/mariadb-qa/linkit"; exit 1; }
-  [ ! -x "${CURATE_SCRIPT}" ] && {
-    wecho 0 'Preflight' "*** ERROR: ${CURATE_SCRIPT} missing — curation will fail"
+  [ ! -x "${WATCHDOG_SH}" ] && {
+    wecho 0 'Preflight' "*** ERROR: ${WATCHDOG_SH} missing — curation will fail"
     # Don't exit — wasabi can still run discovery; curate is optional.
   }
 }
@@ -403,13 +404,14 @@ discover_fireworks(){
 }
 
 # =============== Curation ===============
-# watchdog_curate.sh handles cleanup, P1 starts, hung handling, copy-through
-# reductions, ~/b reports, MTR generation. Its lock prevents overlap with any
-# concurrently-running watchdog.sh that's also calling it.
+# Invoke watchdog.sh single-pass (WATCHDOG_SOURCE=wasabi). watchdog.sh handles
+# cleanup, P1 starts, hung handling, copy-through reductions, ~/b reports,
+# MTR generation. The flock inside watchdog.sh prevents overlap with a
+# separately-running watchdog daemon.
 curate(){
   [ "${CURATE_ENABLED}" -ne 1 ] && { wecho 1 'Curate' 'CURATE_ENABLED=0 — skipping'; return 0; }
-  [ ! -x "${CURATE_SCRIPT}" ] && { wecho 1 'Curate' "${CURATE_SCRIPT} missing — skipping"; return 0; }
-  "${CURATE_SCRIPT}"
+  [ ! -x "${WATCHDOG_SH}" ] && { wecho 1 'Curate' "${WATCHDOG_SH} missing — skipping"; return 0; }
+  WATCHDOG_SOURCE=wasabi "${WATCHDOG_SH}"
 }
 
 # =============== Main loop ===============

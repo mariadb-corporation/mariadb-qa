@@ -12,6 +12,9 @@ if [ ! -d /test/TESTCASES -o ! -d /data/NEWBUGS ]; then
   sudo chmod -R +rX /data
 fi
 
+# Cleanup old links - this can be removed 1 Jan 27
+rm -f ${HOME}/fb ${HOME}/ps ${HOME}/p56
+
 # Squirrel/AFL
 # mariadb-qa/squirrel: a copy of the squirrel repo, with modified code (for example afl-fuzz.c) for MariaDB QA
 # mariadb-qa/fuzzing: files, script, binaries required for fuzzing (binaries compiled from mariadb-qa/squirrel/MariaDB/AFL)
@@ -59,7 +62,7 @@ if [ ! -d /home/${USER}/fuzzing/fuzzing_root/init_lib ]; then
 fi
 
 # Homedir scripts
-rm -f ${HOME}/tcp ${HOME}/pge ${HOME}/pg ${HOME}/tr ${HOME}/tc ${HOME}/t ${HOME}/fc ${HOME}/mcl ${HOME}/s ${HOME}/st ${HOME}/li ${HOME}/crc ${HOME}/cto ${HOME}/mmtr ${HOME}/stack
+rm -f ${HOME}/tcp ${HOME}/pge ${HOME}/pg ${HOME}/tr ${HOME}/tc ${HOME}/t ${HOME}/fc ${HOME}/mcl ${HOME}/s ${HOME}/st ${HOME}/sts ${HOME}/li ${HOME}/crc ${HOME}/cto ${HOME}/mmtr ${HOME}/stack
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/watchdog /home/${USER}/watchdog 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/wasabi /home/${USER}/wasabi 2>&1
@@ -73,7 +76,8 @@ ln -fs /home/${USER}/mariadb-qa/new_text_string.sh /home/${USER}/t 2>&1
 ln -fs /home/${USER}/mariadb-qa/find_cause.sh /home/${USER}/fc 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-allsubdir-del-string.sh /home/${USER}/mcl 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-screen.sh /home/${USER}/s 2>&1
-ln -fs /home/${USER}/mariadb-qa/san_text_string.sh /home/${USER}/st 2>&1
+ln -fs /home/${USER}/mariadb-qa/san_text_string.sh /home/${USER}/sts 2>&1
+ln -fs /home/${USER}/mariadb-qa/startup.sh /home/${USER}/st 2>&1
 ln -fs /home/${USER}/mariadb-qa/linkit /home/${USER}/li 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${USER}/crc 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/count_testcases_out /home/${USER}/cto 2>&1
@@ -193,7 +197,8 @@ alias s='${HOME}/s '       # Reconnect to given screen (pass start of screen nam
 alias sc='${HOME}/sc'      # Check if the current bash session is running inside a screen
 alias sg='screen -list | grep '  # List screens that match a search pattern (pass quoted search pattern)
 alias sb='source ${HOME}/.bashrc' # Re-source ${HOME}/.bashrc, handy to use when this alias list was updated
-alias st='${HOME}/start'   # Prepare a BASEDIR with all runtime scripts for it
+alias st='${HOME}/st'      # Prepare a BASEDIR with all runtime scripts for it (ref ${HOME}/mariadb-qa/startup.sh)
+alias sts='${HOME}/sts'    # Classify a SAN bug from the error log (ref ${HOME}/mariadb-qa/san_text_string.sh)
 alias str='./start_replication' # Startup replication in a given BASEDIR (after st/startup.sh was ran at least once)
 alias stopr='./stop_replication' # Stop replication in a given BASEDIR (after st/startup.sh was ran at least once)
 alias d='cd /test;. ./d1'  # cd to the latest debug 11.2 in /test

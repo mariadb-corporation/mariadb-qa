@@ -1,7 +1,7 @@
 /data/watchdog/ai_queue/ — how to process the queue
 ====================================================
 
-watchdog_curate.sh drops pointer directories here when it cannot mechanically
+watchdog.sh drops pointer directories here when it cannot mechanically
 handle a case. Each entry is a directory like:
 
     /data/watchdog/ai_queue/p3_163879_22/
@@ -50,7 +50,7 @@ Add "Process up to 5 entries this session." to cap per-session work.
 Lifecycle
 ---------
 
-  - watchdog_curate.sh creates entries but never removes them.
+  - watchdog.sh creates entries but never removes them.
   - You (via Claude or manually) remove them after processing.
   - Stale entries (wd/trial has been processed since being queued) are
     harmless: the artifact-already-exists checks in P3/P5 cause Claude

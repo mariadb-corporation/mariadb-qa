@@ -1,21 +1,21 @@
 claude_loop_instructions.txt
 ============================
 
-This file used to drive /loop 3h, the original AI-managed pquery
-curation flow. That flow has been replaced by a daemon pair plus a
-shared single-pass curate script:
+  ~/mariadb-qa/watchdog.sh   supervising daemon + curate phases
+                             (run via ~/watchdog). Single-pass mode
+                             when invoked with WATCHDOG_SOURCE != watchdog.
+  ~/mariadb-qa/wasabi.sh     builds + FireWorks + generator (run via
+                             ~/wasabi). Calls watchdog.sh with
+                             WATCHDOG_SOURCE=wasabi each tick for
+                             curation.
 
-  ~/mariadb-qa/watchdog.sh         thin watcher; run via ~/watchdog
-  ~/mariadb-qa/wasabi.sh           builds + FireWorks + generator;
-                                   run via ~/wasabi
-  ~/mariadb-qa/watchdog_curate.sh  single-pass curate (P0..P6), called
-                                   by both daemons under flock
-
-The curate script implements the same phase model previously specified
-in this file, mechanically rather than under AI judgment.
+watchdog.sh implements the same phase model previously specified in this
+file, mechanically rather than under AI judgment. A flock at
+/data/watchdog/state/watchdog.lock prevents the daemon and any wasabi-
+triggered single-pass invocation from overlapping.
 
 
-Phase summary (implemented in watchdog_curate.sh)
+Phase summary (implemented in watchdog.sh)
 -------------------------------------------------
 
   P0A  cleanup_finished_screens               uncapped
@@ -35,7 +35,7 @@ Phase summary (implemented in watchdog_curate.sh)
 AI fall-through queue
 ---------------------
 
-When watchdog_curate.sh cannot handle a case mechanically (multi-line
+When watchdog.sh cannot handle a case mechanically (multi-line
 _out files needing real SQL simplification, ambiguous Spider template
 selection), it deposits a pointer directory under
 /data/watchdog/ai_queue/. For the queue layout and the prompt to feed a

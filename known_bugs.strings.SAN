@@ -711,6 +711,7 @@ UBSAN|pointer index expression with base X overflowed to Y|sql/item_jsonfunc.cc|
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Item::send|Protocol::send_result_set_row|select_send::send_data     ## MDEV-26814
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-26814
 UBSAN|applying non-zero offset X to null pointer|sql/item_jsonfunc.cc|Item_func_json_array_insert::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-26814
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_key.c|_ma_make_key|maria_write|handler::ha_write_row|Write_record::single_insert  ## MDEV-26839
 UBSAN|applying zero offset to null pointer|storage/maria/ma_unique.c|_ma_unique_hash|maria_write|handler::ha_write_tmp_row|select_unit::write_record                           ## MDEV-26839
 UBSAN|applying zero offset to null pointer|strings/ctype-bin.c|my_hash_sort_bin|_ma_unique_hash|maria_write|ha_maria::write_row                                                ## MDEV-26839
 UBSAN|applying zero offset to null pointer|storage/maria/ma_unique.c|_ma_unique_comp|_ma_cmp_dynamic_unique|_ma_check_unique|maria_write                                       ## MDEV-26839
