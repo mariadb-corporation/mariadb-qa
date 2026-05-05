@@ -1882,6 +1882,9 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 i < get_width()|SIGABRT|Histogram::get_value|Histogram::find_bucket|Histogram::range_selectivity|get_column_range_cardinality                                                  ## MDEV-23151
 i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucket|Histogram_binary::point_selectivity|get_column_range_cardinality                             ## MDEV-23151
 
+SIGABRT|Diagnostics_area::sql_errno|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write                ## MDEV-39517
+SIGSEGV|Item::delete_self|Query_arena::free_items|THD::cleanup_after_query|dispatch_command             ##MDEV-39355
+SIGSEGV|my_strnncoll_utf8mb3_general1400_as_ci|charset_info_st::strnncoll|charset_info_st::streq        ##MDEV-39507
 ###### FALLBACK REFERENCE (remarked, but eases lookups) ######
 # FALLBACK|is_open                                  ## MDEV-23045
 
