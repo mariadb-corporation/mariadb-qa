@@ -129,9 +129,9 @@ cat ${TESTCASE} | grep -v '^[ \t]*$' | tee -a "${MAINLOG}"
 echo '--------------------------------------------' | tee -a "${MAINLOG}"
 echo "LAST_KNOWN_GOOD_COMMIT: ${LAST_KNOWN_GOOD_COMMIT}" | tee -a "${MAINLOG}"
 echo "FIRST_KNOWN_BAD_COMMIT: ${FIRST_KNOWN_BAD_COMMIT}" | tee -a "${MAINLOG}"
-if [ ! -z "${UNIQUEID}" ]; then echo "Validator: UNIQUEID: ${UNIQUEID}" | tee -a "${MAINLOG}" 
-if [ ! -z "${TEXT}" ]; then echo "Validator: ERROR LOG TEXT: ${TEXT}" | tee -a "${MAINLOG}"
-if [ ! -z "${CLI_TEXT}" ]; then echo "Validator: CLI TEXT: ${CLI_TEXT}" | tee -a "${MAINLOG}}" | tee -a "${MAINLOG}"
+if [ ! -z "${UNIQUEID}" ]; then echo "Validator: UNIQUEID: ${UNIQUEID}" | tee -a "${MAINLOG}"; fi
+if [ ! -z "${TEXT}" ]; then echo "Validator: ERROR LOG TEXT: ${TEXT}" | tee -a "${MAINLOG}"; fi
+if [ ! -z "${CLI_TEXT}" ]; then echo "Validator: CLI TEXT: ${CLI_TEXT}" | tee -a "${MAINLOG}"; fi
 echo "|> [*] A leading '[*]', like to the one in this comment, shows that git-bisect.sh saw the bug reproduced in-run at least once" | tee -a "${MAINLOG}"
 echo "|> If you do not observe this '[*]' marker during the bisect run, then please make sure your testcase (${TESTCASE}) is correctly triggering a bug in at least your first indicated bad commit ${FIRST_KNOWN_BAD_COMMIT}, in version ${VERSION}, build as an ${DBG_OR_OPT} build (with/while using UBASAN: ${UBASAN}, REPLICATION: ${REPLICATION}, USE_PQUERY: ${USE_PQUERY}) (1: yes, 0: no). You may also want to verify that the correct failure type/mode is being used; cores (none of the following options set), or [UNIQUEID, TEXT or TEXT_CLI] (one of them set)." | tee -a "${MAINLOG}"
 sleep 3  # Give user time to see the output
