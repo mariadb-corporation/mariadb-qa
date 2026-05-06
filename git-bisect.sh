@@ -17,8 +17,8 @@ BISECT_REPLAY=0                                                     # Set to 1 t
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
-LAST_KNOWN_GOOD_COMMIT='c194db34d93d8d94bd52b17349063fa401e3f942'   # Revision of last known good commit (pre-11.0 fork 10.11 commit, Dec 2022; verified via 10.11.15 dbg build)
-FIRST_KNOWN_BAD_COMMIT='dc89915ad9bf3dcb67e66d2844c77ec0403373de'   # Revision of first known bad commit (CS 11.4 dbg verified-bad commit per JIRA matrix, MDEV-39513)
+LAST_KNOWN_GOOD_COMMIT='ba9e8ebdbe903aa6f8b4f388356085dfd2df91a8'   # Revision of last known good commit (10.11 commit, Aug 22 2025; empirically verified via UBASAN_MD220825-mariadb-10.11.15 dbg)
+FIRST_KNOWN_BAD_COMMIT='dc89915ad9bf3dcb67e66d2844c77ec0403373de'   # Revision of first known bad commit (CS 11.4 dbg verified-bad commit per JIRA matrix, MDEV-39513; reproduces via UBASAN_MD220825-mariadb-11.4.9 ancestor)
 # To obtain the first commit for a given branch/version, some examples (after full branch checkouts):
 # /test/git-bisect/12.1 $ git log origin/12.0..12.1 --oneline | tail -1
 # 72b666b837eb16819f8f3de3e739a582dbbf4b53  # This is the first 12.1 commit
@@ -29,8 +29,8 @@ TESTCASE='/test/in41.sql'                                           # The testca
 UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID=""                                                         # The UniqueID to scan for [Exclusive]
-TEXT="Sql_cmd_update::update_single_table"                          # The string to scan for in the error log [Exclusive]
+UNIQUEID="LSAN|memory leak|<unknown_module>|malloc|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute"  # The UniqueID to scan for [Exclusive]
+TEXT=""                                                             # The string to scan for in the error log [Exclusive]
 CLI_TEXT=""                                                         # The string to scan for in CLI output [Exclusive]
 # [Exclusive]: UNIQUEID, TEXT and CLI_TEXT are all mutually exclusive: setting one should exclude all others (i.e. set empty)
 # Finally, leave all three (UNIQUEID, TEXT and CLI_TEXT) empty to scan for core files instead
@@ -123,14 +123,19 @@ elif [ "${STY}" == "" ]; then
 fi
 
 rm -f "${MAINLOG}"
-echo "Testing testcase ${TESTCASE}:"
-echo '--------------------------------------------';
-cat ${TESTCASE} | grep -v '^[ \t]*$'
-echo '--------------------------------------------';
-echo "|> [*] A leading '[*]', like to the one in this comment, shows that git-bisect.sh saw the bug reproduced in-run at least once"
-echo "|> If you do not observe this '[*]' marker during the bisect run, then please make sure your testcase (${TESTCASE}) is correctly triggering a bug in at least your first indicated bad commit ${FIRST_KNOWN_BAD_COMMIT}, in version ${VERSION}, build as an ${DBG_OR_OPT} build (with/while using UBASAN: ${UBASAN}, REPLICATION: ${REPLICATION}, USE_PQUERY: ${USE_PQUERY}) (1: yes, 0: no). You may also want to verify that the correct failure type/mode is being used; cores (none of the following options set), or [UNIQUEID, TEXT or TEXT_CLI] (one of them set)."
+echo "Testing testcase ${TESTCASE}:" | tee -a "${MAINLOG}"
+echo '--------------------------------------------' | tee -a "${MAINLOG}"
+cat ${TESTCASE} | grep -v '^[ \t]*$' | tee -a "${MAINLOG}"
+echo '--------------------------------------------' | tee -a "${MAINLOG}"
+echo "LAST_KNOWN_GOOD_COMMIT: ${LAST_KNOWN_GOOD_COMMIT}" | tee -a "${MAINLOG}"
+echo "FIRST_KNOWN_BAD_COMMIT: ${FIRST_KNOWN_BAD_COMMIT}" | tee -a "${MAINLOG}"
+if [ ! -z "${UNIQUEID}" ]; then echo "Validator: UNIQUEID: ${UNIQUEID}" | tee -a "${MAINLOG}" 
+if [ ! -z "${TEXT}" ]; then echo "Validator: ERROR LOG TEXT: ${TEXT}" | tee -a "${MAINLOG}"
+if [ ! -z "${CLI_TEXT}" ]; then echo "Validator: CLI TEXT: ${CLI_TEXT}" | tee -a "${MAINLOG}}" | tee -a "${MAINLOG}"
+echo "|> [*] A leading '[*]', like to the one in this comment, shows that git-bisect.sh saw the bug reproduced in-run at least once" | tee -a "${MAINLOG}"
+echo "|> If you do not observe this '[*]' marker during the bisect run, then please make sure your testcase (${TESTCASE}) is correctly triggering a bug in at least your first indicated bad commit ${FIRST_KNOWN_BAD_COMMIT}, in version ${VERSION}, build as an ${DBG_OR_OPT} build (with/while using UBASAN: ${UBASAN}, REPLICATION: ${REPLICATION}, USE_PQUERY: ${USE_PQUERY}) (1: yes, 0: no). You may also want to verify that the correct failure type/mode is being used; cores (none of the following options set), or [UNIQUEID, TEXT or TEXT_CLI] (one of them set)." | tee -a "${MAINLOG}"
 sleep 3  # Give user time to see the output
-echo "|> Commencing Bisect"
+echo "|> Commencing Bisect" | tee -a "${MAINLOG}"
 cd /test || die 1 '/test does not exist'
 mkdir -p git-bisect || die 1 '/test/git-bisect could not be created'
 echo 'Changing directory to /test/git-bisect' | tee -a "${MAINLOG}"
@@ -418,7 +423,14 @@ while :; do
     fi
     #DEBUG# read -p 'test done'
     echo "$(./stop 2>&1)" >/dev/null 2>&1  # Output is removed as otherwise it may contain, for example, 'bin/mariadb-admin: connect to server at 'localhost' failed' if the server already crashed due to testcase exec
-    sleep 1
+    # Wait for mariadbd to actually exit (so LSAN/UBSAN/atexit reports flush to master.err).
+    # Same pgrep heuristic as ./kill (matches mariadbd by its --log-error=$(pwd)/log/master.err arg).
+    # Only kill -9 as a safety net after the wait.
+    for i in $(seq 1 120); do
+      pgrep -f "$(pwd)/log/master.err" >/dev/null 2>&1 || break
+      sleep 1
+    done
+    sleep 5
     ./kill >/dev/null 2>&1
   else
     export SRNOCL=1  # No CLI when using ./start_replication

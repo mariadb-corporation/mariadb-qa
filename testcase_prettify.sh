@@ -27,9 +27,9 @@ cat "${1}" | tr -d '`' | \
        s|div|DIV|gi; \
        s|rollup|ROLLUP|gi; \
        s|execute|EXECUTE|gi; \
-       s|index|INDEX|g; \
-       s|leaves|LEAVES|g; \
-       s|immediate|IMMEDIATE|g; \
+       s|index|INDEX|gi; \
+       s|leaves|LEAVES|gi; \
+       s|immediate|IMMEDIATE|gi; \
        s|reverse|REVERSE|gi; \
        s|preserve|PRESERVE|gi; \
        s|hex|HEX|gi; \
@@ -102,7 +102,7 @@ cat "${1}" | tr -d '`' | \
        s|table|TABLE|gi; \
        s|tables|TABLES|gi; \
        s|view|VIEW|gi; \
-       s|views|views|gi; \
+       s|views|VIEWS|gi; \
        s|merge|MERGE|gi; \
        s|status|STATUS|gi; \
        s|using|USING|gi; \
@@ -246,6 +246,8 @@ cat "${1}" | tr -d '`' | \
        s|small|SMALL|gi; \
        s|large|LARGE|gi; \
        s|medium|MEDIUM|gi; \
+       s|tiny|TINY|gi; \
+       s|long|LONG|gi; \
        s|from|FROM|gi; \
        s|union|UNION|gi; \
        s|select|SELECT|gi; \
@@ -302,7 +304,7 @@ cat "${1}" | tr -d '`' | \
        s|memory|MEMORY|gi; \
        s|innodb|InnoDB|gi; \
        s|spider|Spider|gi; \
-       s|spider_|spider_|gi; \
+       s|spider_|\Lspider_|gi; \
        s|myisam|MyISAM|gi; \
        s|rocksdb|RocksDB|gi; \
        s|csv|CSV|gi; \
@@ -335,19 +337,21 @@ cat "${1}" | tr -d '`' | \
        s|increment|INCREMENT|gi; \
        s|increment by|INCREMENT BY|gi; \
        s|checkpoint|CHECKPOINT|gi; \
-       s|coordinates|coordinates|gi; \
+       s|coordinates|\Lcoordinates|gi; \
        s|_\([a-zA-Z]\+\)|_\L\1|gi;s|\([a-zA-Z]\+\)_|\L\1_|gi; \
        s|json_\([_a-zA-Z]\+\)|JSON_\U\1|gi; \
        s|\([^\.]\)st_|\1ST_|gi; \
        s|geomfromtext|GEOMFROMTEXT|gi; \
-       s|ST_\([_a-zA-Z]\+\)|\UST_\1|gi; \
        s|crc32|CRC32|g; \
        s| ,|,|g; \
        s|( |(|g; \
        s| )|)|g; \
        s|(| (|g; \
        s| \([A-Z][A-Z][A-Z]\) (| \1(|g; \
+       s|ST_\([^ (]\+\) *(|\UST_\1(|gi; \
        s|FLOAT *(|FLOAT(|gi;s|INT *(|INT(|gi;s|VARBINARY *(|VARBINARY(|gi;s|TIME *(|TIME(|gi;s|DECIMAL *(|DECIMAL(|gi;s|TRIM *(|TRIM(|gi;s|REAL *(|REAL(|gi;s|NUMERIC *(|NUMERIC(|gi;s|KEY *(|KEY(|gi;s|SUBSTR *(|SUBSTR(|gi;; \
+       s|BENCHMARK *(|BENCHMARK(|gi;s|CONNECTION_ID *(|CONNECTION_ID(|gi;s|LAST_INSERT_ID *(|LAST_INSERT_ID(|gi;s|GET_LOCK *(|GET_LOCK(|gi;s|RELEASE_LOCK *(|RELEASE_LOCK(|gi;s|IS_FREE_LOCK *(|IS_FREE_LOCK(|gi;s|IS_USED_LOCK *(|IS_USED_LOCK(|gi; \
+       s|GEOMFROMTEXT *(|GEOMFROMTEXT(|gi;s|POINTFROMTEXT *(|POINTFROMTEXT(|gi;s|MULTIPOINTFROMTEXT *(|MULTIPOINTFROMTEXT(|gi; \
        s|starts|STARTS|gi; \
        s|intersect|INTERSECT|gi; \
        s|interval|INTERVAL|gi; \
@@ -390,8 +394,9 @@ cat "${1}" | tr -d '`' | \
        s|no_write_to_binlog|NO_WRITE_TO_BINLOG|gi; \
        s|user@localhost|user@localhost|gi; \
        s|root@localhost|root@localhost|gi; \
-       s|@localhost|@localhost|gi; \
-       s|log_bin_trust_function_creators|log_bin_trust_function_creators|gi; \
+       s|@localhost|\L@localhost|gi; \
+       s|@'localhost'|\L@'localhost'|gi; \
+       s|log_bin_trust_function_creators|\Llog_bin_trust_function_creators|gi; \
        s|\.TABLES|\.tables|gi; \
        s|first|FIRST|gi; \
        s|second|SECOND|gi; \
@@ -455,9 +460,9 @@ cat "${1}" | tr -d '`' | \
        s|join|JOIN|gi; \
        s|straight|STRAIGHT|gi; \
        s|natural|NATURAL|gi; \
-       s|transforms|transforms|gi; \
+       s|transforms|\Ltransforms|gi; \
        s|identified by|IDENTIFIED BY|gi; \
-       s|autocommit|autocommit|gi; \
+       s|autocommit|\Lautocommit|gi; \
        s|test\([^ ]*\)|test\L\1|gi; \
        s|greatest *(|GREATEST(|gi; \
        s|0x\([0-9A-Fa-f]\)|0x\1|gi; \
@@ -482,15 +487,15 @@ cat "${1}" | tr -d '`' | \
        s|auto_increment_increment|AUTO_INCREMENT_INCREMENT|gi; \
        s|date_format *(|DATE_FORMAT(|gi; \
        s|time_format *(|TIME_FORMAT(|gi; \
-       s|world|world|gi; \
+       s|world|\Lworld|gi; \
        s|engine innodb|ENGINE=InnoDB|gi; \
        s|engine spider|ENGINE=Spider|gi; \
        s|history|HISTORY|gi;s|_history|_history|gi; \
        s|sql_mode= |sql_mode=|gi; \
-       s|semijoin|semijoin|gi; \
-       s|transport|transport|gi; \
-       s|master_port|master_port|gi; \
-       s|performance_schema|performance_schema|gi; \
+       s|semijoin|\Lsemijoin|gi; \
+       s|transport|\Ltransport|gi; \
+       s|master_port|\Lmaster_port|gi; \
+       s|performance_schema|\Lperformance_schema|gi; \
        s|performance_schema\.\([a-zA-Z]\+\)|performance_schema.\L\1|gi; \
        s|des_encrypt|DES_ENCRYPT|gi; \
        s|des_decrypt|DES_DECRYPT|gi; \
@@ -500,7 +505,7 @@ cat "${1}" | tr -d '`' | \
        s|convert *(|CONVERT(|gi; \
        s|analyse *(|ANALYSE(|gi; \
        s|do *(|DO(|gi; \
-       s|(VALUE|(value|g; \
+       s|(VALUE|(\Lvalue|g; \
        s|( (|((|g;s|) )|))|g; \
        s| \+(\([^)]\+\))VALUES(|(\1) VALUES (|gi; \
        s| \+| |g; \
@@ -519,7 +524,7 @@ cat "${1}" | tr -d '`' | \
        s|get_lock[ ]*(|GET_LOCK(|gi; \
        s|JSON_ARRAYAGG[ ]*(|JSON_ARRAYAGG(|gi; \
        s|json_array_add|JSON_ARRAY_ADD|gi; \
-       s|_JOIN_|_join_|gi; \
+       s|_JOIN_|\L_join_|gi; \
        s|row_format|ROW_FORMAT|gi; \
        s|innodb_default_row_format|INNODB_DEFAULT_ROW_FORMAT|gi; \
        s|remote_port|REMOTE_PORT|gi; \
@@ -542,7 +547,7 @@ cat "${1}" | tr -d '`' | \
        s|test / |test/|gi; \
        s|[ \t]*;[ \t]*$|;|gi; \
        s|^[ \t]\+||gi; \
-       s|_offset|_offset|gi; \
+       s|_offset|\L_offset|gi; \
        s|sleep[ ]*(|SLEEP(|gi; \
        s|DELIMITER|DELIMITER |gi; \
        s|DELIMITER [ ]\+|DELIMITER |gi; \

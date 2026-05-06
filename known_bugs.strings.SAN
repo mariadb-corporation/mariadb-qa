@@ -28,6 +28,8 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Item_ref::val_str|Item_func_envelope::val_str|Item_func_as_wkt::val_str_ascii ## MDEV-39523
+UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-39523
 LSAN|memory leak|<unknown_module>|malloc|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute                                                ## MDEV-39513
 UBSAN|member access within null pointer of type 'ha_table_option_struct'|storage/sphinx/ha_sphinx.cc|ha_sphinx::create|handler::ha_create|ha_create_table_from_share|ha_create_table ## MDEV-39512
 ASAN|stack-buffer-overflow|sql/item_jsonfunc.cc|check_key_in_list|Item_func_json_keys::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                       ## MDEV-39049
@@ -445,6 +447,7 @@ UBSAN|load of null pointer of type 'my_bitmap_map'|include/my_bitmap.h|bitmap_cl
 ASAN|use-after-poison|storage/federatedx/federatedx_txn.cc|federatedx_txn::sp_release|ha_release_savepoint|savepoint_add|trans_savepoint                                       ## MDEV-29317
 ASAN|heap-buffer-overflow|sql/item_subselect.h|Ordered_key::add_key|subselect_rowid_merge_engine::init|subselect_hash_sj_engine::exec|Item_subselect::exec                     ## MDEV-24986
 # UBSAN|signed integer overflow: -X * Y cannot be represented in type 'long int'|sql/sql_time.cc                                                                                 ## Likely MDEV-35406 but too generic to filter
+UBSAN|signed integer overflow: -X * -Y cannot be represented in type 'long'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long'|sql/item_timefunc.cc|Item_func_makedate::get_date|Temporal_with_date::make_from_item|Temporal_with_date::Temporal_with_date|Date::Date ## MDEV-35406
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Item_handled_func::get_date ## MDEV-35406
 UBSAN|signed integer overflow: X + Y cannot be represented in type 'long'|sql/sql_time.cc|date_add_interval|Func_handler_date_add_interval::add|Func_handler_date_add_interval_string::get_date|Temporal_hybrid::Temporal_hybrid ## MDEV-35406

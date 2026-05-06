@@ -5,7 +5,9 @@ Aria
 RocksDB
 RocksDB
 RocksDB
-RocksDB
+InnoDB
+InnoDB
+InnoDB
 InnoDB
 InnoDB
 InnoDB
@@ -27,8 +29,11 @@ MRG_MyISAM
 ARCHIVE
 SEQUENCE
 PERFORMANCE_SCHEMA
+PERFORMANCE_SCHEMA
 S3
 CONNECT
 Spider
+Spider
+ColumnStore
 ColumnStore
 Mroonga

@@ -85,6 +85,7 @@ ln -fs /home/${USER}/mariadb-qa/mini_mtr_to_sql.sh /home/${USER}/mmtr 2>&1
 ln -fs /home/${USER}/mariadb-qa/stack.sh /home/${USER}/stack 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_resume /home/${USER}/clr 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_delete /home/${USER}/crd 2>&1
+ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_find   /home/${USER}/clf 2>&1
 
 # Git bisect clone & main scripts
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
@@ -167,6 +168,7 @@ alias ck='cd ${HOME};clear'   # Clear screen and jump to homedir
 alias crt='${HOME}/crt'    # Changes to /data and shows all current runs (according to /data/results.list i.e. 'vr') testcases
 alias clr='${HOME}/clr'    # Claude Code resume: picker for any session across all projects (cross-dir)
 alias crd='${HOME}/crd'    # Claude Code delete session: 'crd' lists, 'crd <id>' dry-run, 'crd <id> 1' deletes
+alias clf='${HOME}/clf'    # Claude Code find: 'clf <regex>' lists session IDs whose logs match the (case-insensitive) regex
 alias b='${HOME}/b'        # Start bug report for in.sql in current BASEDIR
 alias bs='${HOME}/b SAN'   # Start SAN based bug report for in.sql in current BASEDIR
 alias bm='${HOME}/b MSAN'  # Start MSAN based bug report for in.sql in current BASEDIR
@@ -229,6 +231,7 @@ alias kbsa='${HOME}/kbsa ' # Search through all known SAN bug UniqueID's (pass s
 alias ubf='vi ${HOME}/mariadb-qa/UBSAN.filter'  # Edit the global UBSAN supressions filter list
 alias asf='vi ${HOME}/mariadb-qa/ASAN.filter'   # Edit the global ASAN supressions filter list
 alias mb='${HOME}/mb '     # For a given trial (pass trial number), make a ./base_reducer{trial}.sh and run it (checks any bug against the relevant basedir as per gendirs.sh)
+alias ms='cd /data; ./myspecific'  # Based on /data/results.list present all currently reduced testcases in descending order
 alias mul='./multirun_loop'  # From a BASEDIR, loop in.sql till a core is found (handy for SHUTDOWN based issues)
 alias mu='./multirun'  # From a BASEDIR, loop in.sql till a crash is observed
 alias mup='./multirun_pquery'  # From a BASEDIR, loop in.sql, using pquery, till a crash is observed

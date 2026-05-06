@@ -1,4 +1,3 @@
---source include/have_partition.inc
 INSTALL SONAME 'ha_rocksdb';
 SET @@MAX_STATEMENT_TIME=0.0001;
 CREATE TABLE t1 (a INT,b INT,KEY(a)) ENGINE=ROCKSDB PARTITION BY KEY(a) PARTITIONS 2;

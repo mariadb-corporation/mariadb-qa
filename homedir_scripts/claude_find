@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# Claude Code find: search all session logs for a regex and print matching session IDs.
+# Usage:
+#   clf <regex>             — search all *.jsonl logs and list matching session IDs
+#   clf 'claude.*git'       — example: lines containing 'claude' followed by 'git'
+# The pattern is a Python regex (re.search, case-insensitive) and is matched
+# against the raw JSONL lines as well as the extracted message text content.
+# Output: one row per matching session (most recent first):
+#   <sid8>  MM-DD HH:MM  <cwd>  <first user prompt>   [N hits]
+# Created by Roel Van de Paar, MariaDB (with Claude Code assistance)
+
+PROJECTS_DIR="${HOME}/.claude/projects"
+
+if [ ! -d "$PROJECTS_DIR" ]; then
+  echo "No $PROJECTS_DIR — nothing to search." >&2
+  exit 1
+fi
+
+if [ -z "${1:-}" ]; then
+  echo "Usage: clf <regex>    (e.g. clf 'claude.*git')" >&2
+  exit 2
+fi
+
+PATTERN="$1"
+
+python3 - "$PROJECTS_DIR" "$PATTERN" <<'PYEOF'
+import json, os, re, sys, time
+
+projects_dir = sys.argv[1]
+pattern_str = sys.argv[2]
+
+try:
+    pattern = re.compile(pattern_str, re.IGNORECASE)
+except re.error as e:
+    print(f"clf: invalid regex: {e}", file=sys.stderr)
+    sys.exit(3)
+
+sessions = []
+for dirpath, _, files in os.walk(projects_dir):
+    for f in files:
+        if not f.endswith(".jsonl"):
+            continue
+        path = os.path.join(dirpath, f)
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            continue
+        sid = f[:-6]
+        sessions.append((mtime, sid, path))
+
+sessions.sort(reverse=True)
+
+def extract_text(obj):
+    """Pull plain text out of a log line's message content (str or list-of-blocks)."""
+    msg = obj.get("message") or {}
+    content = msg.get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, dict):
+                t = block.get("text") or block.get("content") or ""
+                if isinstance(t, str):
+                    parts.append(t)
+        return "\n".join(parts)
+    return ""
+
+def first_user_prompt(path):
+    cwd, text = "", ""
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    obj = json.loads(line)
+                except Exception:
+                    continue
+                if obj.get("type") != "user":
+                    continue
+                if not cwd:
+                    cwd = obj.get("cwd", "") or ""
+                candidate = extract_text(obj)
+                stripped = candidate.lstrip()
+                if stripped.startswith("<local-command-") or stripped.startswith("<command-") or stripped.startswith("<bash-"):
+                    continue
+                if candidate.strip():
+                    text = candidate
+                    break
+    except OSError:
+        pass
+    return cwd, text
+
+def count_matches(path):
+    hits = 0
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if pattern.search(line):
+                    hits += 1
+                    continue
+                try:
+                    obj = json.loads(line)
+                except Exception:
+                    continue
+                txt = extract_text(obj)
+                if txt and pattern.search(txt):
+                    hits += 1
+    except OSError:
+        pass
+    return hits
+
+rows = []
+for mtime, sid, path in sessions:
+    hits = count_matches(path)
+    if hits == 0:
+        continue
+    cwd, prompt = first_user_prompt(path)
+    ts = time.strftime("%m-%d %H:%M", time.localtime(mtime))
+    cwd_short = cwd.replace(os.path.expanduser("~"), "~") if cwd else "?"
+    prompt_line = " ".join(prompt.split())[:80] if prompt else "(no user prompt)"
+    rows.append((sid, ts, cwd_short, prompt_line, hits))
+
+if not rows:
+    print(f"No sessions matched /{pattern_str}/i.", file=sys.stderr)
+    sys.exit(4)
+
+cwd_w = min(40, max((len(r[2]) for r in rows), default=10))
+for sid, ts, cwd_short, prompt_line, hits in rows:
+    print(f"{sid[:8]}  {ts}  {cwd_short:<{cwd_w}.{cwd_w}}  {prompt_line}   [{hits} hit{'s' if hits != 1 else ''}]")
+
+print("", file=sys.stderr)
+print(f"{len(rows)} session(s) matched /{pattern_str}/i.", file=sys.stderr)
+PYEOF

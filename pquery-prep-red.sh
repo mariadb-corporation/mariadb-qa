@@ -1160,9 +1160,13 @@ for MATCHING_TRIAL in `grep --binary-files=text -H "^MODE=[0-9]$" reducer* 2>/de
       touch ${MATCHING_TRIAL}/AVOID_FORCE_KILL
     elif [ $(ls -1 ./${MATCHING_TRIAL}/data/*core* 2>&1 | grep --binary-files=text -v "No such file" | wc -l) -eq 0 ]; then
       echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial with no core dump nor memory free issue present"
-      echo "  > Setting MODE=0, TEXT='', and turning off USE_NEW_TEXT_STRING use"
+      echo "  > Setting MODE=0, TEXT='', TIMEOUT_CHECK=130, and turning off USE_NEW_TEXT_STRING use"
       sed -i "s|^MODE=[1-9]|MODE=0|" reducer${MATCHING_TRIAL}.sh
       sed -i "s|^   TEXT=.*|TEXT=''|" reducer${MATCHING_TRIAL}.sh
+      # Align reducer's MODE=0 sensitivity with pquery-run.sh's 90s shutdown-timeout marker threshold
+      # (default 600s would only flag multi-minute hangs, allowing the meaningful SQL to be reduced away
+      # while a longer secondary shutdown stall keeps the trial "passing")
+      sed -i "s|^TIMEOUT_CHECK=[0-9]\+|TIMEOUT_CHECK=130|" reducer${MATCHING_TRIAL}.sh
       sed -i "s|^USE_NEW_TEXT_STRING=1|USE_NEW_TEXT_STRING=0|" reducer${MATCHING_TRIAL}.sh
       sed -i "s|^SCAN_FOR_NEW_BUGS=1|SCAN_FOR_NEW_BUGS=0|" reducer${MATCHING_TRIAL}.sh  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
     else

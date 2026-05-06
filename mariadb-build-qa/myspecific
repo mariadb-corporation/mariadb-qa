@@ -13,9 +13,28 @@ bash "$TMP" \
   | grep -v "/data$" \
   | xargs wc -l \
   | grep -v 'total$' \
+  | awk '{
+      lines=$1
+      path=$2
+      base=path
+      sub(/(_out)+$/, "", base)
+      suffix=substr(path, length(base)+1)
+      n=gsub(/_out/, "&", suffix)
+      if (!(base in best_n) || n > best_n[base]) {
+        best_n[base]=n
+        best_path[base]=path
+        best_lines[base]=lines
+      }
+      sib[base]++
+    }
+    END {
+      for (b in best_n) {
+        printf "%d %s %d\n", best_lines[b], best_path[b], sib[b]-1
+      }
+    }' \
   | sort -n \
   | tac \
-  | while read -r count path; do
+  | while read -r count path others; do
       if [ "$count" -eq 0 ]; then
         count_color='\033[31m'
       elif [ "$count" -le 8 ]; then
@@ -27,12 +46,18 @@ bash "$TMP" \
       else
         count_color='\033[31m'
       fi
-      printf '%b%s\033[0m \033[1;32m%s\033[0m\n' "$count_color" "$count" "$path"
+      printf '%b%s\033[0m \033[1;32m%s\033[0m' "$count_color" "$count" "$path"
+      if [ "$others" -gt 0 ]; then
+        printf ' \033[38;5;88m+%s Other reduced testcases for the same trial\033[0m' "$others"
+      fi
+      printf '\n'
       trial_dir="$(dirname "$path")"
       base="$(dirname "$trial_dir")"
       trial="$(basename "$trial_dir")"
       reducer="${base}/reducer${trial}.sh"
-      if [ -f "$reducer" ]; then
+      if [ -f "${trial_dir}/SHUTDOWN_TIMEOUT_ISSUE" ]; then
+        printf '  \033[38;5;245m%s\033[0m\n' 'SHUTDOWN TIMEOUT >90 SEC ISSUE'
+      elif [ -f "$reducer" ]; then
         text="$(grep "^   TEXT=" "$reducer" | head -n1 | sed 's|^   TEXT="||; s|"$||')"
         if [ ${#text} -gt 113 ]; then
           text="${text:0:113}..."
