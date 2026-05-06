@@ -422,16 +422,18 @@ while :; do
       ./test >>"${MAINLOG}" 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
     fi
     #DEBUG# read -p 'test done'
-    echo "$(./stop 2>&1)" >/dev/null 2>&1  # Output is removed as otherwise it may contain, for example, 'bin/mariadb-admin: connect to server at 'localhost' failed' if the server already crashed due to testcase exec
+    # NOTE: do NOT call ./stop here — its tail invokes ./kill (kill -9), which truncates
+    # LSAN/UBSAN/atexit reports mid-cleanup. Issue mariadb-admin shutdown directly instead
+    # (harmless / quick-fails if the testcase already issued SHUTDOWN).
+    timeout 30 ./bin/mariadb-admin -uroot -S./socket.sock shutdown >/dev/null 2>&1
     # Wait for mariadbd to actually exit (so LSAN/UBSAN/atexit reports flush to master.err).
     # Same pgrep heuristic as ./kill (matches mariadbd by its --log-error=$(pwd)/log/master.err arg).
-    # Only kill -9 as a safety net after the wait.
     for i in $(seq 1 120); do
       pgrep -f "$(pwd)/log/master.err" >/dev/null 2>&1 || break
       sleep 1
     done
     sleep 5
-    ./kill >/dev/null 2>&1
+    ./kill >/dev/null 2>&1   # SIGKILL safety net only (process should already be gone)
   else
     export SRNOCL=1  # No CLI when using ./start_replication
     ./start_replication ${OPTIONS_TO_PASS} 2>&1 | grep -vE 'To get a |^Note: |Adding scripts: '
