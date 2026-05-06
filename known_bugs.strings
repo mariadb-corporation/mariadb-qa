@@ -285,7 +285,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
-SIGABRT|Diagnostics_area::sql_errno|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write                                                                                       ## MDEV-39517
+m_status == DA_ERROR|SIGABRT|Diagnostics_area::sql_errno|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write|THD::binlog_query                                                ## MDEV-39517
 SIGSEGV|Item::delete_self|Query_arena::free_items|THD::cleanup_after_query|dispatch_command                                                                                    ## MDEV-39355
 SIGSEGV|ha_sphinx::create|handler::ha_create|ha_create_table_from_share|ha_create_table                                                                                        ## MDEV-39512
 SIGSEGV|TABLE_SHARE::db_type|THD::free_tmp_table_share|THD::drop_temporary_table|mysql_alter_table                                                                             ## MDEV-39454

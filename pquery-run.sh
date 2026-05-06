@@ -1455,7 +1455,7 @@ pquery_test(){
       fi
       cp generator.sh generator${RANDOMD}.sh
       sed -i "s|^[ \t]*OUTPUT_FILE[ \t]*=.*|OUTPUT_FILE=out${RANDOMD}|" generator${RANDOMD}.sh
-      export GENERATOR_THREADS=5  # Avoid CPU oversubscription under pquery's concurrent trial model; generator.sh honors this env var when set
+      export GENERATOR_THREADS=4  # Avoid CPU oversubscription under pquery's concurrent trial model; generator.sh honors this env var when set
       ./generator${RANDOMD}.sh ${QUERIES_PER_GENERATOR_RUN} > /dev/null
       if [ ! -r out${RANDOMD}.sql ]; then
         echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution! This script left ${PWD}/generator${RANDOMD}.sh in place to check what happened"

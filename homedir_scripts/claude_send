@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# Resume a Claude Code session and send it a prompt to continue with.
+# Usage:
+#   cls <id-prefix> "prompt to send"
+# Designed for: sleep N; cls <id> 'continue this work, ...'  (in a screen session)
+# Created by Roel Van de Paar, MariaDB (with Claude Code assistance)
+
+PROJECTS_DIR="${HOME}/.claude/projects"
+
+if [ $# -lt 2 ]; then
+  echo "Usage: cls <session-id-prefix> \"prompt to send\"" >&2
+  exit 1
+fi
+
+ARG="$1"
+shift
+PROMPT="$*"
+
+if [ ! -d "$PROJECTS_DIR" ]; then
+  echo "No $PROJECTS_DIR — nothing to resume." >&2
+  exit 1
+fi
+
+SELECTION="$(python3 - "$PROJECTS_DIR" "$ARG" <<'PYEOF'
+import json, os, sys
+
+projects_dir = sys.argv[1]
+arg = sys.argv[2].lower()
+
+sessions = []
+for dirpath, _, files in os.walk(projects_dir):
+    for f in files:
+        if not f.endswith(".jsonl"):
+            continue
+        path = os.path.join(dirpath, f)
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            continue
+        sid = f[:-6]
+        sessions.append((mtime, sid, path))
+
+sessions.sort(reverse=True)
+
+def first_cwd(path):
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    obj = json.loads(line)
+                except Exception:
+                    continue
+                cwd = obj.get("cwd")
+                if cwd:
+                    return cwd
+    except OSError:
+        pass
+    return ""
+
+matches = [(m, s, p) for (m, s, p) in sessions if s.startswith(arg)]
+if not matches:
+    print(f"No session id starts with '{arg}'.", file=sys.stderr)
+    sys.exit(5)
+if len(matches) > 1:
+    print(f"Prefix '{arg}' is ambiguous ({len(matches)} matches):", file=sys.stderr)
+    for _, s, p in matches[:10]:
+        print(f"  {s[:8]}  {first_cwd(p)}", file=sys.stderr)
+    sys.exit(6)
+
+_, sid, path = matches[0]
+print(f"{sid}|{first_cwd(path)}")
+PYEOF
+)"
+
+rc=$?
+[ $rc -ne 0 ] && exit $rc
+[ -z "$SELECTION" ] && exit 0
+
+SID="${SELECTION%%|*}"
+CWD="${SELECTION#*|}"
+
+if [ -z "$CWD" ]; then
+  echo "cls: could not determine original working dir for session $SID — attempting from $(pwd)." >&2
+  exec claude --resume "$SID" "$PROMPT"
+elif [ ! -d "$CWD" ]; then
+  echo "cls: original working dir no longer exists:" >&2
+  echo "       $CWD" >&2
+  echo "     session $SID cannot be auto-resumed (--resume requires that dir)." >&2
+  exit 7
+else
+  cd "$CWD" || exit 1
+  exec claude --resume "$SID" "$PROMPT"
+fi
