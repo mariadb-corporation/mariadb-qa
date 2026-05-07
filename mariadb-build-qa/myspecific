@@ -48,7 +48,7 @@ bash "$TMP" \
       fi
       printf '%b%s\033[0m \033[1;32m%s\033[0m' "$count_color" "$count" "$path"
       if [ "$others" -gt 0 ]; then
-        printf ' \033[38;5;88m+%s Other reduced testcases for the same trial\033[0m' "$others"
+        printf ' \033[38;5;88m+%s Other less reduced testcases for this trial\033[0m' "$others"
       fi
       printf '\n'
       trial_dir="$(dirname "$path")"

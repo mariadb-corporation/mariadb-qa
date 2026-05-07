@@ -1,4 +1,6 @@
 # Special filters and their respective tickets and/or reasons. Remove filters when their respective bugs are fixed
+COMMIT\(.*[^O]\)\? RELEASE    # Avoids RELEASE
+ROLLBACK\(.*[^O]\)\? RELEASE  # Avoids RELEASE
 MASTER_.*_WAIT                # Avoids pquery loosing connection/250 last queries failed waiting for a GTID / POS
 FOR.*rec.*IN.*DO.*SELECT      # MDEV-27627
 DATE_ADD.*INTERV.*YEAR_MONTH  # MDEV-35406: an abbreviated UBSAN stack (ref kba) is regularly seen for this issue

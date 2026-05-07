@@ -1,0 +1,3 @@
+CREATE TABLE t(c INT KEY,c2 TEXT,c3 JSON);
+SET @@SESSION.sort_buffer_size=+ 1;
+SELECT c,LAG(c,1)OVER w - c prev_diff FROM t WINDOW w AS(PARTITION BY c3 ORDER BY c2);

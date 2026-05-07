@@ -58,7 +58,7 @@ Listed in increasing complexity / decreasing operational simplicity.
         thread launch, or
       * a one-line addition to MYINIT/MYEXTRA that sources the file.
     Then activate ONLY the CALL / exercise / toggle cases (4197, 4202) in
-    generator.sh and add the SEQUENCED bucket back to categories.txt.
+    generator.sh and add the SEQUENCED bucket back.
     Pros: clean separation; supports the full multi-statement bodies;
     no per-trial overhead; single static asset to maintain.
     Cons: one new shell-level setup step and one new tracked artefact.

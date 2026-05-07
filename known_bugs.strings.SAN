@@ -28,6 +28,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Item_ref::val_str|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii ## MDEV-39523
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Item_ref::val_str|Item_func_envelope::val_str|Item_func_as_wkt::val_str_ascii ## MDEV-39523
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-39523
 LSAN|memory leak|<unknown_module>|malloc|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute                                                ## MDEV-39513
@@ -464,6 +465,7 @@ UBSAN|member access within null pointer of type 'JOIN_TAB' (aka 'st_join_table')
 ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_link_get_key|my_hash_key|hashcmp|my_hash_first_from_hash_value                                                     ## MDEV-35011
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_first_internal|handler::ha_index_first|mysql_ha_read                                   ## MDEV-35375
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_first_internal|ha_spider::index_first|handler::ha_index_first                          ## MDEV-35375
+UBSAN|signed integer overflow: X - -Y cannot be represented in type 'longlong' (aka 'long long')|sql/item_func.cc|Item_func_minus::int_op|Item_func_hybrid_field_type::val_decimal_from_int_op|VDec::VDec|Func_handler_bit_or_dec_to_ulonglong::to_longlong_null ## MDEV-35329
 UBSAN|signed integer overflow: X - -Y cannot be represented in type 'long long int'|sql/item_func.cc|Item_func_minus::int_op|Item_func_hybrid_field_type::val_int_from_int_op|Type_handler_int_result::Item_func_hybrid_field_type_val_int|Item_func_hybrid_field_type::val_int ## MDEV-35329
 UBSAN|signed integer overflow: X - -Y cannot be represented in type 'longlong' (aka 'long long')|sql/item_func.cc|Item_func_minus::int_op|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## MDEV-35329
 UBSAN|signed integer overflow: X - -Y cannot be represented in type 'long long int'|sql/item_func.cc|Item_func_minus::int_op|Type_handler::Item_send_longlong|Protocol::send_result_set_row|select_send::send_data ## MDEV-35329

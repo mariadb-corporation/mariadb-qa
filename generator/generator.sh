@@ -24,10 +24,6 @@ RANDOM=$(( 10#$(date +%s%N | cut -b13-19) ))  # Random entropy pool init (10# fo
 MYSQL_VERSION="${MYSQL_VERSION//.}"
 SUBWHEREACTIVE=0
 REPLY=""              # Helpers communicate via $REPLY; pre-initialise so set -u doesn't error on the first read
-SKEW_NAME="NEUTRAL"   # init_balance() will overwrite; default keeps query() safe before first call
-SKEW_PCT=0
-SKEW_PICK=0
-SKEW_BUCKETS=()
 RANDOM_SUFFIX=""
 set -u  # Treat unset variables as errors — surfaces $REPLY cross-talk and forgotten initialisation early
 
@@ -132,7 +128,7 @@ mapfile -t setvarg   < global_$MYSQL_VERSION.txt    ; SETVARG=${#setvarg[*]}    
 mapfile -t pstables  < pstables_$MYSQL_VERSION.txt  ; PSTABLES=${#pstables[*]}  ; pstable()    { REPLY="${pstables[$((RANDOM % PSTABLES))]}"; }
 mapfile -t setvals   < setvalues.txt    ; SETVALUES=${#setvals[*]}              ; setval()     { REPLY="${setvals[$((RANDOM % SETVALUES))]}"; }
 mapfile -t sqlmode   < sqlmode.txt      ; SQLMODE=${#sqlmode[*]}                ; sqlmode()    { REPLY="${sqlmode[$((RANDOM % SQLMODE))]}"; }
-mapfile -t optsw     < optimizersw.txt  ; OPTSW=${#optsw[*]}                    ; optsw()      { REPLY="${optsw[$((RANDOM % OPTSW))]}"; }
+mapfile -t optswold  < optimizersw.txt  ; OPTSWOLD=${#optswold[*]}              ; optsw()      { REPLY="${optswold[$((RANDOM % OPTSWOLD))]}"; }
 mapfile -t inmetrics < inmetrics.txt    ; INMETRICS=${#inmetrics[*]}            ; inmetrics()  { REPLY="${inmetrics[$((RANDOM % INMETRICS))]}"; }
 mapfile -t event     < event.txt        ; EVENT=${#event[*]}                    ; event()      { REPLY="${event[$((RANDOM % EVENT))]}"; }
 mapfile -t timefunc  < timefunc.txt     ; TIMEFUNC=${#timefunc[*]}              ; timefuncpr() { REPLY="${timefunc[$((RANDOM % TIMEFUNC))]}"; }  # pr: prepare
@@ -214,13 +210,13 @@ not()        { if (( RANDOM % 20 + 1 <= 5  )); then REPLY="NOT"; else REPLY=""; 
 no()         { if (( RANDOM % 20 + 1 <= 8  )); then REPLY="NO"; else REPLY=""; fi }                           # 40% NO(for transactions)
 fromdb()     { if (( RANDOM % 20 + 1 <= 2  )); then REPLY="FROM test"; else REPLY=""; fi }                    # 10% FROM test
 offset()     { if (( RANDOM % 20 + 1 <= 4  )); then n9; REPLY="OFFSET $REPLY"; else REPLY=""; fi }            # 20% OFFSET $((RANDOM % 52))-9
-forquery()   { if (( RANDOM % 20 + 1 <= 4  )); then n9; REPLY="FORQUERY $REPLY"; else REPLY=""; fi }          # 20% QUERY 0-9
+forquery()   { if (( RANDOM % 20 + 1 <= 4  )); then n9; REPLY="FOR QUERY $REPLY"; else REPLY=""; fi }         # 20% FOR QUERY 0-9
 onephase()   { if (( RANDOM % 20 + 1 <= 16 )); then REPLY="ONE PHASE"; else REPLY=""; fi }                    # 80% ONE PHASE
 convertxid() { if (( RANDOM % 20 + 1 <= 3  )); then REPLY="FORMAT='SQL'"; else REPLY=""; fi }                  # 15% FORMAT='SQL' (MariaDB syntax; CONVERT XID is MySQL-only)
 ifnotexist() { if (( RANDOM % 20 + 1 <= 10 )); then REPLY="IF NOT EXISTS"; else REPLY=""; fi }                # 50% IF NOT EXISTS
 ifexist()    { if (( RANDOM % 20 + 1 <= 10 )); then REPLY="IF EXISTS"; else REPLY=""; fi }                    # 50% IF EXISTS
 completion() { if (( RANDOM % 20 + 1 <= 5  )); then not; REPLY="ON COMPLETION $REPLY PRESERVE"; else REPLY=""; fi }  # 25% ON COMPLETION [NOT] PRESERVE
-comment()    { if (( RANDOM % 20 + 1 <= 5  )); then data; REPLY="COMMENT $REPLY'"; else REPLY=""; fi }        # 25% COMMENT
+comment()    { if (( RANDOM % 20 + 1 <= 5  )); then data; REPLY="COMMENT $REPLY"; else REPLY=""; fi }         # 25% COMMENT
 intervaladd(){ if (( RANDOM % 20 + 1 <= 4  )); then interval; REPLY="+ INTERVAL $REPLY"; else REPLY=""; fi }  # 20% + 0-9 INTERVAL
 work()       { if (( RANDOM % 20 + 1 <= 5  )); then REPLY="WORK"; else REPLY=""; fi }                         # 25% WORK
 savepoint()  { if (( RANDOM % 20 + 1 <= 5  )); then REPLY="SAVEPOINT"; else REPLY=""; fi }                    # 25% SAVEPOINT
@@ -590,20 +586,20 @@ importantvar() {  # Variables that significantly affect server behavior
     8) REPLY="SET @@GLOBAL.table_open_cache=$((RANDOM % 2000 + 100))";;
     9) REPLY="SET @@GLOBAL.query_cache_size=$((RANDOM % 1048576))";;
    10) REPLY="SET @@GLOBAL.query_cache_type=$((RANDOM % 3))";;
-   11) globses; REPLY="SET @@${REPLY}.join_buffer_size=$((RANDOM % 1048576 + 128))";;
-   12) globses; REPLY="SET @@${REPLY}.sort_buffer_size=$((RANDOM % 1048576 + 32768))";;
-   13) globses; REPLY="SET @@${REPLY}.tmp_table_size=$((RANDOM % 1048576 + 1024))";;
-   14) globses; REPLY="SET @@${REPLY}.max_heap_table_size=$((RANDOM % 1048576 + 16384))";;
-   15) REPLY="SET @@GLOBAL.innodb_buffer_pool_size=$((RANDOM % 1048576 + 1048576))";;
+   11) globses; REPLY="SET @@${REPLY}.join_buffer_size=$((RANDOM % 1048448 + 128))";;
+   12) globses; REPLY="SET @@${REPLY}.sort_buffer_size=$((RANDOM % 1015808 + 32768))";;
+   13) globses; REPLY="SET @@${REPLY}.tmp_table_size=$((RANDOM % 1047552 + 1024))";;
+   14) globses; REPLY="SET @@${REPLY}.max_heap_table_size=$((RANDOM % 1032192 + 16384))";;
+   15) REPLY="SET @@GLOBAL.innodb_buffer_pool_size=$((RANDOM % 1047553 + 1024))";;
    16) REPLY="SET @@GLOBAL.innodb_adaptive_hash_index=$((RANDOM % 2))";;
    17) REPLY="SET @@GLOBAL.innodb_change_buffering='all'";;
    18) REPLY="SET @@GLOBAL.innodb_file_per_table=$((RANDOM % 2))";;
    19) globses; REPLY="SET @@${REPLY}.optimizer_use_condition_selectivity=$((RANDOM % 6 + 1))";;
    20) globses; REPLY="SET @@${REPLY}.optimizer_search_depth=$((RANDOM % 63))";;
    21) globses; REPLY="SET @@${REPLY}.optimizer_prune_level=$((RANDOM % 2))";;
-   22) globses; REPLY="SET @@${REPLY}.max_length_for_sort_data=$((RANDOM % 1048576 + 4))";;
-   23) globses; REPLY="SET @@${REPLY}.max_sort_length=$((RANDOM % 1048576 + 4))";;
-   24) globses; REPLY="SET @@${REPLY}.group_concat_max_len=$((RANDOM % 1048576 + 4))";;
+   22) globses; REPLY="SET @@${REPLY}.max_length_for_sort_data=$((RANDOM % 1048572 + 4))";;
+   23) globses; REPLY="SET @@${REPLY}.max_sort_length=$((RANDOM % 1048572 + 4))";;
+   24) globses; REPLY="SET @@${REPLY}.group_concat_max_len=$((RANDOM % 1048572 + 4))";;
    25) REPLY="SET @@GLOBAL.innodb_stats_persistent_sample_pages=$((RANDOM % 100 + 1))";;
    26) REPLY="SET @@GLOBAL.innodb_compression_level=$((RANDOM % 10))";;
    27) globses; REPLY="SET @@${REPLY}.eq_range_index_dive_limit=$((RANDOM % 200))";;
@@ -926,70 +922,8 @@ selectq()   {  # Select Query. Do not use 'select' as select is a reserved syste
   esac
 }
 
-# Per-generation balance-skew: tilts each invocation toward one named category by ±15-49% to increase entropy
-# across runs. SKEW_BUCKETS holds the bucket specs for the chosen category — each bucket is either a single
-# dispatcher case-pick (e.g. "50") or a LO-HI range (e.g. "1-3" or "660-664"). When skew fires (probability
-# SKEW_PCT), a random bucket is picked, then a random value within that bucket.
-init_balance(){
-  local _cats=()
-  local _weights=()
-  local _cats_file="$(dirname "${BASH_SOURCE[0]}")/categories.txt"
-  if [ -r "${_cats_file}" ]; then
-    local _line
-    while IFS= read -r _line; do
-      [[ -z "${_line}" || "${_line}" =~ ^[[:space:]]*# ]] && continue
-      # Optional weight syntax: NAME [wN] | buckets   (default w=1)
-      local _w=1
-      if [[ "${_line}" =~ \[w([0-9]+)\] ]]; then
-        _w="${BASH_REMATCH[1]}"
-        # Strip the [wN] tag from the line so SKEW_NAME parses cleanly
-        _line="${_line/\[w${_w}\]/}"
-      fi
-      _cats+=("${_line}")
-      _weights+=("${_w}")
-    done < "${_cats_file}"
-  fi
-  if [ ${#_cats[@]} -eq 0 ]; then
-    >&2 echo "[gen] WARNING: ${_cats_file} not found or empty; falling back to NEUTRAL skew"
-    _cats=("NEUTRAL | 0"); _weights=(1)
-  fi
-  # Build a weighted index list: each category appears `weight` times.
-  # Per-run randomness is preserved (uniform pick over the weighted list);
-  # full-SQL coverage is preserved (every category still has nonzero pick rate
-  # because the SKEW_PCT 15-49% means 51-85% of picks go through normal random dispatch).
-  local _weighted=()
-  local _i _j
-  for _i in "${!_cats[@]}"; do
-    for ((_j=0; _j<${_weights[$_i]}; _j++)); do
-      _weighted+=("$_i")
-    done
-  done
-  local _idx="${_weighted[$((RANDOM % ${#_weighted[@]}))]}"
-  local _entry="${_cats[$_idx]}"
-  SKEW_NAME="${_entry%%|*}"; SKEW_NAME="${SKEW_NAME// /}"
-  local _bs="${_entry#*|}"
-  read -ra SKEW_BUCKETS <<< "$_bs"
-  SKEW_PCT=$((RANDOM % 35 + 15))   # 15..49
-}
-
-# Pick a dispatcher value biased toward the active SKEW category; result in SKEW_PICK.
-skew_pick(){
-  local _b="${SKEW_BUCKETS[$((RANDOM % ${#SKEW_BUCKETS[@]}))]}"
-  if [[ "$_b" == *-* ]]; then
-    local _lo="${_b%%-*}" _hi="${_b##*-}"
-    SKEW_PICK=$((RANDOM % (_hi - _lo + 1) + _lo))
-  else
-    SKEW_PICK=$_b
-  fi
-}
-
 query(){
-  local _pick=$(($RANDOM % 4277 + 1))
-  # With probability SKEW_PCT, override the pick into the active category's bucket set
-  if [ "${SKEW_NAME}" != "NEUTRAL" ] && (( RANDOM % 100 < SKEW_PCT )); then
-    skew_pick
-    _pick=$SKEW_PICK
-  fi
+  local _pick=$(($RANDOM % 4354 + 1))
   case $_pick in
     # Frequencies for CREATE (1-3), INSERT (4-7), and DROP (8) statements are well tuned, please do not change these case ranges
     [1-3]|97[3-9]|98[0-9]|99[0-9]|10[0-9][0-9]|11[0-9][0-9]|160[1-9]|16[1-9][0-9]|17[0-9][0-9]|1900|320[1-9]|32[1-9][0-9]|3300) case $(($RANDOM % 10 + 1)) in  # CREATE
@@ -1478,7 +1412,7 @@ query(){
         1) orreplace; local _or=$REPLY; idxname; local _idx=$REPLY; indextype; local _it=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE ${_or} INDEX ${_idx} ${_it} ON ${_tbl} (c${REPLY})";;
         2) orreplace; local _or=$REPLY; idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE ${_or} UNIQUE INDEX ${_idx} ON ${_tbl} (c${REPLY})";;
         3) idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; local _c1=$REPLY; n3; REPLY="CREATE INDEX ${_idx} ON ${_tbl} (c${_c1},c${REPLY})";;
-        4) ifnotexist; local _ine=$REPLY; idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; waitnowait; REPLY="CREATE INDEX ${_ine} ${_idx} ON ${_tbl} (c${REPLY}) ${REPLY}";;
+        4) ifnotexist; local _ine=$REPLY; idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; local _c=$REPLY; waitnowait; REPLY="CREATE INDEX ${_ine} ${_idx} ON ${_tbl} (c${_c}) ${REPLY}";;
         5) ifexist; local _ie=$REPLY; idxname; local _idx=$REPLY; table; local _tbl=$REPLY; waitnowait; REPLY="DROP INDEX ${_ie} ${_idx} ON ${_tbl} ${REPLY}";;
         6) idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE FULLTEXT INDEX ${_idx} ON ${_tbl} (c${REPLY})";;
         7) idxname; local _idx=$REPLY; table; local _tbl=$REPLY; n3; REPLY="CREATE SPATIAL INDEX ${_idx} ON ${_tbl} (c${REPLY})";;
@@ -1673,10 +1607,10 @@ query(){
         5) table; REPLY="DESCRIBE ${REPLY}";;
         6) table; REPLY="DESC ${REPLY}";;
         7) REPLY="USE test";;
-        8) n100; REPLY="KILL QUERY ${REPLY}";;
-        9) n100; REPLY="KILL HARD QUERY ${REPLY}";;
-       10) n100; REPLY="KILL SOFT ${REPLY}";;
-       11) n100; REPLY="KILL CONNECTION ${REPLY}";;
+        8) REPLY="KILL QUERY $((RANDOM % 1000000 + 1000000))";;
+        9) REPLY="KILL HARD QUERY $((RANDOM % 1000000 + 1000000))";;
+       10) REPLY="KILL SOFT $((RANDOM % 1000000 + 1000000))";;
+       11) REPLY="KILL CONNECTION $((RANDOM % 1000000 + 1000000))";;
        12) REPLY="SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci";;
        13) REPLY="SET NAMES DEFAULT";;
        14) REPLY="SET CHARACTER SET DEFAULT";;
@@ -1797,7 +1731,7 @@ query(){
         *) >&2 echo "[gen-assert] EXPLAIN/ANALYZE"; REPLY="Assert: invalid random case selection in EXPLAIN/ANALYZE case";;
       esac;;
     74) case $(($RANDOM % 6 + 1)) in  # SET STATEMENT ... FOR (MariaDB per-query variable override)
-        1) n100; selectq; REPLY="SET STATEMENT max_statement_time=${REPLY} FOR ${REPLY}";;
+        1) n100; local _n=$REPLY; selectq; REPLY="SET STATEMENT max_statement_time=${_n} FOR ${REPLY}";;
         2) optsw; local _os=$REPLY; onoff; local _oo=$REPLY; selectq; REPLY="SET STATEMENT optimizer_switch='${_os}=${_oo}' FOR ${REPLY}";;
         3) n1000; local _n=$REPLY; selectq; REPLY="SET STATEMENT sort_buffer_size=${_n} FOR ${REPLY}";;
         4) n100; local _n=$REPLY; selectq; REPLY="SET STATEMENT join_buffer_size=${_n} FOR ${REPLY}";;
@@ -1910,10 +1844,10 @@ query(){
         *) >&2 echo "[gen-assert] SHOW EXPLAIN/ANALYZE"; REPLY="Assert: invalid random case selection in SHOW EXPLAIN/ANALYZE case";;
       esac;;
     87) case $(($RANDOM % 4 + 1)) in  # UPDATE/DELETE with FOR PORTION OF PERIOD(MariaDB application-time periods)
-        1) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="UPDATE ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}' SET c${_c}=${_d}";;
-        2) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="DELETE FROM ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}'";;
-        3) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="UPDATE ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}' SET c${_c}=${_d}";;
-        4) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="DELETE FROM ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}'";;
+        1) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM '${_d1}' TO '${REPLY}' SET c${_c}=${_d}";;
+        2) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM '${_d1}' TO '${REPLY}'";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM '${_d1}' TO '${REPLY}' SET c${_c}=${_d}";;
+        4) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM '${_d1}' TO '${REPLY}'";;
         *) >&2 echo "[gen-assert] FOR PORTION OF"; REPLY="Assert: invalid random case selection in FOR PORTION OF case";;
       esac;;
     88) importantvar;;  # Third slot for server-state SET variables (intentionally high frequency for bug hunting)
@@ -2020,14 +1954,14 @@ query(){
         6) REPLY="FLUSH QUERY CACHE";;
         *) >&2 echo "[gen-assert] FLUSH expanded"; REPLY="Assert: invalid random case selection in FLUSH expanded case";;
       esac;;
-   100) case $(($RANDOM % 6 + 1)) in  # RESET, PURGE, SHUTDOWN(MariaDB admin commands)
+   100) case $(($RANDOM % 6 + 1)) in  # RESET, PURGE, FLUSH (MariaDB admin commands)
         1) REPLY="RESET MASTER";;
         2) REPLY="RESET REPLICA";;
         3) REPLY="RESET REPLICA ALL";;
         4) REPLY="RESET QUERY CACHE";;
         5) binmaster; REPLY="PURGE ${REPLY} LOGS BEFORE NOW()";;
-        6) REPLY="SHUTDOWN WAIT FOR ALL REPLICAS";;
-        *) >&2 echo "[gen-assert] RESET/PURGE/SHUTDOWN"; REPLY="Assert: invalid random case selection in RESET/PURGE/SHUTDOWN case";;
+        6) REPLY="FLUSH BINARY LOGS";;
+        *) >&2 echo "[gen-assert] RESET/PURGE/FLUSH"; REPLY="Assert: invalid random case selection in RESET/PURGE/FLUSH case";;
       esac;;
 
    101) case $(($RANDOM % 6 + 1)) in  # SELECT with multiple random expression functions
@@ -2144,10 +2078,10 @@ query(){
         *) >&2 echo "[gen-assert] system versioning CREATE"; REPLY="Assert: invalid random case selection in system versioning CREATE case";;
       esac;;
    117) case $(($RANDOM % 4 + 1)) in  # Application-time period tables
-        1) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 INT, c3 INT, app_start DATE, app_end DATE, PERIOD FOR apptime(app_start, app_end)) ENGINE=${REPLY}";;
+        1) ifnotexist; local _ine=$REPLY; table; local _t=$REPLY; pk; local _pk=$REPLY; engine; REPLY="CREATE TABLE ${_ine} ${_t} (c1 ${_pk}, c2 INT, c3 INT, app_start DATE, app_end DATE, PERIOD FOR app_time(app_start, app_end)) ENGINE=${REPLY}";;
         2) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="SELECT * FROM ${_t}";;
-        3) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="UPDATE ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}' SET c${_c}=${_d}";;
-        4) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="DELETE FROM ${_t} FOR PORTION OF apptime FROM '${_d1}' TO '${REPLY}'";;
+        3) table; local _t=$REPLY; n3; local _c=$REPLY; data; local _d=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM '${_d1}' TO '${REPLY}' SET c${_c}=${_d}";;
+        4) table; local _t=$REPLY; dategen; local _d1=$REPLY; dategen; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM '${_d1}' TO '${REPLY}'";;
         *) >&2 echo "[gen-assert] application-time period"; REPLY="Assert: invalid random case selection in application-time period case";;
       esac;;
    118) selectq;;  # Extra selectq() slots (higher frequency for SELECT statements)
@@ -2587,11 +2521,11 @@ query(){
    177) selectq;;
    178) importantvar;;  # Extra server-state variable slots for bug hunting
    179) importantvar;;
-   180) case $(($RANDOM % 4 + 1)) in  # KILL variants
-        1) REPLY="KILL QUERY 1";;
-        2) n100; REPLY="KILL CONNECTION ${REPLY}";;
-        3) user; REPLY="KILL USER ${REPLY}";;
-        4) n100; REPLY="KILL SOFT QUERY ${REPLY}";;
+   180) case $(($RANDOM % 4 + 1)) in  # KILL variants — non-existent IDs only (never self/current connection)
+        1) REPLY="KILL QUERY $((RANDOM % 1000000 + 1000000))";;
+        2) REPLY="KILL CONNECTION $((RANDOM % 1000000 + 1000000))";;
+        3) REPLY="KILL USER 'nonexistent_u$((RANDOM % 100))'";;
+        4) REPLY="KILL SOFT QUERY $((RANDOM % 1000000 + 1000000))";;
         *) >&2 echo "[gen-assert] KILL variants"; REPLY="Assert: invalid random case selection in KILL variants case";;
       esac;;
 
@@ -2839,12 +2773,16 @@ query(){
         4) REPLY="FLUSH TABLES WITH READ LOCK";;
         *) >&2 echo "[gen-assert] BACKUP"; REPLY="Assert: invalid random case selection in BACKUP case";;
       esac;;
-   215) case $(($RANDOM % 4 + 1)) in  # DELIMITER + complex statements in single string
-        1) REPLY="DELIMITER //";;
-        2) REPLY="DELIMITER ;";;
-        3) REPLY="DELIMITER \$\$";;
-        4) REPLY="DELIMITER //";;
-        *) >&2 echo "[gen-assert] DELIMITER"; REPLY="Assert: invalid random case selection in DELIMITER case";;
+   215) case $(($RANDOM % 8 + 1)) in  # Session-state probes (was raw DELIMITER which is client meta, never parses through pquery/PREPARE)
+        1) REPLY="SELECT @@SESSION.sql_mode";;
+        2) REPLY="SELECT @@GLOBAL.character_set_server";;
+        3) REPLY="SELECT @@SESSION.tx_isolation, @@SESSION.transaction_isolation";;
+        4) REPLY="SELECT @@SESSION.autocommit, @@SESSION.foreign_key_checks, @@SESSION.unique_checks";;
+        5) REPLY="SELECT @@warning_count, @@error_count";;
+        6) REPLY="SHOW WARNINGS LIMIT $((RANDOM % 10 + 1))";;
+        7) REPLY="SHOW ERRORS LIMIT $((RANDOM % 10 + 1))";;
+        8) REPLY="SELECT CONNECTION_ID(), USER(), CURRENT_USER(), DATABASE(), VERSION()";;
+        *) >&2 echo "[gen-assert] session-probe"; REPLY="Assert: invalid random case selection in session-probe case";;
       esac;;
    216) case $(($RANDOM % 4 + 1)) in  # USE + session-level commands
         1) REPLY="USE test";;
@@ -3498,7 +3436,7 @@ query(){
         *) >&2 echo "[gen-assert] DEFAULT values"; REPLY="Assert: invalid random case selection in DEFAULT values case";;
       esac;;
    339) case $(($RANDOM % 4 + 1)) in  # SEQUENCE extended queries
-        1) seqname; REPLY="SELECT NEXT VALUE FOR ${REPLY}, NEXT VALUE FOR ${REPLY}";;
+        1) seqname; local _s1=$REPLY; seqname; REPLY="SELECT NEXT VALUE FOR ${_s1}, NEXT VALUE FOR ${REPLY}";;
         2) seqname; REPLY="SELECT * FROM ${REPLY}";;
         3) seqname; REPLY="SHOW CREATE SEQUENCE ${REPLY}";;
         4) seqname; REPLY="SELECT SETVAL(${REPLY}, 1, FALSE)";;
@@ -3563,7 +3501,7 @@ query(){
    348) case $(($RANDOM % 4 + 1)) in  # Transaction control
         1) REPLY="START TRANSACTION WITH CONSISTENT SNAPSHOT";;
         2) REPLY="COMMIT AND CHAIN NO RELEASE";;
-        3) REPLY="ROLLBACK AND NO CHAIN RELEASE";;
+        3) REPLY="ROLLBACK AND NO CHAIN NO RELEASE";;
         4) REPLY="SET autocommit=0";;
         *) >&2 echo "[gen-assert] tx control"; REPLY="Assert: invalid random case selection in tx control case";;
       esac;;
@@ -3661,11 +3599,11 @@ query(){
         4) REPLY="DROP DATABASE IF EXISTS test_db";;
         *) >&2 echo "[gen-assert] schema ops"; REPLY="Assert: invalid random case selection in schema ops case";;
       esac;;
-   371) case $(($RANDOM % 4 + 1)) in  # KILL variations
-        1) REPLY="KILL 1";;
-        2) REPLY="KILL CONNECTION 1";;
-        3) REPLY="KILL HARD 1";;
-        4) REPLY="KILL QUERY ID 1";;
+   371) case $(($RANDOM % 4 + 1)) in  # KILL variations — non-existent IDs only (never self/current connection)
+        1) REPLY="KILL $((RANDOM % 1000000 + 1000000))";;
+        2) REPLY="KILL CONNECTION $((RANDOM % 1000000 + 1000000))";;
+        3) REPLY="KILL HARD $((RANDOM % 1000000 + 1000000))";;
+        4) REPLY="KILL QUERY ID $((RANDOM % 1000000 + 1000000))";;
         *) >&2 echo "[gen-assert] KILL variations"; REPLY="Assert: invalid random case selection in KILL variations case";;
       esac;;
    372) case $(($RANDOM % 4 + 1)) in  # More complex INSERT ON DUPLICATE with VALUES(col)
@@ -4497,7 +4435,7 @@ query(){
    538) case $(($RANDOM % 4 + 1)) in  # COMMIT/ROLLBACK variants
         1) REPLY="COMMIT AND CHAIN";;
         2) REPLY="ROLLBACK AND CHAIN";;
-        3) REPLY="COMMIT AND NO CHAIN RELEASE";;
+        3) REPLY="COMMIT AND NO CHAIN NO RELEASE";;
         4) REPLY="COMMIT WORK NO RELEASE";;
         *) >&2 echo "[gen-assert] tx variants"; REPLY="Assert: invalid random case selection in tx variants case";;
       esac;;
@@ -4658,11 +4596,11 @@ query(){
         4) ifexist; local _ie=$REPLY; table; REPLY="DROP TEMPORARY TABLE ${_ie} ${REPLY}";;
         *) >&2 echo "[gen-assert] temp/heap"; REPLY="Assert: invalid random case selection in temp/heap case";;
       esac;;
-   570) case $(($RANDOM % 4 + 1)) in  # Administrative commands
-        1) REPLY="KILL SOFT QUERY 1";;
-        2) REPLY="KILL HARD 1";;
-        3) REPLY="KILL CONNECTION 1";;
-        4) REPLY="KILL QUERY ID 1";;
+   570) case $(($RANDOM % 4 + 1)) in  # Administrative commands — non-existent IDs only (never self/current connection)
+        1) REPLY="KILL SOFT QUERY $((RANDOM % 1000000 + 1000000))";;
+        2) REPLY="KILL HARD $((RANDOM % 1000000 + 1000000))";;
+        3) REPLY="KILL CONNECTION $((RANDOM % 1000000 + 1000000))";;
+        4) REPLY="KILL QUERY ID $((RANDOM % 1000000 + 1000000))";;
         *) >&2 echo "[gen-assert] admin commands"; REPLY="Assert: invalid random case selection in admin commands case";;
       esac;;
    571) selectq;;
@@ -4739,7 +4677,7 @@ query(){
         *) >&2 echo "[gen-assert] EXPLAIN out"; REPLY="Assert: invalid random case selection in EXPLAIN out case";;
       esac;;
    590) case $(($RANDOM % 4 + 1)) in  # Misc session operations
-        1) REPLY="KILL CONNECTION_ID()";;  # will usually fail
+        1) REPLY="SELECT CONNECTION_ID()";;
         2) REPLY="SELECT CONNECTION_ID(), USER()";;
         3) REPLY="SELECT @@hostname, @@basedir, @@datadir";;
         4) REPLY="SELECT @@version, @@version_comment, @@version_compile_os, @@version_compile_machine";;
@@ -5214,7 +5152,7 @@ query(){
 635) case $(($RANDOM % 20 + 1)) in  # ALTER TABLE advanced
         1) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD CONSTRAINT chk_pos CHECK (c1 >= 0)";;
         2) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP CONSTRAINT IF EXISTS chk_pos";;
-        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR app_time (start_date, end_date)";;
+        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR app_time (sd, ed)";;
         4) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR app_time";;
         5) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR SYSTEM_TIME(row_start, row_end), ADD SYSTEM VERSIONING";;
         6) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP SYSTEM VERSIONING";;
@@ -5259,7 +5197,7 @@ query(){
         4) REPLY="GET DIAGNOSTICS @n = NUMBER, @r = ROW_COUNT";;
         5) REPLY="GET DIAGNOSTICS CONDITION 1 @sqlstate = RETURNED_SQLSTATE, @msg = MESSAGE_TEXT";;
         6) REPLY="GET DIAGNOSTICS @n = ROW_COUNT";;
-        7) REPLY="GET STACKED DIAGNOSTICS CONDITION 1 @sqlstate = RETURNED_SQLSTATE";;
+        7) REPLY="GET DIAGNOSTICS CONDITION 1 @sqlstate = RETURNED_SQLSTATE";;
         8) proc; local _pr=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE ${_pr}() BEGIN DECLARE CONTINUE HANDLER FOR SQLWARNING BEGIN GET DIAGNOSTICS CONDITION 1 @msg = MESSAGE_TEXT; END; SELECT 1/0; END";;
         9) proc; local _pr=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE ${_pr}() BEGIN DECLARE EXIT HANDLER FOR NOT FOUND SET @done=1; SELECT c1 INTO @v FROM t1 WHERE c1=-999999; END";;
        10) proc; local _pr=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE ${_pr}() BEGIN DECLARE cond CONDITION FOR SQLSTATE '42S02'; DECLARE CONTINUE HANDLER FOR cond SELECT 'table missing'; SELECT * FROM missing_table; END";;
@@ -5362,7 +5300,7 @@ query(){
        12) REPLY="FLUSH HOSTS";;
        13) REPLY="FLUSH USER_RESOURCES";;
        14) REPLY="RESET QUERY CACHE";;
-       15) REPLY="KILL HARD CONNECTION 999999";;
+       15) REPLY="KILL HARD CONNECTION $((RANDOM % 1000000 + 1000000))";;
         *) >&2 echo "[gen-assert] LOAD/admin"; REPLY="Assert: invalid random case selection in LOAD/admin case";;
       esac;;
 643) case $(($RANDOM % 18 + 1)) in  # Encryption / hashing / compression
@@ -5467,7 +5405,7 @@ query(){
        15) REPLY="SELECT COLUMN_CREATE(1, 3.14 AS DECIMAL(5,2))";;
        16) REPLY="SELECT COLUMN_JSON(COLUMN_ADD(COLUMN_CREATE(1, 'a'), 2, 'b', 3, 'c'))";;
        17) REPLY="SELECT HEX(COLUMN_CREATE(1, 'test'))";;
-       18) REPLY="SELECT COLUMN_GET(COLUMN_CREATE(1, UNIX_TIMESTAMP() AS UNSIGNED), 1 AS UNSIGNED)";;
+       18) REPLY="SELECT COLUMN_GET(COLUMN_CREATE(1, UNIX_TIMESTAMP() AS UNSIGNED INTEGER), 1 AS UNSIGNED INTEGER)";;
         *) >&2 echo "[gen-assert] dynamic columns"; REPLY="Assert: invalid random case selection in dynamic columns case";;
       esac;;
 648) case $(($RANDOM % 15 + 1)) in  # VECTOR type and functions
@@ -5945,7 +5883,7 @@ query(){
       esac;;
 671) case $(($RANDOM % 15 + 1)) in  # Sequence advanced (MariaDB SEQUENCE engine)
         1) REPLY="CREATE OR REPLACE SEQUENCE sq1 START WITH 1 INCREMENT BY $((RANDOM % 50 + 1)) MINVALUE 1 MAXVALUE 1000000 CACHE $((RANDOM % 1001 + 1)) CYCLE ENGINE=InnoDB";;
-        2) REPLY="CREATE OR REPLACE SEQUENCE sq2 START WITH 100 INCREMENT BY $((RANDOM % 50 + 1)) NO MINVALUE NO MAXVALUE NO CACHE NOCYCLE";;
+        2) REPLY="CREATE OR REPLACE SEQUENCE sq2 START WITH 100 INCREMENT BY $((RANDOM % 50 + 1)) NO MINVALUE NO MAXVALUE NOCACHE NOCYCLE";;
         3) REPLY="CREATE SEQUENCE IF NOT EXISTS sq3 INCREMENT BY -1 START WITH 100 MINVALUE -1000 CYCLE";;
         4) REPLY="SELECT NEXTVAL(sq1), NEXTVAL(sq1), NEXTVAL(sq1)";;
         5) REPLY="SELECT LASTVAL(sq1), PREVIOUS VALUE FOR sq1, NEXT VALUE FOR sq1";;
@@ -5980,21 +5918,21 @@ query(){
         *) >&2 echo "[gen-assert] backup/check"; REPLY="Assert: invalid random case selection in backup/check case";;
       esac;;
 673) case $(($RANDOM % 20 + 1)) in  # Memory-related vars (session-safe, all capped ≤10MB)
-        1) globses; REPLY="SET @@${REPLY}.sort_buffer_size=$((RANDOM % 1048576 + 262144))";;
-        2) globses; REPLY="SET @@${REPLY}.join_buffer_size=$((RANDOM % 1048576 + 262144))";;
+        1) globses; REPLY="SET @@${REPLY}.sort_buffer_size=$((RANDOM % 786433 + 262144))";;
+        2) globses; REPLY="SET @@${REPLY}.join_buffer_size=$((RANDOM % 786433 + 262144))";;
         3) globses; REPLY="SET @@${REPLY}.read_buffer_size=$((RANDOM % 262144 + 8192))";;
         4) globses; REPLY="SET @@${REPLY}.read_rnd_buffer_size=$((RANDOM % 262144 + 8192))";;
-        5) globses; REPLY="SET @@${REPLY}.bulk_insert_buffer_size=$((RANDOM % 1048576 + 8192))";;
-        6) globses; REPLY="SET @@${REPLY}.tmp_table_size=$((RANDOM % 1048576 + 1024))";;
-        7) globses; REPLY="SET @@${REPLY}.max_heap_table_size=$((RANDOM % 1048576 + 16384))";;
-        8) globses; REPLY="SET @@${REPLY}.myisam_sort_buffer_size=$((RANDOM % 1048576 + 8192))";;
-        9) globses; REPLY="SET @@${REPLY}.aria_sort_buffer_size=$((RANDOM % 1048576 + 8192))";;
-       10) globses; REPLY="SET @@${REPLY}.aria_pagecache_buffer_size=$((RANDOM % 1048576 + 1048576))";;
-       11) REPLY="SET @@GLOBAL.key_buffer_size=$((RANDOM % 1048576 + 1048576))";;
+        5) globses; REPLY="SET @@${REPLY}.bulk_insert_buffer_size=$((RANDOM % 1040385 + 8192))";;
+        6) globses; REPLY="SET @@${REPLY}.tmp_table_size=$((RANDOM % 1047553 + 1024))";;
+        7) globses; REPLY="SET @@${REPLY}.max_heap_table_size=$((RANDOM % 1032193 + 16384))";;
+        8) globses; REPLY="SET @@${REPLY}.myisam_sort_buffer_size=$((RANDOM % 1040385 + 8192))";;
+        9) globses; REPLY="SET @@${REPLY}.aria_sort_buffer_size=$((RANDOM % 1040385 + 8192))";;
+       10) globses; REPLY="SET @@${REPLY}.aria_pagecache_buffer_size=$((RANDOM % 1048576 + 1))";;
+       11) REPLY="SET @@GLOBAL.key_buffer_size=$((RANDOM % 1048576 + 1))";;
        12) REPLY="SET @@GLOBAL.query_cache_size=$((RANDOM % 1048576))";;
-       13) globses; REPLY="SET @@${REPLY}.max_allowed_packet=$((RANDOM % 1048576 + 16384))";;
+       13) globses; REPLY="SET @@${REPLY}.max_allowed_packet=$((RANDOM % 1032193 + 16384))";;
        14) globses; REPLY="SET @@${REPLY}.net_buffer_length=$((RANDOM % 524288 + 1024))";;
-       15) globses; REPLY="SET @@${REPLY}.binlog_cache_size=$((RANDOM % 1048576 + 4096))";;
+       15) globses; REPLY="SET @@${REPLY}.binlog_cache_size=$((RANDOM % 1044481 + 4096))";;
        16) globses; REPLY="SET @@${REPLY}.transaction_alloc_block_size=$((RANDOM % 131072 + 1024))";;
        17) globses; REPLY="SET @@${REPLY}.transaction_prealloc_size=$((RANDOM % 131072 + 1024))";;
        18) globses; REPLY="SET @@${REPLY}.query_prealloc_size=$((RANDOM % 131072 + 8192))";;
@@ -6004,22 +5942,22 @@ query(){
       esac;;
 674) case $(($RANDOM % 20 + 1)) in  # More memory-tuning (InnoDB, thread/stack, bounded)
         1) REPLY="SET GLOBAL innodb_log_buffer_size=$((RANDOM % 524288 + 524288))";;
-        2) REPLY="SET GLOBAL innodb_sort_buffer_size=$((RANDOM % 1048576 + 65536))";;
-        3) REPLY="SET GLOBAL innodb_online_alter_log_max_size=$((RANDOM % 1048576 + 131072))";;
-        4) REPLY="SET GLOBAL innodb_ft_total_cache_size=$((RANDOM % 1048576 + 524288))";;
-        5) REPLY="SET GLOBAL innodb_ft_cache_size=$((RANDOM % 1048576 + 32768))";;
-        6) REPLY="SET GLOBAL innodb_buffer_pool_chunk_size=$((RANDOM % 1048576 + 1048576))";;
+        2) REPLY="SET GLOBAL innodb_sort_buffer_size=$((RANDOM % 983041 + 65536))";;
+        3) REPLY="SET GLOBAL innodb_online_alter_log_max_size=$((RANDOM % 917505 + 131072))";;
+        4) REPLY="SET GLOBAL innodb_ft_total_cache_size=$((RANDOM % 524289 + 524288))";;
+        5) REPLY="SET GLOBAL innodb_ft_cache_size=$((RANDOM % 1015809 + 32768))";;
+        6) REPLY="SET GLOBAL innodb_buffer_pool_chunk_size=$((RANDOM % 1048576 + 1))";;
         7) REPLY="SET GLOBAL innodb_change_buffer_max_size=$((RANDOM % 25 + 1))";;  # %, not bytes
-        8) REPLY="SET GLOBAL innodb_max_undo_log_size=$((RANDOM % 1048576 + 1048576))";;
-        9) REPLY="SET GLOBAL innodb_redo_log_capacity=$((RANDOM % 1048576 + 1048576))";;
+        8) REPLY="SET GLOBAL innodb_max_undo_log_size=$((RANDOM % 1048576 + 1))";;
+        9) REPLY="SET GLOBAL innodb_redo_log_capacity=$((RANDOM % 1048576 + 1))";;
        10) REPLY="SET GLOBAL innodb_purge_batch_size=$((RANDOM % 500 + 100))";;
        11) REPLY="SET GLOBAL innodb_max_purge_lag=$((RANDOM % 10000))";;
        12) REPLY="SET GLOBAL innodb_lru_scan_depth=$((RANDOM % 1024 + 64))";;
        13) globses; REPLY="SET @@${REPLY}.preload_buffer_size=$((RANDOM % 65536 + 1024))";;
        14) globses; REPLY="SET @@${REPLY}.thread_stack=$((RANDOM % 262144 + 262144))";;
-       15) globses; REPLY="SET @@${REPLY}.max_length_for_sort_data=$((RANDOM % 1048576 + 4))";;
-       16) globses; REPLY="SET @@${REPLY}.max_sort_length=$((RANDOM % 1048576 + 4))";;
-       17) globses; REPLY="SET @@${REPLY}.group_concat_max_len=$((RANDOM % 1048576 + 64))";;
+       15) globses; REPLY="SET @@${REPLY}.max_length_for_sort_data=$((RANDOM % 1048573 + 4))";;
+       16) globses; REPLY="SET @@${REPLY}.max_sort_length=$((RANDOM % 1048573 + 4))";;
+       17) globses; REPLY="SET @@${REPLY}.group_concat_max_len=$((RANDOM % 1048513 + 64))";;
        18) REPLY="SET GLOBAL stored_program_cache=$((RANDOM % 1024 + 16))";;
        19) REPLY="SET GLOBAL table_definition_cache=$((RANDOM % 2000 + 400))";;
        20) REPLY="SET GLOBAL table_open_cache=$((RANDOM % 2000 + 400))";;
@@ -6136,7 +6074,7 @@ query(){
        16) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} STATS_SAMPLE_PAGES=8, STATS_PERSISTENT=1";;
        17) table; local _t=$REPLY; REPLY="SELECT c1 FROM ${_t} WHERE c2 IS NOT NULL AND VEC_DISTANCE_EUCLIDEAN(c2, VEC_FROMTEXT('[0,0,0,0]')) < 2 FOR UPDATE";;
        18) table; local _t=$REPLY; REPLY="COMMIT AND CHAIN";;
-       19) table; local _t=$REPLY; REPLY="ROLLBACK AND RELEASE";;
+       19) table; local _t=$REPLY; REPLY="ROLLBACK AND NO CHAIN NO RELEASE";;
        20) REPLY="SET SESSION innodb_lock_wait_timeout=5";;
         *) >&2 echo "[gen-assert] VECTOR txn"; REPLY="Assert: invalid random case selection in VECTOR txn case";;
       esac;;
@@ -6166,7 +6104,7 @@ query(){
         2) table; local _t=$REPLY; REPLY="SELECT * FROM ${_t}";;
         3) table; local _t=$REPLY; REPLY="UPDATE ${_t} SET c2 = 100";;
         4) table; local _t=$REPLY; REPLY="DELETE FROM ${_t}";;
-        5) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR app_time(start_date, end_date)";;
+        5) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR app_time(sd, ed)";;
         6) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR app_time";;
         7) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD CONSTRAINT pk_t PRIMARY KEY (id, app_time WITHOUT OVERLAPS)";;
         8) table; local _t=$REPLY; REPLY="SELECT id, sd, ed FROM ${_t} ORDER BY id, sd LIMIT $((RANDOM % 52))";;
@@ -6442,13 +6380,13 @@ query(){
         2) globses; REPLY="SET @@${REPLY}.optimizer_prune_level=$(( RANDOM % 2 ))";;
         3) globses; REPLY="SET @@${REPLY}.optimizer_use_condition_selectivity=$(( RANDOM % 6 + 1 ))";;
         4) globses; REPLY="SET @@${REPLY}.eq_range_index_dive_limit=$(( RANDOM % 200 + 1 ))";;
-        5) globses; REPLY="SET @@${REPLY}.range_optimizer_max_mem_size=$(( RANDOM % 1048576 + 8192 ))";;
+        5) globses; REPLY="SET @@${REPLY}.range_optimizer_max_mem_size=$(( RANDOM % 1040385 + 8192 ))";;
         6) globses; REPLY="SET @@${REPLY}.optimizer_max_sel_arg_weight=$(( RANDOM % 4096 + 32 ))";;
         7) globses; REPLY="SET @@${REPLY}.mrr_buffer_size=$(( RANDOM % 524288 + 8192 ))";;
         8) globses; REPLY="SET @@${REPLY}.optimizer_selectivity_sampling_limit=$(( RANDOM % 1000 + 10 ))";;
         9) globses; REPLY="SET @@${REPLY}.optimizer_trace='enabled=on'";;
        10) globses; REPLY="SET @@${REPLY}.optimizer_trace='enabled=off'";;
-       11) globses; REPLY="SET @@${REPLY}.optimizer_trace_max_mem_size=$(( RANDOM % 1048576 + 8192 ))";;
+       11) globses; REPLY="SET @@${REPLY}.optimizer_trace_max_mem_size=$(( RANDOM % 1040385 + 8192 ))";;
        12) REPLY="SELECT * FROM INFORMATION_SCHEMA.OPTIMIZER_TRACE LIMIT $((RANDOM % 52))";;
        13) globses; REPLY="SET @@${REPLY}.optimizer_switch='index_merge_sort_intersection=on'";;
        14) globses; REPLY="SET @@${REPLY}.optimizer_switch='optimize_join_buffer_size=on'";;
@@ -6663,7 +6601,7 @@ query(){
         7) proc; local _pr=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE ${_pr}() BEGIN DECLARE CONTINUE HANDLER FOR 1062 BEGIN GET DIAGNOSTICS CONDITION 1 @st = RETURNED_SQLSTATE, @msg = MESSAGE_TEXT; SELECT @st, @msg; END; INSERT INTO t1 VALUES (1,1,1); END";;
         8) REPLY="GET DIAGNOSTICS @n = NUMBER";;
         9) REPLY="GET DIAGNOSTICS CONDITION 1 @errno = MYSQL_ERRNO, @msg = MESSAGE_TEXT, @stt = RETURNED_SQLSTATE";;
-       10) REPLY="GET STACKED DIAGNOSTICS CONDITION 1 @errno = MYSQL_ERRNO";;
+       10) REPLY="GET DIAGNOSTICS CONDITION 1 @errno = MYSQL_ERRNO";;
        11) proc; local _pr=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE ${_pr}() BEGIN DECLARE EXIT HANDLER FOR NOT FOUND BEGIN RESIGNAL SET MESSAGE_TEXT='no rows'; END; SELECT c1 INTO @v FROM t1 WHERE c1=-9999; END";;
        12) REPLY="DO (SELECT 1 WHERE 1=1)";;
        13) proc; local _pr=$REPLY; REPLY="CALL ${_pr}()";;
@@ -6775,7 +6713,7 @@ query(){
        11) REPLY="SET GLOBAL innodb_autoextend_increment=$((RANDOM % 64 + 8))";;
        12) REPLY="SET GLOBAL innodb_data_file_path='ibdata1:12M:autoextend'";;
        13) REPLY="SET GLOBAL innodb_temp_data_file_path='ibtmp1:12M:autoextend'";;
-       14) REPLY="SET GLOBAL innodb_log_file_size=$((RANDOM % 1048576 + 1048576))";;
+       14) REPLY="SET GLOBAL innodb_log_file_size=$((RANDOM % 1048576 + 1))";;
        15) REPLY="SET GLOBAL innodb_log_files_in_group=$((RANDOM % 4 + 2))";;
         *) >&2 echo "[gen-assert] tablespace"; REPLY="Assert: invalid random case selection in tablespace case";;
       esac;;
@@ -7179,7 +7117,7 @@ query(){
         1) REPLY="SET GLOBAL innodb_ft_user_stopword_table=NULL";;
         2) REPLY="SET GLOBAL innodb_ft_enable_diag_print=ON";;
         3) REPLY="SET GLOBAL innodb_ft_num_word_optimize=$(( RANDOM % 2000 + 500 ))";;
-        4) REPLY="SET GLOBAL innodb_ft_result_cache_limit=$(( RANDOM % 1048576 + 131072 ))";;
+        4) REPLY="SET GLOBAL innodb_ft_result_cache_limit=$(( RANDOM % 917505 + 131072 ))";;
         5) REPLY="SET GLOBAL innodb_ft_sort_pll_degree=$(( RANDOM % 16 + 1 ))";;
         6) REPLY="SET SESSION ft_boolean_syntax='+ -><()~*:\"\"&|'";;
         7) REPLY="SELECT * FROM INFORMATION_SCHEMA.INNODB_FT_INDEX_CACHE LIMIT $((RANDOM % 52))";;
@@ -7437,7 +7375,7 @@ query(){
         7) REPLY="SET GLOBAL server_audit_output_type='FILE'";;
         8) REPLY="SET GLOBAL server_audit_output_type='SYSLOG'";;
         9) REPLY="SET GLOBAL server_audit_syslog_facility='LOG_USER'";;
-       10) REPLY="SET GLOBAL server_audit_file_rotate_size=$(( RANDOM % 1048576 + 1048576 ))";;
+       10) REPLY="SET GLOBAL server_audit_file_rotate_size=$(( RANDOM % 1048576 + 1 ))";;
        11) REPLY="SET GLOBAL server_audit_file_rotations=$(( RANDOM % 10 + 1 ))";;
        12) REPLY="SHOW VARIABLES LIKE 'server_audit_%'";;
        13) REPLY="SHOW STATUS LIKE 'Server_audit_%'";;
@@ -7620,8 +7558,8 @@ query(){
        10) REPLY="SELECT @@internal_tmp_mem_storage_engine, @@internal_tmp_disk_storage_engine";;
        11) REPLY="SET SESSION internal_tmp_mem_storage_engine='MEMORY'";;
        12) REPLY="SET SESSION internal_tmp_mem_storage_engine='TempTable'";;
-       13) REPLY="SET GLOBAL temptable_max_ram=$(( RANDOM % 1048576 + 1048576 ))";;
-       14) REPLY="SET GLOBAL temptable_max_mmap=$(( RANDOM % 1048576 + 1048576 ))";;
+       13) REPLY="SET GLOBAL temptable_max_ram=$(( RANDOM % 1048576 + 1 ))";;
+       14) REPLY="SET GLOBAL temptable_max_mmap=$(( RANDOM % 1048576 + 1 ))";;
        15) REPLY="SET GLOBAL temptable_use_mmap=OFF";;
         *) >&2 echo "[gen-assert] tmpfile"; REPLY="Assert: invalid random case selection in tmpfile case";;
       esac;;
@@ -7681,7 +7619,7 @@ query(){
       esac;;
 765) case $(($RANDOM % 15 + 1)) in  # Parallel / concurrent threads
         1) REPLY="SET GLOBAL slave_parallel_threads=$(( RANDOM % 8 + 1 ))";;
-        2) REPLY="SET GLOBAL slave_parallel_max_queued=$(( RANDOM % 1048576 + 131072 ))";;
+        2) REPLY="SET GLOBAL slave_parallel_max_queued=$(( RANDOM % 917505 + 131072 ))";;
         3) REPLY="SET GLOBAL binlog_commit_wait_count=$(( RANDOM % 100 ))";;
         4) REPLY="SET GLOBAL binlog_commit_wait_usec=$(( RANDOM % 100000 ))";;
         5) REPLY="SET GLOBAL thread_pool_size=$(( RANDOM % 32 + 1 ))";;
@@ -7755,7 +7693,7 @@ query(){
         1) REPLY="SET GLOBAL innodb_encryption_rotate_key_age=$(( RANDOM % 100 + 1 ))";;
         2) REPLY="SET GLOBAL innodb_encryption_rotation_iops=$(( RANDOM % 200 + 100 ))";;
         3) REPLY="SET GLOBAL innodb_scrub_log=ON";;
-        4) REPLY="SET GLOBAL innodb_scrub_log_speed=$(( RANDOM % 1048576 + 1048576 ))";;
+        4) REPLY="SET GLOBAL innodb_scrub_log_speed=$(( RANDOM % 1048576 + 1 ))";;
         5) REPLY="SET GLOBAL innodb_encrypt_tables='FORCE'";;
         6) REPLY="SET GLOBAL innodb_encrypt_temporary_tables=ON";;
         7) REPLY="SET GLOBAL encrypt_binlog=ON";;
@@ -7798,7 +7736,7 @@ query(){
         8) REPLY="ROLLBACK";;
         9) REPLY="COMMIT";;
        10) REPLY="COMMIT AND CHAIN";;
-       11) REPLY="COMMIT AND NO CHAIN RELEASE";;
+       11) REPLY="COMMIT AND NO CHAIN NO RELEASE";;
        12) REPLY="COMMIT AND NO CHAIN NO RELEASE";;
        13) REPLY="COMMIT WORK NO RELEASE";;
        14) REPLY="ROLLBACK AND CHAIN";;
@@ -7809,7 +7747,7 @@ query(){
         1) REPLY="SET GLOBAL aria_block_size=$(( 1024 * (1 << (RANDOM % 4 + 2)) ))";;
         2) REPLY="SET GLOBAL aria_pagecache_division_limit=$(( RANDOM % 100 + 1 ))";;
         3) REPLY="SET GLOBAL aria_repair_threads=$(( RANDOM % 8 + 1 ))";;
-        4) REPLY="SET GLOBAL aria_log_file_size=$(( RANDOM % 1048576 + 1048576 ))";;
+        4) REPLY="SET GLOBAL aria_log_file_size=$(( RANDOM % 1048576 + 1 ))";;
         5) REPLY="SET GLOBAL aria_checkpoint_interval=$(( RANDOM % 60 + 5 ))";;
         6) REPLY="SET SESSION aria_used_for_temp_tables=ON";;
         7) REPLY="SHOW STATUS LIKE 'Aria_%'";;
@@ -7850,12 +7788,12 @@ query(){
         6) REPLY="SET GLOBAL performance_schema_events_waits_history_size=$(( RANDOM % 100 + 10 ))";;
         7) REPLY="SET GLOBAL performance_schema_max_thread_instances=$(( RANDOM % 1000 + 50 ))";;
         8) REPLY="SET GLOBAL performance_schema_digests_size=$(( RANDOM % 10000 + 100 ))";;
-        9) REPLY="SET GLOBAL max_relay_log_size=$(( RANDOM % 1048576 + 1048576 ))";;
-       10) REPLY="SET GLOBAL max_binlog_size=$(( RANDOM % 1048576 + 1048576 ))";;
-       11) REPLY="SET GLOBAL max_binlog_cache_size=$(( RANDOM % 1048576 + 1048576 ))";;
-       12) REPLY="SET GLOBAL max_binlog_stmt_cache_size=$(( RANDOM % 1048576 + 1048576 ))";;
-       13) REPLY="SET GLOBAL max_allowed_packet=$(( RANDOM % 1048576 + 1024 ))";;
-       14) REPLY="SET GLOBAL slave_max_allowed_packet=$(( RANDOM % 1048576 + 1024 ))";;
+        9) REPLY="SET GLOBAL max_relay_log_size=$(( RANDOM % 1048576 + 1 ))";;
+       10) REPLY="SET GLOBAL max_binlog_size=$(( RANDOM % 1048576 + 1 ))";;
+       11) REPLY="SET GLOBAL max_binlog_cache_size=$(( RANDOM % 1048576 + 1 ))";;
+       12) REPLY="SET GLOBAL max_binlog_stmt_cache_size=$(( RANDOM % 1048576 + 1 ))";;
+       13) REPLY="SET GLOBAL max_allowed_packet=$(( RANDOM % 1047553 + 1024 ))";;
+       14) REPLY="SET GLOBAL slave_max_allowed_packet=$(( RANDOM % 1047553 + 1024 ))";;
        15) REPLY="SET GLOBAL max_connect_errors=$(( RANDOM % 1000 + 10 ))";;
         *) >&2 echo "[gen-assert] mem savvy"; REPLY="Assert: invalid random case selection in mem savvy case";;
       esac;;
@@ -8337,12 +8275,12 @@ query(){
         7) REPLY="SET SESSION max_execution_time=DEFAULT";;
         8) REPLY="SELECT /*+ MAX_EXECUTION_TIME(50) */ BENCHMARK(100, MD5('x'))";;
         9) REPLY="SELECT /*+ MAX_EXECUTION_TIME(10) */ SLEEP(0.001)";;
-       10) REPLY="KILL QUERY 1";;
-       11) REPLY="KILL 1";;
-       12) REPLY="KILL HARD QUERY 1";;
-       13) REPLY="KILL SOFT QUERY 1";;
-       14) REPLY="KILL QUERY ID 1";;
-       15) REPLY="KILL HARD CONNECTION 1";;
+       10) REPLY="KILL QUERY $((RANDOM % 1000000 + 1000000))";;
+       11) REPLY="KILL $((RANDOM % 1000000 + 1000000))";;
+       12) REPLY="KILL HARD QUERY $((RANDOM % 1000000 + 1000000))";;
+       13) REPLY="KILL SOFT QUERY $((RANDOM % 1000000 + 1000000))";;
+       14) REPLY="KILL QUERY ID $((RANDOM % 1000000 + 1000000))";;
+       15) REPLY="KILL HARD CONNECTION $((RANDOM % 1000000 + 1000000))";;
         *) >&2 echo "[gen-assert] sleep"; REPLY="Assert: invalid random case selection in sleep case";;
       esac;;
 802) case $(($RANDOM % 15 + 1)) in  # Binlog / replication modes
@@ -8357,8 +8295,8 @@ query(){
         9) REPLY="SET GLOBAL binlog_checksum='NONE'";;
        10) REPLY="SET GLOBAL master_verify_checksum=ON";;
        11) REPLY="SET GLOBAL slave_sql_verify_checksum=ON";;
-       12) REPLY="SET GLOBAL binlog_stmt_cache_size=$(( RANDOM % 1048576 + 4096 ))";;
-       13) REPLY="SET GLOBAL binlog_cache_size=$(( RANDOM % 1048576 + 4096 ))";;
+       12) REPLY="SET GLOBAL binlog_stmt_cache_size=$(( RANDOM % 1044481 + 4096 ))";;
+       13) REPLY="SET GLOBAL binlog_cache_size=$(( RANDOM % 1044481 + 4096 ))";;
        14) REPLY="SET GLOBAL log_bin_trust_function_creators=ON";;
        15) REPLY="SET GLOBAL log_bin_use_v1_row_events=OFF";;
         *) >&2 echo "[gen-assert] binlog mode"; REPLY="Assert: invalid random case selection in binlog mode case";;
@@ -8823,8 +8761,8 @@ query(){
         7) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 INT) ENGINE=MyISAM ROW_FORMAT=DYNAMIC";;
         8) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 INT) ENGINE=MyISAM ROW_FORMAT=COMPRESSED";;
         9) REPLY="SET GLOBAL myisam_use_mmap=ON";;
-       10) REPLY="SET GLOBAL myisam_max_sort_file_size=$(( RANDOM % 1048576 + 1048576 ))";;
-       11) REPLY="SET GLOBAL myisam_sort_buffer_size=$(( RANDOM % 1048576 + 8192 ))";;
+       10) REPLY="SET GLOBAL myisam_max_sort_file_size=$(( RANDOM % 1048576 + 1 ))";;
+       11) REPLY="SET GLOBAL myisam_sort_buffer_size=$(( RANDOM % 1040385 + 8192 ))";;
        12) REPLY="SET GLOBAL myisam_repair_threads=$(( RANDOM % 8 + 1 ))";;
        13) REPLY="SET GLOBAL myisam_data_pointer_size=$(( RANDOM % 7 + 2 ))";;
        14) REPLY="SHOW STATUS LIKE 'Key_%'";;
@@ -9021,8 +8959,8 @@ query(){
         7) REPLY="GET DIAGNOSTICS @n = NUMBER, @r = ROW_COUNT";;
         8) REPLY="GET DIAGNOSTICS CONDITION 1 @sqlstate = RETURNED_SQLSTATE, @errno = MYSQL_ERRNO, @msg = MESSAGE_TEXT, @cn = CONSTRAINT_NAME, @tn = TABLE_NAME, @cln = COLUMN_NAME";;
         9) REPLY="GET DIAGNOSTICS CONDITION 2 @st = RETURNED_SQLSTATE";;
-       10) REPLY="GET STACKED DIAGNOSTICS @n = NUMBER";;
-       11) REPLY="GET STACKED DIAGNOSTICS CONDITION 1 @ms = MESSAGE_TEXT";;
+       10) REPLY="GET DIAGNOSTICS @n = NUMBER";;
+       11) REPLY="GET DIAGNOSTICS CONDITION 1 @ms = MESSAGE_TEXT";;
        12) REPLY="SHOW WARNINGS LIMIT $((RANDOM % 52))";;
        13) REPLY="SHOW ERRORS LIMIT $((RANDOM % 52))";;
        14) REPLY="SHOW COUNT(*) WARNINGS";;
@@ -9078,7 +9016,7 @@ query(){
        10) REPLY="SELECT JSON_EXTRACT('[{\"id\":1,\"tags\":[\"a\",\"b\"]}]', '\$[0].tags[0]')";;
        11) REPLY="SELECT JSON_EXISTS('{\"a\":null}', '\$.a')";;
        12) REPLY="SELECT JSON_EXISTS('{\"a\":1}', '\$.b')";;
-       13) REPLY="SELECT JSON_TABLE('[1,2,3]', '\$[*]' COLUMNS(v INT PATH '\$' )) AS jt";;
+       13) REPLY="SELECT * FROM JSON_TABLE('[1,2,3]', '\$[*]' COLUMNS(v INT PATH '\$' )) AS jt";;
        14) REPLY="SELECT * FROM JSON_TABLE('[{\"a\":1},{\"a\":null}]', '\$[*]' COLUMNS(a INT PATH '\$.a' )) AS jt";;
        15) REPLY="SELECT JSON_OBJECT('a', 1, 'b', JSON_ARRAY(1,2,3), 'c', NOW())";;
         *) >&2 echo "[gen-assert] json value"; REPLY="Assert: invalid random case selection in json value case";;
@@ -9205,7 +9143,7 @@ query(){
        11) REPLY="SET GLOBAL mhnsw_default_m=$(( RANDOM % 20 + 3 ))";;
        12) REPLY="SET GLOBAL mhnsw_default_distance='cosine'";;
        13) REPLY="SET GLOBAL mhnsw_default_distance='euclidean'";;
-       14) REPLY="SET GLOBAL mhnsw_max_cache_size=$(( RANDOM % 1048576 + 1048576 ))";;
+       14) REPLY="SET GLOBAL mhnsw_max_cache_size=$(( RANDOM % 1048576 + 1 ))";;
        15) REPLY="SHOW VARIABLES LIKE 'mhnsw%'";;
         *) >&2 echo "[gen-assert] VECTOR index behavior"; REPLY="Assert: invalid random case selection in VECTOR index behavior case";;
       esac;;
@@ -9450,9 +9388,9 @@ query(){
         4) REPLY="SET SESSION max_sp_recursion_depth=$(( RANDOM % 255 + 1 ))";;
         5) REPLY="SET SESSION max_user_connections=$(( RANDOM % 100 + 1 ))";;
         6) REPLY="SET SESSION max_connect_errors=$(( RANDOM % 100 + 1 ))";;
-        7) REPLY="SET SESSION max_join_size=$(( RANDOM % 1048576 + 1024 ))";;
-        8) REPLY="SET SESSION max_length_for_sort_data=$(( RANDOM % 1048576 + 4 ))";;
-        9) REPLY="SET SESSION max_sort_length=$(( RANDOM % 1048576 + 4 ))";;
+        7) REPLY="SET SESSION max_join_size=$(( RANDOM % 1047553 + 1024 ))";;
+        8) REPLY="SET SESSION max_length_for_sort_data=$(( RANDOM % 1048573 + 4 ))";;
+        9) REPLY="SET SESSION max_sort_length=$(( RANDOM % 1048573 + 4 ))";;
        10) REPLY="SET SESSION max_seeks_for_key=$(( RANDOM % 1000 + 10 ))";;
        11) REPLY="SET SESSION ft_query_expansion_limit=$(( RANDOM % 1000 + 1 ))";;
        12) REPLY="SET SESSION debug_sync=''";;
@@ -9628,9 +9566,9 @@ query(){
         2) REPLY="SET SESSION query_cache_type=OFF";;
         3) REPLY="SET SESSION query_cache_type=DEMAND";;
         4) REPLY="SET SESSION query_cache_min_res_unit=$(( RANDOM % 65536 + 512 ))";;
-        5) REPLY="SET SESSION query_cache_limit=$(( RANDOM % 1048576 + 8192 ))";;
+        5) REPLY="SET SESSION query_cache_limit=$(( RANDOM % 1040385 + 8192 ))";;
         6) REPLY="SET GLOBAL query_cache_size=0";;
-        7) REPLY="SET GLOBAL query_cache_size=$(( RANDOM % 1048576 + 16384 ))";;
+        7) REPLY="SET GLOBAL query_cache_size=$(( RANDOM % 1032193 + 16384 ))";;
         8) table; local _t=$REPLY; REPLY="SELECT SQL_CACHE c1 FROM ${_t} LIMIT $((RANDOM % 52))";;
         9) table; local _t=$REPLY; REPLY="SELECT SQL_NO_CACHE c1 FROM ${_t} LIMIT $((RANDOM % 52))";;
        10) REPLY="RESET QUERY CACHE";;
@@ -9790,29 +9728,29 @@ query(){
         2) REPLY="COMMIT WORK";;
         3) REPLY="COMMIT AND CHAIN";;
         4) REPLY="COMMIT AND NO CHAIN";;
-        5) REPLY="COMMIT RELEASE";;
+        5) REPLY="COMMIT NO RELEASE";;
         6) REPLY="COMMIT NO RELEASE";;
-        7) REPLY="COMMIT AND NO CHAIN RELEASE";;
+        7) REPLY="COMMIT AND NO CHAIN NO RELEASE";;
         8) REPLY="COMMIT AND CHAIN NO RELEASE";;
-        9) REPLY="COMMIT AND NO CHAIN RELEASE";;
+        9) REPLY="COMMIT AND NO CHAIN NO RELEASE";;
        10) REPLY="COMMIT AND NO CHAIN NO RELEASE";;
        11) REPLY="ROLLBACK";;
        12) REPLY="ROLLBACK WORK";;
        13) REPLY="ROLLBACK AND CHAIN";;
        14) REPLY="ROLLBACK AND NO CHAIN";;
-       15) REPLY="ROLLBACK AND NO CHAIN RELEASE";;
+       15) REPLY="ROLLBACK AND NO CHAIN NO RELEASE";;
         *) >&2 echo "[gen-assert] commit"; REPLY="Assert: invalid random case selection in commit case";;
       esac;;
 883) case $(($RANDOM % 15 + 1)) in  # More memory-bounded vars (1MB cap)
-        1) REPLY="SET GLOBAL innodb_sort_buffer_size=$((RANDOM % 1048576 + 65536))";;
-        2) REPLY="SET GLOBAL innodb_log_buffer_size=$((RANDOM % 1048576 + 262144))";;
-        3) REPLY="SET GLOBAL innodb_ft_cache_size=$((RANDOM % 1048576 + 32768))";;
-        4) REPLY="SET GLOBAL innodb_ft_total_cache_size=$((RANDOM % 1048576 + 524288))";;
-        5) REPLY="SET GLOBAL innodb_online_alter_log_max_size=$((RANDOM % 1048576 + 131072))";;
-        6) REPLY="SET GLOBAL innodb_max_undo_log_size=$((RANDOM % 1048576 + 131072))";;
-        7) REPLY="SET GLOBAL innodb_redo_log_capacity=$((RANDOM % 1048576 + 1048576))";;
-        8) REPLY="SET GLOBAL innodb_buffer_pool_size=$((RANDOM % 1048576 + 1048576))";;
-        9) REPLY="SET GLOBAL innodb_buffer_pool_size_max=$((RANDOM % 1048576 + 1048576))";;
+        1) REPLY="SET GLOBAL innodb_sort_buffer_size=$((RANDOM % 983041 + 65536))";;
+        2) REPLY="SET GLOBAL innodb_log_buffer_size=$((RANDOM % 786433 + 262144))";;
+        3) REPLY="SET GLOBAL innodb_ft_cache_size=$((RANDOM % 1015809 + 32768))";;
+        4) REPLY="SET GLOBAL innodb_ft_total_cache_size=$((RANDOM % 524289 + 524288))";;
+        5) REPLY="SET GLOBAL innodb_online_alter_log_max_size=$((RANDOM % 917505 + 131072))";;
+        6) REPLY="SET GLOBAL innodb_max_undo_log_size=$((RANDOM % 917505 + 131072))";;
+        7) REPLY="SET GLOBAL innodb_redo_log_capacity=$((RANDOM % 1048576 + 1))";;
+        8) REPLY="SET GLOBAL innodb_buffer_pool_size=$((RANDOM % 1048576 + 1))";;
+        9) REPLY="SET GLOBAL innodb_buffer_pool_size_max=$((RANDOM % 1048576 + 1))";;
        10) globses; REPLY="SET @@${REPLY}.sort_buffer_size=$((RANDOM % 262144 + 32768))";;
        11) globses; REPLY="SET @@${REPLY}.join_buffer_size=$((RANDOM % 262144 + 8192))";;
        12) globses; REPLY="SET @@${REPLY}.read_buffer_size=$((RANDOM % 262144 + 8192))";;
@@ -9825,18 +9763,18 @@ query(){
         1) globses; REPLY="SET @@${REPLY}.max_heap_table_size=$((RANDOM % 524288 + 32768))";;
         2) globses; REPLY="SET @@${REPLY}.binlog_cache_size=$((RANDOM % 524288 + 4096))";;
         3) globses; REPLY="SET @@${REPLY}.binlog_stmt_cache_size=$((RANDOM % 524288 + 4096))";;
-        4) globses; REPLY="SET @@${REPLY}.max_binlog_cache_size=$((RANDOM % 1048576 + 131072))";;
-        5) globses; REPLY="SET @@${REPLY}.max_binlog_stmt_cache_size=$((RANDOM % 1048576 + 131072))";;
+        4) globses; REPLY="SET @@${REPLY}.max_binlog_cache_size=$((RANDOM % 917505 + 131072))";;
+        5) globses; REPLY="SET @@${REPLY}.max_binlog_stmt_cache_size=$((RANDOM % 917505 + 131072))";;
         6) globses; REPLY="SET @@${REPLY}.aria_sort_buffer_size=$((RANDOM % 524288 + 8192))";;
-        7) globses; REPLY="SET @@${REPLY}.aria_pagecache_buffer_size=$((RANDOM % 1048576 + 262144))";;
+        7) globses; REPLY="SET @@${REPLY}.aria_pagecache_buffer_size=$((RANDOM % 786433 + 262144))";;
         8) globses; REPLY="SET @@${REPLY}.myisam_sort_buffer_size=$((RANDOM % 524288 + 8192))";;
-        9) REPLY="SET GLOBAL myisam_max_sort_file_size=$((RANDOM % 1048576 + 131072))";;
-       10) REPLY="SET GLOBAL key_buffer_size=$((RANDOM % 1048576 + 131072))";;
+        9) REPLY="SET GLOBAL myisam_max_sort_file_size=$((RANDOM % 917505 + 131072))";;
+       10) REPLY="SET GLOBAL key_buffer_size=$((RANDOM % 917505 + 131072))";;
        11) REPLY="SET GLOBAL query_cache_size=$((RANDOM % 1048576))";;
        12) REPLY="SET GLOBAL query_cache_limit=$((RANDOM % 524288 + 8192))";;
        13) globses; REPLY="SET @@${REPLY}.net_buffer_length=$((RANDOM % 262144 + 1024))";;
-       14) globses; REPLY="SET @@${REPLY}.max_allowed_packet=$((RANDOM % 1048576 + 16384))";;
-       15) REPLY="SET GLOBAL slave_max_allowed_packet=$((RANDOM % 1048576 + 16384))";;
+       14) globses; REPLY="SET @@${REPLY}.max_allowed_packet=$((RANDOM % 1032193 + 16384))";;
+       15) REPLY="SET GLOBAL slave_max_allowed_packet=$((RANDOM % 1032193 + 16384))";;
         *) >&2 echo "[gen-assert] mem caps 2"; REPLY="Assert: invalid random case selection in mem caps 2 case";;
       esac;;
 885) case $(($RANDOM % 15 + 1)) in  # Alloc block / prealloc / stack (1MB)
@@ -9853,8 +9791,8 @@ query(){
        11) globses; REPLY="SET @@${REPLY}.max_length_for_sort_data=$((RANDOM % 524288 + 4))";;
        12) globses; REPLY="SET @@${REPLY}.max_sort_length=$((RANDOM % 524288 + 4))";;
        13) globses; REPLY="SET @@${REPLY}.group_concat_max_len=$((RANDOM % 524288 + 64))";;
-       14) REPLY="SET GLOBAL innodb_ft_result_cache_limit=$((RANDOM % 1048576 + 131072))";;
-       15) REPLY="SET GLOBAL innodb_buffer_pool_chunk_size=$((RANDOM % 1048576 + 131072))";;
+       14) REPLY="SET GLOBAL innodb_ft_result_cache_limit=$((RANDOM % 917505 + 131072))";;
+       15) REPLY="SET GLOBAL innodb_buffer_pool_chunk_size=$((RANDOM % 917505 + 131072))";;
         *) >&2 echo "[gen-assert] alloc"; REPLY="Assert: invalid random case selection in alloc case";;
       esac;;
 886) case $(($RANDOM % 15 + 1)) in  # VECTOR pt58 — memory-safe ops
@@ -9912,8 +9850,8 @@ query(){
         *) >&2 echo "[gen-assert] ps mem"; REPLY="Assert: invalid random case selection in ps mem case";;
       esac;;
 889) case $(($RANDOM % 15 + 1)) in  # Aria memory-tunable (1MB)
-        1) REPLY="SET GLOBAL aria_pagecache_buffer_size=$((RANDOM % 1048576 + 131072))";;
-        2) REPLY="SET GLOBAL aria_log_file_size=$((RANDOM % 1048576 + 131072))";;
+        1) REPLY="SET GLOBAL aria_pagecache_buffer_size=$((RANDOM % 917505 + 131072))";;
+        2) REPLY="SET GLOBAL aria_log_file_size=$((RANDOM % 917505 + 131072))";;
         3) REPLY="SET GLOBAL aria_block_size=$((1024 * (1 << (RANDOM % 4 + 2))))";;
         4) REPLY="SET GLOBAL aria_checkpoint_interval=$((RANDOM % 60 + 5))";;
         5) REPLY="SET GLOBAL aria_pagecache_division_limit=$((RANDOM % 99 + 1))";;
@@ -9931,9 +9869,9 @@ query(){
       esac;;
 890) case $(($RANDOM % 15 + 1)) in  # RocksDB buffer vars (1MB)
         1) REPLY="SET GLOBAL rocksdb_block_size=$((RANDOM % 65536 + 4096))";;
-        2) REPLY="SET GLOBAL rocksdb_block_cache_size=$((RANDOM % 1048576 + 1048576))";;
-        3) REPLY="SET GLOBAL rocksdb_compaction_readahead_size=$((RANDOM % 1048576 + 65536))";;
-        4) REPLY="SET GLOBAL rocksdb_write_buffer_size=$((RANDOM % 1048576 + 65536))";;
+        2) REPLY="SET GLOBAL rocksdb_block_cache_size=$((RANDOM % 1048576 + 1))";;
+        3) REPLY="SET GLOBAL rocksdb_compaction_readahead_size=$((RANDOM % 983041 + 65536))";;
+        4) REPLY="SET GLOBAL rocksdb_write_buffer_size=$((RANDOM % 983041 + 65536))";;
         5) REPLY="SET SESSION rocksdb_bulk_load_size=$((RANDOM % 1000 + 100))";;
         6) REPLY="SET SESSION rocksdb_bulk_load=ON";;
         7) REPLY="SET SESSION rocksdb_bulk_load=OFF";;
@@ -9948,15 +9886,15 @@ query(){
         *) >&2 echo "[gen-assert] rocksdb 1mb"; REPLY="Assert: invalid random case selection in rocksdb 1mb case";;
       esac;;
 891) case $(($RANDOM % 15 + 1)) in  # Binlog / replication sizes (1MB)
-        1) REPLY="SET GLOBAL max_binlog_size=$((RANDOM % 1048576 + 131072))";;
-        2) REPLY="SET GLOBAL max_binlog_cache_size=$((RANDOM % 1048576 + 131072))";;
-        3) REPLY="SET GLOBAL max_binlog_stmt_cache_size=$((RANDOM % 1048576 + 131072))";;
-        4) REPLY="SET GLOBAL max_relay_log_size=$((RANDOM % 1048576 + 131072))";;
+        1) REPLY="SET GLOBAL max_binlog_size=$((RANDOM % 917505 + 131072))";;
+        2) REPLY="SET GLOBAL max_binlog_cache_size=$((RANDOM % 917505 + 131072))";;
+        3) REPLY="SET GLOBAL max_binlog_stmt_cache_size=$((RANDOM % 917505 + 131072))";;
+        4) REPLY="SET GLOBAL max_relay_log_size=$((RANDOM % 917505 + 131072))";;
         5) REPLY="SET GLOBAL binlog_cache_size=$((RANDOM % 524288 + 4096))";;
         6) REPLY="SET GLOBAL binlog_stmt_cache_size=$((RANDOM % 524288 + 4096))";;
         7) REPLY="SET GLOBAL binlog_commit_wait_count=$((RANDOM % 100))";;
         8) REPLY="SET GLOBAL binlog_commit_wait_usec=$((RANDOM % 100000))";;
-        9) REPLY="SET GLOBAL slave_parallel_max_queued=$((RANDOM % 1048576 + 131072))";;
+        9) REPLY="SET GLOBAL slave_parallel_max_queued=$((RANDOM % 917505 + 131072))";;
        10) REPLY="SET GLOBAL slave_parallel_threads=$((RANDOM % 8 + 1))";;
        11) REPLY="SET GLOBAL slave_transaction_retries=$((RANDOM % 20 + 1))";;
        12) REPLY="SET GLOBAL binlog_format='ROW'";;
@@ -9995,14 +9933,14 @@ query(){
         9) REPLY="SET SESSION aria_sort_buffer_size=$((RANDOM % 524288 + 8192))";;
        10) REPLY="SET SESSION binlog_cache_size=$((RANDOM % 524288 + 4096))";;
        11) REPLY="SET SESSION binlog_stmt_cache_size=$((RANDOM % 524288 + 4096))";;
-       12) REPLY="SET SESSION max_allowed_packet=$((RANDOM % 1048576 + 16384))";;
+       12) REPLY="SET SESSION max_allowed_packet=$((RANDOM % 1032193 + 16384))";;
        13) REPLY="SET SESSION net_buffer_length=$((RANDOM % 262144 + 1024))";;
        14) REPLY="SET SESSION transaction_alloc_block_size=$((RANDOM % 131072 + 1024))";;
        15) REPLY="SET SESSION transaction_prealloc_size=$((RANDOM % 131072 + 1024))";;
         *) >&2 echo "[gen-assert] session mem"; REPLY="Assert: invalid random case selection in session mem case";;
       esac;;
 894) case $(($RANDOM % 15 + 1)) in  # mhnsw_max_cache_size 1MB
-        1) REPLY="SET GLOBAL mhnsw_max_cache_size=$((RANDOM % 1048576 + 1048576))";;
+        1) REPLY="SET GLOBAL mhnsw_max_cache_size=$((RANDOM % 1048576 + 1))";;
         2) REPLY="SET GLOBAL mhnsw_max_cache_size=1048576";;
         3) REPLY="SET GLOBAL mhnsw_max_cache_size=2097152";;
         4) REPLY="SET GLOBAL mhnsw_default_m=$((RANDOM % 20 + 3))";;
@@ -10029,7 +9967,7 @@ query(){
         7) REPLY="SET GLOBAL innodb_encryption_rotate_key_age=$((RANDOM % 50 + 1))";;
         8) REPLY="SET GLOBAL innodb_encryption_rotation_iops=$((RANDOM % 200 + 10))";;
         9) REPLY="SET GLOBAL innodb_scrub_log=ON";;
-       10) REPLY="SET GLOBAL innodb_scrub_log_speed=$((RANDOM % 1048576 + 131072))";;
+       10) REPLY="SET GLOBAL innodb_scrub_log_speed=$((RANDOM % 917505 + 131072))";;
        11) REPLY="SET GLOBAL file_key_management_encryption_algorithm='AES_CTR'";;
        12) REPLY="SET GLOBAL file_key_management_encryption_algorithm='AES_CBC'";;
        13) REPLY="SHOW STATUS LIKE 'Innodb_encryption_%'";;
@@ -10038,9 +9976,9 @@ query(){
         *) >&2 echo "[gen-assert] enc 1mb"; REPLY="Assert: invalid random case selection in enc 1mb case";;
       esac;;
 896) case $(($RANDOM % 15 + 1)) in  # InnoDB max_* (1MB)
-        1) REPLY="SET GLOBAL innodb_max_undo_log_size=$((RANDOM % 1048576 + 131072))";;
-        2) REPLY="SET GLOBAL innodb_redo_log_capacity=$((RANDOM % 1048576 + 1048576))";;
-        3) REPLY="SET GLOBAL innodb_log_file_size=$((RANDOM % 1048576 + 262144))";;
+        1) REPLY="SET GLOBAL innodb_max_undo_log_size=$((RANDOM % 917505 + 131072))";;
+        2) REPLY="SET GLOBAL innodb_redo_log_capacity=$((RANDOM % 1048576 + 1))";;
+        3) REPLY="SET GLOBAL innodb_log_file_size=$((RANDOM % 786433 + 262144))";;
         4) REPLY="SET GLOBAL innodb_log_files_in_group=$((RANDOM % 4 + 2))";;
         5) REPLY="SET GLOBAL innodb_max_dirty_pages_pct=$((RANDOM % 99 + 1))";;
         6) REPLY="SET GLOBAL innodb_max_dirty_pages_pct_lwm=$((RANDOM % 50))";;
@@ -10056,8 +9994,8 @@ query(){
         *) >&2 echo "[gen-assert] innodb max"; REPLY="Assert: invalid random case selection in innodb max case";;
       esac;;
 897) case $(($RANDOM % 15 + 1)) in  # Temp-table memory vars (1MB)
-        1) REPLY="SET GLOBAL temptable_max_ram=$((RANDOM % 1048576 + 262144))";;
-        2) REPLY="SET GLOBAL temptable_max_mmap=$((RANDOM % 1048576 + 262144))";;
+        1) REPLY="SET GLOBAL temptable_max_ram=$((RANDOM % 786433 + 262144))";;
+        2) REPLY="SET GLOBAL temptable_max_mmap=$((RANDOM % 786433 + 262144))";;
         3) REPLY="SET GLOBAL temptable_use_mmap=ON";;
         4) REPLY="SET GLOBAL temptable_use_mmap=OFF";;
         5) REPLY="SET SESSION internal_tmp_mem_storage_engine='MEMORY'";;
@@ -11518,7 +11456,7 @@ query(){
         2) REPLY="SET GLOBAL sync_binlog=$((RANDOM % 2))";;
         3) REPLY="SET GLOBAL max_connections=$((RANDOM % 200 + 50))";;
         4) REPLY="SET GLOBAL log_bin=ON";;
-        5) REPLY="SET GLOBAL innodb_buffer_pool_size=$((RANDOM % 1048576 + 1048576))";;
+        5) REPLY="SET GLOBAL innodb_buffer_pool_size=$((RANDOM % 1048576 + 1))";;
         6) REPLY="SET GLOBAL slow_query_log=$((RANDOM % 2))";;
         7) REPLY="SET GLOBAL long_query_time=$((RANDOM % 10))";;
         8) REPLY="SET GLOBAL optimizer_switch='mrr=on,mrr_cost_based=off'";;
@@ -12326,7 +12264,7 @@ query(){
 3751) case $(($RANDOM % 15 + 1)) in  # SEQUENCE advanced clauses (MariaDB)
         1) REPLY="CREATE SEQUENCE IF NOT EXISTS s1 START WITH 100 INCREMENT BY $((RANDOM % 50 + 1)) MINVALUE 1 MAXVALUE 1000 CACHE $((RANDOM % 1001 + 1)) NOCYCLE ENGINE=InnoDB";;
         2) REPLY="CREATE OR REPLACE SEQUENCE s1 START WITH -100 INCREMENT BY -1 MINVALUE -1000 MAXVALUE -1 CYCLE";;
-        3) REPLY="CREATE SEQUENCE IF NOT EXISTS s2 INCREMENT BY $((RANDOM % 50 + 1)) NO CACHE NOCYCLE";;
+        3) REPLY="CREATE SEQUENCE IF NOT EXISTS s2 INCREMENT BY $((RANDOM % 50 + 1)) NOCACHE NOCYCLE";;
         4) REPLY="SELECT NEXT VALUE FOR s1";;
         5) REPLY="SELECT PREVIOUS VALUE FOR s1";;
         6) REPLY="SELECT SETVAL(s1, $(($RANDOM % 10000 + 1)), TRUE)";;
@@ -12363,9 +12301,9 @@ query(){
         1) table; local _t=$REPLY; REPLY="HANDLER ${_t} OPEN";;
         2) table; local _t=$REPLY; REPLY="HANDLER ${_t} OPEN AS h1";;
         3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST";;
-        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST";;
+        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST";;
         5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT LIMIT $((RANDOM % 52))";;
-        6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV LIMIT $((RANDOM % 52))";;
+        6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV LIMIT $((RANDOM % 52))";;
         7) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` FIRST";;
         8) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` NEXT LIMIT $((RANDOM % 52))";;
         9) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` = ($(($RANDOM % 100 + 1)))";;
@@ -12396,19 +12334,19 @@ query(){
         *) >&2 echo "[gen-assert] locking advanced"; REPLY="Assert: invalid random case selection in locking advanced case";;
       esac;;
 3755) case $(($RANDOM % 15 + 1)) in  # Application-time periods (WITHOUT OVERLAPS, FOR PORTION OF)
-        1) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATE, c3 DATE, PERIOD FOR p_app(c2,c3), PRIMARY KEY(c1, p_app WITHOUT OVERLAPS))";;
-        2) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATETIME, c3 DATETIME, PERIOD FOR p_app(c2,c3)) ENGINE=InnoDB";;
-        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR p_app(c2,c3)";;
-        4) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR p_app";;
+        1) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATE, c3 DATE, PERIOD FOR app_time(c2,c3), PRIMARY KEY(c1, app_time WITHOUT OVERLAPS))";;
+        2) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATETIME, c3 DATETIME, PERIOD FOR app_time(c2,c3)) ENGINE=InnoDB";;
+        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR app_time(c2,c3)";;
+        4) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR app_time";;
         5) table; local _t=$REPLY; REPLY="INSERT INTO ${_t} (c1,c2,c3) VALUES ($(($RANDOM % 100 + 1)),'2020-01-01','2021-01-01')";;
-        6) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF p_app FROM '2020-06-01' TO '2020-09-01' WHERE c1=$(($RANDOM % 100 + 1))";;
-        7) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF p_app FROM '2020-03-01' TO '2020-05-01' SET c1=c1+1 WHERE c1<$(($RANDOM % 100 + 1))";;
+        6) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM '2020-06-01' TO '2020-09-01' WHERE c1=$(($RANDOM % 100 + 1))";;
+        7) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM '2020-03-01' TO '2020-05-01' SET c1=c1+1 WHERE c1<$(($RANDOM % 100 + 1))";;
         8) table; local _t=$REPLY; REPLY="SELECT c1 FROM ${_t} WHERE c2<=DATE'2021-01-01' AND c3>DATE'2020-01-01' LIMIT $((RANDOM % 52))";;
         9) table; local _t=$REPLY; REPLY="SELECT * FROM ${_t} WHERE c2 BETWEEN DATE'2020-01-01' AND DATE'2020-12-31' ORDER BY c2 LIMIT $((RANDOM % 52))";;
-       10) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_t} ADD PRIMARY KEY(c${_c}, p_app WITHOUT OVERLAPS)";;
-       11) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD UNIQUE KEY(c1, p_app WITHOUT OVERLAPS)";;
-       12) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF p_app FROM NOW() - INTERVAL $((RANDOM % 365 + 1)) DAY TO NOW() WHERE c1>0";;
-       13) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF p_app FROM TIMESTAMP'2020-06-01 00:00:00' TO TIMESTAMP'2020-09-01 00:00:00' SET c1=NULL";;
+       10) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="ALTER TABLE ${_t} ADD PRIMARY KEY(c${_c}, app_time WITHOUT OVERLAPS)";;
+       11) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD UNIQUE KEY(c1, app_time WITHOUT OVERLAPS)";;
+       12) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM NOW() - INTERVAL $((RANDOM % 365 + 1)) DAY TO NOW() WHERE c1>0";;
+       13) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM TIMESTAMP'2020-06-01 00:00:00' TO TIMESTAMP'2020-09-01 00:00:00' SET c1=NULL";;
        14) table; local _t=$REPLY; REPLY="SELECT c1, c2, c3, DATEDIFF(c3,c2) AS lifespan FROM ${_t} ORDER BY lifespan DESC LIMIT $((RANDOM % 52))";;
        15) REPLY="SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.PERIODS LIMIT $((RANDOM % 52))";;
         *) >&2 echo "[gen-assert] periods"; REPLY="Assert: invalid random case selection in periods case";;
@@ -12788,7 +12726,7 @@ query(){
        12) REPLY="START TRANSACTION READ ONLY";;
        13) REPLY="START TRANSACTION READ WRITE";;
        14) REPLY="COMMIT AND CHAIN";;
-       15) REPLY="ROLLBACK AND RELEASE";;
+       15) REPLY="ROLLBACK AND NO CHAIN NO RELEASE";;
         *) >&2 echo "[gen-assert] savepoint"; REPLY="Assert: invalid random case selection in savepoint case";;
       esac;;
 3777) case $(($RANDOM % 15 + 1)) in  # DO statement and misc admin
@@ -12878,7 +12816,7 @@ query(){
        12) table; local _t=$REPLY; REPLY="UPDATE ${_t} SET c2=COLUMN_ADD(c2, 'nested', COLUMN_CREATE('x', 1, 'y', 2)) WHERE c1<$(($RANDOM % 100 + 1))";;
        13) REPLY="SELECT COLUMN_GET(COLUMN_CREATE('k', 'v' AS CHAR), 'k' AS CHAR)";;
        14) REPLY="SELECT COLUMN_GET(COLUMN_CREATE(1, 10, 2, 20, 3, 30), 2 AS INT)";;
-       15) table; local _t=$REPLY; REPLY="SELECT COLUMN_GET(c2, 'deep' AS UNSIGNED), COLUMN_GET(c2, 'flag' AS DECIMAL) FROM ${_t} LIMIT $((RANDOM % 52))";;
+       15) table; local _t=$REPLY; REPLY="SELECT COLUMN_GET(c2, 'deep' AS UNSIGNED INTEGER), COLUMN_GET(c2, 'flag' AS DECIMAL) FROM ${_t} LIMIT $((RANDOM % 52))";;
         *) >&2 echo "[gen-assert] dyn col"; REPLY="Assert: invalid random case selection in dyn col case";;
       esac;;
 3782) case $(($RANDOM % 15 + 1)) in  # Generated/virtual column complex expressions
@@ -13166,7 +13104,7 @@ query(){
        12) REPLY="SET mhnsw_default_m=$(($RANDOM % 64 + 4))";;
        13) REPLY="SET mhnsw_default_distance='cosine'";;
        14) REPLY="SET mhnsw_default_distance='euclidean'";;
-       15) REPLY="SET mhnsw_max_cache_size=$((RANDOM % 1048576 + 131072))";;
+       15) REPLY="SET mhnsw_max_cache_size=$((RANDOM % 917505 + 131072))";;
         *) >&2 echo "[gen-assert] vector pt97"; REPLY="Assert: invalid random case selection in vector pt97 case";;
       esac;;
 3798) case $(($RANDOM % 15 + 1)) in  # Partition DDL advanced
@@ -13213,7 +13151,7 @@ query(){
         5) REPLY="SET STATEMENT max_statement_time=$(($RANDOM % 10 + 1)) FOR SELECT SLEEP(0)";;
         6) REPLY="SET STATEMENT optimizer_switch='mrr=on,mrr_sort_keys=on' FOR SELECT c1 FROM t1 LIMIT $((RANDOM % 52))";;
         7) REPLY="SET STATEMENT use_stat_tables='preferably' FOR SELECT COUNT(*) FROM t1";;
-        8) REPLY="KILL QUERY(SELECT PROCESSLIST_ID FROM PERFORMANCE_SCHEMA.THREADS WHERE THREAD_ID=CONNECTION_ID())";;
+        8) REPLY="SELECT PROCESSLIST_ID FROM PERFORMANCE_SCHEMA.THREADS WHERE TYPE='BACKGROUND' LIMIT $((RANDOM % 5 + 1))";;
         9) REPLY="SELECT CONNECTION_ID(), USER(), CURRENT_USER(), SESSION_USER()";;
        10) REPLY="SELECT LAST_INSERT_ID(), ROW_COUNT(), FOUND_ROWS()";;
        11) REPLY="SELECT DATABASE(), SCHEMA(), COALESCE(DATABASE(), 'none')";;
@@ -13263,16 +13201,16 @@ query(){
         1) table; local _t=$REPLY; REPLY="CACHE INDEX ${_t} IN default";;
         2) table; local _t=$REPLY; REPLY="CACHE INDEX ${_t} KEY(idx1) IN default";;
         3) table; local _t1=$REPLY; table; local _t2=$REPLY; REPLY="CACHE INDEX ${_t1}, ${_t2} IN default";;
-        4) REPLY="SET GLOBAL hot_cache.key_buffer_size=$((RANDOM % 1048576 + 131072))";;
+        4) REPLY="SET GLOBAL hot_cache.key_buffer_size=$((RANDOM % 917505 + 131072))";;
         5) table; local _t=$REPLY; REPLY="CACHE INDEX ${_t} IN hot_cache";;
         6) table; local _t=$REPLY; REPLY="LOAD INDEX INTO CACHE ${_t}";;
         7) table; local _t=$REPLY; REPLY="LOAD INDEX INTO CACHE ${_t} IGNORE LEAVES";;
         8) table; local _t=$REPLY; REPLY="LOAD INDEX INTO CACHE ${_t} KEY(idx1)";;
         9) table; local _t1=$REPLY; table; local _t2=$REPLY; REPLY="LOAD INDEX INTO CACHE ${_t1} PARTITION (p1, p2)";;
        10) table; local _t=$REPLY; REPLY="LOAD INDEX INTO CACHE ${_t} KEY(\`PRIMARY\`) IGNORE LEAVES";;
-       11) REPLY="SET GLOBAL key_buffer_size=$((RANDOM % 1048576 + 1048576))";;
-       12) REPLY="SET GLOBAL myisam_sort_buffer_size=$((RANDOM % 1048576 + 262144))";;
-       13) REPLY="SET GLOBAL bulk_insert_buffer_size=$((RANDOM % 1048576 + 131072))";;
+       11) REPLY="SET GLOBAL key_buffer_size=$((RANDOM % 1048576 + 1))";;
+       12) REPLY="SET GLOBAL myisam_sort_buffer_size=$((RANDOM % 786433 + 262144))";;
+       13) REPLY="SET GLOBAL bulk_insert_buffer_size=$((RANDOM % 917505 + 131072))";;
        14) REPLY="SHOW STATUS LIKE 'Key_%'";;
        15) REPLY="SHOW GLOBAL STATUS LIKE 'Qcache%'";;
         *) >&2 echo "[gen-assert] keycache"; REPLY="Assert: invalid random case selection in keycache case";;
@@ -13313,16 +13251,16 @@ query(){
        15) REPLY="USE test";;
         *) >&2 echo "[gen-assert] db ddl"; REPLY="Assert: invalid random case selection in db ddl case";;
       esac;;
-3806) case $(($RANDOM % 15 + 1)) in  # KILL variants
-        1) REPLY="KILL(SELECT CONNECTION_ID())";;
-        2) REPLY="KILL CONNECTION(SELECT CONNECTION_ID())";;
-        3) REPLY="KILL QUERY(SELECT CONNECTION_ID())";;
-        4) REPLY="KILL HARD QUERY(SELECT CONNECTION_ID())";;
-        5) REPLY="KILL SOFT QUERY(SELECT CONNECTION_ID())";;
-        6) REPLY="KILL QUERY ID(SELECT CONNECTION_ID())";;
-        7) REPLY="KILL USER 'rnd_u1'";;
-        8) REPLY="KILL USER 'rnd_u1'@'%'";;
-        9) REPLY="KILL HARD CONNECTION(SELECT CONNECTION_ID())";;
+3806) case $(($RANDOM % 15 + 1)) in  # KILL variants — non-existent IDs only (never self/current connection)
+        1) REPLY="KILL $((RANDOM % 1000000 + 1000000))";;
+        2) REPLY="KILL CONNECTION $((RANDOM % 1000000 + 1000000))";;
+        3) REPLY="KILL QUERY $((RANDOM % 1000000 + 1000000))";;
+        4) REPLY="KILL HARD QUERY $((RANDOM % 1000000 + 1000000))";;
+        5) REPLY="KILL SOFT QUERY $((RANDOM % 1000000 + 1000000))";;
+        6) REPLY="KILL QUERY ID $((RANDOM % 1000000 + 1000000))";;
+        7) REPLY="KILL USER 'nonexistent_u$((RANDOM % 100))'";;
+        8) REPLY="KILL USER 'nonexistent_u$((RANDOM % 100))'@'%'";;
+        9) REPLY="KILL HARD CONNECTION $((RANDOM % 1000000 + 1000000))";;
        10) REPLY="SELECT ID, USER, COMMAND FROM INFORMATION_SCHEMA.PROCESSLIST WHERE COMMAND='Sleep' LIMIT $((RANDOM % 52))";;
        11) REPLY="SELECT ID, USER, COMMAND, STATE, INFO FROM INFORMATION_SCHEMA.PROCESSLIST WHERE COMMAND<>'Sleep' LIMIT $((RANDOM % 52))";;
        12) REPLY="SHOW PROCESSLIST";;
@@ -13425,7 +13363,7 @@ query(){
         1) REPLY="GET DIAGNOSTICS @rows = ROW_COUNT";;
         2) REPLY="GET DIAGNOSTICS @n = NUMBER, @errno = ROW_COUNT";;
         3) REPLY="GET CURRENT DIAGNOSTICS @a = NUMBER";;
-        4) REPLY="GET STACKED DIAGNOSTICS @msg = MESSAGE_TEXT";;
+        4) REPLY="GET DIAGNOSTICS @msg = MESSAGE_TEXT";;
         5) REPLY="GET DIAGNOSTICS CONDITION 1 @sqlstate = RETURNED_SQLSTATE, @msg = MESSAGE_TEXT";;
         6) REPLY="GET DIAGNOSTICS CONDITION 1 @errno = MYSQL_ERRNO, @msg = MESSAGE_TEXT, @cls = CLASS_ORIGIN";;
         7) REPLY="GET DIAGNOSTICS CONDITION 1 @cat_n = CATALOG_NAME, @sch_n = SCHEMA_NAME, @tbl_n = TABLE_NAME, @col_n = COLUMN_NAME";;
@@ -13500,7 +13438,7 @@ query(){
         4) REPLY="SELECT ST_DISJOINT(ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'), ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
         5) REPLY="SELECT ST_EQUALS(ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'), ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
         6) REPLY="SELECT ST_OVERLAPS(ST_GEOMFROMTEXT('POLYGON((0 0,5 0,5 5,0 5,0 0))'), ST_GEOMFROMTEXT('POLYGON((3 3,8 3,8 8,3 8,3 3))'))";;
-        7) REPLY="SELECT ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON((0 0, ST_GEOMFROMTEXT('POLYGON((0 0))'), ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
+        7) REPLY="SELECT ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON((0 0,10 0,10 10,0 10,0 0))'), ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
         8) REPLY="SELECT ST_COVEREDBY(ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'), ST_GEOMFROMTEXT('POLYGON((0 0,10 0,10 10,0 10,0 0))'))";;
         9) REPLY="SELECT MBRContains(ST_GEOMFROMTEXT('POLYGON((0 0,10 0,10 10,0 10,0 0))'), ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
        10) REPLY="SELECT MBRWithin(ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'), ST_GEOMFROMTEXT('POLYGON((0 0,10 0,10 10,0 10,0 0))'))";;
@@ -14135,7 +14073,7 @@ query(){
         9) REPLY="SELECT VERSION(), CURRENT_USER(), USER(), SESSION_USER(), SYSTEM_USER()";;
        10) REPLY="SELECT CONNECTION_ID(), LAST_VALUE(CONNECTION_ID()) OVER ()";;
        11) REPLY="SELECT DATABASE(), SCHEMA(), @@version, @@tx_isolation";;
-       12) REPLY="SELECT FORMAT_PICO_TIME(1000000), FORMAT_BYTES($(($RANDOM % 1048576 + 1024)))";;
+       12) REPLY="SELECT FORMAT_PICO_TIME(1000000), FORMAT_BYTES($(($RANDOM % 1047553 + 1024)))";;
        13) REPLY="SELECT PS_CURRENT_THREAD_ID(), PS_THREAD_ID(CONNECTION_ID())";;
        14) REPLY="SELECT 1, ''";;
        15) REPLY="SELECT MASTER_GTID_WAIT('0-1-1', 0)";;
@@ -14232,8 +14170,8 @@ query(){
         *) >&2 echo "[gen-assert] txn"; REPLY="Assert: invalid random case selection in txn case";;
       esac;;
 3857) case $(($RANDOM % 15 + 1)) in  # KILL / process management
-        1) REPLY="KILL(SELECT IFNULL(MIN(ID), 0) FROM INFORMATION_SCHEMA.PROCESSLIST WHERE COMMAND='Sleep' AND TIME>3600)";;
-        2) REPLY="KILL QUERY(SELECT IFNULL(MIN(ID), 0) FROM INFORMATION_SCHEMA.PROCESSLIST WHERE STATE='Waiting for table metadata lock')";;
+        1) REPLY="KILL(SELECT IFNULL(MIN(ID), 0) FROM INFORMATION_SCHEMA.PROCESSLIST WHERE COMMAND='Sleep' AND TIME>3600 AND ID<>CONNECTION_ID())";;
+        2) REPLY="KILL QUERY(SELECT IFNULL(MIN(ID), 0) FROM INFORMATION_SCHEMA.PROCESSLIST WHERE STATE='Waiting for table metadata lock' AND ID<>CONNECTION_ID())";;
         3) REPLY="KILL(SELECT IFNULL(MIN(ID), 0) FROM INFORMATION_SCHEMA.PROCESSLIST WHERE COMMAND='Query' AND TIME>60 AND ID<>CONNECTION_ID())";;
         4) REPLY="SELECT COUNT(*) FROM INFORMATION_SCHEMA.PROCESSLIST WHERE COMMAND='Sleep'";;
         5) REPLY="SELECT COUNT(*) FROM INFORMATION_SCHEMA.PROCESSLIST WHERE COMMAND<>'Sleep' AND ID<>CONNECTION_ID()";;
@@ -14306,8 +14244,8 @@ query(){
 3861) case $(($RANDOM % 15 + 1)) in  # SET GLOBAL / PERSIST_ONLY / RESET PERSIST
         1) REPLY="SET GLOBAL max_connections=$(($RANDOM % 1000 + 100))";;
         2) REPLY="SET GLOBAL max_connections=$(($RANDOM % 1000 + 100))";;
-        3) REPLY="SET GLOBAL innodb_buffer_pool_size=$((RANDOM % 1048576 + 1048576))";;
-        4) REPLY="SET GLOBAL innodb_buffer_pool_size=$((RANDOM % 1048576 + 1048576))";;
+        3) REPLY="SET GLOBAL innodb_buffer_pool_size=$((RANDOM % 1048576 + 1))";;
+        4) REPLY="SET GLOBAL innodb_buffer_pool_size=$((RANDOM % 1048576 + 1))";;
         5) REPLY="SET GLOBAL sql_mode='STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION'";;
         6) REPLY="SET GLOBAL default_storage_engine='InnoDB'";;
         7) REPLY="RESET GLOBAL max_connections";;
@@ -14318,7 +14256,7 @@ query(){
        12) REPLY="SET @@PERSIST.innodb_flush_log_at_trx_commit=$(($RANDOM % 3))";;
        13) REPLY="SET @@PERSIST_ONLY.thread_cache_size=$(($RANDOM % 100 + 1))";;
        14) REPLY="SET @@GLOBAL.event_scheduler='ON'";;
-       15) REPLY="SET GLOBAL read_buffer_size=$((RANDOM % 1048576 + 8192))";;
+       15) REPLY="SET GLOBAL read_buffer_size=$((RANDOM % 1040385 + 8192))";;
         *) >&2 echo "[gen-assert] persist"; REPLY="Assert: invalid random case selection in persist case";;
       esac;;
 3862) case $(($RANDOM % 15 + 1)) in  # CHANGE MASTER TO / CHANGE MASTER
@@ -14863,13 +14801,13 @@ query(){
       esac;;
 3892) case $(($RANDOM % 15 + 1)) in  # HANDLER READ FIRST/LAST
         1) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST";;
-        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST";;
+        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST";;
         3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST LIMIT $(($RANDOM % 10 + 1))";;
-        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST LIMIT $(($RANDOM % 10 + 1))";;
+        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST LIMIT $(($RANDOM % 10 + 1))";;
         5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST WHERE c1>$(($RANDOM % 100 + 1))";;
-        6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST WHERE c1<$(($RANDOM % 100 + 1))";;
+        6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST WHERE c1<$(($RANDOM % 100 + 1))";;
         7) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST WHERE c2 IS NOT NULL LIMIT $((RANDOM % 52))";;
-        8) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST WHERE c3>0 LIMIT $((RANDOM % 52))";;
+        8) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST WHERE c3>0 LIMIT $((RANDOM % 52))";;
         9) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` FIRST";;
        10) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST";;
        11) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` FIRST LIMIT $((RANDOM % 52))";;
@@ -14881,15 +14819,15 @@ query(){
       esac;;
 3893) case $(($RANDOM % 15 + 1)) in  # HANDLER READ NEXT/PREV
         1) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT";;
-        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV";;
+        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV";;
         3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT LIMIT $(($RANDOM % 10 + 1))";;
-        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV LIMIT $(($RANDOM % 10 + 1))";;
+        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV LIMIT $(($RANDOM % 10 + 1))";;
         5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` NEXT";;
         6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV";;
         7) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` NEXT LIMIT $((RANDOM % 52))";;
         8) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV LIMIT $((RANDOM % 52))";;
         9) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c1>$(($RANDOM % 100))";;
-       10) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV WHERE c1<$(($RANDOM % 100 + 1))";;
+       10) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV WHERE c1<$(($RANDOM % 100 + 1))";;
        11) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c2 IS NOT NULL LIMIT $((RANDOM % 52))";;
        12) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c3>0 AND c4 IS NOT NULL LIMIT $((RANDOM % 52))";;
        13) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx1 NEXT";;
@@ -14935,7 +14873,7 @@ query(){
       esac;;
 3896) case $(($RANDOM % 15 + 1)) in  # HANDLER WHERE filter chains
         1) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST WHERE c1>0 AND c2 IS NOT NULL LIMIT $((RANDOM % 52))";;
-        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST WHERE c1<100 OR c2=0 LIMIT $((RANDOM % 52))";;
+        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST WHERE c1<100 OR c2=0 LIMIT $((RANDOM % 52))";;
         3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c3 BETWEEN 1 AND 100 LIMIT $((RANDOM % 52))";;
         4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c2 IN (1,2,3,4,5) LIMIT $((RANDOM % 52))";;
         5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c2 LIKE 'a%' LIMIT $((RANDOM % 52))";;
@@ -14954,8 +14892,8 @@ query(){
 3897) case $(($RANDOM % 15 + 1)) in  # HANDLER mixed navigation
         1) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST";;
         2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT LIMIT $((RANDOM % 52))";;
-        3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV LIMIT $((RANDOM % 52))";;
-        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST";;
+        3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV LIMIT $((RANDOM % 52))";;
+        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST";;
         5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV LIMIT $((RANDOM % 52))";;
         6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` FIRST LIMIT $((RANDOM % 52))";;
         7) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx1 LAST LIMIT $((RANDOM % 52))";;
@@ -14971,7 +14909,7 @@ query(){
       esac;;
 3898) case $(($RANDOM % 15 + 1)) in  # HANDLER partitioned tables
         1) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST LIMIT $((RANDOM % 52))";;
-        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST LIMIT $((RANDOM % 52))";;
+        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST LIMIT $((RANDOM % 52))";;
         3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT LIMIT $((RANDOM % 52))";;
         4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` >= (1) LIMIT $((RANDOM % 52))";;
         5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` < (9999) LIMIT $((RANDOM % 52))";;
@@ -14991,8 +14929,8 @@ query(){
         1) table; local _t=$REPLY; REPLY="HANDLER ${_t} OPEN AS h1";;
         2) REPLY="HANDLER h1 READ FIRST LIMIT $((RANDOM % 52))";;
         3) REPLY="HANDLER h1 READ NEXT LIMIT $((RANDOM % 52))";;
-        4) REPLY="HANDLER h1 READ LAST LIMIT $((RANDOM % 52))";;
-        5) REPLY="HANDLER h1 READ PREV LIMIT $((RANDOM % 52))";;
+        4) REPLY="HANDLER h1 READ \`PRIMARY\` LAST LIMIT $((RANDOM % 52))";;
+        5) REPLY="HANDLER h1 READ \`PRIMARY\` PREV LIMIT $((RANDOM % 52))";;
         6) REPLY="HANDLER h1 READ \`PRIMARY\` = ($(($RANDOM % 100 + 1)))";;
         7) REPLY="HANDLER h1 READ \`PRIMARY\` > ($(($RANDOM % 100))) LIMIT $((RANDOM % 52))";;
         8) REPLY="HANDLER h1 READ \`PRIMARY\` < ($(($RANDOM % 100 + 1))) LIMIT $((RANDOM % 52))";;
@@ -15026,7 +14964,7 @@ query(){
 3901) case $(($RANDOM % 15 + 1)) in  # HANDLER combined navigation patterns
         1) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST WHERE c1%3=0 LIMIT $((RANDOM % 52))";;
         2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c2 LIKE '%abc%' LIMIT $((RANDOM % 52))";;
-        3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV WHERE LENGTH(c2)>10 LIMIT $((RANDOM % 52))";;
+        3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV WHERE LENGTH(c2)>10 LIMIT $((RANDOM % 52))";;
         4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx1 FIRST WHERE c2<>0 LIMIT $((RANDOM % 52))";;
         5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx2 LAST WHERE c3>0 LIMIT $((RANDOM % 52))";;
         6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx3 NEXT WHERE c4 IS NOT NULL LIMIT $((RANDOM % 52))";;
@@ -15035,9 +14973,9 @@ query(){
         9) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx1 > ($(($RANDOM % 100))) WHERE c3=c4 LIMIT $((RANDOM % 52))";;
        10) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c1 XOR c2 LIMIT $((RANDOM % 52))";;
        11) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST WHERE c1 BETWEEN 10 AND 200 LIMIT $((RANDOM % 52))";;
-       12) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST WHERE c1 NOT BETWEEN 500 AND 1000 LIMIT $((RANDOM % 52))";;
+       12) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST WHERE c1 NOT BETWEEN 500 AND 1000 LIMIT $((RANDOM % 52))";;
        13) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c2<>c3 LIMIT $((RANDOM % 52))";;
-       14) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV WHERE c4=c1 LIMIT $((RANDOM % 52))";;
+       14) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV WHERE c4=c1 LIMIT $((RANDOM % 52))";;
        15) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT LIMIT $((RANDOM % 52))";;
         *) >&2 echo "[gen-assert] handler combined"; REPLY="Assert: invalid random case selection in handler combined case";;
       esac;;
@@ -15079,9 +15017,9 @@ query(){
       esac;;
 3904) case $(($RANDOM % 15 + 1)) in  # HANDLER wrap-up
         1) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT LIMIT $(($RANDOM % 20 + 1))";;
-        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV LIMIT $(($RANDOM % 20 + 1))";;
+        2) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV LIMIT $(($RANDOM % 20 + 1))";;
         3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST LIMIT $(($RANDOM % 20 + 1))";;
-        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST LIMIT $(($RANDOM % 20 + 1))";;
+        4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST LIMIT $(($RANDOM % 20 + 1))";;
         5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` = ($(($RANDOM % 1000 + 1)))";;
         6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx1 = ($(($RANDOM % 1000 + 1)))";;
         7) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` > (0) LIMIT $((RANDOM % 52))";;
@@ -15092,7 +15030,7 @@ query(){
        12) table; local _t=$REPLY; REPLY="HANDLER ${_t} CLOSE";;
        13) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST WHERE c1%2=0 LIMIT $((RANDOM % 52))";;
        14) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c1%3=1 LIMIT $((RANDOM % 52))";;
-       15) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST WHERE c1%5=0 LIMIT $((RANDOM % 52))";;
+       15) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST WHERE c1%5=0 LIMIT $((RANDOM % 52))";;
         *) >&2 echo "[gen-assert] handler wrapup"; REPLY="Assert: invalid random case selection in handler wrapup case";;
       esac;;
 3905) case $(($RANDOM % 15 + 1)) in  # HANDLER vs SELECT equivalence
@@ -15100,7 +15038,7 @@ query(){
         2) table; local _t=$REPLY; REPLY="SELECT * FROM ${_t} WHERE c1=$(($RANDOM % 100 + 1)) LIMIT $((RANDOM % 52))";;
         3) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST LIMIT $((RANDOM % 52))";;
         4) table; local _t=$REPLY; REPLY="SELECT * FROM ${_t} ORDER BY c1 LIMIT $((RANDOM % 52))";;
-        5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST LIMIT $((RANDOM % 52))";;
+        5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST LIMIT $((RANDOM % 52))";;
         6) table; local _t=$REPLY; REPLY="SELECT * FROM ${_t} ORDER BY c1 DESC LIMIT $((RANDOM % 52))";;
         7) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx1 = ($(($RANDOM % 100 + 1))) LIMIT $((RANDOM % 52))";;
         8) table; local _t=$REPLY; REPLY="SELECT * FROM ${_t} WHERE c2=$(($RANDOM % 100 + 1)) LIMIT $((RANDOM % 52))";;
@@ -15190,9 +15128,9 @@ query(){
         2) REPLY="SET mhnsw_default_m=$(($RANDOM % 64 + 4))";;
         3) REPLY="SET mhnsw_default_distance='cosine'";;
         4) REPLY="SET mhnsw_default_distance='euclidean'";;
-        5) REPLY="SET mhnsw_max_cache_size=$((RANDOM % 1048576 + 131072))";;
+        5) REPLY="SET mhnsw_max_cache_size=$((RANDOM % 917505 + 131072))";;
         6) REPLY="SET SESSION mhnsw_ef_search=$(($RANDOM % 100 + 50))";;
-        7) REPLY="SET SESSION mhnsw_max_cache_size=$((RANDOM % 1048576 + 65536))";;
+        7) REPLY="SET SESSION mhnsw_max_cache_size=$((RANDOM % 983041 + 65536))";;
         8) REPLY="SELECT @@mhnsw_ef_search, @@mhnsw_default_m, @@mhnsw_default_distance";;
         9) REPLY="SHOW VARIABLES LIKE 'mhnsw_%'";;
        10) REPLY="SHOW STATUS LIKE 'mhnsw_%'";;
@@ -15457,16 +15395,16 @@ query(){
       esac;;
 3925) case $(($RANDOM % 15 + 1)) in  # Session resource vars
         1) REPLY="SET SESSION sql_big_selects=$(($RANDOM % 2))";;
-        2) REPLY="SET SESSION max_join_size=$((RANDOM % 1048576 + 1000))";;
-        3) REPLY="SET SESSION max_heap_table_size=$((RANDOM % 1048576 + 65536))";;
-        4) REPLY="SET SESSION tmp_table_size=$((RANDOM % 1048576 + 65536))";;
-        5) REPLY="SET SESSION sort_buffer_size=$((RANDOM % 1048576 + 32768))";;
-        6) REPLY="SET SESSION join_buffer_size=$((RANDOM % 1048576 + 32768))";;
-        7) REPLY="SET SESSION read_buffer_size=$((RANDOM % 1048576 + 8192))";;
-        8) REPLY="SET SESSION read_rnd_buffer_size=$((RANDOM % 1048576 + 8192))";;
+        2) REPLY="SET SESSION max_join_size=$((RANDOM % 1047577 + 1000))";;
+        3) REPLY="SET SESSION max_heap_table_size=$((RANDOM % 983041 + 65536))";;
+        4) REPLY="SET SESSION tmp_table_size=$((RANDOM % 983041 + 65536))";;
+        5) REPLY="SET SESSION sort_buffer_size=$((RANDOM % 1015809 + 32768))";;
+        6) REPLY="SET SESSION join_buffer_size=$((RANDOM % 1015809 + 32768))";;
+        7) REPLY="SET SESSION read_buffer_size=$((RANDOM % 1040385 + 8192))";;
+        8) REPLY="SET SESSION read_rnd_buffer_size=$((RANDOM % 1040385 + 8192))";;
         9) REPLY="SET SESSION query_cache_type=$(($RANDOM % 3))";;
        10) REPLY="SET SESSION max_sort_length=$(($RANDOM % 8192 + 1024))";;
-       11) REPLY="SET SESSION group_concat_max_len=$((RANDOM % 1048576 + 1024))";;
+       11) REPLY="SET SESSION group_concat_max_len=$((RANDOM % 1047553 + 1024))";;
        12) REPLY="SET SESSION net_read_timeout=$(($RANDOM % 60 + 10))";;
        13) REPLY="SET SESSION net_write_timeout=$(($RANDOM % 60 + 10))";;
        14) REPLY="SET SESSION wait_timeout=$(($RANDOM % 3600 + 60))";;
@@ -15989,19 +15927,19 @@ query(){
         *) >&2 echo "[gen-assert] sysversion"; REPLY="Assert: invalid random case selection in sysversion case";;
       esac;;
 3955) case $(($RANDOM % 15 + 1)) in  # Application-time FOR PORTION OF / WITHOUT OVERLAPS
-        1) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATE, c3 DATE, PERIOD FOR p_app(c2, c3), PRIMARY KEY(c1, p_app WITHOUT OVERLAPS))";;
-        2) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATETIME, c3 DATETIME, PERIOD FOR p_app(c2, c3), UNIQUE(c1, p_app WITHOUT OVERLAPS))";;
-        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR p_app(c2, c3)";;
-        4) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR p_app";;
-        5) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF p_app FROM '2020-06-01' TO '2020-09-01' WHERE c1<5";;
-        6) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF p_app FROM '2020-03-01' TO '2020-05-01' SET c1=c1+1 WHERE c1<5";;
+        1) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATE, c3 DATE, PERIOD FOR app_time(c2, c3), PRIMARY KEY(c1, app_time WITHOUT OVERLAPS))";;
+        2) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATETIME, c3 DATETIME, PERIOD FOR app_time(c2, c3), UNIQUE(c1, app_time WITHOUT OVERLAPS))";;
+        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR app_time(c2, c3)";;
+        4) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR app_time";;
+        5) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM '2020-06-01' TO '2020-09-01' WHERE c1<5";;
+        6) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM '2020-03-01' TO '2020-05-01' SET c1=c1+1 WHERE c1<5";;
         7) table; local _t=$REPLY; REPLY="INSERT INTO ${_t} (c1, c2, c3) VALUES ($(($RANDOM % 100 + 1)), '2020-01-01', '2021-01-01')";;
         8) table; local _t=$REPLY; REPLY="SELECT c1 FROM ${_t} WHERE c2<='2020-06-01' AND c3>'2020-06-01' LIMIT $((RANDOM % 52))";;
         9) REPLY="SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.PERIODS LIMIT $((RANDOM % 52))";;
-       10) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PRIMARY KEY(c1, p_app WITHOUT OVERLAPS)";;
-       11) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD UNIQUE(c1, p_app WITHOUT OVERLAPS)";;
-       12) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF p_app FROM NOW()-INTERVAL $((RANDOM % 12 + 1)) WEEK TO NOW() WHERE c1>0";;
-       13) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF p_app FROM TIMESTAMP'2020-01-01 00:00:00' TO TIMESTAMP'2020-12-31 23:59:59' SET c1=c1+100";;
+       10) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PRIMARY KEY(c1, app_time WITHOUT OVERLAPS)";;
+       11) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD UNIQUE(c1, app_time WITHOUT OVERLAPS)";;
+       12) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM NOW()-INTERVAL $((RANDOM % 12 + 1)) WEEK TO NOW() WHERE c1>0";;
+       13) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM TIMESTAMP'2020-01-01 00:00:00' TO TIMESTAMP'2020-12-31 23:59:59' SET c1=c1+100";;
        14) table; local _t=$REPLY; REPLY="SELECT c1, c2, c3, DATEDIFF(c3, c2) span FROM ${_t} WHERE c2 IS NOT NULL LIMIT $((RANDOM % 52))";;
        15) REPLY="SELECT TABLE_NAME, PERIOD_NAME, START_COLUMN_NAME, END_COLUMN_NAME FROM INFORMATION_SCHEMA.PERIODS WHERE TABLE_SCHEMA='test' LIMIT $((RANDOM % 52))";;
         *) >&2 echo "[gen-assert] app-time"; REPLY="Assert: invalid random case selection in app-time case";;
@@ -16593,7 +16531,7 @@ query(){
         8) REPLY="SELECT FIND_IN_SET('b', 'a,b,c,d')";;
         9) REPLY="SELECT INTERVAL($(($RANDOM % 100)), 10, 20, 30, 40, 50, 60, 70)";;
        10) REPLY="SELECT FORMAT_PICO_TIME(POW(10, 9))";;
-       11) REPLY="SELECT FORMAT_BYTES($(($RANDOM % 1048576 + 1024)))";;
+       11) REPLY="SELECT FORMAT_BYTES($(($RANDOM % 1047553 + 1024)))";;
        12) REPLY="SELECT NATURAL_SORT_KEY('abc10'), NATURAL_SORT_KEY('abc2')";;
        13) REPLY="SELECT LOCATE('x', 'xyz', 2), LOCATE('b', 'abc', 0)";;
        14) REPLY="SELECT INSTR(NULL, 'x'), INSTR('haystack', NULL), INSTR('', 'x'), INSTR('haystack', '')";;
@@ -16718,7 +16656,7 @@ query(){
         7) REPLY="SELECT ST_TOUCHES(ST_GEOMFROMTEXT('POLYGON((0 0,5 0,5 5,0 5,0 0))'), ST_GEOMFROMTEXT('POLYGON((5 0,10 0,10 5,5 5,5 0))'))";;
         8) REPLY="SELECT ST_OVERLAPS(ST_GEOMFROMTEXT('POLYGON((0 0,5 0,5 5,0 5,0 0))'), ST_GEOMFROMTEXT('POLYGON((3 3,8 3,8 8,3 8,3 3))'))";;
         9) REPLY="SELECT ST_EQUALS(ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'), ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
-       10) REPLY="SELECT ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON((0 0, ST_GEOMFROMTEXT('POLYGON((0 0))'), ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
+       10) REPLY="SELECT ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON((0 0,10 0,10 10,0 10,0 0))'), ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
        11) REPLY="SELECT ST_COVEREDBY(ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'), ST_GEOMFROMTEXT('POLYGON((0 0,10 0,10 10,0 10,0 0))'))";;
        12) REPLY="SELECT ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON((0 0,10 0,10 10,0 10,0 0),(4 4,6 4,6 6,4 6,4 4))'), ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
        13) REPLY="SELECT ST_INTERSECTS(ST_GEOMFROMTEXT('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'), ST_GEOMFROMTEXT('POLYGON((0 0,10 0,10 10,0 10,0 0))'))";;
@@ -16909,7 +16847,7 @@ query(){
 4006) case $(($RANDOM % 15 + 1)) in  # Optimizer trace
         1) REPLY="SET SESSION optimizer_trace='enabled=on'";;
         2) REPLY="SET SESSION optimizer_trace='enabled=off'";;
-        3) REPLY="SET SESSION optimizer_trace_max_mem_size=$((RANDOM % 1048576 + 65536))";;
+        3) REPLY="SET SESSION optimizer_trace_max_mem_size=$((RANDOM % 983041 + 65536))";;
         4) REPLY="SET SESSION optimizer_trace_features='greedy_search=on,range_optimizer=on'";;
         5) REPLY="SET SESSION optimizer_trace_features='greedy_search=off'";;
         6) REPLY="SET SESSION optimizer_trace_offset=$(($RANDOM % 100))";;
@@ -16951,8 +16889,8 @@ query(){
         6) REPLY="SET SESSION binlog_row_image='NOBLOB'";;
         7) REPLY="SET GLOBAL binlog_format='ROW'";;
         8) REPLY="SET GLOBAL sync_binlog=$(($RANDOM % 100))";;
-        9) REPLY="SET GLOBAL binlog_cache_size=$((RANDOM % 1048576 + 32768))";;
-       10) REPLY="SET GLOBAL binlog_stmt_cache_size=$((RANDOM % 1048576 + 32768))";;
+        9) REPLY="SET GLOBAL binlog_cache_size=$((RANDOM % 1015809 + 32768))";;
+       10) REPLY="SET GLOBAL binlog_stmt_cache_size=$((RANDOM % 1015809 + 32768))";;
        11) REPLY="SET SESSION binlog_direct_non_transactional_updates=$(($RANDOM % 2))";;
        12) REPLY="SET SESSION sql_log_bin=$(($RANDOM % 2))";;
        13) REPLY="SELECT @@binlog_format, @@binlog_row_image, @@sql_log_bin";;
@@ -17219,8 +17157,8 @@ query(){
         4) table; local _t=$REPLY; REPLY="SELECT c3, GROUP_CONCAT(c1) FROM ${_t} GROUP BY c3 ORDER BY GROUP_CONCAT(c1) LIMIT $((RANDOM % 52))";;
         5) table; local _t=$REPLY; REPLY="SELECT GROUP_CONCAT(c1 ORDER BY c1 SEPARATOR ',') FROM ${_t} WHERE c2>0";;
         6) table; local _t=$REPLY; REPLY="SELECT GROUP_CONCAT(DISTINCT c1) FROM ${_t}";;
-        7) REPLY="SET SESSION group_concat_max_len=$((RANDOM % 1048576 + 1024))";;
-        8) REPLY="SET GLOBAL group_concat_max_len=$((RANDOM % 1048576 + 4096))";;
+        7) REPLY="SET SESSION group_concat_max_len=$((RANDOM % 1047553 + 1024))";;
+        8) REPLY="SET GLOBAL group_concat_max_len=$((RANDOM % 1044481 + 4096))";;
         9) REPLY="SELECT @@group_concat_max_len";;
        10) table; local _t=$REPLY; REPLY="SELECT c2, JSON_ARRAYAGG(c1 ORDER BY c1) FROM ${_t} GROUP BY c2 LIMIT $((RANDOM % 52))";;
        11) table; local _t=$REPLY; REPLY="SELECT c2, JSON_OBJECTAGG(c1, c3) FROM ${_t} GROUP BY c2 LIMIT $((RANDOM % 52))";;
@@ -17231,18 +17169,18 @@ query(){
         *) >&2 echo "[gen-assert] case"; REPLY="Assert: invalid random case selection in case";;
       esac;;
 4024) case $(($RANDOM % 15 + 1)) in  # PERIOD FOR / FOR PORTION OF detail
-        1) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATE, c3 DATE, PERIOD FOR p_app(c2,c3), PRIMARY KEY(c1, p_app WITHOUT OVERLAPS))";;
-        2) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATETIME, c3 DATETIME, PERIOD FOR p_app(c2,c3), UNIQUE(c1, p_app WITHOUT OVERLAPS))";;
-        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR p_app(c2,c3)";;
-        4) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR p_app";;
-        5) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF p_app FROM '2020-06-01' TO '2020-09-01' WHERE c1<5";;
-        6) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF p_app FROM '2020-03-01' TO '2020-05-01' SET c1=c1+1 WHERE c1<5";;
+        1) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATE, c3 DATE, PERIOD FOR app_time(c2,c3), PRIMARY KEY(c1, app_time WITHOUT OVERLAPS))";;
+        2) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATETIME, c3 DATETIME, PERIOD FOR app_time(c2,c3), UNIQUE(c1, app_time WITHOUT OVERLAPS))";;
+        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR app_time(c2,c3)";;
+        4) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR app_time";;
+        5) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM '2020-06-01' TO '2020-09-01' WHERE c1<5";;
+        6) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM '2020-03-01' TO '2020-05-01' SET c1=c1+1 WHERE c1<5";;
         7) REPLY="SELECT TABLE_NAME, PERIOD_NAME, START_COLUMN_NAME, END_COLUMN_NAME FROM INFORMATION_SCHEMA.PERIODS WHERE TABLE_SCHEMA='test' LIMIT $((RANDOM % 52))";;
         8) table; local _t=$REPLY; REPLY="SELECT c1, c2, c3, DATEDIFF(c3, c2) span FROM ${_t} WHERE c2 IS NOT NULL LIMIT $((RANDOM % 52))";;
-        9) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD CONSTRAINT pk_a PRIMARY KEY(c1, p_app WITHOUT OVERLAPS)";;
-       10) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD CONSTRAINT u_a UNIQUE(c1, p_app WITHOUT OVERLAPS)";;
-       11) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF p_app FROM NOW()-INTERVAL $((RANDOM % 365 + 1)) DAY TO NOW() WHERE c1>0";;
-       12) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF p_app FROM TIMESTAMP'2020-01-01 00:00:00' TO TIMESTAMP'2020-06-30 23:59:59' SET c1=c1+100";;
+        9) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD CONSTRAINT pk_a PRIMARY KEY(c1, app_time WITHOUT OVERLAPS)";;
+       10) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD CONSTRAINT u_a UNIQUE(c1, app_time WITHOUT OVERLAPS)";;
+       11) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM NOW()-INTERVAL $((RANDOM % 365 + 1)) DAY TO NOW() WHERE c1>0";;
+       12) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM TIMESTAMP'2020-01-01 00:00:00' TO TIMESTAMP'2020-06-30 23:59:59' SET c1=c1+100";;
        13) table; local _t=$REPLY; REPLY="INSERT INTO ${_t} (c1, c2, c3) VALUES ($(($RANDOM % 100)), '2020-01-01', '2021-12-31')";;
        14) table; local _t=$REPLY; REPLY="SELECT c1 FROM ${_t} WHERE c2<='2020-12-31' AND c3>'2020-01-01' LIMIT $((RANDOM % 52))";;
        15) table; local _t=$REPLY; REPLY="SELECT c1, c2, c3 FROM ${_t} ORDER BY c2, c3 LIMIT $((RANDOM % 52))";;
@@ -17640,8 +17578,8 @@ query(){
        11) REPLY="TRUNCATE TABLE tmp_a";;
        12) REPLY="SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TEMPORARY='Y' LIMIT $((RANDOM % 52))";;
        13) REPLY="SELECT IS_TEMPORARY FROM INFORMATION_SCHEMA.INNODB_TEMP_TABLE_INFO LIMIT $((RANDOM % 52))";;
-       14) REPLY="SET tmp_table_size=$((RANDOM % 1048576 + 65536))";;
-       15) REPLY="SET max_heap_table_size=$((RANDOM % 1048576 + 65536))";;
+       14) REPLY="SET tmp_table_size=$((RANDOM % 983041 + 65536))";;
+       15) REPLY="SET max_heap_table_size=$((RANDOM % 983041 + 65536))";;
         *) >&2 echo "[gen-assert] case"; REPLY="Assert: invalid random case selection in case";;
       esac;;
 4047) case $(($RANDOM % 15 + 1)) in  # Connection / session
@@ -17656,7 +17594,7 @@ query(){
         9) REPLY="SET SESSION wait_timeout=$(($RANDOM % 3600 + 60))";;
        10) REPLY="SET SESSION interactive_timeout=$(($RANDOM % 3600 + 60))";;
        11) REPLY="SET SESSION net_read_timeout=$(($RANDOM % 60 + 10)), SESSION net_write_timeout=$(($RANDOM % 60 + 10))";;
-       12) REPLY="SET SESSION max_join_size=$((RANDOM % 1048576 + 1000))";;
+       12) REPLY="SET SESSION max_join_size=$((RANDOM % 1047577 + 1000))";;
        13) REPLY="SET SESSION sql_select_limit=$(($RANDOM % 1000 + 100))";;
        14) REPLY="SET SESSION sql_select_limit=DEFAULT";;
        15) REPLY="SHOW VARIABLES WHERE Variable_name LIKE '%timeout%'";;
@@ -17907,7 +17845,7 @@ query(){
         8) REPLY="SELECT @@warning_count, @@error_count";;
         9) REPLY="GET DIAGNOSTICS @rows = ROW_COUNT, @num = NUMBER";;
        10) REPLY="GET CURRENT DIAGNOSTICS @r = ROW_COUNT";;
-       11) REPLY="GET STACKED DIAGNOSTICS @msg = MESSAGE_TEXT";;
+       11) REPLY="GET DIAGNOSTICS @msg = MESSAGE_TEXT";;
        12) REPLY="GET DIAGNOSTICS CONDITION 1 @sqlstate = RETURNED_SQLSTATE, @msg = MESSAGE_TEXT";;
        13) REPLY="SET sql_warnings=$(($RANDOM % 2))";;
        14) REPLY="SET sql_notes=$(($RANDOM % 2))";;
@@ -17962,7 +17900,7 @@ query(){
         9) REPLY="SELECT UUID(), UUID_SHORT(), SYS_GUID()";;
        10) REPLY="SELECT RAND(), RAND($(($RANDOM)))";;
        11) REPLY="SELECT @@version_compile_zlib, @@version_ssl_library";;
-       12) REPLY="SELECT FORMAT_BYTES($(($RANDOM % 1048576 + 1024))), FORMAT_PICO_TIME($(($RANDOM % 1000000 + 1000)))";;
+       12) REPLY="SELECT FORMAT_BYTES($(($RANDOM % 1047553 + 1024))), FORMAT_PICO_TIME($(($RANDOM % 1000000 + 1000)))";;
        13) REPLY="SELECT IS_FREE_LOCK('lock_a_$(($RANDOM % 10))'), IS_USED_LOCK('lock_a_$(($RANDOM % 10))')";;
        14) REPLY="SELECT 1, ''";;
        15) REPLY="SELECT BINLOG_GTID_POS('binlog.000001', 1000)";;
@@ -17990,10 +17928,10 @@ query(){
         1) REPLY="SET STATEMENT max_statement_time=$(($RANDOM % 10 + 1)) FOR SELECT SLEEP(0)";;
         2) REPLY="SET STATEMENT optimizer_switch='mrr=on,mrr_sort_keys=on' FOR SELECT c1 FROM t1 LIMIT $((RANDOM % 52))";;
         3) REPLY="SET STATEMENT use_stat_tables='preferably' FOR SELECT COUNT(*) FROM t1";;
-        4) REPLY="SET STATEMENT sort_buffer_size=$((RANDOM % 1048576 + 32768)) FOR SELECT c1 FROM t1 ORDER BY c2 LIMIT $((RANDOM % 52))";;
-        5) REPLY="SET STATEMENT join_buffer_size=$((RANDOM % 1048576 + 32768)) FOR SELECT a.c1 FROM t1 a JOIN t2 b USING(c1) LIMIT $((RANDOM % 52))";;
-        6) REPLY="SET STATEMENT tmp_table_size=$((RANDOM % 1048576 + 65536)) FOR SELECT c2, COUNT(*) FROM t1 GROUP BY c2";;
-        7) REPLY="SET STATEMENT max_heap_table_size=$((RANDOM % 1048576 + 65536)) FOR SELECT c1 FROM t1";;
+        4) REPLY="SET STATEMENT sort_buffer_size=$((RANDOM % 1015809 + 32768)) FOR SELECT c1 FROM t1 ORDER BY c2 LIMIT $((RANDOM % 52))";;
+        5) REPLY="SET STATEMENT join_buffer_size=$((RANDOM % 1015809 + 32768)) FOR SELECT a.c1 FROM t1 a JOIN t2 b USING(c1) LIMIT $((RANDOM % 52))";;
+        6) REPLY="SET STATEMENT tmp_table_size=$((RANDOM % 983041 + 65536)) FOR SELECT c2, COUNT(*) FROM t1 GROUP BY c2";;
+        7) REPLY="SET STATEMENT max_heap_table_size=$((RANDOM % 983041 + 65536)) FOR SELECT c1 FROM t1";;
         8) REPLY="SET STATEMENT lock_wait_timeout=1 FOR SELECT c1 FROM t1 LIMIT $((RANDOM % 52)) FOR UPDATE";;
         9) REPLY="SET STATEMENT innodb_lock_wait_timeout=1 FOR SELECT c1 FROM t1 LIMIT $((RANDOM % 52)) FOR UPDATE";;
        10) REPLY="SET STATEMENT group_concat_max_len=$(($RANDOM % 8192 + 1024)) FOR SELECT GROUP_CONCAT(c1) FROM t1";;
@@ -18044,7 +17982,7 @@ query(){
         1) REPLY="CREATE OR REPLACE SEQUENCE seq_a START WITH 1 INCREMENT BY $((RANDOM % 50 + 1)) ENGINE=InnoDB";;
         2) REPLY="CREATE OR REPLACE SEQUENCE seq_b START WITH $(($RANDOM % 100)) INCREMENT BY $(($RANDOM % 5 + 1)) MINVALUE 1 MAXVALUE 1000";;
         3) REPLY="CREATE OR REPLACE SEQUENCE seq_c START WITH 100 INCREMENT BY -1 MINVALUE -100 MAXVALUE 100 CYCLE";;
-        4) REPLY="CREATE OR REPLACE SEQUENCE seq_d INCREMENT BY $(($RANDOM % 5 + 1)) NO CACHE NOCYCLE";;
+        4) REPLY="CREATE OR REPLACE SEQUENCE seq_d INCREMENT BY $(($RANDOM % 5 + 1)) NOCACHE NOCYCLE";;
         5) REPLY="CREATE OR REPLACE SEQUENCE seq_e CACHE $(($RANDOM % 100 + 1))";;
         6) REPLY="DROP SEQUENCE IF EXISTS seq_a, seq_b, seq_c, seq_d, seq_e";;
         7) REPLY="SELECT NEXT VALUE FOR seq_a";;
@@ -18179,7 +18117,7 @@ query(){
        10) REPLY="SET mhnsw_default_distance='cosine'";;
        11) REPLY="SET mhnsw_default_distance='euclidean'";;
        12) REPLY="SET mhnsw_default_m=$(($RANDOM % 64 + 8))";;
-       13) REPLY="SET mhnsw_max_cache_size=$((RANDOM % 1048576 + 131072))";;
+       13) REPLY="SET mhnsw_max_cache_size=$((RANDOM % 917505 + 131072))";;
        14) REPLY="SHOW VARIABLES LIKE 'mhnsw_%'";;
        15) REPLY="SHOW STATUS LIKE 'mhnsw_%'";;
         *) >&2 echo "[gen-assert] case"; REPLY="Assert: invalid random case selection in case";;
@@ -18374,8 +18312,8 @@ query(){
         7) table; local _t=$REPLY; REPLY="HANDLER ${_t} OPEN";;
         8) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST WHERE c1 IS NOT NULL LIMIT $((RANDOM % 52))";;
         9) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT WHERE c2 IS NOT NULL LIMIT $((RANDOM % 52))";;
-       10) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST WHERE c3 IS NOT NULL LIMIT $((RANDOM % 52))";;
-       11) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV WHERE c4 IS NOT NULL LIMIT $((RANDOM % 52))";;
+       10) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST WHERE c3 IS NOT NULL LIMIT $((RANDOM % 52))";;
+       11) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV WHERE c4 IS NOT NULL LIMIT $((RANDOM % 52))";;
        12) table; local _t=$REPLY; REPLY="HANDLER ${_t} CLOSE";;
        13) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` = ($(($RANDOM % 1000)))";;
        14) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx1 = ($(($RANDOM % 100)))";;
@@ -18714,14 +18652,14 @@ query(){
         5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx3 < ($(($RANDOM % 1000 + 100))) LIMIT $((RANDOM % 52))";;
         6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ idx4 <= ($(($RANDOM % 1000 + 100))) LIMIT $((RANDOM % 52))";;
         7) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT LIMIT $(($RANDOM % 100 + 1))";;
-        8) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV LIMIT $(($RANDOM % 100 + 1))";;
+        8) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV LIMIT $(($RANDOM % 100 + 1))";;
         9) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST LIMIT $(($RANDOM % 100 + 1))";;
-       10) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST LIMIT $(($RANDOM % 100 + 1))";;
+       10) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST LIMIT $(($RANDOM % 100 + 1))";;
        11) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` = ($(($RANDOM % 100000)))";;
        12) table; local _t=$REPLY; REPLY="HANDLER ${_t} OPEN AS h_$(($RANDOM % 10))";;
        13) table; local _t=$REPLY; REPLY="HANDLER h_$(($RANDOM % 10)) CLOSE";;
        14) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT";;
-       15) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV";;
+       15) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV";;
         *) >&2 echo "[gen-assert] case"; REPLY="Assert: invalid random case selection in case";;
       esac;;
 4107) case $(($RANDOM % 15 + 1)) in  # SHOW TABLES / status
@@ -18771,7 +18709,7 @@ query(){
         8) REPLY="SET GLOBAL innodb_adaptive_hash_index=$(($RANDOM % 2))";;
         9) REPLY="SET GLOBAL innodb_lru_scan_depth=$(($RANDOM % 1000 + 100))";;
        10) REPLY="SET GLOBAL innodb_purge_threads=$(($RANDOM % 32 + 1))";;
-       11) REPLY="SET GLOBAL innodb_log_buffer_size=$((RANDOM % 1048576 + 65536))";;
+       11) REPLY="SET GLOBAL innodb_log_buffer_size=$((RANDOM % 983041 + 65536))";;
        12) REPLY="SET GLOBAL innodb_max_dirty_pages_pct=$(($RANDOM % 100))";;
        13) REPLY="SET GLOBAL innodb_max_dirty_pages_pct_lwm=$(($RANDOM % 50))";;
        14) REPLY="SET GLOBAL innodb_print_all_deadlocks=$(($RANDOM % 2))";;
@@ -18779,14 +18717,14 @@ query(){
         *) >&2 echo "[gen-assert] case"; REPLY="Assert: invalid random case selection in case";;
       esac;;
 4110) case $(($RANDOM % 15 + 1)) in  # Aria / MyISAM / RocksDB SET
-        1) REPLY="SET GLOBAL aria_pagecache_buffer_size=$((RANDOM % 1048576 + 1048576))";;
-        2) REPLY="SET GLOBAL aria_sort_buffer_size=$((RANDOM % 1048576 + 65536))";;
-        3) REPLY="SET GLOBAL aria_log_file_size=$((RANDOM % 1048576 + 1048576))";;
+        1) REPLY="SET GLOBAL aria_pagecache_buffer_size=$((RANDOM % 1048576 + 1))";;
+        2) REPLY="SET GLOBAL aria_sort_buffer_size=$((RANDOM % 983041 + 65536))";;
+        3) REPLY="SET GLOBAL aria_log_file_size=$((RANDOM % 1048576 + 1))";;
         4) REPLY="SET GLOBAL aria_checkpoint_interval=$(($RANDOM % 100 + 1))";;
-        5) REPLY="SET GLOBAL myisam_sort_buffer_size=$((RANDOM % 1048576 + 65536))";;
+        5) REPLY="SET GLOBAL myisam_sort_buffer_size=$((RANDOM % 983041 + 65536))";;
         6) REPLY="SET GLOBAL myisam_repair_threads=$(($RANDOM % 8 + 1))";;
         7) REPLY="SET GLOBAL myisam_use_mmap=$(($RANDOM % 2))";;
-        8) REPLY="SET GLOBAL key_buffer_size=$((RANDOM % 1048576 + 1048576))";;
+        8) REPLY="SET GLOBAL key_buffer_size=$((RANDOM % 1048576 + 1))";;
         9) REPLY="SET GLOBAL key_cache_block_size=$(($RANDOM % 16384 + 512))";;
        10) REPLY="SET GLOBAL key_cache_division_limit=$(($RANDOM % 100 + 1))";;
        11) REPLY="SET GLOBAL rocksdb_block_size=$(($RANDOM % 65536 + 4096))";;
@@ -18968,7 +18906,7 @@ query(){
         7) REPLY="HANDLER h_1 READ NEXT LIMIT $((RANDOM % 52))";;
         8) REPLY="HANDLER h_2 READ NEXT LIMIT $((RANDOM % 52))";;
         9) REPLY="HANDLER h_3 READ NEXT LIMIT $((RANDOM % 52))";;
-       10) REPLY="HANDLER h_1 READ LAST LIMIT $((RANDOM % 52))";;
+       10) REPLY="HANDLER h_1 READ \`PRIMARY\` LAST LIMIT $((RANDOM % 52))";;
        11) REPLY="HANDLER h_2 READ \`PRIMARY\` < (1000) LIMIT $((RANDOM % 52))";;
        12) REPLY="HANDLER h_3 READ idx1 > ($(($RANDOM % 100))) LIMIT $((RANDOM % 52))";;
        13) REPLY="HANDLER h_1 CLOSE";;
@@ -19338,8 +19276,8 @@ query(){
       esac;;
 4141) case $(($RANDOM % 15 + 1)) in  # Query cache (deprecated but parses) + per-statement hints
         1) REPLY="SET SESSION query_cache_type=$(($RANDOM % 3))";;
-        2) REPLY="SET GLOBAL query_cache_size=$((RANDOM % 1048576 + 32768))";;
-        3) REPLY="SET GLOBAL query_cache_limit=$((RANDOM % 1048576 + 1024))";;
+        2) REPLY="SET GLOBAL query_cache_size=$((RANDOM % 1015809 + 32768))";;
+        3) REPLY="SET GLOBAL query_cache_limit=$((RANDOM % 1047553 + 1024))";;
         4) REPLY="SET GLOBAL query_cache_min_res_unit=$((RANDOM % 16384 + 512))";;
         5) REPLY="SHOW STATUS LIKE 'Qcache_%'";;
         6) REPLY="RESET QUERY CACHE";;
@@ -19431,9 +19369,9 @@ query(){
         2) table; local _t=$REPLY; REPLY="HANDLER ${_t} OPEN AS h$(($RANDOM % 4 + 1))";;
         3) table; local _t=$REPLY; REPLY="HANDLER ${_t} CLOSE";;
         4) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ FIRST LIMIT $(($RANDOM % 10 + 1))";;
-        5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ LAST LIMIT $(($RANDOM % 10 + 1))";;
+        5) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` LAST LIMIT $(($RANDOM % 10 + 1))";;
         6) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ NEXT LIMIT $(($RANDOM % 10 + 1))";;
-        7) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ PREV LIMIT $(($RANDOM % 10 + 1))";;
+        7) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` PREV LIMIT $(($RANDOM % 10 + 1))";;
         8) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` = ($(($RANDOM % 100 + 1)))";;
         9) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` > ($(($RANDOM % 100))) LIMIT $((RANDOM % 52))";;
        10) table; local _t=$REPLY; REPLY="HANDLER ${_t} READ \`PRIMARY\` < ($(($RANDOM % 100 + 1))) LIMIT $((RANDOM % 52))";;
@@ -19474,7 +19412,7 @@ query(){
         9) REPLY="SELECT VARIABLE_NAME, VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_STATUS WHERE VARIABLE_NAME LIKE 'Threads_%'";;
        10) REPLY="SELECT VARIABLE_NAME, VARIABLE_VALUE FROM INFORMATION_SCHEMA.GLOBAL_STATUS WHERE VARIABLE_NAME LIKE 'Innodb_row_lock%'";;
        11) REPLY="SET SESSION wait_timeout=$(($RANDOM % 3600 + 60))";;
-       12) REPLY="SET SESSION sort_buffer_size=$((RANDOM % 1048576 + 32768))";;
+       12) REPLY="SET SESSION sort_buffer_size=$((RANDOM % 1015809 + 32768))";;
        13) REPLY="SELECT CONNECTION_ID(), USER(), CURRENT_USER()";;
        14) REPLY="SELECT FOUND_ROWS(), ROW_COUNT(), LAST_INSERT_ID()";;
        15) table; local _t=$REPLY; REPLY="SELECT /*+ MAX_EXECUTION_TIME($(($RANDOM % 5000 + 100))) */ COUNT(*) FROM ${_t}";;
@@ -19709,7 +19647,7 @@ query(){
        10) table; local _t=$REPLY; REPLY="SET STATEMENT autocommit=0 FOR SELECT * FROM ${_t} LIMIT $((RANDOM % 52))";;
        11) table; local _t=$REPLY; REPLY="SET STATEMENT lock_wait_timeout=$(($RANDOM % 60 + 1)) FOR SELECT * FROM ${_t} LIMIT $((RANDOM % 52))";;
        12) table; local _t=$REPLY; REPLY="SET STATEMENT innodb_lock_wait_timeout=$(($RANDOM % 30 + 1)) FOR SELECT * FROM ${_t} FOR UPDATE LIMIT $((RANDOM % 52))";;
-       13) table; local _t=$REPLY; REPLY="SET STATEMENT max_join_size=$(($RANDOM % 1048576 + 1024)) FOR SELECT * FROM ${_t} LIMIT $((RANDOM % 52))";;
+       13) table; local _t=$REPLY; REPLY="SET STATEMENT max_join_size=$(($RANDOM % 1047553 + 1024)) FOR SELECT * FROM ${_t} LIMIT $((RANDOM % 52))";;
        14) table; local _t=$REPLY; REPLY="SET STATEMENT optimizer_max_sel_arg_weight=$(($RANDOM % 100 + 1)) FOR SELECT * FROM ${_t} WHERE c1 BETWEEN 1 AND 100 LIMIT $((RANDOM % 52))";;
        15) table; local _t=$REPLY; REPLY="SET STATEMENT use_stat_tables='preferably_for_queries' FOR SELECT c1, COUNT(*) FROM ${_t} GROUP BY c1 LIMIT $((RANDOM % 52))";;
         *) >&2 echo "[gen-assert] set statement"; REPLY="Assert: invalid random case selection in set statement case";;
@@ -19724,7 +19662,7 @@ query(){
         7) REPLY="BEGIN WORK";;
         8) REPLY="COMMIT";;
         9) REPLY="COMMIT AND CHAIN";;
-       10) REPLY="COMMIT AND NO CHAIN RELEASE";;
+       10) REPLY="COMMIT AND NO CHAIN NO RELEASE";;
        11) REPLY="ROLLBACK";;
        12) REPLY="ROLLBACK AND CHAIN";;
        13) REPLY="SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED";;
@@ -20218,18 +20156,18 @@ query(){
        15) REPLY="CREATE OR REPLACE FUNCTION f$(($RANDOM % 100))() RETURNS VARCHAR($((RANDOM % 256 + 1))) DETERMINISTIC BEGIN RETURN VERSION(); END";;
         *) >&2 echo "[gen-assert] control flow"; REPLY="Assert: invalid random case selection in control flow case";;
       esac;;
-4187) case $(($RANDOM % 15 + 1)) in  # KILL variants (HARD/SOFT, CONNECTION/QUERY/ID) + CHECKSUM TABLE
-        1) REPLY="KILL $(($RANDOM % 1000 + 1))";;
-        2) REPLY="KILL CONNECTION $(($RANDOM % 1000 + 1))";;
-        3) REPLY="KILL QUERY $(($RANDOM % 1000 + 1))";;
-        4) REPLY="KILL HARD $(($RANDOM % 1000 + 1))";;
-        5) REPLY="KILL SOFT $(($RANDOM % 1000 + 1))";;
-        6) REPLY="KILL HARD CONNECTION $(($RANDOM % 1000 + 1))";;
-        7) REPLY="KILL SOFT CONNECTION $(($RANDOM % 1000 + 1))";;
-        8) REPLY="KILL HARD QUERY $(($RANDOM % 1000 + 1))";;
-        9) REPLY="KILL SOFT QUERY $(($RANDOM % 1000 + 1))";;
-       10) REPLY="KILL QUERY ID $(($RANDOM % 1000 + 1))";;
-       11) REPLY="KILL HARD QUERY ID $(($RANDOM % 1000 + 1))";;
+4187) case $(($RANDOM % 15 + 1)) in  # KILL variants (HARD/SOFT, CONNECTION/QUERY/ID) — non-existent IDs only + CHECKSUM TABLE
+        1) REPLY="KILL $((RANDOM % 1000000 + 1000000))";;
+        2) REPLY="KILL CONNECTION $((RANDOM % 1000000 + 1000000))";;
+        3) REPLY="KILL QUERY $((RANDOM % 1000000 + 1000000))";;
+        4) REPLY="KILL HARD $((RANDOM % 1000000 + 1000000))";;
+        5) REPLY="KILL SOFT $((RANDOM % 1000000 + 1000000))";;
+        6) REPLY="KILL HARD CONNECTION $((RANDOM % 1000000 + 1000000))";;
+        7) REPLY="KILL SOFT CONNECTION $((RANDOM % 1000000 + 1000000))";;
+        8) REPLY="KILL HARD QUERY $((RANDOM % 1000000 + 1000000))";;
+        9) REPLY="KILL SOFT QUERY $((RANDOM % 1000000 + 1000000))";;
+       10) REPLY="KILL QUERY ID $((RANDOM % 1000000 + 1000000))";;
+       11) REPLY="KILL HARD QUERY ID $((RANDOM % 1000000 + 1000000))";;
        12) table; local _t=$REPLY; REPLY="CHECKSUM TABLE ${_t}";;
        13) table; local _t=$REPLY; REPLY="CHECKSUM TABLE ${_t} QUICK";;
        14) table; local _t=$REPLY; REPLY="CHECKSUM TABLE ${_t} EXTENDED";;
@@ -20365,15 +20303,15 @@ query(){
         8) REPLY="SELECT j1.a, j2.tag FROM JSON_TABLE('[{\"a\":1,\"t\":[\"x\"]},{\"a\":2,\"t\":[\"y\",\"z\"]}]', '\$[*]' COLUMNS(a INT PATH '\$.a')) j1, JSON_TABLE(JSON_EXTRACT('[{\"a\":1,\"t\":[\"x\"]},{\"a\":2,\"t\":[\"y\",\"z\"]}]', '\$[*].t'), '\$[*]' COLUMNS(tag VARCHAR($((RANDOM % 256 + 1))) PATH '\$')) j2";;
         *) >&2 echo "[gen-assert] json_table nested"; REPLY="Assert: invalid random case selection in json_table nested case";;
       esac;;
-4204) case $(($RANDOM % 14 + 1)) in  # SQL standard idioms: FETCH FIRST/OFFSET ROWS [WITH TIES], multi-row VALUES, IGNORE/RESPECT NULLS, FOR ORDINALITY, ROW()
+4204) case $(($RANDOM % 14 + 1)) in  # SQL standard idioms: FETCH FIRST/OFFSET ROWS [WITH TIES], multi-row VALUES, FOR ORDINALITY, ROW(); IGNORE/RESPECT NULLS and NTH_VALUE FROM FIRST/LAST not supported on 13.0
         1) table; local _t=$REPLY; n3; local _c=$REPLY; n9; local _n=$REPLY; REPLY="SELECT * FROM ${_t} ORDER BY c${_c} FETCH FIRST ${_n} ROWS WITH TIES";;
         2) table; local _t=$REPLY; n3; local _c=$REPLY; n9; local _o=$REPLY; n9; local _n=$REPLY; REPLY="SELECT * FROM ${_t} ORDER BY c${_c} OFFSET ${_o} ROWS FETCH FIRST ${_n} ROWS ONLY";;
         3) table; local _t=$REPLY; n3; local _c=$REPLY; n9; local _o=$REPLY; n9; local _n=$REPLY; REPLY="SELECT * FROM ${_t} ORDER BY c${_c} DESC OFFSET ${_o} ROWS FETCH NEXT ${_n} ROWS WITH TIES";;
-        4) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, LAG(c${_c}, 1) IGNORE NULLS OVER (ORDER BY c${_c}) FROM ${_t}";;
-        5) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, LEAD(c${_c}) RESPECT NULLS OVER (PARTITION BY c1 ORDER BY c${_c}) FROM ${_t} LIMIT $((RANDOM % 52))";;
-        6) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, FIRST_VALUE(c${_c}) IGNORE NULLS OVER (ORDER BY c${_c}) FROM ${_t} LIMIT $((RANDOM % 52))";;
-        7) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, LAST_VALUE(c${_c}) IGNORE NULLS OVER (ORDER BY c${_c} ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM ${_t} LIMIT $((RANDOM % 52))";;
-        8) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, NTH_VALUE(c${_c}, 2) FROM FIRST IGNORE NULLS OVER (ORDER BY c${_c}) FROM ${_t} LIMIT $((RANDOM % 52))";;
+        4) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, LAG(c${_c}, 1, 0) OVER (ORDER BY c${_c}) FROM ${_t} LIMIT $((RANDOM % 52))";;
+        5) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, LEAD(c${_c}, $((RANDOM % 5 + 1))) OVER (PARTITION BY c1 ORDER BY c${_c}) FROM ${_t} LIMIT $((RANDOM % 52))";;
+        6) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, FIRST_VALUE(c${_c}) OVER (ORDER BY c${_c}) FROM ${_t} LIMIT $((RANDOM % 52))";;
+        7) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, LAST_VALUE(c${_c}) OVER (ORDER BY c${_c} ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM ${_t} LIMIT $((RANDOM % 52))";;
+        8) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT c${_c}, NTH_VALUE(c${_c}, $((RANDOM % 5 + 2))) OVER (ORDER BY c${_c} ROWS UNBOUNDED PRECEDING) FROM ${_t} LIMIT $((RANDOM % 52))";;
         9) data; local _d1=$REPLY; data; local _d2=$REPLY; data; local _d3=$REPLY; data; REPLY="VALUES (${_d1},${_d2},${_d3}),(${_d1},${_d2},${REPLY})";;
        10) REPLY="SELECT * FROM (VALUES (1,2,3),(4,5,6),(7,8,9)) AS dt(a,b,c)";;
        11) table; local _t=$REPLY; n3; local _c=$REPLY; REPLY="SELECT a, b, c FROM (VALUES (1,'x',1.5),(2,'y',2.5),(3,'z',3.5)) AS dt(a,b,c) WHERE a > 1";;
@@ -20996,9 +20934,9 @@ query(){
         *) >&2 echo "[gen-assert] window-exclude/partition-all"; REPLY="Assert: invalid random case selection in window-exclude/partition-all case";;
       esac;;
 4238) case $(($RANDOM % 16 + 1)) in  # Application-time PERIOD FOR DDL + system-versioning HISTORY/CURRENT partitions
-        1) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR p_app (c2,c3)";;
+        1) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR app_time (c2,c3)";;
         2) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD PERIOD FOR validity (c1,c4)";;
-        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR p_app";;
+        3) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR app_time";;
         4) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} DROP PERIOD FOR validity";;
         5) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 DATE, c3 DATE, PERIOD FOR validity(c2,c3))";;
         6) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT NOT NULL, vs DATETIME(6) NOT NULL, ve DATETIME(6) NOT NULL, PERIOD FOR app_time(vs, ve), PRIMARY KEY(c1, app_time WITHOUT OVERLAPS))";;
@@ -21006,8 +20944,8 @@ query(){
         8) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT) WITH SYSTEM VERSIONING PARTITION BY SYSTEM_TIME LIMIT $((RANDOM % 52)) PARTITIONS $((RANDOM % 32 + 1)) (PARTITION p1 HISTORY, PARTITION p2 HISTORY, PARTITION pc CURRENT)";;
         9) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT) WITH SYSTEM VERSIONING PARTITION BY SYSTEM_TIME INTERVAL $((RANDOM % 24 + 1)) MONTH(PARTITION p1 HISTORY, PARTITION p2 HISTORY, PARTITION pc CURRENT)";;
        10) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} PARTITION BY SYSTEM_TIME(PARTITION p_h HISTORY, PARTITION p_c CURRENT)";;
-       11) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF p_app FROM '2020-01-01' TO '2020-06-01' SET c1=c1+1";;
-       12) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF p_app FROM '2020-03-01' TO '2020-04-01'";;
+       11) table; local _t=$REPLY; REPLY="UPDATE ${_t} FOR PORTION OF app_time FROM '2020-01-01' TO '2020-06-01' SET c1=c1+1";;
+       12) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} FOR PORTION OF app_time FROM '2020-03-01' TO '2020-04-01'";;
        13) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ALTER COLUMN IF EXISTS c1 SET DEFAULT 0";;
        14) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ALTER COLUMN IF EXISTS c2 DROP DEFAULT";;
        15) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD CONSTRAINT fk_match FOREIGN KEY (c2) REFERENCES t1 (c1) MATCH SIMPLE";;
@@ -21027,9 +20965,9 @@ query(){
        10) user; local _u=$REPLY; REPLY="GRANT SET USER, READ_ONLY ADMIN, CONNECTION ADMIN ON *.* TO ${_u}";;
        11) user; local _u=$REPLY; REPLY="GRANT SLAVE MONITOR, REPLICA MONITOR, REPLICATION CLIENT ON *.* TO ${_u}";;
        12) user; local _u=$REPLY; REPLY="REVOKE BINLOG MONITOR, READ_ONLY ADMIN ON *.* FROM ${_u}";;
-       13) REPLY="KILL CONNECTION $(($RANDOM % 100000 + 1))";;
-       14) REPLY="KILL HARD QUERY $(($RANDOM % 100000 + 1))";;
-       15) REPLY="KILL SOFT CONNECTION $(($RANDOM % 100000 + 1))";;
+       13) REPLY="KILL CONNECTION $((RANDOM % 1000000 + 1000000))";;
+       14) REPLY="KILL HARD QUERY $((RANDOM % 1000000 + 1000000))";;
+       15) REPLY="KILL SOFT CONNECTION $((RANDOM % 1000000 + 1000000))";;
        16) REPLY="FLUSH SSL";;
         *) >&2 echo "[gen-assert] user-account/dyn-privs"; REPLY="Assert: invalid random case selection in user-account/dyn-privs case";;
       esac;;
@@ -21210,7 +21148,7 @@ query(){
         2) REPLY="CHANGE MASTER TO IGNORE_DOMAIN_IDS=($(($RANDOM % 10)),$(($RANDOM % 10)))";;
         3) REPLY="CHANGE MASTER TO DO_DOMAIN_IDS=($(($RANDOM % 10)),$(($RANDOM % 10)),$(($RANDOM % 10)))";;
         4) REPLY="CHANGE MASTER TO MASTER_USE_GTID=NO";;
-        5) REPLY="CHANGE MASTER TO MASTER_USE_GTID=DEFAULT";;
+        5) REPLY="CHANGE MASTER TO MASTER_USE_GTID=slave_pos";;
         6) REPLY="CHANGE MASTER TO MASTER_USE_GTID=current_pos";;
         7) REPLY="CHANGE MASTER TO MASTER_HOST='r$(($RANDOM % 10))' FOR CHANNEL 'c$(($RANDOM % 5))'";;
         8) REPLY="CHANGE MASTER TO IGNORE_SERVER_IDS=()";;
@@ -21220,7 +21158,7 @@ query(){
        12) REPLY="FLUSH NO_WRITE_TO_BINLOG SESSION STATUS";;
        13) REPLY="SHOW BINLOG EVENTS IN 'mysql-bin.000$(($RANDOM % 100 + 1))' FROM $(($RANDOM % 100000 + 4)) LIMIT $((RANDOM % 52))";;
        14) REPLY="SHOW RELAYLOG EVENTS IN 'relay-bin.000001' FROM 4 LIMIT $((RANDOM % 52))";;
-       15) REPLY="KILL HARD USER CURRENT_USER";;
+       15) REPLY="KILL HARD USER 'nonexistent_u$((RANDOM % 100))'";;
        16) REPLY="STOP SLAVE 'c1' IO_THREAD FOR CHANNEL 'c1'";;
         *) >&2 echo "[gen-assert] repl-config"; REPLY="Assert: invalid random case selection in repl-config case";;
       esac;;
@@ -21275,7 +21213,7 @@ query(){
        10) REPLY="FLUSH THREADS";;
        11) REPLY="INSTALL PLUGIN IF NOT EXISTS p$(($RANDOM % 10)) SONAME 'ha_example.so'";;
        12) REPLY="UNINSTALL PLUGIN IF EXISTS p$(($RANDOM % 10))";;
-       13) REPLY="KILL HARD QUERY ID $(($RANDOM % 100000 + 1))";;
+       13) REPLY="KILL HARD QUERY ID $((RANDOM % 1000000 + 1000000))";;
        14) REPLY="EXECUTE p$(($RANDOM % 10)) USING @a, DEFAULT, IGNORE";;
        15) REPLY="BEGIN NOT ATOMIC DECLARE x VARCHAR($((RANDOM % 256 + 1))); GET DIAGNOSTICS CONDITION 1 x = CONSTRAINT_CATALOG; END";;
        16) REPLY="BEGIN NOT ATOMIC DECLARE x VARCHAR($((RANDOM % 256 + 1))); GET DIAGNOSTICS CONDITION 1 x = CURSOR_NAME; END";;
@@ -21441,14 +21379,14 @@ query(){
         5) table; local _t=$REPLY; REPLY="WITH RECURSIVE rcte AS (SELECT 1 AS n UNION ALL SELECT n+1 FROM rcte WHERE n<$((RANDOM % 50 + 1))) UPDATE ${_t} SET c1=(SELECT MAX(n) FROM rcte) WHERE c2>0";;
         6) table; local _t=$REPLY; REPLY="WITH cte1 AS (SELECT c1, RANK() OVER (PARTITION BY c3 ORDER BY c2) r FROM ${_t}), cte2 AS (SELECT c1, c2 FROM ${_t} WHERE c2 IS NOT NULL) SELECT c1.r, c2.c2 FROM cte1 c1 JOIN cte2 c2 ON c1.c1=c2.c1 LIMIT $((RANDOM % 52))";;
         7) table; local _t=$REPLY; REPLY="DELETE FROM ${_t} WHERE c1 IN (WITH ck AS (SELECT c1, ROW_NUMBER() OVER (PARTITION BY c3 ORDER BY c2) rn FROM ${_t}) SELECT c1 FROM ck WHERE rn > $((RANDOM % 10 + 1))) RETURNING c1, c2, c3";;
-        8) table; local _t=$REPLY; REPLY="SELECT JSON_TABLE('[{\"a\":1,\"b\":2},{\"a\":3,\"b\":4}]', '\$[*]' COLUMNS (a INT PATH '\$.a', b INT PATH '\$.b')) AS jt JOIN ${_t} t ON jt.a=t.c1 LIMIT $((RANDOM % 52))";;
+        8) table; local _t=$REPLY; REPLY="SELECT * FROM JSON_TABLE('[{\"a\":1,\"b\":2},{\"a\":3,\"b\":4}]', '\$[*]' COLUMNS (a INT PATH '\$.a', b INT PATH '\$.b')) AS jt JOIN ${_t} t ON jt.a=t.c1 LIMIT $((RANDOM % 52))";;
         9) table; local _t=$REPLY; REPLY="UPDATE ${_t} a JOIN (SELECT c1, MAX(c2) m FROM ${_t} GROUP BY c1) b ON a.c1=b.c1 SET a.c2=b.m+1 WHERE a.c3>0 LIMIT $((RANDOM % 52))";;
        10) table; local _t=$REPLY; REPLY="SELECT c1, c2, JSON_VALID(CONCAT('[', GROUP_CONCAT(c3 SEPARATOR ','), ']')) AS valid FROM ${_t} GROUP BY c1, c2 HAVING COUNT(*)>1 LIMIT $((RANDOM % 52))";;
        11) table; local _t=$REPLY; REPLY="SELECT c1, COALESCE(LAG(c2) OVER (ORDER BY c1), 0) AS prev_c2, COALESCE(LEAD(c2) OVER (ORDER BY c1), 0) AS next_c2 FROM ${_t} WHERE c2 IS NOT NULL LIMIT $((RANDOM % 52))";;
        12) table; local _t=$REPLY; REPLY="(SELECT c1, c2, 'low' AS bucket FROM ${_t} WHERE c2 < $((RANDOM % 100))) UNION ALL (SELECT c1, c2, 'high' FROM ${_t} WHERE c2 >= $((RANDOM % 100))) ORDER BY c1 LIMIT $((RANDOM % 52))";;
        13) table; local _t=$REPLY; REPLY="SELECT c1, JSON_OBJECTAGG(c2, c3), JSON_ARRAYAGG(DISTINCT c2 ORDER BY c2) FROM ${_t} GROUP BY c1 LIMIT $((RANDOM % 52))";;
        14) table; local _t=$REPLY; REPLY="ALTER TABLE ${_t} ADD COLUMN c_gen INT GENERATED ALWAYS AS (c1*c2) PERSISTENT, ADD INDEX idx_gen(c_gen), ADD CONSTRAINT chk_gen CHECK (c_gen >= 0)";;
-       15) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 JSON, c3 VECTOR(4) NOT NULL, c4 INET6, c5 UUID DEFAULT UUID(), PRIMARY KEY(c1), INDEX idx_json((CAST(JSON_VALUE(c2,'\$.id') AS INT))), VECTOR INDEX vidx(c3))";;
+       15) table; local _t=$REPLY; REPLY="CREATE OR REPLACE TABLE ${_t} (c1 INT, c2 JSON, c3 VECTOR(4) NOT NULL, c4 INET6, c5 UUID DEFAULT UUID(), PRIMARY KEY(c1), KEY idx_json (c1), VECTOR INDEX vidx(c3))";;
        16) table; local _t=$REPLY; REPLY="SELECT c1, ROW_NUMBER() OVER (PARTITION BY c3 ORDER BY c2) rn, COUNT(*) OVER (PARTITION BY c3) total, FIRST_VALUE(c2) OVER (PARTITION BY c3 ORDER BY c1) first_c2 FROM ${_t} WHERE c2 BETWEEN $((RANDOM % 100 - 50)) AND $((RANDOM % 100 + 50)) LIMIT $((RANDOM % 52))";;
         *) >&2 echo "[gen-assert] cross-domain"; REPLY="Assert: invalid random case selection in cross-domain case";;
       esac;;
@@ -21491,14 +21429,14 @@ query(){
         *) >&2 echo "[gen-assert] dynvar-pool"; REPLY="Assert: invalid random case selection in dynvar-pool case";;
       esac;;
 4262) case $(($RANDOM % 12 + 1)) in  # PARTITION DML — DML against pruned partition list
-        1) REPLY="INSERT INTO t1 PARTITION (p$((RANDOM % 4 + 1))) VALUES ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))";;
-        2) REPLY="INSERT INTO t1 PARTITION (p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))) VALUES ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))";;
-        3) REPLY="REPLACE INTO t1 PARTITION (p$((RANDOM % 4 + 1))) VALUES ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))";;
-        4) REPLY="UPDATE t1 PARTITION (p$((RANDOM % 4 + 1))) SET c2=$((RANDOM % 1025 - 1024)) WHERE c1=$((RANDOM % 1025 - 1024))";;
-        5) REPLY="UPDATE t1 PARTITION (p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))) SET c2=$((RANDOM % 1025 - 1024)) ORDER BY c1 LIMIT $((RANDOM % 52))";;
-        6) REPLY="DELETE FROM t1 PARTITION (p$((RANDOM % 4 + 1))) WHERE c1<$((RANDOM % 1025 - 1024))";;
+        1) REPLY="INSERT INTO t1 PARTITION (p$((RANDOM % 4 + 1))) (c1,c2,c3) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        2) REPLY="INSERT INTO t1 PARTITION (p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))) (c1,c2,c3) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        3) REPLY="REPLACE INTO t1 PARTITION (p$((RANDOM % 4 + 1))) (c1,c2,c3) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        4) REPLY="UPDATE t1 PARTITION (p$((RANDOM % 4 + 1))) SET c2=$((RANDOM % 2051 - 1025)) WHERE c1=$((RANDOM % 2051 - 1025))";;
+        5) REPLY="UPDATE t1 PARTITION (p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))) SET c2=$((RANDOM % 2051 - 1025)) ORDER BY c1 LIMIT $((RANDOM % 52))";;
+        6) REPLY="DELETE FROM t1 PARTITION (p$((RANDOM % 4 + 1))) WHERE c1<$((RANDOM % 2051 - 1025))";;
         7) REPLY="DELETE FROM t1 PARTITION (p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))) ORDER BY c1 LIMIT $((RANDOM % 52))";;
-        8) REPLY="SELECT * FROM t1 PARTITION (p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))) WHERE c1>$((RANDOM % 1025 - 1024))";;
+        8) REPLY="SELECT * FROM t1 PARTITION (p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))) WHERE c1>$((RANDOM % 2051 - 1025))";;
         9) REPLY="INSERT INTO t1 PARTITION (p$((RANDOM % 4 + 1))) (c1,c2) SELECT c1,c2 FROM t2 LIMIT $((RANDOM % 52))";;
        10) REPLY="LOAD INDEX INTO CACHE t1 PARTITION (p$((RANDOM % 4 + 1)))";;
        11) REPLY="ALTER TABLE t1 TRUNCATE PARTITION p$((RANDOM % 4 + 1))";;
@@ -21506,24 +21444,24 @@ query(){
         *) >&2 echo "[gen-assert] partition-dml"; REPLY="Assert: invalid random case selection in partition-dml case";;
       esac;;
 4263) case $(($RANDOM % 12 + 1)) in  # EXPLAIN/ANALYZE prefix on DML — generator concentrates these on SELECT only
-        1) REPLY="EXPLAIN INSERT INTO t1 (c1,c2) VALUES ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))";;
+        1) REPLY="EXPLAIN INSERT INTO t1 (c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
         2) REPLY="EXPLAIN FORMAT=JSON INSERT INTO t1 SELECT * FROM t2 LIMIT $((RANDOM % 52))";;
-        3) REPLY="EXPLAIN UPDATE t1 SET c2=$((RANDOM % 1025 - 1024)) WHERE c1>$((RANDOM % 1025 - 1024))";;
+        3) REPLY="EXPLAIN UPDATE t1 SET c2=$((RANDOM % 2051 - 1025)) WHERE c1>$((RANDOM % 2051 - 1025))";;
         4) REPLY="EXPLAIN FORMAT=JSON UPDATE t1 SET c2=c2+$((RANDOM % 100 + 1)) ORDER BY c1 LIMIT $((RANDOM % 52))";;
-        5) REPLY="EXPLAIN DELETE FROM t1 WHERE c1<$((RANDOM % 1025 - 1024))";;
+        5) REPLY="EXPLAIN DELETE FROM t1 WHERE c1<$((RANDOM % 2051 - 1025))";;
         6) REPLY="EXPLAIN FORMAT=JSON DELETE FROM t1 ORDER BY c1 LIMIT $((RANDOM % 52))";;
-        7) REPLY="EXPLAIN REPLACE INTO t1 (c1,c2) VALUES ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))";;
-        8) REPLY="ANALYZE INSERT INTO t1 (c1,c2) VALUES ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))";;
-        9) REPLY="ANALYZE UPDATE t1 SET c2=$((RANDOM % 1025 - 1024)) WHERE c1=$((RANDOM % 1025 - 1024))";;
-       10) REPLY="ANALYZE DELETE FROM t1 WHERE c1>$((RANDOM % 1025 - 1024)) LIMIT $((RANDOM % 52))";;
-       11) REPLY="ANALYZE FORMAT=JSON UPDATE t1 SET c2=c2*$((RANDOM % 10 + 1)) WHERE c1<$((RANDOM % 1025 - 1024))";;
-       12) REPLY="ANALYZE FORMAT=JSON DELETE FROM t1 WHERE c1 BETWEEN $((RANDOM % 1025 - 1024)) AND $((RANDOM % 1025 - 1024))";;
+        7) REPLY="EXPLAIN REPLACE INTO t1 (c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        8) REPLY="ANALYZE INSERT INTO t1 (c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        9) REPLY="ANALYZE UPDATE t1 SET c2=$((RANDOM % 2051 - 1025)) WHERE c1=$((RANDOM % 2051 - 1025))";;
+       10) REPLY="ANALYZE DELETE FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 52))";;
+       11) REPLY="ANALYZE FORMAT=JSON UPDATE t1 SET c2=c2*$((RANDOM % 10 + 1)) WHERE c1<$((RANDOM % 2051 - 1025))";;
+       12) REPLY="ANALYZE FORMAT=JSON DELETE FROM t1 WHERE c1 BETWEEN $((RANDOM % 2051 - 1025)) AND $((RANDOM % 2051 - 1025))";;
         *) >&2 echo "[gen-assert] explain-dml"; REPLY="Assert: invalid random case selection in explain-dml case";;
       esac;;
 4264) case $(($RANDOM % 10 + 1)) in  # FOR SYSTEM_TIME ranges — generator covers AS OF, missing FROM..TO / BETWEEN..AND / ALL
-        1) dategen; local _d1=$REPLY; dategen; local _d2=$REPLY; REPLY="SELECT * FROM t1 FOR SYSTEM_TIME FROM '$_d1' TO '$_d2' WHERE c1>$((RANDOM % 1025 - 1024))";;
+        1) dategen; local _d1=$REPLY; dategen; local _d2=$REPLY; REPLY="SELECT * FROM t1 FOR SYSTEM_TIME FROM '$_d1' TO '$_d2' WHERE c1>$((RANDOM % 2051 - 1025))";;
         2) dategen; local _d1=$REPLY; dategen; local _d2=$REPLY; REPLY="SELECT c1,c2 FROM t1 FOR SYSTEM_TIME BETWEEN '$_d1' AND '$_d2' ORDER BY c1 LIMIT $((RANDOM % 52))";;
-        3) REPLY="SELECT * FROM t1 FOR SYSTEM_TIME ALL WHERE c1=$((RANDOM % 1025 - 1024))";;
+        3) REPLY="SELECT * FROM t1 FOR SYSTEM_TIME ALL WHERE c1=$((RANDOM % 2051 - 1025))";;
         4) REPLY="SELECT COUNT(*) FROM t1 FOR SYSTEM_TIME ALL";;
         5) dategen; local _d1=$REPLY; REPLY="SELECT * FROM t1 FOR SYSTEM_TIME FROM '$_d1' TO NOW() LIMIT $((RANDOM % 52))";;
         6) REPLY="SELECT * FROM t1 FOR SYSTEM_TIME ALL JOIN t2 ON t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
@@ -21539,12 +21477,12 @@ query(){
         3) REPLY="ALTER TABLE t1 DROP COLUMN IF EXISTS c$((RANDOM % 4 + 1))";;
         4) ctype; local _ct=$REPLY; REPLY="ALTER TABLE t1 MODIFY COLUMN IF EXISTS c$((RANDOM % 4 + 1)) ${_ct}";;
         5) ctype; local _ct=$REPLY; REPLY="ALTER TABLE t1 CHANGE COLUMN IF EXISTS c$((RANDOM % 4 + 1)) c$((RANDOM % 4 + 1)) ${_ct}";;
-        6) REPLY="ALTER TABLE t1 ALTER COLUMN IF EXISTS c$((RANDOM % 4 + 1)) SET DEFAULT $((RANDOM % 1025 - 1024))";;
+        6) REPLY="ALTER TABLE t1 ALTER COLUMN IF EXISTS c$((RANDOM % 4 + 1)) SET DEFAULT $((RANDOM % 2051 - 1025))";;
         7) REPLY="ALTER TABLE t1 ALTER COLUMN IF EXISTS c$((RANDOM % 4 + 1)) DROP DEFAULT";;
         8) REPLY="ALTER TABLE t1 ADD INDEX IF NOT EXISTS idx$((RANDOM % 4 + 1)) (c$((RANDOM % 4 + 1)))";;
         9) REPLY="ALTER TABLE t1 ADD KEY IF NOT EXISTS idx$((RANDOM % 4 + 1)) (c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1)))";;
        10) REPLY="ALTER TABLE t1 DROP KEY IF EXISTS idx$((RANDOM % 4 + 1))";;
-       11) REPLY="ALTER TABLE t1 ADD CONSTRAINT IF NOT EXISTS chk$((RANDOM % 4 + 1)) CHECK (c1>$((RANDOM % 1025 - 1024)))";;
+       11) REPLY="ALTER TABLE t1 ADD CONSTRAINT IF NOT EXISTS chk$((RANDOM % 4 + 1)) CHECK (c1>$((RANDOM % 2051 - 1025)))";;
        12) REPLY="ALTER TABLE t1 DROP CONSTRAINT IF EXISTS chk$((RANDOM % 4 + 1))";;
        13) REPLY="ALTER TABLE t1 DROP FOREIGN KEY IF EXISTS fk$((RANDOM % 4 + 1))";;
        14) REPLY="ALTER TABLE t1 RENAME INDEX IF EXISTS idx$((RANDOM % 4 + 1)) TO idx$((RANDOM % 4 + 1))";;
@@ -21555,13 +21493,13 @@ query(){
         2) REPLY="SELECT /*+ JOIN_SUFFIX(t$((RANDOM % 4 + 1))) */ * FROM t1,t2,t3 WHERE t1.c1=t2.c1 AND t2.c1=t3.c1 LIMIT $((RANDOM % 52))";;
         3) REPLY="SELECT /*+ JOIN_ORDER(t$((RANDOM % 4 + 1)),t$((RANDOM % 4 + 1))) */ * FROM t1,t2 WHERE t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
         4) REPLY="SELECT /*+ JOIN_FIXED_ORDER() */ * FROM t1 STRAIGHT_JOIN t2 ON t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
-        5) REPLY="SELECT /*+ QB_NAME(qb$((RANDOM % 4 + 1))) */ * FROM t1 WHERE c1>$((RANDOM % 1025 - 1024)) LIMIT $((RANDOM % 52))";;
-        6) REPLY="SELECT /*+ DERIVED_CONDITION_PUSHDOWN(@qb1) */ * FROM (SELECT * FROM t1) AS d WHERE d.c1>$((RANDOM % 1025 - 1024))";;
-        7) REPLY="SELECT /*+ NO_DERIVED_CONDITION_PUSHDOWN(@qb1) */ * FROM (SELECT c1,SUM(c2) AS s FROM t1 GROUP BY c1) AS d WHERE d.s>$((RANDOM % 1025 - 1024))";;
-        8) REPLY="SELECT /*+ NO_SPLIT_MATERIALIZED(@qb1) */ * FROM t1 WHERE c1 IN (SELECT c1 FROM t2 WHERE c2>$((RANDOM % 1025 - 1024)))";;
+        5) REPLY="SELECT /*+ QB_NAME(qb$((RANDOM % 4 + 1))) */ * FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT /*+ DERIVED_CONDITION_PUSHDOWN(@qb1) */ * FROM (SELECT * FROM t1) AS d WHERE d.c1>$((RANDOM % 2051 - 1025))";;
+        7) REPLY="SELECT /*+ NO_DERIVED_CONDITION_PUSHDOWN(@qb1) */ * FROM (SELECT c1,SUM(c2) AS s FROM t1 GROUP BY c1) AS d WHERE d.s>$((RANDOM % 2051 - 1025))";;
+        8) REPLY="SELECT /*+ NO_SPLIT_MATERIALIZED(@qb1) */ * FROM t1 WHERE c1 IN (SELECT c1 FROM t2 WHERE c2>$((RANDOM % 2051 - 1025)))";;
         9) REPLY="SELECT /*+ BKA(t$((RANDOM % 4 + 1))) NO_BKA(t$((RANDOM % 4 + 1))) */ * FROM t1,t2 WHERE t1.c1=t2.c1";;
-       10) REPLY="SELECT /*+ MRR(t$((RANDOM % 4 + 1))) */ * FROM t1 WHERE c1 IN ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))";;
-       11) REPLY="SELECT /*+ NO_RANGE_OPTIMIZATION(t$((RANDOM % 4 + 1)) idx$((RANDOM % 4 + 1))) */ * FROM t1 WHERE c1>$((RANDOM % 1025 - 1024))";;
+       10) REPLY="SELECT /*+ MRR(t$((RANDOM % 4 + 1))) */ * FROM t1 WHERE c1 IN ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+       11) REPLY="SELECT /*+ NO_RANGE_OPTIMIZATION(t$((RANDOM % 4 + 1)) idx$((RANDOM % 4 + 1))) */ * FROM t1 WHERE c1>$((RANDOM % 2051 - 1025))";;
        12) REPLY="SELECT /*+ MAX_EXECUTION_TIME($((RANDOM % 60000 + 1))) */ * FROM t1 LIMIT $((RANDOM % 52))";;
        13) REPLY="SELECT /*+ SET_VAR(optimizer_search_depth=$((RANDOM % 63))) */ * FROM t1,t2 WHERE t1.c1=t2.c1";;
        14) REPLY="SELECT /*+ SUBQUERY(@qb1 INTOEXISTS) */ * FROM t1 WHERE c1 IN (SELECT c1 FROM t2)";;
@@ -21600,22 +21538,22 @@ query(){
 4269) case $(($RANDOM % 12 + 1)) in  # ALTER ADD/DROP PERIOD FOR + PARTITION BY SYSTEM_TIME ... AUTO PARTITIONS
         1) REPLY="ALTER TABLE t1 ADD PERIOD FOR p$((RANDOM % 4 + 1))(c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1)))";;
         2) REPLY="ALTER TABLE t1 DROP PERIOD FOR p$((RANDOM % 4 + 1))";;
-        3) REPLY="ALTER TABLE t1 ADD PERIOD FOR app_period(start_date,end_date)";;
-        4) REPLY="CREATE TABLE t1 (c1 INT,sd DATE,ed DATE,PERIOD FOR app_period(sd,ed))";;
+        3) REPLY="ALTER TABLE t1 ADD PERIOD FOR app_time(c2,c3)";;
+        4) REPLY="CREATE OR REPLACE TABLE t1 (c1 INT,c2 DATE,c3 DATE,PERIOD FOR app_time(c2,c3))";;
         5) REPLY="CREATE TABLE t1 (c1 INT) WITH SYSTEM VERSIONING PARTITION BY SYSTEM_TIME INTERVAL $((RANDOM % 100 + 1)) HOUR AUTO";;
         6) REPLY="CREATE TABLE t1 (c1 INT) WITH SYSTEM VERSIONING PARTITION BY SYSTEM_TIME INTERVAL $((RANDOM % 100 + 1)) DAY AUTO PARTITIONS $((RANDOM % 100 + 1))";;
         7) REPLY="CREATE TABLE t1 (c1 INT) WITH SYSTEM VERSIONING PARTITION BY SYSTEM_TIME LIMIT $((RANDOM % 100000 + 1)) AUTO PARTITIONS $((RANDOM % 100 + 1))";;
         8) REPLY="CREATE TABLE t1 (c1 INT) WITH SYSTEM VERSIONING PARTITION BY SYSTEM_TIME (PARTITION p1 HISTORY,PARTITION p2 HISTORY,PARTITION pn CURRENT)";;
         9) REPLY="ALTER TABLE t1 PARTITION BY SYSTEM_TIME INTERVAL $((RANDOM % 100 + 1)) MINUTE AUTO";;
        10) REPLY="ALTER TABLE t1 PARTITION BY SYSTEM_TIME INTERVAL $((RANDOM % 100 + 1)) WEEK AUTO PARTITIONS $((RANDOM % 100 + 1))";;
-       11) dategen; local _d1=$REPLY; dategen; local _d2=$REPLY; REPLY="DELETE FROM t1 FOR PORTION OF p$((RANDOM % 4 + 1)) FROM '$_d1' TO '$_d2' WHERE c1>$((RANDOM % 1025 - 1024))";;
-       12) dategen; local _d1=$REPLY; dategen; local _d2=$REPLY; REPLY="UPDATE t1 FOR PORTION OF p$((RANDOM % 4 + 1)) FROM '$_d1' TO '$_d2' SET c2=$((RANDOM % 1025 - 1024)) WHERE c1>$((RANDOM % 1025 - 1024))";;
+       11) dategen; local _d1=$REPLY; dategen; local _d2=$REPLY; REPLY="DELETE FROM t1 FOR PORTION OF p$((RANDOM % 4 + 1)) FROM '$_d1' TO '$_d2' WHERE c1>$((RANDOM % 2051 - 1025))";;
+       12) dategen; local _d1=$REPLY; dategen; local _d2=$REPLY; REPLY="UPDATE t1 FOR PORTION OF p$((RANDOM % 4 + 1)) FROM '$_d1' TO '$_d2' SET c2=$((RANDOM % 2051 - 1025)) WHERE c1>$((RANDOM % 2051 - 1025))";;
         *) >&2 echo "[gen-assert] period"; REPLY="Assert: invalid random case selection in period case";;
       esac;;
 4270) case $(($RANDOM % 14 + 1)) in  # New JSON funcs (JSON_OBJECT_TO_ARRAY, JSON_KEY_VALUE, JSON_OBJECT_FILTER_KEYS, JSON_LOOSE/DETAILED/COMPACT)
-        1) REPLY="SELECT JSON_OBJECT_TO_ARRAY(JSON_OBJECT('k1',$((RANDOM % 1025 - 1024)),'k2',$((RANDOM % 1025 - 1024))))";;
+        1) REPLY="SELECT JSON_OBJECT_TO_ARRAY(JSON_OBJECT('k1',$((RANDOM % 2051 - 1025)),'k2',$((RANDOM % 2051 - 1025))))";;
         2) REPLY="SELECT JSON_OBJECT_TO_ARRAY(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
-        3) REPLY="SELECT JSON_KEY_VALUE(JSON_OBJECT('a',$((RANDOM % 1025 - 1024)),'b',$((RANDOM % 1025 - 1024))),'\$.a')";;
+        3) REPLY="SELECT JSON_KEY_VALUE(JSON_OBJECT('a',$((RANDOM % 2051 - 1025)),'b',$((RANDOM % 2051 - 1025))),'\$.a')";;
         4) REPLY="SELECT JSON_KEY_VALUE(c$((RANDOM % 4 + 1)),'\$.k$((RANDOM % 4 + 1))') FROM t1 LIMIT $((RANDOM % 52))";;
         5) REPLY="SELECT JSON_OBJECT_FILTER_KEYS(JSON_OBJECT('a',1,'b',2,'c',3),JSON_ARRAY('a','b'))";;
         6) REPLY="SELECT JSON_OBJECT_FILTER_KEYS(c$((RANDOM % 4 + 1)),JSON_ARRAY('k1','k2')) FROM t1 LIMIT $((RANDOM % 52))";;
@@ -21624,37 +21562,37 @@ query(){
         9) REPLY="SELECT JSON_DETAILED(c$((RANDOM % 4 + 1)),$((RANDOM % 8 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
        10) REPLY="SELECT JSON_COMPACT(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
        11) REPLY="SELECT JSON_PRETTY(JSON_OBJECT_TO_ARRAY(c$((RANDOM % 4 + 1)))) FROM t1 LIMIT $((RANDOM % 52))";;
-       12) REPLY="SELECT JSON_LOOSE(JSON_DETAILED(JSON_OBJECT('k',$((RANDOM % 1025 - 1024)))))";;
+       12) REPLY="SELECT JSON_LOOSE(JSON_DETAILED(JSON_OBJECT('k',$((RANDOM % 2051 - 1025)))))";;
        13) REPLY="SELECT JSON_OBJECT_FILTER_KEYS(JSON_OBJECT('a',1,'b',2),JSON_KEYS(c$((RANDOM % 4 + 1)))) FROM t1 LIMIT $((RANDOM % 52))";;
-       14) REPLY="SELECT JSON_OVERLAPS(JSON_OBJECT_TO_ARRAY(c$((RANDOM % 4 + 1))),JSON_ARRAY($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))) FROM t1 LIMIT $((RANDOM % 52))";;
+       14) REPLY="SELECT JSON_OVERLAPS(JSON_OBJECT_TO_ARRAY(c$((RANDOM % 4 + 1))),JSON_ARRAY($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))) FROM t1 LIMIT $((RANDOM % 52))";;
         *) >&2 echo "[gen-assert] json-new"; REPLY="Assert: invalid random case selection in json-new case";;
       esac;;
 4271) case $(($RANDOM % 14 + 1)) in  # SHOW PACKAGE STATUS / KILL HARD-SOFT-USER / FLUSH variants / CHECK FAST/MEDIUM
         1) REPLY="SHOW CREATE SERVER s$((RANDOM % 4 + 1))";;
         2) REPLY="SHOW PACKAGE STATUS LIKE 'p%'";;
         3) REPLY="SHOW PACKAGE BODY STATUS LIKE 'p%'";;
-        4) REPLY="KILL HARD QUERY $((RANDOM % 1000 + 1))";;
-        5) REPLY="KILL SOFT QUERY $((RANDOM % 1000 + 1))";;
-        6) REPLY="KILL HARD CONNECTION $((RANDOM % 1000 + 1))";;
-        7) REPLY="KILL SOFT CONNECTION $((RANDOM % 1000 + 1))";;
-        8) REPLY="KILL QUERY ID $((RANDOM % 1000 + 1))";;
-        9) REPLY="KILL USER 'u$((RANDOM % 4 + 1))'@'localhost'";;
+        4) REPLY="KILL HARD QUERY $((RANDOM % 1000000 + 1000000))";;
+        5) REPLY="KILL SOFT QUERY $((RANDOM % 1000000 + 1000000))";;
+        6) REPLY="KILL HARD CONNECTION $((RANDOM % 1000000 + 1000000))";;
+        7) REPLY="KILL SOFT CONNECTION $((RANDOM % 1000000 + 1000000))";;
+        8) REPLY="KILL QUERY ID $((RANDOM % 1000000 + 1000000))";;
+        9) REPLY="KILL USER 'nonexistent_u$((RANDOM % 100))'@'localhost'";;
        10) REPLY="FLUSH GLOBAL STATUS";;
        11) REPLY="FLUSH SESSION STATUS";;
        12) REPLY="FLUSH SSL";;
        13) REPLY="FLUSH THREADS";;
-       14) case $(($RANDOM % 6 + 1)) in 1) REPLY="CHECK TABLE t1 FAST";; 2) REPLY="CHECK TABLE t1 MEDIUM";; 3) REPLY="CHECK TABLE t1 EXTENDED FAST";; 4) REPLY="REPAIR TABLE t1 QUICK";; 5) REPLY="REPAIR TABLE t1 EXTENDED QUICK";; 6) REPLY="CHECK TABLE t1,t2,t3 MEDIUM";; esac;;
+       14) case $(($RANDOM % 6 + 1)) in 1) REPLY="CHECK TABLE t1 FAST";; 2) REPLY="CHECK TABLE t1 MEDIUM";; 3) REPLY="CHECK TABLE t1 EXTENDED";; 4) REPLY="REPAIR TABLE t1 QUICK";; 5) REPLY="REPAIR TABLE t1 EXTENDED";; 6) REPLY="CHECK TABLE t1,t2,t3 MEDIUM";; esac;;
         *) >&2 echo "[gen-assert] show-kill-flush"; REPLY="Assert: invalid random case selection in show-kill-flush case";;
       esac;;
 4272) case $(($RANDOM % 14 + 1)) in  # MariaDB dynamic columns + ODBC temporal literals + REQUIRE CIPHER/ISSUER/SUBJECT
-        1) REPLY="SELECT COLUMN_CREATE($((RANDOM % 100 + 1)),$((RANDOM % 1025 - 1024)) AS INT,$((RANDOM % 100 + 1)),$((RANDOM % 1025 - 1024)) AS INT)";;
+        1) REPLY="SELECT COLUMN_CREATE($((RANDOM % 100 + 1)),$((RANDOM % 2051 - 1025)) AS INT,$((RANDOM % 100 + 1)),$((RANDOM % 2051 - 1025)) AS INT)";;
         2) REPLY="SELECT COLUMN_GET(c$((RANDOM % 4 + 1)),$((RANDOM % 100 + 1)) AS INT) FROM t1 LIMIT $((RANDOM % 52))";;
         3) REPLY="SELECT COLUMN_DELETE(c$((RANDOM % 4 + 1)),$((RANDOM % 100 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
         4) REPLY="SELECT COLUMN_LIST(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
         5) REPLY="SELECT COLUMN_EXISTS(c$((RANDOM % 4 + 1)),$((RANDOM % 100 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
         6) REPLY="SELECT COLUMN_CHECK(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
         7) REPLY="SELECT COLUMN_JSON(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
-        8) REPLY="SELECT COLUMN_ADD(c$((RANDOM % 4 + 1)),$((RANDOM % 100 + 1)),$((RANDOM % 1025 - 1024)) AS INT) FROM t1 LIMIT $((RANDOM % 52))";;
+        8) REPLY="SELECT COLUMN_ADD(c$((RANDOM % 4 + 1)),$((RANDOM % 100 + 1)),$((RANDOM % 2051 - 1025)) AS INT) FROM t1 LIMIT $((RANDOM % 52))";;
         9) dategen; local _d=$REPLY; REPLY="SELECT {d '${_d%% *}'}";;
        10) REPLY="SELECT {t '$((RANDOM % 24)):$((RANDOM % 60)):$((RANDOM % 60))'}";;
        11) dategen; local _d=$REPLY; REPLY="SELECT {ts '${_d}'}";;
@@ -21664,8 +21602,8 @@ query(){
         *) >&2 echo "[gen-assert] dyncol-odbc"; REPLY="Assert: invalid random case selection in dyncol-odbc case";;
       esac;;
 4273) case $(($RANDOM % 14 + 1)) in  # REF_SYSTEM_ID + DEFAULT NEXTVAL + REPLICATION privileges + INTERVAL multi-unit qualifiers
-        1) srid; REPLY="CREATE TABLE t1 (c1 GEOMETRY REF_SYSTEM_ID=$REPLY)";;
-        2) srid; REPLY="CREATE TABLE t1 (c1 POINT REF_SYSTEM_ID=$REPLY,c2 INT)";;
+        1) srid; REPLY="CREATE TABLE IF NOT EXISTS tg$((RANDOM % 4 + 1)) (c1 GEOMETRY REF_SYSTEM_ID=$REPLY)";;
+        2) srid; REPLY="CREATE TABLE IF NOT EXISTS tg$((RANDOM % 4 + 1)) (c1 POINT REF_SYSTEM_ID=$REPLY,c2 INT)";;
         3) srid; REPLY="ALTER TABLE t1 MODIFY c$((RANDOM % 4 + 1)) GEOMETRY REF_SYSTEM_ID=$REPLY";;
         4) seqname; local _s=$REPLY; REPLY="CREATE TABLE t1 (c1 INT DEFAULT NEXT VALUE FOR ${_s},c2 INT)";;
         5) seqname; local _s=$REPLY; REPLY="CREATE TABLE t1 (c1 INT DEFAULT NEXTVAL(${_s}),c2 INT)";;
@@ -21686,7 +21624,7 @@ query(){
         3) REPLY="SELECT CAST(c$((RANDOM % 4 + 1)) AS DOUBLE) FROM t1 LIMIT $((RANDOM % 52))";;
         4) REPLY="SELECT CAST(c$((RANDOM % 4 + 1)) AS NCHAR) FROM t1 LIMIT $((RANDOM % 52))";;
         5) REPLY="SELECT CONVERT(c$((RANDOM % 4 + 1)),NCHAR($((RANDOM % 256 + 1)))) FROM t1 LIMIT $((RANDOM % 52))";;
-        6) REPLY="SELECT CAST($((RANDOM % 1025 - 1024))/$((RANDOM % 100 + 1)) AS FLOAT)";;
+        6) REPLY="SELECT CAST($((RANDOM % 2051 - 1025))/$((RANDOM % 100 + 1)) AS FLOAT)";;
         7) REPLY="SELECT MATCH (c$((RANDOM % 4 + 1))) AGAINST ('test') FROM t1 LIMIT $((RANDOM % 52))";;
         8) REPLY="SELECT MATCH (c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1))) AGAINST ('a' IN BOOLEAN MODE) FROM t1";;
         9) REPLY="SELECT * FROM t1 WHERE MATCH (c$((RANDOM % 4 + 1))) AGAINST ('+a -b' IN BOOLEAN MODE) LIMIT $((RANDOM % 52))";;
@@ -21702,7 +21640,7 @@ query(){
         4) REPLY="ALTER TABLE t1 DELAY_KEY_WRITE=$((RANDOM % 2))";;
         5) REPLY="ALTER TABLE t1 PACK_KEYS=$((RANDOM % 3))";;
         6) REPLY="ALTER TABLE t1 INSERT_METHOD=$(case $((RANDOM % 3)) in 0) echo NO;; 1) echo FIRST;; 2) echo LAST;; esac)";;
-        7) REPLY="ALTER TABLE t1 KEY_BLOCK_SIZE=$(echo $((1 << (RANDOM % 7 + 0))))";;
+        7) REPLY="ALTER TABLE t1 KEY_BLOCK_SIZE=$((1 << (RANDOM % 5)))";;
         8) REPLY="ALTER TABLE t1 ROW_FORMAT=$(case $((RANDOM % 6)) in 0) echo DEFAULT;; 1) echo DYNAMIC;; 2) echo COMPRESSED;; 3) echo REDUNDANT;; 4) echo COMPACT;; 5) echo FIXED;; esac)";;
         9) REPLY="ALTER TABLE t1 STATS_SAMPLE_PAGES=$((RANDOM % 65535 + 1))";;
        10) REPLY="ALTER TABLE t1 STATS_PERSISTENT=$(case $((RANDOM % 3)) in 0) echo DEFAULT;; 1) echo 0;; 2) echo 1;; esac)";;
@@ -21713,10 +21651,10 @@ query(){
         *) >&2 echo "[gen-assert] tableopt-rebal"; REPLY="Assert: invalid random case selection in tableopt-rebal case";;
       esac;;
 4276) case $(($RANDOM % 16 + 1)) in  # SQL-standard idioms: VALUES rows, OFFSET..ROWS FETCH FIRST, JSON_TABLE NESTED/ORDINALITY, CYCLE, $[last]
-        1) REPLY="VALUES ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024))),($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))";;
-        2) REPLY="VALUES ($((RANDOM % 1025 - 1024))),($((RANDOM % 1025 - 1024))),($((RANDOM % 1025 - 1024))),($((RANDOM % 1025 - 1024)))";;
-        3) REPLY="SELECT * FROM (VALUES ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024))),($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))) AS v(c1,c2)";;
-        4) REPLY="INSERT INTO t1 (c1,c2) VALUES ($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024))),($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024))),($((RANDOM % 1025 - 1024)),$((RANDOM % 1025 - 1024)))";;
+        1) REPLY="VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        2) REPLY="VALUES ($((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)))";;
+        3) REPLY="SELECT * FROM (VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))) AS v(c1,c2)";;
+        4) REPLY="INSERT INTO t1 (c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
         5) REPLY="SELECT c1 FROM t1 ORDER BY c1 OFFSET $((RANDOM % 52)) ROWS FETCH FIRST $((RANDOM % 52)) ROWS ONLY";;
         6) REPLY="SELECT c1 FROM t1 ORDER BY c1 FETCH FIRST $((RANDOM % 52)) ROWS WITH TIES";;
         7) REPLY="SELECT c1 FROM t1 ORDER BY c1 FETCH NEXT $((RANDOM % 52)) ROWS ONLY";;
@@ -21732,27 +21670,1158 @@ query(){
         *) >&2 echo "[gen-assert] sql-std-idioms"; REPLY="Assert: invalid random case selection in sql-std-idioms case";;
       esac;;
 4277) case $(($RANDOM % 18 + 1)) in  # Deep-nesting composites: CTE+JOIN+window, correlated subqueries, multi-derived, multi-table DML
-        1) REPLY="WITH a AS (SELECT c1,c2 FROM t1 WHERE c1>$((RANDOM % 1025 - 1024))),b AS (SELECT c1,SUM(c2) AS s FROM a GROUP BY c1) SELECT b.c1,b.s,RANK() OVER (ORDER BY b.s) FROM b JOIN a ON a.c1=b.c1 LIMIT $((RANDOM % 52))";;
+        1) REPLY="WITH a AS (SELECT c1,c2 FROM t1 WHERE c1>$((RANDOM % 2051 - 1025))),b AS (SELECT c1,SUM(c2) AS s FROM a GROUP BY c1) SELECT b.c1,b.s,RANK() OVER (ORDER BY b.s) FROM b JOIN a ON a.c1=b.c1 LIMIT $((RANDOM % 52))";;
         2) REPLY="WITH RECURSIVE r AS (SELECT 1 AS n UNION SELECT n+1 FROM r WHERE n<$((RANDOM % 50 + 1))) SELECT n,ROW_NUMBER() OVER (ORDER BY n DESC),DENSE_RANK() OVER (ORDER BY n%$((RANDOM % 10 + 2))) FROM r";;
-        3) REPLY="SELECT t1.c1,RANK() OVER (PARTITION BY t1.c2 ORDER BY t1.c3) FROM t1 WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.c1=t1.c1 AND t2.c2>$((RANDOM % 1025 - 1024))) LIMIT $((RANDOM % 52))";;
+        3) REPLY="SELECT t1.c1,RANK() OVER (PARTITION BY t1.c2 ORDER BY t1.c3) FROM t1 WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.c1=t1.c1 AND t2.c2>$((RANDOM % 2051 - 1025))) LIMIT $((RANDOM % 52))";;
         4) REPLY="SELECT c1,ROW_NUMBER() OVER w AS rn,RANK() OVER w AS rk,LAG(c1) OVER w AS lg FROM t1 WINDOW w AS (PARTITION BY c2 ORDER BY c3) ORDER BY rn LIMIT $((RANDOM % 52))";;
-        5) REPLY="SELECT * FROM (SELECT c1,c2 FROM (SELECT c1,c2,c3 FROM (SELECT * FROM t1 WHERE c1>$((RANDOM % 1025 - 1024))) AS x WHERE c2<$((RANDOM % 1025 - 1024))) AS y) AS z LIMIT $((RANDOM % 52))";;
-        6) REPLY="UPDATE t1 JOIN t2 ON t1.c1=t2.c1 SET t1.c2=(SELECT COALESCE(MAX(c2),$((RANDOM % 100))) FROM t3 WHERE c1=t1.c1) WHERE t2.c3>$((RANDOM % 1025 - 1024))";;
-        7) REPLY="DELETE t1.* FROM t1 JOIN t2 ON t1.c1=t2.c1 WHERE t1.c2 IN (SELECT c2 FROM t3 WHERE c3>$((RANDOM % 1025 - 1024))) LIMIT $((RANDOM % 52))";;
+        5) REPLY="SELECT * FROM (SELECT c1,c2 FROM (SELECT c1,c2,c3 FROM (SELECT * FROM t1 WHERE c1>$((RANDOM % 2051 - 1025))) AS x WHERE c2<$((RANDOM % 2051 - 1025))) AS y) AS z LIMIT $((RANDOM % 52))";;
+        6) REPLY="UPDATE t1 JOIN t2 ON t1.c1=t2.c1 SET t1.c2=(SELECT COALESCE(MAX(c2),$((RANDOM % 100))) FROM t3 WHERE c1=t1.c1) WHERE t2.c3>$((RANDOM % 2051 - 1025))";;
+        7) REPLY="DELETE t1.* FROM t1 JOIN t2 ON t1.c1=t2.c1 WHERE t1.c2 IN (SELECT c2 FROM t3 WHERE c3>$((RANDOM % 2051 - 1025))) LIMIT $((RANDOM % 52))";;
         8) REPLY="INSERT INTO t1(c1,c2) WITH g AS (SELECT c1,SUM(c2) AS s FROM t2 GROUP BY c1 HAVING s>$((RANDOM % 100))) SELECT c1,ROW_NUMBER() OVER (ORDER BY s DESC) FROM g LIMIT $((RANDOM % 52))";;
-        9) REPLY="(SELECT c1 FROM t1 WHERE c2>$((RANDOM % 1025 - 1024)) GROUP BY c1) EXCEPT (SELECT c1 FROM t2 WHERE c3<$((RANDOM % 1025 - 1024)) GROUP BY c1) ORDER BY c1 LIMIT $((RANDOM % 52))";;
+        9) REPLY="(SELECT c1 FROM t1 WHERE c2>$((RANDOM % 2051 - 1025)) GROUP BY c1) EXCEPT (SELECT c1 FROM t2 WHERE c3<$((RANDOM % 2051 - 1025)) GROUP BY c1) ORDER BY c1 LIMIT $((RANDOM % 52))";;
        10) REPLY="SELECT t1.c1,(SELECT COUNT(*) FROM t2 WHERE t2.c1=t1.c1) AS cnt,(SELECT MAX(c2) FROM t3 WHERE t3.c1=t1.c1) AS mx FROM t1 ORDER BY cnt DESC LIMIT $((RANDOM % 52))";;
        11) REPLY="SELECT t1.c1, RANK() OVER (PARTITION BY t1.c2 ORDER BY (SELECT SUM(c2) FROM t2 WHERE t2.c1=t1.c1)) FROM t1 LIMIT $((RANDOM % 52))";;
-       12) REPLY="WITH a AS (SELECT c1,c2 FROM t1 WHERE c3<$((RANDOM % 1025 - 1024))) SELECT a.c1,(SELECT MIN(c2) FROM t2 WHERE c1=a.c1),(SELECT MAX(c2) FROM t3 WHERE c1=a.c1) FROM a JOIN t2 ON a.c1=t2.c1 LIMIT $((RANDOM % 52))";;
+       12) REPLY="WITH a AS (SELECT c1,c2 FROM t1 WHERE c3<$((RANDOM % 2051 - 1025))) SELECT a.c1,(SELECT MIN(c2) FROM t2 WHERE c1=a.c1),(SELECT MAX(c2) FROM t3 WHERE c1=a.c1) FROM a JOIN t2 ON a.c1=t2.c1 LIMIT $((RANDOM % 52))";;
        13) REPLY="SELECT c1,c2,(c2 - COALESCE(LAG(c2,$((RANDOM % 5 + 1))) OVER (PARTITION BY c1 ORDER BY c3),0)) AS delta FROM t1 ORDER BY c1,c3 LIMIT $((RANDOM % 52))";;
        14) REPLY="SELECT c1,c2,SUM(c2) OVER (PARTITION BY c1 ORDER BY c3 ROWS BETWEEN $((RANDOM % 10)) PRECEDING AND $((RANDOM % 10)) FOLLOWING) FROM t1 LIMIT $((RANDOM % 52))";;
-       15) REPLY="SELECT c1, JSON_OBJECTAGG(c2,c3) FROM t1 WHERE c1 IN (SELECT c1 FROM t2 WHERE c2 IN (SELECT c2 FROM t3 WHERE c3>$((RANDOM % 1025 - 1024)))) GROUP BY c1 LIMIT $((RANDOM % 52))";;
+       15) REPLY="SELECT c1, JSON_OBJECTAGG(c2,c3) FROM t1 WHERE c1 IN (SELECT c1 FROM t2 WHERE c2 IN (SELECT c2 FROM t3 WHERE c3>$((RANDOM % 2051 - 1025)))) GROUP BY c1 LIMIT $((RANDOM % 52))";;
        16) REPLY="WITH a AS (SELECT c1,c2 FROM t1) SELECT a.c1,(WITH b AS (SELECT c2 FROM t2 WHERE c1=a.c1) SELECT MAX(c2) FROM b) AS mx FROM a LIMIT $((RANDOM % 52))";;
        17) REPLY="SELECT t1.c1, t1.c2, COALESCE((SELECT GROUP_CONCAT(c2 ORDER BY c3) FROM t2 WHERE c1=t1.c1),'(none)') FROM t1 GROUP BY t1.c1,t1.c2 ORDER BY t1.c1 LIMIT $((RANDOM % 52))";;
-       18) REPLY="SELECT c1,c2 FROM t1 WHERE (c1,c2) IN (SELECT t2.c1,MAX(t2.c2) FROM t2 GROUP BY t2.c1) AND c3 BETWEEN $((RANDOM % 1025 - 1024)) AND $((RANDOM % 1025 - 1024)) LIMIT $((RANDOM % 52))";;
+       18) REPLY="SELECT c1,c2 FROM t1 WHERE (c1,c2) IN (SELECT t2.c1,MAX(t2.c2) FROM t2 GROUP BY t2.c1) AND c3 BETWEEN $((RANDOM % 2051 - 1025)) AND $((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 52))";;
         *) >&2 echo "[gen-assert] deep-nest"; REPLY="Assert: invalid random case selection in deep-nest case";;
       esac;;
-    *) query;;  # Outer dispatcher catch-all: ~10.6% of picks land in numeric gaps; recursively re-pick instead of emitting a stale REPLY
+4278) case $(($RANDOM % 22 + 1)) in  # HNSW vector ops: VECTOR(N) cols, VECTOR INDEX with DISTANCE/M, kNN ORDER BY, mhnsw_* sysvars
+        1) local _d=$((RANDOM % 32 + 1)); REPLY="CREATE TABLE tv1 (c1 INT PRIMARY KEY,c2 VECTOR($_d) NOT NULL,VECTOR INDEX(c2)) ENGINE=InnoDB";;
+        2) local _d=$((RANDOM % 32 + 1)); REPLY="CREATE TABLE tv1 (c1 INT PRIMARY KEY,c2 VECTOR($_d) NOT NULL,VECTOR INDEX idx1(c2) DISTANCE=$(case $((RANDOM % 2)) in 0) echo cosine;; 1) echo euclidean;; esac) M=$((RANDOM % 16 + 4))) ENGINE=InnoDB";;
+        3) REPLY="ALTER TABLE tv1 ADD VECTOR INDEX idx$((RANDOM % 4 + 1))(c2)";;
+        4) REPLY="ALTER TABLE tv1 ADD VECTOR INDEX idx$((RANDOM % 4 + 1))(c2) DISTANCE=cosine M=$((RANDOM % 16 + 4))";;
+        5) REPLY="CREATE VECTOR INDEX idx$((RANDOM % 4 + 1)) ON tv1(c2)";;
+        6) REPLY="DROP INDEX idx$((RANDOM % 4 + 1)) ON tv1";;
+        7) local _d=$((RANDOM % 8 + 2)); local _v=""; for ((i=0;i<_d;i++)); do _v+="$((RANDOM % 200 - 100)).$((RANDOM % 100)),"; done; REPLY="SELECT VEC_FromText('[${_v%,}]')";;
+        8) local _d=$((RANDOM % 8 + 2)); local _a=""; local _b=""; for ((i=0;i<_d;i++)); do _a+="$((RANDOM % 200 - 100)).$((RANDOM % 100)),"; _b+="$((RANDOM % 200 - 100)).$((RANDOM % 100)),"; done; REPLY="SELECT VEC_DISTANCE_EUCLIDEAN(VEC_FromText('[${_a%,}]'),VEC_FromText('[${_b%,}]'))";;
+        9) local _d=$((RANDOM % 8 + 2)); local _a=""; local _b=""; for ((i=0;i<_d;i++)); do _a+="$((RANDOM % 200 - 100)).$((RANDOM % 100)),"; _b+="$((RANDOM % 200 - 100)).$((RANDOM % 100)),"; done; REPLY="SELECT VEC_DISTANCE_COSINE(VEC_FromText('[${_a%,}]'),VEC_FromText('[${_b%,}]'))";;
+       10) REPLY="SELECT VEC_ToText(VEC_FromText('[$((RANDOM % 100)).$((RANDOM % 100)),$((RANDOM % 100)).$((RANDOM % 100)),$((RANDOM % 100)).$((RANDOM % 100))]'))";;
+       11) REPLY="INSERT INTO tv1(c1,c2) VALUES ($((RANDOM % 2051 - 1025)),VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]'))";;
+       12) REPLY="SELECT c1 FROM tv1 ORDER BY VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]')) LIMIT $((RANDOM % 52))";;
+       13) REPLY="SELECT c1,VEC_DISTANCE_COSINE(c2,VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]')) AS d FROM tv1 ORDER BY d LIMIT $((RANDOM % 52))";;
+       14) REPLY="WITH q AS (SELECT VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]') AS v) SELECT c1,VEC_DISTANCE_EUCLIDEAN(c2,(SELECT v FROM q)) AS d FROM tv1 ORDER BY d LIMIT $((RANDOM % 52))";;
+       15) REPLY="SELECT * FROM tv1 WHERE VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[0.0,0.0,0.0]'))<$((RANDOM % 100 + 1)).0 LIMIT $((RANDOM % 52))";;
+       16) REPLY="SET SESSION mhnsw_default_distance='$(case $((RANDOM % 2)) in 0) echo cosine;; 1) echo euclidean;; esac)'";;
+       17) REPLY="SET SESSION mhnsw_default_m=$((RANDOM % 16 + 4))";;
+       18) REPLY="SET SESSION mhnsw_ef_search=$((RANDOM % 200 + 1))";;
+       19) REPLY="SET GLOBAL mhnsw_max_cache_size=$((RANDOM % 1048576 + 1))";;
+       20) REPLY="SET STATEMENT mhnsw_ef_search=$((RANDOM % 200 + 1)) FOR SELECT c1 FROM tv1 ORDER BY VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[1.0,2.0,3.0]')) LIMIT $((RANDOM % 52))";;
+       21) REPLY="UPDATE tv1 SET c2=VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]') WHERE c1=$((RANDOM % 2051 - 1025))";;
+       22) REPLY="DELETE FROM tv1 ORDER BY VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[0.0,0.0,0.0]')) DESC LIMIT $((RANDOM % 10 + 1))";;
+        *) >&2 echo "[gen-assert] vec-hnsw"; REPLY="Assert: invalid random case selection in vec-hnsw case";;
+      esac;;
+4279) case $(($RANDOM % 18 + 1)) in  # RETURNING surface — INSERT/DELETE/REPLACE forms with *, expr lists, qualified cols, subquery/CASE/JSON
+        1) REPLY="INSERT INTO t1 VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) RETURNING *";;
+        2) REPLY="INSERT INTO t1(c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) RETURNING c1,c2,c1+c2 AS s,UPPER('x') AS u";;
+        3) REPLY="INSERT INTO t1 VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) RETURNING t1.c1,t1.c2";;
+        4) REPLY="INSERT IGNORE INTO t1 VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) RETURNING c1,c2";;
+        5) REPLY="INSERT INTO t1 SELECT * FROM t2 WHERE c1>$((RANDOM % 2051 - 1025)) RETURNING c1";;
+        6) REPLY="INSERT INTO t1 VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) ON DUPLICATE KEY UPDATE c2=c2+$((RANDOM % 100 + 1)) RETURNING c1,c2";;
+        7) REPLY="INSERT INTO t1(c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) RETURNING c1,(SELECT MAX(c2) FROM t2) AS mx";;
+        8) REPLY="INSERT INTO t1(c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) RETURNING c1,JSON_OBJECT('pk',c1,'v',c2)";;
+        9) REPLY="INSERT INTO t1(c1,c2,c3) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) RETURNING c1,CASE WHEN c2>$((RANDOM % 100)) THEN 'big' ELSE 'small' END AS lbl";;
+       10) REPLY="DELETE FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) RETURNING *";;
+       11) REPLY="DELETE FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) RETURNING c1,c2*$((RANDOM % 10 + 1)) AS doubled";;
+       12) REPLY="DELETE FROM t1 ORDER BY c$((RANDOM % 4 + 1)) LIMIT $((RANDOM % 52)) RETURNING c1,c2,c3";;
+       13) REPLY="DELETE FROM t1 PARTITION (p$((RANDOM % 4 + 1))) WHERE c1>$((RANDOM % 2051 - 1025)) RETURNING c1";;
+       14) REPLY="DELETE FROM t1 WHERE c1 IN (SELECT c1 FROM t2 WHERE c2<$((RANDOM % 2051 - 1025))) RETURNING c1,c2";;
+       15) REPLY="REPLACE INTO t1 VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) RETURNING *";;
+       16) REPLY="REPLACE INTO t1 SELECT * FROM t2 WHERE c1>$((RANDOM % 2051 - 1025)) RETURNING c1,c2";;
+       17) REPLY="INSERT INTO t1(c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) RETURNING c1,c2";;
+       18) REPLY="WITH src AS (SELECT c1,c2 FROM t2 WHERE c3>$((RANDOM % 2051 - 1025))) INSERT INTO t1(c1,c2) SELECT * FROM src RETURNING c1,c2";;
+        *) >&2 echo "[gen-assert] returning"; REPLY="Assert: invalid random case selection in returning case";;
+      esac;;
+4280) case $(($RANDOM % 14 + 1)) in  # JSON_TABLE EXISTS PATH + DEFAULT/ERROR ON EMPTY/ON ERROR + JSON_NORMALIZE/EQUALS/SCHEMA_VALID
+        1) REPLY="SELECT * FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(o FOR ORDINALITY,v INT EXISTS PATH '\$')) AS j";;
+        2) REPLY="SELECT * FROM JSON_TABLE('[$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$' DEFAULT '0' ON EMPTY ERROR ON ERROR)) AS j";;
+        3) REPLY="SELECT * FROM JSON_TABLE('[$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$' NULL ON EMPTY DEFAULT '$((RANDOM % 100))' ON ERROR)) AS j";;
+        4) REPLY="SELECT * FROM JSON_TABLE('{\"a\":[$((RANDOM % 100)),$((RANDOM % 100))]}','\$' COLUMNS(o FOR ORDINALITY,NESTED PATH '\$.a[*]' COLUMNS(v INT PATH '\$' ERROR ON EMPTY DEFAULT '0' ON ERROR))) AS j";;
+        5) REPLY="SELECT JSON_NORMALIZE('{\"a\":$((RANDOM % 2051 - 1025)),\"b\":$((RANDOM % 2051 - 1025))}')";;
+        6) REPLY="SELECT JSON_EQUALS('{\"a\":$((RANDOM % 100))}','{\"a\":$((RANDOM % 100))}')";;
+        7) REPLY="SELECT JSON_SCHEMA_VALID('{\"type\":\"object\"}','{\"a\":$((RANDOM % 100))}')";;
+        8) REPLY="SELECT JSON_NORMALIZE(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+        9) REPLY="SELECT JSON_EQUALS(c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT JSON_ARRAYAGG(c$((RANDOM % 4 + 1)) ORDER BY c1 LIMIT $((RANDOM % 52))) FROM t1";;
+       11) REPLY="SELECT GROUP_CONCAT(c$((RANDOM % 4 + 1)) ORDER BY c1 SEPARATOR ' AND ' LIMIT $((RANDOM % 52))) FROM t1";;
+       12) REPLY="SELECT JSON_OBJECTAGG(c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1)) ORDER BY c1 LIMIT $((RANDOM % 52))) FROM t1 GROUP BY c1";;
+       13) REPLY="SELECT JSON_KEYS(c$((RANDOM % 4 + 1)),'\$.a$((RANDOM % 4 + 1))') FROM t1 LIMIT $((RANDOM % 52))";;
+       14) REPLY="SELECT JSON_SEARCH(c$((RANDOM % 4 + 1)),'one','%val%',NULL,'\$') FROM t1 LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] json-extra"; REPLY="Assert: invalid random case selection in json-extra case";;
+      esac;;
+4281) case $(($RANDOM % 16 + 1)) in  # Tri-valued logic + SOUNDS LIKE chain + multi-var SET STATEMENT + ANALYZE FORMAT=JSON DML
+        1) REPLY="SELECT $((RANDOM % 2051 - 1025)) IS UNKNOWN, $((RANDOM % 2051 - 1025)) IS NOT UNKNOWN";;
+        2) REPLY="SELECT NULL IS TRUE, NULL IS NOT FALSE, $((RANDOM % 2051 - 1025)) IS TRUE";;
+        3) REPLY="SELECT * FROM t1 WHERE c1 IS NOT UNKNOWN AND c2 IS NOT FALSE LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT * FROM t1 WHERE (c1 IS UNKNOWN) OR (c2 IS TRUE AND c3 IS NOT NULL) LIMIT $((RANDOM % 52))";;
+        5) REPLY="SELECT 'abc' SOUNDS LIKE 'abd' SOUNDS LIKE 'abe'";;
+        6) REPLY="SELECT * FROM t1 WHERE c1 SOUNDS LIKE 'sample$((RANDOM % 100))' SOUNDS LIKE 'sample$((RANDOM % 100))' LIMIT $((RANDOM % 52))";;
+        7) REPLY="SET STATEMENT sort_buffer_size=$((RANDOM % 1048576 + 1)),join_buffer_size=$((RANDOM % 1048576 + 1)) FOR SELECT c1 FROM t1 LIMIT $((RANDOM % 52))";;
+        8) REPLY="SET STATEMENT optimizer_switch='semijoin=off',optimizer_use_condition_selectivity=$((RANDOM % 5 + 1)) FOR SELECT c1 FROM t1";;
+        9) REPLY="SET STATEMENT max_statement_time=$((RANDOM % 60)),sort_buffer_size=$((RANDOM % 1048576 + 1)) FOR SELECT * FROM t1 ORDER BY c1 LIMIT $((RANDOM % 52))";;
+       10) REPLY="ANALYZE FORMAT=JSON UPDATE t1 SET c2=$((RANDOM % 2051 - 1025)) WHERE c1>$((RANDOM % 2051 - 1025))";;
+       11) REPLY="ANALYZE FORMAT=JSON DELETE FROM t1 WHERE c1<$((RANDOM % 2051 - 1025)) ORDER BY c1 LIMIT $((RANDOM % 52))";;
+       12) REPLY="ANALYZE FORMAT=JSON INSERT INTO t1 SELECT * FROM t2 WHERE c1>$((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 52))";;
+       13) REPLY="SHOW EXPLAIN FORMAT=JSON FOR $((RANDOM % 1000 + 1))";;
+       14) REPLY="SHOW EXPLAIN FOR $((RANDOM % 1000 + 1))";;
+       15) REPLY="EXPLAIN FORMAT=JSON FOR CONNECTION $((RANDOM % 1000 + 1))";;
+       16) REPLY="ANALYZE FORMAT=JSON FOR CONNECTION $((RANDOM % 1000 + 1))";;
+        *) >&2 echo "[gen-assert] tri-soundslike"; REPLY="Assert: invalid random case selection in tri-soundslike case";;
+      esac;;
+4282) case $(($RANDOM % 14 + 1)) in  # Expression DEFAULT + CTE column-list + parenthesized UNION + VALUES col-aliased
+        1) REPLY="ALTER TABLE t1 ALTER c$((RANDOM % 4 + 1)) SET DEFAULT (CURRENT_TIMESTAMP)";;
+        2) REPLY="ALTER TABLE t1 ALTER c$((RANDOM % 4 + 1)) SET DEFAULT (UUID())";;
+        3) REPLY="ALTER TABLE t1 ALTER c$((RANDOM % 4 + 1)) SET DEFAULT ($((RANDOM % 2051 - 1025))*$((RANDOM % 100 + 1)))";;
+        4) REPLY="CREATE TABLE t1 (c1 INT DEFAULT (RAND()*$((RANDOM % 1025 + 1))),c2 JSON DEFAULT (JSON_OBJECT('k',$((RANDOM % 2051 - 1025)))))";;
+        5) REPLY="ALTER TABLE t1 ALTER c$((RANDOM % 4 + 1)) DROP DEFAULT";;
+        6) REPLY="WITH cte (n) AS (SELECT $((RANDOM % 2051 - 1025)) UNION SELECT $((RANDOM % 2051 - 1025))) SELECT n FROM cte";;
+        7) REPLY="WITH cte (a,b,c) AS (SELECT c1,c2,c3 FROM t1 WHERE c1>$((RANDOM % 2051 - 1025))) SELECT a,b,c FROM cte LIMIT $((RANDOM % 52))";;
+        8) REPLY="WITH RECURSIVE r (n,d) AS (SELECT 1,1 UNION SELECT n+1,d*2 FROM r WHERE n<$((RANDOM % 30 + 1))) SELECT n,d FROM r";;
+        9) REPLY="(SELECT c1 FROM t1 ORDER BY c1 LIMIT $((RANDOM % 10 + 1))) UNION (SELECT c1 FROM t2 ORDER BY c1 LIMIT $((RANDOM % 10 + 1))) ORDER BY 1";;
+       10) REPLY="(SELECT c1 FROM t1 WHERE c2>$((RANDOM % 2051 - 1025))) UNION ALL (SELECT c1 FROM t2 WHERE c3<$((RANDOM % 2051 - 1025))) LIMIT $((RANDOM % 52))";;
+       11) REPLY="SELECT * FROM (VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))) AS v(a,b,c)";;
+       12) REPLY="INSERT INTO t1(c1,c2,c3) SELECT * FROM (VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))) AS v(a,b,c)";;
+       13) REPLY="SELECT a,b FROM (VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))) AS v(a,b) WHERE a>$((RANDOM % 2051 - 1025))";;
+       14) REPLY="ALTER TABLE t1 ALTER c$((RANDOM % 4 + 1)) SET DEFAULT (DATE_ADD(NOW(),INTERVAL $((RANDOM % 365)) DAY))";;
+        *) >&2 echo "[gen-assert] default-cte-values"; REPLY="Assert: invalid random case selection in default-cte-values case";;
+      esac;;
+4283) case $(($RANDOM % 14 + 1)) in  # Sequence: NEXT/PREVIOUS VALUE FOR + ALTER SEQUENCE RESTART + seq_X_to_Y system tables
+        1) seqname; REPLY="SELECT NEXT VALUE FOR ${REPLY}";;
+        2) seqname; REPLY="SELECT PREVIOUS VALUE FOR ${REPLY}";;
+        3) seqname; local _s=$REPLY; REPLY="SELECT NEXT VALUE FOR ${_s},NEXT VALUE FOR ${_s}";;
+        4) seqname; REPLY="ALTER SEQUENCE ${REPLY} RESTART WITH $((RANDOM % 10000 + 1))";;
+        5) seqname; local _mn=$((RANDOM % 100 + 1)); REPLY="ALTER SEQUENCE ${REPLY} MINVALUE ${_mn} MAXVALUE $((_mn + RANDOM % 1000000 + 1000)) RESTART";;
+        6) seqname; REPLY="ALTER SEQUENCE ${REPLY} INCREMENT BY $((RANDOM % 50 + 1)) CACHE $((RANDOM % 100 + 1))";;
+        7) seqname; REPLY="ALTER SEQUENCE ${REPLY} CYCLE";;
+        8) seqname; REPLY="ALTER SEQUENCE ${REPLY} NOCYCLE NOCACHE";;
+        9) REPLY="SELECT * FROM seq_1_to_$((RANDOM % 100 + 1))";;
+       10) REPLY="SELECT * FROM seq_$((RANDOM % 10))_to_$((RANDOM % 100 + 10))";;
+       11) REPLY="SELECT * FROM seq_1_to_$((RANDOM % 100 + 1))_step_$((RANDOM % 5 + 1))";;
+       12) REPLY="SELECT COUNT(*) FROM seq_1_to_$((RANDOM % 1000 + 1))";;
+       13) seqname; REPLY="INSERT INTO t1(c1) VALUES (NEXT VALUE FOR ${REPLY})";;
+       14) seqname; REPLY="UPDATE t1 SET c1=NEXT VALUE FOR ${REPLY} WHERE c1=$((RANDOM % 2051 - 1025))";;
+        *) >&2 echo "[gen-assert] seq-extra"; REPLY="Assert: invalid random case selection in seq-extra case";;
+      esac;;
+4284) case $(($RANDOM % 14 + 1)) in  # Misc bit/string/encoding funcs + sys helpers + WEIGHT_STRING/NATURAL_SORT_KEY
+        1) REPLY="SELECT INTERVAL($((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100)))";;
+        2) REPLY="SELECT MAKE_SET($((RANDOM % 32)),'a','b','c','d','e')";;
+        3) REPLY="SELECT EXPORT_SET($((RANDOM % 256)),'Y','N',',',$((RANDOM % 16 + 1)))";;
+        4) REPLY="SELECT BIN($((RANDOM % 65536))),OCT($((RANDOM % 65536))),HEX($((RANDOM % 65536)))";;
+        5) REPLY="SELECT CONV('$((RANDOM % 65536))',10,$((RANDOM % 33 + 2)))";;
+        6) REPLY="SELECT CRC32C('test_$((RANDOM % 1000)).$((RANDOM % 1000))')";;
+        7) REPLY="SELECT UNCOMPRESSED_LENGTH(COMPRESS(REPEAT('a',$((RANDOM % 1024 + 1)))))";;
+        8) REPLY="SELECT RANDOM_BYTES($((RANDOM % 1024 + 1)))";;
+        9) REPLY="SELECT WEIGHT_STRING(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT NATURAL_SORT_KEY(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+       11) REPLY="SELECT FORMAT_PICO_TIME($((RANDOM % 1000000)))";;
+       12) REPLY="SELECT sys.format_bytes($((RANDOM % 1073741824)))";;
+       13) REPLY="SELECT sys.format_time($((RANDOM % 1000000000)))";;
+       14) REPLY="SELECT BIT_LENGTH(c$((RANDOM % 4 + 1))),CHAR_LENGTH(c$((RANDOM % 4 + 1))),OCTET_LENGTH(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] misc-funcs"; REPLY="Assert: invalid random case selection in misc-funcs case";;
+      esac;;
+4285) case $(($RANDOM % 14 + 1)) in  # GIS extras + per-partition options + ALTER TABLESPACE + multi-pair RENAME + LOCK variants
+        1) REPLY="SELECT ST_GeometryType(ST_GeomFromText('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
+        2) REPLY="SELECT ST_NumPoints(ST_GeomFromText('LINESTRING($((RANDOM % 100)) $((RANDOM % 100)),$((RANDOM % 100)) $((RANDOM % 100)))'))";;
+        3) REPLY="SELECT ST_StartPoint(ST_GeomFromText('LINESTRING($((RANDOM % 100)) $((RANDOM % 100)),$((RANDOM % 100)) $((RANDOM % 100)))')),ST_EndPoint(ST_GeomFromText('LINESTRING(0 0,$((RANDOM % 100)) $((RANDOM % 100)))'))";;
+        4) REPLY="SELECT ST_AsBinary(ST_GeomFromText('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
+        5) REPLY="SELECT ST_GeoHash(ST_GeomFromText('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'),$((RANDOM % 12 + 1)))";;
+        6) REPLY="SELECT ST_AsGeoJSON(ST_GeomFromText('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
+        7) REPLY="SELECT ST_GeomFromGeoJSON('{\"type\":\"Point\",\"coordinates\":[$((RANDOM % 200 - 100)),$((RANDOM % 200 - 100))]}')";;
+        8) REPLY="SELECT ST_NumGeometries(ST_GeomFromText('MULTIPOINT(($((RANDOM % 100)) $((RANDOM % 100))),($((RANDOM % 100)) $((RANDOM % 100))))'))";;
+        9) REPLY="CREATE OR REPLACE TABLE t1 (c1 INT) PARTITION BY HASH(c1) (PARTITION p$((RANDOM % 4 + 1)) ENGINE=InnoDB COMMENT='hot',PARTITION p$((RANDOM % 4 + 1)) ENGINE=InnoDB COMMENT='cold')";;
+       10) REPLY="CREATE OR REPLACE TABLE t1 (c1 INT) PARTITION BY KEY ALGORITHM=$((RANDOM % 2 + 1))(c1) PARTITIONS $((RANDOM % 8 + 1))";;
+       11) REPLY="CREATE OR REPLACE TABLE t1 (c1 INT) PARTITION BY LINEAR HASH(c1) PARTITIONS $((RANDOM % 8 + 1))";;
+       12) REPLY="ALTER TABLE t1 DISCARD TABLESPACE";;
+       13) REPLY="ALTER TABLE t1 IMPORT TABLESPACE";;
+       14) REPLY="RENAME TABLE t1 TO t1_renamed,t1_renamed TO t1";;
+        *) >&2 echo "[gen-assert] gis-part-tspc"; REPLY="Assert: invalid random case selection in gis-part-tspc case";;
+      esac;;
+4286) case $(($RANDOM % 14 + 1)) in  # FK ON DELETE/UPDATE matrix + WITH CHECK OPTION views + ALTER USER ACCOUNT/PASSWORD
+        1) REPLY="CREATE TABLE t3 (c1 INT,c2 INT,FOREIGN KEY (c1) REFERENCES t1(c1) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB";;
+        2) REPLY="CREATE TABLE t3 (c1 INT,c2 INT,FOREIGN KEY (c1) REFERENCES t1(c1) ON DELETE SET NULL ON UPDATE SET NULL) ENGINE=InnoDB";;
+        3) REPLY="CREATE TABLE t3 (c1 INT,c2 INT,FOREIGN KEY (c1) REFERENCES t1(c1) ON DELETE RESTRICT ON UPDATE NO ACTION) ENGINE=InnoDB";;
+        4) REPLY="CREATE TABLE t3 (c1 INT,c2 INT,FOREIGN KEY (c1) REFERENCES t1(c1) ON DELETE CASCADE ON UPDATE SET DEFAULT) ENGINE=InnoDB";;
+        5) REPLY="ALTER TABLE t3 ADD FOREIGN KEY (c2) REFERENCES t1(c1) ON DELETE SET NULL ON UPDATE CASCADE";;
+        6) REPLY="CREATE OR REPLACE VIEW v1 AS SELECT c1,c2 FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) WITH CASCADED CHECK OPTION";;
+        7) REPLY="CREATE OR REPLACE VIEW v2 AS SELECT * FROM t1 WHERE c2<$((RANDOM % 2051 - 1025)) WITH LOCAL CHECK OPTION";;
+        8) REPLY="CREATE OR REPLACE ALGORITHM=TEMPTABLE SQL SECURITY INVOKER VIEW v3 AS SELECT * FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) WITH CHECK OPTION";;
+        9) REPLY="CREATE OR REPLACE ALGORITHM=MERGE SQL SECURITY DEFINER VIEW v4 AS SELECT c1,c2 FROM t1 WITH CASCADED CHECK OPTION";;
+       10) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost ACCOUNT $(case $((RANDOM % 2)) in 0) echo LOCK;; 1) echo UNLOCK;; esac)";;
+       11) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost PASSWORD EXPIRE";;
+       12) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost PASSWORD EXPIRE INTERVAL $((RANDOM % 365 + 1)) DAY";;
+       13) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost PASSWORD EXPIRE NEVER";;
+       14) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost WITH MAX_QUERIES_PER_HOUR $((RANDOM % 1000 + 1)) MAX_USER_CONNECTIONS $((RANDOM % 100 + 1)) MAX_UPDATES_PER_HOUR $((RANDOM % 1000 + 1)) MAX_CONNECTIONS_PER_HOUR $((RANDOM % 100 + 1))";;
+        *) >&2 echo "[gen-assert] fk-view-acct"; REPLY="Assert: invalid random case selection in fk-view-acct case";;
+      esac;;
+4287) case $(($RANDOM % 14 + 1)) in  # GIS set-ops + Buffer/Distance_Sphere + INSERT...SET form
+        1) REPLY="SELECT ST_Touches(ST_GeomFromText('POINT($((RANDOM % 100)) $((RANDOM % 100)))'),ST_GeomFromText('LINESTRING(0 0,$((RANDOM % 100)) $((RANDOM % 100)))'))";;
+        2) REPLY="SELECT ST_Crosses(ST_GeomFromText('LINESTRING(0 0,$((RANDOM % 100)) $((RANDOM % 100)))'),ST_GeomFromText('LINESTRING($((RANDOM % 100)) 0,0 $((RANDOM % 100)))'))";;
+        3) REPLY="SELECT ST_AsText(ST_Difference(ST_GeomFromText('POLYGON((0 0,$((RANDOM % 100 + 5)) 0,$((RANDOM % 100 + 5)) $((RANDOM % 100 + 5)),0 $((RANDOM % 100 + 5)),0 0))'),ST_GeomFromText('POLYGON((3 3,8 3,8 8,3 8,3 3))')))";;
+        4) REPLY="SELECT ST_AsText(ST_Intersection(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0))'),ST_GeomFromText('POLYGON(($((RANDOM % 5)) $((RANDOM % 5)),12 $((RANDOM % 5)),12 12,$((RANDOM % 5)) 12,$((RANDOM % 5)) $((RANDOM % 5))))')))";;
+        5) REPLY="SELECT ST_AsText(ST_Union(ST_GeomFromText('POINT($((RANDOM % 100)) $((RANDOM % 100)))'),ST_GeomFromText('POINT($((RANDOM % 100)) $((RANDOM % 100)))')))";;
+        6) REPLY="SELECT ST_AsText(ST_SymDifference(ST_GeomFromText('POLYGON((0 0,5 0,5 5,0 5,0 0))'),ST_GeomFromText('POLYGON((3 3,8 3,8 8,3 8,3 3))')))";;
+        7) REPLY="SELECT ST_AsText(ST_Buffer(ST_GeomFromText('POINT($((RANDOM % 100)) $((RANDOM % 100)))'),$((RANDOM % 50 + 1)).$((RANDOM % 100))))";;
+        8) REPLY="SELECT ST_Distance_Sphere(ST_GeomFromText('POINT($((RANDOM % 360 - 180)) $((RANDOM % 180 - 90)))'),ST_GeomFromText('POINT($((RANDOM % 360 - 180)) $((RANDOM % 180 - 90)))'))";;
+        9) REPLY="SELECT ST_Covers(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0))'),ST_GeomFromText('POINT($((RANDOM % 10)) $((RANDOM % 10)))'))";;
+       10) REPLY="SELECT ST_CoveredBy(ST_GeomFromText('POINT($((RANDOM % 10)) $((RANDOM % 10)))'),ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0))'))";;
+       11) REPLY="INSERT INTO t1 SET c1=$((RANDOM % 2051 - 1025)),c2=$((RANDOM % 2051 - 1025)),c3=DEFAULT,c4=NULL";;
+       12) REPLY="INSERT INTO t1 SET c1=$((RANDOM % 2051 - 1025)),c2=$((RANDOM % 2051 - 1025)) ON DUPLICATE KEY UPDATE c2=c2+$((RANDOM % 100 + 1))";;
+       13) REPLY="REPLACE INTO t1 SET c1=$((RANDOM % 2051 - 1025)),c2=$((RANDOM % 2051 - 1025)),c3=$((RANDOM % 2051 - 1025)),c4=$((RANDOM % 2051 - 1025))";;
+       14) REPLY="SELECT ST_AsGeoJSON(ST_Intersection(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0))'),ST_GeomFromText('POLYGON((5 5,15 5,15 15,5 15,5 5))')))";;
+        *) >&2 echo "[gen-assert] gis-setop-insert-set"; REPLY="Assert: invalid random case selection in gis-setop-insert-set case";;
+      esac;;
+4288) case $(($RANDOM % 14 + 1)) in  # ENGINE_ATTRIBUTE + ENCRYPTION + RENAME USER + multi-table LOCK + RESET MASTER TO + PURGE
+        1) REPLY="ALTER TABLE t1 ENGINE_ATTRIBUTE='{\"k$((RANDOM % 10))\":\"v$((RANDOM % 100))\"}'";;
+        2) REPLY="ALTER TABLE t1 SECONDARY_ENGINE_ATTRIBUTE='{\"engine\":\"InnoDB\"}'";;
+        3) REPLY="CREATE TABLE t3 (c1 INT ENGINE_ATTRIBUTE='{\"k\":1}',c2 INT) ENGINE=InnoDB ENGINE_ATTRIBUTE='{\"compress\":true}'";;
+        4) REPLY="CREATE TABLE t3 (c1 INT,c2 INT) ENGINE=InnoDB ENCRYPTION='Y' ENCRYPTION_KEY_ID=$((RANDOM % 100 + 1))";;
+        5) REPLY="ALTER TABLE t1 ENCRYPTION='$(case $((RANDOM % 2)) in 0) echo Y;; 1) echo N;; esac)'";;
+        6) REPLY="ALTER TABLE t1 ENCRYPTION_KEY_ID=$((RANDOM % 100 + 1))";;
+        7) REPLY="RENAME USER u$((RANDOM % 4 + 1))@localhost TO u$((RANDOM % 4 + 1))@'%'";;
+        8) REPLY="RENAME USER u$((RANDOM % 4 + 1))@'%' TO u$((RANDOM % 4 + 1))@localhost,u$((RANDOM % 4 + 1))@localhost TO u$((RANDOM % 4 + 1))@'127.0.0.1'";;
+        9) REPLY="LOCK TABLES t1 AS al1 READ,t2 AS al2 WRITE";;
+       10) REPLY="LOCK TABLES t1 WRITE,t2 READ,t3 READ LOCAL";;
+       11) REPLY="LOCK TABLE t1 WRITE CONCURRENT,t2 READ";;
+       12) REPLY="PURGE BINARY LOGS BEFORE NOW()-INTERVAL $((RANDOM % 24 + 1)) HOUR";;
+       13) REPLY="PURGE BINARY LOGS BEFORE DATE_SUB(NOW(),INTERVAL $((RANDOM % 30 + 1)) DAY)";;
+       14) REPLY="RESET MASTER TO $((RANDOM % 100000 + 1))";;
+        *) >&2 echo "[gen-assert] eng-attr-user-lock"; REPLY="Assert: invalid random case selection in eng-attr-user-lock case";;
+      esac;;
+4289) case $(($RANDOM % 14 + 1)) in  # USING HASH/BTREE indexes with KEY_BLOCK_SIZE/COMMENT + index hint composites
+        1) REPLY="CREATE INDEX idx$((RANDOM % 4 + 1)) ON t1 (c$((RANDOM % 4 + 1))) USING HASH KEY_BLOCK_SIZE=$((1 << (RANDOM % 5))) COMMENT 'fz_$((RANDOM % 100))'";;
+        2) REPLY="CREATE INDEX idx$((RANDOM % 4 + 1)) ON t1 (c$((RANDOM % 4 + 1))) USING BTREE KEY_BLOCK_SIZE=$((1 << (RANDOM % 5))) COMMENT 'fz_$((RANDOM % 100))'";;
+        3) REPLY="CREATE INDEX idx$((RANDOM % 4 + 1)) ON t1 (c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1))) USING BTREE COMMENT 'mc_$((RANDOM % 100))'";;
+        4) REPLY="ALTER TABLE t1 ADD INDEX idx$((RANDOM % 4 + 1)) (c$((RANDOM % 4 + 1))) USING HASH";;
+        5) REPLY="ALTER TABLE t1 ADD UNIQUE INDEX idx$((RANDOM % 4 + 1)) (c$((RANDOM % 4 + 1))) USING BTREE KEY_BLOCK_SIZE=$((1 << (RANDOM % 5)))";;
+        6) REPLY="SELECT * FROM t1 USE INDEX(idx$((RANDOM % 4 + 1))) WHERE c$((RANDOM % 4 + 1))>$((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 52))";;
+        7) REPLY="SELECT * FROM t1 FORCE INDEX(idx$((RANDOM % 4 + 1)),idx$((RANDOM % 4 + 1))) WHERE c1>$((RANDOM % 2051 - 1025))";;
+        8) REPLY="SELECT * FROM t1 IGNORE INDEX(idx$((RANDOM % 4 + 1))) WHERE c1>$((RANDOM % 2051 - 1025))";;
+        9) REPLY="SELECT * FROM t1 USE INDEX FOR ORDER BY(idx$((RANDOM % 4 + 1))) ORDER BY c1 LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT * FROM t1 USE INDEX FOR GROUP BY(idx$((RANDOM % 4 + 1))) GROUP BY c1";;
+       11) REPLY="SELECT * FROM t1 USE INDEX FOR JOIN(idx$((RANDOM % 4 + 1))) JOIN t2 ON t1.c1=t2.c1";;
+       12) REPLY="SELECT * FROM t1 PARTITION (p$((RANDOM % 4 + 1))) USE INDEX(idx$((RANDOM % 4 + 1))) LIMIT $((RANDOM % 52))";;
+       13) REPLY="ALTER TABLE t1 ALTER INDEX idx$((RANDOM % 4 + 1)) IGNORED";;
+       14) REPLY="ALTER TABLE t1 ALTER INDEX idx$((RANDOM % 4 + 1)) NOT IGNORED";;
+        *) >&2 echo "[gen-assert] idx-hash-btree"; REPLY="Assert: invalid random case selection in idx-hash-btree case";;
+      esac;;
+4290) case $(($RANDOM % 12 + 1)) in  # Cross-domain combos: versioning+CTE+RETURNING, JSON_TABLE+recursive CTE, vector+window, GIS set-op+AsGeoJSON
+        1) dategen; local _d1=$REPLY; dategen; REPLY="WITH ph AS (SELECT * FROM t1 FOR SYSTEM_TIME FROM '$_d1' TO '$REPLY' WHERE c1>$((RANDOM % 2051 - 1025))) SELECT COUNT(*),MAX(c2),MIN(c3) FROM ph";;
+        2) REPLY="WITH RECURSIVE r(n) AS (SELECT v FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$')) AS j UNION SELECT n+1 FROM r WHERE n<$((RANDOM % 50 + 10))) SELECT * FROM r LIMIT $((RANDOM % 52))";;
+        3) REPLY="SELECT c1,RANK() OVER (ORDER BY VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]'))) AS dr FROM tv1 LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT ST_AsGeoJSON(ST_Intersection(ST_GeomFromText('POLYGON((0 0,$((RANDOM % 50 + 5)) 0,$((RANDOM % 50 + 5)) $((RANDOM % 50 + 5)),0 $((RANDOM % 50 + 5)),0 0))'),ST_Buffer(ST_GeomFromText('POINT($((RANDOM % 50)) $((RANDOM % 50)))'),$((RANDOM % 10 + 1)))))";;
+        5) REPLY="WITH src AS (SELECT * FROM t1 FOR SYSTEM_TIME ALL WHERE c1>$((RANDOM % 2051 - 1025))) DELETE FROM t2 WHERE c1 IN (SELECT c1 FROM src) RETURNING c1,c2";;
+        6) REPLY="SELECT t1.c1,JSON_OBJECT('rank',ROW_NUMBER() OVER (ORDER BY t1.c2),'sum',(SELECT SUM(c2) FROM t2 WHERE c1=t1.c1)) FROM t1 LIMIT $((RANDOM % 52))";;
+        7) REPLY="WITH agg AS (SELECT c1,COUNT(*) AS n,JSON_ARRAYAGG(c2 ORDER BY c2) AS arr FROM t1 GROUP BY c1) SELECT a1.c1,a1.n,JSON_LENGTH(a1.arr) FROM agg a1 ORDER BY a1.n DESC LIMIT $((RANDOM % 52))";;
+        8) REPLY="(SELECT c1 FROM t1 WHERE c2>$((RANDOM % 2051 - 1025)) ORDER BY c1 LIMIT $((RANDOM % 10 + 1))) UNION ALL (SELECT v FROM JSON_TABLE('[$((RANDOM % 1024)),$((RANDOM % 1024))]','\$[*]' COLUMNS(v INT PATH '\$')) AS j) ORDER BY 1";;
+        9) REPLY="INSERT INTO t1(c1,c2) SELECT c1,VEC_DISTANCE_COSINE(c2,VEC_FromText('[1.0,2.0,3.0]')) FROM tv1 ORDER BY 2 LIMIT $((RANDOM % 10 + 1))";;
+       10) REPLY="UPDATE t1 SET c2=(SELECT JSON_LENGTH(c$((RANDOM % 4 + 1))) FROM t2 WHERE c1=t1.c1) WHERE c1 IN (SELECT c1 FROM t3 FOR SYSTEM_TIME ALL WHERE c2>$((RANDOM % 2051 - 1025)))";;
+       11) REPLY="DELETE FROM t1 WHERE (c1,c2) IN (SELECT t2.c1,JSON_LENGTH(t2.c$((RANDOM % 4 + 1))) FROM t2) ORDER BY c1 LIMIT $((RANDOM % 52)) RETURNING c1,c2,c3";;
+       12) REPLY="SELECT c1,COUNT(*) OVER w FROM t1 WINDOW w AS (PARTITION BY c2 ORDER BY c3) UNION SELECT v,1 FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$')) AS j ORDER BY 1 LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] xdomain"; REPLY="Assert: invalid random case selection in xdomain case";;
+      esac;;
+4291) case $(($RANDOM % 12 + 1)) in  # BACKUP STAGE phases + LOAD INDEX/XML + ON DUP qualified VALUES + window inheritance
+        1) REPLY="BACKUP STAGE START";;
+        2) REPLY="BACKUP STAGE FLUSH";;
+        3) REPLY="BACKUP STAGE BLOCK_DDL";;
+        4) REPLY="BACKUP STAGE BLOCK_COMMIT";;
+        5) REPLY="BACKUP STAGE END";;
+        6) REPLY="LOAD INDEX INTO CACHE t1 PARTITION (p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))) IGNORE LEAVES";;
+        7) REPLY="LOAD INDEX INTO CACHE t$((RANDOM % 4 + 1)) IGNORE LEAVES";;
+        8) REPLY="LOAD XML INFILE '/tmp/x$((RANDOM % 100)).xml' INTO TABLE t1 ROWS IDENTIFIED BY '<row>' (c1,c2,c3)";;
+        9) REPLY="LOAD XML LOCAL INFILE '/tmp/x$((RANDOM % 100)).xml' INTO TABLE t1 CHARACTER SET utf8mb4 ROWS IDENTIFIED BY '<r>'";;
+       10) REPLY="INSERT INTO t1 SELECT * FROM t2 ON DUPLICATE KEY UPDATE c2=VALUES(c2)+t1.c2,c3=VALUES(c3)+t1.c3";;
+       11) REPLY="SELECT c1,ROW_NUMBER() OVER w1,RANK() OVER w2 FROM t1 WINDOW w1 AS (PARTITION BY c2),w2 AS (w1 ORDER BY c1) LIMIT $((RANDOM % 52))";;
+       12) REPLY="SELECT c1,SUM(c2) OVER w1,AVG(c2) OVER w2 FROM t1 WINDOW w1 AS (PARTITION BY c3),w2 AS (w1 ORDER BY c1 ROWS BETWEEN $((RANDOM % 5)) PRECEDING AND CURRENT ROW)";;
+        *) >&2 echo "[gen-assert] backup-load-window"; REPLY="Assert: invalid random case selection in backup-load-window case";;
+      esac;;
+4292) case $(($RANDOM % 12 + 1)) in  # NULL-endpoint FOR PORTION OF + subquery endpoints + ALGORITHM=NOCOPY + INSTALL/UNINSTALL SONAME literal + KILL SOFT QUERY ID + SHOW PROFILE ALL
+        1) dategen; REPLY="DELETE FROM t1 FOR PORTION OF app_time FROM NULL TO '$REPLY' WHERE c1>$((RANDOM % 2051 - 1025))";;
+        2) dategen; REPLY="DELETE FROM t1 FOR PORTION OF app_time FROM '$REPLY' TO NULL WHERE c1<$((RANDOM % 2051 - 1025))";;
+        3) REPLY="DELETE FROM t1 FOR PORTION OF app_time FROM (SELECT MIN(c$((RANDOM % 4 + 1))) FROM t2) TO (SELECT MAX(c$((RANDOM % 4 + 1))) FROM t3)";;
+        4) dategen; REPLY="UPDATE t1 FOR PORTION OF app_time FROM NULL TO '$REPLY' SET c2=$((RANDOM % 2051 - 1025))";;
+        5) REPLY="ALTER TABLE t1 ALGORITHM=NOCOPY,FORCE";;
+        6) REPLY="ALTER TABLE t1 ALGORITHM=NOCOPY,LOCK=$(case $((RANDOM % 4)) in 0) echo NONE;; 1) echo SHARED;; 2) echo EXCLUSIVE;; 3) echo DEFAULT;; esac)";;
+        7) REPLY="INSTALL SONAME 'libxx_$((RANDOM % 100)).so'";;
+        8) REPLY="UNINSTALL SONAME 'libxx_$((RANDOM % 100)).so'";;
+        9) REPLY="KILL SOFT QUERY ID $((RANDOM % 1000000 + 1000000))";;
+       10) REPLY="KILL HARD QUERY ID $((RANDOM % 1000000 + 1000000))";;
+       11) REPLY="SHOW PROFILE ALL FOR QUERY $((RANDOM % 20 + 1))";;
+       12) REPLY="SHOW PROFILE CPU,BLOCK IO,SOURCE FOR QUERY $((RANDOM % 20 + 1)) LIMIT $((RANDOM % 10 + 1))";;
+        *) >&2 echo "[gen-assert] null-period-misc"; REPLY="Assert: invalid random case selection in null-period-misc case";;
+      esac;;
+4293) case $(($RANDOM % 14 + 1)) in  # CHECK constraint variations + GENERATED column variants + BEGIN..END substantive + EXPLAIN FORMAT=JSON FOR CONNECTION
+        1) ctype; local _ct=$REPLY; local _lo=$((RANDOM % 2051 - 1025)); local _hi=$((_lo + RANDOM % 1024 + 1)); REPLY="CREATE TABLE t3 (c1 ${_ct} CHECK (c1 BETWEEN ${_lo} AND ${_hi}),c2 INT)";;
+        2) REPLY="CREATE TABLE t3 (c1 INT,c2 INT,CONSTRAINT chk$((RANDOM % 4 + 1)) CHECK (c1+c2>$((RANDOM % 100))))";;
+        3) REPLY="ALTER TABLE t1 ADD CONSTRAINT chk$((RANDOM % 4 + 1)) CHECK (c$((RANDOM % 4 + 1)) IN ($((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100))))";;
+        4) REPLY="CREATE TABLE t3 (c1 INT,c2 INT,CHECK (c1<c2))";;
+        5) REPLY="CREATE TABLE t3 (c1 INT,c2 INT GENERATED ALWAYS AS (c1*$((RANDOM % 10 + 2))) VIRTUAL)";;
+        6) REPLY="CREATE TABLE t3 (c1 INT,c2 INT GENERATED ALWAYS AS (c1+$((RANDOM % 2051 - 1025))) STORED,c3 INT GENERATED ALWAYS AS (c2*2) VIRTUAL)";;
+        7) REPLY="ALTER TABLE t1 ADD COLUMN c$((RANDOM % 4 + 1)) INT AS (c1*$((RANDOM % 10 + 1))) PERSISTENT";;
+        8) REPLY="ALTER TABLE t1 ADD COLUMN c$((RANDOM % 4 + 1)) JSON AS (JSON_OBJECT('v',c1)) VIRTUAL";;
+        9) REPLY="EXPLAIN FORMAT=JSON FOR CONNECTION $((RANDOM % 1000 + 1))";;
+       10) REPLY="EXPLAIN FORMAT=JSON FOR CONNECTION $((RANDOM % 1000 + 1)) /*+ BKA(t1) */";;
+       11) REPLY="OPTIMIZE NO_WRITE_TO_BINLOG TABLE t1 WAIT $((RANDOM % 30 + 1))";;
+       12) REPLY="REPAIR NO_WRITE_TO_BINLOG TABLE t1 WAIT $((RANDOM % 30 + 1)) QUICK";;
+       13) REPLY="ANALYZE NO_WRITE_TO_BINLOG TABLE t1 PERSISTENT FOR ALL";;
+       14) REPLY="CHECKSUM TABLE t1,t2,t3 EXTENDED";;
+        *) >&2 echo "[gen-assert] check-gen-noWAIT"; REPLY="Assert: invalid random case selection in check-gen-noWAIT case";;
+      esac;;
+4294) case $(($RANDOM % 12 + 1)) in  # CREATE OR REPLACE TABLE LIKE + Roles + DEFINER on triggers/procs + CREATE FUNCTION/PROCEDURE single-line + CHANGE MASTER variants
+        1) REPLY="CREATE OR REPLACE TABLE t$((RANDOM % 4 + 1)) LIKE t1";;
+        2) REPLY="CREATE TEMPORARY TABLE IF NOT EXISTS tt$((RANDOM % 4 + 1)) LIKE t1";;
+        3) REPLY="CREATE OR REPLACE ROLE r$((RANDOM % 4 + 1))";;
+        4) REPLY="GRANT r$((RANDOM % 4 + 1)) TO u$((RANDOM % 4 + 1))@localhost WITH ADMIN OPTION";;
+        5) REPLY="GRANT r$((RANDOM % 4 + 1)),r$((RANDOM % 4 + 1)) TO u$((RANDOM % 4 + 1))@localhost";;
+        6) REPLY="SET ROLE r$((RANDOM % 4 + 1))";;
+        7) REPLY="SET DEFAULT ROLE r$((RANDOM % 4 + 1)) FOR u$((RANDOM % 4 + 1))@localhost";;
+        8) REPLY="SET DEFAULT ROLE NONE";;
+        9) REPLY="CREATE FUNCTION IF NOT EXISTS fn$((RANDOM % 4 + 1))() RETURNS INT RETURN $((RANDOM % 2051 - 1025))";;
+       10) REPLY="CREATE PROCEDURE IF NOT EXISTS pp$((RANDOM % 4 + 1))() SELECT $((RANDOM % 2051 - 1025))";;
+       11) REPLY="CHANGE MASTER TO MASTER_USE_GTID=$(case $((RANDOM % 4)) in 0) echo current_pos;; 1) echo slave_pos;; 2) echo no;; 3) echo Slave_Pos;; esac)";;
+       12) REPLY="CHANGE MASTER 'ch$((RANDOM % 4 + 1))' TO MASTER_HOST='localhost',MASTER_PORT=$((RANDOM % 60000 + 3306))";;
+        *) >&2 echo "[gen-assert] role-defun-changemaster"; REPLY="Assert: invalid random case selection in role-defun-changemaster case";;
+      esac;;
+4295) case $(($RANDOM % 12 + 1)) in  # Cross-domain combos + advanced WITH RECURSIVE + ST_Collect window + vector kNN UPDATE + multi-resource WITH
+        1) REPLY="WITH RECURSIVE d(n,dt) AS (SELECT 1,DATE'2020-01-01' UNION SELECT n+1,dt+INTERVAL n DAY FROM d WHERE n<$((RANDOM % 30 + 5))) DELETE FROM t1 WHERE c$((RANDOM % 4 + 1)) IN (SELECT n FROM d)";;
+        2) REPLY="WITH RECURSIVE p(n,g) AS (SELECT 1,ST_GeomFromText('POINT(0 0)') UNION SELECT n+1,ST_PointFromText(CONCAT('POINT(',n,' ',n,')')) FROM p WHERE n<$((RANDOM % 8 + 3))) SELECT ST_AsText(g),ROW_NUMBER() OVER () FROM p";;
+        3) REPLY="UPDATE t1 SET c2=c2+$((RANDOM % 100 + 1)) WHERE c1 IN (SELECT c1 FROM tv1 ORDER BY VEC_DISTANCE_COSINE(c2,VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]')) LIMIT $((RANDOM % 10 + 1)))";;
+        4) seqname; local _s=$REPLY; REPLY="INSERT INTO t1(c1,c2) SELECT NEXT VALUE FOR ${_s},j.v FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$')) AS j";;
+        5) REPLY="WITH RECURSIVE r(n) AS (SELECT 1 UNION SELECT n+1 FROM r WHERE n<$((RANDOM % 50 + 5))) SELECT n,SUM(n) OVER (ORDER BY n ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM r";;
+        6) REPLY="WITH src AS (SELECT c1 FROM t1 FOR SYSTEM_TIME ALL) DELETE FROM t2 WHERE c1 IN (SELECT c1 FROM src) RETURNING c1,c2,c3";;
+        7) REPLY="SELECT t1.c1,(SELECT JSON_OBJECTAGG(c2,c3) FROM t2 WHERE c1=t1.c1) FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) GROUP BY t1.c1 LIMIT $((RANDOM % 52))";;
+        8) REPLY="WITH agg AS (SELECT c1,JSON_ARRAYAGG(c2 ORDER BY c2 LIMIT $((RANDOM % 10 + 1))) AS arr FROM t1 GROUP BY c1) SELECT a.c1,JSON_LENGTH(a.arr),ROW_NUMBER() OVER (ORDER BY JSON_LENGTH(a.arr) DESC) FROM agg a";;
+        9) seqname; local _s=$REPLY; REPLY="UPDATE t1 SET c$((RANDOM % 4 + 1))=NEXT VALUE FOR ${_s} WHERE c1>$((RANDOM % 2051 - 1025)) ORDER BY c1 LIMIT $((RANDOM % 52))";;
+       10) REPLY="DELETE FROM t1 WHERE c1<(SELECT VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[1.0,2.0,3.0]')) FROM tv1 ORDER BY 1 LIMIT 1) RETURNING c1,c2";;
+       11) REPLY="SELECT c1,SUM(c2) OVER (PARTITION BY c1 ORDER BY c3) FROM t1 WHERE c2 IN (SELECT v FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$')) AS j) LIMIT $((RANDOM % 52))";;
+       12) REPLY="SELECT t1.c1,RANK() OVER w FROM t1 JOIN (SELECT * FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$')) AS j) AS jj ON t1.c1=jj.v WINDOW w AS (PARTITION BY t1.c2 ORDER BY t1.c3) LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] xdomain-r3"; REPLY="Assert: invalid random case selection in xdomain-r3 case";;
+      esac;;
+4296) case $(($RANDOM % 12 + 1)) in  # CTE-INSERT (WITH after target) + WITH-prepended DELETE + multi-CTE INSERT + multi-table UPDATE/DELETE chains + sql_mode=ORACLE wrapper
+        1) REPLY="INSERT INTO t2(c1,c2) WITH x AS (SELECT c1,c2 FROM t1 WHERE c1>$((RANDOM % 2051 - 1025))) SELECT * FROM x";;
+        2) REPLY="INSERT INTO t2(c1,c2) WITH a AS (SELECT c1 FROM t1),b AS (SELECT c1+$((RANDOM % 100)) AS c1 FROM a) SELECT c1,c1*$((RANDOM % 10 + 1)) FROM b";;
+        3) REPLY="WITH x AS (SELECT c1 FROM t1 WHERE c2>$((RANDOM % 2051 - 1025))) DELETE FROM t1 WHERE c1 IN (SELECT c1 FROM x)";;
+        4) REPLY="WITH y AS (SELECT c1 FROM t2 WHERE c3<$((RANDOM % 2051 - 1025))) DELETE FROM t1 WHERE c1 IN (SELECT c1 FROM y) ORDER BY c1 LIMIT $((RANDOM % 52))";;
+        5) REPLY="UPDATE t1,t2,t3 SET t1.c2=t2.c2+t3.c2 WHERE t1.c1=t2.c1 AND t2.c1=t3.c1";;
+        6) REPLY="UPDATE t1 LEFT JOIN t2 ON t1.c1=t2.c1 SET t1.c2=COALESCE(t2.c2,$((RANDOM % 2051 - 1025)))";;
+        7) REPLY="DELETE t1,t2 FROM t1 INNER JOIN t2 ON t1.c1=t2.c1 WHERE t2.c2>$((RANDOM % 2051 - 1025))";;
+        8) REPLY="DELETE FROM t1 USING t1 INNER JOIN t2 ON t1.c1=t2.c1 WHERE t2.c2>$((RANDOM % 2051 - 1025))";;
+        9) REPLY="UPDATE t1,t2 SET t1.c2=t2.c2,t1.c3=t2.c3 WHERE t1.c1=t2.c1 AND t2.c2>$((RANDOM % 2051 - 1025))";;
+       10) REPLY="SET STATEMENT sql_mode='ORACLE' FOR SELECT $((RANDOM % 2051 - 1025)) FROM DUAL";;
+       11) REPLY="SET STATEMENT sql_mode='ORACLE',max_statement_time=$((RANDOM % 60)) FOR SELECT c1 FROM t1 LIMIT $((RANDOM % 52))";;
+       12) dategen; REPLY="UPDATE t1 FOR PORTION OF app_time FROM '$REPLY' TO NULL SET c2=$((RANDOM % 2051 - 1025))";;
+        *) >&2 echo "[gen-assert] cte-dml-multi"; REPLY="Assert: invalid random case selection in cte-dml-multi case";;
+      esac;;
+4297) case $(($RANDOM % 14 + 1)) in  # GET DIAGNOSTICS standalone + ALTER USER REQUIRE matrix + DROP USER IF EXISTS + SHOW CREATE USER + SHOW GRANTS
+        1) REPLY="GET DIAGNOSTICS @x=ROW_COUNT,@y=NUMBER";;
+        2) REPLY="GET DIAGNOSTICS CONDITION 1 @x=RETURNED_SQLSTATE,@y=MESSAGE_TEXT,@z=MYSQL_ERRNO";;
+        3) REPLY="GET DIAGNOSTICS CONDITION $((RANDOM % 5 + 1)) @s=RETURNED_SQLSTATE";;
+        4) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost REQUIRE SSL";;
+        5) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost REQUIRE X509";;
+        6) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost REQUIRE NONE";;
+        7) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost REQUIRE SUBJECT '/CN=user$((RANDOM % 100))'";;
+        8) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost REQUIRE CIPHER 'AES128-SHA' AND ISSUER '/CN=ca$((RANDOM % 10))'";;
+        9) REPLY="DROP USER IF EXISTS u$((RANDOM % 4 + 1))@localhost";;
+       10) REPLY="DROP USER IF EXISTS u$((RANDOM % 4 + 1))@localhost,u$((RANDOM % 4 + 1))@'%'";;
+       11) REPLY="SHOW CREATE USER u$((RANDOM % 4 + 1))@localhost";;
+       12) REPLY="SHOW GRANTS FOR CURRENT_USER";;
+       13) REPLY="SHOW GRANTS FOR u$((RANDOM % 4 + 1))@localhost";;
+       14) REPLY="RENAME USER u$((RANDOM % 4 + 1))@localhost TO u$((RANDOM % 4 + 1))_renamed@localhost";;
+        *) >&2 echo "[gen-assert] diag-user-grant"; REPLY="Assert: invalid random case selection in diag-user-grant case";;
+      esac;;
+4298) case $(($RANDOM % 14 + 1)) in  # CREATE EVENT variants + GRANT/REVOKE column-level + privilege chains + SHOW PRIVILEGES
+        1) REPLY="CREATE EVENT IF NOT EXISTS e$((RANDOM % 4 + 1)) ON SCHEDULE EVERY $((RANDOM % 60 + 1)) MINUTE DO SELECT $((RANDOM % 2051 - 1025))";;
+        2) REPLY="CREATE EVENT IF NOT EXISTS e$((RANDOM % 4 + 1)) ON SCHEDULE EVERY $((RANDOM % 24 + 1)) HOUR ON COMPLETION PRESERVE DO SELECT 1";;
+        3) REPLY="CREATE EVENT IF NOT EXISTS e$((RANDOM % 4 + 1)) ON SCHEDULE AT CURRENT_TIMESTAMP+INTERVAL $((RANDOM % 60 + 1)) MINUTE DO SELECT 1";;
+        4) REPLY="CREATE EVENT IF NOT EXISTS e$((RANDOM % 4 + 1)) ON SCHEDULE EVERY $((RANDOM % 24 + 1)) HOUR DISABLE ON SLAVE DO SELECT 1";;
+        5) REPLY="ALTER EVENT e$((RANDOM % 4 + 1)) RENAME TO e$((RANDOM % 4 + 1))_renamed";;
+        6) REPLY="ALTER EVENT e$((RANDOM % 4 + 1)) COMMENT 'fz_$((RANDOM % 100))'";;
+        7) REPLY="DROP EVENT IF EXISTS e$((RANDOM % 4 + 1))";;
+        8) REPLY="GRANT FILE ON *.* TO u$((RANDOM % 4 + 1))@localhost";;
+        9) REPLY="GRANT PROCESS,RELOAD,REPLICATION CLIENT ON *.* TO u$((RANDOM % 4 + 1))@localhost";;
+       10) REPLY="GRANT SELECT(c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1))),UPDATE(c$((RANDOM % 4 + 1))) ON test.t1 TO u$((RANDOM % 4 + 1))@localhost";;
+       11) REPLY="GRANT EXECUTE ON PROCEDURE test.pp$((RANDOM % 4 + 1)) TO u$((RANDOM % 4 + 1))@localhost";;
+       12) REPLY="REVOKE INSERT,UPDATE ON test.t1 FROM u$((RANDOM % 4 + 1))@localhost";;
+       13) REPLY="SHOW PRIVILEGES";;
+       14) REPLY="FLUSH PRIVILEGES";;
+        *) >&2 echo "[gen-assert] event-priv"; REPLY="Assert: invalid random case selection in event-priv case";;
+      esac;;
+4299) case $(($RANDOM % 14 + 1)) in  # ALTER SEQUENCE variants + SAVEPOINT lifecycle + START TRANSACTION/SET TRANSACTION
+        1) seqname; REPLY="ALTER SEQUENCE ${REPLY} CYCLE";;
+        2) seqname; REPLY="ALTER SEQUENCE ${REPLY} NOCACHE";;
+        3) seqname; REPLY="ALTER SEQUENCE ${REPLY} INCREMENT BY $((RANDOM % 100 + 1))";;
+        4) seqname; REPLY="ALTER SEQUENCE ${REPLY} MAXVALUE $((RANDOM % 1000000 + 1000))";;
+        5) seqname; REPLY="ALTER SEQUENCE ${REPLY} MINVALUE -$((RANDOM % 1000 + 1))";;
+        6) seqname; REPLY="ALTER SEQUENCE ${REPLY} NOMINVALUE";;
+        7) seqname; REPLY="ALTER SEQUENCE ${REPLY} NOMAXVALUE";;
+        8) REPLY="SAVEPOINT sp$((RANDOM % 9 + 1))";;
+        9) REPLY="ROLLBACK TO SAVEPOINT sp$((RANDOM % 9 + 1))";;
+       10) REPLY="RELEASE SAVEPOINT sp$((RANDOM % 9 + 1))";;
+       11) REPLY="START TRANSACTION READ ONLY,WITH CONSISTENT SNAPSHOT";;
+       12) REPLY="START TRANSACTION READ WRITE";;
+       13) REPLY="SET TRANSACTION ISOLATION LEVEL SERIALIZABLE,READ ONLY";;
+       14) REPLY="SET TRANSACTION ISOLATION LEVEL READ COMMITTED,READ WRITE";;
+        *) >&2 echo "[gen-assert] seq-savepoint-tx"; REPLY="Assert: invalid random case selection in seq-savepoint-tx case";;
+      esac;;
+4300) case $(($RANDOM % 14 + 1)) in  # ALTER TABLE CONVERT TO + RENAME COLUMN + multi-op ALTER + ROW_FORMAT/PAGE_COMPRESSED matrix
+        1) REPLY="ALTER TABLE t1 CONVERT TO CHARACTER SET utf8mb4";;
+        2) REPLY="ALTER TABLE t1 CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";;
+        3) REPLY="ALTER TABLE t1 DEFAULT CHARACTER SET utf8mb4";;
+        4) REPLY="CREATE DATABASE IF NOT EXISTS db$((RANDOM % 4 + 1)) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci";;
+        5) REPLY="ALTER DATABASE test CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci";;
+        6) REPLY="ALTER TABLE t1 RENAME COLUMN c$((RANDOM % 4 + 1)) TO c$((RANDOM % 4 + 1))_x";;
+        7) REPLY="ALTER TABLE t1 ADD FULLTEXT(c$((RANDOM % 4 + 1)))";;
+        8) REPLY="ALTER TABLE t1 ADD COLUMN c5 INT,ADD COLUMN c6 VARCHAR(10),DROP COLUMN c5,DROP COLUMN c6";;
+        9) REPLY="ALTER TABLE t1 DROP INDEX idx$((RANDOM % 4 + 1)),ADD INDEX idx$((RANDOM % 4 + 1))(c$((RANDOM % 4 + 1)))";;
+       10) REPLY="CREATE TABLE t3 (c1 INT,c2 BLOB) ENGINE=InnoDB ROW_FORMAT=$(case $((RANDOM % 4)) in 0) echo DYNAMIC;; 1) echo COMPRESSED;; 2) echo COMPACT;; 3) echo REDUNDANT;; esac)";;
+       11) REPLY="ALTER TABLE t1 PAGE_COMPRESSED=1 PAGE_COMPRESSION_LEVEL=$((RANDOM % 9 + 1))";;
+       12) REPLY="ALTER TABLE t1 ENCRYPTED=YES ENCRYPTION_KEY_ID=$((RANDOM % 100 + 1))";;
+       13) REPLY="CREATE TABLE t3 (c1 VARCHAR(200) CHARACTER SET 'utf8' COLLATE 'utf8_bin',PRIMARY KEY(c1($((RANDOM % 50 + 1)))),KEY idx1(c1)) ENGINE=InnoDB";;
+       14) REPLY="CREATE TABLE t3 (c1 DATE,c2 DATE DEFAULT (c1))";;
+        *) >&2 echo "[gen-assert] convert-rename-rowfmt"; REPLY="Assert: invalid random case selection in convert-rename-rowfmt case";;
+      esac;;
+4301) case $(($RANDOM % 12 + 1)) in  # SELECT INTO @vars/OUTFILE/DUMPFILE + FLUSH variants
+        1) REPLY="SELECT c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1)) INTO @x,@y FROM t1 LIMIT 1";;
+        2) REPLY="SELECT c$((RANDOM % 4 + 1)) INTO @x FROM t1 ORDER BY c1 LIMIT 1";;
+        3) REPLY="SELECT c1 FROM t1 INTO OUTFILE '/tmp/x_$((RANDOM % 10000)).txt' FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\\n'";;
+        4) REPLY="SELECT c1 FROM t1 LIMIT 1 INTO DUMPFILE '/tmp/y_$((RANDOM % 10000)).dump'";;
+        5) REPLY="FLUSH TABLES t1,t2 WITH READ LOCK";;
+        6) REPLY="FLUSH TABLES t1 FOR EXPORT";;
+        7) REPLY="FLUSH NO_WRITE_TO_BINLOG STATUS";;
+        8) REPLY="FLUSH STATUS,BINARY LOGS,ENGINE LOGS,RELAY LOGS";;
+        9) REPLY="FLUSH LOCAL TABLES";;
+       10) REPLY="UNLOCK TABLES";;
+       11) REPLY="LOCK TABLES t1 READ LOCAL,t2 READ,t3 AS al$((RANDOM % 4 + 1)) READ";;
+       12) REPLY="LOCK TABLES t1 AS al1 WRITE,t2 AS al2 READ,t3 WRITE";;
+        *) >&2 echo "[gen-assert] into-flush-lock"; REPLY="Assert: invalid random case selection in into-flush-lock case";;
+      esac;;
+4302) case $(($RANDOM % 10 + 1)) in  # Cross-domain combos r4: rec CTE+JSON_OBJECTAGG+window, multi-CTE INSERT, scalar CTE in SET, vector+JSON_TABLE join
+        1) REPLY="WITH RECURSIVE n(i) AS (SELECT 1 UNION SELECT i+1 FROM n WHERE i<$((RANDOM % 30 + 5))) SELECT JSON_OBJECTAGG(i,SUM(i) OVER (ORDER BY i)) FROM n";;
+        2) REPLY="INSERT INTO t2(c1,c2) WITH a AS (SELECT c1 FROM t1 WHERE c2>$((RANDOM % 2051 - 1025))),b AS (SELECT c1+$((RANDOM % 100)) AS c1 FROM a) SELECT c1,c1*2 FROM b";;
+        3) REPLY="UPDATE t1 SET c2=(WITH x AS (SELECT MAX(c2) AS m FROM t2) SELECT m FROM x) WHERE c1=$((RANDOM % 2051 - 1025))";;
+        4) REPLY="SELECT j.id,VEC_DISTANCE_EUCLIDEAN(tv1.c2,VEC_FromText('[1.0,2.0,3.0]')) FROM tv1 JOIN JSON_TABLE('[{\"id\":$((RANDOM % 100))},{\"id\":$((RANDOM % 100))}]','\$[*]' COLUMNS(id INT PATH '\$.id')) AS j ON tv1.c1=j.id";;
+        5) seqname; local _s=$REPLY; REPLY="WITH x AS (SELECT NEXT VALUE FOR ${_s} AS n) SELECT n,RANK() OVER (ORDER BY n) FROM x";;
+        6) REPLY="WITH RECURSIVE r(n) AS (SELECT 1 UNION SELECT n+1 FROM r WHERE n<$((RANDOM % 20 + 5))) SELECT n,JSON_OBJECT('seq',n,'sq',n*n) FROM r";;
+        7) REPLY="INSERT INTO t2(c1,c2) WITH src AS (SELECT * FROM t1 FOR SYSTEM_TIME ALL WHERE c1>$((RANDOM % 2051 - 1025))) SELECT c1,c2 FROM src LIMIT $((RANDOM % 52))";;
+        8) REPLY="UPDATE t1 SET c2=(WITH x AS (SELECT JSON_LENGTH(c$((RANDOM % 4 + 1))) AS l FROM t2 WHERE c1=t1.c1) SELECT MAX(l) FROM x) WHERE c1<$((RANDOM % 2051 - 1025))";;
+        9) REPLY="SELECT t1.c1,JSON_OBJECT('rk',ROW_NUMBER() OVER (PARTITION BY t1.c2 ORDER BY t1.c3),'val',t1.c4) FROM t1 LEFT JOIN t2 ON t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
+       10) REPLY="DELETE FROM t1 WHERE c1 IN (WITH x AS (SELECT c1 FROM tv1 ORDER BY VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[1.0,2.0,3.0]')) LIMIT $((RANDOM % 5 + 1))) SELECT c1 FROM x) RETURNING c1,c2";;
+        *) >&2 echo "[gen-assert] xdomain-r4"; REPLY="Assert: invalid random case selection in xdomain-r4 case";;
+      esac;;
+4303) case $(($RANDOM % 16 + 1)) in  # Temporal funcs — TIMESTAMPDIFF/TIMESTAMPADD all units, EXTRACT, MAKEDATE, etc.
+        1) REPLY="SELECT TIMESTAMPDIFF($(case $((RANDOM % 9)) in 0) echo MICROSECOND;; 1) echo SECOND;; 2) echo MINUTE;; 3) echo HOUR;; 4) echo DAY;; 5) echo WEEK;; 6) echo MONTH;; 7) echo QUARTER;; 8) echo YEAR;; esac),NOW(),NOW()-INTERVAL $((RANDOM % 1000 + 1)) SECOND)";;
+        2) REPLY="SELECT TIMESTAMPADD($(case $((RANDOM % 9)) in 0) echo MICROSECOND;; 1) echo SECOND;; 2) echo MINUTE;; 3) echo HOUR;; 4) echo DAY;; 5) echo WEEK;; 6) echo MONTH;; 7) echo QUARTER;; 8) echo YEAR;; esac),$((RANDOM % 100 - 50)),NOW())";;
+        3) REPLY="SELECT ADDDATE(NOW(),INTERVAL $((RANDOM % 1000 - 500)) DAY)";;
+        4) REPLY="SELECT ADDDATE('2024-01-01',$((RANDOM % 365 - 30)))";;
+        5) REPLY="SELECT SUBDATE(NOW(),INTERVAL $((RANDOM % 100 + 1)) HOUR)";;
+        6) REPLY="SELECT DATEDIFF(NOW(),DATE_SUB(NOW(),INTERVAL $((RANDOM % 100 + 1)) DAY))";;
+        7) REPLY="SELECT DAYNAME(NOW()),MONTHNAME(NOW()),WEEKDAY(NOW()),DAYOFYEAR(NOW()),DAYOFWEEK(NOW())";;
+        8) REPLY="SELECT QUARTER(NOW()),WEEK(NOW(),$((RANDOM % 8))),WEEKOFYEAR(NOW()),YEARWEEK(NOW(),$((RANDOM % 8)))";;
+        9) REPLY="SELECT EXTRACT($(case $((RANDOM % 6)) in 0) echo MICROSECOND;; 1) echo SECOND;; 2) echo MINUTE;; 3) echo HOUR;; 4) echo YEAR_MONTH;; 5) echo DAY_HOUR;; esac) FROM NOW())";;
+       10) REPLY="SELECT TIMEDIFF(NOW(),NOW()-INTERVAL $((RANDOM % 1000 + 1)) SECOND)";;
+       11) REPLY="SELECT FROM_UNIXTIME($((RANDOM % 2000000000)))";;
+       12) REPLY="SELECT FROM_UNIXTIME($((RANDOM % 2000000000)),'%Y-%m-%d %H:%i:%s')";;
+       13) REPLY="SELECT CONVERT_TZ(NOW(),'+00:00','+$((RANDOM % 12)):00')";;
+       14) REPLY="SELECT MAKEDATE(2024,$((RANDOM % 365 + 1))),MAKETIME($((RANDOM % 24)),$((RANDOM % 60)),$((RANDOM % 60)))";;
+       15) REPLY="SELECT TO_DAYS(NOW()),FROM_DAYS($((RANDOM % 800000 + 700000))),LAST_DAY(NOW()),TO_SECONDS(NOW())";;
+       16) REPLY="SELECT SEC_TO_TIME($((RANDOM % 100000))),TIME_TO_SEC('$((RANDOM % 24)):$((RANDOM % 60)):$((RANDOM % 60))')";;
+        *) >&2 echo "[gen-assert] temporal"; REPLY="Assert: invalid random case selection in temporal case";;
+      esac;;
+4304) case $(($RANDOM % 14 + 1)) in  # Encoding/encryption — AES_ENCRYPT/DECRYPT, COMPRESS, MD5/SHA, BASE64, INET_*
+        1) REPLY="SELECT HEX(AES_ENCRYPT('text$((RANDOM % 1000))','key$((RANDOM % 1000))'))";;
+        2) REPLY="SELECT AES_DECRYPT(AES_ENCRYPT('plain$((RANDOM % 1000))','key1'),'key1')";;
+        3) REPLY="SELECT LENGTH(COMPRESS(REPEAT('a',$((RANDOM % 1024 + 1)))))";;
+        4) REPLY="SELECT UNCOMPRESS(COMPRESS('hello $((RANDOM % 1000))'))";;
+        5) REPLY="SELECT MD5('test_$((RANDOM % 1000))_$((RANDOM % 1000))')";;
+        6) REPLY="SELECT SHA1('test_$((RANDOM % 1000))')";;
+        7) REPLY="SELECT SHA2('test_$((RANDOM % 1000))',$(case $((RANDOM % 4)) in 0) echo 224;; 1) echo 256;; 2) echo 384;; 3) echo 512;; esac))";;
+        8) REPLY="SELECT FORMAT($((RANDOM % 1000000)).$((RANDOM % 1000)),$((RANDOM % 6)))";;
+        9) REPLY="SELECT FORMAT($((RANDOM % 1000000)).$((RANDOM % 1000)),$((RANDOM % 6)),'de_DE')";;
+       10) REPLY="SELECT TO_BASE64('input_$((RANDOM % 1000))')";;
+       11) REPLY="SELECT FROM_BASE64(TO_BASE64('roundtrip_$((RANDOM % 1000))'))";;
+       12) REPLY="SELECT INET_ATON('$((RANDOM % 255)).$((RANDOM % 255)).$((RANDOM % 255)).$((RANDOM % 255))'),INET_NTOA($((RANDOM % 4000000000)))";;
+       13) REPLY="SELECT HEX(INET6_ATON('::$((RANDOM % 65535))')),INET6_NTOA(INET6_ATON('::1'))";;
+       14) REPLY="SELECT IS_IPV4('$((RANDOM % 255)).$((RANDOM % 255)).$((RANDOM % 255)).$((RANDOM % 255))'),IS_IPV6('::1'),IS_IPV4_COMPAT(INET6_ATON('::')),IS_IPV4_MAPPED(INET6_ATON('::ffff:1.2.3.4'))";;
+        *) >&2 echo "[gen-assert] enc-encry"; REPLY="Assert: invalid random case selection in enc-encry case";;
+      esac;;
+4305) case $(($RANDOM % 8 + 1)) in  # Locking primitives — GET_LOCK / IS_FREE_LOCK / IS_USED_LOCK / RELEASE_LOCK / SLEEP
+        1) REPLY="SELECT GET_LOCK('lk$((RANDOM % 8 + 1))',$((RANDOM % 5)))";;
+        2) REPLY="SELECT IS_FREE_LOCK('lk$((RANDOM % 8 + 1))')";;
+        3) REPLY="SELECT IS_USED_LOCK('lk$((RANDOM % 8 + 1))')";;
+        4) REPLY="SELECT RELEASE_LOCK('lk$((RANDOM % 8 + 1))')";;
+        5) REPLY="SELECT RELEASE_ALL_LOCKS()";;
+        6) REPLY="SELECT SLEEP($((RANDOM % 2)))";;
+        7) REPLY="DO GET_LOCK('lk$((RANDOM % 8 + 1))',$((RANDOM % 3)))";;
+        8) REPLY="DO RELEASE_LOCK('lk$((RANDOM % 8 + 1))')";;
+        *) >&2 echo "[gen-assert] locking"; REPLY="Assert: invalid random case selection in locking case";;
+      esac;;
+4306) case $(($RANDOM % 16 + 1)) in  # JSON gaps — VALID/TYPE/DEPTH/LENGTH(j,path)/QUOTE/UNQUOTE/SET/INSERT/REMOVE/CONTAINS/MERGE/VALUE
+        1) REPLY="SELECT JSON_VALID('{\"a\":$((RANDOM % 2051 - 1025))}'),JSON_VALID('not json')";;
+        2) REPLY="SELECT JSON_TYPE('{\"a\":1}'),JSON_TYPE('[1,2,3]'),JSON_TYPE('null')";;
+        3) REPLY="SELECT JSON_DEPTH('{\"a\":{\"b\":{\"c\":$((RANDOM % 100))}}}')";;
+        4) REPLY="SELECT JSON_LENGTH('[1,2,3,4,5]','\$')";;
+        5) REPLY="SELECT JSON_QUOTE('text $((RANDOM % 1000))'),JSON_UNQUOTE('\"unquoted\"')";;
+        6) REPLY="SELECT JSON_REPLACE('{\"a\":1,\"b\":2}','\$.a',$((RANDOM % 1000)))";;
+        7) REPLY="SELECT JSON_SET('{\"a\":1}','\$.b',$((RANDOM % 1000)))";;
+        8) REPLY="SELECT JSON_INSERT('{\"a\":1}','\$.c',$((RANDOM % 1000)))";;
+        9) REPLY="SELECT JSON_REMOVE('{\"a\":1,\"b\":2,\"c\":3}','\$.b')";;
+       10) REPLY="SELECT JSON_CONTAINS('[1,2,3,4]','$((RANDOM % 5))','\$')";;
+       11) REPLY="SELECT JSON_CONTAINS_PATH('{\"a\":1,\"b\":2}','one','\$.a','\$.c')";;
+       12) REPLY="SELECT JSON_MERGE_PATCH('{\"a\":1}','{\"b\":2}'),JSON_MERGE_PRESERVE('{\"a\":1}','{\"a\":2}')";;
+       13) REPLY="SELECT JSON_VALUE('{\"a\":$((RANDOM % 1000))}','\$.a')";;
+       14) REPLY="SELECT JSON_SEARCH('[\"a\",\"b\",\"c\"]','one','b')";;
+       15) REPLY="SELECT JSON_ARRAY_INSERT('[1,3]','\$[1]',$((RANDOM % 100)))";;
+       16) REPLY="SELECT JSON_ARRAYAGG(c$((RANDOM % 4 + 1)) ORDER BY c1) FROM t1 LIMIT 1";;
+        *) >&2 echo "[gen-assert] json-gap"; REPLY="Assert: invalid random case selection in json-gap case";;
+      esac;;
+4307) case $(($RANDOM % 8 + 1)) in  # Subquery comparison ops — ALL/ANY/SOME / NOT IN / row-tuple
+        1) REPLY="SELECT * FROM t1 WHERE c1>ALL(SELECT c1 FROM t2 WHERE c2>$((RANDOM % 2051 - 1025))) LIMIT $((RANDOM % 52))";;
+        2) REPLY="SELECT * FROM t1 WHERE c1<ALL(SELECT c1 FROM t2) LIMIT $((RANDOM % 52))";;
+        3) REPLY="SELECT * FROM t1 WHERE c1=ANY(SELECT c1 FROM t2 WHERE c3<$((RANDOM % 2051 - 1025))) LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT * FROM t1 WHERE c2>SOME(SELECT c2 FROM t3) LIMIT $((RANDOM % 52))";;
+        5) REPLY="SELECT * FROM t1 WHERE (c1,c2) NOT IN (SELECT c1,c2 FROM t2) LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT * FROM t1 WHERE c1<>ANY(SELECT c1 FROM t2 WHERE c2 IS NOT NULL) LIMIT $((RANDOM % 52))";;
+        7) REPLY="SELECT * FROM t1 WHERE EXISTS(SELECT 1 FROM t2 WHERE t2.c1=t1.c1 AND t2.c2 IN (SELECT c2 FROM t3)) LIMIT $((RANDOM % 52))";;
+        8) REPLY="SELECT * FROM t1 WHERE NOT EXISTS(SELECT 1 FROM t2 JOIN t3 ON t2.c1=t3.c1 WHERE t2.c1=t1.c1) LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] subq-cmp"; REPLY="Assert: invalid random case selection in subq-cmp case";;
+      esac;;
+4308) case $(($RANDOM % 10 + 1)) in  # Conditional expressions — NULLIF/GREATEST/LEAST/IFNULL/IF/CASE/<=>/COALESCE
+        1) REPLY="SELECT NULLIF(c$((RANDOM % 4 + 1)),$((RANDOM % 2051 - 1025))) FROM t1 LIMIT $((RANDOM % 52))";;
+        2) REPLY="SELECT GREATEST(c1,c2,c3,c4) FROM t1 LIMIT $((RANDOM % 52))";;
+        3) REPLY="SELECT LEAST(c1,c2,c3,c4,$((RANDOM % 2051 - 1025))) FROM t1 LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT IFNULL(c$((RANDOM % 4 + 1)),$((RANDOM % 2051 - 1025))),IFNULL(NULL,'fallback') FROM t1 LIMIT $((RANDOM % 52))";;
+        5) REPLY="SELECT IF(c$((RANDOM % 4 + 1))>$((RANDOM % 2051 - 1025)),'big','small') FROM t1 LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT COALESCE(c1,c2,c3,c4,$((RANDOM % 2051 - 1025))) FROM t1 LIMIT $((RANDOM % 52))";;
+        7) REPLY="SELECT CASE WHEN c1<$((RANDOM % 2051 - 1025)) THEN 'A' WHEN c1<$((RANDOM % 2051 - 1025)) THEN 'B' WHEN c1<$((RANDOM % 2051 - 1025)) THEN 'C' ELSE 'D' END FROM t1 LIMIT $((RANDOM % 52))";;
+        8) REPLY="SELECT CASE c$((RANDOM % 4 + 1)) WHEN $((RANDOM % 2051 - 1025)) THEN 1 WHEN $((RANDOM % 2051 - 1025)) THEN 2 ELSE 0 END FROM t1 LIMIT $((RANDOM % 52))";;
+        9) REPLY="SELECT (c1<=>NULL),(c2<=>c3),(NULL<=>NULL) FROM t1 LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT GREATEST($((RANDOM % 2051 - 1025)),IFNULL(c1,$((RANDOM % 2051 - 1025))),COALESCE(c2,$((RANDOM % 2051 - 1025)))) FROM t1 LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] cond-expr"; REPLY="Assert: invalid random case selection in cond-expr case";;
+      esac;;
+4309) case $(($RANDOM % 12 + 1)) in  # Optimizer trace + I_S views
+        1) REPLY="SET SESSION optimizer_trace='enabled=on'";;
+        2) REPLY="SET SESSION optimizer_trace='enabled=on,one_line=on'";;
+        3) REPLY="SET SESSION optimizer_trace='enabled=off'";;
+        4) REPLY="SET SESSION optimizer_trace_max_mem_size=$((RANDOM % 1048576 + 1))";;
+        5) REPLY="SELECT * FROM INFORMATION_SCHEMA.OPTIMIZER_TRACE";;
+        6) REPLY="SELECT TRACE FROM INFORMATION_SCHEMA.OPTIMIZER_TRACE LIMIT $((RANDOM % 5 + 1))";;
+        7) REPLY="SELECT * FROM INFORMATION_SCHEMA.COLUMN_PRIVILEGES LIMIT $((RANDOM % 52))";;
+        8) REPLY="SELECT * FROM INFORMATION_SCHEMA.EVENTS LIMIT $((RANDOM % 52))";;
+        9) REPLY="SELECT * FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_TYPE='PROCEDURE' LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT * FROM INFORMATION_SCHEMA.TRIGGERS LIMIT $((RANDOM % 52))";;
+       11) REPLY="SELECT * FROM INFORMATION_SCHEMA.CHECK_CONSTRAINTS LIMIT $((RANDOM % 52))";;
+       12) REPLY="SELECT * FROM INFORMATION_SCHEMA.PERIODS LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] opt-trace-IS"; REPLY="Assert: invalid random case selection in opt-trace-IS case";;
+      esac;;
+4310) case $(($RANDOM % 12 + 1)) in  # Window function edges — CUME_DIST, PERCENT_RANK, NTILE, FIRST_VALUE, LAST_VALUE, NTH_VALUE, MEDIAN, PERCENTILE_CONT/DISC
+        1) REPLY="SELECT c1,CUME_DIST() OVER (ORDER BY c1) FROM t1 LIMIT $((RANDOM % 52))";;
+        2) REPLY="SELECT c1,PERCENT_RANK() OVER (PARTITION BY c2 ORDER BY c1) FROM t1 LIMIT $((RANDOM % 52))";;
+        3) REPLY="SELECT c1,NTILE($((RANDOM % 8 + 2))) OVER (ORDER BY c1) FROM t1 LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT c1,FIRST_VALUE(c2) OVER w,LAST_VALUE(c2) OVER w FROM t1 WINDOW w AS (PARTITION BY c3 ORDER BY c1 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) LIMIT $((RANDOM % 52))";;
+        5) REPLY="SELECT c1,NTH_VALUE(c2,$((RANDOM % 5 + 1))) OVER (PARTITION BY c3 ORDER BY c1) FROM t1 LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT c1,LEAD(c2) OVER (PARTITION BY c3 ORDER BY c1) FROM t1 LIMIT $((RANDOM % 52))";;
+        7) REPLY="SELECT c1,LEAD(c2,$((RANDOM % 5 + 1))) OVER (PARTITION BY c3 ORDER BY c1) FROM t1 LIMIT $((RANDOM % 52))";;
+        8) REPLY="SELECT c1,MEDIAN(c2) OVER (PARTITION BY c3) FROM t1 LIMIT $((RANDOM % 52))";;
+        9) REPLY="SELECT c1,PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c2) OVER (PARTITION BY c3) FROM t1 LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT c1,PERCENTILE_DISC(0.$((RANDOM % 100))) WITHIN GROUP (ORDER BY c2) OVER (PARTITION BY c3) FROM t1 LIMIT $((RANDOM % 52))";;
+       11) REPLY="SELECT c1,BIT_AND(c2) OVER (ORDER BY c1),BIT_OR(c2) OVER (ORDER BY c1),BIT_XOR(c2) OVER (ORDER BY c1) FROM t1 LIMIT $((RANDOM % 52))";;
+       12) REPLY="SELECT GROUP_CONCAT(DISTINCT c$((RANDOM % 4 + 1)) ORDER BY c1 SEPARATOR '|' LIMIT $((RANDOM % 10 + 1))) FROM t1";;
+        *) >&2 echo "[gen-assert] win-edge"; REPLY="Assert: invalid random case selection in win-edge case";;
+      esac;;
+4311) case $(($RANDOM % 16 + 1)) in  # SHOW gaps — TABLES IN db, FULL COLUMNS, INDEX FROM, ENGINE InnoDB STATUS, PLUGINS, etc.
+        1) REPLY="SHOW TABLES IN test";;
+        2) REPLY="SHOW FULL TABLES IN test";;
+        3) REPLY="SHOW FULL COLUMNS FROM t$((RANDOM % 4 + 1)) WHERE Field LIKE 'c%'";;
+        4) REPLY="SHOW INDEX FROM t$((RANDOM % 4 + 1)) IN test";;
+        5) REPLY="SHOW TABLE STATUS LIKE 't%'";;
+        6) REPLY="SHOW CHARACTER SET LIKE 'utf%'";;
+        7) REPLY="SHOW COLLATION LIKE 'utf8%'";;
+        8) REPLY="SHOW ENGINE InnoDB $(case $((RANDOM % 2)) in 0) echo STATUS;; 1) echo MUTEX;; esac)";;
+        9) REPLY="SHOW STATUS LIKE 'Innodb_$((RANDOM % 100))%'";;
+       10) REPLY="SHOW VARIABLES LIKE 'innodb_%'";;
+       11) REPLY="SHOW PLUGINS";;
+       12) REPLY="SHOW STORAGE ENGINES";;
+       13) REPLY="SHOW MASTER STATUS";;
+       14) REPLY="SHOW BINARY LOGS";;
+       15) REPLY="SHOW BINLOG EVENTS LIMIT $((RANDOM % 10 + 1))";;
+       16) REPLY="SHOW DATABASES LIKE '$(case $((RANDOM % 3)) in 0) echo t;; 1) echo test;; 2) echo db;; esac)%'";;
+        *) >&2 echo "[gen-assert] show-gap"; REPLY="Assert: invalid random case selection in show-gap case";;
+      esac;;
+4312) case $(($RANDOM % 8 + 1)) in  # Roles/security — GRANT ALL/PROXY, REVOKE ALL, IDENTIFIED VIA, DROP ROLE
+        1) REPLY="GRANT ALL PRIVILEGES ON test.* TO u$((RANDOM % 4 + 1))@localhost";;
+        2) REPLY="GRANT ALL PRIVILEGES ON *.* TO u$((RANDOM % 4 + 1))@localhost WITH GRANT OPTION";;
+        3) REPLY="REVOKE ALL PRIVILEGES,GRANT OPTION FROM u$((RANDOM % 4 + 1))@localhost";;
+        4) REPLY="CREATE USER IF NOT EXISTS u$((RANDOM % 4 + 1))@localhost IDENTIFIED VIA mysql_native_password";;
+        5) REPLY="GRANT PROXY ON u$((RANDOM % 4 + 1))@localhost TO u$((RANDOM % 4 + 1))@'%'";;
+        6) REPLY="DROP ROLE IF EXISTS r$((RANDOM % 4 + 1))";;
+        7) REPLY="DROP ROLE IF EXISTS r$((RANDOM % 4 + 1)),r$((RANDOM % 4 + 1))";;
+        8) REPLY="REVOKE PROXY ON u$((RANDOM % 4 + 1))@localhost FROM u$((RANDOM % 4 + 1))@'%'";;
+        *) >&2 echo "[gen-assert] roles-sec"; REPLY="Assert: invalid random case selection in roles-sec case";;
+      esac;;
+4313) case $(($RANDOM % 8 + 1)) in  # Vector + sequence helpers — VEC_FromText empty/binary, SETVAL/LASTVAL forms
+        1) REPLY="SELECT VEC_FromText('[1,2,3,4]')=VEC_FromText('[1,2,3,4]')";;
+        2) REPLY="SELECT HEX(VEC_FromText('[$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100))]'))";;
+        3) REPLY="SELECT LENGTH(VEC_FromText('[1,2,3,4]'))";;
+        4) seqname; REPLY="SELECT SETVAL(${REPLY},$((RANDOM % 10000 + 1)))";;
+        5) seqname; REPLY="SELECT SETVAL(${REPLY},$((RANDOM % 10000 + 1)),FALSE)";;
+        6) seqname; REPLY="SELECT SETVAL(${REPLY},$((RANDOM % 100000 + 1000)),TRUE,$((RANDOM % 100 + 1)))";;
+        7) seqname; REPLY="SELECT LASTVAL(${REPLY})";;
+        8) seqname; REPLY="SELECT NEXTVAL(${REPLY}),PREVIOUS VALUE FOR ${REPLY}";;
+        *) >&2 echo "[gen-assert] vec-seq"; REPLY="Assert: invalid random case selection in vec-seq case";;
+      esac;;
+4314) case $(($RANDOM % 10 + 1)) in  # Multi-row DML + recursive CTE shapes (Fibonacci, mutual)
+        1) REPLY="INSERT INTO t1(c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) ON DUPLICATE KEY UPDATE c2=GREATEST(c2,VALUES(c2))";;
+        2) REPLY="INSERT INTO t1(c1,c2) SELECT c1,c2 FROM t2 WHERE NOT EXISTS(SELECT 1 FROM t1 WHERE t1.c1=t2.c1) LIMIT $((RANDOM % 52))";;
+        3) REPLY="WITH RECURSIVE r(a,b) AS (SELECT 1,1 UNION ALL SELECT b,a+b FROM r WHERE b<$((RANDOM % 200 + 50))) SELECT a,b FROM r LIMIT $((RANDOM % 30 + 5))";;
+        4) REPLY="WITH RECURSIVE x(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM x WHERE n<$((RANDOM % 20 + 5))),y(n) AS (SELECT n*2 FROM x WHERE n<$((RANDOM % 10 + 3))) SELECT x.n,y.n FROM x,y";;
+        5) REPLY="UPDATE t1 SET c2=c2+$((RANDOM % 100 + 1)) WHERE c1 IN (SELECT c1 FROM t2 WHERE NOT EXISTS(SELECT 1 FROM t3 WHERE t3.c1=t2.c1))";;
+        6) REPLY="DELETE FROM t1 WHERE NOT EXISTS(SELECT 1 FROM t2 WHERE t2.c1=t1.c1) ORDER BY c1 LIMIT $((RANDOM % 52))";;
+        7) REPLY="WITH RECURSIVE depth_search(node,d) AS (SELECT c1,0 FROM t1 WHERE c1=$((RANDOM % 2051 - 1025)) UNION SELECT t2.c1,d+1 FROM depth_search,t2 WHERE t2.c2=depth_search.node AND d<$((RANDOM % 8 + 2))) SELECT * FROM depth_search LIMIT $((RANDOM % 52))";;
+        8) REPLY="INSERT INTO t1(c1,c2,c3) VALUES ($((RANDOM % 2051 - 1025)),GREATEST($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),LEAST($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))))";;
+        9) REPLY="REPLACE INTO t1 SELECT c1,COALESCE(c2,$((RANDOM % 100))),IFNULL(c3,$((RANDOM % 100))),NULLIF(c4,$((RANDOM % 100))) FROM t2";;
+       10) REPLY="WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n*2 FROM r WHERE n<$((RANDOM % 1024 + 64))) SELECT n,LOG2(n),BIN(n) FROM r";;
+        *) >&2 echo "[gen-assert] multirow-rec"; REPLY="Assert: invalid random case selection in multirow-rec case";;
+      esac;;
+4315) case $(($RANDOM % 14 + 1)) in  # Misc table options + XA + transaction modes + admin LOCAL/CHANGED/USE_FRM + extra string funcs
+        1) REPLY="CREATE TABLE IF NOT EXISTS tu$((RANDOM % 4 + 1)) (c1 UUID DEFAULT UUID(),c2 INT)";;
+        2) REPLY="CREATE TABLE IF NOT EXISTS tn$((RANDOM % 4 + 1)) (c1 INET4,c2 INET6,c3 BIT(8))";;
+        3) REPLY="ALTER TABLE t1 ENGINE=Aria PAGE_CHECKSUM=$((RANDOM % 2))";;
+        4) REPLY="XA START 'xid$((RANDOM % 100))','bq$((RANDOM % 100))'";;
+        5) REPLY="XA RECOVER FORMAT='SQL'";;
+        6) REPLY="START TRANSACTION WITH CONSISTENT SNAPSHOT";;
+        7) REPLY="COMMIT WORK AND CHAIN";;
+        8) REPLY="ROLLBACK WORK AND NO CHAIN NO RELEASE";;
+        9) REPLY="CHECK TABLE t1 FOR UPGRADE";;
+       10) REPLY="REPAIR LOCAL TABLE t1 USE_FRM";;
+       11) REPLY="OPTIMIZE LOCAL TABLE t1,t2";;
+       12) REPLY="SELECT CONCAT_WS('|',c1,c2,c3,c4) FROM t1 LIMIT $((RANDOM % 52))";;
+       13) REPLY="SELECT INSTR('haystack','$((RANDOM % 1000))'),LOCATE('a',c$((RANDOM % 4 + 1))),POSITION('x' IN c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+       14) REPLY="SELECT LPAD(c$((RANDOM % 4 + 1)),$((RANDOM % 20 + 5)),'0'),RPAD(c$((RANDOM % 4 + 1)),$((RANDOM % 20 + 5)),'-'),REVERSE(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] misc-r5"; REPLY="Assert: invalid random case selection in misc-r5 case";;
+      esac;;
+4316) case $(($RANDOM % 10 + 1)) in  # Cross-domain composites r5 — CTE+window+JSON_OBJECTAGG+JOIN, hint+PARTITION+ROLLUP, recursive+sequence-engine, etc.
+        1) REPLY="WITH cte AS (SELECT c1,JSON_OBJECTAGG(c2,c3) AS j FROM t1 GROUP BY c1) SELECT cte.c1,JSON_EXTRACT(cte.j,'\$.*'),ROW_NUMBER() OVER (ORDER BY cte.c1) FROM cte JOIN t2 ON t2.c1=cte.c1 ORDER BY cte.c1 LIMIT $((RANDOM % 52))";;
+        2) REPLY="SELECT /*+ MAX_EXECUTION_TIME(1000) */ t1.c1,JSON_ARRAYAGG(t2.c2 ORDER BY t2.c1) FROM t1 PARTITION (p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))) JOIN t2 ON t1.c1=t2.c1 GROUP BY t1.c1 WITH ROLLUP";;
+        3) REPLY="WITH RECURSIVE rec(a,b) AS (SELECT 1,1 UNION ALL SELECT b,a+b FROM rec WHERE b<$((RANDOM % 100 + 50))) SELECT rec.a,rec.b,ROW_NUMBER() OVER (ORDER BY rec.b) FROM rec WHERE rec.a IN (SELECT seq FROM seq_1_to_$((RANDOM % 50 + 10))) LIMIT $((RANDOM % 30 + 5))";;
+        4) REPLY="UPDATE t1 JOIN (SELECT c1,JSON_OBJECTAGG(c2,c3) AS j FROM t2 GROUP BY c1) AS d ON t1.c1=d.c1 SET t1.c4=JSON_UNQUOTE(JSON_EXTRACT(d.j,'\$.*[0]'))";;
+        5) REPLY="SELECT c1,COUNT(*) OVER w,JSON_VALUE((SELECT JSON_OBJECT('m',MAX(c2),'n',MIN(c2)) FROM t2),'\$.m') FROM t1 WINDOW w AS (PARTITION BY c2 ORDER BY c3 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) ORDER BY c1 LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT t1.c1,ST_AsText(ST_Centroid(ST_PolyFromText('POLYGON((0 0,1 0,1 1,0 1,0 0))'))),CASE WHEN t1.c2>(SELECT AVG(c2) FROM t2) THEN 'high' ELSE 'low' END FROM t1 WHERE EXISTS(SELECT 1 FROM t3 WHERE t3.c1=t1.c1) LIMIT $((RANDOM % 52))";;
+        7) REPLY="SELECT c1,MEDIAN(c2) OVER (PARTITION BY c1),EXTRACT(YEAR_MONTH FROM NOW()),JSON_OBJECT('rk',RANK() OVER (ORDER BY c2)) FROM t1 LIMIT $((RANDOM % 30 + 5))";;
+        8) REPLY="SELECT j.id,VEC_DISTANCE_EUCLIDEAN(tv1.c2,VEC_FromText('[1.0,2.0,3.0,4.0]')) AS d,RANK() OVER (ORDER BY j.id) FROM tv1 JOIN JSON_TABLE('[{\"id\":$((RANDOM % 100))},{\"id\":$((RANDOM % 100))}]','\$[*]' COLUMNS(id INT PATH '\$.id')) AS j ON tv1.c1=j.id ORDER BY d LIMIT $((RANDOM % 30 + 5))";;
+        9) REPLY="WITH wins AS (SELECT c1,RANK() OVER (PARTITION BY c2 ORDER BY c3) AS rk FROM t1) SELECT w.c1,w.rk,JSON_OBJECT('rank',w.rk,'cnt',(SELECT COUNT(*) FROM t2 WHERE c1=w.c1)) FROM wins w WHERE w.rk<=$((RANDOM % 5 + 1)) LIMIT $((RANDOM % 52))";;
+       10) REPLY="DELETE FROM t1 WHERE c1 IN (SELECT c1 FROM (SELECT c1,ROW_NUMBER() OVER (PARTITION BY c2 ORDER BY c3) AS rn FROM t1) ranked WHERE ranked.rn>$((RANDOM % 5 + 1))) RETURNING c1,c2";;
+        *) >&2 echo "[gen-assert] xdomain-r5"; REPLY="Assert: invalid random case selection in xdomain-r5 case";;
+      esac;;
+4317) case $(($RANDOM % 14 + 1)) in  # SQL/PSM-Standard idioms — ROW comparison, LIKE ESCAPE, POSITION, SUBSTRING FROM..FOR, TRIM modes, EXTRACT, NORMALIZE, FROM DUAL
+        1) REPLY="SELECT * FROM t1 WHERE (c1,c2)=ROW($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) LIMIT $((RANDOM % 52))";;
+        2) REPLY="SELECT * FROM t1 WHERE (c1,c2,c3)>ROW($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))) LIMIT $((RANDOM % 52))";;
+        3) REPLY="SELECT * FROM t1 WHERE c$((RANDOM % 4 + 1)) LIKE '%abc!_%' ESCAPE '!' LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT POSITION('abc' IN c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+        5) REPLY="SELECT LOCATE('abc',c$((RANDOM % 4 + 1)),$((RANDOM % 10 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT SUBSTRING('abcdefgh' FROM $((RANDOM % 5 + 1)) FOR $((RANDOM % 4 + 1)))";;
+        7) REPLY="SELECT TRIM(BOTH 'x' FROM 'xxhelloxx'),TRIM(LEADING ' ' FROM '  abc'),TRIM(TRAILING '!' FROM 'hi!!!')";;
+        8) REPLY="SELECT EXTRACT(QUARTER FROM NOW()),EXTRACT(WEEK FROM NOW()),EXTRACT(MICROSECOND FROM NOW(6))";;
+        9) REPLY="SELECT CAST('1.5' AS DECIMAL($((RANDOM % 30 + 5)),$((RANDOM % 5))))";;
+       10) REPLY="SELECT CAST('text' AS CHAR(50) CHARACTER SET utf8mb4)";;
+       11) REPLY="SELECT * FROM DUAL";;
+       12) REPLY="SELECT $((RANDOM % 2051 - 1025)) FROM DUAL WHERE 1=1";;
+       13) REPLY="SELECT * FROM t1 WHERE (c1,c2,c3) IN (($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))))";;
+       14) REPLY="SELECT _utf8mb4'hello' COLLATE utf8mb4_bin,_binary'hi',_latin1'x'";;
+        *) >&2 echo "[gen-assert] sql-std-r6"; REPLY="Assert: invalid random case selection in sql-std-r6 case";;
+      esac;;
+4318) case $(($RANDOM % 14 + 1)) in  # ALTER TABLE shape gaps — NOWAIT/WAIT, ONLINE, MODIFY FIRST/AFTER, INVISIBLE, DESC index, multi-rename, ALGORITHM=INSTANT, DISABLE/ENABLE KEYS, ORDER BY
+        1) REPLY="ALTER TABLE t1 NOWAIT ADD COLUMN cw INT";;
+        2) REPLY="ALTER TABLE t1 WAIT $((RANDOM % 10 + 1)) ADD COLUMN cw INT";;
+        3) REPLY="ALTER ONLINE TABLE t1 ADD COLUMN cw INT";;
+        4) REPLY="ALTER TABLE t1 FORCE,ALGORITHM=INPLACE,LOCK=SHARED";;
+        5) REPLY="ALTER TABLE t1 ADD INDEX idx$((RANDOM % 4 + 1))(c$((RANDOM % 4 + 1))) INVISIBLE";;
+        6) REPLY="ALTER TABLE t1 MODIFY c$((RANDOM % 4 + 1)) INT FIRST";;
+        7) REPLY="ALTER TABLE t1 MODIFY c$((RANDOM % 4 + 1)) INT AFTER c$((RANDOM % 4 + 1))";;
+        8) REPLY="ALTER TABLE t1 ADD UNIQUE KEY idx$((RANDOM % 4 + 1))(c$((RANDOM % 4 + 1)) DESC)";;
+        9) REPLY="ALTER TABLE t1 DROP PRIMARY KEY,ADD PRIMARY KEY(c1,c2)";;
+       10) REPLY="ALTER TABLE t1 ORDER BY c$((RANDOM % 4 + 1)) DESC";;
+       11) REPLY="ALTER TABLE t1 ADD COLUMN cw INT,ALGORITHM=INSTANT";;
+       12) REPLY="ALTER TABLE t1 DISABLE KEYS";;
+       13) REPLY="ALTER TABLE t1 ENABLE KEYS";;
+       14) REPLY="ALTER TABLE t1 ADD COLUMN cw INT,LOCK=DEFAULT,ALGORITHM=DEFAULT";;
+        *) >&2 echo "[gen-assert] alter-shape"; REPLY="Assert: invalid random case selection in alter-shape case";;
+      esac;;
+4319) case $(($RANDOM % 12 + 1)) in  # JSON depth/EXISTS/IS-JSON/JSON_QUERY/range-path/wildcard descent
+        1) REPLY="SELECT JSON_EXISTS('{\"a\":$((RANDOM % 100))}','\$.a')";;
+        2) REPLY="SELECT JSON_OBJECT('a',$((RANDOM % 1025))) IS JSON";;
+        3) REPLY="SELECT JSON_OBJECT('a',1) IS JSON OBJECT,JSON_ARRAY(1,2,3) IS JSON ARRAY";;
+        4) REPLY="SELECT '\"hello\"' IS JSON SCALAR,'null' IS NOT JSON";;
+        5) REPLY="SELECT JSON_QUERY('{\"a\":[1,2,3]}','\$.a')";;
+        6) REPLY="SELECT JSON_EXTRACT('[$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100))]','\$[1 to last]')";;
+        7) REPLY="SELECT JSON_EXTRACT('{\"a\":1,\"b\":{\"c\":2}}','\$**.*')";;
+        8) REPLY="SELECT JSON_DEPTH('[[],[],[]]'),JSON_DEPTH('{}'),JSON_DEPTH('{\"a\":{\"b\":{\"c\":{\"d\":1}}}}')";;
+        9) REPLY="SELECT JSON_REPLACE('{\"a\":1}','\$.a',JSON_OBJECT('b',$((RANDOM % 100))))";;
+       10) REPLY="SELECT JSON_OBJECT() AS empty_obj,JSON_ARRAY() AS empty_arr";;
+       11) REPLY="SELECT JSON_ARRAY_APPEND('[1,2]','\$',$((RANDOM % 100)),'\$',$((RANDOM % 100)))";;
+       12) REPLY="SELECT JSON_VALUE('{\"k\":\"v$((RANDOM % 100))\"}','\$.k')";;
+        *) >&2 echo "[gen-assert] json-edge"; REPLY="Assert: invalid random case selection in json-edge case";;
+      esac;;
+4320) case $(($RANDOM % 12 + 1)) in  # SHOW gaps — SCHEMAS, COUNT(*) WARNINGS, PROCEDURE STATUS WHERE, EVENTS IN/LIKE/FROM, TRIGGERS IN, SHOW CREATE *, FULL PROCESSLIST, MASTER LOGS
+        1) REPLY="SHOW SCHEMAS";;
+        2) REPLY="SHOW COUNT(*) WARNINGS";;
+        3) REPLY="SHOW COUNT(*) ERRORS";;
+        4) REPLY="SHOW WARNINGS LIMIT $((RANDOM % 10)),$((RANDOM % 5 + 1))";;
+        5) REPLY="SHOW PROCEDURE STATUS WHERE db='test'";;
+        6) REPLY="SHOW EVENTS IN test";;
+        7) REPLY="SHOW EVENTS LIKE 'e%'";;
+        8) REPLY="SHOW TRIGGERS IN test";;
+        9) REPLY="SHOW CREATE TRIGGER tr$((RANDOM % 4 + 1))";;
+       10) REPLY="SHOW CREATE EVENT e$((RANDOM % 4 + 1))";;
+       11) REPLY="SHOW CREATE VIEW v$((RANDOM % 4 + 1))";;
+       12) REPLY="SHOW CREATE SEQUENCE s$((RANDOM % 4 + 1))";;
+        *) >&2 echo "[gen-assert] show-r6"; REPLY="Assert: invalid random case selection in show-r6 case";;
+      esac;;
+4321) case $(($RANDOM % 8 + 1)) in  # REGEXP family — REGEXP_INSTR/REPLACE/SUBSTR multi-arg, RLIKE chains
+        1) REPLY="SELECT REGEXP_INSTR(c$((RANDOM % 4 + 1)),'[a-z]+') FROM t1 LIMIT $((RANDOM % 52))";;
+        2) REPLY="SELECT REGEXP_INSTR('Hello World','l+',$((RANDOM % 5 + 1)),$((RANDOM % 3 + 1)),0)";;
+        3) REPLY="SELECT REGEXP_REPLACE(c$((RANDOM % 4 + 1)),'[0-9]+','#') FROM t1 LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT REGEXP_REPLACE('hello','l','L',$((RANDOM % 3 + 1)),0)";;
+        5) REPLY="SELECT REGEXP_SUBSTR(c$((RANDOM % 4 + 1)),'[a-z]+',$((RANDOM % 3 + 1)),$((RANDOM % 3 + 1))) FROM t1 LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT 'hello' RLIKE 'l+','abc' RLIKE '^a.*c\$'";;
+        7) REPLY="SELECT 'abc' RLIKE 'a.*c' AND 'abc' LIKE 'a%' AND 'abc' SOUNDS LIKE 'abk'";;
+        8) REPLY="SELECT * FROM t1 WHERE c$((RANDOM % 4 + 1)) RLIKE '^[a-zA-Z][0-9]+\$' LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] regexp"; REPLY="Assert: invalid random case selection in regexp case";;
+      esac;;
+4322) case $(($RANDOM % 8 + 1)) in  # Window-frame edges — RANGE BETWEEN, EXCLUDE CURRENT/TIES/GROUP/NO OTHERS, bare WINDOW clause
+        1) REPLY="SELECT c1,SUM(c1) OVER (ORDER BY c1 RANGE BETWEEN $((RANDOM % 5)) PRECEDING AND $((RANDOM % 5)) FOLLOWING) FROM t1 LIMIT $((RANDOM % 52))";;
+        2) REPLY="SELECT c1,SUM(c1) OVER (ORDER BY c1 ROWS UNBOUNDED PRECEDING) FROM t1 LIMIT $((RANDOM % 52))";;
+        3) REPLY="SELECT c1,COUNT(*) OVER (ORDER BY c1 ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING EXCLUDE CURRENT ROW) FROM t1 LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT c1,COUNT(*) OVER (ORDER BY c1 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE TIES) FROM t1 LIMIT $((RANDOM % 52))";;
+        5) REPLY="SELECT c1,COUNT(*) OVER (ORDER BY c1 ROWS UNBOUNDED PRECEDING EXCLUDE GROUP) FROM t1 LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT c1,COUNT(*) OVER (ORDER BY c1 ROWS UNBOUNDED PRECEDING EXCLUDE NO OTHERS) FROM t1 LIMIT $((RANDOM % 52))";;
+        7) REPLY="SELECT * FROM t1 WINDOW w AS (ORDER BY c1) LIMIT $((RANDOM % 52))";;
+        8) REPLY="SELECT GROUP_CONCAT(DISTINCT c$((RANDOM % 4 + 1)) ORDER BY c1 SEPARATOR '/') FROM t1";;
+        *) >&2 echo "[gen-assert] win-frame"; REPLY="Assert: invalid random case selection in win-frame case";;
+      esac;;
+4323) case $(($RANDOM % 12 + 1)) in  # Optimizer hints additional — BNL/HASH_JOIN/INDEX_MERGE/INDEX/MERGE/SEMIJOIN_MATERIALIZATION
+        1) REPLY="SELECT /*+ BNL(t1) */ * FROM t1,t2 WHERE t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
+        2) REPLY="SELECT /*+ NO_BNL(t1,t2) */ * FROM t1 JOIN t2 ON t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
+        3) REPLY="SELECT /*+ HASH_JOIN(t1) */ * FROM t1,t2 WHERE t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT /*+ NO_HASH_JOIN(t1) */ * FROM t1 JOIN t2 ON t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
+        5) REPLY="SELECT /*+ INDEX_MERGE(t1 idx1,idx2) */ * FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) AND c2<$((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT /*+ NO_INDEX_MERGE(t1) */ * FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 52))";;
+        7) REPLY="SELECT /*+ INDEX(t1 idx$((RANDOM % 4 + 1))) */ * FROM t1 WHERE c1>$((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 52))";;
+        8) REPLY="SELECT /*+ NO_INDEX(t1 idx$((RANDOM % 4 + 1))) */ * FROM t1 WHERE c2>$((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 52))";;
+        9) REPLY="SELECT /*+ MERGE(d) */ * FROM (SELECT * FROM t1 WHERE c1>$((RANDOM % 2051 - 1025))) d LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT /*+ NO_MERGE(d) */ * FROM (SELECT * FROM t1) d LIMIT $((RANDOM % 52))";;
+       11) REPLY="SELECT /*+ SPLIT_MATERIALIZED(d) */ * FROM (SELECT c1,SUM(c2) AS s FROM t1 GROUP BY c1) d WHERE d.s>$((RANDOM % 1000)) LIMIT $((RANDOM % 52))";;
+       12) REPLY="SELECT /*+ SEMIJOIN_MATERIALIZATION(t1) */ * FROM t1 WHERE c1 IN (SELECT c1 FROM t2) LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] opt-hint-r6"; REPLY="Assert: invalid random case selection in opt-hint-r6 case";;
+      esac;;
+4324) case $(($RANDOM % 12 + 1)) in  # GIS predicates / functions — Validate/IsValid/IsClosed/IsEmpty/IsRing, LineFromText, Disjoint/Within/Contains, Transform, typed CAST
+        1) REPLY="SELECT ST_IsValid(ST_GeomFromText('POINT($((RANDOM % 200 - 100)) $((RANDOM % 200 - 100)))'))";;
+        2) REPLY="SELECT ST_IsClosed(ST_GeomFromText('LINESTRING(0 0,$((RANDOM % 100)) $((RANDOM % 100)),0 0)'))";;
+        3) REPLY="SELECT ST_IsEmpty(ST_GeomFromText('POINT(0 0)'))";;
+        4) REPLY="SELECT ST_IsRing(ST_GeomFromText('LINESTRING(0 0,$((RANDOM % 100)) 0,$((RANDOM % 100)) $((RANDOM % 100)),0 0)'))";;
+        5) REPLY="SELECT ST_LineFromText('LINESTRING(0 0,$((RANDOM % 100)) $((RANDOM % 100)),$((RANDOM % 100)) $((RANDOM % 100)))')";;
+        6) REPLY="SELECT ST_Disjoint(ST_GeomFromText('POINT(0 0)'),ST_GeomFromText('POINT($((RANDOM % 100 + 1)) $((RANDOM % 100 + 1)))'))";;
+        7) REPLY="SELECT ST_Within(ST_GeomFromText('POINT($((RANDOM % 5)) $((RANDOM % 5)))'),ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0))'))";;
+        8) REPLY="SELECT ST_Contains(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0))'),ST_GeomFromText('POINT($((RANDOM % 5)) $((RANDOM % 5)))'))";;
+        9) REPLY="SELECT ST_Equals(ST_GeomFromText('POINT($((RANDOM % 100)) $((RANDOM % 100)))'),ST_GeomFromText('POINT($((RANDOM % 100)) $((RANDOM % 100)))'))";;
+       10) REPLY="SELECT ST_Relate(ST_GeomFromText('POINT(0 0)'),ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0))'),'T*F**FFF*')";;
+       11) REPLY="SELECT CAST('POINT($((RANDOM % 100)) $((RANDOM % 100)))' AS GEOMETRY)";;
+       12) REPLY="SELECT ST_Length(ST_GeomFromText('LINESTRING(0 0,$((RANDOM % 100)) $((RANDOM % 100)))')),ST_Area(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0))'))";;
+        *) >&2 echo "[gen-assert] gis-pred"; REPLY="Assert: invalid random case selection in gis-pred case";;
+      esac;;
+4325) case $(($RANDOM % 10 + 1)) in  # ALTER PARTITION ops — REORGANIZE/COALESCE/REMOVE/REBUILD/ADD/SUBPARTITION
+        1) REPLY="ALTER TABLE t1 REORGANIZE PARTITION p$((RANDOM % 4 + 1)) INTO (PARTITION p1a VALUES LESS THAN($((RANDOM % 100))),PARTITION p1b VALUES LESS THAN($((RANDOM % 1000 + 100))))";;
+        2) REPLY="ALTER TABLE t1 COALESCE PARTITION $((RANDOM % 3 + 1))";;
+        3) REPLY="ALTER TABLE t1 REMOVE PARTITIONING";;
+        4) REPLY="ALTER TABLE t1 REBUILD PARTITION p$((RANDOM % 4 + 1)),p$((RANDOM % 4 + 1))";;
+        5) REPLY="ALTER TABLE t1 OPTIMIZE PARTITION ALL";;
+        6) REPLY="ALTER TABLE t1 ANALYZE PARTITION p$((RANDOM % 4 + 1))";;
+        7) REPLY="ALTER TABLE t1 CHECK PARTITION p$((RANDOM % 4 + 1)) FOR UPGRADE";;
+        8) REPLY="ALTER TABLE t1 REPAIR PARTITION p$((RANDOM % 4 + 1)) EXTENDED";;
+        9) REPLY="ALTER TABLE t1 ADD PARTITION (PARTITION p$((RANDOM % 9 + 5)) VALUES LESS THAN($((RANDOM % 1000 + 100))))";;
+       10) REPLY="CREATE OR REPLACE TABLE tpd$((RANDOM % 4 + 1)) (c1 DATE) PARTITION BY RANGE(YEAR(c1)) (PARTITION p0 VALUES LESS THAN($((RANDOM % 50 + 2000))),PARTITION p1 VALUES LESS THAN($((RANDOM % 50 + 2050))))";;
+        *) >&2 echo "[gen-assert] alter-part"; REPLY="Assert: invalid random case selection in alter-part case";;
+      esac;;
+4326) case $(($RANDOM % 12 + 1)) in  # INSERT edge forms + DEFAULT(col) + multi-DROP + INSERT IGNORE PARTITION
+        1) REPLY="INSERT INTO t1 VALUES (DEFAULT,DEFAULT,DEFAULT,DEFAULT)";;
+        2) REPLY="INSERT INTO t1(c1,c2) VALUES (DEFAULT(c1),DEFAULT(c2))";;
+        3) REPLY="SELECT DEFAULT(c$((RANDOM % 4 + 1))) FROM t1 LIMIT 1";;
+        4) REPLY="INSERT IGNORE INTO t1 PARTITION (p$((RANDOM % 4 + 1))) (c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        5) REPLY="INSERT HIGH_PRIORITY INTO t1 (c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        6) REPLY="INSERT DELAYED INTO t1 (c1,c2) VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        7) REPLY="INSERT INTO t1(c1,c2) VALUES (1,2),(3,4),(5,6),(7,8) ON DUPLICATE KEY UPDATE c2=GREATEST(c2,VALUES(c2))+1";;
+        8) REPLY="DROP TABLE IF EXISTS t9,t10,t11";;
+        9) REPLY="DROP TEMPORARY TABLE IF EXISTS tt$((RANDOM % 4 + 1)),tt$((RANDOM % 4 + 1))";;
+       10) REPLY="DROP VIEW IF EXISTS v$((RANDOM % 4 + 1)),v$((RANDOM % 4 + 1))";;
+       11) REPLY="DROP INDEX idx$((RANDOM % 4 + 1)) ON t1,DROP INDEX idx$((RANDOM % 4 + 1)) ON t2";;
+       12) REPLY="CREATE TEMPORARY TABLE tt$((RANDOM % 4 + 1)) AS SELECT * FROM t1 LIMIT 0";;
+        *) >&2 echo "[gen-assert] dml-edge-r6"; REPLY="Assert: invalid random case selection in dml-edge-r6 case";;
+      esac;;
+4327) case $(($RANDOM % 14 + 1)) in  # Misc/scattered — SOUNDEX, FIELD/FIND_IN_SET/ELT, INSERT/SPACE/QUOTE, bitwise ops, IS NULL sort
+        1) REPLY="SELECT SOUNDEX(c$((RANDOM % 4 + 1)))=SOUNDEX('Robert') FROM t1 LIMIT $((RANDOM % 52))";;
+        2) REPLY="SELECT INSERT('abcdef',$((RANDOM % 6 + 1)),$((RANDOM % 4 + 1)),'XYZ')";;
+        3) REPLY="SELECT FIELD('b','a','b','c'),FIND_IN_SET('b','a,b,c'),ELT($((RANDOM % 3 + 1)),'a','b','c')";;
+        4) REPLY="SELECT SPACE($((RANDOM % 20 + 1))),REPEAT('xy',$((RANDOM % 10 + 1))),QUOTE('hello')";;
+        5) REPLY="SELECT $((RANDOM % 256)) & $((RANDOM % 256)),$((RANDOM % 256)) | $((RANDOM % 256)),$((RANDOM % 256)) ^ $((RANDOM % 256))";;
+        6) REPLY="SELECT ~$((RANDOM % 256)),$((RANDOM % 256)) << $((RANDOM % 4 + 1)),$((RANDOM % 256)) >> $((RANDOM % 4 + 1))";;
+        7) REPLY="SELECT $((RANDOM % 100 + 1)) DIV $((RANDOM % 10 + 1)),$((RANDOM % 100 + 1)) MOD $((RANDOM % 10 + 1)),NOT 1,1 XOR 0";;
+        8) REPLY="SELECT TRUNCATE($((RANDOM % 1000)).$((RANDOM % 10000)),$((RANDOM % 4)))";;
+        9) REPLY="SELECT * FROM t1 ORDER BY c$((RANDOM % 4 + 1)) IS NULL,c$((RANDOM % 4 + 1)) LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT CHAR(65,66,67),CHAR($((RANDOM % 65535)) USING utf8mb4)";;
+       11) REPLY="SELECT POWER($((RANDOM % 10 + 1)),$((RANDOM % 5 + 1))),SQRT($((RANDOM % 1000 + 1))),EXP($((RANDOM % 5))),LOG2($((RANDOM % 1000 + 1))),LOG10($((RANDOM % 1000 + 1)))";;
+       12) REPLY="SELECT SIN($((RANDOM % 7)).$((RANDOM % 100))),COS($((RANDOM % 7)).$((RANDOM % 100))),ATAN2($((RANDOM % 10)),$((RANDOM % 10 + 1))),PI()";;
+       13) REPLY="SELECT DEGREES(PI()/2),RADIANS(180),SIGN($((RANDOM % 2051 - 1025)))";;
+       14) REPLY="SELECT STRCMP('abc','abd'),STRCMP(c$((RANDOM % 4 + 1)),'$((RANDOM % 1000))') FROM t1 LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] misc-r6"; REPLY="Assert: invalid random case selection in misc-r6 case";;
+      esac;;
+4328) case $(($RANDOM % 8 + 1)) in  # Replication / GTID functions
+        1) REPLY="SELECT MASTER_GTID_WAIT('1-1-1',$((RANDOM % 10)))";;
+        2) REPLY="SELECT BINLOG_GTID_POS('master.000001',$((RANDOM % 1000 + 4)))";;
+        3) REPLY="SELECT MASTER_POS_WAIT('master.000001',$((RANDOM % 1000 + 4)),$((RANDOM % 10)))";;
+        4) REPLY="START SLAVE UNTIL MASTER_LOG_FILE='m.000001',MASTER_LOG_POS=$((RANDOM % 1000 + 4))";;
+        5) REPLY="STOP SLAVE";;
+        6) REPLY="FLUSH RELAY LOGS FOR CHANNEL 'ch$((RANDOM % 4 + 1))'";;
+        7) REPLY="RESET REPLICA ALL";;
+        8) REPLY="RESET SLAVE 'ch$((RANDOM % 4 + 1))' ALL";;
+        *) >&2 echo "[gen-assert] repl-gtid"; REPLY="Assert: invalid random case selection in repl-gtid case";;
+      esac;;
+4329) case $(($RANDOM % 10 + 1)) in  # Privileges advanced — BINLOG ADMIN, DELETE HISTORY, REVOKE GRANT OPTION, multi-plugin OR
+        1) REPLY="GRANT BINLOG ADMIN ON *.* TO u$((RANDOM % 4 + 1))@localhost";;
+        2) REPLY="GRANT BINLOG MONITOR ON *.* TO u$((RANDOM % 4 + 1))@localhost";;
+        3) REPLY="GRANT BINLOG REPLAY ON *.* TO u$((RANDOM % 4 + 1))@localhost";;
+        4) REPLY="GRANT CONNECTION ADMIN,FEDERATED ADMIN,SET USER ON *.* TO u$((RANDOM % 4 + 1))@localhost";;
+        5) REPLY="GRANT SHOW_ROUTINE ON *.* TO u$((RANDOM % 4 + 1))@localhost";;
+        6) REPLY="GRANT DELETE HISTORY ON test.t1 TO u$((RANDOM % 4 + 1))@localhost";;
+        7) REPLY="REVOKE DELETE HISTORY ON test.t1 FROM u$((RANDOM % 4 + 1))@localhost";;
+        8) REPLY="REVOKE GRANT OPTION ON test.* FROM u$((RANDOM % 4 + 1))@localhost";;
+        9) REPLY="ALTER USER IF EXISTS u$((RANDOM % 4 + 1))@localhost ACCOUNT $(case $((RANDOM % 2)) in 0) echo LOCK;; 1) echo UNLOCK;; esac)";;
+       10) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost WITH MAX_STATEMENT_TIME $((RANDOM % 60 + 1))";;
+        *) >&2 echo "[gen-assert] priv-adv"; REPLY="Assert: invalid random case selection in priv-adv case";;
+      esac;;
+4330) case $(($RANDOM % 12 + 1)) in  # Cross-domain composites r6 — recursive×JSON_TABLE×window, vector kNN+JSON+RETURNING, seq×sysver×correlated, etc.
+        1) REPLY="WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM r WHERE n<$((RANDOM % 10 + 5))) SELECT r.n,j.v,COUNT(*) OVER (PARTITION BY r.n%3) FROM r CROSS JOIN JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$')) AS j LIMIT $((RANDOM % 52))";;
+        2) REPLY="INSERT INTO t1(c1,c2) SELECT j.id,VEC_DISTANCE_EUCLIDEAN(tv1.c2,VEC_FromText('[1.0,2.0,3.0,4.0]')) FROM tv1 JOIN JSON_TABLE('[{\"id\":$((RANDOM % 100))}]','\$[*]' COLUMNS(id INT PATH '\$.id')) AS j ON tv1.c1=j.id RETURNING c1,c2";;
+        3) seqname; local _s=$REPLY; REPLY="WITH x AS (SELECT NEXT VALUE FOR ${_s} AS sv) UPDATE t1 SET c2=(SELECT sv FROM x) WHERE c1=(SELECT MAX(c1) FROM t2 FOR SYSTEM_TIME ALL)";;
+        4) REPLY="SELECT t1.c1,COUNT(*) OVER w,JSON_ARRAYAGG(t1.c2) OVER w FROM t1 WINDOW w AS (PARTITION BY t1.c2 ORDER BY t1.c3 ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) LIMIT $((RANDOM % 52))";;
+        5) REPLY="DELETE FROM t1 WHERE EXISTS (WITH x AS (SELECT c1 FROM t2 WHERE c2 IS NOT NULL) SELECT 1 FROM x WHERE x.c1=t1.c1) RETURNING c1";;
+        6) REPLY="UPDATE t1 SET c2=(SELECT JSON_VALUE(JSON_OBJECT('a',c2,'b',c3),'\$.a') FROM t2 WHERE c1=t1.c1) WHERE c1 IN (SELECT c1 FROM t3 FOR SYSTEM_TIME ALL)";;
+        7) REPLY="SELECT c1,ST_AsText(ST_PointFromText(CONCAT('POINT(',c1,' ',c2,')'))),JSON_OBJECT('pt',c1,'rk',RANK() OVER (ORDER BY c2)) FROM t1 LIMIT $((RANDOM % 52))";;
+        8) seqname; local _s=$REPLY; REPLY="SELECT c1,JSON_OBJECT('seq_val',NEXT VALUE FOR ${_s},'rk',RANK() OVER (ORDER BY c2)) FROM t1 LIMIT $((RANDOM % 52))";;
+        9) REPLY="SELECT c1,ST_AsText(ST_Buffer(ST_GeomFromText('POINT(0 0)'),c1)) FROM t1 WHERE c1 IN (SELECT v FROM JSON_TABLE('[$((RANDOM % 10 + 1)),$((RANDOM % 10 + 1)),$((RANDOM % 10 + 1))]','\$[*]' COLUMNS(v INT PATH '\$')) j) LIMIT $((RANDOM % 52))";;
+       10) REPLY="WITH ranked AS (SELECT c1,ROW_NUMBER() OVER (PARTITION BY c2 ORDER BY c3) AS rn FROM t1) DELETE t1 FROM t1 JOIN ranked ON t1.c1=ranked.c1 WHERE ranked.rn>$((RANDOM % 5 + 1))";;
+       11) REPLY="SELECT * FROM t1 WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.c1>t1.c1) ORDER BY c1 LIMIT $((RANDOM % 52)) FOR UPDATE";;
+       12) REPLY="WITH a AS (SELECT 1 AS x),b AS (SELECT x*2 AS y FROM a) SELECT a.x,b.y FROM a,b";;
+        *) >&2 echo "[gen-assert] xdomain-r6"; REPLY="Assert: invalid random case selection in xdomain-r6 case";;
+      esac;;
+4331) case $(($RANDOM % 12 + 1)) in  # HANDLER navigation — OPEN AS / READ FIRST/NEXT/PREV/LAST / READ idx ops
+        1) REPLY="HANDLER t$((RANDOM % 4 + 1)) OPEN AS h$((RANDOM % 4 + 1))";;
+        2) REPLY="HANDLER t$((RANDOM % 4 + 1)) OPEN h$((RANDOM % 4 + 1))";;
+        3) REPLY="HANDLER h$((RANDOM % 4 + 1)) READ FIRST";;
+        4) REPLY="HANDLER h$((RANDOM % 4 + 1)) READ NEXT WHERE c1>$((RANDOM % 2051 - 1025)) LIMIT $((RANDOM % 10 + 1))";;
+        5) REPLY="HANDLER h$((RANDOM % 4 + 1)) READ \`PRIMARY\` PREV";;
+        6) REPLY="HANDLER h$((RANDOM % 4 + 1)) READ \`PRIMARY\` LAST";;
+        7) REPLY="HANDLER t$((RANDOM % 4 + 1)) READ \`PRIMARY\` = ($((RANDOM % 2051 - 1025)))";;
+        8) REPLY="HANDLER t$((RANDOM % 4 + 1)) READ \`PRIMARY\` >= ($((RANDOM % 2051 - 1025)))";;
+        9) REPLY="HANDLER t$((RANDOM % 4 + 1)) READ \`PRIMARY\` > ($((RANDOM % 2051 - 1025)))";;
+       10) REPLY="HANDLER t$((RANDOM % 4 + 1)) READ \`PRIMARY\` <= ($((RANDOM % 2051 - 1025))) WHERE c2 IS NOT NULL";;
+       11) REPLY="HANDLER t$((RANDOM % 4 + 1)) READ \`PRIMARY\` < ($((RANDOM % 2051 - 1025))) LIMIT $((RANDOM % 10 + 1))";;
+       12) REPLY="HANDLER h$((RANDOM % 4 + 1)) CLOSE";;
+        *) >&2 echo "[gen-assert] handler-nav"; REPLY="Assert: invalid random case selection in handler-nav case";;
+      esac;;
+4332) case $(($RANDOM % 12 + 1)) in  # SAVEPOINT lifecycle + isolation/access modes + BEGIN/CHAIN
+        1) REPLY="BEGIN";;
+        2) REPLY="BEGIN WORK";;
+        3) REPLY="ROLLBACK AND CHAIN";;
+        4) REPLY="ROLLBACK TO sp$((RANDOM % 9 + 1))";;
+        5) REPLY="SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ";;
+        6) REPLY="SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED";;
+        7) REPLY="SET TRANSACTION READ ONLY";;
+        8) REPLY="SET TRANSACTION READ WRITE";;
+        9) REPLY="SET @@session.foreign_key_checks=$((RANDOM % 2))";;
+       10) REPLY="SET FOREIGN_KEY_CHECKS=$((RANDOM % 2))";;
+       11) REPLY="SET UNIQUE_CHECKS=$((RANDOM % 2))";;
+       12) REPLY="SET @@session.collation_connection='utf8mb4_general_ci'";;
+        *) >&2 echo "[gen-assert] tx-savepoint"; REPLY="Assert: invalid random case selection in tx-savepoint case";;
+      esac;;
+4333) case $(($RANDOM % 10 + 1)) in  # SET STATEMENT multi-var + sysvar reads + profiling + storage engine
+        1) REPLY="SET STATEMENT max_statement_time=$((RANDOM % 60 + 1)),big_tables=$((RANDOM % 2)),optimizer_switch='index_merge=off' FOR SELECT * FROM t1 LIMIT $((RANDOM % 52))";;
+        2) REPLY="SET STATEMENT in_predicate_conversion_threshold=$((RANDOM % 100)) FOR SELECT * FROM t1 WHERE c1 IN ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))";;
+        3) REPLY="SET @x:=$((RANDOM % 2051 - 1025)),@y:=@x+$((RANDOM % 100 + 1))";;
+        4) REPLY="SELECT @@local.foreign_key_checks,@@global.event_scheduler,@@session.autocommit";;
+        5) REPLY="SELECT @@hostname,@@version,@@tx_isolation,@@datadir";;
+        6) REPLY="SET default_storage_engine=$(case $((RANDOM % 4)) in 0) echo InnoDB;; 1) echo Aria;; 2) echo MyISAM;; 3) echo Memory;; esac)";;
+        7) REPLY="SET @@profiling=$((RANDOM % 2)),@@profiling_history_size=$((RANDOM % 50 + 5))";;
+        8) REPLY="SET @@session.tx_read_only=$((RANDOM % 2))";;
+        9) REPLY="SET @@global.read_only=$((RANDOM % 2))";;
+       10) REPLY="SET @@session.transaction_isolation='SERIALIZABLE'";;
+        *) >&2 echo "[gen-assert] set-stmt-r6"; REPLY="Assert: invalid random case selection in set-stmt-r6 case";;
+      esac;;
+4334) case $(($RANDOM % 10 + 1)) in  # Sequence extras — TEMPORARY, RESTART bare, negative increment, multi-arg SETVAL
+        1) seqname; REPLY="CREATE OR REPLACE SEQUENCE ${REPLY} RESTART";;
+        2) REPLY="CREATE TEMPORARY SEQUENCE ts$((RANDOM % 4 + 1))";;
+        3) seqname; REPLY="CREATE OR REPLACE SEQUENCE ${REPLY} START WITH 1 INCREMENT BY -1 MINVALUE -$((RANDOM % 1000 + 1)) MAXVALUE $((RANDOM % 1000 + 1)) CYCLE NOCACHE";;
+        4) seqname; local _s=$REPLY; REPLY="SELECT SETVAL(${_s},$((RANDOM % 10000 + 1)),FALSE,$((RANDOM % 100 + 1)))";;
+        5) seqname; local _s=$REPLY; REPLY="SELECT SETVAL(${_s},$((RANDOM % 10000 + 1)),TRUE)";;
+        6) seqname; local _s=$REPLY; seqname; REPLY="SELECT NEXT VALUE FOR ${_s},LASTVAL(${REPLY})";;
+        7) seqname; REPLY="ALTER SEQUENCE ${REPLY} NOMINVALUE NOMAXVALUE";;
+        8) seqname; REPLY="ALTER SEQUENCE ${REPLY} INCREMENT BY $((RANDOM % 100 + 1)) START WITH $((RANDOM % 1000 + 1)) RESTART";;
+        9) REPLY="SELECT seq FROM seq_1_to_$((RANDOM % 100 + 5)) WHERE seq>$((RANDOM % 5)) ORDER BY seq DESC LIMIT $((RANDOM % 10 + 1))";;
+       10) seqname; REPLY="SHOW CREATE SEQUENCE ${REPLY}";;
+        *) >&2 echo "[gen-assert] seq-extra-r6"; REPLY="Assert: invalid random case selection in seq-extra-r6 case";;
+      esac;;
+4335) case $(($RANDOM % 10 + 1)) in  # CTE / set-op extras — derived×derived, paren-wrapped, multi-anchor recursive, CTE with column-rename
+        1) REPLY="SELECT 1 UNION SELECT 2 ORDER BY 1 LIMIT $((RANDOM % 5 + 1))";;
+        2) REPLY="(SELECT c1 FROM t1) ORDER BY c1 LIMIT $((RANDOM % 10 + 1))";;
+        3) REPLY="SELECT * FROM (SELECT c1 FROM t1) AS x JOIN (SELECT c1 FROM t2) AS y ON x.c1=y.c1 LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT * FROM (SELECT c1 FROM t1) AS x(a) LIMIT $((RANDOM % 52))";;
+        5) REPLY="WITH RECURSIVE r(n) AS (SELECT 1 UNION SELECT 2 UNION SELECT n+1 FROM r WHERE n<$((RANDOM % 20 + 5))) SELECT n FROM r LIMIT $((RANDOM % 30 + 1))";;
+        6) REPLY="WITH a AS (SELECT 1 AS x),b AS (SELECT x*$((RANDOM % 10 + 2)) AS y FROM a),c AS (SELECT y+$((RANDOM % 100)) AS z FROM b) SELECT a.x,b.y,c.z FROM a,b,c";;
+        7) REPLY="WITH v(a,b) AS (VALUES ($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)))) SELECT * FROM v";;
+        8) REPLY="(SELECT c1 FROM t1 ORDER BY c1 ASC LIMIT $((RANDOM % 5 + 1))) UNION (SELECT c1 FROM t2 ORDER BY c1 DESC LIMIT $((RANDOM % 5 + 1))) ORDER BY c1";;
+        9) REPLY="SELECT (WITH x AS (SELECT MAX(c2) m FROM t2) SELECT m FROM x) FROM t1 LIMIT 1";;
+       10) REPLY="WITH cte (n) AS (SELECT $((RANDOM % 2051 - 1025)) UNION ALL SELECT $((RANDOM % 2051 - 1025)) UNION ALL SELECT $((RANDOM % 2051 - 1025))) SELECT n FROM cte";;
+        *) >&2 echo "[gen-assert] cte-setop-r6"; REPLY="Assert: invalid random case selection in cte-setop-r6 case";;
+      esac;;
+4336) case $(($RANDOM % 8 + 1)) in  # ANALYZE / OPTIMIZE / CHECK / REPAIR per-column / per-index variants
+        1) REPLY="ANALYZE TABLE t1 PERSISTENT FOR COLUMNS (c$((RANDOM % 4 + 1))) INDEXES (PRIMARY)";;
+        2) REPLY="ANALYZE TABLE t1 PERSISTENT FOR COLUMNS ALL INDEXES ALL";;
+        3) REPLY="ANALYZE TABLE t1 PERSISTENT FOR COLUMNS (c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1))) INDEXES (idx$((RANDOM % 4 + 1)),idx$((RANDOM % 4 + 1)))";;
+        4) REPLY="ANALYZE LOCAL TABLE t1,t2";;
+        5) REPLY="OPTIMIZE NO_WRITE_TO_BINLOG TABLE t1 WAIT $((RANDOM % 30 + 1))";;
+        6) REPLY="REPAIR NO_WRITE_TO_BINLOG TABLE t1 WAIT $((RANDOM % 30 + 1)) QUICK USE_FRM";;
+        7) REPLY="CHECK TABLE t1,t2,t3 EXTENDED CHANGED";;
+        8) REPLY="ANALYZE TABLE t$((RANDOM % 4 + 1)) PERSISTENT FOR ALL";;
+        *) >&2 echo "[gen-assert] analyze-opt-r6"; REPLY="Assert: invalid random case selection in analyze-opt-r6 case";;
+      esac;;
+4337) case $(($RANDOM % 10 + 1)) in  # ALTER USER subtle / advanced — IDENTIFIED VIA, REPLACE old, ACCOUNT mods, multi-plugin OR
+        1) REPLY="CREATE USER IF NOT EXISTS u$((RANDOM % 4 + 1))@localhost IDENTIFIED VIA mysql_native_password";;
+        2) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost IDENTIFIED VIA mysql_native_password USING 'pwd1' OR ed25519 USING 'pwd2'";;
+        3) REPLY="CREATE USER IF NOT EXISTS u$((RANDOM % 4 + 1))@localhost REQUIRE SSL";;
+        4) REPLY="CREATE USER IF NOT EXISTS u$((RANDOM % 4 + 1))@localhost REQUIRE X509";;
+        5) REPLY="CREATE USER u$((RANDOM % 4 + 1))@localhost IDENTIFIED BY PASSWORD '*ABCD1234ABCD1234ABCD1234ABCD1234ABCD1234'";;
+        6) REPLY="ALTER USER IF EXISTS u$((RANDOM % 4 + 1))@localhost ACCOUNT $(case $((RANDOM % 2)) in 0) echo LOCK;; 1) echo UNLOCK;; esac)";;
+        7) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost REQUIRE NONE";;
+        8) REPLY="ALTER USER u$((RANDOM % 4 + 1))@localhost REQUIRE SUBJECT '/CN=u$((RANDOM % 4 + 1))/O=test/C=US'";;
+        9) REPLY="SHOW GRANTS FOR CURRENT_USER()";;
+       10) REPLY="SHOW CREATE USER u$((RANDOM % 4 + 1))@localhost";;
+        *) >&2 echo "[gen-assert] user-adv-r6"; REPLY="Assert: invalid random case selection in user-adv-r6 case";;
+      esac;;
+4338) case $(($RANDOM % 8 + 1)) in  # CREATE INDEX shapes — IGNORED, WAIT/NOWAIT, prefix, USING HASH/BTREE, multi-col DESC
+        1) REPLY="CREATE UNIQUE INDEX idx$((RANDOM % 4 + 1)) ON t1(c$((RANDOM % 4 + 1))) IGNORED";;
+        2) REPLY="CREATE INDEX idx$((RANDOM % 4 + 1)) ON t1(c$((RANDOM % 4 + 1))) WAIT $((RANDOM % 10 + 1))";;
+        3) REPLY="CREATE INDEX idx$((RANDOM % 4 + 1)) ON t1(c$((RANDOM % 4 + 1))) NOWAIT";;
+        4) REPLY="CREATE INDEX idx$((RANDOM % 4 + 1)) ON t1(c$((RANDOM % 4 + 1))($((RANDOM % 16 + 1))))";;
+        5) REPLY="CREATE INDEX idx$((RANDOM % 4 + 1)) ON t1(c$((RANDOM % 4 + 1)) DESC,c$((RANDOM % 4 + 1)) ASC)";;
+        6) REPLY="CREATE INDEX idx$((RANDOM % 4 + 1)) ON t1(c$((RANDOM % 4 + 1))) USING HASH KEY_BLOCK_SIZE=$((1 << (RANDOM % 5 + 1)))";;
+        7) REPLY="CREATE OR REPLACE INDEX idx$((RANDOM % 4 + 1)) ON t1(c$((RANDOM % 4 + 1)))";;
+        8) REPLY="DROP INDEX idx$((RANDOM % 4 + 1)) ON t1";;
+        *) >&2 echo "[gen-assert] crt-idx-r6"; REPLY="Assert: invalid random case selection in crt-idx-r6 case";;
+      esac;;
+4339) case $(($RANDOM % 10 + 1)) in  # Column-level options — CHARSET+COLLATE inline, INVISIBLE, ZEROFILL, UUID/INET col types
+        1) REPLY="ALTER TABLE t1 ADD COLUMN cw VARCHAR($((RANDOM % 100 + 10))) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'x'";;
+        2) REPLY="ALTER TABLE t1 ADD COLUMN cw INT NOT NULL UNIQUE";;
+        3) REPLY="CREATE OR REPLACE TABLE tinv$((RANDOM % 4 + 1)) (c1 INT,c2 INT INVISIBLE)";;
+        4) REPLY="CREATE OR REPLACE TABLE tn$((RANDOM % 4 + 1)) (c1 INT(5) ZEROFILL UNSIGNED,c2 BIGINT UNSIGNED,c3 DECIMAL(10,2) UNSIGNED)";;
+        5) REPLY="CREATE OR REPLACE TABLE tn$((RANDOM % 4 + 1)) (c1 SMALLINT(2) ZEROFILL,c2 TINYINT(1) UNSIGNED ZEROFILL)";;
+        6) REPLY="CREATE OR REPLACE TABLE tu$((RANDOM % 4 + 1)) (c1 UUID DEFAULT UUID(),c2 INET4,c3 INET6,c4 BIT(8))";;
+        7) REPLY="ALTER TABLE t1 MODIFY c$((RANDOM % 4 + 1)) INT NOT NULL DEFAULT 0 COMMENT 'fz_$((RANDOM % 100))'";;
+        8) REPLY="ALTER TABLE t1 ADD COLUMN cw INT GENERATED ALWAYS AS (c1*c2) STORED";;
+        9) REPLY="ALTER TABLE t1 ADD COLUMN cw INT GENERATED ALWAYS AS (c1+$((RANDOM % 1000))) PERSISTENT";;
+       10) REPLY="ALTER TABLE t1 ADD COLUMN cw JSON GENERATED ALWAYS AS (JSON_OBJECT('v',c1)) VIRTUAL";;
+        *) >&2 echo "[gen-assert] col-opts-r6"; REPLY="Assert: invalid random case selection in col-opts-r6 case";;
+      esac;;
+4340) case $(($RANDOM % 8 + 1)) in  # Date / time edge funcs — boundary dates, GET_FORMAT, fn-as-GROUP-BY, IS NULL sort
+        1) REPLY="SELECT DATE'9999-12-31'+INTERVAL 1 DAY";;
+        2) REPLY="SELECT DATE'1000-01-01'-INTERVAL 1 DAY";;
+        3) REPLY="SELECT GET_FORMAT(DATE,'EUR'),GET_FORMAT(DATETIME,'USA'),GET_FORMAT(TIME,'ISO')";;
+        4) REPLY="SELECT YEAR(NOW()),COUNT(*) FROM t1 GROUP BY YEAR(NOW())";;
+        5) REPLY="SELECT * FROM t1 ORDER BY c$((RANDOM % 4 + 1)) IS NULL,c$((RANDOM % 4 + 1)) DESC LIMIT $((RANDOM % 52))";;
+        6) REPLY="SELECT STR_TO_DATE('2024-Jan-$((RANDOM % 28 + 1))','%Y-%b-%d'),DATE_FORMAT(NOW(),'%W %M %Y')";;
+        7) REPLY="SELECT TIMESTAMPADD(QUARTER,$((RANDOM % 8 - 4)),NOW()),DATE_ADD(NOW(),INTERVAL '$((RANDOM % 12 - 6)):$((RANDOM % 60))' HOUR_MINUTE)";;
+        8) REPLY="SELECT FROM_UNIXTIME(0),FROM_UNIXTIME($((RANDOM % 2147483647))),UNIX_TIMESTAMP(NOW())";;
+        *) >&2 echo "[gen-assert] dt-edge-r6"; REPLY="Assert: invalid random case selection in dt-edge-r6 case";;
+      esac;;
+4341) case $(($RANDOM % 10 + 1)) in  # Vector / HNSW additions — extra sysvars, equality, length, distance composites
+        1) REPLY="SET SESSION mhnsw_max_edges_per_node=$((RANDOM % 64 + 4))";;
+        2) REPLY="SHOW VARIABLES LIKE 'mhnsw_%'";;
+        3) REPLY="SELECT VEC_FromText('[1.0,2.0,3.0,4.0]')=VEC_FromText('[1.0,2.0,3.0,4.0]')";;
+        4) REPLY="SELECT LENGTH(VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]'))";;
+        5) REPLY="SELECT HEX(VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]'))";;
+        6) REPLY="SELECT VEC_DISTANCE_EUCLIDEAN(VEC_FromText('[1.0,2.0,3.0,4.0]'),VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]'))";;
+        7) REPLY="SELECT VEC_DISTANCE_COSINE(VEC_FromText('[1.0,2.0,3.0,4.0]'),VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]'))";;
+        8) REPLY="CREATE TABLE IF NOT EXISTS tv$((RANDOM % 3 + 2)) (c1 INT PRIMARY KEY,c2 VECTOR(4) NOT NULL,VECTOR INDEX(c2)) ENGINE=InnoDB";;
+        9) REPLY="SET STATEMENT mhnsw_ef_search=$((RANDOM % 200 + 1)) FOR SELECT c1 FROM tv1 ORDER BY VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[1.0,2.0,3.0,4.0]')) LIMIT $((RANDOM % 10 + 1))";;
+       10) REPLY="SELECT c1,VEC_DISTANCE_COSINE(c2,VEC_FromText('[$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0,$((RANDOM % 100)).0]')) AS d FROM tv1 WHERE VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[0.0,0.0,0.0,0.0]'))<$((RANDOM % 100 + 1)).0 ORDER BY d LIMIT $((RANDOM % 10 + 1))";;
+        *) >&2 echo "[gen-assert] vec-add-r6"; REPLY="Assert: invalid random case selection in vec-add-r6 case";;
+      esac;;
+4342) case $(($RANDOM % 8 + 1)) in  # ROW operator / row-tuple / multi-charset literals / CONVERT USING
+        1) REPLY="SELECT * FROM t1 WHERE (c1,c2,c3) IN (($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))),($((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025)),$((RANDOM % 2051 - 1025))))";;
+        2) REPLY="SELECT (1,2)=(SELECT c1,c2 FROM t1 LIMIT 1)";;
+        3) REPLY="SELECT ROW(1,2)=(SELECT c1,c2 FROM t1 LIMIT 1)";;
+        4) REPLY="SELECT _utf16'hello',_binary'hi',_ucs2'h',_latin1'x'";;
+        5) REPLY="SELECT CONVERT('hello' USING utf8mb4),CONVERT('world',CHAR CHARACTER SET utf8mb4)";;
+        6) REPLY="SELECT _utf8mb4'hello' COLLATE utf8mb4_bin";;
+        7) REPLY="SELECT 'hello' COLLATE utf8mb4_unicode_ci='HELLO'";;
+        8) REPLY="SELECT * FROM t1 WHERE (c1,c2)<>(SELECT c1,c2 FROM t2 LIMIT 1) LIMIT $((RANDOM % 52))";;
+        *) >&2 echo "[gen-assert] row-op-r6"; REPLY="Assert: invalid random case selection in row-op-r6 case";;
+      esac;;
+4343) case $(($RANDOM % 10 + 1)) in  # Cross-domain composites r7 — recursive×JSON_TABLE×CROSS, CTE-window-DELETE-RETURNING, vector kNN driving DML
+        1) REPLY="WITH RECURSIVE cnt(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM cnt WHERE n<$((RANDOM % 10 + 5))),j AS (SELECT v FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$')) AS jt) SELECT cnt.n,(SELECT MAX(v) FROM j) FROM cnt LIMIT $((RANDOM % 30 + 5))";;
+        2) seqname; local _s=$REPLY; REPLY="INSERT INTO t1(c1,c2) SELECT j.v,NEXT VALUE FOR ${_s} FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$')) AS j RETURNING c1,c2";;
+        3) REPLY="DELETE FROM t1 WHERE c1 IN (WITH x AS (SELECT c1 FROM tv1 ORDER BY VEC_DISTANCE_EUCLIDEAN(c2,VEC_FromText('[1.0,2.0,3.0,4.0]')) LIMIT $((RANDOM % 5 + 1))) SELECT c1 FROM x) RETURNING c1,c2";;
+        4) REPLY="WITH ranked AS (SELECT c1,c2,ROW_NUMBER() OVER (PARTITION BY c2 ORDER BY c3) AS rn FROM t1) DELETE FROM t1 WHERE c1 IN (SELECT c1 FROM ranked WHERE rn>$((RANDOM % 5 + 1))) RETURNING c1";;
+        5) REPLY="INSERT INTO t1(c1,c2) SELECT j.id,VEC_DISTANCE_EUCLIDEAN(tv1.c2,VEC_FromText('[1.0,2.0,3.0,4.0]')) FROM tv1 JOIN JSON_TABLE('[{\"id\":$((RANDOM % 100))},{\"id\":$((RANDOM % 100))}]','\$[*]' COLUMNS(id INT PATH '\$.id')) AS j ON tv1.c1=j.id RETURNING c1,c2";;
+        6) REPLY="UPDATE t1 SET c2=(SELECT JSON_LENGTH(JSON_OBJECTAGG(t2.c1,t2.c2)) FROM t2 WHERE t2.c1=t1.c1) WHERE c1>$((RANDOM % 2051 - 1025))";;
+        7) REPLY="SELECT t1.c1,COUNT(*) OVER w,JSON_ARRAYAGG(t1.c2) OVER w FROM t1 WINDOW w AS (PARTITION BY t1.c2 ORDER BY t1.c3 ROWS BETWEEN $((RANDOM % 3 + 1)) PRECEDING AND $((RANDOM % 3 + 1)) FOLLOWING) LIMIT $((RANDOM % 52))";;
+        8) seqname; local _s=$REPLY; REPLY="WITH g AS (SELECT NEXT VALUE FOR ${_s} AS sv,c1 FROM t1) SELECT g.c1,g.sv,RANK() OVER (ORDER BY g.sv) FROM g LIMIT $((RANDOM % 52))";;
+        9) REPLY="SELECT * FROM t1 WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.c1>t1.c1) ORDER BY c1 LIMIT $((RANDOM % 10 + 1)) FOR UPDATE";;
+       10) REPLY="WITH cte AS (SELECT c1,JSON_OBJECTAGG(c2,c3) AS j FROM t1 GROUP BY c1) UPDATE t2 SET c2=(SELECT JSON_LENGTH(cte.j) FROM cte WHERE cte.c1=t2.c1) WHERE c1>$((RANDOM % 2051 - 1025))";;
+        *) >&2 echo "[gen-assert] xdomain-r7"; REPLY="Assert: invalid random case selection in xdomain-r7 case";;
+      esac;;
+4344) case $(($RANDOM % 10 + 1)) in  # Locking primitives + multi-DROP + multi-table DML extras + STRAIGHT_JOIN
+        1) REPLY="SELECT GET_LOCK('lk$((RANDOM % 32 + 1))',$((RANDOM % 5)))";;
+        2) REPLY="SELECT IS_FREE_LOCK('lk$((RANDOM % 32 + 1))'),IS_USED_LOCK('lk$((RANDOM % 32 + 1))')";;
+        3) REPLY="DO RELEASE_LOCK('lk$((RANDOM % 32 + 1))')";;
+        4) REPLY="SELECT RELEASE_ALL_LOCKS()";;
+        5) REPLY="DROP TABLE IF EXISTS t9,t10,t11,t12";;
+        6) REPLY="DROP USER IF EXISTS u$((RANDOM % 4 + 1))@localhost,u$((RANDOM % 4 + 1))@'%',u$((RANDOM % 4 + 1))@'127.0.0.1'";;
+        7) REPLY="SELECT STRAIGHT_JOIN c1 FROM t1,t2 WHERE t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
+        8) REPLY="SELECT * FROM t1 STRAIGHT_JOIN t2 ON t1.c1=t2.c1 LIMIT $((RANDOM % 52))";;
+        9) REPLY="SELECT HIGH_PRIORITY * FROM t1 LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT SQL_BIG_RESULT c1,COUNT(*) FROM t1 GROUP BY c1";;
+        *) >&2 echo "[gen-assert] lock-misc-r6"; REPLY="Assert: invalid random case selection in lock-misc-r6 case";;
+      esac;;
+4345) case $(($RANDOM % 10 + 1)) in  # MariaDB optimizer/sysvar fine-tuning
+        1) REPLY="SET SESSION optimizer_adjust_secondary_key_costs='disable_max_seek,disable_forced_index_pushdown'";;
+        2) REPLY="SET SESSION expensive_subquery_limit=$((RANDOM % 10000 + 100))";;
+        3) REPLY="SET SESSION optimizer_max_sel_arg_weight=$((RANDOM % 10000 + 1000))";;
+        4) REPLY="SET SESSION optimizer_max_sel_args=$((RANDOM % 1000 + 100))";;
+        5) REPLY="SET SESSION rowid_merge_buff_size=$((RANDOM % 524288 + 4096))";;
+        6) REPLY="SET SESSION optimizer_extra_pruning_depth=$((RANDOM % 16 + 4))";;
+        7) REPLY="SET SESSION join_cache_level=$((RANDOM % 9))";;
+        8) REPLY="SET SESSION optimizer_use_condition_selectivity=$((RANDOM % 5 + 1))";;
+        9) REPLY="SET SESSION expand_fast_index_creation=$(case $((RANDOM % 2)) in 0) echo OFF;; 1) echo ON;; esac)";;
+       10) REPLY="SET SESSION mrr_buffer_size=$((RANDOM % 524288 + 8192))";;
+        *) >&2 echo "[gen-assert] opt-sysvar-r7"; REPLY="Assert: invalid random case selection in opt-sysvar-r7 case";;
+      esac;;
+4346) case $(($RANDOM % 10 + 1)) in  # MariaDB replication channel-aware variants — STOP/START with channel, CHANGE MASTER details
+        1) REPLY="STOP SLAVE 'ch$((RANDOM % 4 + 1))' IO_THREAD";;
+        2) REPLY="STOP SLAVE 'ch$((RANDOM % 4 + 1))' SQL_THREAD";;
+        3) REPLY="START SLAVE 'ch$((RANDOM % 4 + 1))' SQL_THREAD";;
+        4) REPLY="START SLAVE 'ch$((RANDOM % 4 + 1))' IO_THREAD";;
+        5) REPLY="SHOW SLAVE 'ch$((RANDOM % 4 + 1))' STATUS";;
+        6) REPLY="SHOW REPLICA 'ch$((RANDOM % 4 + 1))' STATUS";;
+        7) REPLY="CHANGE MASTER 'ch$((RANDOM % 4 + 1))' TO MASTER_DELAY=$((RANDOM % 60)),MASTER_CONNECT_RETRY=$((RANDOM % 60 + 1))";;
+        8) REPLY="CHANGE MASTER TO MASTER_HEARTBEAT_PERIOD=$((RANDOM % 30 + 1)),MASTER_RETRY_COUNT=$((RANDOM % 10 + 1))";;
+        9) REPLY="CHANGE MASTER TO IGNORE_DOMAIN_IDS=($((RANDOM % 100)),$((RANDOM % 100))),DO_DOMAIN_IDS=($((RANDOM % 100)))";;
+       10) REPLY="CHANGE MASTER TO IGNORE_SERVER_IDS=($((RANDOM % 100)),$((RANDOM % 100)))";;
+        *) >&2 echo "[gen-assert] repl-channel-r7"; REPLY="Assert: invalid random case selection in repl-channel-r7 case";;
+      esac;;
+4347) case $(($RANDOM % 10 + 1)) in  # JSON path / extraction advanced
+        1) REPLY="SELECT JSON_EXTRACT('{\"a\":1,\"b\":[2,3]}','\$**.a','\$.b[0]')";;
+        2) REPLY="SELECT JSON_UNQUOTE(JSON_EXTRACT('{\"k\":\"v$((RANDOM % 1000))\"}','\$.k'))";;
+        3) REPLY="SELECT * FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$' DEFAULT '0' ON EMPTY DEFAULT '0' ON ERROR)) AS j";;
+        4) REPLY="SELECT JSON_KEYS('{\"a\":1,\"b\":2,\"c\":{\"d\":3}}','\$.c')";;
+        5) REPLY="SELECT JSON_OBJECT('a',JSON_OBJECT('b',JSON_ARRAY($((RANDOM % 100)),$((RANDOM % 100)),$((RANDOM % 100)))))";;
+        6) REPLY="SELECT JSON_ARRAY_INSERT('[1,2,3]','\$[$((RANDOM % 4))]','x$((RANDOM % 100))')";;
+        7) REPLY="SELECT JSON_LENGTH('{\"a\":[1,2,3,4,5]}','\$.a')";;
+        8) REPLY="SELECT JSON_UNQUOTE(JSON_QUOTE('hello $((RANDOM % 1000))'))";;
+        9) REPLY="SELECT JSON_VALUE('{\"k\":\"v$((RANDOM % 1000))\"}','\$.k')";;
+       10) REPLY="SELECT JSON_QUERY('{\"a\":[1,2]}','\$.a')";;
+        *) >&2 echo "[gen-assert] json-adv-r7"; REPLY="Assert: invalid random case selection in json-adv-r7 case";;
+      esac;;
+4348) case $(($RANDOM % 8 + 1)) in  # GIS advanced — Simplify, PointN, GeometryN, NumInteriorRings, ExteriorRing, MBR predicates
+        1) REPLY="SELECT ST_AsText(ST_Simplify(ST_GeomFromText('LINESTRING(0 0,1 1,2 2,3 3,4 4)'),0.5))";;
+        2) REPLY="SELECT ST_PointN(ST_GeomFromText('LINESTRING(0 0,1 1,2 2)'),$((RANDOM % 3 + 1)))";;
+        3) REPLY="SELECT ST_GeometryN(ST_GeomFromText('GEOMETRYCOLLECTION(POINT(0 0),POINT(1 1))'),$((RANDOM % 2 + 1)))";;
+        4) REPLY="SELECT ST_NumInteriorRings(ST_GeomFromText('POLYGON((0 0,$((RANDOM % 50 + 5)) 0,$((RANDOM % 50 + 5)) $((RANDOM % 50 + 5)),0 $((RANDOM % 50 + 5)),0 0))'))";;
+        5) REPLY="SELECT ST_ExteriorRing(ST_GeomFromText('POLYGON((0 0,5 0,5 5,0 5,0 0))'))";;
+        6) REPLY="SELECT MBR_CONTAINS(ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0))'),ST_GeomFromText('POINT($((RANDOM % 9)) $((RANDOM % 9)))'))";;
+        7) REPLY="SELECT MBR_INTERSECTS(ST_GeomFromText('POLYGON((0 0,5 0,5 5,0 5,0 0))'),ST_GeomFromText('POLYGON((3 3,8 3,8 8,3 8,3 3))'))";;
+        8) REPLY="SELECT BOUNDARY(ST_GeomFromText('POLYGON((0 0,5 0,5 5,0 5,0 0))')),DIMENSION(ST_GeomFromText('LINESTRING(0 0,1 1)'))";;
+        *) >&2 echo "[gen-assert] gis-adv-r7"; REPLY="Assert: invalid random case selection in gis-adv-r7 case";;
+      esac;;
+4349) case $(($RANDOM % 10 + 1)) in  # PRIVILEGES advanced — BACKUP ADMIN, role privs, table-priv mix, REVOKE GRANT OPTION
+        1) REPLY="GRANT BACKUP ADMIN ON *.* TO u$((RANDOM % 4 + 1))@localhost";;
+        2) REPLY="GRANT CREATE ROLE,DROP ROLE ON *.* TO u$((RANDOM % 4 + 1))@localhost";;
+        3) REPLY="GRANT CREATE TEMPORARY TABLES,LOCK TABLES ON test.* TO u$((RANDOM % 4 + 1))@localhost";;
+        4) REPLY="GRANT EVENT,TRIGGER ON test.* TO u$((RANDOM % 4 + 1))@localhost";;
+        5) REPLY="GRANT REFERENCES,INDEX,ALTER,CREATE VIEW,SHOW VIEW ON test.* TO u$((RANDOM % 4 + 1))@localhost";;
+        6) REPLY="GRANT CREATE ROUTINE,ALTER ROUTINE ON test.* TO u$((RANDOM % 4 + 1))@localhost";;
+        7) REPLY="REVOKE ALL PRIVILEGES,GRANT OPTION FROM u$((RANDOM % 4 + 1))@localhost";;
+        8) REPLY="GRANT SELECT(c$((RANDOM % 4 + 1))),UPDATE(c$((RANDOM % 4 + 1)),c$((RANDOM % 4 + 1))) ON test.t1 TO u$((RANDOM % 4 + 1))@localhost";;
+        9) REPLY="REVOKE SELECT(c$((RANDOM % 4 + 1))),UPDATE(c$((RANDOM % 4 + 1))) ON test.t1 FROM u$((RANDOM % 4 + 1))@localhost";;
+       10) REPLY="GRANT EXECUTE ON FUNCTION test.fn$((RANDOM % 4 + 1)) TO u$((RANDOM % 4 + 1))@localhost";;
+        *) >&2 echo "[gen-assert] priv-r7"; REPLY="Assert: invalid random case selection in priv-r7 case";;
+      esac;;
+4350) case $(($RANDOM % 10 + 1)) in  # System versioning advanced — ROW_START/ROW_END SELECT, SYSTEM_TIME variants, ADD/DROP versioning
+        1) REPLY="SELECT * FROM tsv FOR SYSTEM_TIME AS OF NOW()-INTERVAL $((RANDOM % 3600)) SECOND";;
+        2) REPLY="SELECT * FROM tsv FOR SYSTEM_TIME BETWEEN '2020-01-01' AND CURRENT_TIMESTAMP LIMIT $((RANDOM % 52))";;
+        3) REPLY="SELECT * FROM tsv FOR SYSTEM_TIME ALL ORDER BY ROW_START LIMIT $((RANDOM % 20 + 1))";;
+        4) REPLY="SELECT ROW_START,ROW_END FROM tsv FOR SYSTEM_TIME ALL LIMIT $((RANDOM % 20 + 1))";;
+        5) REPLY="ALTER TABLE tsv DROP SYSTEM VERSIONING";;
+        6) REPLY="ALTER TABLE t1 ADD SYSTEM VERSIONING";;
+        7) REPLY="DELETE HISTORY FROM tsv BEFORE SYSTEM_TIME NOW()-INTERVAL $((RANDOM % 365 + 1)) DAY";;
+        8) REPLY="DELETE HISTORY FROM tsv";;
+        9) REPLY="SELECT * FROM tsv FOR SYSTEM_TIME AS OF TIMESTAMP NOW()-INTERVAL $((RANDOM % 60 + 1)) MINUTE LIMIT $((RANDOM % 52))";;
+       10) REPLY="SELECT COUNT(*) FROM tsv FOR SYSTEM_TIME ALL";;
+        *) >&2 echo "[gen-assert] sysver-adv-r7"; REPLY="Assert: invalid random case selection in sysver-adv-r7 case";;
+      esac;;
+4351) case $(($RANDOM % 10 + 1)) in  # Cross-domain composites r8 — sequence×JSON×window, vector×CTE, GIS×JSON_TABLE, etc.
+        1) seqname; local _s=$REPLY; REPLY="SELECT NEXT VALUE FOR ${_s}+NEXT VALUE FOR ${_s} AS sum_seq,JSON_OBJECT('seq',NEXT VALUE FOR ${_s})";;
+        2) REPLY="SELECT JSON_OBJECT('a',NEXT VALUE FOR s1,'b',ROW_NUMBER() OVER (ORDER BY c1)) FROM t1 LIMIT $((RANDOM % 30 + 1))";;
+        3) REPLY="WITH agg AS (SELECT c1,JSON_ARRAYAGG(c2 ORDER BY c3) AS arr FROM t1 GROUP BY c1) SELECT a.c1,JSON_LENGTH(a.arr),JSON_EXTRACT(a.arr,'\$[0]') FROM agg a LIMIT $((RANDOM % 52))";;
+        4) REPLY="SELECT j.id,VEC_DISTANCE_EUCLIDEAN(tv1.c2,VEC_FromText('[1.0,2.0,3.0,4.0]')) FROM tv1 LEFT JOIN JSON_TABLE('[{\"id\":$((RANDOM % 100))},{\"id\":$((RANDOM % 100))}]','\$[*]' COLUMNS(id INT PATH '\$.id')) AS j ON tv1.c1=j.id LIMIT $((RANDOM % 30 + 1))";;
+        5) REPLY="WITH RECURSIVE r(n,sq) AS (SELECT 1,1 UNION ALL SELECT n+1,(n+1)*(n+1) FROM r WHERE n<$((RANDOM % 20 + 5))) SELECT n,sq,JSON_OBJECT('n',n,'square',sq) FROM r";;
+        6) REPLY="UPDATE t1 SET c2=(SELECT JSON_LENGTH(JSON_OBJECTAGG(t2.c1,t2.c2)) FROM t2 WHERE t2.c1=t1.c1) WHERE c1>$((RANDOM % 2051 - 1025))";;
+        7) REPLY="DELETE FROM t1 WHERE c1 IN (SELECT c1 FROM (SELECT c1,RANK() OVER (PARTITION BY c2 ORDER BY c3) AS rnk FROM t1) ranked WHERE rnk>$((RANDOM % 5 + 1))) RETURNING c1";;
+        8) REPLY="WITH x AS (SELECT * FROM tsv FOR SYSTEM_TIME ALL WHERE c1>$((RANDOM % 2051 - 1025))) INSERT INTO t1(c1,c2) SELECT c1,c2 FROM x LIMIT $((RANDOM % 30 + 1))";;
+        9) REPLY="SELECT t1.c1,COUNT(*) OVER w,JSON_OBJECTAGG(t1.c1,t1.c2) OVER w FROM t1 WINDOW w AS (ORDER BY t1.c3 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) LIMIT $((RANDOM % 30 + 1))";;
+       10) REPLY="SELECT c1,ST_AsText(ST_Buffer(ST_PointFromText(CONCAT('POINT(',c1,' ',c2,')')),$((RANDOM % 5 + 1)))) FROM t1 WHERE c1 IN (SELECT v FROM JSON_TABLE('[$((RANDOM % 100)),$((RANDOM % 100))]','\$[*]' COLUMNS(v INT PATH '\$')) j) LIMIT $((RANDOM % 30 + 1))";;
+        *) >&2 echo "[gen-assert] xdomain-r8"; REPLY="Assert: invalid random case selection in xdomain-r8 case";;
+      esac;;
+4352) case $(($RANDOM % 10 + 1)) in  # Triggers / events — CREATE OR REPLACE, PRECEDES/FOLLOWS, ENABLE/DISABLE
+        1) REPLY="CREATE OR REPLACE TRIGGER tr$((RANDOM % 4 + 1)) BEFORE INSERT ON t1 FOR EACH ROW SET NEW.c2=NEW.c1*$((RANDOM % 10 + 2))";;
+        2) REPLY="CREATE OR REPLACE TRIGGER tr$((RANDOM % 4 + 1)) AFTER UPDATE ON t1 FOR EACH ROW SET @x=NEW.c1-OLD.c1";;
+        3) REPLY="CREATE OR REPLACE TRIGGER tr$((RANDOM % 4 + 1)) BEFORE DELETE ON t1 FOR EACH ROW SET @x=OLD.c1";;
+        4) REPLY="DROP TRIGGER IF EXISTS tr$((RANDOM % 4 + 1))";;
+        5) REPLY="CREATE OR REPLACE EVENT e$((RANDOM % 4 + 1)) ON SCHEDULE EVERY $((RANDOM % 24 + 1)) HOUR DO SELECT 1";;
+        6) REPLY="CREATE EVENT IF NOT EXISTS e$((RANDOM % 4 + 1)) ON SCHEDULE AT NOW()+INTERVAL $((RANDOM % 60 + 1)) MINUTE ON COMPLETION PRESERVE DO SELECT 1";;
+        7) REPLY="ALTER EVENT e$((RANDOM % 4 + 1)) ON SCHEDULE EVERY $((RANDOM % 60 + 1)) MINUTE STARTS NOW() ENDS NOW()+INTERVAL $((RANDOM % 30 + 1)) DAY";;
+        8) REPLY="ALTER EVENT e$((RANDOM % 4 + 1)) RENAME TO e$((RANDOM % 4 + 1))_renamed ENABLE";;
+        9) REPLY="ALTER EVENT e$((RANDOM % 4 + 1)) DISABLE ON SLAVE";;
+       10) REPLY="ALTER EVENT e$((RANDOM % 4 + 1)) COMMENT 'fz_$((RANDOM % 1000))'";;
+        *) >&2 echo "[gen-assert] trig-event-r7"; REPLY="Assert: invalid random case selection in trig-event-r7 case";;
+      esac;;
+4353) case $(($RANDOM % 10 + 1)) in  # Charset/collation/conversion advanced
+        1) REPLY="SELECT CHARSET(c$((RANDOM % 4 + 1))),COLLATION(c$((RANDOM % 4 + 1))),COERCIBILITY(c$((RANDOM % 4 + 1))) FROM t1 LIMIT $((RANDOM % 5 + 1))";;
+        2) REPLY="SELECT _utf8mb4'hi' COLLATE utf8mb4_unicode_520_ci";;
+        3) REPLY="SELECT CONVERT('hello' USING ascii)";;
+        4) REPLY="SHOW COLLATION WHERE 'Charset'='utf8mb4'";;
+        5) REPLY="SHOW CHARACTER SET WHERE Maxlen=$((RANDOM % 4 + 1))";;
+        6) REPLY="SELECT CONVERT(c$((RANDOM % 4 + 1)),CHAR CHARACTER SET utf8mb4) FROM t1 LIMIT $((RANDOM % 5 + 1))";;
+        7) REPLY="ALTER TABLE t1 CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci";;
+        8) REPLY="SELECT CHAR(65 USING utf8),CHAR(0x4F USING utf8mb4),CHAR(65,66,67)";;
+        9) REPLY="SET CHARACTER SET utf8mb4";;
+       10) REPLY="SET NAMES utf8mb4 COLLATE utf8mb4_general_ci";;
+        *) >&2 echo "[gen-assert] charset-r7"; REPLY="Assert: invalid random case selection in charset-r7 case";;
+      esac;;
+4354) case $(($RANDOM % 10 + 1)) in  # Conditionals + numeric edge + math funcs
+        1) REPLY="SELECT IF(c$((RANDOM % 4 + 1))>0,'pos',IF(c$((RANDOM % 4 + 1))<0,'neg','zero')) FROM t1 LIMIT $((RANDOM % 5 + 1))";;
+        2) REPLY="SELECT GREATEST(c1,c2,c3,c4),LEAST(c1,c2,c3,c4) FROM t1 LIMIT $((RANDOM % 5 + 1))";;
+        3) REPLY="SELECT 1 IN (1,2,3,NULL),1 IN (NULL),NULL IN (1,2,3)";;
+        4) REPLY="SELECT NULL+0,0+NULL,NULL OR NULL,NULL AND NULL,NULL XOR NULL";;
+        5) REPLY="SELECT BIT_COUNT($((RANDOM % 65535))),BIT_COUNT(b'1010101010101010')";;
+        6) REPLY="SELECT POW(2,$((RANDOM % 32 + 1))),POW(0,0),POW(-1,0.5)";;
+        7) REPLY="SELECT INTERVAL($((RANDOM % 100)),1,2,3,4,5,6,7,8)";;
+        8) REPLY="SELECT MAKE_SET($((RANDOM % 32)),'a','b','c','d','e','f')";;
+        9) REPLY="SELECT EXPORT_SET($((RANDOM % 256)),'Y','N','-',$((RANDOM % 16 + 1)))";;
+       10) REPLY="SELECT BIN($((RANDOM % 65535))),OCT($((RANDOM % 65535))),HEX($((RANDOM % 65535))),CONV('1010',2,$((RANDOM % 30 + 2)))";;
+        *) >&2 echo "[gen-assert] cond-numeric-r7"; REPLY="Assert: invalid random case selection in cond-numeric-r7 case";;
+      esac;;
+    *) query;;  # Outer dispatcher catch-all: numeric gaps (CREATE/INSERT/DROP grouped ranges leave some pick ids un-cased) re-pick instead of emitting a stale REPLY
     # NOTE: cases 4196-4203 (chained-SQL equivalents: stored procs / triggers / events / BEGIN NOT ATOMIC compound)
     # are parked in generator_todo.txt — pquery splits on `;` mid-line and would fragment their multi-statement bodies.
   esac
@@ -21769,8 +22838,6 @@ thread(){
 
 # ====== Main runtime
 _tmp="${RANDOM}${RANDOM}${RANDOM}"; RANDOM_SUFFIX="${_tmp:2:6}"  # Random number generator (6 digits)
-init_balance
-echo "Generation skew: ${SKEW_NAME} (${SKEW_PCT}%, buckets: ${SKEW_BUCKETS[*]})" >&2
 MUTEX_THREAD_BUSY=0
 QUERIES_PER_THREAD=$(( ${QUERIES} / ${THREADS} ))
 FINAL_OUTFILE="${OUTPUT_FILE%.sql}"
