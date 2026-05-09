@@ -286,6 +286,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|crcr32_calc_pclmulqdq|crc32_pclmul|handler::calculate_checksum|mysql_checksum_table                                                                                    ## MDEV-39557
 SIGSEGV|ha_mroonga::storage_set_keys_in_use|ha_mroonga::storage_info|get_schema_stat_record|fill_schema_table_by_open                                                          ## MDEV-39556
 SIGSEGV|ha_mroonga::storage_set_keys_in_use|ha_mroonga::storage_info|ha_mroonga::info|get_schema_stat_record                                                                   ## MDEV-39556
 m_status == DA_ERROR|SIGABRT|Diagnostics_area::sql_errno|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write|THD::binlog_query                                                ## MDEV-39517
