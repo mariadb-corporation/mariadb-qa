@@ -286,6 +286,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+length <= column->length|SIGABRT|write_block_record|allocate_and_write_block_record|_ma_write_init_block_record|maria_write                                                    ## MDEv-39562
 SIGSEGV|collect_indexed_vcols_for_table|collect_indexed_vcols_for_join|substitute_indexed_vcols_for_join|JOIN::optimize_inner                                                  ## MDEV-39558
 SIGSEGV|crcr32_calc_pclmulqdq|crc32_pclmul|handler::calculate_checksum|mysql_checksum_table                                                                                    ## MDEV-39557
 SIGSEGV|ha_mroonga::storage_set_keys_in_use|ha_mroonga::storage_info|get_schema_stat_record|fill_schema_table_by_open                                                          ## MDEV-39556
