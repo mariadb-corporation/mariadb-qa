@@ -28,6 +28,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of null pointer of type 'grn_obj *' (aka '_grn_obj *')|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_set_keys_in_use|ha_mroonga::storage_info|get_schema_stat_record|fill_schema_table_by_open  ## MDEV-39566
 UBSAN|applying non-zero offset X to null pointer|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_set_keys_in_use|ha_mroonga::storage_info|get_schema_stat_record|fill_schema_table_by_open        ## MDEV-39566
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Item_ref::val_str|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii ## MDEV-39523
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Item_ref::val_str|Item_func_envelope::val_str|Item_func_as_wkt::val_str_ascii ## MDEV-39523
