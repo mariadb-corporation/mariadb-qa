@@ -378,40 +378,9 @@ if [ ! -z "$(grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null)" 
   grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null
 fi
 
-# Significant/major error scanning. This code is partially duplicated in pquery-run.sh as well as in pquery-del-trial.sh. Update all three when making changes. TODO: integrate this code into a new script to de-duplicate the code
+# Significant/major error scanning. The REGEX_ERRORS_* application is centralised in error_log_scan.sh (shared with pquery-run.sh / pquery-prep-red.sh / pquery-del-trial.sh). This script applies its own additional ERROR_MSG_FILTER on top of the helper's output (see ERROR_MSG_FILTER below).
 ERRORS=
 ERROR_LOG=
-ERRORS_LAST_LINE=
-REGEX_ERRORS_SCAN=
-REGEX_ERRORS_LASTLINE=
-REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
-if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
-  REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
-  if [ -z "${REGEX_ERRORS_SCAN}" ]; then
-    echo '** Significant/Major errors (if any)'
-    echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
-    exit 1
-  fi
-else
-  echo '** Significant/Major errors (if any)'
-  echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
-  exit 1
-fi
-if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
-  REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
-  if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
-    echo '** Significant/Major errors (if any)'
-    echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
-    exit 1
-  fi
-else
-  echo '** Significant/Major errors (if any)'
-  echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
-  exit 1
-fi
-if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
-  REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
-fi
 if [ ! -z "$(grep -io 'Basedir.*' pquery-run.log | grep -o '10\.[2-5]\.')" ]; then
   if grep -qm1 'innodb.checksum.algorithm' [0-9]*/default.node.tld_thread-0.sql 2>/dev/null; then
     echo '** Trials which modify innodb_checksum_algorithm (likely cause of corruption on versions <10.6, ref MDEV-23667)'
@@ -433,11 +402,10 @@ if [ -r ./errorlogs.tmp ]; then
   FIST_OCCURRENCE=0
   while read ERROR_LOG; do
     if [ -r ${ERROR_LOG} ]; then
-      # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
-      # Filtering 'MariaDB error code' is a bit wide, but the pquery-results output is simply too large without including this
-      ERROR_MSG_FILTER='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code|slave SQL thread aborted' # 'Warning: Memory not freed' etc. are now handled by new_text_string.sh and will show up in the UniqueID list already, not much point including them here again (except here it shows for example the actual memory lost in bytes size, but it also really clogs the output/screen)  # 'slave SQL thread aborted' is now handled by it's own '** Trials where the slave SQL thread aborted' section, which provides much cleaner and shorter overall pr output
-      ERRORS="$(grep --binary-files=text -Ei "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep --binary-files=text -vE "${ERROR_MSG_FILTER}" | grep -vE "^[ \t]*$")"
-      ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "${ERROR_MSG_FILTER}" | grep -vE "^[ \t]*$")"
+      # ERROR_MSG_FILTER is pquery-results.sh-specific (extra filter on top of REGEX_ERRORS_FILTER) and is applied to the helper's output. Items already produced as new_text_string.sh UniqueIDs (and visible in the UniqueID list) are filtered out here to keep the 'Significant/Major errors' section concise. 'slave SQL thread aborted' has its own '** Trials where the slave SQL thread aborted' section above.
+      ERROR_MSG_FILTER='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code|slave SQL thread aborted'
+      ERRORS="$(${SCRIPT_PWD}/error_log_scan.sh errors ${ERROR_LOG} | grep --binary-files=text -vE "${ERROR_MSG_FILTER}")"
+      ERRORS_LAST_LINE="$(${SCRIPT_PWD}/error_log_scan.sh lastline ${ERROR_LOG} | grep --binary-files=text -vE "${ERROR_MSG_FILTER}")"
       if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then
         if [ "${FIST_OCCURRENCE}" != "1" ]; then
           echo "** Significant/Major errors (if any)"

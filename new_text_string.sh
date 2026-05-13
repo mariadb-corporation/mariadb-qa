@@ -11,7 +11,7 @@
 # ./new_text_string.sh "${mysqld_loc}" # Where mysqld
 
 # Quick check to see if sleep can be skipped for *SAN issues (much faster output and automation)
-if [ $(grep -m1 --binary-files=text -E "=ERROR:|ThreadSanitizer:|runtime error:|LeakSanitizer:|MemorySanitizer:" ./log/master.err ./log/slave.err 2>/dev/null | wc -l) -eq 0 ]; then  # If no such issue found (count is 0), sleep x seconds to allow core, if any, to finish writing
+if [ $(grep -m1 --binary-files=text -E "=ERROR:|ThreadSanitizer:|runtime error:|LeakSanitizer:|MemorySanitizer:" ./log/master.err ./log/slave.err ./node*/node*.err 2>/dev/null | wc -l) -eq 0 ]; then  # If no such issue found (count is 0), sleep x seconds to allow core, if any, to finish writing
   # Whilst 2 seconds is almost surely not sufficient for all cores to finish writing on heavily loaded machines,
   # There is a tradeoff here - this script is very often called during automation and all sorts of other processing,
   # thus many things are affected even by a single second more. On the flip side, more failures may be observed
@@ -86,8 +86,8 @@ if [ -z "${MYSQLD}" ]; then
     MYSQLD="../../mysqld/mariadbd"
   elif [ -r ../../mysqld/mysqld -a ! -d ../../mysqld/mysqld ]; then  # Used by pquery-pre-red.sh to re-generate MYBUG string with valid input
     MYSQLD="../../mysqld/mysqld"
-  elif [ -r ../../../../../bin/mariadbd -a ! -d ../../../../../bin/mariadbd ]; then  # Used with/for MTR 
-    mariadbd="../../../../../bin/mariadbd"
+  elif [ -r ../../../../../bin/mariadbd -a ! -d ../../../../../bin/mariadbd ]; then  # Used with/for MTR
+    MYSQLD="../../../../../bin/mariadbd"
   elif [ -r ../../../../../bin/mysqld -a ! -d ../../../../../bin/mysqld ]; then  # Used with/for MTR 
     MYSQLD="../../../../../bin/mysqld"
   elif [ -r ./log/mysqld.out ]; then  # Reducer
@@ -165,7 +165,7 @@ else
   if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 2/3 (this may have been an MTR run)  # Replication, with --parallel
     LATEST_CORE=$(ls -t ${LOC}/var/*/log/*/mysqld*/data*/*core* 2>/dev/null | head -n1)
   fi
-  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 2/3 (this may have been an MTR run)  # Replication MTR testcases seems to use ./var/mysqld.nr/data/core.* instead, or may be due to older version?
+  if [ -z "${LATEST_CORE}" ]; then  # Attempt MTR core location 3/3 (this may have been an MTR run)  # Replication MTR testcases seems to use ./var/mysqld.nr/data/core.* instead, or may be due to older version?
     LATEST_CORE=$(ls -t ${LOC}/var/mysqld*/data*/*core* 2>/dev/null | head -n1)
   fi
 fi
@@ -191,27 +191,6 @@ if [ -z "${ERROR_LOGS}" ]; then
   fi
   if [ -r "./var/log/mysqld.1.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
     ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.1.1.err"
-  fi
-  if [ -r "../../mysqld.2.err" ]; then
-    ERROR_LOGS="${ERROR_LOGS} ../../mysqld.2.err"
-  fi
-  if [ -r "../../mysqld.2.err" ]; then
-    ERROR_LOGS="${ERROR_LOGS} ../../mysqld.2.err"
-  fi
-  if [ -r "./var/log/mysqld.2.err" ]; then  # For MTR, default ./mtr test runs (e.g. testcase in main/test.test)
-    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.err"
-  fi
-  if [ -r "./var/log/mysqld.2.err" ]; then  # For MTR, default ./mtr test runs (e.g. testcase in main/test.test)
-    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.err"
-  fi
-  if [ -r "./var/log/mysqld.3.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
-    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.3.1.err"
-  fi
-  if [ -r "./var/log/mysqld.2.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
-    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.1.err"
-  fi
-  if [ -r "./var/log/mysqld.2.1.err" ]; then  # For MTR Spider (and other) test runs (may not be correct one)
-    ERROR_LOGS="${ERROR_LOGS} ./var/log/mysqld.2.1.err"
   fi
   if [ -r "./log/mysqld.out" ]; then  # Reducer
     ERROR_LOGS="${ERROR_LOGS} ./log/mysqld.out"
@@ -292,13 +271,13 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MEMNOTFREED=
-  GOTERROR="$(grep -hio 'mysqld: Got error[^"]\+"[^"]\+"' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/.*sql-temptable.*MAI|.*sql-temptable.*MAI|' | sed 's|/[dt][ae][ts][at]/.*sql-temptable.*MAI|.*sql-temptable.*MAI|')"
+  GOTERROR="$(grep -hio 'm\(ariadb\|ysql\)d: Got error[^"]\+"[^"]\+"' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/.*sql-temptable.*MAI|.*sql-temptable.*MAI|' | sed 's#/\(data\|test\)/.*sql-temptable.*MAI#.*sql-temptable.*MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g')"
   if [ ! -z "${GOTERROR}" ]; then
     TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
   else
-    GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/.*sql-temptable.*MAI|.*sql-temptable.*MAI|' | sed 's|/[dt][ae][ts][at]/.*sql-temptable.*MAI|.*sql-temptable.*MAI|')"
+    GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*#sql-temptable[^']*'|Got error \1 when reading table (temptable)|" | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*'|Got error \1 when reading table 'X'|" | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/.*sql-temptable.*MAI|.*sql-temptable.*MAI|' | sed 's#/\(data\|test\)/.*sql-temptable.*MAI#.*sql-temptable.*MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g')"
     if [ ! -z "${GOTERROR}" ]; then
       TEXT="GOT_ERROR|${GOTERROR}"
       TEXT="$(echo "${TEXT}" | sed "s|marked as crashed and should be repaired\"' for .*|marked as crashed and should be repaired\" for 'X'|")"  # Use a generic indentifier 'X' for any table name, similar to X/Y value handling in *SAN bugs
@@ -307,14 +286,14 @@ find_other_possible_issue_strings(){
     fi
   fi
   GOTERROR=
-  MARKEDASCRASHED="$(grep -hio 'mysqld: Table.*is marked as crashed and should be repaired' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|Table /[^#]\+#sql-temptable[^ ]\+ |Table sql-temptable-X |')"
+  MARKEDASCRASHED="$(grep -hio 'm\(ariadb\|ysql\)d: Table.*is marked as crashed and should be repaired' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|^mariadbd: ||;s|^mysqld: ||' | sed 's|Table /[^#]\+#sql-temptable[^ ]\+ |Table sql-temptable-X |')"
   if [ ! -z "${MARKEDASCRASHED}" ]; then
     TEXT="MARKED_AS_CRASHED|${MARKEDASCRASHED}"
     echo "${TEXT}"
     exit 0
   fi
   MARKEDASCRASHED=
-  INNODBERROR="$(grep -hio 'ERROR. InnoDB.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|ERROR. InnoDB[: ]*||' | sed 's|table.*index.*stat[^:]\+|table.*index.*stat.*|;s|User stopword table.*does not exist|User stopword table does not exist|;s|\.$||')"
+  INNODBERROR="$(grep -hio 'ERROR\] InnoDB.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|ERROR\] InnoDB[: ]*||' | sed 's|table.*index.*stat[^:]\+|table.*index.*stat.*|;s|User stopword table.*does not exist|User stopword table does not exist|;s|\.$||')"
   if [ ! -z "${INNODBERROR}" ]; then
     TEXT="INNODB_ERROR|${INNODBERROR}"
     TEXT="$(echo "${TEXT}" | sed 's|Cannot rename.*to.*because the target schema directory doesnt exist|Cannot rename.*to.*because the target schema directory doesnt exist|')"  # https://jira.mariadb.org/browse/MDEV-27952?focusedCommentId=283382&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-283382
@@ -366,6 +345,13 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   SLAVE_ERROR2=
+  INNODBWARNING="$(grep -hio '\[Warning\] InnoDB: Record in index.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|.*\[Warning\] InnoDB: ||' | sed 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD|')"
+  if [ ! -z "${INNODBWARNING}" ]; then
+    TEXT="INNODB_WARNING|${INNODBWARNING}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  INNODBWARNING=
   # RV-27/08/22 If none of these issues was found present, then the script will continue and such continuations will always result in exit 1 as find_other_possible_issue_strings is a final attempt at returning a useful string if all other checks have already failed. It provides for several of the exit_code!=0 by mariadbd/mysyqld, previously reported as 'no core found' and similar, yet now covered.
 }
 
@@ -383,11 +369,11 @@ elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${ERROR_LOGS} 2>/dev/n
   SAN_BUG=1
 fi
 if [ "${SAN_BUG}" -eq 1 ]; then
-  if [ ! -r ${HOME}/mariadb-qa/san_text_string.sh ]; then
-    echo "Assert: ${HOME}/mariadb-qa/san_text_string.sh not available, you may want to clone mariadb-qa. Terminating"
+  if [ ! -r ${SCRIPT_PWD}/san_text_string.sh ]; then
+    echo "Assert: ${SCRIPT_PWD}/san_text_string.sh not available, you may want to clone mariadb-qa. Terminating"
     exit 1
   fi
-  TEXT="$(${HOME}/mariadb-qa/san_text_string.sh "${ERROR_LOGS}")"  # Ensure the double quotes in "${ERROR_LOGS}" are present so ${1} is all logs, rather than ${1} being the first log only
+  TEXT="$(${SCRIPT_PWD}/san_text_string.sh "${ERROR_LOGS}")"  # Ensure the double quotes in "${ERROR_LOGS}" are present so ${1} is all logs, rather than ${1} being the first log only
   if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
     1>&2 echo "${SHOWTEXT}"
   fi
@@ -404,7 +390,7 @@ if [ -z "${LATEST_CORE}" ]; then
   if [ -f ${SCRIPT_PWD}/fallback_text_string.sh -a -r ${SCRIPT_PWD}/fallback_text_string.sh ]; then
     if [[ "${PWD}" != *"SAN"* ]]; then  # [*] When SAN is used, no cores are generated. As such, we don't want to produce a fallback_text_string.sh string here (from the error log) as they will be almost always dud's and there will be many of them (all the same issues which already have UniqueID's and are already logged etc.)
       COUNT_NR_OF_ERROR_LOGS="$(echo "${ERROR_LOGS}" | tr ' ' '\n' | wc -l)"
-      for((i=0;i<${COUNT_NR_OF_ERROR_LOGS};i++)){
+      for((i=1;i<=${COUNT_NR_OF_ERROR_LOGS};i++)){
         # echo "${ERROR_LOGS}" | tr ' ' '\n' | head -n${i} | tail -n1  # debug to see what logs are scanned
         TEXT="$(${SCRIPT_PWD}/fallback_text_string.sh "$(echo "${ERROR_LOGS}" | tr ' ' '\n' | head -n${i} | tail -n1)" 2>&1 | grep -v 'No relevant strings were found in')"  # Try FTS, one log at the time. Note: spaces in the path may break this, but with a standard server setup (i.e. ~/mariadb-qa, /test, /data and /dev/shm, this should never happen as every path used is without spaces). fallback_text_string.sh was never made multi-error-log aware, the ROI is too low
         if [ ! -z "${TEXT}" ]; then

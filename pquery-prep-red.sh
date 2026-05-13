@@ -696,16 +696,16 @@ generate_reducer_script(){
       ALT_ACTIVATIONS=
     fi
   fi
-  if [ ! -z "${FINDBUG}" ]; then  # Already known and logged, non-fixed bug, use an error log entry instead, using pquery-trial-del.sh (in 'CHECK' non-delete mode only) to tell us what string to use (and additionally pquery-trial-del.sh automatically provides some TEXT regex cleanup in this mode)
+  if [ ! -z "${FINDBUG}" ]; then  # Already known and logged, non-fixed bug, use an error log entry instead, using pquery-del-trial.sh (in 'CHECK' non-delete mode only) to tell us what string to use (and additionally pquery-del-trial.sh automatically provides some TEXT regex cleanup in this mode)
     ERROR_LOG_STRING="$(${SCRIPT_PWD}/pquery-del-trial.sh ${TRIAL} CHECK)"
     # pquery-del-trial.sh CHECK can return multiple lines (one per significant error log entry).
     # sed's s-command cannot embed raw newlines in the replacement, so we join with '|' (regex alternation).
     # This lets reducer's TEXT regex match ANY of the unfiltered error log entries.
     ERROR_LOG_STRING="$(echo "${ERROR_LOG_STRING}" | grep -v '^[ \t]*$' | tr '\n' '|' | sed 's|[|]$||')"
     if [ ! -z "${ERROR_LOG_STRING}" ]; then
-      UNTS_COMMENT="# TEXT set to the unfiltered error log bug (multi-line entries joined with '|' as regex alternation). The original crash UniqueID - now below as '#TEXT=' - is an already-known/filtered bug. Before starting this reducer, consider tightening the TEXT regex to be more stable (strip port numbers, GTIDs, temporary table names, file paths, line numbers, hex addresses, etc.) so it matches correctly across testcase replays by reducer rather than become non-reproducible."
-      sed -i "s|^USE_NEW_TEXT_STRING=.*|USE_NEW_TEXT_STRING=0  ${UNTS_COMMENT}|" ${REDUCER_FILENAME}
-      sed -i "s|^   \(TEXT=.*\)|   TEXT=\"$ERROR_LOG_STRING\"\n#\1|" ${REDUCER_FILENAME}
+      UNTS_COMMENT="# TEXT set to the unfiltered error log bug (multi-line entries joined with regex alternation). The original crash UniqueID - now below as '#TEXT=' - is an already-known/filtered bug. Before starting this reducer, consider tightening the TEXT regex to be more stable (strip port numbers, GTIDs, temporary table names, file paths, line numbers, hex addresses, etc.) so it matches correctly across testcase replays by reducer rather than become non-reproducible."
+      sed -i $'s\x01^USE_NEW_TEXT_STRING=.*\x01USE_NEW_TEXT_STRING=0  '"${UNTS_COMMENT}"$'\x01' ${REDUCER_FILENAME}
+      sed -i $'s\x01^   \\(TEXT=.*\\)\x01   TEXT="'"${ERROR_LOG_STRING}"$'"\\n#\\1\x01' ${REDUCER_FILENAME}
       UNTS_COMMENT=
     fi
     echo "* TEXT variable set to: '${ERROR_LOG_STRING}'"

@@ -827,7 +827,7 @@ savetrial() {  # Only call this if we definitely want to save a trial
   fi
   # If there are *SAN bugs, delete any known ones from the top of the error log(s)
   if [ "${SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG}" != "1" ]; then
-    if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+    if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null; then
       SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=1
       echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
       CUR_PWD_TMP="${PWD}"
@@ -837,7 +837,7 @@ savetrial() {  # Only call this if we definitely want to save a trial
       CUR_PWD_TMP=
     fi
   fi
-  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null; then
     # As we are already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh
     if [ "$(echo "${TEXT}" | grep --binary-files=text -o 'no core.*empty output' | grep --binary-files=text -o 'no core' | head -n1)" == "no core" ]; then
       echo "Debug Assert: a *SAN text string was found in the error log at ${RUNDIR}/${TRIAL}/log/*.err yet TEXT ('${TEXT}') contains 'no core.*empty output'. Possibly master vs slave issue. Feel free to improve code in this area."  # TODO
@@ -928,7 +928,7 @@ handle_bugs() {
   add_handy_scripts
   # If there are *SAN bugs, delete any known ones from the top of the error log(s)
   if [ "${SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG}" != "1" ]; then
-    if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then  # TODO: needs improving for MDG
+    if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null; then
       SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=1
       echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
       # We are already in ${RUNDIR}/${TRIAL} directory (ref above), so no need to change to it
@@ -942,13 +942,7 @@ handle_bugs() {
     export GALERA_ERROR_LOGS=""
   else
     TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"  # Note this will auto-call san_text_string.sh or fallback_text_string.sh if required
-    # Only write MYBUG if (a) MYBUG is not yet present, or (b) the new UniqueID is NOT a known bug.
-    # This preserves the unfiltered-error-log MYBUG written in the ERROR_LOG_SCAN_ISSUE branch when the core here resolves to a known bug.
-    if [ ! -r ${RUNDIR}/${TRIAL}/MYBUG ] || [ -z "$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | grep -v '^[ \t]*#')" ]; then
-      echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/MYBUG
-    else
-      echoit "new_text_string.sh produced a KNOWN bug UniqueID ('${TEXT}'); keeping existing MYBUG (unfiltered error log bug) instead"
-    fi
+    echo "${TEXT}" | grep -v '^[ \t]*$' > ${RUNDIR}/${TRIAL}/MYBUG
   fi
   cd - >/dev/null || exit 1
   if [[ "${MDG}" -eq 1 ]]; then
@@ -968,7 +962,7 @@ handle_bugs() {
   fi
   echoit "Bug found (as per new_text_string.sh): ${TEXT}"
   TRIAL_TO_SAVE=1
-  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err; then
+  if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null; then
     # As we are already post-'known SAN* bug filtering', and *SAN issues remain (as the grep shows), this trial needs to always be saved; it cannot be a known issue as all known issues are already removed by drop_one_or_more_san_from_log.sh
     # As such, ELIMINATE_KNOWN_BUGS filtering is also not required in this case, and should not be called  # TODO: ',and should not ...': Defensive or required?
     TRIAL_TO_SAVE=1  # Defensive, leave
@@ -2605,23 +2599,8 @@ EOF
   fi
   # Process results
   # NOTE**: Do not kill PQPID here/before shutdown. The reason is that pquery may still be writing queries it's executing to the log. The only way to halt pquery correctly is by actually shutting down the server which will auto-terminate pquery due to 250 consecutive queries failing. If 250 queries failed and ${PQUERY_RUN_TIMEOUT}s timeout was reached, and if there is no core/Valgrind issue and there is no output of mariadb-qa/text_string.sh either (in case core dumps are not configured correctly, and thus no core file is generated, text_string.sh will still produce output in case the server crashed based on the information in the error log), then we do not need to save this trial (as it is a standard occurrence for this to happen). If however we saw 250 queries failed before the timeout was complete, then there may be another problem and the trial should be saved.
-  # First check if we have a significant/major error
-  # Significant/major error scanning. This code is partially duplicated in pquery-results.sh as well as in pquery-del-trial.sh. Update all three when making changes. TODO: integrate this code into a new script to de-duplicate the code
-  ERRORS=
+  # First check if we have a significant/major error. The scan + cleanup is centralised in error_log_scan.sh and is shared with pquery-prep-red.sh / pquery-del-trial.sh / pquery-results.sh.
   ERROR_LOG_SCAN=
-  ERRORS_LAST_LINE=
-  REGEX_ERRORS_SCAN=
-  REGEX_ERRORS_LASTLINE=
-  REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
-  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
-    REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
-  fi
-  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
-    REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
-  fi
-  if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
-    REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
-  fi
   if [[ "${MDG}" -eq 1 ]]; then
     if [ -z "${MDG_NODE}" ]; then
       ERROR_LOG_SCAN="${RUNDIR}/${TRIAL}/node*.err"
@@ -2629,6 +2608,7 @@ EOF
       ERROR_LOG_SCAN="${RUNDIR}/${TRIAL}/node${MDG_NODE}.err"
     fi
   else
+    ERROR_LOG_SCAN=
     if [ -r ${RUNDIR}/${TRIAL}/log/master.err ]; then
       ERROR_LOG_SCAN="${RUNDIR}/${TRIAL}/log/master.err"
     fi
@@ -2636,32 +2616,13 @@ EOF
       ERROR_LOG_SCAN="${ERROR_LOG_SCAN} ${RUNDIR}/${TRIAL}/log/slave.err"
     fi
   fi
-  if [ ! -z "${ERROR_LOG_SCAN}" -a ! -z "${REGEX_ERRORS_SCAN}" -a ! -z "${REGEX_ERRORS_FILTER}" ]; then  # Do not use -r as it will not work if both master.err and slave.err are present, for example
-    # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
-    ERRORS="$(grep --binary-files=text -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$")"
-  fi
-  if [ ! -z "${ERROR_LOG_SCAN}" -a ! -z "${REGEX_ERRORS_LASTLINE}" -a ! -z "${REGEX_ERRORS_FILTER}" ]; then
-    ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$")"
-  fi
-  if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then  # We have a significant/major error
-    touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # Mark trial as containing a error log issue. TODO: pquery-prep-red.sh will use this as an indicator for possibly taking the error log issue as TEXT for reducer. However, for doing so, it will use pquery-del-trial.sh (in CHECK mode) which may (or may not) slightly differ from how the error log issue grab works above (to be checked, or perhaps these several areas of error log issue processing can be moved/unified/de-duplicated into a new standalone script)
-    echoit "Error log bug found: $(echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')"
-    # Persist the unfiltered error log bug as MYBUG (multi-line entries joined with '|' as regex alternation). Guarded by -r check for defensive coding; no upstream code writes MYBUG before this point.
-    if [ ! -r ${RUNDIR}/${TRIAL}/MYBUG ]; then
-      {
-        if [ ! -z "${ERRORS}" ]; then echo "${ERRORS}"; fi
-        if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "${ERRORS_LAST_LINE}"; fi
-      } | grep -v '^[ \t]*$' | tr '\n' '|' | sed 's|[|]$||' > ${RUNDIR}/${TRIAL}/MYBUG
-    fi
+  if [ ! -z "${ERROR_LOG_SCAN}" ] && ${SCRIPT_PWD}/error_log_scan.sh check ${ERROR_LOG_SCAN}; then  # error_log_scan.sh: unified REGEX_ERRORS_* scanner; see that script for the regex config & cleanup pipeline
+    touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # Mark trial as containing an error log issue. pquery-prep-red.sh uses this (plus a known-bug check on the MYBUG UniqueID) to decide whether to override reducer TEXT with the cleaned error log bug from error_log_scan.sh.
+    echoit "Error log bug found: \"$(${SCRIPT_PWD}/error_log_scan.sh errors ${ERROR_LOG_SCAN} | tr '\n' ' ' | sed 's|[ ]\+$||')\" \"$(${SCRIPT_PWD}/error_log_scan.sh lastline ${ERROR_LOG_SCAN} | tr '\n' ' ' | sed 's|[ ]\+$||')\""
     savetrial
     TRIAL_SAVED=1
   fi
-  ERRORS=
   ERROR_LOG_SCAN=
-  ERRORS_LAST_LINE=
-  REGEX_ERRORS_SCAN=
-  REGEX_ERRORS_LASTLINE=
-  REGEX_ERRORS_FILTER=
   # Now continue with main processing
   if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
     if [ "${VALGRIND_RUN}" == "1" ]; then # For Valgrind, we want the full Valgrind output in the error log, hence we need a proper/clean (and slow...) shutdown
@@ -3142,7 +3103,7 @@ EOF
     fi
     # If there are *SAN bugs, delete any known ones from the top of the error log(s)...
     if [ "${SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG}" != "1" ]; then
-      if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null; then
+      if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null; then
         SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=1
         echoit "Dropping any known *SAN bugs from the top of the error log for trial ${TRIAL}, if any"  # Note that reducer.sh matches this behavior when a TOP_SAN_ISSUES_REMOVED flag file is present for the trial, and drop_one_or_more_san_from_log.sh will create this flag when a pquery-run.sh based trial (like here) was found, and only writes this flag file if it has removed top level known issue(s)/bug(s)
         CUR_PWD_TMP="${PWD}"
@@ -3209,27 +3170,27 @@ EOF
         savetrial
         TRIAL_SAVED=1
       # The various *SAN check below assume that any pre-existing/known *SAN issues have already been dropped from the log. Ref the provision for this before the first 'if' in this longer if/elif/elif...
-      elif [ $(grep -im1 --binary-files=text "=ERROR:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+      elif [ $(grep -im1 --binary-files=text "=ERROR:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "Uknown/new ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
-      elif [ $(grep -im1 --binary-files=text "runtime error:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+      elif [ $(grep -im1 --binary-files=text "runtime error:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "Uknown/new UBSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
-      elif [ $(grep -im1 --binary-files=text "AddressSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+      elif [ $(grep -im1 --binary-files=text "AddressSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "Uknown/new ASAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
-      elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+      elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "Uknown/new TSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
-      elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+      elif [ $(grep -im1 --binary-files=text "LeakSanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "Uknown/new LSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1
-      elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err 2>/dev/null | wc -l) -ge 1 ]; then
+      elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "Uknown/new MSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
         savetrial
         TRIAL_SAVED=1

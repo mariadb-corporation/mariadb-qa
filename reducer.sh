@@ -3778,7 +3778,7 @@ process_outcome(){
           export GALERA_CORE_LOC=$WORKD/node${GALERA_NODE}/*core*
         fi
         # If there are *SAN bugs, and if pquery-run.sh wrote a TOP_SAN_ISSUES_REMOVED for the trial, then delete any known ones from the top of the error log(s)
-        if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${WORKD}/log/*.err; then
+        if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${WORKD}/log/*.err ${WORKD}/node*/node*.err 2>/dev/null; then
           if [ -r "$(echo "${INPUTFILE}" | sed 's|/default.node.tld.*|/TOP_SAN_ISSUES_REMOVED|')" ]; then
             echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] TOP_SAN_ISSUES_REMOVED flag file found: dropping any known *SAN bugs from the top of the error log, if any"
             # We are already in $WORKD so we can immediately execute drop_one_or_more_san_from_log.sh from here
@@ -5664,7 +5664,99 @@ if [ $SKIPSTAGEBELOW -lt 4 -a $SKIPSTAGEABOVE -gt 4 ]; then
     elif [ $TRIAL -eq 294 ]; then sed -e "s/\"\([^\"]\{1,\}\)[^\"]\{20\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{20\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{20\}\"/\"\1\"/g" $WORKF > $WORKT
     # Hex literals (0xDEADBEEF...)
     elif [ $TRIAL -eq 295 ]; then sed "s/0x[0-9A-Fa-f]\{8,\}/0x0/g" $WORKF > $WORKT
-    elif [ $TRIAL -eq 296 ]; then sed "s/0x[0-9A-Fa-f]\{8,\}/0x0/" $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
+    elif [ $TRIAL -eq 296 ]; then sed "s/0x[0-9A-Fa-f]\{8,\}/0x0/" $WORKF > $WORKT
+    # Per-occurrence string-literal reduction. Used when 'g' (all) and first-only ('') have both failed,
+    # i.e. removing all long strings, or just the first, breaks reproduction. The GNU sed /N flag targets
+    # the Nth match on a line, isolating individual fuzz payloads inside VALUES (...) lists.
+    elif [ $TRIAL -eq 297 ]; then sed "s/'[^']\{32,\}'/'a'/2" $WORKF > $WORKT  # 2nd long '...' -> 'a'
+    elif [ $TRIAL -eq 298 ]; then sed "s/'[^']\{32,\}'/'a'/3" $WORKF > $WORKT  # 3rd
+    elif [ $TRIAL -eq 299 ]; then sed "s/'[^']\{32,\}'/'a'/4" $WORKF > $WORKT  # 4th
+    elif [ $TRIAL -eq 300 ]; then sed "s/\"[^\"]\{32,\}\"/\"a\"/2" $WORKF > $WORKT  # Idem, "..."
+    elif [ $TRIAL -eq 301 ]; then sed "s/\"[^\"]\{32,\}\"/\"a\"/3" $WORKF > $WORKT
+    elif [ $TRIAL -eq 302 ]; then sed "s/\"[^\"]\{32,\}\"/\"a\"/4" $WORKF > $WORKT
+    # Per-occurrence keep-first-16: shorten an individual long string without dropping it
+    elif [ $TRIAL -eq 303 ]; then sed "s/'\([^']\{16\}\)[^']\{16,\}'/'\1'/2" $WORKF > $WORKT  # 2nd only
+    elif [ $TRIAL -eq 304 ]; then sed "s/'\([^']\{16\}\)[^']\{16,\}'/'\1'/3" $WORKF > $WORKT  # 3rd only
+    elif [ $TRIAL -eq 305 ]; then sed "s/'\([^']\{16\}\)[^']\{16,\}'/'\1'/4" $WORKF > $WORKT  # 4th only
+    # 'a'-fill length sweep. For bugs where minimum string length matters, not content. Each step
+    # roughly halves the 'a' run; a step that breaks repro reverts, surviving steps feed the next.
+    elif [ $TRIAL -eq 306 ]; then sed "s/'[^']\{33,\}'/'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'/g" $WORKF > $WORKT  # 33+ -> 32 a
+    elif [ $TRIAL -eq 307 ]; then sed "s/'[^']\{17,\}'/'aaaaaaaaaaaaaaaa'/g" $WORKF > $WORKT                  # 17+ -> 16 a
+    elif [ $TRIAL -eq 308 ]; then sed "s/'[^']\{9,\}'/'aaaaaaaa'/g" $WORKF > $WORKT                           # 9+  -> 8 a
+    elif [ $TRIAL -eq 309 ]; then sed "s/'[^']\{5,\}'/'aaaa'/g" $WORKF > $WORKT                               # 5+  -> 4 a
+    elif [ $TRIAL -eq 310 ]; then sed "s/'[^']\{3,\}'/'aa'/g" $WORKF > $WORKT                                 # 3+  -> 2 a
+    # Idem for "..."
+    elif [ $TRIAL -eq 311 ]; then sed "s/\"[^\"]\{17,\}\"/\"aaaaaaaaaaaaaaaa\"/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 312 ]; then sed "s/\"[^\"]\{9,\}\"/\"aaaaaaaa\"/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 313 ]; then sed "s/\"[^\"]\{5,\}\"/\"aaaa\"/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 314 ]; then sed "s/\"[^\"]\{3,\}\"/\"aa\"/g" $WORKF > $WORKT
+    # Final 'a'-run collapse — covers leftover 'aa'/"aa" after the cascade above
+    elif [ $TRIAL -eq 315 ]; then sed "s/'aa'/'a'/g" $WORKF > $WORKT
+    elif [ $TRIAL -eq 316 ]; then sed "s/\"aa\"/\"a\"/g" $WORKF > $WORKT
+    # Drop explicit column list from INSERT/REPLACE INTO t (col1,...) VALUES — Stage 6's per-column
+    # eliminator cannot remove a column referenced in the explicit list, so try dropping the list first.
+    # Accepts optional modifiers (IGNORE/DELAYED/LOW_PRIORITY/HIGH_PRIORITY), `db.t` table names, any case.
+    elif [ $TRIAL -eq 317 ]; then sed "s/\(INSERT\|REPLACE\)\(\([\t ]\+[a-zA-Z_]\+\)*\)\([\t ]\+INTO[\t ]\+[a-zA-Z0-9_.]\+\)[\t ]*([^)]*)\([\t ]*VALUES\)/\1\2\4\5/gi" $WORKF > $WORKT
+    # Drop common column-decoration clauses. Each pattern accepts: unquoted ident, single- or double-quoted
+    # value, optional '=', and optional whitespace between keyword and value (covers e.g. CHARACTER SET'BINARY').
+    elif [ $TRIAL -eq 318 ]; then sed "s/\(CHARACTER[\t ]\+SET\|CHARSET\)[\t ]*=\{0,1\}[\t ]*\('[^']*'\|\"[^\"]*\"\|[a-zA-Z0-9_]\+\)//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 319 ]; then sed "s/COLLATE[\t ]*=\{0,1\}[\t ]*\('[^']*'\|\"[^\"]*\"\|[a-zA-Z0-9_]\+\)//gi" $WORKF > $WORKT
+    elif [ $TRIAL -eq 320 ]; then sed "s/[\t ]*ZEROFILL//gi" $WORKF > $WORKT
+    # Collapse CREATE OR REPLACE TABLE to CREATE TABLE so Stage 6 (and the pre-split) recognises the table
+    elif [ $TRIAL -eq 321 ]; then sed "s/CREATE[\t ]\+OR[\t ]\+REPLACE[\t ]\+TABLE/CREATE TABLE/gi" $WORKF > $WORKT
+    # Multi-line INSERT/REPLACE: join continuation lines through next `;` (string-aware), then drop
+    # col_list if present. Supersets trial 317; handles INSERT IGNORE / LOW_PRIORITY / DELAYED, db.t
+    # table names, any case, and `;` chars inside string literals.
+    elif [ $TRIAL -eq 322 ]; then awk '
+      function is_complete(s,    j, c, in_str, str_ch, esc, len) {
+        in_str = 0; str_ch = ""; esc = 0; len = length(s)
+        for (j = 1; j <= len; j++) {
+          c = substr(s, j, 1)
+          if (in_str) {
+            if (esc) { esc = 0 }
+            else if (c == "\\") { esc = 1 }
+            else if (c == str_ch) {
+              if (substr(s, j+1, 1) == str_ch) { j++ }
+              else { in_str = 0; str_ch = "" }
+            }
+          } else {
+            if (c == "\047" || c == "\"") { in_str = 1; str_ch = c; esc = 0 }
+            else if (c == ";") return 1
+          }
+        }
+        return 0
+      }
+      function drop_col_list(s,    upper, pre, rest, depth, close_idx, after, j, ch) {
+        upper = toupper(s)  # awk has no /i flag; match against uppercase copy, operate on original (toupper preserves length in C/POSIX locale)
+        if (match(upper, /(INSERT|REPLACE)([[:space:]]+[A-Z_]+)*[[:space:]]+INTO[[:space:]]+[A-Z0-9_.]+[[:space:]]*\(/)) {
+          pre = substr(s, 1, RSTART + RLENGTH - 1)
+          rest = substr(s, RSTART + RLENGTH)
+          depth = 1; close_idx = 0
+          for (j = 1; j <= length(rest); j++) {
+            ch = substr(rest, j, 1)
+            if (ch == "(") depth++
+            else if (ch == ")") { depth--; if (depth == 0) { close_idx = j; break } }
+          }
+          if (close_idx > 0) {
+            after = substr(rest, close_idx + 1)
+            if (toupper(after) ~ /^[[:space:]]*VALUES/) {
+              sub(/[[:space:]]*\($/, "", pre)
+              return pre after
+            }
+          }
+        }
+        return s
+      }
+      toupper($0) ~ /^[[:space:]]*(INSERT|REPLACE)([[:space:]]+[A-Z_]+)*[[:space:]]+INTO/ {
+        buf = $0
+        while (!is_complete(buf)) {
+          if ((getline nl) <= 0) break
+          buf = buf " " nl
+        }
+        print drop_col_list(buf); next
+      }
+      { print }
+    ' $WORKF > $WORKT; NEXTACTION="& progress to the next stage"
     else break
     fi
     if [ ! -r "${WORKT}" ]; then abort; fi
@@ -5760,6 +5852,52 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
   if [ ! -r "${WORKF}" ]; then abort; fi
   SIZEF=`stat -c %s $WORKF`
   echoit "$ATLEASTONCE [Stage $STAGE] Commencing stage $STAGE"
+
+  # Normalise the CREATE TABLE keyword to upper-case so the rest of Stage 6 (all case-sensitive
+  # `CREATE[\t ]*TABLE` grep/sed/awk patterns) works on any-case input. Length-preserving, so SIZEF
+  # is unchanged. Only the bare keyword is touched — table names, column names and identifiers like
+  # `create_date` are left untouched.
+  sed -i 's/CREATE\([\t ]\+\)TABLE/CREATE\1TABLE/gI' "$WORKF"
+
+  # Pre-step: split any single-line CREATE TABLE name (col1, col2, ...); on depth-1 commas so the
+  # column-name extraction below has one column per line. Depth- and string-aware so FLOAT(2,2),
+  # SET('') and similar are preserved. No-op for already-multi-line CREATE TABLE (regex requires
+  # both '(' and ');' on the same line). Whitespace-only edit, so semantically equivalent.
+  if grep -E --binary-files=text -q "CREATE[[:space:]]+TABLE[^(]*\([^)]*).*;" "$WORKF"; then
+    if awk '
+      /^[[:space:]]*(--|#)/ { print; next }
+      /CREATE[[:space:]]+TABLE.*\(.*\).*;/ {
+        line = $0; out = ""; depth = 0; in_str = 0; str_ch = ""; esc = 0
+        for (i = 1; i <= length(line); i++) {
+          c = substr(line, i, 1)
+          if (in_str) {
+            out = out c
+            if (esc) { esc = 0 }                                  # current char consumed by preceding \-escape
+            else if (c == "\\") { esc = 1 }                       # next char will be \-escaped
+            else if (c == str_ch) {
+              if (substr(line, i+1, 1) == str_ch) { out = out str_ch; i++ }  # SQL '' escape
+              else { in_str = 0; str_ch = "" }
+            }
+          } else {
+            if (c == "\047" || c == "\"") { in_str = 1; str_ch = c; esc = 0; out = out c }
+            else if (c == "(" && depth == 0) { depth++; out = out c "\n" }
+            else if (c == "(") { depth++; out = out c }
+            else if (c == ")" && depth == 1) { depth--; out = out "\n" c }
+            else if (c == ")") { depth--; out = out c }
+            else if (c == "," && depth == 1) { out = out ",\n" }
+            else { out = out c }
+          }
+        }
+        print out; next
+      }
+      { print }
+    ' "$WORKF" > "$WORKT"; then
+      cp -f "$WORKT" "$WORKF"
+      SIZEF=$(stat -c %s "$WORKF")
+      LINECOUNTF=$(awk 'END{print NR}' "$WORKF")
+      echoit "$ATLEASTONCE [Stage $STAGE] Pre-step: split single-line CREATE TABLE definitions for per-column processing"
+    fi
+  fi
 
   # CREATE TABLE name (...); statements on one line are split to obtain one column per line by the initial verification (STAGE V).
   # And, another situation, CREATE TABLE statements with each column on a new line is the usual RQG output. Both these cases are handled.
@@ -5878,7 +6016,7 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
 
             # First count how many actual INSERT rows there are
             COUNTINSERTS=0
-            COUNTINSERTS=$(for INSERT in $(cat $WORKT2 | awk "/INSERT.*INTO.*$TABLENAME.*VALUES/,/;/" | \
+            COUNTINSERTS=$(for INSERT in $(cat $WORKT2 | awk "/(INSERT|REPLACE).*INTO.*$TABLENAME.*VALUES/,/;/" | \
               sed "s/;/,/;s/^[ ]*(/(\n/;s/)[ ,;]$/\n)/;s/)[ ]*,[ ]*(/\n/g" | \
               grep -E --binary-files=text -v "^[ ]*[\(\)][ ]*$|INSERT"); do \
               echo $INSERT; \
@@ -5895,14 +6033,14 @@ if [ $SKIPSTAGEBELOW -lt 6 -a $SKIPSTAGEABOVE -gt 6 ]; then
                 echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Column $COLUMN/$COUNTCOLS] Removing $COUNTINSERTS INSERT..VALUES for column '$COL' in table '$TABLENAME'"
               fi
               for i in $(eval echo {1..$COUNTINSERTS}); do
-                FROM=$(for INSERT in $(cat $WORKT2 | awk "/INSERT.*INTO.*$TABLENAME.*VALUES/,/;/" | \
+                FROM=$(for INSERT in $(cat $WORKT2 | awk "/(INSERT|REPLACE).*INTO.*$TABLENAME.*VALUES/,/;/" | \
                   sed "s/;/,/;s/^[ ]*(/(\n/;s/)[ ,;]$/\n)/;s/)[ ]*,[ ]*(/\n/g" | \
                   grep -E --binary-files=text -v "^[ ]*[\(\)][ ]*$|INSERT"); do \
                   echo $INSERT; \
                   done | awk "{if(NR==$i) print "'$1}')
 
                 TO_DONE=0
-                TO=$(for INSERT in $(cat $WORKT2 | awk "/INSERT.*INTO.*$TABLENAME.*VALUES/,/;/" | \
+                TO=$(for INSERT in $(cat $WORKT2 | awk "/(INSERT|REPLACE).*INTO.*$TABLENAME.*VALUES/,/;/" | \
                   sed "s/;/,/;s/^[ ]*(/(\n/;s/)[ ,;]$/\n)/;s/)[ ]*,[ ]*(/\n/g" | \
                   grep -E --binary-files=text -v "^[ ]*[\(\)][ ]*$|INSERT"); do \
                   echo $INSERT | tr ',' '\n' | awk "{if(NR!=$COLUMN && $TO_DONE==0) print "'$1}'; echo "==>=="; \

@@ -98,18 +98,17 @@ MARIADB_ERROR_CODE|MariaDB error code: 4254  ## SPECIAL-52 (valid warning/error 
 MARIADB_ERROR_CODE|MariaDB error code: 4226  ## Covering various init_slave exec issues (ref MDEV-29499 and for example SPECIAL-42)
 MARIADB_ERROR_CODE|MariaDB error code: 12501 ## SPECIAL-31 (to be expected; remote table not available)
 MARIADB_ERROR_CODE|MariaDB error code: 12701 ## MDEV-22936
-MARKED_AS_CRASHED|mysqld: Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
-MARKED_AS_CRASHED|mysqld: Table sql-temptable-X is marked as crashed and should be repaired  ## MDEV-31588
+MARKED_AS_CRASHED|Table slow_log is marked as crashed and should be repaired  ## MDEV-27076
+MARKED_AS_CRASHED|Table sql-temptable-X is marked as crashed and should be repaired  ## MDEV-31588
 GOT_ERROR|Got error 1|when reading table                       ## MDEV-34951 (may mask other bugs)
 GOT_ERROR|Got error 9|when reading table                       ## MDEV-23297
 GOT_ERROR|Got error 10|'Operation aborted: Failed to acquire lock due to rocksdb_max_row_locks limit' from ROCKSDB, Error_code: 1296; Got error 221 'RocksDB status: lock limit reached.' from ROCKSDB, Error_code: 1296; handler error No Error!; the event's master log FIRST, end_log_pos 610, Internal MariaDB error code: 1296 # SPECIAL-35
 GOT_ERROR|Got error 122|when reading table                     ## MDEV-31896
 GOT_ERROR|Got error 123|when reading table                     ## MDEV-36963
-GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488  ## 126's, so it may be worthwhile to once
-GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-26492  ## in a while disable all these 'error 126'
-GOT_ERROR|Got error 126|when reading table                     ## MDEV-26492  ## entries to check
-GOT_ERROR|Got error '126 "Index is corrupted"' for './test/t.MAI' ## MDEV-31029
-GOT_ERROR|Got error 127|when reading table                     ## MDEV-34472
+# GOT_ERROR|Got error 126|Index is corrupted                     ## MDEV-30488/MDEV-31029/MDEV-26492  ## Idem v
+# GOT_ERROR|Got error 126|when reading table (temptable)         ## 
+# GOT_ERROR|Got error 127|when reading table                     ## MDEV-34472  ## Common error with different sources; don't filter
+# GOT_ERROR|Got error 127|when reading table (temptable)         ## MDEV-39562  ## Idem ^
 GOT_ERROR|Got error 128|when reading table                     ## MDEV-34991
 GOT_ERROR|Got error 134|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 140|"Wrong create options" from storage engine InnoDB Error_code: 1030  ## MDEV-33961

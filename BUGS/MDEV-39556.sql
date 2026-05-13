@@ -3,3 +3,9 @@ INSTALL SONAME 'ha_mroonga';
 ALTER TABLE t ENGINE=Mroonga;
 CHECK TABLE t;
 SELECT * FROM information_schema.STATISTICS;
+
+CREATE TABLE t (c INT, INDEX i(c)) ENGINE=InnoDB;
+INSTALL SONAME 'ha_mroonga';
+ALTER TABLE t ENGINE=Mroonga;
+CHECK TABLE t;
+SELECT * FROM information_schema.STATISTICS;

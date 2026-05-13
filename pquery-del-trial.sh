@@ -67,37 +67,8 @@ elif [ ! -d ./${TRIAL} ]; then
   echo "Will still attempt to delete all related remaining files, if any"
 fi
 
-# Delete trial directory, provided it does not contain a significant/major error of interest. Scan first
-# Significant/major error scanning. This code is partially duplicated in pquery-results.sh as well as in pquery-run.sh. Update all three when making changes. TODO: integrate this code into a new script to de-duplicate the code
-ERRORS=
-ERROR_LOG=
-ERRORS_LAST_LINE=
-REGEX_ERRORS_SCAN=
-REGEX_ERRORS_LASTLINE=
-REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
-if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_SCAN ]; then
-  REGEX_ERRORS_SCAN="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
-  if [ -z "${REGEX_ERRORS_SCAN}" ]; then
-    echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
-    exit 1
-  fi
-else
-  echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
-  exit 1
-fi
-if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE ]; then
-  REGEX_ERRORS_LASTLINE="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
-  if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
-    echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
-    exit 1
-  fi
-else
-  echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
-  exit 1
-fi
-if [ -r ${SCRIPT_PWD}/REGEX_ERRORS_FILTER ]; then
-  REGEX_ERRORS_FILTER="$(cat ${SCRIPT_PWD}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
-fi
+# Delete trial directory, provided it does not contain a significant/major error of interest. Scan first.
+# The REGEX_ERRORS_* application and the TEXT-cleanup pipeline live in error_log_scan.sh (single source of truth, shared with pquery-run.sh / pquery-prep-red.sh / pquery-results.sh).
 if [[ "${MDG}" -eq 1 ]]; then
   if [ -z "${MDG_NODE}" ]; then
     ERROR_LOG="./${TRIAL_DIR}/node*.err"
@@ -108,28 +79,18 @@ else
   ERROR_LOG="./${TRIAL}/log/*.err"
 fi
 if [ ! -z "${ERROR_LOG}" ]; then  # Do not use -r as it will not work if both master.err and slave.err are present, for example
-  # Note that the next line does not use -Eio but -Ei. The 'o' should not be used here as that will cause the filter to fail where the search string (REGEX_ERRORS_SCAN) contains for example 'corruption' and the filter looks for 'the required persistent statistics storage is not present or is corrupted'
-  ERRORS="$(grep --binary-files=text -h -Ei -m1 "${REGEX_ERRORS_SCAN}" ${ERROR_LOG} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$|^==>")"
-  ERRORS_LAST_LINE="$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$|^==>")"
-  if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
-    if [ "${2}" != "CHECK" ]; then
-      delete_trial
-    fi
-  elif [ -z "${ERRORS}" -a ! -z "${ERRORS_LAST_LINE}" -a ! -z "$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --binary-files=text -o 'Assertion .* failed' 2>/dev/null | sed "s|'|.|g" | sed 's|"|.|g' | sed "s|^Assertion .||;s|. failed$||" | xargs -I{} grep --binary-files=text -i "{}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null)" ]; then  # There are no other errors, and there is an assertion on the last line of the error log which exactly matches an already known assertion in the known bugs file: ok to proceed with deletion
+  ERRORS="$(${SCRIPT_PWD}/error_log_scan.sh errors ${ERROR_LOG})"
+  ERRORS_LAST_LINE="$(${SCRIPT_PWD}/error_log_scan.sh lastline ${ERROR_LOG})"
+  if [ "${2}" = "CHECK" ]; then  # CHECK mode: non-destructive in every branch. Emit cleaned content from any significant error log entries so pquery-prep-red.sh can set the reducer TEXT when MYBUG's UniqueID is a known-still-open bug (see pquery-prep-red.sh's FINDBUG block).
+    ${SCRIPT_PWD}/error_log_scan.sh clean ${ERROR_LOG}
+  elif [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
+    delete_trial  # No significant errors: safe to delete
+  elif [ -z "${ERRORS}" -a ! -z "${ERRORS_LAST_LINE}" -a ! -z "$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --binary-files=text -o 'Assertion .* failed' 2>/dev/null | sed "s|'|.|g" | sed 's|"|.|g' | sed "s|^Assertion .||;s|. failed$||" | xargs -I{} grep --binary-files=text -i "{}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null)" ]; then  # No other errors and last-line assertion exactly matches an already-known assertion in the known bugs file: safe to delete
     delete_trial
   else  # There are uknown issues remaining: do not delete unless an overwrite "1" is passed as an option to the script
     if [ "${2}" != "1" ]; then
-      if [ "${2}" != "CHECK" ]; then
-        if [ "${CA_ACTIVE}" != "1" ]; then  # Supress many messages when 'ca' (/data/clean_all) is used
-          echo "Not deleting trial ${TRIAL} (Dir: ${PWD}) as one or more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script (pquery-del-trial.sh)!"
-        fi
-      else # $2=CHECK (check if dt would normally *not* delete this trial and report on what error was observed so pquery-prep-red.sh can set the right TEXT=... string
-        echo "$(if [ ! -z "${ERRORS}" ]; then echo "${ERRORS}"; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "${ERRORS_LAST_LINE}"; fi;)" |  sed "s|^[-0-9: ]*||;s|[]['@/}{#\!$%\^\&\*)(]|.|g" | sed 's|[`"]|.|g' | tr '-' '.' | sed 's|PROCEDURE [^ ]\+ |PROCEDURE.*|' | sed 's|:[0-9][0-9]\+\.|.*|' | sed 's|binlog\.0.*end_log_pos.*gtid.*Internal MariaDB error|binlog.*end_log_pos.*gtid.*Internal MariaDB error|i' | sed 's|\(gtid\) [\.0-9 ]\+|\1.*|i' | sed 's|binlog.[0-9]\+\. at [0-9]\+|binlog.*|g;s| at [0-9]\+|.*|g' | sed 's|\.\*[\.]\+|.*|g;s|[\.]\+\.\*|.*|g;s|^[\.]\+||;s|[\.]\+$||' | sed 's|\.test\.1[^ $]\+|.*|;s|\.dev\.shm\.[^ $]\+|.*|' | sed 's|line [0-9]\+|line |' | sed 's|[\. ]\+$||;s|\.\.\*|.*|' | sed 's|for table.*Lock|for table.*Lock|' | sed 's|ERROR. mariadbd: Table .* is marked as crashed and should be repaired|ERROR. mariadbd: Table .* is marked as crashed and should be repaired|'
-        # sed 's|:[0-9][0-9]\+\.|.*|': removes port number
-        # sed 's|binlog\.0.*end_log_pos.*gtid.*Internal MariaDB error|binlog.*end_log_pos.*gtid.*Internal MariaDB error|i' : removes binlog file name, end_log_pos, GTID pos
-        # sed 's|\(gtid\) [\.0-9 ]\+|\1.*|i': removes any leftover GTID pos (while leaving the upper/lower case for 'gtid' text which at times is 'GTID' and at times 'Gtid')
-        # sed 's|binlog.[0-9]\+\. at [0-9]\+|binlog.*|g;s| at [0-9]\+|.*|g': removes binlog names/positions in the form of 'binlog...at', and second part removes leftover positions in the form of 'at'
-        # sed 's|\.\*[\.]\+|.*|g;s|[\.]\+\.\*|.*|g': cleanup things like '..*' and '.*.' to '.*', and remove leading/trailing dots in the last part
+      if [ "${CA_ACTIVE}" != "1" ]; then  # Supress many messages when 'ca' (/data/clean_all) is used
+        echo "Not deleting trial ${TRIAL} (Dir: ${PWD}) as one or more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script (pquery-del-trial.sh)!"
       fi
     else
       delete_trial
