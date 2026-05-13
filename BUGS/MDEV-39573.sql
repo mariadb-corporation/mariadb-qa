@@ -1,0 +1,1 @@
+SELECT XMLTYPE(1);

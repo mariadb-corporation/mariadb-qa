@@ -285,6 +285,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item_char_typecast::fix_length_and_dec_internal|Item_char_typecast::fix_length_and_dec_generic|Item_char_typecast::fix_length_and_dec_str|Item_xmltype_typecast::fix_length_and_dec  ## MDEV-39573
 SIGSEGV|write_tail|write_block_record|allocate_and_write_block_record|_ma_write_init_block_record                                                                              ## MDEV-39562
 SIGSEGV|_ma_rec_pack|_ma_write_blob_record|maria_write|ha_maria::write_row                                                                                                     ## MDEV-39591
 SIGSEGV|_ma_rec_pack|_ma_write_blob_record|maria_write|handler::ha_write_tmp_row                                                                                               ## MDEV-39591
