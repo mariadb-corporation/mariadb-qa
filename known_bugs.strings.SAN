@@ -28,6 +28,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-buffer-overflow|strings/my_vsnprintf.c|strnlen|process_str_arg|my_vsnprintf_ex|my_snprintf_8bit                                                                       ## MDEV-39590
 UBSAN|member access within null pointer of type 'Item'|sql/item_func.h|Item_func::Item_func|Item_real_func::Item_real_func|Item_xpath_cast_number::Item_xpath_cast_number|create_func_number  ## MDEV-39593
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_dynrec.c|_ma_rec_pack|_ma_write_blob_record|maria_write|handler::ha_write_tmp_row  ## MDEV-39591
 UBSAN|load of address X with insufficient space for an object of type 'grn_obj *' (aka '_grn_obj *')|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_set_keys_in_use|ha_mroonga::storage_info|get_schema_stat_record|fill_schema_table_by_open  ## MDEV-39566
