@@ -67,7 +67,7 @@ MASTER_EXTRA="--log_bin=binlog --binlog_format=ROW --log_bin_trust_function_crea
 SLAVE_EXTRA="--slave_skip_errors=ALL --server_id=2"  # Extra mariadbd/mysqld options to pass to the slave server only
 
 # === Hang issues               # For catching hang issues (both in normal runtime as well as during shutdown). Must set MODE=0 for this option to become active
-TIMEOUT_CHECK=600               # When MODE=0 is used, this specifies the nr of seconds to be used as a timeout. Do not set too small (eg. >600 sec is likely best). See examples in help below. Set to approx FULL testcase duration + 20 seconds, keeping in mind load on the server. Minimum: 31 seconds. 'FULL': Because the chuncking algorithm could eliminate the hanging query, but if the TIMEOUT_CHECK is set too small then a timeout will still occur due to overall testcase duration! Likely best to take overall testcase lenght (without the hanging query) + 30 seconds on otherwise unused server, or simply set it to a large number like 600 as this is less error-prone. A good approach is to pre-trim the file past the hanging query first manually, then remove last statement, check duration client. Then add 30 seconds.
+TIMEOUT_CHECK=350               # When MODE=0 is used, this specifies the nr of seconds to be used as a timeout. Do not set too small (eg. 350 sec is likely best. In the past this was 600 best. 350 to be confirmed as new best. note that ~/ds only alllows up to 397 here (400 hardcoded in ~/ds) - this may or may not require further work; TODO: to be tested with a new set of hang bugs). See examples in help below. Set to approx FULL testcase duration + 20 seconds, keeping in mind load on the server. Minimum: 31 seconds. 'FULL': Because the chuncking algorithm could eliminate the hanging query, but if the TIMEOUT_CHECK is set too small then a timeout will still occur due to overall testcase duration! Likely best to take overall testcase lenght (without the hanging query) + 30 seconds on otherwise unused server, or simply set it to a large number as this is less error-prone (though note the hardcoded ~/ds note above). A good approach is to pre-trim the file past the hanging query first manually, then remove last statement, check duration client. Then add 30 seconds.
 
 # === Timeout mariadbd/mysqld   # Uncommonly used option. Used to terminate (timeout) mariadbd/mysqld after x seconds, while still checking for MODE=2/3 TEXT. See examples in help below.
 TIMEOUT_COMMAND=""              # A specific command, executed as a prefix to mariadbd/mysqld. For example, TIMEOUT_COMMAND="timeout --signal=SIGKILL 10m"
@@ -646,34 +646,6 @@ diskspace(){
     sleep 600
     echoit "Slept 10 minutes, re-checking diskspace on ${CHECK_PATH}..."
   done
-}
-
-# WORKT integrity check - guards against silent ENOSPC truncation of WORKT.
-# diskspace() before cut_chunk's sed only checks pre-write headroom; a parallel
-# reducer can fill tmpfs between the check and the redirect, leaving WORKT
-# partial/empty. With a permissive bug regex (e.g. 'GOT_ERROR' alternative
-# matching OOS noise in the error log), the trial then commits a bogus near-
-# empty reduction. Returns 0 if WORKT looks intact, 1 if truncation is suspected.
-# Skips (returns 0) for stage V, FIREWORKS=1, or when LINECOUNTF/CHUNK are unset.
-# The leading "# mysqld options..." header is excluded from the SQL-line count
-# by design - it is what survives a truncation, so counting it would mask the bug.
-workt_integrity_ok(){
-  local WORKT_LINES SQL_LINES EXPECTED_TOTAL EXPECTED_SQL_FLOOR
-  if [ "$STAGE" = "V" ] || [ "${FIREWORKS}" = "1" ]; then return 0; fi
-  if [ -z "$LINECOUNTF" ] || [ -z "$CHUNK" ] || [ ! -e "$WORKT" ]; then return 0; fi
-  WORKT_LINES=$(wc -l < "$WORKT" 2>/dev/null | awk '{print $1+0}')
-  SQL_LINES=$(grep -cvE '^[[:space:]]*(#|$)' "$WORKT" 2>/dev/null || echo 0)
-  EXPECTED_TOTAL=$(( LINECOUNTF - CHUNK - 1 ))
-  if [ "$EXPECTED_TOTAL" -gt 0 ] && [ "${SQL_LINES:-0}" -lt 1 ]; then  # Hard floor: zero non-comment lines = impossible from a correct sed cut
-    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] WORKT integrity (hard floor): 0 non-comment lines, expected total ${EXPECTED_TOTAL} (WORKT_LINES=${WORKT_LINES}, LINECOUNTF=${LINECOUNTF}, CHUNK=${CHUNK}). Likely ENOSPC truncation in cut_chunk."
-    return 1
-  fi
-  EXPECTED_SQL_FLOOR=$(( (EXPECTED_TOTAL - 1) / 2 ))  # Soft floor: 50% of expected SQL lines (-1 discounts header in typical case)
-  if [ "$EXPECTED_TOTAL" -gt 4 ] && [ "${SQL_LINES:-0}" -lt "$EXPECTED_SQL_FLOOR" ]; then  # Activates only once a meaningful reduction was expected, to avoid false positives at near-final stages
-    echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] WORKT integrity (soft floor): ${SQL_LINES} non-comment lines, expected >=${EXPECTED_SQL_FLOOR} (WORKT_LINES=${WORKT_LINES}, LINECOUNTF=${LINECOUNTF}, CHUNK=${CHUNK}). Possible partial truncation in cut_chunk."
-    return 1
-  fi
-  return 0
 }
 
 save_rr_trace(){
@@ -1749,9 +1721,8 @@ TS_init_all_sql_files(){
   done
 }
 
-# Find empty port
+# Find empty port. See ~/mariadb-qa/init_empty_port.sh for the canonical description of the picker design — this is the inline mirror, sharing the same claim dir but using the 13001-47001 port range.
 _INIT_EMPTY_PORT_CLAIM_DIR=/tmp/.mariadb_qa_ports
-_INIT_EMPTY_PORT_LOCK_FILE=/tmp/.mariadb_qa_port_lock
 _INIT_EMPTY_PORT_CLAIMED=
 _INIT_EMPTY_PORT_TRAP_SET=
 
@@ -1763,59 +1734,48 @@ _init_empty_port_cleanup(){
 }
 
 init_empty_port(){
-  # Choose a random port number in 13-47K range. The port must be observed free across 3 consecutive iterations (DOUBLE_CHECK reaches 2) before being claimed under the lock.
-  # Note that reducer.sh uses a 13-47K port range, whereas init_empty_port.sh uses 10-13K to further avoid conflicts
+  # Pick a random port in the 13001-47001 range; init_empty_port.sh uses the 10001-13000 range to avoid conflicts.
   mkdir -p "${_INIT_EMPTY_PORT_CLAIM_DIR}" 2>/dev/null
-  # fd 9 is local to this function; the lock releases when fd 9 is closed below.
-  exec 9>"${_INIT_EMPTY_PORT_LOCK_FILE}"
-  flock -x 9
-  # Reap claims whose owner PID is no longer alive (covers SIGKILL'd or crashed owners).
-  local _stale _owner
+  # Best-effort reap of claims whose owner PID is no longer alive. Scoped to this picker's range to bound cost.
+  # Race-tolerant: if a concurrent picker rewrites the file between read and rm, we re-verify ownership before unlinking.
+  local _stale _owner _port _verify
   for _stale in "${_INIT_EMPTY_PORT_CLAIM_DIR}"/[0-9]*; do
     [ -f "${_stale}" ] || continue
-    _owner=$(cat "${_stale}" 2>/dev/null)
-    if [ -n "${_owner}" ] && ! kill -0 "${_owner}" 2>/dev/null; then rm -f "${_stale}"; fi
+    _port=${_stale##*/}
+    if [ "${_port}" -lt 13001 ] || [ "${_port}" -gt 47001 ]; then continue; fi
+    read -r _owner < "${_stale}" 2>/dev/null
+    [ -n "${_owner}" ] || continue
+    kill -0 "${_owner}" 2>/dev/null && continue
+    read -r _verify < "${_stale}" 2>/dev/null
+    [ "${_owner}" = "${_verify}" ] && rm -f "${_stale}"
   done
 
-  NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # 'RANDOM << 15': 1st $RANDOM is bit-shifted left by 15 places (i.e. * 2^15), '| RANDOM': Bitwise OR operation with a 2nd $RANDOM, which fills the lower 15 bits with a new random number. Result: 30-bit random integer
-  DOUBLE_CHECK=0
   while :; do
-    # Skip ports already promised to another in-flight picker.
-    if [ -e "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}" ]; then
-      NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))
-      DOUBLE_CHECK=0
+    NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # 'RANDOM << 15': 1st $RANDOM is bit-shifted left by 15 places (i.e. * 2^15), '| RANDOM': Bitwise OR operation with a 2nd $RANDOM, which fills the lower 15 bits with a new random number. Result: 30-bit random integer
+    # Atomic claim attempt. set -o noclobber makes the redirect use O_CREAT|O_EXCL; on collision with another picker
+    # holding the same port, the subshell's redirect fails, the subshell exits non-zero, and we retry a fresh random port.
+    if ! ( set -o noclobber; echo "$$" > "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}" ) 2>/dev/null; then
       continue
     fi
-    # Check if the port is free in four different ways
+    # We hold the claim. Verify the port is also free at the OS level (catches unrelated services bound to the port).
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     ISPORTFREE4="$(netstat -tuln | grep :${NEWPORT})"
     ISPORTFREE5="$(lsof -i :${NEWPORT})"
     if [ "${ISPORTFREE1}" -eq 0 -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE2}${ISPORTFREE4}${ISPORTFREE5}" ]; then
-      if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # 3 successive free observations seen
-        # Claim must be written while still holding the lock so concurrent pickers cannot select the same port.
-        echo "$$" > "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}"
-        _INIT_EMPTY_PORT_CLAIMED="${_INIT_EMPTY_PORT_CLAIMED} ${NEWPORT}"
-        if [ -z "${_INIT_EMPTY_PORT_TRAP_SET}" ]; then
-          trap '_init_empty_port_cleanup' EXIT
-          _INIT_EMPTY_PORT_TRAP_SET=1
-        fi
-        # Brief settle pause keeps the lock held while the caller starts bind(); subsequent pickers see the claim with high reliability.
-        sleep 0.2
-        break  # Suitable free port number found
-      else
-        DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
-        sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
-        continue  # Loop the check
+      _INIT_EMPTY_PORT_CLAIMED="${_INIT_EMPTY_PORT_CLAIMED} ${NEWPORT}"
+      if [ -z "${_INIT_EMPTY_PORT_TRAP_SET}" ]; then
+        trap '_init_empty_port_cleanup' EXIT
+        _INIT_EMPTY_PORT_TRAP_SET=1
       fi
-    else
-      NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # Try a new port
-      DOUBLE_CHECK=0  # Reset the double check
-      continue  # Recheck the new port
+      # Auto-release the claim ~600s later. Sized to comfortably exceed the worst-case caller bind window (SAN/UBASAN/MSAN builds use seq 0 480 = 120s ping-wait in start; 600s = 5x safety margin). Cost is bounded: max in-flight claims <= port-range size (34001 entries). Double-fork detaches so long-lived pickers don't accumulate zombies and the reaper survives if the parent exits before the timer fires.
+      ( ( sleep 600; rm -f "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}" ) & ) </dev/null >/dev/null 2>&1
+      break
     fi
+    # Port is in use by an unrelated process; release the claim and retry.
+    rm -f "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}"
   done
-  exec 9>&-
 }
 
 init_workdir_and_files(){
@@ -3499,6 +3459,17 @@ cleanup_and_save(){
       ( ps -def | grep -E  'node1_socket|node2_socket|node3_socket' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
       sleep 2; sync
     fi
+    # Precondition: $WORKT must exist and be non-empty before any write. When $WORKT is
+    # absent or zero-byte, the later "grep ... > $WORKO" still truncates $WORKO (bash
+    # opens the target before the command runs and keeps it on command failure), and
+    # write_workO_options_header then synthesises a header-only $WORKO over the prior
+    # good one. The common trigger is a workdir-wipe race against an in-flight
+    # cleanup_and_save (e.g. rm -Rf /dev/shm/[0-9]* from ~/ka, ~/memory, ~/ds, or any
+    # ad-hoc /dev/shm cleanup).
+    if [ ! -s "$WORKT" ]; then
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] WORKT ($WORKT) is missing or empty; refusing to commit. Previous $WORKO kept intact."
+      return 1
+    fi
     diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF/WORKO/*.prev
     cp -f $WORKT $WORKF
     if [ -r "$WORKO" ]; then
@@ -3638,18 +3609,12 @@ process_outcome(){
     RUN_TIME=$[ $(date +'%s') - ${MYSQLD_START_TIME} ]
     M0_ISSUE_FOUND=0
     if [ ${RUN_TIME} -ge ${TIMEOUT_CHECK_REAL} ]; then M0_ISSUE_FOUND=1; fi
-    if [ $M0_ISSUE_FOUND -eq 1 ] && ! workt_integrity_ok; then  # Reject trial if WORKT was silently truncated (likely ENOSPC); avoids committing a bogus reduction
-      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Discarding trial result instead of committing a bogus reduction. Re-checking diskspace before next trial."
-      M0_ISSUE_FOUND=0
-      diskspace "$(dirname "$WORKT")" 500
-    fi
     if [ $M0_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TimeoutBug*] [$NOISSUEFLOW] Swapping files & saving last known good timeout issue in $WORKO"
         control_backtrack_flow
       fi
-      cleanup_and_save
-      return 1
+      if cleanup_and_save; then return 1; else return 0; fi
     else
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTimeoutBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
@@ -3670,8 +3635,7 @@ process_outcome(){
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*ValgrindBug*] [$NOISSUEFLOW] Swapping files & saving last known good Valgrind issue in $WORKO"
         control_backtrack_flow
       fi
-      cleanup_and_save
-      return 1
+      if cleanup_and_save; then return 1; else return 0; fi
     else
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoValgrindBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
@@ -3718,9 +3682,7 @@ process_outcome(){
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*ClientOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good client output issue in $WORKO"
         control_backtrack_flow
       fi
-      cleanup_and_save
-      MODE2_OCCURRENCE=
-      return 1
+      if cleanup_and_save; then MODE2_OCCURRENCE=; return 1; else MODE2_OCCURRENCE=; return 0; fi
     else
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoClientOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
@@ -3992,19 +3954,13 @@ process_outcome(){
         if grep -E --binary-files=text -iq "$TEXT" $ERRORLOG; then M3_ISSUE_FOUND=1; fi
       fi
     fi
-    if [ $M3_ISSUE_FOUND -eq 1 ] && ! workt_integrity_ok; then  # Reject trial if WORKT was silently truncated (likely ENOSPC); avoids committing a bogus reduction
-      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Discarding trial result instead of committing a bogus reduction. Re-checking diskspace before next trial."
-      M3_ISSUE_FOUND=0
-      diskspace "$(dirname "$WORKT")" 500
-    fi
     if [ $M3_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" -a "${FIREWORKS}" != "1" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*${M3_OUTPUT_TEXT}OutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good testcase in $WORKO"
         control_backtrack_flow
       fi
       sleep 2; sync
-      cleanup_and_save
-      return 1
+      if cleanup_and_save; then return 1; else return 0; fi
     else
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [No${M3_OUTPUT_TEXT}OutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
@@ -4054,11 +4010,6 @@ process_outcome(){
     else
       M4_OUTPUT_TEXT="Crash"
     fi
-    if [ $M4_ISSUE_FOUND -eq 1 ] && ! workt_integrity_ok; then  # Reject trial if WORKT was silently truncated (likely ENOSPC); avoids committing a bogus reduction
-      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Discarding trial result instead of committing a bogus reduction. Re-checking diskspace before next trial."
-      M4_ISSUE_FOUND=0
-      diskspace "$(dirname "$WORKT")" 500
-    fi
     if [ $M4_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then
         if [ $STAGE -eq 6 ]; then
@@ -4068,8 +4019,7 @@ process_outcome(){
         fi
         control_backtrack_flow
       fi
-      cleanup_and_save
-      return 1
+      if cleanup_and_save; then return 1; else return 0; fi
     else
       if [ ! "$STAGE" = "V" ]; then
         if [ $STAGE -eq 6 ]; then
@@ -4092,8 +4042,7 @@ process_outcome(){
           echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*MTRCaseOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good MTR testcase output issue in $WORKO"
           control_backtrack_flow
         fi
-        cleanup_and_save
-        return 1
+        if cleanup_and_save; then return 1; else return 0; fi
       else
         if [ ! "$STAGE" = "V" ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoMTRCaseOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
@@ -4123,8 +4072,7 @@ process_outcome(){
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSValgrindBug*] [$NOISSUEFLOW] Swapping files & saving last known good Valgrind issue thread file(s) in $WORKD/out/"
         control_backtrack_flow
       fi
-      cleanup_and_save
-      return 1
+      if cleanup_and_save; then return 1; else return 0; fi
     else
       if [ ! "$STAGE" = "V" -a ! "$STAGE" = "T" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSValgrindBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
@@ -4142,8 +4090,7 @@ process_outcome(){
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCLIOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good CLI output issue thread file(s) in $WORKD/out/"
         control_backtrack_flow
       fi
-      cleanup_and_save
-      return 1
+      if cleanup_and_save; then return 1; else return 0; fi
     else
       if [ ! "$STAGE" = "V" -a ! "$STAGE" = "T" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSCLIOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
@@ -4161,8 +4108,7 @@ process_outcome(){
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSErrorLogOutputBug*] [$NOISSUEFLOW] Swapping files & saving last known good error log output issue thread file(s) in $WORKD/out/"
         control_backtrack_flow
       fi
-      cleanup_and_save
-      return 1
+      if cleanup_and_save; then return 1; else return 0; fi
     else
       if [ ! "$STAGE" = "V" -a ! "$STAGE" = "T" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSErrorLogOutputBug] [$NOISSUEFLOW] Kill server $NEXTACTION"
@@ -4182,8 +4128,7 @@ process_outcome(){
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TSCrash*] [$NOISSUEFLOW] Swapping files & saving last known good crash thread file(s) in $WORKD/out/"
         control_backtrack_flow
       fi
-      cleanup_and_save
-      return 1
+      if cleanup_and_save; then return 1; else return 0; fi
     else
       if [ ! "$STAGE" = "V" -a ! "$STAGE" = "T" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [NoTSCrash] [$NOISSUEFLOW] Kill server $NEXTACTION"
@@ -4277,8 +4222,7 @@ process_outcome(){
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*DumpBinlogDiff*] [$NOISSUEFLOW] MODE11_TYPE=${MODE11_TYPE} diff found. Swapping files & saving last known good diff; snapshots in $WORKD/mode11_snap_{before,after}.txt"
         control_backtrack_flow
       fi
-      cleanup_and_save
-      return 1
+      if cleanup_and_save; then return 1; else return 0; fi
     fi
 
   # Invalid mode

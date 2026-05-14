@@ -60,11 +60,21 @@ else
         if [ $(ps -ef | grep --binary-files=text -v 'grep' | grep --binary-files=text "${DIR}" | wc -l) -eq 0 ]; then
           sync; sleep 0.3  # Small wait, then recheck (to avoid missed ps output)
           if [ $(ps -ef | grep --binary-files=text -v 'grep' | grep --binary-files=text "${DIR}" | wc -l) -eq 0 ]; then
+            # The ps probe above matches the workdir path in argv (datadir=/dev/shm/<EPOCH>),
+            # which only mariadbd carries. reducer.sh's argv has only the script basename
+            # (reducer<N>.sh) — between trials, with mariadbd shut down, the probe sees no
+            # match and the workdir looks orphaned even though reducer is alive in
+            # cleanup_and_save. Secondary check: re-confirm via the script basename read
+            # from reducer.log.
+            REDUCER_BASENAME="$(grep -m1 'Init.*Reducer:' ${DIR}/reducer.log 2>/dev/null | sed 's|.*/||;s| .*||')"
+            if [ -n "${REDUCER_BASENAME}" ] && ps -ef | grep -F "${REDUCER_BASENAME}" | grep -v grep >/dev/null 2>&1; then
+              continue
+            fi
             AGEDIR=$[ $(date +%s) - $(stat -c %Z ${DIR}) ]  # Directory age in seconds
             if [ ${AGEDIR} -ge 90 ]; then  # Yet another safety, don't delete very recent directories
               if [ -r ${DIR}/reducer.log ]; then
                 AGEFILE=$[ $(date +%s) - $(stat -c %Z ${DIR}/reducer.log) ]  # File age in seconds
-                if [ ${AGEFILE} -ge 90 ]; then  # Yet another safety specifically for often-occuring reducer directories, don't delete very recent reducers
+                if [ ${AGEFILE} -ge 400 ]; then  # One MODE=0 trial can be silent on reducer.log for server-start + TIMEOUT_CHECK + MODE0_MIN_SHUTDOWN_TIME (~330s at TIMEOUT_CHECK=130); 400 leaves headroom
                   if [ ${SILENT} -eq 0 ]; then
                     echo "Deleting reducer directory ${DIR} (directory age: ${AGEDIR}s, file age: ${AGEFILE}s)"
                   fi

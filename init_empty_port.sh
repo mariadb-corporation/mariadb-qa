@@ -3,10 +3,11 @@
 # The empty port number will then be stored in the ${NEWPORT} variable for you to use.
 
 # Two parallel pickers can both observe a port as free via netstat/ps/lsof — neither has called bind(2) yet.
-# Reservation closes that gap: each picker writes its PID into a claim file under flock, so other in-flight
-# pickers see the claim and skip the port until the owner has bound or exited.
+# Reservation closes that gap: each picker creates a claim file at /tmp/.mariadb_qa_ports/<port> using O_CREAT|O_EXCL
+# semantics (set -o noclobber). The atomic create-or-fail is the synchronization primitive — at most one picker can
+# hold a claim for a given port at any moment. No global lock; concurrent pickers that random-hit the same port are
+# repelled per-port and immediately retry with another random pick.
 _INIT_EMPTY_PORT_CLAIM_DIR=/tmp/.mariadb_qa_ports
-_INIT_EMPTY_PORT_LOCK_FILE=/tmp/.mariadb_qa_port_lock
 _INIT_EMPTY_PORT_CLAIMED=
 _INIT_EMPTY_PORT_TRAP_SET=
 
@@ -18,57 +19,46 @@ _init_empty_port_cleanup(){
 }
 
 init_empty_port(){  # Find an empty port
-  # Choose a random port number in 10-13K range. The port must be observed free across 3 consecutive iterations (DOUBLE_CHECK reaches 2) before being claimed under the lock.
-  # Note that reducer.sh uses a 13-47K port range, whereas init_empty_port.sh uses 10-13K to further avoid conflicts
+  # Pick a random port in the 10001-13000 range; reducer.sh uses the 13001-47001 range to avoid conflicts.
   mkdir -p "${_INIT_EMPTY_PORT_CLAIM_DIR}" 2>/dev/null
-  # fd 9 is local to this function; the lock releases when fd 9 is closed below.
-  exec 9>"${_INIT_EMPTY_PORT_LOCK_FILE}"
-  flock -x 9
-  # Reap claims whose owner PID is no longer alive (covers SIGKILL'd or crashed owners).
-  local _stale _owner
+  # Best-effort reap of claims whose owner PID is no longer alive. Scoped to this picker's range to bound cost.
+  # Race-tolerant: if a concurrent picker rewrites the file between read and rm, we re-verify ownership before unlinking.
+  local _stale _owner _port _verify
   for _stale in "${_INIT_EMPTY_PORT_CLAIM_DIR}"/[0-9]*; do
     [ -f "${_stale}" ] || continue
-    _owner=$(cat "${_stale}" 2>/dev/null)
-    if [ -n "${_owner}" ] && ! kill -0 "${_owner}" 2>/dev/null; then rm -f "${_stale}"; fi
+    _port=${_stale##*/}
+    if [ "${_port}" -lt 10001 ] || [ "${_port}" -gt 13000 ]; then continue; fi
+    read -r _owner < "${_stale}" 2>/dev/null
+    [ -n "${_owner}" ] || continue
+    kill -0 "${_owner}" 2>/dev/null && continue
+    read -r _verify < "${_stale}" 2>/dev/null
+    [ "${_owner}" = "${_verify}" ] && rm -f "${_stale}"
   done
 
-  NEWPORT=$[ 10001 + ( ${RANDOM} % 3000 ) ]
-  DOUBLE_CHECK=0
   while :; do
-    # Skip ports already promised to another in-flight picker.
-    if [ -e "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}" ]; then
-      NEWPORT=$[ 10001 + ( ${RANDOM} % 3000 ) ]
-      DOUBLE_CHECK=0
+    NEWPORT=$[ 10001 + ( ${RANDOM} % 3000 ) ]
+    # Atomic claim attempt. set -o noclobber makes the redirect use O_CREAT|O_EXCL; on collision with another picker
+    # holding the same port, the subshell's redirect fails, the subshell exits non-zero, and we retry a fresh random port.
+    if ! ( set -o noclobber; echo "$$" > "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}" ) 2>/dev/null; then
       continue
     fi
-    # Check if the port is free in four different ways
+    # We hold the claim. Verify the port is also free at the OS level (catches unrelated services bound to the port).
     ISPORTFREE1="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"
     ISPORTFREE3="$(grep --binary-files=text -o "port=${NEWPORT}" /test/*/start 2>/dev/null | wc -l)"
     ISPORTFREE4="$(netstat -tuln | grep :${NEWPORT})"
     ISPORTFREE5="$(lsof -i :${NEWPORT})"
     if [ "${ISPORTFREE1}" -eq 0 -a "${ISPORTFREE3}" -eq 0 -a -z "${ISPORTFREE2}${ISPORTFREE4}${ISPORTFREE5}" ]; then
-      if [ "${DOUBLE_CHECK}" -eq 2 ]; then  # 3 successive free observations seen
-        # Claim must be written while still holding the lock so concurrent pickers cannot select the same port.
-        echo "$$" > "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}"
-        _INIT_EMPTY_PORT_CLAIMED="${_INIT_EMPTY_PORT_CLAIMED} ${NEWPORT}"
-        if [ -z "${_INIT_EMPTY_PORT_TRAP_SET}" ]; then
-          trap '_init_empty_port_cleanup' EXIT
-          _INIT_EMPTY_PORT_TRAP_SET=1
-        fi
-        # Brief settle pause keeps the lock held while the caller starts bind(); subsequent pickers see the claim with high reliability.
-        sleep 0.2
-        break  # Suitable port number found
-      else
-        DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
-        sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
-        continue  # Loop the check
+      _INIT_EMPTY_PORT_CLAIMED="${_INIT_EMPTY_PORT_CLAIMED} ${NEWPORT}"
+      if [ -z "${_INIT_EMPTY_PORT_TRAP_SET}" ]; then
+        trap '_init_empty_port_cleanup' EXIT
+        _INIT_EMPTY_PORT_TRAP_SET=1
       fi
-    else
-      NEWPORT=$[ 10001 + ( ${RANDOM} % 3000 ) ]  # Try a new port
-      DOUBLE_CHECK=0  # Reset the double check
-      continue  # Recheck the new port
+      # Auto-release the claim ~600s later. Sized to comfortably exceed the worst-case caller bind window (SAN/UBASAN/MSAN builds use seq 0 480 = 120s ping-wait in start; 600s = 5x safety margin). Cost is bounded: max in-flight claims <= port-range size (3000 entries). Double-fork detaches so long-lived pickers don't accumulate zombies and the reaper survives if the parent exits before the timer fires.
+      ( ( sleep 600; rm -f "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}" ) & ) </dev/null >/dev/null 2>&1
+      break
     fi
+    # Port is in use by an unrelated process; release the claim and retry.
+    rm -f "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}"
   done
-  exec 9>&-
 }

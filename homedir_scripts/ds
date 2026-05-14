@@ -134,10 +134,14 @@ while :; do
         if [ -r ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log ]; then
           # Copy log
           cp ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log ~/terminated_${ANY_SINGLE_LARGE_REDUCER_DIR}_reducer.log
-          # Terminate instance
-          update_current_filter_pids
-          grep -m1 'Init.*Reducer' ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log | sed 's|.*reducer|reducer|;s| .*||' | xargs -I{} echo "ps -ef | grep {}" | xargs -I{} bash -c "{}" | grep -vEi "${FILTER}" | awk '{print $2}' | grep -vE "${COMBINED_PID_FILTER}" | xargs -I{} kill -9 {}
-          # Check for continued dir presence and cleanup
+          # Terminate the owning reducer by PID (recorded by reducer.sh as "[Init] Reducer PID:").
+          # A name-based ps grep cannot kill it: ${FILTER} (correctly) protects any argv matching
+          # "reducer", leaving the kill list empty and letting the rm below race cleanup_and_save.
+          REDUCER_PID="$(grep -m1 'Init.*Reducer PID:' ${ANY_SINGLE_LARGE_REDUCER_DIR}/reducer.log 2>/dev/null | grep -o '[0-9]\+$')"
+          if [ -n "${REDUCER_PID}" ] && kill -0 "${REDUCER_PID}" 2>/dev/null; then
+            for((l=0;l<3;l++)){ sudo kill -9 "${REDUCER_PID}" 2>/dev/null; }
+            sleep 1
+          fi
           if [ -d ${ANY_SINGLE_LARGE_REDUCER_DIR} ]; then rm -Rf ${ANY_SINGLE_LARGE_REDUCER_DIR}; fi
         fi
       fi

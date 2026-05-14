@@ -251,25 +251,25 @@ if [ -z "${TEXT}" -o "${TEXT}" == "BBB" ]; then
     echo "Assert: SAN mode is enabled, but TEXT variable is not set!"
     exit 1
   elif [ "${1}" == "GAL" ]; then
-    CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh GAL | xargs -I{} echo "ls {}/node1/*core* 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh GAL | xargs -I{} echo "ls {}/node1/*core* 2>/dev/null" | xargs -P10 -I{} bash -c "{}" | wc -l)
   else
-    CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh | xargs -I{} echo "ls {}/data*/*core* 2>/dev/null" | xargs -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(./gendirs.sh | xargs -I{} echo "ls {}/data*/*core* 2>/dev/null" | xargs -P10 -I{} bash -c "{}" | wc -l)
   fi
 else
   if [ "${1}" == "SAN" ]; then
     #echo "Searching error logs for the '^SUMMARY:|=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:' (SAN mode enabled)"  # This is now set in ~/b (when using ~/bs) - ref/use linkit if ~/b or ~/bs are not present
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "MSAN" ]; then
     #echo "Searching error logs for the '^SUMMARY:|=ERROR:|MemorySanitizer:' (MSAN mode enabled)"  # This is now set in ~/b (when using ~/bm) - ref/use linkit if ~/b or ~/bm are not present
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh MSAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh MSAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "GAL" ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh GAL | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/node1/node1.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh GAL | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/node1/node1.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
   else
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
-    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | wc -l)
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
   fi
 fi
 cd - >/dev/null || exit 1
@@ -315,6 +315,28 @@ else
 EOF
 fi
 
+# Capture ./stack output from the alternative (opt vs dbg) basedir, if it also crashed
+ALT_BASEDIR=
+ALT_STACK_OUTPUT=
+if [[ "${PWD}" == *"opt" ]]; then
+  ALT_BASEDIR="$(pwd | sed 's|opt$|dbg|')"
+elif [[ "${PWD}" == *"dbg" ]]; then
+  ALT_BASEDIR="$(pwd | sed 's|dbg$|opt|')"
+fi
+if [ ! -z "${ALT_BASEDIR}" -a -d "${ALT_BASEDIR}" -a "${ALT_BASEDIR}" != "${PWD}" -a -x "${ALT_BASEDIR}/stack" ]; then
+  if [ "${1}" == "GAL" ]; then
+    ALT_CORE_COUNT=$(ls ${ALT_BASEDIR}/node1/*core* 2>/dev/null | wc -l)
+  else
+    ALT_CORE_COUNT=$(ls ${ALT_BASEDIR}/data*/*core* 2>/dev/null | wc -l)
+  fi
+  if [ ${ALT_CORE_COUNT} -ge 1 ]; then
+    ALT_STACK_OUTPUT="$(cd ${ALT_BASEDIR} && ./stack 2>/dev/null)"
+    if ! echo "${ALT_STACK_OUTPUT}" | grep -q '{noformat:title'; then
+      ALT_STACK_OUTPUT=
+    fi
+  fi
+fi
+
 echo '-------------------- BUG REPORT --------------------'
 echo '{code:sql}'
 cat in.sql | grep -v --binary-files=text '^$'
@@ -322,6 +344,11 @@ echo -e '{code}\n'
 echo -e 'Leads to:\n'
 # Assumes (which is valid for the pquery framework) that 1st assertion is also the last in the log
 if [ ${SAN_MODE} -eq 0 -a ${MSAN_MODE} -eq 0 ]; then
+  # If current basedir is dbg, place the opt stack first (directly under "Leads to:")
+  if [[ "${PWD}" == *"dbg" ]] && [ ! -z "${ALT_STACK_OUTPUT}" ]; then
+    echo "${ALT_STACK_OUTPUT}"
+    echo ''
+  fi
   if [ "${1}" == "GAL" ]; then
     ERROR_LOG=$(ls node1/node1.err 2>/dev/null | head -n1)
   else
@@ -361,6 +388,11 @@ if [ ${SAN_MODE} -eq 0 -a ${MSAN_MODE} -eq 0 ]; then
     fi
   fi
   echo '{noformat}'
+  # If current basedir is opt, place the dbg stack after the opt stack (opt always first)
+  if [[ "${PWD}" == *"opt" ]] && [ ! -z "${ALT_STACK_OUTPUT}" ]; then
+    echo ''
+    echo "${ALT_STACK_OUTPUT}"
+  fi
 else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
   # START_LINE: the 1st line on which any *SAN issue shows (ref TEXT in ~/b), END_LINE: the last of either '^SUMMARY:' or '=ABORTING$'
   START_LINE=$(grep -n -m 1 -E "${TEXT}" ./log/master.err | cut -d: -f1)
