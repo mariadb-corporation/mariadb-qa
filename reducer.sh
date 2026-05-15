@@ -3526,10 +3526,45 @@ cleanup_and_save(){
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
     fi
     diskspace "$(dirname "$WORKO")"  # Ensure >=500MB free before writing WORKO (final reduced output)
-    grep -E --binary-files=text -v "^# mysqld options required for replay:" $WORKT > $WORKO
+    # Atomic WORKO write: build new content in a sibling tmp file then rename(2) into place, so a race against ~/ka / ~/ds / any /dev/shm wipe (or ENOSPC) between the top-of-function B-guard and this destructive redirect cannot leave $WORKO truncated to zero/header-only. The bash redirect `> $WORKO` would otherwise open and truncate the prior good $WORKO before grep finishes, producing a 1-line _out on grep failure.
+    WORKO_TMP=$(mktemp "${WORKO}.XXXXXX.tmp" 2>/dev/null)
+    if [ -z "$WORKO_TMP" ] || [ ! -e "$WORKO_TMP" ]; then
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] mktemp failed in $(dirname "$WORKO"); refusing to commit. Previous $WORKO kept intact."
+      WORKO_TMP=
+      return 1
+    fi
+    if ! grep -E --binary-files=text -v "^# mysqld options required for replay:" "$WORKT" > "$WORKO_TMP" 2>/dev/null; then
+      rm -f "$WORKO_TMP"
+      WORKO_TMP=
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] grep of $WORKT into tmp failed (WORKT possibly wiped mid-write); refusing to commit. Previous $WORKO kept intact."
+      return 1
+    fi
+    WORKO_TMP_SQL_LINES=$(grep -E --binary-files=text -cv '^[[:space:]]*(#|--|$)' "$WORKO_TMP" 2>/dev/null || echo 0)
+    if [ "${WORKO_TMP_SQL_LINES:-0}" -eq 0 ]; then
+      rm -f "$WORKO_TMP"
+      WORKO_TMP=
+      WORKO_TMP_SQL_LINES=
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] tmp from grep has no SQL lines (race between B-guard and grep wiped/emptied WORKT); refusing to commit. Previous $WORKO kept intact."
+      return 1
+    fi
+    WORKO_TMP_SQL_LINES=
+    mv -f "$WORKO_TMP" "$WORKO"
+    WORKO_TMP=
     write_workO_options_header
     diskspace "$(dirname "$WORK_OUT")"  # Ensure >=500MB free before writing the _out file and bug bundle tarball
-    cp -f $WORKO $WORK_OUT
+    # Atomic WORK_OUT write: same rationale — protects the disk-resident bug-bundle copy from partial/truncated writes during ~/ka, ~/ds, or ENOSPC races between $WORKO update and $WORK_OUT update
+    WORK_OUT_TMP=$(mktemp "${WORK_OUT}.XXXXXX.tmp" 2>/dev/null)
+    if [ -n "$WORK_OUT_TMP" ] && [ -e "$WORK_OUT_TMP" ]; then
+      if cp -f "$WORKO" "$WORK_OUT_TMP"; then
+        mv -f "$WORK_OUT_TMP" "$WORK_OUT"
+      else
+        rm -f "$WORK_OUT_TMP"
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] cp $WORKO to $WORK_OUT_TMP failed; $WORK_OUT not refreshed but $WORKO is up-to-date"
+      fi
+    else
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] mktemp failed in $(dirname "$WORK_OUT"); $WORK_OUT not refreshed but $WORKO is up-to-date"
+    fi
+    WORK_OUT_TMP=
     # Save a tarball of full self-contained testcase on each successful reduction
     rm -f $WORK_BUG_DIR/${EPOCH}_bug_bundle.tar.gz
     diskspace "$WORK_BUG_DIR"  # Tarball compresses the EPOCH bundle (sql + scripts + pquery binary); explicit re-check after the cp above in case another process consumed the headroom between the two writes
