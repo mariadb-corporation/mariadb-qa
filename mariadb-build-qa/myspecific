@@ -1,15 +1,7 @@
 #!/bin/bash
 
-TMP=/tmp/myspecific.tmp
-
-awk '/return/{exit} {print}' results.list \
-  | grep '^MON' \
-  | sed 's|.*=||' \
-  | sed 's| .*||' \
-  | xargs -I{} echo "cd {}; ./my | sed \"s|^[0-9]\+ .||;s|^|/|\"; cd -" \
-  > "$TMP"
-
-bash "$TMP" \
+awk '/^[[:space:]]*return([[:space:]]|$)/{exit} /^MON/{sub(/.*=/,""); sub(/ .*/,""); print}' results.list \
+  | xargs -P8 -I{} bash -c 'cd "{}" && ./my | sed "s|^[0-9]\+ .||;s|^|/|"' \
   | grep -v "/data$" \
   | xargs wc -l \
   | grep -v 'total$' \
@@ -51,9 +43,9 @@ bash "$TMP" \
         printf ' \033[38;5;88m+%s Other less reduced testcases for this trial\033[0m' "$others"
       fi
       printf '\n'
-      trial_dir="$(dirname "$path")"
-      base="$(dirname "$trial_dir")"
-      trial="$(basename "$trial_dir")"
+      trial_dir="${path%/*}"
+      base="${trial_dir%/*}"
+      trial="${trial_dir##*/}"
       reducer="${base}/reducer${trial}.sh"
       if [ -f "${trial_dir}/SHUTDOWN_TIMEOUT_ISSUE" ]; then
         printf '  \033[38;5;245m%s\033[0m\n' 'SHUTDOWN TIMEOUT >90 SEC ISSUE'
@@ -65,5 +57,3 @@ bash "$TMP" \
         printf '  \033[38;5;245m%s\033[0m\n' "$text"
       fi
     done
-
-rm -f "$TMP"

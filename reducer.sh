@@ -621,13 +621,13 @@ echoit_overwrite(){
 }
 
 # Diskspace OOS check function - ensures at least ${2:-200}MB is free on ${1:-${WORKD}}
-# Usage: diskspace                 # Checks WORKD for >=200MB free
-#        diskspace /some/dir       # Checks /some/dir for >=200MB free
-#        diskspace /some/dir 500   # Checks /some/dir for >=500MB free
+# Usage: diskspace                 # Checks WORKD for >=500MB free
+#        diskspace /some/dir       # Checks /some/dir for >=500MB free
+#        diskspace /some/dir 1000  # Checks /some/dir for >=1000MB free
 # Waits 10 minutes and re-checks in a loop until the minimum is available.
 diskspace(){
   local CHECK_PATH="${1:-${WORKD}}"
-  local MIN_MB="${2:-200}"
+  local MIN_MB="${2:-500}"  # /dev/shm (tmpfs runtime) free-space fluctuates fast on busy QA hosts running concurrent reducers; 500MB floor leaves headroom for in-flight WORKT/WORKO writes plus bug-bundle tarball, avoiding 0-byte write cascades
   local MIN_KB=$((MIN_MB * 1024))
   local FREE_KB TEST_PATH
   while :; do
@@ -652,6 +652,7 @@ save_rr_trace(){
   RR_SAVE_LOCATION=${1}
   rm -rf ${RR_SAVE_LOCATION}
   mkdir -p "${RR_SAVE_LOCATION}/"
+  diskspace "${RR_SAVE_LOCATION}"  # RR traces can run to multiple GB; pause if the destination is below the default headroom rather than producing a partial trace
   cp -r ${WORKD}/rr/* ${RR_SAVE_LOCATION}/
   rm -rf ${WORKD}/rr
   chmod -R 777 ${RR_SAVE_LOCATION}/
@@ -966,6 +967,12 @@ options_check(){
       exit 1
     fi
     TIMEOUT_COMMAND="timeout --signal=SIGKILL ${TIMEOUT_CHECK}s"  # TIMEOUT_COMMAND var is used (hack) instead of adding yet another MODE0 specific variable
+    # Sanitizer-build warning: ASAN/UBSAN/MSAN/TSAN builds have inflated startup+shutdown latency (sanitizer init + LSAN/UBSAN report flush at exit). MODE=0's runtime-only trigger compares against TIMEOUT_CHECK_REAL=TIMEOUT_CHECK-30. On sanitizer builds with TIMEOUT_CHECK below ~240, normal start+stop alone can satisfy the threshold, producing false-positive reductions that converge on header-only $WORKO. The PRE_SHUTDOWN_RUNTIME filter in process_outcome suppresses the worst cases, but raising TIMEOUT_CHECK is the durable fix.
+    if echo "${BASEDIR}" | grep -qiE '(ubasan|ubsan|asan|msan|tsan|hwasan|-san-|_san_|-asan-|-ubsan-|-msan-|-tsan-)'; then
+      if [ ${TIMEOUT_CHECK} -lt 240 ]; then
+        echoit "[Init] [Warning] BASEDIR appears to be a sanitizer build (${BASEDIR}) and TIMEOUT_CHECK=${TIMEOUT_CHECK} is below the recommended sanitizer floor (240). MODE=0's runtime-only trigger may misfire from shutdown / sanitizer-flush latency. Recommended: raise TIMEOUT_CHECK to >=240 (the inline default-comment recommends 350) or reduce on a non-sanitizer build."
+      fi
+    fi
   fi
   if [ "${TIMEOUT_COMMAND}" != "" -a "$(timeout 2>&1 | grep -E --binary-files=text -o 'information')" != "information" ]; then
     echo "Error: TIMEOUT_COMMAND is set, yet the timeout command does not seem to be available"
@@ -1355,6 +1362,7 @@ multi_reducer(){
   mkdir $WORKD/subreducer/
 
   TXT_OUT="$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Forking subreducer threads [PIDs]:"
+  diskspace "$WORKD/subreducer"  # Each MULTI thread receives its own ~480KB subreducer script (cat \$0 | sed > $MULTI_WORKD/subreducer); MULTI_THREADS_MAX=9 implies up to ~4-5MB of cumulative writes per spawn
   for t in $(eval echo {1..$MULTI_THREADS}); do
     # Create individual subreducer paths
     export WORKD$t="$WORKD/subreducer/$t"
@@ -1452,7 +1460,7 @@ multi_reducer(){
             echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Terminating subreducer threads... done"
           fi
           # The subshell in the following line simply retrieves the WORKO output file from the subreducer Then, the grep -v removes any mariadbd/mysqld option line before copying the file to the new/next WORKF for the next trial If this step was not done, the new/next WORKF testcase would always be +1 line longer. The way this would show for example in SKIPV mode is that the main reducer would indicate that it had found a shorter testcase (-1 line for example) whereas the next trial would start with the same line number (as +1 line was re-added). This is not so clear when large chunks are removed at the time, but it becomes very clear when only ~5-15 lines are left. This was fixed and the line below does not suffer from said problem
-          diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF (subreducer aggregation; running out of space here can produce a 0-byte WORKF and cascade to a 0-byte WORKO)
+          diskspace "$(dirname "$WORKF")"  # Ensure >=500MB free on WORKD before writing WORKF (subreducer aggregation; running out of space here can produce a 0-byte WORKF and cascade to a 0-byte WORKO)
           grep -E --binary-files=text -v "^# mysqld options required for replay:" $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') > $WORKF
           if [ "${FIREWORKS}" != "1" ]; then
             if [ -r "$WORKO" ]; then  # Avoid first occurrence when there is no $WORKO yet
@@ -1462,16 +1470,16 @@ multi_reducer(){
                   echoit "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
                 fi
               fi
-              diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free on WORKD before writing WORKO.prev
+              diskspace "$(dirname "$WORKO")"  # Ensure >=500MB free on WORKD before writing WORKO.prev
               cp -f $WORKO ${WORKO}.prev
               # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
               echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Previous good testcase backed up as $WORKO.prev"
             fi
           fi
-          diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free on WORKD before writing WORKO
+          diskspace "$(dirname "$WORKO")"  # Ensure >=500MB free on WORKD before writing WORKO
           cp -f $WORKF $WORKO
           write_workO_options_header
-          diskspace "$(dirname "$WORK_OUT")"  # Ensure >=200MB free before writing the _out file
+          diskspace "$(dirname "$WORK_OUT")"  # Ensure >=500MB free before writing the _out file
           cp -f $WORKO $WORK_OUT
           ATLEASTONCE="[*]"  # The issue was seen at least once, or FIREWORKS detected at least one newbug
           if [ "${FIREWORKS}" != "1" ]; then
@@ -1656,7 +1664,7 @@ multi_reducer_decide_input(){
       TRIAL_LEVEL=$(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "TRIAL" | sed -e 's/^.*://' -e 's/[ ]*//g')
       if [ $TRIAL_LEVEL -eq 1 ]; then
         # Highest optimization possible, use file and exit
-        diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF
+        diskspace "$(dirname "$WORKF")"  # Ensure >=500MB free on WORKD before writing WORKF
         cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, maximum initial simplification file, at thread #$t: Using it as new input file"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
@@ -1665,7 +1673,7 @@ multi_reducer_decide_input(){
         break
       elif [ $TRIAL_LEVEL -lt $LOWEST_TRIAL_LEVEL_SEEN ]; then
         LOWEST_TRIAL_LEVEL_SEEN=$TRIAL_LEVEL
-        diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF
+        diskspace "$(dirname "$WORKF")"  # Ensure >=500MB free on WORKD before writing WORKF
         cp -f $(cat $MULTI_WORKD/VERIFIED | grep -E --binary-files=text "WORKO" | sed -e 's/^.*://' -e 's/[ ]*//g') $WORKF
         echoit "$ATLEASTONCE [Stage $STAGE] [${RUNMODE}] Found verified, level $TRIAL_LEVEL simplification file, at thread #$t: Using it as new input file, unless better is found"
         if [ -r $MULTI_WORKD/MYEXTRA ]; then
@@ -1716,6 +1724,7 @@ TS_init_all_sql_files(){
   done
   # Copy of INPUTFILE to WORKF files
   # DDL data thread load is done in run_sql_code. Here reducer handles the SQL threads
+  diskspace "$(dirname "$(eval echo $(echo '$WORKF'"1"))")"  # All per-thread WORKF files live under the same workdir
   for t in $(eval echo {1..$TS_THREADS}); do
     cat $(eval echo $(echo '$TS_SQLINPUTFILE'"$t")) > $(eval echo $(echo '$WORKF'"$t"))
   done
@@ -1920,7 +1929,7 @@ init_workdir_and_files(){
     fi
     # Initial INPUTFILE to WORKF copy
     if [ "${FIREWORKS}" != "1" ]; then  # In fireworks mode, we do not need a WORKF file (ref cut_fireworks_chunk_and_shuffle and note ${INPUTFILE} is used instead. The reason for setting it up this way is 1) it greatly improves /dev/shm diskspace as WORKF is not created per-thread, thereby saving let's say 450MB for a standard SQL input file, per-thread, 2) There is no need to maintain a working file (WORKF) as the input is never changed/reduced. INPUTFILE is shuffled and chuncked (as per FIREWORKS_LINES setting) and saved as in.tmp, and if a new bug is found, that file is copied to NEW_BUGS_SAVE_DIR.
-      diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF (initial INPUTFILE→WORKF setup)
+      diskspace "$(dirname "$WORKF")"  # Ensure >=500MB free on WORKD before writing WORKF (initial INPUTFILE→WORKF setup)
       if [ "$MULTI_REDUCER" != "1" -a $FORCE_SKIPV -gt 0 ]; then  # This is the parent/main reducer and verify stage is being skipped, add dropc. If the verify stage is not being skipped (FORCE_SKIPV=0) then the 'else' clause will apply and the verify stage will handle the dropc addition or not (depending on how much initial simplification in the verify stage is possible). Note that FORCE_SKIPV check is defensive programming and not needed atm; the actual call within the verify() uses multi_reducer $1 - i.e. the original input file is used, not the here-modified WORKF file.
         if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
           #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
@@ -2180,6 +2189,7 @@ init_workdir_and_files(){
     if [[ $MDG -ne 1 && $GRP_RPL -ne 1 ]]; then
       echoit "[Init] Setting up standard data directory working template (without using MYEXTRA options)"
       generate_run_scripts
+      diskspace "$WORKD"  # mariadb-install-db / mysql_install_db stages 30-100MB of data files plus init.log into /dev/shm
       ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR --datadir=$WORKD/data ${MID_OPTIONS} --user=$MYUSER > $WORKD/init.log 2>&1
       if [ ! -d "$WORKD/data" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [ERROR] data directory at $WORKD/data does not exist... check $WORKD/log/mysqld.out, $WORKD/log/*.err and $WORKD/init.log"
@@ -2228,6 +2238,7 @@ init_workdir_and_files(){
         echoit "[Init] Loading timezone data into mysql database"
         # echoit "[Info] You may safely ignore any 'Warning: Unable to load...' messages, unless there are very many (Ref. BUG#13563952)"
         # The ones listed in BUG#13563952 are now filterered out to make output nicer
+        diskspace "$WORKD"  # mysql_tzinfo_to_sql streams ~1-2MB of generated SQL into timezone.init
         $BASEDIR/bin/mysql_tzinfo_to_sql /usr/share/zoneinfo > $WORKD/timezone.init 2> $WORKD/timezone.err
         grep -E --binary-files=text -v "Riyadh8[789]'|zoneinfo/iso3166.tab|zoneinfo/zone.tab" $WORKD/timezone.err > $WORKD/timezone.err.tmp
         for A in $(cat $WORKD/timezone.err.tmp|sed 's/ /=DUMMY=/g'); do
@@ -2239,6 +2250,7 @@ init_workdir_and_files(){
       stop_mysqld_or_mdg
     elif [[ $MDG -eq 1 ]]; then
       echoit "[Init] Setting up standard MDG data directory working template (without using MYEXTRA options)"
+      diskspace "$WORKD"  # Each Galera node init+copy stages 30-100MB into /dev/shm; checked once before the loop (a per-iteration guard would be redundant on a single tmpfs)
       for i in $(seq 1 ${NR_OF_NODES}); do
         node="${WORKD}/node${i}"
         ${INIT_TOOL} ${INIT_OPT} --basedir=$BASEDIR ${MID_OPTIONS} --user=$MYUSER --datadir=$node  > ${WORKD}/startup_node${i}_error.log 2>&1
@@ -2254,6 +2266,7 @@ init_workdir_and_files(){
       node1="${WORKD}/node1"
       node2="${WORKD}/node2"
       node3="${WORKD}/node3"
+      diskspace "$WORKD"  # Three Group-Replication node init+copy passes stage 90-300MB into /dev/shm
       ${MID} --datadir=$node1  > ${WORKD}/startup_node1_error.log 2>&1 || exit 1;
       ${MID} --datadir=$node2  > ${WORKD}/startup_node2_error.log 2>&1 || exit 1;
       ${MID} --datadir=$node3  > ${WORKD}/startup_node3_error.log 2>&1 || exit 1;
@@ -2285,7 +2298,7 @@ generate_run_scripts(){
     local EPOCH_SOCKET="/dev/shm/${EPOCH}/socket.sock"
     local EPOCH_ERROR_LOG="/dev/shm/${EPOCH}/log/master.err"
   fi
-  diskspace "$(dirname "$WORK_BASEDIR")"  # Ensure >=200MB free before writing _mybase/_init/_start/_stop/_run/_cl/_gdb/_parse_core/_how_to_use
+  diskspace "$(dirname "$WORK_BASEDIR")"  # Ensure >=500MB free before writing _mybase/_init/_start/_stop/_run/_cl/_gdb/_parse_core/_how_to_use
   echo "BASEDIR=$BASEDIR" | sed 's|^[ \t]*||;s|[ \t]*$||;s|/$||' > $WORK_BASEDIR
   echo "SOURCE_DIR=\$BASEDIR  # Only required to be set if make_binary_distrubtion script was NOT used to build MySQL" | sed 's|^[ \t]*||;s|[ \t]*$||;s|/$||' >> $WORK_BASEDIR
   echo "JEMALLOC=~/libjemalloc.so.1  # Only required for Percona Server with TokuDB. Can be completely ignored otherwise. This can be changed to a custom path to use a custom jemalloc. If this file is not present, the standard OS locations for jemalloc will be checked" >> $WORK_BASEDIR
@@ -2430,6 +2443,7 @@ generate_run_scripts(){
 }
 
 init_mysql_dir(){
+  diskspace "$WORKD"  # Per-trial data dir refresh — every cp -a below restages 30-100MB of mariadbd data files into /dev/shm; guard at the top covers all MDG/GRP_RPL/standard/replication branches in one place
   if [ ! -d "${WORKD}" ]; then abort; fi
   touch $WORKD
   if [[ $MDG -eq 1 ]] ; then
@@ -2647,6 +2661,7 @@ start_mdg_main(){
 #    fi
   done
 
+  diskspace "$(dirname "$WORK_START")"  # MDG/GRP_RPL start path regenerates $WORK_START and launches multiple mariadbd nodes that each write data/InnoDB/binlog into $WORKD/node${i}
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
   echo "BIN=\`find -L \${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1\`;if [ -z "\$BIN" ]; then echo \"Assert! mysqld binary '\$BIN' could not be read\";exit 1;fi" >> $WORK_START
@@ -2847,6 +2862,7 @@ start_mysqld_main(){
     echo "Terminating now."
     exit 1
   fi
+  diskspace "$(dirname "$WORK_START")"  # $WORK_START is regenerated on each mariadbd launch (~1-7KB), and mariadbd then writes data/InnoDB ibdata/log files into $WORKD/data while running; the guard covers the start-script write plus the subsequent mariadbd workload
   echo "SCRIPT_DIR=\$(cd \$(dirname \$0) && pwd)" > $WORK_START
   echo ". \$SCRIPT_DIR/${EPOCH}_mybase" >> $WORK_START
   echo "echo \"Attempting to start mariadbd/mysqld (socket /dev/shm/${EPOCH}/socket.sock)...\"" >> $WORK_START
@@ -2986,6 +3002,7 @@ start_valgrind_mysqld_main(){
     echo "Terminating now."
     exit 1
   fi
+  diskspace "$WORKD"  # Valgrind-instrumented mariadbd writes substantially more to $WORKD/valgrind.out (memcheck trace can grow to hundreds of MB) plus the normal data/InnoDB workload, and the $WORK_START_VALGRIND script is regenerated per launch
   if [ -f $WORKD/valgrind.out ]; then mv -f $WORKD/valgrind.out $WORKD/valgrind.prev; fi
   SCHEDULER_OR_NOT=
   if [ $ENABLE_QUERYTIMEOUT -gt 0 ]; then SCHEDULER_OR_NOT="--event-scheduler=ON "; fi
@@ -3113,15 +3130,32 @@ control_backtrack_flow(){
 cut_random_chunk(){
   RANDLINE=-1  # Dummy start
   RLLOOPCOUNT=0
-  if [ "${PQUERY_CONS_Q_FAIL}" -eq 0 ]; then  # Regular runs 
+  TAIL_ANCHOR_LINE=0  # MODE=0 only: trailing SHUTDOWN is protected from chunk-cuts so mariadbd self-shutdown stays intact. Without this, removing SHUTDOWN leaves stop_mysqld_or_mdg dependent on timeout wrappers, which on sanitizer builds inflates RUN_TIME enough to fire MODE=0's runtime-only trigger structurally. Cached against WORKF stat fingerprint to avoid re-scanning per trial.
+  if [ "${MODE}" -eq 0 ] && [ -s "$WORKF" ]; then
+    WORKF_STAT_CURRENT=$(stat -c '%s_%Y' "$WORKF" 2>/dev/null)
+    if [ "${WORKF_STAT_CACHED}" != "${WORKF_STAT_CURRENT}" ]; then
+      TAIL_ANCHOR_LINE_CACHED=$(awk 'toupper($0) ~ /^[[:space:]]*SHUTDOWN[[:space:]]*;?[[:space:]]*$/ {i=NR} END {print i+0}' "$WORKF" 2>/dev/null)
+      WORKF_STAT_CACHED="${WORKF_STAT_CURRENT}"
+    fi
+    TAIL_ANCHOR_LINE=${TAIL_ANCHOR_LINE_CACHED:-0}
+    WORKF_STAT_CURRENT=
+  fi
+  if [ "${PQUERY_CONS_Q_FAIL}" -eq 0 ]; then  # Regular runs
     #RANDLINE=$[ ( $RANDOM % ( $[ $LINECOUNTF - $CHUNK - 1 ] + 1 ) ) + 1 ]  # Old
     while [ "${RANDLINE}" -le 0 ]; do
       RANDLINE=$[ $RANDOM % ($[ $LINECOUNTF - $CHUNK ] + 1 ) ]  # New
+      # Anchor avoidance: reject candidates whose cut-range covers the tail anchor. After 100 retries release the anchor for this trial so STAGE progresses; cleanup_and_save SQL-line guard and MODE=0 PRE_SHUTDOWN_RUNTIME filter catch any resulting empty/header-only WORKT.
+      if [ "${RANDLINE}" -gt 0 ] && [ "${TAIL_ANCHOR_LINE}" -gt 0 ]; then
+        if [ "${RANDLINE}" -le "${TAIL_ANCHOR_LINE}" ] && [ $[$RANDLINE+$CHUNK] -ge "${TAIL_ANCHOR_LINE}" ]; then
+          RANDLINE=-1
+          if [ "${RLLOOPCOUNT}" -ge 100 ]; then TAIL_ANCHOR_LINE=0; fi
+        fi
+      fi
       # Inf loop protection (can be removed in time if this assert never triggers)
       RLLOOPCOUNT=$[ ${RLLOOPCOUNT} + 1 ]
       if [ "${RLLOOPCOUNT}" -ge 1000 ]; then
         echo "Assert: RLLOOPCOUNT -ge 1000! Fix this"
-        echo "Debug: RANDLINE: ${RANDLINE} | LINECOUNTF: ${LINECOUNTF} | CHUNK: ${CHUNK}"
+        echo "Debug: RANDLINE: ${RANDLINE} | LINECOUNTF: ${LINECOUNTF} | CHUNK: ${CHUNK} | TAIL_ANCHOR_LINE: ${TAIL_ANCHOR_LINE}"
         exit 1
       fi
     done
@@ -3152,7 +3186,7 @@ cut_random_chunk(){
   if [ $CHUNK -eq 0 -a $TRIAL -gt 5 ]; then STUCKTRIAL=$[ $STUCKTRIAL + 1 ]; fi
   if [ $CHUNK -eq 0 -a $STUCKTRIAL -gt 5 ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line $RANDLINE (Current chunk size: stuck at 1)"
-    diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before writing WORKT (chunk cut)
+    diskspace "$(dirname "$WORKT")"  # Ensure >=500MB free on WORKD before writing WORKT (chunk cut)
     sed -n "$RANDLINE ! p" $WORKF > $WORKT  # Note that ,+$CHUNK i.e. ,+0 would have the same outcome
   else
     ENDLINE=$[$RANDLINE+$CHUNK]
@@ -3162,7 +3196,7 @@ cut_random_chunk(){
     else
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line(s) $RANDLINE to $ENDLINE (Current chunk size: $REALCHUNK)"
     fi
-    diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before writing WORKT (chunk cut)
+    diskspace "$(dirname "$WORKT")"  # Ensure >=500MB free on WORKD before writing WORKT (chunk cut)
     sed -n "$RANDLINE,+$CHUNK ! p" $WORKF > $WORKT  # RANDLINE: starting line (line 1=1), CHUNK: number of lines (1 line=+0)
   fi
 }
@@ -3170,7 +3204,7 @@ cut_random_chunk(){
 cut_fireworks_chunk_and_shuffle(){
   echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [FIREWORKS] Chunking, shuffling and executing ${FIREWORKS_LINES} lines"  # The 'executing' is a bit premature (as it happens a bit later outside of this procedure), but the text makes sense here
   RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Resetting random entropy to ensure highest quality entropy
-  diskspace "$(dirname "${WORKT}")"  # Ensure >=200MB free on WORKD before writing WORKT (fireworks shuf)
+  diskspace "$(dirname "${WORKT}")"  # Ensure >=500MB free on WORKD before writing WORKT (fireworks shuf)
   shuf -n${FIREWORKS_LINES} --random-source=/dev/urandom ${INPUTFILE} > ${WORKT}
 }
 
@@ -3178,6 +3212,7 @@ cut_threadsync_chunk(){
   if [ $TS_TRXS_SETS -gt 0 ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering out last $TS_TRXS_SETS command sets"
   fi
+  diskspace "$(dirname "$(eval echo $(echo '$WORKT'"1"))")"  # Per-thread TS_WORKT writes (tail-based sed/grep pipes) all land in the same workdir; one guard before the loop covers every iteration
   for t in $(eval echo {1..$TS_THREADS}); do
     export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
     export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -3230,6 +3265,7 @@ run_and_check(){
   OUTCOME="$?"
   if [ $MODE -ne 0 -a $MODE -ne 1 -a $MODE -ne 6 ]; then stop_mysqld_or_mdg; fi
   # Add error log from this trial to the overall run error log
+  diskspace "$WORKD"  # Per-trial error-log accumulation: each trial's master.err/node*.err is appended to the cumulative *_error.log; mariadbd with sanitizers/--log-warnings=N can produce many MB per trial, so cumulative growth across hundreds of trials is non-trivial
   if [[ $MDG -eq 1 ]] ; then
     for i in $(seq 1 "${NR_OF_NODES}"); do
       cat $WORKD/node${i}/node${i}.err >> $WORKD/node${i}_error.log
@@ -3322,6 +3358,7 @@ run_sql_code(){
     # client replay output. Thus, any TEXT="..." strings need to be matched to the specific output seen in the original trial's pquery or mysql CLI output.
     if [ $USE_PQUERY -eq 1 ]; then
       export LD_LIBRARY_PATH=${BASEDIR}/lib
+      diskspace "$WORKD"  # pquery with --log-all-queries / --log-failed-queries can stream tens to hundreds of MB into pquery.out; guard covers all four invocation branches below (MDG/GRP_RPL × PQUERY_MULTI on/off)
       if [ -r $WORKD/pquery.out ]; then
         mv $WORKD/pquery.out $WORKD/pquery.prev
       fi
@@ -3422,6 +3459,7 @@ cleanup_and_save(){
   if [ $MODE -ge 6 -a $MODE -le 9 ]; then
     if [ "$STAGE" = "T" ]; then rm -Rf $WORKD/log/*.sql; fi
     rm -Rf $WORKD/out/*.sql
+    diskspace "$WORKD"  # MODE 6-9 commits N pairs of per-thread WORKF/WORKO writes plus the STAGE T thread-eliminated WORKO copy; one guard before the loop is sufficient for a single tmpfs
     for t in $(eval echo {1..$TS_THREADS}); do
       export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
       export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -3459,18 +3497,21 @@ cleanup_and_save(){
       ( ps -def | grep -E  'node1_socket|node2_socket|node3_socket' | grep $EPOCH | awk '{print $2}' | xargs -I{} kill -9 {} >/dev/null 2>&1; ) >/dev/null 2>&1
       sleep 2; sync
     fi
-    # Precondition: $WORKT must exist and be non-empty before any write. When $WORKT is
-    # absent or zero-byte, the later "grep ... > $WORKO" still truncates $WORKO (bash
-    # opens the target before the command runs and keeps it on command failure), and
-    # write_workO_options_header then synthesises a header-only $WORKO over the prior
-    # good one. The common trigger is a workdir-wipe race against an in-flight
-    # cleanup_and_save (e.g. rm -Rf /dev/shm/[0-9]* from ~/ka, ~/memory, ~/ds, or any
-    # ad-hoc /dev/shm cleanup).
-    if [ ! -s "$WORKT" ]; then
-      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] WORKT ($WORKT) is missing or empty; refusing to commit. Previous $WORKO kept intact."
+    # Precondition: $WORKT must contain at least one non-comment, non-blank SQL line
+    # before any write. Catches: 1) workdir-wipe race producing a zero-byte $WORKT
+    # (e.g. rm -Rf /dev/shm/[0-9]* from ~/ka, ~/memory, ~/ds, or any ad-hoc /dev/shm
+    # cleanup, intersecting an in-flight cleanup_and_save), 2) header-only / comment-only
+    # $WORKT from a chunk-cut that eliminated every SQL line. Without this, the later
+    # "grep -v <header> $WORKT > $WORKO" leaves $WORKO empty and write_workO_options_header
+    # re-creates it with just the header, silently overwriting the prior good $WORKO.
+    WORKT_SQL_LINES=$(grep -E --binary-files=text -cv '^[[:space:]]*(#|--|$)' "$WORKT" 2>/dev/null || echo 0)
+    if [ ! -s "$WORKT" ] || [ "${WORKT_SQL_LINES:-0}" -eq 0 ]; then
+      echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [Warning] WORKT ($WORKT) is empty or has no SQL lines (only header/comments); refusing to commit. Previous $WORKO kept intact."
+      WORKT_SQL_LINES=
       return 1
     fi
-    diskspace "$(dirname "$WORKF")"  # Ensure >=200MB free on WORKD before writing WORKF/WORKO/*.prev
+    WORKT_SQL_LINES=
+    diskspace "$(dirname "$WORKF")"  # Ensure >=500MB free on WORKD before writing WORKF/WORKO/*.prev
     cp -f $WORKT $WORKF
     if [ -r "$WORKO" ]; then
       if [[ ${RR_TRACING} -eq 1 ]]; then
@@ -3479,18 +3520,19 @@ cleanup_and_save(){
           echoit "$ATLEASTONCE [Stage $STAGE] [Trial ${TRIAL}] Saved RR trace in ${WORK_BUG_DIR}/rr/${STAGE}_${TRIAL}_rr_trace"
         fi
       fi
-      diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free before writing WORKO.prev (preserve last-known-good)
+      diskspace "$(dirname "$WORKO")"  # Ensure >=500MB free before writing WORKO.prev (preserve last-known-good)
       cp -f $WORKO ${WORKO}.prev
       # Save a testcase backup (this is useful if [oddly] the issue now fails to reproduce)
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Previous good testcase backed up as $WORKO.prev"
     fi
-    diskspace "$(dirname "$WORKO")"  # Ensure >=200MB free before writing WORKO (final reduced output)
+    diskspace "$(dirname "$WORKO")"  # Ensure >=500MB free before writing WORKO (final reduced output)
     grep -E --binary-files=text -v "^# mysqld options required for replay:" $WORKT > $WORKO
     write_workO_options_header
-    diskspace "$(dirname "$WORK_OUT")"  # Ensure >=200MB free before writing the _out file and bug bundle tarball
+    diskspace "$(dirname "$WORK_OUT")"  # Ensure >=500MB free before writing the _out file and bug bundle tarball
     cp -f $WORKO $WORK_OUT
     # Save a tarball of full self-contained testcase on each successful reduction
     rm -f $WORK_BUG_DIR/${EPOCH}_bug_bundle.tar.gz
+    diskspace "$WORK_BUG_DIR"  # Tarball compresses the EPOCH bundle (sql + scripts + pquery binary); explicit re-check after the cp above in case another process consumed the headroom between the two writes
     (cd $WORK_BUG_DIR; tar -zhcf ${EPOCH}_bug_bundle.tar.gz ${EPOCH}*)
   fi
   ATLEASTONCE="[*]"  # The issue was seen at least once (this is used to permanently mark lines with '[*]' suffix as soon as this happens)
@@ -3562,6 +3604,7 @@ mode11_do_dump(){
     : >"$dest"
     return 0
   fi
+  diskspace "$(dirname "$dest")"  # mariadb-dump streams the full schema+data SQL dump (often 10-500MB) into $dest
   # shellcheck disable=SC2086
   ${BASEDIR}/bin/mariadb-dump -uroot -S"$sock" --force --hex-blob --routines --triggers --events \
       --skip-dump-date --skip-comments --databases $user_dbs >"$dest" 2>"$WORKD/mode11_dump.err"
@@ -3590,6 +3633,7 @@ mode11_replay_binlogs(){
   local files
   files=$(ls -1 "$src" 2>/dev/null | sort)
   [ -z "$files" ] && { echoit "[MODE11] no binlog files in $src"; return 1; }
+  diskspace "$WORKD"  # mariadb-binlog | mariadb pipeline writes replay stdout/err into $WORKD, plus mariadbd processes the binlog stream and writes data/InnoDB files
   # shellcheck disable=SC2086
   ( cd "$src" && ${BASEDIR}/bin/mariadb-binlog --disable-log-bin $files ) \
       | ${BASEDIR}/bin/mariadb -uroot -S"$sock" --binary-mode --force \
@@ -3609,6 +3653,17 @@ process_outcome(){
     RUN_TIME=$[ $(date +'%s') - ${MYSQLD_START_TIME} ]
     M0_ISSUE_FOUND=0
     if [ ${RUN_TIME} -ge ${TIMEOUT_CHECK_REAL} ]; then M0_ISSUE_FOUND=1; fi
+    # False-positive suppression: when $WORKT contains zero SQL lines (only header/comments) and the pre-shutdown runtime alone is below threshold, the runtime spike came from shutdown / sanitizer-flush latency rather than a SQL hang. Common pattern on UBSAN/ASAN builds once a chunk-cut removed the trailing SHUTDOWN. Preserves the prior good $WORKO instead of collapsing to a header-only one.
+    if [ ${M0_ISSUE_FOUND} -eq 1 ] && [ -r "${WORKT}" ]; then
+      PRE_SHUTDOWN_RUNTIME=$[ ${RUN_TIME} - ${SHUTDOWN_DURATION:-0} ]
+      WORKT_SQL_LINES_M0=$(grep -E --binary-files=text -cv '^[[:space:]]*(#|--|$)' "${WORKT}" 2>/dev/null || echo 0)
+      if [ "${WORKT_SQL_LINES_M0:-0}" -eq 0 ] && [ ${PRE_SHUTDOWN_RUNTIME} -lt ${TIMEOUT_CHECK_REAL} ]; then
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [M0-FP-Suppressed] WORKT has no SQL lines and PRE_SHUTDOWN_RUNTIME=${PRE_SHUTDOWN_RUNTIME}s < TIMEOUT_CHECK_REAL=${TIMEOUT_CHECK_REAL}s; shutdown-latency-only spike — not treating as bug"
+        M0_ISSUE_FOUND=0
+      fi
+      WORKT_SQL_LINES_M0=
+      PRE_SHUTDOWN_RUNTIME=
+    fi
     if [ $M0_ISSUE_FOUND -eq 1 ]; then
       if [ ! "$STAGE" = "V" ]; then
         echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*TimeoutBug*] [$NOISSUEFLOW] Swapping files & saving last known good timeout issue in $WORKO"
@@ -3824,6 +3879,7 @@ process_outcome(){
                   save_rr_trace "${NEW_BUGS_SAVE_DIR}/${EPOCH_RAN}_rr_trace"
                   echoit "[NewBug] Saved RR trace in ${NEW_BUGS_SAVE_DIR}/${EPOCH_RAN}_rr_trace"
                 fi
+                diskspace "${NEW_BUGS_SAVE_DIR}"  # Newbug bundle (sql + UniqueID + reducer.sh + optional varmod) lands on the disk-backed bugs dir, not tmpfs; guard against /data exhaustion
                 cp "${WORKT}" "${NEWBUGSO}"
                 echoit "[NewBug] Saved the new testcase to: ${NEWBUGSO}"
                 cp "${WORKD}/MYBUG.FOUND" "${NEWBUGTO}"
@@ -4198,6 +4254,7 @@ process_outcome(){
     fi
     # (4) Restore.
     if [ "${MODE11_TYPE}" = "dump" ]; then
+      diskspace "$WORKD"  # mariadb < dump replays the schema+data into the second mariadbd instance and writes restore.out/.err plus data/InnoDB files
       ${BASEDIR}/bin/mariadb -uroot -S"$SOCK" --binary-mode --force <"$DUMPF" >"$WORKD/mode11_restore.out" 2>"$WORKD/mode11_restore.err"
     else
       if ! mode11_replay_binlogs "$SOCK" "$BL_DIR"; then
@@ -4349,7 +4406,8 @@ stop_mysqld_or_mdg(){
     KPIDS=
     PIDV=
   fi
-  RUN_TIME=$[ ${RUN_TIME} + $(date +'%s') - ${SHUTDOWN_TIME_START} ]  # Add shutdown runtime to overall runtime which is later checked against TIMEOUT_CHECK
+  SHUTDOWN_DURATION=$[ $(date +'%s') - ${SHUTDOWN_TIME_START} ]  # Exposed for MODE=0 process_outcome to separate pre-shutdown runtime (real in-query hang) from shutdown latency (which on sanitizer builds is large enough to fire the runtime-only MODE=0 trigger structurally)
+  RUN_TIME=$[ ${RUN_TIME} + ${SHUTDOWN_DURATION} ]  # Add shutdown runtime to overall runtime which is later checked against TIMEOUT_CHECK
 }
 
 finish(){
@@ -4364,7 +4422,7 @@ finish(){
   echoit "[Finish] Finalized reducing SQL input file ($INPUTFILE)"
   echoit "[Finish] Number of server startups         : $STARTUPCOUNT (not counting subreducers)"
   echoit "[Finish] Reducer log                       : $WORKD/reducer.log"
-  diskspace "$(dirname "$WORK_OUT")"  # Ensure >=200MB free before writing the final _out file
+  diskspace "$(dirname "$WORK_OUT")"  # Ensure >=500MB free before writing the final _out file
   if [ ! -r $WORKO ]; then  # If there was no reduction (i.e. issue was not found), $WORKO was never written
     cp $INPUTFILE $WORK_OUT
     echoit "[Finish] Final testcase                    : $INPUTFILE (= input file; no optimizations were successful. $(awk 'END{print NR}' $INPUTFILE) lines)"
@@ -4373,6 +4431,7 @@ finish(){
     echoit "[Finish] Final testcase                    : $WORKO ($(awk 'END{print NR}' $WORKO) lines)"
   fi
   rm -f $WORK_BUG_DIR/${EPOCH}_bug_bundle.tar.gz
+  diskspace "$WORK_BUG_DIR"  # Final tarball is the user-facing deliverable; explicit guard after the preceding cp ensures the destination still has headroom even if a concurrent process consumed space
   (cd $WORK_BUG_DIR; tar -zhcf ${EPOCH}_bug_bundle.tar.gz ${EPOCH}*)
   echoit "[Finish] Final testcase bundle + scripts in: $WORK_BUG_DIR"
   echoit "[Finish] Final testcase for script use     : $WORK_OUT (handy to use in combination with the scripts below)"
@@ -4582,10 +4641,11 @@ verify(){
       else
         REMOVESUFFIX="s/;[\t ]*#.*/;/i"
       fi
-      diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before each verify-stage WORKT/WORKF transformation (covers all TRIAL=1..6 branches; cheap defensive guard against empty-write cascades)
+      diskspace "$(dirname "$WORKT")"  # Ensure >=500MB free on WORKD before each verify-stage WORKT/WORKF transformation (covers all TRIAL=1..6 branches; cheap defensive guard against empty-write cascades)
       if   [ $TRIAL -eq 1 ]; then
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & DEBUG_SYNC disabled and removed (DEBUG_SYNC may not be necessary)"
+          diskspace "$(dirname "$(eval echo $(echo '$WORKT'"1"))")"  # TS verify TRIAL 1 per-thread pipeline writes (closer-in-time check than the top-of-loop guard)
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -4599,6 +4659,7 @@ verify(){
           done
         else
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & cleanup"
+          diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 1 grep+sed pipeline write to $WORKT (closer-in-time check than the top-of-loop guard)
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-| \[Note\] |====|  WARNING: |^Hope that|^Logging: |\++++| exit with exit status |Lost connection to | valgrind |Using [MSI]|Using dynamic|MySQL Version|\------|TIME \(ms\)$|Skipping ndb|Setting mysqld |Setting mariadbd |Binaries are debug |Killing Possible Leftover|Removing Stale Files|Creating Directories|Installing Master Database|Servers started, |Try: yum|Missing separate debug|SOURCE|CURRENT_TEST|\[ERROR\]|with SSL|_root_|connect to MySQL|No such file|is deprecated at|just omit the defined" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed 's/[\t ]\+/ /g' \
@@ -4610,6 +4671,7 @@ verify(){
                   -e "s/', '/','/g" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            diskspace "$WORKD"  # INITFILE block writes $WORKF (DROPC + filtered input), /tmp/WORKT_*.tmp (DROPC + INITFILE + WORKT), and $WORKD/MYEXTRA — guards the cumulative inline-init write burst
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -4632,6 +4694,7 @@ verify(){
       elif [ $TRIAL -eq 2 ]; then
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: Medium initial simplification (CREATE+INSERT lines split) & DEBUG_SYNC disabled and removed"
+          diskspace "$(dirname "$(eval echo $(echo '$WORKT'"1"))")"  # TS verify TRIAL 2 per-thread pipeline writes
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -4641,6 +4704,7 @@ verify(){
           done
         else
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: High initial simplification & cleanup (no RQG log text removal)"
+          diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 2 grep+sed pipeline write to $WORKT
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed 's/[\t ]\+/ /g' \
@@ -4651,6 +4715,7 @@ verify(){
                   -e "s/', '/','/g" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            diskspace "$WORKD"  # INITFILE block writes $WORKF (DROPC + filtered input), /tmp/WORKT_*.tmp (DROPC + INITFILE + WORKT), and $WORKD/MYEXTRA — guards the cumulative inline-init write burst
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -4674,6 +4739,7 @@ verify(){
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
         TS_DEBUG_SYNC_REQUIRED_FLAG=1
         echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: Maximum initial simplification & DEBUG_SYNC enabled"
+          diskspace "$(dirname "$(eval echo $(echo '$WORKT'"1"))")"  # TS verify TRIAL 3 per-thread pipeline writes
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -4687,6 +4753,7 @@ verify(){
           done
         else
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: High initial simplification (no RQG text removal & less cleanup)"
+          diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 3 grep+sed pipeline write to $WORKT
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" \
@@ -4695,6 +4762,7 @@ verify(){
             | sed 's/ VALUES[ ]*(/ VALUES \n(/g' > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            diskspace "$WORKD"  # INITFILE block writes $WORKF (DROPC + filtered input), /tmp/WORKT_*.tmp (DROPC + INITFILE + WORKT), and $WORKD/MYEXTRA — guards the cumulative inline-init write burst
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -4717,6 +4785,7 @@ verify(){
       elif [ $TRIAL -eq 4 ]; then
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split) & DEBUG_SYNC enabled"
+          diskspace "$(dirname "$(eval echo $(echo '$WORKT'"1"))")"  # TS verify TRIAL 4 per-thread pipeline writes
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -4726,12 +4795,14 @@ verify(){
           done
         else
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split & remove # comments)"
+          diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 4 sed pipeline write to $WORKT
           sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
             | sed "$REMOVESUFFIX" \
             | sed "s/;\(.*CREATE.*TABLE\)/;\n\1/g" \
             | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            diskspace "$WORKD"  # INITFILE block writes $WORKF (DROPC + filtered input), /tmp/WORKT_*.tmp (DROPC + INITFILE + WORKT), and $WORKD/MYEXTRA — guards the cumulative inline-init write burst
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -4754,6 +4825,7 @@ verify(){
       elif [ $TRIAL -eq 5 ]; then
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split) & DEBUG_SYNC enabled"
+          diskspace "$(dirname "$(eval echo $(echo '$WORKT'"1"))")"  # TS verify TRIAL 5 per-thread pipeline writes
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
@@ -4763,10 +4835,12 @@ verify(){
           # The benefit of splitting INSERT lines: example: INSERT (a),(b),(c); becomes INSERT (a),\n(b)\n(c); and thus the seperate line with "b" could be eliminated/simplified.
           # If the testcase then works fine withouth the 'b' elemeneted inserted, it has become simpler. Consider large inserts (100's of rows) and how complexity can be reduced.
           echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split & remove # comments)"
+          diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 5 sed pipeline write to $WORKT
           sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
             | sed "$REMOVESUFFIX" > $WORKT
           if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
             echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            diskspace "$WORKD"  # INITFILE block writes $WORKF (DROPC + filtered input), /tmp/WORKT_*.tmp (DROPC + INITFILE + WORKT), and $WORKD/MYEXTRA — guards the cumulative inline-init write burst
             if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
               #Improvement made on 25/01/2021 RV: the original line was seen producing 'ignoring null byte in input'. I am not 100% confident on this change as testing went into the original line construction many years ago. Monitor results over time. This code was also changed elsewhere in reducer.sh, search for 'DROPC can be on a single line'.
               #echo "$(echo "$DROPC";cat $INPUTFILE | grep -E --binary-files=text -v "$DROPC")" > $WORKF
@@ -5037,7 +5111,7 @@ if [ $MODE -ge 6 -a $MODE -le 9 ]; then
   if [ $TS_THREADS -eq 1 ]; then
     echoit "$ATLEASTONCE [Stage $STAGE] [TSE Finish] Only one SQL thread remaining. Merging DATA and SQL thread and swapping to single threaded simplification"
     WORKO="$WORKD/single_out.sql"
-    diskspace "$WORKD"  # Ensure >=200MB free on WORKD before writing WORKF/WORKO
+    diskspace "$WORKD"  # Ensure >=500MB free on WORKD before writing WORKF/WORKO
     cp -f $TS_DATAINPUTFILE $WORKF
     # We can immediately use thread #1 as TS_init_all_sql_files (from the last run above, or from the original run if there was ever only one thread)
     # has set thread #1 to be the correct remaining thread
@@ -5139,7 +5213,7 @@ if [ $SKIPSTAGEBELOW -lt 2 -a $SKIPSTAGEABOVE -gt 2 ]; then
       NEXTACTION="& progress to the next stage"  # Last line
     fi
     echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] Now filtering line ${CURRENTLINE} (Current chunk size: fixed to 1)"
-    diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before writing WORKT (Stage 2 single-line chunk)
+    diskspace "$(dirname "$WORKT")"  # Ensure >=500MB free on WORKD before writing WORKT (Stage 2 single-line chunk)
     sed -n "$CURRENTLINE ! p" $WORKF > $WORKT
     while :; do
       run_and_check
@@ -5190,7 +5264,7 @@ if [ $SKIPSTAGEBELOW -lt 3 -a $SKIPSTAGEABOVE -gt 3 ]; then
     if [ ! -d "${WORKD}" -o ! -r ${INPUTFILE} -o ! -r ${THIS_REDUCER} ]; then abort; break; fi
     NOSKIP=0
 
-    diskspace "$(dirname "$WORKT")"  # Ensure >=200MB free on WORKD before each Stage 3 sed transformation (covers all TRIAL=1..N branches below)
+    diskspace "$(dirname "$WORKT")"  # Ensure >=500MB free on WORKD before each Stage 3 sed transformation (covers all TRIAL=1..N branches below)
     # The @##@ sed's remove comments like /*! NULL */. Each sed removes one /* */ block per line, so 3 sed's removes 3x /* */ for each line
     if   [ $TRIAL -eq 1  ]; then sed "s/[\t ]*,[ \t]*/,/g" $WORKF > $WORKT
     elif [ $TRIAL -eq 2  ]; then NOSKIP=1; sed "s/\\\"/'/g" $WORKF > $WORKT
