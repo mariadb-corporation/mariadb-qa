@@ -351,7 +351,8 @@ find_other_possible_issue_strings(){
       -e 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: COMPACT RECORD|' \
       -e 's|Record in index.*of table.*was not found on update: TUPLE.*at: RECORD(.*|Record in index X of table Y was not found on update: TUPLE Z at: RECORD|' \
       -e 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: RECORD(.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: RECORD|' \
-      -e 's|In ALTER TABLE `[^`]\+`\.`[^`]\+` has or is referenced in foreign key constraints which are not compatible with the new table definition|In ALTER TABLE X has or is referenced in foreign key constraints which are not compatible with the new table definition|' \
+      -e 's|In ALTER TABLE [^ ]\+ has or is referenced in foreign key constraints which are not compatible with the new table definition|In ALTER TABLE X has or is referenced in foreign key constraints which are not compatible with the new table definition|' \
+      -e 's|Unable to flag corruption of `[^`]\+` in table `[^`]\+`\.`[^`]\+` in CHECK TABLE; Wrong count|Unable to flag corruption of X in table Y in CHECK TABLE; Wrong count|' \
       -e 's|We detected index corruption in an InnoDB type table\. You have to dump.*forcing recovery|We detected index corruption in an InnoDB type table|' \
       -e 's|for table [^ ]\+|for table X|g' \
       -e 's|The table [^ ]\+ doesnt have|The table X doesnt have|g' \

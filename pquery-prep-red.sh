@@ -821,9 +821,13 @@ if [ ${QC} -eq 0 ]; then
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1
             REFRESH_TEXT="$(head -n1 ./${TRIAL}/node${SUBDIR}/MYBUG | sed 's|"|\\\\"|g')"
-            sed -i $'s\x01^   TEXT=.*\x01   TEXT="'"${REFRESH_TEXT}"$'"\x01' ./reducer${TRIAL}-${SUBDIR}.sh
+            NEW_LINE='   TEXT="'"${REFRESH_TEXT}"'"'
+            OLD_LINE="$(grep -m1 '^   TEXT=' ./reducer${TRIAL}-${SUBDIR}.sh)"
+            if [ "${OLD_LINE}" != "${NEW_LINE}" ]; then
+              sed -i $'s\x01^   TEXT=.*\x01   TEXT="'"${REFRESH_TEXT}"$'"\x01' ./reducer${TRIAL}-${SUBDIR}.sh
+              echo "* Refreshed UniqueID in ./reducer${TRIAL}-${SUBDIR}.sh (universalization rules changed since this reducer was generated)"
+            fi
             touch ./reducer${TRIAL}-${SUBDIR}.sh
-            echo "* Refreshed TEXT in ./reducer${TRIAL}-${SUBDIR}.sh from regenerated MYBUG (nts rules updated since previous prep-red run)"
           fi
           echo "* Reducer for this trial (./reducer${TRIAL}_${SUBDIR}.sh) already exists. Skipping to next trial/node."
           continue
@@ -961,9 +965,13 @@ if [ ${QC} -eq 0 ]; then
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1
             REFRESH_TEXT="$(head -n1 ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"
-            sed -i $'s\x01^   TEXT=.*\x01   TEXT="'"${REFRESH_TEXT}"$'"\x01' ./reducer${TRIAL}.sh
-            touch ./reducer${TRIAL}.sh  # bump mtime so this refresh is idempotent across pg cycles
-            echo "* Refreshed TEXT in ./reducer${TRIAL}.sh from regenerated MYBUG (nts rules updated since previous prep-red run)"
+            NEW_LINE='   TEXT="'"${REFRESH_TEXT}"'"'
+            OLD_LINE="$(grep -m1 '^   TEXT=' ./reducer${TRIAL}.sh)"
+            if [ "${OLD_LINE}" != "${NEW_LINE}" ]; then
+              sed -i $'s\x01^   TEXT=.*\x01   TEXT="'"${REFRESH_TEXT}"$'"\x01' ./reducer${TRIAL}.sh
+              echo "* Refreshed UniqueID in ./reducer${TRIAL}.sh (universalization rules changed since this reducer was generated)"
+            fi
+            touch ./reducer${TRIAL}.sh  # bump mtime so this check stays silent on subsequent pg cycles
           fi
           echo "* Reducer for this trial (./reducer${TRIAL}.sh) already exists. Skipping to next trial."
           continue
