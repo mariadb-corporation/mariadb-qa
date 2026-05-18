@@ -343,7 +343,7 @@ if [[ $AUTO_INC_TEST -eq 1 ]]; then
   PQPID="$!"
   for X in $(seq 1 ${PQUERY_RUN_TIMEOUT}); do
     sleep 1
-    if [ "`ps -ef | grep ${PQPID} | grep -v grep`" == "" ]; then  # pquery ended
+    if ! kill -0 ${PQPID} 2>/dev/null; then  # pquery ended. kill -0 is an O(1) PID-exists probe; avoids ps -ef scan which stalls multi-seconds under high process count / high load
       break
     fi
     if [ $X -ge ${PQUERY_RUN_TIMEOUT} ]; then
@@ -429,7 +429,7 @@ if [[ $AUTO_INC_SHUFFLE_TEST -eq 1 ]]; then
   PQPID="$!"
   for X in $(seq 1 ${PQUERY_RUN_TIMEOUT}); do
     sleep 1
-    if [ "`ps -ef | grep ${PQPID} | grep -v grep`" == "" ]; then  # pquery ended
+    if ! kill -0 ${PQPID} 2>/dev/null; then  # pquery ended. kill -0 is an O(1) PID-exists probe; avoids ps -ef scan which stalls multi-seconds under high process count / high load
       break
     fi
     if [ $X -eq 30 ];then

@@ -85,16 +85,14 @@ fi
 if [ ! -z "${ERROR_LOG}" ]; then  # Do not use -r as it will not work if both master.err and slave.err are present, for example
   ERRORS="$(${SCRIPT_PWD}/error_log_scan.sh errors ${ERROR_LOG})"
   ERRORS_LAST_LINE="$(${SCRIPT_PWD}/error_log_scan.sh lastline ${ERROR_LOG})"
-  if [ "${2}" = "CHECK" ]; then  # CHECK mode: non-destructive in every branch. Emit UID-form content (PREFIX|details) from any significant error log entries so pquery-prep-red.sh can set the reducer TEXT and MYBUG when MYBUG's UniqueID is a known-still-open bug or non-UID like "Assert: no core found..." (see pquery-prep-red.sh's FINDBUG block). UID form keeps the MYBUG-is-always-a-UID invariant; partial-match in USE_NEW_TEXT_STRING=1 mode lets reducer's nts compare against this prefix during reduction.
-    ${SCRIPT_PWD}/error_log_scan.sh errors ${ERROR_LOG}
-  elif [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
+  if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
     delete_trial  # No significant errors: safe to delete
   elif [ -z "${ERRORS}" -a ! -z "${ERRORS_LAST_LINE}" -a ! -z "$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --binary-files=text -o 'Assertion .* failed' 2>/dev/null | sed "s|'|.|g" | sed 's|"|.|g' | sed "s|^Assertion .||;s|. failed$||" | xargs -I{} grep --binary-files=text -i "{}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null)" ]; then  # No other errors and last-line assertion exactly matches an already-known assertion in the known bugs file: safe to delete
     delete_trial
   else  # There are uknown issues remaining: do not delete unless an overwrite "1" is passed as an option to the script
     if [ "${2}" != "1" ]; then
       if [ "${CA_ACTIVE}" != "1" ]; then  # Supress many messages when 'ca' (/data/clean_all) is used
-        echo "Not deleting trial ${TRIAL} (Dir: ${PWD}) as one or more significant error(s) ($( echo "$(if [ ! -z "${ERRORS}" ]; then echo "\"${ERRORS}\""; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then echo "\"${ERRORS_LAST_LINE}\""; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')) was/were found in the error log! To delete it anyways please add a '1' as second option to this script (pquery-del-trial.sh)!"
+        echo "Not deleting trial ${TRIAL} (Dir: ${PWD}) as a significant error (\"$(${SCRIPT_PWD}/error_log_scan.sh top ${ERROR_LOG} 2>/dev/null)\") was found in the error log! To delete it anyways please add a '1' as second option to this script (pquery-del-trial.sh)!"
       fi
     else
       delete_trial

@@ -72,7 +72,7 @@ while :; do
   if [ ${PERCENT} -ge ${KILL_PERCENT} ]; then
     echo "Process ${PID} is consuming too much memory (${PERCENT}%): terminating..."
     echo "Process ${PID} snapshot:"
-    ps -ef | grep "${PID}" | grep -v grep
+    ps -p ${PID} -f  # Precise single-PID lookup; avoids ps -ef scan and substring-PID false positives
     sleep 1
     for((l=0;l<3;l++)){
       sudo kill -9 ${PID} 2>/dev/null

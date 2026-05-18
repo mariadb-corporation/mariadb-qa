@@ -7,6 +7,7 @@
 # Usage:
 #   error_log_scan.sh errors   <log>...   typed UIDs (REGEX_ERRORS_SCAN matches, filtered, normalised)
 #   error_log_scan.sh lastline <log>...   typed UID(s) for the tail-of-log error
+#   error_log_scan.sh top      <log>...   single highest-severity UID across errors+lastline (one input line, no blending)
 #   error_log_scan.sh check    <log>...   silent; exit 0 if any significant errors, 1 otherwise
 #   error_log_scan.sh clean    <log>...   cleaned combined form suitable for reducer TEXT (regex-friendly)
 #   error_log_scan.sh aggregate <log>...  <UID><tab><trial> rows for pquery-results.sh's grouper
@@ -23,8 +24,8 @@ SCRIPT_PWD="$(dirname $(readlink -f "${0}"))"
 MODE="${1}"
 shift 2>/dev/null
 case "${MODE}" in
-  errors|lastline|check|clean|aggregate) ;;
-  *) echo "Usage: $0 {errors|lastline|check|clean|aggregate} <log>..." >&2; exit 1 ;;
+  errors|lastline|top|check|clean|aggregate) ;;
+  *) echo "Usage: $0 {errors|lastline|top|check|clean|aggregate} <log>..." >&2; exit 1 ;;
 esac
 [ $# -eq 0 ] && exit 1
 
@@ -177,8 +178,8 @@ uid_prefix() {
       if ($0 ~ /^Trying to lock uninitialized mutex/)   { print "MUTEX_ERROR|" $0; next }
       if ($0 ~ /^Indirect leak of/)                     { print "LSAN|" $0; next }
       if ($0 ~ /AddressSanitizer/)                      { print "ASAN|" $0; next }
-      if ($0 ~ /^(corrupted|malloc\(|free\(|double free|munmap_chunk)/) { print "GLIBC|" $0; next }
-      print
+      if ($0 ~ /^(corrupted|malloc\(|free\(|double free|munmap_chunk)/ || $0 ~ /\*\*\* (glibc detected|Error in `)/) { print "GLIBC|" $0; next }   # Line-start markers cover modern glibc (just the keyword line); the *** preludes cover older glibc emit format on legacy systems / unusual binaries.
+      print "UNTYPED|Please add a typed prefix rule to error_log_scan.sh uid_prefix() for: " $0   # Catch-all: ensures the MYBUG-is-always-a-UID invariant holds even when no typed-prefix rule above matched. Seeing UNTYPED| in pquery-results.sh aggregate output is an action signal — add a rule for this log shape.
     }
   '
 }
@@ -218,6 +219,23 @@ fi
 case "${MODE}" in
   errors)   [ -z "${ERRORS}" ]           && exit 1; echo "${ERRORS}"           | uid_normalize | uid_prefix ;;
   lastline) [ -z "${ERRORS_LAST_LINE}" ] && exit 1; echo "${ERRORS_LAST_LINE}" | uid_normalize | uid_prefix ;;
+  top)
+    # Pick the single highest-severity UID across both scans, sourced from one input line (no blending). Severity tiers: 1=ASSERT, 2=ASAN/LSAN, 3=GLIBC/MUTEX_ERROR, 4=other typed errors (INNODB_ERROR/MARIADBD_ERROR/SLAVE_ERROR/MARKED_AS_CRASHED/...), 5=warnings/notes, 9=untyped fallback. Lower tier wins. Within a tier the first occurrence wins.
+    [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ] && exit 1
+    { [ -n "${ERRORS}" ] && echo "${ERRORS}"; [ -n "${ERRORS_LAST_LINE}" ] && echo "${ERRORS_LAST_LINE}"; } \
+      | uid_normalize | uid_prefix \
+      | awk '
+          { p = 9
+            if      ($0 ~ /^ASSERT\|/)                                                                                  p = 1
+            else if ($0 ~ /^(ASAN|LSAN)\|/)                                                                             p = 2
+            else if ($0 ~ /^(GLIBC|MUTEX_ERROR)\|/)                                                                     p = 3
+            else if ($0 ~ /\|/ && $0 !~ /^(INNODB_WARNING|SLAVE_WARNING|WARNING_ABORTED|INNODB_NOTE|UNTYPED)\|/)        p = 4
+            else if ($0 ~ /^(INNODB_WARNING|SLAVE_WARNING|WARNING_ABORTED|INNODB_NOTE)\|/)                              p = 5
+            else if ($0 ~ /^UNTYPED\|/)                                                                                 p = 6
+            if (!bp || p < bp) { bu = $0; bp = p }
+          }
+          END { if (bu != "") print bu }'
+    ;;
   check)    [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ] && exit 1 ;;
   clean)
     [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ] && exit 1

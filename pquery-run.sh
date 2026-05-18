@@ -1451,10 +1451,10 @@ pquery_test(){
   echoit "Clearing rundir..."
   rm -Rf ${RUNDIR}/[0-9A-Za-ln-z]* # m* is avoided to leave ./mysqld or ./mariadbd in place
   if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
-    echoit "Generating new SQL inputfile using the SQL Generator..."
     SAVEDIR=${PWD}
     cd ${SCRIPT_PWD}/generator/ || exit 1
     if [ ${TRIAL} -eq 1 -o $((${TRIAL} % ${GENERATE_NEW_QUERIES_EVERY_X_TRIALS})) -eq 0 ]; then
+      echoit "Generating new SQL inputfile using the SQL Generator..."
       if [ "${RANDOMD}" == "" ]; then
         echoit "Assert: RANDOMD is empty. This should not happen. Terminating."
         exit 1
@@ -1487,6 +1487,10 @@ pquery_test(){
         BEFORE_FILTER_LINES_NR=
         AFTER_FILTER_LINES_NR=
       fi
+    else
+      GEN_LAST_REGEN_TRIAL=$(( (TRIAL / GENERATE_NEW_QUERIES_EVERY_X_TRIALS) * GENERATE_NEW_QUERIES_EVERY_X_TRIALS ))
+      if [ ${GEN_LAST_REGEN_TRIAL} -eq 0 ]; then GEN_LAST_REGEN_TRIAL=1; fi
+      echoit "Re-using generated SQL out${RANDOMD}.sql for Trial $((TRIAL - GEN_LAST_REGEN_TRIAL + 1))/${GENERATE_NEW_QUERIES_EVERY_X_TRIALS}"
     fi
     INFILE=${PWD}/out${RANDOMD}.sql
     cd ${SAVEDIR} || exit 1
@@ -2493,7 +2497,7 @@ EOF
           fi
           exit 1
         fi
-        if [ "$(ps -ef | grep ${PQPID} | grep -v grep)" == "" ]; then # pquery ended
+        if ! kill -0 ${PQPID} 2>/dev/null; then # pquery ended. kill -0 is an O(1) PID-exists probe; avoids ps -ef scan which stalls multi-seconds under high process count / high load
           break
         fi
         if [ ${CRASH_RECOVERY_TESTING} -eq 1 ]; then
@@ -2637,7 +2641,7 @@ EOF
   fi
   if [ ! -z "${ERROR_LOG_SCAN}" ] && ${SCRIPT_PWD}/error_log_scan.sh check ${ERROR_LOG_SCAN}; then  # error_log_scan.sh: unified REGEX_ERRORS_* scanner; see that script for the regex config & cleanup pipeline
     touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # Mark trial as containing an error log issue. pquery-prep-red.sh uses this (plus a known-bug check on the MYBUG UniqueID) to decide whether to override reducer TEXT with the cleaned error log bug from error_log_scan.sh.
-    echoit "Error log bug found: \"$(${SCRIPT_PWD}/error_log_scan.sh errors ${ERROR_LOG_SCAN} | tr '\n' ' ' | sed 's|[ ]\+$||')\" \"$(${SCRIPT_PWD}/error_log_scan.sh lastline ${ERROR_LOG_SCAN} | tr '\n' ' ' | sed 's|[ ]\+$||')\""
+    echoit "Error log bug found: \"$(${SCRIPT_PWD}/error_log_scan.sh top ${ERROR_LOG_SCAN} 2>/dev/null)\""
     savetrial
     TRIAL_SAVED=1
   fi

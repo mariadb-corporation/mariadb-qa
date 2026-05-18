@@ -721,7 +721,7 @@ generate_reducer_script(){
     fi
   fi
   if [ ! -z "${FINDBUG}" ]; then  # Override path: nts UID is either a known/filtered bug or "no core found", and ERROR_LOG_SCAN_ISSUE flagged a separate error-log entry worth reducing.
-    ERROR_LOG_UID="$(${SCRIPT_PWD}/pquery-del-trial.sh ${TRIAL} CHECK | grep -v '^[ \t]*$' | sort -u | head -n1)"
+    ERROR_LOG_UID="$(${SCRIPT_PWD}/error_log_scan.sh top ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null)"
     if [ ! -z "${ERROR_LOG_UID}" ]; then
       UNTS_COMMENT="# TEXT is the error-log UID (the original UniqueID is the '#TEXT=' line below). USE_NEW_TEXT_STRING=1: reducer nts-compares each replay against this UID."
       sed -i $'s\x01^USE_NEW_TEXT_STRING=.*\x01USE_NEW_TEXT_STRING=1  '"${UNTS_COMMENT}"$'\x01' ${REDUCER_FILENAME}
