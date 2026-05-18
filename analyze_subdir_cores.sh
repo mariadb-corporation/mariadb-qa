@@ -25,7 +25,7 @@ for CORE in $(find . | grep "core" | grep -v "mysql-test") ; do
   COREFILE=$(echo $CORE | sed 's|/|_|g;s|^[\._]\+||')  # This is for the txt file name only
   echoit "Now processing core ${COREFILE}..."
   # For debugging purposes, remove ">/dev/null 2>&1" on the next line and observe output
-  gdb ${BIN} ${CORE} >/dev/null 2>&1 <<EOF
+  gdb -iex 'set debuginfod enabled off' ${BIN} ${CORE} >/dev/null 2>&1 <<EOF
     # Avoids libary loading issues / more manual work, see bash$ info "(gdb)Auto-loading safe path"
     set auto-load safe-path /
     # See http://sourceware.org/gdb/onlinedocs/gdb/Threads.html - this avoids the following issue:

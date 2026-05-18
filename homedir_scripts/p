@@ -6,4 +6,4 @@ vi start
 ./all
 ./stop
 echo "vi log/master.err"
-echo "gdb bin/mysqld $(ls data/core* 2>/dev/null)"
+echo "gdb -iex 'set debuginfod enabled off' bin/mysqld $(ls data/core* 2>/dev/null)"

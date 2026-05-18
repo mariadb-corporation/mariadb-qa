@@ -24,7 +24,7 @@ failing_queries_core(){
   rm -Rf ${WORKD_PWD}/${TRIAL}/gdb_PARSE.txt
   cat ${SCRIPT_PWD}/extract_query.gdb | sed "s|file /tmp/gdb_PARSE.txt|file ${WORKD_PWD}/${TRIAL}/gdb_PARSE.txt|" > ${WORKD_PWD}/${TRIAL}/extract_query.gdb
   # For debugging purposes, remove ">/dev/null" on the next line and observe output
-  gdb ${BIN} ${CORE} >/dev/null 2>&1 < ${WORKD_PWD}/${TRIAL}/extract_query.gdb
+  gdb -iex 'set debuginfod enabled off' ${BIN} ${CORE} >/dev/null 2>&1 < ${WORKD_PWD}/${TRIAL}/extract_query.gdb
   # The double quotes ; ; are to prevent parsing mishaps where the query is invalid and has opened a multi-line situation
   grep '^\$' ${WORKD_PWD}/${TRIAL}/gdb_PARSE.txt | sed 's/^[\$0-9a-fx =]*"//;s/"$//;s/[ \t]*$//;s|\\"|"|g;s/$/; ;/' | grep -v '^\$' >> ${WORKD_PWD}/${TRIAL}/${TRIAL}.sql.failing
 }

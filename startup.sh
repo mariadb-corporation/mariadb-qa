@@ -123,7 +123,7 @@ if [ "$(uname -v | grep 'Ubuntu')" != "" ]; then
   fi
 fi
 
-# Delete any .cnf files. Whilst the framework takes care of not accidentally reading .cnf files (generally by using --no-defaults everwhere), it is best to delete these unnecessary files. Also cleanup some other non-used files
+# Delete any .cnf files. Whilst the framework takes care of not accidentally reading .cnf files (generally by using --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 everwhere), it is best to delete these unnecessary files. Also cleanup some other non-used files
 rm -f *.cnf COPYING CREDITS README-wsrep THIRDPARTY README* LICENSE*
 
 CLIENT_TO_USE=
@@ -159,7 +159,7 @@ if [ -r ${BASEDIR}/scripts/mariadb-install-db ]; then MID="${BASEDIR}/scripts/ma
 if [ -r ${PWD}/scripts/mysql_install_db ]; then MID="${PWD}/scripts/mysql_install_db"; fi
 if [ -r ${PWD}/bin/mysql_install_db ]; then MID="${PWD}/bin/mysql_install_db"; fi
 START_OPT="--core-file"                        # Compatible with 5.6,5.7,8.0
-INIT_OPT="--no-defaults --initialize-insecure ${TMP_DIR}" # Compatible with     5.7,8.0 (mysqld init)
+INIT_OPT="--no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --initialize-insecure ${TMP_DIR}" # Compatible with     5.7,8.0 (mysqld init)
 INIT_TOOL="${BIN}"                             # Compatible with     5.7,8.0 (mysqld init), changed to MID later if version <=5.6
 VERSION_INFO=$(${BIN} --version | grep --binary-files=text -oe '[589]\.[0-9]' | head -n1)
 if [ -z "${VERSION_INFO}" ]; then VERSION_INFO="NA"; fi
@@ -169,12 +169,12 @@ if [ -z "${VERSION_INFO_2}" ]; then VERSION_INFO_2="NA"; fi
 if [[ "${VERSION_INFO_2}" =~ ^10.[1-3]$ ]]; then
   VERSION_INFO="5.1"
   INIT_TOOL="${PWD}/scripts/mysql_install_db"
-  INIT_OPT="--no-defaults --force ${TMP_DIR}"
+  INIT_OPT="--no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --force ${TMP_DIR}"
   START_OPT="--core"
 elif [[ "${VERSION_INFO_2}" =~ ^1[0-5].[0-9][0-9]* ]]; then
   VERSION_INFO="5.6"
   INIT_TOOL="${PWD}/scripts/mariadb-install-db"
-  INIT_OPT="--no-defaults --force --auth-root-authentication-method=normal ${TMP_DIR} ${MYINIT}"
+  INIT_OPT="--no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --force --auth-root-authentication-method=normal ${TMP_DIR} ${MYINIT}"
   #START_OPT="--core-file --core"
   START_OPT="--core-file"
 elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_INFO}" == "5.6" ]; then
@@ -183,7 +183,7 @@ elif [ "${VERSION_INFO}" == "5.1" -o "${VERSION_INFO}" == "5.5" -o "${VERSION_IN
     exit 1
   fi
   INIT_TOOL="${MID}"
-  INIT_OPT="--no-defaults --force"
+  INIT_OPT="--no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --force"
   START_OPT="--core"
 elif [ "${VERSION_INFO}" != "5.7" -a "${VERSION_INFO}" != "8.0" -a "${VERSION_INFO}" != "9.1" ]; then
   echo "=========================================================================================="
@@ -254,7 +254,7 @@ if [[ $GRP_RPL -eq 1 ]]; then
   echo -e "  touch ./stop_group_replication" >>./start_group_replication
   echo -e "fi" >>./start_group_replication
 
-  echo -e "MID=\"\${BUILD}/bin/mysqld --no-defaults --initialize-insecure --basedir=\${BUILD}\"" >>./start_group_replication
+  echo -e "MID=\"\${BUILD}/bin/mysqld --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --initialize-insecure --basedir=\${BUILD}\"" >>./start_group_replication
 
   if [[ $i -eq 1 ]]; then
     GR_GROUP_SEEDS=$LADDR
@@ -281,7 +281,7 @@ if [[ $GRP_RPL -eq 1 ]]; then
   echo -e "      NODE_CHK=1" >>./start_group_replication
   echo -e "    fi\n" >>./start_group_replication
 
-  echo -e "    \${BUILD}/bin/mysqld --no-defaults \\" >>./start_group_replication
+  echo -e "    \${BUILD}/bin/mysqld --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 \\" >>./start_group_replication
   echo -e "      --basedir=\${BUILD} --datadir=\$node \\" >>./start_group_replication
   echo -e "      --innodb_file_per_table \$MYEXTRA --innodb_autoinc_lock_mode=2 --innodb_locks_unsafe_for_binlog=1 \\" >>./start_group_replication
   echo -e "      --server_id=1 --gtid_mode=ON --enforce_gtid_consistency=ON \\" >>./start_group_replication
@@ -563,6 +563,7 @@ if [ -d "${MTR_DIR}" ]; then
   chmod +x ${MTR_DIR}/decode_binlog
   echo '#!/bin/bash' >${MTR_DIR}/mtra
   add_san_options ${MTR_DIR}/mtra
+  echo 'echo 0x11 > /proc/self/coredump_filter 2>/dev/null  # Smaller cores; bt + locals retained' >> ${MTR_DIR}/mtra
   echo 'echo "Running: ./mtr ${*}"' >> ${MTR_DIR}/mtra
   echo './mtr ${*}' >> ${MTR_DIR}/mtra
   chmod +x ${MTR_DIR}/mtra
@@ -596,17 +597,21 @@ fi
 MTR_DIR=
 echo '#!/bin/bash' >start
 echo 'MYEXTRA_OPT="$*"' >>start
-echo 'MYEXTRA=" --no-defaults --max_connections=10000 "' >>start
-echo '#MYEXTRA=" --no-defaults --ssl=0 "' >>start
-echo '#MYEXTRA=" --no-defaults --sql_mode= "' >>start
-#echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load=TokuDB=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
-#echo '#MYEXTRA=" --no-defaults --log-bin --server-id=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
-echo '#MYEXTRA=" --no-defaults --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>start
-echo "#MYEXTRA=\" --no-defaults --performance-schema --performance-schema-instrument='%=on'\"" >>start
-#echo '#MYEXTRA=" --no-defaults --default-tmp-storage-engine=MyISAM --rocksdb --skip-innodb --default-storage-engine=RocksDB  # For fb-mysql only"' >> start
-echo '#MYEXTRA=" --no-defaults --event-scheduler=ON --maximum-bulk_insert_buffer_size=1M --maximum-join_buffer_size=1M --maximum-max_heap_table_size=1M --maximum-max_join_size=1M --maximum-myisam_max_sort_file_size=1M --maximum-myisam_mmap_size=1M --maximum-myisam_sort_buffer_size=1M --maximum-optimizer_trace_max_mem_size=1M --maximum-preload_buffer_size=1M --maximum-query_alloc_block_size=1M --maximum-query_prealloc_size=1M --maximum-range_alloc_block_size=1M --maximum-read_buffer_size=1M --maximum-read_rnd_buffer_size=1M --maximum-sort_buffer_size=1M --maximum-tmp_table_size=1M --maximum-transaction_alloc_block_size=1M --maximum-transaction_prealloc_size=1M --log-output=none --sql_mode=ONLY_FULL_GROUP_BY"' >>start
+echo 'MYEXTRA=" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --max_connections=10000 "' >>start
+echo '#MYEXTRA=" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --ssl=0 "' >>start
+echo '#MYEXTRA=" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --sql_mode= "' >>start
+#echo '#MYEXTRA=" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --log-bin --server-id=0 --plugin-load=TokuDB=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
+#echo '#MYEXTRA=" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --log-bin --server-id=0 --plugin-load-add=RocksDB=ha_rocksdb.so"    # --init-file=${SCRIPT_PWD}/plugins_57.sql --performance-schema --thread_handling=pool-of-threads"' >> start
+echo '#MYEXTRA=" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>start
+echo "#MYEXTRA=\" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --performance-schema --performance-schema-instrument='%=on'\"" >>start
+#echo '#MYEXTRA=" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --default-tmp-storage-engine=MyISAM --rocksdb --skip-innodb --default-storage-engine=RocksDB  # For fb-mysql only"' >> start
+echo '#MYEXTRA=" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --event-scheduler=ON --maximum-bulk_insert_buffer_size=1M --maximum-join_buffer_size=1M --maximum-max_heap_table_size=1M --maximum-max_join_size=1M --maximum-myisam_max_sort_file_size=1M --maximum-myisam_mmap_size=1M --maximum-myisam_sort_buffer_size=1M --maximum-optimizer_trace_max_mem_size=1M --maximum-preload_buffer_size=1M --maximum-query_alloc_block_size=1M --maximum-query_prealloc_size=1M --maximum-range_alloc_block_size=1M --maximum-read_buffer_size=1M --maximum-read_rnd_buffer_size=1M --maximum-sort_buffer_size=1M --maximum-tmp_table_size=1M --maximum-transaction_alloc_block_size=1M --maximum-transaction_prealloc_size=1M --log-output=none --sql_mode=ONLY_FULL_GROUP_BY"' >>start
 add_san_options start
 echo 'rm -Rf data*/core*' >>start
+# Shrink core dumps: keep anon-private (stacks/heap) + ELF headers (bits 0+4 = 0x11).
+# Drops anon-shared (bit 1, InnoDB buffer pool) and private hugepages (bit 5).
+# UniqueID extraction (bt + locals) is unaffected; deep InnoDB inspection is not.
+echo 'echo 0x11 > /proc/self/coredump_filter 2>/dev/null' >>start
 if [ "${USE_JE}" -eq 1 ]; then
   echo $JE1 >>start
   echo $JE2 >>start
@@ -1129,7 +1134,7 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   sed -i 's|^TEXT_STRING_LOC=[^#]\+|TEXT_STRING_LOC="${HOME}/mariadb-qa/new_text_string.sh"   |' ./reducer_fireworks.sh
   sed -i 's|^PQUERY_LOC=[^#]\+|PQUERY_LOC="${HOME}/mariadb-qa/pquery/pquery2-md"   |' ./reducer_fireworks.sh
   sed -i 's|^FIREWORKS=0|FIREWORKS=1|' ./reducer_fireworks.sh
-  sed -i 's|^MYEXTRA=.*|MYEXTRA="--no-defaults ${3}"|' ./reducer_fireworks.sh  # It is best not to add --sql_mode=... as this will significantly affect CLI replay attempts as the CLI by default does not set --sql_mode=... as normally defined in reducer.sh's MYEXTRA default (--sql_mode=ONLY_FULL_GROUP_BY). Reason: with either --sql_mode= or --sql_mode=--sql_mode=ONLY_FULL_GROUP_BY engine substituion (to the default storage engine, i.e. InnoDB or MyISAM in MTR) is enabled. Replays at the CLI would thus look significantly different by default (i.e. unless this option was passed and by default it is not)
+  sed -i 's|^MYEXTRA=.*|MYEXTRA="--no-defaults --loose-innodb-buffer-pool-in-core-dump=0 ${3}"|' ./reducer_fireworks.sh  # It is best not to add --sql_mode=... as this will significantly affect CLI replay attempts as the CLI by default does not set --sql_mode=... as normally defined in reducer.sh's MYEXTRA default (--sql_mode=ONLY_FULL_GROUP_BY). Reason: with either --sql_mode= or --sql_mode=--sql_mode=ONLY_FULL_GROUP_BY engine substituion (to the default storage engine, i.e. InnoDB or MyISAM in MTR) is enabled. Replays at the CLI would thus look significantly different by default (i.e. unless this option was passed and by default it is not)
 fi
 
 echo 'rm -f in.tmp' >fixin
@@ -1193,10 +1198,10 @@ sed -i 's|socket.sock|socket_slave.sock|g' start_slave
 sed -i 's|socket.sock|socket_slave.sock|g' stop_slave
 sed -i 's|socket.sock|socket_slave.sock|g' wipe_slave
 sed -i 's|socket.sock|socket_slave.sock|g' cl_slave
-sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\nMYEXTRA=\" --no-defaults --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
+sed -i "s|^MYEXTRA=\"[ ]*--no-defaults --loose-innodb-buffer-pool-in-core-dump=0 .*|#MYEXTRA=\" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --gtid_strict_mode=1 --relay-log=relaylog --log_bin=binlog --binlog_format=ROW --log_bin_trust_function_creators=1 --max_connections=10000 --server_id=1\"\nMYEXTRA=\" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --log_bin=binlog --binlog_format=ROW --max_connections=10000 --server_id=1\"  # Minimal master setup|" start_master
 sed -i "s|^INSERT_SLAVE_SQL_HERE|rm -Rf ${PWD}/data_slave ${PWD}/tmp_slave  # Avoid old slave data interference|" wipe  # This cannot be inserted earlier into wipe (when it is created) as taking a copy of wipe to wipe_slave will then invalide path names when /data is changed to /data_slave, rendering /data_slave_slave (and it is not needed in wipe_slave)
 # Replaced --slave-parallel-mode=aggressive with --slave-parallel-mode=conservative, ref various discussions and MDEV's discussing [optimistic|aggressive]
-sed -i "s|^MYEXTRA=\"[ ]*--no-defaults .*|# slave_transaction_retries: see #replication 12 Mar 24 discussion between AE/RV\n#MYEXTRA=\" --no-defaults --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=conservative --slave-parallel-max-queued=65536 --slave_transaction_retries=4294967295 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\nMYEXTRA=\" --no-defaults --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
+sed -i "s|^MYEXTRA=\"[ ]*--no-defaults --loose-innodb-buffer-pool-in-core-dump=0 .*|# slave_transaction_retries: see #replication 12 Mar 24 discussion between AE/RV\n#MYEXTRA=\" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --gtid_strict_mode=1 --relay-log=relaylog --slave-parallel-threads=11 --slave-parallel-mode=conservative --slave-parallel-max-queued=65536 --slave_transaction_retries=4294967295 --innodb_lock_wait_timeout=120 --slave_run_triggers_for_rbr=LOGGING --slave_skip_errors=ALL --max_connections=10000 --server_id=2\"\nMYEXTRA=\" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --max_connections=10000 --server_id=2\"  # Minimal slave setup|" start_slave  # --slave_transaction_retries: set to max, default is 10, but with many threads this value is very easily reached leading to:
 # [ERROR] Slave worker thread retried transaction 10 time(s) in vain, giving up. Consider raising the value of the slave_transaction_retries variable.
 # [ERROR] Slave SQL: Deadlock found when trying to get lock; try restarting transaction, Gtid 0-1-416, Internal MariaDB error code: 1213
 # [Warning] Slave: XAER_DUPID: The XID already exists Error_code: 1440
@@ -1218,6 +1223,7 @@ echo './stop_slave; ./stop' >>stop_replication
 echo '#!/bin/bash' >kill_replication
 echo './kill_slave; ./kill' >>kill_replication
 echo '#!/bin/bash' >start_replication
+echo 'echo 0x11 > /proc/self/coredump_filter 2>/dev/null  # Drop anon-shared (InnoDB BP) and hugepages from cores; bt + locals retained' >>start_replication
 echo 'MYEXTRA_OPT="$*"' >>start_replication
 echo './kill_replication >/dev/null 2>&1' >>start_replication
 echo 'rm -f socket.sock socket.sock.lock socket_slave.sock socket_slave.sock.lock; sync' >>start_replication
@@ -1267,7 +1273,7 @@ chmod +x sysbench_lua*
 #echo "else" >>repl_setup
 #echo "  NODES=1" >>repl_setup
 #echo "fi" >>repl_setup
-#echo 'MYEXTRA=" --no-defaults --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>repl_setup
+#echo 'MYEXTRA=" --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --gtid_mode=ON --enforce_gtid_consistency=ON --log_slave_updates=ON --log_bin=binlog --binlog_format=ROW --master_info_repository=TABLE --relay_log_info_repository=TABLE"' >>repl_setup
 #echo "RPORT=$(($RANDOM % 10000 + 10000))" >>repl_setup
 #echo "echo \"\" > stop_repl" >>repl_setup
 #echo "if ${PWD}/bin/mysqladmin -uroot -S$PWD/socket.sock ping > /dev/null 2>&1; then" >>repl_setup

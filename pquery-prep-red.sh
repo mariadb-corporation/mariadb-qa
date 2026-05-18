@@ -246,6 +246,9 @@ generate_reducer_script(){
     exit 1
   fi
   USE_NEW_TEXT_STRING=1  # Set to 1 (on) until proven otherwise, i.e. when MODE!=3
+  # Reset per-trial MODE=11 overrides so a previous trial's BINLOG_RECOVERY assignment does not leak forward
+  MODE11_FORCE_TYPE_STRING=
+  MODE11_FORCE_BLF_STRING=
   if [ -r ${BASE}/lib/mysql/plugin/ha_tokudb.so ]; then
     DISABLE_TOKUDB_AUTOLOAD=0
   else
@@ -294,7 +297,26 @@ generate_reducer_script(){
       # UniqueID's will be in the form of: 'MARIADB_ERROR_CODE|MariaDB error code: 1969'
       MODE=3
       USE_NEW_TEXT_STRING=1  # As 'Table is crashed' bugs are supported as of 27/08/22 by new_text_string.sh, we can use it here
-      SCAN_FOR_NEW_BUGS=1 
+      SCAN_FOR_NEW_BUGS=1
+    elif [[ "$TEXT" == "BINLOG_RECOVERY_ERROR"* || "$TEXT" == "BINLOG_CHECKSUM_DIFF"* ]]; then  # Binlog recovery (MARIADB_BINLOG_RECOVERY_TESTING=1) trials
+      # UniqueID forms:
+      #   BINLOG_RECOVERY_ERROR|ERROR N (N) at line X: ...
+      #   BINLOG_CHECKSUM_DIFF|test.tN <  N N <
+      # MODE=11 with MODE11_TYPE=binlog runs the deterministic binlog roundtrip per iteration; TEXT is ignored by the mode but is preserved for `pr` categorisation
+      MODE=11
+      MODE11_FORCE_TYPE=binlog
+      # Pick up binlog format from the trial MYEXTRA so the reducer's --log_bin instance matches the original run
+      case " ${MYEXTRA} " in
+        *--binlog[_-]format=ROW*)       MODE11_FORCE_BLF=ROW ;;
+        *--binlog[_-]format=STATEMENT*) MODE11_FORCE_BLF=STATEMENT ;;
+        *)                              MODE11_FORCE_BLF=MIXED ;;
+      esac
+      # Use the framework's #VARMOD# insertion pattern (same as MODE=, TEXT=, EPOCH=, USE_NEW_TEXT_STRING= etc) so the Machine section overrides the User-section default rather than replacing the User line in-place.
+      MODE11_FORCE_TYPE_STRING="0,/#VARMOD#/s:#VARMOD#:MODE11_TYPE=${MODE11_FORCE_TYPE}\n#VARMOD#:"
+      MODE11_FORCE_BLF_STRING="0,/#VARMOD#/s:#VARMOD#:MODE11_BINLOG_FORMAT=${MODE11_FORCE_BLF}\n#VARMOD#:"
+      # MODE=11 ignores TEXT and reduces on replay-error / state-diff signals (reducer.sh asserts when USE_NEW_TEXT_STRING=1 and MODE!=3). Matches the MODE=1 / MODE=4 convention.
+      USE_NEW_TEXT_STRING=0
+      SCAN_FOR_NEW_BUGS=0
     elif [ "${QC}" == "1" ]; then  # Query Correctness (QC) bug
       USE_NEW_TEXT_STRING=0  # As here we're doing QC (Query correctness testing)
       SCAN_FOR_NEW_BUGS=0  # Reducer cannot scan for new bugs yet if USE_NEW_TEXT_STRING=0 TODO
@@ -643,6 +665,8 @@ generate_reducer_script(){
    | sed "${SI_STRING1}" \
    | sed "0,/#VARMOD#/s:#VARMOD#:MODE=${MODE}\n#VARMOD#:" \
    | sed "0,/#VARMOD#/s:#VARMOD#:USE_NEW_TEXT_STRING=${USE_NEW_TEXT_STRING}\n#VARMOD#:" \
+   | sed "${MODE11_FORCE_TYPE_STRING:-s|ZERO0|ZERO0|}" \
+   | sed "${MODE11_FORCE_BLF_STRING:-s|ZERO0|ZERO0|}" \
    | sed "${TEXT_STRING1}" \
    | sed "${TEXT_STRING2}" \
    | sed "0,/#VARMOD#/s:#VARMOD#:BASEDIR=\"${BASE}\"\n#VARMOD#:" \
@@ -696,20 +720,19 @@ generate_reducer_script(){
       ALT_ACTIVATIONS=
     fi
   fi
-  if [ ! -z "${FINDBUG}" ]; then  # Already known and logged, non-fixed bug, use an error log entry instead, using pquery-del-trial.sh (in 'CHECK' non-delete mode only) to tell us what string to use (and additionally pquery-del-trial.sh automatically provides some TEXT regex cleanup in this mode)
-    ERROR_LOG_STRING="$(${SCRIPT_PWD}/pquery-del-trial.sh ${TRIAL} CHECK)"
-    # pquery-del-trial.sh CHECK can return multiple lines (one per significant error log entry).
-    # sed's s-command cannot embed raw newlines in the replacement, so we join with '|' (regex alternation).
-    # This lets reducer's TEXT regex match ANY of the unfiltered error log entries.
-    ERROR_LOG_STRING="$(echo "${ERROR_LOG_STRING}" | grep -v '^[ \t]*$' | tr '\n' '|' | sed 's|[|]$||')"
-    if [ ! -z "${ERROR_LOG_STRING}" ]; then
-      UNTS_COMMENT="# TEXT set to the unfiltered error log bug (multi-line entries joined with regex alternation). The original crash UniqueID - now below as '#TEXT=' - is an already-known/filtered bug. Before starting this reducer, consider tightening the TEXT regex to be more stable (strip port numbers, GTIDs, temporary table names, file paths, line numbers, hex addresses, etc.) so it matches correctly across testcase replays by reducer rather than become non-reproducible."
-      sed -i $'s\x01^USE_NEW_TEXT_STRING=.*\x01USE_NEW_TEXT_STRING=0  '"${UNTS_COMMENT}"$'\x01' ${REDUCER_FILENAME}
-      sed -i $'s\x01^   \\(TEXT=.*\\)\x01   TEXT="'"${ERROR_LOG_STRING}"$'"\\n#\\1\x01' ${REDUCER_FILENAME}
+  if [ ! -z "${FINDBUG}" ]; then  # Override path: nts UID is either a known/filtered bug or "no core found", and ERROR_LOG_SCAN_ISSUE flagged a separate error-log entry worth reducing.
+    ERROR_LOG_UID="$(${SCRIPT_PWD}/pquery-del-trial.sh ${TRIAL} CHECK | grep -v '^[ \t]*$' | sort -u | head -n1)"
+    if [ ! -z "${ERROR_LOG_UID}" ]; then
+      UNTS_COMMENT="# TEXT is the error-log UID (the original UniqueID is the '#TEXT=' line below). USE_NEW_TEXT_STRING=1: reducer nts-compares each replay against this UID."
+      sed -i $'s\x01^USE_NEW_TEXT_STRING=.*\x01USE_NEW_TEXT_STRING=1  '"${UNTS_COMMENT}"$'\x01' ${REDUCER_FILENAME}
+      sed -i $'s\x01^   \\(TEXT=.*\\)\x01   TEXT="'"${ERROR_LOG_UID}"$'"\\n#\\1\x01' ${REDUCER_FILENAME}
+      # Reaching this block means the override gate fired (known/filtered nts UID, or "no core found" + ERROR_LOG_SCAN_ISSUE). In both cases the current MYBUG is no longer the right signal to reduce against, so overwrite it with the error-log UID unconditionally. The core/SAN precedence applies upstream in nts (which already wrote the highest-precedence signal as MYBUG before this override gate); it does not apply here. MYBUG.orig snapshots the pre-override state.
+      [ -r ${RUNDIR}/${TRIAL}/MYBUG ] && cp ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/MYBUG.orig 2>/dev/null
+      echo "${ERROR_LOG_UID}" > ${RUNDIR}/${TRIAL}/MYBUG
       UNTS_COMMENT=
     fi
-    echo "* TEXT variable set to: '${ERROR_LOG_STRING}'"
-    ERROR_LOG_STRING=
+    echo "* TEXT variable set to: '${ERROR_LOG_UID}'"
+    ERROR_LOG_UID=
   fi
   FINDBUG=
   ORIGINAL_TEXT=  # This variable was only used for the checks above
@@ -793,6 +816,15 @@ if [ ${QC} -eq 0 ]; then
         touch ${RUNDIR}/${TRIAL}/${TRIAL}.sql.failing
         echo "========== Processing pquery trial ${TRIAL}-${SUBDIR}"
         if [ -r ./reducer${TRIAL}-${SUBDIR}.sh ]; then
+          if [ "${SCRIPT_PWD}/new_text_string.sh" -nt "./reducer${TRIAL}-${SUBDIR}.sh" ]; then
+            cd ./${TRIAL}/node${SUBDIR} || exit 1
+            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+            cd - >/dev/null || exit 1
+            REFRESH_TEXT="$(head -n1 ./${TRIAL}/node${SUBDIR}/MYBUG | sed 's|"|\\\\"|g')"
+            sed -i $'s\x01^   TEXT=.*\x01   TEXT="'"${REFRESH_TEXT}"$'"\x01' ./reducer${TRIAL}-${SUBDIR}.sh
+            touch ./reducer${TRIAL}-${SUBDIR}.sh
+            echo "* Refreshed TEXT in ./reducer${TRIAL}-${SUBDIR}.sh from regenerated MYBUG (nts rules updated since previous prep-red run)"
+          fi
           echo "* Reducer for this trial (./reducer${TRIAL}_${SUBDIR}.sh) already exists. Skipping to next trial/node."
           continue
         fi
@@ -846,7 +878,7 @@ if [ ${QC} -eq 0 ]; then
         fi
         BASE="$(grep --binary-files=text 'Basedir:' ./pquery-run.log 2>/dev/null | sed 's|^.*Basedir[: \t]*||;;s/|.*$//' | tr -d '[[:space:]]')"
         if [ -z "${BASE}" ]; then BASE="/test/SOMEBASEDIR"; fi
-        if [ ! -r ./${TRIAL}/node${SUBDIR}/MYBUG ]; then  # [re-]generate it if not present  TODO: find reason (in pquery-run.sh likely) why it not always generated by pquery-run.sh (or later deleted?)
+        if [ ! -r ./${TRIAL}/node${SUBDIR}/MYBUG ] || [ "${SCRIPT_PWD}/new_text_string.sh" -nt "./${TRIAL}/node${SUBDIR}/MYBUG" ]; then  # Regenerate MYBUG when missing OR when new_text_string.sh is newer (= generification rules updated since this trial was first processed; otherwise pr would show stale UniqueIDs forever)
           cd ./${TRIAL}/node${SUBDIR} || exit 1
           ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
           cd - >/dev/null || exit 1
@@ -923,6 +955,16 @@ if [ ${QC} -eq 0 ]; then
           continue
         fi
         if [ -r ./reducer${TRIAL}.sh ]; then
+          # If new_text_string.sh is newer than the existing reducer script, the generification rules likely changed since this reducer was first generated. Refresh the `   TEXT=` line in-place from a regenerated MYBUG so `pr` (which reads `^   TEXT=` from reducer<N>.sh, NOT MYBUG) stops showing stale UniqueIDs.
+          if [ "${SCRIPT_PWD}/new_text_string.sh" -nt "./reducer${TRIAL}.sh" ]; then
+            cd ./${TRIAL} || exit 1
+            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+            cd - >/dev/null || exit 1
+            REFRESH_TEXT="$(head -n1 ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"
+            sed -i $'s\x01^   TEXT=.*\x01   TEXT="'"${REFRESH_TEXT}"$'"\x01' ./reducer${TRIAL}.sh
+            touch ./reducer${TRIAL}.sh  # bump mtime so this refresh is idempotent across pg cycles
+            echo "* Refreshed TEXT in ./reducer${TRIAL}.sh from regenerated MYBUG (nts rules updated since previous prep-red run)"
+          fi
           echo "* Reducer for this trial (./reducer${TRIAL}.sh) already exists. Skipping to next trial."
           continue
         fi
@@ -1013,7 +1055,7 @@ if [ ${QC} -eq 0 ]; then
         fi
         # if not a valgrind run process everything, if it is valgrind run only if there's a core
         if [ ! -r ./${TRIAL}/VALGRIND ] || [ -r ./${TRIAL}/VALGRIND -a ! -z "$(ls -t --color=never data*/*core* node*/*core* 2>/dev/null)" ]; then
-          if [ ! -r ./${TRIAL}/MYBUG ]; then  # Sometimes (approx 1/75 trials) MYBUG is missing, so [re-]generate it. TODO: find reason (in pquery-run.sh likely)
+          if [ ! -r ./${TRIAL}/MYBUG ] || [ "${SCRIPT_PWD}/new_text_string.sh" -nt "./${TRIAL}/MYBUG" ]; then  # Regenerate MYBUG when missing OR when new_text_string.sh is newer (= generification rules updated since this trial was first processed; otherwise pr would show stale UniqueIDs forever)
             cd ./${TRIAL} || exit 1
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1
@@ -1162,7 +1204,7 @@ for MATCHING_TRIAL in `grep --binary-files=text -H "^MODE=[0-9]$" reducer* 2>/de
       echo "* Trial ${MATCHING_TRIAL} found to be a SHUTDOWN_TIMEOUT_ISSUE trial with no core dump nor memory free issue present"
       echo "  > Setting MODE=0, TEXT='', TIMEOUT_CHECK=130, and turning off USE_NEW_TEXT_STRING use"
       sed -i "s|^MODE=[1-9]|MODE=0|" reducer${MATCHING_TRIAL}.sh
-      sed -i "s|^   TEXT=.*|TEXT=''|" reducer${MATCHING_TRIAL}.sh
+      sed -i "s|^   TEXT=.*|   TEXT=''|" reducer${MATCHING_TRIAL}.sh
       # Align reducer's MODE=0 sensitivity with pquery-run.sh's 90s shutdown-timeout marker threshold
       # (default 600s would only flag multi-minute hangs, allowing the meaningful SQL to be reduced away
       # while a longer secondary shutdown stall keeps the trial "passing")

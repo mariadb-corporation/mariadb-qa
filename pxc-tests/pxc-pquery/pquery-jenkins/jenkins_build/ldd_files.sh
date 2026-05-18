@@ -14,7 +14,7 @@ if [ -r ./mysqld ]; then
   CORE=`ls -1 *core* 2>&1 | head -n1 | grep -v "No such file"`
   if [ -f "$CORE" -a "" != "${CORE}" ]; then
     mkdir lib64
-    gdb ./mysqld $CORE -ex "info sharedlibrary" -ex "quit" 2>&1 | grep "0x0" | grep -v "lib.mysql.plugin" | sed 's|.*/lib64|/lib64|' | xargs -I_ cp _ ./lib64/
+    gdb -iex 'set debuginfod enabled off' ./mysqld $CORE -ex "info sharedlibrary" -ex "quit" 2>&1 | grep "0x0" | grep -v "lib.mysql.plugin" | sed 's|.*/lib64|/lib64|' | xargs -I_ cp _ ./lib64/
   fi
 fi
 

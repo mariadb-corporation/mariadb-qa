@@ -29,11 +29,33 @@ elif [ ${CORE_COUNT} -gt 1 ]; then
   exit 1
 fi
 
+# Note that no 'head -n1' or similar is needed here, as the script will terminate if >1 core is found (ref code above)
+LATEST_CORE=
+if [ "${MDG}" -eq 1 ]; then
+  LATEST_CORE="$(ls -t --color=never node*/*core* 2>/dev/null)"
+else
+  LATEST_CORE="$(ls -t --color=never data*/*core* var/log/*/*/data/*core* var/*/log/*/*/data/*core* var/mysqld*/data/*core* 2>/dev/null)"
+fi
+
 if [ "${MDG}" -eq 1 ]; then
   ERROR_LOG=$(ls --color=never node*/node*.err 2>/dev/null | head -n1)  # This is not perfect in case node2 or node3 crashes TODO
 else
-  ERROR_LOG=$(ls --color=never log/master.err log/slave.err var/log/mysqld.2.err var/log/mysqld.1.err 2>/dev/null | sort -R | head -n1)  # sort -R: Slave log first, if present (as often the slave asserts). This by itself is not perfect given that there may be an order difference. This was fixed by [1] below (search for '[1]'). Likely something similar can be done for MDG
+  ERROR_LOG=$(ls --color=never log/master.err log/slave.err var/log/mysqld.2.err var/log/mysqld.1.err 2>/dev/null | head -n1)  # Deterministic initial pick (first existing of master.err / slave.err / mysqld.2.err / mysqld.1.err). The LATEST_CORE-driven sed realignment immediately below swaps master.err<->slave.err and mysqld.1<->mysqld.2 as needed so the assertion extracted further down matches the core actually analyzed by gdb. Likely something similar can be done for MDG.
 fi
+# Match the (MTR / master-slave) error log to the core actually being analyzed, if/when mismatched (for example when both m+s crash and one dir is deleted to debug the other with tt etc.). Done BEFORE assert extraction so the assertion shown corresponds to the LATEST_CORE chosen for gdb below.
+if [[ "${LATEST_CORE}" == *"mysqld.1"* ]]; then
+  ERROR_LOG="$(echo "${ERROR_LOG}" | sed 's|mysqld.2|mysqld.1|')"
+elif [[ "${LATEST_CORE}" == *"mysqld.2"* ]]; then
+  ERROR_LOG="$(echo "${ERROR_LOG}" | sed 's|mysqld.1|mysqld.2|')"
+fi
+if [[ "${LATEST_CORE}" == *"data_slave"* ]]; then
+  ERROR_LOG="$(echo "${ERROR_LOG}" | sed 's|master.err|slave.err|g')"
+elif [[ "${LATEST_CORE}" == *"data/core"* ]]; then
+  ERROR_LOG="$(echo "${ERROR_LOG}" | sed 's|slave.err|master.err|g')"
+fi
+#echo "DEBUG: err: ${ERROR_LOG} | core: ${LATEST_CORE}"
+# TODO: MDG needs similar code for node1/2/3
+
 if [ ! -z "${ERROR_LOG}" ]; then
   #echo "----${ERROR_LOG} "  # Debug
   ASSERT="$(grep --binary-files=text -m1 'Assertion.*failed.$' ${ERROR_LOG} | head -n1)"
@@ -46,32 +68,7 @@ if [ ! -z "${ERROR_LOG}" ]; then
   fi
 fi
 
-# Note that no 'head -n1' or similar is needed here, as the script will terminate if >1 core is found (ref code above)
-LATEST_CORE=
-if [ "${MDG}" -eq 1 ]; then
-  LATEST_CORE="$(ls -t --color=never node*/*core* 2>/dev/null)"
-else
-  LATEST_CORE="$(ls -t --color=never data*/*core* var/log/*/*/data/*core* var/*/log/*/*/data/*core* var/mysqld*/data/*core* 2>/dev/null)"
-fi
-
-# Ref [1] above
-# Match the MTR error log used with the m/s core used, if/when mismatched (for example when both m+s crash and one dir is deleted to debug the other with tt etc.)
-# As we already have a core in mysqld.1 or mysqld.2 we can safely change mysqld.2 or mysqld.1 to mysqld.1 and mysqld.2 respectively
-if [[ "${LATEST_CORE}" == *"mysqld.1"* ]]; then
-  ERROR_LOG="$(echo "${ERROR_LOG}" | sed 's|mysqld.2|mysqld.1|')"
-elif [[ "${LATEST_CORE}" == *"mysqld.2"* ]]; then
-  ERROR_LOG="$(echo "${ERROR_LOG}" | sed 's|mysqld.1|mysqld.2|')"
-fi
-# Idem for non-MTR runs, i.e. standard BASEDIR 'str' runs
-if [[ "${LATEST_CORE}" == *"data_slave"* ]]; then
-  ERROR_LOG="$(echo "${ERROR_LOG}" | sed 's|master.err|slave.err|g')"
-elif [[ "${LATEST_CORE}" == *"data/core"* ]]; then
-  ERROR_LOG="$(echo "${ERROR_LOG}" | sed 's|slave.err|master.err|g')"
-fi
-#echo "DEBUG: err: ${ERROR_LOG} | core: ${LATEST_CORE}"
-# TODO: MDG needs similar code for node1/2/3
-
-gdb -q ${BIN} ${LATEST_CORE} >/tmp/${RANDF}.gdba 2>&1 << EOF
+gdb -q -iex 'set debuginfod enabled off' ${BIN} ${LATEST_CORE} >/tmp/${RANDF}.gdba 2>&1 << EOF
  set pagination off
  set print pretty on
  set print frame-arguments all

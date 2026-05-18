@@ -2,6 +2,12 @@
 # Created by Roel Van de Paar, MariaDB
 # Expanded by Ramesh Sivaraman, MariaDB
 
+# Cap gdb / elfutils debuginfod fetch attempts. Primary defence is the
+# -iex 'set debuginfod enabled off' on the gdb command line below; this env
+# is a secondary guard, also covers any helper tool gdb might shell out to.
+export DEBUGINFOD_TIMEOUT=13
+export DEBUGINFOD_PROGRESS=0
+
 # This script (new_text_string.sh) generates a UniqueID for a given crash, assert, ASAN, UBSAN, LSAN or TSAN issue
 # It is generall executed from within a BASEDIR which has experienced a failure of any of these types
 
@@ -52,6 +58,8 @@ if [ ! -z "${1}" ]; then
   elif [ -d "${1}" -a "$(echo "${1}" | grep -o '[0-9]\+')" == "${1}" ]; then
     TRIAL="${1}"
     LOC="${PWD}/${TRIAL}"
+  elif [ -d "${1}" ]; then  # Non-numeric directory name: still accept it so binlog-recovery markers (which live next to log/) can be discovered
+    LOC="$(readlink -f ${1})"
   elif grep --binary-files=text -q '#[0-9]  ' "${1}"; then  # Likely raw GDB trace was passed, parse as such
     echo "$(cat "${1}" | grep --binary-files=text -v '^[ \t]*$' | tr '\n' ' ' | sed 's|\(#[0-9]\+[ ]\+\)|\n\1|g' | grep --binary-files=text -v '^[ \t]*$' | head -n4 | sed 's|^#[0-9]\+[ ]\+||;s|^0x[0-9A-Fa-f]\+[ ]\+||;s| [^ ]\+$||;s|[ ]*(.*||' | tr '\n' '|' | sed 's/|$/\n/' | sed 's/^/RAW_GDB_UID|/' )"  # Output is based on GDB trace only (not a true UniqueID)
     exit 0
@@ -59,6 +67,39 @@ if [ ! -z "${1}" ]; then
     echo "Assert: an option (${1}) was passed to this script, but that option does not make sense to this script [ref #2]"
     exit 1
   fi
+fi
+
+# Binlog recovery markers (set by pquery-run.sh MARIADB_BINLOG_RECOVERY_TESTING=1 trials).
+# The trial may have no core and no SAN signal; the failure mode is either a replay error
+# (BINLOG_RECOVERY_ERROR) or a post-replay checksum divergence (BINLOG_CHECKSUM_DIFF).
+# Generify the extracted line so similar trials hash to the same UniqueID.
+# Checked here, before the mariadbd lookup, so trials saved without a runnable basedir nearby are still classified.
+if [ -r "${LOC}/BINLOG_RECOVERY_ERROR" ]; then
+  BRE_LINE="$(head -n1 ${LOC}/BINLOG_RECOVERY_ERROR 2>/dev/null | tr -d '\r')"
+  if [ ! -z "${BRE_LINE}" ]; then
+    # SQLSTATE collapse before digit-strip so `(42S01)` becomes `(X)` rather than `(NSN)`.
+    BRE_LINE="$(echo "${BRE_LINE}" \
+      | sed 's|\(ERROR [0-9]\+\) ([0-9A-Z]\{5\})|\1 (X)|' \
+      | sed "s|'[^']*'|'X'|g" \
+      | sed 's|[0-9]\+|N|g' \
+      | sed 's|[ \t]\+| |g;s|^ ||;s| $||')"
+    echo "BINLOG_RECOVERY_ERROR|${BRE_LINE}"
+    exit 0
+  fi
+fi
+if [ -r "${LOC}/BINLOG_CHECKSUM_DIFF" ]; then
+  BCD_LINE="$(head -n1 ${LOC}/BINLOG_CHECKSUM_DIFF 2>/dev/null | tr -d '\r')"
+  if [ ! -z "${BCD_LINE}" ]; then
+    # Diff rows look like:  test.t1 <checksum> | test.t1 <other-checksum>
+    # Strip the long checksum integers so the UniqueID hashes on the table name only.
+    BCD_LINE="$(echo "${BCD_LINE}" \
+      | sed 's|[0-9]\{6,\}|N|g' \
+      | sed 's|[ \t]\+| |g;s|^ ||;s| $||')"
+    echo "BINLOG_CHECKSUM_DIFF|${BCD_LINE}"
+    exit 0
+  fi
+  echo "BINLOG_CHECKSUM_DIFF|generic"
+  exit 0
 fi
 
 if [ -z "${MYSQLD}" ]; then
@@ -252,7 +293,12 @@ find_other_possible_issue_strings(){
   WRONGMUTEXUSAGE=
   OPENTABLE="$(grep -hio "OpenTable:.*" ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g")"
   if [ ! -z "${OPENTABLE}" ]; then
-    TEXT="OPENTABLE|${OPENTABLE}"  # Found 'OpenTable' bug
+    TEXT="OPENTABLE|${OPENTABLE}"
+    # Per-pattern OPENTABLE UID body normalisations. Keep errno literal (different errno = different bug); collapse volatile file paths and column names to X.
+    TEXT="$(echo "${TEXT}" | sed \
+      -e 's|Open(r+b) error \([0-9]\+\) on [^:]\+:|Open(r+b) error \1 on X:|' \
+      -e 's|Invalid flag [0-9]\+ for column [a-zA-Z_][a-zA-Z0-9_]*|Invalid flag X for column Y|' \
+    )"
     echo "${TEXT}"
     exit 0
   fi
@@ -271,13 +317,13 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MEMNOTFREED=
-  GOTERROR="$(grep -hio 'm\(ariadb\|ysql\)d: Got error[^"]\+"[^"]\+"' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/.*sql-temptable.*MAI|.*sql-temptable.*MAI|' | sed 's#/\(data\|test\)/.*sql-temptable.*MAI#.*sql-temptable.*MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g')"
+  GOTERROR="$(grep -hio 'm\(ariadb\|ysql\)d: Got error[^"]\+"[^"]\+"' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/[^ ]*sql-temptable[^ ]*MAI|X/sql-temptable-Y.MAI|' | sed 's#/\(data\|test\)/[^ ]*sql-temptable[^ ]*MAI#X/sql-temptable-Y.MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g')"
   if [ ! -z "${GOTERROR}" ]; then
     TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
   else
-    GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*#sql-temptable[^']*'|Got error \1 when reading table (temptable)|" | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*'|Got error \1 when reading table 'X'|" | sed "s|when reading table '.*|when reading table|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/.*sql-temptable.*MAI|.*sql-temptable.*MAI|' | sed 's#/\(data\|test\)/.*sql-temptable.*MAI#.*sql-temptable.*MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g')"
+    GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*#sql-temptable[^']*'|Got error \1 when reading table (temptable)|" | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*'|Got error \1 when reading table 'X'|" | sed "s|when reading table '[^']*'|when reading table X|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/[^ ]*sql-temptable[^ ]*MAI|X/sql-temptable-Y.MAI|' | sed 's#/\(data\|test\)/[^ ]*sql-temptable[^ ]*MAI#X/sql-temptable-Y.MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g')"
     if [ ! -z "${GOTERROR}" ]; then
       TEXT="GOT_ERROR|${GOTERROR}"
       TEXT="$(echo "${TEXT}" | sed "s|marked as crashed and should be repaired\"' for .*|marked as crashed and should be repaired\" for 'X'|")"  # Use a generic indentifier 'X' for any table name, similar to X/Y value handling in *SAN bugs
@@ -289,21 +335,36 @@ find_other_possible_issue_strings(){
   MARKEDASCRASHED="$(grep -hio 'm\(ariadb\|ysql\)d: Table.*is marked as crashed and should be repaired' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|^mariadbd: ||;s|^mysqld: ||' | sed 's|Table /[^#]\+#sql-temptable[^ ]\+ |Table sql-temptable-X |')"
   if [ ! -z "${MARKEDASCRASHED}" ]; then
     TEXT="MARKED_AS_CRASHED|${MARKEDASCRASHED}"
+    # Fold generic test-table names (t<N>) to a single placeholder so the kb entry is per-bug, not per-table-instance. System tables (slow_log, gtid_slave_pos, etc.) and #sql-temptable-X are NOT touched (different kb entries).
+    TEXT="$(echo "${TEXT}" | sed 's|Table t[0-9]\+ is marked as crashed|Table X is marked as crashed|g')"
     echo "${TEXT}"
     exit 0
   fi
   MARKEDASCRASHED=
-  INNODBERROR="$(grep -hio 'ERROR\] InnoDB.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|ERROR\] InnoDB[: ]*||' | sed 's|table.*index.*stat[^:]\+|table.*index.*stat.*|;s|User stopword table.*does not exist|User stopword table does not exist|;s|\.$||')"
+  INNODBERROR="$(grep -hio 'ERROR\] InnoDB.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|ERROR\] InnoDB[: ]*||' | sed 's|table.*index.*stat[^:]\+|table X index Y stat Z|;s|User stopword table.*does not exist|User stopword table X does not exist|;s|\.$||')"
   if [ ! -z "${INNODBERROR}" ]; then
     TEXT="INNODB_ERROR|${INNODBERROR}"
-    TEXT="$(echo "${TEXT}" | sed 's|Cannot rename.*to.*because the target schema directory doesnt exist|Cannot rename.*to.*because the target schema directory doesnt exist|')"  # https://jira.mariadb.org/browse/MDEV-27952?focusedCommentId=283382&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-283382
-    TEXT="$(echo "${TEXT}" | sed 's|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD.*|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD|')"  # MDEV-35187
-    TEXT="$(echo "${TEXT}" | sed 's|for table [^ ]\+|for table|g')"  # MDEV-34951
-    TEXT="$(echo "${TEXT}" | sed 's|The table [^ ]\+ doesnt have|The table doesnt have|g')"  # SPECIAL-33
-    TEXT="$(echo "${TEXT}" | sed 's|Unable to import tablespace .* because it already exists.  Please DISCARD the tablespace before IMPORT|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT|')"  # Use a generic indentifier 'X' for any table name, similar to X/Y value handling in *SAN bugs
-    TEXT="$(echo "${TEXT}" | sed 's|Cannot add field.*in table.*because after adding it, the row size is.*which is greater than maximum allowed size.*for a record on index leaf page|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page|')"  # Use a generic message for all similar errors
-    TEXT="$(echo "${TEXT}" | sed 's|Failed to read page [0-9]\+ from file [^:]\+:|Failed to read page X from file Y:|')"
-    TEXT="$(echo "${TEXT}" | sed 's|Invalid column name for stopword table.*Its first column must be named as value|Invalid column name for stopword table X. Its first column must be named as value|')"
+    # Per-pattern INNODB_ERROR UID body normalisations. Each rule maps one or more raw error-log variants to a single stable UID body so semantically-identical events fold to one kb entry. Order matters where rules could overlap: COMPACT RECORD collapse runs BEFORE non-COMPACT RECORD collapse so the more-specific pattern wins.
+    TEXT="$(echo "${TEXT}" | sed \
+      -e 's|Cannot rename.*to.*because the target schema directory doesnt exist|Cannot rename X to Y because the target schema directory doesnt exist|' \
+      -e 's|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on update: TUPLE Z at: COMPACT RECORD|' \
+      -e 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: COMPACT RECORD|' \
+      -e 's|Record in index.*of table.*was not found on update: TUPLE.*at: RECORD(.*|Record in index X of table Y was not found on update: TUPLE Z at: RECORD|' \
+      -e 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: RECORD(.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: RECORD|' \
+      -e 's|In ALTER TABLE `[^`]\+`\.`[^`]\+` has or is referenced in foreign key constraints which are not compatible with the new table definition|In ALTER TABLE X has or is referenced in foreign key constraints which are not compatible with the new table definition|' \
+      -e 's|We detected index corruption in an InnoDB type table\. You have to dump.*forcing recovery|We detected index corruption in an InnoDB type table|' \
+      -e 's|for table [^ ]\+|for table X|g' \
+      -e 's|The table [^ ]\+ doesnt have|The table X doesnt have|g' \
+      -e 's|The file .* already exists though the corresponding table did not exist in the InnoDB data dictionary|The file X already exists though the corresponding table did not exist in the InnoDB data dictionary|' \
+      -e 's|Unable to import tablespace .* because it already exists.  Please DISCARD the tablespace before IMPORT|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT|' \
+      -e 's|Cannot add field.*in table.*because after adding it, the row size is.*which is greater than maximum allowed size.*for a record on index leaf page|Cannot add field X in table Y because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page|' \
+      -e 's|Failed to read page [0-9]\+ from file [^:]\+:|Failed to read page X from file Y:|' \
+      -e 's|Invalid column name for stopword table.*Its first column must be named as value|Invalid column name for stopword table X. Its first column must be named as value|' \
+      -e 's|Cannot rename [^ ]\+ to [^ ]\+ because the source file does not exist|Cannot rename X to Y because the source file does not exist|' \
+      -e 's|#sql-backup-[0-9a-f]\+-[0-9]\+|#sql-backup-X|g' \
+      -e 's|`[^`]\+`\.`[^`]\+`|`X`.`X`|g' \
+    )"
+    # rule refs: MDEV-27952 (Cannot rename to target schema dir), MDEV-35187 (Record in index ... at: COMPACT RECORD update/rollback), non-COMPACT RECORD update/rollback collapse, MDEV-34951 (for table <name>), SPECIAL-33 (The table <name> doesnt have), .ibd-path collapse, tablespace-import collapse, row-size leaf-page collapse, page-read collapse, stopword-table collapse, generic Cannot rename source-file collapse, sql-backup id collapse, generic test-table backtick collapse (`test`.`X`).
     echo "${TEXT}"
     exit 0
   fi
@@ -345,7 +406,7 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   SLAVE_ERROR2=
-  INNODBWARNING="$(grep -hio '\[Warning\] InnoDB: Record in index.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|.*\[Warning\] InnoDB: ||' | sed 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD|')"
+  INNODBWARNING="$(grep -hio '\[Warning\] InnoDB: Record in index.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|.*\[Warning\] InnoDB: ||' | sed 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: COMPACT RECORD|')"
   if [ ! -z "${INNODBWARNING}" ]; then
     TEXT="INNODB_WARNING|${INNODBWARNING}"
     echo "${TEXT}"
@@ -416,7 +477,7 @@ RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
 RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
 
 rm -f /tmp/${RANDF}.gdb*
-gdb -q ${MYSQLD} ${LATEST_CORE} >/tmp/${RANDF}.gdb1 2>&1 << EOF
+gdb -q -iex 'set debuginfod enabled off' ${MYSQLD} ${LATEST_CORE} >/tmp/${RANDF}.gdb1 2>&1 << EOF
   set pagination off
   set trace-commands off
   set frame-info short-location

@@ -42,10 +42,19 @@ add-auto-load-safe-path /usr/lib/x86_64-linux-gnu/libthread_db.so
 add-auto-load-safe-path /usr/lib/x86_64-linux-gnu/libthread_db.so.1
 set auto-load safe-path /
 set libthread-db-search-path /usr/lib/x86_64-linux-gnu/libthread_db.so
-set debuginfod enabled on
+# Remote symbol-fetch can stall gdb >7 min on large mariadbd cores
+set debuginfod enabled off
 #set pagination off
 #set print pretty on
 #set print frame-arguments all
+EOF
+fi
+
+# debuginfod env caps, in case a tool ignores the .gdbinit setting or uses elfutils directly
+if [ -z "$(grep DEBUGINFOD_TIMEOUT ~/.bashrc 2>/dev/null)" ]; then cat << 'EOF' >> ~/.bashrc
+# Cap gdb / elfutils debuginfod remote fetches (large mariadbd cores would otherwise stall gdb for many minutes)
+export DEBUGINFOD_TIMEOUT=13
+export DEBUGINFOD_PROGRESS=0
 EOF
 fi
 

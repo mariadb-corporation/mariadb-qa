@@ -38,7 +38,7 @@ TEXT="somebug"                  # The text string you want reducer to search for
 MODE3_ANY_SIG=0                 # MODE=3 Modifier which works similar to MODE=4. 1: MODE 3 will look for any UniqueID starting with 'SIG'. Requires USE_NEW_TEXT_STRING. TEXT is ignored
 WORKDIR_LOCATION=1              # 0: use /tmp (disk bound) | 1: use tmpfs (default) | 2: use ramfs (needs setup) | 3: use storage at WORKDIR_M3_DIRECTORY
 WORKDIR_M3_DIRECTORY="/data"    # Only relevant if WORKDIR_LOCATION is set to 3, use a specific directory/mount point
-MYEXTRA="--no-defaults --log-output=none --sql_mode="  # mariadbd/mysqld options to be used (and reduced). Note: TokuDB plugin loading is checked/done automatically. # RV 14/05/22 ONLY_FULL_GROUP_BY removed 
+MYEXTRA="--no-defaults --loose-innodb-buffer-pool-in-core-dump=0 --log-output=none --sql_mode="  # mariadbd/mysqld options to be used (and reduced). Note: TokuDB plugin loading is checked/done automatically. # RV 14/05/22 ONLY_FULL_GROUP_BY removed
 MYINIT=""                       # Extra options to pass to mariadbd/mysqld AND at data dir init time. See pquery-run-*.conf for more info
 BASEDIR="${PWD}"                # Path to the MySQL BASE directory to be used
 DISABLE_TOKUDB_AUTOLOAD=0       # On/Off (1/0) Prevents mariadbd/mysqld startup issues when using standard MySQL server (i.e. no TokuDB available) with a testcase containing TokuDB SQL
@@ -337,6 +337,16 @@ TS_VARIABILITY_SLEEP=1
 
 # Disable history substitution and avoid  -bash: !: event not found  like errors
 set +H
+
+# Shrink mariadbd cores: anon-private (stacks/heap) + ELF headers only (0x11);
+# drops anon-shared (InnoDB buffer pool) and private hugepages. Inherited by
+# every forked child including the mariadbd CMD launches.
+echo 0x11 > /proc/self/coredump_filter 2>/dev/null
+
+# Cap any gdb / elfutils debuginfod fetch attempt — secondary guard so a
+# missed call site cannot stall reduction on remote symbol lookups.
+export DEBUGINFOD_TIMEOUT=13
+export DEBUGINFOD_PROGRESS=0
 
 # Provision ABORT_ACTIVE
 ABORT_ACTIVE=0
@@ -894,14 +904,21 @@ options_check(){
       export -n INPUTFILE=$1  # export -n is not necessary for this script, but it is here to prevent pquery-prep-red.sh from seeing this as a adjustable var
     fi
     if [[ "${0}" == *"base_reducer"* ]]; then
-      if [ -r "${INPUTFILE}_out" ]; then  # A reduced testcase already exists, copy it unless a previously made copy already exists too
-        if [ -r "${INPUTFILE}_out_copy" ]; then  # A previously made copy of a previously reduced testcase also already exists
-          echo "Error: the input file (${INPUTFILE}) already has a reduced testcase (${INPUTFILE}_out), which would be ovewritten by running this reducer script as-is. Still, in such cases reducer generally takes a copy of the previously reduced testcase into ${INPUTFILE}_out_copy, howerver, that file also already exists. Please cleanup files as deemed best, and then restart reducer."
-          exit 1
-        else
-          echo "Warning: a reduced testcase (${INPUTFILE}_out) already exists and will be overwritten, thus backing it up as ${INPUTFILE}_out_copy now"
-          cp ${INPUTFILE}_out ${INPUTFILE}_out_copy
+      if [ -r "${INPUTFILE}_out" ]; then  # A reduced testcase already exists, back it up to a free _out_copy<N> slot before letting this run overwrite it
+        COPY_TARGET="${INPUTFILE}_out_copy"
+        if [ -r "${COPY_TARGET}" ]; then
+          COPY_N=2
+          while [ -r "${INPUTFILE}_out_copy${COPY_N}" ]; do
+            COPY_N=$[ ${COPY_N} + 1 ]
+            if [ ${COPY_N} -gt 999 ]; then
+              echo "Error: ${INPUTFILE}_out_copy and _out_copy2..._out_copy999 are all present. Cleanup ${INPUTFILE}_out_copy* manually and re-run."
+              exit 1
+            fi
+          done
+          COPY_TARGET="${INPUTFILE}_out_copy${COPY_N}"
         fi
+        echo "Warning: a reduced testcase (${INPUTFILE}_out) already exists and will be overwritten, thus backing it up as ${COPY_TARGET} now"
+        cp "${INPUTFILE}_out" "${COPY_TARGET}"
       fi
     fi
     if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
@@ -3593,8 +3610,20 @@ cleanup_and_save(){
 mode11_take_snapshot(){
   local sock="$1" out="$2"
   : >"$out"
-  if ! ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SELECT 1" >/dev/null 2>&1; then
-    echoit "[MODE11] server on $sock not responding during snapshot"
+  # Readiness probe with retry. SQL chunks loaded via the mysql CLI can leave the server briefly busy (background flush, slow shutdown of the prior connection, partial init); a single one-shot SELECT 1 misclassifies many such trials as InfraErr. Mirrors the step-(3) readiness loop already used after the second mysqld start.
+  local _ready=0 _retry
+  for _retry in $(seq 1 60); do
+    if ${BASEDIR}/bin/mariadb -uroot -S"$sock" -Nse "SELECT 1" >/dev/null 2>&1; then
+      _ready=1; break
+    fi
+    sleep 0.5
+  done
+  if [ $_ready -ne 1 ]; then
+    echoit "[MODE11] server on $sock not responding during snapshot (after 30s of retries)"
+    if [ -r "$WORKD/log/master.err" ]; then
+      echoit "[MODE11] Tail of $WORKD/log/master.err:"
+      tail -n 10 "$WORKD/log/master.err" 2>/dev/null | while IFS= read -r _ln; do echoit "  | $_ln"; done
+    fi
     return 1
   fi
   local dbs db tv tbl typ rn rt
@@ -3669,8 +3698,10 @@ mode11_replay_binlogs(){
   files=$(ls -1 "$src" 2>/dev/null | sort)
   [ -z "$files" ] && { echoit "[MODE11] no binlog files in $src"; return 1; }
   diskspace "$WORKD"  # mariadb-binlog | mariadb pipeline writes replay stdout/err into $WORKD, plus mariadbd processes the binlog stream and writes data/InnoDB files
+  # mariadb-binlog stderr goes to mode11_replay_binlog.err; mariadb client stdout+stderr to mode11_replay.out/.err.
+  # Splitting so the (4b) ERROR/WARNING grep in process_outcome can scan both files (decode errors vs replay errors land in different streams).
   # shellcheck disable=SC2086
-  ( cd "$src" && ${BASEDIR}/bin/mariadb-binlog --disable-log-bin $files ) \
+  ( cd "$src" && ${BASEDIR}/bin/mariadb-binlog --disable-log-bin $files 2>"$WORKD/mode11_replay_binlog.err" ) \
       | ${BASEDIR}/bin/mariadb -uroot -S"$sock" --binary-mode --force \
       >"$WORKD/mode11_replay.out" 2>"$WORKD/mode11_replay.err"
 }
@@ -4297,6 +4328,28 @@ process_outcome(){
         return 0
       fi
     fi
+    # (4b) Check the restore/replay output for client/decode errors that wouldn't be caught by the state diff (e.g. an ERROR landed but the resulting state still happens to match the original).
+    # Same regex used by pquery-run.sh MARIADB_BINLOG_RECOVERY_TESTING.
+    # For dump path: mariadb client errors go to mode11_restore.err.
+    # For binlog path: mariadb client errors go to mode11_replay.err, mariadb-binlog decode errors go to mode11_replay_binlog.err.
+    MODE11_REPLAY_ERR_FILES="$WORKD/mode11_restore.err"
+    if [ "${MODE11_TYPE}" = "binlog" ]; then
+      MODE11_REPLAY_ERR_FILES="$WORKD/mode11_replay.err $WORKD/mode11_replay_binlog.err"
+    fi
+    MODE11_REPLAY_HIT=
+    for _f in ${MODE11_REPLAY_ERR_FILES}; do
+      if [ -r "$_f" ] && grep --binary-files=text -qE '^ERROR [0-9]+|^ERROR:|^WARNING:' "$_f"; then
+        MODE11_REPLAY_HIT="$_f"
+        break
+      fi
+    done
+    if [ -n "${MODE11_REPLAY_HIT}" ]; then
+      if [ ! "$STAGE" = "V" ]; then
+        echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [*DumpBinlogReplayError*] [$NOISSUEFLOW] MODE11_TYPE=${MODE11_TYPE} replay error found in ${MODE11_REPLAY_HIT} (first line: $(grep --binary-files=text -m1 -E '^ERROR [0-9]+|^ERROR:|^WARNING:' "${MODE11_REPLAY_HIT}"))"
+        control_backtrack_flow
+      fi
+      if cleanup_and_save; then return 1; else return 0; fi
+    fi
     # (5) Snapshot the restored state.
     if ! mode11_take_snapshot "$SOCK" "$SNAP_AFTER"; then
       echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [MODE11-InfraErr] post-roundtrip snapshot failed; skipping trial"
@@ -4627,6 +4680,30 @@ verify_not_found(){
   exit 1
 }
 
+apply_tcp_to_workt(){
+  # Layer ~/tcp (testcase_prettify.sh) on top of $WORKT for verify-stage trials 1-5. Soft-fail: any failure (script missing, sanity-gate trip) leaves $WORKT untouched so the trial still runs with the standard cleanup, just without tcp. TS modes (MODE 6-9) must not call this; tcp is not designed for ThreadSync multi-file input.
+  local _tcp="" _pre_lines _post_lines _semi_lines _min_lines
+  if   [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then _tcp="${SCRIPT_PWD}/testcase_prettify.sh"
+  elif [ -r "${HOME}/mariadb-qa/testcase_prettify.sh" ]; then _tcp="${HOME}/mariadb-qa/testcase_prettify.sh"
+  else return; fi
+  if [ ! -r "${WORKT}" ]; then return; fi
+  _pre_lines=$(wc -l < "${WORKT}" 2>/dev/null)
+  if [ ${_pre_lines:-0} -lt 20 ]; then return; fi  # too small for tcp gains to outweigh tcp risk
+  if ! "${_tcp}" "${WORKT}" > "${WORKT}.tcp" 2>/dev/null; then
+    rm -f "${WORKT}.tcp"; return
+  fi
+  if [ ! -s "${WORKT}.tcp" ]; then rm -f "${WORKT}.tcp"; return; fi
+  _post_lines=$(wc -l < "${WORKT}.tcp" 2>/dev/null)
+  _semi_lines=$(grep -c ';' "${WORKT}.tcp" 2>/dev/null)
+  _min_lines=$(( _pre_lines * 30 / 100 ))
+  if [ ${_post_lines:-0} -lt ${_min_lines} ] || [ ${_semi_lines:-0} -lt 1 ]; then
+    echoit "$ATLEASTONCE [Stage $STAGE] tcp output failed sanity gate (lines: ${_pre_lines} -> ${_post_lines}, ; lines: ${_semi_lines}); keeping non-tcp version for this trial"
+    rm -f "${WORKT}.tcp"; return
+  fi
+  mv -f "${WORKT}.tcp" "${WORKT}"
+  echoit "$ATLEASTONCE [Stage $STAGE] tcp layered on top (${_pre_lines} -> ${_post_lines} lines)"
+}
+
 #STAGEV: VERIFY: Check first if the bug/issue exists and is reproducible by reducer
 verify(){
   STAGE='V'
@@ -4693,7 +4770,7 @@ verify(){
                     -e "s/', '/','/g" > $TS_WORKT
           done
         else
-          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & cleanup"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #1: Maximum initial simplification & cleanup & tcp prettify"
           diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 1 grep+sed pipeline write to $WORKT (closer-in-time check than the top-of-loop guard)
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-| \[Note\] |====|  WARNING: |^Hope that|^Logging: |\++++| exit with exit status |Lost connection to | valgrind |Using [MSI]|Using dynamic|MySQL Version|\------|TIME \(ms\)$|Skipping ndb|Setting mysqld |Setting mariadbd |Binaries are debug |Killing Possible Leftover|Removing Stale Files|Creating Directories|Installing Master Database|Servers started, |Try: yum|Missing separate debug|SOURCE|CURRENT_TEST|\[ERROR\]|with SSL|_root_|connect to MySQL|No such file|is deprecated at|just omit the defined" $WORKF \
             | sed "$REMOVESUFFIX" \
@@ -4725,6 +4802,7 @@ verify(){
             MYEXTRA=$MYEXTRAWITHOUTINIT
             echo $MYEXTRA > $WORKD/MYEXTRA
           fi
+          apply_tcp_to_workt
         fi
       elif [ $TRIAL -eq 2 ]; then
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
@@ -4738,7 +4816,7 @@ verify(){
               | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
           done
         else
-          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: High initial simplification & cleanup (no RQG log text removal)"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #2: High initial simplification & cleanup (no RQG log text removal) & tcp prettify"
           diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 2 grep+sed pipeline write to $WORKT
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-" $WORKF \
             | sed "$REMOVESUFFIX" \
@@ -4769,6 +4847,7 @@ verify(){
             MYEXTRA=$MYEXTRAWITHOUTINIT
             echo $MYEXTRA > $WORKD/MYEXTRA
           fi
+          apply_tcp_to_workt
         fi
       elif [ $TRIAL -eq 3 ]; then
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
@@ -4787,7 +4866,7 @@ verify(){
                     -e "s/', '/','/g" > $TS_WORKT
           done
         else
-          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: High initial simplification (no RQG text removal & less cleanup)"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #3: High initial simplification (no RQG text removal & less cleanup) & tcp prettify"
           diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 3 grep+sed pipeline write to $WORKT
           grep -E --binary-files=text -v "^#|^$|DEBUG_SYNC|^\-\-" $WORKF \
             | sed "$REMOVESUFFIX" \
@@ -4816,6 +4895,7 @@ verify(){
             MYEXTRA=$MYEXTRAWITHOUTINIT
             echo $MYEXTRA > $WORKD/MYEXTRA
           fi
+          apply_tcp_to_workt
         fi
       elif [ $TRIAL -eq 4 ]; then
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
@@ -4829,7 +4909,7 @@ verify(){
               | sed "/CREATE.*TABLE.*;/s/(/(\n/1;/CREATE.*TABLE.*;/s/\(.*\))/\1\n)/;/CREATE.*TABLE.*;/s/,/,\n/g;" > $TS_WORKT
           done
         else
-          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split & remove # comments)"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #4: Medium initial simplification (CREATE+INSERT lines split & remove # comments) & tcp prettify"
           diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 4 sed pipeline write to $WORKT
           sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
             | sed "$REMOVESUFFIX" \
@@ -4856,6 +4936,7 @@ verify(){
             MYEXTRA=$MYEXTRAWITHOUTINIT
             echo $MYEXTRA > $WORKD/MYEXTRA
           fi
+          apply_tcp_to_workt
         fi
       elif [ $TRIAL -eq 5 ]; then
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
@@ -4869,7 +4950,7 @@ verify(){
         else
           # The benefit of splitting INSERT lines: example: INSERT (a),(b),(c); becomes INSERT (a),\n(b)\n(c); and thus the seperate line with "b" could be eliminated/simplified.
           # If the testcase then works fine withouth the 'b' elemeneted inserted, it has become simpler. Consider large inserts (100's of rows) and how complexity can be reduced.
-          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split & remove # comments)"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #5: Low initial simplification (only main data INSERT lines split & remove # comments) & tcp prettify"
           diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 5 sed pipeline write to $WORKT
           sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
             | sed "$REMOVESUFFIX" > $WORKT
@@ -4894,17 +4975,51 @@ verify(){
             MYEXTRA=$MYEXTRAWITHOUTINIT
             echo $MYEXTRA > $WORKD/MYEXTRA
           fi
+          apply_tcp_to_workt
         fi
       elif [ $TRIAL -eq 6 ]; then
+        # tcp-free fallback at the same low-simplification level as TRIAL=5: catches bugs where ~/tcp's prettify broke reproduction in trials 1-5.
         if [ $MODE -ge 6 -a $MODE -le 9 ]; then
-          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #6: No initial simplification & DEBUG_SYNC enabled"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #6: Low initial simplification (only main data INSERT lines split) & DEBUG_SYNC enabled (tcp-free retry at low-simplification level)"
+          diskspace "$(dirname "$(eval echo $(echo '$WORKT'"1"))")"  # TS verify TRIAL 6 per-thread pipeline writes (mirrors TRIAL 5)
+          for t in $(eval echo {1..$TS_THREADS}); do
+            export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
+            export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
+            sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $TS_WORKF > $TS_WORKT
+          done
+        else
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #6: Low initial simplification (only main data INSERT lines split & remove # comments) (tcp-free retry at low-simplification level)"
+          diskspace "$(dirname "$WORKT")"  # Non-TS verify TRIAL 6 sed pipeline write to $WORKT (mirrors TRIAL 5 minus the tcp layer)
+          sed "s/[\t ]*)[\t ]*,[\t ]*([\t ]*/),\n(/g" $WORKF \
+            | sed "$REMOVESUFFIX" > $WORKT
+          if [ "${INITFILE}" != "" ]; then  # Instead of using an init file, add the init file contents to the top of the testcase
+            echoit "$ATLEASTONCE [Stage $STAGE] Adding contents of --init-file directly into testcase and removing --init-file option from MYEXTRA"
+            diskspace "$WORKD"  # INITFILE block writes $WORKF (DROPC + filtered input), /tmp/WORKT_*.tmp (DROPC + INITFILE + WORKT), and $WORKD/MYEXTRA — guards the cumulative inline-init write burst
+            if [ $USE_PQUERY -eq 0 ]; then  # Standard mysql client is used; DROPC can be on a single line
+              echo "$DROPC" > $WORKF
+              grep -E --binary-files=text -v "$DROPC" $INPUTFILE >> $WORKF
+              sed -i "1 r $INITFILE" $WORKT  # Inline INITFILE into WORKT after the DROPC line so the testcase under test no longer depends on --init-file (mirrors the pquery branch's INITFILE inlining)
+            else  # pquery is used; use a multi-line format for DROPC
+              remove_dropc $WORKT
+              DROPC_UNIQUE_FILESUFFIX=$RANDOM$RANDOM
+              echo "$(echo "$DROPC" | sed 's|;|;\n|g' | grep -v "^$";cat $INITFILE;cat $WORKT)" > /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp
+              rm -f $WORKT
+              mv /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp $WORKT
+            fi
+            MYEXTRA=$MYEXTRAWITHOUTINIT
+            echo $MYEXTRA > $WORKD/MYEXTRA
+          fi
+        fi
+      elif [ $TRIAL -eq 7 ]; then
+        if [ $MODE -ge 6 -a $MODE -le 9 ]; then
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #7: No initial simplification & DEBUG_SYNC enabled"
           for t in $(eval echo {1..$TS_THREADS}); do
             export TS_WORKF=$(eval echo $(echo '$WORKF'"$t"))
             export TS_WORKT=$(eval echo $(echo '$WORKT'"$t"))
             cp -f $TS_WORKF $TS_WORKT
           done
         else
-          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #6: No initial simplification"
+          echoit "$ATLEASTONCE [Stage $STAGE] Verify attempt #7: No initial simplification"
           echoit "$ATLEASTONCE [Stage $STAGE] Restoring original MYEXTRA and using --init-file exactly as given there originally"
           MYEXTRA=$ORIGINALMYEXTRA
           echo $MYEXTRA > $WORKD/MYEXTRA

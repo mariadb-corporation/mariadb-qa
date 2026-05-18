@@ -1,3 +1,4 @@
+set debuginfod enabled off
 # Avoids libary loading issues / more manual work, see bash$ info "(gdb)Auto-loading safe path"
 set auto-load safe-path /         
 # See http://sourceware.org/gdb/onlinedocs/gdb/Threads.html - this avoids the following issue:

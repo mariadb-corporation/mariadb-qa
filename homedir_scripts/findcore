@@ -1,6 +1,6 @@
 CORES=$(ls ./data/core.* 2>/dev/null | wc -l)
 if [ $CORES -eq 1 ]; then
-  gdb ./bin/mysqld $(ls ./data/core.*)
+  gdb -iex 'set debuginfod enabled off' ./bin/mysqld $(ls ./data/core.*)
 elif [ $CORES -eq 0 ]; then
   echo "No cores found in ./data !"
 else 

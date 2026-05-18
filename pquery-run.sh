@@ -20,7 +20,18 @@ ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|ki
 # ========================================= MAIN CODE
 
 # Disables history substitution and avoids  -bash: !: event not found  like errors
-set +H 
+set +H
+
+# Shrink mariadbd cores: anon-private (stacks/heap) + ELF headers only (0x11);
+# drops anon-shared (InnoDB buffer pool) and private hugepages. Inherited by
+# every forked child, including the mariadbd CMD launches via eval.
+echo 0x11 > /proc/self/coredump_filter 2>/dev/null
+
+# Cap any gdb / elfutils debuginfod fetch attempt that escapes the in-script
+# `-iex set debuginfod enabled off` covers, so a single missed call site
+# cannot stall a trial for 7+ min on remote symbol lookups.
+export DEBUGINFOD_TIMEOUT=13
+export DEBUGINFOD_PROGRESS=0
 
 # Discourage OOM killer on this process
 sudo echo -1000 > /proc/$$/oom_score_adj
@@ -74,7 +85,7 @@ echoit() {
 }
 
 # Read configuration
-MDG=0;GRP_RPL=0;MDG_CLUSTER_RUN=0;  # Ensure these are preset (will be overwritten by source below if set in conf file)
+MDG=0;GRP_RPL=0;MDG_CLUSTER_RUN=0;MARIADB_BINLOG_RECOVERY_TESTING=0;  # Ensure these are preset (will be overwritten by source below if set in conf file)
 if [ "$1" != "" ]; then CONFIGURATION_FILE=$1; fi
 if [ ! -r ${SCRIPT_PWD}/${CONFIGURATION_FILE} ]; then
   echo "Assert: the confiruation file ${SCRIPT_PWD}/${CONFIGURATION_FILE} cannot be read!"
@@ -325,13 +336,13 @@ add_handy_scripts(){  # Add handy stack and gdb scripts per trial
   echo "echo '  bt'" >> ${SAVE_HANDY_LOC}/gdb
   echo "sleep 5" >> ${SAVE_HANDY_LOC}/gdb
   echo 'if [ -r ../mysqld/mariadbd ]; then' >> ${SAVE_HANDY_LOC}/gdb
-  echo "  gdb ../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
+  echo "  gdb -iex 'set debuginfod enabled off' ../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
   echo 'elif [ -r ../mysqld/mysqld ]; then' >> ${SAVE_HANDY_LOC}/gdb
-  echo "  gdb ../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
+  echo "  gdb -iex 'set debuginfod enabled off' ../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
   echo 'elif [ -r ../../mysqld/mariadbd ]; then' >> ${SAVE_HANDY_LOC}/gdb
-  echo "  gdb ../../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
+  echo "  gdb -iex 'set debuginfod enabled off' ../../mysqld/mariadbd ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
   echo 'elif [ -r ../../mysqld/mysqld ]; then' >> ${SAVE_HANDY_LOC}/gdb
-  echo "  gdb ../../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
+  echo "  gdb -iex 'set debuginfod enabled off' ../../mysqld/mysqld ${CORE_TO_ANALYZE}" >> ${SAVE_HANDY_LOC}/gdb
   echo 'else' >> ${SAVE_HANDY_LOC}/gdb
   echo '  echo "Assert: neither mariadbd nor mysqld were found in any usual locations (PWD: ${PWD})"' >> ${SAVE_HANDY_LOC}/gdb
   echo '  exit 1'  >> ${SAVE_HANDY_LOC}/gdb
@@ -550,6 +561,7 @@ elif [ "${QUERY_CORRECTNESS_TESTING}" -eq 1 ]; then
   echoit "MODE: Query Correctness Testing"
 elif [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 ]; then
   echoit "MODE: mariadb-binlog Recovery Testing"
+  echoit "Note: BINLOG_RECOVERY_ERROR markers can capture 'expected' replay errors (master failed on a statement, the error is encoded in the binlog, replay re-fires it). --force --binary-mode (set by the framework) suppresses most. BINLOG_CHECKSUM_DIFF markers indicate the binlog replay produced a different DB state than the original — these are the more likely real bugs. Review each saved trial individually."
   if [ "${REPLICATION}" == "1" ]; then
     echoit "Assert: mariadb-binlog recovery testing is not compatible with replication testing (REPLICATION=1}, yet; feel free to implement it"
     exit 1
@@ -1624,8 +1636,8 @@ pquery_test(){
       sudo chmod -R 777 "${_RR_TRACE_DIR}"
       CMD="/usr/bin/rr record --chaos ${BIN} ${MYSAFE} ${MYEXTRA} ${ENCRYPTION_OPTIONS} ${REPL_EXTRA} ${MASTER_EXTRA} --basedir=${BASEDIR} --datadir=${RUNDIR}/${TRIAL}/data --tmpdir=${RUNDIR}/${TRIAL}/tmp --core-file --loose-innodb-flush-method=fsync --port=$PORT --pid_file=${RUNDIR}/${TRIAL}/pid.pid --socket=${SOCKET} --log-output=none --log-error=${RUNDIR}/${TRIAL}/log/master.err"
     fi
-    if [ -r "${HOME}/stack" -a ! -r ${RUNDIR}/${TRIAL}/stack ]; then
-      ln -s ${HOME}/stack ${RUNDIR}/${TRIAL}/stack  # Handy ./stack shorthand (automatically copied later to WORKDIR if trial is saved)
+    if [ -r "${HOME}/stack" ]; then
+      ln -sf ${HOME}/stack ${RUNDIR}/${TRIAL}/stack  # Handy ./stack shorthand (automatically copied later to WORKDIR if trial is saved). -f handles pre-existing broken/stale symlinks (trial-dir reuse, savetrial path race).
     fi
     diskspace
     $CMD >> ${RUNDIR}/${TRIAL}/log/master.err 2>&1 &
@@ -2287,6 +2299,13 @@ pquery_test(){
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
                 PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
               fi
+              # Health-check the server(s) before launching the main pquery: pre_shuffle_setup can take tens of seconds (find+shuf+sed pipeline on /). During that window master+slave sit idle. If something killed mariadbd in that window (background-thread issue, external signal, OOM-killer), pquery would launch against a dead server and exit silently on 250-consecutive-failures with no observable cause in pquery-run.log. Logging the ping outcome here makes the silent-death scenario visible and grep-able. Diagnostic-only: flow is unchanged, the for-loop below will still break early naturally if pquery has nothing to talk to.
+              if ! ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
+                echoit "Warning: master (${SOCKET}) is not responding to ping immediately before pquery launch. Server died during the pre-shuffle/PRELOAD idle window. Trial's pquery will produce no useful output; check ${RUNDIR}/${TRIAL}/log/master.err for cause."
+              fi
+              if [ ${REPLICATION} -eq 1 ] && [ ! -z "${SLAVE_SOCKET}" ] && ! ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} ping > /dev/null 2>&1; then
+                echoit "Warning: slave (${SLAVE_SOCKET}) is not responding to ping immediately before pquery launch. Server died during the pre-shuffle/PRELOAD idle window. Check ${RUNDIR}/${TRIAL}/log/slave.err for cause."
+              fi
               # Pre-shuffled trial
               echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
               ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
@@ -2919,21 +2938,32 @@ EOF
       break
     fi
     BINLOG_BASENAME="$(ls -1 ${RUNDIR}/${TRIAL}/data.ORIGINAL/*.idx | grep --binary-files=text -vi 'relay' | head -n1 | sed 's|.*/||;s|.idx||;s|[0]\+[0-9]\+|0*|')"
-    echo "${BASEDIR}/bin/mariadb-binlog \$(ls -1 ${RUNDIR}/${TRIAL}/data.ORIGINAL/${BINLOG_BASENAME} | grep -v idx | sort -n) | ${BASEDIR}/bin/mariadb -A -uroot -S${RUNDIR}/${TRIAL}/socket.sock --force --binary-mode test 2>&1 >${RUNDIR}/${TRIAL}/binlog_recovery_result.txt" > ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh
+    # { cmd1 | cmd2 ; } >file 2>&1 — the brace group makes the redirect apply to BOTH ends of the pipeline, so mariadb-binlog's stderr (decode errors / "ERROR: ..." / "WARNING: ...") is captured alongside the mariadb client's stderr (replay "ERROR N at line ..."). A plain `cmd1 | cmd2 >file 2>&1` only captures cmd2's descriptors.
+    echo "{ ${BASEDIR}/bin/mariadb-binlog \$(ls -1 ${RUNDIR}/${TRIAL}/data.ORIGINAL/${BINLOG_BASENAME} | grep -v idx | sort -n) | ${BASEDIR}/bin/mariadb -A -uroot -S${RUNDIR}/${TRIAL}/socket.sock --force --binary-mode test ; } >${RUNDIR}/${TRIAL}/binlog_recovery_result.txt 2>&1" > ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh
     echo "# Reference command, indentical to the full used command in binlog_recovery_cmd.sh" > ${RUNDIR}/${TRIAL}/local_binlog_recovery
     echo "# For manual use in /test/MD..." >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
     echo "cp ${WORKDIR}/${TRIAL}/${BINLOG_BASENAME} ." >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
     echo "./all_no_cl ${MYEXTRA}" >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
-    echo "./bin/mariadb-binlog \$(ls -1 ./${BINLOG_BASENAME} | grep -v idx | sort -n) | ./bin/mariadb -A -uroot -Ssocket.sock --force --binary-mode test 2>&1" >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
+    echo "{ ./bin/mariadb-binlog \$(ls -1 ./${BINLOG_BASENAME} | grep -v idx | sort -n) | ./bin/mariadb -A -uroot -Ssocket.sock --force --binary-mode test ; } 2>&1" >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
     chmod +x ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh
     ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh
     chmod -x ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh  # There will be no need to re-run it manually
     BINLOG_BASENAME=
-    if grep --binary-files=text -qi 'error' ${RUNDIR}/${TRIAL}/binlog_recovery_result.txt; then
-      touch ${RUNDIR}/${TRIAL}/BINLOG_RECOVERY_ERROR
-      echo 'Please note that some binlog recovery errors are expected and normal; for example, if the master failed on a given statement with an error (think for example DROP TABLE t1, t2; where t2 does not exist), then this 'expected' error will have been enecoded into the binlog and a binlog replay (or a replica in replication) is expected to render the same error upon binlog replay. For binlog replay, you can use --force and --binary-mode to prevent most errors. In replication, the replica automatically uses this error.' >> ${RUNDIR}/${TRIAL}/BINLOG_RECOVERY_ERROR
+    # BINLOG_RECOVERY_ERROR_REGEX matches real error/warning lines from the mariadb client and from mariadb-binlog:
+    #   - "ERROR 1234 (HY000) at line N: ..."   (mariadb client, replay errors)
+    #   - "ERROR: ..."                          (mariadb-binlog, decode errors)
+    #   - "WARNING: ..."                        (mariadb-binlog, decode warnings)
+    # Avoids matching the substring "error" inside informational text, sysvar names, or base64 BINLOG payloads.
+    BINLOG_RECOVERY_ERROR_REGEX='^ERROR [0-9]+|^ERROR:|^WARNING:'
+    if grep --binary-files=text -qE "${BINLOG_RECOVERY_ERROR_REGEX}" ${RUNDIR}/${TRIAL}/binlog_recovery_result.txt; then
+      # Marker file content: prefer mariadb client errors (`^ERROR [0-9]+ ... at line N: ...`) since they carry SQLSTATE + line offset and are more diagnostic; fall back to mariadb-binlog decode errors (`^ERROR:`/`^WARNING:`) only if no client errors present. Downstream consumers (new_text_string.sh, pquery-prep-red.sh, pquery-results.sh) read from this file.
+      if grep --binary-files=text -qE '^ERROR [0-9]+' ${RUNDIR}/${TRIAL}/binlog_recovery_result.txt; then
+        grep --binary-files=text -E '^ERROR [0-9]+' ${RUNDIR}/${TRIAL}/binlog_recovery_result.txt | head -n10 > ${RUNDIR}/${TRIAL}/BINLOG_RECOVERY_ERROR
+      else
+        grep --binary-files=text -E '^ERROR:|^WARNING:' ${RUNDIR}/${TRIAL}/binlog_recovery_result.txt | head -n10 > ${RUNDIR}/${TRIAL}/BINLOG_RECOVERY_ERROR
+      fi
       echoit "Binlog recovery testing: FOUND issue during binlog recovery testing (max 10 shown):"
-      grep --binary-files=text -i 'error' ${RUNDIR}/${TRIAL}/binlog_recovery_result.txt | head -n10 | tee -a /${WORKDIR}/pquery-run.log
+      cat ${RUNDIR}/${TRIAL}/BINLOG_RECOVERY_ERROR | tee -a /${WORKDIR}/pquery-run.log
       savetrial
       TRIAL_SAVED=1
       # Now that we have mariadb-binlog test completion, we can kill this recovery instance. If instead the trial is not saved here, due to succesful here binlog replay, the server will stay up and table checksums will be taken just below. After that the instance is terminated there
@@ -3026,11 +3056,13 @@ EOF
       sort ${RUNDIR}/${TRIAL}/checksumlist_result1.txt -o ${RUNDIR}/${TRIAL}/checksumlist_result1.txt
       sort ${RUNDIR}/${TRIAL}/checksumlist_result2.txt -o ${RUNDIR}/${TRIAL}/checksumlist_result2.txt
       if ! diff -dq ${RUNDIR}/${TRIAL}/checksumlist_result1.txt ${RUNDIR}/${TRIAL}/checksumlist_result2.txt >/dev/null 2>&1; then
-        touch ${RUNDIR}/${TRIAL}/BINLOG_CHECKSUM_DIFF
-        echoit "Binlog recovery testing: FOUND table checksum difference(s) between the original re-started and binlog replay instances (max 10 shown):"
-        echo "diff -dy ${RUNDIR}/${TRIAL}/checksumlist_result1.txt ${RUNDIR}/${TRIAL}/checksumlist_result2.txt | grep --binary-files=text -vE 'Table.*Checksum' | grep --binary-files=text -E '<|>'" > ${RUNDIR}/${TRIAL}/checksumlist_result_diff.sh
+        # Marker file content: the first 10 diff lines. Downstream consumers (new_text_string.sh, pquery-prep-red.sh, pquery-results.sh) read from this file.
+        # diff -d (default ed-style) so each differing line is prefixed with '< ' or '> '; grep '^[<>]' captures both deletions, additions, and the "same row, different value" case (which diff -dy formats with '|' and which the previous grep '<|>' filter silently missed).
+        echo "diff -d ${RUNDIR}/${TRIAL}/checksumlist_result1.txt ${RUNDIR}/${TRIAL}/checksumlist_result2.txt | grep --binary-files=text -vE 'Table.*Checksum' | grep --binary-files=text -E '^[<>]'" > ${RUNDIR}/${TRIAL}/checksumlist_result_diff.sh
         chmod +x ${RUNDIR}/${TRIAL}/checksumlist_result_diff.sh
-        ${RUNDIR}/${TRIAL}/checksumlist_result_diff.sh | head -n10 | tee -a /${WORKDIR}/pquery-run.log
+        ${RUNDIR}/${TRIAL}/checksumlist_result_diff.sh | head -n10 > ${RUNDIR}/${TRIAL}/BINLOG_CHECKSUM_DIFF
+        echoit "Binlog recovery testing: FOUND table checksum difference(s) between the original re-started and binlog replay instances (max 10 shown):"
+        cat ${RUNDIR}/${TRIAL}/BINLOG_CHECKSUM_DIFF | tee -a /${WORKDIR}/pquery-run.log
         savetrial
         TRIAL_SAVED=1
       else

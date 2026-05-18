@@ -13,6 +13,7 @@ set +H  # Disables history substitution and avoids  -bash: !: event not found  l
 SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 VALGRINDOUTPUT=0
 SCANBUGS=0
+
 if [ "$1" == "valgrind" ]; then
   VALGRINDOUTPUT=1
 fi
@@ -55,6 +56,41 @@ if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null
 fi
 TRIALS_EXECUTED=$(cat pquery-run.log 2>/dev/null | grep --binary-files=text -o "==.*TRIAL.*==" 2>/dev/null | tail -n1 | sed 's|[^0-9]*||;s|[ \t=]||g')
 echo "========== [ cd ${PWD} ] Sorted UniqueID's (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers) nf: non-filtered bugs =========="
+
+# Hang/timeout signature scan over SHUTDOWN_TIMEOUT_ISSUE-marked trials. Consumed by the TRIALS_MDEV_30418 / MASTER_POS_WAIT / MDEV_22727 / NET_RETRY / MDEV_25611 / MDEV_35064 blocks (all inside the MDG=0 && GRP_RPL=0 main branch), each looking for a different SQL pattern within those trials' default.node.tld_thread-*.sql. One batched grep populates a "<file>:<matched_line>" cache that _pq_trials_with dispatches over.
+_HANG_TRIALS=
+_PQ_SQL_FIRSTPASS=
+if [ "${MDG}" -eq 0 ] && [ "${GRP_RPL}" -eq 0 ]; then
+  _HANG_TRIALS="$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | sort -u)"
+  if [ -n "${_HANG_TRIALS}" ]; then
+    _PQ_SQL_FIRSTPASS="$(mktemp 2>/dev/null)"
+    if [ -n "${_PQ_SQL_FIRSTPASS}" ]; then
+      trap 'rm -f "${_PQ_SQL_FIRSTPASS}"' EXIT
+      _hang_sql=()
+      for _t in ${_HANG_TRIALS}; do
+        for _f in "${_t}"/default.node.tld_thread-*.sql; do
+          [ -e "${_f}" ] && _hang_sql+=("${_f}")
+        done
+      done
+      if [ ${#_hang_sql[@]} -gt 0 ]; then
+        grep --binary-files=text -EHi \
+          -e 'set.*global.*wsrep_cluster_address' \
+          -e 'set.*global.*wsrep_slave_threads' \
+          -e 'set.*aria_group_commit_interval' \
+          -e 'set.*aria_group_commit.*hard' \
+          -e 'innodb_flush_log_at_timeout' \
+          -e 'RESET[ \t]*MASTER' \
+          -e 'set.*net_retry_count' \
+          -e 'start.*slave' \
+          -e 'master_pos_wait' \
+          "${_hang_sql[@]}" 2>/dev/null > "${_PQ_SQL_FIRSTPASS}"
+      fi
+      _hang_sql= _t= _f=
+    fi
+  fi
+fi
+# Trial numbers whose first-pass-cache line matches the given regex. Cache is restricted to hang trials; no further SHUTDOWN_TIMEOUT_ISSUE filter needed at the call site.
+_pq_trials_with() { [ -s "${_PQ_SQL_FIRSTPASS}" ] && grep -Ei "$1" "${_PQ_SQL_FIRSTPASS}" 2>/dev/null | sed 's|/.*||' | sort -u; }
 # Current location checks
 if [ $(ls ./*/*.sql 2>/dev/null | wc -l) -eq 0 ]; then
   if [ "$(echo ${PWD} | sed 's|.*/||')" != "ERR_REDUCERS" -a $(ls ./*.sql 2>/dev/null | wc -l) -eq 0  ]; then
@@ -251,46 +287,80 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
   COUNT=
   STRING_OUT=
   COUNT_OUT=
-  TRIALS_MDEV_30418="$(grep --binary-files=text -il 'set.*global.*wsrep_cluster_address' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'set.*global.*wsrep_slave_threads' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  # Two-stage SQL pattern match: both patterns intersected via comm -12 over the hang-trial first-pass cache (_pq_trials_with).
+  TRIALS_MDEV_30418="$(comm -12 <(_pq_trials_with 'set.*global.*wsrep_cluster_address') <(_pq_trials_with 'set.*global.*wsrep_slave_threads') | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
   if [ ! -z "${TRIALS_MDEV_30418}" ]; then
     echo '** Trials with SET GLOBAL of wsrep_cluster_address & wsrep_slave_threads (known hang/timeout issue MDEV-30418):'
     echo "${TRIALS_MDEV_30418}"
   fi
   TRIALS_MDEV_30418=
-  TRIALS_MASTER_POS_WAIT="$(grep --binary-files=text -il 'start.*slave' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'master_pos_wait' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  TRIALS_MASTER_POS_WAIT="$(comm -12 <(_pq_trials_with 'start.*slave') <(_pq_trials_with 'master_pos_wait') | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
   if [ ! -z "${TRIALS_MASTER_POS_WAIT}" ]; then
     echo '** Trials with START SLAVE & MASTER_POS_WAIT (known hang/timeout issue waiting for an invalid position):'
     echo "${TRIALS_MASTER_POS_WAIT}"
   fi
   TRIALS_MASTER_POS_WAIT=
-  TRIALS_MDEV_22727="$(grep --binary-files=text -il 'set.*aria_group_commit_interval' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'set.*aria_group_commit.*hard' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  TRIALS_MDEV_22727="$(comm -12 <(_pq_trials_with 'set.*aria_group_commit_interval') <(_pq_trials_with 'set.*aria_group_commit.*hard') | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
   if [ ! -z "${TRIALS_MDEV_22727}" ]; then
     echo '** Trials with SET aria_group_commit_interval & SET aria_group_commit=HARD (known hang/timeout issue MDEV-22727):'
     echo "${TRIALS_MDEV_22727}"
   fi
   TRIALS_MDEV_22727=
-  TRIALS_NET_RETRY="$(grep --binary-files=text -il 'set.*net_retry_count' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  TRIALS_NET_RETRY="$(_pq_trials_with 'set.*net_retry_count' | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
   if [ ! -z "${TRIALS_NET_RETRY}" ]; then
     echo '** Trials with SET net_retry_count (known to cause hang/timeout issues):'
     echo "${TRIALS_NET_RETRY}"
   fi
   TRIALS_NET_RETRY=
-  TRIALS_MDEV_35064="$(grep --binary-files=text -il "CREATE.*SERVER.*WRAPPER.*HOST[ \t]\+'1');" [0-9]*/default.node.tld_thread-*.sql*out*out* 2>/dev/null | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  TRIALS_MDEV_35064=
+  if [ -n "${_HANG_TRIALS}" ]; then
+    _out_files=()
+    for _t in ${_HANG_TRIALS}; do
+      for _f in "${_t}"/default.node.tld_thread-*.sql*out*out*; do
+        [ -e "${_f}" ] && _out_files+=("${_f}")
+      done
+    done
+    [ ${#_out_files[@]} -gt 0 ] && TRIALS_MDEV_35064="$(grep --binary-files=text -lim1 "CREATE.*SERVER.*WRAPPER.*HOST[ \t]\+'1');" "${_out_files[@]}" 2>/dev/null | sed 's|/.*||' | sort -u | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+    _out_files= _t= _f=
+  fi
   if [ ! -z "${TRIALS_MDEV_35064}" ]; then
     echo '** Trials with "CREATE SERVER.*WRAPPER.*HOST '1');" in reduced traces (known to cause thread-hang issues: ref MDEV-35064):'
     echo "${TRIALS_MDEV_35064}"
   fi
   TRIALS_MDEV_35064=
-  TRIALS_MDEV_25611="$(grep --binary-files=text -il 'innodb_flush_log_at_timeout' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'RESET[ \t]*MASTER' {}/default.node.tld_thread-*.sql 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | grep -E "$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | tr '\n' '|' | sed 's/[|]\+$//')" | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  TRIALS_MDEV_25611="$(comm -12 <(_pq_trials_with 'innodb_flush_log_at_timeout') <(_pq_trials_with 'RESET[ \t]*MASTER') | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
   if [ ! -z "${TRIALS_MDEV_25611}" ]; then
     echo '** Trials with SET innodb_flush_log_at_timeout and RESET MASTER (known to cause hang/timeout issues, ref MDEV-25611):'
     echo "${TRIALS_MDEV_25611}"
   fi
   TRIALS_MDEV_25611=
+  _HANG_TRIALS=
+fi
+
+# Binlog recovery trials (MARIADB_BINLOG_RECOVERY_TESTING=1): replay error in mariadb-binlog | mariadb pipeline
+if [ $(ls */BINLOG_RECOVERY_ERROR 2>/dev/null | wc -l) -gt 0 ]; then
+  COUNT=$(ls */BINLOG_RECOVERY_ERROR 2>/dev/null | wc -l)
+  STRING_OUT="$(echo "* BINLOG RECOVERY: REPLAY ERROR *" | awk -F "\n" '{printf "%-55s",$1}')"
+  COUNT_OUT=$(echo $COUNT | awk '{printf "  (Seen %3s times: trials ",$1}')
+  echo -e "${STRING_OUT}${COUNT_OUT}$(ls */BINLOG_RECOVERY_ERROR 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||'))"
+  COUNT=
+  STRING_OUT=
+  COUNT_OUT=
+fi
+
+# Binlog recovery trials (MARIADB_BINLOG_RECOVERY_TESTING=1): table checksum diverged after binlog replay
+if [ $(ls */BINLOG_CHECKSUM_DIFF 2>/dev/null | wc -l) -gt 0 ]; then
+  COUNT=$(ls */BINLOG_CHECKSUM_DIFF 2>/dev/null | wc -l)
+  STRING_OUT="$(echo "* BINLOG RECOVERY: CHECKSUM DIVERGENCE *" | awk -F "\n" '{printf "%-55s",$1}')"
+  COUNT_OUT=$(echo $COUNT | awk '{printf "  (Seen %3s times: trials ",$1}')
+  echo -e "${STRING_OUT}${COUNT_OUT}$(ls */BINLOG_CHECKSUM_DIFF 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||'))"
+  COUNT=
+  STRING_OUT=
+  COUNT_OUT=
 fi
 
 # Timeouts (MODE=0) which are not shutdown issues (i.e. no <trialnr>/SHUTDOWN_TIMEOUT_ISSUE)
-MODE0_TRIALS="$(grep --binary-files=text -l -m1 '^MODE=0' reducer[0-9]*.sh 2>/dev/null | grep -o '[0-9]\+' | sort -uh | xargs -I{} echo "if [ ! -r {}/SHUTDOWN_TIMEOUT_ISSUE ]; then echo '{}'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' ' ')"
+MODE0_TRIALS="$(grep --binary-files=text -l -m1 '^MODE=0' reducer[0-9]*.sh 2>/dev/null | grep -o '[0-9]\+' | sort -uh | while read _t; do [ ! -r "${_t}/SHUTDOWN_TIMEOUT_ISSUE" ] && echo "${_t}"; done | tr '\n' ' ')"
 if [ ! -z "${MODE0_TRIALS}" ]; then
   echo '** Trials which timed out (MODE=0) which are not shutdown issues (i.e. no <trialnr>/SHUTDOWN_TIMEOUT_ISSUE):'
   echo "${MODE0_TRIALS}"
@@ -298,7 +368,20 @@ fi
 MODE0_TRIALS=
 
 # Other MDEV related issues worth highlighting, aiding issue management
-TRIALS_MDEV_26492="$(grep --binary-files=text -il 'key_cache_segments' [0-9]*/default.node.tld_thread-*.sql 2>/dev/null | sed 's|/.*||' | sort -u | xargs -I{} echo "grep --binary-files=text -il 'ERROR] Got an error' {}/log/*.err 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | sed 's|/.*||' | sort -u | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+# MDEV-26492: SET key_cache_segments in SQL plus '[ERROR] Got an error' in the err log. Independent of SHUTDOWN_TIMEOUT_ISSUE; narrowed by scanning the (small) err logs first, then SQL only of trials matching that err-log marker.
+TRIALS_MDEV_26492=
+_T1="$(grep --binary-files=text -lim1 'ERROR] Got an error' ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | sort -u)"
+if [ -n "${_T1}" ]; then
+  _sql_files=()
+  for _t in ${_T1}; do
+    for _f in "${_t}"/default.node.tld_thread-*.sql; do
+      [ -e "${_f}" ] && _sql_files+=("${_f}")
+    done
+  done
+  [ ${#_sql_files[@]} -gt 0 ] && TRIALS_MDEV_26492="$(grep --binary-files=text -lim1 'key_cache_segments' "${_sql_files[@]}" 2>/dev/null | sed 's|/.*||' | sort -u | sort -h | tr '\n' ' ' | sed 's|[ ]\+$||')"
+  _sql_files= _t= _f=
+fi
+_T1=
 if [ ! -z "${TRIALS_MDEV_26492}" ]; then
   echo '** Trials with SET key_cache_segments resulting in '[ERROR] Got an error' (from a thread or an unknown thread), a know bug; ref MDEV-26492:'
   echo "${TRIALS_MDEV_26492}"
@@ -395,28 +478,31 @@ if grep -qm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null; then
   echo '** Trials where the slave SQL thread aborted: manual reducer setup verification may be required'
   grep -lm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
 fi
-rm -f ./errorlogs.tmp
+rm -f ./errorlogs.tmp ./error_sigs.tmp
 find . -type f -name "master.err" | grep '\./[0-9]\+/log/master.err' > ./errorlogs.tmp
 find . -type f -name "slave.err" | grep '\./[0-9]\+/log/slave.err' >> ./errorlogs.tmp
-if [ -r ./errorlogs.tmp ]; then
-  FIST_OCCURRENCE=0
-  while read ERROR_LOG; do
-    if [ -r ${ERROR_LOG} ]; then
-      # ERROR_MSG_FILTER is pquery-results.sh-specific (extra filter on top of REGEX_ERRORS_FILTER) and is applied to the helper's output. Items already produced as new_text_string.sh UniqueIDs (and visible in the UniqueID list) are filtered out here to keep the 'Significant/Major errors' section concise. 'slave SQL thread aborted' has its own '** Trials where the slave SQL thread aborted' section above.
-      ERROR_MSG_FILTER='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code|slave SQL thread aborted'
-      ERRORS="$(${SCRIPT_PWD}/error_log_scan.sh errors ${ERROR_LOG} | grep --binary-files=text -vE "${ERROR_MSG_FILTER}")"
-      ERRORS_LAST_LINE="$(${SCRIPT_PWD}/error_log_scan.sh lastline ${ERROR_LOG} | grep --binary-files=text -vE "${ERROR_MSG_FILTER}")"
-      if [ ! -z "${ERRORS}" -o ! -z "${ERRORS_LAST_LINE}" ]; then
-        if [ "${FIST_OCCURRENCE}" != "1" ]; then
-          echo "** Significant/Major errors (if any)"
-          FIST_OCCURRENCE=1
-        fi
-        echo "${ERROR_LOG}: $(DOUBLE=0; echo "$(if [ ! -z "${ERRORS}" ]; then echo -n "${ERRORS}"; DOUBLE=1; fi; if [ ! -z "${ERRORS_LAST_LINE}" ]; then if [ "${DOUBLE}" -eq 1 ]; then echo ", ${ERRORS_LAST_LINE}"; else echo ", ${ERRORS_LAST_LINE}"; fi; else echo ''; fi;)" | sed 's|^[ ]+||;s|[ ]\+$||')" | sed 's|:[ ,]\+mariadbd: /test.*_dbg/|: |;s|: Assertion |Assertion |'
-      fi
-    fi
-  done < ./errorlogs.tmp
+if [ -s ./errorlogs.tmp ]; then
+  # Single error_log_scan.sh aggregate call over all error logs; emits "<UID>\t<trial>" rows. ERROR_MSG_FILTER (pquery-results.sh-local, on top of REGEX_ERRORS_FILTER) drops items already shown as new_text_string.sh UniqueIDs and 'slave SQL thread aborted' (own section above), keeping the 'Significant/Major errors' section concise.
+  ERROR_MSG_FILTER='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code|slave SQL thread aborted'
+  xargs -a ./errorlogs.tmp "${SCRIPT_PWD}/error_log_scan.sh" aggregate 2>/dev/null \
+    | grep --binary-files=text -vE "${ERROR_MSG_FILTER}" > ./error_sigs.tmp
 fi
-rm -f ./errorlogs.tmp
+if [ -s ./error_sigs.tmp ]; then
+  echo "** Significant/Major errors (if any)"
+  # Cross-trial aggregation: group by signature, list trials per signature in numeric order. Sort by signature (alphabetical) then trial (numeric) so the awk pass only has to detect signature boundaries. The per-(sig,trial) dedup in the awk catches trials whose master.err and slave.err both contain the same signature.
+  sort -t$'\t' -k1,1 -k2,2n ./error_sigs.tmp | awk -F'\t' '
+    seen[$1, $2]++ { next }
+    $1 != prev_sig {
+      if (prev_sig != "") print "    " trials
+      print "  " $1
+      trials = $2
+      prev_sig = $1
+      next
+    }
+    { trials = trials " " $2 }
+    END { if (prev_sig != "") print "    " trials }'
+fi
+rm -f ./errorlogs.tmp ./error_sigs.tmp
 
 extract_valgrind_error(){
   for i in $( ls  ${ERROR_LOG_LOC} 2>/dev/null); do

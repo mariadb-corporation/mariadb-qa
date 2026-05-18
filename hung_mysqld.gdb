@@ -1,3 +1,4 @@
+set debuginfod enabled off
 set trace-commands on
 set logging file out.txt
 set logging enabled on

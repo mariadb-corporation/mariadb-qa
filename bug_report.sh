@@ -306,7 +306,7 @@ else
   # set print array on
   # set print array-indexes on
   # set print elements 0
-  gdb -q bin/mysqld $(ls $CORE_FILE) >/tmp/${RANDF}.gdba 2>&1 << EOF
+  gdb -q -iex 'set debuginfod enabled off' bin/mysqld $(ls $CORE_FILE) >/tmp/${RANDF}.gdba 2>&1 << EOF
    set pagination off
    set print pretty on
    set print frame-arguments all

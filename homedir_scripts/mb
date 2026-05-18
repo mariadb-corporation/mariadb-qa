@@ -29,6 +29,12 @@ if [ "${DBG_OR_OPT}" != "dbg" -a "${DBG_OR_OPT}" != "opt" ]; then
   echo "Assert: could not determine build type (dbg or opt) from the feature base directory name: '${FEATURE_DIR}'"
   exit 1
 fi
+# Sanitizer/variant detection: if FEATURE_DIR is a SAN/MSAN/GAL build, the base BASEDIR must be the same variant so the sanitizer instrumentation (or galera replication) is present in the verification build. gendirs.sh excludes SAN/GAL from its default output and needs an explicit category arg to include them. Substring match on TOKEN_ (trailing underscore is always present in sanitizer/galera basedir names; anchoring on it avoids false-positive matches against tokens that happen to share the prefix).
+SAN_CATEGORY=
+if   [[ "${FEATURE_DIR}" == *"UBASAN_"* || "${FEATURE_DIR}" == *"TSAN_"* ]]; then SAN_CATEGORY="SAN"
+elif [[ "${FEATURE_DIR}" == *"MSAN_"* ]]; then SAN_CATEGORY="MSAN"
+elif [[ "${FEATURE_DIR}" == *"GAL_"* ]]; then SAN_CATEGORY="GAL"
+fi
 if [ ! -r /test/gendirs.sh ]; then
   echo "Assert: /test/gendirs.sh does not exist"
   exit 1
@@ -43,7 +49,7 @@ if [ -r ./BASEDIR ]; then
   echo "BASEDIR for 'base_' reducers set to ${BASEDIR} as specified in ./BASEDIR"
 else
   # TODO: possible improvement: auto-base BASEDIR where instead of using gendirs.sh in this script, gendirs.sh is used from the patched reducer instead
-  BASEDIR="/test/$(cd /test; ./gendirs.sh | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | sort -h | tac | head -n1)"
+  BASEDIR="/test/$(cd /test; ./gendirs.sh ${SAN_CATEGORY} | grep "\-${MAJOR_VERSION}" | grep "${DBG_OR_OPT}" | sort -h | tac | head -n1)"
 fi
 if [ -z "${BASEDIR}" ]; then
   echo "Assert: BASEDIR variable empty after running gendirs.sh"

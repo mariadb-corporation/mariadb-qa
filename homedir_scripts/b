@@ -178,14 +178,33 @@ else
   fi
 fi
 
+# Collect UniqueIDs that bug_report.sh's test_san_build() emitted inline. The line format is "${VERSION} ${2}: ${BUG_STRING}" where VERSION is "" or "10.1[0-9]" (regex in bug_report.sh) and ${2} is "opt"/"dbg". Three observed body forms:
+#   "No SAN issue detected"                                     -> drop (no real finding)
+#   "<UniqueID>"                                                -> keep (SAN match in BUG_STRING)
+#   "No SAN issue detected, though saw <UniqueID>"              -> strip prefix, keep (non-SAN UniqueID from SAN-build run)
+# These need to flow into the "No core" message and the at-end summaries — allstrings_merged without arg skips SAN basedirs, so the SAN-build findings would otherwise be invisible.
+SAN_FINDINGS="$(grep -E ' (opt|dbg): ' report.log 2>/dev/null \
+  | sed -E 's#^.* (opt|dbg): ##' \
+  | sed -E 's#^No SAN issue detected, though saw ##' \
+  | grep -v '^No SAN issue detected$' \
+  | grep -v '^[[:space:]]*$' \
+  | sort -u)"
+
 if [ ! -z "$(~/t | grep -o 'no core file found')" ]; then
-  echo "*) No core file was found, and no *SAN issue detected in the current directory, though other versions may have reproduced the issue! Check 'All strings merged' output below to confirm if any issues were seen in any version tested." | tee -a report.log
-  echo "*) As no issue was detected in the current directory, you may want to re-run this from another version's basedir where the issue was detected (Run and check ./allstrings output to find the exact basedir where the issue produced). This will then provide full stacks/a full report." | tee -a report.log
+  if [ -n "${SAN_FINDINGS}" ]; then
+    SAN_COUNT="$(echo "${SAN_FINDINGS}" | wc -l)"
+    echo "*) No core file was found in the current directory, however ${SAN_COUNT} UniqueID(s) (SAN/crash/assert) were detected in SAN builds — see 'SAN Execution of the testcase' section above. Run 'bs' in the matching SAN basedir for a full SAN matrix." | tee -a report.log
+  else
+    echo "*) No core file was found, and no *SAN issue detected in the current directory, though other versions may have reproduced the issue! Check 'All strings merged' output below to confirm if any issues were seen in any version tested." | tee -a report.log
+  fi
+  echo "*) As no core file was detected in the current directory, you may want to re-run this from another version's basedir where the issue was detected (Run and check ./allstrings output to find the exact basedir where the issue produced). This will then provide full stacks/a full report." | tee -a report.log
 else
   ~/tt | tee -a report.log
 fi
 REPORT_PATH="${PWD}"
 FILT_SHA2_PWD='caching_sha2_password: failed to read private_key.pem.*2.*No such file or directory'
+# Truncate /tmp/allstrings_merged before this section. The downstream "All NEW (not known yet) strings merged" pipeline reads from this file, and the producer ./allstrings_merged only rewrites it when invoked (it uses `>` not `>>`). If ../allstrings_merged is missing or skipped (e.g. wrong PWD), the file would otherwise carry stale content from a prior `~/b` invocation into both this report's "All strings merged" follow-on append AND the "All NEW" section. Pre-truncating ensures each `~/b` run sees a clean slate.
+: >/tmp/allstrings_merged
 echo '----- All strings merged -----' | tee -a report.log
 if [ -r ../allstrings_merged ]; then
   if [ "${1}" == "GAL" ]; then
@@ -198,6 +217,11 @@ if [ -r ../allstrings_merged ]; then
     cd .. && ./allstrings_merged 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   fi
 fi
+# Add SAN findings to "All strings merged" (and /tmp/allstrings_merged so the "All NEW" pipeline below sees them). Only relevant in non-SAN runs; in SAN runs the SAN basedirs are already covered by allstrings_merged.
+if [ -n "${SAN_FINDINGS}" ] && [[ "${PWD}" != *"SAN"* && "${1}" != "SAN" && "${1}" != "MSAN" ]]; then
+  echo "${SAN_FINDINGS}" | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log"
+  echo "${SAN_FINDINGS}" >> /tmp/allstrings_merged
+fi
 # Print all new bugs that are not in the known bug list
 if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
   echo '----- All NEW (not known yet) strings merged (for adding to ~/kba or ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
@@ -205,6 +229,11 @@ if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
   cat /tmp/allstrings_merged | sort -u | grep -v '^[ \t]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbsa REVERSE "{}" | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log"
 else
   echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT_PATH}/report.log"
-  cat /tmp/allstrings_merged | sort -u | grep -v '^[ \t]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log"
+  # When SAN findings landed via test_san_build in a non-SAN run, run them through kbsa as well (SAN-known-bugs list) so known SAN issues are filtered before tagging as "NEW".
+  if [ -n "${SAN_FINDINGS}" ]; then
+    cat /tmp/allstrings_merged | sort -u | grep -v '^[ \t]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbsa REVERSE "{}" | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log"
+  else
+    cat /tmp/allstrings_merged | sort -u | grep -v '^[ \t]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log"
+  fi
 fi
 

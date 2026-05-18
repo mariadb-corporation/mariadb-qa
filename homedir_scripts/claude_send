@@ -1,14 +1,25 @@
 #!/usr/bin/env bash
-# Resume a Claude Code session and send it a prompt to continue with.
+# Send a prompt to a running Claude Code session living inside a screen window.
+# Fire-and-forget: cls injects the prompt via `screen -X stuff` and returns
+# immediately. The target claude session continues on its own.
+#
 # Usage:
-#   cls <id-prefix> "prompt to send"
-# Designed for: sleep N; cls <id> 'continue this work, ...'  (in a screen session)
+#   cls <sid-prefix>            "prompt"   - resolve to running claude's screen
+#   cls <screen-name>           "prompt"   - stuff into screen's current window
+#   cls <screen-name>:<window>  "prompt"   - stuff into a specific window
+#
+# SID-prefix mode requires the target claude to be running and inside a screen
+# session. cls finds it via lsof on the session JSONL, then walks the process
+# tree to the SCREEN master. Prompt is delivered to that screen's current
+# window; for multi-claude screens, use the explicit <screen-name>:<window>
+# form.
 # Created by Roel Van de Paar, MariaDB (with Claude Code assistance)
 
+set -u
 PROJECTS_DIR="${HOME}/.claude/projects"
 
 if [ $# -lt 2 ]; then
-  echo "Usage: cls <session-id-prefix> \"prompt to send\"" >&2
+  echo "Usage: cls <sid-prefix | screen-name[:window]> \"prompt\"" >&2
   exit 1
 fi
 
@@ -16,78 +27,91 @@ ARG="$1"
 shift
 PROMPT="$*"
 
-if [ ! -d "$PROJECTS_DIR" ]; then
-  echo "No $PROJECTS_DIR — nothing to resume." >&2
-  exit 1
+stuff_screen() {
+  local target="$1" prompt="$2"
+  local sname win
+  if [[ "$target" == *:* ]]; then
+    sname="${target%%:*}"
+    win="${target#*:}"
+  else
+    sname="$target"
+    win=""
+  fi
+  local payload="${prompt}"$'\r'
+  if [ -n "$win" ]; then
+    screen -S "$sname" -p "$win" -X stuff "$payload"
+  else
+    screen -S "$sname" -X stuff "$payload"
+  fi
+}
+
+resolve_sid_to_screen() {
+  # Prints resolved screen name on stdout; nonzero exit on failure.
+  local prefix="$1"
+  local jsonl_list
+  jsonl_list="$(find "$PROJECTS_DIR" -maxdepth 3 -type f -name "${prefix}*.jsonl" 2>/dev/null)"
+  local count
+  count="$(printf '%s' "$jsonl_list" | grep -c . || true)"
+  if [ "$count" -eq 0 ]; then
+    return 2
+  fi
+  if [ "$count" -gt 1 ]; then
+    echo "cls: sid prefix '$prefix' is ambiguous ($count matches):" >&2
+    printf '%s\n' "$jsonl_list" | head -10 | sed 's|^.*/||; s|\.jsonl$||; s/^/  /' >&2
+    return 3
+  fi
+  local jsonl="$jsonl_list"
+  local pid
+  pid="$(lsof -t -- "$jsonl" 2>/dev/null | head -1)"
+  if [ -z "$pid" ]; then
+    echo "cls: session $prefix exists but no running process has its jsonl open." >&2
+    return 4
+  fi
+  local cur="$pid" screen_pid="" comm
+  while [ -n "$cur" ] && [ "$cur" != "1" ] && [ "$cur" != "0" ]; do
+    comm="$(ps -o comm= -p "$cur" 2>/dev/null | tr -d ' ')"
+    if [ "$comm" = "screen" ] || [ "$comm" = "SCREEN" ]; then
+      screen_pid="$cur"
+      break
+    fi
+    cur="$(ps -o ppid= -p "$cur" 2>/dev/null | tr -d ' ')"
+  done
+  if [ -z "$screen_pid" ]; then
+    echo "cls: claude (pid $pid) is not inside a screen session." >&2
+    return 5
+  fi
+  local sname
+  sname="$(screen -ls 2>/dev/null | awk -v pid="$screen_pid" '$1 ~ "^"pid"\\." { sub(/^[0-9]+\./,"",$1); print $1; exit }')"
+  if [ -z "$sname" ]; then
+    echo "cls: could not match screen pid $screen_pid in screen -ls output." >&2
+    return 6
+  fi
+  printf '%s\n' "$sname"
+  return 0
+}
+
+# Try SID-prefix mode when arg looks like a UUID fragment.
+if [[ "$ARG" =~ ^[0-9a-fA-F-]+$ ]]; then
+  ARG_LC="$(printf '%s' "$ARG" | tr 'A-F' 'a-f')"
+  if sname_out="$(resolve_sid_to_screen "$ARG_LC")"; then
+    if stuff_screen "$sname_out" "$PROMPT"; then
+      echo "cls: prompt sent to screen '$sname_out' (sid $ARG_LC)."
+      exit 0
+    fi
+    echo "cls: failed to stuff into screen '$sname_out'." >&2
+    exit 8
+  else
+    rc=$?
+    # rc==2 means no JSONL matched the prefix; fall through to screen-name mode.
+    [ "$rc" -ne 2 ] && exit "$rc"
+  fi
 fi
 
-SELECTION="$(python3 - "$PROJECTS_DIR" "$ARG" <<'PYEOF'
-import json, os, sys
-
-projects_dir = sys.argv[1]
-arg = sys.argv[2].lower()
-
-sessions = []
-for dirpath, _, files in os.walk(projects_dir):
-    for f in files:
-        if not f.endswith(".jsonl"):
-            continue
-        path = os.path.join(dirpath, f)
-        try:
-            mtime = os.path.getmtime(path)
-        except OSError:
-            continue
-        sid = f[:-6]
-        sessions.append((mtime, sid, path))
-
-sessions.sort(reverse=True)
-
-def first_cwd(path):
-    try:
-        with open(path, "r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                try:
-                    obj = json.loads(line)
-                except Exception:
-                    continue
-                cwd = obj.get("cwd")
-                if cwd:
-                    return cwd
-    except OSError:
-        pass
-    return ""
-
-matches = [(m, s, p) for (m, s, p) in sessions if s.startswith(arg)]
-if not matches:
-    print(f"No session id starts with '{arg}'.", file=sys.stderr)
-    sys.exit(5)
-if len(matches) > 1:
-    print(f"Prefix '{arg}' is ambiguous ({len(matches)} matches):", file=sys.stderr)
-    for _, s, p in matches[:10]:
-        print(f"  {s[:8]}  {first_cwd(p)}", file=sys.stderr)
-    sys.exit(6)
-
-_, sid, path = matches[0]
-print(f"{sid}|{first_cwd(path)}")
-PYEOF
-)"
-
-rc=$?
-[ $rc -ne 0 ] && exit $rc
-[ -z "$SELECTION" ] && exit 0
-
-SID="${SELECTION%%|*}"
-CWD="${SELECTION#*|}"
-
-if [ -z "$CWD" ]; then
-  echo "cls: could not determine original working dir for session $SID — attempting from $(pwd)." >&2
-  exec claude --resume "$SID" "$PROMPT"
-elif [ ! -d "$CWD" ]; then
-  echo "cls: original working dir no longer exists:" >&2
-  echo "       $CWD" >&2
-  echo "     session $SID cannot be auto-resumed (--resume requires that dir)." >&2
-  exit 7
-else
-  cd "$CWD" || exit 1
-  exec claude --resume "$SID" "$PROMPT"
+# Screen-name (optionally :window) mode.
+if stuff_screen "$ARG" "$PROMPT"; then
+  echo "cls: prompt sent to screen '$ARG'."
+  exit 0
 fi
+
+echo "cls: '$ARG' is neither a unique sid prefix nor an addressable screen session." >&2
+exit 9

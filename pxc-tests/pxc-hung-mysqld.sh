@@ -18,7 +18,7 @@ cd ${dirname}
 
 cp /var/lib/mysql/error.log .
 
-gdb /usr/sbin/mysqld ${pid} < ${SCRIPT_PWD}/hung_mysqld.gdb | tee gdb.out
+gdb -iex 'set debuginfod enabled off' /usr/sbin/mysqld ${pid} < ${SCRIPT_PWD}/hung_mysqld.gdb | tee gdb.out
 
 gcore -o core_mysqld_${hname}_${tstamp} ${pid}
 

@@ -1,1 +1,1 @@
-gdb ../afl-fuzz ./core
+gdb -iex 'set debuginfod enabled off' ../afl-fuzz ./core

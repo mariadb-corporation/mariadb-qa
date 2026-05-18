@@ -334,9 +334,11 @@ if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
   if [ -d ${GALERA_BUILD_LOC}_opt ]; then 
     if [[ -f ${GALERA_BUILD_LOC}_opt/libgalera_smm.so ]] || [[ -f ${GALERA_BUILD_LOC}_opt/libgalera_enterprise_smm.so ]] ; then 
       if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
-        cp ${GALERA_BUILD_LOC}_opt/libgalera_enterprise_smm.so ${DIR_opt_new}/lib/libgalera_smm.so
+        ln -sf ${GALERA_BUILD_LOC}_opt/libgalera_enterprise_smm.so ${DIR_opt_new}/lib/libgalera_smm.so
+        echo "ln -sf ${GALERA_BUILD_LOC}_opt/libgalera_enterprise_smm.so ${DIR_opt_new}/lib/libgalera_smm.so"
       else
-        cp ${GALERA_BUILD_LOC}_opt/libgalera_smm.so ${DIR_opt_new}/lib/libgalera_smm.so
+        ln -sf ${GALERA_BUILD_LOC}_opt/libgalera_smm.so ${DIR_opt_new}/lib/libgalera_smm.so
+        echo "ln -sf ${GALERA_BUILD_LOC}_opt/libgalera_smm.so ${DIR_opt_new}/lib/libgalera_smm.so"
       fi
     else
       echo "WARNING! Could not copy libgalera_smm.so to ${DIR_opt_new}, please copy manually"
@@ -347,11 +349,20 @@ if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
     cmake . | tee /tmp/psms_opt_galera_build_${RANDOMD}
     make | tee -a /tmp/psms_opt_galera_build_${RANDOMD}
     if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
-      cp libgalera_enterprise_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
+      ln -sf ${GALERA_BUILD_LOC}_opt/libgalera_enterprise_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
     else
-      cp libgalera_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
+      ln -sf ${GALERA_BUILD_LOC}_opt/libgalera_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
     fi
     cd ..
+  fi
+  # Patch mariadb-test/suite/wsrep/common.pm to also probe the basedir's own
+  # lib/libgalera_smm.so. Without this, MTR's auto-detection only searches
+  # /usr/lib{64,}/galera{,-4}/ and skips every wsrep test with "No wsrep
+  # provider library" when those paths are absent.
+  WSREP_COMMON_PM=${DIR_opt_new}/mariadb-test/suite/wsrep/common.pm
+  if [ -r ${WSREP_COMMON_PM} ] && ! grep -q '\$::bindir/lib/libgalera_smm.so' ${WSREP_COMMON_PM}; then
+    sed -i 's|::mtr_file_exists("/usr/lib64/galera-4/libgalera_smm.so",|::mtr_file_exists("$::bindir/lib/libgalera_smm.so",\n                      "/usr/lib64/galera-4/libgalera_smm.so",|' ${WSREP_COMMON_PM}
+    echo "Patched ${WSREP_COMMON_PM} to auto-detect basedir-local libgalera_smm.so"
   fi
   exit 0
 else
