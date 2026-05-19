@@ -4,7 +4,6 @@
 # Usage example"
 #  For normal output            : $./pquery-results.sh
 #  For Valgrind + normal output : $./pquery-results.sh valgrind
-#  For known bugs scanning      : $./pquery-results.sh scan
 
 # Setup
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
@@ -12,13 +11,9 @@ set +H  # Disables history substitution and avoids  -bash: !: event not found  l
 # Internal variables
 SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
 VALGRINDOUTPUT=0
-SCANBUGS=0
 
 if [ "$1" == "valgrind" ]; then
   VALGRINDOUTPUT=1
-fi
-if [ "$1" == "scan" ]; then
-  SCANBUGS=1
 fi
 
 if [ "${PWD}" == "/test" -o "${PWD}" == "/data" -o "${PWD}" == "${HOME}" ]; then
@@ -154,38 +149,6 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
       COUNT_OUT="$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')"
       echo -e "${STRING_OUT}${COUNT_OUT}$(echo ${MATCHING_TRIALS[@]}|sed 's| |,|g'))"
     fi
-    if [ ${SCANBUGS} -eq 1 ]; then
-      # Look for exact match (except for allowing both .c and .cc to be used)
-      #OLD SCANSTRING="$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|')"
-      SCANSTRING="$(echo "${STRING}")"
-      KB="${SCRIPT_PWD}/known_bugs.strings"
-      if [ "${SAN}" -eq 1 ]; then
-        KB="${SCRIPT_PWD}/known_bugs.strings.SAN"
-      fi
-      SCANOUTPUT="$(grep ${NTS} --binary-files=text "${SCANSTRING}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /')"
-      if [ "$(echo "${SCANOUTPUT}" | sed 's|[ \t]\+||g')" != "" ]; then  # TODO: this does not work yet with new text string, as the strings are specific uniqueid's/bugs rather than for example the second/third frame only etc. It may help to just use 2nd/3rd frame alone. Add regex here if this functionality is going to be used more (it isn't atm and the new uniqueID's and the new dup bug search function of ~/tt have made this mostly redudant).
-        # Note you cannot just echo ${SCANOUTPUT} here without processing; it does not contain newlines. If multiple matches are found, it will condense them into one line
-        grep ${NTS} --binary-files=text "${SCANSTRING}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /'
-      else  # Also may provide backwards (old text string) compatibility
-        # Look for a more generic string. Allow things like "line 1000" to match for "line 2100" (first digit match + neighbour numbers)
-        SCANSTRING=$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|;s|\( line [0-9]\)[0-9]\+|\1|')
-        SCANSTRINGLASTNR=$(echo "${SCANSTRING}" | sed 's|.*\(.\)$|\1|' | sed 's|[^0-9]||')
-        if [ "${SCANSTRINGLASTNR}" == "" -o "${SCANSTRINGLASTNR}" == "0" ]; then  # The last character was not a digit, or a 0
-          grep ${NTS} --binary-files=text "${SCANSTRING}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
-        else
-          # Scan all nearest neighbours
-          SCANSTRING=$(echo "${SCANSTRING}" | sed 's|.$||')  # Remove last character (the number)
-          # Scan with the original string number
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
-          # Scan with the original string number -1 (0 is not fine; already handled above)
-          SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} - 1 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
-          # Scan with the original string number +1 (9 is fine; this becomes 10 and that would be the next upper neighbour)
-          SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} + 2 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${KB} 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
-        fi
-      fi
-    fi
   done
 else  # Galera or GR run
   for STRING in $(grep --binary-files=text -m1 '^   TEXT=' reducer* 2>/dev/null | grep -v 'Last.*consecutive queries all failed' | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u); do
@@ -198,33 +161,6 @@ else  # Galera or GR run
     STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-55s",$1}')"
     COUNT_OUT="$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')"
     echo "$(echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})" | sed 's|, |,|g;s|,)|)|')"
-    if [ ${SCANBUGS} -eq 1 ]; then
-      # Look for exact match (except for allowing both .c and .cc to be used)
-      SCANSTRING="$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|')"
-      SCANOUTPUT="$(grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /')"
-      if [ "$(echo --binary-files=text "${SCANOUTPUT}" | sed 's|[ \t]\+||g')" != "" ]; then
-        # Note you cannot just echo ${SCANOUTPUT} here without processing; it does not contain newlines. If multiple matches are found, it will condense them into one line
-        grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /'
-      else
-        # Look for a more generic string. Allow things like "line 1000" to match for "line 2100" (first digit match + neighbour numbers)
-        SCANSTRING=$(echo "${STRING}" | sed 's|\.c[c]*|.c[c]*|;s|\( line [0-9]\)[0-9]\+|\1|')
-        SCANSTRINGLASTNR=$(echo "${SCANSTRING}" | sed 's|.*\(.\)$|\1|' | sed 's|[^0-9]||')
-        if [ "${SCANSTRINGLASTNR}" == "" -o "${SCANSTRINGLASTNR}" == "0" ]; then  # The last character was not a digit, or a 0
-          grep ${NTS} --binary-files=text "${SCANSTRING}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
-        else
-          # Scan all nearest neighbours
-          SCANSTRING=$(echo "${SCANSTRING}" | sed 's|.$||')  # Remove last character (the number)
-          # Scan with the original string number
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
-          # Scan with the original string number -1 (0 is not fine; already handled above)
-          SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} - 1 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
-          # Scan with the original string number +1 (9 is fine; this becomes 10 and that would be the next upper neighbour)
-          SCANSTRINGLASTNR=$[ ${SCANSTRINGLASTNR} + 2 ]
-          grep ${NTS} --binary-files=text "${SCANSTRING}${SCANSTRINGLASTNR}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | sed 's|[ \t]\+| |g;s/^/  | /' | sort -u
-        fi
-      fi
-    fi
   done
 fi
 IFS=$ORIG_IFS

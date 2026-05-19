@@ -10,6 +10,19 @@ set +H
 # This handles crashes/asserts/Valgrind issues for the moment only. Could be expanded later for other cases, and to handle more unforseen situations.
 # Query correctness: data (output) correctness (QC DC) trial handling was also added 11 May 2016
 
+# MYBUG content rule (consumed here)
+# ──────────────────────────────────
+# This script reads MYBUG files written by pquery-run.sh (via new_text_string.sh)
+# as the per-trial UniqueID source. See the MYBUG content rule in
+# new_text_string.sh for the four valid shapes (crash signal, crash with assert,
+# SAN finding, typed-prefix UID — in decreasing severity).
+#
+# TODO: special-case handling exists for the case where nts could not produce
+# one of those shapes AND the error-log scan flagged a separate issue
+# (ERROR_LOG_SCAN_ISSUE present). In that case MYBUG may contain literal
+# "Assert: no core file found..." text, and the FINDBUG override block
+# replaces it with the typed UID produced by error_log_scan.sh top.
+
 # Improvement ideas
 # - It would be better if failing queries were added like this; 3x{query_from_err_log,query_from_core},3{SELECT 1},3{SELECT SLEEP(3)} instead of 3{query_from_core},3{query_from_err_log},3{SELECT 1},3{SELECT SLEEP(3)}
 

@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
-# Send a prompt to a running Claude Code session living inside a screen window.
-# Fire-and-forget: cls injects the prompt via `screen -X stuff` and returns
-# immediately. The target claude session continues on its own.
+# Send a prompt to a Claude Code session living inside a screen window.
 #
-# Usage:
-#   cls <sid-prefix>            "prompt"   - resolve to running claude's screen
-#   cls <screen-name>           "prompt"   - stuff into screen's current window
-#   cls <screen-name>:<window>  "prompt"   - stuff into a specific window
+# Two modes:
+#   sid-prefix:  cls <sid-prefix> "prompt"
+#     Resolves the sid to the screen + claude PID, then RESTARTS that claude
+#     session in-place: Ctrl-C, kill the PID, stuff `clr <full-sid>` into the
+#     same screen window to relaunch via --resume, wait for claude to be ready,
+#     then stuff "prompt"+CR. Robust against stuck states (compact dialog,
+#     out-of-tokens prompt, hung permission picker) because the TUI is killed.
 #
-# SID-prefix mode requires the target claude to be running and inside a screen
-# session. cls finds it via lsof on the session JSONL, then walks the process
-# tree to the SCREEN master. Prompt is delivered to that screen's current
-# window; for multi-claude screens, use the explicit <screen-name>:<window>
-# form.
+#   screen-name: cls <screen-name>[:<window>] "prompt"
+#     Plain `screen -X stuff "<prompt>\r"`. No restart, no assumptions.
+#
+# Fire-and-forget: cls returns immediately after the synchronous kill. The
+# relaunch + prompt-injection runs in a backgrounded subshell that survives
+# the parent shell exiting (trap '' HUP + disown).
 # Created by Roel Van de Paar, MariaDB (with Claude Code assistance)
 
 set -u
@@ -27,26 +29,48 @@ ARG="$1"
 shift
 PROMPT="$*"
 
-stuff_screen() {
+simple_stuff() {
+  # Synchronous single-shot stuff to a screen[:window]. Used by screen-name mode.
   local target="$1" prompt="$2"
   local sname win
   if [[ "$target" == *:* ]]; then
     sname="${target%%:*}"
     win="${target#*:}"
+    screen -S "$sname" -p "$win" -X stuff "${prompt}"$'\r'
   else
-    sname="$target"
-    win=""
-  fi
-  local payload="${prompt}"$'\r'
-  if [ -n "$win" ]; then
-    screen -S "$sname" -p "$win" -X stuff "$payload"
-  else
-    screen -S "$sname" -X stuff "$payload"
+    screen -S "$target" -X stuff "${prompt}"$'\r'
   fi
 }
 
+restart_and_send() {
+  # $1 screen name   $2 old claude PID   $3 full sid   $4 real prompt
+  # Sync: Ctrl-C + SIGTERM. Async (backgrounded): poll for exit, SIGKILL if
+  # needed, stuff `clr <sid>`+CR, wait 60s, stuff prompt+CR.
+  local sname="$1" old_pid="$2" sid="$3" prompt="$4"
+  local -a sc=(screen -S "$sname" -X stuff)
+  "${sc[@]}" $'\x03' || return 1
+  sleep 0.1
+  "${sc[@]}" $'\x03'
+  sleep 1
+  kill "$old_pid" 2>/dev/null
+  (
+    trap '' HUP
+    local i
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+      kill -0 "$old_pid" 2>/dev/null || break
+      sleep 1
+    done
+    kill -0 "$old_pid" 2>/dev/null && kill -9 "$old_pid" 2>/dev/null
+    sleep 2
+    "${sc[@]}" "clr ${sid}"$'\r'
+    sleep 60   # wait for new claude TUI to be ready for input
+    "${sc[@]}" "${prompt}"$'\r'
+  ) >/dev/null 2>&1 </dev/null &
+  disown
+}
+
 resolve_sid_to_screen() {
-  # Prints resolved screen name on stdout; nonzero exit on failure.
+  # Prints "<screen-name>|<claude-pid>|<full-sid>" on stdout; nonzero exit on failure.
   local prefix="$1"
   local jsonl_list
   jsonl_list="$(find "$PROJECTS_DIR" -maxdepth 3 -type f -name "${prefix}*.jsonl" 2>/dev/null)"
@@ -61,6 +85,8 @@ resolve_sid_to_screen() {
     return 3
   fi
   local jsonl="$jsonl_list"
+  local full_sid
+  full_sid="$(basename "$jsonl" .jsonl)"
   local pid
   pid="$(lsof -t -- "$jsonl" 2>/dev/null | head -1)"
   if [ -z "$pid" ]; then
@@ -86,19 +112,20 @@ resolve_sid_to_screen() {
     echo "cls: could not match screen pid $screen_pid in screen -ls output." >&2
     return 6
   fi
-  printf '%s\n' "$sname"
+  printf '%s|%s|%s\n' "$sname" "$pid" "$full_sid"
   return 0
 }
 
-# Try SID-prefix mode when arg looks like a UUID fragment.
+# SID-prefix mode when arg looks like a UUID fragment.
 if [[ "$ARG" =~ ^[0-9a-fA-F-]+$ ]]; then
   ARG_LC="$(printf '%s' "$ARG" | tr 'A-F' 'a-f')"
-  if sname_out="$(resolve_sid_to_screen "$ARG_LC")"; then
-    if stuff_screen "$sname_out" "$PROMPT"; then
-      echo "cls: prompt sent to screen '$sname_out' (sid $ARG_LC)."
+  if resolved="$(resolve_sid_to_screen "$ARG_LC")"; then
+    IFS='|' read -r SNAME_OUT PID_OUT FULL_SID <<<"$resolved"
+    if restart_and_send "$SNAME_OUT" "$PID_OUT" "$FULL_SID" "$PROMPT"; then
+      echo "cls: $SNAME_OUT (sid ${FULL_SID:0:8}, pid $PID_OUT): killed + clr queued; prompt fires in ~60s."
       exit 0
     fi
-    echo "cls: failed to stuff into screen '$sname_out'." >&2
+    echo "cls: failed to initiate restart on screen '$SNAME_OUT'." >&2
     exit 8
   else
     rc=$?
@@ -108,7 +135,7 @@ if [[ "$ARG" =~ ^[0-9a-fA-F-]+$ ]]; then
 fi
 
 # Screen-name (optionally :window) mode.
-if stuff_screen "$ARG" "$PROMPT"; then
+if simple_stuff "$ARG" "$PROMPT"; then
   echo "cls: prompt sent to screen '$ARG'."
   exit 0
 fi

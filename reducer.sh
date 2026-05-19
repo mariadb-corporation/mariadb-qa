@@ -1769,10 +1769,10 @@ init_empty_port(){
     [ -f "${_stale}" ] || continue
     _port=${_stale##*/}
     if [ "${_port}" -lt 13001 ] || [ "${_port}" -gt 47001 ]; then continue; fi
-    read -r _owner < "${_stale}" 2>/dev/null
+    read -r _owner 2>/dev/null < "${_stale}"
     [ -n "${_owner}" ] || continue
     kill -0 "${_owner}" 2>/dev/null && continue
-    read -r _verify < "${_stale}" 2>/dev/null
+    read -r _verify 2>/dev/null < "${_stale}"
     [ "${_owner}" = "${_verify}" ] && rm -f "${_stale}"
   done
 

@@ -11,6 +11,41 @@ export DEBUGINFOD_PROGRESS=0
 # This script (new_text_string.sh) generates a UniqueID for a given crash, assert, ASAN, UBSAN, LSAN or TSAN issue
 # It is generall executed from within a BASEDIR which has experienced a failure of any of these types
 
+# MYBUG content rule
+# ──────────────────
+# Every line written to MYBUG must be exactly one of these shapes, in
+# decreasing order of severity:
+#
+#   1. Crash (signal only):     SIGNAL|frame1|frame2|frame3|frame4
+#      e.g.  SIGSEGV|Item_func_collect::add|Item_sum::aggregator_add|...
+#
+#   2. Crash with assertion:    <assert-text>|SIGABRT|frame1|frame2|frame3|frame4
+#      e.g.  table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|...
+#
+#   3. Sanitizer finding:       SAN_PREFIX|<class>|frame1|...
+#      (emitted by san_text_string.sh: ASAN, UBSAN, LSAN, TSAN, MSAN)
+#
+#   4. Typed-prefix UID:        PREFIX|body
+#      (lowest priority — log-derived only; no core, no SAN)
+#      Emitted by this script's find_other_possible_issue_strings(),
+#      fallback_text_string.sh, or by error_log_scan.sh's uid_prefix().
+#      Prefix vocabulary covers: ASSERT, INNODB_ERROR, INNODB_WARNING,
+#      MUTEX_ERROR, MARKED_AS_CRASHED, GOT_ERROR, GOT_FATAL_ERROR,
+#      SLAVE_ERROR, MARIADBD_ERROR, MARIADB_ERROR_CODE, SERVER_ERRNO,
+#      OPENTABLE, FALLBACK, BINLOG_RECOVERY_ERROR, BINLOG_CHECKSUM_DIFF,
+#      RAW_GDB_UID, MEMNOTFREED (as GENERIC_ISSUE-DO_NOT_ADD_TO_KB_OR_KBA).
+#
+# Why the rule: downstream consumers (pquery-prep-red.sh, pquery-results.sh,
+# kb / kb.SAN substring matching, reducer TEXT replay) all rely on one of
+# these four shapes. Without it, each consumer would need its own ad-hoc parser.
+#
+# TODO: the no-core fallback path (find_other_possible_issue_strings returned
+# nothing AND fallback_text_string.sh returned nothing) emits a literal
+# "Assert: no core file found in */*core*..." line instead of one of the four
+# shapes above. pquery-prep-red.sh has a special-case grep "No .* found" to
+# detect and work around this. A clean fix would emit a typed UID like
+# NO_BUG_INFO|no-core.
+
 # Exit codes in this script are significant; used by reducer.sh and potentially other scripts
 # First option to this script can be;
 # ./new_text_string.sh 'FRAMESONLY'    # Used in automation, ref mass_bug_report.sh
