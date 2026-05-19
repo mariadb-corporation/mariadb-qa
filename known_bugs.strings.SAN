@@ -28,6 +28,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying zero offset to null pointer|storage/mroonga/vendor/groonga/lib/db.c|grn_db_check_name|grn_table_create_with_max_n_subrecs|grn_table_create|grn_ii_builder_create_lexicon   ## MDEV-39671
 ASAN|heap-buffer-overflow|include/my_byteorder.h|uint2korr|dynamic_column_update_many_fmt|Item_func_dyncol_add::val_str|Item::save_str_in_field                                ## MDEV-39667
 ASAN|heap-buffer-overflow|mysys/ma_dyncol.c|dynamic_column_update_many_fmt|Item_func_dyncol_add::val_str|Item::save_str_in_field|Item::save_in_field                           ## MDEV-39667
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_blockrec.c|write_full_pages|write_block_record|allocate_and_write_block_record|_ma_write_init_block_record  ## MDEV-39562
