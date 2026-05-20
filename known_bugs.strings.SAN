@@ -28,6 +28,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|negation of -X cannot be represented in type 'longlong' (aka 'long long'); cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoll_8bit|charset_info_st::strntoll|Value_source::Converter_strntoll::Converter_strntoll|Value_source::Converter_strntoll_with_warn::Converter_strntoll_with_warn                                                            ## MDEV-39690
 ASAN|heap-use-after-free|crtstuff.c|MemcmpInterceptorCommon|bcmp|dfield_data_is_binary_equal|row_upd_build_difference_binary                                                   ## MDEV-39679
 UBSAN|applying zero offset to null pointer|storage/mroonga/vendor/groonga/lib/db.c|grn_db_check_name|grn_table_create_with_max_n_subrecs|grn_table_create|grn_ii_builder_create_lexicon   ## MDEV-39671
 ASAN|heap-buffer-overflow|include/my_byteorder.h|uint2korr|dynamic_column_update_many_fmt|Item_func_dyncol_add::val_str|Item::save_str_in_field                                ## MDEV-39667
