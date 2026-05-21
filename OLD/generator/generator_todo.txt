@@ -1,0 +1,255 @@
+================================================================================
+generator_todo.txt — Sequenced / chained-equivalent SQL coverage (parked)
+================================================================================
+
+PURPOSE
+-------
+This file holds chained-SQL-equivalent dispatcher cases that were prototyped
+in generator.sh but parked before activation. The cases produce on-server
+sequences (multi-statement procedure / trigger / event bodies, BEGIN NOT ATOMIC
+compound blocks, XA cycles inside stored programs) while each generator output
+line is a single CREATE / CALL / ALTER statement. They are preserved here so
+they can be reactivated cleanly once the prerequisites in "REACTIVATION" below
+are satisfied.
+
+WHY THESE WERE NOT INCLUDED AT THIS POINT
+-----------------------------------------
+The downstream consumer (pquery / reducer.sh) feeds SQL one statement at a
+time. In our installed pquery variant the statement boundary is the semicolon
+("`;`") character, including semicolons that appear inside the body of a
+CREATE PROCEDURE, CREATE TRIGGER, CREATE EVENT, or BEGIN NOT ATOMIC compound
+block. As a result, a generator line such as:
+
+    CREATE OR REPLACE PROCEDURE p_seq_savepoint() BEGIN
+      SAVEPOINT sp1; INSERT INTO t1 (c1) VALUES (1);
+      SAVEPOINT sp2; ROLLBACK TO sp2; RELEASE SAVEPOINT sp1;
+    END;
+
+is fragmented by pquery into seven invalid sub-statements (the first being
+"CREATE OR REPLACE PROCEDURE p_seq_savepoint() BEGIN SAVEPOINT sp1"), each of
+which fails parsing with ERROR 1064. The mariadb client supports the DELIMITER
+directive to address this; pquery does not. Activating these cases against the
+current pquery would produce a high (and largely uninformative) ERROR 1064
+volume, mask real grammar issues in PREPARE-validation runs, and write
+unparseable trial SQL to disk.
+
+The CALL-only cases (4197, 4202) are by themselves single-statement and would
+parse cleanly, but they reference procedure / trigger / event objects that the
+CREATE cases above are responsible for installing. Without the CREATEs, the
+CALLs raise ERROR 1305 (PROCEDURE does not exist) or trigger no side-effect.
+Shipping the CALLs without the CREATEs adds noise without adding coverage.
+
+Net effect: the entire cluster (4196-4203) is parked together until a workable
+preload path exists.
+
+PROPOSED FUTURE SOLUTIONS
+-------------------------
+Listed in increasing complexity / decreasing operational simplicity.
+
+  Solution A — Preload via mariadb client (recommended)
+    Maintain a static `seq_init.sql` containing the CREATE PROCEDURE /
+    TRIGGER / EVENT bodies that cases 4196 / 4198 / 4199 / 4201 would emit.
+    Load it once per trial via the mariadb client (which honours DELIMITER):
+
+        mariadb -u… -S… test < seq_init.sql
+
+    Wire this into pquery-run.sh either as:
+      * a thin wrapper invoked between mysqld start and the first pquery
+        thread launch, or
+      * a one-line addition to MYINIT/MYEXTRA that sources the file.
+    Then activate ONLY the CALL / exercise / toggle cases (4197, 4202) in
+    generator.sh and add the SEQUENCED bucket back.
+    Pros: clean separation; supports the full multi-statement bodies;
+    no per-trial overhead; single static asset to maintain.
+    Cons: one new shell-level setup step and one new tracked artefact.
+
+  Solution B — Single-statement bodies only
+    Rewrite every CREATE PROCEDURE / TRIGGER / EVENT below with a single-
+    statement body (no internal semicolons). Examples:
+
+        CREATE OR REPLACE PROCEDURE p_x() INSERT INTO t1 SELECT … FROM t1 LIMIT 5
+        CREATE OR REPLACE TRIGGER tr_x BEFORE INSERT ON t1
+            FOR EACH ROW SET NEW.c1 = COALESCE(NEW.c1, 0)
+        CREATE OR REPLACE EVENT e_x ON SCHEDULE EVERY 1 HOUR
+            DO UPDATE t1 SET c1 = c1 + 1 WHERE c1 < 10 LIMIT 5
+
+    Pros: works with current pquery as-is; no preload step.
+    Cons: each procedure / trigger / event body collapses to a single
+    statement, which removes essentially all of the chained-outcome value
+    that motivated this cluster in the first place. The CALL cases are
+    still useful for stored-routine dispatch coverage but stop adding
+    sequence-level state changes.
+
+  Solution C — Patch pquery to honour DELIMITER (or a `--delim-aware` flag)
+    The cleanest long-term answer; pquery becomes capable of consuming the
+    output as-is, no preload required. Effort lives in C++ rather than the
+    framework. Out of scope for this generator change but flagged for the
+    pquery roadmap.
+
+  Solution D — Anonymous compound blocks only (4200, 4203 subset)
+    BEGIN NOT ATOMIC … END is in principle a single parser statement, but
+    pquery's `;`-splitting truncates it the same way as procedure bodies.
+    Without DELIMITER awareness this cannot be reactivated either, even
+    though it is the syntactically simplest form.
+
+REACTIVATION CHECKLIST
+----------------------
+When Solution A, B, or C is in place:
+  1. Restore the cases below into generator.sh just before the outer
+     dispatcher catch-all line (`    *) query;;`).
+  2. Bump the dispatcher modulus to cover the new max case-number (4203
+     for the full set; 4197 + 4202 for the CALL-only / Solution-A subset).
+  3. Add the SEQUENCED entry back to categories.txt:
+        SEQUENCED      | 4196-4203
+     (or the trimmed bucket: `SEQUENCED      | 4197 4202`).
+  4. Smoke-test with a SEQUENCED-skewed run; expect every case to fire
+     and PREPARE-validate without ERROR 1064.
+
+================================================================================
+PARKED DISPATCHER CASES (preserve verbatim)
+================================================================================
+
+# Case 4196 — CREATE OR REPLACE PROCEDURE with sequenced body
+# Single CREATE statement; body internally chains.
+4196) case $(($RANDOM % 14 + 1)) in
+        1) REPLY="CREATE OR REPLACE PROCEDURE p_seq_savepoint() BEGIN SAVEPOINT sp1; INSERT INTO t1 (c1) VALUES (1); SAVEPOINT sp2; INSERT INTO t1 (c1) VALUES (2); ROLLBACK TO sp2; RELEASE SAVEPOINT sp1; END";;
+        2) REPLY="CREATE OR REPLACE PROCEDURE p_seq_trx() BEGIN START TRANSACTION; INSERT INTO t1 (c1) VALUES (10); UPDATE t1 SET c1=c1+1 WHERE c1=10 LIMIT 1; COMMIT; END";;
+        3) REPLY="CREATE OR REPLACE PROCEDURE p_seq_rollback() BEGIN START TRANSACTION; INSERT INTO t2 (c1) VALUES (100); DELETE FROM t2 WHERE c1=100 LIMIT 1; ROLLBACK; END";;
+        4) REPLY="CREATE OR REPLACE PROCEDURE p_seq_lock_dml() BEGIN LOCK TABLES t1 WRITE; INSERT INTO t1 (c1) VALUES (5); UPDATE t1 SET c1=c1+1 WHERE c1=5; UNLOCK TABLES; END";;
+        5) REPLY="CREATE OR REPLACE PROCEDURE p_seq_multi_dml() BEGIN INSERT INTO t1 (c1) VALUES (1); INSERT INTO t2 (c1) VALUES (2); INSERT INTO t3 (c1) VALUES (3); END";;
+        6) REPLY="CREATE OR REPLACE PROCEDURE p_seq_loop() BEGIN DECLARE i INT DEFAULT 0; WHILE i < 5 DO INSERT INTO t1 (c1) VALUES (i); SET i = i + 1; END WHILE; END";;
+        7) REPLY="CREATE OR REPLACE PROCEDURE p_seq_handler() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; END; START TRANSACTION; INSERT INTO t1 (c1) VALUES (99); UPDATE t2 SET c1=c1+1 WHERE c1=99; COMMIT; END";;
+        8) REPLY="CREATE OR REPLACE PROCEDURE p_seq_cursor() BEGIN DECLARE done INT DEFAULT 0; DECLARE v INT; DECLARE cur CURSOR FOR SELECT c1 FROM t1 LIMIT 10; DECLARE CONTINUE HANDLER FOR NOT FOUND SET done=1; OPEN cur; FETCH cur INTO v; CLOSE cur; END";;
+        9) REPLY="CREATE OR REPLACE PROCEDURE p_seq_savepoint_chain() BEGIN START TRANSACTION; SAVEPOINT a; INSERT INTO t1 (c1) VALUES (1); SAVEPOINT b; INSERT INTO t1 (c1) VALUES (2); SAVEPOINT c; ROLLBACK TO b; RELEASE SAVEPOINT a; COMMIT; END";;
+       10) REPLY="CREATE OR REPLACE PROCEDURE p_seq_select_into() BEGIN DECLARE v INT; START TRANSACTION; SELECT c1 INTO v FROM t1 ORDER BY c1 LIMIT 1; UPDATE t1 SET c1=v+1 WHERE c1=v; COMMIT; END";;
+       11) REPLY="CREATE OR REPLACE PROCEDURE p_seq_signal_diag() BEGIN DECLARE EXIT HANDLER FOR 1062 BEGIN GET DIAGNOSTICS CONDITION 1 @sqlstate = RETURNED_SQLSTATE; SELECT @sqlstate; END; INSERT INTO t1 (c1) VALUES (1); INSERT INTO t1 (c1) VALUES (1); END";;
+       12) REPLY="CREATE OR REPLACE PROCEDURE p_seq_isolation() BEGIN SET TRANSACTION ISOLATION LEVEL READ COMMITTED; START TRANSACTION; SELECT COUNT(*) FROM t1; INSERT INTO t1 (c1) VALUES (42); COMMIT; END";;
+       13) REPLY="CREATE OR REPLACE PROCEDURE p_seq_temp() BEGIN CREATE OR REPLACE TEMPORARY TABLE _tmp_seq (id INT) ENGINE=MEMORY; INSERT INTO _tmp_seq (id) SELECT c1 FROM t1 LIMIT 5; SELECT COUNT(*) FROM _tmp_seq; DROP TEMPORARY TABLE _tmp_seq; END";;
+       14) REPLY="CREATE OR REPLACE PROCEDURE p_seq_repeat() BEGIN DECLARE i INT DEFAULT 0; REPEAT INSERT INTO t1 (c1) VALUES (i); SET i = i + 1; UNTIL i >= 3 END REPEAT; END";;
+        *) >&2 echo "[gen-assert] seq procedure"; REPLY="Assert: invalid random case selection in seq procedure case";;
+      esac;;
+
+# Case 4197 — CALL pre-defined procedures (one-line statements)
+# Safe under pquery as a single statement, but requires Solution A so the
+# referenced procedures exist on the server.
+4197) case $(($RANDOM % 14 + 1)) in
+        1) REPLY="CALL p_seq_savepoint()";;
+        2) REPLY="CALL p_seq_trx()";;
+        3) REPLY="CALL p_seq_rollback()";;
+        4) REPLY="CALL p_seq_lock_dml()";;
+        5) REPLY="CALL p_seq_multi_dml()";;
+        6) REPLY="CALL p_seq_loop()";;
+        7) REPLY="CALL p_seq_handler()";;
+        8) REPLY="CALL p_seq_cursor()";;
+        9) REPLY="CALL p_seq_savepoint_chain()";;
+       10) REPLY="CALL p_seq_select_into()";;
+       11) REPLY="CALL p_seq_signal_diag()";;
+       12) REPLY="CALL p_seq_isolation()";;
+       13) REPLY="CALL p_seq_temp()";;
+       14) REPLY="CALL p_seq_repeat()";;
+        *) >&2 echo "[gen-assert] seq call"; REPLY="Assert: invalid random case selection in seq call case";;
+      esac;;
+
+# Case 4198 — CREATE OR REPLACE TRIGGER with sequenced body
+# Fires on subsequent DML against the registered table.
+4198) case $(($RANDOM % 8 + 1)) in
+        1) REPLY="CREATE OR REPLACE TRIGGER tr_seq_audit BEFORE INSERT ON t1 FOR EACH ROW BEGIN SET @inserted = NEW.c1; INSERT INTO t2 (c1) VALUES (NEW.c1 + 1000); END";;
+        2) REPLY="CREATE OR REPLACE TRIGGER tr_seq_log AFTER UPDATE ON t1 FOR EACH ROW BEGIN INSERT INTO t3 (c1, c2, c3) VALUES (OLD.c1, NEW.c1, NEW.c1 - OLD.c1); END";;
+        3) REPLY="CREATE OR REPLACE TRIGGER tr_seq_chain BEFORE DELETE ON t1 FOR EACH ROW BEGIN INSERT INTO t2 (c1) VALUES (OLD.c1); UPDATE t3 SET c1 = c1 + 1 WHERE c1 = OLD.c1; END";;
+        4) REPLY="CREATE OR REPLACE TRIGGER tr_seq_cond BEFORE INSERT ON t2 FOR EACH ROW BEGIN IF NEW.c1 < 0 THEN SET NEW.c1 = 0; END IF; IF NEW.c1 > 1000 THEN SET NEW.c1 = 1000; END IF; END";;
+        5) REPLY="CREATE OR REPLACE TRIGGER tr_seq_signal BEFORE UPDATE ON t2 FOR EACH ROW BEGIN IF NEW.c1 = OLD.c1 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'no-op update'; END IF; END";;
+        6) REPLY="CREATE OR REPLACE TRIGGER tr_seq_handler AFTER INSERT ON t3 FOR EACH ROW BEGIN DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN END; INSERT IGNORE INTO t1 (c1) VALUES (NEW.c1); END";;
+        7) REPLY="CREATE OR REPLACE TRIGGER tr_seq_set BEFORE INSERT ON t3 FOR EACH ROW SET NEW.c1 = COALESCE(NEW.c1, 0), NEW.c2 = COALESCE(NEW.c2, NEW.c1 * 2)";;
+        8) REPLY="CREATE OR REPLACE TRIGGER tr_seq_multi AFTER UPDATE ON t3 FOR EACH ROW BEGIN INSERT INTO t1 (c1) VALUES (NEW.c1); INSERT INTO t2 (c1) VALUES (OLD.c1); END";;
+        *) >&2 echo "[gen-assert] seq trigger"; REPLY="Assert: invalid random case selection in seq trigger case";;
+      esac;;
+
+# Case 4199 — CREATE OR REPLACE EVENT with sequenced body
+# Fires per schedule when SHEDULING_ENABLED; the CREATE itself is one statement.
+4199) case $(($RANDOM % 6 + 1)) in
+        1) REPLY="CREATE OR REPLACE EVENT e_seq_clean ON SCHEDULE EVERY 1 HOUR DISABLE DO BEGIN DELETE FROM t1 WHERE c1 < -1000 LIMIT 100; OPTIMIZE TABLE t1; END";;
+        2) REPLY="CREATE OR REPLACE EVENT e_seq_archive ON SCHEDULE EVERY 30 MINUTE DISABLE DO BEGIN INSERT INTO t2 (c1, c2, c3) SELECT c1, c2, c3 FROM t1 WHERE c1 > 9000 LIMIT 50; DELETE FROM t1 WHERE c1 > 9000 LIMIT 50; END";;
+        3) REPLY="CREATE OR REPLACE EVENT e_seq_stats ON SCHEDULE EVERY 15 MINUTE DISABLE DO BEGIN ANALYZE TABLE t1; ANALYZE TABLE t2; ANALYZE TABLE t3; END";;
+        4) REPLY="CREATE OR REPLACE EVENT e_seq_rotate ON SCHEDULE AT NOW() + INTERVAL 1 DAY DISABLE DO BEGIN TRUNCATE TABLE t3; INSERT INTO t3 (c1) SELECT c1 FROM t1 LIMIT 100; END";;
+        5) REPLY="CREATE OR REPLACE EVENT e_seq_loop ON SCHEDULE EVERY 1 MINUTE DISABLE DO BEGIN DECLARE i INT DEFAULT 0; WHILE i < 3 DO INSERT INTO t1 (c1) VALUES (-i); SET i = i + 1; END WHILE; END";;
+        6) REPLY="CREATE OR REPLACE EVENT e_seq_cond ON SCHEDULE EVERY 5 MINUTE DISABLE DO BEGIN IF (SELECT COUNT(*) FROM t1) > 10000 THEN DELETE FROM t1 ORDER BY c1 LIMIT 1000; END IF; END";;
+        *) >&2 echo "[gen-assert] seq event"; REPLY="Assert: invalid random case selection in seq event case";;
+      esac;;
+
+# Case 4200 — BEGIN NOT ATOMIC anonymous compound block
+# Single parser statement carrying an internal sequence at top level.
+4200) case $(($RANDOM % 6 + 1)) in
+        1) REPLY="BEGIN NOT ATOMIC INSERT INTO t1 (c1) VALUES (1); INSERT INTO t1 (c1) VALUES (2); SELECT COUNT(*) FROM t1 WHERE c1 IN (1,2); END";;
+        2) REPLY="BEGIN NOT ATOMIC DECLARE i INT DEFAULT 0; WHILE i < 3 DO INSERT INTO t2 (c1) VALUES (i); SET i = i + 1; END WHILE; END";;
+        3) REPLY="BEGIN NOT ATOMIC SAVEPOINT s1; INSERT INTO t3 (c1) VALUES (5); ROLLBACK TO s1; END";;
+        4) REPLY="BEGIN NOT ATOMIC DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; END; START TRANSACTION; INSERT INTO t1 (c1) VALUES (50); UPDATE t1 SET c1=c1+1 WHERE c1=50; COMMIT; END";;
+        5) REPLY="BEGIN NOT ATOMIC DECLARE v INT; SELECT MAX(c1) INTO v FROM t1; INSERT INTO t1 (c1) VALUES (COALESCE(v,0)+1); END";;
+        6) REPLY="BEGIN NOT ATOMIC IF (SELECT COUNT(*) FROM t1) > 0 THEN DELETE FROM t1 ORDER BY c1 LIMIT 1; ELSE INSERT INTO t1 (c1) VALUES (0); END IF; END";;
+        *) >&2 echo "[gen-assert] compound stmt"; REPLY="Assert: invalid random case selection in compound stmt case";;
+      esac;;
+
+# Case 4201 — Advanced sequenced procedures (XA cycles + handler-guarded chains)
+# Single CREATE statement containing XA in the body (MariaDB 10.5+).
+4201) case $(($RANDOM % 12 + 1)) in
+        1) xid; local _x=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE p_xa_cycle() BEGIN XA START ${_x}; INSERT INTO t1 (c1) VALUES (1); XA END ${_x}; XA PREPARE ${_x}; XA COMMIT ${_x}; END";;
+        2) xid; local _x=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE p_xa_rollback() BEGIN XA START ${_x}; INSERT INTO t2 (c1) VALUES (2); XA END ${_x}; XA PREPARE ${_x}; XA ROLLBACK ${_x}; END";;
+        3) xid; local _x=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE p_xa_one_phase() BEGIN XA START ${_x}; UPDATE t1 SET c1=c1+1 WHERE c1<10 LIMIT 5; XA END ${_x}; XA COMMIT ${_x} ONE PHASE; END";;
+        4) xid; local _x=$REPLY; xid; local _x2=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE p_xa_pair() BEGIN XA START ${_x}; INSERT INTO t1 (c1) VALUES (10); XA END ${_x}; XA PREPARE ${_x}; XA COMMIT ${_x}; XA START ${_x2}; INSERT INTO t1 (c1) VALUES (20); XA END ${_x2}; XA COMMIT ${_x2} ONE PHASE; END";;
+        5) REPLY="CREATE OR REPLACE PROCEDURE p_xa_recover() BEGIN XA RECOVER; END";;
+        6) REPLY="CREATE OR REPLACE PROCEDURE p_seq_savepoint_deep() BEGIN START TRANSACTION; SAVEPOINT a; INSERT INTO t1 (c1) VALUES (1); SAVEPOINT b; INSERT INTO t1 (c1) VALUES (2); SAVEPOINT c; INSERT INTO t1 (c1) VALUES (3); ROLLBACK TO c; ROLLBACK TO b; RELEASE SAVEPOINT a; COMMIT; END";;
+        7) REPLY="CREATE OR REPLACE PROCEDURE p_seq_handler_chain() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; INSERT INTO t3 (c1) VALUES (-1); END; START TRANSACTION; INSERT INTO t1 (c1) VALUES (1); INSERT INTO t2 (c1) VALUES (2); INSERT INTO t3 (c1) VALUES (3); COMMIT; END";;
+        8) REPLY="CREATE OR REPLACE PROCEDURE p_seq_iso_repeat() BEGIN SET TRANSACTION ISOLATION LEVEL REPEATABLE READ; START TRANSACTION; INSERT INTO t1 (c1) VALUES (100); SELECT COUNT(*) FROM t1 WHERE c1=100; UPDATE t1 SET c1=101 WHERE c1=100; COMMIT; END";;
+        9) REPLY="CREATE OR REPLACE PROCEDURE p_seq_iso_ser() BEGIN SET TRANSACTION ISOLATION LEVEL SERIALIZABLE; START TRANSACTION; SELECT COUNT(*) FROM t1; INSERT INTO t1 (c1) VALUES (200); COMMIT; END";;
+       10) REPLY="CREATE OR REPLACE PROCEDURE p_seq_release_chain() BEGIN START TRANSACTION; SAVEPOINT s1; INSERT INTO t1 (c1) VALUES (1); SAVEPOINT s2; UPDATE t1 SET c1=c1+1 WHERE c1=1; RELEASE SAVEPOINT s2; RELEASE SAVEPOINT s1; COMMIT; END";;
+       11) REPLY="CREATE OR REPLACE PROCEDURE p_seq_get_diag_chain() BEGIN DECLARE CONTINUE HANDLER FOR SQLWARNING BEGIN GET DIAGNOSTICS @cnt = NUMBER; END; START TRANSACTION; INSERT INTO t1 (c1) VALUES (1); UPDATE t1 SET c1 = c1 + 1 WHERE c1 = 1; COMMIT; END";;
+       12) REPLY="CREATE OR REPLACE PROCEDURE p_seq_temp_chain() BEGIN CREATE OR REPLACE TEMPORARY TABLE _tmp_chain (c1 INT, c2 INT) ENGINE=MEMORY; INSERT INTO _tmp_chain SELECT c1, c2 FROM t1 LIMIT 10; UPDATE _tmp_chain SET c2 = c1 * 2; DELETE FROM _tmp_chain WHERE c1 IS NULL; DROP TEMPORARY TABLE _tmp_chain; END";;
+        *) >&2 echo "[gen-assert] advanced seq procedure"; REPLY="Assert: invalid random case selection in advanced seq procedure case";;
+      esac;;
+
+# Case 4202 — Actual exercise of pre-created procs / triggers / events
+# CALL invocations + trigger-firing DML + event toggles. Each emitted REPLY
+# is a single statement, but presupposes the CREATEs above were preloaded.
+4202) case $(($RANDOM % 16 + 1)) in
+        1) REPLY="CALL p_xa_cycle()";;
+        2) REPLY="CALL p_xa_rollback()";;
+        3) REPLY="CALL p_xa_one_phase()";;
+        4) REPLY="CALL p_xa_pair()";;
+        5) REPLY="CALL p_xa_recover()";;
+        6) REPLY="CALL p_seq_savepoint_deep()";;
+        7) REPLY="CALL p_seq_handler_chain()";;
+        8) REPLY="CALL p_seq_iso_repeat()";;
+        9) REPLY="CALL p_seq_iso_ser()";;
+       10) REPLY="CALL p_seq_release_chain()";;
+       11) REPLY="CALL p_seq_get_diag_chain()";;
+       12) REPLY="CALL p_seq_temp_chain()";;
+       13) REPLY="INSERT INTO t1 (c1) VALUES ($((RANDOM % 1000)))";;  # Fires any tr_seq_* trigger registered on t1
+       14) REPLY="UPDATE t1 SET c1 = c1 + 1 WHERE c1 BETWEEN 0 AND 100 LIMIT $((RANDOM % 5 + 1))";;  # Fires AFTER UPDATE triggers on t1
+       15) REPLY="DELETE FROM t1 WHERE c1 = (SELECT MIN(c1) FROM (SELECT c1 FROM t1) AS dt) LIMIT 1";;  # Fires BEFORE DELETE triggers on t1
+       16) case $(($RANDOM % 8 + 1)) in
+             1) REPLY="ALTER EVENT e_seq_clean ENABLE";;
+             2) REPLY="ALTER EVENT e_seq_archive DISABLE";;
+             3) REPLY="ALTER EVENT e_seq_stats ON SCHEDULE EVERY 10 MINUTE";;
+             4) REPLY="ALTER EVENT e_seq_rotate ON COMPLETION PRESERVE";;
+             5) REPLY="ALTER EVENT e_seq_loop COMMENT 'rotated'";;
+             6) REPLY="SET GLOBAL event_scheduler='ON'";;
+             7) REPLY="SET GLOBAL event_scheduler='OFF'";;
+             8) REPLY="SET GLOBAL event_scheduler='DISABLED'";;
+           esac;;
+        *) >&2 echo "[gen-assert] sequenced exercise"; REPLY="Assert: invalid random case selection in sequenced exercise case";;
+      esac;;
+
+# Case 4203 — BEGIN NOT ATOMIC anonymous compound with XA / advanced chains
+# Top-level single statement; XA inside compound is supported in MariaDB 10.5+.
+4203) case $(($RANDOM % 6 + 1)) in
+        1) xid; local _x=$REPLY; REPLY="BEGIN NOT ATOMIC XA START ${_x}; INSERT INTO t1 (c1) VALUES (1); XA END ${_x}; XA PREPARE ${_x}; XA COMMIT ${_x}; END";;
+        2) xid; local _x=$REPLY; REPLY="BEGIN NOT ATOMIC XA START ${_x}; UPDATE t2 SET c1=c1+1 WHERE c1<5 LIMIT 2; XA END ${_x}; XA COMMIT ${_x} ONE PHASE; END";;
+        3) xid; local _x=$REPLY; REPLY="BEGIN NOT ATOMIC XA START ${_x}; INSERT INTO t3 (c1) VALUES (3); XA END ${_x}; XA PREPARE ${_x}; XA ROLLBACK ${_x}; END";;
+        4) REPLY="BEGIN NOT ATOMIC DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; END; SET TRANSACTION ISOLATION LEVEL READ COMMITTED; START TRANSACTION; INSERT INTO t1 (c1) VALUES (1); SELECT COUNT(*) FROM t1; COMMIT; END";;
+        5) REPLY="BEGIN NOT ATOMIC START TRANSACTION; SAVEPOINT a; INSERT INTO t2 (c1) VALUES (1); SAVEPOINT b; UPDATE t2 SET c1=2 WHERE c1=1; ROLLBACK TO a; COMMIT; END";;
+        6) REPLY="BEGIN NOT ATOMIC DECLARE done INT DEFAULT 0; DECLARE v INT; DECLARE cur CURSOR FOR SELECT c1 FROM t1 LIMIT 5; DECLARE CONTINUE HANDLER FOR NOT FOUND SET done=1; OPEN cur; FETCH cur INTO v; INSERT INTO t2 (c1) VALUES (v); CLOSE cur; END";;
+        *) >&2 echo "[gen-assert] compound xa"; REPLY="Assert: invalid random case selection in compound xa case";;
+      esac;;
+
+================================================================================
+END
+================================================================================

@@ -39,12 +39,29 @@ export DEBUGINFOD_PROGRESS=0
 # kb / kb.SAN substring matching, reducer TEXT replay) all rely on one of
 # these four shapes. Without it, each consumer would need its own ad-hoc parser.
 #
+# Core priority rule
+# ──────────────────
+# When a core file is present, the UID is ALWAYS derived from gdb on the core
+# (shape 1 or 2). The "Assertion ... failed" line in the error log is folded
+# INTO shape 2 as the leading <assert-text>, never emitted alone as
+# `ASSERT|<text>`. The bare `ASSERT|<text>` form (shape 4) is reserved for the
+# no-core path: an assert that aborted the server without dumping a core
+# typically lands as the final line of the error log — hence
+# error_log_scan.sh's LASTLINE mode covers the same signal. The no-core flow
+# below (find_other_possible_issue_strings) extracts this form when no other
+# typed prefix matches and no core was found. error_log_scan.sh also honours
+# EXCLUDE_ASSERT=1 (set by consumers when nts already produced a frame-based
+# UID) so the error-log ASSERT shadow does not become the reducer TEXT when a
+# core-derived UID exists.
+#
 # TODO: the no-core fallback path (find_other_possible_issue_strings returned
 # nothing AND fallback_text_string.sh returned nothing) emits a literal
 # "Assert: no core file found in */*core*..." line instead of one of the four
 # shapes above. pquery-prep-red.sh has a special-case grep "No .* found" to
 # detect and work around this. A clean fix would emit a typed UID like
-# NO_BUG_INFO|no-core.
+# NO_BUG_INFO|no-core. (With the ASSERT|<text> branch in
+# find_other_possible_issue_strings, asserts-without-core no longer hit this
+# literal-string path; only true no-signal cases do.)
 
 # Exit codes in this script are significant; used by reducer.sh and potentially other scripts
 # First option to this script can be;
@@ -326,6 +343,14 @@ find_other_possible_issue_strings(){
     fi
   fi
   WRONGMUTEXUSAGE=
+  # GLIBC|... — glibc heap-corruption / double-free / munmap_chunk family. Tier-3 severity (same band as MUTEX_ERROR). Mirrors error_log_scan.sh uid_prefix line 181: both line-start markers (modern glibc) and the older "*** glibc detected" / "*** Error in `" preludes are accepted.
+  GLIBC="$(grep --binary-files=text -hEo '^(corrupted|malloc\(|free\(|double free|munmap_chunk).*|\*\*\* (glibc detected|Error in `).*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
+  if [ ! -z "${GLIBC}" ]; then
+    TEXT="GLIBC|${GLIBC}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  GLIBC=
   OPENTABLE="$(grep -hio "OpenTable:.*" ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g")"
   if [ ! -z "${OPENTABLE}" ]; then
     TEXT="OPENTABLE|${OPENTABLE}"
@@ -376,6 +401,18 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MARKEDASCRASHED=
+  # [Warning] InnoDB: "Record in index ... was not found on rollback/update: TUPLE ... at: (COMPACT )?RECORD" — paired emission with the [ERROR] update variant, same logical event. Promoted to INNODB_ERROR so MYBUG (nts) agrees with error_log_scan.sh's uid_prefix rollback-fold (els line 142-148). All 4 body variants (rollback/update × COMPACT/non-COMPACT) fold to the same 4 normalised UIDs that the INNODBERROR sed pipeline below produces for the [ERROR] case. Must be checked BEFORE MARIADBD_ERROR (line 432) so an "Out of sort memory" line co-emitted in the same log does not win UID assignment.
+  INNODBWARNROLLBACK="$(grep -hio '\[Warning\] InnoDB: Record in index.*was not found on \(update\|rollback, trying to insert\): TUPLE.*at: \(COMPACT \)\?RECORD.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|.*\[Warning\] InnoDB: ||')"
+  if [ ! -z "${INNODBWARNROLLBACK}" ]; then
+    TEXT="INNODB_ERROR|$(echo "${INNODBWARNROLLBACK}" | sed \
+      -e 's|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on update: TUPLE Z at: COMPACT RECORD|' \
+      -e 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: COMPACT RECORD|' \
+      -e 's|Record in index.*of table.*was not found on update: TUPLE.*at: RECORD(.*|Record in index X of table Y was not found on update: TUPLE Z at: RECORD|' \
+      -e 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: RECORD(.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: RECORD|')"
+    echo "${TEXT}"
+    exit 0
+  fi
+  INNODBWARNROLLBACK=
   INNODBERROR="$(grep -hio 'ERROR\] InnoDB.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|ERROR\] InnoDB[: ]*||' | sed 's|table.*index.*stat[^:]\+|table X index Y stat Z|;s|User stopword table.*does not exist|User stopword table X does not exist|;s|\.$||')"
   if [ ! -z "${INNODBERROR}" ]; then
     TEXT="INNODB_ERROR|${INNODBERROR}"
@@ -405,6 +442,30 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   INNODBERROR=
+  # MYSQL_HA_READ|... — [ERROR] mysql_ha_read: ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 154.
+  MYSQL_HA_READ="$(grep -hio '\[ERROR\] mysql_ha_read: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] mysql_ha_read: ||')"
+  if [ ! -z "${MYSQL_HA_READ}" ]; then
+    TEXT="MYSQL_HA_READ|${MYSQL_HA_READ}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  MYSQL_HA_READ=
+  # ROCKSDB_ERROR|... — [ERROR] RocksDB: ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 171.
+  ROCKSDB_ERROR="$(grep -hio '\[ERROR\] RocksDB: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] RocksDB: |RocksDB: |')"
+  if [ ! -z "${ROCKSDB_ERROR}" ]; then
+    TEXT="ROCKSDB_ERROR|${ROCKSDB_ERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  ROCKSDB_ERROR=
+  # CHECKTABLE|... — [ERROR] CHECKTABLE ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 172.
+  CHECKTABLE_E="$(grep -hio '\[ERROR\] CHECKTABLE .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] CHECKTABLE |CHECKTABLE |')"
+  if [ ! -z "${CHECKTABLE_E}" ]; then
+    TEXT="CHECKTABLE|${CHECKTABLE_E}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  CHECKTABLE_E=
   MDERRORCODE="$(grep -hio 'MariaDB error code: [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
   if [ ! -z "${MDERRORCODE}" ]; then
     TEXT="MARIADB_ERROR_CODE|${MDERRORCODE}"
@@ -421,6 +482,14 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MDBDERROR=
+  # MARIADBD_ERROR|Table ... — [ERROR] Table ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 173 (mapped to MARIADBD_ERROR there, same here).
+  MDBD_TABLE="$(grep -hio '\[ERROR\] Table .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] Table |Table |')"
+  if [ ! -z "${MDBD_TABLE}" ]; then
+    TEXT="MARIADBD_ERROR|${MDBD_TABLE}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  MDBD_TABLE=
   SERVER_ERRNO="$(grep -hio 'server_errno: [0-9]\+' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
   if [ ! -z "${SERVER_ERRNO}" ]; then
     TEXT="SERVER_ERRNO|${SERVER_ERRNO}"
@@ -442,13 +511,38 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   SLAVE_ERROR2=
-  INNODBWARNING="$(grep -hio '\[Warning\] InnoDB: Record in index.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|.*\[Warning\] InnoDB: ||' | sed 's|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: COMPACT RECORD|')"
-  if [ ! -z "${INNODBWARNING}" ]; then
-    TEXT="INNODB_WARNING|${INNODBWARNING}"
+  # Tier-5 fallback — delegate to error_log_scan.sh `top` for any line that the
+  # rules above did NOT catch. Covers INNODB_WARNING (other variants),
+  # SLAVE_WARNING, WARNING_ABORTED, INNODB_NOTE, plus any future prefix added to
+  # error_log_scan.sh uid_prefix(). Using els here (rather than per-rule mirrors)
+  # avoids false-positives on benign startup logs: els REGEX_ERRORS_SCAN + FILTER
+  # gating only lets significant lines through. EXCLUDE_ASSERT=1 suppresses the
+  # log-derived ASSERT shadow so the ASSERT_LOG branch below remains the sole
+  # source of the no-core ASSERT|<text> UID.
+  ELS_UID="$(EXCLUDE_ASSERT=1 ${SCRIPT_PWD}/error_log_scan.sh top ${ERROR_LOGS} 2>/dev/null | head -n1)"
+  if [ ! -z "${ELS_UID}" ]; then
+    echo "${ELS_UID}"
+    exit 0
+  fi
+  ELS_UID=
+  # ASSERT|<text> — emitted ONLY in the no-core path (this function is only
+  # called from the `if [ -z "${LATEST_CORE}" ]` branch). Per the "Core priority
+  # rule" at the top of this script: when a core exists, the assertion line is
+  # folded into shape 2 (<assert-text>|SIGABRT|frame1..4) by the main gdb path
+  # below — never as a standalone ASSERT|. Two extraction forms mirror the
+  # with-core path at lines ~550-553. Placed near the end of this function so
+  # any more-specific typed prefix above (MUTEX_ERROR, INNODB_ERROR, etc.)
+  # wins when both signals coexist in the log.
+  ASSERT_LOG="$(grep --binary-files=text -ohm1 'Assertion.*failed.$' ${ERROR_LOGS} 2>/dev/null | sed "s|\.$||;s|^Assertion [\`]||;s|['] failed$||" | head -n1)"
+  if [ -z "${ASSERT_LOG}" ]; then
+    ASSERT_LOG="$(grep --binary-files=text -hm1 'Failing assertion:' ${ERROR_LOGS} 2>/dev/null | sed "s|.*Failing assertion:[ \t]*||" | head -n1)"
+  fi
+  if [ ! -z "${ASSERT_LOG}" ]; then
+    TEXT="ASSERT|${ASSERT_LOG}"
     echo "${TEXT}"
     exit 0
   fi
-  INNODBWARNING=
+  ASSERT_LOG=
   # RV-27/08/22 If none of these issues was found present, then the script will continue and such continuations will always result in exit 1 as find_other_possible_issue_strings is a final attempt at returning a useful string if all other checks have already failed. It provides for several of the exit_code!=0 by mariadbd/mysyqld, previously reported as 'no core found' and similar, yet now covered.
 }
 
@@ -479,6 +573,12 @@ if [ "${SAN_BUG}" -eq 1 ]; then
 fi
 
 if [ -z "${LATEST_CORE}" ]; then
+  # No core present — apply shape-4 typed-prefix extraction from error logs.
+  # Per the "Core priority rule" at the top of this script, this branch is the
+  # ONLY caller of find_other_possible_issue_strings, which includes the
+  # ASSERT|<text> fallback for "Assertion ... failed" lines. When a core IS
+  # present (the `else` flow below), the assertion text is folded into shape 2
+  # (<assert>|SIGABRT|frame1..4) via gdb — never as a standalone ASSERT|.
   if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
     1>&2 echo "${SHOWTEXT}"
   fi

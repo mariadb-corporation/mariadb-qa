@@ -779,8 +779,7 @@ ctrl-c() {
   fi
   if [ $USE_GENERATOR_INSTEAD_OF_INFILE -eq 1 ]; then
     echoit "Attempting to cleanup generator temporary files..."
-    rm -f ${SCRIPT_PWD}/generator/generator${RANDOMD}.sh
-    rm -f ${SCRIPT_PWD}/generator/out${RANDOMD}*.sql
+    rm -f ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}*.sql ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.part*
   fi
   if [ "$PMM" == "1" ]; then
     echoit "Attempting to cleanup PMM client services..."
@@ -1437,6 +1436,14 @@ gr_startup() {
 pquery_test(){
   TRIAL_SAVED=0
   TRIAL=$((${TRIAL} + 1))
+  # Reset PIDs of any child processes this trial may (re-)launch. Without this,
+  # a previous trial's PQPID/PQPID2/MPID/SLAVE_MPID/MPID2 could be re-targeted
+  # by this trial's kill / kill -0 / SIGTERM logic if the kernel happens to
+  # reassign that PID to an unrelated process between trials. Each launch
+  # site below overwrites these via `=$!`; only paths that skip a launch (e.g.
+  # server-start failure for the secondary engine) would otherwise inherit a
+  # stale PID from the prior trial.
+  PQPID= PQPID2= MPID= SLAVE_MPID= MPID2=
   SOCKET=${RUNDIR}/${TRIAL}/socket.sock
   SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=0
   echoit "====== TRIAL #${TRIAL} ======"
@@ -1445,29 +1452,52 @@ pquery_test(){
   (
     sleep 0.2
     kill -9 $KILLPID > /dev/null 2>&1
-    timeout -k4 -s9 4s wait $KILLPID > /dev/null 2>&1
+    for P in $KILLPID; do
+      for X in $(seq 1 4); do kill -0 ${P} 2>/dev/null || break; sleep 1; done  # bounded kill-confirm; replaces dead `timeout … wait` (see end-of-script poll comment)
+    done
   ) &
-  timeout -k5 -s9 5s wait $KILLPID > /dev/null 2>&1 # The sleep 0.2 + subsequent wait (cought before the kill) avoids the annoying 'Killed' message from being displayed in the output. Thank you to user 'Foonly' @ forums.whirlpool.net.au
+  # Foonly idiom: bare `wait $PID` in the main shell starts blocking BEFORE the
+  # backgrounded subshell's `sleep 0.2` + kill -9 fires. When the PID dies, our
+  # wait consumes the exit status, so bash's deferred SIGCHLD handler has
+  # nothing left to report — suppressing the otherwise-annoying 'Killed' line.
+  # 2>/dev/null swallows the rare "not a child of this shell" message that
+  # bash prints if a captured PID was inherited from a defunct previous trial.
+  # A short kill -0 fallback poll handles those non-child PIDs (wait returns
+  # 127 immediately for them so the budget is otherwise unspent).
+  # Thank you to user 'Foonly' @ forums.whirlpool.net.au
+  for P in $KILLPID; do wait ${P} 2>/dev/null; done
+  for P in $KILLPID; do
+    for X in $(seq 1 5); do kill -0 ${P} 2>/dev/null || break; sleep 1; done
+  done
   echoit "Clearing rundir..."
   rm -Rf ${RUNDIR}/[0-9A-Za-ln-z]* # m* is avoided to leave ./mysqld or ./mariadbd in place
   if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
     SAVEDIR=${PWD}
-    cd ${SCRIPT_PWD}/generator/ || exit 1
+    cd ${SCRIPT_PWD}/generatorcpp/ || exit 1
     if [ ${TRIAL} -eq 1 -o $((${TRIAL} % ${GENERATE_NEW_QUERIES_EVERY_X_TRIALS})) -eq 0 ]; then
       echoit "Generating new SQL inputfile using the SQL Generator..."
       if [ "${RANDOMD}" == "" ]; then
         echoit "Assert: RANDOMD is empty. This should not happen. Terminating."
         exit 1
       fi
-      cp generator.sh generator${RANDOMD}.sh
-      sed -i "s|^[ \t]*OUTPUT_FILE[ \t]*=.*|OUTPUT_FILE=out${RANDOMD}|" generator${RANDOMD}.sh
-      export GENERATOR_THREADS=4  # Avoid CPU oversubscription under pquery's concurrent trial model; generator.sh honors this env var when set
-      ./generator${RANDOMD}.sh ${QUERIES_PER_GENERATOR_RUN} > /dev/null
-      if [ ! -r out${RANDOMD}.sql ]; then
-        echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution! This script left ${PWD}/generator${RANDOMD}.sh in place to check what happened"
+      # Retry up to 5 times with a 10s pause to ride out a concurrent rebuild
+      # of generatorcpp/generator. build.sh writes to generator.tmp and atomically
+      # renames into place, but the window between rm-old-tmp and rename can
+      # still trip a -x check if a rebuild started just before us.
+      for GEN_TRY in 1 2 3 4 5; do
+        if [ -x ./generator ]; then break; fi
+        echoit "Note: ${SCRIPT_PWD}/generatorcpp/generator is missing or not executable (attempt ${GEN_TRY}/5); pausing 10s and retrying..."
+        sleep 10
+      done
+      if [ ! -x ./generator ]; then
+        echoit "Assert: ${SCRIPT_PWD}/generatorcpp/generator is missing or not executable after 5 retries. Run generatorcpp/build.sh first."
         exit 1
       fi
-      rm -f generator${RANDOMD}.sh
+      ./generator --threads 4 --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} > /dev/null
+      if [ ! -r out${RANDOMD}.sql ]; then
+        echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution"
+        exit 1
+      fi
       if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then # If this is not a RocksDB run, exclude RocksDB SE
         sed -i "s|RocksDB|InnoDB|" out${RANDOMD}.sql
       fi
@@ -2297,18 +2327,18 @@ pquery_test(){
               done
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
                 pre_shuffle_setup
+                # Health-check the server(s) after pre_shuffle_setup, which can take tens of seconds (find+shuf+sed pipeline on /). During that window master+slave sit idle. If something killed mariadbd in that window (background-thread issue, external signal, OOM-killer), pquery would launch against a dead server and exit silently on 250-consecutive-failures with no observable cause in pquery-run.log. Only runs on the first trial of each shuffle round (PRE_SHUFFLE_TRIAL_ROUND=1) — trials reusing the cached shuffle have no idle window so the ping would be noise. Diagnostic-only: flow is unchanged.
+                if ! ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
+                  echoit "Warning: master (${SOCKET}) is not responding to ping immediately after pre_shuffle_setup. Server died during the pre-shuffle idle window. Trial's pquery will produce no useful output; check ${RUNDIR}/${TRIAL}/log/master.err for cause."
+                fi
+                if [ ${REPLICATION} -eq 1 ] && [ ! -z "${SLAVE_SOCKET}" ] && ! ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} ping > /dev/null 2>&1; then
+                  echoit "Warning: slave (${SLAVE_SOCKET}) is not responding to ping immediately after pre_shuffle_setup. Server died during the pre-shuffle idle window. Check ${RUNDIR}/${TRIAL}/log/slave.err for cause."
+                fi
               else
                 echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} for Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
               fi
               if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
                 PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
-              fi
-              # Health-check the server(s) before launching the main pquery: pre_shuffle_setup can take tens of seconds (find+shuf+sed pipeline on /). During that window master+slave sit idle. If something killed mariadbd in that window (background-thread issue, external signal, OOM-killer), pquery would launch against a dead server and exit silently on 250-consecutive-failures with no observable cause in pquery-run.log. Logging the ping outcome here makes the silent-death scenario visible and grep-able. Diagnostic-only: flow is unchanged, the for-loop below will still break early naturally if pquery has nothing to talk to.
-              if ! ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
-                echoit "Warning: master (${SOCKET}) is not responding to ping immediately before pquery launch. Server died during the pre-shuffle/PRELOAD idle window. Trial's pquery will produce no useful output; check ${RUNDIR}/${TRIAL}/log/master.err for cause."
-              fi
-              if [ ${REPLICATION} -eq 1 ] && [ ! -z "${SLAVE_SOCKET}" ] && ! ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} ping > /dev/null 2>&1; then
-                echoit "Warning: slave (${SLAVE_SOCKET}) is not responding to ping immediately before pquery launch. Server died during the pre-shuffle/PRELOAD idle window. Check ${RUNDIR}/${TRIAL}/log/slave.err for cause."
               fi
               # Pre-shuffled trial
               echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
@@ -2574,18 +2604,24 @@ EOF
         (
           sleep 0.2
           kill -9 ${MPID2} > /dev/null 2>&1
-          timeout -k4 -s9 4s wait ${MPID2} > /dev/null 2>&1
+          for X in $(seq 1 4); do kill -0 ${MPID2} 2>/dev/null || break; sleep 1; done  # see comment at the corresponding poll at end of this script for why this replaces `timeout … wait`
         ) &
-        timeout -k5 -s9 5s wait ${MPID2} > /dev/null 2>&1
+        # Foonly idiom in main shell — bare wait consumes the SIGKILL exit so
+        # bash never prints 'Killed' for MPID2. See KILLPID site for full notes.
+        wait ${MPID2} 2>/dev/null
+        for X in $(seq 1 5); do kill -0 ${MPID2} 2>/dev/null || break; sleep 1; done    # fallback if MPID2 wasn't reaped by wait (shouldn't happen — MPID2 is a direct child)
       else
         echoit "Server (PID: ${MPID} | Socket: ${SOCKET}) failed to start after ${MYSQLD_START_TIMEOUT} seconds. Will issue extra kill -9 to ensure it's gone..."
       fi
       (
         sleep 0.2
         kill -9 ${MPID} > /dev/null 2>&1
-        timeout -k4 -s9 4s wait ${MPID} > /dev/null 2>&1
+        for X in $(seq 1 4); do kill -0 ${MPID} 2>/dev/null || break; sleep 1; done  # see comment at the corresponding poll at end of this script for why this replaces `timeout … wait`
       ) &
-      timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
+      # Foonly idiom in main shell — bare wait consumes the SIGKILL exit so
+      # bash never prints 'Killed' for MPID. See KILLPID site for full notes.
+      wait ${MPID} 2>/dev/null
+      for X in $(seq 1 5); do kill -0 ${MPID} 2>/dev/null || break; sleep 1; done    # fallback if MPID wasn't reaped by wait (shouldn't happen — MPID is a direct child)
       sleep 2
       sync
     elif [[ "${MDG}" -eq 1 ]]; then
@@ -2773,18 +2809,44 @@ EOF
     (
       sleep 0.2
       kill -9 ${MPID} ${SLAVE_MPID} > /dev/null 2>&1
-      timeout -k5 -s9 5s wait ${MPID} ${SLAVE_MPID} > /dev/null 2>&1
+      # Single 5s budget shared by both PIDs (matches the original `timeout 5s
+      # wait MPID SLAVE_MPID` intent). Both are parent-shell children, so
+      # subshell `wait` would error "not a child", and `timeout … wait` can't
+      # run a shell builtin in any shell — so the prior form was a no-op.
+      # After SIGKILL the kernel reaps in microseconds; the budget is rarely
+      # consumed in practice.
+      for X in $(seq 1 5); do
+        STILL=0
+        for P in ${MPID} ${SLAVE_MPID}; do
+          [ -z "${P}" ] && continue
+          kill -0 ${P} 2>/dev/null && STILL=1
+        done
+        [ ${STILL} -eq 0 ] && break
+        sleep 1
+      done
     ) # Terminate mysqld/mariadbd
     if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
       (
         sleep 0.2
         kill -9 ${MPID2} > /dev/null 2>&1
-        timeout -k5 -s9 5s wait ${MPID2} > /dev/null 2>&1
+        for X in $(seq 1 5); do kill -0 ${MPID2} 2>/dev/null || break; sleep 1; done  # see comment at the corresponding poll at end of this script for why this replaces `timeout … wait`
       ) # Terminate mysqld/mariadbd
       (
         sleep 0.2
+        # Graceful first so the secondary-engine pquery's worker runs its
+        # destructor + writeFinalReport (NODE SUMMARY line); then SIGKILL any
+        # survivor. SIGTERM is sent to worker children (master noop-handles it
+        # in fork-mode pquery; harmless on PQPID2 itself for older variants).
+        if kill -0 ${PQPID2} 2>/dev/null; then
+          WPIDS2=$(ps -o pid= --ppid ${PQPID2} 2>/dev/null | tr '\n' ' ')
+          for WPID in ${WPIDS2} ${PQPID2}; do kill -SIGTERM ${WPID} 2>/dev/null; done
+          for X in $(seq 1 5); do kill -0 ${PQPID2} 2>/dev/null || break; sleep 1; done
+        fi
         kill -9 ${PQPID2} > /dev/null 2>&1
-        timeout -k5 -s9 5s wait ${PQPID2} > /dev/null 2>&1
+        # kill -0 poll instead of `wait` because PQPID2 is a child of the
+        # parent shell, not this subshell; bash's `wait` returns 127 immediately
+        # for non-children, which made the previous timeout-wait a no-op.
+        for X in $(seq 1 5); do kill -0 ${PQPID2} 2>/dev/null || break; sleep 1; done
       ) # Terminate pquery (if it went past ${PQUERY_RUN_TIMEOUT} time, also see NOTE** above)
     fi
     sleep 1 # <^ Make sure all is gone
@@ -2846,6 +2908,24 @@ EOF
     sleep 2
     sync
   fi
+  # Ensure pquery has fully exited so its destructor wrote NODE SUMMARY into
+  # *_general.log. pquery v2.1+ runs as a master + forked worker(s); the master
+  # installs a no-op SIGTERM handler (pquery.cpp:pq_master_signal_noop) so it
+  # keeps wait()-ing across signals, while the worker installs the graceful-stop
+  # handler (node.cpp:pq_stop_handler) that flips g_stop_requested. So SIGTERM
+  # must go to the worker child, not the master, to trigger writeFinalReport.
+  # The master then exits on its own once wait() returns ECHILD. Without this,
+  # non-crash save paths (e.g. error_log_scan flagging an InnoDB warning) leave
+  # pquery alive until the next trial's process-cleanup SIGKILLs it, skipping
+  # the destructor and losing the "pquery run details" line.
+  for PQID in ${PQPID} ${PQPID2}; do
+    [ -z "${PQID}" ] && continue
+    if kill -0 ${PQID} 2>/dev/null; then
+      WPIDS=$(ps -o pid= --ppid ${PQID} 2>/dev/null | tr '\n' ' ')
+      for WPID in ${WPIDS} ${PQID}; do kill -SIGTERM ${WPID} 2>/dev/null; done  # PQID for older single-process variants; master noop-handles SIGTERM in fork variants so this is harmless
+      for X in $(seq 1 5); do kill -0 ${PQID} 2>/dev/null || break; sleep 1; done
+    fi
+  done
   if [ ${ISSTARTED} -eq 1 ]; then  # Do not try and print pquery stats when mysqld/mariadbd failed to start
     FAILED_QUERIES_OUTPUT=
     if [ -d ${RUNDIR}/${TRIAL} ]; then
@@ -2972,10 +3052,10 @@ EOF
       TRIAL_SAVED=1
       # Now that we have mariadb-binlog test completion, we can kill this recovery instance. If instead the trial is not saved here, due to succesful here binlog replay, the server will stay up and table checksums will be taken just below. After that the instance is terminated there
       echoit "Binlog recovery testing: terminating post-binlog recovery instance"
-      ( 
+      (
         sleep 0.2
         kill -9 ${MPID} > /dev/null 2>&1
-        timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
+        for X in $(seq 1 5); do kill -0 ${MPID} 2>/dev/null || break; sleep 1; done  # see comment at the corresponding poll at end of this script for why this replaces `timeout … wait`
       ) # Terminate mysqld/mariadbd
     else
       echoit "Binlog recovery testing: NO issue found during binlog recovery testing"
@@ -2987,10 +3067,10 @@ EOF
       ${BASEDIR}/bin/mariadb -A -uroot -S${SOCKET} --force --binary-mode < ${RUNDIR}/${TRIAL}/checksumlist2.sql > ${RUNDIR}/${TRIAL}/checksumlist_result2.txt
       # Now that we have mariadb-binlog test completion & checksums for the recovery instance, we can kill this instance
       echoit "Binlog recovery testing: terminating post-binlog recovery instance"
-      ( 
+      (
         sleep 0.2
         kill -9 ${MPID} > /dev/null 2>&1
-        timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
+        for X in $(seq 1 5); do kill -0 ${MPID} 2>/dev/null || break; sleep 1; done  # see comment at the corresponding poll at end of this script for why this replaces `timeout … wait`
       ) # Terminate mysqld/mariadbd
       # Re-init the original instance to obtain table checksums
       init_empty_port
@@ -3074,10 +3154,10 @@ EOF
       fi
       # Now that we have the checksums from the original instance (data.ORIGINAL), we can kill this instance
       echoit "Binlog recovery testing: terminating the re-started original instance"
-      ( 
+      (
         sleep 0.2
         kill -9 ${MPID} > /dev/null 2>&1
-        timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
+        for X in $(seq 1 5); do kill -0 ${MPID} 2>/dev/null || break; sleep 1; done  # see comment at the corresponding poll at end of this script for why this replaces `timeout … wait`
       ) # Terminate mysqld/mariadbd
       rm -f "${SOCKET}"
     fi
@@ -3270,6 +3350,15 @@ EOF
     fi
     if [ ${TRIAL_SAVED} -eq 0 ]; then
       removetrial
+    fi
+  fi
+  # Per-batch cleanup of the generator output file. Re-used across
+  # GENERATE_NEW_QUERIES_EVERY_X_TRIALS trials, then regenerated. Delete once
+  # the batch is done (next trial would regenerate) so it doesn't linger
+  # in-tree under generatorcpp/. The exit-time rm still covers interrupted runs.
+  if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ] && [ "${GENERATE_NEW_QUERIES_EVERY_X_TRIALS:-0}" -gt 0 ]; then
+    if [ $(( (TRIAL + 1) % GENERATE_NEW_QUERIES_EVERY_X_TRIALS )) -eq 0 ] || [ ${TRIAL} -ge ${TRIALS} ]; then
+      rm -f ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}*.sql ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.part* 2>/dev/null
     fi
   fi
 }
@@ -3570,7 +3659,12 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
     (
       sleep 0.2
       kill -9 ${MPID} > /dev/null 2>&1
-      timeout -k5 -s9 5s wait ${MPID} > /dev/null 2>&1
+      # kill -0 poll instead of `wait`: this PID is a parent-shell child, not
+      # a child of this subshell; `wait $PID` would error "not a child" and
+      # return 127 instantly. `timeout` is external (coreutils) and can't
+      # invoke a shell builtin, so the previous `timeout … wait $PID` form
+      # was a no-op regardless of subshell.
+      for X in $(seq 1 5); do kill -0 ${MPID} 2>/dev/null || break; sleep 1; done
     ) # Terminate mysqld/mariadbd
   fi
   echo "${MYEXTRA}${MYSAFE}" | if grep -qi "innodb[_-]log[_-]checksum[_-]algorithm"; then

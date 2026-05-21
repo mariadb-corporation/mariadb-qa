@@ -279,8 +279,7 @@ ctrl-c(){
   fi
   if [ $USE_GENERATOR_INSTEAD_OF_INFILE -eq 1 ]; then
     echoit "Attempting to cleanup generator temporary files..."
-    rm -f ${SCRIPT_PWD}/generator/generator${RANDOMD}.sh
-    rm -f ${SCRIPT_PWD}/generator/out${RANDOMD}*.sql
+    rm -f ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}*.sql ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.part*
   fi
   if [ $PMM -eq 1 ]; then
     echoit "Attempting to cleanup PMM client services..."
@@ -576,20 +575,21 @@ pquery_test(){
   if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
     echoit "Generating new SQL inputfile using the SQL Generator..."
     SAVEDIR=${PWD}
-    cd ${SCRIPT_PWD}/generator/
+    cd ${SCRIPT_PWD}/generatorcpp/
     if [ ${TRIAL} -eq 1 -o $[ ${TRIAL} % ${GENERATE_NEW_QUERIES_EVERY_X_TRIALS} ] -eq 0 ]; then
       if [ "${RANDOMD}" == "" ]; then
         echoit "Assert: RANDOMD is empty. This should not happen. Terminating."
         exit 1
       fi
-      cp generator.sh generator${RANDOMD}.sh
-      sed -i "s|^[ \t]*OUTPUT_FILE[ \t]*=.*|OUTPUT_FILE=out${RANDOMD}|" generator${RANDOMD}.sh
-      ./generator${RANDOMD}.sh ${QUERIES_PER_GENERATOR_RUN} >/dev/null
-      if [ ! -r out${RANDOMD}.sql ]; then
-        echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution! This script left ${PWD}/generator${RANDOMD}.sh in place to check what happened"
+      if [ ! -x ./generator ]; then
+        echoit "Assert: ${SCRIPT_PWD}/generatorcpp/generator missing or not executable. Run generatorcpp/build.sh first."
         exit 1
       fi
-      rm -f generator${RANDOMD}.sh
+      ./generator --threads 4 --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} >/dev/null
+      if [ ! -r out${RANDOMD}.sql ]; then
+        echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution"
+        exit 1
+      fi
       if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then  # If this is not a RocksDB run, exclude RocksDB SE
         sed -i "s|RocksDB|InnoDB|" out${RANDOMD}.sql
       fi

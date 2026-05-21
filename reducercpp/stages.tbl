@@ -1,0 +1,887 @@
+STAGE3	1	0	0	sed "s/[\t ]*,[ \t]*/,/g" $WORKF > $WORKT
+STAGE3	2	1	0	sed "s/\\\"/'/g" $WORKF > $WORKT
+STAGE3	3	0	0	sed "s/\\\'//g" $WORKF > $WORKT
+STAGE3	4	0	0	sed "s/'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'/'0000-00-00'/g" $WORKF > $WORKT
+STAGE3	5	0	0	sed "s/'[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.[0-9][0-9][0-9][0-9][0-9][0-9]'/'00:00:00.000000'/g" $WORKF > $WORKT
+STAGE3	6	0	0	sed "s/'[-][0-9]*\.[0-9]*'/'0.0'/g" $WORKF > $WORKT
+STAGE3	7	0	0	sed "s/'[0-9][0-9]:[0-9][0-9]:[0-9][0-9]'/'00:00:00'/g" $WORKF > $WORKT
+STAGE3	8	0	0	sed "s/'[-][0-9]'/'0'/g" $WORKF > $WORKT
+STAGE3	9	0	0	sed "s/'[-][0-9]\+'/'0'/g" $WORKF > $WORKT
+STAGE3	10	0	0	sed "s/'0'/0/g" $WORKF > $WORKT
+STAGE3	11	0	0	sed "s/,[-][0-9],/,0,/g" $WORKF > $WORKT
+STAGE3	12	0	0	sed "s/,[-][0-9]\+,/,0,/g" $WORKF > $WORKT
+STAGE3	13	0	0	sed "s/'[a-z]'/'a'/g" $WORKF > $WORKT
+STAGE3	14	0	0	sed "s/'[a-z]\+'/'a'/g" $WORKF > $WORKT
+STAGE3	15	0	0	sed "s/'[A-Z]'/'a'/g"  $WORKF > $WORKT
+STAGE3	16	0	0	sed "s/'[A-Z]\+'/'a'/g"  $WORKF > $WORKT
+STAGE3	17	0	0	sed -e 's/^[ \t]\+//g' -e 's/[ \t]\+$//g' -e 's/[ \t]\+/ /g' $WORKF > $WORKT
+STAGE3	18	0	0	sed -e 's/( /(/g' -e 's/ )/)/g' $WORKF > $WORKT
+STAGE3	19	0	0	sed -e 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
+STAGE3	20	0	0	sed -e 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
+STAGE3	21	0	0	sed -e 's/\*\//@##@/' -e 's/\/\*.*@##@//' $WORKF > $WORKT
+STAGE3	22	0	0	sed -e 's/ \. /\./g' -e 's/, /,/g' $WORKF > $WORKT
+STAGE3	23	0	0	sed -e 's/)[ \t]\+,/),/g' -e 's/)[ \t]\+;/);/g' $WORKF > $WORKT
+STAGE3	24	0	0	sed 's/\/\*\(.*\)\*\//\1/' $WORKF > $WORKT
+STAGE3	25	0	0	sed 's/field/f/g' $WORKF > $WORKT
+STAGE3	26	0	0	sed 's/field/f/gi' $WORKF > $WORKT
+STAGE3	27	0	0	sed 's/column/c/g' $WORKF > $WORKT
+STAGE3	28	0	0	sed 's/column/c/gi' $WORKF > $WORKT
+STAGE3	29	0	0	sed 's/col/c/g' $WORKF > $WORKT
+STAGE3	30	0	0	sed 's/col/c/gi' $WORKF > $WORKT
+STAGE3	31	0	0	sed 's/view/v/g' $WORKF > $WORKT
+STAGE3	32	0	0	sed 's/view\([0-9]*\)/v\1/gi' $WORKF > $WORKT
+STAGE3	33	0	0	sed 's/table/t/g' $WORKF > $WORKT
+STAGE3	34	0	0	sed 's/table\([0-9]*\)/t\1/gi' $WORKF > $WORKT
+STAGE3	35	0	0	sed 's/alias\([0-9]*\)/a\1/gi' $WORKF > $WORKT
+STAGE3	36	0	0	sed 's/ \([=<>!]\+\)/\1/gi' $WORKF > $WORKT
+STAGE3	37	0	0	sed 's/\([=<>!]\+\) /\1/gi' $WORKF > $WORKT
+STAGE3	38	0	0	sed 's/[=<>!]\+/=/gi' $WORKF > $WORKT
+STAGE3	39	0	0	sed 's/ .*[=<>!]\+.* / 1=1 /gi' $WORKF > $WORKT
+STAGE3	40	0	0	sed 's/([0-9]\+)/(1)/gi' $WORKF > $WORKT
+STAGE3	41	0	0	sed 's/([0-9]\+)//gi' $WORKF > $WORKT
+STAGE3	42	0	0	sed 's/[ ]\+/ /g' $WORKF > $WORKT
+STAGE3	43	0	0	sed 's/^[ ]\+//g' $WORKF > $WORKT
+STAGE3	44	0	0	sed 's/[ ]\+$//g' $WORKF > $WORKT
+STAGE3	45	0	0	sed 's/transforms\.//gi' $WORKF > $WORKT
+STAGE3	46	0	0	sed 's/test\.//gi' $WORKF > $WORKT
+STAGE3	47	0	0	sed "s/'[^']\+'/'abcdefghijklmnopqrstuvwxyz'/g" $WORKF > $WORKT
+STAGE3	48	0	0	sed "s/'[^']\+'/'abcdefghijklm'/g" $WORKF > $WORKT
+STAGE3	49	0	0	sed "s/'[^']\+'/'abcde'/g" $WORKF > $WORKT
+STAGE3	50	0	0	sed "s/'[^']\+'/NULL/g" $WORKF > $WORKT
+STAGE3	51	0	0	sed "s/NULL,/,/g" $WORKF > $WORKT
+STAGE3	52	0	0	sed "s/NULL,/,/" $WORKF > $WORKT  # 1st occurrence only
+STAGE3	53	0	0	sed "s/NULL,/,/" $WORKF > $WORKT  # 2nd occurrence only
+STAGE3	54	0	0	sed "s/'[^']\+'/'a'/g" $WORKF > $WORKT
+STAGE3	55	0	0	sed "s/'[^']\+'/'0'/g" $WORKF > $WORKT
+STAGE3	56	0	0	sed "s/'[^']\+'/''/g" $WORKF > $WORKT
+STAGE3	57	0	0	sed "s/'[^']\+'/1/g" $WORKF > $WORKT
+STAGE3	58	0	0	sed "s/'[^']\+'/0/g" $WORKF > $WORKT
+STAGE3	59	1	0	sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+STAGE3	60	0	1	sed 's/`//g' $WORKF > $WORKT
+STAGE4	1	0	0	sed "s/IN[ \t]*(.*)/IN (SELECT 1)/i" $WORKF > $WORKT
+STAGE4	2	0	0	sed "s/IN[ \t]*(.*)/IN (SELECT 1)/gi" $WORKF > $WORKT
+STAGE4	3	0	0	sed "s/ON[ \t]*(.*)/ON (1=1)/i" $WORKF > $WORKT
+STAGE4	4	0	0	sed "s/ON[ \t]*(.*)/ON (1=1)/gi" $WORKF > $WORKT
+STAGE4	5	0	0	sed "s/FROM[ \t]*(.*)/FROM (SELECT 1)/i" $WORKF > $WORKT
+STAGE4	6	0	0	sed "s/FROM[ \t]*(.*)/FROM (SELECT 1)/gi" $WORKF > $WORKT
+STAGE4	7	0	0	sed "s/WHERE.*ORDER BY/ORDER BY/i" $WORKF > $WORKT
+STAGE4	8	0	0	sed "s/WHERE.*ORDER BY/ORDER BY/gi" $WORKF > $WORKT
+STAGE4	9	0	0	sed "s/WHERE.*LIMIT/LIMIT/i" $WORKF > $WORKT
+STAGE4	10	0	0	sed "s/WHERE.*LIMIT/LIMIT/gi" $WORKF > $WORKT
+STAGE4	11	0	0	sed "s/WHERE.*GROUP BY/GROUP BY/i" $WORKF > $WORKT
+STAGE4	12	0	0	sed "s/WHERE.*GROUP BY/GROUP BY/gi" $WORKF > $WORKT
+STAGE4	13	0	0	sed "s/WHERE.*HAVING/HAVING/i" $WORKF > $WORKT
+STAGE4	14	0	0	sed "s/WHERE.*HAVING/HAVING/gi" $WORKF > $WORKT
+STAGE4	15	0	0	sed "s/ORDER BY.*WHERE/WHERE/i" $WORKF > $WORKT
+STAGE4	16	0	0	sed "s/ORDER BY.*WHERE/WHERE/gi" $WORKF > $WORKT
+STAGE4	17	0	0	sed "s/ORDER BY.*LIMIT/LIMIT/i" $WORKF > $WORKT
+STAGE4	18	0	0	sed "s/ORDER BY.*LIMIT/LIMIT/gi" $WORKF > $WORKT
+STAGE4	19	0	0	sed "s/ORDER BY.*GROUP BY/GROUP BY/i" $WORKF > $WORKT
+STAGE4	20	0	0	sed "s/ORDER BY.*GROUP BY/GROUP BY/gi" $WORKF > $WORKT
+STAGE4	21	0	0	sed "s/ORDER BY.*HAVING/HAVING/i" $WORKF > $WORKT
+STAGE4	22	0	0	sed "s/ORDER BY.*HAVING/HAVING/gi" $WORKF > $WORKT
+STAGE4	23	0	0	sed "s/LIMIT.*WHERE/WHERE/i" $WORKF > $WORKT
+STAGE4	24	0	0	sed "s/LIMIT.*WHERE/WHERE/gi" $WORKF > $WORKT
+STAGE4	25	0	0	sed "s/LIMIT.*ORDER BY/ORDER BY/i" $WORKF > $WORKT
+STAGE4	26	0	0	sed "s/LIMIT.*ORDER BY/ORDER BY/gi" $WORKF > $WORKT
+STAGE4	27	0	0	sed "s/LIMIT.*GROUP BY/GROUP BY/i" $WORKF > $WORKT
+STAGE4	28	0	0	sed "s/LIMIT.*GROUP BY/GROUP BY/gi" $WORKF > $WORKT
+STAGE4	29	0	0	sed "s/LIMIT.*HAVING/HAVING/i" $WORKF > $WORKT
+STAGE4	30	0	0	sed "s/LIMIT.*HAVING/HAVING/gi" $WORKF > $WORKT
+STAGE4	31	0	0	sed "s/GROUP BY.*WHERE/WHERE/i" $WORKF > $WORKT
+STAGE4	32	0	0	sed "s/GROUP BY.*WHERE/WHERE/gi" $WORKF > $WORKT
+STAGE4	33	0	0	sed "s/GROUP BY.*ORDER BY/ORDER BY/i" $WORKF > $WORKT
+STAGE4	34	0	0	sed "s/GROUP BY.*ORDER BY/ORDER BY/gi" $WORKF > $WORKT
+STAGE4	35	0	0	sed "s/GROUP BY.*LIMIT/LIMIT/i" $WORKF > $WORKT
+STAGE4	36	0	0	sed "s/GROUP BY.*LIMIT/LIMIT/gi" $WORKF > $WORKT
+STAGE4	37	0	0	sed "s/GROUP BY.*HAVING/HAVING/i" $WORKF > $WORKT
+STAGE4	38	0	0	sed "s/GROUP BY.*HAVING/HAVING/gi" $WORKF > $WORKT
+STAGE4	39	0	0	sed "s/HAVING.*WHERE/WHERE/i" $WORKF > $WORKT
+STAGE4	40	0	0	sed "s/HAVING.*WHERE/WHERE/gi" $WORKF > $WORKT
+STAGE4	41	0	0	sed "s/HAVING.*ORDER BY/ORDER BY/i" $WORKF > $WORKT
+STAGE4	42	0	0	sed "s/HAVING.*ORDER BY/ORDER BY/gi" $WORKF > $WORKT
+STAGE4	43	0	0	sed "s/HAVING.*LIMIT/LIMIT/i" $WORKF > $WORKT
+STAGE4	44	0	0	sed "s/HAVING.*LIMIT/LIMIT/gi" $WORKF > $WORKT
+STAGE4	45	0	0	sed "s/HAVING.*GROUP BY/GROUP BY/i" $WORKF > $WORKT
+STAGE4	46	0	0	sed "s/HAVING.*GROUP BY/GROUP BY/gi" $WORKF > $WORKT
+STAGE4	47	0	0	sed "s/LIMIT[[:digit:][:space:][:cntrl:]]*;$/;/i" $WORKF > $WORKT
+STAGE4	48	0	0	sed "s/ORDER BY.*;$/;/i" $WORKF > $WORKT
+STAGE4	49	0	0	sed "s/GROUP BY.*;$/;/i" $WORKF > $WORKT
+STAGE4	50	0	0	sed "s/HAVING.*;$/;/i" $WORKF > $WORKT
+STAGE4	51	0	0	sed "s/WHERE.*;$/;/i" $WORKF > $WORKT
+STAGE4	52	0	0	sed "s/LIMIT.*;$/;/gi" $WORKF > $WORKT
+STAGE4	53	0	0	sed "s/GROUP BY.*;$/;/gi" $WORKF > $WORKT
+STAGE4	54	0	0	sed "s/ORDER BY.*;$/;/gi" $WORKF > $WORKT
+STAGE4	55	0	0	sed "s/HAVING.*;$/;/gi" $WORKF > $WORKT
+STAGE4	56	0	0	sed "s/WHERE.*;$/;/gi" $WORKF > $WORKT
+STAGE4	57	0	0	sed "s/(SELECT 1)/(1)/gi" $WORKF > $WORKT
+STAGE4	58	0	0	sed "s/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i" $WORKF > $WORKT
+STAGE4	59	0	0	sed "s/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i" $WORKF > $WORKT
+STAGE4	60	0	0	sed "s/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i" $WORKF > $WORKT
+STAGE4	61	0	0	sed "s/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i" $WORKF > $WORKT
+STAGE4	62	0	0	sed "s/ORDER BY \(.*\),\(.*\)/ORDER BY \1/i" $WORKF > $WORKT
+STAGE4	63	0	0	sed "s/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i" $WORKF > $WORKT
+STAGE4	64	0	0	sed "s/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i" $WORKF > $WORKT
+STAGE4	65	0	0	sed "s/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i" $WORKF > $WORKT
+STAGE4	66	0	0	sed "s/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i" $WORKF > $WORKT
+STAGE4	67	0	0	sed "s/GROUP BY \(.*\),\(.*\)/GROUP BY \1/i" $WORKF > $WORKT
+STAGE4	68	0	0	sed "s/SELECT \(.*\),\(.*\)/SELECT \1/i" $WORKF > $WORKT
+STAGE4	69	0	0	sed "s/SELECT \(.*\),\(.*\)/SELECT \1/i" $WORKF > $WORKT
+STAGE4	70	0	0	sed "s/SELECT \(.*\),\(.*\)/SELECT \1/i" $WORKF > $WORKT
+STAGE4	71	0	0	sed "s/SELECT \(.*\),\(.*\)/SELECT \1/i" $WORKF > $WORKT
+STAGE4	72	0	0	sed "s/SELECT \(.*\),\(.*\)/SELECT \1/i" $WORKF > $WORKT
+STAGE4	73	0	0	sed "s/ SET \(.*\),\(.*\)/ SET \1/i" $WORKF > $WORKT
+STAGE4	74	0	0	sed "s/ SET \(.*\),\(.*\)/ SET \1/i" $WORKF > $WORKT
+STAGE4	75	0	0	sed "s/ SET \(.*\),\(.*\)/ SET \1/i" $WORKF > $WORKT
+STAGE4	76	0	0	sed "s/ SET \(.*\),\(.*\)/ SET \1/i" $WORKF > $WORKT
+STAGE4	77	0	0	sed "s/ SET \(.*\),\(.*\)/ SET \1/i" $WORKF > $WORKT
+STAGE4	78	0	0	sed "s/AND.*IN/IN/i" $WORKF > $WORKT
+STAGE4	79	0	0	sed "s/AND.*ON/ON/i" $WORKF > $WORKT
+STAGE4	80	0	0	sed "s/AND.*WHERE/WHERE/i" $WORKF > $WORKT
+STAGE4	81	0	0	sed "s/AND.*ORDER BY/ORDER BY/i" $WORKF > $WORKT
+STAGE4	82	0	0	sed "s/AND.*GROUP BY/GROUP BY/i" $WORKF > $WORKT
+STAGE4	83	0	0	sed "s/AND.*LIMIT/LIMIT/i" $WORKF > $WORKT
+STAGE4	84	0	0	sed "s/AND.*HAVING/HAVING/i" $WORKF > $WORKT
+STAGE4	85	0	0	sed "s/OR.*IN/IN/i" $WORKF > $WORKT
+STAGE4	86	0	0	sed "s/OR.*ON/ON/i" $WORKF > $WORKT
+STAGE4	87	0	0	sed "s/OR.*WHERE/WHERE/i" $WORKF > $WORKT
+STAGE4	88	0	0	sed "s/OR.*ORDER BY/ORDER BY/i" $WORKF > $WORKT
+STAGE4	89	0	0	sed "s/OR.*GROUP BY/GROUP BY/i" $WORKF > $WORKT
+STAGE4	90	0	0	sed "s/OR.*LIMIT/LIMIT/i" $WORKF > $WORKT
+STAGE4	91	0	0	sed "s/OR.*HAVING/HAVING/i" $WORKF > $WORKT
+STAGE4	92	0	0	sed "s/ NOT NULL/ /i" $WORKF > $WORKT
+STAGE4	93	0	0	sed "s/ NOT NULL/ /gi" $WORKF > $WORKT
+STAGE4	94	0	0	sed "s/ NULL/ /i" $WORKF > $WORKT
+STAGE4	95	0	0	sed "s/ NULL/ /gi" $WORKF > $WORKT
+STAGE4	96	0	0	sed "s/ AUTO_INCREMENT/ /gi" $WORKF > $WORKT
+STAGE4	97	0	0	sed "s/ ALGORITHM=MERGE/ /gi" $WORKF > $WORKT
+STAGE4	98	0	0	sed "s/ OR REPLACE/ /gi" $WORKF > $WORKT
+STAGE4	99	0	0	sed "s/ PRIMARY/ /gi" $WORKF > $WORKT
+STAGE4	100	0	0	sed "s/ PRIMARY KEY/ /gi" $WORKF > $WORKT
+STAGE4	101	0	0	sed "s/ DEFAULT NULL/ /i" $WORKF > $WORKT
+STAGE4	102	0	0	sed "s/ DEFAULT NULL/ /gi" $WORKF > $WORKT
+STAGE4	103	0	0	sed "s/ DEFAULT 0/ /i" $WORKF > $WORKT
+STAGE4	104	0	0	sed "s/ DEFAULT 0/ /gi" $WORKF > $WORKT
+STAGE4	105	0	0	sed "s/ DEFAULT .2038-01-19 03:14:07./ /i" $WORKF > $WORKT
+STAGE4	106	0	0	sed "s/ DEFAULT .2038-01-19 03:14:07./ /gi" $WORKF > $WORKT
+STAGE4	107	0	0	sed "s/ DEFAULT .1970-01-01 00:00:01./ /i" $WORKF > $WORKT
+STAGE4	108	0	0	sed "s/ DEFAULT .1970-01-01 00:00:01./ /gi" $WORKF > $WORKT
+STAGE4	109	0	0	sed "s/ DEFAULT CURRENT_TIMESTAMP/ /i" $WORKF > $WORKT
+STAGE4	110	0	0	sed "s/ DEFAULT CURRENT_TIMESTAMP/ /gi" $WORKF > $WORKT
+STAGE4	111	0	0	sed "s/ ON UPDATE CURRENT_TIMESTAMP/ /i" $WORKF > $WORKT
+STAGE4	112	0	0	sed "s/ ON UPDATE CURRENT_TIMESTAMP/ /gi" $WORKF > $WORKT
+STAGE4	113	0	0	sed "s/ IF NOT EXISTS / /gi" $WORKF > $WORKT
+STAGE4	114	0	0	sed "s/ DISTINCT / /gi" $WORKF > $WORKT
+STAGE4	115	0	0	sed "s/ SQL_.*_RESULT / /gi" $WORKF > $WORKT
+STAGE4	116	0	0	sed "s/CHARACTER SET[ ]*.*[ ]*COLLATE[ ]*.*\([, ]\)/\1/gi" $WORKF > $WORKT
+STAGE4	117	0	0	sed "s/CHARACTER SET[ ]*.*\([, ]\)/\1/gi" $WORKF > $WORKT
+STAGE4	118	0	0	sed "s/COLLATE[ ]*.*\([, ]\)/\1/gi" $WORKF > $WORKT
+STAGE4	119	0	0	awk '{ for (i=1; i<=NF; ++i) if ($i ~ "^v[0-9]+$") $i = (seen[$i] ? seen[$i] : seen[$i] = "v" ++n) }; 1' $WORKF > $WORKT  # With thanks, https://unix.stackexchange.com/a/702361/241016 (Kusalananda) - simplifies all fuzzer 'v[0-9]+' aliases etc.
+STAGE4	120	0	0	sed "s|\(v[0-9]\+\)| \1 |g" $WORKF | awk '{ for (i=1; i<=NF; ++i) if ($i ~ "^v[0-9]+$") $i = (seen[$i] ? seen[$i] : seen[$i] = "v" ++n) }; 1' > $WORKT
+STAGE4	121	0	0	sed "s/DROP DATABASE transforms;CREATE DATABASE transforms;//" $WORKF > $WORKT
+STAGE4	122	0	0	sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
+STAGE4	123	0	0	sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
+STAGE4	124	0	0	sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
+STAGE4	125	0	0	sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
+STAGE4	126	0	0	sed "s/[a-z0-9]\+_//" $WORKF > $WORKT
+STAGE4	127	0	0	sed "s/[0-9]\+\.//" $WORKF > $WORKT
+STAGE4	128	0	0	sed "s/\.[0-9]\+//" $WORKF > $WORKT
+STAGE4	129	0	0	sed "s/alias/a/gi" $WORKF > $WORKT
+STAGE4	130	0	0	sed "s/SELECT .* /SELECT * /gi" $WORKF > $WORKT
+STAGE4	131	0	0	sed "s/SELECT .* /SELECT * /i" $WORKF > $WORKT
+STAGE4	132	0	0	sed "s/SELECT .* /SELECT 1 /gi" $WORKF > $WORKT
+STAGE4	133	0	0	sed "s/SELECT .* /SELECT 1 /i" $WORKF > $WORKT
+STAGE4	134	0	0	sed -e "s/[\t ]\+/ /g" -e "s/ *\([;,]\)/\1/g" -e "s/ $//g" -e "s/^ //g" $WORKF > $WORKT
+STAGE4	135	0	0	sed "s/CHARACTER[ ]*SET[ ]*latin1/ /i" $WORKF > $WORKT
+STAGE4	136	0	0	sed "s/CHARACTER[ ]*SET[ ]*utf8/ /i" $WORKF > $WORKT
+STAGE4	137	0	0	sed "s/SELECT .* /SELECT 1 /gi" $WORKF > $WORKT
+STAGE4	138	0	0	sed "s/COLUMN_FORMAT COMPRESSED/ /i" $WORKF > $WORKT
+STAGE4	139	0	0	sed "s/INTEGER/INT/gi" $WORKF > $WORKT
+STAGE4	140	0	0	sed "s/MAX[ \t]\+[0-9]\+//gi" $WORKF > $WORKT
+STAGE4	141	0	0	sed "s/MAX[ \t]\+//gi" $WORKF > $WORKT
+STAGE4	142	0	0	sed "s/NOT NULL//gi" $WORKF > $WORKT  # All
+STAGE4	143	0	0	sed "s/NOT NULL//i" $WORKF > $WORKT  # First occurrence only
+STAGE4	144	0	0	sed "s/NOT NULL//i" $WORKF > $WORKT  # Second occurrence only
+STAGE4	145	0	0	sed "s/NOT NULL//i" $WORKF > $WORKT  # Third occurrence only
+STAGE4	146	0	0	sed "s/TEMPORARY//gi" $WORKF > $WORKT
+STAGE4	147	0	0	sed "s/TEMPORARY//i" $WORKF > $WORKT
+STAGE4	148	0	0	sed "s/AUTO_INCREMENT KEY//i" $WORKF > $WORKT
+STAGE4	149	0	0	sed "s/AUTO_INCREMENT//i" $WORKF > $WORKT
+STAGE4	150	0	0	sed "s/UNIQUE//i" $WORKF > $WORKT
+STAGE4	151	0	0	sed "s/IDX/I/" $WORKF > $WORKT
+STAGE4	152	0	0	sed "s/ IS NOT NULL / /gi" $WORKF > $WORKT
+STAGE4	153	0	0	sed "s/ IS NOT NULL / /i" $WORKF > $WORKT
+STAGE4	154	0	0	sed "s/ IS NOT NULL / /i" $WORKF > $WORKT
+STAGE4	155	0	0	sed "s/,''/ /g" $WORKF > $WORKT
+STAGE4	156	0	0	sed "s/,''/ /" $WORKF > $WORKT
+STAGE4	157	0	0	sed "s/,''/ /" $WORKF > $WORKT
+STAGE4	158	0	0	sed "s/  / /g" $WORKF > $WORKT
+STAGE4	159	0	0	sed "s/( /(/g" $WORKF > $WORKT
+STAGE4	160	0	0	sed "s/ )/)/g" $WORKF > $WORKT
+STAGE4	161	0	0	sed "s|(SELECT[ \t]\+[^()]\+FROM[ \t]\+\([a-zA-Z0-9_]\+\) )| \1 |gi" $WORKF > $WORKT
+STAGE4	162	0	0	sed "s|(SELECT[ \t]\+[^()]\+FROM[ \t]\+\([a-zA-Z0-9_]\+\) )| \1 |i" $WORKF > $WORKT
+STAGE4	163	0	0	sed "s|(SELECT[ \t]\+[^()]\+FROM[ \t]\+\([a-zA-Z0-9_]\+\) )| \1 |i" $WORKF > $WORKT
+STAGE4	164	0	0	sed "s|(SELECT[ \t]\+[^()]\+FROM[ \t]\+\([^ \t]\+\)[ \t][^()]\+)| \1 |gi" $WORKF > $WORKT
+STAGE4	165	0	0	sed "s|(SELECT[ \t]\+[^()]\+FROM[ \t]\+\([^ \t]\+\)[ \t][^()]\+)| \1 |i" $WORKF > $WORKT
+STAGE4	166	0	0	sed "s|(SELECT[ \t]\+[^()]\+FROM[ \t]\+\([^ \t]\+\)[ \t][^()]\+)| \1 |i" $WORKF > $WORKT
+STAGE4	167	0	0	sed "s|(SELECT[ \t]\+[^()]\+FROM[^()]\+)| 1 |gi" $WORKF > $WORKT
+STAGE4	168	0	0	sed "s|(SELECT[ \t]\+[^()]\+FROM[^()]\+)| 1 |i" $WORKF > $WORKT
+STAGE4	169	0	0	sed "s|(SELECT[ \t]\+[^()]\+FROM[^()]\+)| 1 |i" $WORKF > $WORKT
+STAGE4	170	0	0	sed "s/[0-9]\+/0/g" $WORKF > $WORKT
+STAGE4	171	0	0	sed "s/[0-9]\+/1/" $WORKF > $WORKT
+STAGE4	172	0	0	sed "s/ -[0-9]\+/ -1/g" $WORKF > $WORKT
+STAGE4	173	0	0	sed "s/ -[0-9]\+/ -1/g" $WORKF > $WORKT
+STAGE4	174	0	0	sed "s/ -1/ 1/g" $WORKF > $WORKT
+STAGE4	175	0	0	sed "s/ [0-9]\+\.[0-9]\+ / 1.0 /" $WORKF > $WORKT
+STAGE4	176	0	0	sed "s/ [0-9]\+\.[0-9]\+ / 1 /g" $WORKF > $WORKT
+STAGE4	177	0	0	sed "s/[0-9]\+\.[0-9]\+/1.0/" $WORKF > $WORKT
+STAGE4	178	0	0	sed "s/[0-9]\+\.[0-9]\+/1/g" $WORKF > $WORKT
+STAGE4	179	0	0	sed "s/BETWEEN[^A]\+AND/AND/gi" $WORKF > $WORKT
+STAGE4	180	0	0	sed "s/BETWEEN[^A]\+AND/AND/i" $WORKF > $WORKT
+STAGE4	181	0	0	sed "s/BETWEEN[^A]\+AND/AND/i" $WORKF > $WORKT
+STAGE4	182	0	0	sed "s/DESC//gi" $WORKF > $WORKT
+STAGE4	183	0	0	sed "s/DESC//i" $WORKF > $WORKT
+STAGE4	184	0	0	sed "s/ASC//gi" $WORKF > $WORKT
+STAGE4	185	0	0	sed "s/ASC//i" $WORKF > $WORKT
+STAGE4	186	0	0	sed "s/SELECT[^F]\+FROM/SELECT * FROM/gi" $WORKF > $WORKT
+STAGE4	187	0	0	sed "s/SELECT[^F]\+FROM/SELECT * FROM/i" $WORKF > $WORKT
+STAGE4	188	0	0	sed "s/SELECT[^F]\+FROM/SELECT 1 FROM/gi" $WORKF > $WORKT
+STAGE4	189	0	0	sed "s/SELECT[^F]\+FROM/SELECT 1 FROM/i" $WORKF > $WORKT
+STAGE4	190	0	0	sed "s/LEFT/ /gi" $WORKF > $WORKT
+STAGE4	191	0	0	sed "s/LEFT/ /g" $WORKF > $WORKT
+STAGE4	192	0	0	sed "s/RIGHT/ /gi" $WORKF > $WORKT
+STAGE4	193	0	0	sed "s/RIGHT/ /i" $WORKF > $WORKT
+STAGE4	194	0	0	sed "s/OUTER/ /gi" $WORKF > $WORKT
+STAGE4	195	0	0	sed "s/OUTER/ /i" $WORKF > $WORKT
+STAGE4	196	0	0	sed "s/INNER/ /gi" $WORKF > $WORKT
+STAGE4	197	0	0	sed "s/INNER/ /g" $WORKF > $WORKT
+STAGE4	198	0	0	sed "s/CROSS/ /gi" $WORKF > $WORKT
+STAGE4	199	0	0	sed "s/CROSS/ /i" $WORKF > $WORKT
+STAGE4	200	0	0	sed "s/NATURAL/ /gi" $WORKF > $WORKT
+STAGE4	201	0	0	sed "s/NATURAL/ /i" $WORKF > $WORKT
+STAGE4	202	0	0	sed "s/FOLLOWING/ /gi" $WORKF > $WORKT
+STAGE4	203	0	0	sed "s/FOLLOWING/ /i" $WORKF > $WORKT
+STAGE4	204	0	0	sed "s/BETWEEN[ \t]\+(/BETWEEN(/gi;s/BETWEEN([^)]\+)/BETWEEN 1/gi" $WORKF > $WORKT
+STAGE4	205	0	0	sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^)]\+)/BETWEEN 1/i" $WORKF > $WORKT
+STAGE4	206	0	0	sed "s/BETWEEN[ \t]\+(/BETWEEN(/gi;s/BETWEEN([^()]\+)/BETWEEN 1/gi" $WORKF > $WORKT  # i.e. single instances, potentially later in the file, which do not have double (())
+STAGE4	207	0	0	sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^()]\+)/BETWEEN 1/i" $WORKF > $WORKT
+STAGE4	208	0	0	sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^)]\+)[^)]\+)/BETWEEN 1/gi" $WORKF > $WORKT  # i.e. double: (())
+STAGE4	209	0	0	sed "s/BETWEEN[ \t]\+(/BETWEEN(/i;s/BETWEEN([^)]\+)[^)]\+)/BETWEEN 1/i" $WORKF > $WORKT
+STAGE4	210	0	0	sed "s/AS[ \t]\+(/AS(/gi;s/AS([^)]\+)/AS vvv1/gi" $WORKF > $WORKT
+STAGE4	211	0	0	sed "s/AS[ \t]\+(/AS(/i;s/AS([^)]\+)/AS vvv2/i" $WORKF > $WORKT  # vvv2: defensive coding
+STAGE4	212	0	0	sed "s/AS[ \t]\+(/AS(/gi;s/AS([^()]\+)/AS vvv1/gi" $WORKF > $WORKT
+STAGE4	213	0	0	sed "s/AS[ \t]\+(/AS(/i;s/AS([^()]\+)/AS vvv2/i" $WORKF > $WORKT
+STAGE4	214	0	0	sed "s/AS[ \t]\+(/AS(/i;s/AS([^)]\+)[^)]\+)/AS vvv4/i" $WORKF > $WORKT  # i.e. double: (())
+STAGE4	215	0	0	sed "s/AS[ \t]\+(/AS(/i;s/AS([^)]\+)[^)]\+)/AS vvv4/i" $WORKF > $WORKT
+STAGE4	216	0	0	sed "s/WITH[^)]\+)//gi" $WORKF > $WORKT
+STAGE4	217	0	0	sed "s/WITH[^)]\+)//i" $WORKF > $WORKT
+STAGE4	218	0	0	sed "s/WITH[^)]\+)//i" $WORKF > $WORKT
+STAGE4	219	0	0	sed "s/WITH[^*]\+([^()]\+)//gi" $WORKF > $WORKT  # WITH followed by text followed by (
+STAGE4	220	0	0	sed "s/WITH[^*]\+([^()]\+)//i" $WORKF > $WORKT
+STAGE4	221	0	0	sed "s/WITH[^*]\+([^()]\+)//i" $WORKF > $WORKT
+STAGE4	222	0	0	sed "s/WITH[^)]\+)[^)]\+)//gi" $WORKF > $WORKT
+STAGE4	223	0	0	sed "s/WITH[^)]\+)[^)]\+)//i" $WORKF > $WORKT
+STAGE4	224	0	0	sed "s/WITH[^)]\+)[^)]\+)//i" $WORKF > $WORKT
+STAGE4	225	0	0	sed "s/(SELECT[^)]\+)/(SELECT 1)/gi" $WORKF > $WORKT
+STAGE4	226	0	0	sed "s/(SELECT[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
+STAGE4	227	0	0	sed "s/(SELECT[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
+STAGE4	228	0	0	sed "s/(SELECT[^()]\+)/(SELECT 1)/gi" $WORKF > $WORKT
+STAGE4	229	0	0	sed "s/(SELECT[^()]\+)/(SELECT 1)/i" $WORKF > $WORKT
+STAGE4	230	0	0	sed "s/(SELECT[^()]\+)/(SELECT 1)/i" $WORKF > $WORKT
+STAGE4	231	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1)/gi" $WORKF > $WORKT
+STAGE4	232	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
+STAGE4	233	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1)/i" $WORKF > $WORKT
+STAGE4	234	0	0	sed "s/(SELECT[^(]\+)/(SELECT (/gi" $WORKF > $WORKT
+STAGE4	235	0	0	sed "s/(SELECT[^(]\+)/(SELECT (/i" $WORKF > $WORKT
+STAGE4	236	0	0	sed "s/(SELECT[^(]\+)/(SELECT (/i" $WORKF > $WORKT
+STAGE4	237	0	0	sed "s/(SELECT[^()]\+)/(SELECT (/gi" $WORKF > $WORKT
+STAGE4	238	0	0	sed "s/(SELECT[^()]\+)/(SELECT (/i" $WORKF > $WORKT
+STAGE4	239	0	0	sed "s/(SELECT[^()]\+)/(SELECT (/i" $WORKF > $WORKT
+STAGE4	240	0	0	sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t)/gi" $WORKF > $WORKT
+STAGE4	241	0	0	sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t)/i" $WORKF > $WORKT
+STAGE4	242	0	0	sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t1)/gi" $WORKF > $WORKT
+STAGE4	243	0	0	sed "s/(SELECT[^)]\+)/(SELECT 1 FROM t1)/i" $WORKF > $WORKT
+STAGE4	244	0	0	sed "s/(SELECT[^()]\+)/(SELECT 1 FROM t)/gi" $WORKF > $WORKT
+STAGE4	245	0	0	sed "s/(SELECT[^()]\+)/(SELECT 1 FROM t)/i" $WORKF > $WORKT
+STAGE4	246	0	0	sed "s/(SELECT[^()]\+)/(SELECT 1 FROM t1)/gi" $WORKF > $WORKT
+STAGE4	247	0	0	sed "s/(SELECT[^()]\+)/(SELECT 1 FROM t1)/i" $WORKF > $WORKT
+STAGE4	248	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1 FROM t)/gi" $WORKF > $WORKT
+STAGE4	249	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1 FROM t)/i" $WORKF > $WORKT
+STAGE4	250	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1 FROM t1)/gi" $WORKF > $WORKT
+STAGE4	251	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT 1 FROM t1)/i" $WORKF > $WORKT
+STAGE4	252	0	0	sed "s/(SELECT[^(]\+)/(SELECT 1 FROM (/gi" $WORKF > $WORKT
+STAGE4	253	0	0	sed "s/(SELECT[^(]\+)/(SELECT 1 FROM (/i" $WORKF > $WORKT
+STAGE4	254	0	0	sed "s/(SELECT[^(]\+)/(SELECT 1 FROM (/i" $WORKF > $WORKT
+STAGE4	255	0	0	sed "s/(SELECT[^()]\+)/(SELECT 1 FROM (/gi" $WORKF > $WORKT
+STAGE4	256	0	0	sed "s/(SELECT[^()]\+)/(SELECT 1 FROM (/i" $WORKF > $WORKT
+STAGE4	257	0	0	sed "s/(SELECT[^)]\+)/(SELECT * FROM t)/gi" $WORKF > $WORKT
+STAGE4	258	0	0	sed "s/(SELECT[^)]\+)/(SELECT * FROM t)/i" $WORKF > $WORKT
+STAGE4	259	0	0	sed "s/(SELECT[^)]\+)/(SELECT * FROM t1)/ig" $WORKF > $WORKT
+STAGE4	260	0	0	sed "s/(SELECT[^)]\+)/(SELECT * FROM t1)/i" $WORKF > $WORKT
+STAGE4	261	0	0	sed "s/(SELECT[^()]\+)/(SELECT * FROM t)/gi" $WORKF > $WORKT
+STAGE4	262	0	0	sed "s/(SELECT[^()]\+)/(SELECT * FROM t)/i" $WORKF > $WORKT
+STAGE4	263	0	0	sed "s/(SELECT[^()]\+)/(SELECT * FROM t1)/ig" $WORKF > $WORKT
+STAGE4	264	0	0	sed "s/(SELECT[^()]\+)/(SELECT * FROM t1)/i" $WORKF > $WORKT
+STAGE4	265	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT * FROM t)/gi" $WORKF > $WORKT
+STAGE4	266	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT * FROM t)/i" $WORKF > $WORKT
+STAGE4	267	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT * FROM t1)/gi" $WORKF > $WORKT
+STAGE4	268	0	0	sed "s/(SELECT[^)]\+)[^)]\+)/(SELECT * FROM t1)/i" $WORKF > $WORKT
+STAGE4	269	0	0	sed "s/(SELECT[^(]\+)/(SELECT * FROM (/gi" $WORKF > $WORKT
+STAGE4	270	0	0	sed "s/(SELECT[^(]\+)/(SELECT * FROM (/i" $WORKF > $WORKT
+STAGE4	271	0	0	sed "s/(SELECT[^(]\+)/(SELECT * FROM (/i" $WORKF > $WORKT
+STAGE4	272	0	0	sed "s/(SELECT[^()]\+)/(SELECT * FROM (/gi" $WORKF > $WORKT
+STAGE4	273	0	0	sed "s/(SELECT[^()]\+)/(SELECT * FROM (/i" $WORKF > $WORKT
+STAGE4	274	1	0	sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+STAGE4	275	0	0	sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /gi" $WORKF > $WORKT  # Long math calculations
+STAGE4	276	0	0	sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /i" $WORKF > $WORKT
+STAGE4	277	0	0	sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /gi" $WORKF > $WORKT
+STAGE4	278	0	0	sed "s/[- *+%^0-9][- *+%^0-9][- *+%^0-9]\+/ + 1 /i" $WORKF > $WORKT
+STAGE4	279	0	0	sed "s/ + 1 //gi" $WORKF > $WORKT
+STAGE4	280	0	0	sed "s/CONCURRENT//gi" $WORKF > $WORKT
+STAGE4	281	0	0	sed "s/CONCURRENT//i" $WORKF > $WORKT
+STAGE4	282	0	0	sed "s/'[^']\{32,\}'/'a'/g" $WORKF > $WORKT  # All long '...' -> 'a'
+STAGE4	283	0	0	sed "s/'[^']\{32,\}'/'a'/" $WORKF > $WORKT   # First only
+STAGE4	284	0	0	sed "s/\"[^\"]\{32,\}\"/\"a\"/g" $WORKF > $WORKT  # Idem, "..."
+STAGE4	285	0	0	sed "s/\"[^\"]\{32,\}\"/\"a\"/" $WORKF > $WORKT
+STAGE4	286	0	0	sed "s/'\([^']\{16\}\)[^']\{16,\}'/'\1'/g" $WORKF > $WORKT  # Keep first 16
+STAGE4	287	0	0	sed "s/'\([^']\{64\}\)[^']\{32,\}'/'\1'/g" $WORKF > $WORKT  # Keep first 64
+STAGE4	288	0	0	sed -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{500\}'/'\1'/g" $WORKF > $WORKT  # 5x trim 500
+STAGE4	289	0	0	sed -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{100\}'/'\1'/g" $WORKF > $WORKT  # 5x trim 100
+STAGE4	290	0	0	sed -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{20\}'/'\1'/g" $WORKF > $WORKT  # 5x trim 20
+STAGE4	291	0	0	sed -e "s/'\([^']\{1,\}\)[^']\{5\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{5\}'/'\1'/g" -e "s/'\([^']\{1,\}\)[^']\{5\}'/'\1'/g" $WORKF > $WORKT  # 3x trim 5
+STAGE4	292	0	0	sed "s/'\([^']\{1,\}\)[^']'/'\1'/g" $WORKF > $WORKT  # Trim 1 char
+STAGE4	293	0	0	sed -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{100\}\"/\"\1\"/g" $WORKF > $WORKT
+STAGE4	294	0	0	sed -e "s/\"\([^\"]\{1,\}\)[^\"]\{20\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{20\}\"/\"\1\"/g" -e "s/\"\([^\"]\{1,\}\)[^\"]\{20\}\"/\"\1\"/g" $WORKF > $WORKT
+STAGE4	295	0	0	sed "s/0x[0-9A-Fa-f]\{8,\}/0x0/g" $WORKF > $WORKT
+STAGE4	296	0	0	sed "s/0x[0-9A-Fa-f]\{8,\}/0x0/" $WORKF > $WORKT
+STAGE4	297	0	0	sed "s/'[^']\{32,\}'/'a'/2" $WORKF > $WORKT  # 2nd long '...' -> 'a'
+STAGE4	298	0	0	sed "s/'[^']\{32,\}'/'a'/3" $WORKF > $WORKT  # 3rd
+STAGE4	299	0	0	sed "s/'[^']\{32,\}'/'a'/4" $WORKF > $WORKT  # 4th
+STAGE4	300	0	0	sed "s/\"[^\"]\{32,\}\"/\"a\"/2" $WORKF > $WORKT  # Idem, "..."
+STAGE4	301	0	0	sed "s/\"[^\"]\{32,\}\"/\"a\"/3" $WORKF > $WORKT
+STAGE4	302	0	0	sed "s/\"[^\"]\{32,\}\"/\"a\"/4" $WORKF > $WORKT
+STAGE4	303	0	0	sed "s/'\([^']\{16\}\)[^']\{16,\}'/'\1'/2" $WORKF > $WORKT  # 2nd only
+STAGE4	304	0	0	sed "s/'\([^']\{16\}\)[^']\{16,\}'/'\1'/3" $WORKF > $WORKT  # 3rd only
+STAGE4	305	0	0	sed "s/'\([^']\{16\}\)[^']\{16,\}'/'\1'/4" $WORKF > $WORKT  # 4th only
+STAGE4	306	0	0	sed "s/'[^']\{33,\}'/'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'/g" $WORKF > $WORKT  # 33+ -> 32 a
+STAGE4	307	0	0	sed "s/'[^']\{17,\}'/'aaaaaaaaaaaaaaaa'/g" $WORKF > $WORKT                  # 17+ -> 16 a
+STAGE4	308	0	0	sed "s/'[^']\{9,\}'/'aaaaaaaa'/g" $WORKF > $WORKT                           # 9+  -> 8 a
+STAGE4	309	0	0	sed "s/'[^']\{5,\}'/'aaaa'/g" $WORKF > $WORKT                               # 5+  -> 4 a
+STAGE4	310	0	0	sed "s/'[^']\{3,\}'/'aa'/g" $WORKF > $WORKT                                 # 3+  -> 2 a
+STAGE4	311	0	0	sed "s/\"[^\"]\{17,\}\"/\"aaaaaaaaaaaaaaaa\"/g" $WORKF > $WORKT
+STAGE4	312	0	0	sed "s/\"[^\"]\{9,\}\"/\"aaaaaaaa\"/g" $WORKF > $WORKT
+STAGE4	313	0	0	sed "s/\"[^\"]\{5,\}\"/\"aaaa\"/g" $WORKF > $WORKT
+STAGE4	314	0	0	sed "s/\"[^\"]\{3,\}\"/\"aa\"/g" $WORKF > $WORKT
+STAGE4	315	0	0	sed "s/'aa'/'a'/g" $WORKF > $WORKT
+STAGE4	316	0	0	sed "s/\"aa\"/\"a\"/g" $WORKF > $WORKT
+STAGE4	317	0	0	sed "s/\(INSERT\|REPLACE\)\(\([\t ]\+[a-zA-Z_]\+\)*\)\([\t ]\+INTO[\t ]\+[a-zA-Z0-9_.]\+\)[\t ]*([^)]*)\([\t ]*VALUES\)/\1\2\4\5/gi" $WORKF > $WORKT
+STAGE4	318	0	0	sed "s/\(CHARACTER[\t ]\+SET\|CHARSET\)[\t ]*=\{0,1\}[\t ]*\('[^']*'\|\"[^\"]*\"\|[a-zA-Z0-9_]\+\)//gi" $WORKF > $WORKT
+STAGE4	319	0	0	sed "s/COLLATE[\t ]*=\{0,1\}[\t ]*\('[^']*'\|\"[^\"]*\"\|[a-zA-Z0-9_]\+\)//gi" $WORKF > $WORKT
+STAGE4	320	0	0	sed "s/[\t ]*ZEROFILL//gi" $WORKF > $WORKT
+STAGE4	321	0	0	sed "s/CREATE[\t ]\+OR[\t ]\+REPLACE[\t ]\+TABLE/CREATE TABLE/gi" $WORKF > $WORKT
+STAGE4	322	0	1	awk '\n      function is_complete(s,    j, c, in_str, str_ch, esc, len) {\n        in_str = 0; str_ch = ""; esc = 0; len = length(s)\n        for (j = 1; j <= len; j++) {\n          c = substr(s, j, 1)\n          if (in_str) {\n            if (esc) { esc = 0 }\n            else if (c == "\\") { esc = 1 }\n            else if (c == str_ch) {\n              if (substr(s, j+1, 1) == str_ch) { j++ }\n              else { in_str = 0; str_ch = "" }\n            }\n          } else {\n            if (c == "\047" || c == "\"") { in_str = 1; str_ch = c; esc = 0 }\n            else if (c == ";") return 1\n          }\n        }\n        return 0\n      }\n      function drop_col_list(s,    upper, pre, rest, depth, close_idx, after, j, ch) {\n        upper = toupper(s)  # awk has no /i flag; match against uppercase copy, operate on original (toupper preserves length in C/POSIX locale)\n        if (match(upper, /(INSERT|REPLACE)([[:space:]]+[A-Z_]+)*[[:space:]]+INTO[[:space:]]+[A-Z0-9_.]+[[:space:]]*\(/)) {\n          pre = substr(s, 1, RSTART + RLENGTH - 1)\n          rest = substr(s, RSTART + RLENGTH)\n          depth = 1; close_idx = 0\n          for (j = 1; j <= length(rest); j++) {\n            ch = substr(rest, j, 1)\n            if (ch == "(") depth++\n            else if (ch == ")") { depth--; if (depth == 0) { close_idx = j; break } }\n          }\n          if (close_idx > 0) {\n            after = substr(rest, close_idx + 1)\n            if (toupper(after) ~ /^[[:space:]]*VALUES/) {\n              sub(/[[:space:]]*\($/, "", pre)\n              return pre after\n            }\n          }\n        }\n        return s\n      }\n      toupper($0) ~ /^[[:space:]]*(INSERT|REPLACE)([[:space:]]+[A-Z_]+)*[[:space:]]+INTO/ {\n        buf = $0\n        while (!is_complete(buf)) {\n          if ((getline nl) <= 0) break\n          buf = buf " " nl\n        }\n        print drop_col_list(buf); next\n      }\n      { print }\n    ' $WORKF > $WORKT
+STAGE7	1	0	0	sed "s/[\t]\+/ /g" $WORKF > $WORKT
+STAGE7	2	0	0	sed "s/[ ]\+/ /g" $WORKF > $WORKT
+STAGE7	3	0	0	sed "s/[ ]*,/,/g" $WORKF > $WORKT
+STAGE7	4	0	0	sed "s/,[ ]*/,/g" $WORKF > $WORKT
+STAGE7	5	0	0	sed "s/[ ]*;[ ]*/;/g" $WORKF > $WORKT
+STAGE7	6	0	0	sed -e "s/^[ ]*//g" -e "s/[ ]*$//g" $WORKF > $WORKT
+STAGE7	7	0	0	sed "s/GRANDPARENT/gp/g" $WORKF > $WORKT
+STAGE7	8	0	0	sed "s/PARENT/p/g" $WORKF > $WORKT
+STAGE7	9	0	0	sed "s/CHILD/c/g" $WORKF > $WORKT
+STAGE7	10	0	0	sed "s/\([(,]\)[ ]*'a'[ ]*/\1''/g;s/[ ]*'a'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Simplify INSERT VALUES
+STAGE7	11	0	0	sed "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante ''
+STAGE7	12	0	0	sed "s/\([(,]\)[ ]*'[a-z]'[ ]*/\1''/g;s/[ ]*'[a-z]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+STAGE7	13	0	0	sed "s/\([(,]\)[ ]*'[A-Z]'[ ]*/\1''/g;s/[ ]*'[A-Z]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+STAGE7	14	0	0	sed "s/\([(,]\)[ ]*'[a-zA-Z]'[ ]*/\1''/g;s/[ ]*'[a-zA-Z]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+STAGE7	15	0	0	sed "s/\([(,]\)[ ]*'[a-z]*'[ ]*/\1''/g;s/[ ]*'[a-z]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+STAGE7	16	0	0	sed "s/\([(,]\)[ ]*'[A-Z]*'[ ]*/\1''/g;s/[ ]*'[A-Z]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+STAGE7	17	0	0	sed "s/\([(,]\)[ ]*'[a-zA-Z]*'[ ]*/\1''/g;s/[ ]*'[a-zA-Z]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+STAGE7	18	0	0	sed "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante '' again now
+STAGE7	19	0	0	sed "s/([ ]*[0-9][ ]*,/(0,/g;s/,[ ]*[0-9][ ]*,/,0,/g;s/,[ ]*[0-9][ ]*)/,0)/g" $WORKF > $WORKT
+STAGE7	20	0	0	sed "s/([ ]*[0-9]*[ ]*,/(0,/g;s/,[ ]*[0-9]*[ ]*,/,0,/g;s/,[ ]*[0-9]*[ ]*)/,0)/g" $WORKF > $WORKT
+STAGE7	21	0	0	sed "s/([ ]*NULL[ ]*,/(1,/g;s/,[ ]*NULL[ ]*,/,1,/g;s/,[ ]*NULL[ ]*)/,1)/g" $WORKF > $WORKT
+STAGE7	22	0	0	sed "s/([ ]*NULL[ ]*,/(0,/g;s/,[ ]*NULL[ ]*,/,0,/g;s/,[ ]*NULL[ ]*)/,0)/g" $WORKF > $WORKT
+STAGE7	23	0	0	sed "s/([ ]*NULL[ ]*,/('',/g;s/,[ ]*NULL[ ]*,/,'',/g;s/,[ ]*NULL[ ]*)/,'')/g" $WORKF > $WORKT
+STAGE7	24	0	0	sed "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante '' again now
+STAGE7	25	0	0	sed "s/\([(,]\)[ ]*'[0-9]'[ ]*/\1''/g;s/[ ]*'[0-9]'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+STAGE7	26	0	0	sed "s/\([(,]\)[ ]*'[0-9]*'[ ]*/\1''/g;s/[ ]*'[0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT
+STAGE7	27	0	0	sed "s/\([(,]\)[ ]*'[-0-9]*'[ ]*/\1''/g;s/[ ]*'[-0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Date
+STAGE7	28	0	0	sed "s/\([(,]\)[ ]*'[:0-9]*'[ ]*/\1''/g;s/[ ]*'[:0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Time
+STAGE7	29	0	0	sed "s/\([(,]\)[ ]*'[:.0-9]*'[ ]*/\1''/g;s/[ ]*'[:.0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Time, FSP
+STAGE7	30	0	0	sed "s/\([(,]\)[ ]*'[-: 0-9]*'[ ]*/\1''/g;s/[ ]*'[-: 0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Datetime
+STAGE7	31	0	0	sed "s/\([(,]\)[ ]*'[-.: 0-9]*'[ ]*/\1''/g;s/[ ]*'[-.: 0-9]*'[ ]*\([,)]\)/''\1/g" $WORKF > $WORKT  # Dt, FSP
+STAGE7	32	0	0	sed "s/\([(,]\)[ ]*''[ ]*/\1/g;s/[ ]*''[ ]*\([,)]\)/\1/g" $WORKF > $WORKT  # Try and elimiante '' again now
+STAGE7	33	0	0	sed "s/[ ]*'[a-z]'[ ]*/''/g" $WORKF > $WORKT
+STAGE7	34	0	0	sed "s/[ ]*'[A-Z]'[ ]*/''/g" $WORKF > $WORKT
+STAGE7	35	0	0	sed "s/[ ]*'[a-zA-Z]'[ ]*/''/g" $WORKF > $WORKT
+STAGE7	36	0	0	sed "s/[ ]*'[a-z]*'[ ]*/''/g" $WORKF > $WORKT
+STAGE7	37	0	0	sed "s/[ ]*'[A-Z]*'[ ]*/''/g" $WORKF > $WORKT
+STAGE7	38	0	0	sed "s/[ ]*'[a-zA-Z]*'[ ]*/''/g" $WORKF > $WORKT
+STAGE7	39	0	0	sed "s/[ ]*[0-9][ ]*/0/g" $WORKF > $WORKT
+STAGE7	40	0	0	sed "s/[ ]*[0-9]\+[ ]*/0/g" $WORKF > $WORKT
+STAGE7	41	0	0	sed "s/[ ]*NULL[ ]*//g" $WORKF > $WORKT
+STAGE7	42	0	0	sed "s/[ ]*NULL[ ]*/0/g" $WORKF > $WORKT
+STAGE7	43	0	0	sed "s/[ ]*NULL[ ]*/''/g" $WORKF > $WORKT
+STAGE7	44	0	0	sed "s/[ ]*'[0-9]'[ ]*/''/g" $WORKF > $WORKT
+STAGE7	45	0	0	sed "s/[ ]*'[0-9]*'[ ]*/''/g" $WORKF > $WORKT
+STAGE7	46	0	0	sed "s/[0-9]/0/g" $WORKF > $WORKT
+STAGE7	47	0	0	sed "s/[0-9]\+/0/g" $WORKF > $WORKT
+STAGE7	48	0	0	sed "s/[ ]*AUTO_INCREMENT=[0-9]*//gi" $WORKF > $WORKT
+STAGE7	49	0	0	sed "s/[ ]*AUTO_INCREMENT[ ]*,/,/gi" $WORKF > $WORKT
+STAGE7	50	0	0	sed "s/PRIMARY[ ]*KEY.*,//g" $WORKF > $WORKT
+STAGE7	51	0	0	sed "s/PRIMARY[ ]*KEY[ ]*(\(.*\))/KEY (\1)/g" $WORKF > $WORKT
+STAGE7	52	0	0	sed "s/KEY[ ]*(\(.*\),.*)/KEY(\1)/g" $WORKF > $WORKT
+STAGE7	53	0	0	sed "s/INNR/I/gi" $WORKF > $WORKT
+STAGE7	54	0	0	sed "s/OUTR/O/gi" $WORKF > $WORKT
+STAGE7	55	0	0	sed "s/,LOAD_FILE('[A-Za-z0-9\/.]*'),/,'',/g" $WORKF > $WORKT
+STAGE7	56	0	0	sed "s/_tinyint/ti/g" $WORKF > $WORKT
+STAGE7	57	0	0	sed "s/_smallint/si/g" $WORKF > $WORKT
+STAGE7	58	0	0	sed "s/_mediumint/mi/g" $WORKF > $WORKT
+STAGE7	59	0	0	sed "s/_bigint/bi/g" $WORKF > $WORKT
+STAGE7	60	0	0	sed "s/_int/i/g" $WORKF > $WORKT
+STAGE7	61	0	0	sed "s/_decimal/dc/g" $WORKF > $WORKT
+STAGE7	62	0	0	sed "s/_float/f/g" $WORKF > $WORKT
+STAGE7	63	0	0	sed "s/_bit/bi/g" $WORKF > $WORKT
+STAGE7	64	0	0	sed "s/_double/do/g" $WORKF > $WORKT
+STAGE7	65	0	0	sed "s/_nokey/nk/g" $WORKF > $WORKT
+STAGE7	66	0	0	sed "s/_key/k/g" $WORKF > $WORKT
+STAGE7	67	0	0	sed "s/_varchar/vc/g" $WORKF > $WORKT
+STAGE7	68	0	0	sed "s/_char/c/g" $WORKF > $WORKT
+STAGE7	69	0	0	sed "s/_datetime/dt/g" $WORKF > $WORKT
+STAGE7	70	0	0	sed "s/_date/d/g" $WORKF > $WORKT
+STAGE7	71	0	0	sed "s/_timestamp/ts/g" $WORKF > $WORKT
+STAGE7	72	0	0	sed "s/_time/t/g" $WORKF > $WORKT
+STAGE7	73	0	0	sed "s/_year/y/g" $WORKF > $WORKT
+STAGE7	74	0	0	sed "s/_tinyblob/tb/g" $WORKF > $WORKT
+STAGE7	75	0	0	sed "s/_mediumblob/mb/g" $WORKF > $WORKT
+STAGE7	76	0	0	sed "s/_longblob/lb/g" $WORKF > $WORKT
+STAGE7	77	0	0	sed "s/_blob/b/g" $WORKF > $WORKT
+STAGE7	78	0	0	sed "s/_tinytext/tt/g" $WORKF > $WORKT
+STAGE7	79	0	0	sed "s/_mediumtext/mt/g" $WORKF > $WORKT
+STAGE7	80	0	0	sed "s/_longtext/lt/g" $WORKF > $WORKT
+STAGE7	81	0	0	sed "s/_text/te/g" $WORKF > $WORKT
+STAGE7	82	0	0	sed "s/_varbinary/vb/g" $WORKF > $WORKT
+STAGE7	83	0	0	sed "s/_binary/bn/g" $WORKF > $WORKT
+STAGE7	84	0	0	sed "s/_enum/e/g" $WORKF > $WORKT
+STAGE7	85	0	0	sed "s/_set/s/g" $WORKF > $WORKT
+STAGE7	86	0	0	sed "s/_not/n/g" $WORKF > $WORKT
+STAGE7	87	0	0	sed "s/_null/nu/g" $WORKF > $WORKT
+STAGE7	88	0	0	sed "s/_latin1/l/g" $WORKF > $WORKT
+STAGE7	89	0	0	sed "s/_utf8/u/g" $WORKF > $WORKT
+STAGE7	90	0	0	sed -e "s/;[ ]*;/;/g" -e "s/[ ]*,[ ]*/,/g" $WORKF > $WORKT
+STAGE7	91	0	0	sed "s/VARCHAR[ ]*(\(.*\))/CHAR (\1)/gi" $WORKF > $WORKT
+STAGE7	92	0	0	sed "s/VARBINARY[ ]*(\(.*\))/BINARY (\1)/gi" $WORKF > $WORKT
+STAGE7	93	0	0	sed "s/DATETIME/DATE/gi" $WORKF > $WORKT
+STAGE7	94	0	0	sed "s/TIME/DATE/gi" $WORKF > $WORKT
+STAGE7	95	0	0	sed "s/TINYBLOB/BLOB/gi" $WORKF > $WORKT
+STAGE7	96	0	0	sed "s/MEDIUMBLOB/BLOB/gi" $WORKF > $WORKT
+STAGE7	97	0	0	sed "s/LONGBLOB/BLOB/gi" $WORKF > $WORKT
+STAGE7	98	0	0	sed "s/TINYTEXT/TEXT/gi" $WORKF > $WORKT
+STAGE7	99	0	0	sed "s/MEDIUMTEXT/TEXT/gi" $WORKF > $WORKT
+STAGE7	100	0	0	sed "s/LONGTEXT/TEXT/gi" $WORKF > $WORKT
+STAGE7	101	0	0	sed "s/INTEGER/INT/gi" $WORKF > $WORKT
+STAGE7	102	0	0	sed "s/TINYINT/INT/gi" $WORKF > $WORKT
+STAGE7	103	0	0	sed "s/SMALLINT/INT/gi" $WORKF > $WORKT
+STAGE7	104	0	0	sed "s/MEDIUMINT/INT/gi" $WORKF > $WORKT
+STAGE7	105	0	0	sed "s/BIGINT/INT/gi;" $WORKF > $WORKT
+STAGE7	106	0	0	sed "s/BOOLEAN/INT/gi;" $WORKF > $WORKT
+STAGE7	107	0	0	sed "s/NUMERIC/INT/gi;" $WORKF > $WORKT
+STAGE7	108	0	0	sed "s/SERIAL/INT/gi;" $WORKF > $WORKT
+STAGE7	109	0	0	sed "s/WHERE[ ]*(\(.*\),.*)/WHERE (\1)/g" $WORKF > $WORKT
+STAGE7	110	0	0	sed "s/\\\'[0-9a-zA-Z]\\\'/0/g" $WORKF > $WORKT  # \'c\' in PS matching
+STAGE7	111	0	0	sed "s/\\\'[0-9a-zA-Z]\\\'/1/g" $WORKF > $WORKT
+STAGE7	112	0	0	sed "s/\\\'[0-9a-zA-Z]*\\\'/0/g" $WORKF > $WORKT
+STAGE7	113	0	0	sed "s/\\\'[0-9a-zA-Z]*\\\'/1/g" $WORKF > $WORKT
+STAGE7	114	0	0	sed "s/\\\'[0-9a-zA-Z]*\\\'/\\\'\\\'/g" $WORKF > $WORKT
+STAGE7	115	0	0	sed "s/<>/=/g" $WORKF > $WORKT
+STAGE7	116	0	0	sed "s/([ ]*(/((/g" $WORKF > $WORKT
+STAGE7	117	0	0	sed "s/)[ ]*)/))/g" $WORKF > $WORKT
+STAGE7	118	0	0	sed "s/([ ]*/(/g" $WORKF > $WORKT
+STAGE7	119	0	0	sed "s/[ ]*)/)/g" $WORKF > $WORKT
+STAGE7	120	0	0	sed "s/ prep_stmt_[0-9]*/ p1/g" $WORKF > $WORKT
+STAGE7	121	0	0	sed "/INSERT[ ]*INTO/,/)/{s/INSERT[ ]*INTO[ ]*\(.*\)[ ]*(/INSERT INTO \1/p;d}" $WORKF > $WORKT
+STAGE7	122	0	0	sed "s/QUICK //gi" $WORKF > $WORKT
+STAGE7	123	0	0	sed "s/LOW_PRIORITY //gi" $WORKF > $WORKT
+STAGE7	124	0	0	sed "s/IGNORE //gi" $WORKF > $WORKT
+STAGE7	125	0	0	sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/gi" $WORKF > $WORKT
+STAGE7	126	0	0	sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/i" $WORKF > $WORKT
+STAGE7	127	0	0	sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/i" $WORKF > $WORKT
+STAGE7	128	0	0	sed "s/enum[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('','','','','',/i" $WORKF > $WORKT
+STAGE7	129	0	0	sed "s/enum[ ]*('','','','','','',/ENUM('',/gi" $WORKF > $WORKT
+STAGE7	130	0	0	sed "s/enum[ ]*('','','','',/ENUM('',/gi" $WORKF > $WORKT
+STAGE7	131	0	0	sed "s/enum[ ]*('','','',/ENUM('',/gi" $WORKF > $WORKT
+STAGE7	132	0	0	sed "s/enum[ ]*('','',/ENUM('',/gi" $WORKF > $WORKT
+STAGE7	133	0	0	sed "s/set[ ]*('[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+STAGE7	134	0	0	sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/gi" $WORKF > $WORKT
+STAGE7	135	0	0	sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/i" $WORKF > $WORKT
+STAGE7	136	0	0	sed "s/set[ ]*('','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*','[a-zA-Z0-9]*',/ENUM('',/i" $WORKF > $WORKT
+STAGE7	137	0	0	sed "s/set[ ]*('','','','','','',/SET('',/gi" $WORKF > $WORKT
+STAGE7	138	0	0	sed "s/set[ ]*('','','','',/SET('',/gi" $WORKF > $WORKT
+STAGE7	139	0	0	sed "s/set[ ]*('','','',/SET('',/gi" $WORKF > $WORKT
+STAGE7	140	0	0	sed "s/set[ ]*('','',/SET('',/gi" $WORKF > $WORKT
+STAGE7	141	1	0	sed "s/ ENGINE=TokuDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT # NOSKIP as lenght of 'TokuDB' is same as 'InnoDB' and we want to check if the testcase is engine specific or not
+STAGE7	142	0	0	sed "s/ ENGINE=RocksDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT  # NOSKIP not required; InnoDB is shorter then RocksDB
+STAGE7	143	1	0	sed "s/ ENGINE=MEMORY/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+STAGE7	144	1	0	sed "s/ ENGINE=MyISAM/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+STAGE7	145	1	0	sed "s/ ENGINE=CSV/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+STAGE7	146	1	0	sed "s/ ENGINE=NDB/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+STAGE7	147	1	0	sed "s/ ENGINE=[A-Za-z_-]\+/ ENGINE=InnoDB/gi" $WORKF > $WORKT
+STAGE7	148	0	0	sed "s/ ENGINE=[A-Za-z_-]\+/ /gi" $WORKF > $WORKT
+STAGE7	149	0	0	sed "s/ ENGINE=TokuDB/ ENGINE=none/gi" $WORKF > $WORKT
+STAGE7	150	0	0	sed "s/ ENGINE=RocksDB/ ENGINE=none/gi" $WORKF > $WORKT
+STAGE7	151	1	0	sed "s/TokuDB/InnoDB/gi" $WORKF > $WORKT
+STAGE7	152	0	0	sed "s/RocksDB/InnoDB/gi" $WORKF > $WORKT
+STAGE7	153	0	0	sed -e "s/[\t ]\+/ /g" -e "s/ \([;,]\)/\1/g" -e "s/ $//g" -e "s/^ //g" $WORKF > $WORKT
+STAGE7	154	0	0	sed "s/.*/\L&/" $WORKF > $WORKT
+STAGE7	155	0	0	sed "s/[ ]*([ ]*/(/;s/[ ]*)[ ]*/)/" $WORKF > $WORKT
+STAGE7	156	0	0	sed "s/;.*/;/" $WORKF > $WORKT
+STAGE7	157	0	0	sed "s/;#;.*$/;/" $WORKF > $WORKT
+STAGE7	158	0	0	sed "s/''/0/g" $WORKF > $WORKT
+STAGE7	159	0	0	sed "/INSERT/,/;/s/''/0/g" $WORKF > $WORKT
+STAGE7	160	0	0	sed "/SELECT/,/;/s/''/0/g" $WORKF > $WORKT
+STAGE7	161	0	0	sed "s/;[ \t]\+#/;#/" $WORKF > $WORKT  # Remove any spaces/tabs before #EOL comments if present
+STAGE7	162	0	0	sed "s/;[ \t]*#.*/;/" $WORKF > $WORKT  # Attempt to remove #EOL comments
+STAGE7	163	0	0	sed "s/#[^#]\+$/;/" $WORKF > $WORKT  # Another attempt at removing #EOL comments
+STAGE7	164	0	0	sed "s/#[^#]\+$/#/" $WORKF > $WORKT  # If previous attempts do not work, attempt shorter comments
+STAGE7	165	0	0	sed "s/[ \t]\+$//" $WORKF > $WORKT  # Remove spaces at end of line
+STAGE7	166	1	0	sed "s|\([^;]\)$|\1;|" $WORKF > $WORKT  # Add ";" on lines that do not have it
+STAGE7	167	1	0	sed "s|#;|;#|" $WORKF > $WORKT  # Ref line above/below for combination effect
+STAGE7	168	0	0	sed "s/;[ \t]\+;/;/g" $WORKF > $WORKT  # Remove empty statements if possible
+STAGE7	169	0	0	sed "s/[ \t]\+/ /g" $WORKF > $WORKT
+STAGE7	170	0	0	sed "s/  / /" $WORKF > $WORKT
+STAGE7	171	0	0	sed "s/  / /" $WORKF > $WORKT
+STAGE7	172	0	0	sed "s/  / /" $WORKF > $WORKT
+STAGE7	173	0	0	sed "s|;#.*$|;|" $WORKF > $WORKT
+STAGE7	174	0	0	sed "s|;#[^#]\+$|;|" $WORKF > $WORKT
+STAGE7	175	0	0	sed "s/;  ;/;/" $WORKF > $WORKT
+STAGE7	176	0	0	sed "s/; ;/;/" $WORKF > $WORKT
+STAGE7	177	0	0	sed "s/;;/;/" $WORKF > $WORKT
+STAGE7	178	0	0	sed "s/; \+/;/" $WORKF > $WORKT
+STAGE7	179	0	0	sed "s/t1/t/g" $WORKF > $WORKT
+STAGE7	180	0	0	sed "s/c1/c/g" $WORKF > $WORKT
+STAGE7	181	0	0	sed "s/p1/p/g" $WORKF > $WORKT
+STAGE7	182	0	0	sed "s/f1/f/g" $WORKF > $WORKT
+STAGE7	183	0	0	sed "s/v1/c/g" $WORKF > $WORKT
+STAGE7	184	0	0	sed "s/c,c,c/c/g" $WORKF > $WORKT
+STAGE7	185	0	0	sed "s/c,c/c/g" $WORKF > $WORKT
+STAGE7	186	0	0	sed "s/t[ \t]*(v)/t/g" $WORKF > $WORKT
+STAGE7	187	0	0	sed "s/[0-9][0-9][0-9][0-9][0-9]\+/1/gi" $WORKF > $WORKT
+STAGE7	188	0	0	sed "s/[0-9][0-9][0-9][0-9][0-9]\+/1/i" $WORKF > $WORKT
+STAGE7	189	0	0	sed "s/[0-9][0-9][0-9][0-9]\+/1/gi" $WORKF > $WORKT
+STAGE7	190	0	0	sed "s/[0-9][0-9][0-9][0-9]\+/1/i" $WORKF > $WORKT
+STAGE7	191	0	0	sed "s/[0-9][0-9][0-9]\+/1/gi" $WORKF > $WORKT
+STAGE7	192	0	0	sed "s/[0-9][0-9][0-9]\+/1/i" $WORKF > $WORKT
+STAGE7	193	0	0	sed "s/[0-9][0-9]\+/1/gi" $WORKF > $WORKT
+STAGE7	194	0	0	sed "s/[0-9][0-9]\+/1/i" $WORKF > $WORKT
+STAGE7	195	0	0	sed "s/[-+%^*]1//gi" $WORKF > $WORKT
+STAGE7	196	0	0	sed "s/[-+%^*]1//i" $WORKF > $WORKT
+STAGE7	197	0	0	sed "s/[-+%^*] [-+%^*]/-/gi" $WORKF > $WORKT
+STAGE7	198	0	0	sed "s/[-+%^*] [-+%^*]/-/i" $WORKF > $WORKT
+STAGE7	199	0	0	sed "s/- 1/1/i" $WORKF > $WORKT
+STAGE7	200	0	0	sed "s/ORDER BY [^ ]\+//gi" $WORKF > $WORKT
+STAGE7	201	0	0	sed "s/ORDER BY [^ ]\+//i" $WORKF > $WORKT
+STAGE7	202	0	0	sed "s/CASE.*END/1/gi" $WORKF > $WORKT
+STAGE7	203	0	0	sed "s/CASE[^E]\+END/1/gi" $WORKF > $WORKT
+STAGE7	204	0	0	sed "s/CASE.*END/1/i" $WORKF > $WORKT
+STAGE7	205	0	0	sed "s/CASE[^E]\+END/1/i" $WORKF > $WORKT
+STAGE7	206	0	0	sed "s/CASE.*END/CASE WHEN 1 THEN 2 ELSE 3 END/gi" $WORKF > $WORKT
+STAGE7	207	0	0	sed "s/CASE[^E]\+END/CASE WHEN 1 THEN 2 ELSE 3 END/gi" $WORKF > $WORKT
+STAGE7	208	0	0	sed "s/CASE.*END/CASE WHEN 1 THEN 2 ELSE 3 END/i" $WORKF > $WORKT
+STAGE7	209	0	0	sed "s/CASE[^E]\+END/CASE WHEN 1 THEN 2 ELSE 3 END/i" $WORKF > $WORKT
+STAGE7	210	0	0	sed "s/VALUES[ \t]\+([^)]\+),/VALUES (1),/i" $WORKF > $WORKT
+STAGE7	211	0	0	sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
+STAGE7	212	0	0	sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
+STAGE7	213	0	0	sed "s/VALUES[ \t]\+([^)]\+),/VALUES /i" $WORKF > $WORKT
+STAGE7	214	0	0	sed "s/VALUES[ \t]\+(.*)/VALUES (1)/i" $WORKF > $WORKT
+STAGE7	215	0	0	sed "s/([ \t]\+ORDER[ \t]\+BY[ \t]\+t[ \t]\+)/(t)/gi" $WORKF > $WORKT
+STAGE7	216	0	0	sed "s/([ \t]\+ORDER[ \t]\+BY[ \t]\+t[ \t]\+)/(t)/i" $WORKF > $WORKT
+STAGE7	217	0	0	sed "s/([ \t]\+ORDER[ \t]\+BY[ \t]\+[^)]\+)/(t)/gi" $WORKF > $WORKT
+STAGE7	218	0	0	sed "s/([ \t]\+ORDER[ \t]\+BY[ \t]\+[^)]\+)/(t)/i" $WORKF > $WORKT
+STAGE7	219	0	0	sed "s/HAVING[ \t]\+FIRST_VALUE[ \t]\+[^A-Z]\+[A-Z]//gi" $WORKF > $WORKT
+STAGE7	220	0	0	sed "s/SUM[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+STAGE7	221	0	0	sed "s/MAX[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+STAGE7	222	0	0	sed "s/MIN[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+STAGE7	223	0	0	sed "s/AVG[ \t]\+([ \t]\+)/1/gi" $WORKF > $WORKT
+STAGE7	224	0	0	sed "s/CHECK[ \t]\+([^)]\+[)]\+//gi" $WORKF > $WORKT
+STAGE7	225	0	0	sed "s/CHECK[ \t]\+([^)]\+[)]\+//i" $WORKF > $WORKT
+STAGE7	226	0	0	sed "s/CHECK[ \t]\+([^)]\+[)]\+//i" $WORKF > $WORKT
+STAGE7	227	0	0	sed "s/v0/c/gi" $WORKF > $WORKT
+STAGE7	228	0	0	sed "s/ CHAR)/ INT)/gi" $WORKF > $WORKT
+STAGE7	229	0	0	sed "s/c(c)/c/gi" $WORKF > $WORKT
+STAGE7	230	0	0	sed "s|0[-+/ ]\+0|0|gi" $WORKF > $WORKT
+STAGE7	231	0	0	sed "s|0[ \t]*[+/-][ \t]*0|0|gi" $WORKF > $WORKT
+STAGE7	232	0	0	sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
+STAGE7	233	0	0	sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
+STAGE7	234	0	0	sed "s|0[ \t]*[+/-][ \t]*0|0|i" $WORKF > $WORKT
+STAGE7	235	0	0	sed "s/stmt/s/gi" $WORKF > $WORKT
+STAGE7	236	0	0	sed "s/f1/f/gi" $WORKF > $WORKT
+STAGE7	237	0	0	sed "s/t1/t/gi" $WORKF > $WORKT
+STAGE7	238	0	0	sed "s/s1/s/gi" $WORKF > $WORKT
+STAGE7	239	0	0	sed "s/ps/p/gi" $WORKF > $WORKT
+STAGE7	240	0	0	sed "s/[ ]*TABLESPACE [^ ]\+ STORAGE DISK[ ]*/ /gi" $WORKF > $WORKT
+STAGE7	241	0	0	sed "s/GROUP_CONCAT([^)]\+)/*/gi" $WORKF > $WORKT
+STAGE7	242	0	0	sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//i" $WORKF > $WORKT
+STAGE7	243	0	0	sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//i" $WORKF > $WORKT
+STAGE7	244	0	0	sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//i" $WORKF > $WORKT
+STAGE7	245	0	0	sed "s/COMMENT[ ]*=[ ]*['\"]WRAPPER[ ]*['\"]mysql['\"][ ]*,[ ]*srv[ ]*['\"]srv['\"][ ]*,[ ]*TABLE[ ]*['\"]t['\"]['\"]//gi" $WORKF > $WORKT
+STAGE7	246	0	0	sed "s/WITH SYSTEM VERSIONING//gi" $WORKF > $WORKT
+STAGE7	247	0	0	sed "s/WITH SYSTEM VERSIONING//i" $WORKF > $WORKT
+STAGE7	248	0	0	sed "s|'../socket.sock'|''|g" $WORKF > $WORKT
+STAGE7	249	0	0	sed "s|'../socket.sock'|''|" $WORKF > $WORKT
+STAGE7	250	0	0	sed "s/PWD1//g" $WORKF > $WORKT
+STAGE7	251	0	0	sed "s/PWD1//" $WORKF > $WORKT
+STAGE7	252	0	0	grep -E --binary-files=text -v "^$" $WORKF > $WORKT
+STAGE7	253	1	0	      if [ -r "${SCRIPT_PWD}/testcase_prettify.sh" ]; then\n        NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality\n        ${SCRIPT_PWD}/testcase_prettify.sh $WORKF > $WORKT\n      elif [ -r "${HOME}/mariadb-qa/testcase_prettify.sh" ]; then  # When started from BASEDIRs\n        NOSKIP=1;  # Attempt a full run of testcase_prettify.sh to greatly improve testcase quality\n        ${HOME}/mariadb-qa/testcase_prettify.sh $WORKF > $WORKT\n      else\n        cat $WORKF > $WORKT  # No updates; this will ensure next trial triggers. Do not use 'continue' here.\n      fi
+STAGE7	254	0	0	sed "s/0D0R0O0P0D0A0T0A0B0A0S0E0t0r0a0n0s0f0o0r0m0s0/NO_SQL_REQUIRED/" $WORKF > $WORKT
+STAGE7	255	0	0	sed 's|^# mysqld|DONOTDELETE|;s|^# mariadbd|DONOTDELETE|' $WORKF | grep -E --binary-files=text -v "^#" | sed 's|^DONOTDELETE|# mysqld|' > $WORKT
+STAGE7	256	1	0	sed "s/$/;/;s/;;$/;/" $WORKF > $WORKT  # Reintroduce end ; everwhere, if lost
+STAGE7	257	0	0	sed "s/t0/t/gi" $WORKF > $WORKT
+STAGE7	258	0	0	sed "s/c0/c/gi" $WORKF > $WORKT
+STAGE7	259	0	0	sed "s/FROM DUAL//gi" $WORKF > $WORKT
+STAGE7	260	0	0	sed "s/WITHOUT VALIDATION//gi" $WORKF > $WORKT
+STAGE7	261	0	0	sed "s/PARTITION.*;/;/gi" $WORKF > $WORKT
+STAGE7	262	0	0	sed "s/[ \t]\+CHARACTER SET[^)]\+)/)/gi" $WORKF > $WORKT
+STAGE7	263	0	0	sed "s/index_merge=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	264	0	0	sed "s/index_merge_union=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	265	0	0	sed "s/index_merge_sort_union=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	266	0	0	sed "s/index_merge_intersection=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	267	0	0	sed "s/index_merge_sort_intersection=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	268	0	0	sed "s/index_condition_pushdown=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	269	0	0	sed "s/derived_merge=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	270	0	0	sed "s/derived_with_keys=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	271	0	0	sed "s/firstmatch=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	272	0	0	sed "s/loosescan=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	273	0	0	sed "s/materialization=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	274	0	0	sed "s/in_to_exists=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	275	0	0	sed "s/semijoin=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	276	0	0	sed "s/partial_match_rowid_merge=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	277	0	0	sed "s/partial_match_table_scan=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	278	0	0	sed "s/subquery_cache=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	279	0	0	sed "s/mrr=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	280	0	0	sed "s/mrr_cost_based=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	281	0	0	sed "s/mrr_sort_keys=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	282	0	0	sed "s/outer_join_with_cache=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	283	0	0	sed "s/semijoin_with_cache=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	284	0	0	sed "s/join_cache_incremental=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	285	0	0	sed "s/join_cache_hashed=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	286	0	0	sed "s/join_cache_bka=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	287	0	0	sed "s/optimize_join_buffer_size=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	288	0	0	sed "s/table_elimination=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	289	0	0	sed "s/extended_keys=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	290	0	0	sed "s/exists_to_in=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	291	0	0	sed "s/orderby_uses_equalities=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	292	0	0	sed "s/condition_pushdown_for_derived=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	293	0	0	sed "s/split_materialized=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	294	0	0	sed "s/condition_pushdown_for_subquery=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	295	0	0	sed "s/rowid_filter=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	296	0	0	sed "s/condition_pushdown_from_having=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	297	0	0	sed "s/not_null_range_scan=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	298	0	0	sed "s/hash_join_cardinality=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	299	0	0	sed "s/cset_narrowing=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	300	0	0	sed "s/sargable_casefold=[ofn]\+[,]*//gi" $WORKF > $WORKT
+STAGE7	301	0	0	sed "s/ON COMMIT PRESERVE ROWS//gi" $WORKF > $WORKT
+STAGE7	302	0	0	sed "s/NOWAIT//gi" $WORKF > $WORKT
+STAGE7	303	0	0	NEXTACTION="& Finalize run"; sed 's/`//g' $WORKF > $WORKT
+STAGE4	323	0	0	sed "s/[ ]*WITH SYSTEM VERSIONING//gi" $WORKF > $WORKT
+STAGE4	324	0	0	sed "s/[ ]*WITHOUT SYSTEM VERSIONING//gi" $WORKF > $WORKT
+STAGE4	325	0	0	sed "s/[ ]*RETURNING[ ]*\*[ ]*//gi" $WORKF > $WORKT
+STAGE4	326	0	0	sed "s/[ ]*RETURNING[ ]*[a-zA-Z0-9_,*[:space:]]\+\([;)]\)/\1/gi" $WORKF > $WORKT
+STAGE4	327	0	0	sed "s/INSERT[ \t]\+DELAYED[ \t]\+INTO/INSERT INTO/gi" $WORKF > $WORKT
+STAGE4	328	0	0	sed "s/INSERT[ \t]\+IGNORE[ \t]\+INTO/INSERT INTO/gi" $WORKF > $WORKT
+STAGE4	329	0	0	sed "s/INSERT[ \t]\+LOW_PRIORITY[ \t]\+INTO/INSERT INTO/gi" $WORKF > $WORKT
+STAGE4	330	0	0	sed "s/INSERT[ \t]\+HIGH_PRIORITY[ \t]\+INTO/INSERT INTO/gi" $WORKF > $WORKT
+STAGE4	331	0	0	sed "s/REPLACE[ \t]\+LOW_PRIORITY[ \t]\+INTO/REPLACE INTO/gi" $WORKF > $WORKT
+STAGE4	332	0	0	sed "s/UPDATE[ \t]\+IGNORE[ \t]/UPDATE /gi" $WORKF > $WORKT
+STAGE4	333	0	0	sed "s/UPDATE[ \t]\+LOW_PRIORITY[ \t]/UPDATE /gi" $WORKF > $WORKT
+STAGE4	334	0	0	sed "s/DELETE[ \t]\+QUICK[ \t]\+IGNORE[ \t]/DELETE /gi" $WORKF > $WORKT
+STAGE4	335	0	0	sed "s/DELETE[ \t]\+QUICK[ \t]/DELETE /gi" $WORKF > $WORKT
+STAGE4	336	0	0	sed "s/[ ]*INVISIBLE[ ]*\([,)]\)/\1/gi" $WORKF > $WORKT
+STAGE4	337	0	0	sed "s/[ ]*GENERATED[ ]\+ALWAYS[ ]\+AS[ ]*([^()]*)[ ]\+\(PERSISTENT\|VIRTUAL\|STORED\)//gi" $WORKF > $WORKT
+STAGE4	338	0	0	sed "s/STRAIGHT_JOIN/JOIN/gi" $WORKF > $WORKT
+STAGE4	339	0	0	sed "s/[ ]*NO_WRITE_TO_BINLOG//gi" $WORKF > $WORKT
+STAGE4	340	0	0	sed "s/\([a-zA-Z0-9_]\+\)[ \t]\+AS[ \t]\+a[0-9]\+/\1/gi" $WORKF > $WORKT
+STAGE4	341	0	0	sed "s/READ[ \t]\+LOCAL/READ/gi" $WORKF > $WORKT
+STAGE4	342	0	0	sed "s/WRITE[ \t]\+CONCURRENT/WRITE/gi" $WORKF > $WORKT
+STAGE4	343	0	0	sed "s/CONSTRAINT[ \t]\+[a-zA-Z0-9_]\+[ \t]\+/  /gi" $WORKF > $WORKT
+STAGE4	344	0	0	sed "s/[ ]*ON[ ]\+DELETE[ ]\+\(NO[ ]\+ACTION\|RESTRICT\|CASCADE\|SET[ ]\+NULL\|SET[ ]\+DEFAULT\)//gi" $WORKF > $WORKT
+STAGE4	345	0	0	sed "s/[ ]*ON[ ]\+UPDATE[ ]\+\(NO[ ]\+ACTION\|RESTRICT\|CASCADE\|SET[ ]\+NULL\|SET[ ]\+DEFAULT\)//gi" $WORKF > $WORKT
+STAGE4	346	0	0	sed "/^UNLOCK[ \t]\+TABLES[ \t]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	347	0	0	sed "/^LOCK[ \t]\+TABLES[ \t].*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	348	0	0	sed "/^ALTER[ \t]\+TABLE[ \t].*[ \t]\(TRUNCATE\|OPTIMIZE\|REBUILD\|ANALYZE\|CHECK\|COALESCE\)[ \t]\+PARTITION[ \t].*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	349	0	0	sed "/^ALTER[ \t]\+TABLE[ \t].*[ \t]\(DISABLE\|ENABLE\)[ \t]\+KEYS[ \t]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	350	0	0	sed "/^XA[ \t]\+RECOVER[ \t]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	351	0	0	sed "/^HANDLER[ \t].*\(OPEN\|CLOSE\)[ \t]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	352	0	0	sed "s/[ ]*DEFAULT[ ]\+'[^']*'//gi" $WORKF > $WORKT
+STAGE4	353	0	0	sed "s/ENGINE[ ]*=[ ]*\(Mroonga\|Spider\|ColumnStore\|CONNECT\|Aria\|MyISAM\|MEMORY\|RocksDB\|PERFORMANCE_SCHEMA\|BLACKHOLE\|ARCHIVE\)/ENGINE=InnoDB/gi" $WORKF > $WORKT
+STAGE4	354	0	0	sed "/^SET[ \t]\+\(SESSION\|GLOBAL\)[ \t].*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	355	0	0	sed "/^SET[ \t]\+@@[A-Za-z._]\+.*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	356	0	0	sed "s/CREATE[ \t]\+OR[ \t]\+REPLACE/CREATE/gi" $WORKF > $WORKT
+STAGE4	357	0	0	sed "s/[ ]*USE_FRM//gi" $WORKF > $WORKT
+STAGE4	358	0	0	sed "s/\(REPAIR\|CHECK\|ANALYZE\)[ \t]\+TABLE\([^;]*\)[ \t]\+\(EXTENDED\|QUICK\|FAST\|MEDIUM\|CHANGED\|PERSISTENT\|FOR[ \t]\+ALL\)/\1 TABLE\2/gi" $WORKF > $WORKT
+STAGE4	359	0	0	sed "s/[ ]*FORMAT[ ]*=[ ]*'[^']*'//gi" $WORKF > $WORKT
+STAGE4	360	0	0	sed "/^HANDLER[ \t].*READ[ \t].*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	361	0	0	sed "s/[ ]*PERIOD[ ]\+FOR[ ]\+SYSTEM_TIME[ ]*([^()]*)//gi" $WORKF > $WORKT
+STAGE4	362	0	0	sed "s/PARTITION[ ]\+BY[ ]\+SYSTEM_TIME[^;]*\(PARTITION[ ]\+pcur[^;]*\)//gi" $WORKF > $WORKT
+STAGE4	363	0	0	sed "s/[ ]*WITH[ ]\+SYSTEM[ ]\+VERSIONING//gi" $WORKF > $WORKT
+STAGE7	304	0	0	sed "s/[ ]*KEY_BLOCK_SIZE[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	305	0	0	sed "s/[ ]*PAGE_COMPRESSION_LEVEL[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	306	0	0	sed "s/[ ]*ENCRYPTION_KEY_ID[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	307	0	0	sed "s/[ ]*TRANSACTIONAL[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	308	0	0	sed "s/[ ]*DELAY_KEY_WRITE[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	309	0	0	sed "s/[ ]*STATS_AUTO_RECALC[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	310	0	0	sed "s/[ ]*STATS_PERSISTENT[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	311	0	0	sed "s/[ ]*AVG_ROW_LENGTH[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	312	0	0	sed "s/[ ]*MAX_ROWS[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	313	0	0	sed "s/[ ]*MIN_ROWS[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	314	0	0	sed "s/[ ]*ENCRYPTED[ ]*=[ ]*YES//gi" $WORKF > $WORKT
+STAGE7	315	0	0	sed "s/[ ]*ROW_FORMAT[ ]*=[ ]*[A-Z]\+//gi" $WORKF > $WORKT
+STAGE7	316	0	0	sed "s/[ ]*CHECKSUM[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	317	0	0	sed "s/[ ]*COMMENT[ ]*=[ ]*'[^']*'//gi" $WORKF > $WORKT
+STAGE7	318	0	0	sed "s/[ ]*DEFINER[ ]*=[ ]*[a-zA-Z0-9_@'.%]\+//gi" $WORKF > $WORKT
+STAGE7	319	0	0	sed "s/[ ]*SQL[ ]\+SECURITY[ ]\+\(DEFINER\|INVOKER\)//gi" $WORKF > $WORKT
+STAGE7	320	0	0	sed "s/[ ]*PARTITION[ ]\+BY[ ]\+.*;/;/gi" $WORKF > $WORKT
+STAGE7	321	0	0	sed "/^INSTALL[ \t]\+SONAME[ \t]\+'[^']*'[ \t]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE7	322	0	0	sed "/^UNINSTALL[ \t]\+SONAME[ \t]\+'[^']*'[ \t]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE7	323	0	0	sed "s/[ ]*WITH[ ]\+VALIDATION//gi" $WORKF > $WORKT
+STAGE7	324	0	0	sed "s/[ ]*WITHOUT[ ]\+VALIDATION//gi" $WORKF > $WORKT
+STAGE7	325	0	0	sed "s/[ ]*FOR[ ]\+EACH[ ]\+ROW//gi" $WORKF > $WORKT
+STAGE7	326	0	0	sed "s/[ ]*CONCURRENT[ ]*//gi" $WORKF > $WORKT
+STAGE7	327	0	0	sed "s/[ ]*BINARY[ ]\+CHARACTER[ ]\+SET[ ]\+'[^']*'[ ]\+COLLATE[ ]\+'[^']*'//gi" $WORKF > $WORKT
+STAGE7	328	0	0	sed "s/[ ]*MATCH[ ]*([^()]*)[ ]\+AGAINST[ ]*([^()]*)//gi" $WORKF > $WORKT
+STAGE7	329	0	0	sed "s/[ ]*COLLATE[ ]*=[ ]*[a-zA-Z0-9_]\+//gi" $WORKF > $WORKT
+STAGE7	330	0	0	sed "s/[ ]*DEFAULT[ ]\+CHARSET[ ]*=[ ]*[a-zA-Z0-9_]\+//gi" $WORKF > $WORKT
+STAGE7	331	0	0	sed "s/[ ]*TEMPORARY[ ]\+//gi" $WORKF > $WORKT
+STAGE7	332	0	0	sed "s/[ ]*BIN(LOG)\?_FORMAT[ ]*=[ ]*[A-Z]\+//gi" $WORKF > $WORKT
+STAGE7	333	0	0	sed "s/[ ]*PACK_KEYS[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	334	0	0	sed "s/[ ]*PAGE_CHECKSUM[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE4	364	0	0	sed "/^DO[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	365	0	0	sed "/^CALL[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	366	0	0	sed "/^XA[ \t]\+\(START\|BEGIN\|END\|COMMIT\|ROLLBACK\|PREPARE\)[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	367	0	0	sed "/^SAVEPOINT[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	368	0	0	sed "/^RELEASE[ \t]\+SAVEPOINT[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	369	0	0	sed "/^ROLLBACK[ \t]\+TO[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	370	0	0	sed "/^ANALYZE[ \t]\+TABLE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	371	0	0	sed "/^CHECK[ \t]\+TABLE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	372	0	0	sed "/^REPAIR[ \t]\+TABLE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	373	0	0	sed "/^OPTIMIZE[ \t]\+TABLE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	374	0	0	sed "/^CHECKSUM[ \t]\+TABLE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	375	0	0	sed "/^SHOW[ \t]\+\(MASTER\|SLAVE\|REPLICA\|BINLOG\)[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	376	0	0	sed "/^BACKUP[ \t]\+STAGE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	377	0	0	sed "/^BACKUP[ \t]\+\(LOCK\|UNLOCK\)[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	378	0	0	sed "/^FLUSH[ \t]\+\(TABLES\|PRIVILEGES\|HOSTS\|STATUS\|LOGS\|USER_RESOURCES\)[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	379	0	0	sed "/^FLUSH[ \t]\+BINARY[ \t]\+LOGS[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	380	0	0	sed "/^RESET[ \t]\+\(MASTER\|SLAVE\|REPLICA\|QUERY[ \t]\+CACHE\)[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	381	0	0	sed "/^PURGE[ \t]\+\(BINARY\|MASTER\)[ \t]\+LOGS[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	382	0	0	sed "/^CHANGE[ \t]\+\(MASTER\|REPLICATION\)[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	383	0	0	sed "/^SIGNAL[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	384	0	0	sed "/^RESIGNAL[ \t]*[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	385	0	0	sed "/^GET[ \t]\+\(STACKED[ \t]\+\)\?DIAGNOSTICS[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	386	0	0	sed "/^SET[ \t]\+NAMES[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	387	0	0	sed "/^SET[ \t]\+CHARACTER[ \t]\+SET[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	388	0	0	sed "/^SET[ \t]\+\(DEFAULT[ \t]\+\)\?ROLE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	389	0	0	sed "/^SET[ \t]\+PASSWORD[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	390	0	0	sed "/^SET[ \t]\+STATEMENT[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	391	0	0	sed "/^DELIMITER[ \t]\+/d" $WORKF > $WORKT
+STAGE4	392	0	0	sed "/^BINLOG[ \t]\+'[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	393	0	0	sed "/^ALTER[ \t]\+TABLE[ \t].*[ \t]\(EXCHANGE\|ADD\|DROP\|REORGANIZE\|REMOVE\)[ \t]\+\(PARTITION\|PARTITIONING\)[^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	394	0	0	sed "/^ALTER[ \t]\+TABLE[ \t].*[ \t]REMOVE[ \t]\+PARTITIONING[ \t]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE7	335	0	0	sed "s/[ ]*USE[ \t]\+INDEX[ \t]*([^()]*)//gi" $WORKF > $WORKT
+STAGE7	336	0	0	sed "s/[ ]*IGNORE[ \t]\+INDEX[ \t]*([^()]*)//gi" $WORKF > $WORKT
+STAGE7	337	0	0	sed "s/[ ]*FORCE[ \t]\+INDEX[ \t]*([^()]*)//gi" $WORKF > $WORKT
+STAGE7	338	0	0	sed "s/[ ]*FOR[ \t]\+UPDATE//gi" $WORKF > $WORKT
+STAGE7	339	0	0	sed "s/[ ]*FOR[ \t]\+SHARE//gi" $WORKF > $WORKT
+STAGE7	340	0	0	sed "s/[ ]*LOCK[ \t]\+IN[ \t]\+SHARE[ \t]\+MODE//gi" $WORKF > $WORKT
+STAGE7	341	0	0	sed "s/[ ]*SKIP[ \t]\+LOCKED//gi" $WORKF > $WORKT
+STAGE7	342	0	0	sed "s/[ ]*WAIT[ \t]\+[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	343	0	0	sed "s/[ ]*SQL_NO_CACHE//gi" $WORKF > $WORKT
+STAGE7	344	0	0	sed "s/[ ]*SQL_CALC_FOUND_ROWS//gi" $WORKF > $WORKT
+STAGE7	345	0	0	sed "s/[ ]*SQL_\(BIG\|SMALL\|BUFFER\)_RESULT//gi" $WORKF > $WORKT
+STAGE7	346	0	0	sed "s/[ ]*SQL_CACHE//gi" $WORKF > $WORKT
+STAGE7	347	0	0	sed "s/[ ]*HIGH_PRIORITY//gi" $WORKF > $WORKT
+STAGE7	348	0	0	sed "s/[ ]*LOW_PRIORITY//gi" $WORKF > $WORKT
+STAGE7	349	0	0	sed "s/[ ]*ALGORITHM[ ]*=[ ]*\(COPY\|INPLACE\|INSTANT\|DEFAULT\|NOCOPY\|UNDO\)//gi" $WORKF > $WORKT
+STAGE7	350	0	0	sed "s/[ ]*LOCK[ ]*=[ ]*\(NONE\|SHARED\|EXCLUSIVE\|DEFAULT\)//gi" $WORKF > $WORKT
+STAGE7	351	0	0	sed "s/[ ]*INSERT_METHOD[ ]*=[ ]*[A-Z]\+//gi" $WORKF > $WORKT
+STAGE7	352	0	0	sed "s/[ ]*CONNECTION[ ]*=[ ]*'[^']*'//gi" $WORKF > $WORKT
+STAGE7	353	0	0	sed "s/[ ]*FOR[ \t]\+SYSTEM_TIME[ \t]\+\(AS[ \t]\+OF\|ALL\|FROM\|BETWEEN\)[^,;)]*//gi" $WORKF > $WORKT
+STAGE7	354	0	0	sed "s/WITH[ \t]\+RECURSIVE[ \t]/WITH /gi" $WORKF > $WORKT
+STAGE7	355	0	0	sed "s/[ ]*WINDOW[ \t]\+[a-zA-Z0-9_]\+[ \t]\+AS[ \t]*([^()]*)//gi" $WORKF > $WORKT
+STAGE7	356	0	0	sed "s/[ ]*OVER[ \t]*([^()]*)//gi" $WORKF > $WORKT
+STAGE7	357	0	0	sed "s/[ ]*OPTIMIZER_SWITCH[ ]*=[ ]*'[^']*'//gi" $WORKF > $WORKT
+STAGE7	358	0	0	sed "s/[ ]*PAGE_COMPRESSED[ ]*=[ ]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	359	0	0	sed "s/[ ]*REMOVE[ \t]\+PARTITIONING//gi" $WORKF > $WORKT
+STAGE7	360	0	0	sed "s/[ ]*SUBPARTITION[ \t]\+BY[ \t]\+[^,;)]*//gi" $WORKF > $WORKT
+STAGE7	361	0	0	sed "s/\(EXPLAIN\|ANALYZE\)[ \t]\+FORMAT[ \t]*=[ \t]*[a-zA-Z]\+/\1/gi" $WORKF > $WORKT
+STAGE7	362	0	0	sed "s/[ ]*WITH[ \t]\+GRANT[ \t]\+OPTION//gi" $WORKF > $WORKT
+STAGE7	363	0	0	sed "s/[ ]*WITH[ \t]\+ADMIN[ \t]\+OPTION//gi" $WORKF > $WORKT
+STAGE7	364	0	0	sed "s/[ ]*CASCADED//gi" $WORKF > $WORKT
+STAGE7	365	0	0	sed "s/[ ]*LOCAL[ \t]\+CHECK[ \t]\+OPTION//gi" $WORKF > $WORKT
+STAGE7	366	0	0	sed "s/[ ]*WITH[ \t]\+CHECK[ \t]\+OPTION//gi" $WORKF > $WORKT
+STAGE7	367	0	0	sed "s/[ ]*\(CHARACTER[ \t]\+SET\|CHARSET\)[ \t]*=\?[ \t]*[a-zA-Z0-9_]\+//gi" $WORKF > $WORKT
+STAGE7	368	0	0	sed "s/[ ]*HIGH_NOT_PRECEDENCE//gi" $WORKF > $WORKT
+STAGE7	369	0	0	sed "s/[ ]*PIPES_AS_CONCAT//gi" $WORKF > $WORKT
+STAGE7	370	0	0	sed "s/[ ]*BINARY[ \t]\+CHARACTER[ \t]\+SET//gi" $WORKF > $WORKT
+STAGE7	371	0	0	sed "s/[ ]*ASCII[ \t]\+BINARY//gi" $WORKF > $WORKT
+STAGE7	372	0	0	sed "s/[ ]*UNICODE[ \t]\+BINARY//gi" $WORKF > $WORKT
+STAGE7	373	0	0	sed "s/[ ]*UNSIGNED[ \t]*//gi" $WORKF > $WORKT
+STAGE7	374	0	0	sed "s/[ ]*VIRTUAL\([ ,);]\)/\1/gi" $WORKF > $WORKT
+STAGE7	375	0	0	sed "s/[ ]*PERSISTENT\([ ,);]\)/\1/gi" $WORKF > $WORKT
+STAGE7	376	0	0	sed "s/[ ]*STORED\([ ,);]\)/\1/gi" $WORKF > $WORKT
+STAGE4	395	0	0	sed "/^SHOW[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	396	0	0	sed "/^DESC[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	397	0	0	sed "/^DESCRIBE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	398	0	0	sed "/^HELP[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	399	0	0	sed "/^USE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	400	0	0	sed "/^EXPLAIN[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	401	0	0	sed "/^CACHE[ \t]\+INDEX[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	402	0	0	sed "/^\(LOAD\|UNLOAD\)[ \t]\+INDEX[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	403	0	0	sed "/^RENAME[ \t]\+\(TABLE\|USER\)[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	404	0	0	sed "/^ALTER[ \t]\+\(DATABASE\|SCHEMA\|EVENT\|VIEW\|PROCEDURE\|FUNCTION\|USER\|SERVER\|SEQUENCE\)[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	405	0	0	sed "/^DROP[ \t]\+\(PROCEDURE\|FUNCTION\|TRIGGER\|VIEW\|EVENT\|ROLE\|USER\|SERVER\|TABLESPACE\|SEQUENCE\|DATABASE\|SCHEMA\)[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	406	0	0	sed "/^GRANT[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	407	0	0	sed "/^REVOKE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	408	0	0	sed "/^TRUNCATE[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	409	0	0	sed "/^FLUSH[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	410	0	0	sed "/^DEBUG[ \t][^;]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE4	411	0	0	sed "/^SHUTDOWN[ \t]*;[ \t]*$/d" $WORKF > $WORKT
+STAGE7	377	0	0	sed "s/CREATE[ \t]\+\(GLOBAL[ \t]\+\|LOCAL[ \t]\+\)\?TEMPORARY[ \t]\+TABLE/CREATE TABLE/gi" $WORKF > $WORKT
+STAGE7	378	0	0	sed "s/CREATE[ \t]\+GLOBAL[ \t]\+TABLE/CREATE TABLE/gi" $WORKF > $WORKT
+STAGE7	379	0	0	sed "s/CREATE[ \t]\+DEFINER[ \t]*=[ \t]*[a-zA-Z0-9_@'.%\`]\+[ \t]/CREATE /gi" $WORKF > $WORKT
+STAGE7	380	0	0	sed "s/DROP[ \t]\+TEMPORARY[ \t]\+TABLE/DROP TABLE/gi" $WORKF > $WORKT
+STAGE7	381	0	0	sed "s/LEFT[ \t]\+OUTER[ \t]\+JOIN/LEFT JOIN/gi" $WORKF > $WORKT
+STAGE7	382	0	0	sed "s/RIGHT[ \t]\+OUTER[ \t]\+JOIN/RIGHT JOIN/gi" $WORKF > $WORKT
+STAGE7	383	0	0	sed "s/FULL[ \t]\+OUTER[ \t]\+JOIN/FULL JOIN/gi" $WORKF > $WORKT
+STAGE7	384	0	0	sed "s/NATURAL[ \t]\+\(LEFT\|RIGHT\|FULL\)[ \t]\+\(OUTER[ \t]\+\)\?JOIN/JOIN/gi" $WORKF > $WORKT
+STAGE7	385	0	0	sed "s/\(LEFT\|RIGHT\|FULL\|CROSS\|INNER\|NATURAL\)[ \t]\+JOIN/JOIN/gi" $WORKF > $WORKT
+STAGE7	386	0	0	sed "s/[ ]*USING[ \t]\+\(BTREE\|HASH\|RTREE\)//gi" $WORKF > $WORKT
+STAGE7	387	0	0	sed "s/[ ]*\(ROWS\|RANGE\|GROUPS\)[ \t]\+BETWEEN[ \t]\+[^,;)]\+[ \t]\+AND[ \t]\+[^,;)]\+//gi" $WORKF > $WORKT
+STAGE7	388	0	0	sed "s/[ ]*\(ROWS\|RANGE\|GROUPS\)[ \t]\+UNBOUNDED[ \t]\+\(PRECEDING\|FOLLOWING\)//gi" $WORKF > $WORKT
+STAGE7	389	0	0	sed "s/[ ]*\(ROWS\|RANGE\|GROUPS\)[ \t]\+CURRENT[ \t]\+ROW//gi" $WORKF > $WORKT
+STAGE7	390	0	0	sed "s/[ ]*EXCLUDE[ \t]\+\(CURRENT[ \t]\+ROW\|GROUP\|TIES\|NO[ \t]\+OTHERS\)//gi" $WORKF > $WORKT
+STAGE7	391	0	0	sed "s/[ ]*WITHIN[ \t]\+GROUP[ \t]*([^()]*)//gi" $WORKF > $WORKT
+STAGE7	392	0	0	sed "s/[ ]*NULLS[ \t]\+\(FIRST\|LAST\)//gi" $WORKF > $WORKT
+STAGE7	393	0	0	sed "s/[ ]*IDENTIFIED[ \t]\+BY[ \t]\+'[^']*'//gi" $WORKF > $WORKT
+STAGE7	394	0	0	sed "s/[ ]*IDENTIFIED[ \t]\+WITH[ \t]\+[a-zA-Z0-9_]\+\([ \t]\+\(AS\|BY\|USING\)[ \t]\+'[^']*'\)\?//gi" $WORKF > $WORKT
+STAGE7	395	0	0	sed "s/[ ]*REQUIRE[ \t]\+\(SSL\|X509\|NONE\)//gi" $WORKF > $WORKT
+STAGE7	396	0	0	sed "s/[ ]*PASSWORD[ \t]\+EXPIRE\(\([ \t]\+\(NEVER\|DEFAULT\|INTERVAL[ \t]\+[0-9]\+[ \t]\+DAY\)\)\)\?//gi" $WORKF > $WORKT
+STAGE7	397	0	0	sed "s/[ ]*ACCOUNT[ \t]\+\(LOCK\|UNLOCK\)//gi" $WORKF > $WORKT
+STAGE7	398	0	0	sed "s/[ ]*AUTO_INCREMENT[ \t]*=[ \t]*[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	399	0	0	sed "s/[ ]*WITH[ \t]\+MAX_\(QUERIES_PER_HOUR\|UPDATES_PER_HOUR\|CONNECTIONS_PER_HOUR\|USER_CONNECTIONS\)[ \t]\+[0-9]\+//gi" $WORKF > $WORKT
+STAGE7	400	0	0	sed "s/CONVERT[ \t]\+TO[ \t]\+\(CHARACTER[ \t]\+SET\|CHARSET\)[ \t]\+[a-zA-Z0-9_]\+\([ \t]\+COLLATE[ \t]\+[a-zA-Z0-9_]\+\)\?//gi" $WORKF > $WORKT
+STAGE7	401	0	0	sed "s/_\(utf8mb4\|utf8mb3\|utf8\|utf16le\|utf16\|utf32\|ucs2\|latin1\|latin2\|latin5\|latin7\|ascii\|binary\|cp[0-9]\+\|gb[a-z0-9]\+\|big5\|gbk\|sjis\|ujis\|euckr\|eucjpms\|cp[0-9]\+_[a-z]\+\)\('[^']*'\)/\2/gi" $WORKF > $WORKT
+STAGE7	402	0	0	sed "s/[ ]*SQL_LOG_BIN[ \t]*=[ \t]*[01]//gi" $WORKF > $WORKT
+STAGE7	403	0	0	sed "s/[ ]*SQL_LOG_OFF[ \t]*=[ \t]*[01]//gi" $WORKF > $WORKT
+STAGE7	404	0	0	sed "s/[ ]*CHARACTER[ \t]\+SET[ \t]\+'[^']*'//gi" $WORKF > $WORKT
+STAGE7	405	0	0	sed "s/[ ]*CHARACTER[ \t]\+SET[ \t]\+\"[^\"]*\"//gi" $WORKF > $WORKT
+STAGE7	406	0	0	sed "s/[ ]*CONVERT[ \t]*(\([^,]*\)[ \t]\+USING[ \t]\+[a-zA-Z0-9_]\+[ \t]*)/(\1)/gi" $WORKF > $WORKT
+STAGE7	407	0	0	sed "s/INTERVAL[ \t]\+[0-9]\+[ \t]\+\(MICROSECOND\|SECOND\|MINUTE\|HOUR\|DAY\|WEEK\|MONTH\|QUARTER\|YEAR\)/0/gi" $WORKF > $WORKT
+STAGE7	408	0	0	sed "s/[ ]*CHANNEL[ \t]\+'[^']*'//gi" $WORKF > $WORKT
+STAGE7	409	0	0	sed "s/[ ]*COMPRESSED[ \t]\+ROW_FORMAT//gi" $WORKF > $WORKT
+STAGE7	410	0	0	sed "s/[ ]*SQL[ \t]\+WARNINGS[ \t]*=[ \t]*[01]//gi" $WORKF > $WORKT
+STAGE7	411	0	0	sed "s/[ ]*ENGINE[ \t]\+\(INNODB\|MYISAM\|MEMORY\|HEAP\|ARIA\|MARIADB_COLUMNSTORE\|SPIDER\|FEDERATEDX\|FEDERATED\|BLACKHOLE\|ARCHIVE\|CSV\|MERGE\|MRG_MYISAM\|MRG_MYISAM\|ROCKSDB\|MROONGA\|CONNECT\|TOKUDB\|PERFORMANCE_SCHEMA\|S3\)[ \t]*\([,)]\)/\2/gi" $WORKF > $WORKT
+STAGE7	412	0	0	sed "s/[ ]*FOR[ \t]\+CHANNEL[ \t]\+'[^']*'//gi" $WORKF > $WORKT
+STAGE7	413	0	0	sed "s/[ ]*WITH[ \t]\+CONSISTENT[ \t]\+SNAPSHOT//gi" $WORKF > $WORKT
+STAGE7	414	0	0	sed "s/[ ]*READ[ \t]\+\(WRITE\|ONLY\)\([ \t;]\)/\2/gi" $WORKF > $WORKT
+STAGE7	415	0	0	sed "s/[ ]*WORK\([ \t;,]\)/\1/gi" $WORKF > $WORKT
+STAGE7	416	0	0	sed "s/[ ]*LOCK_WAIT_TIMEOUT[ \t]*=[ \t]*[0-9]\+//gi" $WORKF > $WORKT

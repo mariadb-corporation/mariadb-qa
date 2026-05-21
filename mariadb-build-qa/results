@@ -2,9 +2,8 @@
 set +H
 
 DATADIR=/data
-MARIADB_QA="${HOME}/mariadb-qa"  # Adjust if needed, though storing mariadb-qa in ~/mariadb-qa is highly recommended
 
-if [ ! -z "{$1}" ]; then
+if [ ! -z "${1}" ]; then
   R_ONCEONLY=1  # Run once only, don't loop
 fi
 
@@ -29,35 +28,10 @@ source results.list  # This file should contain lines like:
                      # use 'return 0' anywhere in the script to stop processing the remainder of the file (handy to save old runs)
 if [ -z "${R_ONCEONLY}" ]; then clear; fi  # Clear screen for normal (i.e. not-onceonly) runs
 
-# Setup error scanning
-ERRORS=
-ERRORS_LAST_LINE=
-REGEX_ERRORS_SCAN=
-REGEX_ERRORS_LASTLINE=
-REGEX_ERRORS_FILTER="NOFILTERDUMMY"  # Leave NOFILTERDUMMY to avoid filtering everything. It will be replaced later if a REGEX_ERRORS_FILTER file is present in mariadb-qa (and by default there is)
-if [ -r ${MARIADB_QA}/REGEX_ERRORS_SCAN ]; then
-  REGEX_ERRORS_SCAN="$(cat ${MARIADB_QA}/REGEX_ERRORS_SCAN 2>/dev/null | tr -d '\n')"
-  if [ -z "${REGEX_ERRORS_SCAN}" ]; then
-    echo "Error: ${REGEX_ERRORS_SCAN} is empty?"
-    exit 1
-  fi
-else
-  echo "Error: ${REGEX_ERRORS_SCAN} could not be read by this script"
-  exit 1
-fi
-if [ -r ${MARIADB_QA}/REGEX_ERRORS_LASTLINE ]; then
-  REGEX_ERRORS_LASTLINE="$(cat ${MARIADB_QA}/REGEX_ERRORS_LASTLINE 2>/dev/null | tr -d '\n')"
-  if [ -z "${REGEX_ERRORS_LASTLINE}" ]; then
-    echo "Error: ${REGEX_ERRORS_LASTLINE} is empty?"
-    exit 1
-  fi
-else
-  echo "Error: ${REGEX_ERRORS_LASTLINE} could not be read by this script"
-  exit 1
-fi
-if [ -r ${MARIADB_QA}/REGEX_ERRORS_FILTER ]; then
-  REGEX_ERRORS_FILTER="$(cat ${MARIADB_QA}/REGEX_ERRORS_FILTER 2>/dev/null | tr -d '\n')"
-fi
+# Error-log scanning is delegated to ~/pr (pquery-results.sh) which calls
+# error_log_scan.sh aggregate — the single source of truth for REGEX_ERRORS_SCAN
+# / REGEX_ERRORS_LASTLINE / REGEX_ERRORS_FILTER. Output appears in pr's
+# "** Significant/Major errors (if any)" section. No local scan needed.
 
 # Loop dirs from results.list
 while :; do
@@ -67,20 +41,7 @@ while :; do
       if [ -d "${DATADIR}/${MON[${i}]}" ]; then
         DATADIR_LIST="${DATADIR_LIST} ${DATADIR}/${MON[${i}]}"
         cd "${DATADIR}/${MON[${i}]}"
-        ~/pr | grep --binary-files=text -vEi '^=========$|^[ \t]+$|no reducer scripts were found in this directory' | sed '/Trials which /,+1d' | sed '/Trials with /,+1d' | sed '/SHUTDOWN/,+1d' | sed '/Coredumps found in trials/,+1d' | sed '/Significant.Major errors/,+9999d' | sed "s|^========== |========== [${i}] |"
-        TO_SCAN='*/*/log/master.err */log/master.err */*/node*/node*.err */node*/node*.err'
-        ERRORS="$(grep --binary-files=text -Ei -m3 "${REGEX_ERRORS_SCAN}" ${TO_SCAN} 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}")"
-        if [ "$(echo "${ERRORS}" | wc -l)" -gt 1 ]; then
-          echo "** Issues found in error logs (first 3 discovered issue lines only, per log)"
-          echo "${ERRORS}"
-        fi
-        ERRORS=
-        ERRORS_LAST_LINE="$(tail -n1 ${TO_SCAN} 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep -vE "${REGEX_ERRORS_FILTER}")"  # malloc(): , double free or corruption, free(): , Warning: Memory not freed, etc.
-        if [ "$(echo "${ERRORS_LAST_LINE}" | wc -l)" -gt 1 ]; then
-          echo "** Other issues found in last line of error logs"
-          echo "${ERRORS_LAST_LINE}" | tr -d '\n' | sed 's|==> |\n|g;s| <==|: |g' | sed '1d' | sed 's|$|\n|'
-        fi
-        ERRORS_LAST_LINE=
+        ~/pr | grep --binary-files=text -vEi '^=========$|^[ \t]+$|no reducer scripts were found in this directory' | sed '/Trials which /,+1d' | sed '/Trials with /,+1d' | sed '/SHUTDOWN/,+1d' | sed '/Coredumps found in trials/,+1d' | sed "s|^========== |========== [${i}] |"
       else
         echo "Index ${i} seems to be invalid: directory ${DATADIR}/${MON[${i}]} does not exist!"
         exit 1

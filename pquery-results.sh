@@ -417,6 +417,12 @@ fi
 rm -f ./errorlogs.tmp ./error_sigs.tmp
 find . -type f -name "master.err" | grep '\./[0-9]\+/log/master.err' > ./errorlogs.tmp
 find . -type f -name "slave.err" | grep '\./[0-9]\+/log/slave.err' >> ./errorlogs.tmp
+# Galera per-node error logs: ./<trial>/node<N>/node<N>.err. error_log_scan.sh
+# aggregate-mode extracts the trial id from the leading ./<digits>/ path component,
+# so these slot into the same aggregate output as master.err / slave.err. Added
+# so /data/results (alias `r`) can drop its own inline scan that previously
+# covered Galera node logs.
+find . -type f -name "node*.err" 2>/dev/null | grep -E '\./[0-9]+/node[0-9]+/node[0-9]+\.err' >> ./errorlogs.tmp
 if [ -s ./errorlogs.tmp ]; then
   # Single error_log_scan.sh aggregate call over all error logs; emits "<UID>\t<trial>" rows. ERROR_MSG_FILTER (pquery-results.sh-local, on top of REGEX_ERRORS_FILTER) drops items already shown as new_text_string.sh UniqueIDs and 'slave SQL thread aborted' (own section above), keeping the 'Significant/Major errors' section concise.
   ERROR_MSG_FILTER='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code|slave SQL thread aborted'

@@ -1093,10 +1093,14 @@ chmod +x perf_record
 #  fi
 #fi
 
-# Add handy local reducers
-if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
+# Add handy local reducers — prefer the C++ thin wrapper (reducer_cpp.sh)
+# when present; fall back to the legacy bash reducer.sh. Both have the same
+# variable-definition layout so the sed-rewrite chain below works on either.
+REDUCER_TEMPLATE="${SCRIPT_PWD}/reducer_cpp.sh"
+[ ! -r "${REDUCER_TEMPLATE}" ] && REDUCER_TEMPLATE="${SCRIPT_PWD}/OLD/reducer.sh"
+if [ -r "${REDUCER_TEMPLATE}" ]; then
   # ------------------- ./reducer_new_text_string.sh creation
-  cp ${SCRIPT_PWD}/reducer.sh ./reducer_new_text_string.sh
+  cp "${REDUCER_TEMPLATE}" ./reducer_new_text_string.sh
   sed -i 's|somebug|${2}|' ./reducer_new_text_string.sh
   sed -i 's|^\(MYEXTRA="[^"]\+\)"|\1 ${3}"|' ./reducer_new_text_string.sh
   sed -i 's|^MODE=4|MODE=3|' ./reducer_new_text_string.sh
@@ -1127,7 +1131,7 @@ if [ -r ${SCRIPT_PWD}/reducer.sh ]; then
   # ------------------- ./reducer_new_text_string_pquery.sh creation
   sed 's|^USE_PQUERY=0|USE_PQUERY=1|' ./reducer_new_text_string.sh > ./reducer_new_text_string_pquery.sh
   # ------------------- ./reducer_fireworks.sh creation
-  cp ${SCRIPT_PWD}/reducer.sh ./reducer_fireworks.sh
+  cp "${REDUCER_TEMPLATE}" ./reducer_fireworks.sh
   mkdir -p ./FIREWORKS-BUGS
   sed -i "s|^NEW_BUGS_COPY_DIR=[^#]\+|NEW_BUGS_COPY_DIR=\"${PWD}/FIREWORKS-BUGS\"   |"  ./reducer_fireworks.sh
   sed -i 's|^KNOWN_BUGS_LOC=[^#]\+|KNOWN_BUGS_LOC="${HOME}/mariadb-qa/known_bugs.strings"   |' ./reducer_fireworks.sh

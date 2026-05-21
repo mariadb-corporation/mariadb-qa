@@ -1,0 +1,2 @@
+# MSAN suppression file, used during MariaDB Server MSAN compliation (build_mdpsms_dbg_msan.sh and _opt_)
+[memory]

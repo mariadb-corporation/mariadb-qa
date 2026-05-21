@@ -3,7 +3,7 @@
 #
 # Two modes:
 #   (1) Default loop mode: repeatedly
-#         - generator.sh produces random SQL
+#         - generatorcpp/generator produces random SQL
 #         - ./anc [--log_bin]  (fresh install + start)
 #         - load the generated SQL
 #         - snapshot checksums
@@ -31,7 +31,7 @@ KEEP_ARTIFACTS=0          # preserve dump.sql/binlogs even when no diff
 VERIFY_FILE=""            # if set: single-shot verify mode on this file
 BASEDIR="${PWD}"
 MYEXTRA=""                # additional mysqld options
-GENERATOR_DIR="${HOME}/mariadb-qa/generator"
+GENERATOR_DIR="${HOME}/mariadb-qa/generatorcpp"
 WORKSUBDIR="verify_work"  # under $BASEDIR
 QUIET=0
 
@@ -192,27 +192,23 @@ take_snapshot(){
 }
 
 generate_sql(){
-  # Produce $WORKDIR/gen.sql via generator.sh.
+  # Produce $WORKDIR/gen.sql via the C++ generator. --output writes directly to
+  # the target path so no serialization or shared-state issues across callers.
   local qcount="$1"
   local target="$WORKDIR/gen.sql"
   [ -d "$GENERATOR_DIR" ] || { err "generator dir not found: $GENERATOR_DIR"; return 2; }
-  [ -x "$GENERATOR_DIR/generator.sh" ] || { err "generator.sh not executable"; return 2; }
-  # generator.sh hard-codes OUTPUT_FILE=out and runs in its own dir, so two
-  # concurrent invocations clobber each other's out.sql.  Serialize with flock
-  # over a lock under the generator dir itself (so it works across basedirs).
+  [ -x "$GENERATOR_DIR/generator" ] || { err "generator binary not executable. Run $GENERATOR_DIR/build.sh first."; return 2; }
   (
-    flock 9
-    cd "$GENERATOR_DIR" && ./generator.sh "$qcount" >"$WORKDIR/generator.log" 2>&1
+    cd "$GENERATOR_DIR" && ./generator --threads 4 --output "$target" "$qcount" >"$WORKDIR/generator.log" 2>&1
     local rc=$?
-    if [ $rc -ne 0 ] || [ ! -s "$GENERATOR_DIR/out.sql" ]; then
+    if [ $rc -ne 0 ] || [ ! -s "$target" ]; then
       echo "GENFAIL:$rc" >"$WORKDIR/genstatus"
       exit $rc
     fi
-    mv "$GENERATOR_DIR/out.sql" "$target"
     echo "OK" >"$WORKDIR/genstatus"
-  ) 9>"$GENERATOR_DIR/.vdb_generate.lock"
+  )
   if ! grep -q '^OK$' "$WORKDIR/genstatus" 2>/dev/null; then
-    err "generator.sh failed. See $WORKDIR/generator.log"
+    err "generator failed. See $WORKDIR/generator.log"
     return 2
   fi
   echo "$target"

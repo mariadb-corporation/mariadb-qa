@@ -54,9 +54,9 @@ done
 [ -z "${LOGS}" ] && exit 1
 
 # Pre-normalisation cleanups applied before UID typing / extraction. Two stages:
-#  1) INNODB_RECORD_COLLAPSE: pattern-specific. Collapses multi-KB InnoDB "Record in index ... TUPLE ... at: (COMPACT )?RECORD ..." dumps into a single stable signature, folding both the [ERROR] update form and the paired [Warning] rollback form, and folding COMPACT vs non-COMPACT row formats (semantically the same logical event, different table row_format). nts (new_text_string.sh) keeps the COMPACT and non-COMPACT forms separate for MYBUG so kb classification can distinguish them (kb anchors the COMPACT form on MDEV-35187); the aggregate-path fold here is the looser grouping used by pquery-results.sh's UID list.
+#  1) INNODB_RECORD_COLLAPSE: pattern-specific. Collapses multi-KB InnoDB "Record in index ... TUPLE ... at: (COMPACT )?RECORD ..." dumps into a stable signature. Form aligned with new_text_string.sh's INNODB_ERROR rules so MYBUG (nts source) and reducer<N>.sh TEXT (override source) produce the same UID body — kb entries (nts-style) match either source. Update / rollback / COMPACT / non-COMPACT each fold to their own UID.
 #  2) UNIVERSAL_COLLAPSE: pattern-agnostic. Squashes long whitespace runs (5+) and long 0x-hex blobs (12+ hex chars) to "..."; catches binary-payload noise that lands in the error log.
-INNODB_RECORD_COLLAPSE='s|Record in index.*of table.*was not found on update: TUPLE.*at: (COMPACT )?RECORD.*|Record in index X of table Y was not found (update/rollback)|; s|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: (COMPACT )?RECORD.*|Record in index X of table Y was not found (update/rollback)|'
+INNODB_RECORD_COLLAPSE='s|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on update: TUPLE Z at: COMPACT RECORD|; s|Record in index.*of table.*was not found on update: TUPLE.*at: RECORD.*|Record in index X of table Y was not found on update: TUPLE Z at: RECORD|; s|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: COMPACT RECORD|; s|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: RECORD.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: RECORD|'
 UNIVERSAL_COLLAPSE='s| \{5,\}|...|g; s|0x[0-9A-Fa-f]\{12,\}|0x...|g'
 
 # UID-line normalisations for the errors / lastline / aggregate output paths. Strips per-trial volatile detail (timestamps, port numbers, binlog positions, GTID values, hex IDs, identifier quoting, table-name suffixes, etc.) so semantically-identical events fold to the same UID. "Clean" mode does NOT use these — it has its own regex-friendly pipeline (below) that pquery-del-trial.sh feeds into reducer TEXT.
@@ -64,7 +64,7 @@ UID_NORMALIZE_TS='s|^[0-9]{4}-[0-9]{2}-[0-9]{2}  *[0-9]+:[0-9]+:[0-9]+ +[0-9]+ +
 UID_NORMALIZE_TT='s|#sql-temptable-[0-9a-f]+-[0-9]+-[0-9a-f]+|#sql-temptable-X|g'
 UID_NORMALIZE_BACKUP='s|#sql-backup-[0-9a-f]+-[0-9]+|#sql-backup-X|g'
 UID_NORMALIZE_SHM='s|/dev/shm/[0-9]+/[0-9]+/|/dev/shm/X/N/|g'
-UID_NORMALIZE_IBD="s|'/[^']*/test/t[0-9]+\\.ibd'|'/X/test/tN.ibd'|g"
+UID_NORMALIZE_IBD="s|'/[^']*/test/t[0-9]+\\.ibd'|X|g"
 UID_NORMALIZE_QUOTED_ID="s/'[a-zA-Z_][a-zA-Z0-9_]*'/'<id>'/g"
 UID_NORMALIZE_BACKTICK_ID='s/`[a-zA-Z_][a-zA-Z0-9_]*`/`<id>`/g'
 UID_NORMALIZE_TABLE_REF="s#'\\./test/[^']+'#'./test/X'#g"
@@ -119,10 +119,11 @@ uid_normalize() {
       -e "${UID_NORMALIZE_LRECL}" \
       -e "${UID_NORMALIZE_TEST_PATH}" \
       -e "${UID_NORMALIZE_INNODB_HELP}" \
+  | awk '{ n=0; while ((p=index($0,"<id>"))>0) { c=(n<3)?sprintf("%c",88+n):sprintf("%c",65+n-3); $0=substr($0,1,p-1) c substr($0,p+4); n++ } print }' \
   | awk '!seen[$0]++'
 }
 
-# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, MYSQL_HA_READ, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT is used only when an assert line reaches the aggregate path without nts producing an <assert>|<frame1..4> UID (no core / no MYBUG); the ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`.
+# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, MYSQL_HA_READ, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
 uid_prefix() {
   awk '
     {
@@ -140,8 +141,8 @@ uid_prefix() {
       }
       if (sub(/^\[ERROR\] InnoDB: /,     "INNODB_ERROR|"))   { print; next }
       if (sub(/^\[Warning\] InnoDB: /,   "INNODB_WARNING|")) {
-        # Fold the [Warning] rollback variant of "Record in index ... was not found" into INNODB_ERROR — paired emission of the same logical event as the [ERROR] update variant. Other [Warning] InnoDB bodies keep the INNODB_WARNING prefix.
-        if ($0 ~ /^INNODB_WARNING\|Record in index X of table Y was not found \(update\/rollback\)$/) {
+        # Fold the [Warning] rollback variant of "Record in index ... was not found" into INNODB_ERROR — paired emission of the same logical event as the [ERROR] update variant. Other [Warning] InnoDB bodies keep the INNODB_WARNING prefix. The match shape mirrors the four bodies INNODB_RECORD_COLLAPSE emits (update/rollback × COMPACT/non-COMPACT).
+        if ($0 ~ /^INNODB_WARNING\|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: (COMPACT )?RECORD$/) {
           sub(/^INNODB_WARNING\|/, "INNODB_ERROR|")
         }
         print; next
@@ -221,11 +222,14 @@ case "${MODE}" in
   lastline) [ -z "${ERRORS_LAST_LINE}" ] && exit 1; echo "${ERRORS_LAST_LINE}" | uid_normalize | uid_prefix ;;
   top)
     # Pick the single highest-severity UID across both scans, sourced from one input line (no blending). Severity tiers: 1=ASSERT, 2=ASAN/LSAN, 3=GLIBC/MUTEX_ERROR, 4=other typed errors (INNODB_ERROR/MARIADBD_ERROR/SLAVE_ERROR/MARKED_AS_CRASHED/...), 5=warnings/notes, 9=untyped fallback. Lower tier wins. Within a tier the first occurrence wins.
+    # EXCLUDE_ASSERT=1 (env var) drops tier-1 ASSERT| candidates before ranking. Consumers set this when nts already produced a frame-based signal UID (SIGSEGV|f1|... or <assert>|SIGABRT|f1..f4); the error-log ASSERT line in that case is a shadow of the same crash and must not become the trial UniqueID (MYBUG) nor the reducer TEXT.
     [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ] && exit 1
+    EXA=0; [ "${EXCLUDE_ASSERT}" = "1" ] && EXA=1
     { [ -n "${ERRORS}" ] && echo "${ERRORS}"; [ -n "${ERRORS_LAST_LINE}" ] && echo "${ERRORS_LAST_LINE}"; } \
       | uid_normalize | uid_prefix \
-      | awk '
-          { p = 9
+      | awk -v exa="${EXA}" '
+          { if (exa == 1 && $0 ~ /^ASSERT\|/) next
+            p = 9
             if      ($0 ~ /^ASSERT\|/)                                                                                  p = 1
             else if ($0 ~ /^(ASAN|LSAN)\|/)                                                                             p = 2
             else if ($0 ~ /^(GLIBC|MUTEX_ERROR)\|/)                                                                     p = 3

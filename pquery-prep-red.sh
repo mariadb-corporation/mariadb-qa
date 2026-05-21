@@ -36,7 +36,15 @@ if [ "${SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/new_text_string.sh" 
   SCRIPT_PWD="${HOME}/mariadb-qa"
 fi
 RUNDIR=$PWD
-REDUCER="${SCRIPT_PWD}/reducer.sh"
+# Prefer the C++ reducer thin-wrapper (reducer_cpp.sh) when available; fall back
+# to the bash reducer.sh otherwise. The thin wrapper preserves the same #VARMOD#
+# section + variable-definition layout as reducer.sh, so the sed pipeline below
+# is unchanged. Override via env: REDUCER=/path/to/your/reducer.sh
+if [ -z "${REDUCER}" ]; then
+  if   [ -r "${SCRIPT_PWD}/reducer_cpp.sh" ]; then REDUCER="${SCRIPT_PWD}/reducer_cpp.sh"
+  else                                              REDUCER="${SCRIPT_PWD}/OLD/reducer.sh"
+  fi
+fi
 SAN_BUG=0  # Do not remove
 
 # Disable history substitution and avoid  -bash: !: event not found  like errors
@@ -79,8 +87,8 @@ check_if_asan_or_ubsan_or_tsan(){
 if [ ! -r ${SCRIPT_PWD}/new_text_string.sh ]; then
   echo "Assert: ${SCRIPT_PWD}/new_text_string.sh not readable by this script!"
   exit 1
-elif [ ! -r ${SCRIPT_PWD}/reducer.sh ]; then
-  echo "Assert: ${SCRIPT_PWD}/reducer.sh not readable by this script!"
+elif [ ! -r "${REDUCER}" ]; then
+  echo "Assert: ${REDUCER} (template reducer source) not readable by this script!"
   exit 1
 elif [ ${SCAN_FOR_NEW_BUGS} -eq 1 -a ! -r ${SCRIPT_PWD}/known_bugs.strings ]; then
   echo "Assert: SCAN_FOR_NEW_BUGS=1, yet ${SCRIPT_PWD}/known_bugs.strings was not found?"
@@ -735,11 +743,18 @@ generate_reducer_script(){
   fi
   if [ ! -z "${FINDBUG}" ]; then  # Override path: nts UID is either a known/filtered bug or "no core found", and ERROR_LOG_SCAN_ISSUE flagged a separate error-log entry worth reducing.
     ERROR_LOG_UID="$(${SCRIPT_PWD}/error_log_scan.sh top ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null)"
+    # ASSERT-shadow guard: when nts already produced a frame-based signal UID (SIGSEGV|f1|... or <assert>|SIGABRT|f1..f4), the error-log ASSERT line is the same crash from the log angle and must not become the trial UniqueID (MYBUG) nor the reducer TEXT. Re-query with EXCLUDE_ASSERT=1 to pick the next-best non-ASSERT UID; if none remains, drop the override so the nts frame UID stays as MYBUG and the reducer reduces against frames.
+    if [ ! -z "${ERROR_LOG_UID}" ] && [[ "${ERROR_LOG_UID}" == ASSERT\|* ]] && echo "${ORIGINAL_TEXT}" | grep -qE '(^|\|)SIG[A-Z]+\|'; then
+      ERROR_LOG_UID="$(EXCLUDE_ASSERT=1 ${SCRIPT_PWD}/error_log_scan.sh top ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null)"
+      if [ -z "${ERROR_LOG_UID}" ]; then
+        echo "* Override skipped: nts UID '${ORIGINAL_TEXT}' has frames and only an ASSERT| shadow was available from error_log_scan"
+      fi
+    fi
     if [ ! -z "${ERROR_LOG_UID}" ]; then
       UNTS_COMMENT="# TEXT is the error-log UID (the original UniqueID is the '#TEXT=' line below). USE_NEW_TEXT_STRING=1: reducer nts-compares each replay against this UID."
       sed -i $'s\x01^USE_NEW_TEXT_STRING=.*\x01USE_NEW_TEXT_STRING=1  '"${UNTS_COMMENT}"$'\x01' ${REDUCER_FILENAME}
       sed -i $'s\x01^   \\(TEXT=.*\\)\x01   TEXT="'"${ERROR_LOG_UID}"$'"\\n#\\1\x01' ${REDUCER_FILENAME}
-      # Reaching this block means the override gate fired (known/filtered nts UID, or "no core found" + ERROR_LOG_SCAN_ISSUE). In both cases the current MYBUG is no longer the right signal to reduce against, so overwrite it with the error-log UID unconditionally. The core/SAN precedence applies upstream in nts (which already wrote the highest-precedence signal as MYBUG before this override gate); it does not apply here. MYBUG.orig snapshots the pre-override state.
+      # Reaching this block means the override gate fired (known/filtered nts UID, or "no core found" + ERROR_LOG_SCAN_ISSUE) AND a non-ASSERT error-log UID is available. Overwrite MYBUG with the error-log UID; the core/SAN precedence applies upstream in nts (which already wrote the highest-precedence signal as MYBUG before this gate). MYBUG.orig snapshots the pre-override state.
       [ -r ${RUNDIR}/${TRIAL}/MYBUG ] && cp ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/MYBUG.orig 2>/dev/null
       echo "${ERROR_LOG_UID}" > ${RUNDIR}/${TRIAL}/MYBUG
       UNTS_COMMENT=

@@ -85,6 +85,10 @@ fi
 if [ ! -z "${ERROR_LOG}" ]; then  # Do not use -r as it will not work if both master.err and slave.err are present, for example
   ERRORS="$(${SCRIPT_PWD}/error_log_scan.sh errors ${ERROR_LOG})"
   ERRORS_LAST_LINE="$(${SCRIPT_PWD}/error_log_scan.sh lastline ${ERROR_LOG})"
+  if [ "${2}" = "CHECK" ]; then  # CHECK mode is non-destructive: emit the top UID-form error-log entry and exit. Never reaches any delete_trial path below. Used by callers that need the UID without trial deletion side effects.
+    ${SCRIPT_PWD}/error_log_scan.sh top ${ERROR_LOG} 2>/dev/null
+    exit 0
+  fi
   if [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ]; then
     delete_trial  # No significant errors: safe to delete
   elif [ -z "${ERRORS}" -a ! -z "${ERRORS_LAST_LINE}" -a ! -z "$(tail -n1 ${ERROR_LOG} 2>/dev/null | grep --binary-files=text -o 'Assertion .* failed' 2>/dev/null | sed "s|'|.|g" | sed 's|"|.|g' | sed "s|^Assertion .||;s|. failed$||" | xargs -I{} grep --binary-files=text -i "{}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null)" ]; then  # No other errors and last-line assertion exactly matches an already-known assertion in the known bugs file: safe to delete
@@ -99,10 +103,11 @@ if [ ! -z "${ERROR_LOG}" ]; then  # Do not use -r as it will not work if both ma
     fi
   fi
 else
+  if [ "${2}" = "CHECK" ]; then  # CHECK mode is non-destructive even when ERROR_LOG is missing.
+    exit 0
+  fi
   if [ "${2}" != "NO_WARNINGS" ]; then
-    if [ "${2}" != "CHECK" ]; then
-      echo "Warning: ${ERROR_LOG} not found, proceeding to delete all other trial files"
-    fi
+    echo "Warning: ${ERROR_LOG} not found, proceeding to delete all other trial files"
   fi
   delete_trial
 fi

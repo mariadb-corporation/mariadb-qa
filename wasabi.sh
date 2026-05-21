@@ -8,7 +8,7 @@
 #      /test/gendirs.sh, clones <major> into /test/<major>/, builds opt+dbg.
 #      Refreshes every BUILD_MAX_AGE_SEC. Only wipes /test/<major>/ trees that
 #      carry a .watchdog-clone stamp (protects hand-managed clones).
-#   2. SQL generation via ~/mariadb-qa/generator/generator.sh (count of queries
+#   2. SQL generation via ~/mariadb-qa/generatorcpp/generator (count of queries
 #      controlled by GENERATOR_LINES). Refreshed every GENERATOR_REFRESH_HOURS;
 #      output saved to /data/wasabi/sql/wasabi_input.sql.
 #   3. FireWorks discovery — reducer.sh FIREWORKS=1 in screen 'fireworks',
@@ -112,10 +112,10 @@ check_if_numeric_nofail(){
 preflight(){
   [ ! -d "/home/${USER}/mariadb-qa" ] && {
     wecho 0 'Preflight' "*** ERROR: /home/${USER}/mariadb-qa not found"; exit 1; }
-  [ ! -x "/home/${USER}/mariadb-qa/reducer.sh" ] && {
-    wecho 0 'Preflight' "*** ERROR: ~/mariadb-qa/reducer.sh missing or not executable"; exit 1; }
-  [ ! -x "/home/${USER}/mariadb-qa/generator/generator.sh" ] && {
-    wecho 0 'Preflight' "*** ERROR: ~/mariadb-qa/generator/generator.sh missing or not executable"; exit 1; }
+  [ ! -x "/home/${USER}/mariadb-qa/reducer_cpp.sh" ] && [ ! -x "/home/${USER}/mariadb-qa/OLD/reducer.sh" ] && {
+    wecho 0 'Preflight' "*** ERROR: ~/mariadb-qa/reducer_cpp.sh missing (and no OLD/reducer.sh fallback)"; exit 1; }
+  [ ! -x "/home/${USER}/mariadb-qa/generatorcpp/generator" ] && {
+    wecho 0 'Preflight' "*** ERROR: ~/mariadb-qa/generatorcpp/generator missing or not executable. Run generatorcpp/build.sh first."; exit 1; }
   [ ! -x "/home/${USER}/mariadb-qa/build_mdpsms_dbg.sh" ] && {
     wecho 0 'Preflight' "*** ERROR: ~/mariadb-qa/build_mdpsms_dbg.sh missing"; exit 1; }
   [ ! -x "/home/${USER}/mariadb-qa/build_mdpsms_opt.sh" ] && {
@@ -290,10 +290,9 @@ build_cycle(){
 }
 
 # =============== SQL generation ===============
-# Generate fresh fuzzed SQL via ~/mariadb-qa/generator/generator.sh. Run from a
-# wasabi-local copy of the generator dir so we don't collide with concurrent
-# pquery-run users sharing the canonical generator/. Output lands at
-# ${WASABI_DIR}/sql/wasabi_input.sql.
+# Generate fresh fuzzed SQL via ~/mariadb-qa/generatorcpp/generator. The C++ generator
+# writes directly to the target path (--output) so no per-instance dir copy is needed.
+# Output lands at ${WASABI_DIR}/sql/wasabi_input.sql.
 generate_sql(){
   local TGT="${WASABI_DIR}/sql/wasabi_input.sql"
   local STATE="${WASABI_DIR}/state/lastgen"
@@ -317,23 +316,19 @@ generate_sql(){
 
   [ "${NEED}" -eq 0 ] && { wecho 1 'Gen' "wasabi_input.sql is fresh; no regen"; return 0; }
 
-  # Sync the generator dir (cheap: only newer files copy via -u).
-  cp -ru "${HOME}/mariadb-qa/generator/." "${WASABI_DIR}/generator/" 2>/dev/null
-
-  local GEN_DIR="${WASABI_DIR}/generator"
-  [ ! -x "${GEN_DIR}/generator.sh" ] && {
-    wecho 0 'Gen' "*** generator.sh not present in ${GEN_DIR}"; return 1
+  local GEN_DIR="${HOME}/mariadb-qa/generatorcpp"
+  [ ! -x "${GEN_DIR}/generator" ] && {
+    wecho 0 'Gen' "*** generator binary not present in ${GEN_DIR}. Run ${GEN_DIR}/build.sh first."; return 1
   }
 
   wecho 0 'Gen' "Generating ${GENERATOR_LINES} queries (cwd=${GEN_DIR})"
   local START
   START=$(date +'%s')
-  ( cd "${GEN_DIR}" && rm -f out.sql; ./generator.sh "${GENERATOR_LINES}" >/dev/null 2>&1 )
-  if [ ! -s "${GEN_DIR}/out.sql" ]; then
-    wecho 0 'Gen' "*** generator.sh produced no out.sql"
+  ( cd "${GEN_DIR}" && ./generator --threads 4 --output "${TGT}" "${GENERATOR_LINES}" >/dev/null 2>&1 )
+  if [ ! -s "${TGT}" ]; then
+    wecho 0 'Gen' "*** generator produced no output at ${TGT}"
     return 1
   fi
-  mv "${GEN_DIR}/out.sql" "${TGT}"
   date +'%s' > "${STATE}"
   wecho 0 'Gen' "Wrote ${TGT}: $(wc -l < "${TGT}") lines in $(( $(date +'%s') - START ))s"
 }
@@ -380,7 +375,10 @@ discover_fireworks(){
   [ -n "${ALIVE}" ] && { screen -S "${ALIVE}" -X quit 2>/dev/null; sleep 2; }
 
   local FW="${WASABI_DIR}/state/fireworks_reducer.sh"
-  cp "${HOME}/mariadb-qa/reducer.sh" "${FW}"
+  # Prefer the C++ wrapper (reducer_cpp.sh) when present.
+  local SRC_REDUCER="${HOME}/mariadb-qa/reducer_cpp.sh"
+  [ ! -r "${SRC_REDUCER}" ] && SRC_REDUCER="${HOME}/mariadb-qa/OLD/reducer.sh"
+  cp "${SRC_REDUCER}" "${FW}"
   sed -i \
     -e "s|^INPUTFILE=.*|INPUTFILE=\"${INFILE}\"|" \
     -e "s|^BASEDIR=.*|BASEDIR=\"${TARGET_BASEDIR}\"|" \
