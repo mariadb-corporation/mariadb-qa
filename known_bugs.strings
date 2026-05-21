@@ -285,6 +285,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!commit_lsn|SIGABRT|trx_t::free|innobase_fts_load_stopword|create_table_info_t::create_table_update_dict|ha_innobase::create                                                   ## MDEV-28730
 SIGSEGV|process_i_s_table_temporary_tables|get_all_tables|get_schema_tables_result|JOIN::exec_inner                                                                            ## MDEV-39609
 SIGSEGV|write_full_pages|write_block_record|allocate_and_write_block_record|_ma_write_init_block_record                                                                        ## MDEV-39562
 !opt_binlog_engine_hton|SIGABRT|MYSQL_BIN_LOG::rotate|binlog_checksum_update|sys_var_pluginvar::global_update|sys_var::update                                                  ## MDEV-39604

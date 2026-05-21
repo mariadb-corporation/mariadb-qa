@@ -1,0 +1,5 @@
+# mysqld options required for replay:  --max_allowed_packet=33554432 --maximum-bulk_insert_buffer_size=1M --maximum-join_buffer_size=1M --maximum-max_heap_table_size=1M --maximum-max_join_size=1M --maximum-myisam_max_sort_file_size=1M --maximum-myisam_mmap_size=1M --maximum-myisam_sort_buffer_size=1M --maximum-optimizer_trace_max_mem_size=1M --maximum-preload_buffer_size=1M --maximum-query_alloc_block_size=1M --maximum-query_prealloc_size=1M --maximum-range_alloc_block_size=1M --maximum-read_buffer_size=1M --maximum-read_rnd_buffer_size=1M --maximum-sort_buffer_size=1M --maximum-tmp_table_size=1M --maximum-transaction_alloc_block_size=1M --maximum-transaction_prealloc_size=1M --log-output=none --secure-file-priv= --sql_mode= --deadlock-timeout-short=10 --deadlock-timeout-long=10 --deadlock-search-depth-short=10 --deadlock-search-depth-long=33
+INSTALL SONAME 'ha_mroonga';#NOERROR;
+CREATE TABLE t1 (c1 DATE,c2 TIME,c3 CHAR,PRIMARY KEY(c1)) ENGINE=Mroonga;#NOERROR;
+INSERT INTO t1 VALUES (DAYOFMONTH(':49:11'),'a','1/2'),(TIMESTAMP(':38:38'),'a',2990);#NOERROR;
+ALTER TABLE t1 DROP INDEX IF EXISTS idx1,ADD INDEX idx1 (c1);#NOERROR;
