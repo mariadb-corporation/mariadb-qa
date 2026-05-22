@@ -285,6 +285,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_upd_lock_and_undo                                                        ## MDEV-38034
+trx_id > 0 || (flags & BTR_KEEP_SYS_FLAG) || index->table->is_temporary()|SIGABRT|btr_cur_optimistic_update|row_upd_clust_rec|row_upd_clust_step|row_upd                       ## MDEV-38034
 lsn != 0|SIGABRT|log_write_up_to|innodb_make_page_dirty|sys_var_pluginvar::global_update|sys_var::update                                                                       ## MDEV-39707
 !thd || !coordinator_thd|SIGABRT|purge_sys_t::clone_oldest_view<false>|trx_purge|purge_coordinator_state::do_purge|purge_coordinator_callback                                  ## MDEV-39706
 !commit_lsn|SIGABRT|trx_t::free|innobase_fts_load_stopword|create_table_info_t::create_table_update_dict|ha_innobase::create                                                   ## MDEV-28730
