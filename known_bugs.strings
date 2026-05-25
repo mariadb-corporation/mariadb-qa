@@ -285,6 +285,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+buf != end|SIGABRT|decimal_mul|my_decimal_mul|Item_func_mul::decimal_op|VDec_op::VDec_op                                                                                       ## MDEV-39744
+bitmap_is_set_all(&table->s->all_set)|SIGABRT|handler::ha_reset|close_thread_table|close_thread_tables|rpl_group_info::slave_close_thread_tables                               ## MDEV-39627
 SIGSEGV|uint2korr|dynamic_column_update_many_fmt|mariadb_dyncol_update_many_named|Item_func_dyncol_add::val_str                                                                ## MDEV-39667
 low == (int)buckets.size()-1 || field->key_cmp((uchar*)buckets[low+1].start_value.data(), lookup_val)> 0|SIGABRT|Histogram_json_hb::find_bucket|Histogram_json_hb::range_selectivity|get_column_range_cardinality|records_in_column_ranges  ## MDEV-30097
 SIGSEGV|srw_lock_impl<true>::wr_lock|trx_undo_assign_low<false>|trx_undo_report_row_operation|btr_cur_upd_lock_and_undo                                                        ## MDEV-38034
