@@ -285,6 +285,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|storage/maria/ma_ft_boolean_search.c|ftb_parse_query_internal|_ftb_parse_query|maria_ft_init_boolean_search|ha_maria::ft_init_ext              ## MDEV-39752
 SIGSEGV|mi_mmap_pread|_mi_read_static_record|mi_rprev|ha_myisam::index_prev                                                                                                    ## MDEV-39749
 SIGSEGV|get_new_handler|mysql_rename_table|mysql_alter_table|Sql_cmd_alter_table::execute                                                                                      ## MDEV-39747
 buf != end|SIGABRT|decimal_mul|my_decimal_mul|Item_func_mul::decimal_op|VDec_op::VDec_op                                                                                       ## MDEV-39744
