@@ -500,6 +500,17 @@ inline std::string sh_capture_trimmed(const std::string& cmd) {
   return s;
 }
 
+// POSIX single-quote-escape: wrap an arbitrary string for safe inclusion in a
+// `bash -c` command line. Replaces each ' with '\'' so embedded quotes cannot
+// break out of the surrounding quotes.
+inline std::string sh_squote(const std::string& s) {
+  std::string out; out.reserve(s.size() + 2);
+  out += '\'';
+  for (char c : s) { if (c == '\'') out += "'\\''"; else out += c; }
+  out += '\'';
+  return out;
+}
+
 // Cross-filesystem-safe rename: tries fs::rename, falls back to cp+rm if
 // EXDEV (cross-device link). Bash `mv` handles this automatically; std::rename
 // (POSIX rename(2)) does NOT, so we emulate.
@@ -1570,9 +1581,9 @@ static int multi_reducer_impl() {
     // Subreducer launch: invoke self with env vars set (mirroring the bash #VARMOD# block).
     std::ostringstream env;
     env << "REDUCER_MULTI_REDUCER=1 "
-        << "REDUCER_EPOCH='" << state::EPOCH << "' "
+        << "REDUCER_EPOCH=" << util::sh_squote(state::EPOCH) << " "
         << "REDUCER_MODE=" << cfg::MODE << " "
-        << "REDUCER_TEXT='" << cfg::TEXT << "' "
+        << "REDUCER_TEXT=" << util::sh_squote(cfg::TEXT) << " "
         << "REDUCER_MODE5_COUNTTEXT=" << cfg::MODE5_COUNTTEXT << " "
         << "REDUCER_SKIPV=" << state::SKIPV << " "
         << "REDUCER_SPORADIC=" << state::SPORADIC << " "
@@ -1580,10 +1591,10 @@ static int multi_reducer_impl() {
         << "REDUCER_PQUERY_MULTI_QUERIES=" << cfg::PQUERY_MULTI_QUERIES << " "
         << "REDUCER_TS_TRXS_SETS=" << cfg::TS_TRXS_SETS << " "
         << "REDUCER_TS_DBG_CLI_OUTPUT=" << cfg::TS_DBG_CLI_OUTPUT << " "
-        << "REDUCER_PAUSE_AFTER_EACH_OCCURRENCE='" << cfg::PAUSE_AFTER_EACH_OCCURRENCE << "' "
-        << "REDUCER_BASEDIR='" << cfg::BASEDIR << "' "
-        << "REDUCER_MYUSER='" << state::MYUSER << "' "
-        << "REDUCER_WORKD='" << subw << "' ";
+        << "REDUCER_PAUSE_AFTER_EACH_OCCURRENCE=" << cfg::PAUSE_AFTER_EACH_OCCURRENCE << " "
+        << "REDUCER_BASEDIR=" << util::sh_squote(cfg::BASEDIR) << " "
+        << "REDUCER_MYUSER=" << util::sh_squote(state::MYUSER) << " "
+        << "REDUCER_WORKD=" << util::sh_squote(subw) << " ";
     // Subreducer reads cfg::INPUTFILE from argv[1] same as a normal run. Use
     // `exec -a <subw>/subreducer` so ps -ef shows "<workdir>/subreducer/<N>/subreducer"
     // as the process command — preserves framework grep contract used by ~/ds,
@@ -1713,9 +1724,9 @@ static int multi_reducer_impl() {
           // Match the initial-spawn env block above 1-for-1 (MODE5_COUNTTEXT, PQUERY_MULTI_*, TS_*, PAUSE_AFTER_EACH_OCCURRENCE included) so a restarted subreducer behaves identically to a fresh one. Earlier divergence here left mode-specific state at its default in the respawned process.
           std::ostringstream env;
           env << "REDUCER_MULTI_REDUCER=1 "
-              << "REDUCER_EPOCH='" << state::EPOCH << "' "
+              << "REDUCER_EPOCH=" << util::sh_squote(state::EPOCH) << " "
               << "REDUCER_MODE=" << cfg::MODE << " "
-              << "REDUCER_TEXT='" << cfg::TEXT << "' "
+              << "REDUCER_TEXT=" << util::sh_squote(cfg::TEXT) << " "
               << "REDUCER_MODE5_COUNTTEXT=" << cfg::MODE5_COUNTTEXT << " "
               << "REDUCER_SKIPV=" << state::SKIPV << " "
               << "REDUCER_SPORADIC=" << state::SPORADIC << " "
@@ -1723,10 +1734,10 @@ static int multi_reducer_impl() {
               << "REDUCER_PQUERY_MULTI_QUERIES=" << cfg::PQUERY_MULTI_QUERIES << " "
               << "REDUCER_TS_TRXS_SETS=" << cfg::TS_TRXS_SETS << " "
               << "REDUCER_TS_DBG_CLI_OUTPUT=" << cfg::TS_DBG_CLI_OUTPUT << " "
-              << "REDUCER_PAUSE_AFTER_EACH_OCCURRENCE='" << cfg::PAUSE_AFTER_EACH_OCCURRENCE << "' "
-              << "REDUCER_BASEDIR='" << cfg::BASEDIR << "' "
-              << "REDUCER_MYUSER='" << state::MYUSER << "' "
-              << "REDUCER_WORKD='" << restart_w << "' ";
+              << "REDUCER_PAUSE_AFTER_EACH_OCCURRENCE=" << cfg::PAUSE_AFTER_EACH_OCCURRENCE << " "
+              << "REDUCER_BASEDIR=" << util::sh_squote(cfg::BASEDIR) << " "
+              << "REDUCER_MYUSER=" << util::sh_squote(state::MYUSER) << " "
+              << "REDUCER_WORKD=" << util::sh_squote(restart_w) << " ";
           // Re-spawn with exec -a so ps -ef shows "<workdir>/subreducer" — see comment at the initial spawn site above. Same verify-vs-stage1 INPUTFILE/WORKF rule applies on restart.
           std::string restart_proc_name = restart_w + "/subreducer";
           const std::string& restart_input =
