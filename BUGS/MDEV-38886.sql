@@ -2,3 +2,7 @@ INSTALL SONAME 'ha_connect';
 CREATE TABLE t (i INT) ENGINE=Connect table_type=XML option_list='xmlsup=libxml2';
 INSERT INTO t VALUES ();
 DELETE FROM t;
+
+INSTALL SONAME 'ha_connect.so';
+CREATE TABLE t1 (c1 INT,c2 VARCHAR(1)) ENGINE=CONNECT TABLE_TYPE=XML FILE_NAME='/tmp/c_68.xml';
+DELETE FROM t1 LIMIT 9;
