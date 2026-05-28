@@ -285,6 +285,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+table->vers_write|SIGABRT|vers_update_or_validate_fields|fill_record|fill_record_n_invoke_before_triggers|mysql_insert                                                         ## MDEV-38854
 SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_row|handler::ha_delete_row                                                                                            ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_row|handler::ha_delete_row|TABLE::delete_row                                                                                       ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_row|handler::ha_delete_row|TABLE::delete_row<false>                                                                                ## MDEV-38886
