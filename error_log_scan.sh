@@ -65,8 +65,8 @@ UID_NORMALIZE_TT='s|#sql-temptable-[0-9a-f]+-[0-9]+-[0-9a-f]+|#sql-temptable-X|g
 UID_NORMALIZE_BACKUP='s|#sql-backup-[0-9a-f]+-[0-9]+|#sql-backup-X|g'
 UID_NORMALIZE_SHM='s|/dev/shm/[0-9]+/[0-9]+/|/dev/shm/X/N/|g'
 UID_NORMALIZE_IBD="s|'/[^']*/test/t[0-9]+\\.ibd'|X|g"
-UID_NORMALIZE_QUOTED_ID="s/'[a-zA-Z_][a-zA-Z0-9_]*'/'<id>'/g"
-UID_NORMALIZE_BACKTICK_ID='s/`[a-zA-Z_][a-zA-Z0-9_]*`/`<id>`/g'
+UID_NORMALIZE="s/'[a-zA-Z_][a-zA-Z0-9_]*'\\.'[a-zA-Z_][a-zA-Z0-9_]*'/'X'/g; s/'[a-zA-Z_][a-zA-Z0-9_]*'/'X'/g"
+UID_NORMALIZE_BACKTICK='s/`[a-zA-Z_][a-zA-Z0-9_]*`\.`[a-zA-Z_][a-zA-Z0-9_]*`/`X`/g; s/`[a-zA-Z_][a-zA-Z0-9_]*`/`X`/g'
 UID_NORMALIZE_TABLE_REF="s#'\\./test/[^']+'#'./test/X'#g"
 UID_NORMALIZE_PORT='s|127\.0\.0\.1:[0-9]+|127.0.0.1:X|g'
 UID_NORMALIZE_BINLOG='s|binlog\.[0-9]+|binlog.X|g'
@@ -96,8 +96,8 @@ uid_normalize() {
       -e "${UID_NORMALIZE_BACKUP}" \
       -e "${UID_NORMALIZE_SHM}" \
       -e "${UID_NORMALIZE_IBD}" \
-      -e "${UID_NORMALIZE_QUOTED_ID}" \
-      -e "${UID_NORMALIZE_BACKTICK_ID}" \
+      -e "${UID_NORMALIZE}" \
+      -e "${UID_NORMALIZE_BACKTICK}" \
       -e "${UID_NORMALIZE_TABLE_REF}" \
       -e "${UID_NORMALIZE_PORT}" \
       -e "${UID_NORMALIZE_BINLOG}" \
@@ -119,11 +119,12 @@ uid_normalize() {
       -e "${UID_NORMALIZE_LRECL}" \
       -e "${UID_NORMALIZE_TEST_PATH}" \
       -e "${UID_NORMALIZE_INNODB_HELP}" \
-  | awk '{ n=0; while ((p=index($0,"<id>"))>0) { c=(n<3)?sprintf("%c",88+n):sprintf("%c",65+n-3); $0=substr($0,1,p-1) c substr($0,p+4); n++ } print }' \
+  | awk '{ n=0; pos=1; q=sprintf("%c",39); qm=q "X" q; bm="`X`"; while(1){ rem=substr($0,pos); qp=index(rem,qm); bp=index(rem,bm); if(qp==0&&bp==0)break; if(qp>0&&(bp==0||qp<bp)){c=(n<3)?sprintf("%c",88+n):sprintf("%c",65+n-3); p=pos+qp-1; $0=substr($0,1,p-1) q c q substr($0,p+3); pos=p+3}else{c=(n<3)?sprintf("%c",88+n):sprintf("%c",65+n-3); p=pos+bp-1; $0=substr($0,1,p-1) "`" c "`" substr($0,p+3); pos=p+3} n++ } print }' \
+  | sed -E "s/'([A-Z])'/\\1/g; s/\`([A-Z])\`/\\1/g" \
   | awk '!seen[$0]++'
 }
 
-# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, MYSQL_HA_READ, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
+# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, WARNING, MYSQL_HA_READ, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
 uid_prefix() {
   awk '
     {
@@ -169,6 +170,7 @@ uid_prefix() {
       if (sub(/^\[Warning\] Slave SQL: /,                 "SLAVE_WARNING|Slave SQL: "))                { print; next }
       if (sub(/^\[Warning\] Slave: /,                     "SLAVE_WARNING|Slave: "))                    { print; next }
       if (sub(/^\[Warning\] Aborted connection/, "WARNING_ABORTED|Aborted connection")) { print; next }
+      if (sub(/^\[Warning\] Table .* was altered WITHOUT VALIDATION.*$/, "WARNING|Table X was altered WITHOUT VALIDATION: the table might be corrupted")) { print; next }
       if (sub(/^\[ERROR\] RocksDB: /,            "ROCKSDB_ERROR|RocksDB: "))     { print; next }
       if (sub(/^\[ERROR\] CHECKTABLE /,          "CHECKTABLE|CHECKTABLE "))      { print; next }
       if (sub(/^\[ERROR\] Table /,               "MARIADBD_ERROR|Table "))       { print; next }
@@ -233,8 +235,8 @@ case "${MODE}" in
             if      ($0 ~ /^ASSERT\|/)                                                                                  p = 1
             else if ($0 ~ /^(ASAN|LSAN)\|/)                                                                             p = 2
             else if ($0 ~ /^(GLIBC|MUTEX_ERROR)\|/)                                                                     p = 3
-            else if ($0 ~ /\|/ && $0 !~ /^(INNODB_WARNING|SLAVE_WARNING|WARNING_ABORTED|INNODB_NOTE|UNTYPED)\|/)        p = 4
-            else if ($0 ~ /^(INNODB_WARNING|SLAVE_WARNING|WARNING_ABORTED|INNODB_NOTE)\|/)                              p = 5
+            else if ($0 ~ /\|/ && $0 !~ /^(INNODB_WARNING|SLAVE_WARNING|WARNING_ABORTED|WARNING|INNODB_NOTE|UNTYPED)\|/) p = 4
+            else if ($0 ~ /^(INNODB_WARNING|SLAVE_WARNING|WARNING_ABORTED|WARNING|INNODB_NOTE)\|/)                       p = 5
             else if ($0 ~ /^UNTYPED\|/)                                                                                 p = 6
             if (!bp || p < bp) { bu = $0; bp = p }
           }

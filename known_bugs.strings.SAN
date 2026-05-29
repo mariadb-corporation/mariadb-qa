@@ -35,6 +35,7 @@ UBSAN|applying zero offset to null pointer|storage/mroonga/vendor/groonga/lib/db
 ASAN|heap-buffer-overflow|include/my_byteorder.h|uint2korr|dynamic_column_update_many_fmt|Item_func_dyncol_add::val_str|Item::save_str_in_field                                ## MDEV-39667
 ASAN|heap-buffer-overflow|mysys/ma_dyncol.c|dynamic_column_update_many_fmt|Item_func_dyncol_add::val_str|Item::save_str_in_field|Item::save_in_field                           ## MDEV-39667
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_blockrec.c|write_full_pages|write_block_record|allocate_and_write_block_record|_ma_write_init_block_record  ## MDEV-39562
+UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/maria/ma_blockrec.c|write_block_record|allocate_and_write_block_record|_ma_write_init_block_record|maria_write  ## MDEV-39562
 UBSAN|applying non-zero offset X to null pointer|mysys/mf_dirname.c|dirname_length|dirname_part|fn_format|MYSQL_BIN_LOG::generate_new_name                                     ## MDEV-39604
 UBSAN|member access within null pointer of type 'CHARSET_INFO' (aka 'const charset_info_st')|sql/item_timefunc.cc|Item_char_typecast::fix_length_and_dec_internal|Item_char_typecast::fix_length_and_dec_generic|Item_char_typecast::fix_length_and_dec_str|Item_xmltype_typecast::fix_length_and_dec  ## MDEV-39573
 ASAN|heap-buffer-overflow|strings/my_vsnprintf.c|strnlen|process_str_arg|my_vsnprintf_ex|my_snprintf_8bit                                                                       ## MDEV-39590

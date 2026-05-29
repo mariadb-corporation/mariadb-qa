@@ -50,6 +50,18 @@ SAN_BUG=0  # Do not remove
 # Disable history substitution and avoid  -bash: !: event not found  like errors
 set +H
 
+# nts_chain_newer <path> — true when any UID-generation script in the nts chain
+# is newer than <path>. nts (new_text_string.sh) delegates to els
+# (error_log_scan.sh) for tier-5 fallback, to san_text_string.sh for SAN bugs,
+# and to fallback_text_string.sh as last resort; freshness of any of these
+# changes the MYBUG that nts would emit today.
+nts_chain_newer(){
+  [ "${SCRIPT_PWD}/new_text_string.sh"      -nt "${1}" ] ||
+  [ "${SCRIPT_PWD}/error_log_scan.sh"       -nt "${1}" ] ||
+  [ "${SCRIPT_PWD}/san_text_string.sh"      -nt "${1}" ] ||
+  [ "${SCRIPT_PWD}/fallback_text_string.sh" -nt "${1}" ]
+}
+
 check_if_asan_or_ubsan_or_tsan(){
   SAN_BUG=0
   if [[ "${TEXT}" == *"Assert: no core file found in"* ]]; then
@@ -910,7 +922,7 @@ if [ ${QC} -eq 0 ]; then
         fi
         BASE="$(grep --binary-files=text 'Basedir:' ./pquery-run.log 2>/dev/null | sed 's|^.*Basedir[: \t]*||;;s/|.*$//' | tr -d '[[:space:]]')"
         if [ -z "${BASE}" ]; then BASE="/test/SOMEBASEDIR"; fi
-        if [ ! -r ./${TRIAL}/node${SUBDIR}/MYBUG ] || [ "${SCRIPT_PWD}/new_text_string.sh" -nt "./${TRIAL}/node${SUBDIR}/MYBUG" ]; then  # Regenerate MYBUG when missing OR when new_text_string.sh is newer (= generification rules updated since this trial was first processed; otherwise pr would show stale UniqueIDs forever)
+        if [ ! -r ./${TRIAL}/node${SUBDIR}/MYBUG ] || nts_chain_newer "./${TRIAL}/node${SUBDIR}/MYBUG"; then  # Regenerate MYBUG when missing OR when any nts-chain script is newer (= generification rules updated since this trial was first processed; otherwise pr would show stale UniqueIDs forever)
           cd ./${TRIAL}/node${SUBDIR} || exit 1
           ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
           cd - >/dev/null || exit 1
@@ -987,8 +999,8 @@ if [ ${QC} -eq 0 ]; then
           continue
         fi
         if [ -r ./reducer${TRIAL}.sh ]; then
-          # If new_text_string.sh is newer than the existing reducer script, the generification rules likely changed since this reducer was first generated. Refresh the `   TEXT=` line in-place from a regenerated MYBUG so `pr` (which reads `^   TEXT=` from reducer<N>.sh, NOT MYBUG) stops showing stale UniqueIDs.
-          if [ "${SCRIPT_PWD}/new_text_string.sh" -nt "./reducer${TRIAL}.sh" ]; then
+          # If any nts-chain script is newer than the existing reducer script, the generification rules likely changed since this reducer was first generated. Refresh the `   TEXT=` line in-place from a regenerated MYBUG so `pr` (which reads `^   TEXT=` from reducer<N>.sh, NOT MYBUG) stops showing stale UniqueIDs.
+          if nts_chain_newer "./reducer${TRIAL}.sh"; then
             cd ./${TRIAL} || exit 1
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1
@@ -1091,7 +1103,7 @@ if [ ${QC} -eq 0 ]; then
         fi
         # if not a valgrind run process everything, if it is valgrind run only if there's a core
         if [ ! -r ./${TRIAL}/VALGRIND ] || [ -r ./${TRIAL}/VALGRIND -a ! -z "$(ls -t --color=never data*/*core* node*/*core* 2>/dev/null)" ]; then
-          if [ ! -r ./${TRIAL}/MYBUG ] || [ "${SCRIPT_PWD}/new_text_string.sh" -nt "./${TRIAL}/MYBUG" ]; then  # Regenerate MYBUG when missing OR when new_text_string.sh is newer (= generification rules updated since this trial was first processed; otherwise pr would show stale UniqueIDs forever)
+          if [ ! -r ./${TRIAL}/MYBUG ] || nts_chain_newer "./${TRIAL}/MYBUG"; then  # Regenerate MYBUG when missing OR when any nts-chain script is newer (= generification rules updated since this trial was first processed; otherwise pr would show stale UniqueIDs forever)
             cd ./${TRIAL} || exit 1
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1

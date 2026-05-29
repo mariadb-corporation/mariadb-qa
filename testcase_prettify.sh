@@ -62,6 +62,7 @@ cat "${1}" | tr -d '`' | \
        s|spatial|SPATIAL|gi; \
        s|enum|ENUM|gi; \
        s|vector|VECTOR|gi; \
+       s|euclidean|EUCLIDEAN|gi; \
        s|varbinary|VARBINARY|gi;s|binary|BINARY|gi; \
        s|decimal|DECIMAL|gi; \
        s|numeric|NUMERIC|gi; \

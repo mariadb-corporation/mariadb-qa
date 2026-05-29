@@ -573,7 +573,14 @@ static void echoit(std::string_view msg) {
 static void echoit_overwrite(std::string_view msg) {
   std::string line = util::now_timestamp() + " " + std::string(msg);
   std::lock_guard<std::mutex> g(state::log_mutex);
-  std::cout << line << "\r";
+  // \r only makes sense on a real TTY; piped/redirected stdout (e.g. ~/sr -> tee
+  // -> reducer.log) would otherwise keep \r as a literal byte and visually
+  // concatenate this line with the next \n-terminated echoit line.
+  if (isatty(STDOUT_FILENO)) {
+    std::cout << line << "\r";
+  } else {
+    std::cout << line << "\n";
+  }
   std::cout.flush();
 }
 

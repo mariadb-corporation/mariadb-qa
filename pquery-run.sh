@@ -1493,9 +1493,14 @@ pquery_test(){
         echoit "Assert: ${SCRIPT_PWD}/generatorcpp/generator is missing or not executable after 5 retries. Run generatorcpp/build.sh first."
         exit 1
       fi
-      ./generator --threads 4 --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} > /dev/null
+      for GEN_RUN_TRY in 1 2 3; do
+        ./generator --threads 4 --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} > /dev/null
+        if [ -r out${RANDOMD}.sql ]; then break; fi
+        echoit "Note: out${RANDOMD}.sql not present in ${PWD} after generator execution (attempt ${GEN_RUN_TRY}/3); pausing 30s and retrying..."
+        sleep 30
+      done
       if [ ! -r out${RANDOMD}.sql ]; then
-        echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution"
+        echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution (3 retries)"
         exit 1
       fi
       if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then # If this is not a RocksDB run, exclude RocksDB SE

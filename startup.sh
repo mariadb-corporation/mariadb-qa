@@ -212,13 +212,13 @@ fi
 
 # Privileges test
 if [ -r ${SCRIPT_PWD}/priv_test.sh ]; then
-  ln -s ${SCRIPT_PWD}/priv_test.sh ./priv_test.sh
+  ln -s ${SCRIPT_PWD}/priv_test.sh ./priv_test.sh 2>/dev/null
 fi
 
 # Select
 ln -s ${HOME}/mariadb-qa/select.sh ./select.sh
 ln -s ${HOME}/mariadb-qa/select.py ./select.py
-echo "rm -f failed_queries.log executed_queries.log select/*.log select/*.sql; rmdir ./select 2>/dev/null" > del_select_logs
+echo "rm -f failed_queries.log executed_queries.log select/*.log select/*.sql; rmdir ./select 2>/dev/null" >del_select_logs
 chmod +x del_select_logs
 
 # AFL Squirrel
