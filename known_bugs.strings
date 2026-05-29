@@ -285,6 +285,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|ha_partition::handle_unordered_prev|ha_partition::index_prev|handler::ha_index_prev|mysql_ha_read                                                                    ## MDEV-39790
+thr_get_trx(thr)->id != 0|SIGABRT|row_ins_sec_index_entry|row_ins_index_entry|row_ins_index_entry_step|row_ins                                                                 ## MDEV-39765
+SIGSEGV|__memset_evex_unaligned_erms|memset|Field_varstring::reset|Field_vector::reset                                                                                         ## MDEV-39764
+SIGSEGV|__memset_evex_unaligned_erms|Field_varstring::reset|Field_vector::reset|Create_tmp_table::finalize                                                                     ## MDEV-39764
+SIGSEGV|base_list_iterator::next|List_iterator<partition_element>::operator++|set_part_state|mysql_admin_table                                                                 ## MDEV-39758
 table->vers_write|SIGABRT|vers_update_or_validate_fields|fill_record|fill_record_n_invoke_before_triggers|mysql_insert                                                         ## MDEV-38854
 SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_row|handler::ha_delete_row                                                                                            ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_row|handler::ha_delete_row|TABLE::delete_row                                                                                       ## MDEV-38886
