@@ -28,6 +28,8 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|call to function show_cmp(st_mysql_show_var*, st_mysql_show_var*) through pointer to incorrect function type 'int (*)(const void *, const void *)'|mysys/mf_qsort.c|my_qsort|enumerate_sys_vars|fill_variables|get_schema_tables_result  ## MDEV-38886
+UBSAN|member call on null pointer of type 'XMLNODELIST'|storage/connect/tabxml.cpp|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_row|handler::ha_delete_row                 ## MDEV-38886
 UBSAN|null pointer passed as argument 3, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_upd_lock_and_undo|btr_cur_update_in_place|btr_cur_optimistic_update  ## MDEV-38034
 UBSAN|negation of -X cannot be represented in type 'longlong' (aka 'long long'); cast to an unsigned type to negate this value to itself|strings/ctype-simple.c|my_strntoll_8bit|charset_info_st::strntoll|Value_source::Converter_strntoll::Converter_strntoll|Value_source::Converter_strntoll_with_warn::Converter_strntoll_with_warn                                                            ## MDEV-39690
 ASAN|heap-use-after-free|crtstuff.c|MemcmpInterceptorCommon|bcmp|dfield_data_is_binary_equal|row_upd_build_difference_binary                                                   ## MDEV-39679
