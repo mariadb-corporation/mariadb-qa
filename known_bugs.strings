@@ -285,6 +285,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|dfield_set_data|dfield_set_null|row_mysql_convert_row_to_innobase|row_insert_for_mysql                                                                                 ## MDEV-39801
+pos < table->n_v_def|SIGABRT|dict_table_get_nth_v_col|build_template_field|ha_innobase::build_template|ha_innobase::write_row                                                  ## MDEV-39801
 0|SIGABRT|ha_partition::handle_unordered_prev|ha_partition::index_prev|handler::ha_index_prev|mysql_ha_read                                                                    ## MDEV-39790
 thr_get_trx(thr)->id != 0|SIGABRT|row_ins_sec_index_entry|row_ins_index_entry|row_ins_index_entry_step|row_ins                                                                 ## MDEV-39765
 SIGSEGV|__memset_evex_unaligned_erms|memset|Field_varstring::reset|Field_vector::reset                                                                                         ## MDEV-39764
