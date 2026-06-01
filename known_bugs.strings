@@ -285,6 +285,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|que_fork_get_first_thr|row_search_mvcc|ha_innobase::general_fetch|ha_innobase::index_prev                                                                              ## MDEV-39805
+SIGSEGV|row_search_mvcc|ha_innobase::general_fetch|handler::ha_index_prev|ha_partition::handle_unordered_prev                                                                  ## MDEV-39805
 !(table->flags2 & (2U))|SIGABRT|fts_delete|fts_commit_table|fts_commit|trx_t::commit_low                                                                                       ## MDEV-38145
 !(table->flags2 & (2U))|SIGABRT|fts_delete|fts_commit_table|fts_commit|trx_t::commit_persist                                                                                   ## MDEV-38145
 SIGSEGV|dfield_set_data|dfield_set_null|row_mysql_convert_row_to_innobase|row_insert_for_mysql                                                                                 ## MDEV-39801
