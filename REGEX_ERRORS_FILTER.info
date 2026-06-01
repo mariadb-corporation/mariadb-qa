@@ -74,7 +74,6 @@ Error reading packet from server: could not find next log  RESET MASTER was exec
 Error reading packet from server.*the last event read from.*the last byte read from.*  SPECIAL-26
 Internal MariaDB error code: 1017                     Presumed non-issue (mysql db was dropped causing slave issues)
 Internal MariaDB error code: 1030                     MDEV-22936
-OpenTable: Open.r.b. error 2 on .*: No such file or directory   SPECIAL-55
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1062  Ref SPECIAL-8 and search this file for 1062
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1205  Ref SPECIAL-17 (Lock wait timeout exceeded)
 BINLOG_BASE64_EVENT.*Internal MariaDB error code: 1290  Ref SPECIAL-18 (--max-session-mem-used=small > cannot execute stmt)
@@ -153,6 +152,7 @@ Got error 128 when reading table                      MDEV-34991
 Got error 134 when reading table                      MDEV-34230
 Got error 170 .It is not possible to log this statement  MDEV-26261
 Got error 171 .The event was corrupt                  MDEV-22936 (May mask other bugs?)
+Got error 174 when reading table                      SPECIAL-55 (CONNECT, file missing, non-issue)
 Got error 188 when reading table                      Presumed non-issue (Operation was interrupted, max_statement_time)
 Got error 192                                         MDEV-26258 (various error 192 msgs). Note we have a space in 'rf' after 192 to avoid all 192* errors being caught
 Got error 194 when reading table                      MDEV-27952 (tablespace discarded)
