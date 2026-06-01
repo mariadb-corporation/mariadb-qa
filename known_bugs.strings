@@ -41,6 +41,7 @@ MARIADB_ERROR_CODE|MariaDB error code: 1237  ## Ignored query due to replicate-*
 
 ##### For known non-issues (ref ~/mariadb-qa/REGEX_ERRORS_FILTER.info) #####
 MARIADBD_ERROR|mariadbd: Out of sort memory, consider increasing server sort buffer size  ## MDEV-39544
+OPENTABLE|OpenTable: Open(r+b) error 2 on X: No such file or directory  ## SPECIAL-55
 MARIADBD_ERROR|mariadbd: Connection was killed  ## SPECIAL-43 (non-issue; simple increased log verbosity)
 MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-28498
 MARIADBD_ERROR|mariadbd: Incorrect information in frm file  ## MDEV-27771
