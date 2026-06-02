@@ -53,6 +53,13 @@ if [ $USE_CLANG -eq 1 -a $USE_AFL -eq 1 ]; then
   exit 1
 fi
 
+# Code coverage (LLVM source-based instrumentation for llvm-profdata/llvm-cov)
+CODE_COVERAGE=0         # 0 or 1 # Requires USE_CLANG=1
+if [ ${CODE_COVERAGE} -eq 1 -a ${USE_CLANG} -ne 1 ]; then
+  echo "Assert: CODE_COVERAGE=1 requires USE_CLANG=1 (LLVM source-based coverage needs clang). Terminating."
+  exit 1
+fi
+
 #Check for gcc version, more than 4.9 required
 GCC_VER=$(gcc -dumpversion | cut -d. -f1-2)
 if (( $(echo "$GCC_VER < 4.9" |bc -l) )); then
@@ -208,6 +215,11 @@ elif [ $FB -eq 1 ]; then
 else
   # Regular builds. The '-fPIC' option prevents https://jira.mariadb.org/browse/MDEV-39148
   FLAGS="-DCMAKE_CXX_FLAGS=-fPIC"
+fi
+
+# Code coverage: LLVM source-based instrumentation (requires USE_CLANG=1)
+if [ ${CODE_COVERAGE} -eq 1 ]; then
+  FLAGS="-DCMAKE_C{,XX}_FLAGS='-fPIC -fprofile-instr-generate -fcoverage-mapping' -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-fprofile-instr-generate'"
 fi
 # Also note that -k can be use for make to ignore any errors; if the build fails somewhere in the tests/unit tests then it matters
 # little. Note that -k is not a compiler flag as -w is. It is a make option.

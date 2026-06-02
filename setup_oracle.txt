@@ -1,0 +1,6 @@
+# docker pull gvenzl/oracle-free:latest-faststart  # FIRST TIME SETUP ONLY
+docker stop oracle-free
+docker rm oracle-free
+docker run -d -P --name oracle-free -e ORACLE_PASSWORD=MyPass123 gvenzl/oracle-free:latest-faststart
+until docker logs oracle-free 2>&1 | grep -q "DATABASE IS READY"; do sleep 5; echo "Still starting..."; done;
+docker exec -it oracle-free sqlplus sys/MyPass123@//localhost/FREE as sysdba   # CLI, multiple CLI's can be started

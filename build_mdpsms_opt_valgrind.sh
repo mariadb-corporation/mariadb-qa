@@ -46,6 +46,14 @@ if [ $USE_CLANG -eq 1 -a $USE_AFL -eq 1 ]; then
   exit 1
 fi
 
+# Code coverage (LLVM source-based instrumentation for llvm-profdata/llvm-cov)
+CODE_COVERAGE=0         # 0 or 1 # Requires USE_CLANG=1; implemented in build_mdpsms_opt.sh / build_mdpsms_dbg.sh only
+if [ ${CODE_COVERAGE} -eq 1 ]; then
+  if [ ${USE_CLANG} -ne 1 ]; then echo "Assert: CODE_COVERAGE=1 requires USE_CLANG=1. Terminating."; exit 1; fi
+  echo "Assert: CODE_COVERAGE=1 is implemented in build_mdpsms_opt.sh / build_mdpsms_dbg.sh only. Terminating."
+  exit 1
+fi
+
 #Check for gcc version, more than 4.9 required
 GCC_VER=$(gcc -dumpversion | cut -d. -f1-2)
 if (( $(echo "$GCC_VER < 4.9" |bc -l) )); then

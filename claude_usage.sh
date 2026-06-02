@@ -9,7 +9,7 @@ set -u
 
 CRED="${HOME}/.claude/.credentials.json"
 CACHE="/tmp/.claude_usage.$(id -u).cache"
-TZONE="Australia/Brisbane"   # UTC+10 == AEST year-round (no DST shift)
+TZONE="Australia/Sydney"   # UTC+10 == AEST year-round (no DST shift)
 REFRESH=90                   # seconds between API calls
 REDRAW=10                    # seconds between screen redraws
 ONCE=0

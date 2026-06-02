@@ -57,6 +57,14 @@ if [ $USE_CLANG -eq 1 -a $USE_AFL -eq 1 ]; then
   exit 1
 fi
 
+# Code coverage (LLVM source-based instrumentation for llvm-profdata/llvm-cov)
+CODE_COVERAGE=0         # 0 or 1 # Requires USE_CLANG=1; implemented in build_mdpsms_opt.sh / build_mdpsms_dbg.sh only
+if [ ${CODE_COVERAGE} -eq 1 ]; then
+  if [ ${USE_CLANG} -ne 1 ]; then echo "Assert: CODE_COVERAGE=1 requires USE_CLANG=1. Terminating."; exit 1; fi
+  echo "Assert: CODE_COVERAGE=1 is implemented in build_mdpsms_opt.sh / build_mdpsms_dbg.sh only. Terminating."
+  exit 1
+fi
+
 #Check for gcc version, more than 4.9 required
 GCC_VER=$(gcc -dumpversion 2>/dev/null | cut -d. -f1-2)
 if [ -z "${GCC_VER}" ]; then
@@ -263,7 +271,7 @@ else
         # undefined,null,nullability-assign,pointer-overflow,pointer-overflow,pointer-overflow,pointer-overflow,alignment,alignment,object-size,signed-integer-overflow,unsigned-integer-overflow,integer-divide-by-zero,float-divide-by-zero,invalid-builtin-use,invalid-objc-cast,implicit-unsigned-integer-truncation,implicit-signed-integer-truncation,implicit-integer-sign-change,implicit-signed-integer-truncation,implicit-integer-sign-change,shift-base,shift-exponent,bounds,local-bounds,unreachable,return,vla-bound,float-cast-overflow,bool,enum,function,returns-nonnull-attribute,nullability-return,nonnull-attribute,nullability-arg,vptr,cfi,vptr_check
         # The '-fPIC' option prevents https://jira.mariadb.org/browse/MDEV-39148
         if [ "$(cmake --version | grep -o '[0-9]' | head -n1)" -ge 4 ]; then  # cmake > v4.0 (also assumes Clang/LLVM 21)
-          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -fPIC -march=native -mtune=native -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-lm -fsanitize=address,undefined /usr/lib/llvm-21/lib/clang/21/lib/linux/libclang_rt.asan-x86_64.a /usr/lib/llvm-21/lib/clang/21/lib/linux/libclang_rt.ubsan_standalone-x86_64.a' -DCMAKE_REQUIRED_FLAGS='-fsanitize=address,undefined'"
+          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -fPIC -march=native -mtune=native -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-lm -fsanitize=address,undefined /usr/local/lib/clang/22/lib/linux/libclang_rt.asan-x86_64.a /usr/local/lib/clang/22/lib/linux/libclang_rt.ubsan_standalone-x86_64.a' -DCMAKE_REQUIRED_FLAGS='-fsanitize=address,undefined'"
           SAN=""  # We set these manually instead (build script limitation in connection with a custom Clang/LLVM install)
         else
           FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -fPIC -march=native -mtune=native'"
