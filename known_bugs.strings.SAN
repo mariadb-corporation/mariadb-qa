@@ -28,6 +28,8 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|include/btr0sea.h|btr_sea::hash_table::lock_get|btr_sea::partition::cleanup_after_erase|btr_sea::partition::erase_status|btr_search_update_hash_on_delete         ## MDEV-39848
+MSAN|use-of-uninitialized-value|sql/log.cc|MYSQL_QUERY_LOG::write|Log_to_file_event_handler::log_slow|LOGGER::slow_log_print|log_slow_statement                                ## MDEV-39838
 ASAN|heap-use-after-free|storage/csv/ha_tina.h|ha_tina::scan_time|handler::ha_scan_time|st_join_table::estimate_scan_time|make_join_statistics                                 ## MDEV-39797
 ASAN|heap-use-after-free|storage/csv/ha_tina.cc|ha_tina::rnd_init|handler::ha_rnd_init|handler::ha_rnd_init_with_error|init_read_record                                        ## MDEV-39797
 UBSAN|index X out of bounds for type 'char[64]'|storage/connect/value.cpp|TYPVAL<double>::SetValue_char|MYSQLCOL::ReadColumn|COLBLK::Eval|EvalColumns                          ## MDEV-39793
