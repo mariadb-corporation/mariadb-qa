@@ -4,8 +4,8 @@
 if [ -z "${1}" ]; then echo "Assert: please specify a version, like 11.2"; exit 1; fi
 if [[ "${1}" == "10."* || "${1}" == "11."* || "${1}" == "12."* || "${1}" == "13."* ]]; then rm -Rf ${1}; fi
 
-if [ "${1}" == "13.0" ]; then
-  git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git $1 &  # Trunk is currently 13.0
+if [ "${1}" == "13.1" ]; then
+  git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git $1 &  # Trunk is currently 13.1
 else
   git clone --depth=1 --recurse-submodules -j8 --branch=$1 https://github.com/MariaDB/server.git $1 &
 fi

@@ -3,8 +3,8 @@
 
 # Handy overview: https://endoflife.date/mariadb
 
-rm -Rf 1[0-3].[0-9]
 rm -Rf 10.1[0-1]
+rm -Rf 1[0-3].[0-9]
 
 #./clone.sh 10.1 &
 #./clone.sh 10.2 &
@@ -30,5 +30,6 @@ rm -Rf 10.1[0-1]
 #./clone.sh 12.1 &
 ./clone.sh 12.2 &
 ./clone.sh 12.3 &
+./clone.sh 13.0 &
 # When updating the next line, i.e. when trunk has changed to a new major version, remember to make a similar fix in clone.sh
-git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git 13.0 &  # Trunk is currently 13.0
+git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git 13.1 &  # Trunk is currently 13.1

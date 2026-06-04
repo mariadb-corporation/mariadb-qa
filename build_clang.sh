@@ -51,6 +51,7 @@
 set -uo pipefail
 
 LLVM_VERSION="${1:-22.1.6}"
+LLVM_MAJOR="${LLVM_VERSION%%.*}"
 PREFIX="/usr/local"
 WORK="/test/llvm-build"
 SRC="${WORK}/llvm-project"
@@ -140,13 +141,10 @@ if [ -n "$old_pkgs" ]; then
   sudo apt-get purge -y $old_pkgs || warn "apt purge incomplete"
 fi
 sudo rm -rf /usr/lib/llvm-*
-# version-specific dirs under the prefix (loose bin/lib files are overwritten on install)
-sudo rm -rf "${PREFIX}/lib/clang" "${PREFIX}/lib/linux" \
-  "${PREFIX}/lib/cmake/llvm" "${PREFIX}/lib/cmake/clang" \
-  "${PREFIX}/lib/cmake/lld" "${PREFIX}/lib/cmake/polly" \
-  "${PREFIX}/include/clang" "${PREFIX}/include/clang-c" \
-  "${PREFIX}/include/llvm" "${PREFIX}/include/llvm-c" \
-  "${PREFIX}/include/lld" "${PREFIX}/include/polly"
+# Do NOT delete the prefix's own clang resource dir here: this script bootstraps
+# with the existing /usr/local clang, and "ninja install" can re-touch a compile.
+# Same-version files are overwritten by install; stale OTHER-version files under
+# the prefix are pruned AFTER install (see step 5).
 # stale symlinks
 sudo rm -f /usr/bin/llvm-symbolizer-21 /usr/bin/ld.lld /usr/bin/ld.lld-21
 # trim old apt.llvm.org channels (-17 / -21) so they are not reinstalled.
@@ -161,6 +159,16 @@ log "installing to ${PREFIX}"
 sudo ninja -C "$BUILD" install || die "ninja install failed"
 sudo ldconfig
 [ -f "${PREFIX}/lib/LLVMgold.so" ] || die "LLVMgold.so missing after install"
+# Prune stale OTHER-version clang installs left under the prefix (safe now that
+# the new toolchain is in place and nothing else compiles with the old one).
+for d in "${PREFIX}/lib/clang"/*/; do
+  [ -d "$d" ] || continue
+  [ "$(basename "$d")" != "$LLVM_MAJOR" ] && { log "pruning stale ${d}"; sudo rm -rf "$d"; }
+done
+for f in "${PREFIX}/bin/"clang-[0-9]*; do
+  [ -e "$f" ] || continue
+  [ "$(basename "$f")" != "clang-${LLVM_MAJOR}" ] && { log "pruning stale ${f}"; sudo rm -f "$f"; }
+done
 
 # --- 6. Convenience symlinks in /usr/bin -----------------------------------
 sudo ln -sf "${PREFIX}/bin/clang"            /usr/bin/clang
