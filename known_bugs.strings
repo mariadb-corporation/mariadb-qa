@@ -286,6 +286,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|include/btr0sea.h|btr_sea::hash_table::lock_get|btr_sea::partition::cleanup_after_erase|btr_sea::partition::erase_status|btr_search_update_hash_on_delete         ## MDEV-39848
 MSAN|use-of-uninitialized-value|sql/log.cc|MYSQL_QUERY_LOG::write|Log_to_file_event_handler::log_slow|LOGGER::slow_log_print|log_slow_statement                                ## MDEV-39838
 SIGSEGV|que_fork_get_first_thr|row_search_mvcc|ha_innobase::general_fetch|ha_innobase::index_prev                                                                              ## MDEV-39805
 SIGSEGV|row_search_mvcc|ha_innobase::general_fetch|handler::ha_index_prev|ha_partition::handle_unordered_prev                                                                  ## MDEV-39805
