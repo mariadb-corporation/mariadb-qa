@@ -286,6 +286,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|ha_partition::return_top_record|ha_partition::handle_ordered_prev|handler::ha_index_prev|mysql_ha_read                                                                 ## MDEV-39923
+SIGSEGV|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc                                                             ## MDEV-39923
+SIGSEGV|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc|ha_innobase::general_fetch                                                                           ## MDEV-39923
+dtuple_get_n_fields_cmp(tuple) <= dict_index_get_n_unique_in_tree(index)|SIGABRT|dict_index_check_search_tuple|btr_cur_t::search_leaf|btr_pcur_open_with_no_init|btr_pcur_t::restore_position  ## MDEV-39923
 sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_release|ha_federatedx::savepoint_release|ha_release_savepoint|trans_release_savepoint         ## MDEV-39922
 sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_rollback|ha_federatedx::savepoint_rollback|ha_rollback_to_savepoint|trans_rollback_to_savepoint ## MDEV-39922
 trn->trid != 0|SIGABRT|write_hook_for_redo|translog_write_variable_record_1chunk|translog_write_variable_record|translog_write_record                                          ## MDEV-25623
