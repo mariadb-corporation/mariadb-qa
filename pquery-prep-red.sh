@@ -361,129 +361,13 @@ generate_reducer_script(){
     TEXT_CLEANUP="0,/^[ \t]*TEXT[ \t]*=.*$/s|^[ \t]*TEXT[ \t]*=.*$|#TEXT=<set_below_in_machine_variables_section>|"
     TEXT_STRING1="0,/#VARMOD#/s:#VARMOD#:# IMPORTANT NOTE; Leave the 3 spaces before TEXT on the next line; pquery-results.sh uses these\n#VARMOD#:"
     # This code below is duplicated into reducer.sh. If it is updated here, please also update it there and vice versa. However, note that the code in reducer.sh is longer as it caters for '^   TEXT=' and '^TEXT=' - see the note in reducer.sh - the main variable name (TEXT vs NEWBUGTEXT) is also different, and the code in reducer.sh does not use QC as below. Be careful with changes as this is important code in the framework.
-    if [[ "${TEXT}" = *":"* ]]; then
-      if [[ "${TEXT}" = *"|"* ]]; then
-        if [[ "${TEXT}" = *"/"* ]]; then
-          if [[ "${TEXT}" = *"_"* ]]; then
-            if [[ "${TEXT}" = *"-"* ]]; then
-              if [[ "${TEXT}" = *"("* ]]; then
-                if [[ "${TEXT}" = *")"* ]]; then
-                  if [[ "${TEXT}" = *"@"* ]]; then
-                    if [[ "${TEXT}" = *"+"* ]]; then
-                      if [[ "${TEXT}" = *";"* ]]; then
-                        if [[ "${TEXT}" = *","* ]]; then
-                          if [[ "${TEXT}" = *">"* ]]; then
-
-                            echo "Assert (#1)! No suitable sed seperator found. TEXT (${TEXT}) contains all of the possibilities, add more!"
-                            TEXT="ASSERT: No suitable sed seperator found in pquery-prep-red.sh; add more!"
-                            TEXT_STRING2="0,/#VARMOD#/s>#VARMOD#>   TEXT=\"${TEXT}\"\n#VARMOD#>"
-                          else
-                            if [ ${QC} -eq 0 ]; then
-                              TEXT="$(echo "$TEXT"|sed "s>&>\\\\\\&>g")"  # Escape '&' correctly
-                              TEXT_STRING2="0,/#VARMOD#/s>#VARMOD#>   TEXT=\"${TEXT}\"\n#VARMOD#>"
-                            else
-                              TEXT="$(echo "$TEXT"|sed "s>|>\\\\\\\|>g")"  # Escape '|' correctly
-                              TEXT_STRING2="0,/#VARMOD#/s>#VARMOD#>   TEXT=\"^${TEXT}\$\"\n#VARMOD#>"
-                            fi
-                          fi
-                        else
-                          if [ ${QC} -eq 0 ]; then
-                            TEXT="$(echo "$TEXT"|sed "s,&,\\\\\\&,g")"  # Escape '&' correctly
-                            TEXT_STRING2="0,/#VARMOD#/s,#VARMOD#,   TEXT=\"${TEXT}\"\n#VARMOD#,"
-                          else
-                            TEXT="$(echo "$TEXT"|sed "s,|,\\\\\\\|,g")"  # Escape '|' correctly
-                            TEXT_STRING2="0,/#VARMOD#/s,#VARMOD#,   TEXT=\"^${TEXT}\$\"\n#VARMOD#,"
-                          fi
-                        fi
-                      else
-                        if [ ${QC} -eq 0 ]; then
-                          TEXT="$(echo "$TEXT"|sed "s;&;\\\\\\&;g")"  # Escape '&' correctly
-                          TEXT_STRING2="0,/#VARMOD#/s;#VARMOD#;   TEXT=\"${TEXT}\"\n#VARMOD#;"
-                        else
-                          TEXT="$(echo "$TEXT"|sed "s;|;\\\\\\\|;g")"  # Escape '|' correctly
-                          TEXT_STRING2="0,/#VARMOD#/s;#VARMOD#;   TEXT=\"^${TEXT}\$\"\n#VARMOD#;"
-                        fi
-                      fi
-                    else
-                      if [ ${QC} -eq 0 ]; then
-                        TEXT="$(echo "$TEXT"|sed "s+&+\\\\\\&+g")"  # Escape '&' correctly
-                        TEXT_STRING2="0,/#VARMOD#/s+#VARMOD#+   TEXT=\"${TEXT}\"\n#VARMOD#+"
-                      else
-                        TEXT="$(echo "$TEXT"|sed "s+|+\\\\\\\|+g")"  # Escape '|' correctly
-                        TEXT_STRING2="0,/#VARMOD#/s+#VARMOD#+   TEXT=\"^${TEXT}\$\"\n#VARMOD#+"
-                      fi
-                    fi
-                  else
-                    if [ ${QC} -eq 0 ]; then
-                      TEXT="$(echo "$TEXT"|sed "s@&@\\\\\\&@g")"  # Escape '&' correctly
-                      TEXT_STRING2="0,/#VARMOD#/s@#VARMOD#@   TEXT=\"${TEXT}\"\n#VARMOD#@"
-                    else
-                      TEXT="$(echo "$TEXT"|sed "s@|@\\\\\\\|@g")"  # Escape '|' correctly
-                      TEXT_STRING2="0,/#VARMOD#/s@#VARMOD#@   TEXT=\"^${TEXT}\$\"\n#VARMOD#@"
-                    fi
-                  fi
-                else
-                  if [ ${QC} -eq 0 ]; then
-                    TEXT="$(echo "$TEXT"|sed "s)&)\\\\\\&)g")"  # Escape '&' correctly
-                    TEXT_STRING2="0,/#VARMOD#/s)#VARMOD#)   TEXT=\"${TEXT}\"\n#VARMOD#)"
-                  else
-                    TEXT="$(echo "$TEXT"|sed "s)|)\\\\\\\|)g")"  # Escape '|' correctly
-                    TEXT_STRING2="0,/#VARMOD#/s)#VARMOD#)   TEXT=\"^${TEXT}\$\"\n#VARMOD#)"
-                  fi
-                fi
-              else
-                if [ ${QC} -eq 0 ]; then
-                  TEXT="$(echo "$TEXT"|sed "s(&(\\\\\\&(g")"  # Escape '&' correctly
-                  TEXT_STRING2="0,/#VARMOD#/s(#VARMOD#(   TEXT=\"${TEXT}\"\n#VARMOD#("
-                else
-                  TEXT="$(echo "$TEXT"|sed "s(|(\\\\\\\|(g")"  # Escape '|' correctly
-                  TEXT_STRING2="0,/#VARMOD#/s(#VARMOD#(   TEXT=\"^${TEXT}\$\"\n#VARMOD#("
-                fi
-              fi
-            else
-              if [ ${QC} -eq 0 ]; then
-                TEXT="$(echo "$TEXT"|sed "s-&-\\\\\\&-g")"  # Escape '&' correctly
-                TEXT_STRING2="0,/#VARMOD#/s-#VARMOD#-   TEXT=\"${TEXT}\"\n#VARMOD#-"
-              else
-                TEXT="$(echo "$TEXT"|sed "s-|-\\\\\\\|-g")"  # Escape '|' correctly
-                TEXT_STRING2="0,/#VARMOD#/s-#VARMOD#-   TEXT=\"^${TEXT}\$\"\n#VARMOD#-"
-              fi
-            fi
-          else
-            if [ ${QC} -eq 0 ]; then
-              TEXT="$(echo "$TEXT"|sed "s_&_\\\\\\&_g")"  # Escape '&' correctly
-              TEXT_STRING2="0,/#VARMOD#/s_#VARMOD#_   TEXT=\"${TEXT}\"\n#VARMOD#_"
-            else
-              TEXT="$(echo "$TEXT"|sed "s_|_\\\\\\\|_g")"  # Escape '|' correctly
-              TEXT_STRING2="0,/#VARMOD#/s_#VARMOD#_   TEXT=\"^${TEXT}\$\"\n#VARMOD#_"
-            fi
-          fi
-        else
-          if [ ${QC} -eq 0 ]; then
-            TEXT="$(echo "$TEXT"|sed "s/&/\\\\\\&/g")"  # Escape '&' correctly
-            TEXT_STRING2="0,/#VARMOD#/s/#VARMOD#/   TEXT=\"${TEXT}\"\n#VARMOD#/"
-          else
-            TEXT="$(echo "$TEXT"|sed "s/|/\\\\\\\|/g")"  # Escape '|' correctly
-            TEXT_STRING2="0,/#VARMOD#/s/#VARMOD#/   TEXT=\"^${TEXT}\$\"\n#VARMOD#/"
-          fi
-        fi
-      else
-        if [ ${QC} -eq 0 ]; then
-          TEXT="$(echo "$TEXT"|sed "s|&|\\\\\\&|g")"  # Escape '&' correctly
-          TEXT_STRING2="0,/#VARMOD#/s|#VARMOD#|   TEXT=\"${TEXT}\"\n#VARMOD#|"
-        else
-          # TODO: check if something was missed here, or is there no swap needed for "|" perhaps? Note '|' is the sed main replacement char here.
-          TEXT_STRING2="0,/#VARMOD#/s|#VARMOD#|   TEXT=\"^${TEXT}\$\"\n#VARMOD#|"
-        fi
-      fi
-    else
-      if [ ${QC} -eq 0 ]; then
-        TEXT="$(echo "$TEXT"|sed "s:&:\\\\\\&:g")"  # Escape '&' correctly
-        TEXT_STRING2="0,/#VARMOD#/s:#VARMOD#:   TEXT=\"${TEXT}\"\n#VARMOD#:"
-      else
-        TEXT="$(echo "$TEXT"|sed "s:|:\\\\\\\|:g")"  # Escape '|' correctly
-        TEXT_STRING2="0,/#VARMOD#/s:#VARMOD#:   TEXT=\"^${TEXT}\$\"\n#VARMOD#:"
-      fi
+    SEP=$'\x01'  # Control-char sed separator; never present in error-log/assert text, so one fixed delimiter always works for any TEXT content
+    if [ ${QC} -eq 0 ]; then  # Literal (USE_NEW_TEXT_STRING) bug
+      TEXT_ESC="$(printf '%s' "${TEXT}" | sed 's/\\/\\\\\\\\/g; s/&/\\\&/g; s/"/\\\\"/g; s/\$/\\\\$/g; s/`/\\\\`/g')"  # Escape for bash double-quote (\ " $ `) and sed replacement (\ &); backslash first
+      TEXT_STRING2="0,/#VARMOD#/s${SEP}#VARMOD#${SEP}   TEXT=\"${TEXT_ESC}\"\n#VARMOD#${SEP}"
+    else  # Query-correctness regex bug; literalize | for the regex and anchor with ^...$
+      TEXT_ESC="$(printf '%s' "${TEXT}" | sed 's/|/\\|/g; s/\\/\\\\\\\\/g; s/&/\\\&/g; s/"/\\\\"/g; s/\$/\\\\$/g; s/`/\\\\`/g')"
+      TEXT_STRING2="0,/#VARMOD#/s${SEP}#VARMOD#${SEP}   TEXT=\"^${TEXT_ESC}\$\"\n#VARMOD#${SEP}"
     fi
   fi
   if [ "${MYEXTRA}" != "" ]; then  # Fix any dual sql_mode spec
@@ -860,7 +744,7 @@ if [ ${QC} -eq 0 ]; then
             cd ./${TRIAL}/node${SUBDIR} || exit 1
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1
-            REFRESH_TEXT="$(head -n1 ./${TRIAL}/node${SUBDIR}/MYBUG | sed 's|"|\\\\"|g')"
+            REFRESH_TEXT="$(head -n1 ./${TRIAL}/node${SUBDIR}/MYBUG | sed 's/\\/\\\\\\\\/g; s/&/\\\&/g; s/"/\\\\"/g; s/\$/\\\\$/g; s/`/\\\\`/g')"
             NEW_LINE='   TEXT="'"${REFRESH_TEXT}"'"'
             OLD_LINE="$(grep -m1 '^   TEXT=' ./reducer${TRIAL}-${SUBDIR}.sh)"
             if [ "${OLD_LINE}" != "${NEW_LINE}" ]; then
@@ -1004,7 +888,7 @@ if [ ${QC} -eq 0 ]; then
             cd ./${TRIAL} || exit 1
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1
-            REFRESH_TEXT="$(head -n1 ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"
+            REFRESH_TEXT="$(head -n1 ./${TRIAL}/MYBUG | sed 's/\\/\\\\\\\\/g; s/&/\\\&/g; s/"/\\\\"/g; s/\$/\\\\$/g; s/`/\\\\`/g')"
             NEW_LINE='   TEXT="'"${REFRESH_TEXT}"'"'
             OLD_LINE="$(grep -m1 '^   TEXT=' ./reducer${TRIAL}.sh)"
             if [ "${OLD_LINE}" != "${NEW_LINE}" ]; then

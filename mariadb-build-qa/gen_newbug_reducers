@@ -47,20 +47,11 @@ while read SQL_FILE; do
   fi
   cp "${REDUCER_MAIN}" "${REDUCER_FILE}"
   # The following code is also present in pquery-prep-red.sh and reducer.sh, please update all at the same time
-  TEXT="$(cat "${STRING_FILE}" | head -n1 | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh.
-  if [[ "${TEXT}" = *":"* ]]; then
-    if [[ "${TEXT}" = *"|"* ]]; then
-      if [[ "${TEXT}" = *"/"* ]]; then
-        if [[ "${TEXT}" = *"_"* ]]; then
-          if [[ "${TEXT}" = *"-"* ]]; then
-            echo "Assert (#1)! No suitable sed seperator found. TEXT (${TEXT}) contains all of the possibilities, add more!"
-          else TEXT="$(echo "$TEXT"|sed -e "s-&-\\\\\\&-g")";fi  # Escape '&' correctly
-        else TEXT="$(echo "$TEXT"|sed -e "s_&_\\\\\\&_g")";fi  # Escape '&' correctly
-      else TEXT="$(echo "$TEXT"|sed -e "s/&/\\\\\\&/g")";fi  # Escape '&' correctly
-    else TEXT="$(echo "$TEXT"|sed -e "s|&|\\\\\\&|g")";fi  # Escape '&' correctly
-  else TEXT="$(echo "$TEXT"|sed -e "s:&:\\\\\\&:g")";fi  # Escape '&' correctly
+  TEXT="$(cat "${STRING_FILE}" | head -n1)"
+  SEP=$'\x01'  # Control-char sed separator; never present in error-log/assert text, so one fixed delimiter always works
+  TEXT_ESC="$(printf '%s' "${TEXT}" | sed 's/\\/\\\\\\\\/g; s/&/\\\&/g; s/"/\\\\"/g; s/\$/\\\\$/g; s/`/\\\\`/g')"  # Escape for bash double-quote (\ " $ `) and sed replacement (\ &); backslash first
   sed -i "s|^MODE=[0-9]|MODE=3|" "${REDUCER_FILE}"
-  sed -i "s/^TEXT=.*/TEXT='${TEXT}'/" "${REDUCER_FILE}"
+  sed -i "s${SEP}^TEXT=.*${SEP}TEXT=\"${TEXT_ESC}\"${SEP}" "${REDUCER_FILE}"
   sed -i "s|^SCAN_FOR_NEW_BUGS=[0-9]|SCAN_FOR_NEW_BUGS=1|" "${REDUCER_FILE}"
   sed -i "s|^USE_NEW_TEXT_STRING=[0-9]|USE_NEW_TEXT_STRING=1|"  "${REDUCER_FILE}"
   sed -i "s|^FORCE_SKIPV=[0-9]|FORCE_SKIPV=1|" ${REDUCER_FILE}

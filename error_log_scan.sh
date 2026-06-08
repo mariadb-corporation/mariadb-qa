@@ -68,6 +68,8 @@ UID_NORMALIZE_IBD="s|'/[^']*/test/t[0-9]+\\.ibd'|X|g"
 UID_NORMALIZE="s/'[a-zA-Z_][a-zA-Z0-9_]*'\\.'[a-zA-Z_][a-zA-Z0-9_]*'/'X'/g; s/'[a-zA-Z_][a-zA-Z0-9_]*'/'X'/g"
 UID_NORMALIZE_BACKTICK='s/`[a-zA-Z_][a-zA-Z0-9_]*`\.`[a-zA-Z_][a-zA-Z0-9_]*`/`X`/g; s/`[a-zA-Z_][a-zA-Z0-9_]*`/`X`/g'
 UID_NORMALIZE_TABLE_REF="s#'\\./test/[^']+'#'./test/X'#g"
+UID_NORMALIZE_FOR_PATH="s|for '[^']*/[^']*'|for 'X'|g"
+UID_NORMALIZE_IBD_REL="s|\\./test/[A-Za-z0-9_#]+\\.ibd|./test/X|g"
 UID_NORMALIZE_PORT='s|127\.0\.0\.1:[0-9]+|127.0.0.1:X|g'
 UID_NORMALIZE_BINLOG='s|binlog\.[0-9]+|binlog.X|g'
 UID_NORMALIZE_POSITION='s#(^| )position [0-9]+#\1position X#g'
@@ -87,7 +89,7 @@ UID_NORMALIZE_DBLWRITE_WAIT='s|Long wait \([0-9]+ seconds\)|Long wait (N seconds
 UID_NORMALIZE_DATETIME='s|[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?|YYYY-MM-DD HH:MM:SS|g'
 UID_NORMALIZE_LRECL='s|Table/File lrecl mismatch \([0-9]+,[0-9]+\)|Table/File lrecl mismatch (N,M)|g'
 UID_NORMALIZE_TEST_PATH='s|/test/[^/]+/|/test/X/|g'
-UID_NORMALIZE_INNODB_HELP='s|We detected index corruption in an InnoDB type table\..*|We detected index corruption in an InnoDB type table|; s|already exists though the corresponding table did not exist in the InnoDB data dictionary\..*|already exists though the corresponding table did not exist in the InnoDB data dictionary|'
+UID_NORMALIZE_INNODB_HELP='s|We detected index corruption in an InnoDB type table\..*|We detected index corruption in an InnoDB type table|; s|The file .* already exists though the corresponding table did not exist in the InnoDB data dictionary\. You can resolve the problem by removing the file\.?|The file X already exists though the corresponding table did not exist in the InnoDB data dictionary. You can resolve the problem by removing the file|'
 
 uid_normalize() {
   sed -E \
@@ -99,6 +101,8 @@ uid_normalize() {
       -e "${UID_NORMALIZE}" \
       -e "${UID_NORMALIZE_BACKTICK}" \
       -e "${UID_NORMALIZE_TABLE_REF}" \
+      -e "${UID_NORMALIZE_FOR_PATH}" \
+      -e "${UID_NORMALIZE_IBD_REL}" \
       -e "${UID_NORMALIZE_PORT}" \
       -e "${UID_NORMALIZE_BINLOG}" \
       -e "${UID_NORMALIZE_POSITION}" \
@@ -120,7 +124,7 @@ uid_normalize() {
       -e "${UID_NORMALIZE_TEST_PATH}" \
       -e "${UID_NORMALIZE_INNODB_HELP}" \
   | awk '{ n=0; pos=1; q=sprintf("%c",39); qm=q "X" q; bm="`X`"; while(1){ rem=substr($0,pos); qp=index(rem,qm); bp=index(rem,bm); if(qp==0&&bp==0)break; if(qp>0&&(bp==0||qp<bp)){c=(n<3)?sprintf("%c",88+n):sprintf("%c",65+n-3); p=pos+qp-1; $0=substr($0,1,p-1) q c q substr($0,p+3); pos=p+3}else{c=(n<3)?sprintf("%c",88+n):sprintf("%c",65+n-3); p=pos+bp-1; $0=substr($0,1,p-1) "`" c "`" substr($0,p+3); pos=p+3} n++ } print }' \
-  | sed -E "s/'([A-Z])'/\\1/g; s/\`([A-Z])\`/\\1/g" \
+  | sed -E "s/\`([A-Z])\`/\\1/g; s/'([A-Z])'/\\1/g" \
   | awk '!seen[$0]++'
 }
 

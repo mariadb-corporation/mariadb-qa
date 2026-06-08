@@ -148,7 +148,9 @@ if [ "$ONCE" = 1 ]; then
 fi
 
 cleanup(){ printf '\e[?25h\n'; }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 printf '\e[2J\e[H\e[?25l'
 while :; do
   STALE=0
