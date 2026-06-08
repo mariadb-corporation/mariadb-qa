@@ -183,6 +183,7 @@ alias bd='screen -admS \"dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_d
 alias bo='screen -admS \"opt_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh; bash\"; screen -d -r opt_build'  # Idem, optimized build
 alias ba='screen -admS \"opt_and_dbg_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt.sh & sleep 70; ${HOME}/mariadb-qa/build_mdpsms_dbg.sh; bash\"; screen -d -r \$(screen -ls | grep \"Detached\" | head -n1 | grep \"opt_and_dbg_build\" | sed \"s|\..*||\")'  # Idem, both
 alias bas='screen -admS \"opt_and_dbg_san_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt_san.sh & sleep 70; ${HOME}/mariadb-qa/build_mdpsms_dbg_san.sh; bash\"; screen -d -r \$(screen -ls | grep \"Detached\" | head -n1 | grep \"opt_and_dbg_san_build\" | sed \"s|\..*||\")'  # Idem, both, SAN
+alias bam='screen -admS \"opt_and_dbg_msan_build\" bash -c \"${HOME}/mariadb-qa/build_mdpsms_opt_msan.sh & sleep 70; ${HOME}/mariadb-qa/build_mdpsms_dbg_msan.sh; bash\"; screen -d -r \$(screen -ls | grep \"Detached\" | head -n1 | grep \"opt_and_dbg_msan_build\" | sed \"s|\..*||\")'  # Idem, both, MSAN (requires clang-20 + /MSAN_libs, ref msan.instrumentedlibs_ubuntu2404.sh)
 alias ca='cd /data; ./clean_all'  # Goes through all workdirs, deleting all [recently] added known bugs'
 alias cur='${HOME}/cur'    # Show current WORKDIR numbers/ongoing runs
 alias dc='${HOME}/dc'      # Docker client
