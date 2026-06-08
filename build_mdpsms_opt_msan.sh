@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, Percona LLC
 
-MAKE_THREADS=30         # Number of build threads
+MAKE_THREADS=$(nproc)   # Number of build threads
 WITH_EMBEDDED_SERVER=0  # 0 or 1 # Include the embedder server (removed in 8.0)
 WITH_LOCAL_INFILE=1     # 0 or 1 # Include the possibility to use LOAD DATA LOCAL INFILE (LOCAL option was removed in 8.0?)
 USE_BOOST_LOCATION=0    # 0 or 1 # Use a custom boost location to avoid boost re-download
@@ -15,9 +15,12 @@ USE_TSAN=0              # 0 or 1 # 1: Enables TSAN, disables ASAN+UBSAN/MSAN. 0:
 ASAN_OR_MSAN=1          # 0 or 1 # 0: ASAN+UBSAN. 1: MSAN
 PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
-CLANG_LOCATION="/usr/bin/clang-21"  # Should end in /clang (and assumes presence of /clang++)
+CLANG_VERSION="${CLANG_VERSION:-20}"  # IMPORTANT: clang-21 MSAN flags InnoDB startup code: the server cannot even bootstrap (MDEV-38419, stalled). Use clang-20 until resolved. Keep in sync with msan.instrumentedlibs_ubuntu2404.sh
+CLANG_LOCATION="/usr/bin/clang-${CLANG_VERSION}"  # clang location
+CLANGPP_LOCATION="/usr/bin/clang++-${CLANG_VERSION}"  # clang++ location (cannot be derived by appending '++' to versioned clang names like clang-20)
+MSAN_TRACK_ORIGINS=0    # 0 or 1 # 1: add -fsanitize-memory-track-origins=2: MSAN reports then show where the uninitialized value was created (much more actionable bug reports) at ~1.5-2.5x runtime cost
 export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing msan.instrumentedlibs_ubuntu2404.sh also
-LD_LOCATION="/usr/bin/ld.lld-21"
+LD_LOCATION="/usr/bin/ld.lld-${CLANG_VERSION}"
 USE_AFL=0               # 0 or 1 # Use the American Fuzzy Lop gcc/g++ wrapper instead of gcc/g++
 AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"
 IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_MODE=OFF. When ignoring warnings, regularly check that existing bugs are fixed. This option additionally sets -DWARNING_AS_ERROR empty so warnings will never be treated as errors. #TODO: consider implementing -DMYSQL_MAINTAINER_MODE=WARN (also disables -Werror, just like, presumably, =OFF, though it will likely not work to avoid for example the lib https://jira.mariadb.org/browse/MDEV-32483 compile error wheras -DWARNING_AS_ERROR='' does) 
@@ -40,6 +43,8 @@ IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_M
 #sudo sysctl vm.mmap_rnd_bits=28  # Workaround, ref https://github.com/google/sanitizers/issues/856
 
 RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
+
+SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 
 if [ "${PERFSCHEMA}" != "NO" -a "${PERFSCHEMA}" != "YES" -a "${PERFSCHEMA}" != "STATIC" -a "${PERFSCHEMA}" != "DYNAMIC" ]; then
   if [ -z "${PERFSCHEMA}" ]; then
@@ -190,9 +195,9 @@ if [ $USE_CLANG -eq 1 ]; then
   echo "======================================================"
   sleep 3
   export CC="${CLANG_LOCATION}"
-  export CXX="${CLANG_LOCATION}++"  # clang++ location is assumed to be same with ++ at end
+  export CXX="${CLANGPP_LOCATION}"
   export LD="${LD_LOCATION}"
-  CLANG="-DCMAKE_C_COMPILER=${CLANG_LOCATION} -DCMAKE_CXX_COMPILER=${CLANG_LOCATION}++ -DCMAKE_LINKER=${LD_LOCATION} -DCMAKE_EXE_LINKER_FLAGS=\"-fuse-ld=lld -B$(dirname "${LD_LOCATION}")\" "
+  CLANG="-DCMAKE_C_COMPILER=${CLANG_LOCATION} -DCMAKE_CXX_COMPILER=${CLANGPP_LOCATION} -DCMAKE_LINKER=${LD_LOCATION} -DCMAKE_EXE_LINKER_FLAGS=\"-fuse-ld=lld -B$(dirname "${LD_LOCATION}")\" "
 fi
 
 # Use AFL gcc/g++ wrapper as compiler
@@ -246,8 +251,16 @@ if [ $USE_SAN -eq 1 ]; then
       # However, note that msan.instrumentedlibs_ubuntu2404.sh does build libaio and liburing, and both work fine on 24.04
       export CMAKE_LIBRARY_PATH="${MSAN_LIBDIR}"
       export CMAKE_PREFIX_PATH="${MSAN_LIBDIR}"
-      #SAN="-DWITH_MSAN=ON -DHAVE_CXX_NEW=1 -DWITH_INNODB_{BZIP2,LZ4,LZMA,LZO,SNAPPY}=OFF -DCMAKE_DISABLE_FIND_PACKAGE_URING=1 -DWITH_NUMA=NO -DWITH_SYSTEMD=no -DPLUGIN_{MROONGA,ROCKSDB,OQGRAPH}=NO -DWITH_WSREP=OFF -DCMAKE_LIBRARY_PATH=${MSAN_LIBDIR} -DCMAKE_PREFIX_PATH=${MSAN_LIBDIR} -DCMAKE_{EXE,MODULE,SHARED}_LINKER_FLAGS=\"-L${MSAN_LIBDIR} -Wl,-rpath=${MSAN_LIBDIR}\" "
-      SAN="-DWITH_MSAN=ON -DHAVE_CXX_NEW=1 -DWITH_INNODB_{BZIP2,LZ4,LZMA,LZO,SNAPPY}=OFF -DWITH_NUMA=NO -DWITH_SYSTEMD=no -DPLUGIN_{MROONGA,ROCKSDB,OQGRAPH}=NO -DWITH_WSREP=OFF -DCMAKE_DISABLE_FIND_PACKAGE_{URING,LIBAIO}=1 -DHAVE_LIBAIO_H=0 -DIGNORE_AIO_CHECK=YES -DCMAKE_LIBRARY_PATH=${MSAN_LIBDIR} -DCMAKE_PREFIX_PATH=${MSAN_LIBDIR} -DCMAKE_{EXE,MODULE,SHARED}_LINKER_FLAGS=\"-L${MSAN_LIBDIR} -Wl,-rpath=${MSAN_LIBDIR}\" -DCMAKE_CXX_FLAGS=\"-fsanitize-ignorelist=${SCRIPT_PWD}/MSAN.ignorelist\" "
+      if [ ! -r "${SCRIPT_PWD}/MSAN.ignorelist" ]; then
+        echo "Error: ${SCRIPT_PWD}/MSAN.ignorelist is missing or unreadable. It is required for MSAN builds."
+        exit 1
+      fi
+      # Note: do not add -DCMAKE_C/CXX_FLAGS here; it would be overridden by the later ${FLAGS} (cmake uses the last -D
+      # for a duplicated variable). The -fsanitize-ignorelist is instead added to FLAGS below for MSAN builds.
+      # -fuse-ld=lld is included in the linker flags here as these override the -DCMAKE_EXE_LINKER_FLAGS set in ${CLANG}
+      #SAN="-DWITH_MSAN=ON -DHAVE_CXX_NEW=1 -DWITH_INNODB_{BZIP2,LZ4,LZMA,LZO,SNAPPY}=OFF -DCMAKE_DISABLE_FIND_PACKAGE_URING=1 -DWITH_NUMA=NO -DWITH_SYSTEMD=no -DPLUGIN_{MROONGA,ROCKSDB,OQGRAPH}=NO -DWITH_WSREP=OFF -DCMAKE_LIBRARY_PATH=${MSAN_LIBDIR} -DCMAKE_PREFIX_PATH=${MSAN_LIBDIR} -DCMAKE_{EXE,MODULE,SHARED}_LINKER_FLAGS=\"-fuse-ld=lld -L${MSAN_LIBDIR} -Wl,-rpath=${MSAN_LIBDIR}\" "
+      # -DSECURITY_HARDENED=OFF: per MDEV-20377, hardening (-D_FORTIFY_SOURCE) breaks operations like memcpy() under MSAN (especially relevant for this RelWithDebInfo build)
+      SAN="-DWITH_MSAN=ON -DSECURITY_HARDENED=OFF -DHAVE_CXX_NEW=1 -DWITH_INNODB_{BZIP2,LZ4,LZMA,LZO,SNAPPY}=OFF -DWITH_NUMA=NO -DWITH_SYSTEMD=no -DPLUGIN_{MROONGA,ROCKSDB,OQGRAPH}=NO -DWITH_WSREP=OFF -DCMAKE_DISABLE_FIND_PACKAGE_{URING,LIBAIO}=1 -DHAVE_LIBAIO_H=0 -DIGNORE_AIO_CHECK=YES -DCMAKE_LIBRARY_PATH=${MSAN_LIBDIR} -DCMAKE_PREFIX_PATH=${MSAN_LIBDIR} -DCMAKE_{EXE,MODULE,SHARED}_LINKER_FLAGS=\"-fuse-ld=lld -L${MSAN_LIBDIR} -Wl,-rpath=${MSAN_LIBDIR}\" "
       SSL="-DWITH_SSL=${MSAN_LIBDIR}"  # Use the MSAN instrumented ssl libs in MSAN_LIBDIR
       if [[ "${MYSQL_VERSION_MAJOR}" =~ ^10$ ]]; then  # 10.5, 10.6 and 11.4 (next if) do not support a path (even though the install says it does)
         SSL="-DWITH_SSL=yes"  # Prefer os library if present, otherwise use bundled (wolfssl)
@@ -297,8 +310,16 @@ else
         export ASAN_OPTIONS=suppressions=${HOME}/mariadb-qa/ASAN.filter  # Prevent MDEV-35738
         # FLAGS='-DCMAKE_CXX_FLAGS=-fsanitize-coverage=trace-pc-guard'  Removed: '-fsanitize-coverage=trace-pc-guard' is only helpful for code coverage analysis, ref https://clang.llvm.org/docs/SanitizerCoverage.html
         #FLAGS="-D_FORTIFY_SOURCE=2 -DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fstack-protector-all -fno-omit-frame-pointer -fno-inline -fno-builtin -fno-common -fsanitize=address,undefined,leak,alignment,bounds,integer,null,enum,pointer-compare,pointer-subtract,return,unreachable,vla-bound'"
-        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native'"
-        echo "Using Clang for SAN build: $(clang --version | head -n1 | tr -d '\n')"
+        MSAN_IGNORELIST=""
+        if [ ${USE_TSAN} -eq 0 -a ${ASAN_OR_MSAN} -eq 1 ]; then
+          # The ignorelist must be part of these flags (and not of ${SAN}) as this -D overrides any earlier same-named -D
+          MSAN_IGNORELIST=" -fsanitize-ignorelist=${SCRIPT_PWD}/MSAN.ignorelist"
+          if [ "${MSAN_TRACK_ORIGINS}" -eq 1 ]; then
+            MSAN_IGNORELIST="${MSAN_IGNORELIST} -fsanitize-memory-track-origins=2"
+          fi
+        fi
+        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native${MSAN_IGNORELIST}'"
+        echo "Using Clang for SAN build: $(${CLANG_LOCATION} --version | head -n1 | tr -d '\n')"
       else
         # '-static-libasan' is needed to avoid this error on mysqld startup:
         # ==PID== ASan runtime does not come first in initial library list; you should either link runtime to your application or manually preload it with LD_PRELOAD.

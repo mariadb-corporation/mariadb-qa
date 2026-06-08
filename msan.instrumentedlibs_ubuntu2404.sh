@@ -26,6 +26,11 @@ if [ "$(grep -o 'DISTRIB_RELEASE=.*' /etc/lsb-release | grep -o '24.04')" != "24
   exit 1
 fi
 
+# Clang version used for all MSAN instrumentation. IMPORTANT: clang-21 MSAN flags InnoDB startup code and the
+# server cannot even bootstrap (https://jira.mariadb.org/browse/MDEV-38419, stalled). Use clang-20 until resolved.
+# Keep this in sync with CLANG_VERSION in build_mdpsms_dbg_msan.sh and build_mdpsms_opt_msan.sh
+CLANG_VERSION="${CLANG_VERSION:-20}"
+
 export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing the two build_mdpsms_dbg/opt_san.sh scripts also
 if [ -d "${MSAN_LIBDIR}" ]; then
   echo "The directory ${MSAN_LIBDIR} already exists, please remove or rename it"
@@ -40,7 +45,10 @@ cd "${MSAN_LIBDIR}/build"
 # Add sources if needed
 if ! grep -q "^Types: deb-src$" /etc/apt/sources.list.d/ubuntu.sources; then
   sudo bash -c 'echo -e "\nTypes: deb-src\nURIs: http://archive.ubuntu.com/ubuntu/\nSuites: noble noble-updates noble-backports noble-security\nComponents: main restricted universe multiverse\nEnabled: yes\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg" >> /etc/apt/sources.list.d/ubuntu.sources'
+  sudo apt-get update  # Required for the apt-get source/build-dep calls below to see the just-added deb-src entries
 fi
+# Tools needed by the library builds below (idempotent; build-essential/git/cmake/ninja are also covered by SKIP_CLEANUP=0)
+sudo apt-get install -y git cmake ninja-build build-essential python3 zlib1g-dev equivs quilt
 
 SKIP_CLEANUP=1
 if [ "${SKIP_CLEANUP}" -ne 1 ]; then
@@ -52,22 +60,45 @@ if [ "${SKIP_CLEANUP}" -ne 1 ]; then
   sudo apt -y autopurge  # /sbin/ldconfig.real: /lib/x86_64-linux-gnu/libreadline.so.5 is not a symbolic link error is normal (was placed here manually)
 fi
 
-SKIP_CLANG_INSTALL=1
+# Clang/LLVM install. Auto-detected: only installs if clang-${CLANG_VERSION} + lld + libc++ dev are not already
+# present, so this script is self-sufficient on a fresh Ubuntu 24.04 box yet a no-op on an already-set-up one.
+# Force a (re)install by exporting SKIP_CLANG_INSTALL=0 ; force skip with SKIP_CLANG_INSTALL=1
+if [ -z "${SKIP_CLANG_INSTALL:-}" ]; then
+  if [ -x "/usr/bin/clang-${CLANG_VERSION}" ] && [ -x "/usr/bin/clang++-${CLANG_VERSION}" ] \
+     && [ -x "/usr/bin/ld.lld-${CLANG_VERSION}" ] && dpkg -s "libc++-${CLANG_VERSION}-dev" >/dev/null 2>&1; then
+    SKIP_CLANG_INSTALL=1
+    echo "clang-${CLANG_VERSION} toolchain already present; skipping install."
+  else
+    SKIP_CLANG_INSTALL=0
+  fi
+fi
 if [ "${SKIP_CLANG_INSTALL}" -ne 1 ]; then
-  # Clang/LLVM install
+  # apt.llvm.org ships versioned libc++-N-dev that all depend on the UNVERSIONED libc++1/libc++abi1; a leftover
+  # apt.llvm.org repo for a DIFFERENT llvm version makes apt try to co-install two versions of those and fail with
+  # "held broken packages". Remove any apt.llvm.org repo line that is not for our CLANG_VERSION before installing.
+  for f in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+    [ -r "$f" ] || continue
+    if grep -q "apt.llvm.org" "$f" && grep -qvE "llvm-toolchain-[a-z]+-${CLANG_VERSION}([^0-9]|\$)" <(grep "apt.llvm.org" "$f"); then
+      sudo sed -i "/apt.llvm.org.*llvm-toolchain-[a-z]*-[0-9]*/{/llvm-toolchain-[a-z]*-${CLANG_VERSION}\([^0-9]\|\$\)/!d}" "$f"
+    fi
+  done
   wget https://apt.llvm.org/llvm.sh
   chmod +x llvm.sh
   sed -i 's|libunwind-$LLVM_VERSION-dev"|libunwind-$LLVM_VERSION-dev python3-lldb-$LLVM_VERSION"|' llvm.sh
-  sudo ./llvm.sh 21 all
+  sudo ./llvm.sh ${CLANG_VERSION} all
   rm llvm.sh
-  sudo ln -sf /usr/bin/clang-21 /usr/bin/clang
-  sudo ln -sf /usr/bin/clang++-21 /usr/bin/clang++
-  sudo ln -sf /usr/bin/ld.lld-21 /usr/bin/ld.lld
-  sudo ln -sf /usr/bin/ld.lld-21 /usr/bin/ld
+  # llvm.sh installs clang/lld but not always the libc++ runtime+dev we link against; ensure they are present
+  sudo apt-get install -y libc++-${CLANG_VERSION}-dev libc++abi-${CLANG_VERSION}-dev libclang-rt-${CLANG_VERSION}-dev
+  # IMPORTANT: do NOT repoint the unversioned /usr/bin/{clang,clang++,ld.lld,ld} system symlinks. The MSAN scripts
+  # all call fully-versioned binaries (clang-${CLANG_VERSION}, ld.lld-${CLANG_VERSION}), so these are not needed, and
+  # clobbering them - especially /usr/bin/ld (the global default linker) - would silently change the compiler/linker
+  # for everything else on the machine (e.g. a clang-18 pquery build). Only create them if they are MISSING entirely.
+  [ -e /usr/bin/clang ]   || sudo ln -s /usr/bin/clang-${CLANG_VERSION}   /usr/bin/clang
+  [ -e /usr/bin/clang++ ] || sudo ln -s /usr/bin/clang++-${CLANG_VERSION} /usr/bin/clang++
   sudo ldconfig
   # To remove, use:
   # sudo rm -f /usr/bin/clang /usr/bin/clang++ /usr/bin/lld
-  # apt purge -y clang-21 lldb-21 lld-21 clangd-21 clang-tidy-21 clang-format-21 clang-tools-21 llvm-21-dev llvm-21-tools libomp-21-dev libc++-21-dev libc++abi-21-dev libclang-common-21-dev libclang-21-dev libclang-cpp21-dev liblldb-21-dev libunwind-21-dev python3-lldb-21 libclang-rt-21-dev libpolly-21-dev llvm-21 llvm-21-linker-tools llvm-21-runtime libunwind-21:amd64 libc++1-21:amd64 libc++abi1-21:amd64 libclang-cpp21 libclang1-21 liblldb-21 libllvm21:amd64
+  # apt purge -y clang-${CLANG_VERSION} lldb-${CLANG_VERSION} lld-${CLANG_VERSION} 'clang*-${CLANG_VERSION}' 'llvm-${CLANG_VERSION}*' 'libc++*-${CLANG_VERSION}*' 'libclang*-${CLANG_VERSION}*' 'libunwind-${CLANG_VERSION}*' 'libllvm${CLANG_VERSION}*' 'libpolly-${CLANG_VERSION}*'
 fi
 
 SKIP_CMAKE_UPGRADE=1
@@ -89,12 +120,13 @@ fi
 
 # Now point to the just-installed Clang/LLVM
 export MSAN_LIBDIR=/MSAN_libs   # handy for copy/paste
-export CC=/usr/bin/clang-21
-export CXX=/usr/bin/clang++-21
-export LD=/usr/bin/ld.lld-21
+export CC=/usr/bin/clang-${CLANG_VERSION}
+export CXX=/usr/bin/clang++-${CLANG_VERSION}
+export LD=/usr/bin/ld.lld-${CLANG_VERSION}
 # TODO: consider adding -fsanitize-memory-track-origins=2 to CFLAGS (and LDFLAGS?) - also update build scripts to match the same
 # Note that -fsanitize=memory is required for the compiler *and* the linker
-export LDFLAGS="-fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR"
+# -fuse-ld=lld is included here as the CMAKE_LINKER_TYPE/CMAKE_*_USING_LINKER_* options below require cmake >= 3.29 (silently ignored on older cmake)
+export LDFLAGS="-fuse-ld=lld -fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR"
 unset CFLAGS CXXFLAGS
 #  -DCMAKE_C_FLAGS="${CFLAGS}" \
 #  -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
@@ -102,9 +134,16 @@ unset CFLAGS CXXFLAGS
 # Native/System Core libs: libc.so.6, libm.so.6, libresolv.so.2, libgcc_s.so.1 (GCC's runtime support library): there is no need to instrument these. MSAN is designed to work alongside these libs. They will point to system directories in ldd output.
 
 # C++ runtime libs (libc++, libc++abi, libunwind)
-git clone --depth 1 https://github.com/llvm/llvm-project.git
+# Pin to the release branch matching the installed clang: building llvm main with an older
+# clang host risks compile failures and produces a libc++ that mismatches the clang libc++ headers
+git clone --depth 1 --branch release/${CLANG_VERSION}.x https://github.com/llvm/llvm-project.git
 cd llvm-project/runtimes
 
+# Note: libunwind must be in LLVM_ENABLE_RUNTIMES (libcxxabi's LIBCXXABI_USE_LLVM_UNWINDER=ON requires it),
+# but the instrumented libunwind.so produced here is REPLACED by an uninstrumented one below. An instrumented
+# libunwind reports a false positive on the asm-written unw_context_t (getReg in UnwindCursor.hpp) the moment
+# the MSAN runtime (or mariadbd's fatal signal handler) tries to unwind the stack to print a report, which
+# recurses (warning -> unwind -> warning -> ...) until the stack overflows: every report becomes a bare SIGSEGV.
 # -S: Source dir
 cmake . -B build -G Ninja \
   -DLLVM_ENABLE_RUNTIMES='compiler-rt;libcxx;libcxxabi;libunwind' \
@@ -126,6 +165,21 @@ cmake . -B build -G Ninja \
 ninja -C build
 cp -aL build/lib/* "$MSAN_LIBDIR/"  # libs
 cp -aL build/include/* "$MSAN_LIBDIR/include"  # includes
+
+# libunwind: build UNINSTRUMENTED (see note above) but with frame pointers and debug info.
+# This intentionally OVERWRITES the instrumented libunwind.so* copied from the build above.
+cmake . -B build-unwind -G Ninja \
+  -DLLVM_ENABLE_RUNTIMES='libunwind' \
+  -DCMAKE_C_COMPILER="${CC}" \
+  -DCMAKE_CXX_COMPILER="${CXX}" \
+  -DCMAKE_C_FLAGS='-fno-omit-frame-pointer -g' \
+  -DCMAKE_CXX_FLAGS='-fno-omit-frame-pointer -g' \
+  -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-fuse-ld=lld' \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DLLVM_INCLUDE_TESTS=OFF \
+  -DLLVM_INCLUDE_DOCS=OFF
+ninja -C build-unwind
+cp -aL build-unwind/lib/libunwind.so* "$MSAN_LIBDIR/"
 cd "$MSAN_LIBDIR/build"
 rm -Rf llvm-project
 
