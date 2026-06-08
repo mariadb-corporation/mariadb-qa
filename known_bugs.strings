@@ -286,6 +286,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_release|ha_federatedx::savepoint_release|ha_release_savepoint|trans_release_savepoint         ## MDEV-39922
+sp && savepoint_next && *sp && *sp <= savepoint_level|SIGABRT|federatedx_txn::sp_rollback|ha_federatedx::savepoint_rollback|ha_rollback_to_savepoint|trans_rollback_to_savepoint ## MDEV-39922
 trn->trid != 0|SIGABRT|write_hook_for_redo|translog_write_variable_record_1chunk|translog_write_variable_record|translog_write_record                                          ## MDEV-25623
 !ctx->online || num_fts_index == 0|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|ha_partition::prepare_inplace_alter_table ## MDEV-39840
 SIGSEGV|que_fork_get_first_thr|row_search_mvcc|ha_innobase::general_fetch|ha_innobase::index_prev                                                                              ## MDEV-39805
