@@ -137,6 +137,16 @@ unset CFLAGS CXXFLAGS
 # Pin to the release branch matching the installed clang: building llvm main with an older
 # clang host risks compile failures and produces a libc++ that mismatches the clang libc++ headers
 git clone --depth 1 --branch release/${CLANG_VERSION}.x https://github.com/llvm/llvm-project.git
+# libunwind's findUnwindSections probes glibc via dlsym("_dl_find_object"); glibc's _dlerror_run
+# calls free(), which at shutdown (no MsanThread) re-enters MSAN's free interceptor -> forced slow
+# unwind -> back into this probe -> infinite recursion -> bogus SIGSEGV. Force the dl_iterate_phdr
+# path instead (no dlsym, no free). Same throwaway-clone patch pattern as the libaio/gmp/xml2 seds.
+AS=llvm-project/libunwind/src/AddressSpace.hpp
+if ! grep -q 'defined(DLFO_STRUCT_HAS_EH_DBASE)' "${AS}"; then
+  echo "Assert: DLFO_STRUCT_HAS_EH_DBASE gate not found in ${AS} (libunwind layout changed for clang-${CLANG_VERSION}?). Terminating."
+  exit 1
+fi
+sed -i '/defined(DLFO_STRUCT_HAS_EH_DBASE)/s/^#if .*/#if 0/' "${AS}"
 cd llvm-project/runtimes
 
 # Note: libunwind must be in LLVM_ENABLE_RUNTIMES (libcxxabi's LIBCXXABI_USE_LLVM_UNWINDER=ON requires it),

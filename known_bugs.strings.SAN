@@ -5,6 +5,7 @@ ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|archive_discover|discover_h
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
+SIGSEGV|libunwind::Registers_x86_64::Registers_x86_64|libunwind::UnwindCursor<libunwind::LocalAddressSpace, libunwind::Registers_x86_64>::UnwindCursor|__unw_init_local|_Unwind_Backtrace ## MSAN tool noise (not a server bug): libunwind dlsym("_dl_find_object")->_dlerror_run->free re-enters MSAN free interceptor at shutdown (no MsanThread, forced slow unwind) -> infinite recursion -> stack overflow. Root-fixed at next /MSAN_libs rebuild via AddressSpace.hpp dl_iterate_phdr sed in msan.instrumentedlibs_ubuntu2404.sh
 
 # Temp key: Ma2
 ##### MDEV-35915 testing v12+ #####
