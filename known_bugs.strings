@@ -286,6 +286,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                                                      ## MDEV-40009
 SIGSEGV|Item_func::Item_func|Item_real_func::Item_real_func|Item_xpath_cast_number::Item_xpath_cast_number|create_func_number                                                  ## MDEV-39593
 SIGSEGV|ha_partition::return_top_record|ha_partition::handle_ordered_prev|handler::ha_index_prev|mysql_ha_read                                                                 ## MDEV-39923
 SIGSEGV|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc                                                             ## MDEV-39923
