@@ -83,7 +83,7 @@ ASAN_FLAGS=(-O1 -g -fsanitize=address -fsanitize=undefined -fno-omit-frame-point
 # Dynamic builds embed an rpath so the loader finds libmariadb.so.3 at runtime.
 # Static build links libmariadbclient.a + all transitive deps as archives.
 MYSQL_FLAGS=(-I"$MARIADB_BASEDIR/include")
-MYSQL_LIBS=(-L"$MARIADB_BASEDIR/lib" -lmariadbclient)
+MYSQL_LIBS=(-L"$MARIADB_BASEDIR/lib" -lmariadbclient -lgnutls -lssl -lcrypto -lz -lzstd -lresolv -lm -ldl)
 MYSQL_RPATH=(-Wl,-rpath,"$MARIADB_BASEDIR/lib")
 
 case "$MODE" in

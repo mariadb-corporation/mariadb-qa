@@ -5,6 +5,7 @@
 WIPE_TMP_ENABLED=0  # /tmp cleaning, generally should NOT be enabled
 FILTER_LARGE_NEWBUG_RUNS=1  # For large-scale newbug verification/reduction runs (normally reducers themselves are not filtered)
 DS_DELETE_GRACE_SEC=60  # Grace period before deleting a reducer workdir that appears stale (reducer script not in ps -ef). Two-pass with re-verification protects against brief ps -ef races (parent bash momentarily not listed between exec'd children). Tune higher on heavily loaded hosts where the race window can be longer.
+DS_MTR_VAR_MAX_AGE_HOURS=4  # Delete /dev/shm/var_* MTR vardirs (mtr --mem leftovers) in which no file was modified for this many hours. Active mtr runs write logs/data continuously and are thus skipped
 
 # Filter this list of processes from termination
 # Call the process filter helper script to set the FILTER var
@@ -138,6 +139,15 @@ while :; do
     ps -eo etime,command,pid -ww | grep 'subreducer' | grep -vEi "${FILTER}" | grep -E '[1-9]:[0-5][0-9]:[0-5][0-9] |[1-9][0-9]:[0-5][0-9]:[0-5][0-9] |[0-9]-[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' | awk '{print $NF}' | grep -o '^[0-9]\+' | grep -vE "${COMBINED_PID_FILTER}" | xargs -I{} kill -9 {} 2>/dev/null
     # RV-05/02/22 increased frequency of ~/mariadb-qa/tmpfs_clean.sh from 60 rounds to 10 rounds, and starting process as background process. Improved ~/mariadb-qa/tmpfs_clean.sh to self-terminate if it is running already
     ~/mariadb-qa/tmpfs_clean.sh 1 SILENT &
+    # Delete stale /dev/shm/var_* MTR vardirs: no file (including the top dir itself) modified within DS_MTR_VAR_MAX_AGE_HOURS hours. find -quit short-circuits on the first recent file, so active mtr runs cost a near-zero scan. The @epoch reference form is required: bfs (a find drop-in) rejects relative -newermt dates
+    DS_MTR_VAR_REF="@$(date -d "-${DS_MTR_VAR_MAX_AGE_HOURS} hours" +%s)"
+    for DS_MTR_VAR in /dev/shm/var_*; do
+      [ -d "${DS_MTR_VAR}" ] || continue
+      if [ -z "$(find "${DS_MTR_VAR}" -newermt "${DS_MTR_VAR_REF}" -print -quit 2>/dev/null)" ]; then
+        rm -Rf "${DS_MTR_VAR}"
+      fi
+    done
+    DS_MTR_VAR=; DS_MTR_VAR_REF=
     if [ -r /data/NEWBUGS/mv_index_corrupted ]; then  # Move similar index corruptions into their own subdirectory
       /data/NEWBUGS/mv_index_corrupted
     fi

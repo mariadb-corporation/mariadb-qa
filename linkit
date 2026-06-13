@@ -83,12 +83,15 @@ ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${US
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/count_testcases_out /home/${USER}/cto 2>&1
 ln -fs /home/${USER}/mariadb-qa/mini_mtr_to_sql.sh /home/${USER}/mmtr 2>&1
 ln -fs /home/${USER}/mariadb-qa/stack.sh /home/${USER}/stack 2>&1
+ln -fs /home/${USER}/mariadb-qa/log_jira_ticket.sh /home/${USER}/jira 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_resume /home/${USER}/clr 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_send   /home/${USER}/cls 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_delete /home/${USER}/crd 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_find   /home/${USER}/clf 2>&1
-ln -fs /home/${USER}/mariadb-qa/claude_usage.sh /home/${USER}/u 2>&1      # Claude usage meter (short)
-ln -fs /home/${USER}/mariadb-qa/claude_usage.sh /home/${USER}/usage 2>&1  # Claude usage meter (long)
+if [ -L "/home/${USER}/u" ]; then rm "/home/${USER}/u"; fi
+if [ -L "/home/${USER}/usage" ]; then rm "/home/${USER}/usage"; fi
+# ln -fs /home/${USER}/mariadb-qa/claude_usage.sh /home/${USER}/u 2>&1      # Claude usage meter (short)
+# ln -fs /home/${USER}/mariadb-qa/claude_usage.sh /home/${USER}/usage 2>&1  # Claude usage meter (long)
 
 # Git bisect clone & main scripts
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
@@ -161,6 +164,7 @@ for SL in ${HOME}/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
 # grep '^alias' ${HOME}/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /usr/bin/{} 2>/dev/null
 # To find possible culprits. Also note things like 'fi' cannot be redefined
 echo "You can now add a list of helpful alias'es to the end of your ${HOME}/.bashrc script, by doing:"
+#alias u='${HOME}/u'        # Claude usage meter (5h + weekly sessions)  # Removed
 echo "
 alias a='./all'      # Start kill>wipe>start>cl in current BASEDIR
 alias all='./all'    # Idem
@@ -173,7 +177,6 @@ alias clr='${HOME}/clr'    # Claude Code resume: picker for any session across a
 alias cls='${HOME}/cls'    # Claude Code send: 'cls <id-prefix> "prompt"' resumes that session and sends prompt (e.g. sleep N; cls ID 'continue')
 alias crd='${HOME}/crd'    # Claude Code delete session: 'crd' lists, 'crd <id>' dry-run, 'crd <id> 1' deletes
 alias clf='${HOME}/clf'    # Claude Code find: 'clf <regex>' lists session IDs whose logs match the (case-insensitive) regex
-alias u='${HOME}/u'        # Claude usage meter (5h + weekly sessions)
 alias usage='${HOME}/usage'  # Idem (long form of 'u')
 alias b='${HOME}/b'        # Start bug report for in.sql in current BASEDIR
 alias bs='${HOME}/b SAN'   # Start SAN based bug report for in.sql in current BASEDIR
@@ -255,6 +258,7 @@ alias vr='vi /data/results.list'  # Open /data/results.list for editing or revie
 alias vt='${HOME}/vt '     # Open the error log for a trial (pass trial number), or in a BASEDIR
 alias li='${HOME}/li'      # Run linkit (can be rerun as often as needed)
 alias m='${HOME}/myver'    # Shows handy JIRA-based version tags for the current BASEDIR
+alias jira='${HOME}/jira'  # Log a public bug ticket to jira.mariadb.org (ref ${HOME}/mariadb-qa/log_jira_ticket.sh)
 alias ge='cd /test;./grep_in_errorlogs.sh ' # Search for string in all BASEDIR error logs (pass string)
 alias rf='vi ${HOME}/mariadb-qa/REGEX_ERRORS_FILTER'  # Open error log filter list
 alias rfi='vi ${HOME}/mariadb-qa/REGEX_ERRORS_FILTER.info'  # Open error log filter list info file

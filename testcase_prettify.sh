@@ -342,6 +342,7 @@ cat "${1}" | tr -d '`' | \
        s|_\([a-zA-Z]\+\)|_\L\1|gi;s|\([a-zA-Z]\+\)_|\L\1_|gi; \
        s|json_\([_a-zA-Z]\+\)|JSON_\U\1|gi; \
        s|\([^\.]\)st_|\1ST_|gi; \
+       s|char_length|CHAR_LENGTH|gi; \
        s|geomfromtext|GEOMFROMTEXT|gi; \
        s|crc32|CRC32|g; \
        s| ,|,|g; \
@@ -350,7 +351,7 @@ cat "${1}" | tr -d '`' | \
        s|(| (|g; \
        s| \([A-Z][A-Z][A-Z]\) (| \1(|g; \
        s|ST_\([^ (]\+\) *(|\UST_\1(|gi; \
-       s|FLOAT *(|FLOAT(|gi;s|INT *(|INT(|gi;s|VARBINARY *(|VARBINARY(|gi;s|TIME *(|TIME(|gi;s|DECIMAL *(|DECIMAL(|gi;s|TRIM *(|TRIM(|gi;s|REAL *(|REAL(|gi;s|NUMERIC *(|NUMERIC(|gi;s|KEY *(|KEY(|gi;s|SUBSTR *(|SUBSTR(|gi;; \
+       s|FLOAT *(|FLOAT(|gi;s|INT *(|INT(|gi;s|VARBINARY *(|VARBINARY(|gi;s|TIME *(|TIME(|gi;s|DECIMAL *(|DECIMAL(|gi;s|TRIM *(|TRIM(|gi;s|REAL *(|REAL(|gi;s|NUMERIC *(|NUMERIC(|gi;s|KEY *(|KEY(|gi;s|SUBSTR *(|SUBSTR(|gi;s|CHAR_LENGTH *(|CHAR_LENGTH(|gi;; \
        s|BENCHMARK *(|BENCHMARK(|gi;s|CONNECTION_ID *(|CONNECTION_ID(|gi;s|LAST_INSERT_ID *(|LAST_INSERT_ID(|gi;s|GET_LOCK *(|GET_LOCK(|gi;s|RELEASE_LOCK *(|RELEASE_LOCK(|gi;s|IS_FREE_LOCK *(|IS_FREE_LOCK(|gi;s|IS_USED_LOCK *(|IS_USED_LOCK(|gi; \
        s|GEOMFROMTEXT *(|GEOMFROMTEXT(|gi;s|POINTFROMTEXT *(|POINTFROMTEXT(|gi;s|MULTIPOINTFROMTEXT *(|MULTIPOINTFROMTEXT(|gi; \
        s|starts|STARTS|gi; \
