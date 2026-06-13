@@ -5,6 +5,7 @@ ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|archive_discover|discover_h
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
+SIGSEGV|libunwind::Registers_x86_64::Registers_x86_64|libunwind::UnwindCursor<libunwind::LocalAddressSpace, libunwind::Registers_x86_64>::UnwindCursor|__unw_init_local|_Unwind_Backtrace ## MSAN tool noise (not a server bug): libunwind dlsym("_dl_find_object")->_dlerror_run->free re-enters MSAN free interceptor at shutdown (no MsanThread, forced slow unwind) -> infinite recursion -> stack overflow. Root-fixed at next /MSAN_libs rebuild via AddressSpace.hpp dl_iterate_phdr sed in msan.instrumentedlibs_ubuntu2404.sh
 
 # Temp key: Ma2
 ##### MDEV-35915 testing v12+ #####
@@ -28,6 +29,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-buffer-overflow|sql/sql_path.cc|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                    ## MDEV-40009
 MSAN|use-of-uninitialized-value|include/btr0sea.h|btr_sea::hash_table::lock_get|btr_sea::partition::cleanup_after_erase|btr_sea::partition::erase_status|btr_search_update_hash_on_delete         ## MDEV-39848
 MSAN|use-of-uninitialized-value|sql/log.cc|MYSQL_QUERY_LOG::write|Log_to_file_event_handler::log_slow|LOGGER::slow_log_print|log_slow_statement                                ## MDEV-39838
 ASAN|heap-use-after-free|storage/csv/ha_tina.h|ha_tina::scan_time|handler::ha_scan_time|st_join_table::estimate_scan_time|make_join_statistics                                 ## MDEV-39797

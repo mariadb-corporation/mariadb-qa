@@ -1,0 +1,2 @@
+SET NAMES swe7;
+SET PATH '`';

@@ -91,9 +91,9 @@ if [ ! -r ${SCRIPT_PWD}/${CONFIGURATION_FILE} ]; then
   echo "Assert: the confiruation file ${SCRIPT_PWD}/${CONFIGURATION_FILE} cannot be read!"
   exit 1
 fi
-if grep -qi '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*2' ${SCRIPT_PWD}/${CONFIGURATION_FILE}; then
+if grep -qiE '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[24]' ${SCRIPT_PWD}/${CONFIGURATION_FILE}; then
   echo "*************************************************************************************************************************"
-  echo "*** IMPORTANT NOTE: PRE_SHUFFLE_SQL=2 is set. No custom-set SQL input file will be used! Make sure this was intended! ***"
+  echo "*** IMPORTANT NOTE: PRE_SHUFFLE_SQL=2/4 is set. No custom-set SQL input file will be used! Make sure this was intended! ***"
   echo "*************************************************************************************************************************"
   sleep 2
 fi
@@ -206,10 +206,37 @@ fi
 # Try and raise ulimit for user processes (see setup_server.sh for how to set correct soft/hard nproc settings in limits.conf)
 #ulimit -u 7000
 
-# Input file compressed? preflight check (when generator is not in use)
+# PRE_SHUFFLE_SQL=3/4 are generator-mix modes: GENERATOR_MIX_PERCENTAGE% generated SQL plus the
+# remainder from the single INFILE (=3, PS=1-style) or from all SQL found on disk (=4, PS=2-style).
+# They require the generator, so auto-enable it and validate the mix percentage.
+if [ "${PRE_SHUFFLE_SQL}" == "3" -o "${PRE_SHUFFLE_SQL}" == "4" ]; then
+  if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 ]; then
+    echoit "Note: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} is a generator-mix mode; auto-setting USE_GENERATOR_INSTEAD_OF_INFILE=1"
+    USE_GENERATOR_INSTEAD_OF_INFILE=1
+  fi
+  if [ -z "${GENERATOR_MIX_PERCENTAGE}" ]; then GENERATOR_MIX_PERCENTAGE=80; fi
+  if ! [[ "${GENERATOR_MIX_PERCENTAGE}" =~ ^[0-9]+$ ]] || [ "${GENERATOR_MIX_PERCENTAGE}" -lt 1 ] || [ "${GENERATOR_MIX_PERCENTAGE}" -gt 99 ]; then
+    echoit "Assert: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} requires GENERATOR_MIX_PERCENTAGE to be an integer in the range 1-99 (current value: '${GENERATOR_MIX_PERCENTAGE}')"
+    exit 1
+  fi
+  # The generator share is sampled (shuf -n) from the generator output, so that output must hold at
+  # least GENERATOR_MIX_PERCENTAGE% of PRE_SHUFFLE_MIN_SQL_LINES or the share is starved. Raise
+  # QUERIES_PER_GENERATOR_RUN accordingly (it only affects PS=3/4 runs; other modes keep their value).
+  if [ -z "${QUERIES_PER_GENERATOR_RUN}" ]; then QUERIES_PER_GENERATOR_RUN=0; fi
+  PS_GEN_LINES_TARGET=$(( PRE_SHUFFLE_MIN_SQL_LINES * GENERATOR_MIX_PERCENTAGE / 100 ))
+  if [ "${QUERIES_PER_GENERATOR_RUN}" -lt "${PS_GEN_LINES_TARGET}" ]; then
+    echoit "Note: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} targets ${GENERATOR_MIX_PERCENTAGE}% generator SQL (~${PS_GEN_LINES_TARGET} of ${PRE_SHUFFLE_MIN_SQL_LINES} lines); raising QUERIES_PER_GENERATOR_RUN from ${QUERIES_PER_GENERATOR_RUN} to ${PS_GEN_LINES_TARGET} so the generator produces enough SQL"
+    QUERIES_PER_GENERATOR_RUN=${PS_GEN_LINES_TARGET}
+  fi
+  PS_GEN_LINES_TARGET=
+fi
+
+# Input file compressed? preflight check. Needed when the generator is not in use, and also for
+# PRE_SHUFFLE_SQL=3 (which mixes in the original single INFILE). PRE_SHUFFLE_SQL=2/4 source their
+# SQL from all files found on disk, so the single INFILE is not required for those.
 # Do not filter PRE_SHUFFLE_SQL=2 (mix all sql files) from extracting the tar here, as the main tar may still need extracting for example when mariadb-qa was just cloned, and it will also need extracting for multi-threaded runs
-if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 ]; then
-  if [ "${PRE_SHUFFLE_SQL}" -ne 2 ]; then  # If PRE_SHUFFLE_SQL=2 then we do not need an INFILE
+if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 ] || [ "${PRE_SHUFFLE_SQL}" == "3" ]; then
+  if [ "${PRE_SHUFFLE_SQL}" -ne 2 ] && [ "${PRE_SHUFFLE_SQL}" -ne 4 ]; then  # PRE_SHUFFLE_SQL=2/4 do not need a single INFILE
     if [ ! -r ${INFILE} ]; then
       echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
       exit 1
@@ -228,8 +255,9 @@ if [ "${USE_GENERATOR_INSTEAD_OF_INFILE}" -ne 1 ]; then
       ORIGINAL_INFILE=
     fi
   fi
+  if [ "${PRE_SHUFFLE_SQL}" == "3" ]; then ORIG_INFILE="${INFILE}"; fi  # PRE_SHUFFLE_SQL=3 mixes in the original single INFILE; preserve its path as the generator block later overwrites INFILE
 else
-  if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
+  if [ "${PRE_SHUFFLE_SQL}" -gt 0 ] && [ "${PRE_SHUFFLE_SQL}" -lt 3 ]; then  # PS=3/4 require the generator; only PS=1/2 conflict with it
     echoit "Note: USE_GENERATOR_INSTEAD_OF_INFILE=1 and PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} are both set. These are mutually exclusive: the SQL Generator produces a fresh input file every trial, so pre-shuffling it adds no value: Auto-disabling PRE_SHUFFLE_SQL"
     PRE_SHUFFLE_SQL=0
   fi
@@ -398,7 +426,28 @@ if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
   fi
 fi
 
-# PRE_SHUFFLE=1/2 handling
+pre_shuffle_collect_all_sql(){  # $1=output file, $2=max lines, $3=1 to use the high-entropy random binary for per-file sample sizes (else ${RANDOM}). Collects randomly-sampled SQL from all *.sql found on disk: the engine behind PRE_SHUFFLE_SQL=2, reused by =4
+  local OUTF="${1}"
+  local MAXLINES="${2}"
+  local SAMPLE_EXPR
+  if [ "${3}" == "1" ] && [ -x "${SCRIPT_PWD}/random" ]; then  # Full-range entropy (not capped at 32767 like ${RANDOM}) for per-file sample sizes
+    SAMPLE_EXPR="\$(( \$(${SCRIPT_PWD}/random \$(( \$(wc -l '{}' | awk '{print \$1}') + 1 )) ) + 1 ))"
+  else
+    SAMPLE_EXPR="\$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ]"
+  fi
+  touch ${OUTF}
+  rm -f ${OUTF}.done ${OUTF}.sh
+  if [ $[$RANDOM % 20 + 1] -le 10 ]; then  # At random use one or another SQL pre-shuffler (for PRE_SHUFFLE=2/4), both which have proven to work well
+    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hvi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${OUTF}.done ]; then if [ \"\$(wc -l ${OUTF} | awk '{print \$1}')\" -lt ${MAXLINES} ]; then shuf --random-source=/dev/urandom -n ${SAMPLE_EXPR} {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${OUTF}; else touch ${OUTF}.done; fi; fi" > ${OUTF}.sh
+  else
+    find / -maxdepth 5 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hviE '/test/TESTCASES|newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${OUTF}.done ]; then if [ \"\$(wc -l ${OUTF} | awk '{print \$1}')\" -lt ${MAXLINES} ]; then shuf --random-source=/dev/urandom -n ${SAMPLE_EXPR} {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${OUTF}; else touch ${OUTF}.done; fi; fi" > ${OUTF}.sh
+  fi
+  chmod +x ${OUTF}.sh
+  ${OUTF}.sh  # No leading './' needed as OUTF is a fully qualified path (already starts with /)
+  rm -f ${OUTF}.done ${OUTF}.sh
+}
+
+# PRE_SHUFFLE=1/2/3/4 handling
 pre_shuffle_setup(){
   local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
   INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
@@ -416,16 +465,7 @@ pre_shuffle_setup(){
     echoit "Obtaining the PRE_SHUFFLE_SQL=1 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
     PRE_SHUFFLE_RES_FIN_LINES=
   elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
-    touch ${INFILE_SHUFFLED}
-    rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
-    if [ $[$RANDOM % 20 + 1] -le 10 ]; then  # At random use one or another SQL pre-shuffler (for PRE_SHUFFLE=2), both which have proven to work well
-      find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hvi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
-    else
-      find / -maxdepth 5 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hviE '/test/TESTCASES|newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${INFILE_SHUFFLED}.done ]; then if [ \"\$(wc -l ${INFILE_SHUFFLED} | awk '{print \$1}')\" -lt ${PRE_SHUFFLE_MIN_SQL_LINES} ]; then shuf --random-source=/dev/urandom -n \$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ] {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${INFILE_SHUFFLED}; else touch ${INFILE_SHUFFLED}.done; fi; fi" > ${INFILE_SHUFFLED}.sh
-    fi
-    chmod +x ${INFILE_SHUFFLED}.sh
-    ${INFILE_SHUFFLED}.sh  # No leading './' needed as INFILE_SHUFFLED is a fully qualified path (already starts with /)
-    rm -f ${INFILE_SHUFFLED}.done ${INFILE_SHUFFLED}.sh
+    pre_shuffle_collect_all_sql "${INFILE_SHUFFLED}" "${PRE_SHUFFLE_MIN_SQL_LINES}"
     # Filtering using ${SCRIPT_PWD}/filter.sql when FILTER_SQL=1 and PRE_SHUFFLE_SQL=2 is done here as it would not be possible to do it on all input files that PRE_SHUFFLE_SQL=2 uses. Filtering for PRE_SHUFFLE_SQL=0 and PRE_SHUFFLE_SQL=1 is done elsewhere (at the start) of this script, as that can be done on the single input filefile  applicable when =0/=1 is used
     PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
     if [ "${FILTER_SQL}" == "1" ]; then
@@ -448,8 +488,54 @@ pre_shuffle_setup(){
     fi
     PRE_SHUFFLE_RES_FIN_LINES=
     PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER=
+  elif [ "${PRE_SHUFFLE_SQL}" == "3" -o "${PRE_SHUFFLE_SQL}" == "4" ]; then
+    # Generator-mix: up to GENERATOR_MIX_PERCENTAGE% of PRE_SHUFFLE_MIN_SQL_LINES from the generator
+    # output (${INFILE}, set to out<RANDOMD>.sql by the generator block earlier this trial), the
+    # remainder from the original single INFILE (=3, PS=1-style) or all SQL found on disk (=4,
+    # PS=2-style). The generator share is capped by the generator file's actual size (shuf -n), so
+    # raise QUERIES_PER_GENERATOR_RUN if a high generator ratio is wanted. Sources are concatenated
+    # then re-shuffled so they interleave rather than sit in separate blocks.
+    GEN_LINES=$(( PRE_SHUFFLE_MIN_SQL_LINES * GENERATOR_MIX_PERCENTAGE / 100 ))
+    OTHER_LINES=$(( PRE_SHUFFLE_MIN_SQL_LINES - GEN_LINES ))
+    shuf --random-source=/dev/urandom -n ${GEN_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | sed 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' > ${INFILE_SHUFFLED}
+    if [ "${PRE_SHUFFLE_SQL}" == "3" ]; then
+      if [ -z "${ORIG_INFILE}" -o ! -r "${ORIG_INFILE}" ]; then
+        echoit "Assert: PRE_SHUFFLE_SQL=3 requires the original INFILE (ORIG_INFILE='${ORIG_INFILE}') to be readable for its ${OTHER_LINES}-line remainder"
+        exit 1
+      fi
+      shuf --random-source=/dev/urandom -n ${OTHER_LINES} ${ORIG_INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | sed 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' > ${INFILE_SHUFFLED}.other
+    else
+      pre_shuffle_collect_all_sql "${INFILE_SHUFFLED}.other" "${OTHER_LINES}" 1
+      # The all-SQL collector appends whole per-file samples and stops only once it crosses its target,
+      # so it can overshoot by up to one (potentially large) file's worth. Cap the remainder to
+      # OTHER_LINES (shuffled first for fair file representation) so the generator share is not diluted.
+      if [ "$(wc -l < ${INFILE_SHUFFLED}.other)" -gt "${OTHER_LINES}" ]; then
+        shuf --random-source=/dev/urandom ${INFILE_SHUFFLED}.other | head -n ${OTHER_LINES} > ${INFILE_SHUFFLED}.other.cap
+        mv ${INFILE_SHUFFLED}.other.cap ${INFILE_SHUFFLED}.other
+      fi
+    fi
+    cat ${INFILE_SHUFFLED}.other >> ${INFILE_SHUFFLED}
+    rm -f ${INFILE_SHUFFLED}.other
+    shuf --random-source=/dev/urandom ${INFILE_SHUFFLED} -o ${INFILE_SHUFFLED}  # Interleave the generator and remainder shares
+    PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
+    if [ "${FILTER_SQL}" == "1" ]; then
+      echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
+      mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
+      grep --binary-files=text -hvif ${SCRIPT_PWD}/filter.sql ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
+      rm -f ${INFILE_SHUFFLED}.temp
+    fi
+    sed -i 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' ${INFILE_SHUFFLED}
+    PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
+    if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
+      echoit "Assert: obtaining the PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
+      exit 1
+    else
+      echoit "Obtaining the PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} SQL (target ${GENERATOR_MIX_PERCENTAGE}% generator + remainder) took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
+    fi
+    PRE_SHUFFLE_RES_FIN_LINES=
+    PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER=
   else
-    echoit "Assert: PRE_SHUFFLE_SQL!=1/2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
+    echoit "Assert: PRE_SHUFFLE_SQL!=1/2/3/4: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
     exit 1
   fi
   PRE_SHUFFLE_DUR_START=
@@ -2410,7 +2496,7 @@ EOF
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             else
-              ## Pre-shuffle (if activated)
+              ## Pre-shuffle (if activated). Note: PRE_SHUFFLE_SQL=3/4 (generator-mix) are intentionally NOT handled in this MDG/GRP_RPL non-cluster path; they fall through to the standard non-shuffled trial below and run against the pure generator output. Supported only in the standard non-cluster single/multi-threaded paths.
               if [ "${PRE_SHUFFLE_SQL}" == "1" -o "${PRE_SHUFFLE_SQL}" == "2" ]; then
                 PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
                 if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
@@ -3497,7 +3583,11 @@ if [[ ${FILTER_SQL} -eq 1 ]]; then
 fi
 
 SQL_INPUT_TEXT=
-if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
+if [ "${PRE_SHUFFLE_SQL}" == "3" ]; then
+  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 3 (mix: ${GENERATOR_MIX_PERCENTAGE}% SQL Generator + remainder pre-shuffled from ${ORIG_INFILE})"
+elif [ "${PRE_SHUFFLE_SQL}" == "4" ]; then
+  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 4 (mix: ${GENERATOR_MIX_PERCENTAGE}% SQL Generator + remainder pre-shuffled from all available SQL)"
+elif [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
   if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 0 ]; then
     SQL_INPUT_TEXT="Using SQL Generator"
   else
