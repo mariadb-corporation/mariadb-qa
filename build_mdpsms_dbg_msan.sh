@@ -296,7 +296,16 @@ else
             MSAN_IGNORELIST="${MSAN_IGNORELIST} -fsanitize-memory-track-origins=2"
           fi
         fi
-        FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native${MSAN_IGNORELIST}'"
+        if [ ${USE_TSAN} -eq 0 -a ${ASAN_OR_MSAN} -eq 1 ]; then
+          # MSAN: match the official builders (amd64-msan-clang-20[-debug], buildbot 866/867), which set neither
+          # -O nor -march/-mtune and let CMAKE_BUILD_TYPE drive optimization (Debug -O0, RelWithDebInfo -O2).
+          # -march=native widens FP/SIMD loads that MSAN reports as bogus use-of-uninitialized-value (e.g.
+          # process_dbl_arg in my_vsnprintf, MDEV-40086); forcing -O over the build-type default also alters
+          # MSAN accuracy. The ignorelist must stay in these flags (this -D overrides any earlier same-named -D).
+          FLAGS="-DCMAKE_C{,XX}_FLAGS='${MSAN_IGNORELIST# }'"
+        else
+          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native'"
+        fi
         echo "Using Clang for SAN build: $(${CLANG_LOCATION} --version | head -n1 | tr -d '\n')"
       else
         # '-static-libasan' is needed to avoid this error on mysqld startup:
