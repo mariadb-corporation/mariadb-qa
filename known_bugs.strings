@@ -286,6 +286,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!err|SIGABRT|ha_innobase::truncate|Sql_cmd_truncate_table::handler_truncate|Sql_cmd_truncate_table::truncate_table|Sql_cmd_truncate_table::execute                             ## MDEV-40085
+!err|SIGABRT|ha_innobase::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate|Sql_cmd_truncate_table::truncate_table                                        ## MDEV-40085
+SIGSEGV|ha_innobase::reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables                                                    ## MDEV-40085
+SIGSEGV|ha_innobase::reset|handler::ha_reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse                                                      ## MDEV-40085
 SIGSEGV|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                                                      ## MDEV-40009
 SIGSEGV|Item_func::Item_func|Item_real_func::Item_real_func|Item_xpath_cast_number::Item_xpath_cast_number|create_func_number                                                  ## MDEV-39593
 SIGSEGV|ha_partition::return_top_record|ha_partition::handle_ordered_prev|handler::ha_index_prev|mysql_ha_read                                                                 ## MDEV-39923
