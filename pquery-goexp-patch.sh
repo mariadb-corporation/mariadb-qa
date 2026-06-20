@@ -74,7 +74,8 @@ if [[ "${0}" == *"depge"* || "${2}" == "depge" ]]; then  # Reverse (de-) pge cha
   sed -i "s|^MULTI_THREADS=[0-9]\+|MULTI_THREADS=7|" ${REDUCER}
 else  # Normal, i.e. ~/pge
   sed -i "s|^FORCE_SKIPV=1|FORCE_SKIPV=0|" ${REDUCER}
-  sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=1000|" ${REDUCER}
+  #sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=1000|" ${REDUCER}
+  sed -i "s|^STAGE1_LINES=[0-9]\+|STAGE1_LINES=250|" ${REDUCER}
 fi
 
 # Start reducer

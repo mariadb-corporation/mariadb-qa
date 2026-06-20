@@ -176,6 +176,8 @@ sudo ln -sf "${PREFIX}/bin/clang++"          /usr/bin/clang++
 sudo ln -sf "${PREFIX}/bin/ld.lld"           /usr/bin/ld.lld
 sudo ln -sf "${PREFIX}/bin/ld.lld"           /usr/bin/ld.lld-21
 sudo ln -sf "${PREFIX}/bin/llvm-symbolizer"  /usr/bin/llvm-symbolizer
+# apt-clang-built sanitizer binaries hardcode the version-suffixed symbolizer path
+sudo ln -sf "${PREFIX}/bin/llvm-symbolizer"  /usr/bin/llvm-symbolizer-21
 
 # --- 7. Repoint mariadb-qa sanitizer build scripts -------------------------
 NEW_RT_DIR="$(${PREFIX}/bin/clang -print-runtime-dir)"

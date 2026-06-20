@@ -544,6 +544,7 @@ cat "${1}" | tr -d '`' | \
        s|sql_no_cache|SQL_NO_CACHE|gi; \
        s|after_sync|AFTER_SYNC|gi; \
        s|max_execution_time|MAX_EXECUTION_TIME|gi; \
+       s|connection_id|CONNECTION_ID|gi; \
        s|information_schema\.PROCESSLIST|information_schema.processlist|gi; \
        s|USERSTAT|userstat|gi; \
        s|test / |test/|gi; \

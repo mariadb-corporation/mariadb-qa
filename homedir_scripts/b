@@ -64,6 +64,22 @@ fi
 
 if [ ! -r ../gendirs.sh ]; then echo "Assert: ../gendirs.sh not available, are you executing this from within a BASEDIR?"; exit 1; fi
 
+# Single-instance safety: b/br/bs each sweep all gendirs basedirs (shared servers/ports), so a second
+# concurrent run would conflict. Refuse to start if one is already running (stale lock with a dead PID is taken over).
+B_LOCK="/tmp/.bug_report.b.lock"
+if ! ( set -o noclobber; echo "$$ $(date '+%F %T') ${PWD}" > "${B_LOCK}" ) 2>/dev/null; then
+  B_OLD="$(cat "${B_LOCK}" 2>/dev/null)"; B_OLDPID="$(echo "${B_OLD}" | awk '{print $1}')"
+  B_AGE=$(( $(date +%s) - $(stat -c %Y "${B_LOCK}" 2>/dev/null || echo 0) ))
+  if [ -n "${B_OLDPID}" ] && kill -0 "${B_OLDPID}" 2>/dev/null && [ "${B_AGE}" -lt 7200 ]; then
+    echo "Assert: a bug report (b/br/bs) is already running: ${B_OLD}"
+    echo "Refusing to start a second one (shared gendirs basedirs/ports would conflict). If stale: rm -f ${B_LOCK}"
+    exit 1
+  fi
+  # stale (dead PID, or lock older than 2h - a real run never lasts that long): take it over
+  echo "$$ $(date '+%F %T') ${PWD}" > "${B_LOCK}"
+fi
+trap 'rm -f "${B_LOCK}"' EXIT
+
 if [[ "${1}" == "--"* ]]; then
   echo "Assert: it looks like you are trying to specify a -- mysqld option to this script. This is incorrect."
   echo "Instead, add the following to the testcase (in.sql):"
@@ -218,9 +234,13 @@ if [ -r ../allstrings_merged ]; then
   fi
 fi
 # Add SAN findings to "All strings merged" (and /tmp/allstrings_merged so the "All NEW" pipeline below sees them). Only relevant in non-SAN runs; in SAN runs the SAN basedirs are already covered by allstrings_merged.
+# Drop SAN findings already printed by allstrings_merged (now in /tmp/allstrings_merged): a crash seen in both a regular basedir and a SAN build would otherwise appear twice here, while the "All NEW" section stays single via its own sort -u.
 if [ -n "${SAN_FINDINGS}" ] && [[ "${PWD}" != *"SAN"* && "${1}" != "SAN" && "${1}" != "MSAN" ]]; then
-  echo "${SAN_FINDINGS}" | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log"
-  echo "${SAN_FINDINGS}" >> /tmp/allstrings_merged
+  SAN_FINDINGS="$(echo "${SAN_FINDINGS}" | grep -Fxv -f /tmp/allstrings_merged)"
+  if [ -n "${SAN_FINDINGS}" ]; then
+    echo "${SAN_FINDINGS}" | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log"
+    echo "${SAN_FINDINGS}" >> /tmp/allstrings_merged
+  fi
 fi
 # Print all new bugs that are not in the known bug list
 if [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then

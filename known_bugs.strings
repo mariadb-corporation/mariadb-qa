@@ -174,8 +174,19 @@ GOT_ERROR|Got error 12701|when reading table                   ## MDEV-28676
 GOT_ERROR|Got error 12701|when reading table                   ## MDEV-29455
 GOT_ERROR|Got error 12719|when reading table                   ## SPECIAL-7 (Spider)
 GOT_ERROR|Got error: 98: Address already in use                ## MDEV-37173
+GOT_ERROR|Got error 128|when reading table X                                                                                                                                   ## MDEV-34991
+GOT_ERROR|Got error 194|when reading table X                                                                                                                                   ## MDEV-27952 (discarded tablespace)
+GOT_ERROR|Got error 122|when reading table X                                                                                                                                   ## MDEV-31896
+GOT_ERROR|Got error 12701|when reading table X                                                                                                                                 ## MENT-2102
+GOT_ERROR|Got error 134|when reading table X                                                                                                                                   ## MDEV-34230
+GOT_ERROR|Got error 159|when reading table X                                                                                                                                   ## SPECIAL-51 (to be expected inside HANDLER)
+GOT_ERROR|Got error 175|when reading table X                                                                                                                                   ## MDEV-34230
+GOT_ERROR|Got error 188|when reading table X                                                                                                                                   ## Presumed non-issue (Operation was interrupted, max_statement_time)
 GOT_FATAL_ERROR|Got fatal error 1236                           ## MDEV-33445 or SPECIAL-24 / MDEV-33291, or presumed non-issue (mysql.gtid_slave_pos renamed/deleted, or RESET MASTER was executed, breaking the replication chain)
 INNODB_ERROR|Table mysql.innodb_table_stats not found          ## SPECIAL-30 (non-issue)
+INNODB_ERROR|The table X doesnt have a corresponding tablespace, it was discarded                                                                                              ## SPECIAL-33 (non-issue)
+INNODB_ERROR|User stopword table X does not exist                                                                                                                              ## Non-issue (ref rfi)
+INNODB_ERROR|Cannot add field X in table Y because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page                      ## SPECIAL-46
 INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
 INNODB_ERROR|Invalid column name for stopword table X. Its first column must be named as value ## SPECIAL-53 (non-issue)
 INNODB_ERROR|FTS_DOC_ID must be larger than 0 for table        ## SPECIAL-34 (non-issue)
@@ -286,6 +297,15 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+fixed()|SIGABRT|Item_func_connection_id::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                       ## MDEV-40041
+SIGSEGV|plugin_hton|tp_foreach|ha_commit_checkpoint_request|MYSQL_BIN_LOG::do_checkpoint_request                                                                               ## MDEV-40038
+SIGSEGV|tp_foreach|ha_commit_checkpoint_request|MYSQL_BIN_LOG::do_checkpoint_request|MYSQL_BIN_LOG::reset_logs                                                                 ## MDEV-40038
+marked_for_read()|SIGABRT|Field_varstring::val_decimal|Item_field::val_decimal|VDec::VDec|Arg_comparator::compare_decimal                                                      ## MDEV-40024
+SIGSEGV|TABLE::evaluate_update_default_function|multi_update::do_updates|multi_update::send_eof|do_select                                                                      ## MDEV-38830
+SIGSEGV|ha_resolve_storage_engine_name|ddl_log_rename_table|do_rename|rename_tables                                                                                            ## MDEV-37265
+SIGSEGV|hton_name|ha_resolve_storage_engine_name|ddl_log_rename_table|do_rename                                                                                                ## MDEV-37265
+SIGSEGV|SEL_ARG::index_order_prev|sel_arg_range_seq_next|trace_ranges|get_best_group_min_max                                                                                   ## MDEV-40037
+SIGSEGV|SEL_ARG::store_min|SEL_ARG::store_min_max|step_down_to|sel_arg_range_seq_next                                                                                          ## MDEV-40037
 SIGSEGV|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                                                      ## MDEV-40009
 SIGSEGV|Item_func::Item_func|Item_real_func::Item_real_func|Item_xpath_cast_number::Item_xpath_cast_number|create_func_number                                                  ## MDEV-39593
 SIGSEGV|ha_partition::return_top_record|ha_partition::handle_ordered_prev|handler::ha_index_prev|mysql_ha_read                                                                 ## MDEV-39923
