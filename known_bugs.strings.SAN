@@ -35,6 +35,10 @@ UBSAN|member access within null pointer of type 'struct st_plugin_int'|sql/handl
 UBSAN|load of null pointer of type 'struct st_plugin_int *'|sql/handler.h|plugin_hton|tp_foreach|ha_commit_checkpoint_request|MYSQL_BIN_LOG::do_checkpoint_request             ## MDEV-40038
 UBSAN|member access within null pointer of type 'struct st_plugin_int'|sql/handler.h|plugin_hton|tp_foreach|ha_commit_checkpoint_request|MYSQL_BIN_LOG::do_checkpoint_request  ## MDEV-40038
 ASAN|heap-use-after-free|storage/maria/ma_info.c|maria_status|ha_maria::info|ha_partition::part_records|partition_info::vers_check_limit                                       ## MDEV-28887
+MSAN|use-of-uninitialized-value|sql/sql_class.h|THD::print_aborted_warning|THD::awake_no_mutex|THD::awake|kill_thread_phase_1                                                  ## MDEV-40103
+MSAN|use-of-uninitialized-value|sql/sql_delete.cc|int|Write_record::replace_row|Write_record::write_record|Delayed_insert::handle_inserts                                      ## MDEV-40099
+MSAN|use-of-uninitialized-value|strings/my_vsnprintf.c|process_dbl_arg|my_vsnprintf_ex|push_warning_printf|innodb_max_dirty_pages_pct_update                                   ## MDEV-40086
+UBSAN|member access within null pointer of type 'row_prebuilt_t'|storage/innobase/handler/ha_innodb.cc|ha_innobase::reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables    ## MDEV-40085
 ASAN|heap-buffer-overflow|sql/sql_path.cc|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                    ## MDEV-40009
 MSAN|use-of-uninitialized-value|include/btr0sea.h|btr_sea::hash_table::lock_get|btr_sea::partition::cleanup_after_erase|btr_sea::partition::erase_status|btr_search_update_hash_on_delete         ## MDEV-39848
 MSAN|use-of-uninitialized-value|sql/log.cc|MYSQL_QUERY_LOG::write|Log_to_file_event_handler::log_slow|LOGGER::slow_log_print|log_slow_statement                                ## MDEV-39838
@@ -531,9 +535,6 @@ ASAN|dynamic-stack-buffer-overflow|strings/decimal.c|bin2decimal|my_decimal::my_
 ASAN|dynamic-stack-buffer-overflow|strings/decimal.c|bin2decimal|my_decimal::my_decimal|Field_new_decimal::save_in_field|fill_record                                           ## MDEV-23444
 ASAN|heap-use-after-free|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::store                                                               ## MDEV-34076
 ASAN|heap-use-after-free|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::store_string_aux                                                    ## MDEV-34076
-UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_command.cpp|mroonga_command_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed  ## MDEV-21166
-UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_snippet.cpp|mroonga_snippet_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed  ## MDEV-21166
-UBSAN|member access within null pointer of type 'const struct handlerton'|sql/sql_class.cc|thd_get_ha_data|mrn_get_slot_data|last_insert_grn_id|udf_handler::val_int           ## MDEV-21166
 LSAN|memory leak|mysys/my_malloc.c|interceptor_malloc|my_malloc|alloc_dynamic|insert_dynamic                                                                                   ## MDEV-34005
 LSAN|memory leak|mysys/my_malloc.c|interceptor_malloc|my_malloc|my_realloc|alloc_dynamic                                                                                       ## MDEV-34005
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_dynamic|insert_dynamic                                                                                               ## MDEV-34005
@@ -611,8 +612,6 @@ UBSAN|member call on address X which does not point to an object of type 'Item'|
 UBSAN|member call on address X which does not point to an object of type 'Item'|sql/item_func.cc|Item_func::print_op|Item::print_parenthesised|Item_cond::print|dbug_print_item ## MDEV-31269
 ASAN|use-after-poison|sql/item_func.cc|Item_func::fix_fields|Item::fix_fields_if_needed|Item::fix_fields_if_needed_for_scalar|Item::fix_fields_if_needed_for_bool              ## MDEV-31269
 ASAN|use-after-poison|sql/item_func.cc|Item_func::print_op|Item_bool_rowready_func2::print|Item::print_parenthesised|Item_cond::print                                          ## MDEV-31269
-UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::make_empty_rec_store_default_value|make_empty_rec_store_default|make_empty_rec ## MDEV-15703
-UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable ## MDEV-15703
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|Sql_cmd_grant_table::execute ## MDEV-24814
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|Sql_cmd_grant_table::execute_exact_table|mysql_execute_command ## MDEV-24814
 UBSAN|member access within null pointer of type 'struct KEY'|sql/sql_acl.cc|replace_table_table|mysql_table_grant|mysql_execute_command|mysql_parse                            ## MDEV-24814
@@ -1250,3 +1249,10 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Item_ref::val_str|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii ## Fixed ## MDEV-39523
 # UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Item_ref::val_str|Item_func_envelope::val_str|Item_func_as_wkt::val_str_ascii ## Fixed ## MDEV-39523
 # UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_sum.cc|Item_func_collect::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## Fixed ## MDEV-39523
+# UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::make_empty_rec_store_default_value|make_empty_rec_store_default|make_empty_rec ## Fixed ## MDEV-15703
+# UBSAN|member call on null pointer of type 'struct TABLE_LIST'|sql/item.cc|Item_param::save_in_field|Field::sp_prepare_and_store_item|THD::sp_eval_expr|sp_rcontext::set_variable ## Fixed ## MDEV-15703
+# UBSAN|store to null pointer of type 'struct Item *'|sql/item_cmpfunc.cc|Item_func_not::fix_fields|st_select_lex::pushdown_from_having_into_where|JOIN::optimize_inner|JOIN::optimize ## Fixed ## MDEV-19520
+# UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_command.cpp|mroonga_command_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed  ## Fixed ## MDEV-21166
+# UBSAN|member call on null pointer of type 'struct ContextPool'|storage/mroonga/udf/mrn_udf_snippet.cpp|mroonga_snippet_init|udf_handler::fix_fields|Item_udf_func::fix_fields|Item::fix_fields_if_needed  ## Fixed ## MDEV-21166
+# UBSAN|member access within null pointer of type 'const struct handlerton'|sql/sql_class.cc|thd_get_ha_data|mrn_get_slot_data|last_insert_grn_id|udf_handler::val_int## Fixed ## MDEV-21166
+# UBSAN|store to null pointer of type 'struct Item *'|sql/item_cmpfunc.cc|Item_func_not::fix_fields|st_select_lex::pushdown_from_having_into_where|JOIN::optimize_inner|JOIN::optimize ## Fixed ## MDEV-19520
