@@ -3,7 +3,7 @@
 # including the binutils gold plugin (LLVMgold.so), remove any prior clang/llvm
 # installs, and repoint the mariadb-qa sanitizer build scripts at it.
 #
-# Usage: build_clang.sh [llvm_version]   (default: 22.1.6, latest stable)
+# Usage: build_clang.sh [llvm_version]   (default: latest stable, auto-discovered)
 #
 # ---------------------------------------------------------------------------
 # Plain-english summary of what this solves and why
@@ -50,8 +50,9 @@
 
 set -uo pipefail
 
-LLVM_VERSION="${1:-22.1.6}"
-LLVM_MAJOR="${LLVM_VERSION%%.*}"
+# Version to build: defaults to the latest stable LLVM release (auto-discovered in
+# preflight from upstream tags); pass an explicit llvmorg version as $1 to pin it.
+LLVM_VERSION="${1:-}"
 PREFIX="/usr/local"
 WORK="/test/llvm-build"
 SRC="${WORK}/llvm-project"
@@ -60,7 +61,6 @@ JOBS="$(nproc)"
 MIN_FREE_GB=18
 QA_DIR="${HOME}/mariadb-qa"
 SAN_SCRIPTS=(build_mdpsms_dbg_san.sh build_mdpsms_opt_san.sh)
-OLD_RT_DIR="/usr/lib/llvm-21/lib/clang/21/lib/linux"
 
 log()  { echo "[build_clang $(date +%H:%M:%S)] $*"; }
 warn() { echo "[build_clang WARN] $*" >&2; }
@@ -68,9 +68,18 @@ die()  { echo "[build_clang FAIL] $*" >&2; exit 1; }
 trap 'die "unexpected error at line ${LINENO}"' ERR
 
 # --- 0. Preflight -----------------------------------------------------------
-log "target LLVM ${LLVM_VERSION}, prefix ${PREFIX}, ${JOBS} jobs"
 sudo -n true 2>/dev/null || die "passwordless sudo required"
 for t in cmake ninja git; do command -v "$t" >/dev/null || die "missing tool: $t"; done
+# Resolve the version to build: default = highest stable llvmorg-X.Y.Z tag upstream
+# (release-candidate and -init tags are excluded by the pure X.Y.Z match).
+if [ -z "$LLVM_VERSION" ]; then
+  log "discovering latest stable LLVM release tag"
+  LLVM_VERSION="$(git ls-remote --tags --refs https://github.com/llvm/llvm-project.git 'llvmorg-*' 2>/dev/null \
+    | sed -n 's#.*/llvmorg-\([0-9]\+\.[0-9]\+\.[0-9]\+\)$#\1#p' | sort -V | tail -1 || true)"
+  [ -n "$LLVM_VERSION" ] || die "could not determine latest stable LLVM release (network down?)"
+fi
+LLVM_MAJOR="${LLVM_VERSION%%.*}"
+log "target LLVM ${LLVM_VERSION}, prefix ${PREFIX}, ${JOBS} jobs"
 if [ ! -f /usr/include/plugin-api.h ]; then
   log "plugin-api.h absent; installing binutils-dev (needed for LLVMgold.so)"
   sudo apt-get update -qq && sudo apt-get install -y binutils-dev || die "binutils-dev install failed"
@@ -80,13 +89,18 @@ avail_gb="$(df -BG --output=avail "$(dirname "$WORK")" | tail -1 | tr -dc '0-9')
 
 # --- 1. Source --------------------------------------------------------------
 mkdir -p "$WORK"
-if [ ! -d "${SRC}/.git" ]; then
-  log "cloning llvmorg-${LLVM_VERSION} (shallow)"
-  rm -rf "$SRC"
-  git clone --depth 1 --branch "llvmorg-${LLVM_VERSION}" \
-    https://github.com/llvm/llvm-project.git "$SRC" || die "clone failed (tag llvmorg-${LLVM_VERSION}?)"
+want_tag="llvmorg-${LLVM_VERSION}"
+have_tag=""
+[ -d "${SRC}/.git" ] && have_tag="$(git -C "$SRC" describe --tags --exact-match 2>/dev/null || true)"
+if [ "$have_tag" = "$want_tag" ]; then
+  log "reusing existing source tree ${SRC} (${want_tag})"
 else
-  log "reusing existing source tree ${SRC}"
+  # Version changed (or no tree yet): drop any stale source AND build so a
+  # leftover tree from an interrupted run cannot install the wrong version.
+  log "cloning ${want_tag} (shallow)"
+  rm -rf "$SRC" "$BUILD"
+  git clone --depth 1 --branch "$want_tag" \
+    https://github.com/llvm/llvm-project.git "$SRC" || die "clone failed (tag ${want_tag}?)"
 fi
 
 # --- 2. Configure -----------------------------------------------------------
@@ -131,6 +145,14 @@ fi
 
 # --- 4. Remove old toolchains ----------------------------------------------
 log "removing prior clang/llvm installs"
+# Record version-suffixed symbolizer links already present (left by a prior apt
+# clang). Their suffix is the path baked into legacy SAN binaries still under test;
+# the apt purge below removes the package-owned ones, so they are recreated against
+# the freshly built symbolizer in step 6 to keep those binaries symbolizing.
+EXISTING_SUFFIXED_SYMBOLIZERS=()
+for s in /usr/bin/llvm-symbolizer-* /usr/local/bin/llvm-symbolizer-*; do
+  if [ -e "$s" ]; then EXISTING_SUFFIXED_SYMBOLIZERS+=("$s"); fi
+done
 # Match only version-suffixed LLVM toolchain packages (from apt.llvm.org), never
 # bare system libs such as libunwind8. No autoremove: it cascades into unrelated
 # packages (perf tools, tcmalloc, etc.) once a base lib is pulled.
@@ -145,13 +167,15 @@ sudo rm -rf /usr/lib/llvm-*
 # with the existing /usr/local clang, and "ninja install" can re-touch a compile.
 # Same-version files are overwritten by install; stale OTHER-version files under
 # the prefix are pruned AFTER install (see step 5).
-# stale symlinks
-sudo rm -f /usr/bin/llvm-symbolizer-21 /usr/bin/ld.lld /usr/bin/ld.lld-21
-# trim old apt.llvm.org channels (-17 / -21) so they are not reinstalled.
-# Use @ as the s/// delimiter; | is taken by the (17|21) alternation.
+# stale linker symlinks (ld.lld is recreated in step 6; ld.lld-21 is unused). The
+# suffixed symbolizers captured above are deliberately left for step 6 to re-link.
+sudo rm -f /usr/bin/ld.lld /usr/bin/ld.lld-21
+# Comment out version-suffixed apt.llvm.org channels so an apt upgrade cannot
+# reinstall a packaged clang/llvm that would shadow this source build. The
+# unversioned channel is left active. @ is the s/// delimiter (URLs contain /).
 for lst in /etc/apt/sources.list.d/*llvm*.list; do
   [ -f "$lst" ] || continue
-  sudo sed -i -E 's@^(deb .*llvm-toolchain-[a-z]+-(17|21) .*)$@# \1@' "$lst"
+  sudo sed -i -E 's@^(deb .*llvm-toolchain-[a-z]+-[0-9]+ .*)$@# \1@' "$lst"
 done
 
 # --- 5. Install -------------------------------------------------------------
@@ -174,10 +198,17 @@ done
 sudo ln -sf "${PREFIX}/bin/clang"            /usr/bin/clang
 sudo ln -sf "${PREFIX}/bin/clang++"          /usr/bin/clang++
 sudo ln -sf "${PREFIX}/bin/ld.lld"           /usr/bin/ld.lld
-sudo ln -sf "${PREFIX}/bin/ld.lld"           /usr/bin/ld.lld-21
+# unversioned symbolizer: resolved by source-built sanitizer binaries (no suffix)
 sudo ln -sf "${PREFIX}/bin/llvm-symbolizer"  /usr/bin/llvm-symbolizer
-# apt-clang-built sanitizer binaries hardcode the version-suffixed symbolizer path
-sudo ln -sf "${PREFIX}/bin/llvm-symbolizer"  /usr/bin/llvm-symbolizer-21
+# version-suffixed symbolizer: re-link every suffixed link that existed before the
+# purge (apt-built legacy SAN binaries bake /usr/bin/llvm-symbolizer-<major>) at the
+# freshly built symbolizer; its protocol is version-compatible across LLVM majors
+if [ "${#EXISTING_SUFFIXED_SYMBOLIZERS[@]}" -gt 0 ]; then
+  for s in "${EXISTING_SUFFIXED_SYMBOLIZERS[@]}"; do
+    sudo ln -sf "${PREFIX}/bin/llvm-symbolizer" "$s"
+    log "re-linked ${s} -> ${PREFIX}/bin/llvm-symbolizer"
+  done
+fi
 
 # --- 7. Repoint mariadb-qa sanitizer build scripts -------------------------
 NEW_RT_DIR="$(${PREFIX}/bin/clang -print-runtime-dir)"
@@ -190,16 +221,18 @@ for f in "${SAN_SCRIPTS[@]}"; do
   p="${QA_DIR}/${f}"
   [ -f "$p" ] || { warn "san script not found: $p"; continue; }
   cp -f "$p" "/tmp/${f}.pre_build_clang.bak"
-  sed -i "s|${OLD_RT_DIR}|${NEW_RT_DIR}|g" "$p"
+  # Repoint whatever runtime-archive dir the script currently names (any prefix,
+  # any clang major) at the freshly built one, keyed on the libclang_rt filename.
+  sed -i -E "s#[^ ']*/libclang_rt\.(asan|ubsan_standalone)-x86_64\.a#${NEW_RT_DIR}/libclang_rt.\1-x86_64.a#g" "$p"
   if grep -q "${NEW_RT_DIR}/libclang_rt.asan-x86_64.a" "$p"; then
     log "updated ${f} -> ${NEW_RT_DIR}"
   else
-    warn "${f}: sanitizer path not rewritten (already changed?)"
+    warn "${f}: sanitizer path not rewritten (libclang_rt path not found?)"
   fi
 done
 
 # --- 8. Self-test -----------------------------------------------------------
-log "self-test: clang version + LLVMgold.so via bfd ld + sanitizers"
+log "self-test: clang version + LLVMgold.so via bfd ld + sanitizers + symbolizer"
 "${PREFIX}/bin/clang" --version | head -1
 ct="$(mktemp /tmp/build_clang_test.XXXX.c)"; printf 'int main(){return 0;}\n' > "$ct"
 "${PREFIX}/bin/clang" "$ct" -flto -fuse-ld=bfd -o "${ct}.out" \
@@ -207,6 +240,13 @@ ct="$(mktemp /tmp/build_clang_test.XXXX.c)"; printf 'int main(){return 0;}\n' > 
 "${PREFIX}/bin/clang" "$ct" -fsanitize=address,undefined -o "${ct}.san" \
   || die "self-test: asan+ubsan link failed"
 rm -f "$ct" "${ct}.out" "${ct}.san"
+"$(readlink -f /usr/bin/llvm-symbolizer)" --version >/dev/null \
+  || die "self-test: /usr/bin/llvm-symbolizer not working"
+if [ "${#EXISTING_SUFFIXED_SYMBOLIZERS[@]}" -gt 0 ]; then
+  for s in "${EXISTING_SUFFIXED_SYMBOLIZERS[@]}"; do
+    [ -x "$(readlink -f "$s")" ] || die "self-test: ${s} does not resolve to an executable"
+  done
+fi
 log "self-test passed"
 
 # --- 9. Cleanup -------------------------------------------------------------
@@ -219,5 +259,6 @@ log "DONE."
 echo "  clang        : $(${PREFIX}/bin/clang --version | head -1)"
 echo "  LLVMgold.so  : ${PREFIX}/lib/LLVMgold.so ($(stat -c%s "${PREFIX}/lib/LLVMgold.so") bytes)"
 echo "  runtime dir  : ${NEW_RT_DIR}"
+echo "  symbolizer   : /usr/bin/llvm-symbolizer + ${#EXISTING_SUFFIXED_SYMBOLIZERS[@]} re-linked suffixed link(s) -> ${PREFIX}/bin/llvm-symbolizer"
 echo "  san scripts  : ${SAN_SCRIPTS[*]} repointed (backups in /tmp/*.pre_build_clang.bak)"
 echo "  free on /    : $(df -BG --output=avail / | tail -1 | tr -d ' ')"
