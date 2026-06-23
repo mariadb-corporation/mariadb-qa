@@ -297,6 +297,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+mod_tables.size() == 0 || mod_tables.begin()->first == table|SIGABRT|trx_t::reset_and_truncate_undo|ha_innobase::extra|extra_cb|ha_partition::loop_partitions_over_map         ## MDEV-37974
 fixed()|SIGABRT|Item_func_connection_id::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                       ## MDEV-40041
 SIGSEGV|plugin_hton|tp_foreach|ha_commit_checkpoint_request|MYSQL_BIN_LOG::do_checkpoint_request                                                                               ## MDEV-40038
 SIGSEGV|tp_foreach|ha_commit_checkpoint_request|MYSQL_BIN_LOG::do_checkpoint_request|MYSQL_BIN_LOG::reset_logs                                                                 ## MDEV-40038
