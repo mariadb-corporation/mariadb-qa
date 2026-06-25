@@ -33,7 +33,7 @@ CLANG_VERSION="${CLANG_VERSION:-20}"
 
 export MSAN_LIBDIR=/MSAN_libs  # Do not change this path without changing the two build_mdpsms_dbg/opt_san.sh scripts also
 if [ -d "${MSAN_LIBDIR}" ]; then
-  echo "The directory ${MSAN_LIBDIR} already exists, please remove or rename it"
+  echo "The directory ${MSAN_LIBDIR} already exists, please remove it, or rename it (to .OLD for example)"
   exit 1
 fi
 

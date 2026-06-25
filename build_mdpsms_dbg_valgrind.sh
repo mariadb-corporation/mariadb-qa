@@ -95,12 +95,14 @@ PREFIX=
 FB=0
 MS=0
 MD=0
+ES=0
 if [ ${MYSQL_VERSION_MAJOR} -eq 8 ]; then  # CMake Error at cmake/zlib.cmake:136 (MESSAGE): ZLIB version must be at least 1.2.12, found 1.2.11.
   ZLIB="-DWITH_ZLIB=bundled"
 fi
 if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-1]$ ]]; then
   MD=1
   PREFIX="MD${DATE}"
+  if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then ES=1; fi
   ZLIB="-DWITH_ZLIB=bundled"  # 10.1 will fail with requirement for WITH_ZLIB=bundled. Building 10.1-10.5 with bundled ftm.
 elif [ ! -d rocksdb ]; then  # MS, PS
   VERSION_EXTRA="$(grep "MYSQL_VERSION_EXTRA=" VERSION | sed 's|MYSQL_VERSION_EXTRA=||;s|[ \t]||g')"
@@ -132,9 +134,17 @@ if [ $SSL_MYSQL57_HACK -eq 1 -a $FB -ne 1 ]; then
   SSL="-DWITH_SSL=bundled"
 fi
 
-# MariaDB: use bundled SSL
+# MariaDB ES ships with system OpenSSL; CS uses bundled wolfssl.
+# ES uses system OpenSSL only when its dev libs/headers are present, else falls back to bundled.
 if [ ${MD} -eq 1 ]; then
   SSL="-DWITH_SSL=bundled"
+  if [ ${ES} -eq 1 ]; then
+    if { command -v pkg-config >/dev/null 2>&1 && pkg-config --exists openssl; } || [ -r /usr/include/openssl/ssl.h ]; then
+      SSL="-DWITH_SSL=system"
+    else
+      echo "Note: OpenSSL dev not found; ES build falling back to bundled wolfssl."
+    fi
+  fi
 fi
 
 # Use CLANG compiler

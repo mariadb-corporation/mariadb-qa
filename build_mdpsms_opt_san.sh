@@ -105,6 +105,7 @@ PREFIX=
 FB=0
 MS=0
 MD=0
+ES=0
 if [ ${USE_SAN} -eq 1 ]; then
   if [ ${USE_TSAN} -eq 1 ]; then
     echo "Building TSAN..."
@@ -131,6 +132,7 @@ if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-5]$ ]]; then  # Provision for MariaDB 10.
   MD=1
   if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then
     PREFIX="${PREFIX}EMD${DATE}"
+    ES=1
   else
     PREFIX="${PREFIX}MD${DATE}"
   fi
@@ -165,9 +167,17 @@ if [ $SSL_MYSQL57_HACK -eq 1 -a $FB -ne 1 ]; then
   SSL="-DWITH_SSL=bundled"
 fi
 
-# MariaDB: use bundled SSL
+# MariaDB ES ships with system OpenSSL; CS uses bundled wolfssl.
+# ES uses system OpenSSL only when its dev libs/headers are present, else falls back to bundled.
 if [ ${MD} -eq 1 ]; then
   SSL="-DWITH_SSL=bundled"
+  if [ ${ES} -eq 1 ]; then
+    if { command -v pkg-config >/dev/null 2>&1 && pkg-config --exists openssl; } || [ -r /usr/include/openssl/ssl.h ]; then
+      SSL="-DWITH_SSL=system"
+    else
+      echo "Note: OpenSSL dev not found; ES build falling back to bundled wolfssl."
+    fi
+  fi
 fi
 
 # Use CLANG compiler
