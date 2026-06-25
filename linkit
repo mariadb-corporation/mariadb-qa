@@ -67,6 +67,7 @@ ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/watchdog /home/${USER}/watchdog 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/wasabi /home/${USER}/wasabi 2>&1
 ln -fs /home/${USER}/mariadb-qa/testcase_prettify.sh /home/${USER}/tcp 2>&1
+ln -fs /home/${USER}/mariadb-qa/claude_prettify.sh /home/${USER}/clp 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/pge 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-goexp-patch.sh /home/${USER}/depge 2>&1
 ln -fs /home/${USER}/mariadb-qa/pquery-go-expert.sh /home/${USER}/pg 2>&1
@@ -266,6 +267,7 @@ alias rfil='vi ${HOME}/mariadb-qa/REGEX_ERRORS_LASTLINE'  # Open error log last 
 alias reg='vi /test/REGEX_EXCLUDE'  # Open the REGEX exclude dir for gendirs.sh (basedirs)
 alias v='${HOME}/v '       # Opens reducer{trial}.sh for a given trial (pass trial number)
 alias tcp='${HOME}/tcp '   # Testcase prettify (pass SQL file)
+alias clp='${HOME}/clp'    # CLaude prettify: reflow indented Claude output to copy-paste ready paragraphs (paste, Ctrl-D)
 alias tl='tail log/master.err' # Display tail of mariadbd/mysqld error log in the current BASEDIR or pquery trial dir
 alias prg='${HOME}/pr | grep -i ' # Search ${HOME}/pr for a specific string or trial number (pass search string or trial number)
 alias j='. ${HOME}/j '     # Jump to a particular /data directory (pass, for example, workdir number)
