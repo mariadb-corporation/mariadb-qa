@@ -5,28 +5,46 @@
 # Reflows indented Claude Code terminal output into copy-and-paste ready text.
 # Per input block it strips 2+ leading spaces from each line, joins wrapped lines
 # with a single space, and keeps one blank line between paragraphs (a blank line
-# in the input). Loops: paste a block, then Ctrl-D to prettify it. Ctrl-D on empty
-# input, or Ctrl-C, exits. Prompts go to stderr so stdout holds only the result
-# (handy for piping: clp < file > out).
+# in the input). Jira {code}/{noformat} fences pass through verbatim (only the
+# base indent is removed), and lines beginning with a "- " or "* " bullet each
+# stay on their own line. Loops: paste a block, then Ctrl-D to prettify it.
+# Ctrl-D on empty input, or Ctrl-C, exits. Prompts go to stderr so stdout holds
+# only the result (handy for piping: clp < file > out).
 
 set +H
 
 prettify() {
   awk '
-    function flush() {
-      if (para != "") {
-        if (printed) print ""
-        print para
-        printed = 1
-        para = ""
-      }
+    function flush(   bullet) {
+      if (para == "") return
+      bullet = (para ~ /^[-*] /)
+      if (printed && !(bullet && lastbullet)) print ""
+      print para
+      printed = 1
+      lastbullet = bullet
+      para = ""
     }
     {
-      line = $0
+      raw = $0
+      sub(/[ \t]+$/, "", raw)
+      if (incode) {
+        bare = raw; sub(/^[ \t]+/, "", bare)
+        if (bare == fence) { print bare; incode = 0; next }
+        code = raw; sub(/^  /, "", code); print code; next
+      }
+      line = raw
       sub(/^  +/, "", line)
-      sub(/[ \t]+$/, "", line)
-      if (line == "") flush()
-      else para = (para == "" ? line : para " " line)
+      if (line ~ /^\{(code|noformat)(:[^}]*)?\}$/) {
+        flush()
+        if (printed) print ""
+        print line
+        printed = 1; lastbullet = 0; incode = 1
+        fence = (line ~ /^\{code/) ? "{code}" : "{noformat}"
+        next
+      }
+      if (line == "") { flush(); next }
+      if (line ~ /^[-*] /) { flush(); para = line; next }
+      para = (para == "" ? line : para " " line)
     }
     END { flush() }
   '
