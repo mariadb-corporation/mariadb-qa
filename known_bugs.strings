@@ -297,6 +297,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!is_valid_datetime() || fraction_remainder(((item->decimals) < (6) ? (item->decimals) : (6))) == 0|SIGABRT|Datetime_truncation_not_needed::Datetime_truncation_not_needed|Datetime_truncation_not_needed::Datetime_truncation_not_needed|Item_func_ifnull::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date      ## MDEV-35543
 m_using_packed_sortkeys == (sort_keys != __null && sort_keys->using_packed_sortkeys())|SIGABRT|Sort_param::using_packed_sortkeys|filesort|create_sort_index|st_join_table::sort_table   ## MDEV-40223
 mod_tables.size() == 0 || mod_tables.begin()->first == table|SIGABRT|trx_t::reset_and_truncate_undo|ha_innobase::extra|extra_cb|ha_partition::loop_partitions_over_map         ## MDEV-37974
 fixed()|SIGABRT|Item_func_connection_id::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field|Item::save_in_field                                       ## MDEV-40041
