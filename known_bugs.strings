@@ -297,6 +297,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+memcmp(field, field_ref_zero, 7)|SIGABRT|trx_undo_page_report_modify|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_clust_rec_by_insert                  ## MDEV-40239
+uint16_t(roll_ptr) >= 38U + (6 + (2 * 6U))|SIGABRT|trx_undo_prev_version_build|row_purge_is_unsafe|row_purge_poss_sec|row_purge_remove_sec_if_poss_leaf                        ## MDEV-40239
 SIGSEGV|hp_movelink|hp_delete_key|heap_delete|ha_heap::delete_row                                                                                                              ## MDEV-40232
 !is_valid_datetime() || fraction_remainder(((item->decimals) < (6) ? (item->decimals) : (6))) == 0|SIGABRT|Datetime_truncation_not_needed::Datetime_truncation_not_needed|Datetime_truncation_not_needed::Datetime_truncation_not_needed|Item_func_ifnull::date_op|Type_handler_temporal_result::Item_func_hybrid_field_type_get_date      ## MDEV-35543
 m_using_packed_sortkeys == (sort_keys != __null && sort_keys->using_packed_sortkeys())|SIGABRT|Sort_param::using_packed_sortkeys|filesort|create_sort_index|st_join_table::sort_table   ## MDEV-40223
