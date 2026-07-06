@@ -1580,7 +1580,7 @@ pquery_test(){
         exit 1
       fi
       for GEN_RUN_TRY in 1 2 3; do
-        ./generator --threads 4 --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} > /dev/null
+        ./generator --threads 4 ${GENERATORCPP_OPTIONS:-} --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} > /dev/null
         if [ -r out${RANDOMD}.sql ]; then break; fi
         echoit "Note: out${RANDOMD}.sql not present in ${PWD} after generator execution (attempt ${GEN_RUN_TRY}/3); pausing 30s and retrying..."
         sleep 30

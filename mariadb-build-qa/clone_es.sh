@@ -33,3 +33,5 @@ if [[ "${1}" == *"enterprise"* ]]; then
 else
   git clone --depth=1 --recurse-submodules -j8 --branch=$1-enterprise https://github.com/mariadb-corporation/MariaDBEnterprise.git $1-es &
 fi
+
+wait  # Block until the backgrounded clone finishes, so a synchronous caller (e.g. a build script) can build right after. cloneall_es.sh backgrounds clone_es.sh itself, so its parallelism is unaffected.

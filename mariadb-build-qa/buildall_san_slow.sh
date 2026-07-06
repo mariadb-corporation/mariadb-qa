@@ -43,7 +43,7 @@ if [ "${STY}" == "" ]; then
   return 2> /dev/null; exit 0
 fi
 
-sed -i 's|^ASAN_OR_MSAN=1|ASAN_OR_MSAN=0|' ~/mariadb-qa/build_mdpsms_dbg_san.sh  # Set to ASAN (not MSAN). For MSAN builds, use the __msan scripts (TODO: add msan builds to this san_slow build script
+sed -i 's|^ASAN_OR_MSAN=1|ASAN_OR_MSAN=0|' ~/mariadb-qa/build_mdpsms_dbg_san.sh  # Set to ASAN (not MSAN). For MSAN builds use buildall_msan_slow.sh (kept separate so it never flips the shared san scripts to MSAN)
 
 DIR=${PWD}
 cleanup_dirs(){

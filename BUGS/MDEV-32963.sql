@@ -4,3 +4,5 @@ SELECT JSON_INSERT('{ "a" : "foo","b" : [ 1,2,3 ] }','$.a[1]',true);
 SELECT JSON_VALUE('["foo"]','$**[-33038035107]')AS f;
 
 SELECT JSON_EXTRACT('[["A",2]]','$[18446744073709551616]');
+
+SELECT JSON_VALUE('["a','$**[-3303803510') AS f;

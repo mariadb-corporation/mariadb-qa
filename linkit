@@ -94,6 +94,31 @@ if [ -L "/home/${USER}/usage" ]; then rm "/home/${USER}/usage"; fi
 # ln -fs /home/${USER}/mariadb-qa/claude_usage.sh /home/${USER}/u 2>&1      # Claude usage meter (short)
 # ln -fs /home/${USER}/mariadb-qa/claude_usage.sh /home/${USER}/usage 2>&1  # Claude usage meter (long)
 
+# Claude Code skills: link shared skills from mariadb-qa/skills into ${HOME}/.claude/skills
+# Bare invocation is preserved; only manages its own links, never touches unmanaged skill dirs
+if [ -d "${HOME}/.claude" ]; then
+  mkdir -p "${HOME}/.claude/skills"
+  for SKILL in "${HOME}"/mariadb-qa/skills/*/; do
+    [ -f "${SKILL}SKILL.md" ] && ln -fsn "${SKILL%/}" "${HOME}/.claude/skills/$(basename "${SKILL}")"
+  done
+  for SL in "${HOME}"/.claude/skills/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
+fi
+
+# Public-safety git hooks for this repo (block confidential content reaching the public remote)
+if [ -d "${HOME}/mariadb-qa/hooks" ]; then
+  chmod +x "${HOME}"/mariadb-qa/hooks/* "${HOME}"/mariadb-qa/skills/_check/*.sh 2>/dev/null
+  git -C "${HOME}/mariadb-qa" config core.hooksPath "${HOME}/mariadb-qa/hooks"
+  # Seed a PRIVATE local denylist template (populate it yourself; it is never committed)
+  DL="${HOME}/.config/mariadb-qa/public_safety_denylist"
+  if [ ! -f "$DL" ]; then
+    mkdir -p "${HOME}/.config/mariadb-qa"
+    printf '%s\n' \
+      '# Private confidential patterns for public_safety_scan.sh - NEVER committed.' \
+      '# One extended-regex per line (case-insensitive). Prefix a line with PATH: for path matching.' \
+      '# Examples:' '# PATH:(^|/)my_private_dir/' '# my_internal_codename' > "$DL"
+  fi
+fi
+
 # Git bisect clone & main scripts
 ln -fs /home/${USER}/mariadb-qa/clone_all_full_for_bisect.sh /test/git-bisect/clone_all_full_for_bisect.sh 2>&1
 ln -fs /home/${USER}/mariadb-qa/contains_commit_check.sh /test/git-bisect/contains_commit_check.sh 2>&1

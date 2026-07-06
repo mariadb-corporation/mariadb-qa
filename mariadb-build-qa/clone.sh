@@ -12,3 +12,5 @@ fi
 
 # For full trees, use:
 #git clone --recurse-submodules -j8 --branch=$1 https://github.com/MariaDB/server.git $1 &
+
+wait  # Block until the backgrounded clone finishes, so a synchronous caller (e.g. a build script) can build right after. cloneall.sh backgrounds clone.sh itself, so its parallelism is unaffected.

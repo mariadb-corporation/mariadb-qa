@@ -75,11 +75,13 @@ fi
 if [ "${SKIP_CLANG_INSTALL}" -ne 1 ]; then
   # apt.llvm.org ships versioned libc++-N-dev that all depend on the UNVERSIONED libc++1/libc++abi1; a leftover
   # apt.llvm.org repo for a DIFFERENT llvm version makes apt try to co-install two versions of those and fail with
-  # "held broken packages". Remove any apt.llvm.org repo line that is not for our CLANG_VERSION before installing.
+  # "held broken packages". Remove any apt.llvm.org repo line that is not for our CLANG_VERSION before installing,
+  # including an UNVERSIONED llvm-toolchain-<suite> line (no -N suffix) which tracks the latest llvm and pulls a
+  # newer libc++1/libc++abi1 than our CLANG_VERSION -dev packages depend on.
   for f in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
     [ -r "$f" ] || continue
     if grep -q "apt.llvm.org" "$f" && grep -qvE "llvm-toolchain-[a-z]+-${CLANG_VERSION}([^0-9]|\$)" <(grep "apt.llvm.org" "$f"); then
-      sudo sed -i "/apt.llvm.org.*llvm-toolchain-[a-z]*-[0-9]*/{/llvm-toolchain-[a-z]*-${CLANG_VERSION}\([^0-9]\|\$\)/!d}" "$f"
+      sudo sed -i "/apt.llvm.org.*llvm-toolchain/{/llvm-toolchain-[a-z]*-${CLANG_VERSION}\([^0-9]\|\$\)/!d}" "$f"
     fi
   done
   wget https://apt.llvm.org/llvm.sh

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Claude Code find: search all session logs for a regex and print matching session IDs.
+# Claude Code find: search top-level session logs for a regex and print matching session IDs.
+# agent-*.jsonl subagent logs are skipped; only top-level sessions are searched.
 # Usage:
-#   clf <regex>             — search all *.jsonl logs and list matching session IDs
+#   clf <regex>             — list the top 13 matching sessions, most hits first
+#   clf <regex> --all       — list every matching session
 #   clf 'claude.*git'       — example: lines containing 'claude' followed by 'git'
 # The pattern is a Python regex (re.search, case-insensitive) and is matched
 # against the raw JSONL lines as well as the extracted message text content.
-# Output: one row per matching session (most recent first):
+# Output: one row per matching session, sorted by hit count descending:
 #   <sid8>  MM-DD HH:MM  <cwd>  <first user prompt>   [N hits]
 # Created by Roel Van de Paar, MariaDB (with Claude Code assistance)
 
@@ -16,18 +18,28 @@ if [ ! -d "$PROJECTS_DIR" ]; then
   exit 1
 fi
 
-if [ -z "${1:-}" ]; then
-  echo "Usage: clf <regex>    (e.g. clf 'claude.*git')" >&2
+SHOW_ALL=0
+PATTERN=""
+for arg in "$@"; do
+  if [ "$arg" = "--all" ]; then
+    SHOW_ALL=1
+  elif [ -z "$PATTERN" ]; then
+    PATTERN="$arg"
+  fi
+done
+
+if [ -z "$PATTERN" ]; then
+  echo "Usage: clf <regex> [--all]    (e.g. clf 'claude.*git')" >&2
   exit 2
 fi
 
-PATTERN="$1"
-
-python3 - "$PROJECTS_DIR" "$PATTERN" <<'PYEOF'
+python3 - "$PROJECTS_DIR" "$PATTERN" "$SHOW_ALL" <<'PYEOF'
 import json, os, re, sys, time
 
 projects_dir = sys.argv[1]
 pattern_str = sys.argv[2]
+show_all = sys.argv[3] == "1"
+TOP_N = 13
 
 try:
     pattern = re.compile(pattern_str, re.IGNORECASE)
@@ -39,6 +51,8 @@ sessions = []
 for dirpath, _, files in os.walk(projects_dir):
     for f in files:
         if not f.endswith(".jsonl"):
+            continue
+        if f.startswith("agent-"):
             continue
         path = os.path.join(dirpath, f)
         try:
@@ -124,10 +138,15 @@ if not rows:
     print(f"No sessions matched /{pattern_str}/i.", file=sys.stderr)
     sys.exit(4)
 
-cwd_w = min(40, max((len(r[2]) for r in rows), default=10))
-for sid, ts, cwd_short, prompt_line, hits in rows:
+rows.sort(key=lambda r: r[4], reverse=True)
+shown = rows if show_all else rows[:TOP_N]
+
+cwd_w = min(40, max((len(r[2]) for r in shown), default=10))
+for sid, ts, cwd_short, prompt_line, hits in shown:
     print(f"{sid[:8]}  {ts}  {cwd_short:<{cwd_w}.{cwd_w}}  {prompt_line}   [{hits} hit{'s' if hits != 1 else ''}]")
 
 print("", file=sys.stderr)
 print(f"{len(rows)} session(s) matched /{pattern_str}/i.", file=sys.stderr)
+if not show_all and len(rows) > TOP_N:
+    print(f"Showing top {TOP_N} sorted by hits; {len(rows) - TOP_N} more found - use --all to see all.", file=sys.stderr)
 PYEOF

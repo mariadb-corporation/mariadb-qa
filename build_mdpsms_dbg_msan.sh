@@ -330,10 +330,10 @@ FLAGS="${FLAGS} -DCMAKE_BUILD_TYPE=Debug"
 CURPATH="$(echo $PWD | sed 's|.*/||')"
 
 cd ..
-rm -Rf ${CURPATH}_dbg_san
-rm -f /tmp/mdpsms_dbg_san_build_${RANDOMD}
-cp -R ${CURPATH} ${CURPATH}_dbg_san
-cd ${CURPATH}_dbg_san
+rm -Rf ${CURPATH}_dbg_msan
+rm -f /tmp/mdpsms_dbg_msan_build_${RANDOMD}
+cp -R ${CURPATH} ${CURPATH}_dbg_msan
+cd ${CURPATH}_dbg_msan
 
 # Replace any old CMAKE_MINIMUM_REQUIRED strings like 'CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)' in all CMakeLists.txt files
 # Ref for example https://jira.mariadb.org/browse/MCOL-6004 and https://jira.mariadb.org/browse/MENT-2383
@@ -375,18 +375,18 @@ if [ $FB -eq 0 ]; then
   CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} ${XPAND} -DWITH_TOKUDB=0 -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DWITH_DEBUG_SYNC=ON -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_{SAFEMALLOC,NUMA}=OFF -DWITH_UNIT_TESTS=OFF -DCONC_WITH_{UNITTEST,SSL}=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} -DWITH_ROCKSDB=${WITH_ROCKSDB} -DWITH_PAM=ON -DWITH_MARIABACKUP=0 -DFORCE_INSOURCE_BUILD=1 -DWITH_INNODB_EXTRA_DEBUG=ON ${SAN} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
-  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_san_build_${RANDOMD}
+  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_msan_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 else
   # FB build
   CMD="cmake . $CLANG $AFL $SSL -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DWITH_DEBUG_SYNC=ON -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} ${FLAGS}"
   echo "Build command used:"
   echo $CMD
-  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_san_build_${RANDOMD}
+  eval "$CMD" 2>&1 | tee /tmp/psms_dbg_msan_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 fi
 
-make -j${MAKE_THREADS} | tee -a /tmp/psms_dbg_san_build_${RANDOMD}
+make -j${MAKE_THREADS} | tee -a /tmp/psms_dbg_msan_build_${RANDOMD}
 if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 
 echo $CMD > BUILD_CMD_CMAKE
@@ -394,7 +394,7 @@ if [ ! -r ./scripts/make_binary_distribution ]; then  # Note: ./scripts/binary_d
   echo "Assert: ./scripts/make_binary_distribution was not found. Terminating."
   exit 1
 else
-  ./scripts/make_binary_distribution | tee -a /tmp/psms_dbg_san_build_${RANDOMD}
+  ./scripts/make_binary_distribution | tee -a /tmp/psms_dbg_msan_build_${RANDOMD}
   if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for ./scripts/make_binary_distribution!"; exit 1; fi
 fi
 

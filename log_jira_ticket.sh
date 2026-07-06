@@ -45,8 +45,10 @@ Modes:
   --createmeta       List required fields for --project / --type
   --comment KEY      Add a comment to issue KEY (body via -d / --description-file)
   --link KEY         Link KEY to related issues: --link KEY --relates OTHER [--relates …] [--link-type Relates]
-  --edit KEY         Add versions to an EXISTING issue (additive, never replaces):
+  --edit KEY         Add versions and/or labels to an EXISTING issue (additive, never replaces):
                        --edit KEY --affects-version 13.0 [--affects-version 13.1] [--fix-version 13.0] [--es-version 13.0]
+                       --edit KEY --label corruption [--label security]
+                       --edit KEY --label corruption --affects-version 13.1   (versions + labels combinable)
                      Use mainline X.Y names only (13.0, not 13.0.1).
 
 Create options:
@@ -258,13 +260,14 @@ case "$MODE" in
     exit $rc ;;
   edit)
     [ -n "$EDIT_KEY" ] || die "--edit requires an issue key (e.g. MDEV-12345)"
-    av_json="$(arr_addname AFFECTS)"; fv_json="$(arr_addname FIXINS)"; ev_json="$(arr_addstr ESVERS)"
-    upd="$(jq -n --argjson av "$av_json" --argjson fv "$fv_json" --argjson ev "$ev_json" \
+    av_json="$(arr_addname AFFECTS)"; fv_json="$(arr_addname FIXINS)"; ev_json="$(arr_addstr ESVERS)"; lb_json="$(arr_addstr LABELS)"
+    upd="$(jq -n --argjson av "$av_json" --argjson fv "$fv_json" --argjson ev "$ev_json" --argjson lb "$lb_json" \
       '{}
        + (if ($av|length) > 0 then {versions: $av}            else {} end)
        + (if ($fv|length) > 0 then {fixVersions: $fv}         else {} end)
-       + (if ($ev|length) > 0 then {customfield_13204: $ev}   else {} end)')"
-    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version"
+       + (if ($ev|length) > 0 then {customfield_13204: $ev}   else {} end)
+       + (if ($lb|length) > 0 then {labels: $lb}              else {} end)')"
+    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version/--label"
     payload="$(jq -n --argjson u "$upd" '{update: $u}')"
     echo "=== Edit (additive) : PUT $JIRA_URL/rest/api/2/issue/$EDIT_KEY ===" >&2
     echo "=== Update payload ===" >&2
@@ -273,7 +276,7 @@ case "$MODE" in
     require_auth
     echo "=== As : $WHOAMI ===" >&2
     if [ "$ASSUME_YES" != 1 ]; then
-      echo "Confirm adding these versions to $EDIT_KEY. Press Enter 3x (Ctrl-C to abort)." >&2
+      echo "Confirm adding these versions/labels to $EDIT_KEY. Press Enter 3x (Ctrl-C to abort)." >&2
       read -rp "1x... " _ < /dev/tty
       read -rp "2x... " _ < /dev/tty
       read -rp "3x... " _ < /dev/tty
