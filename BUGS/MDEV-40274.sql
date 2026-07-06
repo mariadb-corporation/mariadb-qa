@@ -1,0 +1,4 @@
+CREATE TABLE t5 (c1 INT) ENGINE=InnoDB;
+SET SESSION debug_dbug='+d,row_ins_sec_index_entry_timeout';
+ALTER TABLE t5 DISCARD TABLESPACE;
+ALTER TABLE t5 ADD COLUMN cg16 INT AS(c1) VIRTUAL;
