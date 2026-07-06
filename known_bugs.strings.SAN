@@ -29,6 +29,8 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #UBSAN|load of value X, which is not a valid value for type 'enum Keytype'|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_create_foreign_key|ha_mroonga::storage_create|ha_mroonga::create|handler::ha_create ## MDEV-37958
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'HASH_INFO' (aka 'struct st_hp_hash_info')|storage/heap/hp_hash.c|hp_movelink|hp_delete_key|heap_delete|ha_heap::delete_row    ## MDEV-40232
+UBSAN|member access within null pointer of type 'MARIA_STATE_HISTORY' (aka 'struct st_state_history')|storage/maria/ma_state.c|_ma_reset_history|_ma_trnman_end_trans_hook|trnman_end_trn|ma_commit  ## MDEV-40202
 ASAN|heap-use-after-free|sql/sql_class.cc|THD::set_sent_row_count|select_export::~select_export|select_export::~select_export|sp_lex_keeper::~sp_lex_keeper                    ## MDEV-40119
 UBSAN|load of null pointer of type 'struct st_plugin_int *'|sql/handler.h                                                                                                      ## MDEV-40038
 UBSAN|member access within null pointer of type 'struct st_plugin_int'|sql/handler.h                                                                                           ## MDEV-40038
