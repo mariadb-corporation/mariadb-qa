@@ -297,6 +297,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                              ## MDEV-40286
 SIGSEGV|dict_table_t::is_temporary|innobase_copy_frm_flags_from_table_share|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                     ## MDEV-40274
 SIGSEGV|std::__atomic_base<unsigned int>::load|Atomic_relaxed<unsigned int>::operator unsigned int|dict_table_t::stat_initialized|innobase_copy_frm_flags_from_table_share     ## MDEV-40274
 memcmp(field, field_ref_zero, 7)|SIGABRT|trx_undo_page_report_modify|trx_undo_report_row_operation|btr_cur_del_mark_set_clust_rec|row_upd_clust_rec_by_insert                  ## MDEV-40239
