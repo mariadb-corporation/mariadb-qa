@@ -51,7 +51,7 @@ inline constexpr std::array<std::string_view, 28> pool_pk = {
   "BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY",
 };
 
-inline constexpr std::array<std::string_view, 713> pool_types = {
+inline constexpr std::array<std::string_view, 721> pool_types = {
   "BIT",
   "BIT(1)",
   "BIT(2)",
@@ -750,6 +750,10 @@ inline constexpr std::array<std::string_view, 713> pool_types = {
   "BOOLEAN NOT NULL DEFAULT FALSE",
   "BOOLEAN NOT NULL DEFAULT TRUE",
   "BOOL",
+  "INET4",
+  "INET4",
+  "INET4 NOT NULL",
+  "INET4 INVISIBLE",
   "INET6",
   "INET6",
   "INET6 NOT NULL",
@@ -758,6 +762,10 @@ inline constexpr std::array<std::string_view, 713> pool_types = {
   "UUID",
   "UUID NOT NULL",
   "UUID INVISIBLE",
+  "type_mysql_timestamp",
+  "test_int8",
+  "test_double",
+  "xmltype",
   "INT NOT NULL",
   "INT NOT NULL DEFAULT 0",
   "BIGINT NOT NULL DEFAULT 0",
@@ -1376,7 +1384,7 @@ inline constexpr std::array<std::string_view, 606> pool_datafile = {
   "'\xf0\x9f\x8f\xb3""0\xf0\x9f\x8c\x88\xef\xb8\x8f'",
 };
 
-inline constexpr std::array<std::string_view, 39> pool_engines = {
+inline constexpr std::array<std::string_view, 48> pool_engines = {
   "Aria",
   "Aria",
   "Aria",
@@ -1416,6 +1424,15 @@ inline constexpr std::array<std::string_view, 39> pool_engines = {
   "ColumnStore",
   "ColumnStore",
   "Mroonga",
+  "DuckDB",
+  "DuckDB",
+  "DuckDB",
+  "FEDERATED",
+  "OQGRAPH",
+  "SPHINX",
+  "VIDEX",
+  "EXAMPLE",
+  "TEST_SQL_DISCOVERY",
 };
 
 inline constexpr std::array<std::string_view, 26> pool_az = {

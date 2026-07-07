@@ -7,30 +7,30 @@ set +H
 # User variables
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 VERSION=11.4                                                        # Use the earliest major version affected by the bug
-LATEST_MARIADB_CS_VERSION=13.0                                      # Ensure this is set to the current trunk/main CS version
+LATEST_MARIADB_CS_VERSION=13.1                                      # Ensure this is set to the current trunk/main CS version
 ES=0                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
 SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0. Also, if there are build errors in older revisions, setting this to 0 may help. Recommended in any case: 0, especially in older versions, which regularly yield build issues on newer systems; it may make the bisect quicker/better/easier in such cases
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)
-RECLONE=1                                                           # Set to 1 to reclone a tree before starting
+RECLONE=0                                                           # Set to 1 to reclone a tree before starting
 UPDATETREE=1                                                        # Set to 1 to update the tree (git pull) before starting
 BISECT_REPLAY=0                                                     # Set to 1 to do a replay rather than good/bad commit
 BISECT_REPLAY_LOG='/test/git-bisect/git-bisect'                     # As manually saved with:  git bisect log > git-bisect
 # WARNING: Take care to use commits from the same MariaDB server version (i.e. both from for example 10.10 etc.)
 #  UPDATE: This has proven to work as well when using commits from an earlier, and older, version for the last known good commit as compared to the first known bad commit. For example, a March 2023 commit from 11.0 as the last known good commit, with a April 11.1 commit as the first known bad commit. TODO: may be good to check if disabling the "${VERSION}" match check would improve failing commit resolution. However, this would also slow down the script considerably and it may lead to more errors while building: make it optional. It would be useful in cases where the default "${VERSION}" based matching did not work or is not finegrained enough.
-LAST_KNOWN_GOOD_COMMIT='ba9e8ebdbe903aa6f8b4f388356085dfd2df91a8'   # Revision of last known good commit (10.11 commit, Aug 22 2025; empirically verified via UBASAN_MD220825-mariadb-10.11.15 dbg)
-FIRST_KNOWN_BAD_COMMIT='dc89915ad9bf3dcb67e66d2844c77ec0403373de'   # Revision of first known bad commit (CS 11.4 dbg verified-bad commit per JIRA matrix, MDEV-39513; reproduces via UBASAN_MD220825-mariadb-11.4.9 ancestor)
+LAST_KNOWN_GOOD_COMMIT='dc89915ad9bf3dcb67e66d2844c77ec0403373de'   # Revision of last known good commit (10.11 commit, Aug 22 2025; empirically verified via UBASAN_MD220825-mariadb-10.11.15 dbg)
+FIRST_KNOWN_BAD_COMMIT='176589bf19ea6e2261bb3ef57886c13b9c0b6759'   # Revision of first known bad commit (CS 11.4 dbg verified-bad commit per JIRA matrix, MDEV-39513; reproduces via UBASAN_MD220825-mariadb-11.4.9 ancestor)
 # To obtain the first commit for a given branch/version, some examples (after full branch checkouts):
 # /test/git-bisect/12.1 $ git log origin/12.0..12.1 --oneline | tail -1
 # 72b666b837eb16819f8f3de3e739a582dbbf4b53  # This is the first 12.1 commit
 # /test/git-bisect/12.0 $ git log origin/11.8..12.0 --oneline | tail -1
 # c92add291e636c797e6d6ddca605905541b2a441  # This is the first 12.0 commit
 # Use git checkout --recurse-submodules --force c92add291e636c797e6d6ddca605905541b2a441 to obtain this
-TESTCASE='/test/in41.sql'                                           # The testcase to be tested (MDEV-39513 connect/UPDATE LSAN leak)
-UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+TESTCASE='/test/in42.sql'                                           # The testcase to be tested (MDEV-39513 connect/UPDATE LSAN leak)
+UBASAN=0                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
 MSAN=0                                                              # Set to 1 to use MSAN builds instead (requires clang + /MSAN_libs, ref msan.instrumentedlibs_ubuntu2404.sh); mutually exclusive with UBASAN
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
-UNIQUEID="LSAN|memory leak|<unknown_module>|malloc|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute"  # The UniqueID to scan for [Exclusive]
+UNIQUEID="SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3"  # The UniqueID to scan for [Exclusive]
 TEXT=""                                                             # The string to scan for in the error log [Exclusive]
 CLI_TEXT=""                                                         # The string to scan for in CLI output [Exclusive]
 # [Exclusive]: UNIQUEID, TEXT and CLI_TEXT are all mutually exclusive: setting one should exclude all others (i.e. set empty)
@@ -119,7 +119,7 @@ elif [ ! -r "${TESTCASE}" ]; then
   clear_env; exit 1
 elif [ "${STY}" == "" ]; then
   echo "Not a screen, restarting myself inside a screen"
-  screen -admS "git-bisect" bash -c "export ENV_GIT_BISECT='1';$0;bash"
+  screen -admS "git-bisect" bash -c "export ENV_GIT_BISECT='1' NOCLEAR='1';$0;bash"
   sleep 1
   screen -d -r "git-bisect"
   clear_env
@@ -223,32 +223,32 @@ bisect_bad(){
 # Git setup
 git bisect reset 2>&1 | grep -v 'We are not bisecting' | tee -a "${MAINLOG}"  # Remove any previous bisect run data
 git reset --hard | tee -a "${MAINLOG}"  # Revert tree to mainline
-if [ "${?}" != "0" ]; then
+if [ "${PIPESTATUS[0]}" != "0" ]; then
   echo "Assert: git reset --hard failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   clear_env; exit 1
 fi
 git clean -xfd | tee -a "${MAINLOG}"    # Cleanup tree
-if [ "${?}" != "0" ]; then
+if [ "${PIPESTATUS[0]}" != "0" ]; then
   echo "Assert: git clean -xfd failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   clear_env; exit 1
 fi
 # Ensure we have the right version
 if [ "${ES}" == "1" ]; then
   git checkout --recurse-submodules --force "${VERSION}-enterprise" | tee -a "${MAINLOG}"
-  if [ "${?}" != "0" ]; then
+  if [ "${PIPESTATUS[0]}" != "0" ]; then
     echo "Assert: git checkout --recurse-submodules --force '${VERSION}-enterprise' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
     clear_env; exit 1
   fi
 else
   if [ "${VERSION}" == "${LATEST_MARIADB_CS_VERSION}" ]; then
     git checkout --recurse-submodules --force | tee -a "${MAINLOG}"
-    if [ "${?}" != "0" ]; then
+    if [ "${PIPESTATUS[0]}" != "0" ]; then
       echo "Assert: git checkout --recurse-submodules --force failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
       clear_env; exit 1
     fi
   else
     git checkout --recurse-submodules --force "${VERSION}" | tee -a "${MAINLOG}"
-    if [ "${?}" != "0" ]; then
+    if [ "${PIPESTATUS[0]}" != "0" ]; then
       echo "Assert: git checkout --recurse-submodules --force '${VERSION}' failed with a non-0 exit status, please check the output above or in the logfile ${MAINLOG}"
       clear_env; exit 1
     fi
@@ -256,19 +256,19 @@ else
 fi
 if [ "${UPDATETREE}" -eq 1 ]; then
   git pull --recurse-submodules | tee -a "${MAINLOG}"  # Ensure we have the latest version
-  if [ "${?}" != "0" ]; then
+  if [ "${PIPESTATUS[0]}" != "0" ]; then
     echo "Assert: git pull --recurse-submodules failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
     clear_env; exit 1
   fi
 fi
 git bisect start | tee -a "${MAINLOG}"  # Start bisect run
-if [ "${?}" != "0" ]; then
+if [ "${PIPESTATUS[0]}" != "0" ]; then
   echo "Assert: git bisect start failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   clear_env; exit 1
 fi
 if [ "${BISECT_REPLAY}" -eq 1 ]; then
   git bisect replay "${BISECT_REPLAY_LOG}" | tee -a "${MAINLOG}"
-  if [ "${?}" != "0" ]; then
+  if [ "${PIPESTATUS[0]}" != "0" ]; then
     echo "git bisect replay \"${BISECT_REPLAY_LOG}\" failed. Terminating for manual debugging." | tee -a "${MAINLOG}"
     clear_env; exit 1
   else
@@ -276,14 +276,14 @@ if [ "${BISECT_REPLAY}" -eq 1 ]; then
   fi
 else
   git bisect bad "${FIRST_KNOWN_BAD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, bad
-  if [ "${?}" != "0" ]; then
+  if [ "${PIPESTATUS[0]}" != "0" ]; then
     echo "Bad revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
     clear_env; exit 1
   fi
   # Always init/update submodules after each git bisect good/bad as those commands update the revision set
   git submodule update --init --recursive
   git bisect good "${LAST_KNOWN_GOOD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, good
-  if [ "${?}" != "0" ]; then
+  if [ "${PIPESTATUS[0]}" != "0" ]; then
     echo "Good revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
     clear_env; exit 1
   fi

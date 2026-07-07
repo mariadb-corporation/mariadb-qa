@@ -196,9 +196,13 @@ cd "$MSAN_LIBDIR/build"
 rm -Rf llvm-project
 
 # Set {C,CXX,LD}FLAGS for all subsequent lib builds. Note that ldd will be found via the LD= export set earlier
-export CFLAGS="-fsanitize=memory -fno-omit-frame-pointer -fPIC -O2 -g"
+# -Wno-error=... demotes clang-20's default-error diagnostics (C23 strictness + OpenSSL-3 deprecations) back to
+# warnings so legacy third-party C (cyrus-sasl2, openldap, rtmpdump, curl, ...) still compiles.
+export CFLAGS="-fsanitize=memory -fno-omit-frame-pointer -fPIC -O2 -g -Wno-error=incompatible-function-pointer-types -Wno-error=deprecated-declarations -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int"
 export CXXFLAGS="$CFLAGS"
-export LDFLAGS="-fuse-ld=lld -fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR"
+# -Wl,--undefined-version: lld (unlike bfd) errors when a version script assigns a symbol the objects do not
+# define (e.g. keyutils' version.lds lists optional keyctl_* symbols). This flag restores bfd's lenient behaviour.
+export LDFLAGS="-fuse-ld=lld -fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR -Wl,--undefined-version"
 
 # ncurses libtinfo.so - used by the mariadb client
 sudo apt-get build-dep -y ncurses
@@ -397,6 +401,293 @@ make -j "$(nproc)" build_libs
 mv ./*.so* "$MSAN_LIBDIR"
 cd ..
 rm -rf -- openssl-*
+
+# >>> MSAN_ADDLIBS_BEGIN
+# System libraries pulled in transitively by mariadbd and its loaded plugins (auth_gssapi, auth_pam, ha_connect,
+# ha_s3, ha_videx, hashicorp_key_management, provider_*). Built AFTER the base libs above so each links the
+# instrumented deps already in $MSAN_LIBDIR. Hand-written assembly / CPU-SIMD is disabled per lib (MSAN cannot
+# instrument it and would report false use-of-uninitialized-value). Leaf libs first; curl near the end (links most).
+
+# zlib - compression; linked by mariadbd and many plugins. No asm. Its configure shared-probe rejects the MSAN
+# flags (disables shared), its `make shared` also links test programs that fail, and the .dfsg source drops win32/
+# (breaks CMake). So run configure only to generate a correct zconf.h (Z_HAVE_UNISTD_H), then compile the library
+# sources and link the shared object directly. SONAME libz.so.1 is the zlib 1.x ABI name that mariadbd links.
+sudo apt-get build-dep -y zlib
+apt-get source zlib
+cd zlib-*/
+CFLAGS='' LDFLAGS='' ./configure
+$CC $CFLAGS -DHAVE_HIDDEN -c adler32.c compress.c crc32.c deflate.c gzclose.c gzlib.c gzread.c gzwrite.c infback.c inffast.c inflate.c inftrees.c trees.c uncompr.c zutil.c
+$CC -shared -Wl,-soname,libz.so.1 $LDFLAGS -o libz.so.1 adler32.o compress.o crc32.o deflate.o gzclose.o gzlib.o gzread.o gzwrite.o infback.o inffast.o inflate.o inftrees.o trees.o uncompr.o zutil.o
+find . \( -name 'libz.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- zlib-*
+
+# libunistring - Unicode strings; pulled by libidn2 and libpsl. Pure C.
+sudo apt-get build-dep -y libunistring
+apt-get source libunistring
+cd libunistring-*/
+./configure --disable-static
+make -j "$(nproc)"
+find . \( -name 'libunistring.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- libunistring-*
+
+# libtasn1 - ASN.1 parser; linked by gnutls and p11-kit. Pure C.
+sudo apt-get build-dep -y libtasn1-6
+apt-get source libtasn1-6
+cd libtasn1-6-*/
+./configure --disable-static --disable-doc --enable-ld-version-script
+make -j "$(nproc)"
+find . \( -name 'libtasn1.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- libtasn1-6-*
+
+# keyutils - kernel keyring; linked by the krb5 stack. Plain Makefile, pure C; pass CC/CFLAGS on the command line
+# to override the Makefile's -Werror append while keeping MSAN flags. NO_ARLIB=1 skips the static lib.
+sudo apt-get build-dep -y keyutils
+apt-get source keyutils
+cd keyutils-*/
+make -j "$(nproc)" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" NO_ARLIB=1
+find . \( -name 'libkeyutils.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- keyutils-*
+
+# libcap-ng - POSIX capabilities; pulled by libaudit. Ships no ./configure (touch NEWS + autoreconf, per Debian).
+sudo apt-get build-dep -y libcap-ng
+apt-get source libcap-ng
+cd libcap-ng-*/
+touch NEWS
+autoreconf -fi
+./configure --disable-static --without-python3
+make -j "$(nproc)"
+find . \( -name 'libcap-ng.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- libcap-ng-*
+
+# bzip2 - compression; provider_bzip2. Pure C. Makefile-libbz2_so builds the shared lib (soname libbz2.so.1.0).
+sudo apt-get build-dep -y bzip2
+apt-get source bzip2
+cd bzip2-*/
+make -f Makefile-libbz2_so CC="$CC" CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=64"
+find . \( -name 'libbz2.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- bzip2-*
+
+# lz4 - compression; provider_lz4 and libcurl. Pure C, no SIMD.
+sudo apt-get build-dep -y lz4
+apt-get source lz4
+cd lz4-*/
+make -C lib CC="$CC" CFLAGS="$CFLAGS"
+find . \( -name 'liblz4.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- lz4-*
+
+# xz-utils (liblzma) - compression; provider_lzma. --disable-assembler + --disable-clmul-crc drop the asm/SIMD paths.
+sudo apt-get build-dep -y xz-utils
+apt-get source xz-utils
+cd xz-utils-*/
+./configure --disable-static --disable-assembler --disable-clmul-crc --disable-xz --disable-xzdec --disable-lzmadec --disable-lzmainfo --disable-scripts --disable-doc
+make -j "$(nproc)"
+find . \( -name 'liblzma.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- xz-utils-*
+
+# lzo2 - compression; provider_lzo. --disable-asm: amd64 asm is used by default and MSAN cannot instrument it.
+sudo apt-get build-dep -y lzo2
+apt-get source lzo2
+cd lzo2-*/
+./configure --disable-static --enable-shared --disable-asm
+make -j "$(nproc)"
+find . \( -name 'liblzo2.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- lzo2-*
+
+# snappy - compression; provider_snappy. Force the SSSE3/BMI2 checks off (MSAN cannot instrument those paths).
+# Strip -Werror: clang-20 flags a -Wsign-compare in snappy's own code that its CMakeLists would treat as fatal.
+sudo apt-get build-dep -y snappy
+apt-get source snappy
+cd snappy-*/
+sed -i 's/-Werror//g' CMakeLists.txt
+cmake -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_SHARED_LIBS=ON -DSNAPPY_BUILD_TESTS=OFF -DSNAPPY_BUILD_BENCHMARKS=OFF \
+  -DHAVE_SSSE3=0 -DHAVE_SSE41=0 -DHAVE_BMI2=0 \
+  -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX" \
+  -DCMAKE_C_FLAGS="$CFLAGS" -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS="$LDFLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS"
+cmake --build build -j "$(nproc)"
+find . \( -name 'libsnappy.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- snappy-*
+
+# nghttp2 - HTTP/2; linked by libcurl. Pure C; --enable-lib-only builds only libnghttp2.
+sudo apt-get build-dep -y nghttp2
+apt-get source nghttp2
+cd nghttp2-*/
+[ -x ./configure ] || autoreconf -fi
+./configure --disable-static --enable-lib-only
+make -j "$(nproc)"
+find . \( -name 'libnghttp2.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- nghttp2-*
+
+# brotli - compression; linked by libcurl. NEON path is ARM-only, no x86 SIMD.
+sudo apt-get build-dep -y brotli
+apt-get source brotli
+cd brotli-*/
+cmake -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_SHARED_LIBS=ON -DBROTLI_DISABLE_TESTS=ON \
+  -DCMAKE_C_COMPILER="$CC" -DCMAKE_C_FLAGS="$CFLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS="$LDFLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS"
+cmake --build build -j "$(nproc)"
+find . \( -name 'libbrotlicommon.so.*' -o -name 'libbrotlidec.so.*' -o -name 'libbrotlienc.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- brotli-*
+
+# libzstd - compression; linked by libcurl and mariadbd. ZSTD_NO_ASM=1 sets -DZSTD_DISABLE_ASM (drops BMI2 asm).
+sudo apt-get build-dep -y libzstd
+apt-get source libzstd
+cd libzstd-*/
+make -C lib ZSTD_NO_ASM=1 CC="$CC" CFLAGS="$CFLAGS"
+find . \( -name 'libzstd.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- libzstd-*
+
+# e2fsprogs - libcom_err only; linked by the krb5/gssapi stack.
+sudo apt-get build-dep -y e2fsprogs
+apt-get source e2fsprogs
+cd e2fsprogs-*/
+./configure --enable-elf-shlibs
+make -j "$(nproc)" -C lib/et
+find . \( -name 'libcom_err.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- e2fsprogs-*
+
+# p11-kit - PKCS#11 loader; linked by gnutls. --without-libffi avoids the un-instrumentable libffi asm trampolines;
+# --with-hash-impl=internal avoids the freebl/NSS dependency. Needs the instrumented libtasn1 (built above).
+sudo apt-get build-dep -y p11-kit
+apt-get source p11-kit
+cd p11-kit-*/
+./configure --disable-static --without-libffi --with-hash-impl=internal --without-bash-completion --disable-doc
+make -j "$(nproc)"
+find . \( -name 'libp11-kit.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- p11-kit-*
+
+# audit (libaudit) - linked by auth_pam. Links libcap-ng (built above).
+sudo apt-get build-dep -y audit
+apt-get source audit
+cd audit-*/
+[ -x ./configure ] || autoreconf -fi
+./configure --disable-static --enable-shared --without-python --without-python3 --disable-zos-remote --without-golang
+make -j "$(nproc)"
+find . \( -name 'libaudit.so.*' -o -name 'libauparse.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- audit-*
+
+# pam (libpam) - linked by auth_pam / auth_pam_v1. Links libaudit (built above).
+sudo apt-get build-dep -y pam
+apt-get source pam
+cd pam-*/
+[ -x ./configure ] || autoreconf -fi
+./configure --disable-static --disable-doc --disable-nis --disable-selinux
+# Build only libpam, overriding BUILD_LDFLAGS/LDFLAGS to drop Debian's -Wl,--no-undefined: the instrumented
+# libpam.so legitimately leaves the MSAN interceptors (__msan_memcpy etc.) for mariadbd's runtime to resolve.
+make -j "$(nproc)" -C libpam BUILD_LDFLAGS="$LDFLAGS" LDFLAGS="$LDFLAGS"
+find . \( -name 'libpam.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- pam-*
+
+# libpsl - public suffix list; linked by libcurl. Uses the instrumented libidn2 (present).
+sudo apt-get build-dep -y libpsl
+apt-get source libpsl
+cd libpsl-*/
+[ -x ./configure ] || autoreconf -fi
+# The suffix-list data lives in a git submodule (list/) absent from the tarball; point PSL_FILE/PSL_DISTFILE at
+# the system publicsuffix package instead (the Debian approach) so the dafsa header generates.
+./configure --disable-static --enable-runtime=libidn2 --with-psl-file=/usr/share/publicsuffix/public_suffix_list.dat --with-psl-distfile=/usr/share/publicsuffix/public_suffix_list.dafsa
+make -j "$(nproc)"
+find . \( -name 'libpsl.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- libpsl-*
+
+# krb5 - MIT Kerberos (libkrb5, libgssapi_krb5, libk5crypto, libkrb5support); auth_gssapi at plugin init calls
+# krb5_init_context_profile() and an uninstrumented libkrb5 gives a false uninit report in profile_make_prf_data.
+# --disable-aesni: MSAN cannot instrument the AES-NI asm (C fallback used).
+sudo apt-get build-dep -y krb5
+apt-get source krb5
+cd krb5-*/src
+./configure --disable-aesni --enable-shared --disable-static
+# krb5's shlib config adds -Wl,--no-undefined, which makes the MSAN TLS globals (__msan_param_tls etc., resolved
+# from mariadbd's runtime) fatal at link. Strip it from every file that carries it.
+grep -rlZ -- '-Wl,--no-undefined' . 2>/dev/null | xargs -0 -r sed -i 's/-Wl,--no-undefined//g'
+make -j "$(nproc)"
+find . \( -name 'libkrb5.so.*' -o -name 'libgssapi_krb5.so.*' -o -name 'libk5crypto.so.*' -o -name 'libkrb5support.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ../..
+rm -rf -- krb5-*
+
+# cyrus-sasl2 (libsasl2) - SASL; linked by libldap and libcurl. Links krb5 (gssapi) and openssl (both present).
+sudo apt-get build-dep -y cyrus-sasl2
+apt-get source cyrus-sasl2
+cd cyrus-sasl2-*/
+[ -x ./configure ] || autoreconf -fi
+# Debian's override_dh_auto_configure writes these empty stubs; common/Makefile references them unconditionally.
+: > common/crypto-compat.c
+: > common/crypto-compat.h
+./configure --disable-static --enable-shared --with-dblib=none --enable-gssapi
+find . -name Makefile -exec sed -i 's/-no-undefined//g; s/-Wl,--no-undefined//g; s/-Wl,-z,defs//g' {} +
+make -j "$(nproc)" -C common
+make -j "$(nproc)" -C lib
+find . \( -name 'libsasl2.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- cyrus-sasl2-*
+
+# librtmp (rtmpdump) is intentionally omitted: it does not build against OpenSSL 3 (Debian builds it against GnuTLS,
+# which drags in an uninstrumented libgcrypt) and it is only reached by libcurl for rtmp:// URLs, which the MariaDB
+# plugins never use. curl below is built --without-librtmp, so librtmp leaves the dependency closure entirely.
+
+# libssh - SSH; linked by libcurl. CMake; OpenSSL backend + zlib (present); GSSAPI via the instrumented krb5.
+sudo apt-get build-dep -y libssh
+apt-get source libssh
+cd libssh-*/
+cmake -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_SHARED_LIBS=ON -DWITH_EXAMPLES=OFF -DUNIT_TESTING=OFF -DWITH_GSSAPI=ON \
+  -DCMAKE_C_COMPILER="$CC" -DCMAKE_C_FLAGS="$CFLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS="$LDFLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS"
+cmake --build build -j "$(nproc)"
+find . \( -name 'libssh.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- libssh-*
+
+# openldap (liblber, libldap) - LDAP client; linked by libcurl. Links cyrus-sasl2 and openssl (present).
+sudo apt-get build-dep -y openldap
+apt-get source openldap
+cd openldap-*/
+./configure --disable-static --disable-slapd --with-tls=openssl --with-cyrus-sasl
+find . -name Makefile -exec sed -i 's/-no-undefined//g; s/-Wl,--no-undefined//g; s/-Wl,-z,defs//g' {} +
+make -j "$(nproc)" depend
+make -j "$(nproc)" -C libraries
+find . \( -name 'liblber.so.*' -o -name 'libldap.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- openldap-*
+
+# curl (libcurl) - HTTP client; linked by ha_s3 / ha_videx / hashicorp_key_management. Links nghttp2, libssh,
+# openldap, cyrus-sasl2, libpsl, brotli, zstd, krb5, zlib, idn2, openssl (all built above / present). librtmp omitted.
+sudo apt-get build-dep -y curl
+apt-get source curl
+cd curl-*/
+./configure --disable-static --with-openssl --with-nghttp2 --with-libssh --with-zstd --with-brotli --with-libidn2 --enable-ldap --enable-ldaps --without-librtmp --disable-manual --without-libssh2
+make -j "$(nproc)"
+find . \( -name 'libcurl.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ..
+rm -rf -- curl-*
+
+# icu (libicudata, libicui18n, libicuuc) - Unicode; linked by ha_connect. Configure lives in source/. No asm.
+sudo apt-get build-dep -y icu
+apt-get source icu
+cd icu-*/source
+./configure --disable-static --enable-shared --disable-samples --disable-tests --disable-layoutex
+make -j "$(nproc)"
+find . \( -name 'libicudata.so.*' -o -name 'libicui18n.so.*' -o -name 'libicuuc.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+cd ../..
+rm -rf -- icu-*
+# <<< MSAN_ADDLIBS_END
 
 # pcre used by server
 sudo apt-get build-dep -y libpcre2-dev
