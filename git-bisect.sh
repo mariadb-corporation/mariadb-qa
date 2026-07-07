@@ -27,6 +27,7 @@ FIRST_KNOWN_BAD_COMMIT='dc89915ad9bf3dcb67e66d2844c77ec0403373de'   # Revision o
 # Use git checkout --recurse-submodules --force c92add291e636c797e6d6ddca605905541b2a441 to obtain this
 TESTCASE='/test/in41.sql'                                           # The testcase to be tested (MDEV-39513 connect/UPDATE LSAN leak)
 UBASAN=1                                                            # Set to 1 to use UBASAN builds instead (UBSAN+ASAN)
+MSAN=0                                                              # Set to 1 to use MSAN builds instead (requires clang + /MSAN_libs, ref msan.instrumentedlibs_ubuntu2404.sh); mutually exclusive with UBASAN
 REPLICATION=0                                                       # Set to 1 to use replication (./start_replication)
 USE_PQUERY=0                                                        # Uses pquery if set to 1, otherwise the CLI is used
 UNIQUEID="LSAN|memory leak|<unknown_module>|malloc|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute"  # The UniqueID to scan for [Exclusive]
@@ -83,6 +84,9 @@ if [ "${ES}" -eq 1 -a ! -z "${FEATURETREE}" ]; then
 elif [ "${DBG_OR_OPT}" != 'dbg' -a "${DBG_OR_OPT}" != 'opt' ]; then
   echo "DBG_OR_OPT variable is incorrectly set: use 'dbg' or 'opt' only"
   clear_env; exit 1
+elif [ "${UBASAN}" -eq 1 -a "${MSAN}" -eq 1 ]; then
+  echo "UBASAN=1 and MSAN=1 are mutually exclusive: set only one of them to 1"
+  clear_env; exit 1
 elif [[ "${VERSION}" != "10."* && "${VERSION}" != "11."* && "${VERSION}" != "12."* && "${FEATURETREE}" == "" ]]; then
   echo "Version (${VERSION}) does not look correct"
   clear_env; exit 1
@@ -100,8 +104,8 @@ elif [ -z "${LAST_KNOWN_GOOD_COMMIT}" -o -z "${FIRST_KNOWN_BAD_COMMIT}" ]; then
   clear_env; exit 1
 elif [ ! -r "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh" ]; then
   echo "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh missing. Try cloning mariadb-qa again from Github into your home directory"
-  if [ "${UBASAN}" -eq 1 ]; then
-    echo "(note: UBASAN=1 so a UBASAN build would have been used to build the server in any case, however the script looks for this script above, as a simple verification whetter mariadb-qa was cloned and is generally ready to be used)"
+  if [ "${UBASAN}" -eq 1 -o "${MSAN}" -eq 1 ]; then
+    echo "(note: UBASAN=1 or MSAN=1 so a sanitizer build would have been used to build the server in any case, however the script looks for this script above, as a simple verification whetter mariadb-qa was cloned and is generally ready to be used)"
   fi
   clear_env; exit 1
 elif [ ! -r "${HOME}/start" ]; then
@@ -133,7 +137,7 @@ if [ ! -z "${UNIQUEID}" ]; then echo "Validator: UNIQUEID: ${UNIQUEID}" | tee -a
 if [ ! -z "${TEXT}" ]; then echo "Validator: ERROR LOG TEXT: ${TEXT}" | tee -a "${MAINLOG}"; fi
 if [ ! -z "${CLI_TEXT}" ]; then echo "Validator: CLI TEXT: ${CLI_TEXT}" | tee -a "${MAINLOG}"; fi
 echo "|> [*] A leading '[*]', like to the one in this comment, shows that git-bisect.sh saw the bug reproduced in-run at least once" | tee -a "${MAINLOG}"
-echo "|> If you do not observe this '[*]' marker during the bisect run, then please make sure your testcase (${TESTCASE}) is correctly triggering a bug in at least your first indicated bad commit ${FIRST_KNOWN_BAD_COMMIT}, in version ${VERSION}, build as an ${DBG_OR_OPT} build (with/while using UBASAN: ${UBASAN}, REPLICATION: ${REPLICATION}, USE_PQUERY: ${USE_PQUERY}) (1: yes, 0: no). You may also want to verify that the correct failure type/mode is being used; cores (none of the following options set), or [UNIQUEID, TEXT or TEXT_CLI] (one of them set)." | tee -a "${MAINLOG}"
+echo "|> If you do not observe this '[*]' marker during the bisect run, then please make sure your testcase (${TESTCASE}) is correctly triggering a bug in at least your first indicated bad commit ${FIRST_KNOWN_BAD_COMMIT}, in version ${VERSION}, build as an ${DBG_OR_OPT} build (with/while using UBASAN: ${UBASAN}, MSAN: ${MSAN}, REPLICATION: ${REPLICATION}, USE_PQUERY: ${USE_PQUERY}) (1: yes, 0: no). You may also want to verify that the correct failure type/mode is being used; cores (none of the following options set), or [UNIQUEID, TEXT or TEXT_CLI] (one of them set)." | tee -a "${MAINLOG}"
 sleep 3  # Give user time to see the output
 echo "|> Commencing Bisect" | tee -a "${MAINLOG}"
 cd /test || die 1 '/test does not exist'
@@ -349,6 +353,8 @@ while :; do
     rm -f ${TMPLOG2}
     if [ "${UBASAN}" -eq 1 ]; then
       screen -admS "${SCREEN_NAME}" bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}_san.sh; echo \"\${?}\" > ${TMPLOG2}"
+    elif [ "${MSAN}" -eq 1 ]; then
+      screen -admS "${SCREEN_NAME}" bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}_msan.sh; echo \"\${?}\" > ${TMPLOG2}"
     else
       screen -admS "${SCREEN_NAME}" bash -c "${HOME}/mariadb-qa/build_mdpsms_${DBG_OR_OPT}.sh; echo \"\${?}\" > ${TMPLOG2}"
     fi

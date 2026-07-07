@@ -4,18 +4,20 @@
 FILES=(
   "$HOME/mariadb-qa/ASAN.filter"
   "$HOME/mariadb-qa/UBSAN.filter"
+  "$HOME/mariadb-qa/MSAN.ignorelist"
   "$HOME/mariadb-qa/filter.sql.info"
   "$HOME/mariadb-qa/REGEX_ERRORS_FILTER.info"
 )
 FILE_KEYS=(
   "CHECK_ASAN_FILTER_FILE"
   "CHECK_UBSAN_FILTER_FILE"
+  "CHECK_MSAN_IGNORELIST_FILE"
   "CHECK_FILTER_INFO_FILE"
   "CHECK_REGEX_FILTER_INFO_FILE"
 )
 
 # Array to hold matched bugs
-MATCHED_BUGS=("" "" "" "")
+MATCHED_BUGS=("" "" "" "" "")
 
 # Temporary file to hold fixed bugs
 TMPRUN=$(mktemp)

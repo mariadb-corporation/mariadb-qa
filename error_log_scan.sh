@@ -128,7 +128,7 @@ uid_normalize() {
   | awk '!seen[$0]++'
 }
 
-# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, WARNING, MYSQL_HA_READ, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
+# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN, MSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, WARNING, MYSQL_HA_READ, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
 uid_prefix() {
   awk '
     {
@@ -185,6 +185,7 @@ uid_prefix() {
       if ($0 ~ /^Trying to lock uninitialized mutex/)   { print "MUTEX_ERROR|" $0; next }
       if ($0 ~ /^Indirect leak of/)                     { print "LSAN|" $0; next }
       if ($0 ~ /AddressSanitizer/)                      { print "ASAN|" $0; next }
+      if ($0 ~ /MemorySanitizer/)                       { print "MSAN|" $0; next }
       if ($0 ~ /^(corrupted|malloc\(|free\(|double free|munmap_chunk)/ || $0 ~ /\*\*\* (glibc detected|Error in `)/) { print "GLIBC|" $0; next }   # Line-start markers cover modern glibc (just the keyword line); the *** preludes cover older glibc emit format on legacy systems / unusual binaries.
       print "UNTYPED|Please add a typed prefix rule to error_log_scan.sh uid_prefix() for: " $0   # Catch-all: ensures the MYBUG-is-always-a-UID invariant holds even when no typed-prefix rule above matched. Seeing UNTYPED| in pquery-results.sh aggregate output is an action signal — add a rule for this log shape.
     }
@@ -227,7 +228,7 @@ case "${MODE}" in
   errors)   [ -z "${ERRORS}" ]           && exit 1; echo "${ERRORS}"           | uid_normalize | uid_prefix ;;
   lastline) [ -z "${ERRORS_LAST_LINE}" ] && exit 1; echo "${ERRORS_LAST_LINE}" | uid_normalize | uid_prefix ;;
   top)
-    # Pick the single highest-severity UID across both scans, sourced from one input line (no blending). Severity tiers: 1=ASSERT, 2=ASAN/LSAN, 3=GLIBC/MUTEX_ERROR, 4=other typed errors (INNODB_ERROR/MARIADBD_ERROR/SLAVE_ERROR/MARKED_AS_CRASHED/...), 5=warnings/notes, 9=untyped fallback. Lower tier wins. Within a tier the first occurrence wins.
+    # Pick the single highest-severity UID across both scans, sourced from one input line (no blending). Severity tiers: 1=ASSERT, 2=ASAN/LSAN/MSAN, 3=GLIBC/MUTEX_ERROR, 4=other typed errors (INNODB_ERROR/MARIADBD_ERROR/SLAVE_ERROR/MARKED_AS_CRASHED/...), 5=warnings/notes, 9=untyped fallback. Lower tier wins. Within a tier the first occurrence wins.
     # EXCLUDE_ASSERT=1 (env var) drops tier-1 ASSERT| candidates before ranking. Consumers set this when nts already produced a frame-based signal UID (SIGSEGV|f1|... or <assert>|SIGABRT|f1..f4); the error-log ASSERT line in that case is a shadow of the same crash and must not become the trial UniqueID (MYBUG) nor the reducer TEXT.
     [ -z "${ERRORS}" -a -z "${ERRORS_LAST_LINE}" ] && exit 1
     EXA=0; [ "${EXCLUDE_ASSERT}" = "1" ] && EXA=1
@@ -237,7 +238,7 @@ case "${MODE}" in
           { if (exa == 1 && $0 ~ /^ASSERT\|/) next
             p = 9
             if      ($0 ~ /^ASSERT\|/)                                                                                  p = 1
-            else if ($0 ~ /^(ASAN|LSAN)\|/)                                                                             p = 2
+            else if ($0 ~ /^(ASAN|LSAN|MSAN)\|/)                                                                        p = 2
             else if ($0 ~ /^(GLIBC|MUTEX_ERROR)\|/)                                                                     p = 3
             else if ($0 ~ /\|/ && $0 !~ /^(INNODB_WARNING|SLAVE_WARNING|WARNING_ABORTED|WARNING|INNODB_NOTE|UNTYPED)\|/) p = 4
             else if ($0 ~ /^(INNODB_WARNING|SLAVE_WARNING|WARNING_ABORTED|WARNING|INNODB_NOTE)\|/)                       p = 5

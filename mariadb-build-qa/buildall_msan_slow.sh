@@ -9,14 +9,13 @@
 # With FRESH_PULL=1 each enabled version is (re)cloned right before its build, so no separate
 # cloneall.sh step is needed. The build scratch is <ver>_dbg_msan / <ver>_opt_msan (distinct from
 # ub/asan's <ver>_dbg_san / <ver>_opt_san, so no scratch clash). Between versions each build's tarballs are
-# moved to <this dir>/TARS and (REMOVE_BASEDIR_AFTER) the extracted basedirs removed, so this dir accrues no
-# build output - only TARS/ grows. Still do NOT run this concurrently with buildall_san_slow.sh: both operate
-# on the same <ver> source trees, which this one re-clones and removes.
+# moved to /data/TARS; the extracted MSAN_*-{dbg,opt} basedirs stay in this dir ready for use. Do NOT run this
+# concurrently with buildall_san_slow.sh: both operate on the same <ver> source trees, which this one
+# re-clones and removes.
 
 AUTO_BUILD_MSAN_LIBS=1  # 1: if the clang-20 toolchain and/or the instrumented /MSAN_libs are missing/incomplete, build them first via msan.instrumentedlibs_ubuntu2404.sh. 0: only pre-check, then abort with instructions.
 FRESH_PULL=1            # 1: (re)clone each version right before building (clone.sh for CS, clone_es.sh for ES). 0: build the existing ${DIR}/<ver> as-is.
 REMOVE_SOURCE_AFTER=1   # 1: remove the source tree after its builds finish, to reclaim disk between versions. 0: keep it.
-REMOVE_BASEDIR_AFTER=1  # 1: after tarballing, remove the extracted MSAN_*-{dbg,opt} basedirs; the tarball moved to ${DIR}/TARS is the kept artifact. 0: keep the basedirs in ${DIR}.
 
 BUILD_10_1=0
 BUILD_10_2=0
@@ -85,16 +84,17 @@ sed -i 's|^USE_TSAN=[0-1]|USE_TSAN=0|'         ~/mariadb-qa/build_mdpsms_opt_msa
 sed -i 's|^ASAN_OR_MSAN=[0-1]|ASAN_OR_MSAN=1|' ~/mariadb-qa/build_mdpsms_opt_msan.sh ~/mariadb-qa/build_mdpsms_dbg_msan.sh
 
 DIR=${PWD}
-TARS_DIR="${DIR}/TARS"  # built tarballs are moved here between versions, so ${DIR} is left holding only the in-flight source/scratch
+TARS_DIR="/data/TARS"  # built tarballs are moved here between versions; the extracted basedirs stay in ${DIR}
 
 cleanup_dirs(){  # $1 = version dir; remove this version's MSAN build scratch (_dbg_msan/_opt_msan, distinct from ub/asan's _dbg_san/_opt_san)
   rm -Rf "${DIR}/${1}_dbg_msan" "${DIR}/${1}_opt_msan"
 }
 
-archive_and_prune(){  # between versions: move the freshly-built tarballs to ${TARS_DIR}, then (REMOVE_BASEDIR_AFTER) remove the extracted MSAN_*-{dbg,opt} basedirs. Only the current version's artifacts are present here (prior versions were pruned in their own iteration), so the MSAN_* globs are self-scoping.
-  mkdir -p "${TARS_DIR}"
-  find "${DIR}" -maxdepth 1 -type f -name 'MSAN_*.tar.gz' -exec mv -t "${TARS_DIR}/" {} +
-  [ ${REMOVE_BASEDIR_AFTER} -eq 1 ] && find "${DIR}" -maxdepth 1 -type d \( -name 'MSAN_*-dbg' -o -name 'MSAN_*-opt' \) -exec rm -Rf {} +
+archive_tars(){  # between versions: move the freshly-built tarballs to ${TARS_DIR} (skipped if absent, matching buildall_san_slow.sh); the extracted MSAN_*-{dbg,opt} basedirs stay in ${DIR}
+  if [ -d "${TARS_DIR}" ]; then
+    find "${DIR}" -maxdepth 1 -type f -name 'MSAN_*.tar.gz' -exec mv -t "${TARS_DIR}/" {} +
+    sync
+  fi
 }
 
 build_ver(){  # $1 = version dir under ${DIR} (e.g. 13.1, 12.3-es)
@@ -112,7 +112,7 @@ build_ver(){  # $1 = version dir under ${DIR} (e.g. 13.1, 12.3-es)
   ( cd ${DIR}/${ver} && ~/mariadb-qa/build_mdpsms_dbg_msan.sh ) &
   wait                                                             # ...double wait for both
   cleanup_dirs "${ver}"                                            # remove build scratch immediately
-  archive_and_prune                                                # move tarballs to ${TARS_DIR}, then remove the extracted MSAN_*-{dbg,opt} basedirs
+  archive_tars                                                     # move tarballs to /data/TARS; basedirs stay in ${DIR}
   [ ${REMOVE_SOURCE_AFTER} -eq 1 ] && rm -Rf "${DIR}/${ver}"       # remove the source tree
 }
 

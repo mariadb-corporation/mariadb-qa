@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 
-# This script generates a UniqueID (using new_text_string.sh) for a given crash, assert, ASAN, UBSAN, LSAN or TSAN issue
+# This script generates a UniqueID (using new_text_string.sh) for a given crash, assert, ASAN, UBSAN, LSAN, TSAN or MSAN issue
 # It is generall executed from within a BASEDIR which has experienced a failure of any of these types
 # It also outputs handy JIRA search URL's and handy JIRA formatting strings to aid with logging bugs at jira.mariadb.org
 

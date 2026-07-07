@@ -19,9 +19,9 @@ if [ "$(grep 'Group Replication Mode:' ./pquery-run.log 2>/dev/null | sed 's|^.*
   GRP_RPL=1
 fi
 
-# Check if this is a *SAN (ASAN, UBSAN, TSAN) run
+# Check if this is a *SAN (ASAN, UBSAN, TSAN, MSAN) run
 SAN=0
-if grep -Eq 'UBASAN_|TSAN_' ./pquery-run.log 2>/dev/null; then
+if grep -Eq 'UBASAN_|TSAN_|MSAN_' ./pquery-run.log 2>/dev/null; then
   SAN=1
 fi
 
