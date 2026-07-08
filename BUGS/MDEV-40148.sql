@@ -1,0 +1,7 @@
+SET sql_mode=ORACLE;
+CREATE TABLE t (id INT, name VARCHAR(100));
+DELIMITER $$
+CREATE PACKAGE pkga AS TYPE r IS RECORD (f t.id%TYPE); END;$$
+CREATE PROCEDURE pa AS v pkga.r;BEGIN v.f := 1; IF v.f = 1 THEN SELECT 'ok'; END IF; END;$$
+DELIMITER ;
+CALL pa; 

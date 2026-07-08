@@ -297,6 +297,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MDEV-40226
+SIGSEGV|Field_iterator_table::set_table|Item_trigger_row::populate_with_trigger_fields|Item_trigger_row::fix_fields|Item::fix_fields_if_needed                                 ## MDEV-40130
+SIGSEGV|Item_trigger_field::setup_field|Item_trigger_row::fix_fields|Item::fix_fields_if_needed|Item_trigger_row::set_value                                                    ## MDEV-40127
+m_sp == m_thd->spcont->m_sp|SIGABRT|Item_splocal::this_item|Item_splocal::element_index|cmp_row_type|Type_handler_hybrid_field_type::aggregate_for_comparison                  ## MDEV-40124
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|do_execute_sp|Sql_cmd_call::execute                                        ## MDEV-40299
 ! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-40299
 0|SIGABRT|Type_handler_row::make_outvar_field|LEX::create_outvar|ORAparse|parse_sql                                                                                            ## MDEV-40244
 prebuilt->select_lock_type == LOCK_NONE || (index)->is_spatial()|SIGABRT|row_search_mvcc|ha_innobase::general_fetch|ha_innobase::index_next|handler::ha_index_next             ## MDEV-40123
@@ -3690,3 +3695,11 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # 0|SIGABRT|ha_partition::handle_unordered_prev|ha_partition::index_prev|handler::ha_index_prev|mysql_ha_read                                                         ## Fixed ## MDEV-39790
 # SIGSEGV|que_fork_get_first_thr|row_search_mvcc|ha_innobase::general_fetch|ha_innobase::index_prev                                                                   ## Fixed ## MDEV-39805
 # SIGSEGV|row_search_mvcc|ha_innobase::general_fetch|handler::ha_index_prev|ha_partition::handle_unordered_prev                                                       ## Fixed ## MDEV-39805
+# rights.allow_bits() == merged->cols|SIGABRT|update_role_columns|update_role_table_columns|merge_role_table_and_column_privileges|merge_role_privileges              ## Fixed ## MDEV-40028
+# SIGSEGV|require_quotes|get_quote_char_for_identifier|append_identifier|show_table_and_column_privileges                                                             ## Fixed ## MDEV-40014
+# Well_formed_prefix(system_charset_info, name->str, name->length).length() == name->length|SIGABRT|Lex_ident_sys_st::set_valid_utf8|Lex_ident_sys::Lex_ident_sys|Lex_prepared_stmt::evaluate_name|mysql_sql_stmt_prepare ## Fixed ## MDEV-40060
+# SIGSEGV|my_decimal::operator=|my_decimal2decimal|Item_cache_decimal::cache_value|Item_cache::has_value                                                              ## Fixed ## MDEV-40148
+# rec->field->head()->charset == nullptr|SIGABRT|Type_handler_row::Column_definition_prepare_stage1|Column_definition::prepare_stage1|Column_definition::sp_prepare_create_field|sp_head::fill_field_definition ## Fixed ## MDEV-40153
+# thd->is_error() || thd->killed|SIGABRT|do_execute_sp|Sql_cmd_call::execute|mysql_execute_command|mysql_parse                                                        ## Fixed ## MDEV-40216
+# SIGSEGV|THD::is_error|Item::save_in_field|Item_trigger_field::set_value|Item_trigger_field::set_value                                                               ## Fixed ## MDEV-40224
+# !thd->in_sub_stmt && !(thd->state_flags & Open_tables_state::BACKUPS_AVAIL)|SIGABRT|Locked_tables_list::unlock_locked_tables|mysql_execute_command|Prepared_statement::execute|Prepared_statement::execute_loop ## Fixed ## MDEV-40225
