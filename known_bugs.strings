@@ -297,6 +297,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+! is_set() || m_can_overwrite_status|SIGABRT|Diagnostics_area::set_error_status|THD::raise_condition|THD::raise_condition|my_message_sql                                       ## MDEV-40299
+0|SIGABRT|Type_handler_row::make_outvar_field|LEX::create_outvar|ORAparse|parse_sql                                                                                            ## MDEV-40244
 prebuilt->select_lock_type == LOCK_NONE || (index)->is_spatial()|SIGABRT|row_search_mvcc|ha_innobase::general_fetch|ha_innobase::index_next|handler::ha_index_next             ## MDEV-40123
 SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                              ## MDEV-40286
 SIGSEGV|dict_table_t::is_temporary|innobase_copy_frm_flags_from_table_share|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                     ## MDEV-40274
