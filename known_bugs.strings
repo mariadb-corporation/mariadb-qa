@@ -297,6 +297,12 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Explain_query::have_query_plan|Prepared_statement::execute|Prepared_statement::execute_loop|Prepared_statement::execute_immediate                                      ## MDEV-40309
+SIGSEGV|THD::is_error|sql_set_variables|LEX::restore_set_statement_var|Prepared_statement::execute                                                                             ## MDEV-40309
+SIGSEGV|base_list_iterator::next_fast|List_iterator_fast<set_var_base>::operator++|sql_set_variables|LEX::restore_set_statement_var                                            ## MDEV-40309
+SIGSEGV|base_list_iterator::next|List_iterator<Item_func_match>::operator++|cleanup_ftfuncs|st_select_lex::cleanup                                                             ## MDEV-40309
+SIGSEGV|cleanup_ftfuncs|st_select_lex::cleanup|st_select_lex_unit::cleanup|mysql_execute_command                                                                               ## MDEV-40309
+SIGSEGV|cleanup_order|st_select_lex::cleanup|st_select_lex_unit::cleanup|mysql_execute_command                                                                                 ## MDEV-40309
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MDEV-40226
 SIGSEGV|Field_iterator_table::set_table|Item_trigger_row::populate_with_trigger_fields|Item_trigger_row::fix_fields|Item::fix_fields_if_needed                                 ## MDEV-40130
 SIGSEGV|Item_trigger_field::setup_field|Item_trigger_row::fix_fields|Item::fix_fields_if_needed|Item_trigger_row::set_value                                                    ## MDEV-40127
