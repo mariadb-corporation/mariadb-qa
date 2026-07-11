@@ -1,0 +1,7 @@
+SET sql_mode=ORACLE;
+CREATE TABLE tb (c_int INT);
+DELIMITER $$
+CREATE PACKAGE pk AS TYPE rec IS RECORD (f tb.c_int%TYPE); TYPE aa IS TABLE OF INT INDEX BY INTEGER; END;$$
+CREATE PROCEDURE p AS r pk.rec; v pk.aa; BEGIN r.f := 5; v(r.f) := 99; SELECT v(5); END;$$
+DELIMITER ;
+CALL p;

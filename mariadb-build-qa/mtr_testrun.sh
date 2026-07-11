@@ -42,6 +42,7 @@ if [ ! -r "${PWD}/${TEST}.test" ]; then
 fi
 
 TEMP="$(mktemp)"
+REPORT="${PWD}/report.log"  # b-style bug report output (analog of ~/b's report.log)
 ./gendirs.sh "${3}" | grep 'MD' > ${TEMP}
 
 while read LINE; do
@@ -87,6 +88,58 @@ while read LINE; do
   fi
   cd - >/dev/null
 done < ${TEMP}
+
+# b-style bug report: reproduce ~/b's JIRA-ready output (testcase, representative backtrace(s), Bug Detection
+# Matrix, new-bug list) from the cores the MTR runs above produced. ~/b/findbug_new cannot be reused directly:
+# they run from the BASEDIR (where MTR did not write var/), and these tarball basedirs are not startup.sh-prepped
+# (no ./line, ./stack). Instead we drive ~/mariadb-qa's version_chk_helper.source, ~/t and stack.sh from each
+# tested m*test dir, which is where MTR ran and where all three already locate MTR cores/logs correctly.
+BR_MATRIX="$(mktemp)"; BR_CRASH="$(mktemp)"; BR_RAW="$(mktemp)"
+while read LINE; do
+  MTR=
+  if [ -d "${LINE}/mariadb-test" ]; then MTR="${LINE}/mariadb-test";
+  elif [ -d "${LINE}/mysql-test" ]; then MTR="${LINE}/mysql-test";
+  else continue; fi
+  STR="$(cd "${MTR}" && ~/t 2>/dev/null)"  # ~/t exits 0 only when it produced a UniqueID (crash/assert/SAN)
+  UID_STR='No bug found'
+  if [ $? -eq 0 ]; then
+    STR="$(echo "${STR}" | grep -vEi 'no core file found|no relevant strings were found' | head -n1)"
+    if [ -n "${STR}" ]; then
+      UID_STR="${STR}"
+      echo "${STR}" >> "${BR_RAW}"
+      if ! grep -qF "${STR}" "${BR_CRASH}" 2>/dev/null; then  # First m*test dir per distinct signature (representative backtrace)
+        printf '%s\t%s\n' "${STR}" "${MTR}" >> "${BR_CRASH}"
+      fi
+    fi
+  fi
+  # Bug Detection Matrix row (mirrors ~/mariadb-qa .../line, but sourced from the m*test dir)
+  ( cd "${MTR}" && source "${HOME}/mariadb-qa/version_chk_helper.source" 2>/dev/null &&
+    printf "%-3s %-6s %-4s %-7s %-41s %-30s\n" "${SVR}" "$(echo "${SERVER_VERSION}" | grep -o '[0-9]\+\.[0-9]\+')" "${BUILD_TYPE_SHORT}" "${BUILD_DATE_SHORT}" "${SOURCE_CODE_REV}" "${UID_STR}"
+  ) >> "${BR_MATRIX}"
+done < ${TEMP}
+
+echo '-------------------- BUG REPORT (b-style) --------------------' | tee "${REPORT}"
+echo '{code:sql}' | tee -a "${REPORT}"
+grep -v --binary-files=text '^$' "${1}" | tee -a "${REPORT}"
+echo -e '{code}\n' | tee -a "${REPORT}"
+echo -e 'Leads to:\n' | tee -a "${REPORT}"
+if [ -s "${BR_CRASH}" ]; then  # Representative backtrace: one per distinct signature, via stack.sh in the crashing m*test dir
+  while IFS="$(printf '\t')" read -r SIG MTR; do
+    ( cd "${MTR}" && bash "${HOME}/mariadb-qa/stack.sh" 2>/dev/null ) | tee -a "${REPORT}"
+    echo '' | tee -a "${REPORT}"
+  done < "${BR_CRASH}"
+fi
+echo '{noformat:title=Bug Detection Matrix}' | tee -a "${REPORT}"
+printf "%-3s %-6s %-4s %-7s %-41s %-30s\n" "" "Rel" "o/d" "Build" "Commit" "UniqueID observed" | tee -a "${REPORT}"
+sort -V "${BR_MATRIX}" | tee -a "${REPORT}"
+echo '{noformat}' | tee -a "${REPORT}"
+if [ -s "${BR_RAW}" ]; then
+  echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT}"
+  sort -u "${BR_RAW}" | grep -v '^[[:space:]]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | tee -a "${REPORT}"
+fi
+rm -f "${BR_MATRIX}" "${BR_CRASH}" "${BR_RAW}"
+echo "Bug report written to ${REPORT}" | tee -a "${REPORT}"
+
 rm -f ${TEMP}
 
 echo '-------------- mtr_testrun.sh Results (core files, if any) --------------'
