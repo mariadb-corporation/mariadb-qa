@@ -15,7 +15,6 @@ ERROR. mariadbd: Connection was killed                SPECIAL-43 (non-issue; sim
 Error while setting value .* to                       Invalid mysqld option value passed, common when options are tested
 Warning. option .*: unsigned value .* adjusted to     Invalid mysqld option value passed, common when options are tested
 Warning. InnoDB: Table.*contains.*user defined columns in InnoDB, but.*in MariaDB.*INFORMATION_SCHEMA.INNODB_SYS_COLUMNS  MDEV25654
-Event invalid                                         MDEV-26270
 mariadbd: Cannot load from mysql\..*The table is probably corrupted  SPECIAL-47 (mysql.* corruption non-issue)
 mariadbd: Cannot load from mysql.host. The table is probably corrupted  SPECIAL-50 (mysql.host table corruption non-issue)
 Fatal error: Can't open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted  SPECIAL-50 (idem)
@@ -49,7 +48,6 @@ ERROR. WSREP: Failed to load provider                 wsrep misconfig for exampl
 RocksDB_force_load_corrupted                          Not real corruption, just a variable name
 Failed to acquire lock due to rocksdb_max_row_locks limit.*Internal MariaDB error code: 1296 SPECIAL-35
 Error finishing bulk load                             RocksDB, Not a real issue, ref SPECIAL-36
-ERROR. InnoDB indexes are inconsistent with what def  MDEV-34951
 ERROR. Got error 122 when reading table               MDEV-31896
 ERROR. Got error 123 when reading table               MDEV-36963
 ERROR. Got error 221 when reading table               RocksDB, Not a real issue, ref SPECIAL-37
@@ -146,7 +144,6 @@ Replication slave GTID position. is invalid. Internal MariaDB error code: 12501 
 Internal MariaDB error code: 4254                     SPECIAL-52 (valid warning/error when BINLOG event does not find correct table def)
 my_hash_free: enter: hash:0x                          Caused by debug_dbug='d,sync.wsrep_apply_toi'
 Got error 9 when reading table                        MDEV-23297
-Got error 126 when reading table                      MDEV-27902 (May mask other bugs)
 Got error 127 when reading table                      MDEV-27903
 Got error 128 when reading table                      MDEV-34991
 Got error 134 when reading table                      MDEV-34230
@@ -154,7 +151,6 @@ Got error 170 .It is not possible to log this statement  MDEV-26261
 Got error 171 .The event was corrupt                  MDEV-22936 (May mask other bugs?)
 Got error 174 when reading table                      SPECIAL-55 (CONNECT, file missing, non-issue)
 Got error 188 when reading table                      Presumed non-issue (Operation was interrupted, max_statement_time)
-Got error 192                                         MDEV-26258 (various error 192 msgs). Note we have a space in 'rf' after 192 to avoid all 192* errors being caught
 Got error 194 when reading table                      MDEV-27952 (tablespace discarded)
 Got error 194 .Tablespace is missing .* engine InnoDB MDEV-27952 (tablespace discarded)
 Got error 1054 when reading table                     MDEV-29430 (Spider)
@@ -177,7 +173,6 @@ Got error 12701                                       MDEV-26543 (Spider)
 Got error 12701                                       MDEV-28676 (Spider)
 Got error 12701                                       MDEV-29455 (Spider)
 Got error 12719 when reading table                    Presumed non-issue (Spider, ref SPECIAL-7.sql & MDEV-29583)
-Got error 12801                                       MDEV-29502 (Spider, CLI only: not filtered ftm)
 Lost connection to server during query.*server_errno=2013  Presumed non-issue (Happens on slave when master has crashed)
 Lost connection to server at.*Internal MariaDB error code: 2013  Presumed non-issue (Appears as another error after 'Lost connection to server during query.*server_errno=2013' at times)
 connecting slave requested.*GTID.*not in the master.s binlog.*server_errno=1236  Presumed non-issue (RESET MASTER was executed, removing the master's binary logs) Ref SPECIAL-20.sql example
@@ -191,20 +186,16 @@ Deleting the meta-data file                           Normal result of FLUSH TAB
 lock_rec_fr.*all.*discard.*ge_low.*set_bit.*ulint.*1  MDEV-21516
 Invalid .old.. table or database name                 MDEV-29051
 Incorrect information in file: ...sys                 Usually not due to bugs but due to /sys/ modifications
-Incorrect information in file: ...sys                 MDEV-26297 (tmp-disk-table-size issue)
 Incorrect information in file:.*.frm                  MDEV-28498 (CREATE TABLE/Charset issue)
 Incorrect information in file:.*.frm                  MDEV-27771 (Charset issue)
 Incorrect.*file.*#sql-alter-.*.frm                    MDEV-29203 (UNIQUE HASH INDEX issue)
 Incorrect.*file.*#sql-alter-.*.frm                    MDEV-27661 (Charset issue)
 Please run mariadb-upgrade                            Often seen when a mysql db table has been modified by a testcase
 Got error .126 .Index is corrupted.*test.*MAI         MDEV-30488 and MDEV-31029
-Got error .126 .Index is corrupted.*sql-alter.*MAI    MDEV-26258
-Got error 126 when reading table.*#sql-temptable      MDEV-26258
 Got error 126 when reading table.*#sql-temptable      MDEV-26492
 Unsafe statement written to the binary log using statement format since BINLOG_FORMAT = STATEMENT  # Assumed non-issue (STMT based replication)
 InnoDB: Operating system error number 13 in a file operation  Non-issue (CREATE TABLE...DATA DIRECTORY='/foo/bar/'), SPECIAL-41
 InnoDB: The error means mariadbd does not have the access rights to the directory  Idem as 'error number 13' description
-Unknown key id 1 for.*sql-alter.*continue             MDEV-26258
 Warning: Memory not freed: 32                         MDEV-25876 session_track_system_variables
 Warning: Memory not freed: 80/104/16400/16320/16424   MDEV-29404 PREPARE (not filtered)
 Warning: Memory not freed: 264                        MDEV-30784 log_bin_trust_function_creators
@@ -216,13 +207,10 @@ Warning: Memory not freed: 560                        MDEV-26335 DROP USER CURRE
 Warning: Memory not freed: 16448                      MDEV-25927 PREPARE s...WITH RECURSIVE
 Warning: Memory not freed: 16496                      MDEV-25927 PREPARE s...WITH RECURSIVE
 Warning: Memory not freed: 16808                      MDEV-25927 PREPARE s...WITH RECURSIVE
-spider/spd_table.cc.*mutex.*spider/spd_table.cc       MDEV-29421
 invalid value in column mysql.proc.db_collation       Testcase artifact caused by direct mysql.proc INSERT
 Cannot load from mysql.proc. The table is probably corrupted  Testcase artifact caused by ALTER TABLE mysql.proc
 WSREP .galera. provider is not loaded                 Presumed non-issue (Galera provider not loaded)
 Trying to lock uninitialized mutex.*sql_cache.*72     MDEV-29708
-wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  MDEV-29744
-wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  MDEV-29744
 InnoDB: Invalid column name for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
 InnoDB: Invalid column type for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
 ERROR. RocksDB: Failed to get column family flags from CF with id.*MyRocks data dictionary may be corrupted  MDEV-26677	
@@ -293,3 +281,15 @@ Warning.*BINLOG_BASE64_EVENT: Table structure for binlog event is not compatible
 #Warning. InnoDB: Recalculation of persistent statistics requested for table.*but the required persistent statistics storage is corrupted  MDEV-36373, Fixed
 #mariadbd: caching_sha2_password: cannot auto-generate keys with WolfSSL MDEV-37339, Fixed
 #mariadbd: caching_sha2_password: failed to read private_key.pem.*No such file or directory MDEV-37339, Fixed
+#Incorrect information in file: ...sys                 MDEV-26297 (tmp-disk-table-size issue), Fixed
+#Got error 192                                         MDEV-26258 (various error 192 msgs). Note we have a space in 'rf' after 192 to avoid all 192* errors being caught, Fixed
+#Got error .126 .Index is corrupted.*sql-alter.*MAI    MDEV-26258, Fixed
+#Got error 126 when reading table.*#sql-temptable      MDEV-26258, Fixed
+#Unknown key id 1 for.*sql-alter.*continue             MDEV-26258, Fixed
+#Event invalid                                         MDEV-26270, Fixed
+#Got error 126 when reading table                      MDEV-27902 (May mask other bugs), Fixed
+#spider/spd_table.cc.*mutex.*spider/spd_table.cc       MDEV-29421, Fixed
+#Got error 12801                                       MDEV-29502 (Spider, CLI only: not filtered ftm), Fixed
+#wrong.*mutex.*LOCK_commit_ordered.*LOCK_global_system_variables  MDEV-29744, Fixed
+#wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  MDEV-29744, Fixed
+#ERROR. InnoDB indexes are inconsistent with what def  MDEV-34951, Fixed
