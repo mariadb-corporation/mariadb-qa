@@ -113,9 +113,9 @@ Slave SQL: Commit failed due to failure of an earlier commit on which this one d
 Slave SQL: Error executing row event: 'You can't combine write-locking of system tables with other tables or lock types', Gtid,*Internal MariaDB error code: 1428  MDEV-34011
 Slave: You can't combine write-locking of system tables with other tables or lock types Error_code: 1428  MDEV-34011
 Can't execute init_slave query due to error code      Covering various init_slave exec issues (ref MDEV-29499 and for example SPECIAL-42), ref error 4226 in kb
-safe_mutex: Found wrong usage of mutex .LOCK_plugin. and .LOCK_thd_kill  MDEV-32477
-safe_mutex: Found wrong usage of mutex .LOCK_thd_data. and .LOCK_plugin  MDEV-32477
-safe_mutex: Found wrong usage of mutex .LOCK_log. and .LOCK_global_system_variables  MDEV-35197
+#safe_mutex: Found wrong usage of mutex .LOCK_plugin. and .LOCK_thd_kill  MDEV-32477,Fixed
+#safe_mutex: Found wrong usage of mutex .LOCK_thd_data. and .LOCK_plugin  MDEV-32477,Fixed
+#safe_mutex: Found wrong usage of mutex .LOCK_log. and .LOCK_global_system_variables  MDEV-35197,Fixed
 Failed to open log .file .647.. errno 2               MDEV-22921 (ref comment) (can also show 'server_errno=29' at the end of the line, on a slave with RESET MASTER TO 0x7FFFFFFF; CREATE TABLE ... executed on master)
 Error reading packet from server. File .647. not found  MDEV-22921 (ref comment)
 Internal MariaDB error code: 1100                     Presumed non-issue (BINLOG_BASE64_EVENT, row event exec error, unlock tables when using manual BINLOG commands)  Ref SPECIAL-11
@@ -210,7 +210,7 @@ Warning: Memory not freed: 16808                      MDEV-25927 PREPARE s...WIT
 invalid value in column mysql.proc.db_collation       Testcase artifact caused by direct mysql.proc INSERT
 Cannot load from mysql.proc. The table is probably corrupted  Testcase artifact caused by ALTER TABLE mysql.proc
 WSREP .galera. provider is not loaded                 Presumed non-issue (Galera provider not loaded)
-Trying to lock uninitialized mutex.*sql_cache.*72     MDEV-29708
+#Trying to lock uninitialized mutex.*sql_cache.*72     MDEV-29708,Fixed
 InnoDB: Invalid column name for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
 InnoDB: Invalid column type for stopword table        Non-issue: innodb_ft_server_stopword_table incorrectly set
 ERROR. RocksDB: Failed to get column family flags from CF with id.*MyRocks data dictionary may be corrupted  MDEV-26677	
