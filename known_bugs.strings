@@ -297,6 +297,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+rights.allow_bits() == merged->cols|SIGABRT|update_role_columns|update_role_table_columns|merge_role_table_and_column_privileges|merge_role_privileges                         ## MDEV-40300
 prebuilt->select_lock_type == LOCK_NONE || (index)->is_spatial()|SIGABRT|row_search_mvcc|ha_innobase::general_fetch|ha_innobase::index_next|handler::ha_index_next             ## MDEV-40123
 SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                              ## MDEV-40286
 SIGSEGV|dict_table_t::is_temporary|innobase_copy_frm_flags_from_table_share|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table                     ## MDEV-40274
@@ -3549,6 +3550,7 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # (*tables)->reginfo.lock_type >= TL_READ|SIGABRT|lock_external|mysql_lock_tables|mysql_lock_tables|lock_tables                                                       ## Fixed ## MDEV-16686
 # SIGSEGV|fk_prepare_copy_alter_table|mysql_alter_table|Sql_cmd_alter_table::execute|mysql_execute_command                                                            ## Fixed ## MDEV-19194
 # 0|SIGABRT|ha_partition::handle_unordered_next|ha_partition::index_next|handler::ha_index_next|mysql_ha_read                                                         ## Fixed ## MDEV-20195
+# 0|SIGABRT|ha_partition::handle_unordered_next|ha_partition::multi_range_read_next|JOIN_TAB_SCAN_MRR::next|JOIN_CACHE::join_matching_records                         ## Fixed ## MDEV-20195
 # share->in_trans == 0|SIGABRT|maria_close|ha_maria::close|handler::ha_close|closefrm                                                                                 ## Fixed ## MDEV-21830
 # share->in_trans == 0|SIGABRT|maria_close|ha_maria::close|handler::ha_close|ha_partition::close                                                                      ## Fixed ## MDEV-21830
 # binlog_table_maps == 0 || locked_tables_mode == LTM_LOCK_TABLES|SIGABRT|THD::reset_for_next_command|mysql_parse|dispatch_command|do_command                         ## Fixed ## MDEV-22915

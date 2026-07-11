@@ -188,9 +188,10 @@ fi
 bisect_good(){
   cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
   rm -f ${TMPLOG1}
+  git reset --hard 2>&1 | tee -a "${MAINLOG}"  # Discard any tree changes made by the build scripts (for example CMakeLists.txt compatibility edits): a dirty tree makes the checkout done by git bisect good/bad/skip abort
   git bisect good 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
   # Always init/update submodules after each git bisect good/bad as those commands update the revision set
-  git submodule update --init --recursive
+  git submodule update --init --recursive --force
   cat "${TMPLOG1}" >> "${MAINLOG}"
   if grep -qi 'first bad commit' ${TMPLOG1}; then
     rm -f ${TMPLOG1}
@@ -203,10 +204,11 @@ bisect_good(){
 bisect_bad(){
   cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
   rm -f ${TMPLOG1}
+  git reset --hard 2>&1 | tee -a "${MAINLOG}"  # Idem as in bisect_good
   git bisect bad 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}
   SEEN_ONCE='[*] '
   # Always init/update submodules after each git bisect good/bad as those commands update the revision set
-  git submodule update --init --recursive
+  git submodule update --init --recursive --force
   cat "${TMPLOG1}" >> "${MAINLOG}"
   if grep -qi 'first bad commit' ${TMPLOG1}; then
     echo "Finished: $(grep 'first bad commit' ${TMPLOG1})" | tee -a "${MAINLOG}"
@@ -220,13 +222,29 @@ bisect_bad(){
   rm -f ${TMPLOG1}
 }
 
+bisect_skip(){
+  cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
+  rm -f ${TMPLOG1}
+  git reset --hard 2>&1 | tee -a "${MAINLOG}"  # Idem as in bisect_good
+  PRE_SKIP_COMMIT="$(git rev-parse HEAD)"
+  git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee ${TMPLOG1}  # The 'unable to rmdir' is just for 3rd party/plugins etc. - it is not a fatal error
+  # Always init/update submodules after each git bisect skip as it updates the revision set (idem as git bisect good/bad)
+  git submodule update --init --recursive --force
+  cat "${TMPLOG1}" >> "${MAINLOG}"
+  if [ "$(git rev-parse HEAD)" == "${PRE_SKIP_COMMIT}" ] && ! grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${TMPLOG1}"; then
+    rm -f ${TMPLOG1}
+    die 1 "Assert: git bisect skip did not advance past commit ${PRE_SKIP_COMMIT}: the checkout of the next revision likely failed, ref the output above or the logfile ${MAINLOG}"
+  fi
+  rm -f ${TMPLOG1}
+}
+
 # Git setup
-git bisect reset 2>&1 | grep -v 'We are not bisecting' | tee -a "${MAINLOG}"  # Remove any previous bisect run data
-git reset --hard | tee -a "${MAINLOG}"  # Revert tree to mainline
+git reset --hard | tee -a "${MAINLOG}"  # Discard any local tree changes (build script edits) first: git bisect reset checks out the pre-bisect branch, which aborts on a dirty tree
 if [ "${PIPESTATUS[0]}" != "0" ]; then
   echo "Assert: git reset --hard failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
   clear_env; exit 1
 fi
+git bisect reset 2>&1 | grep -v 'We are not bisecting' | tee -a "${MAINLOG}"  # Remove any previous bisect run data
 git clean -xfd | tee -a "${MAINLOG}"    # Cleanup tree
 if [ "${PIPESTATUS[0]}" != "0" ]; then
   echo "Assert: git clean -xfd failed with a non-0 exit status, please check the output above or the logfile ${MAINLOG}"
@@ -273,6 +291,8 @@ if [ "${BISECT_REPLAY}" -eq 1 ]; then
     clear_env; exit 1
   else
     echo "git bisect replay \"${BISECT_REPLAY_LOG}\" succeeded. Proceding with regular git bisecting." | tee -a "${MAINLOG}"
+    # Always init/update submodules after each git bisect replay as it updates the revision set (idem as git bisect good/bad)
+    git submodule update --init --recursive --force
   fi
 else
   git bisect bad "${FIRST_KNOWN_BAD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, bad
@@ -281,14 +301,14 @@ else
     clear_env; exit 1
   fi
   # Always init/update submodules after each git bisect good/bad as those commands update the revision set
-  git submodule update --init --recursive
+  git submodule update --init --recursive --force
   git bisect good "${LAST_KNOWN_GOOD_COMMIT}" | tee -a "${MAINLOG}"  # Starting point, good
   if [ "${PIPESTATUS[0]}" != "0" ]; then
     echo "Good revision input failed. Terminating for manual debugging. Possible reasons: you may have used a revision of a feature branch, not trunk, have a typo in the revision, or the current tree being used is not recent enough (try 'git pull' or set RECLONE=1 inside the script)."
     clear_env; exit 1
   fi
   # Always init/update submodules after each git bisect good/bad as those commands update the revision set
-  git submodule update --init --recursive
+  git submodule update --init --recursive --force
 fi
 
 # Note that the starting point may not point git to a valid commit to test. i.e. git bisect may jump to a commit
@@ -302,6 +322,7 @@ while :; do
   CUR_VERSION=;CUR_COMMIT=
   COUNT_SAME_VERSION=0
   while :; do
+    cd "/test/git-bisect/${VERSION}" || die 1 "Could not change directory to /test/git-bisect/${VERSION}"
     source ./VERSION
     CUR_VERSION="${MYSQL_VERSION_MAJOR}.${MYSQL_VERSION_MINOR}"
     CUR_COMMIT="$(git log | head -n1 | tr -d '\n')"
@@ -309,7 +330,7 @@ while :; do
     if [ "${CUR_VERSION}" != "${VERSION}" ]; then
       if [ "${SKIP_NON_SAME_VERSION}" == "1" ]; then
         echo "|> ${SEEN_ONCE}${CUR_COMMIT} (${CUR_DATE}) is ver ${CUR_VERSION}, and SKIP_NON_SAME_VERSION=1: skipping.." | tee -a "${MAINLOG}"
-        git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
+        bisect_skip
       else
         echo "|> ${SEEN_ONCE}${CUR_COMMIT} (${CUR_DATE}) is ver ${CUR_VERSION}, and SKIP_NON_SAME_VERSION=0: proceeding.." | tee -a "${MAINLOG}"
         break
@@ -325,7 +346,7 @@ while :; do
       COUNT_SAME_VERSION=$[ ${COUNT_SAME_VERSION} + 1 ]
       if [ ${COUNT_SAME_VERSION} -gt 2 ]; then
         echo "|> ${SEEN_ONCE}${CUR_COMMIT} is the same as the last tested commit ${LAST_TESTED_COMMIT}, and this has happened trice consecutively: finishing.." | tee -a "${MAINLOG}"
-        git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
+        bisect_skip
         if grep -qiE 'There are only.*skip.*ped commits left to test|The first bad commit could be any of' "${MAINLOG}"; then
           echo '|> Consider re-running SKIP_NON_SAME_VERSION=0, or manually test the remaining commits if there are only a few'
         fi
@@ -365,7 +386,7 @@ while :; do
     OUTCOME_BUILD="$(cat ${TMPLOG2} 2>/dev/null | head -n1 | tr -d '\n')"
     if [ "${OUTCOME_BUILD}" != "0" ]; then
       echo "|> ${SEEN_ONCE}Build failure.. Skipping revision ${CUR_COMMIT}" | tee -a "${MAINLOG}"
-      git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # The 'unable to rmdir' is just for 3rd party/plugins etc. - it is not a fatal error
+      bisect_skip
       CONTINUE_MAIN_LOOP=1
       break  # Failed build, CONTINUE_MAIN_LOOP=1 set, break, then 'continue' in main loop for next revision
     else
@@ -392,7 +413,7 @@ while :; do
     echo "Assert: TEST_DIR is empty (no .tar.gz was created in the last two minutes by the build script)" | tee -a "${MAINLOG}"
     echo "Will try and recover by using git skip for this commit. Bisecting may fail" | tee -a "${MAINLOG}"
     cd "${VERSION}" || die 1 "Script could not change directory to ${VERSION}"
-    git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
+    bisect_skip
     continue
   elif [ "$(echo "${TEST_DIR}" | wc -l)" -ne "1" ]; then
     echo "Assert: TEST_DIR does not contain exactly one line; this should not happen. The current value is:" | tee -a "${MAINLOG}"
@@ -403,7 +424,7 @@ while :; do
     echo "Assert: TEST_DIR ${TEST_DIR} does not exits" | tee -a "${MAINLOG}"
     echo "Will try and recover by using git skip for this commit. Bisecting may fail" | tee -a "${MAINLOG}"
     cd "${VERSION}" || die 1 "Script could not change directory to ${VERSION}"
-    git bisect skip 2>&1 | grep -v 'warning: unable to rmdir' | tee -a "${MAINLOG}"  # rmdir: ref above (idem)
+    bisect_skip
     continue
   fi
   cd "${TEST_DIR}" || die 1 "Could not change directory to TEST_DIR (${TEST_DIR})"
@@ -427,6 +448,7 @@ while :; do
     else
       ./test >>"${MAINLOG}" 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
     fi
+    sleep 2  # Allow an in-testcase SHUTDOWN (and any at-shutdown crash) to complete and flush before shutdown/detection
     #DEBUG# read -p 'test done'
     # NOTE: do NOT call ./stop here — its tail invokes ./kill (kill -9), which truncates
     # LSAN/UBSAN/atexit reports mid-cleanup. Issue mariadb-admin shutdown directly instead
@@ -448,6 +470,7 @@ while :; do
     else
       ./test >>"${MAINLOG}" 2>&1 || die 1 "Could not execute ./test in ${PWD}"  # ./in.sql exec test
     fi
+    sleep 2  # Idem as above
     ./stop_replication >/dev/null 2>&1 # Output is removed, ref above
     sleep 1
     ./kill_replication >/dev/null 2>&1
