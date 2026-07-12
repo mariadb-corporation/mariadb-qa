@@ -104,6 +104,11 @@ if [ "${SEED}" == "" ]; then SEED=${RANDOMD}; fi
 # TODO: research this new code (and how it affects trials, though it seeems backwards compatible; checking for PQUERY3 varialbe happens AFTER all other checks are done (i.e. first core, then other checks, then PQUERY3 check, so should be fine? Though trial-1 is apparently removed; research further))
 if [[ ${PQUERY_TOOL_NAME} == "pquery3"* ]]; then PQUERY3=1; fi
 
+# MSAN: symbolized stack traces in handle_fatal_signal are very slow on the multi-GB MSAN binary; the server may be stopped/killed before the handler reaches the core dump, leaving assert trials without a core (and thus without a frames-based UniqueID). Skip the in-log trace so the core is written promptly; UniqueID frames come from gdb on the core
+if [[ "${BASEDIR}" == *"MSAN"* || "${BASEDIR}" == *"msan"* || "${BASEDIR}" == *"Msan"* ]]; then
+  MYSAFE="${MYSAFE} --skip-stack-trace"
+fi
+
 # Safety checks: ensure variables are correctly set to avoid rm -Rf issues (if not set correctly, it was likely due to altering internal variables at the top of this file)
 if [ "${WORKDIR}" == "/sd[a-z][/]" ]; then
   echo "Assert! \${WORKDIR} == '${WORKDIR}' - is it missing the \$RANDOMD suffix?"
