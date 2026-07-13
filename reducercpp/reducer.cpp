@@ -2044,6 +2044,9 @@ static void init_workdir_and_files() {
       state::WORK_BUG_DIR = fs::current_path().string();
     }
   }
+  // Propagate a trial-level TOP_SAN_ISSUES_REMOVED flag into WORKD so subreducers (whose INPUTFILE directory is this WORKD) inherit it
+  if (util::file_readable(state::WORK_BUG_DIR + "/TOP_SAN_ISSUES_REMOVED") && state::WORK_BUG_DIR != state::WORKD)
+    util::sh("touch \"" + state::WORKD + "/TOP_SAN_ISSUES_REMOVED\"");
   state::WORKF = state::WORKD + "/in.sql";
   state::WORKT = state::WORKD + "/in.tmp";
   std::string pref = inputfile_dir_prefix();
@@ -4060,7 +4063,8 @@ static int process_outcome_impl() {
       // Top-SAN dropping
       if (util::sh("grep --binary-files=text -qiE \"=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:\" " +
                    state::WORKD + "/log/*.err " + state::WORKD + "/node*/node*.err 2>/dev/null") == 0) {
-        std::string flag = util::sh_capture_trimmed("echo \"" + cfg::INPUTFILE + "\" | sed 's|/default.node.tld.*|/TOP_SAN_ISSUES_REMOVED|'");
+        // The flag lives in the input file's directory: the trial dir for the main reducer, the parent workdir for subreducers (propagated there at init)
+        std::string flag = state::WORK_BUG_DIR + "/TOP_SAN_ISSUES_REMOVED";
         if (util::file_readable(flag)) {
           echoit(state::ATLEASTONCE + " [Stage " + state::STAGE + "] [Trial " + std::to_string(state::TRIAL) +
                  "] TOP_SAN_ISSUES_REMOVED flag file found: dropping any known *SAN bugs from the top of the error log");

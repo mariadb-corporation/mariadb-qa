@@ -210,7 +210,7 @@ apt-get source ncurses
 cd ncurses-*/
 #./configure --prefix=/usr --with-shared --without-normal --without-debug --enable-widec --enable-pc-files --with-pkg-config-libdir=/usr/lib/pkgconfig --enable-symlinks --with
 #./configure --with-shared --without-normal --without-debug --enable-widec --enable-pc-files --enable-symlinks --with-termlib=tinfo --with-versioned-syms
-./configure --with-shared --without-normal --without-debug --enable-widec --enable-pc-files --enable-symlinks --with-termlib=tinfo
+./configure --with-shared --without-normal --without-debug --enable-widec --enable-pc-files --enable-symlinks --with-termlib=tinfo --with-versioned-syms
 make -j "$(nproc)" sources libs
 cp -aL lib/lib*so* "$MSAN_LIBDIR/"
 cp -aL include/* "$MSAN_LIBDIR/include"

@@ -1907,6 +1907,10 @@ init_workdir_and_files(){
   if [ "${WORK_BUG_DIR}" == "${INPUTFILE}" -o "${WORK_BUG_DIR}" == "./${INPUTFILE}" ]; then
     WORK_BUG_DIR=${PWD}
   fi
+  # Propagate a trial-level TOP_SAN_ISSUES_REMOVED flag into WORKD so subreducers (whose INPUTFILE directory is this WORKD) inherit it
+  if [ -r "${WORK_BUG_DIR}/TOP_SAN_ISSUES_REMOVED" -a "${WORK_BUG_DIR}" != "${WORKD}" ]; then
+    touch ${WORKD}/TOP_SAN_ISSUES_REMOVED
+  fi
   WORKF="$WORKD/in.sql"
   WORKT="$WORKD/in.tmp"
   WORK_BASEDIR=$(echo $INPUTFILE | sed "s|/[^/]\+$|/|;s|$|${EPOCH}_mybase|")
@@ -3875,7 +3879,7 @@ process_outcome(){
         fi
         # If there are *SAN bugs, and if pquery-run.sh wrote a TOP_SAN_ISSUES_REMOVED for the trial, then delete any known ones from the top of the error log(s)
         if grep --binary-files=text -qiE "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" ${WORKD}/log/*.err ${WORKD}/node*/node*.err 2>/dev/null; then
-          if [ -r "$(echo "${INPUTFILE}" | sed 's|/default.node.tld.*|/TOP_SAN_ISSUES_REMOVED|')" ]; then
+          if [ -r "${WORK_BUG_DIR}/TOP_SAN_ISSUES_REMOVED" ]; then  # The flag lives in the input file's directory: the trial dir for the main reducer, the parent workdir for subreducers (propagated there at init)
             echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] TOP_SAN_ISSUES_REMOVED flag file found: dropping any known *SAN bugs from the top of the error log, if any"
             # We are already in $WORKD so we can immediately execute drop_one_or_more_san_from_log.sh from here
             if [ -r ${SCRIPT_PWD}/drop_one_or_more_san_from_log.sh ]; then
