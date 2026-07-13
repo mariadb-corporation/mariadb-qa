@@ -321,23 +321,17 @@ for FILE in ${ERROR_LOGS}; do
         MSAN_ERROR="$(echo "${LINE}" | sed 's|.*WARNING:||;s|.*MemorySanitizer:[ ]*||;s| (pid=.*||')"
       fi
       if [ "${FLAG_MSAN_IN_PROGRESS}" -eq 1 ]; then
-        # Parse first 4 stack frames if discovered in current line
-        if [[ "${LINE}" == *" #0 "* ]]; then
-          MSAN_FRAME1="$(echo "${LINE}" | grep -o '[ ]\+in[ ]\+[^ \(\)]\+' | sed 's|[ ]\+in[ ]\+||')"
+        # Slot-fill the first 4 named stack frames in report order: a frame line without an ' in <name>' token (e.g. an unsymbolized module+offset-only frame) is passed over and the next named frame (#4, #5, ...) takes its slot instead, so the UniqueID always carries 4 frames whenever 4 named frames are available
+        if [[ "${LINE}" == *" #"[0-9]" "* || "${LINE}" == *" #"[0-9][0-9]" "* ]]; then
+          MSAN_FRAME_CUR="$(echo "${LINE}" | grep -o '[ ]\+in[ ]\+[^ \(\)]\+' | sed 's|[ ]\+in[ ]\+||')"
+          if [ ! -z "${MSAN_FRAME_CUR}" ]; then
+            if [ -z "${MSAN_FRAME1}" ]; then MSAN_FRAME1="${MSAN_FRAME_CUR}"
+            elif [ -z "${MSAN_FRAME2}" ]; then MSAN_FRAME2="${MSAN_FRAME_CUR}"
+            elif [ -z "${MSAN_FRAME3}" ]; then MSAN_FRAME3="${MSAN_FRAME_CUR}"
+            elif [ -z "${MSAN_FRAME4}" ]; then MSAN_FRAME4="${MSAN_FRAME_CUR}"; FLAG_MSAN_READY=1
+            fi
+          fi
           msan_file_preparse
-        fi
-        if [[ "${LINE}" == *" #1 "* ]]; then
-          MSAN_FRAME2="$(echo "${LINE}" | grep -o '[ ]\+in[ ]\+[^ \(\)]\+' | sed 's|[ ]\+in[ ]\+||')"
-          msan_file_preparse
-        fi
-        if [[ "${LINE}" == *" #2 "* ]]; then
-          MSAN_FRAME3="$(echo "${LINE}" | grep -o '[ ]\+in[ ]\+[^ \(\)]\+' | sed 's|[ ]\+in[ ]\+||')"
-          msan_file_preparse
-        fi
-        if [[ "${LINE}" == *" #3 "* ]]; then
-          MSAN_FRAME4="$(echo "${LINE}" | grep -o '[ ]\+in[ ]\+[^ \(\)]\+' | sed 's|[ ]\+in[ ]\+||')"
-          msan_file_preparse
-          FLAG_MSAN_READY=1
         fi
       fi
     fi

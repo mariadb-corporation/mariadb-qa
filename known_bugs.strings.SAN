@@ -21,6 +21,13 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|sql/keycaches.cc|bcmp|NAMED_ILINK::cmp|find_named|get_rpl_filter                                                                               ## MDEV-39759
+MSAN|use-of-uninitialized-value|strings/strings_def.h|skip_trailing_space|my_hash_sort_utf8mb3|my_ci_hash_sort|my_hash_sort                                                    ## MDEV-39757
+MSAN|use-of-uninitialized-value|storage/maria/ma_ft_boolean_search.c|ftb_parse_query_internal|_ftb_parse_query|maria_ft_init_boolean_search|ha_maria::ft_init_ext              ## MDEV-39752
+LSAN|memory leak|sql/opt_range.cc|operator|get_quick_select|TRP_RANGE::make_quick|SQL_SELECT::test_quick_select                                                                ## MDEV-38761
+UBSAN|member access within null pointer of type 'Field'|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner             ## MDEV-38658
+ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                        ## MDEV-34735
+ASAN|stack-use-after-return|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                     ## MDEV-34735
 MSAN|use-of-uninitialized-value|sql/item_subselect.h|subselect_uniquesubquery_engine::no_rows|Item_in_optimizer::val_bool|Item_cache_bool::cache_value|Item_cache_wrapper::cache  ## MDEV-40338
 MSAN|use-of-uninitialized-value|storage/connect/xindex.cpp|XFILE::Write|XINDEX::SaveIndex|XINDEX::Make|TDBDOS::MakeIndex                                                       ## MDEV-40310
 MSAN|use-of-uninitialized-value|storage/heap/hp_hash.c|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                ## MDEV-40302

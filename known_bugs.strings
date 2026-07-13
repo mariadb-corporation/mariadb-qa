@@ -342,9 +342,6 @@ SIGSEGV|TDBXML::DeleteDB|CntDeleteRow|ha_connect::delete_row|handler::ha_delete_
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_row|handler::ha_delete_row|TABLE::delete_row                                                                                       ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_row|handler::ha_delete_row|TABLE::delete_row<false>                                                                                ## MDEV-38886
 SIGSEGV|TDBXML::DeleteDB|ha_connect::delete_row|handler::ha_delete_row|mysql_delete                                                                                            ## MDEV-38886
-MSAN|use-of-uninitialized-value|sql/keycaches.cc|bcmp|NAMED_ILINK::cmp|find_named|get_rpl_filter                                                                               ## MDEV-39759
-MSAN|use-of-uninitialized-value|strings/strings_def.h|skip_trailing_space|my_hash_sort_utf8mb3|my_ci_hash_sort|my_hash_sort                                                    ## MDEV-39757
-MSAN|use-of-uninitialized-value|storage/maria/ma_ft_boolean_search.c|ftb_parse_query_internal|_ftb_parse_query|maria_ft_init_boolean_search|ha_maria::ft_init_ext              ## MDEV-39752
 SIGSEGV|mi_mmap_pread|_mi_read_static_record|mi_rprev|ha_myisam::index_prev                                                                                                    ## MDEV-39749
 SIGSEGV|get_new_handler|mysql_rename_table|mysql_alter_table|Sql_cmd_alter_table::execute                                                                                      ## MDEV-39747
 buf != end|SIGABRT|decimal_mul|my_decimal_mul|Item_func_mul::decimal_op|VDec_op::VDec_op                                                                                       ## MDEV-39744
@@ -425,11 +422,9 @@ trx->n_mysql_tables_in_use|SIGABRT|ut_dbg_assertion_failed|ha_innobase::external
 table_records == 0 || sel <= s->table->opt_range_condition_rows / table_records|SIGABRT|apply_selectivity_for_table|best_access_path|get_costs_for_tables|best_extension_by_limited_search ## MDEV-37249
 not_autocommit || trx->n_mysql_tables_in_use || (trx->lock.trx_locks).count == 0|SIGABRT|ha_innobase::external_lock|handler::ha_external_lock|lock_external|mysql_lock_tables  ## MDEV-38766
 status_var.local_memory_used == 0 || !debug_assert_on_not_freed_memory|SIGABRT|THD::~THD|THD::~THD|handle_one_connection|asan_thread_start                                     ## MDEV-38761
-LSAN|memory leak|sql/opt_range.cc|operator|get_quick_select|TRP_RANGE::make_quick|SQL_SELECT::test_quick_select                                                                ## MDEV-38761
 block->page.buf_fix_count()|SIGABRT|btr_pcur_store_position|row_search_mvcc|ha_innobase::index_read|handler::index_read_map                                                    ## MDEV-38725
 !all|SIGABRT|binlog_rollback|run_binlog_first|ha_rollback_trans|ha_prepare                                                                                                     ## MDEV-36174
 !info->error|SIGABRT|flush_write_buffer_if_file_backed|binlog_flush_cache|binlog_commit_flush_stmt_cache|binlog_rollback                                                       ## MDEV-38679
-UBSAN|member access within null pointer of type 'Field'|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner             ## MDEV-38658
 SIGFPE|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const|check_quick_select|get_key_scans_params                                                               ## MDEV-38543
 SIGFPE|handler::multi_range_read_info_const|DsMrr_impl::dsmrr_info_const|ha_innobase::multi_range_read_info_const|check_quick_select                                           ## MDEV-38543
 marked_for_read()|SIGABRT|Field_long::val_int|Item_field::val_int|part_val_int|get_partition_id_range                                                                          ## MDEV-38512
@@ -740,8 +735,6 @@ SIGSEGV|spider_mbase_handler::append_key_order_with_alias|ha_spider::append_key_
 SIGSEGV|spider_mbase_handler::append_key_order_with_alias|spider_mbase_handler::append_key_order_with_alias_part|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_read_map_internal ## MDEV-34735
 SIGSEGV|spider_mbase_handler::append_key_order_with_alias|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_read_map_internal|handler::index_read_idx_map       ## MDEV-34735 (UBASAN builds)
 SIGSEGV|spider_mbase_handler::append_key_order_with_alias|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_first_internal|handler::ha_index_first              ## MDEV-34735
-ASAN|heap-use-after-free|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                        ## MDEV-34735
-ASAN|stack-use-after-return|storage/spider/spd_table.cc|spider_get_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                     ## MDEV-34735
 SIGSEGV|spider_mbase_handler::append_key_order_with_alias|spider_mbase_handler::append_key_order_with_alias_part|ha_spider::append_key_order_with_alias_sql_part|ha_spider::index_first_internal ## MDEV-34735
 len > alloc_length|SIGABRT|Binary_string::realloc_raw|Binary_string::realloc|Binary_string::reserve|spider_string::reserve                                                     ## MDEV-34735
 SIGSEGV|spider_get_select_limit_from_select_lex|spider_get_select_limit|spider_split_read_param|spider_set_result_list_param                                                   ## MDEV-34735

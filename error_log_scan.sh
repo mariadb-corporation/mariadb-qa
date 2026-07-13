@@ -87,7 +87,7 @@ UID_NORMALIZE_LEAK='s|Indirect leak of [0-9]+ byte\(s\) in [0-9]+ object\(s\)|In
 UID_NORMALIZE_ASAN_PID='s|^==[0-9]+==|==X==|'
 UID_NORMALIZE_DBLWRITE_WAIT='s|Long wait \([0-9]+ seconds\)|Long wait (N seconds)|g'
 UID_NORMALIZE_DATETIME='s|[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?|YYYY-MM-DD HH:MM:SS|g'
-UID_NORMALIZE_LRECL='s|Table/File lrecl mismatch \([0-9]+,[0-9]+\)|Table/File lrecl mismatch (N,M)|g'
+UID_NORMALIZE_LRECL='s|Table/File lrecl mismatch \([0-9]+,[0-9]+\)|Table/File lrecl mismatch (X,Y)|g'
 UID_NORMALIZE_TEST_PATH='s|/test/[^/]+/|/test/X/|g'
 UID_NORMALIZE_INNODB_HELP='s|We detected index corruption in an InnoDB type table\..*|We detected index corruption in an InnoDB type table|; s|The file .* already exists though the corresponding table did not exist in the InnoDB data dictionary\. You can resolve the problem by removing the file\.?|The file X already exists though the corresponding table did not exist in the InnoDB data dictionary. You can resolve the problem by removing the file|'
 

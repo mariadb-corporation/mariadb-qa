@@ -358,6 +358,7 @@ find_other_possible_issue_strings(){
     TEXT="$(echo "${TEXT}" | sed \
       -e 's|Open(r+b) error \([0-9]\+\) on [^:]\+:|Open(r+b) error \1 on X:|' \
       -e 's|Invalid flag [0-9]\+ for column [a-zA-Z_][a-zA-Z0-9_]*|Invalid flag X for column Y|' \
+      -e 's|Table/File lrecl mismatch ([0-9]\+,[0-9]\+)|Table/File lrecl mismatch (X,Y)|' \
     )"
     echo "${TEXT}"
     exit 0
