@@ -23,6 +23,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 ##### CURRENT BUGS (Search key: Mac) #####
 MSAN|use-of-uninitialized-value|plugin/server_audit/server_audit.cc|escape_string_hide_passwords|log_statement_ex|log_statement|auditing                                       ## MDEV-40351
 MSAN|use-of-uninitialized-value|plugin/server_audit/server_audit.c|escape_string_hide_passwords|log_statement_ex|log_statement|auditing                                        ## MDEV-40351
+MSAN|use-of-uninitialized-value|sql/item_sum.cc|Item_func_collect::add|Item_sum::aggregator_add|update_sum_func|end_send_group                                                 ## MDEV-40364
 MSAN|use-of-uninitialized-value|sql/keycaches.cc|bcmp|NAMED_ILINK::cmp|find_named|get_rpl_filter                                                                               ## MDEV-39759
 MSAN|use-of-uninitialized-value|strings/strings_def.h|skip_trailing_space|my_hash_sort_utf8mb3|my_ci_hash_sort|my_hash_sort                                                    ## MDEV-39757
 MSAN|use-of-uninitialized-value|storage/maria/ma_ft_boolean_search.c|ftb_parse_query_internal|_ftb_parse_query|maria_ft_init_boolean_search|ha_maria::ft_init_ext              ## MDEV-39752
