@@ -282,6 +282,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|mrn::ExternalLock::ExternalLock|ha_mroonga::storage_info|ha_mroonga::storage_write_row              ## MDEV-40369
 ptr|SIGABRT|skip_trailing_space|my_hash_sort_utf8mb3_general1400_as_ci|my_ci_hash_sort|my_hash_sort                                                                            ## MDEV-40367
 rights.allow_bits() == merged->cols|SIGABRT|update_role_columns|update_role_table_columns|merge_role_table_and_column_privileges|merge_role_privileges                         ## MDEV-40300
 SIGSEGV|Explain_query::have_query_plan|Prepared_statement::execute|Prepared_statement::execute_loop|Prepared_statement::execute_immediate                                      ## MDEV-40309
