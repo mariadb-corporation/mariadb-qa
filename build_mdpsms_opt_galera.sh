@@ -364,13 +364,17 @@ if [[ "${TAR_opt}" == *".tar.gz"* ]]; then
   else
     cp -r ${GALERA_BUILD_LOC} ${GALERA_BUILD_LOC}_opt
     cd ${GALERA_BUILD_LOC}_opt
-    cmake . | tee /tmp/psms_opt_galera_build_${RANDOMD}
-    make | tee -a /tmp/psms_opt_galera_build_${RANDOMD}
+    cmake . 2>&1 | tee /tmp/psms_opt_galera_build_${RANDOMD}
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then echo "Assert: non-0 exit status detected for Galera cmake! See /tmp/psms_opt_galera_build_${RANDOMD}. Note: 'Could not find BOOST components' means Galera build deps are missing (e.g. libboost-filesystem-dev); see the '# For Galera' line in setup_server.sh"; exit 1; fi
+    make -j${MAKE_THREADS} 2>&1 | tee -a /tmp/psms_opt_galera_build_${RANDOMD}
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then echo "Assert: non-0 exit status detected for Galera make! See /tmp/psms_opt_galera_build_${RANDOMD}"; exit 1; fi
     if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
-      ln -sf ${GALERA_BUILD_LOC}_opt/libgalera_enterprise_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
+      GALERA_LIB=libgalera_enterprise_smm.so
     else
-      ln -sf ${GALERA_BUILD_LOC}_opt/libgalera_smm.so ../${DIR_opt_new}/lib/libgalera_smm.so
+      GALERA_LIB=libgalera_smm.so
     fi
+    if [ ! -f ${GALERA_BUILD_LOC}_opt/${GALERA_LIB} ]; then echo "Assert: Galera build reported success but ${GALERA_BUILD_LOC}_opt/${GALERA_LIB} was not produced!"; exit 1; fi
+    ln -sf ${GALERA_BUILD_LOC}_opt/${GALERA_LIB} ../${DIR_opt_new}/lib/libgalera_smm.so
     cd ..
   fi
   # Patch mariadb-test/suite/wsrep/common.pm to also probe the basedir's own

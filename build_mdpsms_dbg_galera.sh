@@ -373,14 +373,19 @@ if [[ "${TAR_dbg}" == *".tar.gz"* ]]; then
   else
     cp -r ${GALERA_BUILD_LOC} ${GALERA_BUILD_LOC}_dbg
     cd ${GALERA_BUILD_LOC}_dbg
-    cmake . | tee /tmp/psms_dbg_galera_build_${RANDOMD}
-    make | tee -a /tmp/psms_dbg_galera_build_${RANDOMD}
+    cmake . 2>&1 | tee /tmp/psms_dbg_galera_build_${RANDOMD}
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then echo "Assert: non-0 exit status detected for Galera cmake! See /tmp/psms_dbg_galera_build_${RANDOMD}. Note: 'Could not find BOOST components' means Galera build deps are missing (e.g. libboost-filesystem-dev); see the '# For Galera' line in setup_server.sh"; exit 1; fi
+    make -j${MAKE_THREADS} 2>&1 | tee -a /tmp/psms_dbg_galera_build_${RANDOMD}
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then echo "Assert: non-0 exit status detected for Galera make! See /tmp/psms_dbg_galera_build_${RANDOMD}"; exit 1; fi
     if [[ $(echo $PREFIX | cut -c1-7) == "GAL_EMD" ]]; then
-      ln -sf ${GALERA_BUILD_LOC}_dbg/libgalera_enterprise_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
+      GALERA_LIB=libgalera_enterprise_smm.so
     else
-      ln -sf ${GALERA_BUILD_LOC}_dbg/libgalera_smm.so ../${DIR_dbg_new}/lib/libgalera_smm.so
+      GALERA_LIB=libgalera_smm.so
     fi
-    cp garb/garbd ${DIR_dbg_new}/bin/
+    if [ ! -f ${GALERA_BUILD_LOC}_dbg/${GALERA_LIB} ]; then echo "Assert: Galera build reported success but ${GALERA_BUILD_LOC}_dbg/${GALERA_LIB} was not produced!"; exit 1; fi
+    ln -sf ${GALERA_BUILD_LOC}_dbg/${GALERA_LIB} ../${DIR_dbg_new}/lib/libgalera_smm.so
+    cp garb/garbd ../${DIR_dbg_new}/bin/
+    if [ $? -ne 0 ]; then echo "Assert: failed to copy garb/garbd to ../${DIR_dbg_new}/bin/"; exit 1; fi
     cd ..
   fi
   # Patch mariadb-test/suite/wsrep/common.pm to also probe the basedir's own
