@@ -1724,6 +1724,8 @@ static int multi_reducer_impl() {
               std::cerr << "Assert: BASEDIR (" << cfg::BASEDIR << ") missing. Terminating.\n"; std::exit(1);
             }
           }
+          // A full disk kills subreducers before they can log anything; pause here like the initial spawn does instead of restart-looping.
+          diskspace(state::WORKD + "/subreducer");
           // Clean restart_w except for subreducer artifact (we have no .sh; respawn via the binary).
           util::sh("rm -Rf \"" + restart_w + "\"/[^s]*");
           util::sh("rm -Rf \"" + restart_w + "\"/socket*");
