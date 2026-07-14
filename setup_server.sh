@@ -248,7 +248,7 @@ sudo apt install build-essential man-db sudo bc perl wget patch make cmake autom
 sudo apt purge libasan4 libasan5 libasan6 gcc-7 gcc-8 gcc-9 gcc-10 gcc c-compiler
 sudo apt autoremove
 sudo apt install libasan6 gcc-9 g++-9 gcc g++ build-essential  # logout login  - drop gcc
-sudo apt install libasio-dev check scons libboost-program-options-dev libboost-dev libssl-dev  # For Galera
+sudo apt install libasio-dev check scons libboost-program-options-dev libboost-filesystem-dev libboost-dev libssl-dev  # For Galera
 sudo apt install libubsan1  # Added here, mostly as a reminder it is required for UBSAN testing; should be installed already
 sudo apt install libc++-dev libc++abi-dev  # Required by generatorcpp/build.sh (clang + -stdlib=libc++ -lc++abi); provides libc++.so.1 / libc++abi.so.1 runtime + headers for release/debug/ubsan/asan profiles
 
