@@ -21,6 +21,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|sql/sql_string.h|Binary_string::c_ptr|Item_func_kdf::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row                         ## MDEV-40385
 MSAN|use-of-uninitialized-value|/MSAN_libs/build/openssl-3.0.13/crypto/modes/gcm128.c|gcm_ghash_4bit|CRYPTO_gcm128_encrypt|generic_aes_gcm_cipher_update|gcm_cipher_internal   ## MDEV-40373
 MSAN|use-of-uninitialized-value|include/mysql/psi/mysql_socket.h|inline_mysql_socket_send|vio_write|net_real_write|net_flush                                                   ## MDEV-40373
 MSAN|use-of-uninitialized-value|plugin/server_audit/server_audit.cc|escape_string_hide_passwords|log_statement_ex|log_statement|auditing                                       ## MDEV-40351
