@@ -32,7 +32,7 @@ task matches its description.
 
 - `_shared/jira_markup.md` - Jira wiki-markup rules shared by the Jira-bound skills.
 - `_shared/tickbox_icons.md` - status-icon set for work summaries and status reports.
-- `_shared/mdev_default_assignees.md` - subsystem-to-assignee map for MDEV bug filing.
+- `_shared/default_assignees.md` - subsystem-to-assignee map for MDEV/MENT bug filing.
 - `_check/public_safety_scan.sh` - blocks generic secrets and private paths from reaching
   this public repo. `linkit` wires it in via the repo's `hooks/` dir (`core.hooksPath`):
   `pre-commit` scans the staged files, `pre-push` re-scans the files in the commits being

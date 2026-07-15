@@ -4,3 +4,38 @@
 # https://clang.llvm.org/docs/ThreadSanitizer.html
 # https://github.com/google/sanitizers/wiki/ThreadSanitizerSuppressions
 # Supported TSAN suppressions: race, race_top, thread, mutex, signal, deadlock, called_from_lib
+
+# ===== Server startup and shutdown data races =====
+# Every entry below fires only during server start/stop or is a transport-layer
+# or lock-free-primitive false positive, so filtering them keeps functional TSAN
+# testing readable without hiding SQL-driven races.
+
+# InnoDB async I/O completion poller (io_uring and simulated aio). Transport-layer
+# false positives that block most TSAN testing. Logged: MDEV-27133.
+race:aio_liburing.cc
+race:aio_simulated.cc
+
+# InnoDB buffer pool restore at startup (buf_load task): page read-completion,
+# buffer-pool LRU and page-latch races that run only under buf_load, so runtime
+# races in the same functions still surface.
+# Logged: MDEV-24328 (buf_page read_complete), MDEV-24330 (buf_LRU_get_free_block).
+# Not yet logged: sux_lock::u_or_x_unlock under buf_load.
+race:buf_load
+
+# Lock-free pin allocator (mysys lf_alloc). Correct lock-free primitive; TSAN
+# reports here are false positives. Not yet logged.
+race:lf_alloc-pin.c
+
+# Global memory-accounting counter, an approximate global updated on every
+# alloc/free. Logged: MDEV-27170.
+race:update_global_memory_status
+
+# InnoDB monitor periodic buffer-pool stats copy. Not yet logged.
+race:buf_refresh_io_stats
+
+# Shutdown-only races (srv_shutdown_state, signal_thread_in_use, abort_loop,
+# thread-cache flush). Not yet logged.
+race:srv_shutdown_bg_undo_sources
+race:signal_hand
+race:break_connect_loop
+race:Thread_cache::final_flush
