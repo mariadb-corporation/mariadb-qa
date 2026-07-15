@@ -209,16 +209,16 @@ sed -i 's|^USE_SAN=[0-1]|USE_SAN=1|' ~/mariadb-qa/build_mdpsms_opt_san.sh
 sed -i 's|^USE_SAN=[0-1]|USE_SAN=1|' ~/mariadb-qa/build_mdpsms_dbg_san.sh
 sed -i 's|^ASAN_OR_MSAN=[0-1]|ASAN_OR_MSAN=0|' ~/mariadb-qa/build_mdpsms_opt_san.sh
 sed -i 's|^ASAN_OR_MSAN=[0-1]|ASAN_OR_MSAN=0|' ~/mariadb-qa/build_mdpsms_dbg_san.sh
+sed -i 's|^USE_TSAN=[^ ]*|USE_TSAN=${USE_TSAN:-0}|' ~/mariadb-qa/build_mdpsms_opt_san.sh  # Normalize to the env-overridable form (ref 'bat' alias)
+sed -i 's|^USE_TSAN=[^ ]*|USE_TSAN=${USE_TSAN:-0}|' ~/mariadb-qa/build_mdpsms_dbg_san.sh
 
-if [ ${BUILD_UBASAN} -eq 1 ]; then 
-  sed -i 's|^USE_TSAN=[0-1]|USE_TSAN=0|' ~/mariadb-qa/build_mdpsms_opt_san.sh
-  sed -i 's|^USE_TSAN=[0-1]|USE_TSAN=0|' ~/mariadb-qa/build_mdpsms_dbg_san.sh
+if [ ${BUILD_UBASAN} -eq 1 ]; then
+  export USE_TSAN=0
   buildall
 fi
 
-if [ ${BUILD_TSAN} -eq 1 ]; then 
-  sed -i 's|^USE_TSAN=[0-1]|USE_TSAN=1|' ~/mariadb-qa/build_mdpsms_opt_san.sh
-  sed -i 's|^USE_TSAN=[0-1]|USE_TSAN=1|' ~/mariadb-qa/build_mdpsms_dbg_san.sh
+if [ ${BUILD_TSAN} -eq 1 ]; then
+  export USE_TSAN=1
   buildall
 fi
 

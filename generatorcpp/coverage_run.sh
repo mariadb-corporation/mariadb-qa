@@ -4,11 +4,13 @@
 # the corpus in chunks, clean-shutdown (flush) after each, restart on crash, and
 # merge every per-instance profraw. Datadir persists across restarts (schema deepens).
 set -u
-BT=/tmp/13.0_cov_opt
+BT="${BT:-/tmp/13.0_cov_opt}"
 BIN=$BT/sql/mariadbd
 CLIENT="$BT/client/mariadb --no-defaults -uroot"
 ADMIN="$BT/client/mariadb-admin --no-defaults -uroot"
+SEED="${SEED:-$HOME/mariadb-qa/generatorcpp/cov_seed.sql}"
 GEN="${GEN:-$HOME/mariadb-qa/generatorcpp/generator}"
+PQUERY="${PQUERY:-$HOME/mariadb-qa/pquery/pquery2-md}"   # one line = one query (no ';' split); the CLI would shatter compound bodies
 NQ="${NQ:-500000}"
 GTHREADS="${GTHREADS:-$(nproc)}"
 CHUNK="${CHUNK:-20000}"
@@ -44,12 +46,16 @@ echo "[$(date +%T)] init datadir"
 
 echo "[$(date +%T)] generate corpus ($NQ)"
 ( cd "$HOME/mariadb-qa/generatorcpp" && "$GEN" --threads "$GTHREADS" --output "$WORK/corpus.sql" "$NQ" ) >/dev/null 2>&1
-split -l "$CHUNK" -d -a 4 "$WORK/corpus.sql" "$WORK/chunk_"
-nch=$(ls "$WORK"/chunk_* 2>/dev/null | wc -l); echo "    corpus=$(wc -l < "$WORK/corpus.sql") lines, $nch chunks"
+# Drop wedge statements (pcre2 catastrophic REGEXP, blocking waits, slave-control) and inject a
+# periodic UNLOCK TABLES so a lone LOCK TABLES cannot poison the rest of a chunk with ER_TABLE_NOT_LOCKED
+FILTER='REGEXP|RLIKE|debug_sync|WAIT_FOR|GET_LOCK|SLEEP[[:space:]]*\(|(START|STOP|RESET)[[:space:]]+(SLAVE|REPLICA)|CHANGE[[:space:]]+MASTER'
+grep -ivE "$FILTER" "$WORK/corpus.sql" | awk 'NR%15==0{print "UNLOCK TABLES;"} {print}' > "$WORK/corpus.f.sql"
+split -l "$CHUNK" -d -a 4 "$WORK/corpus.f.sql" "$WORK/chunk_"
+nch=$(ls "$WORK"/chunk_* 2>/dev/null | wc -l); echo "    corpus=$(wc -l < "$WORK/corpus.f.sql") lines, $nch chunks"
 
 echo "[$(date +%T)] start + seed"
 start_server || { echo "initial start failed"; tail "$WORK/err.log"; exit 1; }
-$CLIENT --socket="$SOCK" --force < /tmp/cov_seed.sql 2>"$WORK/seed_err.log"
+$CLIENT --socket="$SOCK" --force < "$SEED" 2>"$WORK/seed_err.log"
 
 ci=0; restarts=0
 for ch in "$WORK"/chunk_*; do
@@ -58,7 +64,9 @@ for ch in "$WORK"/chunk_*; do
   split -n l/$CPAR -d "$ch" "$ch.sp_" 2>/dev/null || cp "$ch" "$ch.sp_00"
   pids=()
   for sp in "$ch".sp_*; do
-    timeout "$TMO" $CLIENT --socket="$SOCK" --force test < "$sp" >/dev/null 2>>"$WORK/run_err.log" &
+    pqlog="$WORK/pq_${ci}_$(basename "$sp")"; mkdir -p "$pqlog"
+    timeout "$TMO" "$PQUERY" --infile="$sp" --socket="$SOCK" --database=test --user=root \
+      --threads=1 --queries-per-thread="$(wc -l < "$sp")" --no-shuffle --logdir="$pqlog" >/dev/null 2>&1 &
     pids+=($!)
   done
   wait "${pids[@]}" 2>/dev/null
@@ -68,6 +76,15 @@ for ch in "$WORK"/chunk_*; do
   printf "\r    chunk %d/%d (restarts=%d)   " "$ci" "$nch" "$restarts"
 done
 stop_server; echo
+
+# aggregate pquery per-part success rate (a low rate means the corpus wastes coverage on errors)
+tot=0; fail=0
+for g in "$WORK"/pq_*/*general.log; do
+  [ -e "$g" ] || continue
+  line=$(grep -oE '[0-9]+/[0-9]+ queries failed' "$g" | head -1); [ -z "$line" ] && continue
+  f=${line%%/*}; rest=${line#*/}; t=${rest%% *}; fail=$((fail+f)); tot=$((tot+t))
+done
+[ "$tot" -gt 0 ] && echo "[$(date +%T)] pquery success: $((tot-fail))/$tot ($(((tot-fail)*100/tot))%)"
 
 echo "[$(date +%T)] profraw files: $(ls "$PROF"/*.profraw 2>/dev/null | wc -l), restarts: $restarts"
 ls "$PROF"/*.profraw >/dev/null 2>&1 || { echo "NO PROFRAW"; exit 2; }

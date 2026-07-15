@@ -6,14 +6,14 @@ task matches its description.
 
 ## Skills
 
-- `claude-basedir-fix-copy-setup` - copy a `/test` basedir to `/tmp` and re-bake the
+- `build-fix-diff` - in a `/tmp` copy of the source tree, iterate a candidate fix (edit,
+  light patched build, run) and capture it as `fix.diff`.
+- `claude-basedir-fix-copy-setup` - copy a built `/test` basedir to `/tmp` and re-bake the
   path-baked helpers so the copy runs as a standalone server without touching the original.
 - `claude-code` - how to get authoritative Claude Code information and how to run Claude
   Code headless (for example from cron).
 - `email` - send a plain-text email from this box via direct-to-MX SMTP, no local MTA or
   credentials.
-- `fix-diff` - generate a `fix.diff` for a code change from an edit cycle in a `/tmp` copy
-  of the source tree.
 - `jira-comment` - draft a short, paste-ready Jira comment for a MariaDB ticket in Jira
   wiki markup.
 - `jira-ticket` - file a reduced pquery trial as a public MariaDB bug: reduce further,
@@ -23,14 +23,16 @@ task matches its description.
   each ended trial's processes and its `/dev/shm` workdir; leave screens still reducing.
 - `mtr_testcase` - craft and verify a `.test` from a CLI/pquery repro: engine guards,
   `--error` coverage, reverse-gating, and run-in-place verification.
-- `qa-build` - build a patched MariaDB binary from a `/tmp` copy of the source tree using
-  the `build_mdpsms_*.sh` variants.
+- `qa-build` - build durable MariaDB basedirs in `/test` from a source tree (`ba`/`bas`/`bam`/`bat`
+  = opt+dbg, UBASAN, MSAN, TSAN); feature/ticket trees get the `MDEV-..._`/`MENT-..._` rename.
 - `verify-fix` - end-to-end fix verification: draft the diff, build the fix, run the test
   across each affected version, record the results.
 
 ## Shared and support files
 
 - `_shared/jira_markup.md` - Jira wiki-markup rules shared by the Jira-bound skills.
+- `_shared/tickbox_icons.md` - status-icon set for work summaries and status reports.
+- `_shared/mdev_default_assignees.md` - subsystem-to-assignee map for MDEV bug filing.
 - `_check/public_safety_scan.sh` - blocks generic secrets and private paths from reaching
   this public repo. `linkit` wires it in via the repo's `hooks/` dir (`core.hooksPath`):
   `pre-commit` scans the staged files, `pre-push` re-scans the files in the commits being
@@ -52,16 +54,16 @@ them from their repo path (`~/mariadb-qa/skills/_shared/...`).
 
 ## Prerequisites
 
-The build, test, and reducer skills (`qa-build`, `verify-fix`, `fix-diff`,
+The build, test, and reducer skills (`qa-build`, `verify-fix`, `build-fix-diff`,
 `claude-basedir-fix-copy-setup`, `mtr_testcase`, `loop-screens-cleanup`, `jira-ticket`)
 assume the mariadb-qa framework is installed:
 
 - source trees under `/test/<ver>` and built basedirs under `/test/`,
 - `~/st` (`startup.sh`) to bake the per-basedir helpers,
-- `build_mdpsms_*.sh` build scripts and the `ba` / `bas` bashrc aliases,
+- `build_mdpsms_*.sh` build scripts and the `ba` / `bas` / `bam` / `bat` bashrc aliases,
 - `gendirs.sh` to enumerate basedirs,
 - `/data/TARS` for tarball storage,
-- the reducer stack (`reducercpp`, `~/loop_screens*`, `~/sr`, `/data/<workdir>` trials) for
+- the reducer stack (`reducercpp`, `/test/loop_screens*`, `~/sr`, `/data/<workdir>` trials) for
   `loop-screens-cleanup`,
 - a jira.mariadb.org Personal Access Token for `jira-ticket` (`$JIRA_PAT` or
   `~/.config/mariadb-qa/jira.pat`; the skill explains how to get one).

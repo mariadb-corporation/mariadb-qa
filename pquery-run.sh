@@ -70,7 +70,7 @@ export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=51
 # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
 #export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1
-export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
+export TSAN_OPTIONS=suppressions=${SCRIPT_PWD}/TSAN.filter:suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1
 export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0
 
 # Print/Output function
@@ -107,6 +107,12 @@ if [[ ${PQUERY_TOOL_NAME} == "pquery3"* ]]; then PQUERY3=1; fi
 # MSAN: symbolized stack traces in handle_fatal_signal are very slow on the multi-GB MSAN binary; the server may be stopped/killed before the handler reaches the core dump, leaving assert trials without a core (and thus without a frames-based UniqueID). Skip the in-log trace so the core is written promptly; UniqueID frames come from gdb on the core
 if [[ "${BASEDIR}" == *"MSAN"* || "${BASEDIR}" == *"msan"* || "${BASEDIR}" == *"Msan"* ]]; then
   MYSAFE="${MYSAFE} --skip-stack-trace"
+fi
+
+# TSAN: the 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space reservation) cannot map within the TSAN-restricted address space; cap it
+if [[ "${BASEDIR}" == *"TSAN"* || "${BASEDIR}" == *"tsan"* || "${BASEDIR}" == *"Tsan"* ]]; then
+  MYSAFE="${MYSAFE} --loose-innodb-buffer-pool-size-max=2G"
+  MYINIT="${MYINIT} --loose-innodb-buffer-pool-size-max=2G"
 fi
 
 # Safety checks: ensure variables are correctly set to avoid rm -Rf issues (if not set correctly, it was likely due to altering internal variables at the top of this file)

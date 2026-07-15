@@ -796,6 +796,12 @@ static void preprocess_myextra() {
     std::this_thread::sleep_for(std::chrono::seconds(2));
     cfg::BASEDIR = basedir_alt;
   }
+  // TSAN: the 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space
+  // reservation) cannot map within the TSAN-restricted address space; cap it
+  if (cfg::BASEDIR.find("TSAN") != std::string::npos &&
+      !util::contains(cfg::MYEXTRA, "--loose-innodb-buffer-pool-size-max")) {
+    cfg::MYEXTRA += " --loose-innodb-buffer-pool-size-max=2G";
+  }
   // Replication blanking (lines 418..421)
   if (cfg::REPLICATION != 1) {
     cfg::REPL_EXTRA.clear();
@@ -5385,13 +5391,14 @@ int main(int argc, char** argv) {
     std::string home = util::getenv_or("HOME");
     std::string asan_sup  = home.empty() ? "" : ("suppressions=" + home + "/mariadb-qa/ASAN.filter:");
     std::string ubsan_sup = home.empty() ? "" : ("suppressions=" + home + "/mariadb-qa/UBSAN.filter:");
+    std::string tsan_sup  = home.empty() ? "" : ("suppressions=" + home + "/mariadb-qa/TSAN.filter:");
     setenv("ASAN_OPTIONS",
       (asan_sup + "quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3"
                   ":dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1").c_str(), 0);
     setenv("UBSAN_OPTIONS",
       (ubsan_sup + "print_stacktrace=1:report_error_type=1").c_str(), 0);
     setenv("TSAN_OPTIONS",
-      "suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1", 0);
+      (tsan_sup + "suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1").c_str(), 0);
     setenv("MSAN_OPTIONS", "abort_on_error=1:poison_in_dtor=0", 0);
   }
   std::error_code ec;

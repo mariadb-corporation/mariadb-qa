@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Created by Roel Van de Paar, MariaDB
 """Send a plain-text email from this box via direct-to-MX SMTP + STARTTLS.
 
 Resolves the recipient domain's MX records (lowest priority first, implicit-MX

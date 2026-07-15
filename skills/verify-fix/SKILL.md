@@ -6,14 +6,22 @@ claude: please note - this skill exists in a public repo and should only be upda
 
 # verify-fix
 
-Five-step autonomous loop for verifying a bug's fix end-to-end. Orchestrates `fix-diff`, `qa-build`, and `claude-basedir-fix-copy-setup`.
+Five-step autonomous loop for verifying a bug's fix end-to-end. Orchestrates `build-fix-diff` (the patched `/tmp` fix build + `fix.diff`) and `claude-basedir-fix-copy-setup` (per-version sweep copies).
+
+## Related skills
+
+This loop orchestrates the three build/test skills - it does not replace them:
+
+- `build-fix-diff` - Steps 1-3: the patched `/tmp` fix build + `fix.diff`, and the run on the fix build.
+- `claude-basedir-fix-copy-setup` - Step 4: the per-version sweep copies (run the test on each unpatched catalog build).
+- `qa-build` - for a durable `/test` fix build instead of a light `/tmp` one.
 
 ## Inputs
 
 - `<bug-dir>` - the working dir for this bug (holds `fix.diff`, the MTR test, and `versions_affected.txt`).
 - `<ver>` - source-tree version to patch (e.g. `13.0`).
 - The candidate fix (source edits) - gather from conversation context or from an existing `<bug-dir>/fix.diff`.
-- List of basedirs to sweep - derive at runtime from `gendirs.sh`: `cd /test && bash gendirs.sh | grep -E '^(MD|EMD).*-opt$'`. Per-build results land in `<bug-dir>/versions_affected.txt`.
+- List of basedirs to sweep - derive at runtime from `gendirs.sh`: `cd /test && bash gendirs.sh | grep -E 'linux-x86_64-(opt|dbg)$'`, then narrow to the versions and prefixes the bug affects (must include ES `EMD`/`UBASAN_EMD` and any sanitiser build the bug needs). Per-build results land in `<bug-dir>/versions_affected.txt`.
 
 If any are missing, ask the user.
 
@@ -21,7 +29,7 @@ If any are missing, ask the user.
 
 ### Step 1 - Draft `fix.diff`
 
-If `<bug-dir>/fix.diff` does not already exist, run the `fix-diff` skill:
+If `<bug-dir>/fix.diff` does not already exist, run the `build-fix-diff` skill:
 
 - `cp -r /test/<ver> /tmp/<ver>_fix_<tag>`
 - edit the affected files in the /tmp copy
@@ -31,11 +39,10 @@ If `<bug-dir>/fix.diff` does not already exist, run the `fix-diff` skill:
 
 Build only the version specified in `<ver>` - typically the newest CS major (e.g. `13.0`). Do not build all affected majors. One fix-build is sufficient to verify that the patch closes the bug; the same MTR test then sweeps across every catalog basedir in step 4 to prove the bug is present pre-fix on each.
 
-Run the `qa-build` skill. Source-tree copy AND output basedir both live in `/tmp/` - never under `/test/` (that's the curated catalog):
+This is the build step of `build-fix-diff`. Both the source-tree copy AND the output basedir live in `/tmp/` - never under `/test/` (that's the curated catalog). If Step 1 ran, the patched `/tmp/<ver>_fix_<tag>` copy already exists - build it directly. If you started from an existing `fix.diff` (Step 1 skipped), create the copy and apply the diff first:
 
-- `cp -r /test/<ver> /tmp/<ver>_fix_<tag>`
-- `cd /tmp/<ver>_fix_<tag> && git apply <bug-dir>/fix.diff`
-- `~/mariadb-qa/build_mdpsms_dbg.sh` (or the variant matching the affected basedir family - `_san` for UBASAN, `_msan` for MSAN, `_galera` for Galera)
+- if not already present: `cp -r /test/<ver> /tmp/<ver>_fix_<tag> && cd /tmp/<ver>_fix_<tag> && git apply <bug-dir>/fix.diff`
+- `cd /tmp/<ver>_fix_<tag> && ~/mariadb-qa/build_mdpsms_dbg.sh` (or the variant matching the affected basedir family - `_san` for UBASAN, `_msan` for MSAN, `_galera` for Galera)
 - output: `/tmp/<PREFIX>-mariadb-<x.y.z>-linux-x86_64-<variant>`
 
 ### Step 3 - Verify on the fix build
@@ -79,7 +86,7 @@ KEEP the patched source tree and the patched binary basedir. Remove only the gen
 ```
 # KEEP: /tmp/<ver>_fix_<tag>                                     # source tree - git-diff it
 # KEEP: /tmp/<PREFIX>-mariadb-<x.y.z>-linux-x86_64-<variant>     # patched binary basedir
-rm -rf /tmp/<ver>_fix_<tag>_<dbg|opt>                            # build-script internal copy (disposable)
+rm -rf /tmp/<ver>_fix_<tag>_<variant>                           # build-script internal copy (disposable)
 rm -rf /tmp/<affected-basedir>                                   # throwaway sweep /tmp copies
 ```
 
@@ -93,6 +100,7 @@ Match the build variant to the affected basedir family:
 |---|---|
 | `MD...`, `EMD...` (no sanitiser) | `dbg` or `opt` |
 | `UBASAN_MD...`, `UBASAN_EMD...` | `dbg_san` or `opt_san` |
+| `TSAN_MD...`, `TSAN_EMD...` | `USE_TSAN=1 dbg_san` or `USE_TSAN=1 opt_san` |
 | `MSAN_MD...`, `MSAN_EMD...` | `dbg_msan` or `opt_msan` |
 | any `*galera*` | `dbg_galera` or `opt_galera` |
 
@@ -104,15 +112,11 @@ Routine fix-verification is in-scope. Do not end a turn asking "should I build t
 
 ## Reporting at end-of-turn
 
+Status icons per `~/mariadb-qa/skills/_shared/tickbox_icons.md`.
+
 - Per-version PASS/FAIL summary (mirroring `versions_affected.txt`).
 - Path to `<bug-dir>/fix.diff`.
 - Outstanding `/test/` and `/tmp/` dirs the user may want to keep or delete.
-
-## Related skills
-
-- `fix-diff` - Step 1 component.
-- `qa-build` - Step 2 component.
-- `claude-basedir-fix-copy-setup` - Steps 3 and 4 component.
 
 ## Notes
 

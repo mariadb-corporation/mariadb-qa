@@ -1,0 +1,6 @@
+# ----- TSAN filter list - used as:
+# TSAN_OPTIONS=suppressions=${HOME}/mariadb-qa/TSAN.filter:suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1
+# ----- Documentation links:
+# https://clang.llvm.org/docs/ThreadSanitizer.html
+# https://github.com/google/sanitizers/wiki/ThreadSanitizerSuppressions
+# Supported TSAN suppressions: race, race_top, thread, mutex, signal, deadlock, called_from_lib

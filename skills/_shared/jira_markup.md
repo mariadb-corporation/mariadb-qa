@@ -15,7 +15,7 @@ Referenced by the `jira-comment` and `mtr_testcase` skills.
 
 ## Escaping (high-frequency error class)
 
-- Backslash-escape the hyphen ONLY inside `MDEV-` / `MENT-` issue keys: `{{MDEV\-12345}}`, `{{MENT\-1234}}`. Nowhere else. Do NOT escape hyphens after a `}}` closer, in compound words (follow-up, server-side), in version ranges (10.6-13.1), or anywhere else in prose. Over-escaping is a recurring error.
+- Backslash-escape the hyphen in two cases only: (1) inside `MDEV-` / `MENT-` issue keys: `{{MDEV\-12345}}`, `{{MENT\-1234}}`; (2) a leading `--` option name inside `{{..}}`: `{{\--ssl-crl}}` - one backslash before the leading `--`, intra-word hyphens stay unescaped (`{{\--ssl-crl}}`, not `{{\-\-ssl\-crl}}`), else the leading `--` renders as strikethrough. Nowhere else: do NOT escape hyphens after a `}}` closer, in compound words (follow-up, server-side), in version ranges (10.6-13.1), or anywhere else in prose. Over-escaping is a recurring error.
 - Never use an em-dash. Use a plain hyphen `-`. A lone hyphen with surrounding spaces is safe; strikethrough triggers only on `-text-` hugging a word with no spaces.
 - Never start a prose line with `#`; Jira turns it into a numbered-list item. Rephrase so the line starts with a word, or escape as `\#`.
 - Identifiers containing `*` or `_` go inside `{{...}}` (no escaping needed inside the braces): `{{char*}}`, `{{auth_string_length}}`.

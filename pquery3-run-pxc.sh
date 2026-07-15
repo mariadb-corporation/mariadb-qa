@@ -29,7 +29,7 @@ export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=51
 # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
 #export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1
 export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1
-export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
+export TSAN_OPTIONS=suppressions=${SCRIPT_PWD}/TSAN.filter:suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1
 export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0
 
 # Read configuration

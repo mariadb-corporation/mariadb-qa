@@ -11,7 +11,7 @@ CUSTOM_COMPILER_LOCATION="${HOME}/GCC-5.5.0/bin"
 O_LEVEL='1'             # 0,1,2,3,g: -O Compiler optimization level. Recommended: '1': for testing dbg, '2': opt, 'g': debugging
 USE_CLANG=1             # 0 or 1 # Use the Clang compiler instead of gcc
 USE_SAN=1               # 0 or 1 # 1: Enable SAN builds: TSAN, ASAN+UBSAN, or MSAN
-USE_TSAN=0              # 0 or 1 # 1: Enables TSAN, disables ASAN+UBSAN/MSAN. 0: Enables ASAN+UBSAN or MSAN, disables TSAN
+USE_TSAN=${USE_TSAN:-0}  # 0 or 1 # 1: Enables TSAN, disables ASAN+UBSAN/MSAN. 0: Enables ASAN+UBSAN or MSAN, disables TSAN. Overridable via env (ref 'bat' alias)
 ASAN_OR_MSAN=0          # 0 or 1 # 0: ASAN+UBSAN. 1: MSAN (not supported in this script; use the dedicated _msan.sh script instead)
 PERFSCHEMA='NO'         # 'NO', 'YES', 'STATIC' or 'DYNAMIC' # Option value is directly passed to -DPLUGIN_PERFSCHEMA=x (i.e. it should always be set to 0 or 1 here). Default is 'NO' to speed up rr.
 DISABLE_DBUG_TRACE=1    # 0 or 1 # If 1, then -DWITH_DBUG_TRACE=OFF is used. Default is 'OFF' to speed up rr.
@@ -234,8 +234,8 @@ if [ $USE_SAN -eq 1 ]; then
   # Ref https://dev.mysql.com/doc/refman/5.7/en/source-configuration-options.html#option_cmake_with_msan
   # Also, -DWITH_RAPID=OFF is a workaround for https://bugs.mysql.com/bug.php?id=90211 - it disables GR and mysqlx (rapid plugins)
   if [ ${USE_TSAN} -eq 1 ]; then
-    # SAN="-DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys"
-    SAN="-DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys -DWITH_INNODB=0"  # InnoDB disabled till rw-lock instrumentation is added
+    SAN="-DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON"
+    # Older trees additionally took -DMUTEXTYPE=sys -DWITH_INNODB=0 (InnoDB disabled pending rw-lock instrumentation). Both options are absent from current trees (13.0 verified: no cmake references, and InnoDB still builds STATIC with them set). To disable InnoDB use -DPLUGIN_INNOBASE=NO
   else
     if [ ${ASAN_OR_MSAN} -eq 0 ]; then
       SAN="-DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON"  # Both, default
@@ -281,8 +281,12 @@ else
         #FLAGS="-D_FORTIFY_SOURCE=2 -DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fstack-protector-all -fno-omit-frame-pointer -fno-inline -fno-builtin -fno-common -fsanitize=address,undefined,leak,alignment,bounds,integer,null,enum,pointer-compare,pointer-subtract,return,unreachable,vla-bound'"
         # undefined,null,nullability-assign,pointer-overflow,pointer-overflow,pointer-overflow,pointer-overflow,alignment,alignment,object-size,signed-integer-overflow,unsigned-integer-overflow,integer-divide-by-zero,float-divide-by-zero,invalid-builtin-use,invalid-objc-cast,implicit-unsigned-integer-truncation,implicit-signed-integer-truncation,implicit-integer-sign-change,implicit-signed-integer-truncation,implicit-integer-sign-change,shift-base,shift-exponent,bounds,local-bounds,unreachable,return,vla-bound,float-cast-overflow,bool,enum,function,returns-nonnull-attribute,nullability-return,nonnull-attribute,nullability-arg,vptr,cfi,vptr_check
         if [ "$(cmake --version | grep -o '[0-9]' | head -n1)" -ge 4 ]; then  # cmake > v4.0 (also assumes Clang/LLVM 21)
-          RTDIR="$(${CLANG_LOCATION} -print-runtime-dir 2>/dev/null)"  # clang runtime dir (version-agnostic) for the -shared-libasan rpath
-          FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-lm -fsanitize=address,undefined -shared-libasan -Wl,-rpath,${RTDIR}' -DCMAKE_REQUIRED_FLAGS='-fsanitize=address,undefined -shared-libasan -Wl,-rpath,${RTDIR}'"
+          RTDIR="$(${CLANG_LOCATION} -print-runtime-dir 2>/dev/null)"  # clang runtime dir (version-agnostic) for the -shared-libasan/-shared-libsan rpath
+          if [ ${USE_TSAN} -eq 1 ]; then
+            FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fsanitize=thread -fno-omit-frame-pointer' -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-lm -fsanitize=thread -shared-libsan -Wl,-rpath,${RTDIR}' -DCMAKE_REQUIRED_FLAGS='-fsanitize=thread -shared-libsan -Wl,-rpath,${RTDIR}'"
+          else
+            FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_{EXE,SHARED,MODULE}_LINKER_FLAGS='-lm -fsanitize=address,undefined -shared-libasan -Wl,-rpath,${RTDIR}' -DCMAKE_REQUIRED_FLAGS='-fsanitize=address,undefined -shared-libasan -Wl,-rpath,${RTDIR}'"
+          fi
           SAN=""  # We set these manually instead (build script limitation in connection with a custom Clang/LLVM install)
         else
           FLAGS="-DCMAKE_C{,XX}_FLAGS='-O${O_LEVEL} -march=native -mtune=native'"

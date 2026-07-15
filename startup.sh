@@ -88,7 +88,7 @@ export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=51
 # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
 #echo "export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1" >> "${1}"
 export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1
-export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1
+export TSAN_OPTIONS=suppressions=${SCRIPT_PWD}/TSAN.filter:suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1
 export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0
 
 add_san_options() {  # For the scripts that startup.sh creates
@@ -98,7 +98,7 @@ add_san_options() {  # For the scripts that startup.sh creates
   # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
   #echo "export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1" >> "${1}"
   echo "export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1" >>"${1}"
-  echo 'export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1' >>"${1}"
+  echo "export TSAN_OPTIONS=suppressions=${SCRIPT_PWD}/TSAN.filter:suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1" >>"${1}"
   echo "export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0" >>"${1}"
   echo 'if [[ "${PWD}" == *"MSAN"* ]]; then' >>"${1}"
   echo '  export MYSQL_HISTFILE=/dev/null  # Disable historyfile for the mariadb CLI, ref the libedit MSAN instrumentation in ~/mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh for more info' >>"${1}"
@@ -228,7 +228,7 @@ if [ -r ${HOME}/mariadb-qa/fuzzer/afl ]; then
   ln -s ${HOME}/mariadb-qa/fuzzer/afl ./afl
 fi
 # NEW  (Note that we can clear __AFL_SHM_ID and AFL_MAP_SIZE ocne server is started as it maintains the same when already started)
-echo "export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1; export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1; export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1; export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0; ./kill >/dev/null 2>&1; rm -f ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
+echo "export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1; export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1; export TSAN_OPTIONS=suppressions=${SCRIPT_PWD}/TSAN.filter:suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1; export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0; ./kill >/dev/null 2>&1; rm -f ./AFL_SHM.ID; export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; echo 'Armed: you can now start squirrel.'; echo 'Doing so will trigger the server to start (and reboot with a clean data dir when crashed)...'; while true; do if ${PWD}/bin/mysqladmin ping -uroot -S${PWD}/socket.sock > /dev/null 2>&1; then export -n __AFL_SHM_ID; export -n AFL_MAP_SIZE; sleep 0.2; else export -n __AFL_SHM_ID; export AFL_MAP_SIZE=50000000; while [ ! -r ${PWD}/AFL_SHM.ID ]; do sleep 0.2; done; export __AFL_SHM_ID=\$(cat AFL_SHM.ID); ./all_no_cl; sleep 0.2; export -n AFL_MAP_SIZE; export -n AFL_MAP_SIZE; fi; done" >aflnew
 chmod +x aflnew
 
 #GR startup scripts
@@ -565,7 +565,12 @@ if [ -d "${MTR_DIR}" ]; then
   add_san_options ${MTR_DIR}/mtra
   echo 'echo 0x11 > /proc/self/coredump_filter 2>/dev/null  # Smaller cores; bt + locals retained' >> ${MTR_DIR}/mtra
   echo 'echo "Running: ./mtr ${*}"' >> ${MTR_DIR}/mtra
-  echo './mtr ${*}' >> ${MTR_DIR}/mtra
+  if [[ "${PWD}" == *"TSAN"* ]]; then
+    # 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space reservation) cannot map within the TSAN-restricted address space
+    echo './mtr --mysqld=--loose-innodb-buffer-pool-size-max=2G ${*}' >> ${MTR_DIR}/mtra
+  else
+    echo './mtr ${*}' >> ${MTR_DIR}/mtra
+  fi
   chmod +x ${MTR_DIR}/mtra
   echo '#!/bin/bash' >${MTR_DIR}/cl_mtr
   add_san_options ${MTR_DIR}/cl_mtr
@@ -1407,6 +1412,11 @@ echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.loc
 echo 'MYEXTRA_OPT="$*"' >gal_rr
 echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;sync;./gal_wipe \${MYEXTRA_OPT};./gal_start_rr \${MYEXTRA_OPT};./gal_cl" >>gal_rr
 chmod +x gal gal_cl gal_sqlmode gal_binlog gal_stbe gal_no_cl gal_rr gal_gdb gal_test gal_test_pquery gal_cl_noprompt_nobinary gal_cl_noprompt gal_multirun gal_multirun_pquery gal_sysbench_measure gal_sysbench_prepare gal_sysbench_run gal_sysbench_multi_master_run 2>/dev/null
+if [[ "${PWD}" == *"TSAN"* ]]; then
+  # 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space reservation) cannot map within the TSAN-restricted address space; cap it on every generated server invocation
+  grep -lI -- '--loose-innodb-buffer-pool-in-core-dump=0' * 2>/dev/null | grep -vE '\.out$|\.err$|\.sql$' | xargs -r sed -i 's|--loose-innodb-buffer-pool-in-core-dump=0\( --loose-innodb-buffer-pool-size-max=2G\)\?|--loose-innodb-buffer-pool-in-core-dump=0 --loose-innodb-buffer-pool-size-max=2G|g'
+fi
+
 echo "Setting up server with default directories"
 
 if [[ $MDG -eq 0 ]]; then

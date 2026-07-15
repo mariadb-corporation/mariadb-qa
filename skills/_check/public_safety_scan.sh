@@ -1,5 +1,4 @@
 #!/bin/bash
-# Created by Roel Van de Paar, MariaDB
 # Public-safety scanner for a PUBLIC repo (mariadb-qa).
 # Blocks generic secrets (built in) PLUS patterns from an optional local denylist that
 # is kept OUTSIDE the repo - so confidential/box-specific patterns are never committed here.

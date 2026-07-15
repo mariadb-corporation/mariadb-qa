@@ -1,20 +1,20 @@
 ---
 name: loop-screens-cleanup
-description: "Sweep the reducer/bug-family screens that `~/loop_screens` cycles (`.s<N>`, and `.ge<N>`/`.pr<N>`/`newbug` siblings) and end the ones that are done, leaving only screens still actively reducing a reproduced issue. For each ended screen, reap that trial's leftover reducer/subreducer/pquery/mariadbd processes and remove its `/dev/shm/<epoch>` workdir. Decision rule keys off the reducer's `ATLEASTONCE` bracket: `[]` (never reproduced) -> end; `[*]` (reproduced) + finished -> end; `[*]` + still reducing -> leave. Use for the routine \"loop_screens-like cleanup\" of stuck/finished reducer screens."
+description: "Sweep the reducer/bug-family screens that `/test/loop_screens` cycles (`.s<N>`, and `.ge<N>`/`.pr<N>`/`newbug` siblings) and end the ones that are done, leaving only screens still actively reducing a reproduced issue. For each ended screen, reap that trial's leftover reducer/subreducer/pquery/mariadbd processes and remove its `/dev/shm/<epoch>` workdir. Decision rule keys off the reducer's `ATLEASTONCE` bracket: `[]` (never reproduced) -> end; `[*]` (reproduced) + finished -> end; `[*]` + still reducing -> leave. Use for the routine \"loop_screens-like cleanup\" of stuck/finished reducer screens."
 claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
 ---
 
 # loop-screens-cleanup
 
-Non-interactive batch version of cycling through `~/loop_screens` and deciding, per screen, end-or-leave. The user normally does this by hand by re-attaching each detached screen in turn; this skill inspects each screen's content via `hardcopy`, applies the decision rule, and ends the done ones cleanly, reaping their resources.
+Non-interactive batch version of cycling through `/test/loop_screens` and deciding, per screen, end-or-leave. The user normally does this by hand by re-attaching each detached screen in turn; this skill inspects each screen's content via `hardcopy`, applies the decision rule, and ends the done ones cleanly, reaping their resources.
 
 ## Inputs
 
-- `<families>` - which screen families to sweep. Default `s`. The `~/loop_screens*` family map:
-  - `s` -> `\.s[0-9]+` reducer screens (the default `~/loop_screens` target)
-  - `ge` -> `\.ge[0-9]+` (`~/loop_screens_ge`)
-  - `pr` -> `\.pr[0-9]+` (`~/loop_screens_pr`)
-  - `newbug` -> screens matching `newbug` (`~/loop_screens_newbug`)
+- `<families>` - which screen families to sweep. Default `s`. The `/test/loop_screens*` family map:
+  - `s` -> `\.s[0-9]+` reducer screens (the default `/test/loop_screens` target)
+  - `ge` -> `\.ge[0-9]+` (`/test/loop_screens_ge`)
+  - `pr` -> `\.pr[0-9]+` (`/test/loop_screens_pr`)
+  - `newbug` -> screens matching `newbug` (`/test/loop_screens_newbug`)
   Confirm scope with the user when unsure; build/`pts-*`/interactive screens are never in scope.
 - `<end-extent>` - how far each end goes. Default `reap` (quit screen + kill that trial's procs + rm its `/dev/shm/<epoch>`). Alternatives: `quit-only` (just `screen -X quit`), `keep-shm` (kill procs but leave `/dev/shm`).
 

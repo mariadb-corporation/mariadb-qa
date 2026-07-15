@@ -36,7 +36,7 @@ Target the whole comment at well under 15 lines. If it needs more, file a separa
 
 ## Markup rules
 
-Follow `~/mariadb-qa/skills/_shared/jira_markup.md` (Jira wiki markup, `{{monospace}}`, single `*bold*`, hyphen-escape only in `MDEV-`/`MENT-` keys, no leading `#`, timeless prose, full CS/ES version names). Two comment-specific reminders:
+Follow `~/mariadb-qa/skills/_shared/jira_markup.md` (Jira wiki markup, `{{monospace}}`, single `*bold*`, hyphen-escape in `MDEV-`/`MENT-` keys and before a leading `--` option (`{{\--ssl-crl}}`), no leading `#`, timeless prose, full CS/ES version names). Two comment-specific reminders:
 
 - Tester-to-dev tone: professional, neutral, brief, factual. No hyperbole ("obviously / clearly / unfortunately"), no idioms.
 - Username casing: `[~handle]` mentions use the lowercase Jira username/key (e.g. `[~some_user]`), never the capitalised display form. If matching a comment's author programmatically, note `author.name` is capitalised (`Some_user`) while the key is lowercase (`some_user`) - compare `author.key`, not `author.name`.
@@ -80,7 +80,7 @@ Could you confirm whether {{ha_innodb.cc:5260}} needs the same guard?
 
 - No backticks (markdown code) and no `**bold**` (markdown bold).
 - No em-dash inside the comment content (only the two display-only delimiter lines use them).
-- Hyphen escaped only inside `MDEV-` / `MENT-` issue keys; nowhere else.
+- Hyphen escaped inside `MDEV-` / `MENT-` issue keys and before a leading `--` option (`{{\--ssl-crl}}`); nowhere else.
 - No leading `#` in any prose line.
 - No tickboxes, status icons, or emoji.
 - One file:line citation per concern, in a code/noformat block where possible.

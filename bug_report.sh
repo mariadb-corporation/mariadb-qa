@@ -455,7 +455,7 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
     # TODO: Once code becomes more stable add: halt_on_error=1
     echo '    -DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys'
     echo 'Set before execution:'
-    echo '    export TSAN_OPTIONS=suppress_equal_stacks=1:suppress_equal_addresses=1:history_size=7:verbosity=1:exitcode=0'
+    echo '    export TSAN_OPTIONS=suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1:exitcode=0'
   fi
   if grep -Eiqm1 --binary-files=text 'runtime error:|=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # UBSAN/ASAN/LSAN(ASAN) (best not to split ASAN vs UBSAN build here, and to just leave both enabled, as these features, when both are enabled, may affect the server differently then only one is enabled: we thus maximize bug reproducibility through leaving the same options enabled as where there during testing)  # elif; avoids double printing
     echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON'

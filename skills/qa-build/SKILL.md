@@ -1,189 +1,150 @@
 ---
 name: qa-build
-description: Build a patched MariaDB server binary by copying /test/<ver> to /tmp/<ver>_<purpose> and running the appropriate ~/mariadb-qa/build_mdpsms_*.sh variant (dbg, opt, san, msan, galera, valgrind). The build script lands the output basedir in /tmp/ next to the source-tree copy - both stay ephemeral. Use when verifying a bug fix requires running the patched server (not just generating a diff), or when a custom debug/sanitiser build is needed.
+description: Build MariaDB server basedirs from a /test source tree in place, using the ba / bas / bam / bat aliases (opt+dbg, UBASAN opt+dbg, MSAN opt+dbg, TSAN opt+dbg) or a single build_mdpsms_*.sh variant. Output basedirs and tarballs land in /test alongside the source. Two uses - (1) a plain re-build of a released version tree (e.g. /test/13.1), and (2) a feature or ticket tree (/test/MDEV-... or /test/MENT-...) whose outputs get the MDEV-<n>_ / MENT-<n>_ prefix. Tarballs move to /data/TARS. This skill never touches /tmp - to run a built basedir standalone in /tmp without touching the original, copy it there with claude-basedir-fix-copy-setup (that skill copies, it does not build).
 claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
 ---
 
 # qa-build
 
-Builds a patched MariaDB binary from a `/tmp` copy of `/test/<ver>` using one of the `~/mariadb-qa/build_mdpsms_*.sh` variants. Source-tree copy and output basedir BOTH live in `/tmp/` - they are ephemeral by design. Do NOT place builds under `/test/` (that's the curated catalog).
+Builds MariaDB server basedirs from a source tree under `/test`, in place, so the output basedirs and tarballs land in `/test` (the curated catalog). Two uses:
 
-NEVER hand-roll `cmake`/`make` with bespoke flags. Use `ba`/`bas` (both opt+dbg) or a single `build_mdpsms_*.sh` (one variant). If a build script fails, fix the INPUTS - use a clean full `cp -r` of `/test/<ver>` (keep `.git/`; do not rsync-exclude `build*`, which wipes `cmake/build_configurations/`) - do not substitute a manual cmake/make. The script's final `scripts/make_binary_distribution` is what yields a real basedir (with `bin/`) that `~/st`+`./all`+`./cl` can drive; an in-source `make` alone does not.
+1. Plain re-build of a released version tree - e.g. `/test/13.1`. Output basedirs keep their generated catalog names.
+2. Feature or ticket tree - `/test/MDEV-<n>...` or `/test/MENT-<n>...` - whose output basedirs are renamed with the ticket prefix.
+
+This skill builds durable catalog basedirs in `/test` and never touches `/tmp`. To run a built basedir standalone in `/tmp` for Claude's own tests, evaluations, or fix verification - without touching the original - copy it there with `claude-basedir-fix-copy-setup` (that skill copies a built basedir, it does not build).
+
+NEVER hand-roll `cmake`/`make`. Use the `ba` / `bas` / `bam` / `bat` aliases (each builds an opt+dbg pair) or a single `build_mdpsms_*.sh` variant. The build script's final `scripts/make_binary_distribution` is what yields a runnable basedir (with `bin/`) that `~/st` + `./anc` + `./cl` can drive; an in-source `make` alone does not. If a build fails, fix the INPUTS - use a clean full source tree (keep `.git/`; do not rsync-exclude `build*`, which wipes `cmake/build_configurations/`) - do not substitute a manual cmake/make.
+
+## Related skills
+
+- For a light patched fix build in `/tmp` (+ `fix.diff`), see `build-fix-diff` instead.
+- For running a built basedir standalone in `/tmp` without touching the original, see `claude-basedir-fix-copy-setup` instead.
+- For the full multi-version fix-verification loop, see `verify-fix` instead.
 
 ## Inputs
 
-- `<ver>` - source-tree version (e.g. `13.0`, `12.3`, `11.8`).
-- `<purpose>` - short suffix for the source-tree copy dir (e.g. `fix_MDEV-99999`, `test`).
-- `<variant>` - one of: `dbg`, `opt`, `dbg_san`, `opt_san`, `dbg_msan`, `opt_msan`, `dbg_galera`, `opt_galera`, `dbg_valgrind`, `opt_valgrind`. Default to `dbg` if unspecified.
-- The source edits to apply (or an existing fix.diff to apply).
+- `<source>` - the source tree under `/test` to build. A released version tree (`/test/13.1`, `/test/12.3`) or a feature/ticket tree (`/test/MDEV-14443`, `/test/MENT-1234`).
+- `<variants>` - which builds to produce: `ba` (opt+dbg), `bas` (UBASAN opt+dbg), `bam` (MSAN opt+dbg), `bat` (TSAN opt+dbg), or a single `build_mdpsms_*.sh`. Default to `ba` if unspecified.
+- For a feature/ticket tree: the ticket key for the output rename (`MDEV-<NNNNN>` or `MENT-<NNNN>`) - derive from the source dir name.
 
 If not provided in the invocation, ask the user.
 
+## Build aliases (ba / bas / bam / bat)
+
+Four `~/.bashrc` aliases each launch a detached `screen` session that builds an opt+dbg pair in parallel (the second starts 70s after the first):
+
+| Alias | Screen session | Scripts | Output prefix |
+|---|---|---|---|
+| `ba` | `opt_and_dbg_build` | `build_mdpsms_opt.sh` + `build_mdpsms_dbg.sh` | `MD<DDMMYY>` (CS) / `EMD<DDMMYY>` (ES) |
+| `bas` | `opt_and_dbg_san_build` | `build_mdpsms_opt_san.sh` + `build_mdpsms_dbg_san.sh` | `UBASAN_MD` / `UBASAN_EMD` |
+| `bam` | `opt_and_dbg_msan_build` | `build_mdpsms_opt_msan.sh` + `build_mdpsms_dbg_msan.sh` | `MSAN_MD` / `MSAN_EMD` |
+| `bat` | `opt_and_dbg_tsan_build` | `USE_TSAN=1 build_mdpsms_opt_san.sh` + `USE_TSAN=1 build_mdpsms_dbg_san.sh` | `TSAN_MD` / `TSAN_EMD` |
+
+`bam` (MSAN) requires clang-20 and instrumented libraries under `/MSAN_libs` (setup: `msan.instrumentedlibs_ubuntu2404.sh`). `bat` (TSAN) is the `_san` scripts with the `USE_TSAN=1` environment variable set - that switches them to `-DWITH_TSAN=ON` and a `TSAN_` prefix instead of `UBASAN_`. Sanitiser basedirs (`UBASAN_*`, `MSAN_*`, `TSAN_*`) need `./mtra` for test runs, not `./mtr`.
+
+Each `build_mdpsms_*.sh` first copies the source to its own sibling scratch dir (`<source>_opt`, `<source>_dbg`, `<source>_opt_san`, `<source>_dbg_san`, `<source>_opt_msan`, `<source>_dbg_msan`) and builds there, so the pairs do not collide and `ba` + `bas` + `bam` can run in parallel. `bat` reuses the `_opt_san`/`_dbg_san` scratch (it is the `_san` build with `USE_TSAN=1`), so do NOT run `bat` and `bas` at the same time - run those two one after the other. Each emits a tarball plus an extracted basedir, renames both to the full `<PREFIX>-mariadb-<x.y.z>-linux-x86_64-<opt|dbg>` name, and moves both to the PARENT of the source tree - so building in `/test/<source>` lands the output in `/test`.
+
+The alias body ends with an interactive `screen -d -r` reattach. When launching non-interactively (e.g. from a tool), run only the `screen -admS "<session>" bash -c "..."` portion and drop the reattach. Monitor with `screen -ls` and by watching for the output basedirs to appear.
+
 ## Procedure
 
-1. Copy the source tree to `/tmp` (preserves `.git/` for `git apply`):
+1. `cd /test/<source>`.
+
+2. Same-day collision check (do this BEFORE building) - see below. Skip only for a plain re-build you intend to replace.
+
+3. Launch the build(s): `ba` and/or `bas` and/or `bam` and/or `bat` (or a single `build_mdpsms_<variant>.sh` for one variant; TSAN = `USE_TSAN=1 build_mdpsms_<dbg|opt>_san.sh`). Builds run in detached screens; wait for completion. Do not run `bas` and `bat` concurrently (shared `_san` scratch).
+
+4. Locate the outputs (today's date):
 
    ```
-   cp -r /test/<ver> /tmp/<ver>_<purpose>
+   ls -dt /test/{MD,EMD,UBASAN_MD,UBASAN_EMD,MSAN_MD,MSAN_EMD,TSAN_MD,TSAN_EMD}$(date +%d%m%y)-mariadb-*-linux-x86_64-* 2>/dev/null | head
    ```
 
-2. Apply edits inside `/tmp/<ver>_<purpose>` - either via the Edit tool, or by applying an existing fix.diff:
+5. Plain re-build - the `MD<date>-...` / `EMD<date>-...` names ARE the catalog names; leave the basedirs in place. Feature/ticket tree - rename each output basedir (and its `.tar.gz`) with the ticket prefix (see below).
 
-   ```
-   cd /tmp/<ver>_<purpose>
-   git apply <bug-dir>/fix.diff
-   ```
+6. Move every tarball to `/data/TARS` (tarballs live there for re-extraction; they do not stay in `/test`).
 
-3. Run the build script from the source-tree root:
+7. Remove the build-scratch sibling dirs (`<source>_{opt,dbg,opt_san,dbg_san,opt_msan,dbg_msan}`) once outputs are in place; keep the source tree and the output basedirs.
 
-   ```
-   cd /tmp/<ver>_<purpose>
-   ~/mariadb-qa/build_mdpsms_<variant>.sh
-   ```
+## Same-day collision check
 
-   The script:
-   - Reads `VERSION` and constructs `PREFIX=MD<DATE>` (CS) or `EMD<DATE>` (ES, when `support-files/rpm/*enterprise*` is present).
-   - Internally copies the source tree to `<source>_dbg/` (or `_opt/`) and builds there.
-   - Runs `cmake` + `make` + `scripts/make_binary_distribution`.
-   - Renames the tarball + extracted dir to `<PREFIX>-mariadb-<x.y.z>-linux-x86_64-<dbg|opt>`.
-   - Moves both to the parent of the source tree - so with source under `/tmp/<ver>_<purpose>`, the output lands at `/tmp/<PREFIX>-mariadb-<x.y.z>-linux-x86_64-<dbg|opt>`.
-   - Writes `git_revision.txt` and `BUILD_CMD_CMAKE` into the output basedir.
-
-4. Locate the output basedir:
-
-   ```
-   ls -dt /tmp/[ME]MD$(date +%d%m%y)-mariadb-*-linux-x86_64-*  | head
-   ```
-
-5. Cleanup. KEEP the patched source tree (the user `git diff`s it) and the patched output basedir (it may be re-run). Remove only the build-script internal copy:
-
-   ```
-   # KEEP: /tmp/<ver>_<purpose>                                  # source tree - user git-diffs it
-   # KEEP: /tmp/<PREFIX>-mariadb-<x.y.z>-linux-x86_64-<dbg|opt>  # patched output basedir
-   rm -rf /tmp/<ver>_<purpose>_<dbg|opt>                         # build-script internal copy (disposable)
-   ```
-
-   State remaining `/tmp/` dirs at end-of-turn for the user to decide retention.
-
-## Why /tmp, not /test
-
-- `/test/` is the curated catalog of stock and reference builds. The `gendirs.sh` enumerator drives audit-wide sweeps off it; injecting an ad-hoc patched build pollutes that namespace and can be picked up by unrelated tooling.
-- `/tmp/` is ephemeral. The OS reclaims it; cleanup boundaries are obvious; collisions across concurrent sessions are unlikely with the `<ver>_<purpose>` naming.
-- The build script's `mv ../` behaviour places output alongside the source-tree copy. So as long as the source-tree copy is in `/tmp`, the output is too.
-
-## Build-script variants
-
-| Script | Output |
-|---|---|
-| `build_mdpsms_dbg.sh` | Debug (`-DCMAKE_BUILD_TYPE=Debug`, `-O1`) |
-| `build_mdpsms_opt.sh` | Optimised (release-equivalent, `-O2`) |
-| `build_mdpsms_dbg_san.sh` | Debug + UBSAN + ASAN (the `UBASAN` prefix in output dir name) |
-| `build_mdpsms_opt_san.sh` | Optimised + UBSAN + ASAN |
-| `build_mdpsms_dbg_msan.sh` | Debug + MSAN (needs MSAN-instrumented libs) |
-| `build_mdpsms_opt_msan.sh` | Optimised + MSAN |
-| `build_mdpsms_dbg_galera.sh` | Debug + Galera (links `libgalera_smm.so`) |
-| `build_mdpsms_opt_galera.sh` | Optimised + Galera |
-| `build_mdpsms_dbg_valgrind.sh` | Debug + Valgrind-compatible flags |
-| `build_mdpsms_opt_valgrind.sh` | Optimised + Valgrind-compatible flags |
-
-## Bulk build via ba / bas (parallel screens)
-
-For building multiple variants of one source tree at once, two `~/.bashrc` aliases launch detached `screen` sessions that build in place:
-
-| Alias | Screen session | Builds (sequentially, second starts after 70s) |
-|---|---|---|
-| `ba` | `opt_and_dbg_build` | `build_mdpsms_opt.sh` then `build_mdpsms_dbg.sh` |
-| `bas` | `opt_and_dbg_san_build` | `build_mdpsms_opt_san.sh` then `build_mdpsms_dbg_san.sh` |
-
-Run them from the source-tree root (e.g. `/test/<ver>` or `/test/<TICKET>`). Each `build_mdpsms_*.sh` first copies the tree to its own sibling (`<dir>_opt`, `<dir>_dbg`, `<dir>_opt_san`, `<dir>_dbg_san`) and builds there, so the four builds do NOT collide and `ba` + `bas` run in parallel safely.
-
-Outputs (tarball + extracted basedir) land in the PARENT dir:
-- `ba` -> `MD<DDMMYY>-mariadb-<x.y.z>-linux-x86_64-{opt,dbg}` (+ matching `.tar.gz`).
-- `bas` -> `UBASAN_MD<DDMMYY>-mariadb-<x.y.z>-linux-x86_64-{opt,dbg}` (+ `.tar.gz`).
-
-So one `ba` + `bas` pair yields 4 dirs + 4 tars, all dated today; tell variants apart by the `MD`/`UBASAN_MD` prefix and the date.
-
-**Same-day collision check (do this BEFORE building).** The output name is keyed on today's date and the `VERSION` file, NOT on the source dir name, and the build OVERWRITES any same-name dir in the parent when it moves output there. A feature branch shares its version with mainline (e.g. `MDEV-14443` is `13.1.0`, same as mainline `13.1`), so running `ba` in `/test/<TICKET>` clobbers an existing same-day mainline `MD<date>-mariadb-13.1.0-...` build. First check:
+The output name is keyed on today's date and the source's `VERSION` file, NOT on the source dir name, and the build OVERWRITES any same-name dir in the parent when it moves output there. A feature branch shares its version with mainline (e.g. `MDEV-14443` is `13.1.0`, same as mainline `13.1`), so running `ba` in `/test/MDEV-14443` would clobber an existing same-day mainline `MD<date>-mariadb-13.1.0-...` build. First check:
 
 ```
-ls -d /test/{MD,EMD,UBASAN_MD,MSAN_MD}$(date +%d%m%y)-mariadb-<x.y.z>-* 2>/dev/null   # match the prefix(es) you will build
+ls -d /test/{MD,EMD,UBASAN_MD,UBASAN_EMD,MSAN_MD,MSAN_EMD,TSAN_MD,TSAN_EMD}$(date +%d%m%y)-mariadb-<x.y.z>-* 2>/dev/null   # match the prefix(es) you will build
 ```
 
-- None exist -> safe to run `ba`/`bas` in `/test/<source>`; rename outputs to `<KEY>_MD...` afterwards.
-- Same-name dirs exist -> do NOT build in `/test/<source>`. Put the source in a subdir - clone/copy to `/test/<tmpdir>/<clone>` - and run `ba` there so output lands in `/test/<tmpdir>/`. Then rename the output to `<KEY>_MD<date>-...` (unique), move it to `/test`, and `rm -rf /test/<tmpdir>`. Rename-before-move guarantees no collision on the move. Recover a clobbered build by re-extracting its tar from `/data/TARS`.
+- None exist -> safe to build in `/test/<source>`; rename outputs afterwards.
+- Same-name dirs exist and you must NOT overwrite them (e.g. a feature tree colliding with mainline) -> do NOT build in `/test/<source>`. Put the source in a subdir - clone/copy to `/test/<tmpdir>/<clone>` - and build there so output lands in `/test/<tmpdir>/`. Then rename the output to `<KEY>_MD<date>-...` (unique), move it to `/test`, and `rm -rf /test/<tmpdir>`. Rename-before-move guarantees no collision on the move. Recover a clobbered build by re-extracting its tar from `/data/TARS`.
 
-The alias body ends with an interactive `screen -d -r` reattach. When launching non-interactively (e.g. from a tool), run only the `screen -admS "<session>" bash -c "..."` portion and drop the reattach.
+## Feature/ticket tree - rename convention
 
-Locate the outputs (today's date):
-
-```
-ls -dt /test/{MD,UBASAN_MD}$(date +%d%m%y)-mariadb-*-linux-x86_64-* | head
-```
-
-### Tie outputs to a ticket (rename convention)
-
-When a build belongs to a specific Jira ticket, prepend the ticket key (and an underscore) to BOTH the output dir and its `.tar.gz`, keeping the build's own `MD`/`EMD`/`UBASAN_` prefix that follows:
+When a build belongs to a specific Jira ticket, prepend the ticket key (and an underscore) to BOTH the output basedir and its `.tar.gz`, keeping the build's own `MD`/`EMD`/`UBASAN_`/`MSAN_`/`TSAN_` prefix that follows:
 
 - CS (MariaDB Server) tickets -> `MDEV-<NNNNN>_`
 - ES (Enterprise) tickets -> `MENT-<NNNN>_`
 
 ```
-# CS ticket, ba + bas outputs:
+# CS ticket, ba + bas + bam + bat outputs:
 MDEV-14443_MD110626-mariadb-13.1.0-linux-x86_64-opt
 MDEV-14443_MD110626-mariadb-13.1.0-linux-x86_64-dbg
 MDEV-14443_UBASAN_MD110626-mariadb-13.1.0-linux-x86_64-opt
 MDEV-14443_UBASAN_MD110626-mariadb-13.1.0-linux-x86_64-dbg
-# (+ the four matching .tar.gz)
+MDEV-14443_MSAN_MD110626-mariadb-13.1.0-linux-x86_64-opt
+MDEV-14443_MSAN_MD110626-mariadb-13.1.0-linux-x86_64-dbg
+MDEV-14443_TSAN_MD110626-mariadb-13.1.0-linux-x86_64-opt
+MDEV-14443_TSAN_MD110626-mariadb-13.1.0-linux-x86_64-dbg
+# (+ the matching .tar.gz for each)
 
-# ES ticket: MENT-<NNNN>_EMD... / MENT-<NNNN>_UBASAN_EMD...
+# ES ticket: MENT-<NNNN>_EMD... / MENT-<NNNN>_UBASAN_EMD... / MENT-<NNNN>_MSAN_EMD... / MENT-<NNNN>_TSAN_EMD...
 ```
 
-Handle the dir and its tar together, every variant: rename the basedir (keep it in `/test`) AND rename the matching `.tar.gz` the same way, then move the tar to `/data/TARS` (tarballs live there for re-extraction; they do not stay in `/test`). Do this for ALL outputs of the run, not just some - each `build_mdpsms_*.sh` emits one `.tar.gz` per basedir, so a `ba`+`bas` pair leaves 4 tars to relocate.
+Rename the basedir (keep it in `/test`) AND the matching `.tar.gz` the same way, then move the tar to `/data/TARS`. Do this for ALL outputs of the run - a `ba`+`bas`+`bam`+`bat` set leaves eight basedirs and eight tars.
 
 After renaming, verify nothing was missed:
 
 ```
-ls -l /test/{MD,EMD,UBASAN_MD,MSAN_MD,TSAN_MD}$(date +%d%m%y)*.tar.gz 2>/dev/null   # MUST be empty
+ls -l /test/{MD,EMD,UBASAN_MD,UBASAN_EMD,MSAN_MD,MSAN_EMD,TSAN_MD,TSAN_EMD}$(date +%d%m%y)*.tar.gz 2>/dev/null   # MUST be empty
 ```
 
-A stray date-stamped `<PREFIX><DDMMYY>-...-<variant>.tar.gz` in `/test` is an unfinished cleanup: rename it with the ticket prefix and move it to `/data/TARS`. This keeps all artifacts for one ticket grouped and identifiable; distinguish builds from the same day by the `MD`/`EMD` vs `UBASAN_` prefix.
+A stray date-stamped `<PREFIX><DDMMYY>-...-<variant>.tar.gz` in `/test` is an unfinished cleanup: rename it with the ticket prefix (if ticket-tied) and move it to `/data/TARS`.
+
+## Single-variant build (build_mdpsms_*.sh)
+
+For one variant only, run the matching script from the source-tree root instead of an alias:
+
+| Script | Output |
+|---|---|
+| `build_mdpsms_dbg.sh` | Debug (`-DWITH_DEBUG=ON`, `O_LEVEL=1`) |
+| `build_mdpsms_opt.sh` | Optimised (`RelWithDebInfo`, `O_LEVEL=2`) |
+| `build_mdpsms_dbg_san.sh` / `build_mdpsms_opt_san.sh` | UBSAN + ASAN (`UBASAN_` prefix) |
+| `USE_TSAN=1 build_mdpsms_dbg_san.sh` / `USE_TSAN=1 build_mdpsms_opt_san.sh` | TSAN (`TSAN_` prefix; the `_san` scripts with the `USE_TSAN=1` env var) |
+| `build_mdpsms_dbg_msan.sh` / `build_mdpsms_opt_msan.sh` | MSAN (`MSAN_` prefix; needs clang-20 + `/MSAN_libs`) |
+| `build_mdpsms_dbg_galera.sh` / `build_mdpsms_opt_galera.sh` | Galera (`GAL_` prefix; links `libgalera_smm.so`) |
+| `build_mdpsms_dbg_valgrind.sh` / `build_mdpsms_opt_valgrind.sh` | Valgrind-compatible flags |
+
+Fan-out across many source trees uses the `buildall_*.sh` wrappers (`buildall_dbg.sh`, `buildall_san_slow.sh`, `buildall_msan_slow.sh`, ...).
 
 ## Galera builds
 
-Galera builds expect `./galera_4x` as a subdir of the source tree. `/test/galera_4x` is the canonical Galera source tree (separate from the MariaDB server source).
-
-Before running a galera variant, either:
+Galera builds expect `./galera_4x` as a subdir of the source tree. `/test/galera_4x` is the canonical Galera source tree (separate from the MariaDB server source); clone it with `/test/clone_galera.sh` if absent. Before a galera variant:
 
 ```
-cd /test/<ver>_<purpose>
+cd /test/<source>
 ln -s /test/galera_4x .
 ```
 
-or rsync `/test/galera_4x` into place. The build script then compiles galera and copies `libgalera_smm.so` from `galera_4x_dbg/` into the output basedir's `lib/`.
+The build script then compiles galera and symlinks `libgalera_smm.so` from `galera_4x_dbg/` (opt build: `galera_4x_opt/`) into the output basedir's `lib/`.
 
-## Source-tree naming convention
+## Why /test, not /tmp
 
-- `/test/<ver>_fix_<tag>` - for fix verification (mirrors the `/tmp/<ver>_fix_<tag>` pattern used by `fix-diff`).
-- `/test/<ver>_<ticket-id>` - when tied to a specific Jira ticket.
-- `/test/<ver>_test` - ephemeral experimentation.
-
-Do not overwrite user-managed reference trees: `/test/13.0`, `/test/13.0_dbg`, `/test/13.0_fixed`, `/test/13.0_fixed_dbg`.
-
-## Cleanup checklist
-
-- Source-tree copy (`/test/<ver>_<purpose>`): remove after build success and verification.
-- Built basedir (`/test/<PREFIX>-mariadb-...`): keep if relevant to a filed finding; otherwise remove.
-
-State what `/test/` dirs remain at end-of-turn so the user can decide retention.
-
-## Related skills
-
-- `fix-diff` - generate the diff before running this skill, if no fix.diff exists yet.
-- `claude-basedir-fix-copy-setup` - after the binary builds, copy the output basedir to `/tmp` for autonomous test runs.
-- `verify-fix` - full fix-verification loop (orchestrates fix-diff -> qa-build -> claude-basedir-fix-copy-setup -> version sweep).
+- `/test/` is the curated catalog. `gendirs.sh` enumerates it and the per-basedir helpers (`~/st`, `./anc`, `./cl`, `~/d0..d9`) drive it. Durable re-builds and feature/ticket builds belong here so the rest of the framework can pick them up.
+- The build script moves output to the PARENT of the source tree - so building in `/test/<source>` lands output in `/test` with no extra move.
+- `/tmp` is only for standalone Claude test runs against a COPY of a basedir - that is `claude-basedir-fix-copy-setup`'s job (it copies a built basedir, it does not build).
 
 ## Notes
 
-- Never hand-roll `cmake`/`make`; use the `build_mdpsms_*.sh` variants (the final `make_binary_distribution` is what yields a runnable basedir).
-- Source-tree copy and output basedir both live in `/tmp/` (ephemeral), never under `/test/`.
-- Sanitiser basedirs (`UBASAN_*`, `MSAN_*`) require `./mtra` for test runs, not `./mtr`.
+- Never hand-roll `cmake`/`make`; use `ba`/`bas`/`bam`/`bat` or a `build_mdpsms_*.sh` variant (the final `make_binary_distribution` is what yields a runnable basedir).
+- Output basedirs and tars land in `/test` (parent of the source tree); tars then move to `/data/TARS`.
+- This skill never uses `/tmp`.
+- Sanitiser basedirs (`UBASAN_*`, `MSAN_*`, `TSAN_*`) require `./mtra` for test runs, not `./mtr`.
