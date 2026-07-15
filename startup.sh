@@ -712,6 +712,25 @@ echo '' >>line
 echo '# Line item for Bug Detection Matrix' >>line
 echo 'printf "%-3s %-6s %-4s %-7s %-41s %-30s\n" "${SVR}" "$(echo "${SERVER_VERSION}" | grep -o "[0-9]\+\.[0-9]\+")" "${BUILD_TYPE_SHORT}" "${BUILD_DATE_SHORT}" "${SOURCE_CODE_REV}" "$(${HOME}/mariadb-qa/new_text_string.sh | sed "s|^Assert: .*|No bug found|" | sed "s~MARIADBD_ERROR.mariadbd: caching_sha2_password: failed to read private_key.pem: 2 .No such file or directory.~No bug found~" 2>/dev/null)"' >>line
 chmod +x line
+# which_ssl script: shows whether the server binary uses OpenSSL or WolfSSL, and where that SSL library lives
+echo '#!/bin/bash' >which_ssl
+echo '# Shows whether bin/mariadbd (or bin/mysqld) uses OpenSSL or WolfSSL, and where that SSL library lives on the system' >>which_ssl
+echo 'BASEDIR="$(dirname "$(readlink -f "${0}")")"' >>which_ssl
+echo 'BIN="${BASEDIR}/bin/mariadbd"' >>which_ssl
+echo 'if [ ! -r "${BIN}" ]; then BIN="${BASEDIR}/bin/mysqld"; fi' >>which_ssl
+echo 'if [ ! -r "${BIN}" ]; then echo "Assert: no bin/mariadbd or bin/mysqld found in ${BASEDIR}/bin"; exit 1; fi' >>which_ssl
+echo 'DYNSSL="$(ldd "${BIN}" 2>/dev/null | grep -E "libssl|libcrypto")"' >>which_ssl
+echo 'if [ -n "${DYNSSL}" ]; then' >>which_ssl
+echo '  echo "${BIN} uses OpenSSL, dynamically linked:"' >>which_ssl
+echo '  echo "${DYNSSL}"' >>which_ssl
+echo 'elif WOLFSSL="$(grep -aoEm1 "wolfSSL [0-9]+\.[0-9]+\.[0-9]+" "${BIN}")"; then' >>which_ssl
+echo '  echo "${BIN} uses WolfSSL (${WOLFSSL}), statically linked into the binary itself"' >>which_ssl
+echo 'elif OPENSSL="$(grep -aoEm1 "OpenSSL [0-9]+\.[0-9]+\.[0-9]+[a-z]*" "${BIN}")"; then' >>which_ssl
+echo '  echo "${BIN} uses OpenSSL (${OPENSSL}), statically linked into the binary itself"' >>which_ssl
+echo 'else' >>which_ssl
+echo '  echo "${BIN}: no OpenSSL or WolfSSL detected (built without SSL?)"' >>which_ssl
+echo 'fi' >>which_ssl
+chmod +x which_ssl
 # memory monitoring scripts
 echo "#!/bin/bash" >memory_monitor
 echo "MTR=0  # Set to MTR=1 if you want to monitor MTR memory usage instead (for the first MTR instance, i.e. master)" >>memory_monitor

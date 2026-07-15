@@ -282,6 +282,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+(m_create_info->options & HA_LEX_CREATE_TMP_TABLE) == 0|SIGABRT|CreateTableConvertor::translate[abi:cxx11]ddl_convertor.cc|ha_duckdb::create|handler::ha_create|ha_create_table_from_share ## MDEV-40379
 SIGSEGV|__strlen_evex|PlugDup|RELDEF::GetStringCatInfo|TABDEF::Define                                                                                                          ## MDEV-40371
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|mrn::ExternalLock::ExternalLock|ha_mroonga::storage_info|ha_mroonga::storage_write_row              ## MDEV-40369
 ptr|SIGABRT|skip_trailing_space|my_hash_sort_utf8mb3_general1400_as_ci|my_ci_hash_sort|my_hash_sort                                                                            ## MDEV-40367

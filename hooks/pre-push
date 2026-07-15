@@ -1,0 +1,19 @@
+#!/bin/bash
+# Last gate before content leaves the box: re-scan the files in the commits being pushed.
+# Approximation: scans the working-tree version of each changed path (fine for recent pushes).
+ROOT="$(git rev-parse --show-toplevel)"
+SCAN="$ROOT/skills/_check/public_safety_scan.sh"
+status=0
+while read -r localref localsha remoteref remotesha; do
+  case "$localsha" in *[!0]*) : ;; *) continue ;; esac   # branch deletion -> nothing to scan
+  if git cat-file -e "$remotesha" 2>/dev/null; then
+    mapfile -t rels < <(git diff --name-only --diff-filter=ACMR "$remotesha" "$localsha" 2>/dev/null)
+  else
+    # New branch: scan only commits not yet on any remote, not the whole tree
+    mapfile -t rels < <(git log --format= --name-only --diff-filter=ACMR "$localsha" --not --remotes 2>/dev/null | sort -u)
+  fi
+  paths=()
+  for f in "${rels[@]}"; do [ -f "$ROOT/$f" ] && paths+=("$ROOT/$f"); done
+  [ "${#paths[@]}" -gt 0 ] && { "$SCAN" "${paths[@]}" || status=1; }
+done
+exit $status

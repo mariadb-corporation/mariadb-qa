@@ -1,0 +1,21 @@
+# clang-tidy configuration for the MariaDB SQL fuzz generator.
+# The generator is a single 22 MB translation unit (clang / libc++ / C++20). The
+# path-sensitive clang-analyzer checks are left out of the default set because they
+# do not scale to a TU this large; enable them ad hoc when needed with:
+#   clang-tidy --checks='-*,clang-analyzer-*' generator.cpp -- -std=c++20 -stdlib=libc++ -I<basedir>/include
+#
+# rand() is the generator's core primitive, so its security check is disabled.
+Checks: >
+  bugprone-*,
+  performance-*,
+  portability-*,
+  misc-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -misc-no-recursion,
+  -misc-use-anonymous-namespace,
+  -clang-analyzer-security.insecureAPI.rand
+WarningsAsErrors: ''
+HeaderFilterRegex: 'pools\.h$'
+FormatStyle: none

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Blocks a commit that would place confidential content into this PUBLIC repo.
+# Activated per clone via: git config core.hooksPath <repo>/hooks  (linkit sets this).
+ROOT="$(git rev-parse --show-toplevel)"
+exec "$ROOT/skills/_check/public_safety_scan.sh"

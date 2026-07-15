@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Claude Code find: search top-level session logs for a regex and print matching session IDs.
-# agent-*.jsonl subagent logs are skipped; only top-level sessions are searched.
+# Nested subagents/ logs (agent-*.jsonl, journal.jsonl, workflow logs) are skipped;
+# only top-level session files are searched.
 # Usage:
 #   clf <regex>             — list the top 13 matching sessions, most hits first
 #   clf <regex> --all       — list every matching session
@@ -52,9 +53,9 @@ for dirpath, _, files in os.walk(projects_dir):
     for f in files:
         if not f.endswith(".jsonl"):
             continue
-        if f.startswith("agent-"):
-            continue
         path = os.path.join(dirpath, f)
+        if f"{os.sep}subagents{os.sep}" in path:
+            continue
         try:
             mtime = os.path.getmtime(path)
         except OSError:

@@ -1567,20 +1567,12 @@ static int multi_reducer_impl() {
   diskspace(state::WORKD + "/subreducer");
   state::MULTI_PIDS.assign(static_cast<size_t>(cfg::MULTI_THREADS) + 1, "");
   std::string txt = state::ATLEASTONCE + " [Stage " + state::STAGE + "] [" + state::RUNMODE + "] Forking subreducer threads [PIDs]:";
-  // Resolve our own binary path. /proc/self/exe must be read via the readlink(2)
-  // syscall here (not via the `readlink` CLI through a shell): in a shelled-out
-  // `readlink -f /proc/self/exe`, /proc/self/exe is the readlink child's exe
-  // (= /usr/bin/readlink), not the reducer's.
-  std::string self;
-  {
-    char buf[PATH_MAX];
-    ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
-    if (n > 0) { buf[n] = '\0'; self = buf; }
-  }
-  if (self.empty()) {
-    echoit("Assert: failed to resolve /proc/self/exe for subreducer launch");
-    std::exit(1);
-  }
+  // Spawn subreducers via /proc/<pid>/exe rather than a resolved binary path:
+  // the kernel keeps it pointing at the running inode, so respawns keep working
+  // after the on-disk binary is replaced by a rebuild (a resolved path would
+  // readlink as ".../reducer (deleted)" and every exec would fail), and every
+  // subreducer is guaranteed to run the exact same binary version as its parent.
+  const std::string self = "/proc/" + std::to_string(getpid()) + "/exe";
   for (int t = 1; t <= cfg::MULTI_THREADS; ++t) {
     std::string subw = state::WORKD + "/subreducer/" + std::to_string(t);
     util::mkdir_p(subw);
