@@ -24,13 +24,17 @@ race:aio_simulated.cc
 # Not yet logged: sux_lock::u_or_x_unlock under buf_load.
 race:buf_load
 
+# InnoDB archive-log create at startup (13.0+). Not yet logged.
+race:buf_flush_archive_create
+
 # Lock-free pin allocator (mysys lf_alloc). Correct lock-free primitive; TSAN
 # reports here are false positives. Not yet logged.
 race:lf_alloc-pin.c
 
 # Global memory-accounting counter, an approximate global updated on every
-# alloc/free. Logged: MDEV-27170.
-race:update_global_memory_status
+# alloc/free via the malloc size callback. Keyed on the callback (present in both
+# opt and dbg stacks; opt inlines update_global_memory_status). Logged: MDEV-27170.
+race:my_malloc_size_cb_func
 
 # InnoDB monitor periodic buffer-pool stats copy. Not yet logged.
 race:buf_refresh_io_stats
