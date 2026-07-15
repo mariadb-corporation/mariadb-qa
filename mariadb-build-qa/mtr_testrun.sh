@@ -43,6 +43,7 @@ fi
 
 TEMP="$(mktemp)"
 REPORT="${PWD}/report.log"  # b-style bug report output (analog of ~/b's report.log)
+export MTR_PRINT_CORE=no    # skip MTR's slow inline gdb; matrix stage uses ~/t + stack.sh on saved cores
 ./gendirs.sh "${3}" | grep 'MD' > ${TEMP}
 
 while read LINE; do
