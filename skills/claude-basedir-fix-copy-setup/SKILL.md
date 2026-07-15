@@ -1,7 +1,7 @@
 ---
 name: claude-basedir-fix-copy-setup
 description: Copy a built MariaDB basedir from /test to /tmp and re-run ~/st to rebake path-baked helpers (start, anc, cl, test, kill, wipe, mtra, init_empty_port.sh, gencerts.sh), giving Claude its own standalone server for Claude Code based tests, evaluations, bug reproduction, and fix verification - without touching the canonical /test basedir. Drive the copy only via its standard baked helpers (~/st then ./anc / ./cl / ./test / ./mtr[a] / ./kill), never a hand-rolled mariadbd. This skill copies, it does not build. A plain MTR run does NOT need this - drop the .test/.result under a new name into /test/<basedir>/mariadb-test/main and run ./mtr in place.
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # claude-basedir-fix-copy-setup

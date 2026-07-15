@@ -1,7 +1,7 @@
 ---
 name: qa-build
 description: Build MariaDB server basedirs from a /test source tree in place, using the ba / bas / bam / bat aliases (opt+dbg, UBASAN opt+dbg, MSAN opt+dbg, TSAN opt+dbg) or a single build_mdpsms_*.sh variant. Output basedirs and tarballs land in /test alongside the source. Two uses - (1) a plain re-build of a released version tree (e.g. /test/13.1), and (2) a feature or ticket tree (/test/MDEV-... or /test/MENT-...) whose outputs get the MDEV-<n>_ / MENT-<n>_ prefix. Tarballs move to /data/TARS. This skill never touches /tmp - to run a built basedir standalone in /tmp without touching the original, copy it there with claude-basedir-fix-copy-setup (that skill copies, it does not build).
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # qa-build

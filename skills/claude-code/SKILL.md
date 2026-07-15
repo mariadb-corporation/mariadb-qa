@@ -1,7 +1,7 @@
 ---
 name: claude-code
 description: How to get authoritative information about Claude Code itself (the CLI, headless/print mode, SDK, settings, hooks, slash commands, MCP) and how to run it non-interactively from cron. Two sources of truth - the internal claude-code-guide agent and the online docs at code.claude.com/docs - plus a verified headless quick-reference. Use when a task needs Claude Code feature details, when automating Claude Code from a script/cron, or before answering any "can Claude Code ..." question (do not answer those from memory).
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # claude-code

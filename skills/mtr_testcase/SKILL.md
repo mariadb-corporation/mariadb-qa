@@ -1,7 +1,7 @@
 ---
 name: mtr_testcase
 description: Craft and verify a MariaDB MTR (.test) testcase from a CLI/pquery testcase - engine guards (InnoDB/partition/RocksDB/Spider), Mroonga/replication setup, default-engine differences, --error coverage, server options, reverse-gating, and run-in-place verification. Use any time a crash/assert/SAN repro must run under mariadb-test-run.pl, including when building the MTR block of a bug report.
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # mtr_testcase

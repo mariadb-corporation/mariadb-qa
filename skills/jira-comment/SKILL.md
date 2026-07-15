@@ -1,7 +1,7 @@
 ---
 name: jira-comment
 description: Draft a short, clear Jira comment for a MariaDB ticket using Jira wiki markup. Use for assignee Q&A, patch-coverage verification, dup-merge clarification, follow-up questions, and similar tester-to-dev exchanges that go into jira.mariadb.org and are paste-ready.
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # jira-comment

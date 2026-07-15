@@ -29,7 +29,7 @@ start(){
 "$BT/scripts/mariadb-install-db" --no-defaults --srcdir="$BT" --datadir="$DATA" \
   --auth-root-authentication-method=normal >/dev/null 2>"$WORK/install.log" || { echo install-db failed; exit 1; }
 ( cd "$HOME/mariadb-qa/generatorcpp" && "$GEN" --threads "$GTHREADS" --output "$WORK/corpus.sql" "$NQ" ) >/dev/null 2>&1
-grep -ivE "$FILTER" "$WORK/corpus.sql" | awk 'NR%15==0{print "UNLOCK TABLES;"} {print}' > "$WORK/corpus.f.sql"
+grep -ivE "$FILTER" "$WORK/corpus.sql" | awk 'NR%15==0{print "UNLOCK TABLES;"; print "ROLLBACK;"; print "SET SESSION TRANSACTION READ WRITE;"; print "SET @@SESSION.transaction_read_only=0;"} {print}' > "$WORK/corpus.f.sql"
 
 start || { echo "initial start failed"; exit 1; }
 $CLIENT --socket="$SOCK" --force < "$SEED" 2>"$WORK/seed_err.log"

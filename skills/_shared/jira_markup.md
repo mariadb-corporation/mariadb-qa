@@ -1,7 +1,7 @@
 # Shared rule: Jira wiki markup (jira.mariadb.org)
 
 Jira wiki markup, NOT markdown. Applies to any Jira-bound text (bug reports, comments, descriptions).
-Referenced by the `jira-comment` and `mtr_testcase` skills.
+Referenced by the `jira-comment`, `mtr_testcase`, and `jira-ticket` skills.
 
 ## Markup
 

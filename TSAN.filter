@@ -4,6 +4,8 @@
 # https://clang.llvm.org/docs/ThreadSanitizer.html
 # https://github.com/google/sanitizers/wiki/ThreadSanitizerSuppressions
 # Supported TSAN suppressions: race, race_top, thread, mutex, signal, deadlock, called_from_lib
+# ----- Umbrella: MDEV-27138 (Make MariaDB server TSAN safe). The individual
+# MDEV numbers cited per entry below are tracked under it.
 
 # ===== Server startup and shutdown data races =====
 # Every entry below fires only during server start/stop or is a transport-layer
@@ -33,9 +35,12 @@ race:update_global_memory_status
 # InnoDB monitor periodic buffer-pool stats copy. Not yet logged.
 race:buf_refresh_io_stats
 
-# Shutdown-only races (srv_shutdown_state, signal_thread_in_use, abort_loop,
-# thread-cache flush). Not yet logged.
-race:srv_shutdown_bg_undo_sources
-race:signal_hand
-race:break_connect_loop
+# Startup and shutdown coordination flags, set once during start/stop and polled
+# without atomics by background threads (page cleaner, rollback, undo). Keyed on
+# the global so every frame variant is covered. Not yet logged.
+race:srv_shutdown_state
+race:srv_startup_is_before_trx_rollback_phase
+race:trx_rollback_is_active
+race:signal_thread_in_use
+race:abort_loop
 race:Thread_cache::final_flush

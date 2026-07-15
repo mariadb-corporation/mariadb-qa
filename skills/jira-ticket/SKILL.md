@@ -1,7 +1,7 @@
 ---
 name: jira-ticket
 description: Turn a reduced pquery trial under /data/<workdir>/<trial> into a filed public MariaDB bug. Pick the most-reduced testcase, hand-reduce it further and prettify with ~/tcp against the version where it reproduces, dedup-check EARLY against jira.mariadb.org (and present a decision menu if a duplicate is found), generate the bug report via ~/b (and ~/bs / ~/br as warranted), splice any SAN stacks/Setup/matrix into the body, build and verify an MTR testcase (CLI/MTR compatible note, or dual CLI+MTR blocks), derive Affects+Fix versions / components / labels / priority, write a paste-ready overview to log_jira_ticket.txt for approval, file the MDEV ticket via ~/jira, then register it (eb testcase + kb/kba UniqueIDs) and clean matching workdirs (ca). Public generic crash / assert / UB / ASAN bugs only.
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # jira-ticket

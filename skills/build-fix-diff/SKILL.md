@@ -1,7 +1,7 @@
 ---
 name: build-fix-diff
 description: In a /tmp copy of a /test/<ver> source tree, iterate a candidate MariaDB fix quickly - edit the source, build a light patched binary (a single build_mdpsms_*.sh variant, default dbg), run the test, and capture the change as fix.diff via git diff. This is the /tmp fix-iteration workspace; the source copy and the patched binary both stay in /tmp (ephemeral). Use when testing or iterating a candidate fix, or when a fix.diff artifact is needed. For a durable production build in /test use qa-build; to run an existing /test build standalone in /tmp use claude-basedir-fix-copy-setup.
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # build-fix-diff

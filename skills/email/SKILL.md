@@ -1,7 +1,7 @@
 ---
 name: email
 description: Send a plain-text email from this box via direct-to-MX SMTP (no local MTA, no credentials). Resolves the recipient domain's MX and delivers straight to the receiving mail server over STARTTLS, with a valid Message-ID and Date so Google/RFC-5322 filters accept it. Default sender is claude@<hostname>. Use when asked to email someone from this machine, send a test/notification message, or mail a short report. Not for inbox-grade authenticated mail (use the Superhuman Mail MCP tool for that).
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # email

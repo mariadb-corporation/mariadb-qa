@@ -58,7 +58,7 @@ $CLIENT --socket="$S1" --force < "$SEED" 2>"$WORK/seed_err.log"
 bash "$HOME/mariadb-qa/generatorcpp/cov_qkiller.sh" "$S1" & QK=$!
 echo "[$(date +%T)] generate corpus ($NQ)"
 ( cd "$HOME/mariadb-qa/generatorcpp" && "$GEN" --threads "$GTHREADS" --output "$WORK/corpus.sql" "$NQ" ) >/dev/null 2>&1
-grep -ivE "$FILTER" "$WORK/corpus.sql" | awk 'NR%15==0{print "UNLOCK TABLES;"} {print}' > "$WORK/corpus.f.sql"
+grep -ivE "$FILTER" "$WORK/corpus.sql" | awk 'NR%15==0{print "UNLOCK TABLES;"; print "ROLLBACK;"; print "SET SESSION TRANSACTION READ WRITE;"; print "SET @@SESSION.transaction_read_only=0;"} {print}' > "$WORK/corpus.f.sql"
 split -l "$CHUNK" -d -a 4 "$WORK/corpus.f.sql" "$WORK/chunk_"
 nch=$(ls "$WORK"/chunk_* 2>/dev/null | wc -l)
 ci=0

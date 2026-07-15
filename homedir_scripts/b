@@ -7,11 +7,11 @@ set "${1^^}" "${2}"  # Make ${1} uppercase ('san' > 'SAN')
 ALSO_CHECK_SAN_BUILDS_FOR_CORES_SET=1  # Recommended to leave as default=1, search for 'ALSO_CHECK_SAN_BUILDS_FOR_CORES' to read more on this.
 
 # Likely mistaken use cases (reversed)
-if [[ "${PWD}" != *"UBASAN"* && "${1}" == "SAN" ]]; then
+if [[ "${PWD}" != *"UBASAN"* && "${PWD}" != *"TSAN"* && "${1}" == "SAN" ]]; then
   echo "Warning: you are starting '~/b san' (bs) from a non-UBASAN basedir. Did you want to use '~/b' (b) or '~/b msan' (bm) instead?"
   echo "Terminating as this cannot work"
   exit 1
-elif [[ "${PWD}" != *"MSAN"* && "${1}" == "MSAN" ]]; then
+elif [[ "${PWD}" != *"MSAN"* && "${PWD}" != *"TSAN"* && "${1}" == "MSAN" ]]; then
   echo "Warning: you are starting '~/b msan' (bs) from a non-MSAN basedir. Did you want to use '~/b' (b) or '~/b san' (bs) instead?"
   echo "Terminating as this cannot work"
   exit 1
@@ -21,6 +21,14 @@ elif [[ "${PWD}" == *"UBASAN"* && "${1}" == "MSAN" ]]; then
   exit 1
 elif [[ "${PWD}" == *"MSAN"* && "${1}" == "SAN" ]]; then
   echo "Warning: you are starting '~/b san' (bs) from a MSAN basedir. Did you want to use '~/b msan' (bm) instead?"
+  echo "Terminating as this cannot work"
+  exit 1
+elif [[ "${PWD}" != *"TSAN"* && "${1}" == "TSAN" ]]; then
+  echo "Warning: you are starting '~/b tsan' (bt) from a non-TSAN basedir. Did you want to use '~/b' (b), '~/b san' (bs) or '~/b msan' (bm) instead?"
+  echo "Terminating as this cannot work"
+  exit 1
+elif [[ "${PWD}" == *"TSAN"* && ( "${1}" == "SAN" || "${1}" == "MSAN" ) ]]; then
+  echo "Warning: you are starting '~/b ${1,,}' from a TSAN basedir. Did you want to use '~/b tsan' (bt) instead?"
   echo "Terminating as this cannot work"
   exit 1
 elif [[ "${PWD}" == *"SAN"* && "${1}" == "REPL" ]]; then
@@ -98,7 +106,8 @@ else
   if [[ "${PWD}" != *"SAN"* ]]; then
     if [ -z "$(echo "$(cd ..;./gendirs.sh)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
   else
-    if [ -z "$(echo "$(cd ..;./gendirs.sh ${1})" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi  # $1: SAN (UBASAN) or MSAN (MSAN)
+    GENDIRS_ARG="${1}"; if [[ "${PWD}" == *"TSAN"* ]]; then GENDIRS_ARG="SAN"; fi  # TSAN basedirs are listed under the SAN category by gendirs.sh
+    if [ -z "$(echo "$(cd ..;./gendirs.sh ${GENDIRS_ARG})" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi  # $1: SAN (UBASAN) or MSAN (MSAN)
   fi
 fi
 
@@ -135,6 +144,26 @@ if [ "${1}" == "MSAN" ]; then
   ~/mariadb-qa/bug_report.sh MSAN ${MYEXTRA_OPT} | tee report.log
   if [ "${PIPESTATUS[0]}" -eq 1 ]; then
     echo "bug_report.sh MSAN exited with status code 1. Terminating"
+    exit 1
+  fi
+elif [ "${1}" == "TSAN" ] || [[ "${PWD}" == *"TSAN"* ]]; then  # TSAN before the generic SAN branch: a TSAN basedir name also matches *SAN*
+  if [ ! -z "$(grep --binary-files=text -i "TSAN" ../REGEX_EXCLUDE | grep -v 'TSAN_')" ]; then
+    echo "Assert: remove TSAN from ../REGEX_EXCLUDE"
+    exit 1
+  fi
+  if [ -z "${2}" ]; then
+    export TEXT="WARNING: ThreadSanitizer:|SUMMARY: ThreadSanitizer:"
+    if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES_SET}" == '1' ]; then
+      export ALSO_CHECK_SAN_BUILDS_FOR_CORES=1
+    fi
+  else
+    export TEXT="${2}"
+  fi
+  # TSAN basedirs are enumerated under the SAN category (gendirs.sh SAN), so the SAN pipeline is reused; bug_report.sh auto-detects the TSAN build and prints the TSAN flags + TSAN.filter reference
+  MYEXTRA_OPT="$3 $4 $5 $6 $7 $8 $9"
+  ~/mariadb-qa/bug_report.sh SAN ${MYEXTRA_OPT} | tee report.log
+  if [ "${PIPESTATUS[0]}" -eq 1 ]; then
+    echo "bug_report.sh TSAN exited with status code 1. Terminating"
     exit 1
   fi
 elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then

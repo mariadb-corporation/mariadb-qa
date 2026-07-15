@@ -1,7 +1,7 @@
 ---
 name: loop-screens-cleanup
 description: "Sweep the reducer/bug-family screens that `/test/loop_screens` cycles (`.s<N>`, and `.ge<N>`/`.pr<N>`/`newbug` siblings) and end the ones that are done, leaving only screens still actively reducing a reproduced issue. For each ended screen, reap that trial's leftover reducer/subreducer/pquery/mariadbd processes and remove its `/dev/shm/<epoch>` workdir. Decision rule keys off the reducer's `ATLEASTONCE` bracket: `[]` (never reproduced) -> end; `[*]` (reproduced) + finished -> end; `[*]` + still reducing -> leave. Use for the routine \"loop_screens-like cleanup\" of stuck/finished reducer screens."
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # loop-screens-cleanup

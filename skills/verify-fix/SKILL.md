@@ -1,7 +1,7 @@
 ---
 name: verify-fix
 description: End-to-end verification of a candidate fix for a MariaDB bug. Five-step loop - draft fix.diff, build the fix binary, copy basedirs to /tmp, run the bug's MTR test against each affected version, log PASS/FAIL in versions_affected.txt, then cleanup. Use when a fix needs full verification across all affected versions.
-claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater
+claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
 # verify-fix

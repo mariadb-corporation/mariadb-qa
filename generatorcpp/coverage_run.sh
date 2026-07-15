@@ -45,11 +45,11 @@ echo "[$(date +%T)] init datadir"
   --auth-root-authentication-method=normal >/dev/null 2>"$WORK/install.log" || { echo install-db failed; tail "$WORK/install.log"; exit 1; }
 
 echo "[$(date +%T)] generate corpus ($NQ)"
-( cd "$HOME/mariadb-qa/generatorcpp" && "$GEN" --threads "$GTHREADS" --output "$WORK/corpus.sql" "$NQ" ) >/dev/null 2>&1
+( cd "$HOME/mariadb-qa/generatorcpp" && "$GEN" --threads "$GTHREADS" ${WEIGHTS:+--weights "$WEIGHTS"} --output "$WORK/corpus.sql" "$NQ" ) >/dev/null 2>&1
 # Drop wedge statements (pcre2 catastrophic REGEXP, blocking waits, slave-control) and inject a
 # periodic UNLOCK TABLES so a lone LOCK TABLES cannot poison the rest of a chunk with ER_TABLE_NOT_LOCKED
 FILTER='REGEXP|RLIKE|debug_sync|WAIT_FOR|GET_LOCK|SLEEP[[:space:]]*\(|(START|STOP|RESET)[[:space:]]+(SLAVE|REPLICA)|CHANGE[[:space:]]+MASTER'
-grep -ivE "$FILTER" "$WORK/corpus.sql" | awk 'NR%15==0{print "UNLOCK TABLES;"} {print}' > "$WORK/corpus.f.sql"
+grep -ivE "$FILTER" "$WORK/corpus.sql" | awk 'NR%15==0{print "UNLOCK TABLES;"; print "ROLLBACK;"; print "SET SESSION TRANSACTION READ WRITE;"; print "SET @@SESSION.transaction_read_only=0;"} {print}' > "$WORK/corpus.f.sql"
 split -l "$CHUNK" -d -a 4 "$WORK/corpus.f.sql" "$WORK/chunk_"
 nch=$(ls "$WORK"/chunk_* 2>/dev/null | wc -l); echo "    corpus=$(wc -l < "$WORK/corpus.f.sql") lines, $nch chunks"
 
@@ -70,6 +70,13 @@ for ch in "$WORK"/chunk_*; do
     pids+=($!)
   done
   wait "${pids[@]}" 2>/dev/null
+  if ! alive; then                    # server crashed this chunk - preserve evidence before the next restart clobbers it
+    cd="$WORK/crashes/$ci"; mkdir -p "$cd"
+    [ -e "$DATA/core" ] && mv "$DATA/core" "$cd/core"
+    cp "$WORK/err.log" "$cd/err.log" 2>/dev/null; cp "$ch" "$cd/chunk.sql" 2>/dev/null
+    [ -e "$cd/core" ] && gdb -batch -iex 'set debuginfod enabled off' -ex bt "$BIN" "$cd/core" >"$cd/bt.txt" 2>&1
+    echo; echo "[$(date +%T)] CRASH in chunk $ci -> $cd (get UID via gdb/tt before rerun)"
+  fi
   rm -f "$ch".sp_*
   stop_server
   [ "$ci" -lt "$nch" ] && { start_server || { sleep 3; start_server; }; }
