@@ -3447,7 +3447,6 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # precision > 0|SIGABRT|decimal_bin_size|User_var_log_event::write|Log_event_writer::write|Event_log::write_event                                                     ## Fixed ## MDEV-23444
 # precision > 0|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::Field_new_decimal|Type_handler_newdecimal::make_table_field                    ## Fixed ## MDEV-23444
 # precision > 0|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::set_and_validate_prec|Field_new_decimal::Field_new_decimal                     ## Fixed ## MDEV-23444
-# scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::Field_new_decimal|Field_new_decimal::create_from_item ## MDEV-23444
 # prefix_size <= width|SIGABRT|Bitmap<64u>::is_prefix|make_join_statistics|JOIN::optimize_inner|JOIN::optimize                                                                 ## Fixed ## MDEV-24931
 # GOT_ERROR|Got error 1|when reading table                                                                                                                                     ## Fixed ## MDEV-34951 (may mask other bugs)
 # INNODB_ERROR|indexes are inconsistent with what defined in .frm for table                                                                                                    ## Fixed ## MDEV-34951
@@ -3660,3 +3659,4 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # 0|SIGABRT|Field_blob_compressed::new_key_field|store_key::store_key|store_key_field::store_key_field|get_store_key                                                           ## Fixed ## MDEV-16808>MDEV-24726
 # SIGSEGV|store_key_field::copy_inner|store_key::copy|cp_buffer_from_ref|JOIN_CACHE_HASHED::put_record                                                                         ## Fixed ## MDEV-16808>MDEV-24726
 # SIGSEGV|store_key::copy|cp_buffer_from_ref|JOIN_CACHE_HASHED::put_record|sub_select_cache                                                                                    ## Fixed ## MDEV-16808>MDEV-24726
+# # scale >= 0 && precision > 0 && scale <= precision|SIGABRT|decimal_bin_size|my_decimal_get_binary_size|Field_new_decimal::Field_new_decimal|Field_new_decimal::create_from_item ## Fixed ## MDEV-23444
