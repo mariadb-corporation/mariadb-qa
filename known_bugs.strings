@@ -282,6 +282,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGABRT|__libc_message_impl|malloc_printerr|_int_free|__GI___libc_free                                                                                                         ## MDEV-40430
+SIGSEGV|__memset_evex_unaligned_erms|my_free|THD::set_db|mysql_change_db_impl                                                                                                  ## MDEV-40430
 !lock.is_locked_or_waiting()|SIGABRT|buf_page_t::init|rtr_init_match|rtr_cur_search_with_match|sel_set_rtr_rec_lock                                                            ## MDEV-40404
 !(wait_lock->is_insert_intention()) || (wait_lock->is_gap()) || is_supremum|SIGABRT|lock_rec_has_to_wait_in_queue|lock_rec_dequeue_from_page|lock_release_try|lock_release     ## MDEV-39799
 SIGSEGV|std::__1::__cxx_atomic_compare_exchange_strong[abi:ne200100]<unsigned|std::__1::__atomic_base<unsigned int,|srw_mutex_impl<true>::wr_lock_try|srw_mutex_impl<true>::wr_lock ## MDEV-38034
