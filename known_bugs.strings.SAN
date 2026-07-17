@@ -21,6 +21,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::send_result_set_row                                          ## MDEV-40422
 MSAN|use-of-uninitialized-value|sql/sql_type_vector.cc|Field_vector::store|Field::save_in_field_str|end_update|evaluate_join_record                                            ## MDEV-40421
 MSAN|use-of-uninitialized-value|sql/sql_reload.cc|reload_acl_and_cache|mysql_execute_command|sp_instr_stmt::exec_core|sp_lex_keeper::reset_lex_and_exec_core                   ## MDEV-40402
 MSAN|use-of-uninitialized-value|strings/ctype-utf8.c|my_charlen_utf8mb3|my_ci_charlen|my_append_fix_badly_formed_tail|my_copy_fix_mb                                           ## MDEV-40393
