@@ -8,3 +8,6 @@ SELECT floor(sum(avg(i)) OVER ()) FROM t;
 CREATE TABLE t (c DECIMAL(65,10));
 SET SESSION div_precision_increment=65550;
 SELECT CEILING (AVG(c)) FROM t;
+
+CREATE TABLE t1 (c2 TINYINT(254),c3 DECIMAL(40,30));
+SELECT FLOOR(c2+c3) FROM t1;
