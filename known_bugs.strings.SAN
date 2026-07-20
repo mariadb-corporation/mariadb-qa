@@ -21,6 +21,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|strings/ctype-bin.c|memcmp|my_strnncoll_binary|my_strnncollsp_binary|my_ci_strnncollsp                                                         ## MDEV-40455
 UBSAN|division by zero|sql/item_windowfunc.h|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                     ## MDEV-40432
 SIGSEGV|Sp_handler::db_find_routine|Sp_handler::db_find_and_cache_routine|Sp_handler::sp_cache_routine|Sp_handler::sp_cache_routine_reentrant                                  ## MDEV-40420
 MSAN|use-of-uninitialized-value|sql/spatial.cc|Gis_point::get_data_as_wkt|Geometry::as_wkt|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii               ## MDEV-40423
