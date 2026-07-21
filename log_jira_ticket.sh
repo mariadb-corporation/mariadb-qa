@@ -23,6 +23,7 @@ COMMENT_KEY=""
 LINK_KEY=""
 EDIT_KEY=""
 LINK_TYPE="Relates"
+LINK_REVERSE=0
 ASSIGNEE=""
 DRY_RUN=0
 ASSUME_YES=0
@@ -44,7 +45,9 @@ Modes:
   --whoami           Print the authenticated Jira account
   --createmeta       List required fields for --project / --type
   --comment KEY      Add a comment to issue KEY (body via -d / --description-file)
-  --link KEY         Link KEY to related issues: --link KEY --relates OTHER [--relates …] [--link-type Relates]
+  --link KEY         Link KEY to related issues: --link KEY --relates OTHER [--relates …] [--link-type Relates] [--reverse]
+                       Default reads "KEY <type-inward> OTHER" (e.g. PartOf: "KEY is part of OTHER");
+                       --reverse flips to "KEY <type-outward> OTHER" (e.g. PartOf: "KEY includes OTHER").
   --edit KEY         Add versions and/or labels to an EXISTING issue (additive, never replaces):
                        --edit KEY --affects-version 13.0 [--affects-version 13.1] [--fix-version 13.0] [--es-version 13.0]
                        --edit KEY --label corruption [--label security]
@@ -86,6 +89,7 @@ while [ $# -gt 0 ]; do
     --edit) MODE="edit"; EDIT_KEY="$2"; shift ;;
     --relates) RELATES+=("$2"); shift ;;
     --link-type) LINK_TYPE="$2"; shift ;;
+    --reverse) LINK_REVERSE=1 ;;
     -p|--project) PROJECT="$2"; shift ;;
     -t|--type) ISSUETYPE="$2"; shift ;;
     -s|--summary) SUMMARY="$2"; shift ;;
@@ -240,8 +244,14 @@ case "$MODE" in
     [ -n "$LINK_KEY" ] || die "--link requires a source issue key (e.g. MDEV-12345)"
     [ "${#RELATES[@]}" -gt 0 ] || die "--link needs at least one --relates <KEY>"
     require_auth
+    lt_json="$(jira_curl "$JIRA_URL/rest/api/2/issueLinkType" 2>/dev/null)"
+    IN_DESC="$(printf '%s' "$lt_json" | jq -r --arg t "$LINK_TYPE" '.issueLinkTypes[]? | select(.name==$t) | .inward' 2>/dev/null)"
+    OUT_DESC="$(printf '%s' "$lt_json" | jq -r --arg t "$LINK_TYPE" '.issueLinkTypes[]? | select(.name==$t) | .outward' 2>/dev/null)"
+    [ -n "$IN_DESC" ] || IN_DESC="$LINK_TYPE"
+    [ -n "$OUT_DESC" ] || OUT_DESC="$LINK_TYPE"
+    if [ "$LINK_REVERSE" = 1 ]; then REL_DESC="$OUT_DESC"; else REL_DESC="$IN_DESC"; fi
     echo "=== Link on $JIRA_URL/browse/$LINK_KEY  (type: $LINK_TYPE, as $WHOAMI) ===" >&2
-    for r in "${RELATES[@]}"; do echo "  $LINK_KEY  $LINK_TYPE  $r" >&2; done
+    for r in "${RELATES[@]}"; do echo "  $LINK_KEY $REL_DESC $r" >&2; done
     if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] links not created." >&2; exit 0; fi
     if [ "$ASSUME_YES" != 1 ]; then
       echo "Confirm creating these links. Press Enter 3x (Ctrl-C to abort)." >&2
@@ -251,10 +261,14 @@ case "$MODE" in
     fi
     rc=0
     for r in "${RELATES[@]}"; do
-      payload="$(jq -n --arg t "$LINK_TYPE" --arg a "$LINK_KEY" --arg b "$r" '{type:{name:$t},inwardIssue:{key:$a},outwardIssue:{key:$b}}')"
+      if [ "$LINK_REVERSE" = 1 ]; then
+        payload="$(jq -n --arg t "$LINK_TYPE" --arg a "$r" --arg b "$LINK_KEY" '{type:{name:$t},inwardIssue:{key:$a},outwardIssue:{key:$b}}')"
+      else
+        payload="$(jq -n --arg t "$LINK_TYPE" --arg a "$LINK_KEY" --arg b "$r" '{type:{name:$t},inwardIssue:{key:$a},outwardIssue:{key:$b}}')"
+      fi
       resp="$(jira_curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' --data-binary "$payload" -w $'\n%{http_code}' "$JIRA_URL/rest/api/2/issueLink")"
       code="${resp##*$'\n'}"; lbody="${resp%$'\n'*}"
-      if [ "$code" = "201" ]; then echo "Linked: $LINK_KEY $LINK_TYPE $r"
+      if [ "$code" = "201" ]; then echo "Linked: $LINK_KEY $REL_DESC $r"
       else echo "Link failed ($LINK_KEY -> $r, HTTP $code):" >&2; printf '%s' "$lbody" | jq . >&2 2>/dev/null || printf '%s\n' "$lbody" >&2; rc=1; fi
     done
     exit $rc ;;

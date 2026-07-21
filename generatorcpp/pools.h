@@ -51,7 +51,7 @@ inline constexpr std::array<std::string_view, 28> pool_pk = {
   "BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY",
 };
 
-inline constexpr std::array<std::string_view, 721> pool_types = {
+inline constexpr std::array<std::string_view, 719> pool_types = {
   "BIT",
   "BIT(1)",
   "BIT(2)",
@@ -763,8 +763,6 @@ inline constexpr std::array<std::string_view, 721> pool_types = {
   "UUID NOT NULL",
   "UUID INVISIBLE",
   "type_mysql_timestamp",
-  "test_int8",
-  "test_double",
   "xmltype",
   "INT NOT NULL",
   "INT NOT NULL DEFAULT 0",

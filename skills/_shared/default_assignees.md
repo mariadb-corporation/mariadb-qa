@@ -2,7 +2,7 @@
 
 Default assignee per subsystem for MDEV and MENT bug reports, used by the `jira-ticket` skill to suggest an assignee in the approval overview. Map the bug's primary component/subsystem to the name and surface it for signoff. Display names are in the table; their Jira usernames are pre-resolved below. Set with `--assignee <username>`. Resolve any new name via `/rest/api/2/user/search?username=<prefix>` (the param is `username`, NOT `query`).
 
-Jira usernames: Sanja/Oleksandr Byelkin=`sanja`, Aleksey Midenkov=`midenok`, Monty Widenius=`monty`, Rucha Deodhar=`rucha174`, Sergei Golubchik=`serg`, Vladislav Vaintroub=`wlad`, Brandon Nesterenko=`bnestere`, Raghunandan Bhat=`raghunandan.bhat`, Thiru Balathandayuthapani=`thiru`, Seppo Jaakola=`seppo`, Georg Richter=`georg`, Sergei Petrunia=`psergei`, Daniel Black=`danblack`, Alexey Botchkov=`holyfoot`, Alexander Barkov=`bar`, Dmitry Shulga=`shulga`, Kristian Nielsen=`knielsen`, Yuchen Pei=`ycp`.
+Jira usernames: Sanja/Oleksandr Byelkin=`sanja`, Aleksey Midenkov=`midenok`, Monty Widenius=`monty`, Rucha Deodhar=`rucha174`, Sergei Golubchik=`serg`, Vladislav Vaintroub=`wlad`, Brandon Nesterenko=`bnestere`, Raghunandan Bhat=`raghunandan.bhat`, Thiru Balathandayuthapani=`thiru`, Seppo Jaakola=`seppo`, Georg Richter=`georg`, Sergei Petrunia=`psergei`, Daniel Black=`danblack`, Alexey Botchkov=`holyfoot`, Alexander Barkov=`bar`, Dmitry Shulga=`shulga`, Kristian Nielsen=`knielsen`, Yuchen Pei=`ycp`, Roman Nozdrin=`drrtuy`.
 
 | Subsystem | Default assignee |
 |---|---|
@@ -23,6 +23,7 @@ Jira usernames: Sanja/Oleksandr Byelkin=`sanja`, Aleksey Midenkov=`midenok`, Mon
 | DDL (generic) | Sanja Byelkin |
 | DML (generic) | Sanja Byelkin |
 | Documentation | Do NOT create in MDEV -> Atlassian JIRA DOCS project |
+| DuckDB | Roman Nozdrin |
 | Dynamic columns | Sanja Byelkin |
 | Encryption in Aria | Monty Widenius |
 | Encryption in binlog | Brandon Nesterenko |

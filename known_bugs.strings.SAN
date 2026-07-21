@@ -21,6 +21,8 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|lib/krb5/keytab/ktbase.c|krb5_kt_resolve|krb5_kt_read_service_key|get_default_principal_name|plugin_init                                       ## MDEV-35575
+MSAN|use-of-uninitialized-value|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                          ## MDEV-30756
 MSAN|use-of-uninitialized-value|strings/ctype-bin.c|memcmp|my_strnncoll_binary|my_strnncollsp_binary|my_ci_strnncollsp                                                         ## MDEV-40455
 UBSAN|division by zero|sql/item_windowfunc.h|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                     ## MDEV-40432
 SIGSEGV|Sp_handler::db_find_routine|Sp_handler::db_find_and_cache_routine|Sp_handler::sp_cache_routine|Sp_handler::sp_cache_routine_reentrant                                  ## MDEV-40420

@@ -104,6 +104,22 @@ if [ -d "${HOME}/.claude" ]; then
   for SL in "${HOME}"/.claude/skills/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
 fi
 
+# Claude Code status line: register claude_statusline.py in ~/.claude/settings.json if no statusLine is configured yet
+if [ -d "${HOME}/.claude" ] && ! grep -qs '"statusLine"' "${HOME}/.claude/settings.json"; then
+  python3 - <<'EOF'
+import json, os
+path = os.path.expanduser('~/.claude/settings.json')
+settings = {}
+if os.path.exists(path):
+  with open(path) as f:
+    settings = json.load(f)
+settings['statusLine'] = {'type': 'command', 'command': 'python3 ~/mariadb-qa/claude_statusline.py'}
+with open(path, 'w') as f:
+  json.dump(settings, f, indent=2)
+  f.write('\n')
+EOF
+fi
+
 # Public-safety git hooks for this repo (block confidential content reaching the public remote)
 if [ -d "${HOME}/mariadb-qa/hooks" ]; then
   chmod +x "${HOME}"/mariadb-qa/hooks/* "${HOME}"/mariadb-qa/skills/_check/*.sh 2>/dev/null

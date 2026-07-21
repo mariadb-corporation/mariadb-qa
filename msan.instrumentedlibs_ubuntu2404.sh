@@ -205,7 +205,7 @@ export CXXFLAGS="$CFLAGS"
 export LDFLAGS="-fuse-ld=lld -fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR -Wl,--undefined-version"
 
 # ncurses libtinfo.so - used by the mariadb client
-sudo apt-get build-dep -y ncurses
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y ncurses
 apt-get source ncurses
 cd ncurses-*/
 #./configure --prefix=/usr --with-shared --without-normal --without-debug --enable-widec --enable-pc-files --with-pkg-config-libdir=/usr/lib/pkgconfig --enable-symlinks --with
@@ -234,7 +234,7 @@ rm -rf -- ncurses-*
 #rm -rf -- libedit-*
 
 # libedit - used by the mariadb client
-sudo apt-get build-dep -y libedit-dev
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libedit-dev
 apt-get source libedit
 cd libedit-*/
 #quilt push -a || true  # Apply all official Debian/Ubuntu patches to the source code
@@ -247,7 +247,7 @@ cd ..
 rm -rf -- libedit-*
 
 # libaio
-sudo apt-get build-dep -y libaio
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libaio
 apt-get source libaio
 cd libaio-*/
 sed -i '/io_getevents_time64/d; /io_pgetevents_time64/d' src/libaio.map  # Enabling the Y2038 compliance (to handle 64-bit time correctly) to avoid missing symbols 'io_getevents_time64' and 'io_pgetevents_time64' errors
@@ -257,7 +257,7 @@ cd ..
 rm -rf -- libaio-*
 
 # libcrypt (from libxcrypt source)
-sudo apt-get build-dep -y libxcrypt
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libxcrypt
 apt-get source libxcrypt
 cd libxcrypt-*/
 ./autogen.sh
@@ -281,7 +281,7 @@ rm -rf -- libxcrypt-*
 #    #0 0x5555585c0569 in (anonymous namespace)::aio_uring::thread_routine((anonymous namespace)::aio_uring*) /test/11.8_dbg_san/tpool/aio_liburing.cc:155:7
 #SUMMARY: MemorySanitizer: use-of-uninitialized-value /usr/include/liburing.h:229:35 in io_uring_cqe_get_data(io_uring_cqe const*)
 # So used -DCMAKE_DISABLE_FIND_PACKAGE_URING=1 for the moment
-#sudo apt-get build-dep -y liburing
+#sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y liburing
 #apt-get source liburing
 #cd liburing-*/
 #./configure
@@ -297,7 +297,7 @@ rm -rf -- libxcrypt-*
 #rm -rf -- liburing-*
 
 # gnutls used by libmariadb
-sudo apt-get build-dep -y gnutls28
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y gnutls28
 apt-get source gnutls28
 cd gnutls28-*/
 aclocal
@@ -322,7 +322,7 @@ rm -rf -- gnutls28-*
 # #1  0x00007ffff7769e0b in nettle_sha512_digest () from /lib/x86_64-linux-gnu/libnettle.so.8
 # #2  0x00007ffff7e48e8a in wrap_nettle_hash_output (src_ctx=0xbcf74c967d490141, digest=0x713000000008, digestsize=140737488331568) at mac.c:843
 # #3  0x00007ffff765ffbf in ma_hash (algorithm=6, buffer=0x701000000110 "foo", buffer_length=3, digest=0x7fffffffa2f0 "\367\366\363\367\377\177") at /home/marko/11.2/libmariadb/include/ma_crypt.h:151
-sudo apt-get build-dep -y nettle
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y nettle
 apt-get source nettle
 cd nettle-*/
 # native assembly isn't understood by the msan instrumentation when it performs initialization of memory resulting in the above trace.
@@ -334,7 +334,7 @@ rm -rf -- nettle-*
 
 # LIBIDN2 - GNUTLS and openssl use this library so it needs to be instrumented too
 #
-sudo apt-get build-dep -y libidn2
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libidn2
 apt-get source libidn2
 cd libidn2-*/
 ./configure --enable-valgrind-tests=no
@@ -344,7 +344,7 @@ cd ..
 rm -rf -- libidn2-*
 
 # GMP - the maths library for gnutls
-sudo apt-get build-dep -y gmp
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y gmp
 apt-get source gmp
 cd gmp-*/
 # There where dependency problems with documentation, and we don't need the documentation so its removed.
@@ -357,7 +357,7 @@ cd ..
 rm -rf -- gmp-*
 
 # XML2 - MariaDB connect engine and Columnstore(?) uses this
-sudo apt-get build-dep -y libxml2
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libxml2
 apt-get source libxml2
 cd libxml2-*/
 aclocal
@@ -370,7 +370,7 @@ cd ..
 rm -rf -- libxml2-*
 
 # Unixodbc used by MariaDB Connect engine.
-sudo apt-get build-dep -y unixodbc-dev
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y unixodbc-dev
 apt-get source unixodbc-dev
 cd unixodbc-*/
 autoreconf -fi
@@ -380,7 +380,7 @@ mv ./DriverManager/.libs/libodbc.so* "$MSAN_LIBDIR"
 cd ..
 rm -rf -- unixodbc-*
 # libfmt -  used by server for SFORMAT function will be hit by mtr test main.func_sformat
-sudo apt-get build-dep -y libfmt-dev
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libfmt-dev
 apt-get source libfmt-dev
 cd fmtlib-*/
 mkdir build
@@ -391,7 +391,7 @@ cd ..
 rm -rf -- fmtlib-*
 
 # openssl - used by tls connections and parsec authentication in the server
-sudo apt-get build-dep -y libssl-dev
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libssl-dev
 apt-get source libssl-dev
 cd openssl-*/
 # note no-asm and enable-msan were't option for less than clang-19, something about libxcrypt instrumentation for libcrypt intentional word splitting of CFLAGS
@@ -412,7 +412,7 @@ rm -rf -- openssl-*
 # flags (disables shared), its `make shared` also links test programs that fail, and the .dfsg source drops win32/
 # (breaks CMake). So run configure only to generate a correct zconf.h (Z_HAVE_UNISTD_H), then compile the library
 # sources and link the shared object directly. SONAME libz.so.1 is the zlib 1.x ABI name that mariadbd links.
-sudo apt-get build-dep -y zlib
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y zlib
 apt-get source zlib
 cd zlib-*/
 CFLAGS='' LDFLAGS='' ./configure
@@ -423,7 +423,7 @@ cd ..
 rm -rf -- zlib-*
 
 # libunistring - Unicode strings; pulled by libidn2 and libpsl. Pure C.
-sudo apt-get build-dep -y libunistring
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libunistring
 apt-get source libunistring
 cd libunistring-*/
 ./configure --disable-static
@@ -433,7 +433,7 @@ cd ..
 rm -rf -- libunistring-*
 
 # libtasn1 - ASN.1 parser; linked by gnutls and p11-kit. Pure C.
-sudo apt-get build-dep -y libtasn1-6
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libtasn1-6
 apt-get source libtasn1-6
 cd libtasn1-6-*/
 ./configure --disable-static --disable-doc --enable-ld-version-script
@@ -444,7 +444,7 @@ rm -rf -- libtasn1-6-*
 
 # keyutils - kernel keyring; linked by the krb5 stack. Plain Makefile, pure C; pass CC/CFLAGS on the command line
 # to override the Makefile's -Werror append while keeping MSAN flags. NO_ARLIB=1 skips the static lib.
-sudo apt-get build-dep -y keyutils
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y keyutils
 apt-get source keyutils
 cd keyutils-*/
 make -j "$(nproc)" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" NO_ARLIB=1
@@ -453,7 +453,7 @@ cd ..
 rm -rf -- keyutils-*
 
 # libcap-ng - POSIX capabilities; pulled by libaudit. Ships no ./configure (touch NEWS + autoreconf, per Debian).
-sudo apt-get build-dep -y libcap-ng
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libcap-ng
 apt-get source libcap-ng
 cd libcap-ng-*/
 touch NEWS
@@ -465,7 +465,7 @@ cd ..
 rm -rf -- libcap-ng-*
 
 # bzip2 - compression; provider_bzip2. Pure C. Makefile-libbz2_so builds the shared lib (soname libbz2.so.1.0).
-sudo apt-get build-dep -y bzip2
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y bzip2
 apt-get source bzip2
 cd bzip2-*/
 make -f Makefile-libbz2_so CC="$CC" CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=64"
@@ -474,7 +474,7 @@ cd ..
 rm -rf -- bzip2-*
 
 # lz4 - compression; provider_lz4 and libcurl. Pure C, no SIMD.
-sudo apt-get build-dep -y lz4
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y lz4
 apt-get source lz4
 cd lz4-*/
 make -C lib CC="$CC" CFLAGS="$CFLAGS"
@@ -483,7 +483,7 @@ cd ..
 rm -rf -- lz4-*
 
 # xz-utils (liblzma) - compression; provider_lzma. --disable-assembler + --disable-clmul-crc drop the asm/SIMD paths.
-sudo apt-get build-dep -y xz-utils
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y xz-utils
 apt-get source xz-utils
 cd xz-utils-*/
 ./configure --disable-static --disable-assembler --disable-clmul-crc --disable-xz --disable-xzdec --disable-lzmadec --disable-lzmainfo --disable-scripts --disable-doc
@@ -493,7 +493,7 @@ cd ..
 rm -rf -- xz-utils-*
 
 # lzo2 - compression; provider_lzo. --disable-asm: amd64 asm is used by default and MSAN cannot instrument it.
-sudo apt-get build-dep -y lzo2
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y lzo2
 apt-get source lzo2
 cd lzo2-*/
 ./configure --disable-static --enable-shared --disable-asm
@@ -504,7 +504,7 @@ rm -rf -- lzo2-*
 
 # snappy - compression; provider_snappy. Force the SSSE3/BMI2 checks off (MSAN cannot instrument those paths).
 # Strip -Werror: clang-20 flags a -Wsign-compare in snappy's own code that its CMakeLists would treat as fatal.
-sudo apt-get build-dep -y snappy
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y snappy
 apt-get source snappy
 cd snappy-*/
 sed -i 's/-Werror//g' CMakeLists.txt
@@ -519,7 +519,7 @@ cd ..
 rm -rf -- snappy-*
 
 # nghttp2 - HTTP/2; linked by libcurl. Pure C; --enable-lib-only builds only libnghttp2.
-sudo apt-get build-dep -y nghttp2
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y nghttp2
 apt-get source nghttp2
 cd nghttp2-*/
 [ -x ./configure ] || autoreconf -fi
@@ -530,7 +530,7 @@ cd ..
 rm -rf -- nghttp2-*
 
 # brotli - compression; linked by libcurl. NEON path is ARM-only, no x86 SIMD.
-sudo apt-get build-dep -y brotli
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y brotli
 apt-get source brotli
 cd brotli-*/
 cmake -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_SHARED_LIBS=ON -DBROTLI_DISABLE_TESTS=ON \
@@ -542,7 +542,7 @@ cd ..
 rm -rf -- brotli-*
 
 # libzstd - compression; linked by libcurl and mariadbd. ZSTD_NO_ASM=1 sets -DZSTD_DISABLE_ASM (drops BMI2 asm).
-sudo apt-get build-dep -y libzstd
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libzstd
 apt-get source libzstd
 cd libzstd-*/
 make -C lib ZSTD_NO_ASM=1 CC="$CC" CFLAGS="$CFLAGS"
@@ -551,7 +551,7 @@ cd ..
 rm -rf -- libzstd-*
 
 # e2fsprogs - libcom_err only; linked by the krb5/gssapi stack.
-sudo apt-get build-dep -y e2fsprogs
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y e2fsprogs
 apt-get source e2fsprogs
 cd e2fsprogs-*/
 ./configure --enable-elf-shlibs
@@ -562,7 +562,7 @@ rm -rf -- e2fsprogs-*
 
 # p11-kit - PKCS#11 loader; linked by gnutls. --without-libffi avoids the un-instrumentable libffi asm trampolines;
 # --with-hash-impl=internal avoids the freebl/NSS dependency. Needs the instrumented libtasn1 (built above).
-sudo apt-get build-dep -y p11-kit
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y p11-kit
 apt-get source p11-kit
 cd p11-kit-*/
 ./configure --disable-static --without-libffi --with-hash-impl=internal --without-bash-completion --disable-doc
@@ -572,7 +572,7 @@ cd ..
 rm -rf -- p11-kit-*
 
 # audit (libaudit) - linked by auth_pam. Links libcap-ng (built above).
-sudo apt-get build-dep -y audit
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y audit
 apt-get source audit
 cd audit-*/
 [ -x ./configure ] || autoreconf -fi
@@ -583,7 +583,7 @@ cd ..
 rm -rf -- audit-*
 
 # pam (libpam) - linked by auth_pam / auth_pam_v1. Links libaudit (built above).
-sudo apt-get build-dep -y pam
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y pam
 apt-get source pam
 cd pam-*/
 [ -x ./configure ] || autoreconf -fi
@@ -596,7 +596,7 @@ cd ..
 rm -rf -- pam-*
 
 # libpsl - public suffix list; linked by libcurl. Uses the instrumented libidn2 (present).
-sudo apt-get build-dep -y libpsl
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libpsl
 apt-get source libpsl
 cd libpsl-*/
 [ -x ./configure ] || autoreconf -fi
@@ -611,7 +611,9 @@ rm -rf -- libpsl-*
 # krb5 - MIT Kerberos (libkrb5, libgssapi_krb5, libk5crypto, libkrb5support); auth_gssapi at plugin init calls
 # krb5_init_context_profile() and an uninstrumented libkrb5 gives a false uninit report in profile_make_prf_data.
 # --disable-aesni: MSAN cannot instrument the AES-NI asm (C fallback used).
-sudo apt-get build-dep -y krb5
+# A vanilla configure links krb5's bundled com_err (SONAME libcom_err.so.3, distinct from e2fsprogs'
+# libcom_err.so.2); ship it too or auth_gssapi fails to load with 'libcom_err.so.3: cannot open'.
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y krb5
 apt-get source krb5
 cd krb5-*/src
 ./configure --disable-aesni --enable-shared --disable-static
@@ -619,12 +621,12 @@ cd krb5-*/src
 # from mariadbd's runtime) fatal at link. Strip it from every file that carries it.
 grep -rlZ -- '-Wl,--no-undefined' . 2>/dev/null | xargs -0 -r sed -i 's/-Wl,--no-undefined//g'
 make -j "$(nproc)"
-find . \( -name 'libkrb5.so.*' -o -name 'libgssapi_krb5.so.*' -o -name 'libk5crypto.so.*' -o -name 'libkrb5support.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
+find . \( -name 'libkrb5.so.*' -o -name 'libgssapi_krb5.so.*' -o -name 'libk5crypto.so.*' -o -name 'libkrb5support.so.*' -o -name 'libcom_err.so.*' \) -exec cp -aL {} "$MSAN_LIBDIR/" \;
 cd ../..
 rm -rf -- krb5-*
 
 # cyrus-sasl2 (libsasl2) - SASL; linked by libldap and libcurl. Links krb5 (gssapi) and openssl (both present).
-sudo apt-get build-dep -y cyrus-sasl2
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y cyrus-sasl2
 apt-get source cyrus-sasl2
 cd cyrus-sasl2-*/
 [ -x ./configure ] || autoreconf -fi
@@ -644,7 +646,7 @@ rm -rf -- cyrus-sasl2-*
 # plugins never use. curl below is built --without-librtmp, so librtmp leaves the dependency closure entirely.
 
 # libssh - SSH; linked by libcurl. CMake; OpenSSL backend + zlib (present); GSSAPI via the instrumented krb5.
-sudo apt-get build-dep -y libssh
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libssh
 apt-get source libssh
 cd libssh-*/
 cmake -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_SHARED_LIBS=ON -DWITH_EXAMPLES=OFF -DUNIT_TESTING=OFF -DWITH_GSSAPI=ON \
@@ -656,7 +658,7 @@ cd ..
 rm -rf -- libssh-*
 
 # openldap (liblber, libldap) - LDAP client; linked by libcurl. Links cyrus-sasl2 and openssl (present).
-sudo apt-get build-dep -y openldap
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y openldap
 apt-get source openldap
 cd openldap-*/
 ./configure --disable-static --disable-slapd --with-tls=openssl --with-cyrus-sasl
@@ -669,7 +671,7 @@ rm -rf -- openldap-*
 
 # curl (libcurl) - HTTP client; linked by ha_s3 / ha_videx / hashicorp_key_management. Links nghttp2, libssh,
 # openldap, cyrus-sasl2, libpsl, brotli, zstd, krb5, zlib, idn2, openssl (all built above / present). librtmp omitted.
-sudo apt-get build-dep -y curl
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y curl
 apt-get source curl
 cd curl-*/
 ./configure --disable-static --with-openssl --with-nghttp2 --with-libssh --with-zstd --with-brotli --with-libidn2 --enable-ldap --enable-ldaps --without-librtmp --disable-manual --without-libssh2
@@ -679,7 +681,7 @@ cd ..
 rm -rf -- curl-*
 
 # icu (libicudata, libicui18n, libicuuc) - Unicode; linked by ha_connect. Configure lives in source/. No asm.
-sudo apt-get build-dep -y icu
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y icu
 apt-get source icu
 cd icu-*/source
 ./configure --disable-static --enable-shared --disable-samples --disable-tests --disable-layoutex
@@ -690,7 +692,7 @@ rm -rf -- icu-*
 # <<< MSAN_ADDLIBS_END
 
 # pcre used by server
-sudo apt-get build-dep -y libpcre2-dev
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y libpcre2-dev
 apt-get source  libpcre2-dev
 cd pcre2-*/
 cmake -S . -B build/ -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=OFF -DPCRE2_BUILD_TESTS=OFF -DPCRE2_SUPPORT_JIT=ON  -DCMAKE_C_FLAGS="${CFLAGS} -Dregcomp=PCRE2regcomp -Dregexec=PCRE2regexec -Dregerror=PCRE2regerror -Dregfree=PCRE2regfree"
@@ -701,7 +703,7 @@ rm -rf -- pcre2-*
 
 # cppunit used by galera
 # intend to reuse this image for galera testing
-sudo apt-get build-dep -y cppunit
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y cppunit
 apt-get source cppunit
 cd cppunit-*/
 ./configure
@@ -711,7 +713,7 @@ cd ..
 rm -rf -- cppunit-*
 
 # subunit
-sudo apt-get build-dep -y subunit
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y subunit
 apt-get source subunit
 cd subunit-*/
 autoreconf  -vi
@@ -722,7 +724,7 @@ cd ..
 rm -rf -- subunit-*
 
 # cracklib used by mariadb-plugin-cracklib-password-check
-sudo apt-get build-dep -y cracklib2
+sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y cracklib2
 apt-get source cracklib2
 cd cracklib2-*/
 aclocal
@@ -742,3 +744,45 @@ rm -rf -- cracklib2-*
 # shellcheck disable=SC2094
 # Requires apt install cracklib-runtime
 #/usr/sbin/cracklib-packer /usr/share/dict/cracklib-small < /usr/share/dict/cracklib-small
+
+# Emit the incremental runner tooling so $MSAN_LIBDIR is fully self-contained and disposable:
+# regen.sh re-derives build/msan_addlibs.sh (the MSAN_ADDLIBS section wrapped in per-package
+# have_pkg skip-guards) from this script; run regen.sh after editing that section here.
+cat > "$MSAN_LIBDIR/build/regen.sh" <<'REGEN_EOF'
+#!/bin/bash
+set -e
+SCRIPT="$HOME/mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh"
+RUN=/MSAN_libs/build/msan_addlibs.sh
+bash -n "$SCRIPT"
+cat > "$RUN" <<'HDR'
+#!/bin/bash
+set -o errexit -o nounset -o pipefail
+export MSAN_LIBDIR=/MSAN_libs
+export CC=/usr/bin/clang-20
+export CXX=/usr/bin/clang++-20
+export LD=/usr/bin/ld.lld-20
+export CFLAGS="-fsanitize=memory -fno-omit-frame-pointer -fPIC -O2 -g -Wno-error=incompatible-function-pointer-types -Wno-error=deprecated-declarations -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int"
+export CXXFLAGS="$CFLAGS"
+export LDFLAGS="-fuse-ld=lld -fsanitize=memory -L$MSAN_LIBDIR -Wl,-rpath=$MSAN_LIBDIR -Wl,--undefined-version"
+have_pkg(){
+  local s
+  case "$1" in
+    zlib) s=libz;; libunistring) s=libunistring;; libtasn1-6) s=libtasn1;; keyutils) s=libkeyutils;;
+    libcap-ng) s=libcap-ng;; bzip2) s=libbz2;; lz4) s=liblz4;; xz-utils) s=liblzma;; lzo2) s=liblzo2;;
+    snappy) s=libsnappy;; nghttp2) s=libnghttp2;; brotli) s=libbrotlidec;; libzstd) s=libzstd;;
+    e2fsprogs) s=libcom_err;; p11-kit) s=libp11-kit;; audit) s=libaudit;; pam) s=libpam;; libpsl) s=libpsl;;
+    krb5) s=libkrb5;; cyrus-sasl2) s=libsasl2;; rtmpdump) s=librtmp;; libssh) s=libssh;; openldap) s=libldap;;
+    curl) s=libcurl;; icu) s=libicuuc;; *) return 1;;
+  esac
+  ls "$MSAN_LIBDIR/$s".so.* >/dev/null 2>&1
+}
+cd "$MSAN_LIBDIR/build"
+HDR
+sed -n '/^# >>> MSAN_ADDLIBS_BEGIN$/,/^# <<< MSAN_ADDLIBS_END$/p' "$SCRIPT" | sed -E \
+  -e 's/^sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y (.+)$/if have_pkg \1; then echo "===== SKIP \1 (present) ====="; else echo "===== BUILDING \1 ====="; sudo DEBIAN_FRONTEND=noninteractive apt-get build-dep -y \1/' \
+  -e 's/^rm -rf -- (.+)$/rm -rf -- \1\nfi/' >> "$RUN"
+bash -n "$RUN"
+echo "runner regenerated; guards=$(grep -c 'if have_pkg' "$RUN")"
+REGEN_EOF
+chmod +x "$MSAN_LIBDIR/build/regen.sh"
+bash "$MSAN_LIBDIR/build/regen.sh"
