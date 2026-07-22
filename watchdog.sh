@@ -742,6 +742,7 @@ phase4_report(){
     local VARIANT=""
     case "$BD" in
       *UBASAN*) VARIANT="SAN" ;;
+      *TSAN*)   VARIANT="TSAN" ;;
       *MSAN*)   VARIANT="MSAN" ;;
     esac
     log_loop "[P4] start wd=$WD trial=$TRIAL variant=${VARIANT:-default} basedir=$BD"

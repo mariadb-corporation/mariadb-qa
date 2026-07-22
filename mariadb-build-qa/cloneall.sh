@@ -28,7 +28,7 @@ rm -Rf 1[0-3].[0-9]
 ./clone.sh 11.8 &
 #./clone.sh 12.0 &
 #./clone.sh 12.1 &
-./clone.sh 12.2 &
+#./clone.sh 12.2 &
 ./clone.sh 12.3 &
 ./clone.sh 13.0 &
 # When updating the next line, i.e. when trunk has changed to a new major version, remember to make a similar fix in clone.sh

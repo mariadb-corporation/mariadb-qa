@@ -26,6 +26,7 @@ BUILD_12_1=0
 BUILD_12_2=0
 BUILD_12_3=1
 BUILD_13_0=1
+BUILD_13_1=1
 BUILD_ES_10_5=0
 BUILD_ES_10_6=1
 BUILD_ES_11_4=1
@@ -46,11 +47,16 @@ fi
 cleanup_dirs(){
   cd ${DIR}
   if [ -d /data/TARS ]; then mv ${DIR}/*.tar.gz /data/TARS 2>/dev/null; sync; fi
-  rm -Rf 1[0-2].[0-9]_dbg 1[0-2].[0-9]_opt
+  rm -Rf 1[0-3].[0-9]_dbg 1[0-3].[0-9]_opt
   rm -Rf 10.1[0-1]_dbg 10.1[0-1]_opt
 }
 
 buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use (newer builds=larger=longer)
+  if [ ${BUILD_13_1} -eq 1 ]; then
+    cleanup_dirs; cd ${DIR}/13.1 && ~/mariadb-qa/build_mdpsms_opt_valgrind.sh
+    cleanup_dirs; cd ${DIR}/13.1 && ~/mariadb-qa/build_mdpsms_dbg_valgrind.sh
+  fi
+
   if [ ${BUILD_13_0} -eq 1 ]; then
     cleanup_dirs; cd ${DIR}/13.0 && ~/mariadb-qa/build_mdpsms_opt_valgrind.sh
     cleanup_dirs; cd ${DIR}/13.0 && ~/mariadb-qa/build_mdpsms_dbg_valgrind.sh

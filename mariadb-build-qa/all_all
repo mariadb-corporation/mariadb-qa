@@ -4,12 +4,16 @@
 # Script variables, do not change
 MYEXTRA_OPT="$*"
 SAN_MODE=0
+TSAN_MODE=0
 MSAN_MODE=0
 GAL_MODE=0
 REPL_MODE=0
 if [ "${1}" == "SAN" ]; then
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
+elif [ "${1}" == "TSAN" ]; then
+  TSAN_MODE=1
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|TSAN||')"
 elif [ "${1}" == "MSAN" ]; then
   MSAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|MSAN||')"
@@ -25,6 +29,8 @@ fi
 # \$ escaped so each parallel worker re-evaluates RANDOM in the inner bash -c (a single outer-shell expansion would give all workers the same value)
 if [ ${SAN_MODE} -eq 1 ]; then
   ./gendirs.sh SAN | xargs -I{} echo "sleep \$((RANDOM % 5)).\${RANDOM}; cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P10 -I{} bash -c "{}"
+elif [ ${TSAN_MODE} -eq 1 ]; then
+  ./gendirs.sh TSAN | xargs -I{} echo "sleep \$((RANDOM % 5)).\${RANDOM}; cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P10 -I{} bash -c "{}"
 elif [ ${MSAN_MODE} -eq 1 ]; then
   ./gendirs.sh MSAN | xargs -I{} echo "sleep \$((RANDOM % 5)).\${RANDOM}; cd {}; ./all_no_cl ${MYEXTRA_OPT}; cd .." | xargs -P10 -I{} bash -c "{}"
 elif [ ${GAL_MODE} -eq 1 ]; then
@@ -37,10 +43,12 @@ fi
 
 sync
 
-# Bootstrap is occasionally racy in parallel; retry dead instances serially (max 3 attempts each). Scoped to SAN/MSAN/regular - Galera and replication have different socket layouts
+# Bootstrap is occasionally racy in parallel; retry dead instances serially (max 3 attempts each). Scoped to SAN/TSAN/MSAN/regular - Galera and replication have different socket layouts
 if [ ${GAL_MODE} -eq 0 ] && [ ${REPL_MODE} -eq 0 ]; then
   if [ ${SAN_MODE} -eq 1 ]; then
     GENDIRS_OUT="$(./gendirs.sh SAN)"
+  elif [ ${TSAN_MODE} -eq 1 ]; then
+    GENDIRS_OUT="$(./gendirs.sh TSAN)"
   elif [ ${MSAN_MODE} -eq 1 ]; then
     GENDIRS_OUT="$(./gendirs.sh MSAN)"
   else

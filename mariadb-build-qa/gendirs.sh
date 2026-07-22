@@ -7,7 +7,9 @@ if [ -z "${REGEX_EXCLUDE}" ]; then REGEX_EXCLUDE="DUMMYSTRINGNEVERSEEN"; fi
 GEN_FILTER="tar|_opt|_dbg"  # _opt/_dbg: build dirs, not basedirs which are -opt/-dbg
 
 if [ "${1}" == "SAN" ]; then
-  ls --color=never -d UBASAN_[EM]* TSAN_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
+  ls --color=never -d UBASAN_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
+elif [ "${1}" == "TSAN" ]; then
+  ls --color=never -d TSAN_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
 elif [ "${1}" == "MSAN" ]; then
   ls --color=never -d MSAN_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
 elif [ "${1}" == "GAL" ]; then

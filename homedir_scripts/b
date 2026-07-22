@@ -51,7 +51,7 @@ if [ "${1}" == "SAN" ]; then
   elif [[ "${PWD}" == *"ASAN"* ]]; then
     echo 'Starting up (ASAN mode/bs)...'
   fi
-elif [ "${1}" == "TSAN" ]; then  # TODO: implement TSAN mode as 'bt' and in other scripts, ref MSAN commit for scripts affected
+elif [ "${1}" == "TSAN" ]; then
   echo 'Starting up (TSAN mode/bt)...'
 elif [ "${1}" == "MSAN" ]; then
   echo 'Starting up (MSAN mode/bm)...'
@@ -106,8 +106,8 @@ else
   if [[ "${PWD}" != *"SAN"* ]]; then
     if [ -z "$(echo "$(cd ..;./gendirs.sh)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
   else
-    GENDIRS_ARG="${1}"; if [[ "${PWD}" == *"TSAN"* ]]; then GENDIRS_ARG="SAN"; fi  # TSAN basedirs are listed under the SAN category by gendirs.sh
-    if [ -z "$(echo "$(cd ..;./gendirs.sh ${GENDIRS_ARG})" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi  # $1: SAN (UBASAN) or MSAN (MSAN)
+    GENDIRS_ARG="${1}"; if [[ "${PWD}" == *"TSAN"* ]]; then GENDIRS_ARG="TSAN"; fi  # TSAN basedirs have their own gendirs.sh category
+    if [ -z "$(echo "$(cd ..;./gendirs.sh ${GENDIRS_ARG})" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi  # $1: SAN (UBASAN), TSAN (TSAN) or MSAN (MSAN)
   fi
 fi
 
@@ -159,9 +159,8 @@ elif [ "${1}" == "TSAN" ] || [[ "${PWD}" == *"TSAN"* ]]; then  # TSAN before the
   else
     export TEXT="${2}"
   fi
-  # TSAN basedirs are enumerated under the SAN category (gendirs.sh SAN), so the SAN pipeline is reused; bug_report.sh auto-detects the TSAN build and prints the TSAN flags + TSAN.filter reference
   MYEXTRA_OPT="$3 $4 $5 $6 $7 $8 $9"
-  ~/mariadb-qa/bug_report.sh SAN ${MYEXTRA_OPT} | tee report.log
+  ~/mariadb-qa/bug_report.sh TSAN ${MYEXTRA_OPT} | tee report.log
   if [ "${PIPESTATUS[0]}" -eq 1 ]; then
     echo "bug_report.sh TSAN exited with status code 1. Terminating"
     exit 1
@@ -256,6 +255,8 @@ if [ -r ../allstrings_merged ]; then
     cd .. && ./allstrings_merged GAL 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   elif [[ "${1}" == "MSAN" ]]; then
     cd .. && ./allstrings_merged MSAN 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
+  elif [[ "${1}" == "TSAN" || "${PWD}" == *"TSAN"* ]]; then
+    cd .. && ./allstrings_merged TSAN 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
     cd .. && ./allstrings_merged SAN 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   else

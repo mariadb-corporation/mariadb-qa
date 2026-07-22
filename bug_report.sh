@@ -4,11 +4,13 @@
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 if [ "${1}" == "san" ]; then set "SAN" "${2}"; fi  # ${1} 'san' > 'SAN'
+if [ "${1}" == "tsan" ]; then set "TSAN" "${2}"; fi  # ${1} 'tsan' > 'TSAN'
 if [ "${1}" == "msan" ]; then set "MSAN" "${2}"; fi  # ${1} 'msan' > 'MSAN'
+if [ "${1}" == "SAN" ] && [[ "${PWD}" == *"TSAN"* ]]; then set "TSAN" "${@:2}"; fi  # A TSAN basedir needs a TSAN report
 
 # User variables
 ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=1
-if [ "${1}" == "MSAN" ]; then ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=0; fi  # Preference ftm
+if [ "${1}" == "TSAN" -o "${1}" == "MSAN" ]; then ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=0; fi  # Preference ftm
 DEBUG_OUTPUT=0  # Set to 1 to see full output of test_all and kill_all (note: this generates lots of output, and it is in parallel threads, so it likely only useful for debugging major issues with test_all and/or kill_all, but it is likely better to check a ./test_all run in a BASEDIR directly). Default: 0, legacy default: 1 (i.e. before this option was implemented, all output was shown)
 
 if [ ! -r /test/gendirs.sh ]; then
@@ -17,8 +19,8 @@ if [ ! -r /test/gendirs.sh ]; then
 fi
 
 # Script variables: do not change
-SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'MD.*\-1[12].[0-9]' | grep 'opt' | sort -h | tail -n1)"
-SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'MD.*\-1[12].[0-9]' | grep 'dbg' | sort -h | tail -n1)"
+SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'opt' | sort -V | tail -n1)"
+SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'dbg' | sort -V | tail -n1)"
 
 if [ "${1}" != 'SAN' ]; then
   # If enabled (ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=1), then check what are deemed to be regular (i.e. non-*SAN) testcases against SAN builds also, as this often reveals new *SAN bugs additional to the original SIGSEGV/SIGABRT etc.
@@ -42,6 +44,7 @@ fi
 MYEXTRA_OPT="$*"
 NOCORE=0
 SAN_MODE=0
+TSAN_MODE=0
 MSAN_MODE=0
 GAL_MODE=0
 REPL_MODE=0
@@ -75,6 +78,18 @@ elif [ "${1}" == "SAN" ]; then
   fi
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
+elif [ "${1}" == "TSAN" ]; then
+  if [ -z "${TEXT}" ]; then   # Passed normally by ~/b preloader/wrapper sript
+    echo "Assert: TEXT is empty, use export TEXT= to set it!"
+    exit 1
+  else
+    echo "NOTE: TSAN Mode: Looking for '${TEXT}' in the error log to validate issue occurrence."
+    if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES}" == '1' ]; then
+      echo "NOTE: ALSO_CHECK_SAN_BUILDS_FOR_CORES[_SET]=1: Will also look for core files in TSAN dirs to validate issue occurence. It is recommended to leave this enabled."  # ... (as set in ~/bt), given that short testcases leading to a SIGSEGV/SIGABRT on TSAN builds are likely directly/immediately related to any TSAN issues they may produce otherwise
+    fi
+  fi
+  TSAN_MODE=1
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|TSAN||')"
 elif [ "${1}" == "MSAN" ]; then
   if [ -z "${TEXT}" ]; then   # Passed normally by ~/b preloader/wrapper sript
     echo "Assert: TEXT is empty, use export TEXT= to set it!"
@@ -222,6 +237,8 @@ if [ "${DEBUG_OUTPUT}" -eq 1 ]; then
 fi
 if [ "${SAN_MODE}" -eq 1 ]; then
   ./test_all SAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
+elif [ "${TSAN_MODE}" -eq 1 ]; then
+  ./test_all TSAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 elif [ "${MSAN_MODE}" -eq 1 ]; then
   ./test_all MSAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 elif [ "${GAL_MODE}" -eq 1 ]; then
@@ -235,6 +252,8 @@ echo "Ensuring all servers are gone..."
 sync
 if [ "${SAN_MODE}" -eq 1 ]; then
   ./kill_all SAN ${REDIRECT}
+elif [ "${TSAN_MODE}" -eq 1 ]; then
+  ./kill_all TSAN ${REDIRECT}
 elif [ "${MSAN_MODE}" -eq 1 ]; then
   ./kill_all MSAN ${REDIRECT}
 elif [ "${GAL_MODE}" -eq 1 ]; then
@@ -260,9 +279,13 @@ else
     #echo "Searching error logs for the '^SUMMARY:|=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:' (SAN mode enabled)"  # This is now set in ~/b (when using ~/bs) - ref/use linkit if ~/b or ~/bs are not present
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh SAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
+  elif [ "${1}" == "TSAN" ]; then
+    #echo "Searching error logs for the 'WARNING: ThreadSanitizer:|SUMMARY: ThreadSanitizer:' (TSAN mode enabled)"  # This is now set in ~/b (when using ~/bt) - ref/use linkit if ~/b or ~/bt are not present
+    echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (TSAN mode enabled)"
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh TSAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "MSAN" ]; then
     #echo "Searching error logs for the '^SUMMARY:|=ERROR:|MemorySanitizer:' (MSAN mode enabled)"  # This is now set in ~/b (when using ~/bm) - ref/use linkit if ~/b or ~/bm are not present
-    echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (SAN mode enabled)"
+    echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (MSAN mode enabled)"
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh MSAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "GAL" ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
@@ -343,7 +366,7 @@ cat in.sql | grep -v --binary-files=text '^$'
 echo -e '{code}\n'
 echo -e 'Leads to:\n'
 # Assumes (which is valid for the pquery framework) that 1st assertion is also the last in the log
-if [ ${SAN_MODE} -eq 0 -a ${MSAN_MODE} -eq 0 ]; then
+if [ ${SAN_MODE} -eq 0 -a ${TSAN_MODE} -eq 0 -a ${MSAN_MODE} -eq 0 ]; then
   # If current basedir is dbg, place the opt stack first (directly under "Leads to:")
   if [[ "${PWD}" == *"dbg" ]] && [ ! -z "${ALT_STACK_OUTPUT}" ]; then
     echo "${ALT_STACK_OUTPUT}"
@@ -429,7 +452,10 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
   ALT_BASEDIR=
   echo -e '\nSetup:\n'
   echo '{noformat}'
-  if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh san | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
+  SAN_CATEGORY='SAN'  # gendirs.sh category matching this run's sanitizer type
+  if [ ${TSAN_MODE} -eq 1 ]; then SAN_CATEGORY='TSAN'; fi
+  if [ ${MSAN_MODE} -eq 1 ]; then SAN_CATEGORY='MSAN'; fi
+  if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh ${SAN_CATEGORY} | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
     # TODO: consider use of dpkg --list | grep -o 'llvm-[0-9]\+' | sort -h -r | head -n1 | grep -o '[0-9]\+'
     echo "Compiled with a recent version of Clang and LLVM. Ubuntu instructions for Clang/LLVM 18:"
     echo "  # Note: It is strongly recommended to uninstall all old Clang & LLVM packages (ref  dpkg --list | grep -iE 'clang|llvm'  and use  apt purge  and  dpkg --purge  to remove the packages), before installing Clang/LLVM 18"
@@ -450,22 +476,26 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
   else
     echo "Compiled with a recent version of GCC (I used GCC $(gcc --version | head -n1 | sed 's|.* ||')) and:"
   fi
-  if grep -Eiqm1 --binary-files=text 'ThreadSanitizer:' ../*SAN*/log/master.err; then  # TSAN
+  # Setup instructions match this run's sanitizer type only (TSAN mode -> TSAN, MSAN mode -> MSAN, otherwise UBASAN)
+  if [ ${TSAN_MODE} -eq 1 ]; then  # TSAN
     # A note on exitcode=0: whereas we do not use this in our runs, it is required to let MTR bootstrap succeed.
     # TODO: Once code becomes more stable add: halt_on_error=1
     echo '    -DWITH_TSAN=ON -DWSREP_LIB_WITH_TSAN=ON -DMUTEXTYPE=sys'
     echo 'Set before execution:'
     echo "    export TSAN_OPTIONS=suppressions=TSAN.filter:suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1:exitcode=0   # TSAN.filter suppresses known server start/stop data races so real races stand out. For the current TSAN.filter (tracked under MDEV-27138) see: https://github.com/mariadb-corporation/mariadb-qa/blob/master/TSAN.filter"
-  fi
-  if grep -Eiqm1 --binary-files=text 'runtime error:|=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # UBSAN/ASAN/LSAN(ASAN) (best not to split ASAN vs UBSAN build here, and to just leave both enabled, as these features, when both are enabled, may affect the server differently then only one is enabled: we thus maximize bug reproducibility through leaving the same options enabled as where there during testing)  # elif; avoids double printing
+  elif [ ${MSAN_MODE} -eq 1 ]; then  # MSAN
+    echo '    -DWITH_MSAN=ON  # Note: WITH_MSAN=ON is auto-ignored when not using clang (MDEV-20377)'
+    echo 'Set before execution:'
+    echo '    export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0'
+  else  # UBASAN (ASAN+UBSAN)
     echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON'
     UBFLAG=0
-    if grep -Eiqm1 --binary-files=text 'runtime error:' ../*SAN*/log/master.err; then  # UBSAN
+    if grep -Eiqm1 --binary-files=text 'runtime error:' ../UBASAN*/log/master.err 2>/dev/null; then  # UBSAN
       UBFLAG=1
       echo 'Set before execution:'
       echo "    export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1   # And you may also want to supress UBSAN startup issues using 'suppressions=UBSAN.filter' in UBSAN_OPTIONS. For an example of UBSAN.filter, which includes current startup issues see: https://github.com/mariadb-corporation/mariadb-qa/blob/master/UBSAN.filter"
     fi
-    if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../*SAN*/log/master.err; then  # ASAN
+    if grep -Eiqm1 --binary-files=text '=ERROR:|LeakSanitizer:|AddressSanitizer:' ../UBASAN*/log/master.err 2>/dev/null; then  # ASAN
       # detect_invalid_pointer_pairs changed from 1 to 3 at start of 2021 (effectively used since)
       if [ "${UBFLAG}" != "1" ]; then  # Avoid double 'Set ...'
         echo 'Set before execution:'
@@ -476,17 +506,19 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
       #echo "    export ASAN_OPTIONS=quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1"
     fi
   fi
-  if grep -Eiqm1 --binary-files=text 'MemorySanitizer:' ../*SAN*/log/master.err; then  # MSAN
-    echo '    -DWITH_MSAN=ON  # Note: WITH_MSAN=ON is auto-ignored when not using clang (MDEV-20377)'
-    echo 'Set before execution:'
-    echo '    export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0'
-  fi
   echo '{noformat}'
 fi
 echo ''
 # The test_all script auto-runs ./findbug_new which generates ../test.results[.san/.gal]. 
 # If it does not exist, something went wrong
 if [ "${1}" == "SAN" ]; then
+  if [ -r ../test.results.san ]; then
+    cat ../test.results.san
+  else
+    echo "ERROR: expected ../test.results.san to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
+    exit 1
+  fi
+elif [ "${1}" == "TSAN" ]; then
   if [ -r ../test.results.san ]; then
     cat ../test.results.san
   else
@@ -518,6 +550,8 @@ fi
 echo '-------------------- /BUG REPORT --------------------'
 if [ "${1}" == "SAN" ]; then
   echo "TOTAL SAN OCCURRENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
+elif [ "${1}" == "TSAN" ]; then
+  echo "TOTAL TSAN OCCURRENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 elif [ "${1}" == "MSAN" ]; then
   echo "TOTAL MSAN OCCURRENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 elif [ "${1}" == "GAL" ]; then
@@ -535,15 +569,15 @@ if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" -eq 1 ]; then
     echo '-----------------------------------------'
   fi
 fi
-if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
+if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
   echo 'Remember to action:'
-  echo "*) Check the 'SAN Execution of the testcase' mini-report just above. If a *SAN (i.e. 'ASAN|...', 'UBSAN|...' or 'TBSAN|...' etc.) UniqueID was seen in a SAN build, then please run a 'bs' report using the same in.sql testcase in that SAN build also. Copy the full resulting SAN matrix (and info on how to create/build a similar SAN build) into the bug report as well"
+  echo "*) Check the 'SAN Execution of the testcase' mini-report just above. If a *SAN (i.e. 'ASAN|...', 'UBSAN|...', 'TSAN|...' or 'MSAN|...' etc.) UniqueID was seen in a SAN build, then please run a 'bs' ('bt' for TSAN, 'bm' for MSAN) report using the same in.sql testcase in that SAN build also. Copy the full resulting SAN matrix (and info on how to create/build a similar SAN build) into the bug report as well"
   echo '*) If no engine is specified, add ENGINE=InnoDB to table definitions and re-run the bug report'
-  if [ ${NOCORE} -ne 1 -o ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
+  if [ ${NOCORE} -ne 1 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
     cd ${RUN_PWD}
     TEXT=
     FINDBUG=
-    if [ ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
+    if [ ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
       TEXT="$(${SCRIPT_PWD}/san_text_string.sh)"
       if [ ! -z "${TEXT}" ]; then
         echo "*) Add bug to ${SCRIPT_PWD}/known.strings.SAN, as follows (use ~/kba for quick access):"
@@ -575,7 +609,7 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 
         echo "BUG NOT FOUND (IDENTICALLY) IN KNOWN BUGS LIST! HOWEVER, A PARTIAL MATCH BASED ON THE 1st FRAME ('${FRAMEX}') WAS FOUND, BUT AS THAT STRING IS TOO GENERIC (AND THERE ARE THUS TOO MANY MATCHES), NO OUTPUT IS SHOWN HERE"
       else
         OUT2=
-        if [ ${SAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
+        if [ ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
           OUT2="$(set +H; grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
         else
           OUT2="$(set +H; grep -Fi --binary-files=text "${FRAMEX}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"

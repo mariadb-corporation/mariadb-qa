@@ -314,11 +314,14 @@ FLAGS="${FLAGS} -DCMAKE_BUILD_TYPE=RelWithDebInfo"
 
 CURPATH="$(echo $PWD | sed 's|.*/||')"
 
+SCRATCH_SUFFIX='_opt_san'
+if [ ${USE_TSAN} -eq 1 ]; then SCRATCH_SUFFIX='_opt_tsan'; fi  # Distinct scratch so TSAN and UBASAN builds of the same source can run concurrently
+
 cd ..
-rm -Rf ${CURPATH}_opt_san
+rm -Rf ${CURPATH}${SCRATCH_SUFFIX}
 rm -f /tmp/mdpsms_opt_san_build_${RANDOMD}
-cp -R ${CURPATH} ${CURPATH}_opt_san
-cd ${CURPATH}_opt_san
+cp -R ${CURPATH} ${CURPATH}${SCRATCH_SUFFIX}
+cd ${CURPATH}${SCRATCH_SUFFIX}
 
 # Replace any old CMAKE_MINIMUM_REQUIRED strings like 'CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)' in all CMakeLists.txt files
 # Ref for example https://jira.mariadb.org/browse/MCOL-6004 and https://jira.mariadb.org/browse/MENT-2383

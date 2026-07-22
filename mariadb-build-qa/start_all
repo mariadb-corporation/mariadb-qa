@@ -2,12 +2,14 @@
 # Created by Roel Van de Paar, MariaDB
 
 MYEXTRA_OPT_PRE="$*"
-MYEXTRA_OPT="$(echo "${MYEXTRA_OPT_PRE}" | sed 's|MSAN||;s|GAL||;s|SAN||;s|REPL||;s|[ \t]\+| |g')"
+MYEXTRA_OPT="$(echo "${MYEXTRA_OPT_PRE}" | sed 's|MSAN||;s|TSAN||;s|GAL||;s|SAN||;s|REPL||;s|[ \t]\+| |g')"
 
 if [ "${1}" == "GAL" ]; then
   ./gendirs.sh GAL | xargs -I{} echo "cd {}; ./gal_start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "SAN" ]; then
   ./gendirs.sh SAN | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
+elif [ "${1}" == "TSAN" ]; then
+  ./gendirs.sh TSAN | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "MSAN" ]; then
   ./gendirs.sh MSAN | xargs -I{} echo "cd {}; ./start ${MYEXTRA_OPT}" | xargs -P50 -I{} bash -c "{}"
 elif [ "${1}" == "REPL" ]; then
