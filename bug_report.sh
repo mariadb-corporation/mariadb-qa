@@ -6,11 +6,12 @@ SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 if [ "${1}" == "san" ]; then set "SAN" "${2}"; fi  # ${1} 'san' > 'SAN'
 if [ "${1}" == "tsan" ]; then set "TSAN" "${2}"; fi  # ${1} 'tsan' > 'TSAN'
 if [ "${1}" == "msan" ]; then set "MSAN" "${2}"; fi  # ${1} 'msan' > 'MSAN'
+if [ "${1}" == "val" ]; then set "VAL" "${2}"; fi  # ${1} 'val' > 'VAL'
 if [ "${1}" == "SAN" ] && [[ "${PWD}" == *"TSAN"* ]]; then set "TSAN" "${@:2}"; fi  # A TSAN basedir needs a TSAN report
 
 # User variables
 ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=1
-if [ "${1}" == "TSAN" -o "${1}" == "MSAN" ]; then ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=0; fi  # Preference ftm
+if [ "${1}" == "TSAN" -o "${1}" == "MSAN" -o "${1}" == "VAL" ]; then ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=0; fi  # Preference ftm
 DEBUG_OUTPUT=0  # Set to 1 to see full output of test_all and kill_all (note: this generates lots of output, and it is in parallel threads, so it likely only useful for debugging major issues with test_all and/or kill_all, but it is likely better to check a ./test_all run in a BASEDIR directly). Default: 0, legacy default: 1 (i.e. before this option was implemented, all output was shown)
 
 if [ ! -r /test/gendirs.sh ]; then
@@ -46,6 +47,7 @@ NOCORE=0
 SAN_MODE=0
 TSAN_MODE=0
 MSAN_MODE=0
+VAL_MODE=0
 GAL_MODE=0
 REPL_MODE=0
 if [ -z "${PASS_MYEXTRA_TO_START_ONLY}" ]; then  # Check if an external script (like ~/b) has set this option. If not, set it here. If you want to use this option in combination with ~/b, set it there, or use export PASS_MYEXTRA_TO_START_ONLY=0 (or 1) before starting ~/b, or use ~/b0 or ~/b1 which are shortcuts
@@ -102,6 +104,18 @@ elif [ "${1}" == "MSAN" ]; then
   fi
   MSAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|MSAN||')"
+elif [ "${1}" == "VAL" ]; then
+  if [ -z "${TEXT}" ]; then   # Passed normally by ~/b preloader/wrapper sript
+    echo "Assert: TEXT is empty, use export TEXT= to set it!"
+    exit 1
+  else
+    echo "NOTE: Valgrind Mode: Looking for '${TEXT}' in the error log to validate issue occurrence."
+    if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES}" == '1' ]; then
+      echo "NOTE: ALSO_CHECK_SAN_BUILDS_FOR_CORES[_SET]=1: Will also look for core files in VAL dirs to validate issue occurence. It is recommended to leave this enabled."  # ... (as set in ~/bv), given that short testcases leading to a SIGSEGV/SIGABRT on Valgrind builds are likely directly/immediately related to any Valgrind issues they may produce otherwise
+    fi
+  fi
+  VAL_MODE=1
+  MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|VAL||')"
 elif [ "${1}" == "REPL" ]; then
   if [ -z "${TEXT}" ]; then   # Passed normally by ~/br preloader/wrapper sript
     echo "Assert: TEXT is empty, but BBB was expected. TODO: add 'export TEXT=...' support for replication"
@@ -241,6 +255,8 @@ elif [ "${TSAN_MODE}" -eq 1 ]; then
   ./test_all TSAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 elif [ "${MSAN_MODE}" -eq 1 ]; then
   ./test_all MSAN ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
+elif [ "${VAL_MODE}" -eq 1 ]; then
+  ./test_all VAL ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 elif [ "${GAL_MODE}" -eq 1 ]; then
   ./test_all GAL ${MYEXTRA_OPT_CLEANED} ${REDIRECT}
 elif [ "${REPL_MODE}" -eq 1 ]; then
@@ -256,6 +272,8 @@ elif [ "${TSAN_MODE}" -eq 1 ]; then
   ./kill_all TSAN ${REDIRECT}
 elif [ "${MSAN_MODE}" -eq 1 ]; then
   ./kill_all MSAN ${REDIRECT}
+elif [ "${VAL_MODE}" -eq 1 ]; then
+  ./kill_all VAL ${REDIRECT}
 elif [ "${GAL_MODE}" -eq 1 ]; then
   ./kill_all GAL ${REDIRECT}
 elif [ "${REPL_MODE}" -eq 1 ]; then
@@ -287,6 +305,9 @@ else
     #echo "Searching error logs for the '^SUMMARY:|=ERROR:|MemorySanitizer:' (MSAN mode enabled)"  # This is now set in ~/b (when using ~/bm) - ref/use linkit if ~/b or ~/bm are not present
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (MSAN mode enabled)"
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh MSAN | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
+  elif [ "${1}" == "VAL" ]; then
+    echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware) (Valgrind mode enabled)"
+    CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh VAL | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/log/master.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
   elif [ "${1}" == "GAL" ]; then
     echo "TEXT set to '${TEXT}', searching error logs for the same (case insensitive, regex aware)"
     CORE_OR_TEXT_COUNT_ALL=$(set +H; ./gendirs.sh GAL | xargs -I{} echo "grep -m1 -iE --binary-files=text '${TEXT}' {}/node1/node1.err 2>/dev/null" | tr '\n' '\0' | xargs -P10 -0 -I{} bash -c "{}" | wc -l)
@@ -366,7 +387,7 @@ cat in.sql | grep -v --binary-files=text '^$'
 echo -e '{code}\n'
 echo -e 'Leads to:\n'
 # Assumes (which is valid for the pquery framework) that 1st assertion is also the last in the log
-if [ ${SAN_MODE} -eq 0 -a ${TSAN_MODE} -eq 0 -a ${MSAN_MODE} -eq 0 ]; then
+if [ ${SAN_MODE} -eq 0 -a ${TSAN_MODE} -eq 0 -a ${MSAN_MODE} -eq 0 -a ${VAL_MODE} -eq 0 ]; then
   # If current basedir is dbg, place the opt stack first (directly under "Leads to:")
   if [[ "${PWD}" == *"dbg" ]] && [ ! -z "${ALT_STACK_OUTPUT}" ]; then
     echo "${ALT_STACK_OUTPUT}"
@@ -416,10 +437,12 @@ if [ ${SAN_MODE} -eq 0 -a ${TSAN_MODE} -eq 0 -a ${MSAN_MODE} -eq 0 ]; then
     echo ''
     echo "${ALT_STACK_OUTPUT}"
   fi
-else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
-  # START_LINE: the 1st line on which any *SAN issue shows (ref TEXT in ~/b), END_LINE: the last of either '^SUMMARY:' or '=ABORTING$'
+else   # UBASAN/UBSAN/ASAN/TSAN/MSAN/VAL
+  # START_LINE: the 1st line on which any *SAN/Valgrind issue shows (ref TEXT in ~/b), END_LINE: the last of either '^SUMMARY:' or '=ABORTING$' (*SAN), or the last Valgrind 'ERROR SUMMARY:' line (VAL)
+  END_REGEX="^SUMMARY:|=ABORTING$"
+  if [ ${VAL_MODE} -eq 1 ]; then END_REGEX="==[0-9]+== ERROR SUMMARY:"; fi
   START_LINE=$(grep -n -m 1 -E "${TEXT}" ./log/master.err | cut -d: -f1)
-  END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ./log/master.err | tail -1 | cut -d: -f1)
+  END_LINE=$(grep -n -E "${END_REGEX}" ./log/master.err | tail -1 | cut -d: -f1)
   if [ ! -z "${START_LINE}" ]; then
     if [ -z "${END_LINE}" ]; then END_LINE=10000; fi
     ${SCRIPT_PWD}/homedir_scripts/myver | head -n1
@@ -438,7 +461,7 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
   fi
   if [ ! -z "${ALT_BASEDIR}" -a -d "${ALT_BASEDIR}" -a "${ALT_BASEDIR}" != "${PWD}" ]; then
     ALT_START_LINE=$(grep -n -m 1 -E "${TEXT}" ${ALT_BASEDIR}/log/master.err | cut -d: -f1)
-    ALT_END_LINE=$(grep -n -E "^SUMMARY:|=ABORTING$" ${ALT_BASEDIR}/log/master.err | tail -1 | cut -d: -f1)
+    ALT_END_LINE=$(grep -n -E "${END_REGEX}" ${ALT_BASEDIR}/log/master.err | tail -1 | cut -d: -f1)
     if [ ! -z "${START_LINE}" ]; then
       if [ -z "${END_LINE}" ]; then END_LINE=10000; fi
       cd ${ALT_BASEDIR}
@@ -452,9 +475,10 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
   ALT_BASEDIR=
   echo -e '\nSetup:\n'
   echo '{noformat}'
-  SAN_CATEGORY='SAN'  # gendirs.sh category matching this run's sanitizer type
+  SAN_CATEGORY='SAN'  # gendirs.sh category matching this run's sanitizer/instrumentation type
   if [ ${TSAN_MODE} -eq 1 ]; then SAN_CATEGORY='TSAN'; fi
   if [ ${MSAN_MODE} -eq 1 ]; then SAN_CATEGORY='MSAN'; fi
+  if [ ${VAL_MODE} -eq 1 ]; then SAN_CATEGORY='VAL'; fi
   if grep -q 'clang' "/test/$(cd /test/; ./gendirs.sh ${SAN_CATEGORY} | head -n1)/BUILD_CMD_CMAKE"; then  # Check if Clang was used for building the *SAN builds
     # TODO: consider use of dpkg --list | grep -o 'llvm-[0-9]\+' | sort -h -r | head -n1 | grep -o '[0-9]\+'
     echo "Compiled with a recent version of Clang and LLVM. Ubuntu instructions for Clang/LLVM 18:"
@@ -487,6 +511,10 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN
     echo '    -DWITH_MSAN=ON  # Note: WITH_MSAN=ON is auto-ignored when not using clang (MDEV-20377)'
     echo 'Set before execution:'
     echo '    export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0'
+  elif [ ${VAL_MODE} -eq 1 ]; then  # Valgrind
+    echo '    -DWITH_VALGRIND=ON'
+    echo 'Run the server under Valgrind (from within the base directory):'
+    echo '    valgrind --suppressions=./mariadb-test/valgrind.supp --num-callers=40 --show-reachable=yes ./bin/mariadbd <options>   # The suppressions file is ./mysql-test/valgrind.supp in older versions'
   else  # UBASAN (ASAN+UBSAN)
     echo '    -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON -DWSREP_LIB_WITH_ASAN=ON'
     UBFLAG=0
@@ -532,6 +560,13 @@ elif [ "${1}" == "MSAN" ]; then
     echo "ERROR: expected ../test.results.san to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
     exit 1
   fi
+elif [ "${1}" == "VAL" ]; then
+  if [ -r ../test.results.val ]; then
+    cat ../test.results.val
+  else
+    echo "ERROR: expected ../test.results.val to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
+    exit 1
+  fi
 elif [ "${1}" == "GAL" ]; then
   if [ -r ../test.results.gal ]; then
     cat ../test.results.gal
@@ -554,6 +589,8 @@ elif [ "${1}" == "TSAN" ]; then
   echo "TOTAL TSAN OCCURRENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 elif [ "${1}" == "MSAN" ]; then
   echo "TOTAL MSAN OCCURRENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
+elif [ "${1}" == "VAL" ]; then
+  echo "TOTAL VALGRIND OCCURRENCES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 elif [ "${1}" == "GAL" ]; then
   echo "TOTAL GALERA CORES SEEN ACCROSS ALL VERSIONS: ${CORE_OR_TEXT_COUNT_ALL}"
 elif [ "${REPL_MODE}" -eq 1 ]; then
@@ -569,11 +606,11 @@ if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" -eq 1 ]; then
     echo '-----------------------------------------'
   fi
 fi
-if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
+if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 -o ${VAL_MODE} -eq 1 ]; then
   echo 'Remember to action:'
   echo "*) Check the 'SAN Execution of the testcase' mini-report just above. If a *SAN (i.e. 'ASAN|...', 'UBSAN|...', 'TSAN|...' or 'MSAN|...' etc.) UniqueID was seen in a SAN build, then please run a 'bs' ('bt' for TSAN, 'bm' for MSAN) report using the same in.sql testcase in that SAN build also. Copy the full resulting SAN matrix (and info on how to create/build a similar SAN build) into the bug report as well"
   echo '*) If no engine is specified, add ENGINE=InnoDB to table definitions and re-run the bug report'
-  if [ ${NOCORE} -ne 1 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
+  if [ ${NOCORE} -ne 1 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 -o ${VAL_MODE} -eq 1 ]; then
     cd ${RUN_PWD}
     TEXT=
     FINDBUG=
@@ -584,6 +621,14 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 
         echo "${TEXT}"
         echo '*) Checking if this bug is already known:'
         FINDBUG="$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
+      fi
+    elif [ ${VAL_MODE} -eq 1 ]; then
+      TEXT="$(${SCRIPT_PWD}/valgrind_string.sh ./log/master.err 2>/dev/null | grep -v 'NO VALGRIND STRING FOUND')"
+      if [ ! -z "${TEXT}" ]; then
+        echo "*) Add bug to ${SCRIPT_PWD}/known.strings, as follows (use ~/kb for quick access):"
+        echo "${TEXT}"
+        echo '*) Checking if this bug is already known:'
+        FINDBUG="$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"
       fi
     else
       TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"

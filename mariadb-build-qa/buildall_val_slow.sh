@@ -47,8 +47,8 @@ fi
 cleanup_dirs(){
   cd ${DIR}
   if [ -d /data/TARS ]; then mv ${DIR}/*.tar.gz /data/TARS 2>/dev/null; sync; fi
-  rm -Rf 1[0-3].[0-9]_dbg 1[0-3].[0-9]_opt
-  rm -Rf 10.1[0-1]_dbg 10.1[0-1]_opt
+  rm -Rf 1[0-3].[0-9]_dbg_val 1[0-3].[0-9]_opt_val
+  rm -Rf 10.1[0-1]_dbg_val 10.1[0-1]_opt_val
 }
 
 buildall(){  # Build 2-by-2 in reverse order to optimize initial time-till-ready-for-use (newer builds=larger=longer)

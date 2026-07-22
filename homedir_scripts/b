@@ -31,6 +31,10 @@ elif [[ "${PWD}" == *"TSAN"* && ( "${1}" == "SAN" || "${1}" == "MSAN" ) ]]; then
   echo "Warning: you are starting '~/b ${1,,}' from a TSAN basedir. Did you want to use '~/b tsan' (bt) instead?"
   echo "Terminating as this cannot work"
   exit 1
+elif [[ "${PWD}" != *"VAL_"* && "${1}" == "VAL" ]]; then
+  echo "Warning: you are starting '~/b val' (bv) from a non-VAL (Valgrind) basedir. Did you want to use '~/b' (b) instead?"
+  echo "Terminating as this cannot work"
+  exit 1
 elif [[ "${PWD}" == *"SAN"* && "${1}" == "REPL" ]]; then
   echo "***********************************************************************************************************************"
   echo "Warning: you are starting '~/b repl' (br) from a UBSAN or MSAN basedir."
@@ -55,6 +59,8 @@ elif [ "${1}" == "TSAN" ]; then
   echo 'Starting up (TSAN mode/bt)...'
 elif [ "${1}" == "MSAN" ]; then
   echo 'Starting up (MSAN mode/bm)...'
+elif [ "${1}" == "VAL" ]; then
+  echo 'Starting up (Valgrind mode/bv)...'
 elif [ "${1}" == "REPL" ]; then
   echo 'Starting up (Replication mode: br)...'
 else
@@ -103,7 +109,9 @@ if [ -r report.log ]; then echo "Assert: report.log still present though this sc
 if [ "${1}" == "GAL" ]; then
   if [ -z "$(echo "$(cd ..;./gendirs.sh GAL)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
 else
-  if [[ "${PWD}" != *"SAN"* ]]; then
+  if [[ "${PWD}" == *"VAL_"* ]]; then
+    if [ -z "$(echo "$(cd ..;./gendirs.sh VAL)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
+  elif [[ "${PWD}" != *"SAN"* ]]; then
     if [ -z "$(echo "$(cd ..;./gendirs.sh)" | grep "$(pwd | sed 's|/$||g;s|.*/||')")" ]; then echo "Assert: the current directory ($PWD) is not included in gendirs.sh! Check ../REGEX_EXCLUDE etc."; exit 1; fi
   else
     GENDIRS_ARG="${1}"; if [[ "${PWD}" == *"TSAN"* ]]; then GENDIRS_ARG="TSAN"; fi  # TSAN basedirs have their own gendirs.sh category
@@ -163,6 +171,25 @@ elif [ "${1}" == "TSAN" ] || [[ "${PWD}" == *"TSAN"* ]]; then  # TSAN before the
   ~/mariadb-qa/bug_report.sh TSAN ${MYEXTRA_OPT} | tee report.log
   if [ "${PIPESTATUS[0]}" -eq 1 ]; then
     echo "bug_report.sh TSAN exited with status code 1. Terminating"
+    exit 1
+  fi
+elif [ "${1}" == "VAL" ] || [[ "${PWD}" == *"VAL_"* ]]; then
+  if [ ! -z "$(grep --binary-files=text -i "VAL" ../REGEX_EXCLUDE | grep -v 'VAL_' | grep -vi 'VALGRIND')" ]; then  # 'VALGRIND' is tolerated: a legacy REGEX_EXCLUDE token predating the VAL_ prefix
+    echo "Assert: remove VAL from ../REGEX_EXCLUDE"
+    exit 1
+  fi
+  if [ -z "${2}" ]; then
+    export TEXT="==[0-9]+==.*(Invalid read|Invalid write|Invalid free|Mismatched free|uninitialised|Syscall param|Source and destination overlap|Jump to the invalid address|Process terminating with default action)"
+    if [ "${ALSO_CHECK_SAN_BUILDS_FOR_CORES_SET}" == '1' ]; then
+      export ALSO_CHECK_SAN_BUILDS_FOR_CORES=1
+    fi
+  else
+    export TEXT="${2}"
+  fi
+  MYEXTRA_OPT="$3 $4 $5 $6 $7 $8 $9"
+  ~/mariadb-qa/bug_report.sh VAL ${MYEXTRA_OPT} | tee report.log
+  if [ "${PIPESTATUS[0]}" -eq 1 ]; then
+    echo "bug_report.sh VAL exited with status code 1. Terminating"
     exit 1
   fi
 elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
@@ -257,6 +284,8 @@ if [ -r ../allstrings_merged ]; then
     cd .. && ./allstrings_merged MSAN 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   elif [[ "${1}" == "TSAN" || "${PWD}" == *"TSAN"* ]]; then
     cd .. && ./allstrings_merged TSAN 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
+  elif [[ "${1}" == "VAL" || "${PWD}" == *"VAL_"* ]]; then
+    cd .. && ./allstrings_merged VAL 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   elif [[ "${PWD}" == *"SAN"* || "${1}" == "SAN" ]]; then
     cd .. && ./allstrings_merged SAN 2>&1 | grep -vi "${FILT_SHA2_PWD}" | tee -a "${REPORT_PATH}/report.log" && cd - >/dev/null 2>&1
   else

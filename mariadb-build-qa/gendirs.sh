@@ -12,6 +12,8 @@ elif [ "${1}" == "TSAN" ]; then
   ls --color=never -d TSAN_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
 elif [ "${1}" == "MSAN" ]; then
   ls --color=never -d MSAN_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
+elif [ "${1}" == "VAL" ]; then
+  ls --color=never -d VAL_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
 elif [ "${1}" == "GAL" ]; then
     ls --color=never -d GAL_MD*   2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V
     ls --color=never -d GAL_EMD* 2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V
@@ -22,11 +24,11 @@ else
   ls --color=never -d MD*1[0-5].[0-9]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | grep -vE "SAN|GAL" | sort -V
   ls --color=never -d MS*[589].[0-9]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | grep -vE "SAN|GAL" | sort -V
   if [ "${1}" == "ALLALL" ]; then
-    ls --color=never -d [UBAM]*SAN_[EM]* TSAN_[EM]* 2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V
+    ls --color=never -d [UBAM]*SAN_[EM]* TSAN_[EM]* VAL_[EM]* 2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V
     ls --color=never -d GAL_M*   2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V
     ls --color=never -d MONTY_M* 2>/dev/null | grep -vE "${GEN_FILTER}" | sort -V
   elif [ "${1}" == "ALL" ]; then
-    ls --color=never -d [UBAM]*SAN_[EM]* TSAN_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
+    ls --color=never -d [UBAM]*SAN_[EM]* TSAN_[EM]* VAL_[EM]* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
     ls --color=never -d GAL_M*   2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
     ls --color=never -d MONTY_M* 2>/dev/null | grep -vE "${REGEX_EXCLUDE}" | grep -vE "${GEN_FILTER}" | sort -V
   fi

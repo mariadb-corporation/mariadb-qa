@@ -109,10 +109,21 @@ if [[ "${BASEDIR}" == *"MSAN"* || "${BASEDIR}" == *"msan"* || "${BASEDIR}" == *"
   MYSAFE="${MYSAFE} --skip-stack-trace"
 fi
 
-# TSAN: the 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space reservation) cannot map within the TSAN-restricted address space; cap it
-if [[ "${BASEDIR}" == *"TSAN"* || "${BASEDIR}" == *"tsan"* || "${BASEDIR}" == *"Tsan"* ]]; then
+# TSAN/VAL: the 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space reservation) cannot map within the TSAN-restricted address space, and stalls Valgrind's memcheck address-range tracking; cap it
+if [[ "${BASEDIR}" == *"TSAN"* || "${BASEDIR}" == *"tsan"* || "${BASEDIR}" == *"Tsan"* || "${BASEDIR}" == *"VAL_"* ]]; then
   MYSAFE="${MYSAFE} --loose-innodb-buffer-pool-size-max=2G"
   MYINIT="${MYINIT} --loose-innodb-buffer-pool-size-max=2G"
+fi
+
+# VAL: Valgrind-instrumented (VAL_) builds are meant to run under Valgrind (VALGRIND_RUN=1 + VALGRIND_CMD in the config); without it mariadbd runs plain and no Valgrind errors can be detected
+if [[ "${BASEDIR}" == *"VAL_"* ]] && [ "${VALGRIND_RUN}" != "1" ]; then
+  echoit "Warning: BASEDIR (${BASEDIR}) is a Valgrind (VAL_) build, but VALGRIND_RUN is not set to 1 in the config; mariadbd will run without Valgrind"
+fi
+
+# Valgrind does not support io_uring: InnoDB hangs right after the 'Using io_uring' startup line when running under Valgrind; disable native AIO
+if [ "${VALGRIND_RUN}" == "1" ]; then
+  MYSAFE="${MYSAFE} --loose-innodb-use-native-aio=0"
+  MYINIT="${MYINIT} --loose-innodb-use-native-aio=0"
 fi
 
 # Safety checks: ensure variables are correctly set to avoid rm -Rf issues (if not set correctly, it was likely due to altering internal variables at the top of this file)

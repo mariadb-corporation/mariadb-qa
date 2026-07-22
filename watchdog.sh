@@ -744,6 +744,7 @@ phase4_report(){
       *UBASAN*) VARIANT="SAN" ;;
       *TSAN*)   VARIANT="TSAN" ;;
       *MSAN*)   VARIANT="MSAN" ;;
+      *VAL_*)   VARIANT="VAL" ;;
     esac
     log_loop "[P4] start wd=$WD trial=$TRIAL variant=${VARIANT:-default} basedir=$BD"
     cp "$REDUCED" "$BD/in.sql" 2>/dev/null || { log_loop "[P4] cp-failed wd=$WD trial=$TRIAL"; continue; }

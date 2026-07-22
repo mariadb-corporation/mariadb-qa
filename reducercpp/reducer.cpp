@@ -303,6 +303,7 @@ std::vector<std::string> MULTI_PIDS;     // PID per subreducer thread
 std::string  TS_DATAINPUTFILE;
 int          TS_ORIG_THREADS = 0;
 std::string  BASEDIR_ALT_PATH;
+std::string  BASEDIR_EXTRACTED_FROM_TAR;  // BASEDIR extracted from a /data/TARS tarball at startup; removed at termination
 
 // Chunking state
 long long    LINECOUNTF = 0;
@@ -786,8 +787,28 @@ static std::string extract_option(std::string& myextra, const std::string& egrep
 static void preprocess_myextra() {
   // BASEDIR auto-fallback to /data/VARIOUS_BUILDS (lines 393..403)
   std::string basedir_alt = util::replace_all(cfg::BASEDIR, "/test/", "/data/VARIOUS_BUILDS/");
+  // Second-level fallback: build in neither /test nor /data/VARIOUS_BUILDS, but its
+  // tarball is in /data/TARS: extract it to /data/VARIOUS_BUILDS. The tarball holds a
+  // generic top-level dir (mariadb-<version>-linux-x86_64) which same-version opt/dbg/
+  // sanitizer tarballs all share, so extract inside a private temp dir, then rename to
+  // the tarball's own name. mv -T is atomic and fails if a concurrent extraction of
+  // the same build won the rename; the winning copy is then used (and owns cleanup).
   if (!util::dir_exists(cfg::BASEDIR) && !util::dir_exists(basedir_alt)) {
-    std::cerr << "Assert: Neither '" << cfg::BASEDIR << "' nor '" << basedir_alt << "' directories exist, please set the BASEDIR variable correctly\n";
+    std::string tarball = "/data/TARS/" + fs::path(basedir_alt).filename().string() + ".tar.gz";
+    if (util::file_readable(tarball)) {
+      std::cerr << "Note: BASEDIR '" << cfg::BASEDIR << "' does not exist, but '" << tarball << "' was found: extracting it to '" << basedir_alt << "' (this can take a minute)\n";
+      std::string tmpdir = util::sh_capture_trimmed("mktemp -d '" + fs::path(basedir_alt).parent_path().string() + "/.extract.XXXXXX'");
+      if (!tmpdir.empty() && util::sh("tar -xzf '" + tarball + "' -C '" + tmpdir + "'") == 0) {
+        std::string topdir = util::sh_capture_trimmed("ls -1 '" + tmpdir + "' | head -n1");
+        if (!topdir.empty() && util::sh("mv -T '" + tmpdir + "/" + topdir + "' '" + basedir_alt + "' 2>/dev/null") == 0) {
+          state::BASEDIR_EXTRACTED_FROM_TAR = basedir_alt;
+        }
+      }
+      if (!tmpdir.empty()) util::sh("rm -Rf '" + tmpdir + "'");
+    }
+  }
+  if (!util::dir_exists(cfg::BASEDIR) && !util::dir_exists(basedir_alt)) {
+    std::cerr << "Assert: Neither '" << cfg::BASEDIR << "' nor '" << basedir_alt << "' directories exist, nor was a matching tarball found in /data/TARS; please set the BASEDIR variable correctly\n";
     std::exit(1);
   }
   if (!util::dir_exists(cfg::BASEDIR) && util::dir_exists(basedir_alt)) {
@@ -2956,8 +2977,8 @@ static void start_valgrind_mysqld_main_impl() {
   state::MYPORT = state::NEWPORT; state::NEWPORT = 0;
   std::ostringstream cmd;
   cmd << cfg::TIMEOUT_COMMAND
-      << " valgrind --suppressions=" << cfg::BASEDIR << "/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes "
-      << state::BIN << " --no-defaults --basedir=" << cfg::BASEDIR
+      << " valgrind --suppressions=$(ls " << cfg::BASEDIR << "/m*test/valgrind.supp 2>/dev/null | head -n1) --num-callers=40 --show-reachable=yes "
+      << state::BIN << " --no-defaults --loose-innodb-use-native-aio=0 --basedir=" << cfg::BASEDIR  // native AIO off: Valgrind does not support io_uring (InnoDB hangs after 'Using io_uring')
       << " --datadir=" << state::WORKD << "/data --port=" << state::MYPORT
       << " --tmpdir=" << state::WORKD << "/tmp --pid-file=" << state::WORKD << "/pid.pid"
       << " --socket=" << state::WORKD << "/socket.sock --user=" << state::MYUSER << " "
@@ -2974,7 +2995,7 @@ static void start_valgrind_mysqld_main_impl() {
   ws << state::JE1 << "\n" << state::JE2 << "\n" << state::JE3 << "\n" << state::JE4 << "\n";
   ws << "BIN=`find -L ${BASEDIR} -maxdepth 2 -name mariadbd -type f -o -name mysqld -type f -o -name mysqld-debug -type f -o -name mysqld -type l -o -name mysqld-debug -type l | head -1`;if [ -z \"$BIN\" ]; then echo \"Assert! mariadbd/mysqld binary '$BIN' could not be read\";exit 1;fi\n";
   std::ostringstream vg;
-  vg << "valgrind --suppressions=${BASEDIR}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN --no-defaults --basedir=${BASEDIR}"
+  vg << "valgrind --suppressions=$(ls ${BASEDIR}/m*test/valgrind.supp 2>/dev/null | head -n1) --num-callers=40 --show-reachable=yes $BIN --no-defaults --loose-innodb-use-native-aio=0 --basedir=${BASEDIR}"
      << " --datadir=" << state::WORKD << "/data --port=" << state::MYPORT
      << " --tmpdir=" << state::WORKD << "/tmp --pid-file=" << state::WORKD << "/pid.pid"
      << " --log-error=" << state::WORKD << "/log/master.err --socket=" << state::WORKD << "/socket.sock "
@@ -4653,6 +4674,22 @@ static void stop_mysqld_or_mdg() {
   state::SHUTDOWN_DURATION = std::time(nullptr) - state::SHUTDOWN_TIME_START;
   state::RUN_TIME += state::SHUTDOWN_DURATION;
 }
+// Remove a build which this reducer itself extracted from /data/TARS at startup,
+// unless other live processes (e.g. a concurrent reducer against the same build)
+// still reference it. Called from all normal termination paths; replaying the
+// testcase afterwards requires re-extracting the tarball.
+static void remove_extracted_basedir() {
+  if (state::BASEDIR_EXTRACTED_FROM_TAR.empty() || !util::dir_exists(state::BASEDIR_EXTRACTED_FROM_TAR)) return;
+  // The [/] bracket keeps pgrep from matching the shell hosting this very command.
+  std::string users = util::sh_capture_trimmed(
+    "pgrep -a -f '[/]" + state::BASEDIR_EXTRACTED_FROM_TAR.substr(1) + "' | head -n3 | tr '\\n' ' '");
+  if (users.empty()) {
+    echoit("[Cleanup] Removing " + state::BASEDIR_EXTRACTED_FROM_TAR + " (extracted from /data/TARS at startup; re-extract the tarball to replay the testcase)");
+    util::sh("rm -Rf '" + state::BASEDIR_EXTRACTED_FROM_TAR + "'");
+  } else {
+    echoit("[Cleanup] Leaving " + state::BASEDIR_EXTRACTED_FROM_TAR + " in place (extracted from /data/TARS at startup): still in use by: " + users);
+  }
+}
 // finish — mirror reducer.sh:4501..4572
 static void finish(const std::string& reason) {
   if (cfg::RR_TRACING == 1) {
@@ -4726,6 +4763,7 @@ static void finish(const std::string& reason) {
              std::to_string(util::count_lines(state::WORKO)) + " lines)");
     }
   }
+  remove_extracted_basedir();
   if (reason == "abort") {
     echoit("[Abort] Done. Terminating reducer");
     std::signal(SIGINT, SIG_DFL);
@@ -4834,6 +4872,7 @@ static void verify_not_found() {
   echoit("[Finish] mariadbd/mysqld error log : " + pw + "/" + extra_path + "error.log(.out)");
   echoit("[Finish] initialization output   : " + pw + "/" + extra_path + "init.log");
   echoit("[Finish] time init output        : " + pw + "/" + extra_path + "timezone.init");
+  remove_extracted_basedir();
   std::exit(1);
 }
 
@@ -5439,7 +5478,6 @@ int main(int argc, char** argv) {
   cfg::KNOWN_BUGS_LOC      = resolve_framework_file("known_bugs.strings");
   cfg::KNOWN_BUGS_LOC_SAN  = resolve_framework_file("known_bugs.strings.SAN");
   cfg::PQUERY_LOC      = resolve_framework_file("pquery/pquery2-md");
-  state::BASEDIR_ALT_PATH = util::replace_all(cfg::BASEDIR, "/test/", "/data/VARIOUS_BUILDS/");
   state::WHOAMI = util::sh_capture_trimmed("whoami");
   state::MYUSER = state::WHOAMI;
   install_signal_handlers();
@@ -5450,6 +5488,8 @@ int main(int argc, char** argv) {
   apply_bare_env();
   // Subreducer? (set by parent's multi_reducer launch)
   apply_subreducer_env();
+  // Computed after env application so it derives from the effective BASEDIR.
+  state::BASEDIR_ALT_PATH = util::replace_all(cfg::BASEDIR, "/test/", "/data/VARIOUS_BUILDS/");
 
   // Load the per-stage trial table. Prefer the directory next to the actual
   // binary (readlink /proc/self/exe), then SCRIPT_PWD (argv[0]'s parent —

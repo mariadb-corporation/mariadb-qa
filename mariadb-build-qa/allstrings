@@ -11,6 +11,8 @@ elif [ "${1}" == "TSAN" ]; then
   ./gendirs.sh TSAN | xargs -I{} echo "cd {}; echo "{}:"; ~/t; cd .." | xargs -I{} bash -c "{}"
 elif [ "${1}" == "MSAN" ]; then
   ./gendirs.sh MSAN | xargs -I{} echo "cd {}; echo "{}:"; ~/t; cd .." | xargs -I{} bash -c "{}"
+elif [ "${1}" == "VAL" ]; then
+  ./gendirs.sh VAL | xargs -I{} echo "cd {}; echo "{}:"; ~/t; cd .." | xargs -I{} bash -c "{}"
 else
   ./gendirs.sh | xargs -I{} echo "cd {}; echo "{}:"; ~/t; cd .." | xargs -I{} bash -c "{}"
 fi

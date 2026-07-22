@@ -34,6 +34,7 @@ SAN_CATEGORY=
 if   [[ "${FEATURE_DIR}" == *"UBASAN_"* ]]; then SAN_CATEGORY="SAN"
 elif [[ "${FEATURE_DIR}" == *"TSAN_"* ]]; then SAN_CATEGORY="TSAN"
 elif [[ "${FEATURE_DIR}" == *"MSAN_"* ]]; then SAN_CATEGORY="MSAN"
+elif [[ "${FEATURE_DIR}" == *"VAL_"* ]]; then SAN_CATEGORY="VAL"
 elif [[ "${FEATURE_DIR}" == *"GAL_"* ]]; then SAN_CATEGORY="GAL"
 fi
 if [ ! -r /test/gendirs.sh ]; then

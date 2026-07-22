@@ -89,29 +89,34 @@ fi
 ZLIB="-DWITH_ZLIB=system"
 
 DATE=$(date +'%d%m%y')
-PREFIX=
+PREFIX="VAL_"
 FB=0
 MS=0
 MD=0
 ES=0
+echo "Building Valgrind-instrumented (VAL_) build..."
 if [ ${MYSQL_VERSION_MAJOR} -eq 8 ]; then  # CMake Error at cmake/zlib.cmake:136 (MESSAGE): ZLIB version must be at least 1.2.12, found 1.2.11.
   ZLIB="-DWITH_ZLIB=bundled"
 fi
-if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-1]$ ]]; then
+if [[ "${MYSQL_VERSION_MAJOR}" =~ ^1[0-5]$ ]]; then  # Provision for MariaDB 10.x, 11.x, ... 15.x
   MD=1
-  PREFIX="MD${DATE}"
-  if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then ES=1; fi
+  if [ $(ls support-files/rpm/*enterprise* 2>/dev/null | wc -l) -gt 0 ]; then
+    PREFIX="${PREFIX}EMD${DATE}"
+    ES=1
+  else
+    PREFIX="${PREFIX}MD${DATE}"
+  fi
   ZLIB="-DWITH_ZLIB=bundled"  # 10.1 will fail with requirement for WITH_ZLIB=bundled. Building 10.1-10.5 with bundled ftm.
 elif [ ! -d rocksdb ]; then  # MS, PS
   VERSION_EXTRA="$(grep "MYSQL_VERSION_EXTRA=" VERSION | sed 's|MYSQL_VERSION_EXTRA=||;s|[ \t]||g')"
   if [ "${VERSION_EXTRA}" == "" -o "${VERSION_EXTRA}" == "-dmr" -o "${VERSION_EXTRA}" == "-rc" ]; then  # MS has no extra version number, or shows '-dmr' or '-rc' (both exactly and only) in this place
     MS=1
-    PREFIX="MS${DATE}"
+    PREFIX="${PREFIX}MS${DATE}"
   else
-    PREFIX="PS${DATE}"
+    PREFIX="${PREFIX}PS${DATE}"
   fi
 else
-  PREFIX="FB${DATE}"
+  PREFIX="${PREFIX}FB${DATE}"
   FB=1
 fi
 
@@ -216,10 +221,10 @@ fi
 CURPATH=$(echo $PWD | sed 's|.*/||')
 
 cd ..
-rm -Rf ${CURPATH}_opt
+rm -Rf ${CURPATH}_opt_val
 rm -f /tmp/valgrind_opt_build_${RANDOMD}
-cp -R ${CURPATH} ${CURPATH}_opt
-cd ${CURPATH}_opt
+cp -R ${CURPATH} ${CURPATH}_opt_val
+cd ${CURPATH}_opt_val
 
 # Replace any old CMAKE_MINIMUM_REQUIRED strings like 'CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)' in all CMakeLists.txt files
 # Ref for example https://jira.mariadb.org/browse/MCOL-6004 and https://jira.mariadb.org/browse/MENT-2383

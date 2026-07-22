@@ -98,7 +98,7 @@ add_san_options() {  # For the scripts that startup.sh creates
   # detect_stack_use_after_return=1 will likely require thread_stack increase (check error log after ./all) TODO
   #echo "export ASAN_OPTIONS=suppressions=${SCRIPT_PWD}/ASAN.filter:quarantine_size_mb=512:atexit=0:detect_invalid_pointer_pairs=3:dump_instruction_bytes=1:abort_on_error=1:allocator_may_return_null=1" >> "${1}"
   echo "export UBSAN_OPTIONS=suppressions=${SCRIPT_PWD}/UBSAN.filter:print_stacktrace=1:report_error_type=1" >>"${1}"
-  echo "export TSAN_OPTIONS=suppressions=${SCRIPT_PWD}/TSAN.filter:suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1" >>"${1}"
+  echo "export TSAN_OPTIONS=suppressions=${SCRIPT_PWD}/TSAN.filter:suppress_equal_stacks=1:history_size=7:second_deadlock_stack=1:verbosity=1:exitcode=0" >>"${1}"  # exitcode=0 is required to let MTR bootstrap succeed
   echo "export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0" >>"${1}"
   echo 'if [[ "${PWD}" == *"MSAN"* ]]; then' >>"${1}"
   echo '  export MYSQL_HISTFILE=/dev/null  # Disable historyfile for the mariadb CLI, ref the libedit MSAN instrumentation in ~/mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh for more info' >>"${1}"
@@ -568,6 +568,11 @@ if [ -d "${MTR_DIR}" ]; then
   if [[ "${PWD}" == *"TSAN"* ]]; then
     # 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space reservation) cannot map within the TSAN-restricted address space
     echo './mtr --mysqld=--loose-innodb-buffer-pool-size-max=2G ${*}' >> ${MTR_DIR}/mtra
+  elif [[ "${PWD}" == *"VAL_"* ]]; then
+    # VAL_ basedirs run MTR under Valgrind; MTR applies its own valgrind.supp suppressions automatically (lib/My/Debugger.pm)
+    # The buffer pool cap avoids memcheck stalling on the 13.0+ innodb_buffer_pool_size_max 8 TiB address-space reservation;
+    # native AIO is disabled because Valgrind does not support io_uring (InnoDB hangs right after 'Using io_uring')
+    echo './mtr --valgrind --mysqld=--loose-innodb-buffer-pool-size-max=2G --mysqld=--loose-innodb-use-native-aio=0 ${*}' >> ${MTR_DIR}/mtra
   else
     echo './mtr ${*}' >> ${MTR_DIR}/mtra
   fi
@@ -634,8 +639,16 @@ echo "PORT=\$NEWPORT" >>start
 cp start start_valgrind # Idem setup for Valgrind
 cp start start_gypsy    # Idem setup for gypsy
 cp start start_rr       # Idem setup for rr
-echo "$BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
-if [[ "${PWD}" == *"SAN"* ]]; then   # Clang build SAN instances take longer to start. Observed: seq 0 240 is insufficient
+VALGRIND_SUPP="${PWD}/mysql-test/valgrind.supp"  # The test dir is mariadb-test in newer versions; valgrind aborts on a missing suppressions file
+if [ -r "${PWD}/mariadb-test/valgrind.supp" ]; then VALGRIND_SUPP="${PWD}/mariadb-test/valgrind.supp"; fi
+if [[ "${PWD}" == *"VAL_"* ]]; then  # VAL_ basedirs always start under Valgrind: a plain start would produce no Valgrind output in the error log
+  echo "valgrind --suppressions=${VALGRIND_SUPP} --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} >>${PWD}/log/master.err 2>&1 &" >>start
+else
+  echo "$BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} 2>&1 &" >>start
+fi
+if [[ "${PWD}" == *"VAL_"* ]]; then  # Valgrind server startup is very slow (slower than SAN)
+  echo "for X in \$(seq 0 960); do if ${MYSQLADMIN_TO_USE} ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
+elif [[ "${PWD}" == *"SAN"* ]]; then   # Clang build SAN instances take longer to start. Observed: seq 0 240 is insufficient
   echo "for X in \$(seq 0 480); do if ${MYSQLADMIN_TO_USE} ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
 else
   echo "for X in \$(seq 0 90); do if ${MYSQLADMIN_TO_USE} ping -uroot -S${SOCKET} > /dev/null 2>&1; then break; fi; sleep 0.25; done" >>start
@@ -643,7 +656,7 @@ fi
 if [ "${VERSION_INFO}" != "5.1" -a "${VERSION_INFO}" != "5.5" -a "${VERSION_INFO}" != "5.6" ]; then
     echo "${CLIENT_TO_USE} -uroot --socket=${SOCKET} -e'CREATE DATABASE IF NOT EXISTS test;'" >>start
 fi
-echo " valgrind --suppressions=${PWD}/mysql-test/valgrind.supp --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
+echo "valgrind --suppressions=${VALGRIND_SUPP} --num-callers=40 --show-reachable=yes $BIN \${MYEXTRA} ${START_OPT} --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} ${ROCKSDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err --server-id=100 \${MYEXTRA_OPT} >>${PWD}/log/master.err 2>&1 &" >>start_valgrind
 echo "$BIN \${MYEXTRA} ${START_OPT} --general_log=1 --general_log_file=${PWD}/general.log --basedir=${PWD} --tmpdir=${PWD}/tmp --datadir=${PWD}/data ${TOKUDB} --socket=${SOCKET} --port=\$PORT --log-error=${PWD}/log/master.err 2>&1 &" >>start_gypsy
 echo "export _RR_TRACE_DIR=\"${PWD}/rr\"" >>start_rr
 echo "if [ -d \"\${_RR_TRACE_DIR}\" ]; then  # Security measure to avoid incorrect mass-rm" >>start_rr
@@ -1416,9 +1429,13 @@ echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.loc
 echo 'MYEXTRA_OPT="$*"' >gal_rr
 echo "./gal_kill >/dev/null 2>&1;rm -f node*/*socket.sock node*/*socket.sock.lock;sync;./gal_wipe \${MYEXTRA_OPT};./gal_start_rr \${MYEXTRA_OPT};./gal_cl" >>gal_rr
 chmod +x gal gal_cl gal_sqlmode gal_binlog gal_stbe gal_no_cl gal_rr gal_gdb gal_test gal_test_pquery gal_cl_noprompt_nobinary gal_cl_noprompt gal_multirun gal_multirun_pquery gal_sysbench_measure gal_sysbench_prepare gal_sysbench_run gal_sysbench_multi_master_run 2>/dev/null
-if [[ "${PWD}" == *"TSAN"* ]]; then
-  # 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space reservation) cannot map within the TSAN-restricted address space; cap it on every generated server invocation
+if [[ "${PWD}" == *"TSAN"* || "${PWD}" == *"VAL_"* ]]; then
+  # 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space reservation) cannot map within the TSAN-restricted address space, and stalls Valgrind's memcheck address-range tracking; cap it on every generated server invocation
   grep -lI -- '--loose-innodb-buffer-pool-in-core-dump=0' * 2>/dev/null | grep -vE '\.out$|\.err$|\.sql$' | xargs -r sed -i 's|--loose-innodb-buffer-pool-in-core-dump=0\( --loose-innodb-buffer-pool-size-max=2G\)\?|--loose-innodb-buffer-pool-in-core-dump=0 --loose-innodb-buffer-pool-size-max=2G|g'
+fi
+if [[ "${PWD}" == *"VAL_"* ]]; then
+  # Valgrind does not support io_uring: InnoDB hangs right after the 'Using io_uring' startup line when running under Valgrind; disable native AIO on every generated server invocation
+  grep -lI -- '--loose-innodb-buffer-pool-size-max=2G' * 2>/dev/null | grep -vE '\.out$|\.err$|\.sql$' | xargs -r sed -i 's|--loose-innodb-buffer-pool-size-max=2G\( --loose-innodb-use-native-aio=0\)\?|--loose-innodb-buffer-pool-size-max=2G --loose-innodb-use-native-aio=0|g'
 fi
 
 echo "Setting up server with default directories"
