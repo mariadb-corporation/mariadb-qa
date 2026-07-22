@@ -282,6 +282,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+next_insert_id == 0|SIGABRT|handler::ha_external_lock|mrn::ExternalLock::ExternalLock|ha_mroonga::storage_info|ha_mroonga::storage_write_row                                   ## MDEV-40476
+SIGSEGV|Binary_string::ptr|Item_func_json_equals::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long                                                                ## MDEV-40414
+SIGSEGV|Charset::charset|Item_func_json_equals::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long                                                                  ## MDEV-40414
+SIGSEGV|get_sel_arg_for_keypart|get_constant_key_infix|get_best_group_min_max|SQL_SELECT::test_quick_select                                                                    ## MDEV-40471
 args[0]->max_length <= ((9 * 9) + 2)|SIGABRT|Item_func_int_val::fix_length_and_dec_int_or_decimal|Type_handler_decimal_result::Item_func_int_val_fix_length_and_dec|Item_func_int_val::fix_length_and_dec|Item_func::fix_fields     ## MDEV-23654
 SIGFPE|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Type_handler_int_result::Item_save_in_field                                                   ## MDEV-40432
 SIGABRT|__libc_message_impl|malloc_printerr|_int_free|__GI___libc_free                                                                                                         ## MDEV-40430
