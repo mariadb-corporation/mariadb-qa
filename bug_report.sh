@@ -22,6 +22,8 @@ fi
 # Script variables: do not change
 SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'opt' | sort -V | tail -n1)"
 SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK="/test/$(cd /test; ./gendirs.sh san | grep 'dbg' | sort -V | tail -n1)"
+if [ "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" == "/test/" ]; then SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK="/test/NO_UBASAN_OPT_BUILD_FOUND"; fi  # No UBASAN builds present: point at a non-existing dir so the -d asserts below fire rather than passing on /test/ itself
+if [ "${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}" == "/test/" ]; then SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK="/test/NO_UBASAN_DBG_BUILD_FOUND"; fi
 
 if [ "${1}" != 'SAN' ]; then
   # If enabled (ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS=1), then check what are deemed to be regular (i.e. non-*SAN) testcases against SAN builds also, as this often reveals new *SAN bugs additional to the original SIGSEGV/SIGABRT etc.
@@ -462,8 +464,8 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN/VAL
   if [ ! -z "${ALT_BASEDIR}" -a -d "${ALT_BASEDIR}" -a "${ALT_BASEDIR}" != "${PWD}" ]; then
     ALT_START_LINE=$(grep -n -m 1 -E "${TEXT}" ${ALT_BASEDIR}/log/master.err | cut -d: -f1)
     ALT_END_LINE=$(grep -n -E "${END_REGEX}" ${ALT_BASEDIR}/log/master.err | tail -1 | cut -d: -f1)
-    if [ ! -z "${START_LINE}" ]; then
-      if [ -z "${END_LINE}" ]; then END_LINE=10000; fi
+    if [ ! -z "${ALT_START_LINE}" ]; then
+      if [ -z "${ALT_END_LINE}" ]; then ALT_END_LINE=10000; fi
       cd ${ALT_BASEDIR}
       ${SCRIPT_PWD}/homedir_scripts/myver | head -n1
       cd - >/dev/null
@@ -496,7 +498,7 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN/VAL
       O_LEVEL_STMT='-O1 ' # Commonly used for dbg builds
       if [[ "${PWD}" == *"opt" ]]; then O_LEVEL_STMT='-O2 '; fi  # For opt builds
     fi
-    echo "Compiled with: \"-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C{,XX}_FLAGS='${O_LEVEL_SMT}-march=native -mtune=native'\" and:"
+    echo "Compiled with: \"-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_C{,XX}_FLAGS='${O_LEVEL_STMT}-march=native -mtune=native'\" and:"
   else
     echo "Compiled with a recent version of GCC (I used GCC $(gcc --version | head -n1 | sed 's|.* ||')) and:"
   fi
@@ -617,7 +619,7 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 
     if [ ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 ]; then
       TEXT="$(${SCRIPT_PWD}/san_text_string.sh)"
       if [ ! -z "${TEXT}" ]; then
-        echo "*) Add bug to ${SCRIPT_PWD}/known.strings.SAN, as follows (use ~/kba for quick access):"
+        echo "*) Add bug to ${SCRIPT_PWD}/known_bugs.strings.SAN, as follows (use ~/kba for quick access):"
         echo "${TEXT}"
         echo '*) Checking if this bug is already known:'
         FINDBUG="$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings.SAN | grep -v grep | grep -vE '^###|^[ ]*$')"
@@ -625,7 +627,7 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 
     elif [ ${VAL_MODE} -eq 1 ]; then
       TEXT="$(${SCRIPT_PWD}/valgrind_string.sh ./log/master.err 2>/dev/null | grep -v 'NO VALGRIND STRING FOUND')"
       if [ ! -z "${TEXT}" ]; then
-        echo "*) Add bug to ${SCRIPT_PWD}/known.strings, as follows (use ~/kb for quick access):"
+        echo "*) Add bug to ${SCRIPT_PWD}/known_bugs.strings, as follows (use ~/kb for quick access):"
         echo "${TEXT}"
         echo '*) Checking if this bug is already known:'
         FINDBUG="$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"
@@ -633,7 +635,7 @@ if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 
     else
       TEXT="$(${SCRIPT_PWD}/new_text_string.sh)"
       if [ ! -z "${TEXT}" ]; then
-        echo "*) Add bug to ${SCRIPT_PWD}/known.strings, as follows (use ~/kb for quick access):"
+        echo "*) Add bug to ${SCRIPT_PWD}/known_bugs.strings, as follows (use ~/kb for quick access):"
         echo "${TEXT}"
         echo '*) Checking if this bug is already known:'
         FINDBUG="$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings | grep -v grep | grep -vE '^###|^[ ]*$')"

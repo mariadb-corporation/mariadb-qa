@@ -17,9 +17,9 @@ MSAN_MODE=0
 VAL_MODE=0
 GAL_MODE=0
 REPL_MODE=0
-# To ensure thread-safety, only delete the relevant test.result[.san/.gal] file so that b and bs (but not b and br) can run at the same time - for the meaning of 'b/bs/br' see the corresponding aliases in ~/.bashrc after running ~/mariadb-qa/linkit and following it's instructions for creating ~/.bashrc
+# To ensure thread-safety, only delete the relevant test.results[.san/.val/.gal] file so that b and bs (but not b and br) can run at the same time - for the meaning of 'b/bs/br' see the corresponding aliases in ~/.bashrc after running ~/mariadb-qa/linkit and following it's instructions for creating ~/.bashrc
 if [ "${1}" == "SAN" ]; then
-  rm -f test.result.san
+  rm -f test.results.san
    if [ -z "${TEXT}" ]; then   # Passed normally by ~/bs and bug_report.sh script
     echo "Assert: TEXT is empty, use export TEXT= to set it!"
     exit 1
@@ -27,7 +27,7 @@ if [ "${1}" == "SAN" ]; then
   SAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|SAN||')"
 elif [ "${1}" == "TSAN" ]; then
-  rm -f test.result.san
+  rm -f test.results.san
    if [ -z "${TEXT}" ]; then   # Passed normally by ~/bt and bug_report.sh script
     echo "Assert: TEXT is empty, use export TEXT= to set it!"
     exit 1
@@ -35,7 +35,7 @@ elif [ "${1}" == "TSAN" ]; then
   TSAN_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|TSAN||')"
 elif [ "${1}" == "MSAN" ]; then
-  rm -f test.result.san
+  rm -f test.results.san
    if [ -z "${TEXT}" ]; then   # Passed normally by ~/bm and bug_report.sh script
     echo "Assert: TEXT is empty, use export TEXT= to set it!"
     exit 1
@@ -51,15 +51,15 @@ elif [ "${1}" == "VAL" ]; then
   VAL_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|VAL||')"
 elif [ "${1}" == "GAL" ]; then
-  rm -f test.result.gal
+  rm -f test.results.gal
   GAL_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|GAL||')"
 elif [ "${1}" == "REPL" ]; then
-  rm -f test.result
+  rm -f test.results
   REPL_MODE=1
   MYEXTRA_OPT="$(echo "${MYEXTRA_OPT}" | sed 's|REPL||')"
 else  # Regular mode
-  rm -f test.result
+  rm -f test.results
 fi
 
 if [ ! -r ./in.sql ]; then
