@@ -282,6 +282,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### Not merged to 11.4 ES yet (remove after merge is done)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+item->name.str && item->name.str[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                    ## MDEV-40521
 len_arg <= (65535-2-1)|SIGABRT|Field_varstring::Field_varstring|Field_vector::Field_vector|Type_handler_vector::make_table_field|Type_handler::make_and_init_table_field       ## MDEV-40486
 s|SIGABRT|buf_page_get_gen|btr_copy_blob_prefix|btr_copy_externally_stored_field_prefix_low|btr_copy_externally_stored_field                                                   ## MDEV-39792
 s|SIGABRT|buf_page_get_low|buf_page_get_gen|btr_copy_blob_prefix|btr_copy_externally_stored_field_prefix_low                                                                   ## MDEV-39792
