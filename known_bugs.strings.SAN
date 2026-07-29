@@ -7,7 +7,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 SIGSEGV|libunwind::Registers_x86_64::Registers_x86_64|libunwind::UnwindCursor<libunwind::LocalAddressSpace, libunwind::Registers_x86_64>::UnwindCursor|__unw_init_local|_Unwind_Backtrace ## MSAN tool noise (not a server bug): libunwind dlsym("_dl_find_object")->_dlerror_run->free re-enters MSAN free interceptor at shutdown (no MsanThread, forced slow unwind) -> infinite recursion -> stack overflow. Root-fixed at next /MSAN_libs rebuild via AddressSpace.hpp dl_iterate_phdr sed in msan.instrumentedlibs_ubuntu2404.sh
 
-# Temp key: Ma2
+Ramesh Sivaraman:# Temp key: Ma2
 ##### MDEV-35915 testing v12+ #####
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|THD::create_temporary_table|THD::create_and_open_tmp_table ## MDEV-37968
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_alloc_root|init_sql_alloc  ## MDEV-37968
@@ -21,6 +21,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|load of value X, which is not a valid value for type 'wkbByteOrder'|sql/spatial.cc|Gis_point::init_from_wkb|Gis_multi_point::init_from_wkb|Geometry::create_from_wkb|Item_func_geometry_from_wkb::val_str ## MDEV-40552
 MSAN|use-of-uninitialized-value|sql/mysqld.cc|temp_file_size_cb_func|_ma_update_tmp_file_size|_ma_set_share_data_file_length|write_block_record                                ## MDEV-40569
 MSAN|use-of-uninitialized-value|storage/spider/ha_spider.cc|ha_spider::append_select_sql_part|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read      ## MDEV-40569
 MSAN|use-of-uninitialized-value|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read                      ## MDEV-40569
