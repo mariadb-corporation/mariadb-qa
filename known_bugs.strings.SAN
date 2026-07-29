@@ -21,6 +21,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|stack-use-after-return|strings/ctype-latin1.c|my_mb_wc_latin1|json_escape|st_append_escaped|Item_func_json_objectagg::add                                                 ## MDEV-40546
 UBSAN|inf is outside the range of representable values of type 'unsigned long long'|sql/sql_show.cc|get_schema_stat_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result ## MDEV-40537
 MSAN|use-of-uninitialized-value|sql/handler.cc|handler::calculate_checksum|mysql_checksum_table|mysql_execute_command|mysql_parse                                              ## MDEV-40534
 MSAN|use-of-uninitialized-value|sql/sql_statistics.h|Histogram::find_bucket|Histogram::range_selectivity|get_column_range_cardinality|records_in_column_ranges                 ## MDEV-40533
