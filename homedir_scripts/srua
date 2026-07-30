@@ -1,0 +1,21 @@
+#!/bin/bash
+# Start reducers for all not-yet-reduced trials in every workdir listed in /data/results.list (ref the 'srua' alias). Per-workdir work is done by /data/start_unreduced, the same script the 'sru' alias uses
+
+if [ ! -r /data/results.list ]; then
+  echo 'Assert: /data/results.list is not readable'
+  exit 1
+fi
+if [ ! -r /data/start_unreduced ]; then
+  echo 'Assert: /data/start_unreduced is not readable. Run linkit to create it'
+  exit 1
+fi
+source /data/results.list  # Sourcing stops at the first 'return', so only the current runs are picked up. Ref /data/results for the file syntax
+for ((i=1;i<=1000;i++)); do
+  if [ -z "${MON[${i}]}" ]; then continue; fi
+  if [ ! -d "/data/${MON[${i}]}" ]; then
+    echo "Index ${i} seems to be invalid: directory /data/${MON[${i}]} does not exist, skipped"
+    continue
+  fi
+  echo "========== [${i}] /data/${MON[${i}]}"
+  (cd "/data/${MON[${i}]}" && . /data/start_unreduced)  # && so a failed cd cannot run start_unreduced against the wrong directory
+done

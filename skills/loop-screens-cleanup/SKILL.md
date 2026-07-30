@@ -25,10 +25,23 @@ Each in-scope screen runs a reducer (`bash -c ./reducer<N>.sh ... ; <pge loops> 
 ```
 [ ]                         -> issue NEVER reproduced this run     -> END
 [*]  + finished             -> reproduced, reduction complete       -> END
+[*]  + reduced to 3 lines    -> at the reduction target             -> END
+[*]  + running over 4 days   -> diminishing returns                 -> END
 [*]  + still reducing        -> reproduced, actively reducing        -> LEAVE
 ```
 
 A `[]` screen still showing live subreducer activity is a stuck reducer spinning on a non-reproducing issue (its main reducer is usually already dead, subreducers orphaned to PID 1) - it still ENDs.
+
+Two runtime END rules on top of the bracket:
+
+- **At the reduction target.** The most-reduced `<trial-dir>/*.sql_out*` down to 3 lines is done - the target is 3-4 lines. Further churn buys nothing.
+- **Over 4 days of runtime** (`ps -o etime=` on the main reducer), UNLESS its `reducer<N>.sh` has `PQUERY_MULTI` set to anything other than 0. A `PQUERY_MULTI` run does true concurrent replay for a race bug and is expected to take much longer, so it keeps running. Anything else past 4 days has hit diminishing returns: take the current `_out` as the testcase and file from that.
+
+  ```
+  grep -E '^PQUERY_MULTI=' <workdir>/reducer<N>.sh      # 0 -> eligible to END past 4 days
+  ```
+
+  The config is read once at startup, so a running reducer whose `reducer<N>.sh` has since been deleted cannot be checked - treat it as eligible.
 
 Detection signals (per screen, from a `hardcopy -h` dump):
 - **bracket** = last `[*]` or `[]` in the dump (default `[]` if none).
@@ -71,6 +84,9 @@ Detection signals (per screen, from a `hardcopy -h` dump):
 
    ```
    MYPID=$$
+   # the main reducer first: it carries no epoch, so the passes below cannot see it,
+   # and while it lives it keeps spawning fresh subreducers
+   pgrep -f "$WD/reducer$N\.sh" | grep -vx "$MYPID" | xargs -r kill -9
    # pass 1: kill that trial's procs (skip PRESERVE epochs and own PID)
    PIDS=$(pgrep -f "/dev/shm/$EPOCH" | grep -vx "$MYPID")
    echo "$PIDS" | xargs -r kill -9

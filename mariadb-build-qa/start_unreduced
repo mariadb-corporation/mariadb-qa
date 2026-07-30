@@ -1,3 +1,17 @@
 #!/bin/bash
+# Start a reducer for each trial in the current workdir which was not reduced yet. Sourced from a /data/<workdir> directory (ref the 'sru' alias), or run by ${HOME}/srua for all workdirs in /data/results.list
+SRU_REDUCED_LINES=13  # A trial whose latest _out file is this short is reduced already, so no new reducer is started for it
 
-pr | grep --binary-files=text -o ': reducers [0-9]\+' | grep -o '[0-9]\+' | xargs -I{} echo 'if [ -z "$(ls {}/[1-2][0-9]*_start 2>/dev/null)" ]; then ${HOME}/sr {}; if [ "${?}" == "0" ]; then echo "Started reducer for trial {}"; fi; fi' | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+for SRU_TRIAL in $(${HOME}/pr | grep --binary-files=text -o ': reducers [0-9]\+' | grep -o '[0-9]\+'); do
+  if [ -n "$(ls ${SRU_TRIAL}/[1-2][0-9]*_start 2>/dev/null)" ]; then continue; fi  # An EPOCH bundle is present, so reduction was attempted already
+  SRU_OUT="$(ls -t ${SRU_TRIAL}/*_out 2>/dev/null | head -n1)"  # The latest reduced testcase, found the same way as ${HOME}/o does
+  if [ -n "${SRU_OUT}" ]; then
+    SRU_LINES="$(wc -l < "${SRU_OUT}")"
+    if [ "${SRU_LINES}" -le "${SRU_REDUCED_LINES}" ]; then
+      echo "Trial ${SRU_TRIAL} is reduced already (${SRU_LINES} lines), skipped"
+      continue
+    fi
+  fi
+  if ${HOME}/sr ${SRU_TRIAL}; then echo "Started reducer for trial ${SRU_TRIAL}"; fi
+done
+unset SRU_REDUCED_LINES SRU_TRIAL SRU_OUT SRU_LINES  # This script is sourced by 'sru', so leave no variables behind

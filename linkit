@@ -104,6 +104,21 @@ if [ -d "${HOME}/.claude" ]; then
   for SL in "${HOME}"/.claude/skills/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
 fi
 
+# Framework cheatsheet: @-include it from the global memory index, so every Claude Code session loads it
+# Adds the line only when absent; an engineer who removes it keeps it removed until they rerun linkit
+if [ -d "${HOME}/.claude" ] && [ -f "${HOME}/mariadb-qa/cheatsheet.md" ]; then
+  GLOBAL_MEMORY="${HOME}/.claude/global-memory/MEMORY.md"
+  if ! grep -qsF '@~/mariadb-qa/cheatsheet.md' "${GLOBAL_MEMORY}"; then
+    mkdir -p "$(dirname "${GLOBAL_MEMORY}")"
+    printf '\n# Framework cheatsheet (linkit maintains this include)\n@~/mariadb-qa/cheatsheet.md\n' >> "${GLOBAL_MEMORY}"
+    echo "Added the cheatsheet include to ${GLOBAL_MEMORY}"
+  fi
+  # The include only reaches a session if the global memory index is itself pulled into CLAUDE.md
+  if [ -f "${HOME}/.claude/CLAUDE.md" ] && ! grep -qsF '@~/.claude/global-memory/MEMORY.md' "${HOME}/.claude/CLAUDE.md"; then
+    echo "Note: add the line '@~/.claude/global-memory/MEMORY.md' to ${HOME}/.claude/CLAUDE.md to load it"
+  fi
+fi
+
 # Claude Code status line: register claude_statusline.py in ~/.claude/settings.json if no statusLine is configured yet
 if [ -d "${HOME}/.claude" ] && ! grep -qs '"statusLine"' "${HOME}/.claude/settings.json"; then
   python3 - <<'EOF'
@@ -246,6 +261,7 @@ alias t='${HOME}/t'        # UniqueID (works in BASEDIRs, and in workdir/trial d
 alias tt='${HOME}/tt'      # UniqueID + known bugs scan + JIRA URL scan links
 alias sr='${HOME}/sr '     # Start reducer for a given trial (pass trial number)
 alias sru='. ../start_unreduced'  # Start reducers in a given workdir for which no reduction has been attempted yet (sourced)
+alias srua='${HOME}/srua'  # Start reducers as sru does, for all workdirs in /data/results.list (up to the first 'return' in that file)
 alias sbr='${HOME}/sbr '   # Start base_reducer for a given trial (pass trial number)
 alias pg='${HOME}/pg'      # Start pquery-go-expert for current workdir
 alias pge='${HOME}/pge '   # Start pquery-goexp-patch for a given trial (pass trial number)

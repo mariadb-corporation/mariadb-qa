@@ -249,6 +249,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_index_read_map|ha_partition::handle_unordered_scan_next_partition|ha_partition::common_index_read|ha_partition::index_read_map ## MDEV-24808
+table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_index_read_map|ha_partition::handle_unordered_scan_next_partition|ha_partition::handle_unordered_next|ha_partition::index_next_same ## MDEV-24808
 opt->value.str|SIGABRT|append_create_options|generate_partition_syntax|generate_partition_syntax_for_frm|mysql_write_frm                                                       ## MDEV-40543
 thd->free_list == __null|SIGABRT|MYSQLparse|parse_sql|mysql_parse|dispatch_command                                                                                             ## MDEV-22013
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## MDEV-40501
