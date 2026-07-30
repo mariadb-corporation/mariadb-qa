@@ -251,6 +251,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### CURRENT BUGS (Search key: Mac) #####
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_cond::split_sum_func|JOIN::prepare                                                       ## MDEV-40560
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_func::split_sum_func|Item::split_sum_func2                                               ## MDEV-40560
+thd->lock == 0|SIGABRT|lock_tables|Grant_tables::open_and_lock|change_password|set_var_password::update                                                                        ## MDEV-40567
+!(*with_wild)|SIGABRT|setup_wild|setup_returning_fields|Sql_cmd_delete::prepare_inner|Sql_cmd_dml::prepare                                                                     ## MDEV-40561
+!(*with_wild)|SIGABRT|setup_wild|setup_returning_fields|mysql_prepare_delete|mysql_delete                                                                                      ## MDEV-40561
+!(*with_wild)|SIGABRT|setup_wild|setup_returning_fields|mysql_prepare_insert|mysql_insert                                                                                      ## MDEV-40561
 SIGSEGV|_ma_read_block_record2|_ma_read_block_record|maria_rprev|ha_maria::index_prev                                                                                          ## MDEV-40559
 SIGSEGV|_ma_read_block_record2|maria_rprev|handler::ha_index_prev|ha_partition::handle_ordered_prev                                                                            ## MDEV-40559
 table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_index_read_map|ha_partition::handle_unordered_scan_next_partition|ha_partition::common_index_read|ha_partition::index_read_map ## MDEV-24808
