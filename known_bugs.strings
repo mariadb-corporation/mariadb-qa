@@ -249,6 +249,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+thd->lock == 0|SIGABRT|lock_tables|Grant_tables::open_and_lock|change_password|set_var_password::update                                                                        ## MDEV-40567
 !(*with_wild)|SIGABRT|setup_wild|setup_returning_fields|mysql_prepare_insert|mysql_insert                                                                                      ## MDEV-40561
 SIGSEGV|_ma_read_block_record2|_ma_read_block_record|maria_rprev|ha_maria::index_prev                                                                                          ## MDEV-40559
 SIGSEGV|_ma_read_block_record2|maria_rprev|handler::ha_index_prev|ha_partition::handle_ordered_prev                                                                            ## MDEV-40559
