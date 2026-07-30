@@ -38,11 +38,9 @@ MSAN|use-of-uninitialized-value|sql/sql_select.cc|bcmp|cmp_buffer_with_ref|join_
 MSAN|use-of-uninitialized-value|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                      ## MDEV-40528
 MSAN|use-of-uninitialized-value|include/dict0dict.h|dict_table_n_rows_inc|row_insert_for_mysql|ha_innobase::write_row|handler::ha_write_row                                    ## MDEV-40525
 MSAN|use-of-uninitialized-value|sql/sql_show.cc|get_one_variable|show_status_array|show_status_array|fill_status                                                               ## MDEV-40520
-MSAN|use-of-uninitialized-value|lib/krb5/keytab/ktbase.c|krb5_kt_resolve|krb5_kt_read_service_key|get_default_principal_name|plugin_init                                       ## MDEV-35575
 MSAN|use-of-uninitialized-value|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                          ## MDEV-30756
 MSAN|use-of-uninitialized-value|strings/ctype-bin.c|memcmp|my_strnncoll_binary|my_strnncollsp_binary|my_ci_strnncollsp                                                         ## MDEV-40455
 UBSAN|division by zero|sql/item_windowfunc.h|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                     ## MDEV-40432
-SIGSEGV|Sp_handler::db_find_routine|Sp_handler::db_find_and_cache_routine|Sp_handler::sp_cache_routine|Sp_handler::sp_cache_routine_reentrant                                  ## MDEV-40420
 MSAN|use-of-uninitialized-value|sql/spatial.cc|Gis_point::get_data_as_wkt|Geometry::as_wkt|Item_func_as_wkt::val_str_ascii|Item_func::val_str_from_val_str_ascii               ## MDEV-40423
 MSAN|use-of-uninitialized-value|strings/ctype.c|my_convert|copy_and_convert|Protocol::net_store_data_cs|Protocol::send_result_set_row                                          ## MDEV-40422
 MSAN|use-of-uninitialized-value|sql/sql_type_vector.cc|Field_vector::store|Field::save_in_field_str|end_update|evaluate_join_record                                            ## MDEV-40421
@@ -74,7 +72,6 @@ UBSAN|member access within null pointer of type 'struct st_plugin_int'|sql/handl
 UBSAN|load of null pointer of type 'struct st_plugin_int *'|sql/handler.h|plugin_hton|tp_foreach|ha_commit_checkpoint_request|MYSQL_BIN_LOG::do_checkpoint_request             ## MDEV-40038
 UBSAN|member access within null pointer of type 'struct st_plugin_int'|sql/handler.h|plugin_hton|tp_foreach|ha_commit_checkpoint_request|MYSQL_BIN_LOG::do_checkpoint_request  ## MDEV-40038
 ASAN|heap-use-after-free|storage/maria/ma_info.c|maria_status|ha_maria::info|ha_partition::part_records|partition_info::vers_check_limit                                       ## MDEV-28887
-MSAN|use-of-uninitialized-value|sql/sql_delete.cc|int|Write_record::replace_row|Write_record::write_record|Delayed_insert::handle_inserts                                      ## MDEV-40099
 MSAN|use-of-uninitialized-value|strings/my_vsnprintf.c|process_dbl_arg|my_vsnprintf_ex|push_warning_printf|innodb_max_dirty_pages_pct_update                                   ## MDEV-40086
 ASAN|heap-buffer-overflow|sql/sql_path.cc|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                    ## MDEV-40009
 MSAN|use-of-uninitialized-value|sql/log.cc|MYSQL_QUERY_LOG::write|Log_to_file_event_handler::log_slow|LOGGER::slow_log_print|log_slow_statement                                ## MDEV-39838
@@ -130,7 +127,6 @@ UBSAN|member access within null pointer of type 'grn_db_obj'|storage/mroonga/ven
 UBSAN|member access within null pointer of type 'grn_db_obj'|storage/mroonga/vendor/groonga/lib/db.c|_grn_obj_remove|grn_obj_remove|ha_mroonga::storage_create_index|ha_mroonga::storage_create_indexes ## MDEV-32881
 UBSAN|division by zero|sql/handler.cc|handler::keyread_time|find_shortest_key|SQL_SELECT::test_quick_select|get_quick_record_count                                             ## MDEV-38848
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/item_subselect.h|subselect_uniquesubquery_engine::no_rows|Item_in_optimizer::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long ## MDEV-38845
-LSAN|memory leak|<unknown_module>|calloc|handler::ha_rnd_init(bool)|handler::ha_rnd_init_with_error(bool)|init_read_record                                                     ## MDEV-38838
 UBSAN|store to null pointer of type 'roll_ptr_t' (aka 'unsigned long')|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|row_ins_clust_index_entry_low|row_ins_clust_index_entry|row_ins_index_entry ## MDEV-31667
 UBSAN|member access within null pointer of type 'SELECT_LEX' (aka 'st_select_lex')|sql/item_subselect.cc|Item_subselect::init|Item_allany_subselect::Item_allany_subselect|all_any_subquery_creator|MYSQLparse ## MDEV-38828
 LSAN|memory leak|plugin/ha_rocksdb.so|operator|vtable|rocksdb::TransactionLogIteratorImpl::SeekToStartSequence                                                                 ## MDEV-38804
@@ -140,7 +136,6 @@ LSAN|memory leak|plugin/ha_rocksdb.so|operator|__PRETTY_FUNCTION__._ZNK7rocksdb8
 LSAN|memory leak|plugin/ha_rocksdb.so|operator|__GNU_EH_FRAME_HDR|rocksdb::BlockBasedTableBuilder::Rep::Rep                                                                    ## MDEV-38804
 LSAN|memory leak|plugin/ha_rocksdb.so|operator|__GNU_EH_FRAME_HDR|__gnu_cxx::__normal_iterator<rocksdb::FileMetaData                                                           ## MDEV-38804
 LSAN|memory leak|plugin/ha_rocksdb.so|operator|__start_asan_globals                                                                                                            ## MDEV-38804
-ASAN|global-buffer-overflow|sql/item_sum.cc|Item_func_collect::add|Item_sum::aggregator_add|Item_sum::reset_and_add|init_sum_functions                                         ## MDEV-38669
 ASAN|heap-use-after-free|plugin/server_audit/server_audit.cc|escape_string|log_statement_ex|log_statement|auditing                                                             ## MDEV-37105
 ASAN|heap-use-after-free|plugin/server_audit/server_audit.cc|filter_query_type|skip_set_statement|log_statement_ex|log_statement                                               ## MDEV-37105
 ASAN|heap-use-after-free|plugin/server_audit/server_audit.c|escape_string|log_statement_ex|log_statement|auditing                                                              ## MDEV-37105
@@ -1185,3 +1180,8 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # MSAN|use-of-uninitialized-value|include/btr0sea.h|btr_sea::hash_table::lock_get|btr_sea::partition::cleanup_after_erase|btr_sea::partition::erase_status|btr_search_update_hash_on_delete         ## Fixed ## MDEV-39848
 # UBSAN|member access within null pointer of type 'row_prebuilt_t'|storage/innobase/handler/ha_innodb.cc|ha_innobase::reset|THD::mark_tmp_table_as_free_for_reuse|THD::mark_tmp_tables_as_free_for_reuse|close_thread_tables    ## Fixed ## MDEV-40085
 # MSAN|use-of-uninitialized-value|sql/sql_class.h|THD::print_aborted_warning|THD::awake_no_mutex|THD::awake|kill_thread_phase_1                                       ## Fixed ## MDEV-40103
+# MSAN|use-of-uninitialized-value|lib/krb5/keytab/ktbase.c|krb5_kt_resolve|krb5_kt_read_service_key|get_default_principal_name|plugin_init                            ## Fixed ## MDEV-35575
+# ASAN|global-buffer-overflow|sql/item_sum.cc|Item_func_collect::add|Item_sum::aggregator_add|Item_sum::reset_and_add|init_sum_functions                              ## Fixed ## MDEV-38669
+# LSAN|memory leak|<unknown_module>|calloc|handler::ha_rnd_init(bool)|handler::ha_rnd_init_with_error(bool)|init_read_record                                          ## Fixed ## MDEV-38838
+# MSAN|use-of-uninitialized-value|sql/sql_delete.cc|int|Write_record::replace_row|Write_record::write_record|Delayed_insert::handle_inserts                           ## Fixed ## MDEV-40099
+# SIGSEGV|Sp_handler::db_find_routine|Sp_handler::db_find_and_cache_routine|Sp_handler::sp_cache_routine|Sp_handler::sp_cache_routine_reentrant                       ## Fixed ## MDEV-40420
