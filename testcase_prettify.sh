@@ -257,7 +257,7 @@ cat "${1}" | tr -d '`' | \
        s|rename|RENAME|gi; \
        s|identified|IDENTIFIED|gi; \
        s|delete|DELETE|gi; \
-       s|truncate|TRUNCATE|gi; \
+       s|truncate|TRUNCATE|gi;s|trunc|TRUNC|gi; \
        s|explain|EXPLAIN|gi; \
        s|extended|EXTENDED|gi; \
        s|date|DATE|gi; \

@@ -55,7 +55,7 @@ if [ ! -r ${OPTIONS_INFILE} ]; then echo "${OPTIONS_INFILE} specified in the con
 #ulimit -u 7000
 
 # Check input file (when generator is not used)
-if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -ne 1 -a ! -r ${INFILE} ]; then
+if [ ${USE_GENERATOR} -ne 1 -a ! -r ${INFILE} ]; then
   echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
   exit 1
 fi
@@ -243,7 +243,7 @@ if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
     THREADS=1
   fi
 fi
-if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 -a ${STORE_COPY_OF_INFILE} -eq 1 ]; then
+if [ ${USE_GENERATOR} -eq 1 -a ${STORE_COPY_OF_INFILE} -eq 1 ]; then
   echoit "Note: as the SQL Generator will be used instead of an input file (and as such there is more then one inputfile), STORE_COPY_OF_INFILE has automatically been set to 0."
   STORE_COPY_OF_INFILE=0
 fi
@@ -265,7 +265,7 @@ ctrl-c(){
   echoit "CTRL+C Was pressed. Attempting to terminate running processes..."
   KILL_PIDS1=`ps -ef | grep "$RANDOMD" | grep -v "grep" | awk '{print $2}' | tr '\n' ' '`
   KILL_PIDS2=
-  if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
+  if [ ${USE_GENERATOR} -eq 1 ]; then
     KILL_PIDS2=`ps -ef | grep generator | grep -v "grep" | awk '{print $2}' | tr '\n' ' '`
   fi
   KILL_PIDS="${KILL_PIDS1} ${KILL_PIDS2}"
@@ -277,7 +277,7 @@ ctrl-c(){
     echoit "Done. Moving the trial $0 was currently working on to workdir as ${WORKDIR}/${TRIAL}/..."
     mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1 | tee -a /${WORKDIR}/pquery-run.log
   fi
-  if [ $USE_GENERATOR_INSTEAD_OF_INFILE -eq 1 ]; then
+  if [ $USE_GENERATOR -eq 1 ]; then
     echoit "Attempting to cleanup generator temporary files..."
     rm -f ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}*.sql ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.part*
   fi
@@ -572,7 +572,7 @@ pquery_test(){
   timeout -k5 -s9 5s wait $KILLDPID >/dev/null 2>&1  # The sleep 0.2 + subsequent wait (cought before the kill) avoids the annoying 'Killed' message from being displayed in the output. Thank you to user 'Foonly' @ forums.whirlpool.net.au
   echoit "Clearing rundir..."
   rm -Rf ${RUNDIR}/*
-  if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
+  if [ ${USE_GENERATOR} -eq 1 ]; then
     echoit "Generating new SQL inputfile using the SQL Generator..."
     SAVEDIR=${PWD}
     cd ${SCRIPT_PWD}/generatorcpp/
@@ -1270,7 +1270,7 @@ else
   echoit "mysqld Start Timeout: ${MYSQLD_START_TIMEOUT} | Client Threads: ${THREADS} | Queries/Thread: ${QUERIES_PER_THREAD} | Trials: ${TRIALS} | Save coredump/valgrind issue trials only: `if [ ${SAVE_TRIALS_WITH_BUGS_ONLY} -eq 1 ]; then echo -n 'TRUE'; if [ ${SAVE_SQL} -eq 1 ]; then echo ' + save all SQL traces'; else echo ''; fi; else echo 'FALSE'; fi`"
 fi
 SQL_INPUT_TEXT="SQL file used: ${INFILE}"
-if [ ${USE_GENERATOR_INSTEAD_OF_INFILE} -eq 1 ]; then
+if [ ${USE_GENERATOR} -eq 1 ]; then
   if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 0 ]; then
     SQL_INPUT_TEXT="Using SQL Generator"
   else

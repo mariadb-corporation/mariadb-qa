@@ -44,6 +44,16 @@ else
   GRP_RPL=0
 fi
 
+# Per-instance temp files. This script runs concurrently in the same workdir: by hand via ~/pr, from /data/results (alias `r`), and twice per loop from the ge<workdir> pquery-go-expert.sh screen. Fixed temp file names in the workdir let one instance truncate or delete another instance's files mid-run, which shows up as awk/grep "No such file or directory" aborts and, worse, silently wrong counts. One dir per instance, removed on exit.
+_PQ_TMPDIR="$(mktemp -d)" || { echo "Assert: mktemp -d failed, cannot create a temporary directory"; exit 1; }
+trap 'rm -rf "${_PQ_TMPDIR}"' EXIT
+TEXTS_CACHE="${_PQ_TMPDIR}/texts_cache"
+STRINGS_CACHE="${_PQ_TMPDIR}/strings_cache"
+ALLERRLOGS="${_PQ_TMPDIR}/allerrlogs"
+ERRORLOGS="${_PQ_TMPDIR}/errorlogs"
+ERROR_SIGS="${_PQ_TMPDIR}/error_sigs"
+LISTED_UIDS="${_PQ_TMPDIR}/listed_uids"
+
 # String (TEXT=string) specific trials (commonly these are MODE=3 trials)
 NTS=  # Backwards compatible (and manually modified reducers scanning without using new text string)
 if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then
@@ -58,9 +68,8 @@ _PQ_SQL_FIRSTPASS=
 if [ "${MDG}" -eq 0 ] && [ "${GRP_RPL}" -eq 0 ]; then
   _HANG_TRIALS="$(ls --color=never [0-9]*/SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | sort -u)"
   if [ -n "${_HANG_TRIALS}" ]; then
-    _PQ_SQL_FIRSTPASS="$(mktemp 2>/dev/null)"
+    _PQ_SQL_FIRSTPASS="${_PQ_TMPDIR}/hang_sql_firstpass"
     if [ -n "${_PQ_SQL_FIRSTPASS}" ]; then
-      trap 'rm -f "${_PQ_SQL_FIRSTPASS}"' EXIT
       _hang_sql=()
       for _t in ${_HANG_TRIALS}; do
         for _f in "${_t}"/default.node.tld_thread-*.sql; do
@@ -102,54 +111,65 @@ fi
 
 # MODE 3 TRIALS
 ORIG_IFS=$IFS; IFS=$'\n'  # Use newline seperator instead of space seperator in the for loop
+# Single head-scan of all reducer scripts: "<file>:   TEXT='...'" rows (-m1 stops at the first TEXT= line per file, so only file heads are read). All per-STRING matching below, and the footer's already-listed-UID filter, run against this cache instead of re-reading every reducer script for each string.
+grep --binary-files=text -H -m1 '^   TEXT=' reducer* 2>/dev/null > "${TEXTS_CACHE}"
+CHAR_REGEX='[^0-9]'
+if [ "$(echo ${PWD} | sed 's|.*/||')" == "ERR_REDUCERS" ]; then
+  CHAR_REGEX='[^_0-9]'
+fi
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
-  for STRING in $(grep --binary-files=text -m1 '^   TEXT=' reducer* 2>/dev/null | grep --binary-files=text -vE 'Last.*consecutive queries all failed|Assert: no core file found in.*and fallback_text_string.sh returned an empty output' 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u); do
-    MATCHING_TRIALS=()
-    if grep --binary-files=text -qi "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then  # New text string (i.e. no regex) mode
-      CHAR_REGEX='[^0-9]'
-      if [ "$(echo ${PWD} | sed 's|.*/||')" == "ERR_REDUCERS" ]; then
-        CHAR_REGEX='[^_0-9]'
+  grep --binary-files=text -vE 'Last.*consecutive queries all failed|Assert: no core file found in.*and fallback_text_string.sh returned an empty output' "${TEXTS_CACHE}" 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u > "${STRINGS_CACHE}"
+  if [ "${NTS}" == "-Fi" ]; then  # New text string (i.e. no regex, exact text string) mode
+    # One awk pass over the string list and the TEXT cache replaces a ~10-process pipeline per string. Matching is case-insensitive fixed-substring (as grep -Fi); trial numbers come from the cache filenames (strip at ':', drop CHAR_REGEX chars, drop leading __); trial lists are numeric-unique ascending (as sort -un). The trailing printf '%b' loop reproduces echo -e's backslash handling. The s|\\"|"|g revert of the else-branch: pquery-prep-reducer.sh inserts \ before " for in-reducer TEXT use; it is not part of the official bug uniqueID string, so pquery-results.sh / MYBUG / known_bug_string.sh show " where reducer.sh TEXT holds \" (pquery-clean-known.sh relies on the \" form to find failing reducers).
+    awk -v crx="${CHAR_REGEX}" '
+      FILENAME==ARGV[1] { if ($0!="") s[++ns]=$0; next }  # An empty TEXT extraction stays hidden, as with word-split iteration
+      { cl[++nc]=$0; lcl[nc]=tolower($0) }
+      END {
+        for (k=1; k<=ns; k++) {
+          S=s[k]; ls=tolower(S); cnt=0; nt=0; delete tr
+          for (i=1; i<=nc; i++) {
+            if (index(lcl[i], ls)) {
+              cnt++
+              f=cl[i]; sub(/:.*/,"",f); gsub(crx,"",f); sub(/^__/,"",f)
+              tr[++nt]=f
+            }
+          }
+          if (cnt==0) continue
+          for (a=2; a<=nt; a++) { v=tr[a]; b=a-1; while (b>=1 && tr[b]+0 > v+0) { tr[b+1]=tr[b]; b-- } tr[b+1]=v }
+          j=""; pv=""
+          for (a=1; a<=nt; a++) { if (a>1 && tr[a]+0 == pv+0) continue; j=(j=="")?tr[a]:j","tr[a]; pv=tr[a] }
+          if      (index(S,"=ERROR")==1)           { o=sprintf("%-164sASAN  ",S) }
+          else if (index(S,"ThreadSanitizer:")==1) { o=sprintf("%-164sTSAN  ",S) }
+          else if (index(S,"runtime error:")==1)   { o=sprintf("%-164sUBSAN ",S) }
+          else if (index(S,"LeakSanitizer:")==1)   { o=sprintf("%-164sASAN ",S) }
+          else if (index(S,"MemorySanitizer:")==1) { o=sprintf("%-164sMSAN ",S) }
+          else                                     { o=sprintf("%-170s",S); gsub(/\\"/,"\"",o) }
+          printf "%s (Seen %3s times: reducers %s)\n", o, cnt, j
+        }
+      }' "${STRINGS_CACHE}" "${TEXTS_CACHE}" | while IFS= read -r _line; do printf '%b\n' "${_line}"; done
+  else  # Backwards compatible (and manually modified reducers scanning without using new text string)
+    for STRING in $(cat "${STRINGS_CACHE}"); do
+      MATCHING_TRIALS=($(grep --binary-files=text "TEXT=.${STRING}." "${TEXTS_CACHE}" 2>/dev/null | awk '{print $1}' | sort -u | sed "s|:.*||;s|${CHAR_REGEX}||g" | sed 's|^__||' | sort -un))
+      COUNT=$(grep --binary-files=text -v 'Last.*consecutive queries all failed' "${TEXTS_CACHE}" 2>/dev/null | sort -u | sed 's|reducer\([0-9]\+\).sh:|reducer\1.sh:  |;s|  TEXT|TEXT|' 2>/dev/null | grep --binary-files=text "${STRING}" 2>/dev/null | wc -l)
+      if [ ${COUNT} -gt 0 ]; then
+        if [[ "${STRING}" == "=ERROR"* ]]; then  # ASAN bug
+          STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sASAN  ",$1}')"
+        elif [[ "${STRING}" == "ThreadSanitizer:"* ]]; then  # TSAN bug
+          STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sTSAN  ",$1}')"
+        elif [[ "${STRING}" == "runtime error:"* ]]; then  # UBSAN bug
+          STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sUBSAN ",$1}')"
+        elif [[ "${STRING}" == "LeakSanitizer:"* ]]; then  # LSAN bug
+          STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sASAN ",$1}')"  # LSAN shows as ASAN, ref san_text_string.sh
+        elif [[ "${STRING}" == "MemorySanitizer:"* ]]; then  # MSAN bugs
+          STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sMSAN ",$1}')"
+        else
+          STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-170s",$1}' | sed 's|\\"|"|g')"  # See the \" revert note above the awk pass
+        fi
+        COUNT_OUT="$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')"
+        echo -e "${STRING_OUT}${COUNT_OUT}$(echo ${MATCHING_TRIALS[@]}|sed 's| |,|g'))"
       fi
-      for MATCHING_TRIAL in $(grep -FiH --binary-files=text "${STRING}" reducer* 2>/dev/null | awk '{print $1}' | sort -u | sed "s|:.*||;s|${CHAR_REGEX}||g" | sed 's|^__||' | sort -un) ; do
-        MATCHING_TRIAL=$(echo ${MATCHING_TRIAL} | sed 's|.*TEXT=.||;s|\.[ \t]*$||')
-        MATCHING_TRIALS+=($MATCHING_TRIAL)
-      done
-      COUNT=$(grep -Fi -m1 --binary-files=text "${STRING}" reducer* 2>/dev/null | wc -l)
-    else  # Backwards compatible (and manually modified reducers scanning without using new text string)
-      CHAR_REGEX='[^0-9]'
-      if [ "$(echo ${PWD} | sed 's|.*/||')" == "ERR_REDUCERS" ]; then
-        CHAR_REGEX='[^_0-9]'
-      fi
-      for MATCHING_TRIAL in $(grep -H --binary-files=text "TEXT=.${STRING}." reducer* 2>/dev/null | awk '{print $1}' | sort -u | sed "s|:.*||;s|${CHAR_REGEX}||g" | sed 's|^__||' | sort -un) ; do
-        MATCHING_TRIAL=$(echo ${MATCHING_TRIAL} | sed 's|.*TEXT=.||;s|\.[ \t]*$||')
-        MATCHING_TRIALS+=($MATCHING_TRIAL)
-      done
-      COUNT=$(grep --binary-files=text -m1 '^   TEXT=' reducer* 2>/dev/null | grep -v 'Last.*consecutive queries all failed' | sort -u | sed 's|reducer\([0-9]\+\).sh:|reducer\1.sh:  |;s|  TEXT|TEXT|' 2>/dev/null | grep --binary-files=text "${STRING}" 2>/dev/null | wc -l)
-    fi
-    SAN=0
-    if [ ${COUNT} -gt 0 ]; then
-      if [[ "${STRING}" == "=ERROR"* ]]; then  # ASAN bug
-        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sASAN  ",$1}')"
-        SAN=1
-      elif [[ "${STRING}" == "ThreadSanitizer:"* ]]; then  # TSAN bug
-        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sTSAN  ",$1}')"
-        SAN=1
-      elif [[ "${STRING}" == "runtime error:"* ]]; then  # UBSAN bug
-        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sUBSAN ",$1}')"
-        SAN=1
-      elif [[ "${STRING}" == "LeakSanitizer:"* ]]; then  # LSAN bug
-        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sASAN ",$1}')"  # LSAN shows as ASAN, ref san_text_string.sh
-        SAN=1
-      elif [[ "${STRING}" == "MemorySanitizer:"* ]]; then  # MSAN bugs
-        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-164sMSAN ",$1}')"
-        SAN=1
-      else
-        STRING_OUT="$(echo $STRING | awk -F "\n" '{printf "%-170s",$1}' | sed 's|\\"|"|g')"  # The s|\\"|"|g sed reverts the insertion of \ before " (i.e. \") as done by pquery-prep-reducer.sh and as used by reducer. It is not helpful here, and it is not part of the offial bug uniqueID string. Thus, pquery-results.sh and in-reducer TEXT slightly differ: " (pquery-results.sh, MYBUG, known_bug_string.sh) vs \" (reducer.sh, and as set by pquery-prep-reducer.sh, and pquery-clean-known.sh also uses this to be able to find failing reducers)
-      fi
-      COUNT_OUT="$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')"
-      echo -e "${STRING_OUT}${COUNT_OUT}$(echo ${MATCHING_TRIALS[@]}|sed 's| |,|g'))"
-    fi
-  done
+    done
+  fi
 else  # Galera or GR run
   for STRING in $(grep --binary-files=text -m1 '^   TEXT=' reducer* 2>/dev/null | grep -v 'Last.*consecutive queries all failed' | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u); do
     MATCHING_TRIALS=()
@@ -380,11 +400,12 @@ if [ ! -z "$REL1" ]; then
   echo "${REL1}"
 fi
 
-# Coredumps overview (for comparison)
-COREDUMPS="$(find . | grep --binary-files=text 'core' 2>/dev/null | grep --binary-files=text -vE 'parse|pquery' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|')"
+# Coredumps overview (for comparison). One tree walk, consumed twice (the display filter additionally drops vault paths)
+CORE_PATHS="$(find . | grep --binary-files=text 'core' 2>/dev/null)"
+COREDUMPS="$(echo "${CORE_PATHS}" | grep --binary-files=text -vE 'parse|pquery' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|')"
 if [ "$(echo "${COREDUMPS}" | sed 's| \+||g')" != "" ]; then
   echo "** Coredumps found in trials:"
-  find . | grep --binary-files=text  'core' 2>/dev/null | grep --binary-files=text -vE 'parse|pquery|vault' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|'
+  echo "${CORE_PATHS}" | grep --binary-files=text -vE 'parse|pquery|vault' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|'
 fi
 
 if [ $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | wc -l) -gt 0 ]; then
@@ -414,25 +435,28 @@ if grep -qm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null; then
   echo '** Trials where the slave SQL thread aborted: manual reducer setup verification may be required'
   grep -lm1 'slave SQL thread aborted' [0-9]*/log/slave.err 2>/dev/null | sed 's|/.*||' | sort -n | tr '\n' ' ' | sed 's| $||;s|$|\n|'
 fi
-rm -f ./errorlogs.tmp ./error_sigs.tmp
-find . -type f -name "master.err" | grep '\./[0-9]\+/log/master.err' > ./errorlogs.tmp
-find . -type f -name "slave.err" | grep '\./[0-9]\+/log/slave.err' >> ./errorlogs.tmp
 # Galera per-node error logs: ./<trial>/node<N>/node<N>.err. error_log_scan.sh
 # aggregate-mode extracts the trial id from the leading ./<digits>/ path component,
 # so these slot into the same aggregate output as master.err / slave.err. Added
 # so /data/results (alias `r`) can drop its own inline scan that previously
-# covered Galera node logs.
-find . -type f -name "node*.err" 2>/dev/null | grep -E '\./[0-9]+/node[0-9]+/node[0-9]+\.err' >> ./errorlogs.tmp
-if [ -s ./errorlogs.tmp ]; then
+# covered Galera node logs. One tree walk for all three log names.
+find . -type f \( -name "master.err" -o -name "slave.err" -o -name "node*.err" \) 2>/dev/null > "${ALLERRLOGS}"
+grep '\./[0-9]\+/log/master.err' "${ALLERRLOGS}" > "${ERRORLOGS}"
+grep '\./[0-9]\+/log/slave.err' "${ALLERRLOGS}" >> "${ERRORLOGS}"
+grep -E '\./[0-9]+/node[0-9]+/node[0-9]+\.err' "${ALLERRLOGS}" >> "${ERRORLOGS}"
+if [ -s "${ERRORLOGS}" ]; then
   # Single error_log_scan.sh aggregate call over all error logs; emits "<UID>\t<trial>" rows. ERROR_MSG_FILTER (pquery-results.sh-local, on top of REGEX_ERRORS_FILTER) drops items already shown as new_text_string.sh UniqueIDs and 'slave SQL thread aborted' (own section above), keeping the 'Significant/Major errors' section concise.
+  # Signatures already listed in the sorted-UniqueID section on top (the reducer TEXT= strings, with the \" escaping reverted to match error_log_scan.sh output) are dropped too: this section surfaces errors not yet captured by any reducer, so that none are lost.
   ERROR_MSG_FILTER='Warning: Memory not freed|mysqld: Got error|is marked as crashed|MariaDB error code|slave SQL thread aborted'
-  xargs -a ./errorlogs.tmp "${SCRIPT_PWD}/error_log_scan.sh" aggregate 2>/dev/null \
-    | grep --binary-files=text -vE "${ERROR_MSG_FILTER}" > ./error_sigs.tmp
+  grep --binary-files=text -vE 'Last.*consecutive queries all failed|Assert: no core file found in.*and fallback_text_string.sh returned an empty output' "${TEXTS_CACHE}" 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sed 's|\\"|"|g' | sort -u > "${LISTED_UIDS}"
+  xargs -a "${ERRORLOGS}" "${SCRIPT_PWD}/error_log_scan.sh" aggregate 2>/dev/null \
+    | grep --binary-files=text -vE "${ERROR_MSG_FILTER}" \
+    | awk -F'\t' 'FILENAME==ARGV[1]{listed[$0];next} !($1 in listed)' "${LISTED_UIDS}" - > "${ERROR_SIGS}"
 fi
-if [ -s ./error_sigs.tmp ]; then
+if [ -s "${ERROR_SIGS}" ]; then
   echo "** Significant/Major errors (if any)"
   # Cross-trial aggregation: group by signature, list trials per signature in numeric order. Sort by signature (alphabetical) then trial (numeric) so the awk pass only has to detect signature boundaries. The per-(sig,trial) dedup in the awk catches trials whose master.err and slave.err both contain the same signature.
-  sort -t$'\t' -k1,1 -k2,2n ./error_sigs.tmp | awk -F'\t' '
+  sort -t$'\t' -k1,1 -k2,2n "${ERROR_SIGS}" | awk -F'\t' '
     seen[$1, $2]++ { next }
     $1 != prev_sig {
       if (prev_sig != "") print "    " trials
@@ -444,7 +468,6 @@ if [ -s ./error_sigs.tmp ]; then
     { trials = trials " " $2 }
     END { if (prev_sig != "") print "    " trials }'
 fi
-rm -f ./errorlogs.tmp ./error_sigs.tmp
 
 extract_valgrind_error(){
   for i in $( ls  ${ERROR_LOG_LOC} 2>/dev/null); do

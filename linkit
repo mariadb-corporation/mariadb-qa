@@ -147,6 +147,7 @@ ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/* /test/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/* /data/ 2>&1
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/current_runs_testcases /home/${USER}/crt 2>&1
 rm -f /data/[odut][0-9]  # Remove changedir scripts (like '. ./d7' etc.) normally only used in /test
+rm -f /data/d[2-9] /data/uo[2-9] /data/o[2-9] /data/u[2-9] /data/d0 /data/uo0 /data/o0 /data/u0  # Deprecated x0+x1-9 scripts (leaving x1 scripts only)
 
 # Mass testcase scripts
 ln -fs /home/${USER}/mariadb-qa/testcase-scripts/* /test/TESTCASES/ 2>&1

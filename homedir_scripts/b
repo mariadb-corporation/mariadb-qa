@@ -1,7 +1,7 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
-set "${1^^}" "${2}"  # Make ${1} uppercase ('san' > 'SAN')
+set "${1^^}" "${@:2}"  # Make ${1} uppercase ('san' > 'SAN'); keep all further args (${3}+ feed MYEXTRA_OPT below)
 
 # User variables
 ALSO_CHECK_SAN_BUILDS_FOR_CORES_SET=1  # Recommended to leave as default=1, search for 'ALSO_CHECK_SAN_BUILDS_FOR_CORES' to read more on this.

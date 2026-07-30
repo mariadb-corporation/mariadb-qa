@@ -91,7 +91,9 @@ UID_NORMALIZE_LRECL='s|Table/File lrecl mismatch \([0-9]+,[0-9]+\)|Table/File lr
 UID_NORMALIZE_TEST_PATH='s|/test/[^/]+/|/test/X/|g'
 UID_NORMALIZE_INNODB_HELP='s|We detected index corruption in an InnoDB type table\..*|We detected index corruption in an InnoDB type table|; s|The file .* already exists though the corresponding table did not exist in the InnoDB data dictionary\. You can resolve the problem by removing the file\.?|The file X already exists though the corresponding table did not exist in the InnoDB data dictionary. You can resolve the problem by removing the file|'
 
-uid_normalize() {
+# uid_normalize_nodedup: every stage is 1:1 line-preserving (no dedup), so aggregate mode can
+# pair each output line back to the trial column it split off before normalisation.
+uid_normalize_nodedup() {
   sed -E \
       -e "${UID_NORMALIZE_TS}" \
       -e "${UID_NORMALIZE_TT}" \
@@ -124,8 +126,11 @@ uid_normalize() {
       -e "${UID_NORMALIZE_TEST_PATH}" \
       -e "${UID_NORMALIZE_INNODB_HELP}" \
   | awk '{ n=0; pos=1; q=sprintf("%c",39); qm=q "X" q; bm="`X`"; while(1){ rem=substr($0,pos); qp=index(rem,qm); bp=index(rem,bm); if(qp==0&&bp==0)break; if(qp>0&&(bp==0||qp<bp)){c=(n<3)?sprintf("%c",88+n):sprintf("%c",65+n-3); p=pos+qp-1; $0=substr($0,1,p-1) q c q substr($0,p+3); pos=p+3}else{c=(n<3)?sprintf("%c",88+n):sprintf("%c",65+n-3); p=pos+bp-1; $0=substr($0,1,p-1) "`" c "`" substr($0,p+3); pos=p+3} n++ } print }' \
-  | sed -E "s/\`([A-Z])\`/\\1/g; s/'([A-Z])'/\\1/g" \
-  | awk '!seen[$0]++'
+  | sed -E "s/\`([A-Z])\`/\\1/g; s/'([A-Z])'/\\1/g"
+}
+
+uid_normalize() {
+  uid_normalize_nodedup | awk '!seen[$0]++'
 }
 
 # uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN, MSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, WARNING, MYSQL_HA_READ, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
@@ -192,22 +197,28 @@ uid_prefix() {
   '
 }
 
-# aggregate mode: processes ALL passed logs in one bash invocation and emits <UID><tab><trial> rows ready for pquery-results.sh's sort-then-awk grouper. Trial number is read from the first numeric component of the log path (./<trial>/log/master.err, ./<trial>/node<N>/node<N>.err). One invocation handles all logs to avoid per-log subprocess spawns for errors+lastline.
+# aggregate mode: emits <UID><tab><trial> rows for pquery-results.sh's sort-then-awk grouper, deduped per (trial,UID). Trial number is read from the first numeric component of the log path (./<trial>/log/master.err, ./<trial>/node<N>/node<N>.err). Fully batched: regex compilation dominates the per-log cost (REGEX_ERRORS_SCAN alone takes ~0.1s to compile; the scan itself is microseconds per log), so all logs go through ONE grep and the normalisation pipeline runs ONCE over all surviving lines. The trial rides in a separate column so the ^/$-anchored rules keep seeing pure log lines; the content-level regexes run on the content column alone via line-number round trips, keeping grep as the regex engine.
 if [ "${MODE}" = "aggregate" ]; then
-  for log in ${LOGS}; do
-    [ -r "${log}" ] || continue
-    trial="$(echo "${log}" | sed -n 's|^\./\([0-9]\+\)/.*|\1|p')"
-    [ -z "${trial}" ] && continue
-    log_errors="$(grep --binary-files=text -h -Ei "${REGEX_ERRORS_SCAN}" "${log}" 2>/dev/null | sort -u 2>/dev/null | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$|^==>")"
-    log_lastline="$(tail -n1 "${log}" 2>/dev/null | grep --no-group-separator --binary-files=text -B1 -E "${REGEX_ERRORS_LASTLINE}" | grep --binary-files=text -vE "${REGEX_ERRORS_FILTER}" | grep -vE "^[ \t]*$|^==>")"
-    { [ -n "${log_errors}" ] && echo "${log_errors}"; [ -n "${log_lastline}" ] && echo "${log_lastline}"; } \
-      | sed -E "${INNODB_RECORD_COLLAPSE}" \
-      | sed "${UNIVERSAL_COLLAPSE}" \
-      | uid_normalize \
-      | uid_prefix \
-      | awk '!seen[$0]++' \
-      | awk -v t="${trial}" 'NF{print $0 "\t" t}'
-  done
+  AGG_TMP="$(mktemp -d)" || exit 1
+  trap 'rm -rf "${AGG_TMP}"' EXIT
+  # Scan hits, "path<tab>content" rows. sort -u on the path-prefixed rows equals a per-log sort/dedup of content (the path holds no ':').
+  grep --binary-files=text -H -Ei "${REGEX_ERRORS_SCAN}" ${LOGS} 2>/dev/null | sort -u | sed 's|:|\t|' > "${AGG_TMP}/err"
+  # Last line of every log in one pass; kept when it matches REGEX_ERRORS_LASTLINE (case-sensitive).
+  awk 'ENDFILE{if(l!="")print FILENAME"\t"l; l=""}{l=$0}' ${LOGS} 2>/dev/null > "${AGG_TMP}/last_raw"
+  cut -f2- "${AGG_TMP}/last_raw" | grep --binary-files=text -nE "${REGEX_ERRORS_LASTLINE}" 2>/dev/null | sed 's|:.*||' > "${AGG_TMP}/last_keep"
+  awk -v kf="${AGG_TMP}/last_keep" 'FILENAME==kf{k[$1];next}(FNR in k)' "${AGG_TMP}/last_keep" "${AGG_TMP}/last_raw" > "${AGG_TMP}/last"
+  # Errors first, lastline after: per-trial first-occurrence dedup keeps the same winner as a sequential per-log errors-then-lastline recipe.
+  cat "${AGG_TMP}/err" "${AGG_TMP}/last" > "${AGG_TMP}/cand"
+  [ -s "${AGG_TMP}/cand" ] || exit 0
+  # REGEX_ERRORS_FILTER + empty/'==>' drop, on the content column only (the filter holds ^-anchored patterns).
+  cut -f2- "${AGG_TMP}/cand" | grep --binary-files=text -nvE -e "${REGEX_ERRORS_FILTER}" -e '^[ \t]*$|^==>' 2>/dev/null | sed 's|:.*||' > "${AGG_TMP}/keep"
+  awk -v kf="${AGG_TMP}/keep" 'FILENAME==kf{k[$1];next}(FNR in k)' "${AGG_TMP}/keep" "${AGG_TMP}/cand" > "${AGG_TMP}/rows"
+  # Split trial and content columns; rows without a leading ./<trial>/ path component are dropped.
+  awk -F'\t' -v T="${AGG_TMP}/trials" -v C="${AGG_TMP}/content" '{ if ($1 !~ /^\.\/[0-9]+\//) next; t=$1; sub(/^\.\//,"",t); sub(/\/.*/,"",t); c=$0; sub(/^[^\t]*\t/,"",c); print t > T; print c > C }' "${AGG_TMP}/rows"
+  [ -s "${AGG_TMP}/content" ] || exit 0
+  # One normalisation pass for all rows (every stage is line-preserving); dedup after re-pairing with the trial column.
+  sed -E "${INNODB_RECORD_COLLAPSE}" < "${AGG_TMP}/content" | sed "${UNIVERSAL_COLLAPSE}" | uid_normalize_nodedup | uid_prefix > "${AGG_TMP}/uids"
+  paste "${AGG_TMP}/trials" "${AGG_TMP}/uids" | awk -F'\t' '{ t=$1; u=$0; sub(/^[^\t]*\t/,"",u); if (u !~ /[^ \t]/) next; if (seen[t,u]++) next; print u "\t" t }'
   exit 0
 fi
 

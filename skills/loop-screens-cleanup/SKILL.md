@@ -32,8 +32,9 @@ A `[]` screen still showing live subreducer activity is a stuck reducer spinning
 
 Detection signals (per screen, from a `hardcopy -h` dump):
 - **bracket** = last `[*]` or `[]` in the dump (default `[]` if none).
-- **finished** = last non-blank line is a shell prompt (matches `\$ *$`, e.g. `host:/data/NNN$`) OR the trial's `/dev/shm/<epoch>` has zero live processes.
-- **still reducing** = bracket `[*]` AND not finished (live procs, no shell prompt, recent timestamps).
+- **finished** = the trial's main reducer process is gone. The main reducer runs for the whole reduction; only subreducers and mariadbd instances come and go. Match it by path - its cmdline is `<workdir>/reducer<N>.sh` (exe `reducercpp/reducer`) and never contains `/dev/shm/<epoch>`, so an epoch-based `pgrep` cannot see it. A shell prompt as the last non-blank line (`\$ *$`, e.g. `host:/data/NNN$`) is the visual confirmation.
+- **still reducing** = bracket `[*]` AND the main reducer is alive.
+- Zero processes on `/dev/shm/<epoch>` never means finished. The main reducer is invisible to that match, and a live reducer sits at zero epoch procs between server restarts and after rotating to a fresh epoch mid-run - so ending on that signal kills healthy reducers.
 
 ## Procedure
 
@@ -55,11 +56,12 @@ Detection signals (per screen, from a `hardcopy -h` dump):
 3. **Classify each screen and extract its dominant epoch.** Take the most-frequent full-length (>=16 digit) `/dev/shm/<epoch>` in the dump as the reducer's own workdir:
 
    ```
+   SES=$(basename "$f" .txt); N=${SES#*.s}          # trial number from the screen name
    BRK=$(grep -oE '\[\*\]|\[\]' "$f" | tail -1); [ -z "$BRK" ] && BRK='[]'
    EPOCH=$(grep -oE '/dev/shm/[0-9]{16,}' "$f" | grep -oE '[0-9]{16,}' | sort | uniq -c | sort -rn | head -1 | awk '{print $2}')
-   LAST=$(grep '.' "$f" | tail -1)
-   PROCS=$([ -n "$EPOCH" ] && pgrep -cf "/dev/shm/$EPOCH" || echo 0)
-   if echo "$LAST" | grep -qE '\$ *$' || [ "$PROCS" = 0 ]; then FIN=yes; else FIN=no; fi
+   WD=$(grep -oE '/data/[0-9]+/' "$f" | head -1 | tr -d '\n')
+   RED=$(pgrep -cf "${WD:-/data/}reducer$N\.sh")     # main reducer; the authoritative liveness test
+   if [ "$RED" = 0 ]; then FIN=yes; else FIN=no; fi
    if [ "$BRK" = '[*]' ] && [ "$FIN" = no ]; then DECISION=LEAVE; else DECISION=END; fi
    ```
 

@@ -1,7 +1,8 @@
 ## Known *SAN bugs file. Note that syntax is important, for example it is necessary to use "##", not "#" before the bug ID etc.
 
 ##### Filter dud testcases/asserts. Bug numbers refer to ~/eb testcases only, not to real MDEV/MENT bugs ######
-ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|archive_discover|discover_handlerton|plugin_foreach_with_mask                                                             ## MDEV-37154
+##### To avoid filters from being marked as Fixed when they are false positives, they are marked with a MDEV -000 addition (when/where they are not already SPECIAL-x which are never automatically marked as fixed)  ######
+MSAN|use-of-uninitialized-value|lib/krb5/keytab/ktbase.c|krb5_kt_resolve|krb5_kt_read_service_key|get_default_principal_name|plugin_init                                       ## MDEV-000-35575
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/mf_keycache.c|interceptor_malloc|my_malloc|my_multi_malloc_large|init_simple_key_cache ## SPECIAL-3
 ASAN|requested allocation size X (Y after adjustments for alignment, red zones etc.) exceeds maximum supported size of Z (thread Tx)|mysys/safemalloc.c|malloc|sf_malloc|my_malloc|my_multi_malloc_large ## SPECIAL-4
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
@@ -21,7 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
-MSAN|use-of-uninitialized-value|lib/krb5/keytab/ktbase.c|krb5_kt_resolve|krb5_kt_read_service_key|get_default_principal_name|plugin_init                                       ## MDEV-35575
+ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|archive_discover|discover_handlerton|plugin_foreach_with_mask                                                             ## MDEV-37154
 MSAN|use-of-uninitialized-value|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                          ## MDEV-30756
 MSAN|use-of-uninitialized-value|strings/ctype-bin.c|memcmp|my_strnncoll_binary|my_strnncollsp_binary|my_ci_strnncollsp                                                         ## MDEV-40455
 UBSAN|division by zero|sql/item_windowfunc.h|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                     ## MDEV-40432

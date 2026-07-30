@@ -817,9 +817,12 @@ static void preprocess_myextra() {
     std::this_thread::sleep_for(std::chrono::seconds(2));
     cfg::BASEDIR = basedir_alt;
   }
-  // TSAN: the 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space
-  // reservation) cannot map within the TSAN-restricted address space; cap it
-  if (cfg::BASEDIR.find("TSAN") != std::string::npos &&
+  // TSAN/VAL: the 13.0+ innodb_buffer_pool_size_max default (8 TiB address-space
+  // reservation) cannot map within the TSAN-restricted address space, and stalls
+  // Valgrind's memcheck address-range tracking (MODE 1/6 run under Valgrind); cap it
+  if ((cfg::BASEDIR.find("TSAN") != std::string::npos ||
+       cfg::BASEDIR.find("VAL_") != std::string::npos ||
+       cfg::MODE == 1 || cfg::MODE == 6) &&
       !util::contains(cfg::MYEXTRA, "--loose-innodb-buffer-pool-size-max")) {
     cfg::MYEXTRA += " --loose-innodb-buffer-pool-size-max=2G";
   }

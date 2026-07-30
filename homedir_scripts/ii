@@ -17,8 +17,8 @@ grep '^PRELOAD=' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
 if grep -q 'PRELOAD=[^0]' pquery*.conf; then
   grep '^PRELOAD_SQL' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|;s|\${SCRIPT_PWD}|~/mariadb-qa|'
 fi
-if grep -q '^USE_GENERATOR_INSTEAD_OF_INFILE=1' pquery*.conf; then
-  grep '^USE_GENERATOR_INSTEAD_OF_INFILE' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
+if grep -q '^USE_GENERATOR=1' pquery*.conf; then
+  grep '^USE_GENERATOR' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
   grep '^ADD_INFILE_TO_GENERATED_SQL' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
   grep '^QUERIES_PER_GENERATOR_RUN' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
   grep '^GENERATE_NEW_QUERIES_EVERY_X_TRIALS' pquery*.conf | sed 's|[ ]\+#.*||;s|=|   \t\t|'
